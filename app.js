@@ -442,5 +442,97 @@ if (inspForm) inspForm.addEventListener('submit', async (e) => {
 });
 
 
+/* =========================
+========================= */
+const LIST_URL = 'https://YOUR-PROJECT.supabase.co/functions/v1/list-submissions';
+
+
+const lgSite = document.getElementById('lg_site');
+const lgFrom = document.getElementById('lg_from');
+const lgTo = document.getElementById('lg_to');
+const lgForm = document.getElementById('lg_form');
+const lgLoad = document.getElementById('lg_load');
+const lgExport= document.getElementById('lg_export');
+const lgTable = document.getElementById('lg_table');
+const lgBody = lgTable ? lgTable.querySelector('tbody') : null;
+
+
+function fmtSummary(row){
+const t = row.form_type;
+const p = row.payload || {};
+if (t === 'E') return `Leader: ${p.submitted_by||''}; Attendees: ${Array.isArray(p.attendees)?p.attendees.length:0}`;
+if (t === 'D') return `Checked by: ${p.checked_by||''}; Non-compliance: ${p.nonCompliant?'YES':'No'}`;
+if (t === 'B') return `Checked by: ${p.checked_by||''}; Flagged: ${p.flagged?'YES':'No'}`;
+if (t === 'C') return `Inspector: ${p.inspector||''}; Open hazards: ${p.openHazards? 'YES':'No'}`;
+if (t === 'A') return `Supervisor: ${p.supervisor||''}; Issues: ${p.issues? 'YES':'No'}`;
+return '';
+}
+
+
+function renderRows(rows){
+if (!lgBody) return;
+lgBody.innerHTML = '';
+rows.forEach(r => {
+const tr = document.createElement('tr');
+const d = (r.date || '').slice(0,10);
+tr.innerHTML = `
+<td>${r.id}</td>
+<td>${d}</td>
+<td>${r.form_type}</td>
+<td>${r.site||''}</td>
+<td>${fmtSummary(r)}</td>
+<td>
+<details>
+<summary>View</summary>
+<pre style="white-space:pre-wrap; word-break:break-word; max-width:60ch;">${JSON.stringify(r.payload, null, 2)}</pre>
+</details>
+</td>`;
+lgBody.appendChild(tr);
+});
+}
+
+
+async function fetchLog(){
+const body = {
+site: (lgSite && lgSite.value.trim()) || undefined,
+formType: (lgForm && lgForm.value) || undefined,
+from: (lgFrom && lgFrom.value) || undefined,
+to: (lgTo && lgTo.value) || undefined,
+limit: 100
+};
+const res = await fetch(LIST_URL, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body) });
+const data = await res.json();
+if (!res.ok || !data.ok) throw new Error(data.error || 'load_failed');
+renderRows(data.rows||[]);
+window._logRows = data.rows||[]; // for CSV export
+}
+
+
+function toCSV(rows){
+const header = ['id','date','form_type','site','summary'];
+const lines = [header.join(',')];
+rows.forEach(r => {
+const row = [r.id, (r.date||'').slice(0,10), r.form_type, r.site||'', fmtSummary(r)];
+const esc = v => '"' + String(v).replaceAll('"','""') + '"';
+lines.push(row.map(esc).join(','));
+});
+return lines.join('\n');
+}
+
+
+if (lgLoad) lgLoad.addEventListener('click', async ()=>{
+try { await fetchLog(); } catch(e){ alert('Failed to load log.'); }
+});
+
+
+if (lgExport) lgExport.addEventListener('click', ()=>{
+const rows = window._logRows || [];
+if (!rows.length) { alert('Nothing to export. Load the log first.'); return; }
+const blob = new Blob([toCSV(rows)], { type: 'text/csv;charset=utf-8;' });
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url; a.download = 'ywi-log.csv'; a.click();
+setTimeout(()=> URL.revokeObjectURL(url), 1000);
+});
 
 
