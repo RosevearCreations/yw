@@ -1,29 +1,89 @@
-    /* Only show the active section */
-    main > section.card { display: none; }
-    main > section.card.active { display: block; }
-
-    /* Active link styling (optional) */
-    nav a.active { font-weight: 700; text-decoration: underline; }
-
-    /* Polished look (optional) */
+/* =========
+   Layout & Theme (tidy, readable)
+=========== */
 :root{
-  --bg: #0f172a;       /* slate-900 */
-  --card: #111827;     /* gray-900 */
-  --text: #e5e7eb;     /* gray-200 */
-  --muted: #9ca3af;    /* gray-400 */
-  --brand: #22d3ee;    /* cyan-400 */
-  --accent: #38bdf8;   /* sky-400 */
-  --radius: 16px;
+  --bg:#0f172a;        /* page background */
+  --card:#111827;      /* section background */
+  --text:#e5e7eb;      /* body text */
+  --muted:#9ca3af;     /* label text */
+  --line:rgba(255,255,255,.10);
+  --brand:#22d3ee;
+  --accent:#38bdf8;
+  --radius:16px;
+  --pad:16px;
 }
-body { background: var(--bg); color: var(--text); }
-.card { background: var(--card); border-radius: var(--radius); padding: 1rem 1.25rem; box-shadow: 0 8px 30px rgba(0,0,0,.3); }
-h2 { margin: .25rem 0 1rem; letter-spacing: .2px; }
-label { color: var(--muted); }
-button.primary { background: var(--brand); color: #0b1220; border-radius: 10px; padding: .6rem 1rem; border: 0; }
-button.primary:hover { filter: brightness(1.05); }
-nav a { color: var(--text); opacity:.8; }
-nav a.active { color: var(--accent); opacity:1; }
-table { width: 100%; border-collapse: collapse; }
-th, td { border-bottom: 1px solid rgba(255,255,255,.08); padding: .5rem; vertical-align: top; }
- 
 
+html,body{height:100%;}
+body{margin:0; background:var(--bg); color:var(--text); font: 15px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;}
+
+main{max-width:1024px; margin:24px auto 64px; padding:0 16px;}
+nav{position:sticky; top:0; z-index:30; background:linear-gradient(to bottom, #0f172a, rgba(15,23,42,.8)); backdrop-filter:saturate(160%) blur(4px); padding:10px 16px; border-bottom:1px solid var(--line);}
+nav a{margin-right:18px; color:var(--text); opacity:.8; text-decoration:none;}
+nav a.active{color:var(--accent); font-weight:700; opacity:1; text-decoration:underline;}
+
+.card{background:var(--card); border-radius:var(--radius); padding:20px; box-shadow:0 10px 30px rgba(0,0,0,.35);}
+
+/* Show only one form (section) at a time */
+main > section.card{display:none;}
+main > section.card.active{display:block;}
+
+/* Headings & spacing */
+h2{margin:.25rem 0 1rem;}
+h3{margin:1.25rem 0 .5rem;}
+.form-footer{display:flex; gap:10px; margin-top:16px;}
+
+/* =========
+   Form grid (labels + inputs align)
+=========== */
+.grid{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap:12px 16px;
+}
+label{display:flex; flex-direction:column; gap:6px; color:var(--muted); font-size:.95rem;}
+input[type="text"], input[type="date"], input[type="time"], input[type="number"], select, textarea{
+  width:100%; box-sizing:border-box; padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:#0b1220; color:var(--text);
+}
+textarea{min-height:88px; resize:vertical;}
+
+/* Buttons */
+button, .button{
+  appearance:none; border:0; border-radius:10px; padding:.6rem 1rem; cursor:pointer; background:#1f2937; color:var(--text);
+}
+button.primary{background:var(--brand); color:#0b1220; font-weight:600;}
+button.secondary{background:#0b1220; border:1px solid var(--line);}
+
+/* =========
+   Tables (tidy + scroll if wide)
+=========== */
+.table-wrap{overflow-x:auto; margin:.25rem 0 0;}
+table{width:100%; border-collapse:collapse; table-layout:auto;}
+th, td{padding:.55rem .6rem; border-bottom:1px solid var(--line); vertical-align:top; text-align:left; white-space:nowrap;}
+th{font-weight:600; color:#cbd5e1;}
+td input, td select, td textarea{margin:0;}
+
+/* Make “Controls” column narrow */
+th:last-child, td:last-child{width:110px;}
+
+/* =========
+   Signature areas → white background + border
+=========== */
+.canvas-wrap{background:#fff; padding:10px; border-radius:10px; border:1px solid #e5e7eb;}
+.canvas-wrap canvas{display:block; width:100%; height:auto; background:#fff; border:1px dashed #cbd5e1; border-radius:8px}
+
+/* Target specific sections just to be safe */
+#toolbox .canvas-wrap canvas,
+#inspect .canvas-wrap canvas,
+#drill .canvas-wrap canvas{background:#fff;}
+
+/* Make signature canvas usable on mobile */
+@media (max-width:640px){
+  .canvas-wrap canvas{min-height:140px;}
+}
+
+/* =========
+   Little polish
+=========== */
+.controls{display:flex; gap:8px;}
+.actions{margin:.25rem 0 .5rem;}
+.help{color:var(--muted); font-size:.9rem;}
