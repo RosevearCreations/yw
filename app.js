@@ -1,5 +1,5 @@
 /* CONFIG: replace with your deployed function URL */
-const FUNCTION_URL = 'https://YOUR-PROJECT.functions.supabase.co/your-function-name';
+const FUNCTION_URL = 'https://jmqvkgiqlimdhcofwkxr.supabase.co/functions/v1/resend-email';
 const OUTBOX_KEY = 'ywi_outbox_v1';
 
 // ===== Toolbox Talk (E) =====
@@ -166,4 +166,5 @@ const payload = { site, date, checked_by: checker, roster: rows, nonCompliant };
 try { await sendToFunction('D', payload); alert(nonCompliant ? 'Submitted. Non-compliance emailed.' : 'Submitted.'); ppeForm.reset(); if (ppeTableBody){ ppeTableBody.innerHTML=''; addPPERow(); addPPERow(); } }
 catch(err){ const out = getOutbox(); out.push({ ts: Date.now(), formType:'D', payload }); setOutbox(out); alert('Offline/server error. Saved to Outbox.'); }
 });
+
 
