@@ -5,19 +5,50 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>YWI HSE</title>
   <meta name="theme-color" content="#0b6c3d" />
+
+  <!-- PWA assets -->
   <link rel="manifest" href="/manifest.json" />
+
+  <!-- Base stylesheet -->
   <link rel="stylesheet" href="/style.css" />
+
+  <!-- Minimal inline overrides: one-section view, grid, and WHITE signature canvases -->
+  <style>
+    /* Show only one card (section) at a time */
+    main > section.card { display: none; }
+    main > section.card.active { display: block; }
+
+    /* Basic tidy layout (works with your existing style.css) */
+    .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:12px 16px; }
+    .form-footer{ display:flex; gap:10px; margin-top:16px; }
+    .actions{ margin:.25rem 0 .5rem; }
+
+    /* Make big tables scroll on mobile instead of blowing layout */
+    .table-wrap{ overflow-x:auto; margin:.25rem 0 0; }
+    table{ width:100%; border-collapse:collapse; }
+    th,td{ padding:.55rem .6rem; border-bottom:1px solid rgba(255,255,255,.10); vertical-align:top; white-space:nowrap; }
+
+    /* Signatures must be white for visibility */
+    .canvas-wrap{ background:#fff; padding:10px; border-radius:10px; border:1px solid #e5e7eb; }
+    .canvas-wrap canvas{ display:block; width:100%; height:auto; background:#fff; border:1px dashed #cbd5e1; border-radius:8px; }
+
+    /* Optional: nav active state if not already present */
+    nav a.active { font-weight:700; text-decoration:underline; }
+  </style>
+
+  <!-- Service Worker: ensure the filename matches your actual SW file (commonly /service-worker.js) -->
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('/server-worker.js'));
+      window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js'));
     }
   </script>
 </head>
 <body>
+  <!-- App Header + Primary Nav -->
   <header class="app-header">
     <h1>YWI HSE</h1>
     <nav>
-      <a class="active" href="#toolbox">Toolbox Talk</a>
+      <a href="#toolbox" class="active">Toolbox Talk</a>
       <a href="#ppe">PPE Check</a>
       <a href="#firstaid">First Aid Kit</a>
       <a href="#inspect">Site Inspection</a>
@@ -27,7 +58,9 @@
   </header>
 
   <main class="container">
-    <!-- TOOLBOX TALK FORM (Form E) -->
+    <!-- ============================= -->
+    <!-- Form E: DAILY TOOLBOX TALK    -->
+    <!-- ============================= -->
     <section id="toolbox" class="card">
       <h2>Daily Toolbox Talk</h2>
       <form id="toolboxForm">
@@ -47,21 +80,21 @@
           <textarea id="tb_topics" rows="4" placeholder="Hazards today, controls, reminders (e.g., reversing dump trucks)"></textarea>
         </label>
 
-        <h3>Attendees & Signatures</h3>
+        <h3>Attendees &amp; Signatures</h3>
         <div class="actions"><button type="button" id="addRowBtn">+ Add Attendee</button></div>
-        <table id="attendeesTable">
-          <thead>
-            <tr>
-              <th style="width: 28%">Name</th>
-              <th style="width: 20%">Role on Site</th>
-              <th>Signature</th>
-              <th style="width: 110px">Controls</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- rows inserted by JS -->
-          </tbody>
-        </table>
+        <div class="table-wrap">
+          <table id="attendeesTable">
+            <thead>
+              <tr>
+                <th style="width:28%">Name</th>
+                <th style="width:20%">Role on Site</th>
+                <th>Signature</th>
+                <th style="width:110px">Controls</th>
+              </tr>
+            </thead>
+            <tbody><!-- rows inserted by JS --></tbody>
+          </table>
+        </div>
 
         <div class="form-footer">
           <button type="submit" class="primary">Submit Toolbox Talk</button>
@@ -70,7 +103,9 @@
       </form>
     </section>
 
-    <!-- PPE CHECK FORM (Form D) -->
+    <!-- ============================= -->
+    <!-- Form D: PPE COMPLIANCE CHECK  -->
+    <!-- ============================= -->
     <section id="ppe" class="card">
       <h2>PPE Compliance Check</h2>
       <form id="ppeForm">
@@ -88,24 +123,24 @@
 
         <h3>Roster</h3>
         <div class="actions"><button type="button" id="ppeAddRowBtn">+ Add Worker</button></div>
-        <table id="ppeTable">
-          <thead>
-            <tr>
-              <th style="width: 28%">Name</th>
-              <th style="width: 20%">Role on Site</th>
-              <th>Shoes</th>
-              <th>Vest</th>
-              <th>Plugs</th>
-              <th>Goggles</th>
-              <th>Muffs</th>
-              <th>Gloves</th>
-              <th style="width:110px">Controls</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- rows inserted by JS -->
-          </tbody>
-        </table>
+        <div class="table-wrap">
+          <table id="ppeTable">
+            <thead>
+              <tr>
+                <th style="width:28%">Name</th>
+                <th style="width:20%">Role on Site</th>
+                <th>Shoes</th>
+                <th>Vest</th>
+                <th>Plugs</th>
+                <th>Goggles</th>
+                <th>Muffs</th>
+                <th>Gloves</th>
+                <th style="width:110px">Controls</th>
+              </tr>
+            </thead>
+            <tbody><!-- rows inserted by JS --></tbody>
+          </table>
+        </div>
 
         <div class="form-footer">
           <button type="submit" class="primary">Submit PPE Check</button>
@@ -114,7 +149,9 @@
       </form>
     </section>
 
-    <!-- FIRST AID KIT (Form B) -->
+    <!-- ============================= -->
+    <!-- Form B: FIRST AID KIT CHECK   -->
+    <!-- ============================= -->
     <section id="firstaid" class="card">
       <h2>First Aid Kit – Daily Check</h2>
       <form id="faForm">
@@ -129,42 +166,45 @@
             <input type="text" id="fa_checker" required placeholder="Responsible person" />
           </label>
         </div>
-<datalist id="fa-catalog">
-  <option value="Guidance Card"></option>
-  <option value="Plastic Band Aid"></option>
-  <option value="Adhesive Tapes"></option>
-  <option value="Absorbent Cotton Bundle"></option>
-  <option value="Gauze Bandage"></option>
-  <option value="Cotton Bandage"></option>
-  <option value="Anti-septic Solution (Dettol)"></option>
-  <option value="Surgical Scissor"></option>
-  <option value="Betadine Dry Powder Spray"></option>
-  <option value="Alcohol Solution"></option>
-  <option value="Antiseptic Cream"></option>
-  <option value="Deep Heat / Moov"></option>
-  <option value="Eye Pad"></option>
-  <option value="Gauze Roll (example)"></option>
-  <option value="Another Item (example)"></option>
-  <option value="Antiseptic Ointment"></option>
-</datalist>
+
+        <!-- Predefined First-Aid item list (still allows free typing) -->
+        <datalist id="fa-catalog">
+          <option value="Guidance Card"></option>
+          <option value="Plastic Band Aid"></option>
+          <option value="Adhesive Tapes"></option>
+          <option value="Absorbent Cotton Bundle"></option>
+          <option value="Gauze Bandage"></option>
+          <option value="Cotton Bandage"></option>
+          <option value="Anti-septic Solution (Dettol)"></option>
+          <option value="Surgical Scissor"></option>
+          <option value="Betadine Dry Powder Spray"></option>
+          <option value="Alcohol Solution"></option>
+          <option value="Antiseptic Cream"></option>
+          <option value="Deep Heat / Moov"></option>
+          <option value="Eye Pad"></option>
+          <option value="Gauze Roll (example)"></option>
+          <option value="Another Item (example)"></option>
+          <option value="Antiseptic Ointment"></option>
+        </datalist>
 
         <div class="notice">Flag triggers email when quantity ≤ min or expiry within 30 days.</div>
 
         <h3>Items</h3>
         <div class="actions"><button type="button" id="faAddRowBtn">+ Add Item</button></div>
-        <table id="faTable">
-          <thead>
-            <tr>
-              <th style="width:40%">Item</th>
-              <th style="width:15%">Quantity</th>
-              <th style="width:15%">Min Stock</th>
-              <th style="width:20%">Expiry (optional)</th>
-              <th style="width:10%">Controls</th>
-            </tr>
-          </thead>
-          <tbody><!-- rows inserted by JS --></tbody>
-        </table>
-
+        <div class="table-wrap">
+          <table id="faTable">
+            <thead>
+              <tr>
+                <th style="width:40%">Item</th>
+                <th style="width:15%">Quantity</th>
+                <th style="width:15%">Min Stock</th>
+                <th style="width:20%">Expiry (optional)</th>
+                <th style="width:10%">Controls</th>
+              </tr>
+            </thead>
+            <tbody><!-- rows inserted by JS --></tbody>
+          </table>
+        </div>
 
         <div class="form-footer">
           <button type="submit" class="primary">Submit First Aid Check</button>
@@ -172,218 +212,244 @@
         </div>
       </form>
     </section>
-            <section id="inspect" class="card">
-<h2>Site Inspection</h2>
-<form id="inspForm">
-<div class="grid">
-<label>Site ID/Name
-<input type="text" id="insp_site" required placeholder="e.g., Site-A" />
-</label>
-<label>Date
-<input type="date" id="insp_date" required />
-</label>
-<label>Inspector
-<input type="text" id="insp_inspector" required placeholder="Your name" />
-</label>
-</div>
 
+    <!-- ============================= -->
+    <!-- Form C: SITE INSPECTION       -->
+    <!-- ============================= -->
+    <section id="inspect" class="card">
+      <h2>Site Inspection</h2>
+      <form id="inspForm">
+        <div class="grid">
+          <label>Site ID/Name
+            <input type="text" id="insp_site" required placeholder="e.g., Site-A" />
+          </label>
+          <label>Date
+            <input type="date" id="insp_date" required />
+          </label>
+          <label>Inspector
+            <input type="text" id="insp_inspector" required placeholder="Your name" />
+          </label>
+        </div>
 
-<h3>Roster</h3>
-<div class="actions"><button type="button" id="inspAddWorker">+ Add Worker</button></div>
-<table id="inspRoster">
-<thead>
-<tr>
-<th style="width:35%">Name</th>
-<th style="width:30%">Role on Site</th>
-<th style="width:110px">Controls</th>
-</tr>
-</thead>
-<tbody><!-- rows inserted by JS --></tbody>
-</table>
+        <h3>Roster</h3>
+        <div class="actions"><button type="button" id="inspAddWorker">+ Add Worker</button></div>
+        <div class="table-wrap">
+          <table id="inspRoster">
+            <thead>
+              <tr>
+                <th style="width:35%">Name</th>
+                <th style="width:30%">Role on Site</th>
+                <th style="width:110px">Controls</th>
+              </tr>
+            </thead>
+            <tbody><!-- rows inserted by JS --></tbody>
+          </table>
+        </div>
 
+        <h3>Hazards</h3>
+        <div class="actions"><button type="button" id="inspAddHazard">+ Add Hazard</button></div>
+        <div class="table-wrap">
+          <table id="inspHazards">
+            <thead>
+              <tr>
+                <th>Hazard</th>
+                <th>Location</th>
+                <th>Risk</th>
+                <th>Action</th>
+                <th>Assigned To</th>
+                <th>Completed?</th>
+                <th>Completed By</th>
+                <th>Completed Date</th>
+                <th style="width:110px">Controls</th>
+              </tr>
+            </thead>
+            <tbody><!-- rows inserted by JS --></tbody>
+          </table>
+        </div>
 
-<h3>Hazards</h3>
-<div class="actions"><button type="button" id="inspAddHazard">+ Add Hazard</button></div>
-<table id="inspHazards">
-<thead>
-<tr>
-<th>Hazard</th>
-<th>Location</th>
-<th>Risk</th>
-<th>Action</th>
-<th>Assigned To</th>
-<th>Completed?</th>
-<th>Completed By</th>
-<th>Completed Date</th>
-<th style="width:110px">Controls</th>
-</tr>
-</thead>
-<tbody><!-- rows inserted by JS --></tbody>
-</table>
-<h3>HSE Approval</h3>
-<div class="grid">
-  <label>Approver
-    <select id="insp_approver">
-      <option value="Krista">Krista</option>
-      <option value="Jack">Jack</option>
-      <option value="Other">Other</option>
-    </select>
-  </label>
-  <label>Approver (if Other)
-    <input type="text" id="insp_approver_other" placeholder="Name">
-  </label>
-</div>
+        <h3>HSE Approval</h3>
+        <div class="grid">
+          <label>Approver
+            <select id="insp_approver">
+              <option value="Krista">Krista</option>
+              <option value="Jack">Jack</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+          <label>Approver (if Other)
+            <input type="text" id="insp_approver_other" placeholder="Name">
+          </label>
+        </div>
 
-<div class="canvas-wrap">
-  <canvas id="insp_approver_canvas" width="600" height="140"></canvas>
-  <div class="controls"><button type="button" id="inspClearSig">Clear</button></div>
-</div>
+        <div class="canvas-wrap">
+          <canvas id="insp_approver_canvas" width="600" height="140"></canvas>
+          <div class="controls"><button type="button" id="inspClearSig">Clear</button></div>
+        </div>
 
+        <div class="form-footer">
+          <button type="submit" class="primary">Submit Site Inspection</button>
+          <button type="button" class="secondary" data-role="retry-outbox">Retry Queued Submissions</button>
+        </div>
+      </form>
+    </section>
 
-<div class="form-footer">
-<button type="submit" class="primary">Submit Site Inspection</button>
-<button type="button" class="secondary" data-role="retry-outbox">Retry Queued Submissions</button>
-</div>
-</form>
-</section>
+    <!-- ============================= -->
+    <!-- Form A: EMERGENCY DRILL       -->
+    <!-- ============================= -->
     <section id="drill" class="card">
-<h2>Emergency Drill / Procedure Practice</h2>
-<form id="drForm">
-<div class="grid">
-<label>Site ID/Name
-<input type="text" id="dr_site" required placeholder="e.g., Site-A" />
-</label>
-<label>Date
-<input type="date" id="dr_date" required />
-</label>
-<label>Supervisor / Leader
-<input type="text" id="dr_supervisor" required placeholder="Your name" />
-</label>
-</div>
+      <h2>Emergency Drill / Procedure Practice</h2>
+      <form id="drForm">
+        <div class="grid">
+          <label>Site ID/Name
+            <input type="text" id="dr_site" required placeholder="e.g., Site-A" />
+          </label>
+          <label>Date
+            <input type="date" id="dr_date" required />
+          </label>
+          <label>Supervisor / Leader
+            <input type="text" id="dr_supervisor" required placeholder="Your name" />
+          </label>
+        </div>
 
+        <div class="grid">
+          <label>Drill Type
+            <select id="dr_type">
+              <option value="Fire">Fire</option>
+              <option value="Evacuation">Evacuation</option>
+              <option value="First Aid">First Aid</option>
+              <option value="Spill">Spill</option>
+              <option value="Rescue">Rescue</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+          <label>Start Time
+            <input type="time" id="dr_start" />
+          </label>
+          <label>End Time
+            <input type="time" id="dr_end" />
+          </label>
+        </div>
 
-<div class="grid">
-<label>Drill Type
-<select id="dr_type">
-<option value="Fire">Fire</option>
-<option value="Evacuation">Evacuation</option>
-<option value="First Aid">First Aid</option>
-<option value="Spill">Spill</option>
-<option value="Rescue">Rescue</option>
-<option value="Other">Other</option>
-</select>
-</label>
-<label>Start Time
-<input type="time" id="dr_start" />
-</label>
-<label>End Time
-<input type="time" id="dr_end" />
-</label>
-</div>
+        <label>Scenario / Notes
+          <textarea id="dr_notes" rows="3" placeholder="What was practiced, key steps, observations..."></textarea>
+        </label>
 
+        <h3>Participants</h3>
+        <div class="actions"><button type="button" id="drAddPart">+ Add Participant</button></div>
+        <div class="table-wrap">
+          <table id="drRoster">
+            <thead>
+              <tr>
+                <th style="width:28%">Name</th>
+                <th style="width:20%">Role on Site</th>
+                <th>Signature (optional)</th>
+                <th style="width:110px">Controls</th>
+              </tr>
+            </thead>
+            <tbody><!-- rows inserted by JS --></tbody>
+          </table>
+        </div>
 
-<label>Scenario / Notes
-<textarea id="dr_notes" rows="3" placeholder="What was practiced, key steps, observations..."></textarea>
-</label>
+        <h3>Outcome</h3>
+        <div class="grid">
+          <label>Evaluation / Result
+            <textarea id="dr_eval" rows="3" placeholder="How did it go? Any delays, misses, or successes?"></textarea>
+          </label>
+          <label>Follow‑Up Actions
+            <textarea id="dr_follow" rows="3" placeholder="Actions required, by whom, by when"></textarea>
+          </label>
+        </div>
 
+        <div class="grid">
+          <label>Next Drill Date (optional)
+            <input type="date" id="dr_next" />
+          </label>
+          <label style="display:flex;align-items:center;gap:.5rem;">
+            <input type="checkbox" id="dr_issues" /> Issues observed that need attention
+          </label>
+        </div>
 
-<h3>Participants</h3>
-<div class="actions"><button type="button" id="drAddPart">+ Add Participant</button></div>
-<table id="drRoster">
-<thead>
-<tr>
-<th style="width:28%">Name</th>
-<th style="width:20%">Role on Site</th>
-<th>Signature (optional)</th>
-<th style="width:110px">Controls</th>
-</tr>
-</thead>
-<tbody><!-- rows inserted by JS --></tbody>
-</table>
+        <div class="form-footer">
+          <button type="submit" class="primary">Submit Drill</button>
+          <button type="button" class="secondary" data-role="retry-outbox">Retry Queued Submissions</button>
+        </div>
+      </form>
+    </section>
 
-
-<h3>Outcome</h3>
-<div class="grid">
-<label>Evaluation / Result
-<textarea id="dr_eval" rows="3" placeholder="How did it go? Any delays, misses, or successes?"></textarea>
-</label>
-<label>Follow‑Up Actions
-<textarea id="dr_follow" rows="3" placeholder="Actions required, by whom, by when"></textarea>
-</label>
-</div>
-
-
-<div class="grid">
-<label>Next Drill Date (optional)
-<input type="date" id="dr_next" />
-</label>
-<label style="display:flex;align-items:center;gap:.5rem;">
-<input type="checkbox" id="dr_issues" /> Issues observed that need attention
-</label>
-</div>
-
-
-<div class="form-footer">
-<button type="submit" class="primary">Submit Drill</button>
-<button type="button" class="secondary" data-role="retry-outbox">Retry Queued Submissions</button>
-</div>
-</form>
-</section>
+    <!-- ============================= -->
+    <!-- LOGBOOK / ADMIN               -->
+    <!-- ============================= -->
     <section id="log" class="card">
-<h2>Logbook / Admin</h2>
-<div class="grid">
-<label>Site (optional)
-<input type="text" id="lg_site" placeholder="e.g., Site-A">
-</label>
-<label>From (date)
-<input type="date" id="lg_from">
-</label>
-<label>To (date)
-<input type="date" id="lg_to">
-</label>
-<label>Form Type
-<select id="lg_form">
-<option value="">All</option>
-<option value="A">A – Emergency Drill</option>
-<option value="B">B – First Aid Kit</option>
-<option value="C">C – Site Inspection</option>
-<option value="D">D – PPE Check</option>
-<option value="E">E – Toolbox Talk</option>
-</select>
-</label>
-</div>
+      <h2>Logbook / Admin</h2>
+      <div class="grid">
+        <label>Site (optional)
+          <input type="text" id="lg_site" placeholder="e.g., Site-A">
+        </label>
+        <label>From (date)
+          <input type="date" id="lg_from">
+        </label>
+        <label>To (date)
+          <input type="date" id="lg_to">
+        </label>
+        <label>Form Type
+          <select id="lg_form">
+            <option value="">All</option>
+            <option value="A">A – Emergency Drill</option>
+            <option value="B">B – First Aid Kit</option>
+            <option value="C">C – Site Inspection</option>
+            <option value="D">D – PPE Check</option>
+            <option value="E">E – Toolbox Talk</option>
+          </select>
+        </label>
+      </div>
 
+      <div class="form-footer">
+        <button id="lg_load" class="primary" type="button">Load Last 100</button>
+        <button id="lg_export" class="secondary" type="button">Export CSV</button>
+      </div>
 
-<div class="form-footer">
-<button id="lg_load" class="primary" type="button">Load Last 100</button>
-<button id="lg_export" class="secondary" type="button">Export CSV</button>
-</div>
-
-
-<table id="lg_table">
-<thead>
-<tr>
-<th style="width:80px">ID</th>
-<th style="width:120px">Date</th>
-<th style="width:120px">Form</th>
-<th style="width:160px">Site</th>
-<th>Summary</th>
-<th style="width:110px">Details</th>
-</tr>
-</thead>
-<tbody><!-- rows inserted by JS --></tbody>
-</table>
-</section>
+      <div class="table-wrap">
+        <table id="lg_table">
+          <thead>
+            <tr>
+              <th style="width:80px">ID</th>
+              <th style="width:120px">Date</th>
+              <th style="width:120px">Form</th>
+              <th style="width:160px">Site</th>
+              <th>Summary</th>
+              <th style="width:110px">Details</th>
+            </tr>
+          </thead>
+          <tbody><!-- rows inserted by JS --></tbody>
+        </table>
+      </div>
+    </section>
   </main>
 
+  <!-- Signature pad library -->
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
-  <script src="/app.js"></script>
+
+  <!-- App JS (ensure this is only included once) -->
+  <script src="/app.js" defer></script>
+
+  <!-- Simple hash router (keeps one visible section at a time) -->
+  <script>
+    (function(){
+      const sections = Array.from(document.querySelectorAll('main > section.card'));
+      const navLinks = Array.from(document.querySelectorAll('nav a[href^="#"]'));
+      function showSection(id){
+        sections.forEach(s => s.classList.toggle('active', s.id === id));
+        navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+        const first = document.querySelector(`#${id} input, #${id} textarea, #${id} select`);
+        if (first) first.focus({ preventScroll: true });
+        if (location.hash !== '#' + id) history.replaceState(null, '', '#' + id);
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+      function current(){ return (location.hash || '#toolbox').slice(1); }
+      window.addEventListener('hashchange', () => showSection(current()));
+      document.addEventListener('DOMContentLoaded', () => showSection(current()));
+      navLinks.forEach(a => a.addEventListener('click', (e) => { e.preventDefault(); showSection(a.getAttribute('href').slice(1)); }));
+    })();
+  </script>
 </body>
 </html>
-
-
-
-
-
-
-
