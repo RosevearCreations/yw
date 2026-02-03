@@ -495,18 +495,49 @@ lgBody.appendChild(tr);
 
 
 async function fetchLog(){
-const body = {
-site: (lgSite && lgSite.value.trim()) || undefined,
-formType: (lgForm && lgForm.value) || undefined,
-from: (lgFrom && lgFrom.value) || undefined,
-to: (lgTo && lgTo.value) || undefined,
-limit: 100
-};
-const res = await fetch(LIST_URL, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body) });
-const data = await res.json();
-if (!res.ok || !data.ok) throw new Error(data.error || 'load_failed');
-renderRows(data.rows||[]);
-window._logRows = data.rows||[]; // for CSV export
+  const headers = { 'Content-Type': 'application/json' };
+  if (SUPABASE_ANON_KEY) headers.Authorization = `Bearer ${SUPABASE_ANON_KEY}`;
+
+  const body = {
+    site: (lgSite && lgSite.value.trim()) || undefined,
+    formType: (lgForm && lgForm.value) || undefined,
+    from: (lgFrom && lgFrom.value) || undefined,
+    to: (lgTo && lgTo.value) || undefined,
+    limit: 100
+  };
+
+  let res, text;
+  try {
+    res = await fetch(LIST_URL, { method:'POST', headers, body: JSON.stringify(body) });
+    text = await res.text();
+  } catch (e) {
+    console.error('Network/Fetch error:', e);
+    alert('Failed to load log (network).');
+    throw e;
+  }
+
+  if (!res.ok) {
+    console.error('HTTP error:', res.status, text);
+    alert(`Failed to load log (HTTP ${res.status}).`);
+    throw new Error(`HTTP ${res.status}: ${text}`);
+  }
+
+  let data;
+  try { data = JSON.parse(text); }
+  catch {
+    console.error('Bad JSON:', text);
+    alert('Failed to load log (bad JSON).');
+    throw new Error('Bad JSON');
+  }
+
+  if (!data.ok) {
+    console.error('Function error payload:', data);
+    alert(`Failed to load log: ${data.error || 'unknown error'}`);
+    throw new Error(data.error || 'load_failed');
+  }
+
+  renderRows(data.rows || []);
+  window._logRows = data.rows || [];
 }
 
 
@@ -536,6 +567,7 @@ const a = document.createElement('a');
 a.href = url; a.download = 'ywi-log.csv'; a.click();
 setTimeout(()=> URL.revokeObjectURL(url), 1000);
 });
+
 
 
 
