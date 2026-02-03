@@ -6,6 +6,34 @@ const LIST_URL = 'https://jmqvkgiqlimdhcofwkxr.supabase.co/functions/v1/clever-e
 
 const SUPABASE_ANON_KEY = ''; // leave '' if your function is public (Verify JWT OFF)
 const OUTBOX_KEY = 'ywi_outbox_v1';
+// Simple hash router: #toolbox, #ppe, #firstaid, #inspect, #drill, #log
+const sections = Array.from(document.querySelectorAll('main > section.card'));
+const navLinks = Array.from(document.querySelectorAll('nav a[href^="#"]'));
+
+function showSection(id){
+  sections.forEach(s => s.classList.toggle('active', s.id === id));
+  navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
+  // focus first input for faster data entry
+  const firstInput = document.querySelector(`#${id} input, #${id} textarea, #${id} select`);
+  if (firstInput) firstInput.focus({ preventScroll: true });
+  // make sure URL reflects current form (no page reload)
+  if (location.hash !== '#' + id) history.replaceState(null, '', '#' + id);
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+// Init + respond to hash changes
+function currentIdFromHash() { return (location.hash || '#toolbox').replace('#',''); }
+window.addEventListener('hashchange', () => showSection(currentIdFromHash()));
+document.addEventListener('DOMContentLoaded', () => showSection(currentIdFromHash()));
+
+// Also handle nav clicks (no jumpy scroll)
+navLinks.forEach(a => {
+  a.addEventListener('click', (e) => {
+    e.preventDefault();
+    const id = a.getAttribute('href').slice(1);
+    showSection(id);
+  });
+});
 
 /* =========================
    HELPERS
@@ -595,6 +623,7 @@ const a = document.createElement('a');
 a.href = url; a.download = 'ywi-log.csv'; a.click();
 setTimeout(()=> URL.revokeObjectURL(url), 1000);
 });
+
 
 
 
