@@ -3,6 +3,7 @@
 ========================= */
 const FUNCTION_URL = 'https://jmqvkgiqlimdhcofwkxr.supabase.co/functions/v1/resend-email';
 const LIST_URL = 'https://jmqvkgiqlimdhcofwkxr.supabase.co/functions/v1/clever-endpoint';
+
 const SUPABASE_ANON_KEY = ''; // leave '' if your function is public (Verify JWT OFF)
 const OUTBOX_KEY = 'ywi_outbox_v1';
 
@@ -535,6 +536,7 @@ const a = document.createElement('a');
 a.href = url; a.download = 'ywi-log.csv'; a.click();
 setTimeout(()=> URL.revokeObjectURL(url), 1000);
 });
+
 
 
 
