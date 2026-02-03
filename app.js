@@ -325,82 +325,119 @@ if (faForm) faForm.addEventListener('submit', async (e) => {
   }
 });
 /* =========================
-SITE INSPECTION (C)
+   SITE INSPECTION (C)
 ========================= */
 const inspForm = document.getElementById('inspForm');
 const inspDate = document.getElementById('insp_date');
 if (inspDate) inspDate.value = todayISO();
 
-
-const inspRosterBody = (function(){
-const b = ensureTBody('inspRoster');
-if (b && b.children.length === 0) addInspWorkerRow();
-return b;
-})();
-const inspHazBody = (function(){
-const b = ensureTBody('inspHazards');
-if (b && b.children.length === 0) addInspHazardRow();
-return b;
-})();
-
+// 1) Get TBODY refs FIRST (no IIFEs)
+const inspRosterBody = ensureTBody('inspRoster');
+const inspHazBody    = ensureTBody('inspHazards');
 
 const inspAddWorker = document.getElementById('inspAddWorker');
 const inspAddHazard = document.getElementById('inspAddHazard');
 
-
+// 2) Row builders
 function addInspWorkerRow(){
-if (!inspRosterBody) return;
-const tr = document.createElement('tr');
-tr.innerHTML = `
-<td><input type="text" class="iw-name" placeholder="Full name" required></td>
-<td>
-<select class="iw-role">
-<option value="worker">Worker</option>
-<option value="foreman">Foreman</option>
-<option value="supervisor">Supervisor</option>
-<option value="visitor">Visitor</option>
-</select>
-</td>
-<td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>`;
-inspRosterBody.appendChild(tr);
+  if (!inspRosterBody) return;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" class="iw-name" placeholder="Full name" required></td>
+    <td>
+      <select class="iw-role">
+        <option value="worker">Worker</option>
+        <option value="foreman">Foreman</option>
+        <option value="supervisor">Supervisor</option>
+        <option value="visitor">Visitor</option>
+      </select>
+    </td>
+    <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>`;
+  inspRosterBody.appendChild(tr);
 }
-
 
 function addInspHazardRow(){
-if (!inspHazBody) return;
-const tr = document.createElement('tr');
-tr.innerHTML = `
-<td><input type="text" class="hz-desc" placeholder="Describe hazard" required></td>
-<td><input type="text" class="hz-loc" placeholder="Where?"></td>
-<td>
-<select class="hz-risk">
-<option value="Low">Low</option>
-<option value="Medium">Medium</option>
-<option value="High">High</option>
-</select>
-</td>
-<td><input type="text" class="hz-action" placeholder="Action to fix"></td>
-<td><input type="text" class="hz-assigned" placeholder="Assigned to"></td>
-<td style="text-align:center"><input type="checkbox" class="hz-done"></td>
-<td><input type="text" class="hz-doneby" placeholder="Completed by"></td>
-<td><input type="date" class="hz-donedate"></td>
-<td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>`;
-inspHazBody.appendChild(tr);
+  if (!inspHazBody) return;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input type="text" class="hz-desc" placeholder="Describe hazard" required></td>
+    <td><input type="text" class="hz-loc" placeholder="Where?"></td>
+    <td>
+      <select class="hz-risk">
+        <option value="Low">Low</option>
+        <option value="Medium">Medium</option>
+        <option value="High">High</option>
+      </select>
+    </td>
+    <td><input type="text" class="hz-action" placeholder="Action to fix"></td>
+    <td><input type="text" class="hz-assigned" placeholder="Assigned to"></td>
+    <td style="text-align:center"><input type="checkbox" class="hz-done"></td>
+    <td><input type="text" class="hz-doneby" placeholder="Completed by"></td>
+    <td><input type="date" class="hz-donedate"></td>
+    <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>`;
+  inspHazBody.appendChild(tr);
 }
 
+// 3) Seed default rows AFTER functions exist
+if (inspRosterBody && inspRosterBody.children.length === 0) addInspWorkerRow();
+if (inspHazBody && inspHazBody.children.length === 0) addInspHazardRow();
 
+// 4) Listeners
 if (inspAddWorker) inspAddWorker.addEventListener('click', addInspWorkerRow);
 if (inspAddHazard) inspAddHazard.addEventListener('click', addInspHazardRow);
 
-
 if (inspRosterBody) inspRosterBody.addEventListener('click', (e) => {
-const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
-if (!btn) return;
-if (btn.dataset.act === 'remove') { const tr = btn.closest('tr'); if (tr) tr.remove(); }
+  const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
+  if (!btn) return;
+  if (btn.dataset.act === 'remove') {
+    const tr = btn.closest('tr'); if (tr) tr.remove();
+  }
 });
-
 
 if (inspHazBody) inspHazBody.addEventListener('click', (e) => {
-const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
-if (!btn) return;
+  const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
+  if (!btn) return;
+  if (btn.dataset.act === 'remove') {
+    const tr = btn.closest('tr'); if (tr) tr.remove();
+  }
 });
+
+if (inspForm) inspForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const site      = (document.getElementById('insp_site')      || {}).value?.trim?.() || '';
+  const date      = (document.getElementById('insp_date')      || {}).value || '';
+  const inspector = (document.getElementById('insp_inspector') || {}).value?.trim?.() || '';
+  if (!site || !date || !inspector) { alert('Please fill Site, Date, and Inspector.'); return; }
+
+  const roster = inspRosterBody ? Array.from(inspRosterBody.querySelectorAll('tr')).map(tr => ({
+    name: tr.querySelector('.iw-name')?.value?.trim?.() || '',
+    role_on_site: tr.querySelector('.iw-role')?.value || 'worker'
+  })).filter(r => r.name) : [];
+
+  const hazards = inspHazBody ? Array.from(inspHazBody.querySelectorAll('tr')).map(tr => ({
+    hazard:         tr.querySelector('.hz-desc')?.value?.trim?.() || '',
+    location:       tr.querySelector('.hz-loc')?.value?.trim?.() || '',
+    risk:           tr.querySelector('.hz-risk')?.value || 'Low',
+    action:         tr.querySelector('.hz-action')?.value?.trim?.() || '',
+    assigned_to:    tr.querySelector('.hz-assigned')?.value?.trim?.() || '',
+    completed:      !!tr.querySelector('.hz-done')?.checked,
+    completed_by:   tr.querySelector('.hz-doneby')?.value?.trim?.() || '',
+    completed_date: tr.querySelector('.hz-donedate')?.value || null
+  })).filter(h => h.hazard) : [];
+
+  const openHazards = hazards.some(h => !h.completed);
+  const payload = { site, date, inspector, roster, hazards, openHazards };
+
+  try {
+    const resp = await sendToFunction('C', payload);
+    alert(resp && resp.emailed ? 'Submitted. Open hazards emailed.' : 'Submitted.');
+    inspForm.reset();
+    if (inspRosterBody) { inspRosterBody.innerHTML = ''; addInspWorkerRow(); }
+    if (inspHazBody)    { inspHazBody.innerHTML    = ''; addInspHazardRow(); }
+  } catch (err) {
+    const out = getOutbox(); out.push({ ts: Date.now(), formType: 'C', payload }); setOutbox(out);
+    alert('Offline/server error. Saved to Outbox.');
+  }
+});
+
+
