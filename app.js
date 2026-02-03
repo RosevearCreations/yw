@@ -263,13 +263,14 @@ const faAddRowBtn = document.getElementById('faAddRowBtn');
 function addItemRow() {
   if (!faTableBody) return;
   const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td><input type="text" class="fa-name" placeholder="e.g., Bandages" required></td>
-    <td><input type="number" class="fa-qty" min="0" value="0"></td>
-    <td><input type="number" class="fa-min" min="0" value="0"></td>
-    <td><input type="date" class="fa-exp"></td>
-    <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
-  `;
+tr.innerHTML = `
+  <td><input type="text" class="fa-name" list="fa-catalog" placeholder="Select or type…" required></td>
+  <td><input type="number" class="fa-qty" min="0" value="0"></td>
+  <td><input type="number" class="fa-min" min="0" value="0"></td>
+  <td><input type="date" class="fa-exp"></td>
+  <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
+`;
+
   faTableBody.appendChild(tr);
 }
 if (faAddRowBtn) faAddRowBtn.addEventListener('click', addItemRow);
@@ -439,6 +440,7 @@ if (inspForm) inspForm.addEventListener('submit', async (e) => {
     alert('Offline/server error. Saved to Outbox.');
   }
 });
+
 
 
 
