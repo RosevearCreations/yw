@@ -22,6 +22,7 @@
       <a href="#firstaid">First Aid Kit</a>
       <a href="#inspect">Site Inspection</a>
       <a href="#drill">Emergency Drill</a>
+      <a href="#log">Logbook</a>
     </nav>
   </header>
 
@@ -310,12 +311,58 @@
 </div>
 </form>
 </section>
+    <section id="log" class="card">
+<h2>Logbook / Admin</h2>
+<div class="grid">
+<label>Site (optional)
+<input type="text" id="lg_site" placeholder="e.g., Site-A">
+</label>
+<label>From (date)
+<input type="date" id="lg_from">
+</label>
+<label>To (date)
+<input type="date" id="lg_to">
+</label>
+<label>Form Type
+<select id="lg_form">
+<option value="">All</option>
+<option value="A">A – Emergency Drill</option>
+<option value="B">B – First Aid Kit</option>
+<option value="C">C – Site Inspection</option>
+<option value="D">D – PPE Check</option>
+<option value="E">E – Toolbox Talk</option>
+</select>
+</label>
+</div>
+
+
+<div class="form-footer">
+<button id="lg_load" class="primary" type="button">Load Last 100</button>
+<button id="lg_export" class="secondary" type="button">Export CSV</button>
+</div>
+
+
+<table id="lg_table">
+<thead>
+<tr>
+<th style="width:80px">ID</th>
+<th style="width:120px">Date</th>
+<th style="width:120px">Form</th>
+<th style="width:160px">Site</th>
+<th>Summary</th>
+<th style="width:110px">Details</th>
+</tr>
+</thead>
+<tbody><!-- rows inserted by JS --></tbody>
+</table>
+</section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>
+
 
 
 
