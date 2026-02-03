@@ -21,6 +21,7 @@
       <a href="#ppe">PPE Check</a>
       <a href="#firstaid">First Aid Kit</a>
       <a href="#inspect">Site Inspection</a>
+      <a href="#drill">Emergency Drill</a>
     </nav>
   </header>
 
@@ -208,12 +209,96 @@
 </div>
 </form>
 </section>
+    <section id="drill" class="card">
+<h2>Emergency Drill / Procedure Practice</h2>
+<form id="drForm">
+<div class="grid">
+<label>Site ID/Name
+<input type="text" id="dr_site" required placeholder="e.g., Site-A" />
+</label>
+<label>Date
+<input type="date" id="dr_date" required />
+</label>
+<label>Supervisor / Leader
+<input type="text" id="dr_supervisor" required placeholder="Your name" />
+</label>
+</div>
+
+
+<div class="grid">
+<label>Drill Type
+<select id="dr_type">
+<option value="Fire">Fire</option>
+<option value="Evacuation">Evacuation</option>
+<option value="First Aid">First Aid</option>
+<option value="Spill">Spill</option>
+<option value="Rescue">Rescue</option>
+<option value="Other">Other</option>
+</select>
+</label>
+<label>Start Time
+<input type="time" id="dr_start" />
+</label>
+<label>End Time
+<input type="time" id="dr_end" />
+</label>
+</div>
+
+
+<label>Scenario / Notes
+<textarea id="dr_notes" rows="3" placeholder="What was practiced, key steps, observations..."></textarea>
+</label>
+
+
+<h3>Participants</h3>
+<div class="actions"><button type="button" id="drAddPart">+ Add Participant</button></div>
+<table id="drRoster">
+<thead>
+<tr>
+<th style="width:28%">Name</th>
+<th style="width:20%">Role on Site</th>
+<th>Signature (optional)</th>
+<th style="width:110px">Controls</th>
+</tr>
+</thead>
+<tbody><!-- rows inserted by JS --></tbody>
+</table>
+
+
+<h3>Outcome</h3>
+<div class="grid">
+<label>Evaluation / Result
+<textarea id="dr_eval" rows="3" placeholder="How did it go? Any delays, misses, or successes?"></textarea>
+</label>
+<label>Follow‑Up Actions
+<textarea id="dr_follow" rows="3" placeholder="Actions required, by whom, by when"></textarea>
+</label>
+</div>
+
+
+<div class="grid">
+<label>Next Drill Date (optional)
+<input type="date" id="dr_next" />
+</label>
+<label style="display:flex;align-items:center;gap:.5rem;">
+<input type="checkbox" id="dr_issues" /> Issues observed that need attention
+</label>
+</div>
+
+
+<div class="form-footer">
+<button type="submit" class="primary">Submit Drill</button>
+<button type="button" class="secondary" data-role="retry-outbox">Retry Queued Submissions</button>
+</div>
+</form>
+</section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>
+
 
 
 
