@@ -220,6 +220,24 @@
 </thead>
 <tbody><!-- rows inserted by JS --></tbody>
 </table>
+<h3>HSE Approval</h3>
+<div class="grid">
+  <label>Approver
+    <select id="insp_approver">
+      <option value="Krista">Krista</option>
+      <option value="Jack">Jack</option>
+      <option value="Other">Other</option>
+    </select>
+  </label>
+  <label>Approver (if Other)
+    <input type="text" id="insp_approver_other" placeholder="Name">
+  </label>
+</div>
+
+<div class="canvas-wrap">
+  <canvas id="insp_approver_canvas" width="600" height="140"></canvas>
+  <div class="controls"><button type="button" id="inspClearSig">Clear</button></div>
+</div>
 
 
 <div class="form-footer">
@@ -362,6 +380,7 @@
   <script src="/app.js"></script>
 </body>
 </html>
+
 
 
 
