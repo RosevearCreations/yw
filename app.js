@@ -1,43 +1,33 @@
+/* =====================================================
+   YWI HSE — app.js (cleaned v2)
+   - One-responsibility helpers
+   - Robust fetch with optional JWT
+   - Outbox for offline
+   - Forms: E (Toolbox), D (PPE), B (First Aid), C (Inspection), A (Drill)
+   - Logbook loader + CSV export
+   NOTE: Router lives in index.html to avoid double-binding.
+===================================================== */
+
 /* =========================
-   CONFIG
+   CONFIG (adjust as needed)
 ========================= */
 const FUNCTION_URL = 'https://jmqvkgiqlimdhcofwkxr.supabase.co/functions/v1/resend-email';
-const LIST_URL = 'https://jmqvkgiqlimdhcofwkxr.supabase.co/functions/v1/clever-endpoint';
+const LIST_URL     = 'https://jmqvkgiqlimdhcofwkxr.supabase.co/functions/v1/clever-endpoint';
 
+// If your Edge Functions have Verify JWT = ON, either:
+//  1) set SUPABASE_ANON_KEY to your public anon key (dev only), OR
+//  2) include @supabase/supabase-js and sign users in, then we send their session token.
+const SUPABASE_URL     = '';  // optional, only if you use Supabase Auth on the client
 const SUPABASE_ANON_KEY = ''; // leave '' if your function is public (Verify JWT OFF)
+
 const OUTBOX_KEY = 'ywi_outbox_v1';
-// Simple hash router: #toolbox, #ppe, #firstaid, #inspect, #drill, #log
-const sections = Array.from(document.querySelectorAll('main > section.card'));
-const navLinks = Array.from(document.querySelectorAll('nav a[href^="#"]'));
-
-function showSection(id){
-  sections.forEach(s => s.classList.toggle('active', s.id === id));
-  navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
-  // focus first input for faster data entry
-  const firstInput = document.querySelector(`#${id} input, #${id} textarea, #${id} select`);
-  if (firstInput) firstInput.focus({ preventScroll: true });
-  // make sure URL reflects current form (no page reload)
-  if (location.hash !== '#' + id) history.replaceState(null, '', '#' + id);
-  window.scrollTo({ top: 0, behavior: 'instant' });
-}
-
-// Init + respond to hash changes
-function currentIdFromHash() { return (location.hash || '#toolbox').replace('#',''); }
-window.addEventListener('hashchange', () => showSection(currentIdFromHash()));
-document.addEventListener('DOMContentLoaded', () => showSection(currentIdFromHash()));
-
-// Also handle nav clicks (no jumpy scroll)
-navLinks.forEach(a => {
-  a.addEventListener('click', (e) => {
-    e.preventDefault();
-    const id = a.getAttribute('href').slice(1);
-    showSection(id);
-  });
-});
 
 /* =========================
-   HELPERS
+   UTILITIES
 ========================= */
+const $  = (sel, root=document) => root.querySelector(sel);
+const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
 function todayISO() {
   const d = new Date();
   const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -57,26 +47,41 @@ function getOutbox() {
   try { return JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]'); }
   catch { return []; }
 }
-function setOutbox(list) {
-  localStorage.setItem(OUTBOX_KEY, JSON.stringify(list));
+function setOutbox(list) { localStorage.setItem(OUTBOX_KEY, JSON.stringify(list)); }
+
+// Build Authorization header:
+//  - prefer Supabase Auth session token if available
+//  - else use SUPABASE_ANON_KEY if set
+async function authHeader() {
+  // optional: use supabase-js if present
+  if (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase?.createClient) {
+    try {
+      const sb = window._sb || (window._sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY));
+      const { data: { session } } = await sb.auth.getSession();
+      if (session?.access_token) return { Authorization: `Bearer ${session.access_token}` };
+    } catch { /* ignore */ }
+  }
+  if (SUPABASE_ANON_KEY) return { Authorization: `Bearer ${SUPABASE_ANON_KEY}` };
+  return {}; // public function
+}
+
+async function jsonFetch(url, { method='POST', headers={}, body=null }={}) {
+  const auth = await authHeader();
+  const res = await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json', ...auth, ...headers },
+    body: body && (typeof body === 'string' ? body : JSON.stringify(body))
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    console.error('HTTP error', res.status, text);
+    throw new Error(`HTTP ${res.status}: ${text}`);
+  }
+  try { return JSON.parse(text); } catch { return text; }
 }
 
 async function sendToFunction(formType, payload) {
-  const headers = { 'Content-Type': 'application/json' };
-  if (SUPABASE_ANON_KEY) headers.Authorization = `Bearer ${SUPABASE_ANON_KEY}`;
-
-  const res = await fetch(FUNCTION_URL, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ formType, payload })
-  });
-
-  const text = await res.text();
-  if (!res.ok) {
-    console.error('Function error', res.status, text);
-    throw new Error(text || `HTTP ${res.status}`);
-  }
-  try { return JSON.parse(text); } catch { return { ok: true }; }
+  return jsonFetch(FUNCTION_URL, { body: { formType, payload } });
 }
 
 async function flushOutbox() {
@@ -85,27 +90,26 @@ async function flushOutbox() {
   const remaining = [];
   for (const item of outbox) {
     try { await sendToFunction(item.formType, item.payload); }
-    catch { remaining.push(item); }
+    catch (e) { console.warn('Outbox send failed for item', e); remaining.push(item); }
   }
   setOutbox(remaining);
   alert(remaining.length ? `Some failed, ${remaining.length} left.` : 'All queued submissions sent.');
 }
-document.querySelectorAll('[data-role="retry-outbox"]').forEach(btn =>
-  btn.addEventListener('click', flushOutbox)
-);
+$$('[data-role="retry-outbox"]').forEach(btn => btn.addEventListener('click', flushOutbox));
 
 /* =========================
-   TOOLBOX TALK (E)
+   FORM E — TOOLBOX TALK
 ========================= */
-const tbForm = document.getElementById('toolboxForm');
-const tbDate = document.getElementById('tb_date');
+const tbForm  = $('#toolboxForm');
+const tbDate  = $('#tb_date');
 if (tbDate) tbDate.value = todayISO();
 
 const attendeesTableBody = ensureTBody('attendeesTable');
-const addRowBtn = document.getElementById('addRowBtn');
+const addRowBtn = $('#addRowBtn');
 
 let tbRowCount = 0;
 const sigPads = new Map(); // rowId -> SignaturePad
+
 function addAttendeeRow(initialName = '', initialRole = 'worker') {
   if (!attendeesTableBody) return;
   tbRowCount++;
@@ -132,43 +136,35 @@ function addAttendeeRow(initialName = '', initialRole = 'worker') {
   `;
   attendeesTableBody.appendChild(tr);
 
-  // Optional signatures if SignaturePad is loaded via CDN
   const canvas = tr.querySelector('canvas');
   if (window.SignaturePad && canvas) {
-    try {
-      // eslint-disable-next-line no-undef
-      const pad = new SignaturePad(canvas, { minWidth: 0.7, maxWidth: 2.5, throttle: 8 });
-      sigPads.set(id, pad);
-    } catch (e) {
-      console.warn('SignaturePad init failed:', e);
-    }
+    try { const pad = new SignaturePad(canvas, { minWidth: .7, maxWidth: 2.5, throttle: 8 }); sigPads.set(id, pad); }
+    catch (e) { console.warn('SignaturePad init failed:', e); }
   }
 }
 
-if (addRowBtn) addRowBtn.addEventListener('click', () => addAttendeeRow());
-if (attendeesTableBody) {
-  attendeesTableBody.addEventListener('click', (e) => {
-    const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
-    if (!btn) return;
-    const tr = btn.closest('tr');
-    const rowId = tr ? tr.dataset.rowId : null;
-    const act = btn.dataset.act;
-    if (act === 'remove' && tr) { if (rowId) sigPads.delete(rowId); tr.remove(); }
-    if (act === 'clear' && rowId) { const pad = sigPads.get(rowId); if (pad && pad.clear) pad.clear(); }
-  });
+addRowBtn?.addEventListener('click', () => addAttendeeRow());
 
-  // default two rows
-  addAttendeeRow();
-  addAttendeeRow();
-}
+attendeesTableBody?.addEventListener('click', (e) => {
+  const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
+  if (!btn) return;
+  const tr = btn.closest('tr');
+  const rowId = tr ? tr.dataset.rowId : null;
+  const act = btn.dataset.act;
+  if (act === 'remove' && tr) { if (rowId) sigPads.delete(rowId); tr.remove(); }
+  if (act === 'clear' && rowId) { const pad = sigPads.get(rowId); if (pad?.clear) pad.clear(); }
+});
 
-if (tbForm) tbForm.addEventListener('submit', async (e) => {
+// default two rows
+if (attendeesTableBody && attendeesTableBody.children.length === 0) { addAttendeeRow(); addAttendeeRow(); }
+
+// submit
+ tbForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const site   = (document.getElementById('tb_site')   || {}).value?.trim?.() || '';
-  const date   = (document.getElementById('tb_date')   || {}).value || '';
-  const leader = (document.getElementById('tb_leader') || {}).value?.trim?.() || '';
-  const notes  = (document.getElementById('tb_topics') || {}).value?.trim?.() || '';
-
+  const site   = $('#tb_site')?.value?.trim?.() || '';
+  const date   = $('#tb_date')?.value || '';
+  const leader = $('#tb_leader')?.value?.trim?.() || '';
+  const notes  = $('#tb_topics')?.value?.trim?.() || '';
   if (!site || !date || !leader) { alert('Please fill Site, Date, and Discussion Leader.'); return; }
 
   const rows = attendeesTableBody ? Array.from(attendeesTableBody.querySelectorAll('tr')) : [];
@@ -182,7 +178,6 @@ if (tbForm) tbForm.addEventListener('submit', async (e) => {
   }).filter(a => a.name);
 
   const payload = { site, date, submitted_by: leader, topic_notes: notes, attendees };
-
   try {
     await sendToFunction('E', payload);
     alert('Toolbox submitted. Email sent.');
@@ -195,14 +190,13 @@ if (tbForm) tbForm.addEventListener('submit', async (e) => {
 });
 
 /* =========================
-   PPE CHECK (D)
+   FORM D — PPE CHECK
 ========================= */
-const ppeForm = document.getElementById('ppeForm');
-const ppeDate = document.getElementById('ppe_date');
-if (ppeDate) ppeDate.value = todayISO();
+const ppeForm = $('#ppeForm');
+$('#ppe_date') && ($('#ppe_date').value = todayISO());
 
 const ppeTableBody = ensureTBody('ppeTable');
-const ppeAddRowBtn = document.getElementById('ppeAddRowBtn');
+const ppeAddRowBtn = $('#ppeAddRowBtn');
 
 function ppeRowTemplate() {
   return `
@@ -231,22 +225,20 @@ function addPPERow() {
   ppeTableBody.appendChild(tr);
 }
 
-if (ppeAddRowBtn) ppeAddRowBtn.addEventListener('click', addPPERow);
-if (ppeTableBody) { addPPERow(); addPPERow(); }
-if (ppeTableBody) ppeTableBody.addEventListener('click', (e) => {
+ppeAddRowBtn?.addEventListener('click', addPPERow);
+if (ppeTableBody && ppeTableBody.children.length === 0) { addPPERow(); addPPERow(); }
+
+ppeTableBody?.addEventListener('click', (e) => {
   const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
   if (!btn) return;
-  if (btn.dataset.act === 'remove') {
-    const tr = btn.closest('tr');
-    if (tr) tr.remove();
-  }
+  if (btn.dataset.act === 'remove') btn.closest('tr')?.remove();
 });
 
-if (ppeForm) ppeForm.addEventListener('submit', async (e) => {
+ppeForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const site    = (document.getElementById('ppe_site')    || {}).value?.trim?.() || '';
-  const date    = (document.getElementById('ppe_date')    || {}).value || '';
-  const checker = (document.getElementById('ppe_checker') || {}).value?.trim?.() || '';
+  const site    = $('#ppe_site')?.value?.trim?.() || '';
+  const date    = $('#ppe_date')?.value || '';
+  const checker = $('#ppe_checker')?.value?.trim?.() || '';
   if (!site || !date || !checker) { alert('Please fill Site, Date, and Checked By.'); return; }
 
   const rows = ppeTableBody ? Array.from(ppeTableBody.querySelectorAll('tr')) : [];
@@ -268,7 +260,6 @@ if (ppeForm) ppeForm.addEventListener('submit', async (e) => {
   );
 
   const payload = { site, date, checked_by: checker, roster, nonCompliant };
-
   try {
     const resp = await sendToFunction('D', payload);
     alert(resp && resp.emailed ? 'Submitted. Non-compliance emailed.' : 'Submitted.');
@@ -281,52 +272,48 @@ if (ppeForm) ppeForm.addEventListener('submit', async (e) => {
 });
 
 /* =========================
-   FIRST AID KIT (B)
+   FORM B — FIRST AID
 ========================= */
-const faForm = document.getElementById('faForm');
-const faDate = document.getElementById('fa_date');
-if (faDate) faDate.value = todayISO();
+const faForm = $('#faForm');
+$('#fa_date') && ($('#fa_date').value = todayISO());
 
 const faTableBody = ensureTBody('faTable');
-const faAddRowBtn = document.getElementById('faAddRowBtn');
+const faAddRowBtn = $('#faAddRowBtn');
 
 function addItemRow() {
   if (!faTableBody) return;
   const tr = document.createElement('tr');
-tr.innerHTML = `
-  <td><input type="text" class="fa-name" list="fa-catalog" placeholder="Select or type…" required></td>
-  <td><input type="number" class="fa-qty" min="0" value="0"></td>
-  <td><input type="number" class="fa-min" min="0" value="0"></td>
-  <td><input type="date" class="fa-exp"></td>
-  <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
-`;
-
+  tr.innerHTML = `
+    <td><input type="text" class="fa-name" list="fa-catalog" placeholder="Select or type…" required></td>
+    <td><input type="number" class="fa-qty" min="0" value="0"></td>
+    <td><input type="number" class="fa-min" min="0" value="0"></td>
+    <td><input type="date" class="fa-exp"></td>
+    <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
+  `;
   faTableBody.appendChild(tr);
 }
-if (faAddRowBtn) faAddRowBtn.addEventListener('click', addItemRow);
-if (faTableBody) { addItemRow(); addItemRow(); }
-if (faTableBody) faTableBody.addEventListener('click', (e) => {
+
+faAddRowBtn?.addEventListener('click', addItemRow);
+if (faTableBody && faTableBody.children.length === 0) { addItemRow(); addItemRow(); }
+
+faTableBody?.addEventListener('click', (e) => {
   const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
   if (!btn) return;
-  if (btn.dataset.act === 'remove') {
-    const tr = btn.closest('tr');
-    if (tr) tr.remove();
-  }
+  if (btn.dataset.act === 'remove') btn.closest('tr')?.remove();
 });
 
 function within30Days(iso) {
   if (!iso) return false;
   const now = new Date();
   const d = new Date(iso);
-  const diffDays = (d.getTime() - now.getTime()) / 86400000;
-  return diffDays <= 30;
+  return ((d.getTime() - now.getTime()) / 86400000) <= 30;
 }
 
-if (faForm) faForm.addEventListener('submit', async (e) => {
+faForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const site    = (document.getElementById('fa_site')    || {}).value?.trim?.() || '';
-  const date    = (document.getElementById('fa_date')    || {}).value || '';
-  const checker = (document.getElementById('fa_checker') || {}).value?.trim?.() || '';
+  const site    = $('#fa_site')?.value?.trim?.() || '';
+  const date    = $('#fa_date')?.value || '';
+  const checker = $('#fa_checker')?.value?.trim?.() || '';
   if (!site || !date || !checker) { alert('Please fill Site, Date, and Checked By.'); return; }
 
   const rows = faTableBody ? Array.from(faTableBody.querySelectorAll('tr')) : [];
@@ -338,13 +325,9 @@ if (faForm) faForm.addEventListener('submit', async (e) => {
     return { name, quantity: qty, min, expiry: exp };
   }).filter(i => i.name);
 
-  const flagged = items.some(i =>
-    (i.quantity <= (i.min || 0)) ||
-    (i.expiry && (within30Days(i.expiry) || (new Date(i.expiry) < new Date())))
-  );
+  const flagged = items.some(i => (i.quantity <= (i.min || 0)) || (i.expiry && (within30Days(i.expiry) || (new Date(i.expiry) < new Date()))));
 
   const payload = { site, date, checked_by: checker, items, flagged };
-
   try {
     const resp = await sendToFunction('B', payload);
     alert(resp && resp.emailed ? 'Submitted. Restock/expiry emailed.' : 'Submitted.');
@@ -355,32 +338,29 @@ if (faForm) faForm.addEventListener('submit', async (e) => {
     alert('Offline/server error. Saved to Outbox.');
   }
 });
-/* =========================
-   SITE INSPECTION (C)
-========================= */
-const inspForm = document.getElementById('inspForm');
-const inspDate = document.getElementById('insp_date');
-if (inspDate) inspDate.value = todayISO();
 
-// 1) Get TBODY refs FIRST (no IIFEs)
+/* =========================
+   FORM C — SITE INSPECTION
+========================= */
+const inspForm = $('#inspForm');
+$('#insp_date') && ($('#insp_date').value = todayISO());
+
 const inspRosterBody = ensureTBody('inspRoster');
 const inspHazBody    = ensureTBody('inspHazards');
 
-const inspAddWorker = document.getElementById('inspAddWorker');
-const inspAddHazard = document.getElementById('inspAddHazard');
-const inspApprover       = document.getElementById('insp_approver');
-const inspApproverOther  = document.getElementById('insp_approver_other');
-const inspSigCanvas      = document.getElementById('insp_approver_canvas');
-let   inspSigPad         = null;
+const inspAddWorker = $('#inspAddWorker');
+const inspAddHazard = $('#inspAddHazard');
+const inspApprover      = $('#insp_approver');
+const inspApproverOther = $('#insp_approver_other');
+const inspSigCanvas     = $('#insp_approver_canvas');
+let inspSigPad = null;
 
 if (window.SignaturePad && inspSigCanvas) {
-  try { inspSigPad = new SignaturePad(inspSigCanvas, { minWidth: 0.7, maxWidth: 2.2, throttle: 8 }); }
+  try { inspSigPad = new SignaturePad(inspSigCanvas, { minWidth:.7, maxWidth:2.2, throttle:8 }); }
   catch (e) { console.warn('SignaturePad init failed for approval', e); }
 }
-const inspClearSigBtn = document.getElementById('inspClearSig');
-if (inspClearSigBtn) inspClearSigBtn.addEventListener('click', () => { if (inspSigPad && inspSigPad.clear) inspSigPad.clear(); });
+$('#inspClearSig')?.addEventListener('click', () => { if (inspSigPad?.clear) inspSigPad.clear(); });
 
-// 2) Row builders
 function addInspWorkerRow(){
   if (!inspRosterBody) return;
   const tr = document.createElement('tr');
@@ -397,7 +377,6 @@ function addInspWorkerRow(){
     <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>`;
   inspRosterBody.appendChild(tr);
 }
-
 function addInspHazardRow(){
   if (!inspHazBody) return;
   const tr = document.createElement('tr');
@@ -420,35 +399,27 @@ function addInspHazardRow(){
   inspHazBody.appendChild(tr);
 }
 
-// 3) Seed default rows AFTER functions exist
 if (inspRosterBody && inspRosterBody.children.length === 0) addInspWorkerRow();
 if (inspHazBody && inspHazBody.children.length === 0) addInspHazardRow();
 
-// 4) Listeners
-if (inspAddWorker) inspAddWorker.addEventListener('click', addInspWorkerRow);
-if (inspAddHazard) inspAddHazard.addEventListener('click', addInspHazardRow);
+inspAddWorker?.addEventListener('click', addInspWorkerRow);
+inspAddHazard?.addEventListener('click', addInspHazardRow);
 
-if (inspRosterBody) inspRosterBody.addEventListener('click', (e) => {
+inspRosterBody?.addEventListener('click', (e) => {
   const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
-  if (!btn) return;
-  if (btn.dataset.act === 'remove') {
-    const tr = btn.closest('tr'); if (tr) tr.remove();
-  }
+  if (!btn) return; if (btn.dataset.act === 'remove') btn.closest('tr')?.remove();
 });
 
-if (inspHazBody) inspHazBody.addEventListener('click', (e) => {
+inspHazBody?.addEventListener('click', (e) => {
   const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
-  if (!btn) return;
-  if (btn.dataset.act === 'remove') {
-    const tr = btn.closest('tr'); if (tr) tr.remove();
-  }
+  if (!btn) return; if (btn.dataset.act === 'remove') btn.closest('tr')?.remove();
 });
 
-if (inspForm) inspForm.addEventListener('submit', async (e) => {
+inspForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const site      = (document.getElementById('insp_site')      || {}).value?.trim?.() || '';
-  const date      = (document.getElementById('insp_date')      || {}).value || '';
-  const inspector = (document.getElementById('insp_inspector') || {}).value?.trim?.() || '';
+  const site      = $('#insp_site')?.value?.trim?.() || '';
+  const date      = $('#insp_date')?.value || '';
+  const inspector = $('#insp_inspector')?.value?.trim?.() || '';
   if (!site || !date || !inspector) { alert('Please fill Site, Date, and Inspector.'); return; }
 
   const roster = inspRosterBody ? Array.from(inspRosterBody.querySelectorAll('tr')).map(tr => ({
@@ -466,23 +437,23 @@ if (inspForm) inspForm.addEventListener('submit', async (e) => {
     completed_by:   tr.querySelector('.hz-doneby')?.value?.trim?.() || '',
     completed_date: tr.querySelector('.hz-donedate')?.value || null
   })).filter(h => h.hazard) : [];
-// derive approver name
-let approver_name = inspApprover ? inspApprover.value : '';
-if (approver_name === 'Other') {
-  const v = (inspApproverOther && inspApproverOther.value.trim()) || '';
-  if (!v) { alert('Please type the approver name.'); return; }
-  approver_name = v;
-}
 
-// require a signature
-if (!inspSigPad || (inspSigPad.isEmpty && inspSigPad.isEmpty())) {
-  alert('HSE approval signature is required.');
-  return;
-}
-const approver_signature_png = (inspSigPad && inspSigPad.toDataURL) ? inspSigPad.toDataURL('image/png') : null;
+  // derive approver name
+  let approver_name = inspApprover ? inspApprover.value : '';
+  if (approver_name === 'Other') {
+    const v = (inspApproverOther && inspApproverOther.value.trim()) || '';
+    if (!v) { alert('Please type the approver name.'); return; }
+    approver_name = v;
+  }
+  // require a signature
+  if (!inspSigPad || (inspSigPad.isEmpty && inspSigPad.isEmpty())) {
+    alert('HSE approval signature is required.');
+    return;
+  }
+  const approver_signature_png = (inspSigPad && inspSigPad.toDataURL) ? inspSigPad.toDataURL('image/png') : null;
 
   const openHazards = hazards.some(h => !h.completed);
-  const payload = { site, date, inspector, roster, hazards, openHazards, approved: true, approver_name, approver_signature_png,};
+  const payload = { site, date, inspector, roster, hazards, openHazards, approved:true, approver_name, approver_signature_png };
 
   try {
     const resp = await sendToFunction('C', payload);
@@ -490,70 +461,160 @@ const approver_signature_png = (inspSigPad && inspSigPad.toDataURL) ? inspSigPad
     inspForm.reset();
     if (inspRosterBody) { inspRosterBody.innerHTML = ''; addInspWorkerRow(); }
     if (inspHazBody)    { inspHazBody.innerHTML    = ''; addInspHazardRow(); }
-     if (inspSigPad && inspSigPad.clear) inspSigPad.clear();
-if (inspApprover) inspApprover.value = 'Krista';
-if (inspApproverOther) inspApproverOther.value = '';
+    if (inspSigPad?.clear) inspSigPad.clear();
+    if (inspApprover) inspApprover.value = 'Krista';
+    if (inspApproverOther) inspApproverOther.value = '';
   } catch (err) {
     const out = getOutbox(); out.push({ ts: Date.now(), formType: 'C', payload }); setOutbox(out);
     alert('Offline/server error. Saved to Outbox.');
   }
 });
 
+/* =========================
+   FORM A — EMERGENCY DRILL
+========================= */
+const drForm = $('#drForm');
+$('#dr_date') && ($('#dr_date').value = todayISO());
+
+const drRosterBody = ensureTBody('drRoster');
+const drAddPartBtn = $('#drAddPart');
+
+const drSigPads = new Map(); // optional per-participant signatures
+let drRowCount = 0;
+
+function addDrillParticipantRow() {
+  if (!drRosterBody) return;
+  drRowCount++;
+  const id = `drp_${drRowCount}`;
+  const tr = document.createElement('tr');
+  tr.dataset.rowId = id;
+  tr.innerHTML = `
+    <td><input type=\"text\" class=\"dr-name\" placeholder=\"Full name\" required></td>
+    <td>
+      <select class=\"dr-role\"> 
+        <option value=\"worker\">Worker</option>
+        <option value=\"foreman\">Foreman</option>
+        <option value=\"supervisor\">Supervisor</option>
+        <option value=\"visitor\">Visitor</option>
+      </select>
+    </td>
+    <td>
+      <div class=\"canvas-wrap\">
+        <canvas id=\"${id}_canvas\" width=\"600\" height=\"140\"></canvas>
+        <div class=\"controls\"><button type=\"button\" data-act=\"clear\">Clear</button></div>
+      </div>
+    </td>
+    <td><div class=\"controls\"><button type=\"button\" data-act=\"remove\">Remove</button></div></td>
+  `;
+  drRosterBody.appendChild(tr);
+
+  const canvas = tr.querySelector('canvas');
+  if (window.SignaturePad && canvas) {
+    try { const pad = new SignaturePad(canvas, { minWidth:.7, maxWidth:2.2, throttle:8 }); drSigPads.set(id, pad); }
+    catch (e) { console.warn('SignaturePad init (drill) failed:', e); }
+  }
+}
+
+if (drRosterBody && drRosterBody.children.length === 0) { addDrillParticipantRow(); addDrillParticipantRow(); }
+
+drAddPartBtn?.addEventListener('click', addDrillParticipantRow);
+
+drRosterBody?.addEventListener('click', (e) => {
+  const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
+  if (!btn) return;
+  const tr = btn.closest('tr');
+  const rowId = tr ? tr.dataset.rowId : null;
+  const act = btn.dataset.act;
+  if (act === 'remove' && tr) { if (rowId) drSigPads.delete(rowId); tr.remove(); }
+  if (act === 'clear' && rowId) { const pad = drSigPads.get(rowId); if (pad?.clear) pad.clear(); }
+});
+
+ drForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const site = $('#dr_site')?.value?.trim?.() || '';
+  const date = $('#dr_date')?.value || '';
+  const supervisor = $('#dr_supervisor')?.value?.trim?.() || '';
+  if (!site || !date || !supervisor) { alert('Please fill Site, Date, and Supervisor.'); return; }
+
+  const participants = drRosterBody ? Array.from(drRosterBody.querySelectorAll('tr')).map(tr => {
+    const name = tr.querySelector('.dr-name')?.value?.trim?.() || '';
+    const role = tr.querySelector('.dr-role')?.value || 'worker';
+    const rowId = tr.dataset.rowId;
+    const pad = rowId ? drSigPads.get(rowId) : null;
+    const signature_png = (pad && !pad.isEmpty?.()) ? (pad.toDataURL ? pad.toDataURL('image/png') : null) : null;
+    return { name, role_on_site: role, signature_png };
+  }).filter(p => p.name) : [];
+
+  const payload = {
+    site,
+    date,
+    supervisor,
+    drill_type: $('#dr_type')?.value || '',
+    start_time: $('#dr_start')?.value || '',
+    end_time:   $('#dr_end')?.value || '',
+    scenario_notes: $('#dr_notes')?.value?.trim?.() || '',
+    participants,
+    evaluation: $('#dr_eval')?.value?.trim?.() || '',
+    follow_up_actions: $('#dr_follow')?.value?.trim?.() || '',
+    next_drill_date: $('#dr_next')?.value || '',
+    issues: !!$('#dr_issues')?.checked,
+  };
+
+  try {
+    const resp = await sendToFunction('A', payload);
+    alert(resp && resp.emailed ? 'Submitted. HSE notified.' : 'Submitted.');
+    drForm.reset();
+    if (drRosterBody) { drRosterBody.innerHTML = ''; addDrillParticipantRow(); addDrillParticipantRow(); }
+  } catch (err) {
+    const out = getOutbox(); out.push({ ts: Date.now(), formType: 'A', payload }); setOutbox(out);
+    alert('Offline/server error. Saved to Outbox.');
+  }
+});
 
 /* =========================
+   LOGBOOK — list & export
 ========================= */
-
-
-
-const lgSite = document.getElementById('lg_site');
-const lgFrom = document.getElementById('lg_from');
-const lgTo = document.getElementById('lg_to');
-const lgForm = document.getElementById('lg_form');
-const lgLoad = document.getElementById('lg_load');
-const lgExport= document.getElementById('lg_export');
-const lgTable = document.getElementById('lg_table');
-const lgBody = lgTable ? lgTable.querySelector('tbody') : null;
-
+const lgSite   = $('#lg_site');
+const lgFrom   = $('#lg_from');
+const lgTo     = $('#lg_to');
+const lgForm   = $('#lg_form');
+const lgLoad   = $('#lg_load');
+const lgExport = $('#lg_export');
+const lgBody   = $('#lg_table')?.querySelector('tbody') || null;
 
 function fmtSummary(row){
-const t = row.form_type;
-const p = row.payload || {};
-if (t === 'E') return `Leader: ${p.submitted_by||''}; Attendees: ${Array.isArray(p.attendees)?p.attendees.length:0}`;
-if (t === 'D') return `Checked by: ${p.checked_by||''}; Non-compliance: ${p.nonCompliant?'YES':'No'}`;
-if (t === 'B') return `Checked by: ${p.checked_by||''}; Flagged: ${p.flagged?'YES':'No'}`;
-if (t === 'C') return `Inspector: ${p.inspector||''}; Open hazards: ${p.openHazards? 'YES':'No'}`;
-if (t === 'A') return `Supervisor: ${p.supervisor||''}; Issues: ${p.issues? 'YES':'No'}`;
-return '';
+  const t = row.form_type; const p = row.payload || {};
+  if (t === 'E') return `Leader: ${p.submitted_by||''}; Attendees: ${Array.isArray(p.attendees)?p.attendees.length:0}`;
+  if (t === 'D') return `Checked by: ${p.checked_by||''}; Non-compliance: ${p.nonCompliant?'YES':'No'}`;
+  if (t === 'B') return `Checked by: ${p.checked_by||''}; Flagged: ${p.flagged?'YES':'No'}`;
+  if (t === 'C') return `Inspector: ${p.inspector||''}; Open hazards: ${p.openHazards? 'YES':'No'}`;
+  if (t === 'A') return `Supervisor: ${p.supervisor||''}; Issues: ${p.issues? 'YES':'No'}`;
+  return '';
 }
-
 
 function renderRows(rows){
-if (!lgBody) return;
-lgBody.innerHTML = '';
-rows.forEach(r => {
-const tr = document.createElement('tr');
-const d = (r.date || '').slice(0,10);
-tr.innerHTML = `
-<td>${r.id}</td>
-<td>${d}</td>
-<td>${r.form_type}</td>
-<td>${r.site||''}</td>
-<td>${fmtSummary(r)}</td>
-<td>
-<details>
-<summary>View</summary>
-<pre style="white-space:pre-wrap; word-break:break-word; max-width:60ch;">${JSON.stringify(r.payload, null, 2)}</pre>
-</details>
-</td>`;
-lgBody.appendChild(tr);
-});
+  if (!lgBody) return;
+  lgBody.innerHTML = '';
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    const d = (r.date || '').slice(0,10);
+    tr.innerHTML = `
+      <td>${r.id}</td>
+      <td>${d}</td>
+      <td>${r.form_type}</td>
+      <td>${r.site||''}</td>
+      <td>${fmtSummary(r)}</td>
+      <td>
+        <details>
+          <summary>View</summary>
+          <pre style="white-space:pre-wrap; word-break:break-word; max-width:60ch;">${JSON.stringify(r.payload, null, 2)}</pre>
+        </details>
+      </td>`;
+    lgBody.appendChild(tr);
+  });
 }
 
-
 async function fetchLog(){
-  const headers = { 'Content-Type': 'application/json' };
-  if (SUPABASE_ANON_KEY) headers.Authorization = `Bearer ${SUPABASE_ANON_KEY}`;
-
   const body = {
     site: (lgSite && lgSite.value.trim()) || undefined,
     formType: (lgForm && lgForm.value) || undefined,
@@ -561,73 +622,35 @@ async function fetchLog(){
     to: (lgTo && lgTo.value) || undefined,
     limit: 100
   };
-
-  let res, text;
-  try {
-    res = await fetch(LIST_URL, { method:'POST', headers, body: JSON.stringify(body) });
-    text = await res.text();
-  } catch (e) {
-    console.error('Network/Fetch error:', e);
-    alert('Failed to load log (network).');
-    throw e;
-  }
-
-  if (!res.ok) {
-    console.error('HTTP error:', res.status, text);
-    alert(`Failed to load log (HTTP ${res.status}).`);
-    throw new Error(`HTTP ${res.status}: ${text}`);
-  }
-
-  let data;
-  try { data = JSON.parse(text); }
-  catch {
-    console.error('Bad JSON:', text);
-    alert('Failed to load log (bad JSON).');
-    throw new Error('Bad JSON');
-  }
-
-  if (!data.ok) {
-    console.error('Function error payload:', data);
-    alert(`Failed to load log: ${data.error || 'unknown error'}`);
-    throw new Error(data.error || 'load_failed');
-  }
-
+  const data = await jsonFetch(LIST_URL, { body });
+  if (!data.ok) throw new Error(data.error || 'load_failed');
   renderRows(data.rows || []);
   window._logRows = data.rows || [];
 }
 
-
 function toCSV(rows){
-const header = ['id','date','form_type','site','summary'];
-const lines = [header.join(',')];
-rows.forEach(r => {
-const row = [r.id, (r.date||'').slice(0,10), r.form_type, r.site||'', fmtSummary(r)];
-const esc = v => '"' + String(v).replaceAll('"','""') + '"';
-lines.push(row.map(esc).join(','));
-});
-return lines.join('\n');
+  const header = ['id','date','form_type','site','summary'];
+  const lines = [header.join(',')];
+  const esc = v => '"' + String(v).replaceAll('"','""') + '"';
+  rows.forEach(r => {
+    const row = [r.id, (r.date||'').slice(0,10), r.form_type, r.site||'', fmtSummary(r)];
+    lines.push(row.map(esc).join(','));
+  });
+  return lines.join('\n');
 }
 
+if (lgLoad && !lgLoad.dataset.bound) {
+  lgLoad.dataset.bound = '1';
+  lgLoad.addEventListener('click', async ()=>{
+    try { await fetchLog(); } catch(e){ console.error(e); alert('Failed to load log.'); }
+  });
+}
 
-if (lgLoad) lgLoad.addEventListener('click', async ()=>{
-try { await fetchLog(); } catch(e){ alert('Failed to load log.'); }
+lgExport?.addEventListener('click', ()=>{
+  const rows = window._logRows || [];
+  if (!rows.length) { alert('Nothing to export. Load the log first.'); return; }
+  const blob = new Blob([toCSV(rows)], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'ywi-log.csv'; a.click();
+  setTimeout(()=> URL.revokeObjectURL(url), 1000);
 });
-
-
-if (lgExport) lgExport.addEventListener('click', ()=>{
-const rows = window._logRows || [];
-if (!rows.length) { alert('Nothing to export. Load the log first.'); return; }
-const blob = new Blob([toCSV(rows)], { type: 'text/csv;charset=utf-8;' });
-const url = URL.createObjectURL(blob);
-const a = document.createElement('a');
-a.href = url; a.download = 'ywi-log.csv'; a.click();
-setTimeout(()=> URL.revokeObjectURL(url), 1000);
-});
-
-
-
-
-
-
-
-
