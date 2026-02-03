@@ -446,7 +446,7 @@ if (inspForm) inspForm.addEventListener('submit', async (e) => {
 
 /* =========================
 ========================= */
-const LIST_URL = 'https://YOUR-PROJECT.supabase.co/functions/v1/list-submissions';
+
 
 
 const lgSite = document.getElementById('lg_site');
@@ -536,6 +536,7 @@ const a = document.createElement('a');
 a.href = url; a.download = 'ywi-log.csv'; a.click();
 setTimeout(()=> URL.revokeObjectURL(url), 1000);
 });
+
 
 
 
