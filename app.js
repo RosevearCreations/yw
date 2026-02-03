@@ -340,6 +340,17 @@ const inspHazBody    = ensureTBody('inspHazards');
 
 const inspAddWorker = document.getElementById('inspAddWorker');
 const inspAddHazard = document.getElementById('inspAddHazard');
+const inspApprover       = document.getElementById('insp_approver');
+const inspApproverOther  = document.getElementById('insp_approver_other');
+const inspSigCanvas      = document.getElementById('insp_approver_canvas');
+let   inspSigPad         = null;
+
+if (window.SignaturePad && inspSigCanvas) {
+  try { inspSigPad = new SignaturePad(inspSigCanvas, { minWidth: 0.7, maxWidth: 2.2, throttle: 8 }); }
+  catch (e) { console.warn('SignaturePad init failed for approval', e); }
+}
+const inspClearSigBtn = document.getElementById('inspClearSig');
+if (inspClearSigBtn) inspClearSigBtn.addEventListener('click', () => { if (inspSigPad && inspSigPad.clear) inspSigPad.clear(); });
 
 // 2) Row builders
 function addInspWorkerRow(){
@@ -427,9 +438,23 @@ if (inspForm) inspForm.addEventListener('submit', async (e) => {
     completed_by:   tr.querySelector('.hz-doneby')?.value?.trim?.() || '',
     completed_date: tr.querySelector('.hz-donedate')?.value || null
   })).filter(h => h.hazard) : [];
+// derive approver name
+let approver_name = inspApprover ? inspApprover.value : '';
+if (approver_name === 'Other') {
+  const v = (inspApproverOther && inspApproverOther.value.trim()) || '';
+  if (!v) { alert('Please type the approver name.'); return; }
+  approver_name = v;
+}
+
+// require a signature
+if (!inspSigPad || (inspSigPad.isEmpty && inspSigPad.isEmpty())) {
+  alert('HSE approval signature is required.');
+  return;
+}
+const approver_signature_png = (inspSigPad && inspSigPad.toDataURL) ? inspSigPad.toDataURL('image/png') : null;
 
   const openHazards = hazards.some(h => !h.completed);
-  const payload = { site, date, inspector, roster, hazards, openHazards };
+  const payload = { site, date, inspector, roster, hazards, openHazards, approved: true, approver_name, approver_signature_png,};
 
   try {
     const resp = await sendToFunction('C', payload);
@@ -437,6 +462,9 @@ if (inspForm) inspForm.addEventListener('submit', async (e) => {
     inspForm.reset();
     if (inspRosterBody) { inspRosterBody.innerHTML = ''; addInspWorkerRow(); }
     if (inspHazBody)    { inspHazBody.innerHTML    = ''; addInspHazardRow(); }
+     if (inspSigPad && inspSigPad.clear) inspSigPad.clear();
+if (inspApprover) inspApprover.value = 'Krista';
+if (inspApproverOther) inspApproverOther.value = '';
   } catch (err) {
     const out = getOutbox(); out.push({ ts: Date.now(), formType: 'C', payload }); setOutbox(out);
     alert('Offline/server error. Saved to Outbox.');
@@ -567,6 +595,7 @@ const a = document.createElement('a');
 a.href = url; a.download = 'ywi-log.csv'; a.click();
 setTimeout(()=> URL.revokeObjectURL(url), 1000);
 });
+
 
 
 
