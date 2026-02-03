@@ -145,7 +145,14 @@
           <tbody><!-- rows inserted by JS --></tbody>
         </table>
 
-        <section id="inspect" class="card">
+
+        <div class="form-footer">
+          <button type="submit" class="primary">Submit First Aid Check</button>
+          <button type="button" class="secondary" data-role="retry-outbox">Retry Queued Submissions</button>
+        </div>
+      </form>
+    </section>
+            <section id="inspect" class="card">
 <h2>Site Inspection</h2>
 <form id="inspForm">
 <div class="grid">
@@ -201,17 +208,12 @@
 </div>
 </form>
 </section>
-        <div class="form-footer">
-          <button type="submit" class="primary">Submit First Aid Check</button>
-          <button type="button" class="secondary" data-role="retry-outbox">Retry Queued Submissions</button>
-        </div>
-      </form>
-    </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>
+
 
 
