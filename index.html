@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>YWI HSE</title>
   <meta name="theme-color" content="#0b6c3d" />
-  <link rel="manifest" href="/public/manifest.json" />
+  <link rel="manifest" href="/manifest.json" />
   <link rel="stylesheet" href="/style.css" />
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('/public/service-worker.js'));
+      window.addEventListener('load', () => navigator.serviceWorker.register('/server-worker.js'));
     }
   </script>
 </head>
@@ -156,3 +156,4 @@
   <script src="/app.js"></script>
 </body>
 </html>
+
