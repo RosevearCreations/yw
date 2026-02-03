@@ -2,13 +2,11 @@
 const FUNCTION_URL = 'https://YOUR-PROJECT.functions.supabase.co/your-function-name';
 const OUTBOX_KEY = 'ywi_outbox_v1';
 
-
 // ===== Toolbox Talk (E) =====
 const attendeesTable = document.getElementById('attendeesTable')?.querySelector('tbody');
 const addRowBtn = document.getElementById('addRowBtn');
 const tbForm = document.getElementById('toolboxForm');
 const tbDate = document.getElementById('tb_date');
-
 
 // ===== PPE Check (D) =====
 const ppeTableBody = document.getElementById('ppeTable')?.querySelector('tbody');
@@ -26,7 +24,6 @@ const dd = String(today.getDate()).padStart(2,'0');
 if (tbDate) tbDate.value = `${yyyy}-${mm}-${dd}`;
 if (ppeDate) ppeDate.value = `${yyyy}-${mm}-${dd}`;
 })();
-
 
 // ---- Outbox helpers ----
 function getOutbox(){ try { return JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]'); } catch { return []; } }
@@ -169,3 +166,4 @@ const payload = { site, date, checked_by: checker, roster: rows, nonCompliant };
 try { await sendToFunction('D', payload); alert(nonCompliant ? 'Submitted. Non-compliance emailed.' : 'Submitted.'); ppeForm.reset(); if (ppeTableBody){ ppeTableBody.innerHTML=''; addPPERow(); addPPERow(); } }
 catch(err){ const out = getOutbox(); out.push({ ts: Date.now(), formType:'D', payload }); setOutbox(out); alert('Offline/server error. Saved to Outbox.'); }
 });
+
