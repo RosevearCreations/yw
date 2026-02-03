@@ -1,6 +1,28 @@
 <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>YWI HSE</title>
+<meta name="theme-color" content="#0b6c3d" />
+<link rel="manifest" href="/manifest.json" />
+<link rel="stylesheet" href="/style.css" />
+<script>
+if ('serviceWorker' in navigator) {
+window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js'));
+}
+</script>
+</head>
+<body>
+<header class="app-header">
+<h1>YWI HSE</h1>
+<nav>
+<a class="active" href="#toolbox">Toolbox Talk</a>
+<a href="#ppe">PPE Check</a>
 </nav>
 </header>
+
+
 <main class="container">
 <!-- TOOLBOX TALK FORM (Form E) -->
 <section id="toolbox" class="card">
@@ -39,15 +61,26 @@
 <!-- rows inserted by JS -->
 </tbody>
 </table>
-
-
 <div class="form-footer">
 <button type="submit" class="primary">Submit Toolbox Talk</button>
 <button type="button" class="secondary" data-role="retry-outbox">Retry Queued Submissions</button>
 </div>
 </form>
 </section>
+
+
 <!-- PPE CHECK FORM (Form D) -->
+<section id="ppe" class="card">
+<h2>PPE Compliance Check</h2>
+<form id="ppeForm">
+<div class="grid">
+<label>Site ID/Name
+<input type="text" id="ppe_site" required placeholder="e.g., Site-A" />
+</label>
+<label>Date
+<input type="date" id="ppe_date" required />
+</label>
+<label>Checked By
 <input type="text" id="ppe_checker" required placeholder="Foreman / Supervisor" />
 </label>
 </div>
@@ -73,8 +106,6 @@
 <!-- rows inserted by JS -->
 </tbody>
 </table>
-
-
 <div class="form-footer">
 <button type="submit" class="primary">Submit PPE Check</button>
 <button type="button" class="secondary" data-role="retry-outbox">Retry Queued Submissions</button>
@@ -82,11 +113,7 @@
 </form>
 </section>
 </main>
-
-
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>
-
-
