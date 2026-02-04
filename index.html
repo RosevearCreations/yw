@@ -57,16 +57,17 @@
       <a href="#log">Logbook</a>
     </nav>
   </header>
-<div id="authBox" class="auth">
-  <form id="loginForm">
-    <input type="email" id="loginEmail" placeholder="work email" required />
-    <button type="submit">Send sign-in link</button>
-  </form>
-  <div id="authInfo" hidden>
-    <span id="whoami"></span>
-    <button id="logoutBtn" type="button">Logout</button>
-  </div>
-</div>
+<section id="loginForm" class="card" style="display:none;gap:.5rem;flex-direction:column;max-width:520px">
+  <h2>Sign in</h2>
+  <label>Email <input id="loginEmail" type="email" placeholder="you@company.com" required></label>
+  <button class="primary" type="submit">Send magic link</button>
+</section>
+
+<section id="authInfo" class="card" hidden>
+  <div>Signed in as <b id="whoami"></b></div>
+  <button id="logoutBtn" class="secondary" type="button">Log out</button>
+</section>
+
 
   <main class="container">
     <!-- ============================= -->
@@ -464,5 +465,6 @@
   </script>
 </body>
 </html>
+
 
 
