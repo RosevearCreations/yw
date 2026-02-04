@@ -1,6 +1,5 @@
-
 const SB_URL  = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
-const SB_ANON = 'SUPABASE_ANON_KEY';
+const SB_ANON = 'SUPABASE_ANON_KEY'; // TODO: replace with your real anon key if Functions require JWT
 /* =====================================================
    YWI HSE — app.js (secure v3)
    - Auth bootstrap: email magic‑link login, logout, idle timeout
@@ -12,13 +11,12 @@ const SB_ANON = 'SUPABASE_ANON_KEY';
 ===================================================== */
 
 /* =========================
-   AUTH BOOTSTRAP (edit these)
+   AUTH BOOTSTRAP
 ========================= */
-// 1) Put your real project creds here and include supabase-js in index.html:
+// Include supabase-js in index.html for auth to work:
 // <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-
-// 2) Optional: idle auto‑logout (ms)
+// Idle auto‑logout (ms)
 const IDLE_MS = 30 * 60 * 1000; // 30 minutes
 
 // Create client if supabase-js is loaded
@@ -40,10 +38,10 @@ async function renderByAuth() {
   if (!sb) return; // no auth UI when client missing
   const { data: { session } } = await sb.auth.getSession();
   const authed = !!session;
-  if (mainEl)      mainEl.style.display   = authed ? 'block' : 'none';
-  if (loginForm)   loginForm.style.display = authed ? 'none' : 'flex';
-  if (authInfo)    authInfo.hidden         = !authed;
-  if (whoami)      whoami.textContent      = authed ? (session.user.email || session.user.id) : '';
+  if (mainEl)      mainEl.style.display    = authed ? 'block' : 'none';
+  if (loginForm)   loginForm.style.display  = authed ? 'none' : 'flex';
+  if (authInfo)    authInfo.hidden          = !authed;
+  if (whoami)      whoami.textContent       = authed ? (session.user.email || session.user.id) : '';
 }
 
 if (sb) {
@@ -626,6 +624,7 @@ function renderRows(rows){
   rows.forEach(r => {
     const tr = document.createElement('tr');
     const d = (r.date || '').slice(0,10);
+    const payloadPretty = String(JSON.stringify(r.payload, null, 2)).replace(/</g, '&lt;');
     tr.innerHTML = `
       <td>${r.id}</td>
       <td>${d}</td>
@@ -635,7 +634,7 @@ function renderRows(rows){
       <td>
         <details>
           <summary>View</summary>
-          <pre style="white-space:pre-wrap; word-break:break-word; max-width:60ch;">${JSON.stringify(r.payload, null, 2)}</pre>
+          <pre style="white-space:pre-wrap; word-break:break-word; max-width:60ch;">${payloadPretty}</pre>
         </details>
       </td>`;
     lgBody.appendChild(tr);
@@ -661,8 +660,7 @@ function toCSV(rows){
   const lines = [header.join(',')];
   const esc = v => '"' + String(v).replaceAll('"','""') + '"';
   rows.forEach(r => { const row = [r.id, (r.date||'').slice(0,10), r.form_type, r.site||'', fmtSummary(r)]; lines.push(row.map(esc).join(',')); });
-  return lines.join('
-');
+  return lines.join('\n');
 }
 
 if (lgLoad && !lgLoad.dataset.bound) {
@@ -681,14 +679,17 @@ lgExport?.addEventListener('click', ()=>{
 
 // ---- Ensure tables always have starter rows when visible
 function seedAllTables() {
-  if (typeof addAttendeeRow === 'function' && attendeesTableBody && attendeesTableBody.children.length === 0) { addAttendeeRow(); addAttendeeRow(); }
-  if (typeof addPPERow === 'function' && ppeTableBody && ppeTableBody.children.length === 0) { addPPERow(); addPPERow(); }
-  if (typeof addItemRow === 'function' && faTableBody && faTableBody.children.length === 0) { addItemRow(); addItemRow(); }
-  if (typeof addInspWorkerRow === 'function' && inspRosterBody && inspRosterBody.children.length === 0) { addInspWorkerRow(); }
-  if (typeof addInspHazardRow === 'function' && inspHazBody && inspHazBody.children.length === 0) { addInspHazardRow(); }
-  if (typeof addDrillParticipantRow === 'function' && drRosterBody && drRosterBody.children.length === 0) { addDrillParticipantRow(); addDrillParticipantRow(); }
+  try {
+    if (typeof addAttendeeRow === 'function' && attendeesTableBody && attendeesTableBody.children.length === 0) { addAttendeeRow(); addAttendeeRow(); }
+    if (typeof addPPERow === 'function' && ppeTableBody && ppeTableBody.children.length === 0) { addPPERow(); addPPERow(); }
+    if (typeof addItemRow === 'function' && faTableBody && faTableBody.children.length === 0) { addItemRow(); addItemRow(); }
+    if (typeof addInspWorkerRow === 'function' && inspRosterBody && inspRosterBody.children.length === 0) { addInspWorkerRow(); }
+    if (typeof addInspHazardRow === 'function' && inspHazBody && inspHazBody.children.length === 0) { addInspHazardRow(); }
+    if (typeof addDrillParticipantRow === 'function' && drRosterBody && drRosterBody.children.length === 0) { addDrillParticipantRow(); addDrillParticipantRow(); }
+  } catch(e) { /* ignore */ }
 }
 
 document.addEventListener('DOMContentLoaded', () => setTimeout(seedAllTables, 0));
 window.addEventListener('hashchange', () => setTimeout(seedAllTables, 0));
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(seedAllTables, 0); });
+window.addEventListener('load', () => setTimeout(seedAllTables, 0));
