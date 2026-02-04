@@ -1,7 +1,7 @@
 /* =====================================================
-   YWI HSE — app.js (cleaned v2)
-   - One-responsibility helpers
-   - Robust fetch with optional JWT
+   YWI HSE — app.js (secure v3)
+   - Auth bootstrap: email magic‑link login, logout, idle timeout
+   - JWT flows to Edge Functions via Authorization header
    - Outbox for offline
    - Forms: E (Toolbox), D (PPE), B (First Aid), C (Inspection), A (Drill)
    - Logbook loader + CSV export
@@ -9,16 +9,78 @@
 ===================================================== */
 
 /* =========================
-   CONFIG (adjust as needed)
+   AUTH BOOTSTRAP (edit these)
+========================= */
+// 1) Put your real project creds here and include supabase-js in index.html:
+// <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+const SB_URL  = '';
+const SB_ANON = '';
+
+// 2) Optional: idle auto‑logout (ms)
+const IDLE_MS = 30 * 60 * 1000; // 30 minutes
+
+// Create client if supabase-js is loaded
+let sb = null;
+if (window.supabase && SB_URL && SB_ANON) {
+  sb = window.supabase.createClient(SB_URL, SB_ANON);
+  window._sb = sb;
+}
+
+// Minimal auth UI wiring (safe if elements are missing)
+const mainEl     = document.querySelector('main.container');
+const loginForm  = document.getElementById('loginForm');
+const emailInput = document.getElementById('loginEmail');
+const authInfo   = document.getElementById('authInfo');
+const whoami     = document.getElementById('whoami');
+const logoutBtn  = document.getElementById('logoutBtn');
+
+async function renderByAuth() {
+  if (!sb) return; // no auth UI when client missing
+  const { data: { session } } = await sb.auth.getSession();
+  const authed = !!session;
+  if (mainEl)      mainEl.style.display   = authed ? 'block' : 'none';
+  if (loginForm)   loginForm.style.display = authed ? 'none' : 'flex';
+  if (authInfo)    authInfo.hidden         = !authed;
+  if (whoami)      whoami.textContent      = authed ? (session.user.email || session.user.id) : '';
+}
+
+if (sb) {
+  sb.auth.onAuthStateChange(() => renderByAuth());
+  document.addEventListener('DOMContentLoaded', renderByAuth);
+}
+
+loginForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!sb) return alert('Auth client not loaded.');
+  const email = (emailInput?.value || '').trim();
+  if (!email) return;
+  const { error } = await sb.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href }
+  });
+  if (error) alert('Login error: ' + error.message); else alert('Check your email for the sign‑in link.');
+});
+
+logoutBtn?.addEventListener('click', async () => { if (sb) await sb.auth.signOut(); });
+
+// Idle timeout — resets on user activity
+(function idleGuard(){
+  if (!sb) return; // skip if no auth
+  let timer = null;
+  function reset(){ clearTimeout(timer); timer = setTimeout(() => sb.auth.signOut(), IDLE_MS); }
+  ['click','mousemove','keydown','touchstart'].forEach(evt => window.addEventListener(evt, reset, { passive: true }));
+  reset();
+})();
+
+/* =========================
+   CONFIG (Edge Function URLs)
 ========================= */
 const FUNCTION_URL = 'https://jmqvkgiqlimdhcofwkxr.supabase.co/functions/v1/resend-email';
 const LIST_URL     = 'https://jmqvkgiqlimdhcofwkxr.supabase.co/functions/v1/clever-endpoint';
 
-// If your Edge Functions have Verify JWT = ON, either:
-//  1) set SUPABASE_ANON_KEY to your public anon key (dev only), OR
-//  2) include @supabase/supabase-js and sign users in, then we send their session token.
-const SUPABASE_URL     = '';  // optional, only if you use Supabase Auth on the client
-const SUPABASE_ANON_KEY = ''; // leave '' if your function is public (Verify JWT OFF)
+// Legacy compatibility (used by authHeader fallback)
+const SUPABASE_URL      = SB_URL || '';
+const SUPABASE_ANON_KEY = SB_ANON || '';
 
 const OUTBOX_KEY = 'ywi_outbox_v1';
 
@@ -43,24 +105,17 @@ function ensureTBody(tableId) {
   return tb;
 }
 
-function getOutbox() {
-  try { return JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]'); }
-  catch { return []; }
-}
+function getOutbox() { try { return JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]'); } catch { return []; } }
 function setOutbox(list) { localStorage.setItem(OUTBOX_KEY, JSON.stringify(list)); }
 
-// Build Authorization header:
-//  - prefer Supabase Auth session token if available
-//  - else use SUPABASE_ANON_KEY if set
+// Build Authorization header from current session token (or anon key)
 async function authHeader() {
-  // optional: use supabase-js if present
-  if (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase?.createClient) {
-    try {
-      const sb = window._sb || (window._sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY));
+  try {
+    if (sb) {
       const { data: { session } } = await sb.auth.getSession();
       if (session?.access_token) return { Authorization: `Bearer ${session.access_token}` };
-    } catch { /* ignore */ }
-  }
+    }
+  } catch {/* ignore */}
   if (SUPABASE_ANON_KEY) return { Authorization: `Bearer ${SUPABASE_ANON_KEY}` };
   return {}; // public function
 }
@@ -73,25 +128,17 @@ async function jsonFetch(url, { method='POST', headers={}, body=null }={}) {
     body: body && (typeof body === 'string' ? body : JSON.stringify(body))
   });
   const text = await res.text();
-  if (!res.ok) {
-    console.error('HTTP error', res.status, text);
-    throw new Error(`HTTP ${res.status}: ${text}`);
-  }
+  if (!res.ok) { console.error('HTTP error', res.status, text); throw new Error(`HTTP ${res.status}: ${text}`); }
   try { return JSON.parse(text); } catch { return text; }
 }
 
-async function sendToFunction(formType, payload) {
-  return jsonFetch(FUNCTION_URL, { body: { formType, payload } });
-}
+async function sendToFunction(formType, payload) { return jsonFetch(FUNCTION_URL, { body: { formType, payload } }); }
 
 async function flushOutbox() {
   const outbox = getOutbox();
   if (!outbox.length) { alert('Outbox is empty.'); return; }
   const remaining = [];
-  for (const item of outbox) {
-    try { await sendToFunction(item.formType, item.payload); }
-    catch (e) { console.warn('Outbox send failed for item', e); remaining.push(item); }
-  }
+  for (const item of outbox) { try { await sendToFunction(item.formType, item.payload); } catch (e) { console.warn('Outbox send failed', e); remaining.push(item); } }
   setOutbox(remaining);
   alert(remaining.length ? `Some failed, ${remaining.length} left.` : 'All queued submissions sent.');
 }
@@ -155,10 +202,8 @@ attendeesTableBody?.addEventListener('click', (e) => {
   if (act === 'clear' && rowId) { const pad = sigPads.get(rowId); if (pad?.clear) pad.clear(); }
 });
 
-// default two rows
 if (attendeesTableBody && attendeesTableBody.children.length === 0) { addAttendeeRow(); addAttendeeRow(); }
 
-// submit
  tbForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
   const site   = $('#tb_site')?.value?.trim?.() || '';
@@ -218,20 +263,14 @@ function ppeRowTemplate() {
     <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
   `;
 }
-function addPPERow() {
-  if (!ppeTableBody) return;
-  const tr = document.createElement('tr');
-  tr.innerHTML = ppeRowTemplate();
-  ppeTableBody.appendChild(tr);
-}
+function addPPERow() { if (!ppeTableBody) return; const tr = document.createElement('tr'); tr.innerHTML = ppeRowTemplate(); ppeTableBody.appendChild(tr); }
 
 ppeAddRowBtn?.addEventListener('click', addPPERow);
 if (ppeTableBody && ppeTableBody.children.length === 0) { addPPERow(); addPPERow(); }
 
 ppeTableBody?.addEventListener('click', (e) => {
   const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
-  if (!btn) return;
-  if (btn.dataset.act === 'remove') btn.closest('tr')?.remove();
+  if (!btn) return; if (btn.dataset.act === 'remove') btn.closest('tr')?.remove();
 });
 
 ppeForm?.addEventListener('submit', async (e) => {
@@ -255,9 +294,7 @@ ppeForm?.addEventListener('submit', async (e) => {
     }
   })).filter(r => r.name);
 
-  const nonCompliant = roster.some(r =>
-    !r.items.shoes || !r.items.vest || !r.items.plugs || !r.items.goggles || !r.items.muffs || !r.items.gloves
-  );
+  const nonCompliant = roster.some(r => !r.items.shoes || !r.items.vest || !r.items.plugs || !r.items.goggles || !r.items.muffs || !r.items.gloves);
 
   const payload = { site, date, checked_by: checker, roster, nonCompliant };
   try {
@@ -298,16 +335,10 @@ if (faTableBody && faTableBody.children.length === 0) { addItemRow(); addItemRow
 
 faTableBody?.addEventListener('click', (e) => {
   const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
-  if (!btn) return;
-  if (btn.dataset.act === 'remove') btn.closest('tr')?.remove();
+  if (!btn) return; if (btn.dataset.act === 'remove') btn.closest('tr')?.remove();
 });
 
-function within30Days(iso) {
-  if (!iso) return false;
-  const now = new Date();
-  const d = new Date(iso);
-  return ((d.getTime() - now.getTime()) / 86400000) <= 30;
-}
+function within30Days(iso) { if (!iso) return false; const now = new Date(); const d = new Date(iso); return ((d.getTime() - now.getTime()) / 86400000) <= 30; }
 
 faForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -438,18 +469,13 @@ inspForm?.addEventListener('submit', async (e) => {
     completed_date: tr.querySelector('.hz-donedate')?.value || null
   })).filter(h => h.hazard) : [];
 
-  // derive approver name
   let approver_name = inspApprover ? inspApprover.value : '';
   if (approver_name === 'Other') {
     const v = (inspApproverOther && inspApproverOther.value.trim()) || '';
     if (!v) { alert('Please type the approver name.'); return; }
     approver_name = v;
   }
-  // require a signature
-  if (!inspSigPad || (inspSigPad.isEmpty && inspSigPad.isEmpty())) {
-    alert('HSE approval signature is required.');
-    return;
-  }
+  if (!inspSigPad || (inspSigPad.isEmpty && inspSigPad.isEmpty())) { alert('HSE approval signature is required.'); return; }
   const approver_signature_png = (inspSigPad && inspSigPad.toDataURL) ? inspSigPad.toDataURL('image/png') : null;
 
   const openHazards = hazards.some(h => !h.completed);
@@ -479,7 +505,7 @@ $('#dr_date') && ($('#dr_date').value = todayISO());
 const drRosterBody = ensureTBody('drRoster');
 const drAddPartBtn = $('#drAddPart');
 
-const drSigPads = new Map(); // optional per-participant signatures
+const drSigPads = new Map();
 let drRowCount = 0;
 
 function addDrillParticipantRow() {
@@ -632,18 +658,14 @@ function toCSV(rows){
   const header = ['id','date','form_type','site','summary'];
   const lines = [header.join(',')];
   const esc = v => '"' + String(v).replaceAll('"','""') + '"';
-  rows.forEach(r => {
-    const row = [r.id, (r.date||'').slice(0,10), r.form_type, r.site||'', fmtSummary(r)];
-    lines.push(row.map(esc).join(','));
-  });
-  return lines.join('\n');
+  rows.forEach(r => { const row = [r.id, (r.date||'').slice(0,10), r.form_type, r.site||'', fmtSummary(r)]; lines.push(row.map(esc).join(',')); });
+  return lines.join('
+');
 }
 
 if (lgLoad && !lgLoad.dataset.bound) {
   lgLoad.dataset.bound = '1';
-  lgLoad.addEventListener('click', async ()=>{
-    try { await fetchLog(); } catch(e){ console.error(e); alert('Failed to load log.'); }
-  });
+  lgLoad.addEventListener('click', async ()=>{ try { await fetchLog(); } catch(e){ console.error(e); alert('Failed to load log.'); } });
 }
 
 lgExport?.addEventListener('click', ()=>{
