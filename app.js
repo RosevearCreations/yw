@@ -13,9 +13,10 @@
 ========================= */
 // 1) Put your real project creds here and include supabase-js in index.html:
 // <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-const SB_URL  = '';
-const SB_ANON = '';
-
+// const SB_URL  = '';
+// const SB_ANON = '';
+const SB_URL  = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
+const SB_ANON = 'SUPABASE_ANON_KEY';
 // 2) Optional: idle auto‑logout (ms)
 const IDLE_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -676,3 +677,4 @@ lgExport?.addEventListener('click', ()=>{
   const a = document.createElement('a'); a.href = url; a.download = 'ywi-log.csv'; a.click();
   setTimeout(()=> URL.revokeObjectURL(url), 1000);
 });
+
