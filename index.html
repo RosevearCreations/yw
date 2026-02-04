@@ -56,6 +56,16 @@
       <a href="#log">Logbook</a>
     </nav>
   </header>
+<div id="authBox" class="auth">
+  <form id="loginForm">
+    <input type="email" id="loginEmail" placeholder="work email" required />
+    <button type="submit">Send sign-in link</button>
+  </form>
+  <div id="authInfo" hidden>
+    <span id="whoami"></span>
+    <button id="logoutBtn" type="button">Logout</button>
+  </div>
+</div>
 
   <main class="container">
     <!-- ============================= -->
@@ -453,3 +463,4 @@
   </script>
 </body>
 </html>
+
