@@ -1,3 +1,6 @@
+
+const SB_URL  = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
+const SB_ANON = 'SUPABASE_ANON_KEY';
 /* =====================================================
    YWI HSE — app.js (secure v3)
    - Auth bootstrap: email magic‑link login, logout, idle timeout
@@ -13,10 +16,8 @@
 ========================= */
 // 1) Put your real project creds here and include supabase-js in index.html:
 // <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-// const SB_URL  = '';
-// const SB_ANON = '';
-const SB_URL  = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
-const SB_ANON = 'SUPABASE_ANON_KEY';
+
+
 // 2) Optional: idle auto‑logout (ms)
 const IDLE_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -516,22 +517,22 @@ function addDrillParticipantRow() {
   const tr = document.createElement('tr');
   tr.dataset.rowId = id;
   tr.innerHTML = `
-    <td><input type=\"text\" class=\"dr-name\" placeholder=\"Full name\" required></td>
+    <td><input type="text" class="dr-name" placeholder="Full name" required></td>
     <td>
-      <select class=\"dr-role\"> 
-        <option value=\"worker\">Worker</option>
-        <option value=\"foreman\">Foreman</option>
-        <option value=\"supervisor\">Supervisor</option>
-        <option value=\"visitor\">Visitor</option>
+      <select class="dr-role">
+        <option value="worker">Worker</option>
+        <option value="foreman">Foreman</option>
+        <option value="supervisor">Supervisor</option>
+        <option value="visitor">Visitor</option>
       </select>
     </td>
     <td>
-      <div class=\"canvas-wrap\">
-        <canvas id=\"${id}_canvas\" width=\"600\" height=\"140\"></canvas>
-        <div class=\"controls\"><button type=\"button\" data-act=\"clear\">Clear</button></div>
+      <div class="canvas-wrap">
+        <canvas id="${id}_canvas" width="600" height="140"></canvas>
+        <div class="controls"><button type="button" data-act="clear">Clear</button></div>
       </div>
     </td>
-    <td><div class=\"controls\"><button type=\"button\" data-act=\"remove\">Remove</button></div></td>
+    <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
   `;
   drRosterBody.appendChild(tr);
 
@@ -678,3 +679,16 @@ lgExport?.addEventListener('click', ()=>{
   setTimeout(()=> URL.revokeObjectURL(url), 1000);
 });
 
+// ---- Ensure tables always have starter rows when visible
+function seedAllTables() {
+  if (typeof addAttendeeRow === 'function' && attendeesTableBody && attendeesTableBody.children.length === 0) { addAttendeeRow(); addAttendeeRow(); }
+  if (typeof addPPERow === 'function' && ppeTableBody && ppeTableBody.children.length === 0) { addPPERow(); addPPERow(); }
+  if (typeof addItemRow === 'function' && faTableBody && faTableBody.children.length === 0) { addItemRow(); addItemRow(); }
+  if (typeof addInspWorkerRow === 'function' && inspRosterBody && inspRosterBody.children.length === 0) { addInspWorkerRow(); }
+  if (typeof addInspHazardRow === 'function' && inspHazBody && inspHazBody.children.length === 0) { addInspHazardRow(); }
+  if (typeof addDrillParticipantRow === 'function' && drRosterBody && drRosterBody.children.length === 0) { addDrillParticipantRow(); addDrillParticipantRow(); }
+}
+
+document.addEventListener('DOMContentLoaded', () => setTimeout(seedAllTables, 0));
+window.addEventListener('hashchange', () => setTimeout(seedAllTables, 0));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(seedAllTables, 0); });
