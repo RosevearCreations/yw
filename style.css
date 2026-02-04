@@ -87,3 +87,12 @@ th:last-child, td:last-child{width:110px;}
 .controls{display:flex; gap:8px;}
 .actions{margin:.25rem 0 .5rem;}
 .help{color:var(--muted); font-size:.9rem;}
+
+/* TEMP: disable sticky headers so first data row is visible */
+table thead th { position: static !important; }
+
+/* Be explicit for the PPE table */
+#ppeTable tbody tr:first-child { display: table-row !important; }
+
+/* Keep signature canvases readable */
+.canvas-wrap canvas { background: #fff; }
