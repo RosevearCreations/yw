@@ -1,4 +1,4 @@
-const SB_URL  = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
+//const SB_URL  = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
 const SB_ANON = 'SB_ANON_PUBLISHABLE'; // TODO: replace with your real anon key if Functions require JWT
 /* =====================================================
    YWI HSE — app.js (secure v3)
@@ -693,4 +693,5 @@ document.addEventListener('DOMContentLoaded', () => setTimeout(seedAllTables, 0)
 window.addEventListener('hashchange', () => setTimeout(seedAllTables, 0));
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(seedAllTables, 0); });
 window.addEventListener('load', () => setTimeout(seedAllTables, 0));
+
 
