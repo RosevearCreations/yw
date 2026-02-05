@@ -3,32 +3,32 @@
 /* ===================================================================
    YWI HSE — app.js (secure v5)
    - Supabase auth (magic link), logout, idle auto-logout
-   - Strip auth fragments (#access_token=...) before router sees them
-   - JWT to Edge Functions via Authorization header with 401 retry
+   - Session persists across reloads; scrub #access_token after parsed
+   - JWT to Edge Functions via Authorization header
    - Outbox for offline retries
    - Forms: E (Toolbox), D (PPE), B (First Aid), C (Inspection), A (Drill)
    - Logbook loader + CSV export
    - Starter-row seeding on visibility / navigation
    - Date input fallback if unsupported
+   - Router crash shield when hash contains access_token
 =================================================================== */
 
 /* =========================
    AUTH / PROJECT SETTINGS
 ========================= */
-// Your Supabase project URL and **publishable** key:
+// Replace with YOUR project values:
 const SB_URL  = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
-const SB_ANON = 'sb_publishable_Xyg1zQU9_vsAaME9BeHm_w_RRgtPs_e'; // publishable key
+const SB_ANON = 'sb_publishable_Xyg1zQU9_vsAaME9BeHm_w_RRgtPs_e';  // Supabase "publishable" anon key
 
-// Idle auto-logout (ms). Set 0 to disable.
+// Optional idle auto-logout (ms). Set to 0 to disable.
 const IDLE_MS = 30 * 60 * 1000;
 
-if (!SB_URL.startsWith('https://') || !SB_ANON || !SB_ANON.startsWith('sb_publishable_')) {
-  console.warn('Supabase not configured with a publishable key — auth will not work.');
+if (!SB_URL.startsWith('https://') || !SB_ANON) {
+  console.warn('Supabase not configured: UI will show but auth won’t work.');
 }
 
 /* =========================
    EDGE FUNCTION ENDPOINTS
-   https://jmqvkgiqlimdhcofwkxr.supabase.co/functions/v1/resend-email
 ========================= */
 const FUNCTION_URL = `${SB_URL}/functions/v1/resend-email`;
 const LIST_URL     = `${SB_URL}/functions/v1/clever-endpoint`;
@@ -40,9 +40,27 @@ const OUTBOX_KEY = 'ywi_outbox_v1';
 
 let sb = null;
 if (window.supabase && SB_URL && SB_ANON) {
-  sb = window.supabase.createClient(SB_URL, SB_ANON);
+  sb = window.supabase.createClient(SB_URL, SB_ANON, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true, // parse #access_token on first load
+    },
+  });
   window._sb = sb;
 }
+
+/* ============================================
+   ROUTER CRASH SHIELD for #access_token hashes
+   (prevents invalid CSS selector exceptions)
+============================================ */
+(function patchQuerySelectorForAuthHash(){
+  const orig = Document.prototype.querySelector;
+  Document.prototype.querySelector = function(sel){
+    if (typeof sel === 'string' && sel.includes('#access_token=')) return null;
+    try { return orig.call(this, sel); } catch { return null; }
+  };
+})();
 
 /* =========================
    DOM SHORTCUTS
@@ -78,37 +96,38 @@ function setOutbox(list) { localStorage.setItem(OUTBOX_KEY, JSON.stringify(list)
    AUTH UI BINDINGS
 ========================= */
 const mainEl     = $('main.container');
-const loginView  = $('#loginView');      // wrapper for login section
-const loginForm  = $('#loginForm');
+const loginView  = $('#loginView');      // wrapper for login UI
+const loginForm  = $('#loginForm');      // the actual <form>
 const emailInput = $('#loginEmail');
 const authInfo   = $('#authInfo');
 const whoami     = $('#whoami');
 const logoutBtn  = $('#logoutBtn');
 
-/* Strip Supabase auth fragments so the router doesn't see them */
+// Clean the URL after Supabase has parsed the token
 function scrubAuthHash() {
-  const h = location.hash || '';
-  // Known fragments Supabase may add after magic-link / OAuth
-  const looksLikeAuth =
+  if (!location.hash) return;
+  const h = location.hash;
+  if (
     h.startsWith('#access_token=') ||
-    h.startsWith('#error=') ||
-    h.startsWith('#type=') ||
-    h.startsWith('#code=');
-
-  if (looksLikeAuth) {
-    // Keep the user on whatever section you prefer after login
+    h.startsWith('#id_token=')     ||
+    h.includes('type=signup')      ||
+    h.includes('type=recovery')    ||
+    h.includes('refresh_token=')
+  ) {
+    // Default to toolbox after sign-in
     history.replaceState(null, '', '#toolbox');
   }
 }
 
 async function renderByAuth() {
+  // If no Supabase client, show the app (public mode)
   if (!sb) {
     if (mainEl) mainEl.style.display = 'block';
     if (loginView) loginView.style.display = 'none';
     if (authInfo) authInfo.hidden = true;
     return;
   }
-  // Make sure supabase processed the auth fragment before we render
+
   const { data: { session } } = await sb.auth.getSession();
   const authed = !!session;
 
@@ -117,13 +136,15 @@ async function renderByAuth() {
   if (authInfo)    authInfo.hidden         = !authed;
   if (whoami)      whoami.textContent      = authed ? (session.user.email || session.user.id) : '';
 
+  // When we become visible, make sure tables are seeded
   if (authed) seedAllTables();
 }
 
 if (sb) {
-  sb.auth.onAuthStateChange(() => {
-    // If a new session arrives, make sure the URL is clean and re-render
-    scrubAuthHash();
+  sb.auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      scrubAuthHash(); // now safe to clean URL
+    }
     renderByAuth();
   });
 
@@ -145,9 +166,11 @@ loginForm?.addEventListener('submit', async (e) => {
   if (!sb) return alert('Auth client not loaded.');
   const email = (emailInput?.value || '').trim();
   if (!email) return;
+
+  const redirect = window.location.origin + '/#toolbox';
   const { error } = await sb.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: window.location.origin + '/#toolbox' }
+    options: { emailRedirectTo: redirect }
   });
   if (error) alert('Login error: ' + error.message);
   else alert('Check your email for the sign-in link.');
@@ -159,33 +182,25 @@ logoutBtn?.addEventListener('click', async () => { if (sb) await sb.auth.signOut
    AUTH HEADERS & FETCH
 ========================= */
 async function authHeader() {
+  // Prefer a real session token
   try {
     if (sb) {
       const { data: { session } } = await sb.auth.getSession();
       if (session?.access_token) return { Authorization: `Bearer ${session.access_token}` };
     }
   } catch {/* ignore */}
-  // Fallback to publishable key (for public functions / dev)
+  // Fallback to anon key (public functions / dev)
   if (SB_ANON) return { Authorization: `Bearer ${SB_ANON}` };
   return {};
 }
 
-// Fetch with one 401 retry after reloading session
 async function jsonFetch(url, { method = 'POST', headers = {}, body = null } = {}) {
-  const doFetch = async () => {
-    const auth = await authHeader();
-    return fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json', ...auth, ...headers },
-      body: body && (typeof body === 'string' ? body : JSON.stringify(body))
-    });
-  };
-  let res = await doFetch();
-  if (res.status === 401 && sb) {
-    // Refresh session and retry once
-    await sb.auth.getSession();
-    res = await doFetch();
-  }
+  const auth = await authHeader();
+  const res = await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json', ...auth, ...headers },
+    body: body && (typeof body === 'string' ? body : JSON.stringify(body))
+  });
   const text = await res.text();
   if (!res.ok) {
     console.error('HTTP error', res.status, text);
@@ -293,7 +308,6 @@ attendeesTableBody?.addEventListener('click', (e) => {
   if (act === 'clear' && rowId) { const pad = sigPads.get(rowId); if (pad?.clear) pad.clear(); }
 });
 
-// Default rows
 function seedToolbox() {
   if (attendeesTableBody && attendeesTableBody.children.length === 0) { addAttendeeRow(); addAttendeeRow(); }
 }
@@ -469,8 +483,7 @@ faForm?.addEventListener('submit', async (e) => {
     return { name, quantity: qty, min, expiry: exp };
   }).filter(i => i.name);
 
-  const flagged = items.some(i =>
-    (i.quantity <= (i.min || 0)) ||
+  const flagged = items.some(i => (i.quantity <= (i.min || 0)) ||
     (i.expiry && (within30Days(i.expiry) || (new Date(i.expiry) < new Date())))
   );
 
@@ -589,12 +602,14 @@ inspForm?.addEventListener('submit', async (e) => {
     completed_date: tr.querySelector('.hz-donedate')?.value || null
   })).filter(h => h.hazard) : [];
 
+  // Approver name
   let approver_name = inspApprover ? inspApprover.value : '';
   if (approver_name === 'Other') {
     const v = (inspApproverOther && inspApproverOther.value.trim()) || '';
     if (!v) { alert('Please type the approver name.'); return; }
     approver_name = v;
   }
+  // Require a signature
   if (!inspSigPad || (inspSigPad.isEmpty && inspSigPad.isEmpty())) {
     alert('HSE approval signature is required.');
     return;
@@ -768,7 +783,7 @@ function renderRows(rows){
 
 async function fetchLog(){
   const body = {
-    site: (lgSite && lgSite.value.trim()) || undefined,
+    site: (lgSite && lgSite.value?.trim?.()) || undefined,
     formType: (lgForm && lgForm.value) || undefined,
     from: (lgFrom && lgFrom.value) || undefined,
     to: (lgTo && lgTo.value) || undefined,
@@ -822,20 +837,17 @@ function seedAllTables() {
    BOOTSTRAP
 ========================= */
 document.addEventListener('DOMContentLoaded', async () => {
-  // 1) Clean up auth fragments so the router won't choke
-  scrubAuthHash();
-
-  // 2) Make sure Supabase has processed the hash (sets the session)
-  if (sb) await sb.auth.getSession();
-
-  // 3) Then render UI and seed tables
+  if (sb) {
+    // Let Supabase read the hash and persist the session, then scrub.
+    await sb.auth.getSession();
+    scrubAuthHash();
+  }
   applyDateFallback();
-  renderByAuth();
+  renderByAuth();          // shows login or app
+  // Also seed on initial load; renderByAuth will seed again when authed
   seedAllTables();
 });
-
 window.addEventListener('hashchange', () => setTimeout(seedAllTables, 0));
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') setTimeout(seedAllTables, 0);
 });
-
