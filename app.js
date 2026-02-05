@@ -2,10 +2,9 @@
 
 /* ===================================================================
    YWI HSE — app.js (secure v5)
-   - Supabase auth (magic link) with persistent sessions
-   - Auto-consume magic-link tokens + clean URL
-   - Logout + optional idle auto-logout
-   - JWT to Edge Functions via Authorization header
+   - Supabase auth (magic link), logout, idle auto-logout
+   - Strip auth fragments (#access_token=...) before router sees them
+   - JWT to Edge Functions via Authorization header with 401 retry
    - Outbox for offline retries
    - Forms: E (Toolbox), D (PPE), B (First Aid), C (Inspection), A (Drill)
    - Logbook loader + CSV export
@@ -16,12 +15,16 @@
 /* =========================
    AUTH / PROJECT SETTINGS
 ========================= */
+// Your Supabase project URL and **publishable** key:
 const SB_URL  = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
-/** ⬇️  PASTE your real anon PUBLIC key from Settings → API (starts with eyJ...) */
-const SB_ANON = 'sb_publishable_Xyg1zQU9_vsAaME9BeHm_w_RRgtPs_e';
+const SB_ANON = 'sb_publishable_Xyg1zQU9_vsAaME9BeHm_w_RRgtPs_e'; // publishable key
 
-/** Idle auto-logout: set to 0 to disable */
+// Idle auto-logout (ms). Set 0 to disable.
 const IDLE_MS = 30 * 60 * 1000;
+
+if (!SB_URL.startsWith('https://') || !SB_ANON || !SB_ANON.startsWith('sb_publishable_')) {
+  console.warn('Supabase not configured with a publishable key — auth will not work.');
+}
 
 /* =========================
    EDGE FUNCTION ENDPOINTS
@@ -35,18 +38,9 @@ const LIST_URL     = `${SB_URL}/functions/v1/clever-endpoint`;
 const OUTBOX_KEY = 'ywi_outbox_v1';
 
 let sb = null;
-if (window.supabase && SB_URL && SB_ANON && SB_ANON.startsWith('sb_')) {
-  sb = window.supabase.createClient(SB_URL, SB_ANON, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      storageKey: 'ywi-auth'
-    }
-  });
+if (window.supabase && SB_URL && SB_ANON) {
+  sb = window.supabase.createClient(SB_URL, SB_ANON);
   window._sb = sb;
-} else {
-  console.warn('Supabase not fully configured. Auth will not work until SB_ANON is the real anon public key (sb_...).');
 }
 
 /* =========================
@@ -83,59 +77,73 @@ function setOutbox(list) { localStorage.setItem(OUTBOX_KEY, JSON.stringify(list)
    AUTH UI BINDINGS
 ========================= */
 const mainEl     = $('main.container');
-const loginCard  = $('#loginCard');     // matches your index.html
+const loginView  = $('#loginView');      // wrapper for login section
 const loginForm  = $('#loginForm');
 const emailInput = $('#loginEmail');
 const authInfo   = $('#authInfo');
 const whoami     = $('#whoami');
 const logoutBtn  = $('#logoutBtn');
-const loginBtn   = loginForm?.querySelector('button[type="submit"]');
 
-function showAuthed(session){
-  if (mainEl)   mainEl.style.display = 'block';
-  if (loginCard) loginCard.style.display = 'none';
-  if (authInfo) authInfo.hidden = false;
-  if (whoami)   whoami.textContent = session?.user?.email || session?.user?.id || '';
-}
-
-function showLogin(){
-  if (mainEl)   mainEl.style.display = 'none';
-  if (loginCard) loginCard.style.display = 'block';
-  if (authInfo) authInfo.hidden = true;
-}
-
-function cleanAuthHash() {
-  // After magic-link redirect, remove token noise but keep your route
+/* Strip Supabase auth fragments so the router doesn't see them */
+function scrubAuthHash() {
   const h = location.hash || '';
-  if (/(access_token|refresh_token|type=recovery)/i.test(h)) {
-    history.replaceState({}, '', location.origin + location.pathname + '#toolbox');
+  // Known fragments Supabase may add after magic-link / OAuth
+  const looksLikeAuth =
+    h.startsWith('#access_token=') ||
+    h.startsWith('#error=') ||
+    h.startsWith('#type=') ||
+    h.startsWith('#code=');
+
+  if (looksLikeAuth) {
+    // Keep the user on whatever section you prefer after login
+    history.replaceState(null, '', '#toolbox');
   }
 }
 
-async function bootAuth(){
-  if (!sb) { showLogin(); return; }
-  // detectSessionInUrl:true will auto-set the session if we just came from a magic link
+async function renderByAuth() {
+  if (!sb) {
+    if (mainEl) mainEl.style.display = 'block';
+    if (loginView) loginView.style.display = 'none';
+    if (authInfo) authInfo.hidden = true;
+    return;
+  }
+  // Make sure supabase processed the auth fragment before we render
   const { data: { session } } = await sb.auth.getSession();
-  if (session) { cleanAuthHash(); showAuthed(session); }
-  else { showLogin(); }
+  const authed = !!session;
+
+  if (mainEl)      mainEl.style.display    = authed ? 'block' : 'none';
+  if (loginView)   loginView.style.display = authed ? 'none'  : 'block';
+  if (authInfo)    authInfo.hidden         = !authed;
+  if (whoami)      whoami.textContent      = authed ? (session.user.email || session.user.id) : '';
+
+  if (authed) seedAllTables();
 }
 
-sb?.auth.onAuthStateChange((_event, session) => {
-  if (session) showAuthed(session); else showLogin();
-  // seed rows once authed so you immediately see inputs
-  if (session) seedAllTables();
-});
+if (sb) {
+  sb.auth.onAuthStateChange(() => {
+    // If a new session arrives, make sure the URL is clean and re-render
+    scrubAuthHash();
+    renderByAuth();
+  });
 
-/** Login (magic link) */
+  // Idle auto-logout
+  if (IDLE_MS > 0) {
+    (function idleGuard(){
+      let timer = null;
+      function reset(){ clearTimeout(timer); timer = setTimeout(() => sb.auth.signOut(), IDLE_MS); }
+      ['click','mousemove','keydown','touchstart','scroll'].forEach(evt =>
+        window.addEventListener(evt, reset, { passive: true })
+      );
+      reset();
+    })();
+  }
+}
+
 loginForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
   if (!sb) return alert('Auth client not loaded.');
   const email = (emailInput?.value || '').trim();
   if (!email) return;
-
-  // simple rate-limit guard to avoid OTP spam
-  if (loginBtn) { loginBtn.disabled = true; setTimeout(()=> loginBtn.disabled = false, 65000); }
-
   const { error } = await sb.auth.signInWithOtp({
     email,
     options: { emailRedirectTo: window.location.origin + '/#toolbox' }
@@ -146,39 +154,37 @@ loginForm?.addEventListener('submit', async (e) => {
 
 logoutBtn?.addEventListener('click', async () => { if (sb) await sb.auth.signOut(); });
 
-/** Optional idle auto-logout */
-if (sb && IDLE_MS > 0) {
-  (function idleGuard(){
-    let timer = null;
-    function reset(){ clearTimeout(timer); timer = setTimeout(() => sb.auth.signOut(), IDLE_MS); }
-    ['click','mousemove','keydown','touchstart','scroll'].forEach(evt =>
-      window.addEventListener(evt, reset, { passive: true })
-    );
-    reset();
-  })();
-}
-
 /* =========================
    AUTH HEADERS & FETCH
 ========================= */
 async function authHeader() {
   try {
     if (sb) {
-      const { data: { session} } = await sb.auth.getSession();
+      const { data: { session } } = await sb.auth.getSession();
       if (session?.access_token) return { Authorization: `Bearer ${session.access_token}` };
     }
-  } catch { /* ignore */ }
-  if (SB_ANON && SB_ANON.startsWith('eyJ')) return { Authorization: `Bearer ${SB_ANON}` };
+  } catch {/* ignore */}
+  // Fallback to publishable key (for public functions / dev)
+  if (SB_ANON) return { Authorization: `Bearer ${SB_ANON}` };
   return {};
 }
 
+// Fetch with one 401 retry after reloading session
 async function jsonFetch(url, { method = 'POST', headers = {}, body = null } = {}) {
-  const auth = await authHeader();
-  const res = await fetch(url, {
-    method,
-    headers: { 'Content-Type': 'application/json', ...auth, ...headers },
-    body: body && (typeof body === 'string' ? body : JSON.stringify(body))
-  });
+  const doFetch = async () => {
+    const auth = await authHeader();
+    return fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json', ...auth, ...headers },
+      body: body && (typeof body === 'string' ? body : JSON.stringify(body))
+    });
+  };
+  let res = await doFetch();
+  if (res.status === 401 && sb) {
+    // Refresh session and retry once
+    await sb.auth.getSession();
+    res = await doFetch();
+  }
   const text = await res.text();
   if (!res.ok) {
     console.error('HTTP error', res.status, text);
@@ -286,9 +292,41 @@ attendeesTableBody?.addEventListener('click', (e) => {
   if (act === 'clear' && rowId) { const pad = sigPads.get(rowId); if (pad?.clear) pad.clear(); }
 });
 
+// Default rows
 function seedToolbox() {
   if (attendeesTableBody && attendeesTableBody.children.length === 0) { addAttendeeRow(); addAttendeeRow(); }
 }
+seedToolbox();
+
+tbForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const site   = $('#tb_site')?.value?.trim?.() || '';
+  const date   = $('#tb_date')?.value || '';
+  const leader = $('#tb_leader')?.value?.trim?.() || '';
+  const notes  = $('#tb_topics')?.value?.trim?.() || '';
+  if (!site || !date || !leader) { alert('Please fill Site, Date, and Discussion Leader.'); return; }
+
+  const rows = attendeesTableBody ? Array.from(attendeesTableBody.querySelectorAll('tr')) : [];
+  const attendees = rows.map(tr => {
+    const name = tr.querySelector('.att-name')?.value?.trim?.() || '';
+    const role = tr.querySelector('.att-role')?.value || 'worker';
+    const rowId = tr.dataset.rowId;
+    const pad = rowId ? sigPads.get(rowId) : null;
+    const signed = pad && typeof pad.isEmpty === 'function' ? !pad.isEmpty() : false;
+    return { name, role_on_site: role, signature_png: signed && pad?.toDataURL ? pad.toDataURL('image/png') : null };
+  }).filter(a => a.name);
+
+  const payload = { site, date, submitted_by: leader, topic_notes: notes, attendees };
+  try {
+    await sendToFunction('E', payload);
+    alert('Toolbox submitted. Email sent.');
+    tbForm.reset();
+    if (attendeesTableBody) { attendeesTableBody.innerHTML = ''; sigPads.clear(); seedToolbox(); }
+  } catch (err) {
+    const out = getOutbox(); out.push({ ts: Date.now(), formType: 'E', payload }); setOutbox(out);
+    alert('Offline/server error. Saved to Outbox.');
+  }
+});
 
 /* =========================
    FORM D — PPE CHECK
@@ -328,11 +366,50 @@ function addPPERow() {
 function seedPPE() {
   if (ppeTableBody && ppeTableBody.children.length === 0) { addPPERow(); addPPERow(); }
 }
+seedPPE();
+
 ppeAddRowBtn?.addEventListener('click', addPPERow);
 ppeTableBody?.addEventListener('click', (e) => {
   const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
   if (!btn) return;
   if (btn.dataset.act === 'remove') btn.closest('tr')?.remove();
+});
+
+ppeForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const site    = $('#ppe_site')?.value?.trim?.() || '';
+  const date    = $('#ppe_date')?.value || '';
+  const checker = $('#ppe_checker')?.value?.trim?.() || '';
+  if (!site || !date || !checker) { alert('Please fill Site, Date, and Checked By.'); return; }
+
+  const rows = ppeTableBody ? Array.from(ppeTableBody.querySelectorAll('tr')) : [];
+  const roster = rows.map(tr => ({
+    name: tr.querySelector('.ppe-name')?.value?.trim?.() || '',
+    role_on_site: tr.querySelector('.ppe-role')?.value || 'worker',
+    items: {
+      shoes:   !!tr.querySelector('.ppe-shoes')?.checked,
+      vest:    !!tr.querySelector('.ppe-vest')?.checked,
+      plugs:   !!tr.querySelector('.ppe-plugs')?.checked,
+      goggles: !!tr.querySelector('.ppe-goggles')?.checked,
+      muffs:   !!tr.querySelector('.ppe-muffs')?.checked,
+      gloves:  !!tr.querySelector('.ppe-gloves')?.checked,
+    }
+  })).filter(r => r.name);
+
+  const nonCompliant = roster.some(r =>
+    !r.items.shoes || !r.items.vest || !r.items.plugs || !r.items.goggles || !r.items.muffs || !r.items.gloves
+  );
+
+  const payload = { site, date, checked_by: checker, roster, nonCompliant };
+  try {
+    const resp = await sendToFunction('D', payload);
+    alert(resp && resp.emailed ? 'Submitted. Non-compliance emailed.' : 'Submitted.');
+    ppeForm.reset();
+    if (ppeTableBody) { ppeTableBody.innerHTML = ''; seedPPE(); }
+  } catch (err) {
+    const out = getOutbox(); out.push({ ts: Date.now(), formType: 'D', payload }); setOutbox(out);
+    alert('Offline/server error. Saved to Outbox.');
+  }
 });
 
 /* =========================
@@ -359,18 +436,54 @@ function addItemRow() {
 function seedFirstAid() {
   if (faTableBody && faTableBody.children.length === 0) { addItemRow(); addItemRow(); }
 }
+seedFirstAid();
+
 faAddRowBtn?.addEventListener('click', addItemRow);
 faTableBody?.addEventListener('click', (e) => {
   const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
   if (!btn) return;
   if (btn.dataset.act === 'remove') btn.closest('tr')?.remove();
 });
+
 function within30Days(iso) {
   if (!iso) return false;
   const now = new Date();
   const d = new Date(iso);
   return ((d.getTime() - now.getTime()) / 86400000) <= 30;
 }
+
+faForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const site    = $('#fa_site')?.value?.trim?.() || '';
+  const date    = $('#fa_date')?.value || '';
+  const checker = $('#fa_checker')?.value?.trim?.() || '';
+  if (!site || !date || !checker) { alert('Please fill Site, Date, and Checked By.'); return; }
+
+  const rows = faTableBody ? Array.from(faTableBody.querySelectorAll('tr')) : [];
+  const items = rows.map(tr => {
+    const name = tr.querySelector('.fa-name')?.value?.trim?.() || '';
+    const qty  = parseInt(tr.querySelector('.fa-qty')?.value || '0', 10);
+    const min  = parseInt(tr.querySelector('.fa-min')?.value || '0', 10);
+    const exp  = tr.querySelector('.fa-exp')?.value || null;
+    return { name, quantity: qty, min, expiry: exp };
+  }).filter(i => i.name);
+
+  const flagged = items.some(i =>
+    (i.quantity <= (i.min || 0)) ||
+    (i.expiry && (within30Days(i.expiry) || (new Date(i.expiry) < new Date())))
+  );
+
+  const payload = { site, date, checked_by: checker, items, flagged };
+  try {
+    const resp = await sendToFunction('B', payload);
+    alert(resp && resp.emailed ? 'Submitted. Restock/expiry emailed.' : 'Submitted.');
+    faForm.reset();
+    if (faTableBody) { faTableBody.innerHTML = ''; seedFirstAid(); }
+  } catch (err) {
+    const out = getOutbox(); out.push({ ts: Date.now(), formType: 'B', payload }); setOutbox(out);
+    alert('Offline/server error. Saved to Outbox.');
+  }
+});
 
 /* =========================
    FORM C — SITE INSPECTION
@@ -431,12 +544,16 @@ function addInspHazardRow(){
     <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>`;
   inspHazBody.appendChild(tr);
 }
+
 function seedInspection(){
   if (inspRosterBody && inspRosterBody.children.length === 0) addInspWorkerRow();
   if (inspHazBody    && inspHazBody.children.length    === 0) addInspHazardRow();
 }
+seedInspection();
+
 inspAddWorker?.addEventListener('click', addInspWorkerRow);
 inspAddHazard?.addEventListener('click', addInspHazardRow);
+
 inspRosterBody?.addEventListener('click', (e) => {
   const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
   if (!btn) return;
@@ -490,8 +607,8 @@ inspForm?.addEventListener('submit', async (e) => {
     const resp = await sendToFunction('C', payload);
     alert(resp && resp.emailed ? 'Submitted. Open hazards emailed.' : 'Submitted.');
     inspForm.reset();
-    if (inspRosterBody) inspRosterBody.innerHTML = '';
-    if (inspHazBody)    inspHazBody.innerHTML    = '';
+    if (inspRosterBody) { inspRosterBody.innerHTML = ''; }
+    if (inspHazBody)    { inspHazBody.innerHTML    = ''; }
     seedInspection();
     if (inspSigPad?.clear) inspSigPad.clear();
     if (inspApprover) inspApprover.value = 'Krista';
@@ -549,6 +666,8 @@ function addDrillParticipantRow() {
 function seedDrill() {
   if (drRosterBody && drRosterBody.children.length === 0) { addDrillParticipantRow(); addDrillParticipantRow(); }
 }
+seedDrill();
+
 drAddPartBtn?.addEventListener('click', addDrillParticipantRow);
 drRosterBody?.addEventListener('click', (e) => {
   const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
@@ -558,8 +677,50 @@ drRosterBody?.addEventListener('click', (e) => {
   const act = btn.dataset.act;
   if (act === 'remove' && tr) { if (rowId) drSigPads.delete(rowId); tr.remove(); }
   if (act === 'clear' && rowId) { const pad = drSigPads.get(rowId); if (pad?.clear) pad.clear(); }
-}
-);
+});
+
+drForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const site = $('#dr_site')?.value?.trim?.() || '';
+  const date = $('#dr_date')?.value || '';
+  const supervisor = $('#dr_supervisor')?.value?.trim?.() || '';
+  if (!site || !date || !supervisor) { alert('Please fill Site, Date, and Supervisor.'); return; }
+
+  const participants = drRosterBody ? Array.from(drRosterBody.querySelectorAll('tr')).map(tr => {
+    const name = tr.querySelector('.dr-name')?.value?.trim?.() || '';
+    const role = tr.querySelector('.dr-role')?.value || 'worker';
+    const rowId = tr.dataset.rowId;
+    const pad = rowId ? drSigPads.get(rowId) : null;
+    const signature_png = (pad && !pad.isEmpty?.()) ? (pad.toDataURL ? pad.toDataURL('image/png') : null) : null;
+    return { name, role_on_site: role, signature_png };
+  }).filter(p => p.name) : [];
+
+  const payload = {
+    site,
+    date,
+    supervisor,
+    drill_type: $('#dr_type')?.value || '',
+    start_time: $('#dr_start')?.value || '',
+    end_time:   $('#dr_end')?.value || '',
+    scenario_notes: $('#dr_notes')?.value?.trim?.() || '',
+    participants,
+    evaluation: $('#dr_eval')?.value?.trim?.() || '',
+    follow_up_actions: $('#dr_follow')?.value?.trim?.() || '',
+    next_drill_date: $('#dr_next')?.value || '',
+    issues: !!$('#dr_issues')?.checked,
+  };
+
+  try {
+    const resp = await sendToFunction('A', payload);
+    alert(resp && resp.emailed ? 'Submitted. HSE notified.' : 'Submitted.');
+    drForm.reset();
+    if (drRosterBody) { drRosterBody.innerHTML = ''; }
+    seedDrill();
+  } catch (err) {
+    const out = getOutbox(); out.push({ ts: Date.now(), formType: 'A', payload }); setOutbox(out);
+    alert('Offline/server error. Saved to Outbox.');
+  }
+});
 
 /* =========================
    LOGBOOK — list & export
@@ -659,13 +820,20 @@ function seedAllTables() {
 /* =========================
    BOOTSTRAP
 ========================= */
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // 1) Clean up auth fragments so the router won't choke
+  scrubAuthHash();
+
+  // 2) Make sure Supabase has processed the hash (sets the session)
+  if (sb) await sb.auth.getSession();
+
+  // 3) Then render UI and seed tables
   applyDateFallback();
-  bootAuth();           // show login or app, restore session
-  seedAllTables();      // initial rows (also re-seeded when authed)
+  renderByAuth();
+  seedAllTables();
 });
+
 window.addEventListener('hashchange', () => setTimeout(seedAllTables, 0));
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') setTimeout(seedAllTables, 0);
 });
-
