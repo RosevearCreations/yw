@@ -28,6 +28,7 @@ if (!SB_URL.startsWith('https://') || !SB_ANON || !SB_ANON.startsWith('sb_publis
 
 /* =========================
    EDGE FUNCTION ENDPOINTS
+   https://jmqvkgiqlimdhcofwkxr.supabase.co/functions/v1/resend-email
 ========================= */
 const FUNCTION_URL = `${SB_URL}/functions/v1/resend-email`;
 const LIST_URL     = `${SB_URL}/functions/v1/clever-endpoint`;
@@ -837,3 +838,4 @@ window.addEventListener('hashchange', () => setTimeout(seedAllTables, 0));
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') setTimeout(seedAllTables, 0);
 });
+
