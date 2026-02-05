@@ -186,3 +186,16 @@ table thead th { position: static !important; }
 
 /* Hide auth info area by default; JS will unhide when logged in */
 #authInfo[hidden]{display:none;}
+/* Make the native date/time picker icon visible on dark inputs */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator{
+  opacity: 1;                 /* ensure it shows */
+  filter: invert(1) contrast(1.1) brightness(1.1); /* turn it light */
+  cursor: pointer;
+}
+
+/* Optional: give the icon a bit more room on the right */
+input[type="date"],
+input[type="time"]{
+  padding-right: 2.2rem;
+}
