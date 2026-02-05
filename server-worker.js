@@ -1,4 +1,4 @@
-const CACHE = 'ywi-hse-v17';
+const CACHE = 'ywi-hse-v18';
 const ASSETS = ['/', '/index.html', '/style.css', '/app.js', '/manifest.json'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
