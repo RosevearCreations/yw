@@ -761,7 +761,7 @@ function toCSV(rows){
     const row = [r.id, (r.date||'').slice(0,10), r.form_type, r.site||'', fmtSummary(r)];
     lines.push(row.map(esc).join(','));
   });
-  return lines.join('\n');   // ← fixed (previous bad newline caused SyntaxError)
+  return lines.join('\n'); // ✅ correct newline
 }
 
 if (lgLoad && !lgLoad.dataset.bound) {
@@ -804,6 +804,7 @@ window.addEventListener('hashchange', () => setTimeout(seedAllTables, 0));
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') setTimeout(seedAllTables, 0);
 });
+
 
 
 
