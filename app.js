@@ -18,7 +18,7 @@
 ========================= */
 const SB_URL  = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
 /** ⬇️  PASTE your real anon PUBLIC key from Settings → API (starts with eyJ...) */
-const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptcXZrZ2lxbGltZGhjb2Z3a3hyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwMDYzNDYsImV4cCI6MjA4NTU4MjM0Nn0.ULYqX2TL08_wfREPCIZjIbRf8nAc61ZWndm8UUJZ-D4';
+const SB_ANON = 'sb_publishable_Xyg1zQU9_vsAaME9BeHm_w_RRgtPs_e';
 
 /** Idle auto-logout: set to 0 to disable */
 const IDLE_MS = 30 * 60 * 1000;
@@ -35,7 +35,7 @@ const LIST_URL     = `${SB_URL}/functions/v1/clever-endpoint`;
 const OUTBOX_KEY = 'ywi_outbox_v1';
 
 let sb = null;
-if (window.supabase && SB_URL && SB_ANON && SB_ANON.startsWith('eyJ')) {
+if (window.supabase && SB_URL && SB_ANON && SB_ANON.startsWith('sb_')) {
   sb = window.supabase.createClient(SB_URL, SB_ANON, {
     auth: {
       persistSession: true,
@@ -46,7 +46,7 @@ if (window.supabase && SB_URL && SB_ANON && SB_ANON.startsWith('eyJ')) {
   });
   window._sb = sb;
 } else {
-  console.warn('Supabase not fully configured. Auth will not work until SB_ANON is the real anon public key (eyJ...).');
+  console.warn('Supabase not fully configured. Auth will not work until SB_ANON is the real anon public key (sb_...).');
 }
 
 /* =========================
@@ -668,3 +668,4 @@ window.addEventListener('hashchange', () => setTimeout(seedAllTables, 0));
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') setTimeout(seedAllTables, 0);
 });
+
