@@ -1,98 +1,188 @@
-/* =========
-   Layout & Theme (tidy, readable)
-=========== */
+/* =========================================
+   YWI HSE — Clean, Accessible Dark Theme
+   - Robust date input styling (dark UI)
+   - One-form-at-a-time layout
+   - Visible tbody rows
+   - White signature canvases
+   - Polished login UI
+========================================= */
+
+/* -------- Theme Tokens -------- */
 :root{
-  --bg:#0f172a;        /* page background */
-  --card:#111827;      /* section background */
-  --text:#e5e7eb;      /* body text */
-  --muted:#9ca3af;     /* label text */
+  --bg:#0f172a;          /* page background */
+  --card:#111827;        /* section background */
+  --text:#e5e7eb;        /* body text */
+  --muted:#9ca3af;       /* label text */
   --line:rgba(255,255,255,.10);
-  --brand:#22d3ee;
-  --accent:#38bdf8;
+  --brand:#22d3ee;       /* primary button */
+  --accent:#38bdf8;      /* nav active */
+  --danger:#ef4444;      /* alerts, errors */
+  --ok:#10b981;          /* success */
   --radius:16px;
   --pad:16px;
+  --input-bg:#0b1220;    /* input background */
+  --focus:#93c5fd;       /* keyboard focus ring */
 }
 
 html,body{height:100%;}
-body{margin:0; background:var(--bg); color:var(--text); font: 15px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;}
+/* Hint to UAs that we use a dark color scheme (improves native controls) */
+:root { color-scheme: dark; }
 
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font: 15px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+/* -------- App Shell -------- */
 main{max-width:1024px; margin:24px auto 64px; padding:0 16px;}
-nav{position:sticky; top:0; z-index:30; background:linear-gradient(to bottom, #0f172a, rgba(15,23,42,.8)); backdrop-filter:saturate(160%) blur(4px); padding:10px 16px; border-bottom:1px solid var(--line);}
+nav{
+  position:sticky; top:0; z-index:30;
+  background:linear-gradient(to bottom, #0f172a, rgba(15,23,42,.8));
+  backdrop-filter:saturate(160%) blur(4px);
+  padding:10px 16px; border-bottom:1px solid var(--line);
+}
 nav a{margin-right:18px; color:var(--text); opacity:.8; text-decoration:none;}
 nav a.active{color:var(--accent); font-weight:700; opacity:1; text-decoration:underline;}
 
-.card{background:var(--card); border-radius:var(--radius); padding:20px; box-shadow:0 10px 30px rgba(0,0,0,.35);}
+.card{
+  background:var(--card);
+  border-radius:var(--radius);
+  padding:20px;
+  box-shadow:0 10px 30px rgba(0,0,0,.35);
+}
 
-/* Show only one form (section) at a time */
+/* One form (section) at a time */
 main > section.card{display:none;}
 main > section.card.active{display:block;}
 
-/* Headings & spacing */
+/* -------- Headings & spacing -------- */
+h1,h2,h3{line-height:1.2;}
 h2{margin:.25rem 0 1rem;}
 h3{margin:1.25rem 0 .5rem;}
-.form-footer{display:flex; gap:10px; margin-top:16px;}
+.form-footer{display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;}
 
-/* =========
-   Form grid (labels + inputs align)
-=========== */
+/* -------- Form Grid -------- */
 .grid{
   display:grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap:12px 16px;
 }
 label{display:flex; flex-direction:column; gap:6px; color:var(--muted); font-size:.95rem;}
-input[type="text"], input[type="date"], input[type="time"], input[type="number"], select, textarea{
-  width:100%; box-sizing:border-box; padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:#0b1220; color:var(--text);
+
+/* Inputs */
+input[type="text"],
+input[type="date"],
+input[type="time"],
+input[type="number"],
+select,
+textarea{
+  width:100%; box-sizing:border-box;
+  padding:10px 12px;
+  border-radius:10px;
+  border:1px solid var(--line);
+  background:var(--input-bg);
+  color:var(--text);
+  outline:none;
 }
 textarea{min-height:88px; resize:vertical;}
+input::placeholder, textarea::placeholder{color:#9aa2b1; opacity:.8;}
 
-/* Buttons */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible{
+  border-color:var(--focus);
+  box-shadow:0 0 0 3px rgba(147,197,253,.25);
+}
+
+/* -------- Date/Time controls (dark mode fixes) -------- */
+/* Make the calendar icon visible in Chromium */
+input[type="date"]::-webkit-calendar-picker-indicator{
+  filter: invert(1) contrast(1.2) brightness(1.2);
+  opacity: .9;
+  cursor: pointer;
+}
+input[type="date"]::-webkit-datetime-edit,
+input[type="time"]::-webkit-datetime-edit{ color:var(--text); }
+input[type="date"]::-webkit-clear-button,
+input[type="date"]::-webkit-inner-spin-button{ display:none; }
+
+/* Firefox: ensure readable native picker */
+@-moz-document url-prefix() {
+  input[type="date"], input[type="time"]{ color-scheme: dark; }
+}
+
+/* -------- Buttons -------- */
 button, .button{
-  appearance:none; border:0; border-radius:10px; padding:.6rem 1rem; cursor:pointer; background:#1f2937; color:var(--text);
+  appearance:none; border:0; border-radius:10px;
+  padding:.6rem 1rem; cursor:pointer;
+  background:#1f2937; color:var(--text);
 }
 button.primary{background:var(--brand); color:#0b1220; font-weight:600;}
-button.secondary{background:#0b1220; border:1px solid var(--line);}
+button.secondary{background:var(--input-bg); border:1px solid var(--line);}
+button:disabled{opacity:.6; cursor:not-allowed;}
 
-/* =========
-   Tables (tidy + scroll if wide)
-=========== */
+/* -------- Tables -------- */
 .table-wrap{overflow-x:auto; margin:.25rem 0 0;}
 table{width:100%; border-collapse:collapse; table-layout:auto;}
-th, td{padding:.55rem .6rem; border-bottom:1px solid var(--line); vertical-align:top; text-align:left; white-space:nowrap;}
+
+/* Always ensure body rows are visible */
+tbody{display:table-row-group;}
+tbody tr{display:table-row;}
+th, td{
+  padding:.55rem .6rem;
+  border-bottom:1px solid var(--line);
+  vertical-align:top; text-align:left;
+  white-space:nowrap;
+}
 th{font-weight:600; color:#cbd5e1;}
 td input, td select, td textarea{margin:0;}
 
-/* Make “Controls” column narrow */
+/* Narrow “Controls” column */
 th:last-child, td:last-child{width:110px;}
 
-/* =========
-   Signature areas → white background + border
-=========== */
-.canvas-wrap{background:#fff; padding:10px; border-radius:10px; border:1px solid #e5e7eb;}
-.canvas-wrap canvas{display:block; width:100%; height:auto; background:#fff; border:1px dashed #cbd5e1; border-radius:8px}
+/* If headings were ever made sticky elsewhere, disable that so first row shows */
+table thead th { position: static !important; }
 
-/* Target specific sections just to be safe */
-#toolbox .canvas-wrap canvas,
-#inspect .canvas-wrap canvas,
-#drill .canvas-wrap canvas{background:#fff;}
+/* PPE: be explicit that at least one row should render */
+#ppeTable tbody tr:first-child { display: table-row !important; }
 
+/* -------- Signature areas (white for clarity) -------- */
+.canvas-wrap{
+  background:#fff; padding:10px;
+  border-radius:10px; border:1px solid #e5e7eb;
+}
+.canvas-wrap canvas{
+  display:block; width:100%; height:auto;
+  background:#fff; border:1px dashed #cbd5e1; border-radius:8px
+}
 /* Make signature canvas usable on mobile */
 @media (max-width:640px){
   .canvas-wrap canvas{min-height:140px;}
 }
 
-/* =========
-   Little polish
-=========== */
+/* -------- Utility & Polish -------- */
 .controls{display:flex; gap:8px;}
 .actions{margin:.25rem 0 .5rem;}
 .help{color:var(--muted); font-size:.9rem;}
+.notice{
+  padding:.5rem .75rem; border-radius:8px;
+  background:rgba(56,189,248,.1);
+  border:1px solid rgba(56,189,248,.25);
+  color:#bae6fd;
+}
 
-/* TEMP: disable sticky headers so first data row is visible */
-table thead th { position: static !important; }
+/* -------- Login / Auth view -------- */
+.auth-card{
+  max-width:480px; margin:48px auto; padding:20px;
+  background:var(--card); border-radius:var(--radius);
+  box-shadow:0 10px 30px rgba(0,0,0,.35);
+}
+.auth-card h2{margin-top:0;}
+.auth-row{display:flex; gap:10px; align-items:center;}
+.auth-row input[type="email"]{flex:1;}
+.auth-info{display:flex; gap:10px; align-items:center; color:var(--muted);}
 
-/* Be explicit for the PPE table */
-#ppeTable tbody tr:first-child { display: table-row !important; }
-
-/* Keep signature canvases readable */
-.canvas-wrap canvas { background: #fff; }
+/* Hide auth info area by default; JS will unhide when logged in */
+#authInfo[hidden]{display:none;}
