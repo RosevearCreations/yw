@@ -16,7 +16,7 @@
 ========================= */
 // Replace with YOUR project values:
 const SB_URL  = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
-const SB_ANON = 'SUPABASE_ANON_KEY';  // ← your Supabase "anon public" key
+const SB_ANON = 'SB_ANON_PUBLISHABLE';  // ← your Supabase "anon public" key
 
 // Optional idle auto-logout (ms). Set to 0 to disable.
 const IDLE_MS = 30 * 60 * 1000;
@@ -800,3 +800,4 @@ window.addEventListener('hashchange', () => setTimeout(seedAllTables, 0));
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') setTimeout(seedAllTables, 0);
 });
+
