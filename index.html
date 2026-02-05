@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>YWI HSE</title>
   <meta name="theme-color" content="#0b6c3d" />
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/app.js"></script>
+  <meta name="color-scheme" content="dark light" />
 
   <!-- PWA assets -->
   <link rel="manifest" href="/manifest.json" />
@@ -14,31 +13,10 @@
   <!-- Base stylesheet -->
   <link rel="stylesheet" href="/style.css" />
 
-  <!-- Minimal inline overrides: one-section view, grid, and WHITE signature canvases -->
-  <style>
-    /* Show only one card (section) at a time */
-    main > section.card { display: none; }
-    main > section.card.active { display: block; }
+  <!-- Supabase client (required for auth in app.js) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    /* Basic tidy layout (works with your existing style.css) */
-    .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:12px 16px; }
-    .form-footer{ display:flex; gap:10px; margin-top:16px; }
-    .actions{ margin:.25rem 0 .5rem; }
-
-    /* Make big tables scroll on mobile instead of blowing layout */
-    .table-wrap{ overflow-x:auto; margin:.25rem 0 0; }
-    table{ width:100%; border-collapse:collapse; }
-    th,td{ padding:.55rem .6rem; border-bottom:1px solid rgba(255,255,255,.10); vertical-align:top; white-space:nowrap; }
-
-    /* Signatures must be white for visibility */
-    .canvas-wrap{ background:#fff; padding:10px; border-radius:10px; border:1px solid #e5e7eb; }
-    .canvas-wrap canvas{ display:block; width:100%; height:auto; background:#fff; border:1px dashed #cbd5e1; border-radius:8px; }
-
-    /* Optional: nav active state if not already present */
-    nav a.active { font-weight:700; text-decoration:underline; }
-  </style>
-
-  <!-- Service Worker: ensure the filename matches your actual SW file (commonly /service-worker.js) -->
+  <!-- Service Worker: use your actual filename -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => navigator.serviceWorker.register('/server-worker.js'));
@@ -58,17 +36,21 @@
       <a href="#log">Logbook</a>
     </nav>
   </header>
-<section id="loginForm" class="card" style="display:none;gap:.5rem;flex-direction:column;max-width:520px">
-  <h2>Sign in</h2>
-  <label>Email <input id="loginEmail" type="email" placeholder="you@company.com" required></label>
-  <button class="primary" type="submit">Send magic link</button>
-</section>
 
-<section id="authInfo" class="card" hidden>
-  <div>Signed in as <b id="whoami"></b></div>
-  <button id="logoutBtn" class="secondary" type="button">Log out</button>
-</section>
+  <!-- Auth: Login form (real <form>) -->
+  <section class="auth-card" id="loginView" style="display:none">
+    <h2>Sign in</h2>
+    <form id="loginForm" class="auth-row" autocomplete="on">
+      <input id="loginEmail" type="email" placeholder="you@company.com" required autocomplete="email" />
+      <button class="primary" type="submit">Send magic link</button>
+    </form>
+  </section>
 
+  <!-- Auth: Who's signed in -->
+  <section id="authInfo" class="card" hidden>
+    <div class="auth-info">Signed in as <b id="whoami"></b></div>
+    <button id="logoutBtn" class="secondary" type="button">Log out</button>
+  </section>
 
   <main class="container">
     <!-- ============================= -->
@@ -368,7 +350,7 @@
           <label>Evaluation / Result
             <textarea id="dr_eval" rows="3" placeholder="How did it go? Any delays, misses, or successes?"></textarea>
           </label>
-          <label>Follow‑Up Actions
+          <label>Follow-Up Actions
             <textarea id="dr_follow" rows="3" placeholder="Actions required, by whom, by when"></textarea>
           </label>
         </div>
@@ -442,7 +424,7 @@
   <!-- Signature pad library -->
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
 
-  <!-- App JS (ensure this is only included once) -->
+  <!-- App JS (load once, at end) -->
   <script src="/app.js" defer></script>
 
   <!-- Simple hash router (keeps one visible section at a time) -->
@@ -464,10 +446,6 @@
       navLinks.forEach(a => a.addEventListener('click', (e) => { e.preventDefault(); showSection(a.getAttribute('href').slice(1)); }));
     })();
   </script>
+  <noscript><p style="padding:1rem">This app requires JavaScript enabled.</p></noscript>
 </body>
 </html>
-
-
-
-
-
