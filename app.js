@@ -20,7 +20,7 @@ const SB_ANON = 'sb_publishable_Xyg1zQU9_vsAaME9BeHm_w_RRgtPs_e';  // ← your S
 
 // Optional idle auto-logout (ms). Set to 0 to disable.
 const IDLE_MS = 30 * 60 * 1000;
-if (!SB_URL.startsWith('https://') || !SB_ANON || SB_ANON === 'SUPABASE_ANON_KEY') {
+if (!SB_URL.startsWith('https://') || !SB_ANON || SB_ANON === 'SP_PUBLIC_KEY') {
   alert('Supabase not configured: paste your real SB_URL and anon public key from Settings → API.');
   throw new Error('Missing SB_URL/SB_ANON');
 }
@@ -804,6 +804,7 @@ window.addEventListener('hashchange', () => setTimeout(seedAllTables, 0));
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') setTimeout(seedAllTables, 0);
 });
+
 
 
 
