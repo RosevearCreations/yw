@@ -38,12 +38,19 @@ const LIST_URL     = `${SB_URL}/functions/v1/clever-endpoint`;
 ========================= */
 const OUTBOX_KEY = 'ywi_outbox_v1';
 
+
 let sb = null;
 if (window.supabase && SB_URL && SB_ANON) {
-  sb = window.supabase.createClient(SB_URL, SB_ANON);
+  sb = window.supabase.createClient(SB_URL, SB_ANON, {
+    auth: {
+      persistSession: true,           // keep session across reloads
+      autoRefreshToken: true,         // refresh tokens in background
+      detectSessionInUrl: true,       // auto-consume magic-link tokens
+      storageKey: 'ywi-auth'          // your own key namespace
+    }
+  });
   window._sb = sb;
 }
-
 /* =========================
    DOM SHORTCUTS
 ========================= */
@@ -806,6 +813,7 @@ window.addEventListener('hashchange', () => setTimeout(seedAllTables, 0));
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') setTimeout(seedAllTables, 0);
 });
+
 
 
 
