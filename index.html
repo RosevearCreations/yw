@@ -38,13 +38,12 @@
   </header>
 
   <!-- Auth: Login form (real <form>) -->
-  <section class="auth-card" id="loginView" style="display:none">
-    <h2>Sign in</h2>
-    <form id="loginForm" class="auth-row" autocomplete="on">
-      <input id="loginEmail" type="email" placeholder="you@company.com" required autocomplete="email" />
-      <button class="primary" type="submit">Send magic link</button>
-    </form>
-  </section>
+<form id="loginForm" class="card" style="display:none;gap:.5rem;flex-direction:column;max-width:520px">
+  <h2>Sign in</h2>
+  <label>Email <input id="loginEmail" type="email" placeholder="you@company.com" required></label>
+  <button class="primary" type="submit">Send magic link</button>
+</form>
+
 
   <!-- Auth: Who's signed in -->
   <section id="authInfo" class="card" hidden>
@@ -449,3 +448,4 @@
   <noscript><p style="padding:1rem">This app requires JavaScript enabled.</p></noscript>
 </body>
 </html>
+
