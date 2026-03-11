@@ -1,3 +1,14 @@
+<!-- =========================================================
+Document 6: /index.html
+Purpose:
+- Match the new app.js exactly
+- Fix login wrapper IDs
+- Load scripts in the correct order
+- Keep one-form-at-a-time layout
+- Keep service worker path as /server-worker.js
+- Prevent duplicate app.js loading
+========================================================= -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,24 +18,25 @@
   <meta name="theme-color" content="#0b6c3d" />
   <meta name="color-scheme" content="dark light" />
 
-  <!-- PWA assets -->
+  <!-- PWA -->
   <link rel="manifest" href="/manifest.json" />
 
-  <!-- Base stylesheet -->
+  <!-- Styles -->
   <link rel="stylesheet" href="/style.css" />
 
-  <!-- Supabase client (required for auth in app.js) -->
+  <!-- Supabase client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- Service Worker: use your actual filename -->
+  <!-- Service worker -->
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('/server-worker.js'));
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/server-worker.js').catch(console.error);
+      });
     }
   </script>
 </head>
 <body>
-  <!-- App Header + Primary Nav -->
   <header class="app-header">
     <h1>YWI HSE</h1>
     <nav>
@@ -37,16 +49,22 @@
     </nav>
   </header>
 
-  <!-- Auth: Login form (real <form>) -->
-<form id="loginForm" class="card" style="gap:.5rem;flex-direction:column;max-width:520px">
-  <h2>Sign in</h2>
-  <label>Email <input id="loginEmail" type="email" placeholder="you@company.com" required></label>
-  <button class="primary" type="submit">Send magic link</button>
-</form>
+  <!-- LOGIN VIEW -->
+  <section id="loginView" class="auth-card" style="display:none;">
+    <h2>Sign in</h2>
+    <form id="loginForm" class="auth-row" autocomplete="on">
+      <input
+        id="loginEmail"
+        type="email"
+        placeholder="you@company.com"
+        required
+        autocomplete="email"
+      />
+      <button class="primary" type="submit">Send magic link</button>
+    </form>
+  </section>
 
-
-
-  <!-- Auth: Who's signed in -->
+  <!-- AUTH INFO -->
   <section id="authInfo" class="card" hidden>
     <div class="auth-info">Signed in as <b id="whoami"></b></div>
     <button id="logoutBtn" class="secondary" type="button">Log out</button>
@@ -72,11 +90,14 @@
         </div>
 
         <label>Topics / Notes
-          <textarea id="tb_topics" rows="4" placeholder="Hazards today, controls, reminders (e.g., reversing dump trucks)"></textarea>
+          <textarea id="tb_topics" rows="4" placeholder="Hazards today, controls, reminders"></textarea>
         </label>
 
         <h3>Attendees &amp; Signatures</h3>
-        <div class="actions"><button type="button" id="addRowBtn">+ Add Attendee</button></div>
+        <div class="actions">
+          <button type="button" id="addRowBtn">+ Add Attendee</button>
+        </div>
+
         <div class="table-wrap">
           <table id="attendeesTable">
             <thead>
@@ -87,7 +108,7 @@
                 <th style="width:110px">Controls</th>
               </tr>
             </thead>
-            <tbody><!-- rows inserted by JS --></tbody>
+            <tbody></tbody>
           </table>
         </div>
 
@@ -99,7 +120,7 @@
     </section>
 
     <!-- ============================= -->
-    <!-- Form D: PPE COMPLIANCE CHECK  -->
+    <!-- Form D: PPE CHECK             -->
     <!-- ============================= -->
     <section id="ppe" class="card">
       <h2>PPE Compliance Check</h2>
@@ -117,7 +138,10 @@
         </div>
 
         <h3>Roster</h3>
-        <div class="actions"><button type="button" id="ppeAddRowBtn">+ Add Worker</button></div>
+        <div class="actions">
+          <button type="button" id="ppeAddRowBtn">+ Add Worker</button>
+        </div>
+
         <div class="table-wrap">
           <table id="ppeTable">
             <thead>
@@ -133,7 +157,7 @@
                 <th style="width:110px">Controls</th>
               </tr>
             </thead>
-            <tbody><!-- rows inserted by JS --></tbody>
+            <tbody></tbody>
           </table>
         </div>
 
@@ -162,7 +186,6 @@
           </label>
         </div>
 
-        <!-- Predefined First-Aid item list (still allows free typing) -->
         <datalist id="fa-catalog">
           <option value="Guidance Card"></option>
           <option value="Plastic Band Aid"></option>
@@ -185,7 +208,10 @@
         <div class="notice">Flag triggers email when quantity ≤ min or expiry within 30 days.</div>
 
         <h3>Items</h3>
-        <div class="actions"><button type="button" id="faAddRowBtn">+ Add Item</button></div>
+        <div class="actions">
+          <button type="button" id="faAddRowBtn">+ Add Item</button>
+        </div>
+
         <div class="table-wrap">
           <table id="faTable">
             <thead>
@@ -197,7 +223,7 @@
                 <th style="width:10%">Controls</th>
               </tr>
             </thead>
-            <tbody><!-- rows inserted by JS --></tbody>
+            <tbody></tbody>
           </table>
         </div>
 
@@ -227,7 +253,10 @@
         </div>
 
         <h3>Roster</h3>
-        <div class="actions"><button type="button" id="inspAddWorker">+ Add Worker</button></div>
+        <div class="actions">
+          <button type="button" id="inspAddWorker">+ Add Worker</button>
+        </div>
+
         <div class="table-wrap">
           <table id="inspRoster">
             <thead>
@@ -237,12 +266,15 @@
                 <th style="width:110px">Controls</th>
               </tr>
             </thead>
-            <tbody><!-- rows inserted by JS --></tbody>
+            <tbody></tbody>
           </table>
         </div>
 
         <h3>Hazards</h3>
-        <div class="actions"><button type="button" id="inspAddHazard">+ Add Hazard</button></div>
+        <div class="actions">
+          <button type="button" id="inspAddHazard">+ Add Hazard</button>
+        </div>
+
         <div class="table-wrap">
           <table id="inspHazards">
             <thead>
@@ -258,7 +290,7 @@
                 <th style="width:110px">Controls</th>
               </tr>
             </thead>
-            <tbody><!-- rows inserted by JS --></tbody>
+            <tbody></tbody>
           </table>
         </div>
 
@@ -272,13 +304,15 @@
             </select>
           </label>
           <label>Approver (if Other)
-            <input type="text" id="insp_approver_other" placeholder="Name">
+            <input type="text" id="insp_approver_other" placeholder="Name" />
           </label>
         </div>
 
         <div class="canvas-wrap">
           <canvas id="insp_approver_canvas" width="600" height="140"></canvas>
-          <div class="controls"><button type="button" id="inspClearSig">Clear</button></div>
+          <div class="controls">
+            <button type="button" id="inspClearSig">Clear</button>
+          </div>
         </div>
 
         <div class="form-footer">
@@ -330,7 +364,10 @@
         </label>
 
         <h3>Participants</h3>
-        <div class="actions"><button type="button" id="drAddPart">+ Add Participant</button></div>
+        <div class="actions">
+          <button type="button" id="drAddPart">+ Add Participant</button>
+        </div>
+
         <div class="table-wrap">
           <table id="drRoster">
             <thead>
@@ -341,7 +378,7 @@
                 <th style="width:110px">Controls</th>
               </tr>
             </thead>
-            <tbody><!-- rows inserted by JS --></tbody>
+            <tbody></tbody>
           </table>
         </div>
 
@@ -376,15 +413,16 @@
     <!-- ============================= -->
     <section id="log" class="card">
       <h2>Logbook / Admin</h2>
+
       <div class="grid">
         <label>Site (optional)
-          <input type="text" id="lg_site" placeholder="e.g., Site-A">
+          <input type="text" id="lg_site" placeholder="e.g., Site-A" />
         </label>
         <label>From (date)
-          <input type="date" id="lg_from">
+          <input type="date" id="lg_from" />
         </label>
         <label>To (date)
-          <input type="date" id="lg_to">
+          <input type="date" id="lg_to" />
         </label>
         <label>Form Type
           <select id="lg_form">
@@ -415,39 +453,68 @@
               <th style="width:110px">Details</th>
             </tr>
           </thead>
-          <tbody><!-- rows inserted by JS --></tbody>
+          <tbody></tbody>
         </table>
       </div>
     </section>
   </main>
 
-  <!-- Signature pad library -->
+  <!-- Signature pad -->
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
 
-  <!-- App JS (load once, at end) -->
+  <!-- App JS: load ONCE only -->
   <script src="/app.js" defer></script>
 
-  <!-- Simple hash router (keeps one visible section at a time) -->
+  <!-- Simple section router -->
   <script>
-    (function(){
+    (function () {
       const sections = Array.from(document.querySelectorAll('main > section.card'));
       const navLinks = Array.from(document.querySelectorAll('nav a[href^="#"]'));
-      function showSection(id){
-        sections.forEach(s => s.classList.toggle('active', s.id === id));
-        navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + id));
-        const first = document.querySelector(`#${id} input, #${id} textarea, #${id} select`);
+
+      function current() {
+        const raw = (location.hash || '#toolbox').slice(1);
+
+        if (
+          /^(access_token|refresh_token|expires_at|expires_in|token_type|type|error|code)=/i.test(raw)
+        ) {
+          return 'toolbox';
+        }
+
+        return raw.split('&')[0];
+      }
+
+      function showSection(id) {
+        const safeId = (id || 'toolbox').replace(/[^a-zA-Z0-9_-]/g, '') || 'toolbox';
+
+        sections.forEach(s => s.classList.toggle('active', s.id === safeId));
+        navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + safeId));
+
+        const first = document.querySelector(
+          `#${safeId} input, #${safeId} textarea, #${safeId} select`
+        );
         if (first) first.focus({ preventScroll: true });
-        if (location.hash !== '#' + id) history.replaceState(null, '', '#' + id);
+
+        if (location.hash !== '#' + safeId) {
+          history.replaceState(null, '', '#' + safeId);
+        }
+
         window.scrollTo({ top: 0, behavior: 'instant' });
       }
-      function current(){ return (location.hash || '#toolbox').slice(1); }
+
       window.addEventListener('hashchange', () => showSection(current()));
       document.addEventListener('DOMContentLoaded', () => showSection(current()));
-      navLinks.forEach(a => a.addEventListener('click', (e) => { e.preventDefault(); showSection(a.getAttribute('href').slice(1)); }));
+
+      navLinks.forEach(a => {
+        a.addEventListener('click', (e) => {
+          e.preventDefault();
+          showSection(a.getAttribute('href').slice(1));
+        });
+      });
     })();
   </script>
-  <noscript><p style="padding:1rem">This app requires JavaScript enabled.</p></noscript>
+
+  <noscript>
+    <p style="padding:1rem">This app requires JavaScript enabled.</p>
+  </noscript>
 </body>
 </html>
-
-
