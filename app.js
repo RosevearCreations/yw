@@ -1,72 +1,60 @@
 'use strict';
 
-/* ===================================================================
-   YWI HSE — app.js (secure v5)
-   - Supabase auth (magic link), logout, idle auto-logout
-   - Session persists across reloads; scrub #access_token after parsed
-   - JWT to Edge Functions via Authorization header
-   - Outbox for offline retries
-   - Forms: E (Toolbox), D (PPE), B (First Aid), C (Inspection), A (Drill)
-   - Logbook loader + CSV export
-   - Starter-row seeding on visibility / navigation
-   - Date input fallback if unsupported
-   - Router crash shield when hash contains access_token
-=================================================================== */
+/* =========================================================
+   Document 5: /app.js
+   Purpose:
+   - Stable Supabase magic-link login
+   - Session persistence after refresh
+   - JWT-authenticated calls to resend-email / clever-endpoint
+   - Form handling for A/B/C/D/E
+   - Logbook loading + CSV export
+   - Starter rows + date defaults
+   - Safe handling of Supabase auth hash fragments
+   ========================================================= */
 
 /* =========================
-   AUTH / PROJECT SETTINGS
+   CONFIG
 ========================= */
-// Replace with YOUR project values:
 const SB_URL  = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
-const SB_ANON = 'sb_publishable_Xyg1zQU9_vsAaME9BeHm_w_RRgtPs_e';  // Supabase "publishable" anon key
+const SB_KEY  = 'sb_publishable_Xyg1zQU9_vsAaME9BeHm_w_RRgtPs_e';
 
-// Optional idle auto-logout (ms). Set to 0 to disable.
-const IDLE_MS = 30 * 60 * 1000;
-
-if (!SB_URL.startsWith('https://') || !SB_ANON) {
-  console.warn('Supabase not configured: UI will show but auth won’t work.');
-}
-
-/* =========================
-   EDGE FUNCTION ENDPOINTS
-========================= */
 const FUNCTION_URL = `${SB_URL}/functions/v1/resend-email`;
 const LIST_URL     = `${SB_URL}/functions/v1/clever-endpoint`;
 
-/* =========================
-   GLOBALS & CLIENT
-========================= */
 const OUTBOX_KEY = 'ywi_outbox_v1';
+const IDLE_MS = 30 * 60 * 1000; // 30 minutes
 
+/* =========================
+   SUPABASE CLIENT
+========================= */
 let sb = null;
-if (window.supabase && SB_URL && SB_ANON) {
-  sb = window.supabase.createClient(SB_URL, SB_ANON, {
+if (window.supabase && SB_URL && SB_KEY) {
+  sb = window.supabase.createClient(SB_URL, SB_KEY, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: true, // parse #access_token on first load
-    },
+      detectSessionInUrl: true,
+      storageKey: 'ywi-auth'
+    }
   });
   window._sb = sb;
+} else {
+  console.warn('Supabase client not loaded or missing config.');
 }
 
-/* ============================================
-   ROUTER CRASH SHIELD for #access_token hashes
-   (prevents invalid CSS selector exceptions)
-============================================ */
-(function patchQuerySelectorForAuthHash(){
-  const orig = Document.prototype.querySelector;
-  Document.prototype.querySelector = function(sel){
-    if (typeof sel === 'string' && sel.includes('#access_token=')) return null;
-    try { return orig.call(this, sel); } catch { return null; }
-  };
-})();
-
 /* =========================
-   DOM SHORTCUTS
+   DOM HELPERS
 ========================= */
 const $  = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+const mainEl     = $('main.container');
+const loginView  = $('#loginView');
+const loginForm  = $('#loginForm');
+const emailInput = $('#loginEmail');
+const authInfo   = $('#authInfo');
+const whoami     = $('#whoami');
+const logoutBtn  = $('#logoutBtn');
 
 /* =========================
    BASIC HELPERS
@@ -79,151 +67,219 @@ function todayISO() {
 }
 
 function ensureTBody(tableId) {
-  const tbl = document.getElementById(tableId);
-  if (!tbl) return null;
-  let tb = tbl.querySelector('tbody');
-  if (!tb) { tb = document.createElement('tbody'); tbl.appendChild(tb); }
-  return tb;
+  const table = document.getElementById(tableId);
+  if (!table) return null;
+  let tbody = table.querySelector('tbody');
+  if (!tbody) {
+    tbody = document.createElement('tbody');
+    table.appendChild(tbody);
+  }
+  return tbody;
 }
 
 function getOutbox() {
   try { return JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]'); }
   catch { return []; }
 }
-function setOutbox(list) { localStorage.setItem(OUTBOX_KEY, JSON.stringify(list)); }
 
-/* =========================
-   AUTH UI BINDINGS
-========================= */
-const mainEl     = $('main.container');
-const loginView  = $('#loginView');      // wrapper for login UI
-const loginForm  = $('#loginForm');      // the actual <form>
-const emailInput = $('#loginEmail');
-const authInfo   = $('#authInfo');
-const whoami     = $('#whoami');
-const logoutBtn  = $('#logoutBtn');
+function setOutbox(list) {
+  localStorage.setItem(OUTBOX_KEY, JSON.stringify(list));
+}
 
-// Clean the URL after Supabase has parsed the token
-function scrubAuthHash() {
-  if (!location.hash) return;
-  const h = location.hash;
+function escHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function showLogin() {
+  if (loginView) loginView.style.display = 'block';
+  if (mainEl) mainEl.style.display = 'none';
+  if (authInfo) authInfo.hidden = true;
+}
+
+function showApp(session) {
+  if (loginView) loginView.style.display = 'none';
+  if (mainEl) mainEl.style.display = 'block';
+  if (authInfo) authInfo.hidden = false;
+  if (whoami) whoami.textContent = session?.user?.email || '';
+}
+
+function cleanAuthHash() {
+  const hash = window.location.hash || '';
   if (
-    h.startsWith('#access_token=') ||
-    h.startsWith('#id_token=')     ||
-    h.includes('type=signup')      ||
-    h.includes('type=recovery')    ||
-    h.includes('refresh_token=')
+    hash.startsWith('#access_token=') ||
+    hash.startsWith('#refresh_token=') ||
+    hash.includes('type=signup') ||
+    hash.includes('type=recovery') ||
+    hash.includes('expires_at=')
   ) {
-    // Default to toolbox after sign-in
-    history.replaceState(null, '', '#toolbox');
+    history.replaceState({}, '', window.location.pathname + '#toolbox');
   }
 }
 
+/* =========================
+   AUTH
+========================= */
 async function renderByAuth() {
-  // If no Supabase client, show the app (public mode)
   if (!sb) {
-    if (mainEl) mainEl.style.display = 'block';
-    if (loginView) loginView.style.display = 'none';
-    if (authInfo) authInfo.hidden = true;
+    showLogin();
     return;
   }
 
   const { data: { session } } = await sb.auth.getSession();
-  const authed = !!session;
+  if (session) {
+    showApp(session);
+    seedAllTables();
+  } else {
+    showLogin();
+  }
+}
 
-  if (mainEl)      mainEl.style.display    = authed ? 'block' : 'none';
-  if (loginView)   loginView.style.display = authed ? 'none'  : 'block';
-  if (authInfo)    authInfo.hidden         = !authed;
-  if (whoami)      whoami.textContent      = authed ? (session.user.email || session.user.id) : '';
+async function bootAuth() {
+  if (!sb) {
+    showLogin();
+    return;
+  }
 
-  // When we become visible, make sure tables are seeded
-  if (authed) seedAllTables();
+  // Let Supabase process any auth callback first
+  await sb.auth.getSession();
+  cleanAuthHash();
+  await renderByAuth();
 }
 
 if (sb) {
-  sb.auth.onAuthStateChange((event) => {
+  sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-      scrubAuthHash(); // now safe to clean URL
+      cleanAuthHash();
     }
-    renderByAuth();
+    if (session) showApp(session);
+    else showLogin();
   });
 
-  // Idle auto-logout
+  // idle logout
   if (IDLE_MS > 0) {
-    (function idleGuard(){
-      let timer = null;
-      function reset(){ clearTimeout(timer); timer = setTimeout(() => sb.auth.signOut(), IDLE_MS); }
-      ['click','mousemove','keydown','touchstart','scroll'].forEach(evt =>
-        window.addEventListener(evt, reset, { passive: true })
-      );
-      reset();
-    })();
+    let idleTimer = null;
+    const resetIdle = () => {
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(async () => {
+        try { await sb.auth.signOut(); } catch {}
+      }, IDLE_MS);
+    };
+    ['click', 'mousemove', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
+      window.addEventListener(evt, resetIdle, { passive: true });
+    });
+    resetIdle();
   }
 }
 
 loginForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  if (!sb) return alert('Auth client not loaded.');
-  const email = (emailInput?.value || '').trim();
-  if (!email) return;
+  if (!sb) return alert('Auth client not available.');
 
-  const redirect = window.location.origin + '/#toolbox';
-  const { error } = await sb.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: redirect }
-  });
-  if (error) alert('Login error: ' + error.message);
-  else alert('Check your email for the sign-in link.');
+  const email = (emailInput?.value || '').trim();
+  if (!email) return alert('Please enter your email.');
+
+  const submitBtn = loginForm.querySelector('button[type="submit"]');
+  if (submitBtn) submitBtn.disabled = true;
+
+  try {
+    const { error } = await sb.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/#toolbox`
+      }
+    });
+
+    if (error) {
+      alert(`Login error: ${error.message}`);
+    } else {
+      alert('Magic link sent. Please check your email.');
+    }
+  } finally {
+    setTimeout(() => {
+      if (submitBtn) submitBtn.disabled = false;
+    }, 65000);
+  }
 });
 
-logoutBtn?.addEventListener('click', async () => { if (sb) await sb.auth.signOut(); });
+logoutBtn?.addEventListener('click', async () => {
+  if (!sb) return;
+  await sb.auth.signOut();
+});
 
 /* =========================
-   AUTH HEADERS & FETCH
+   FETCH / AUTH HEADERS
 ========================= */
 async function authHeader() {
-  // Prefer a real session token
-  try {
-    if (sb) {
-      const { data: { session } } = await sb.auth.getSession();
-      if (session?.access_token) return { Authorization: `Bearer ${session.access_token}` };
-    }
-  } catch {/* ignore */}
-  // Fallback to anon key (public functions / dev)
-  if (SB_ANON) return { Authorization: `Bearer ${SB_ANON}` };
+  if (!sb) return {};
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.access_token) {
+    return { Authorization: `Bearer ${session.access_token}` };
+  }
   return {};
 }
 
 async function jsonFetch(url, { method = 'POST', headers = {}, body = null } = {}) {
-  const auth = await authHeader();
-  const res = await fetch(url, {
+  let auth = await authHeader();
+
+  let res = await fetch(url, {
     method,
     headers: { 'Content-Type': 'application/json', ...auth, ...headers },
-    body: body && (typeof body === 'string' ? body : JSON.stringify(body))
+    body: body ? (typeof body === 'string' ? body : JSON.stringify(body)) : null
   });
+
+  // one retry on 401 after refreshing session
+  if (res.status === 401 && sb) {
+    try { await sb.auth.refreshSession(); } catch {}
+    auth = await authHeader();
+    res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json', ...auth, ...headers },
+      body: body ? (typeof body === 'string' ? body : JSON.stringify(body)) : null
+    });
+  }
+
   const text = await res.text();
   if (!res.ok) {
     console.error('HTTP error', res.status, text);
     throw new Error(`HTTP ${res.status}: ${text}`);
   }
-  try { return JSON.parse(text); } catch { return text; }
+
+  try { return JSON.parse(text); }
+  catch { return text; }
 }
 
-async function sendToFunction(formType, payload) {
-  return jsonFetch(FUNCTION_URL, { body: { formType, payload } });
+async function sendToFunction(formType, payload, images = []) {
+  return jsonFetch(FUNCTION_URL, {
+    body: { formType, payload, images }
+  });
 }
 
 async function flushOutbox() {
   const outbox = getOutbox();
-  if (!outbox.length) { alert('Outbox is empty.'); return; }
+  if (!outbox.length) {
+    alert('Outbox is empty.');
+    return;
+  }
+
   const remaining = [];
   for (const item of outbox) {
-    try { await sendToFunction(item.formType, item.payload); }
-    catch (e) { console.warn('Outbox send failed', e); remaining.push(item); }
+    try {
+      await sendToFunction(item.formType, item.payload, item.images || []);
+    } catch (err) {
+      console.warn('Outbox send failed', err);
+      remaining.push(item);
+    }
   }
+
   setOutbox(remaining);
-  alert(remaining.length ? `Some failed, ${remaining.length} left.` : 'All queued submissions sent.');
+  alert(remaining.length ? `Some failed, ${remaining.length} remain.` : 'All queued submissions sent.');
 }
+
 $$('[data-role="retry-outbox"]').forEach(btn => {
   if (!btn.dataset.bound) {
     btn.dataset.bound = '1';
@@ -232,19 +288,20 @@ $$('[data-role="retry-outbox"]').forEach(btn => {
 });
 
 /* =========================
-   DATE INPUT FALLBACK
+   DATE SUPPORT
 ========================= */
 function supportsDateInput() {
   const i = document.createElement('input');
   i.setAttribute('type', 'date');
   return i.type === 'date';
 }
+
 function applyDateFallback() {
   if (supportsDateInput()) return;
   $$('input[type="date"]').forEach(inp => {
     inp.setAttribute('type', 'text');
-    inp.setAttribute('inputmode', 'numeric');
     inp.setAttribute('placeholder', 'YYYY-MM-DD');
+    inp.setAttribute('inputmode', 'numeric');
     inp.setAttribute('pattern', '\\d{4}-\\d{2}-\\d{2}');
   });
 }
@@ -252,30 +309,30 @@ function applyDateFallback() {
 /* =========================
    FORM E — TOOLBOX TALK
 ========================= */
-const tbForm  = $('#toolboxForm');
-const tbDate  = $('#tb_date');
+const tbForm = $('#toolboxForm');
+const tbDate = $('#tb_date');
 if (tbDate) tbDate.value = todayISO();
 
 const attendeesTableBody = ensureTBody('attendeesTable');
 const addRowBtn = $('#addRowBtn');
 
 let tbRowCount = 0;
-const sigPads = new Map(); // rowId -> SignaturePad
+const sigPads = new Map();
 
 function addAttendeeRow(initialName = '', initialRole = 'worker') {
   if (!attendeesTableBody) return;
   tbRowCount++;
-  const id = `row_${tbRowCount}`;
+  const id = `tb_row_${tbRowCount}`;
   const tr = document.createElement('tr');
   tr.dataset.rowId = id;
   tr.innerHTML = `
-    <td><input type="text" class="att-name" placeholder="Full name" value="${initialName}" required></td>
+    <td><input type="text" class="att-name" placeholder="Full name" value="${escHtml(initialName)}" required></td>
     <td>
       <select class="att-role">
-        <option value="worker" ${initialRole==='worker'?'selected':''}>Worker</option>
-        <option value="foreman" ${initialRole==='foreman'?'selected':''}>Foreman</option>
-        <option value="supervisor" ${initialRole==='supervisor'?'selected':''}>Supervisor</option>
-        <option value="visitor" ${initialRole==='visitor'?'selected':''}>Visitor</option>
+        <option value="worker" ${initialRole === 'worker' ? 'selected' : ''}>Worker</option>
+        <option value="foreman" ${initialRole === 'foreman' ? 'selected' : ''}>Foreman</option>
+        <option value="supervisor" ${initialRole === 'supervisor' ? 'selected' : ''}>Supervisor</option>
+        <option value="visitor" ${initialRole === 'visitor' ? 'selected' : ''}>Visitor</option>
       </select>
     </td>
     <td>
@@ -291,35 +348,52 @@ function addAttendeeRow(initialName = '', initialRole = 'worker') {
   const canvas = tr.querySelector('canvas');
   if (window.SignaturePad && canvas) {
     try {
-      const pad = new SignaturePad(canvas, { minWidth: .7, maxWidth: 2.5, throttle: 8 });
+      const pad = new SignaturePad(canvas, { minWidth: 0.7, maxWidth: 2.5, throttle: 8 });
       sigPads.set(id, pad);
-    } catch (e) { console.warn('SignaturePad init failed:', e); }
+    } catch (err) {
+      console.warn('SignaturePad init failed:', err);
+    }
   }
 }
+
+function seedToolbox() {
+  if (attendeesTableBody && attendeesTableBody.children.length === 0) {
+    addAttendeeRow();
+    addAttendeeRow();
+  }
+}
+
 addRowBtn?.addEventListener('click', () => addAttendeeRow());
 
 attendeesTableBody?.addEventListener('click', (e) => {
   const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
   if (!btn) return;
   const tr = btn.closest('tr');
-  const rowId = tr ? tr.dataset.rowId : null;
+  const rowId = tr?.dataset.rowId || '';
   const act = btn.dataset.act;
-  if (act === 'remove' && tr) { if (rowId) sigPads.delete(rowId); tr.remove(); }
-  if (act === 'clear' && rowId) { const pad = sigPads.get(rowId); if (pad?.clear) pad.clear(); }
-});
 
-function seedToolbox() {
-  if (attendeesTableBody && attendeesTableBody.children.length === 0) { addAttendeeRow(); addAttendeeRow(); }
-}
-seedToolbox();
+  if (act === 'remove' && tr) {
+    sigPads.delete(rowId);
+    tr.remove();
+  }
+  if (act === 'clear') {
+    const pad = sigPads.get(rowId);
+    if (pad?.clear) pad.clear();
+  }
+});
 
 tbForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
+
   const site   = $('#tb_site')?.value?.trim?.() || '';
   const date   = $('#tb_date')?.value || '';
   const leader = $('#tb_leader')?.value?.trim?.() || '';
   const notes  = $('#tb_topics')?.value?.trim?.() || '';
-  if (!site || !date || !leader) { alert('Please fill Site, Date, and Discussion Leader.'); return; }
+
+  if (!site || !date || !leader) {
+    alert('Please fill Site, Date, and Discussion Leader.');
+    return;
+  }
 
   const rows = attendeesTableBody ? Array.from(attendeesTableBody.querySelectorAll('tr')) : [];
   const attendees = rows.map(tr => {
@@ -328,17 +402,35 @@ tbForm?.addEventListener('submit', async (e) => {
     const rowId = tr.dataset.rowId;
     const pad = rowId ? sigPads.get(rowId) : null;
     const signed = pad && typeof pad.isEmpty === 'function' ? !pad.isEmpty() : false;
-    return { name, role_on_site: role, signature_png: signed && pad?.toDataURL ? pad.toDataURL('image/png') : null };
+    return {
+      name,
+      role_on_site: role,
+      signature_png: signed && pad?.toDataURL ? pad.toDataURL('image/png') : null
+    };
   }).filter(a => a.name);
 
-  const payload = { site, date, submitted_by: leader, topic_notes: notes, attendees };
+  const payload = {
+    site,
+    date,
+    submitted_by: leader,
+    topic_notes: notes,
+    attendees
+  };
+
   try {
     await sendToFunction('E', payload);
-    alert('Toolbox submitted. Email sent.');
+    alert('Toolbox submitted.');
     tbForm.reset();
-    if (attendeesTableBody) { attendeesTableBody.innerHTML = ''; sigPads.clear(); seedToolbox(); }
+    if (tbDate) tbDate.value = todayISO();
+    if (attendeesTableBody) {
+      attendeesTableBody.innerHTML = '';
+      sigPads.clear();
+      seedToolbox();
+    }
   } catch (err) {
-    const out = getOutbox(); out.push({ ts: Date.now(), formType: 'E', payload }); setOutbox(out);
+    const outbox = getOutbox();
+    outbox.push({ ts: Date.now(), formType: 'E', payload });
+    setOutbox(outbox);
     alert('Offline/server error. Saved to Outbox.');
   }
 });
@@ -347,13 +439,16 @@ tbForm?.addEventListener('submit', async (e) => {
    FORM D — PPE CHECK
 ========================= */
 const ppeForm = $('#ppeForm');
-$('#ppe_date') && ($('#ppe_date').value = todayISO());
+const ppeDate = $('#ppe_date');
+if (ppeDate) ppeDate.value = todayISO();
 
 const ppeTableBody = ensureTBody('ppeTable');
 const ppeAddRowBtn = $('#ppeAddRowBtn');
 
-function ppeRowTemplate() {
-  return `
+function addPPERow() {
+  if (!ppeTableBody) return;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
     <td><input type="text" class="ppe-name" placeholder="Full name" required></td>
     <td>
       <select class="ppe-role">
@@ -363,27 +458,26 @@ function ppeRowTemplate() {
         <option value="visitor">Visitor</option>
       </select>
     </td>
-    <td><input type="checkbox" class="ppe-shoes"   checked></td>
-    <td><input type="checkbox" class="ppe-vest"    checked></td>
-    <td><input type="checkbox" class="ppe-plugs"   checked></td>
+    <td><input type="checkbox" class="ppe-shoes" checked></td>
+    <td><input type="checkbox" class="ppe-vest" checked></td>
+    <td><input type="checkbox" class="ppe-plugs" checked></td>
     <td><input type="checkbox" class="ppe-goggles" checked></td>
-    <td><input type="checkbox" class="ppe-muffs"   checked></td>
-    <td><input type="checkbox" class="ppe-gloves"  checked></td>
+    <td><input type="checkbox" class="ppe-muffs" checked></td>
+    <td><input type="checkbox" class="ppe-gloves" checked></td>
     <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
   `;
-}
-function addPPERow() {
-  if (!ppeTableBody) return;
-  const tr = document.createElement('tr');
-  tr.innerHTML = ppeRowTemplate();
   ppeTableBody.appendChild(tr);
 }
+
 function seedPPE() {
-  if (ppeTableBody && ppeTableBody.children.length === 0) { addPPERow(); addPPERow(); }
+  if (ppeTableBody && ppeTableBody.children.length === 0) {
+    addPPERow();
+    addPPERow();
+  }
 }
-seedPPE();
 
 ppeAddRowBtn?.addEventListener('click', addPPERow);
+
 ppeTableBody?.addEventListener('click', (e) => {
   const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
   if (!btn) return;
@@ -392,10 +486,15 @@ ppeTableBody?.addEventListener('click', (e) => {
 
 ppeForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
+
   const site    = $('#ppe_site')?.value?.trim?.() || '';
   const date    = $('#ppe_date')?.value || '';
   const checker = $('#ppe_checker')?.value?.trim?.() || '';
-  if (!site || !date || !checker) { alert('Please fill Site, Date, and Checked By.'); return; }
+
+  if (!site || !date || !checker) {
+    alert('Please fill Site, Date, and Checked By.');
+    return;
+  }
 
   const rows = ppeTableBody ? Array.from(ppeTableBody.querySelectorAll('tr')) : [];
   const roster = rows.map(tr => ({
@@ -407,7 +506,7 @@ ppeForm?.addEventListener('submit', async (e) => {
       plugs:   !!tr.querySelector('.ppe-plugs')?.checked,
       goggles: !!tr.querySelector('.ppe-goggles')?.checked,
       muffs:   !!tr.querySelector('.ppe-muffs')?.checked,
-      gloves:  !!tr.querySelector('.ppe-gloves')?.checked,
+      gloves:  !!tr.querySelector('.ppe-gloves')?.checked
     }
   })).filter(r => r.name);
 
@@ -415,14 +514,27 @@ ppeForm?.addEventListener('submit', async (e) => {
     !r.items.shoes || !r.items.vest || !r.items.plugs || !r.items.goggles || !r.items.muffs || !r.items.gloves
   );
 
-  const payload = { site, date, checked_by: checker, roster, nonCompliant };
+  const payload = {
+    site,
+    date,
+    checked_by: checker,
+    roster,
+    nonCompliant
+  };
+
   try {
-    const resp = await sendToFunction('D', payload);
-    alert(resp && resp.emailed ? 'Submitted. Non-compliance emailed.' : 'Submitted.');
+    await sendToFunction('D', payload);
+    alert('PPE check submitted.');
     ppeForm.reset();
-    if (ppeTableBody) { ppeTableBody.innerHTML = ''; seedPPE(); }
+    if (ppeDate) ppeDate.value = todayISO();
+    if (ppeTableBody) {
+      ppeTableBody.innerHTML = '';
+      seedPPE();
+    }
   } catch (err) {
-    const out = getOutbox(); out.push({ ts: Date.now(), formType: 'D', payload }); setOutbox(out);
+    const outbox = getOutbox();
+    outbox.push({ ts: Date.now(), formType: 'D', payload });
+    setOutbox(outbox);
     alert('Offline/server error. Saved to Outbox.');
   }
 });
@@ -431,7 +543,8 @@ ppeForm?.addEventListener('submit', async (e) => {
    FORM B — FIRST AID
 ========================= */
 const faForm = $('#faForm');
-$('#fa_date') && ($('#fa_date').value = todayISO());
+const faDate = $('#fa_date');
+if (faDate) faDate.value = todayISO();
 
 const faTableBody = ensureTBody('faTable');
 const faAddRowBtn = $('#faAddRowBtn');
@@ -448,12 +561,16 @@ function addItemRow() {
   `;
   faTableBody.appendChild(tr);
 }
+
 function seedFirstAid() {
-  if (faTableBody && faTableBody.children.length === 0) { addItemRow(); addItemRow(); }
+  if (faTableBody && faTableBody.children.length === 0) {
+    addItemRow();
+    addItemRow();
+  }
 }
-seedFirstAid();
 
 faAddRowBtn?.addEventListener('click', addItemRow);
+
 faTableBody?.addEventListener('click', (e) => {
   const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
   if (!btn) return;
@@ -469,10 +586,15 @@ function within30Days(iso) {
 
 faForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
+
   const site    = $('#fa_site')?.value?.trim?.() || '';
   const date    = $('#fa_date')?.value || '';
   const checker = $('#fa_checker')?.value?.trim?.() || '';
-  if (!site || !date || !checker) { alert('Please fill Site, Date, and Checked By.'); return; }
+
+  if (!site || !date || !checker) {
+    alert('Please fill Site, Date, and Checked By.');
+    return;
+  }
 
   const rows = faTableBody ? Array.from(faTableBody.querySelectorAll('tr')) : [];
   const items = rows.map(tr => {
@@ -483,18 +605,32 @@ faForm?.addEventListener('submit', async (e) => {
     return { name, quantity: qty, min, expiry: exp };
   }).filter(i => i.name);
 
-  const flagged = items.some(i => (i.quantity <= (i.min || 0)) ||
+  const flagged = items.some(i =>
+    (i.quantity <= (i.min || 0)) ||
     (i.expiry && (within30Days(i.expiry) || (new Date(i.expiry) < new Date())))
   );
 
-  const payload = { site, date, checked_by: checker, items, flagged };
+  const payload = {
+    site,
+    date,
+    checked_by: checker,
+    items,
+    flagged
+  };
+
   try {
-    const resp = await sendToFunction('B', payload);
-    alert(resp && resp.emailed ? 'Submitted. Restock/expiry emailed.' : 'Submitted.');
+    await sendToFunction('B', payload);
+    alert('First aid check submitted.');
     faForm.reset();
-    if (faTableBody) { faTableBody.innerHTML = ''; seedFirstAid(); }
+    if (faDate) faDate.value = todayISO();
+    if (faTableBody) {
+      faTableBody.innerHTML = '';
+      seedFirstAid();
+    }
   } catch (err) {
-    const out = getOutbox(); out.push({ ts: Date.now(), formType: 'B', payload }); setOutbox(out);
+    const outbox = getOutbox();
+    outbox.push({ ts: Date.now(), formType: 'B', payload });
+    setOutbox(outbox);
     alert('Offline/server error. Saved to Outbox.');
   }
 });
@@ -503,25 +639,32 @@ faForm?.addEventListener('submit', async (e) => {
    FORM C — SITE INSPECTION
 ========================= */
 const inspForm = $('#inspForm');
-$('#insp_date') && ($('#insp_date').value = todayISO());
+const inspDate = $('#insp_date');
+if (inspDate) inspDate.value = todayISO();
 
 const inspRosterBody = ensureTBody('inspRoster');
-const inspHazBody    = ensureTBody('inspHazards');
+const inspHazBody = ensureTBody('inspHazards');
 
-const inspAddWorker      = $('#inspAddWorker');
-const inspAddHazard      = $('#inspAddHazard');
-const inspApprover       = $('#insp_approver');
-const inspApproverOther  = $('#insp_approver_other');
-const inspSigCanvas      = $('#insp_approver_canvas');
-let   inspSigPad         = null;
+const inspAddWorker = $('#inspAddWorker');
+const inspAddHazard = $('#inspAddHazard');
+const inspApprover = $('#insp_approver');
+const inspApproverOther = $('#insp_approver_other');
+const inspSigCanvas = $('#insp_approver_canvas');
+let inspSigPad = null;
 
 if (window.SignaturePad && inspSigCanvas) {
-  try { inspSigPad = new SignaturePad(inspSigCanvas, { minWidth:.7, maxWidth:2.2, throttle:8 }); }
-  catch (e) { console.warn('SignaturePad init failed for approval', e); }
+  try {
+    inspSigPad = new SignaturePad(inspSigCanvas, { minWidth: 0.7, maxWidth: 2.2, throttle: 8 });
+  } catch (err) {
+    console.warn('SignaturePad init failed for approval', err);
+  }
 }
-$('#inspClearSig')?.addEventListener('click', () => { if (inspSigPad?.clear) inspSigPad.clear(); });
 
-function addInspWorkerRow(){
+$('#inspClearSig')?.addEventListener('click', () => {
+  if (inspSigPad?.clear) inspSigPad.clear();
+});
+
+function addInspWorkerRow() {
   if (!inspRosterBody) return;
   const tr = document.createElement('tr');
   tr.innerHTML = `
@@ -534,10 +677,12 @@ function addInspWorkerRow(){
         <option value="visitor">Visitor</option>
       </select>
     </td>
-    <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>`;
+    <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
+  `;
   inspRosterBody.appendChild(tr);
 }
-function addInspHazardRow(){
+
+function addInspHazardRow() {
   if (!inspHazBody) return;
   const tr = document.createElement('tr');
   tr.innerHTML = `
@@ -555,15 +700,15 @@ function addInspHazardRow(){
     <td style="text-align:center"><input type="checkbox" class="hz-done"></td>
     <td><input type="text" class="hz-doneby" placeholder="Completed by"></td>
     <td><input type="date" class="hz-donedate"></td>
-    <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>`;
+    <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
+  `;
   inspHazBody.appendChild(tr);
 }
 
-function seedInspection(){
+function seedInspection() {
   if (inspRosterBody && inspRosterBody.children.length === 0) addInspWorkerRow();
-  if (inspHazBody    && inspHazBody.children.length    === 0) addInspHazardRow();
+  if (inspHazBody && inspHazBody.children.length === 0) addInspHazardRow();
 }
-seedInspection();
 
 inspAddWorker?.addEventListener('click', addInspWorkerRow);
 inspAddHazard?.addEventListener('click', addInspHazardRow);
@@ -573,6 +718,7 @@ inspRosterBody?.addEventListener('click', (e) => {
   if (!btn) return;
   if (btn.dataset.act === 'remove') btn.closest('tr')?.remove();
 });
+
 inspHazBody?.addEventListener('click', (e) => {
   const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
   if (!btn) return;
@@ -581,10 +727,15 @@ inspHazBody?.addEventListener('click', (e) => {
 
 inspForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const site      = $('#insp_site')?.value?.trim?.() || '';
-  const date      = $('#insp_date')?.value || '';
+
+  const site = $('#insp_site')?.value?.trim?.() || '';
+  const date = $('#insp_date')?.value || '';
   const inspector = $('#insp_inspector')?.value?.trim?.() || '';
-  if (!site || !date || !inspector) { alert('Please fill Site, Date, and Inspector.'); return; }
+
+  if (!site || !date || !inspector) {
+    alert('Please fill Site, Date, and Inspector.');
+    return;
+  }
 
   const roster = inspRosterBody ? Array.from(inspRosterBody.querySelectorAll('tr')).map(tr => ({
     name: tr.querySelector('.iw-name')?.value?.trim?.() || '',
@@ -592,45 +743,58 @@ inspForm?.addEventListener('submit', async (e) => {
   })).filter(r => r.name) : [];
 
   const hazards = inspHazBody ? Array.from(inspHazBody.querySelectorAll('tr')).map(tr => ({
-    hazard:         tr.querySelector('.hz-desc')?.value?.trim?.() || '',
-    location:       tr.querySelector('.hz-loc')?.value?.trim?.() || '',
-    risk:           tr.querySelector('.hz-risk')?.value || 'Low',
-    action:         tr.querySelector('.hz-action')?.value?.trim?.() || '',
-    assigned_to:    tr.querySelector('.hz-assigned')?.value?.trim?.() || '',
-    completed:      !!tr.querySelector('.hz-done')?.checked,
-    completed_by:   tr.querySelector('.hz-doneby')?.value?.trim?.() || '',
+    hazard: tr.querySelector('.hz-desc')?.value?.trim?.() || '',
+    location: tr.querySelector('.hz-loc')?.value?.trim?.() || '',
+    risk: tr.querySelector('.hz-risk')?.value || 'Low',
+    action: tr.querySelector('.hz-action')?.value?.trim?.() || '',
+    assigned_to: tr.querySelector('.hz-assigned')?.value?.trim?.() || '',
+    completed: !!tr.querySelector('.hz-done')?.checked,
+    completed_by: tr.querySelector('.hz-doneby')?.value?.trim?.() || '',
     completed_date: tr.querySelector('.hz-donedate')?.value || null
   })).filter(h => h.hazard) : [];
 
-  // Approver name
   let approver_name = inspApprover ? inspApprover.value : '';
   if (approver_name === 'Other') {
-    const v = (inspApproverOther && inspApproverOther.value.trim()) || '';
-    if (!v) { alert('Please type the approver name.'); return; }
-    approver_name = v;
+    const other = inspApproverOther?.value?.trim?.() || '';
+    if (!other) {
+      alert('Please type the approver name.');
+      return;
+    }
+    approver_name = other;
   }
-  // Require a signature
+
   if (!inspSigPad || (inspSigPad.isEmpty && inspSigPad.isEmpty())) {
     alert('HSE approval signature is required.');
     return;
   }
-  const approver_signature_png = (inspSigPad && inspSigPad.toDataURL) ? inspSigPad.toDataURL('image/png') : null;
 
-  const openHazards = hazards.some(h => !h.completed);
-  const payload = { site, date, inspector, roster, hazards, openHazards, approved:true, approver_name, approver_signature_png };
+  const payload = {
+    site,
+    date,
+    inspector,
+    roster,
+    hazards,
+    openHazards: hazards.some(h => !h.completed),
+    approved: true,
+    approver_name,
+    approver_signature_png: inspSigPad.toDataURL('image/png')
+  };
 
   try {
-    const resp = await sendToFunction('C', payload);
-    alert(resp && resp.emailed ? 'Submitted. Open hazards emailed.' : 'Submitted.');
+    await sendToFunction('C', payload);
+    alert('Site inspection submitted.');
     inspForm.reset();
-    if (inspRosterBody) { inspRosterBody.innerHTML = ''; }
-    if (inspHazBody)    { inspHazBody.innerHTML    = ''; }
+    if (inspDate) inspDate.value = todayISO();
+    if (inspRosterBody) inspRosterBody.innerHTML = '';
+    if (inspHazBody) inspHazBody.innerHTML = '';
     seedInspection();
     if (inspSigPad?.clear) inspSigPad.clear();
     if (inspApprover) inspApprover.value = 'Krista';
     if (inspApproverOther) inspApproverOther.value = '';
   } catch (err) {
-    const out = getOutbox(); out.push({ ts: Date.now(), formType: 'C', payload }); setOutbox(out);
+    const outbox = getOutbox();
+    outbox.push({ ts: Date.now(), formType: 'C', payload });
+    setOutbox(outbox);
     alert('Offline/server error. Saved to Outbox.');
   }
 });
@@ -639,7 +803,8 @@ inspForm?.addEventListener('submit', async (e) => {
    FORM A — EMERGENCY DRILL
 ========================= */
 const drForm = $('#drForm');
-$('#dr_date') && ($('#dr_date').value = todayISO());
+const drDate = $('#dr_date');
+if (drDate) drDate.value = todayISO();
 
 const drRosterBody = ensureTBody('drRoster');
 const drAddPartBtn = $('#drAddPart');
@@ -650,7 +815,7 @@ let drRowCount = 0;
 function addDrillParticipantRow() {
   if (!drRosterBody) return;
   drRowCount++;
-  const id = `drp_${drRowCount}`;
+  const id = `dr_row_${drRowCount}`;
   const tr = document.createElement('tr');
   tr.dataset.rowId = id;
   tr.innerHTML = `
@@ -675,40 +840,62 @@ function addDrillParticipantRow() {
 
   const canvas = tr.querySelector('canvas');
   if (window.SignaturePad && canvas) {
-    try { const pad = new SignaturePad(canvas, { minWidth:.7, maxWidth:2.2, throttle:8 }); drSigPads.set(id, pad); }
-    catch (e) { console.warn('SignaturePad init (drill) failed:', e); }
+    try {
+      const pad = new SignaturePad(canvas, { minWidth: 0.7, maxWidth: 2.2, throttle: 8 });
+      drSigPads.set(id, pad);
+    } catch (err) {
+      console.warn('SignaturePad init (drill) failed:', err);
+    }
   }
 }
+
 function seedDrill() {
-  if (drRosterBody && drRosterBody.children.length === 0) { addDrillParticipantRow(); addDrillParticipantRow(); }
+  if (drRosterBody && drRosterBody.children.length === 0) {
+    addDrillParticipantRow();
+    addDrillParticipantRow();
+  }
 }
-seedDrill();
 
 drAddPartBtn?.addEventListener('click', addDrillParticipantRow);
+
 drRosterBody?.addEventListener('click', (e) => {
   const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
   if (!btn) return;
   const tr = btn.closest('tr');
-  const rowId = tr ? tr.dataset.rowId : null;
+  const rowId = tr?.dataset.rowId || '';
   const act = btn.dataset.act;
-  if (act === 'remove' && tr) { if (rowId) drSigPads.delete(rowId); tr.remove(); }
-  if (act === 'clear' && rowId) { const pad = drSigPads.get(rowId); if (pad?.clear) pad.clear(); }
+  if (act === 'remove' && tr) {
+    drSigPads.delete(rowId);
+    tr.remove();
+  }
+  if (act === 'clear') {
+    const pad = drSigPads.get(rowId);
+    if (pad?.clear) pad.clear();
+  }
 });
 
 drForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
+
   const site = $('#dr_site')?.value?.trim?.() || '';
   const date = $('#dr_date')?.value || '';
   const supervisor = $('#dr_supervisor')?.value?.trim?.() || '';
-  if (!site || !date || !supervisor) { alert('Please fill Site, Date, and Supervisor.'); return; }
+
+  if (!site || !date || !supervisor) {
+    alert('Please fill Site, Date, and Supervisor.');
+    return;
+  }
 
   const participants = drRosterBody ? Array.from(drRosterBody.querySelectorAll('tr')).map(tr => {
     const name = tr.querySelector('.dr-name')?.value?.trim?.() || '';
     const role = tr.querySelector('.dr-role')?.value || 'worker';
     const rowId = tr.dataset.rowId;
     const pad = rowId ? drSigPads.get(rowId) : null;
-    const signature_png = (pad && !pad.isEmpty?.()) ? (pad.toDataURL ? pad.toDataURL('image/png') : null) : null;
-    return { name, role_on_site: role, signature_png };
+    return {
+      name,
+      role_on_site: role,
+      signature_png: (pad && !pad.isEmpty?.()) ? pad.toDataURL('image/png') : null
+    };
   }).filter(p => p.name) : [];
 
   const payload = {
@@ -717,29 +904,34 @@ drForm?.addEventListener('submit', async (e) => {
     supervisor,
     drill_type: $('#dr_type')?.value || '',
     start_time: $('#dr_start')?.value || '',
-    end_time:   $('#dr_end')?.value || '',
+    end_time: $('#dr_end')?.value || '',
     scenario_notes: $('#dr_notes')?.value?.trim?.() || '',
     participants,
     evaluation: $('#dr_eval')?.value?.trim?.() || '',
     follow_up_actions: $('#dr_follow')?.value?.trim?.() || '',
     next_drill_date: $('#dr_next')?.value || '',
-    issues: !!$('#dr_issues')?.checked,
+    issues: !!$('#dr_issues')?.checked
   };
 
   try {
-    const resp = await sendToFunction('A', payload);
-    alert(resp && resp.emailed ? 'Submitted. HSE notified.' : 'Submitted.');
+    await sendToFunction('A', payload);
+    alert('Drill submitted.');
     drForm.reset();
-    if (drRosterBody) { drRosterBody.innerHTML = ''; }
-    seedDrill();
+    if (drDate) drDate.value = todayISO();
+    if (drRosterBody) {
+      drRosterBody.innerHTML = '';
+      seedDrill();
+    }
   } catch (err) {
-    const out = getOutbox(); out.push({ ts: Date.now(), formType: 'A', payload }); setOutbox(out);
+    const outbox = getOutbox();
+    outbox.push({ ts: Date.now(), formType: 'A', payload });
+    setOutbox(outbox);
     alert('Offline/server error. Saved to Outbox.');
   }
 });
 
 /* =========================
-   LOGBOOK — list & export
+   LOGBOOK
 ========================= */
 const lgSite   = $('#lg_site');
 const lgFrom   = $('#lg_from');
@@ -749,81 +941,117 @@ const lgLoad   = $('#lg_load');
 const lgExport = $('#lg_export');
 const lgBody   = $('#lg_table')?.querySelector('tbody') || null;
 
-function fmtSummary(row){
-  const t = row.form_type; const p = row.payload || {};
-  if (t === 'E') return `Leader: ${p.submitted_by||''}; Attendees: ${Array.isArray(p.attendees)?p.attendees.length:0}`;
-  if (t === 'D') return `Checked by: ${p.checked_by||''}; Non-compliance: ${p.nonCompliant?'YES':'No'}`;
-  if (t === 'B') return `Checked by: ${p.checked_by||''}; Flagged: ${p.flagged?'YES':'No'}`;
-  if (t === 'C') return `Inspector: ${p.inspector||''}; Open hazards: ${p.openHazards? 'YES':'No'}`;
-  if (t === 'A') return `Supervisor: ${p.supervisor||''}; Issues: ${p.issues? 'YES':'No'}`;
+function fmtSummary(row) {
+  const t = row.form_type;
+  const p = row.payload || {};
+  if (t === 'E') return `Leader: ${p.submitted_by || ''}; Attendees: ${Array.isArray(p.attendees) ? p.attendees.length : 0}`;
+  if (t === 'D') return `Checked by: ${p.checked_by || ''}; Non-compliance: ${p.nonCompliant ? 'YES' : 'No'}`;
+  if (t === 'B') return `Checked by: ${p.checked_by || ''}; Flagged: ${p.flagged ? 'YES' : 'No'}`;
+  if (t === 'C') return `Inspector: ${p.inspector || ''}; Open hazards: ${p.openHazards ? 'YES' : 'No'}`;
+  if (t === 'A') return `Supervisor: ${p.supervisor || ''}; Issues: ${p.issues ? 'YES' : 'No'}`;
   return '';
 }
 
-function renderRows(rows){
+function renderRows(rows) {
   if (!lgBody) return;
   lgBody.innerHTML = '';
+
   rows.forEach(r => {
     const tr = document.createElement('tr');
-    const d = (r.date || '').slice(0,10);
+    const d = (r.date || '').slice(0, 10);
     tr.innerHTML = `
-      <td>${r.id}</td>
-      <td>${d}</td>
-      <td>${r.form_type}</td>
-      <td>${r.site||''}</td>
-      <td>${fmtSummary(r)}</td>
+      <td>${escHtml(r.id)}</td>
+      <td>${escHtml(d)}</td>
+      <td>${escHtml(r.form_type)}</td>
+      <td>${escHtml(r.site || '')}</td>
+      <td>${escHtml(fmtSummary(r))}</td>
       <td>
         <details>
           <summary>View</summary>
-          <pre style="white-space:pre-wrap; word-break:break-word; max-width:60ch;">${JSON.stringify(r.payload, null, 2)}</pre>
+          <pre style="white-space:pre-wrap; word-break:break-word; max-width:60ch;">${escHtml(JSON.stringify(r.payload, null, 2))}</pre>
         </details>
-      </td>`;
+      </td>
+    `;
     lgBody.appendChild(tr);
   });
 }
 
-async function fetchLog(){
+async function fetchLog() {
+  if (!sb) {
+    alert('Please sign in first.');
+    return;
+  }
+
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) {
+    alert('Please sign in to load the logbook.');
+    return;
+  }
+
   const body = {
-    site: (lgSite && lgSite.value?.trim?.()) || undefined,
+    site: (lgSite && lgSite.value.trim()) || undefined,
     formType: (lgForm && lgForm.value) || undefined,
     from: (lgFrom && lgFrom.value) || undefined,
     to: (lgTo && lgTo.value) || undefined,
     limit: 100
   };
+
   const data = await jsonFetch(LIST_URL, { body });
   if (!data.ok) throw new Error(data.error || 'load_failed');
+
   renderRows(data.rows || []);
   window._logRows = data.rows || [];
 }
 
-function toCSV(rows){
-  const header = ['id','date','form_type','site','summary'];
+function toCSV(rows) {
+  const header = ['id', 'date', 'form_type', 'site', 'summary'];
   const lines = [header.join(',')];
-  const esc = v => '"' + String(v).replaceAll('"','""') + '"';
+  const esc = v => `"${String(v).replaceAll('"', '""')}"`;
+
   rows.forEach(r => {
-    const row = [r.id, (r.date||'').slice(0,10), r.form_type, r.site||'', fmtSummary(r)];
+    const row = [
+      r.id,
+      (r.date || '').slice(0, 10),
+      r.form_type,
+      r.site || '',
+      fmtSummary(r)
+    ];
     lines.push(row.map(esc).join(','));
   });
+
   return lines.join('\n');
 }
 
 if (lgLoad && !lgLoad.dataset.bound) {
   lgLoad.dataset.bound = '1';
-  lgLoad.addEventListener('click', async ()=>{
-    try { await fetchLog(); } catch(e){ console.error(e); alert('Failed to load log.'); }
+  lgLoad.addEventListener('click', async () => {
+    try {
+      await fetchLog();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to load log.');
+    }
   });
 }
 
-lgExport?.addEventListener('click', ()=>{
+lgExport?.addEventListener('click', () => {
   const rows = window._logRows || [];
-  if (!rows.length) { alert('Nothing to export. Load the log first.'); return; }
+  if (!rows.length) {
+    alert('Nothing to export. Load the log first.');
+    return;
+  }
+
   const blob = new Blob([toCSV(rows)], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = 'ywi-log.csv'; a.click();
-  setTimeout(()=> URL.revokeObjectURL(url), 1000);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'ywi-log.csv';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
 
 /* =========================
-   SEED ALL TABLES ON VIEW
+   TABLE SEEDING
 ========================= */
 function seedAllTables() {
   seedToolbox();
@@ -837,17 +1065,17 @@ function seedAllTables() {
    BOOTSTRAP
 ========================= */
 document.addEventListener('DOMContentLoaded', async () => {
-  if (sb) {
-    // Let Supabase read the hash and persist the session, then scrub.
-    await sb.auth.getSession();
-    scrubAuthHash();
-  }
   applyDateFallback();
-  renderByAuth();          // shows login or app
-  // Also seed on initial load; renderByAuth will seed again when authed
+  await bootAuth();
   seedAllTables();
 });
-window.addEventListener('hashchange', () => setTimeout(seedAllTables, 0));
+
+window.addEventListener('hashchange', () => {
+  setTimeout(seedAllTables, 0);
+});
+
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') setTimeout(seedAllTables, 0);
+  if (document.visibilityState === 'visible') {
+    setTimeout(seedAllTables, 0);
+  }
 });
