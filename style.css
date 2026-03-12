@@ -1,201 +1,470 @@
-/* =========================================
-   YWI HSE — Clean, Accessible Dark Theme
-   - Robust date input styling (dark UI)
-   - One-form-at-a-time layout
-   - Visible tbody rows
-   - White signature canvases
-   - Polished login UI
-========================================= */
+/* =========================================================
+Document 7: /style.css
+Purpose:
+- Clean mobile-friendly styling
+- One visible section at a time
+- Better login/admin/header layout
+- White signature areas
+- Better table scrolling
+- Visible date/time picker icons on dark theme
+- General polish for field use
+========================================================= */
 
-/* -------- Theme Tokens -------- */
 :root{
-  --bg:#0f172a;          /* page background */
-  --card:#111827;        /* section background */
-  --text:#e5e7eb;        /* body text */
-  --muted:#9ca3af;       /* label text */
+  --bg:#0f172a;
+  --bg-2:#111827;
+  --card:#111827;
+  --card-2:#0b1220;
+  --text:#e5e7eb;
+  --muted:#9ca3af;
   --line:rgba(255,255,255,.10);
-  --brand:#22d3ee;       /* primary button */
-  --accent:#38bdf8;      /* nav active */
-  --danger:#ef4444;      /* alerts, errors */
-  --ok:#10b981;          /* success */
+  --line-strong:rgba(255,255,255,.18);
+  --brand:#22d3ee;
+  --brand-2:#38bdf8;
+  --danger:#ef4444;
+  --ok:#22c55e;
+  --shadow:0 10px 30px rgba(0,0,0,.35);
   --radius:16px;
+  --radius-sm:10px;
   --pad:16px;
-  --input-bg:#0b1220;    /* input background */
-  --focus:#93c5fd;       /* keyboard focus ring */
 }
 
+*{box-sizing:border-box;}
 html,body{height:100%;}
-/* Hint to UAs that we use a dark color scheme (improves native controls) */
-:root { color-scheme: dark; }
-
+html{scroll-behavior:smooth;}
 body{
   margin:0;
   background:var(--bg);
   color:var(--text);
-  font: 15px/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
 }
 
-/* -------- App Shell -------- */
-main{max-width:1024px; margin:24px auto 64px; padding:0 16px;}
+/* =========================
+   HEADER / NAV
+========================= */
+.app-header{
+  position:sticky;
+  top:0;
+  z-index:40;
+  background:linear-gradient(to bottom, rgba(15,23,42,.96), rgba(15,23,42,.88));
+  backdrop-filter:saturate(160%) blur(6px);
+  border-bottom:1px solid var(--line);
+  padding:12px 16px 10px;
+}
+
+.app-header h1{
+  margin:0 0 10px;
+  font-size:1.35rem;
+  line-height:1.2;
+}
+
 nav{
-  position:sticky; top:0; z-index:30;
-  background:linear-gradient(to bottom, #0f172a, rgba(15,23,42,.8));
-  backdrop-filter:saturate(160%) blur(4px);
-  padding:10px 16px; border-bottom:1px solid var(--line);
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
 }
-nav a{margin-right:18px; color:var(--text); opacity:.8; text-decoration:none;}
-nav a.active{color:var(--accent); font-weight:700; opacity:1; text-decoration:underline;}
 
-.card{
+nav a{
+  color:var(--text);
+  text-decoration:none;
+  opacity:.82;
+  padding:.45rem .7rem;
+  border-radius:999px;
+  border:1px solid transparent;
+  transition:all .16s ease;
+}
+
+nav a:hover{
+  opacity:1;
+  border-color:var(--line);
+  background:rgba(255,255,255,.05);
+}
+
+nav a.active{
+  opacity:1;
+  color:#07131b;
+  background:var(--brand);
+  border-color:transparent;
+  font-weight:700;
+}
+
+/* =========================
+   LAYOUT
+========================= */
+main.container{
+  max-width:1100px;
+  margin:22px auto 64px;
+  padding:0 16px;
+}
+
+.card,
+.auth-card{
   background:var(--card);
+  border:1px solid var(--line);
   border-radius:var(--radius);
+  box-shadow:var(--shadow);
   padding:20px;
-  box-shadow:0 10px 30px rgba(0,0,0,.35);
 }
 
-/* One form (section) at a time */
+.auth-card{
+  max-width:760px;
+  margin:24px auto 0;
+}
+
+#authInfo{
+  max-width:1100px;
+  margin:16px auto 0;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.auth-info{
+  color:var(--text);
+  word-break:break-word;
+}
+
+/* show only one main form section at a time */
 main > section.card{display:none;}
 main > section.card.active{display:block;}
 
-/* -------- Headings & spacing -------- */
-h1,h2,h3{line-height:1.2;}
-h2{margin:.25rem 0 1rem;}
-h3{margin:1.25rem 0 .5rem;}
-.form-footer{display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;}
+/* =========================
+   TYPOGRAPHY / SPACING
+========================= */
+h2{
+  margin:.2rem 0 1rem;
+  font-size:1.35rem;
+  line-height:1.2;
+}
 
-/* -------- Form Grid -------- */
+h3{
+  margin:1.2rem 0 .55rem;
+  font-size:1.02rem;
+}
+
+p{margin:.5rem 0;}
+.notice,
+.help{
+  color:var(--muted);
+  font-size:.92rem;
+  margin:.4rem 0 .8rem;
+}
+
+/* =========================
+   GRID / FORM CONTROLS
+========================= */
 .grid{
   display:grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));
   gap:12px 16px;
 }
-label{display:flex; flex-direction:column; gap:6px; color:var(--muted); font-size:.95rem;}
 
-/* Inputs */
+label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  color:var(--muted);
+  font-size:.95rem;
+}
+
 input[type="text"],
+input[type="email"],
 input[type="date"],
 input[type="time"],
 input[type="number"],
 select,
 textarea{
-  width:100%; box-sizing:border-box;
+  width:100%;
+  min-width:0;
   padding:10px 12px;
-  border-radius:10px;
+  border-radius:var(--radius-sm);
   border:1px solid var(--line);
-  background:var(--input-bg);
+  background:var(--card-2);
   color:var(--text);
   outline:none;
-}
-textarea{min-height:88px; resize:vertical;}
-input::placeholder, textarea::placeholder{color:#9aa2b1; opacity:.8;}
-
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible{
-  border-color:var(--focus);
-  box-shadow:0 0 0 3px rgba(147,197,253,.25);
+  transition:border-color .15s ease, box-shadow .15s ease, background .15s ease;
 }
 
-/* -------- Date/Time controls (dark mode fixes) -------- */
-/* Make the calendar icon visible in Chromium */
-input[type="date"]::-webkit-calendar-picker-indicator{
-  filter: invert(1) contrast(1.2) brightness(1.2);
-  opacity: .9;
-  cursor: pointer;
-}
-input[type="date"]::-webkit-datetime-edit,
-input[type="time"]::-webkit-datetime-edit{ color:var(--text); }
-input[type="date"]::-webkit-clear-button,
-input[type="date"]::-webkit-inner-spin-button{ display:none; }
-
-/* Firefox: ensure readable native picker */
-@-moz-document url-prefix() {
-  input[type="date"], input[type="time"]{ color-scheme: dark; }
+input::placeholder,
+textarea::placeholder{
+  color:#94a3b8;
 }
 
-/* -------- Buttons -------- */
-button, .button{
-  appearance:none; border:0; border-radius:10px;
-  padding:.6rem 1rem; cursor:pointer;
-  background:#1f2937; color:var(--text);
+input:focus,
+select:focus,
+textarea:focus{
+  border-color:rgba(34,211,238,.65);
+  box-shadow:0 0 0 3px rgba(34,211,238,.16);
 }
-button.primary{background:var(--brand); color:#0b1220; font-weight:600;}
-button.secondary{background:var(--input-bg); border:1px solid var(--line);}
-button:disabled{opacity:.6; cursor:not-allowed;}
 
-/* -------- Tables -------- */
-.table-wrap{overflow-x:auto; margin:.25rem 0 0;}
-table{width:100%; border-collapse:collapse; table-layout:auto;}
+textarea{
+  min-height:90px;
+  resize:vertical;
+}
 
-/* Always ensure body rows are visible */
-tbody{display:table-row-group;}
-tbody tr{display:table-row;}
-th, td{
-  padding:.55rem .6rem;
+/* auth row */
+.auth-row{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.auth-row input{
+  flex:1 1 280px;
+  min-width:220px;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+button,
+.button{
+  appearance:none;
+  border:0;
+  border-radius:10px;
+  padding:.65rem 1rem;
+  cursor:pointer;
+  background:#1f2937;
+  color:var(--text);
+  transition:transform .04s ease, opacity .15s ease, background .15s ease, border-color .15s ease;
+}
+
+button:hover,
+.button:hover{
+  opacity:.96;
+}
+
+button:active,
+.button:active{
+  transform:translateY(1px);
+}
+
+button:disabled{
+  opacity:.6;
+  cursor:not-allowed;
+}
+
+button.primary{
+  background:var(--brand);
+  color:#07131b;
+  font-weight:700;
+}
+
+button.secondary{
+  background:var(--card-2);
+  border:1px solid var(--line);
+  color:var(--text);
+}
+
+button.secondary:hover{
+  border-color:var(--line-strong);
+}
+
+.form-footer{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:16px;
+}
+
+.actions{
+  margin:.2rem 0 .55rem;
+}
+
+.controls{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+/* =========================
+   TABLES
+========================= */
+.table-wrap{
+  overflow-x:auto;
+  overflow-y:visible;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:rgba(255,255,255,.02);
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:auto;
+  min-width:720px;
+}
+
+th,td{
+  padding:.62rem .66rem;
   border-bottom:1px solid var(--line);
-  vertical-align:top; text-align:left;
+  vertical-align:top;
+  text-align:left;
+}
+
+thead th{
+  position:static !important;
+  background:rgba(255,255,255,.03);
+  color:#cbd5e1;
+  font-weight:700;
   white-space:nowrap;
 }
-th{font-weight:600; color:#cbd5e1;}
-td input, td select, td textarea{margin:0;}
 
-/* Narrow “Controls” column */
-th:last-child, td:last-child{width:110px;}
+tbody tr:hover{
+  background:rgba(255,255,255,.025);
+}
 
-/* If headings were ever made sticky elsewhere, disable that so first row shows */
-table thead th { position: static !important; }
+td input,
+td select,
+td textarea{
+  margin:0;
+  min-width:0;
+}
 
-/* PPE: be explicit that at least one row should render */
-#ppeTable tbody tr:first-child { display: table-row !important; }
+td input[type="checkbox"]{
+  transform:scale(1.08);
+  accent-color:var(--brand);
+}
 
-/* -------- Signature areas (white for clarity) -------- */
+th:last-child,
+td:last-child{
+  width:110px;
+}
+
+/* =========================
+   SIGNATURE AREAS
+========================= */
 .canvas-wrap{
-  background:#fff; padding:10px;
-  border-radius:10px; border:1px solid #e5e7eb;
+  background:#ffffff;
+  padding:10px;
+  border-radius:10px;
+  border:1px solid #dbe2ea;
 }
+
 .canvas-wrap canvas{
-  display:block; width:100%; height:auto;
-  background:#fff; border:1px dashed #cbd5e1; border-radius:8px
-}
-/* Make signature canvas usable on mobile */
-@media (max-width:640px){
-  .canvas-wrap canvas{min-height:140px;}
-}
-
-/* -------- Utility & Polish -------- */
-.controls{display:flex; gap:8px;}
-.actions{margin:.25rem 0 .5rem;}
-.help{color:var(--muted); font-size:.9rem;}
-.notice{
-  padding:.5rem .75rem; border-radius:8px;
-  background:rgba(56,189,248,.1);
-  border:1px solid rgba(56,189,248,.25);
-  color:#bae6fd;
+  display:block;
+  width:100%;
+  height:auto;
+  min-height:120px;
+  background:#ffffff;
+  border:1px dashed #cbd5e1;
+  border-radius:8px;
 }
 
-/* -------- Login / Auth view -------- */
-.auth-card{
-  max-width:480px; margin:48px auto; padding:20px;
-  background:var(--card); border-radius:var(--radius);
-  box-shadow:0 10px 30px rgba(0,0,0,.35);
-}
-.auth-card h2{margin-top:0;}
-.auth-row{display:flex; gap:10px; align-items:center;}
-.auth-row input[type="email"]{flex:1;}
-.auth-info{display:flex; gap:10px; align-items:center; color:var(--muted);}
-
-/* Hide auth info area by default; JS will unhide when logged in */
-#authInfo[hidden]{display:none;}
-/* Make the native date/time picker icon visible on dark inputs */
-input[type="date"]::-webkit-calendar-picker-indicator,
-input[type="time"]::-webkit-calendar-picker-indicator{
-  opacity: 1;                 /* ensure it shows */
-  filter: invert(1) contrast(1.1) brightness(1.1); /* turn it light */
-  cursor: pointer;
-}
-
-/* Optional: give the icon a bit more room on the right */
+/* =========================
+   DATE/TIME PICKER ICONS
+========================= */
 input[type="date"],
 input[type="time"]{
-  padding-right: 2.2rem;
+  appearance:auto;
+  -webkit-appearance:auto;
+  color-scheme:dark;
+  padding-right:2.2rem;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator{
+  opacity:1;
+  filter:invert(1) contrast(1.08) brightness(1.08);
+  cursor:pointer;
+}
+
+/* =========================
+   DETAILS / PRE
+========================= */
+details{
+  background:rgba(255,255,255,.03);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:.35rem .5rem;
+}
+
+summary{
+  cursor:pointer;
+  font-weight:600;
+}
+
+pre{
+  margin:.6rem 0 0;
+  white-space:pre-wrap;
+  word-break:break-word;
+  color:#dbe4ee;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.85rem;
+}
+
+/* =========================
+   SMALL UTILITIES
+========================= */
+.notice{
+  background:rgba(56,189,248,.08);
+  border:1px solid rgba(56,189,248,.18);
+  border-radius:10px;
+  padding:.7rem .9rem;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+@media (max-width: 860px){
+  .app-header h1{
+    font-size:1.2rem;
+  }
+
+  #authInfo{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  main.container{
+    margin:16px auto 56px;
+    padding:0 12px;
+  }
+
+  .card,
+  .auth-card{
+    padding:16px;
+  }
+
+  .grid{
+    grid-template-columns:1fr;
+  }
+
+  .form-footer{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .form-footer button{
+    width:100%;
+  }
+
+  .auth-row{
+    flex-direction:column;
+  }
+
+  .auth-row input,
+  .auth-row button{
+    width:100%;
+  }
+
+  table{
+    min-width:680px;
+  }
+}
+
+@media (max-width: 640px){
+  nav{
+    gap:8px;
+  }
+
+  nav a{
+    padding:.42rem .62rem;
+    font-size:.92rem;
+  }
+
+  .canvas-wrap canvas{
+    min-height:140px;
+  }
 }
