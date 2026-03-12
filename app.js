@@ -1,16 +1,17 @@
 'use strict';
 
 /* =========================================================
-   Document 5: /app.js
-   Purpose:
-   - Stable Supabase magic-link login
-   - Session persistence after refresh
-   - JWT-authenticated calls to resend-email / clever-endpoint
-   - Form handling for A/B/C/D/E
-   - Logbook loading + CSV export
-   - Starter rows + date defaults
-   - Safe handling of Supabase auth hash fragments
-   ========================================================= */
+Document 11: /app.js
+Purpose:
+- Stable Supabase magic-link login
+- Session persistence after refresh
+- JWT-authenticated calls to resend-email / clever-endpoint
+- Form handling for A/B/C/D/E
+- Logbook loading + CSV export
+- Starter rows + date defaults
+- Safe handling of Supabase auth hash fragments
+- Image upload support for Site Inspection and Emergency Drill
+========================================================= */
 
 /* =========================
    CONFIG
@@ -20,9 +21,10 @@ const SB_KEY  = 'sb_publishable_Xyg1zQU9_vsAaME9BeHm_w_RRgtPs_e';
 
 const FUNCTION_URL = `${SB_URL}/functions/v1/resend-email`;
 const LIST_URL     = `${SB_URL}/functions/v1/clever-endpoint`;
+const STORAGE_BUCKET = 'submission-images';
 
 const OUTBOX_KEY = 'ywi_outbox_v1';
-const IDLE_MS = 30 * 60 * 1000; // 30 minutes
+const IDLE_MS = 30 * 60 * 1000;
 
 /* =========================
    SUPABASE CLIENT
@@ -121,6 +123,21 @@ function cleanAuthHash() {
   }
 }
 
+function extFromName(name = '') {
+  const clean = name.toLowerCase().trim();
+  if (clean.endsWith('.png')) return 'png';
+  if (clean.endsWith('.webp')) return 'webp';
+  if (clean.endsWith('.gif')) return 'gif';
+  return 'jpg';
+}
+
+function bytesLabel(size) {
+  const n = Number(size || 0);
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(2)} MB`;
+}
+
 /* =========================
    AUTH
 ========================= */
@@ -145,7 +162,6 @@ async function bootAuth() {
     return;
   }
 
-  // Let Supabase process any auth callback first
   await sb.auth.getSession();
   cleanAuthHash();
   await renderByAuth();
@@ -160,7 +176,6 @@ if (sb) {
     else showLogin();
   });
 
-  // idle logout
   if (IDLE_MS > 0) {
     let idleTimer = null;
     const resetIdle = () => {
@@ -232,7 +247,6 @@ async function jsonFetch(url, { method = 'POST', headers = {}, body = null } = {
     body: body ? (typeof body === 'string' ? body : JSON.stringify(body)) : null
   });
 
-  // one retry on 401 after refreshing session
   if (res.status === 401 && sb) {
     try { await sb.auth.refreshSession(); } catch {}
     auth = await authHeader();
@@ -305,6 +319,136 @@ function applyDateFallback() {
     inp.setAttribute('pattern', '\\d{4}-\\d{2}-\\d{2}');
   });
 }
+
+/* =========================
+   IMAGE UPLOAD SUPPORT
+========================= */
+const inspImageState = [];
+const drImageState = [];
+
+const inspImageFiles = $('#insp_image_files');
+const inspImageType = $('#insp_image_type');
+const inspImageCaption = $('#insp_image_caption');
+const inspImageBody = ensureTBody('inspImageTable');
+
+const drImageFiles = $('#dr_image_files');
+const drImageType = $('#dr_image_type');
+const drImageCaption = $('#dr_image_caption');
+const drImageBody = ensureTBody('drImageTable');
+
+function renderImageRows(state, tbody) {
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  state.forEach((img, index) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <img
+          src="${escHtml(img.preview_url)}"
+          alt="preview"
+          style="width:160px;max-width:100%;height:auto;border-radius:8px;border:1px solid rgba(255,255,255,.12);"
+        />
+      </td>
+      <td>
+        <div>${escHtml(img.file_name)}</div>
+        <div style="color:#9ca3af;font-size:.85rem;">${escHtml(bytesLabel(img.file_size_bytes))}</div>
+      </td>
+      <td>${escHtml(img.image_type)}</td>
+      <td>${escHtml(img.caption || '')}</td>
+      <td>
+        <div class="controls">
+          <button type="button" data-remove-image="${index}">Remove</button>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function clearImageState(state, tbody, fileInput, captionInput) {
+  state.forEach(item => {
+    if (item.preview_url) URL.revokeObjectURL(item.preview_url);
+  });
+  state.length = 0;
+  if (tbody) tbody.innerHTML = '';
+  if (fileInput) fileInput.value = '';
+  if (captionInput) captionInput.value = '';
+}
+
+async function uploadImagesForSubmission(localImages, submissionId, prefix) {
+  if (!sb || !localImages.length) return [];
+
+  const uploaded = [];
+
+  for (const item of localImages) {
+    const ext = extFromName(item.file_name);
+    const safePrefix = prefix || 'submission';
+    const filePath = `${safePrefix}/${submissionId}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+
+    const { error: uploadErr } = await sb.storage
+      .from(STORAGE_BUCKET)
+      .upload(filePath, item.file, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: item.content_type || item.file?.type || 'image/jpeg'
+      });
+
+    if (uploadErr) throw uploadErr;
+
+    uploaded.push({
+      image_type: item.image_type || 'status',
+      file_name: item.file_name,
+      file_path: filePath,
+      file_size_bytes: item.file_size_bytes ?? null,
+      content_type: item.content_type ?? null,
+      caption: item.caption || null
+    });
+  }
+
+  return uploaded;
+}
+
+function bindImageInput(fileInput, typeInput, captionInput, state, tbody) {
+  fileInput?.addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files || []);
+    const imageType = typeInput?.value || 'status';
+    const caption = captionInput?.value?.trim?.() || '';
+
+    files.forEach(file => {
+      state.push({
+        file,
+        file_name: file.name,
+        file_size_bytes: file.size,
+        content_type: file.type || 'image/jpeg',
+        image_type: imageType,
+        caption,
+        preview_url: URL.createObjectURL(file)
+      });
+    });
+
+    renderImageRows(state, tbody);
+
+    if (fileInput) fileInput.value = '';
+    if (captionInput) captionInput.value = '';
+  });
+
+  tbody?.addEventListener('click', (e) => {
+    const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
+    if (!btn) return;
+    const idx = btn.dataset.removeImage;
+    if (idx === undefined) return;
+
+    const index = Number(idx);
+    const item = state[index];
+    if (item?.preview_url) URL.revokeObjectURL(item.preview_url);
+    state.splice(index, 1);
+    renderImageRows(state, tbody);
+  });
+}
+
+bindImageInput(inspImageFiles, inspImageType, inspImageCaption, inspImageState, inspImageBody);
+bindImageInput(drImageFiles, drImageType, drImageCaption, drImageState, drImageBody);
 
 /* =========================
    FORM E — TOOLBOX TALK
@@ -781,7 +925,15 @@ inspForm?.addEventListener('submit', async (e) => {
   };
 
   try {
-    await sendToFunction('C', payload);
+    const resp = await sendToFunction('C', payload);
+    const submissionId = resp?.id;
+    if (submissionId && inspImageState.length) {
+      const uploadedImages = await uploadImagesForSubmission(inspImageState, submissionId, 'inspection');
+      if (uploadedImages.length) {
+        await sendToFunction('C', payload, uploadedImages);
+      }
+    }
+
     alert('Site inspection submitted.');
     inspForm.reset();
     if (inspDate) inspDate.value = todayISO();
@@ -791,9 +943,10 @@ inspForm?.addEventListener('submit', async (e) => {
     if (inspSigPad?.clear) inspSigPad.clear();
     if (inspApprover) inspApprover.value = 'Krista';
     if (inspApproverOther) inspApproverOther.value = '';
+    clearImageState(inspImageState, inspImageBody, inspImageFiles, inspImageCaption);
   } catch (err) {
     const outbox = getOutbox();
-    outbox.push({ ts: Date.now(), formType: 'C', payload });
+    outbox.push({ ts: Date.now(), formType: 'C', payload, images: [] });
     setOutbox(outbox);
     alert('Offline/server error. Saved to Outbox.');
   }
@@ -914,7 +1067,15 @@ drForm?.addEventListener('submit', async (e) => {
   };
 
   try {
-    await sendToFunction('A', payload);
+    const resp = await sendToFunction('A', payload);
+    const submissionId = resp?.id;
+    if (submissionId && drImageState.length) {
+      const uploadedImages = await uploadImagesForSubmission(drImageState, submissionId, 'drill');
+      if (uploadedImages.length) {
+        await sendToFunction('A', payload, uploadedImages);
+      }
+    }
+
     alert('Drill submitted.');
     drForm.reset();
     if (drDate) drDate.value = todayISO();
@@ -922,9 +1083,10 @@ drForm?.addEventListener('submit', async (e) => {
       drRosterBody.innerHTML = '';
       seedDrill();
     }
+    clearImageState(drImageState, drImageBody, drImageFiles, drImageCaption);
   } catch (err) {
     const outbox = getOutbox();
-    outbox.push({ ts: Date.now(), formType: 'A', payload });
+    outbox.push({ ts: Date.now(), formType: 'A', payload, images: [] });
     setOutbox(outbox);
     alert('Offline/server error. Saved to Outbox.');
   }
