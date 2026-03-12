@@ -1,16 +1,21 @@
 'use strict';
 
 /* =========================================================
-Document 11: /app.js
+Document 13: /app.js
 Purpose:
 - Stable Supabase magic-link login
 - Session persistence after refresh
-- JWT-authenticated calls to resend-email / clever-endpoint
+- JWT-authenticated calls to:
+  - resend-email
+  - clever-endpoint
+  - submission-images
 - Form handling for A/B/C/D/E
 - Logbook loading + CSV export
 - Starter rows + date defaults
 - Safe handling of Supabase auth hash fragments
-- Image upload support for Site Inspection and Emergency Drill
+- Image upload support for:
+  - Site Inspection
+  - Emergency Drill
 ========================================================= */
 
 /* =========================
@@ -20,7 +25,8 @@ const SB_URL  = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
 const SB_KEY  = 'sb_publishable_Xyg1zQU9_vsAaME9BeHm_w_RRgtPs_e';
 
 const FUNCTION_URL = `${SB_URL}/functions/v1/resend-email`;
-const LIST_URL     = `${SB_URL}/functions/v1/clever-endpoint`;
+const LIST_URL = `${SB_URL}/functions/v1/clever-endpoint`;
+const IMAGE_META_URL = `${SB_URL}/functions/v1/submission-images`;
 const STORAGE_BUCKET = 'submission-images';
 
 const OUTBOX_KEY = 'ywi_outbox_v1';
@@ -128,6 +134,7 @@ function extFromName(name = '') {
   if (clean.endsWith('.png')) return 'png';
   if (clean.endsWith('.webp')) return 'webp';
   if (clean.endsWith('.gif')) return 'gif';
+  if (clean.endsWith('.jpeg')) return 'jpeg';
   return 'jpg';
 }
 
@@ -267,9 +274,15 @@ async function jsonFetch(url, { method = 'POST', headers = {}, body = null } = {
   catch { return text; }
 }
 
-async function sendToFunction(formType, payload, images = []) {
+async function sendToFunction(formType, payload) {
   return jsonFetch(FUNCTION_URL, {
-    body: { formType, payload, images }
+    body: { formType, payload }
+  });
+}
+
+async function attachSubmissionImages(submissionId, images) {
+  return jsonFetch(IMAGE_META_URL, {
+    body: { submission_id: submissionId, images }
   });
 }
 
@@ -283,7 +296,14 @@ async function flushOutbox() {
   const remaining = [];
   for (const item of outbox) {
     try {
-      await sendToFunction(item.formType, item.payload, item.images || []);
+      const resp = await sendToFunction(item.formType, item.payload);
+      const submissionId = resp?.id;
+      if (submissionId && item.localImages?.length) {
+        const uploadedImages = await uploadImagesForSubmission(item.localImages, submissionId, item.imagePrefix || 'submission');
+        if (uploadedImages.length) {
+          await attachSubmissionImages(submissionId, uploadedImages);
+        }
+      }
     } catch (err) {
       console.warn('Outbox send failed', err);
       remaining.push(item);
@@ -927,10 +947,11 @@ inspForm?.addEventListener('submit', async (e) => {
   try {
     const resp = await sendToFunction('C', payload);
     const submissionId = resp?.id;
+
     if (submissionId && inspImageState.length) {
       const uploadedImages = await uploadImagesForSubmission(inspImageState, submissionId, 'inspection');
       if (uploadedImages.length) {
-        await sendToFunction('C', payload, uploadedImages);
+        await attachSubmissionImages(submissionId, uploadedImages);
       }
     }
 
@@ -946,7 +967,13 @@ inspForm?.addEventListener('submit', async (e) => {
     clearImageState(inspImageState, inspImageBody, inspImageFiles, inspImageCaption);
   } catch (err) {
     const outbox = getOutbox();
-    outbox.push({ ts: Date.now(), formType: 'C', payload, images: [] });
+    outbox.push({
+      ts: Date.now(),
+      formType: 'C',
+      payload,
+      localImages: [...inspImageState],
+      imagePrefix: 'inspection'
+    });
     setOutbox(outbox);
     alert('Offline/server error. Saved to Outbox.');
   }
@@ -1069,10 +1096,11 @@ drForm?.addEventListener('submit', async (e) => {
   try {
     const resp = await sendToFunction('A', payload);
     const submissionId = resp?.id;
+
     if (submissionId && drImageState.length) {
       const uploadedImages = await uploadImagesForSubmission(drImageState, submissionId, 'drill');
       if (uploadedImages.length) {
-        await sendToFunction('A', payload, uploadedImages);
+        await attachSubmissionImages(submissionId, uploadedImages);
       }
     }
 
@@ -1086,7 +1114,13 @@ drForm?.addEventListener('submit', async (e) => {
     clearImageState(drImageState, drImageBody, drImageFiles, drImageCaption);
   } catch (err) {
     const outbox = getOutbox();
-    outbox.push({ ts: Date.now(), formType: 'A', payload, images: [] });
+    outbox.push({
+      ts: Date.now(),
+      formType: 'A',
+      payload,
+      localImages: [...drImageState],
+      imagePrefix: 'drill'
+    });
     setOutbox(outbox);
     alert('Offline/server error. Saved to Outbox.');
   }
