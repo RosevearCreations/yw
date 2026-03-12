@@ -1,12 +1,26 @@
 {
   "name": "YWI HSE",
   "short_name": "YWI HSE",
-  "start_url": "/",
+  "description": "YWI Health, Safety and Environment field forms and logbook",
+  "start_url": "/#toolbox",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "background_color": "#0f172a",
   "theme_color": "#0b6c3d",
+  "orientation": "portrait-primary",
+  "lang": "en",
   "icons": [
-    { "src": "/public/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/public/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
   ]
 }
