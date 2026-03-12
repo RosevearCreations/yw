@@ -1,12 +1,11 @@
 <!-- =========================================================
-Document 6: /index.html
+Document 10: /index.html
 Purpose:
-- Match the new app.js exactly
-- Fix login wrapper IDs
-- Load scripts in the correct order
-- Keep one-form-at-a-time layout
-- Keep service worker path as /server-worker.js
-- Prevent duplicate app.js loading
+- Full replacement document
+- Matches app.js IDs and structure
+- Includes login, auth info, all forms, logbook
+- Adds image upload sections to Site Inspection and Emergency Drill
+- Keeps router and script loading clean
 ========================================================= -->
 
 <!DOCTYPE html>
@@ -18,16 +17,11 @@ Purpose:
   <meta name="theme-color" content="#0b6c3d" />
   <meta name="color-scheme" content="dark light" />
 
-  <!-- PWA -->
   <link rel="manifest" href="/manifest.json" />
-
-  <!-- Styles -->
   <link rel="stylesheet" href="/style.css" />
 
-  <!-- Supabase client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- Service worker -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -315,6 +309,51 @@ Purpose:
           </div>
         </div>
 
+        <h3>Status / Hazard Images</h3>
+        <div class="notice">
+          Add photos of hazards, repairs, or site status. Images are optional.
+        </div>
+
+        <div class="grid">
+          <label>Image Type
+            <select id="insp_image_type">
+              <option value="hazard">Hazard</option>
+              <option value="status">Status</option>
+              <option value="repair">Repair</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+
+          <label>Caption (optional)
+            <input type="text" id="insp_image_caption" placeholder="Short note about the photo" />
+          </label>
+        </div>
+
+        <div class="actions">
+          <input
+            type="file"
+            id="insp_image_files"
+            accept="image/*"
+            capture="environment"
+            multiple
+          />
+        </div>
+
+        <div class="table-wrap">
+          <table id="inspImageTable">
+            <thead>
+              <tr>
+                <th style="width:180px">Preview</th>
+                <th>File</th>
+                <th style="width:140px">Type</th>
+                <th>Caption</th>
+                <th style="width:110px">Controls</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
         <div class="form-footer">
           <button type="submit" class="primary">Submit Site Inspection</button>
           <button type="button" class="secondary" data-role="retry-outbox">Retry Queued Submissions</button>
@@ -401,6 +440,50 @@ Purpose:
           </label>
         </div>
 
+        <h3>Drill Status Images</h3>
+        <div class="notice">
+          Add optional photos from the drill, setup, or follow-up actions.
+        </div>
+
+        <div class="grid">
+          <label>Image Type
+            <select id="dr_image_type">
+              <option value="status">Status</option>
+              <option value="repair">Repair</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+
+          <label>Caption (optional)
+            <input type="text" id="dr_image_caption" placeholder="Short note about the photo" />
+          </label>
+        </div>
+
+        <div class="actions">
+          <input
+            type="file"
+            id="dr_image_files"
+            accept="image/*"
+            capture="environment"
+            multiple
+          />
+        </div>
+
+        <div class="table-wrap">
+          <table id="drImageTable">
+            <thead>
+              <tr>
+                <th style="width:180px">Preview</th>
+                <th>File</th>
+                <th style="width:140px">Type</th>
+                <th>Caption</th>
+                <th style="width:110px">Controls</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
         <div class="form-footer">
           <button type="submit" class="primary">Submit Drill</button>
           <button type="button" class="secondary" data-role="retry-outbox">Retry Queued Submissions</button>
@@ -459,13 +542,9 @@ Purpose:
     </section>
   </main>
 
-  <!-- Signature pad -->
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
-
-  <!-- App JS: load ONCE only -->
   <script src="/app.js" defer></script>
 
-  <!-- Simple section router -->
   <script>
     (function () {
       const sections = Array.from(document.querySelectorAll('main > section.card'));
@@ -474,9 +553,7 @@ Purpose:
       function current() {
         const raw = (location.hash || '#toolbox').slice(1);
 
-        if (
-          /^(access_token|refresh_token|expires_at|expires_in|token_type|type|error|code)=/i.test(raw)
-        ) {
+        if (/^(access_token|refresh_token|expires_at|expires_in|token_type|type|error|code)=/i.test(raw)) {
           return 'toolbox';
         }
 
@@ -486,12 +563,15 @@ Purpose:
       function showSection(id) {
         const safeId = (id || 'toolbox').replace(/[^a-zA-Z0-9_-]/g, '') || 'toolbox';
 
-        sections.forEach(s => s.classList.toggle('active', s.id === safeId));
-        navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + safeId));
+        sections.forEach(section => {
+          section.classList.toggle('active', section.id === safeId);
+        });
 
-        const first = document.querySelector(
-          `#${safeId} input, #${safeId} textarea, #${safeId} select`
-        );
+        navLinks.forEach(link => {
+          link.classList.toggle('active', link.getAttribute('href') === '#' + safeId);
+        });
+
+        const first = document.querySelector(`#${safeId} input, #${safeId} textarea, #${safeId} select`);
         if (first) first.focus({ preventScroll: true });
 
         if (location.hash !== '#' + safeId) {
@@ -504,10 +584,10 @@ Purpose:
       window.addEventListener('hashchange', () => showSection(current()));
       document.addEventListener('DOMContentLoaded', () => showSection(current()));
 
-      navLinks.forEach(a => {
-        a.addEventListener('click', (e) => {
+      navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
           e.preventDefault();
-          showSection(a.getAttribute('href').slice(1));
+          showSection(link.getAttribute('href').slice(1));
         });
       });
     })();
