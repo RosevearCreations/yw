@@ -1,7 +1,7 @@
 'use strict';
 
 /* =========================================================
-Document 13: /app.js
+Document 17: /app.js
 Purpose:
 - Stable Supabase magic-link login
 - Session persistence after refresh
@@ -9,8 +9,10 @@ Purpose:
   - resend-email
   - clever-endpoint
   - submission-images
+  - review-submission
 - Form handling for A/B/C/D/E
 - Logbook loading + CSV export
+- Review/admin panel support
 - Starter rows + date defaults
 - Safe handling of Supabase auth hash fragments
 - Image upload support for:
@@ -27,6 +29,7 @@ const SB_KEY  = 'sb_publishable_Xyg1zQU9_vsAaME9BeHm_w_RRgtPs_e';
 const FUNCTION_URL = `${SB_URL}/functions/v1/resend-email`;
 const LIST_URL = `${SB_URL}/functions/v1/clever-endpoint`;
 const IMAGE_META_URL = `${SB_URL}/functions/v1/submission-images`;
+const REVIEW_URL = `${SB_URL}/functions/v1/review-submission`;
 const STORAGE_BUCKET = 'submission-images';
 
 const OUTBOX_KEY = 'ywi_outbox_v1';
@@ -283,6 +286,12 @@ async function sendToFunction(formType, payload) {
 async function attachSubmissionImages(submissionId, images) {
   return jsonFetch(IMAGE_META_URL, {
     body: { submission_id: submissionId, images }
+  });
+}
+
+async function saveSubmissionReview(payload) {
+  return jsonFetch(REVIEW_URL, {
+    body: payload
   });
 }
 
@@ -1133,9 +1142,13 @@ const lgSite   = $('#lg_site');
 const lgFrom   = $('#lg_from');
 const lgTo     = $('#lg_to');
 const lgForm   = $('#lg_form');
+const lgStatus = $('#lg_status');
 const lgLoad   = $('#lg_load');
 const lgExport = $('#lg_export');
 const lgBody   = $('#lg_table')?.querySelector('tbody') || null;
+
+window._logRows = window._logRows || [];
+window._logRole = window._logRole || '';
 
 function fmtSummary(row) {
   const t = row.form_type;
@@ -1152,22 +1165,28 @@ function renderRows(rows) {
   if (!lgBody) return;
   lgBody.innerHTML = '';
 
+  const canReview = ['supervisor', 'hse', 'admin'].includes(window._logRole || '');
+
   rows.forEach(r => {
     const tr = document.createElement('tr');
     const d = (r.date || '').slice(0, 10);
+
     tr.innerHTML = `
       <td>${escHtml(r.id)}</td>
       <td>${escHtml(d)}</td>
       <td>${escHtml(r.form_type)}</td>
       <td>${escHtml(r.site || '')}</td>
+      <td>${escHtml(r.status || 'submitted')}</td>
       <td>${escHtml(fmtSummary(r))}</td>
       <td>
         <details>
           <summary>View</summary>
           <pre style="white-space:pre-wrap; word-break:break-word; max-width:60ch;">${escHtml(JSON.stringify(r.payload, null, 2))}</pre>
         </details>
+        ${canReview ? `<div class="controls" style="margin-top:8px;"><button type="button" data-review-id="${escHtml(r.id)}">Review</button></div>` : ''}
       </td>
     `;
+
     lgBody.appendChild(tr);
   });
 }
@@ -1189,18 +1208,20 @@ async function fetchLog() {
     formType: (lgForm && lgForm.value) || undefined,
     from: (lgFrom && lgFrom.value) || undefined,
     to: (lgTo && lgTo.value) || undefined,
+    status: (lgStatus && lgStatus.value) || undefined,
     limit: 100
   };
 
   const data = await jsonFetch(LIST_URL, { body });
   if (!data.ok) throw new Error(data.error || 'load_failed');
 
-  renderRows(data.rows || []);
   window._logRows = data.rows || [];
+  window._logRole = data.role || '';
+  renderRows(window._logRows);
 }
 
 function toCSV(rows) {
-  const header = ['id', 'date', 'form_type', 'site', 'summary'];
+  const header = ['id', 'date', 'form_type', 'site', 'status', 'summary'];
   const lines = [header.join(',')];
   const esc = v => `"${String(v).replaceAll('"', '""')}"`;
 
@@ -1210,6 +1231,7 @@ function toCSV(rows) {
       (r.date || '').slice(0, 10),
       r.form_type,
       r.site || '',
+      r.status || '',
       fmtSummary(r)
     ];
     lines.push(row.map(esc).join(','));
@@ -1247,6 +1269,99 @@ lgExport?.addEventListener('click', () => {
 });
 
 /* =========================
+   REVIEW PANEL
+========================= */
+const rvSubmissionId = $('#rv_submission_id');
+const rvStatus = $('#rv_status');
+const rvAction = $('#rv_action');
+const rvNote = $('#rv_note');
+const rvAdminNotes = $('#rv_admin_notes');
+const rvSubmit = $('#rv_submit');
+const rvClear = $('#rv_clear');
+const rvSummary = $('#rv_summary');
+
+function clearReviewPanel() {
+  if (rvSubmissionId) rvSubmissionId.value = '';
+  if (rvStatus) rvStatus.value = '';
+  if (rvAction) rvAction.value = 'commented';
+  if (rvNote) rvNote.value = '';
+  if (rvAdminNotes) rvAdminNotes.value = '';
+  if (rvSummary) {
+    rvSummary.style.display = 'none';
+    rvSummary.textContent = '';
+  }
+}
+
+function setReviewPanelFromRow(row) {
+  if (!row) return;
+  if (rvSubmissionId) rvSubmissionId.value = String(row.id || '');
+  if (rvStatus) rvStatus.value = row.status || '';
+  if (rvAction) rvAction.value = 'commented';
+  if (rvNote) rvNote.value = '';
+  if (rvAdminNotes) rvAdminNotes.value = row.admin_notes || '';
+  if (rvSummary) {
+    rvSummary.style.display = 'block';
+    rvSummary.textContent = `Selected submission #${row.id} | ${row.form_type} | ${row.site || ''} | ${row.status || 'submitted'}`;
+  }
+}
+
+lgBody?.addEventListener('click', (e) => {
+  const btn = (e.target instanceof Element) ? e.target.closest('button[data-review-id]') : null;
+  if (!btn) return;
+
+  const id = Number(btn.dataset.reviewId || 0);
+  const row = (window._logRows || []).find(r => Number(r.id) === id);
+  if (!row) return;
+
+  setReviewPanelFromRow(row);
+  location.hash = '#log';
+});
+
+rvClear?.addEventListener('click', clearReviewPanel);
+
+rvSubmit?.addEventListener('click', async () => {
+  const submissionId = Number(rvSubmissionId?.value || 0);
+  const status = rvStatus?.value || '';
+  const reviewAction = rvAction?.value || 'commented';
+  const reviewNote = rvNote?.value?.trim?.() || '';
+  const adminNotes = rvAdminNotes?.value ?? '';
+
+  if (!submissionId) {
+    alert('Select a submission from the logbook first.');
+    return;
+  }
+
+  try {
+    const resp = await saveSubmissionReview({
+      submission_id: submissionId,
+      status: status || undefined,
+      review_action: reviewAction || undefined,
+      review_note: reviewNote || undefined,
+      admin_notes: adminNotes
+    });
+
+    if (!resp?.ok) {
+      throw new Error(resp?.error || 'Review save failed');
+    }
+
+    if (rvSummary) {
+      rvSummary.style.display = 'block';
+      rvSummary.textContent = `Review saved for submission #${submissionId}.`;
+    }
+
+    await fetchLog();
+
+    const updatedRow = (window._logRows || []).find(r => Number(r.id) === submissionId);
+    if (updatedRow) setReviewPanelFromRow(updatedRow);
+
+    alert('Review saved.');
+  } catch (err) {
+    console.error(err);
+    alert('Failed to save review.');
+  }
+});
+
+/* =========================
    TABLE SEEDING
 ========================= */
 function seedAllTables() {
@@ -1264,6 +1379,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   applyDateFallback();
   await bootAuth();
   seedAllTables();
+  clearReviewPanel();
 });
 
 window.addEventListener('hashchange', () => {
