@@ -1,13 +1,14 @@
 /* =========================================================
-Document 7: /style.css
+Document 18: /style.css
 Purpose:
-- Clean mobile-friendly styling
-- One visible section at a time
-- Better login/admin/header layout
-- White signature areas
-- Better table scrolling
-- Visible date/time picker icons on dark theme
-- General polish for field use
+- Full replacement stylesheet
+- Supports:
+  - login view
+  - one-section navigation
+  - all forms
+  - image tables
+  - review/admin panel
+  - dark theme with visible date/time pickers
 ========================================================= */
 
 :root{
@@ -23,15 +24,16 @@ Purpose:
   --brand-2:#38bdf8;
   --danger:#ef4444;
   --ok:#22c55e;
+  --warn:#f59e0b;
   --shadow:0 10px 30px rgba(0,0,0,.35);
   --radius:16px;
   --radius-sm:10px;
-  --pad:16px;
 }
 
 *{box-sizing:border-box;}
 html,body{height:100%;}
 html{scroll-behavior:smooth;}
+
 body{
   margin:0;
   background:var(--bg);
@@ -130,7 +132,7 @@ main > section.card{display:none;}
 main > section.card.active{display:block;}
 
 /* =========================
-   TYPOGRAPHY / SPACING
+   TYPOGRAPHY
 ========================= */
 h2{
   margin:.2rem 0 1rem;
@@ -144,6 +146,7 @@ h3{
 }
 
 p{margin:.5rem 0;}
+
 .notice,
 .help{
   color:var(--muted);
@@ -151,8 +154,15 @@ p{margin:.5rem 0;}
   margin:.4rem 0 .8rem;
 }
 
+.notice{
+  background:rgba(56,189,248,.08);
+  border:1px solid rgba(56,189,248,.18);
+  border-radius:10px;
+  padding:.7rem .9rem;
+}
+
 /* =========================
-   GRID / FORM CONTROLS
+   FORMS / GRID
 ========================= */
 .grid{
   display:grid;
@@ -173,6 +183,7 @@ input[type="email"],
 input[type="date"],
 input[type="time"],
 input[type="number"],
+input[type="file"],
 select,
 textarea{
   width:100%;
@@ -353,7 +364,7 @@ td:last-child{
 }
 
 /* =========================
-   DATE/TIME PICKER ICONS
+   DATE/TIME PICKERS
 ========================= */
 input[type="date"],
 input[type="time"]{
@@ -371,7 +382,7 @@ input[type="time"]::-webkit-calendar-picker-indicator{
 }
 
 /* =========================
-   DETAILS / PRE
+   DETAILS / JSON VIEW
 ========================= */
 details{
   background:rgba(255,255,255,.03);
@@ -395,13 +406,42 @@ pre{
 }
 
 /* =========================
-   SMALL UTILITIES
+   REVIEW PANEL
 ========================= */
-.notice{
-  background:rgba(56,189,248,.08);
-  border:1px solid rgba(56,189,248,.18);
-  border-radius:10px;
-  padding:.7rem .9rem;
+#rv_summary{
+  white-space:pre-wrap;
+}
+
+#rv_submission_id[readonly]{
+  background:#0f172a;
+  opacity:.95;
+}
+
+.status-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:.35rem;
+  padding:.24rem .6rem;
+  border-radius:999px;
+  font-size:.85rem;
+  font-weight:700;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.04);
+}
+
+.status-submitted{ color:#cbd5e1; }
+.status-under_review{ color:#93c5fd; }
+.status-approved{ color:#86efac; }
+.status-follow_up_required{ color:#fde68a; }
+.status-closed{ color:#d1d5db; }
+
+/* =========================
+   IMAGE PREVIEW TABLES
+========================= */
+#inspImageTable img,
+#drImageTable img{
+  display:block;
+  background:#0b1220;
 }
 
 /* =========================
