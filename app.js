@@ -1,7 +1,7 @@
 'use strict';
 
 /* =========================================================
-Document 17: /app.js
+Document 21: /app.js
 Purpose:
 - Stable Supabase magic-link login
 - Session persistence after refresh
@@ -10,9 +10,11 @@ Purpose:
   - clever-endpoint
   - submission-images
   - review-submission
+  - admin-directory
 - Form handling for A/B/C/D/E
 - Logbook loading + CSV export
 - Review/admin panel support
+- Admin directory support
 - Starter rows + date defaults
 - Safe handling of Supabase auth hash fragments
 - Image upload support for:
@@ -26,11 +28,12 @@ Purpose:
 const SB_URL  = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
 const SB_KEY  = 'sb_publishable_Xyg1zQU9_vsAaME9BeHm_w_RRgtPs_e';
 
-const FUNCTION_URL = `${SB_URL}/functions/v1/resend-email`;
-const LIST_URL = `${SB_URL}/functions/v1/clever-endpoint`;
-const IMAGE_META_URL = `${SB_URL}/functions/v1/submission-images`;
-const REVIEW_URL = `${SB_URL}/functions/v1/review-submission`;
-const STORAGE_BUCKET = 'submission-images';
+const FUNCTION_URL    = `${SB_URL}/functions/v1/resend-email`;
+const LIST_URL        = `${SB_URL}/functions/v1/clever-endpoint`;
+const IMAGE_META_URL  = `${SB_URL}/functions/v1/submission-images`;
+const REVIEW_URL      = `${SB_URL}/functions/v1/review-submission`;
+const DIRECTORY_URL   = `${SB_URL}/functions/v1/admin-directory`;
+const STORAGE_BUCKET  = 'submission-images';
 
 const OUTBOX_KEY = 'ywi_outbox_v1';
 const IDLE_MS = 30 * 60 * 1000;
@@ -295,6 +298,12 @@ async function saveSubmissionReview(payload) {
   });
 }
 
+async function loadAdminDirectory(payload) {
+  return jsonFetch(DIRECTORY_URL, {
+    body: payload
+  });
+}
+
 async function flushOutbox() {
   const outbox = getOutbox();
   if (!outbox.length) {
@@ -308,7 +317,11 @@ async function flushOutbox() {
       const resp = await sendToFunction(item.formType, item.payload);
       const submissionId = resp?.id;
       if (submissionId && item.localImages?.length) {
-        const uploadedImages = await uploadImagesForSubmission(item.localImages, submissionId, item.imagePrefix || 'submission');
+        const uploadedImages = await uploadImagesForSubmission(
+          item.localImages,
+          submissionId,
+          item.imagePrefix || 'submission'
+        );
         if (uploadedImages.length) {
           await attachSubmissionImages(submissionId, uploadedImages);
         }
@@ -439,7 +452,7 @@ async function uploadImagesForSubmission(localImages, submissionId, prefix) {
 }
 
 function bindImageInput(fileInput, typeInput, captionInput, state, tbody) {
-  fileInput?.addEventListener('change', async (e) => {
+  fileInput?.addEventListener('change', (e) => {
     const files = Array.from(e.target.files || []);
     const imageType = typeInput?.value || 'status';
     const caption = captionInput?.value?.trim?.() || '';
@@ -582,13 +595,7 @@ tbForm?.addEventListener('submit', async (e) => {
     };
   }).filter(a => a.name);
 
-  const payload = {
-    site,
-    date,
-    submitted_by: leader,
-    topic_notes: notes,
-    attendees
-  };
+  const payload = { site, date, submitted_by: leader, topic_notes: notes, attendees };
 
   try {
     await sendToFunction('E', payload);
@@ -687,13 +694,7 @@ ppeForm?.addEventListener('submit', async (e) => {
     !r.items.shoes || !r.items.vest || !r.items.plugs || !r.items.goggles || !r.items.muffs || !r.items.gloves
   );
 
-  const payload = {
-    site,
-    date,
-    checked_by: checker,
-    roster,
-    nonCompliant
-  };
+  const payload = { site, date, checked_by: checker, roster, nonCompliant };
 
   try {
     await sendToFunction('D', payload);
@@ -783,13 +784,7 @@ faForm?.addEventListener('submit', async (e) => {
     (i.expiry && (within30Days(i.expiry) || (new Date(i.expiry) < new Date())))
   );
 
-  const payload = {
-    site,
-    date,
-    checked_by: checker,
-    items,
-    flagged
-  };
+  const payload = { site, date, checked_by: checker, items, flagged };
 
   try {
     await sendToFunction('B', payload);
@@ -1186,7 +1181,6 @@ function renderRows(rows) {
         ${canReview ? `<div class="controls" style="margin-top:8px;"><button type="button" data-review-id="${escHtml(r.id)}">Review</button></div>` : ''}
       </td>
     `;
-
     lgBody.appendChild(tr);
   });
 }
@@ -1362,6 +1356,132 @@ rvSubmit?.addEventListener('click', async () => {
 });
 
 /* =========================
+   ADMIN DIRECTORY
+========================= */
+const adMode = $('#ad_mode');
+const adSearch = $('#ad_search');
+const adSiteId = $('#ad_site_id');
+const adProfileId = $('#ad_profile_id');
+const adActiveOnly = $('#ad_active_only');
+const adLimit = $('#ad_limit');
+const adLoad = $('#ad_load');
+const adClear = $('#ad_clear');
+
+const adUsersBody = $('#ad_users_table')?.querySelector('tbody') || null;
+const adSitesBody = $('#ad_sites_table')?.querySelector('tbody') || null;
+const adAssignmentsBody = $('#ad_assignments_table')?.querySelector('tbody') || null;
+const adSummary = $('#ad_summary');
+
+function clearAdminDirectoryTables() {
+  if (adUsersBody) adUsersBody.innerHTML = '';
+  if (adSitesBody) adSitesBody.innerHTML = '';
+  if (adAssignmentsBody) adAssignmentsBody.innerHTML = '';
+  if (adSummary) {
+    adSummary.style.display = 'none';
+    adSummary.textContent = '';
+  }
+}
+
+function renderAdminUsers(rows) {
+  if (!adUsersBody) return;
+  adUsersBody.innerHTML = '';
+
+  rows.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escHtml(row.email || '')}</td>
+      <td>${escHtml(row.full_name || '')}</td>
+      <td>${escHtml(row.role || '')}</td>
+      <td>${row.is_active ? 'Yes' : 'No'}</td>
+      <td>${escHtml(row.id || '')}</td>
+    `;
+    adUsersBody.appendChild(tr);
+  });
+}
+
+function renderAdminSites(rows) {
+  if (!adSitesBody) return;
+  adSitesBody.innerHTML = '';
+
+  rows.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escHtml(row.site_code || '')}</td>
+      <td>${escHtml(row.site_name || '')}</td>
+      <td>${row.is_active ? 'Yes' : 'No'}</td>
+      <td>${escHtml(row.address || '')}</td>
+      <td>${escHtml(row.id || '')}</td>
+    `;
+    adSitesBody.appendChild(tr);
+  });
+}
+
+function renderAdminAssignments(rows) {
+  if (!adAssignmentsBody) return;
+  adAssignmentsBody.innerHTML = '';
+
+  rows.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escHtml(row?.sites?.site_code || '')}</td>
+      <td>${escHtml(row?.sites?.site_name || '')}</td>
+      <td>${escHtml(row?.profiles?.email || '')}</td>
+      <td>${escHtml(row?.profiles?.full_name || '')}</td>
+      <td>${escHtml(row.assignment_role || '')}</td>
+      <td>${row.is_primary ? 'Yes' : 'No'}</td>
+    `;
+    adAssignmentsBody.appendChild(tr);
+  });
+}
+
+async function fetchAdminDirectory() {
+  const payload = {
+    mode: adMode?.value || 'all',
+    search: adSearch?.value?.trim?.() || '',
+    active_only: !!adActiveOnly?.checked,
+    site_id: adSiteId?.value?.trim?.() || '',
+    profile_id: adProfileId?.value?.trim?.() || '',
+    limit: Number(adLimit?.value || 200)
+  };
+
+  const data = await loadAdminDirectory(payload);
+  if (!data?.ok) {
+    throw new Error(data?.error || 'Directory load failed');
+  }
+
+  renderAdminUsers(data.users || []);
+  renderAdminSites(data.sites || []);
+  renderAdminAssignments(data.assignments || []);
+
+  if (adSummary) {
+    adSummary.style.display = 'block';
+    adSummary.textContent =
+      `Loaded users: ${data?.counts?.users || 0} | ` +
+      `sites: ${data?.counts?.sites || 0} | ` +
+      `assignments: ${data?.counts?.assignments || 0}`;
+  }
+}
+
+adLoad?.addEventListener('click', async () => {
+  try {
+    await fetchAdminDirectory();
+  } catch (err) {
+    console.error(err);
+    alert('Failed to load admin directory.');
+  }
+});
+
+adClear?.addEventListener('click', () => {
+  if (adSearch) adSearch.value = '';
+  if (adSiteId) adSiteId.value = '';
+  if (adProfileId) adProfileId.value = '';
+  if (adActiveOnly) adActiveOnly.checked = false;
+  if (adLimit) adLimit.value = '200';
+  if (adMode) adMode.value = 'all';
+  clearAdminDirectoryTables();
+});
+
+/* =========================
    TABLE SEEDING
 ========================= */
 function seedAllTables() {
@@ -1380,6 +1500,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await bootAuth();
   seedAllTables();
   clearReviewPanel();
+  clearAdminDirectoryTables();
 });
 
 window.addEventListener('hashchange', () => {
