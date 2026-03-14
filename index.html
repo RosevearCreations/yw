@@ -1,13 +1,14 @@
 <!-- =========================================================
-Document 23: /index.html
+Document 31: /index.html
 Purpose:
 - Full replacement document
-- Adds Admin Management panel for:
-  - updating profiles
-  - creating/updating sites
-  - creating/updating/deleting assignments
-- Keeps all existing forms, review panel, and admin directory
-- Matches current app.js plus upcoming admin-manage UI IDs
+- Adds Submission Detail panel to Logbook
+- Supports:
+  - core submission details
+  - review history display
+  - attached image display
+- Keeps all existing forms, admin directory, and admin management
+- Matches current app.js plus upcoming submission-detail UI IDs
 ========================================================= -->
 
 <!DOCTYPE html>
@@ -493,7 +494,7 @@ Purpose:
     </section>
 
     <!-- ============================= -->
-    <!-- LOGBOOK / REVIEW              -->
+    <!-- LOGBOOK / REVIEW / DETAIL     -->
     <!-- ============================= -->
     <section id="log" class="card">
       <h2>Logbook / Admin</h2>
@@ -551,12 +552,94 @@ Purpose:
               <th style="width:160px">Site</th>
               <th style="width:150px">Status</th>
               <th>Summary</th>
-              <th style="width:110px">Details</th>
+              <th style="width:140px">Details</th>
             </tr>
           </thead>
           <tbody></tbody>
         </table>
       </div>
+
+      <h3 style="margin-top:22px;">Submission Detail</h3>
+      <div class="notice">
+        Use the view detail button from the logbook to load one complete submission.
+      </div>
+
+      <div class="grid">
+        <label>Submission ID
+          <input type="text" id="sd_submission_id" placeholder="Select from logbook" readonly />
+        </label>
+        <label>Form Type
+          <input type="text" id="sd_form_type" readonly />
+        </label>
+        <label>Status
+          <input type="text" id="sd_status" readonly />
+        </label>
+        <label>Site
+          <input type="text" id="sd_site" readonly />
+        </label>
+      </div>
+
+      <div class="grid" style="margin-top:12px;">
+        <label>Date
+          <input type="text" id="sd_date" readonly />
+        </label>
+        <label>Submitted By
+          <input type="text" id="sd_submitted_by" readonly />
+        </label>
+        <label>Reviewed At
+          <input type="text" id="sd_reviewed_at" readonly />
+        </label>
+        <label>Reviewed By
+          <input type="text" id="sd_reviewed_by" readonly />
+        </label>
+      </div>
+
+      <div class="grid" style="margin-top:12px;">
+        <label>Admin Notes
+          <textarea id="sd_admin_notes" rows="3" readonly></textarea>
+        </label>
+        <label>Payload
+          <textarea id="sd_payload" rows="8" readonly></textarea>
+        </label>
+      </div>
+
+      <h3>Review History</h3>
+      <div class="table-wrap">
+        <table id="sd_reviews_table">
+          <thead>
+            <tr>
+              <th style="width:90px">ID</th>
+              <th style="width:150px">Action</th>
+              <th style="width:180px">Reviewer ID</th>
+              <th style="width:180px">Created</th>
+              <th>Note</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <h3>Attached Images</h3>
+      <div class="table-wrap">
+        <table id="sd_images_table">
+          <thead>
+            <tr>
+              <th style="width:180px">Preview</th>
+              <th style="width:140px">Type</th>
+              <th>File</th>
+              <th>Caption</th>
+              <th style="width:180px">Created</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="form-footer">
+        <button id="sd_clear" class="secondary" type="button">Clear Detail</button>
+      </div>
+
+      <div id="sd_summary" class="notice" style="display:none;margin-top:14px;"></div>
 
       <h3 style="margin-top:22px;">Review Selected Submission</h3>
       <div class="notice">
