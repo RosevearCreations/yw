@@ -1,7 +1,7 @@
 'use strict';
 
 /* =========================================================
-Document 21: /app.js
+Document 24: /app.js
 Purpose:
 - Stable Supabase magic-link login
 - Session persistence after refresh
@@ -11,10 +11,12 @@ Purpose:
   - submission-images
   - review-submission
   - admin-directory
+  - admin-manage
 - Form handling for A/B/C/D/E
 - Logbook loading + CSV export
 - Review/admin panel support
 - Admin directory support
+- Admin management support
 - Starter rows + date defaults
 - Safe handling of Supabase auth hash fragments
 - Image upload support for:
@@ -33,6 +35,7 @@ const LIST_URL        = `${SB_URL}/functions/v1/clever-endpoint`;
 const IMAGE_META_URL  = `${SB_URL}/functions/v1/submission-images`;
 const REVIEW_URL      = `${SB_URL}/functions/v1/review-submission`;
 const DIRECTORY_URL   = `${SB_URL}/functions/v1/admin-directory`;
+const MANAGE_URL      = `${SB_URL}/functions/v1/admin-manage`;
 const STORAGE_BUCKET  = 'submission-images';
 
 const OUTBOX_KEY = 'ywi_outbox_v1';
@@ -149,6 +152,17 @@ function bytesLabel(size) {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
   return `${(n / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function setNotice(el, text) {
+  if (!el) return;
+  if (text) {
+    el.style.display = 'block';
+    el.textContent = text;
+  } else {
+    el.style.display = 'none';
+    el.textContent = '';
+  }
 }
 
 /* =========================
@@ -293,15 +307,15 @@ async function attachSubmissionImages(submissionId, images) {
 }
 
 async function saveSubmissionReview(payload) {
-  return jsonFetch(REVIEW_URL, {
-    body: payload
-  });
+  return jsonFetch(REVIEW_URL, { body: payload });
 }
 
 async function loadAdminDirectory(payload) {
-  return jsonFetch(DIRECTORY_URL, {
-    body: payload
-  });
+  return jsonFetch(DIRECTORY_URL, { body: payload });
+}
+
+async function manageAdminEntity(payload) {
+  return jsonFetch(MANAGE_URL, { body: payload });
 }
 
 async function flushOutbox() {
@@ -1280,10 +1294,7 @@ function clearReviewPanel() {
   if (rvAction) rvAction.value = 'commented';
   if (rvNote) rvNote.value = '';
   if (rvAdminNotes) rvAdminNotes.value = '';
-  if (rvSummary) {
-    rvSummary.style.display = 'none';
-    rvSummary.textContent = '';
-  }
+  setNotice(rvSummary, '');
 }
 
 function setReviewPanelFromRow(row) {
@@ -1293,10 +1304,7 @@ function setReviewPanelFromRow(row) {
   if (rvAction) rvAction.value = 'commented';
   if (rvNote) rvNote.value = '';
   if (rvAdminNotes) rvAdminNotes.value = row.admin_notes || '';
-  if (rvSummary) {
-    rvSummary.style.display = 'block';
-    rvSummary.textContent = `Selected submission #${row.id} | ${row.form_type} | ${row.site || ''} | ${row.status || 'submitted'}`;
-  }
+  setNotice(rvSummary, `Selected submission #${row.id} | ${row.form_type} | ${row.site || ''} | ${row.status || 'submitted'}`);
 }
 
 lgBody?.addEventListener('click', (e) => {
@@ -1334,14 +1342,9 @@ rvSubmit?.addEventListener('click', async () => {
       admin_notes: adminNotes
     });
 
-    if (!resp?.ok) {
-      throw new Error(resp?.error || 'Review save failed');
-    }
+    if (!resp?.ok) throw new Error(resp?.error || 'Review save failed');
 
-    if (rvSummary) {
-      rvSummary.style.display = 'block';
-      rvSummary.textContent = `Review saved for submission #${submissionId}.`;
-    }
+    setNotice(rvSummary, `Review saved for submission #${submissionId}.`);
 
     await fetchLog();
 
@@ -1376,10 +1379,7 @@ function clearAdminDirectoryTables() {
   if (adUsersBody) adUsersBody.innerHTML = '';
   if (adSitesBody) adSitesBody.innerHTML = '';
   if (adAssignmentsBody) adAssignmentsBody.innerHTML = '';
-  if (adSummary) {
-    adSummary.style.display = 'none';
-    adSummary.textContent = '';
-  }
+  setNotice(adSummary, '');
 }
 
 function renderAdminUsers(rows) {
@@ -1423,6 +1423,7 @@ function renderAdminAssignments(rows) {
   rows.forEach(row => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
+      <td>${escHtml(row.id || '')}</td>
       <td>${escHtml(row?.sites?.site_code || '')}</td>
       <td>${escHtml(row?.sites?.site_name || '')}</td>
       <td>${escHtml(row?.profiles?.email || '')}</td>
@@ -1445,21 +1446,16 @@ async function fetchAdminDirectory() {
   };
 
   const data = await loadAdminDirectory(payload);
-  if (!data?.ok) {
-    throw new Error(data?.error || 'Directory load failed');
-  }
+  if (!data?.ok) throw new Error(data?.error || 'Directory load failed');
 
   renderAdminUsers(data.users || []);
   renderAdminSites(data.sites || []);
   renderAdminAssignments(data.assignments || []);
 
-  if (adSummary) {
-    adSummary.style.display = 'block';
-    adSummary.textContent =
-      `Loaded users: ${data?.counts?.users || 0} | ` +
-      `sites: ${data?.counts?.sites || 0} | ` +
-      `assignments: ${data?.counts?.assignments || 0}`;
-  }
+  setNotice(
+    adSummary,
+    `Loaded users: ${data?.counts?.users || 0} | sites: ${data?.counts?.sites || 0} | assignments: ${data?.counts?.assignments || 0}`
+  );
 }
 
 adLoad?.addEventListener('click', async () => {
@@ -1482,6 +1478,210 @@ adClear?.addEventListener('click', () => {
 });
 
 /* =========================
+   ADMIN MANAGEMENT
+========================= */
+const amProfileId = $('#am_profile_id');
+const amProfileName = $('#am_profile_name');
+const amProfileRole = $('#am_profile_role');
+const amProfileActive = $('#am_profile_active');
+const amProfileSave = $('#am_profile_save');
+
+const amSiteId = $('#am_site_id');
+const amSiteCode = $('#am_site_code');
+const amSiteName = $('#am_site_name');
+const amSiteAddress = $('#am_site_address');
+const amSiteNotes = $('#am_site_notes');
+const amSiteActive = $('#am_site_active');
+const amSiteCreate = $('#am_site_create');
+const amSiteUpdate = $('#am_site_update');
+
+const amAssignmentId = $('#am_assignment_id');
+const amAssignmentSiteId = $('#am_assignment_site_id');
+const amAssignmentProfileId = $('#am_assignment_profile_id');
+const amAssignmentRole = $('#am_assignment_role');
+const amAssignmentPrimary = $('#am_assignment_primary');
+const amAssignmentCreate = $('#am_assignment_create');
+const amAssignmentUpdate = $('#am_assignment_update');
+const amAssignmentDelete = $('#am_assignment_delete');
+
+const amSummary = $('#am_summary');
+
+function setManageSummary(text) {
+  setNotice(amSummary, text);
+}
+
+amProfileSave?.addEventListener('click', async () => {
+  const profileId = amProfileId?.value?.trim?.() || '';
+  if (!profileId) {
+    alert('Profile ID is required.');
+    return;
+  }
+
+  try {
+    const resp = await manageAdminEntity({
+      entity: 'profile',
+      action: 'update',
+      profile_id: profileId,
+      full_name: amProfileName?.value?.trim?.() || null,
+      role: amProfileRole?.value || undefined,
+      is_active: !!amProfileActive?.checked
+    });
+
+    if (!resp?.ok) throw new Error(resp?.error || 'Profile save failed');
+
+    setManageSummary(`Profile updated: ${resp?.record?.email || profileId}`);
+    await fetchAdminDirectory();
+  } catch (err) {
+    console.error(err);
+    alert('Failed to save profile.');
+  }
+});
+
+amSiteCreate?.addEventListener('click', async () => {
+  const siteCode = amSiteCode?.value?.trim?.() || '';
+  const siteName = amSiteName?.value?.trim?.() || '';
+
+  if (!siteCode || !siteName) {
+    alert('Site code and site name are required.');
+    return;
+  }
+
+  try {
+    const resp = await manageAdminEntity({
+      entity: 'site',
+      action: 'create',
+      site_code: siteCode,
+      site_name: siteName,
+      address: amSiteAddress?.value?.trim?.() || null,
+      notes: amSiteNotes?.value?.trim?.() || null,
+      is_active: !!amSiteActive?.checked
+    });
+
+    if (!resp?.ok) throw new Error(resp?.error || 'Site create failed');
+
+    setManageSummary(`Site created: ${resp?.record?.site_code || siteCode}`);
+    if (amSiteId) amSiteId.value = resp?.record?.id || '';
+    await fetchAdminDirectory();
+  } catch (err) {
+    console.error(err);
+    alert('Failed to create site.');
+  }
+});
+
+amSiteUpdate?.addEventListener('click', async () => {
+  const siteId = amSiteId?.value?.trim?.() || '';
+  if (!siteId) {
+    alert('Site ID is required for update.');
+    return;
+  }
+
+  try {
+    const resp = await manageAdminEntity({
+      entity: 'site',
+      action: 'update',
+      site_id: siteId,
+      site_code: amSiteCode?.value?.trim?.() || undefined,
+      site_name: amSiteName?.value?.trim?.() || undefined,
+      address: amSiteAddress?.value?.trim?.() || null,
+      notes: amSiteNotes?.value?.trim?.() || null,
+      is_active: !!amSiteActive?.checked
+    });
+
+    if (!resp?.ok) throw new Error(resp?.error || 'Site update failed');
+
+    setManageSummary(`Site updated: ${resp?.record?.site_code || siteId}`);
+    await fetchAdminDirectory();
+  } catch (err) {
+    console.error(err);
+    alert('Failed to update site.');
+  }
+});
+
+amAssignmentCreate?.addEventListener('click', async () => {
+  const siteId = amAssignmentSiteId?.value?.trim?.() || '';
+  const profileId = amAssignmentProfileId?.value?.trim?.() || '';
+
+  if (!siteId || !profileId) {
+    alert('Site ID and Profile ID are required.');
+    return;
+  }
+
+  try {
+    const resp = await manageAdminEntity({
+      entity: 'assignment',
+      action: 'create',
+      site_id: siteId,
+      profile_id: profileId,
+      assignment_role: amAssignmentRole?.value || 'worker',
+      is_primary: !!amAssignmentPrimary?.checked
+    });
+
+    if (!resp?.ok) throw new Error(resp?.error || 'Assignment create failed');
+
+    if (amAssignmentId) amAssignmentId.value = resp?.record?.id || '';
+    setManageSummary(`Assignment created: ${resp?.record?.id || ''}`);
+    await fetchAdminDirectory();
+  } catch (err) {
+    console.error(err);
+    alert('Failed to create assignment.');
+  }
+});
+
+amAssignmentUpdate?.addEventListener('click', async () => {
+  const assignmentId = amAssignmentId?.value?.trim?.() || '';
+  if (!assignmentId) {
+    alert('Assignment ID is required for update.');
+    return;
+  }
+
+  try {
+    const resp = await manageAdminEntity({
+      entity: 'assignment',
+      action: 'update',
+      assignment_id: assignmentId,
+      assignment_role: amAssignmentRole?.value || 'worker',
+      is_primary: !!amAssignmentPrimary?.checked
+    });
+
+    if (!resp?.ok) throw new Error(resp?.error || 'Assignment update failed');
+
+    setManageSummary(`Assignment updated: ${assignmentId}`);
+    await fetchAdminDirectory();
+  } catch (err) {
+    console.error(err);
+    alert('Failed to update assignment.');
+  }
+});
+
+amAssignmentDelete?.addEventListener('click', async () => {
+  const assignmentId = amAssignmentId?.value?.trim?.() || '';
+  if (!assignmentId) {
+    alert('Assignment ID is required for delete.');
+    return;
+  }
+
+  const confirmed = window.confirm(`Delete assignment ${assignmentId}?`);
+  if (!confirmed) return;
+
+  try {
+    const resp = await manageAdminEntity({
+      entity: 'assignment',
+      action: 'delete',
+      assignment_id: assignmentId
+    });
+
+    if (!resp?.ok) throw new Error(resp?.error || 'Assignment delete failed');
+
+    setManageSummary(`Assignment deleted: ${assignmentId}`);
+    if (amAssignmentId) amAssignmentId.value = '';
+    await fetchAdminDirectory();
+  } catch (err) {
+    console.error(err);
+    alert('Failed to delete assignment.');
+  }
+});
+
+/* =========================
    TABLE SEEDING
 ========================= */
 function seedAllTables() {
@@ -1501,6 +1701,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   seedAllTables();
   clearReviewPanel();
   clearAdminDirectoryTables();
+  setManageSummary('');
 });
 
 window.addEventListener('hashchange', () => {
