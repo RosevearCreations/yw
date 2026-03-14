@@ -1,150 +1,186 @@
-# YWI HSE
+# YWI HSE Safety System
 
-YWI HSE is a Supabase-backed safety and compliance web app for site reporting, reviews, and administration.
+A Supabase-powered safety compliance application for field and site operations.
 
-## What the app currently does
+This system allows teams to submit safety forms, attach evidence images, review submissions, track safety activity, and manage users and sites through an admin interface.
 
-The current application supports:
+The application is designed to run as a **lightweight static frontend with Supabase providing authentication, database, storage, and backend functions.**
 
-- Email magic-link sign-in with Supabase Auth
-- Daily Toolbox Talk submissions
-- PPE Compliance Check submissions
-- First Aid Kit daily check submissions
-- Site Inspection submissions with required approval signature
-- Emergency Drill submissions
-- Optional image uploads for inspections and drills
-- Offline outbox retry support for failed submissions
-- Logbook filtering by site, date, form type, and status
-- Submission review workflow with status changes and admin notes
-- Submission detail view with review history and images
-- Admin directory for users, sites, and assignments
-- Admin management tools for profiles, sites, and assignments
+---
 
-## Current repo structure
+# System Overview
 
-```text
-.
-├─ app.js
-├─ index.html
-├─ manifest.json
-├─ server-worker.js
-├─ style.css
-├─ docs/
-│  ├─ REPO_BASE.md
-│  └─ DATABASE_STRUCTURE.md
-└─ sql/
-   └─ 000_full_schema_reference.sql
-```
+The YWI HSE system provides the following capabilities:
 
-## Frontend files
+- Secure login via **Supabase Magic Link authentication**
+- Structured digital safety forms
+- Image uploads for inspections and drills
+- Submission review and approval workflow
+- Logbook lookup and CSV export
+- Admin management of users, sites, and assignments
+- Email notifications for important events
 
-### `index.html`
-Main single-page interface for:
+The architecture keeps the frontend simple while moving all secure logic to **Supabase Edge Functions**.
 
-- authentication view
-- all submission forms
-- logbook
-- submission detail panel
-- review panel
-- admin directory
-- admin management
+---
 
-### `app.js`
-Client-side application logic for:
+# Technology Stack
 
-- Supabase auth session handling
-- Edge Function calls
-- offline outbox retries
-- dynamic form rows
-- image upload flow
-- logbook loading
-- submission detail loading
-- admin management actions
+Frontend
 
-### `style.css`
-UI theme, responsive layout, tables, signatures, cards, and form styling.
+- HTML
+- CSS
+- Vanilla JavaScript
+- Progressive Web App support
 
-### `server-worker.js`
-Service worker for basic PWA/offline support.
+Backend
 
-### `manifest.json`
-PWA metadata.
+- Supabase Auth
+- Supabase Postgres
+- Supabase Edge Functions
+- Supabase Storage
 
-## Supabase pieces expected by the app
+Deployment
 
-### Auth
-- Magic link email sign-in
-- Persisted browser session
+- Static hosting (Vercel / Cloudflare Pages / Netlify)
+- Supabase backend
 
-### Edge Functions
-The current app expects these functions:
+---
 
-- `resend-email`
-- `clever-endpoint`
-- `submission-images`
-- `review-submission`
-- `admin-directory`
-- `admin-manage`
-- `submission-detail`
+# Core System Workflow
 
-### Storage
-Bucket expected:
+1. User signs in using a **magic email login link**
+2. User fills out a safety form
+3. Submission is stored in the database
+4. Optional images are uploaded to storage
+5. Supervisors or HSE staff review the submission
+6. Review actions update submission status
+7. Logbook shows historical safety activity
 
-- `submission-images`
+---
 
-### Database tables expected
+# Supported Safety Forms
 
-- `profiles`
-- `sites`
-- `site_assignments`
-- `submissions`
-- `toolbox_attendees`
-- `submission_reviews`
-- `submission_images`
+The system currently supports five safety form types.
 
-See `docs/DATABASE_STRUCTURE.md` and `sql/000_full_schema_reference.sql` for the full structure.
+## Toolbox Talk
 
-## Required Supabase client values in `app.js`
+Used for documenting safety meetings.
 
-```js
-const SB_URL  = 'https://YOUR_PROJECT.supabase.co';
-const SB_KEY  = 'YOUR_PUBLISHABLE_KEY';
-```
+Includes
 
-## Expected server-side secrets
+- meeting topic
+- discussion notes
+- attendee sign-in list
 
-Typical secrets used by the Edge Functions:
+Form code: `E`
 
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `SUPABASE_ANON_KEY` or `SB_ANON_PUBLISHABLE`
-- `RESEND_API_KEY`
-- `HSE_EMAIL`
-- `CHRIS_EMAIL`
+---
 
-## Recommended deployment order
+## PPE Check
 
-1. Build database tables
-2. Create storage bucket and policies
-3. Deploy Edge Functions
-4. Set function secrets
-5. Confirm Supabase Auth magic links work
-6. Deploy frontend
-7. Test each form end to end
-8. Test review workflow
-9. Test admin management
+Used to verify workers are wearing required protective equipment.
 
-## Immediate priorities
+Includes
 
-1. Confirm every Edge Function is deployed and JWT-protected
-2. Confirm database tables match the schema file
-3. Confirm storage bucket exists and uploads succeed
-4. Confirm the service worker only caches supported requests
-5. Add full image viewing/download UX in submission detail
-6. Add create-user/admin invitation workflow if needed
+- worker list
+- PPE compliance
+- non-compliant flag
 
-## Useful companion docs
+Form code: `D`
 
-- `docs/REPO_BASE.md`
-- `docs/DATABASE_STRUCTURE.md`
-- `sql/000_full_schema_reference.sql`
+---
+
+## First Aid Kit Check
+
+Ensures site medical kits are stocked.
+
+Includes
+
+- item checklist
+- missing items
+- flagged issues
+
+Form code: `B`
+
+---
+
+## Site Inspection
+
+Full site hazard inspection.
+
+Includes
+
+- hazard list
+- open hazards count
+- inspector details
+- approval signature
+- image evidence
+
+Form code: `C`
+
+---
+
+## Emergency Drill
+
+Records evacuation or safety drills.
+
+Includes
+
+- drill type
+- start and end time
+- participants
+- evaluation
+- follow-up actions
+- image evidence
+
+Form code: `A`
+
+---
+
+# Authentication
+
+Authentication uses **Supabase magic link login**.
+
+User flow
+
+1. Enter email
+2. Receive login link
+3. Click link
+4. Supabase session is created
+
+The session token is used by Edge Functions to validate requests.
+
+---
+
+# User Roles
+
+Roles control access to features.
+
+### Worker
+
+- submit forms
+- view personal submissions
+
+### Supervisor
+
+- review submissions
+- comment on reports
+
+### HSE
+
+- review safety reports
+- request follow-up actions
+
+### Admin
+
+- full access
+- manage users
+- manage sites
+- manage assignments
+
+---
+
+# Submission Status Flow
+
+Submissions move through the following status states.
