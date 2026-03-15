@@ -1,29 +1,20 @@
 'use strict';
 
 /* =========================================================
-Document 32: /app.js
-Purpose:
-- Stable Supabase magic-link login
-- Session persistence after refresh
-- JWT-authenticated calls to:
-  - resend-email
-  - clever-endpoint
-  - submission-images
-  - review-submission
-  - admin-directory
-  - admin-manage
-  - submission-detail
-- Form handling for A/B/C/D/E
-- Logbook loading + CSV export
-- Review/admin panel support
-- Submission detail support
-- Admin directory support
-- Admin management support
-- Starter rows + date defaults
-- Safe handling of Supabase auth hash fragments
-- Image upload support for:
-  - Site Inspection
-  - Emergency Drill
+   YWI HSE — app.js
+   Full application script
+   Features:
+   - Supabase magic-link auth
+   - session persistence
+   - secure JWT calls to Edge Functions
+   - forms A/B/C/D/E
+   - image uploads
+   - logbook + CSV export
+   - submission detail
+   - review workflow
+   - admin directory
+   - admin management
+   - admin selectors / dropdown helpers
 ========================================================= */
 
 /* =========================
@@ -39,6 +30,7 @@ const REVIEW_URL      = `${SB_URL}/functions/v1/review-submission`;
 const DIRECTORY_URL   = `${SB_URL}/functions/v1/admin-directory`;
 const MANAGE_URL      = `${SB_URL}/functions/v1/admin-manage`;
 const DETAIL_URL      = `${SB_URL}/functions/v1/submission-detail`;
+const SELECTORS_URL   = `${SB_URL}/functions/v1/admin-selectors`;
 const STORAGE_BUCKET  = 'submission-images';
 
 const OUTBOX_KEY = 'ywi_outbox_v1';
@@ -183,6 +175,31 @@ function storagePreviewUrl(filePath) {
   return data?.publicUrl || '';
 }
 
+function fillSelectOptions(selectEl, rows, placeholder = 'Select...') {
+  if (!selectEl) return;
+  const current = selectEl.value || '';
+  selectEl.innerHTML = '';
+  const empty = document.createElement('option');
+  empty.value = '';
+  empty.textContent = placeholder;
+  selectEl.appendChild(empty);
+
+  rows.forEach((row) => {
+    const opt = document.createElement('option');
+    opt.value = String(row.id ?? '');
+    opt.textContent = row.option_label || row.display_label || row.email || row.site_code || String(row.id);
+    selectEl.appendChild(opt);
+  });
+
+  if (current && rows.some(r => String(r.id) === current)) {
+    selectEl.value = current;
+  }
+}
+
+function pickById(rows, id) {
+  return rows.find(r => String(r.id) === String(id)) || null;
+}
+
 /* =========================
    AUTH
 ========================= */
@@ -213,10 +230,8 @@ async function bootAuth() {
 }
 
 if (sb) {
-  sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-      cleanAuthHash();
-    }
+  sb.auth.onAuthStateChange(async (_event, session) => {
+    cleanAuthHash();
     if (session) showApp(session);
     else showLogin();
   });
@@ -249,9 +264,7 @@ loginForm?.addEventListener('submit', async (e) => {
   try {
     const { error } = await sb.auth.signInWithOtp({
       email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/#toolbox`
-      }
+      options: { emailRedirectTo: `${window.location.origin}/#toolbox` }
     });
 
     if (error) {
@@ -334,6 +347,10 @@ async function manageAdminEntity(payload) {
 
 async function fetchSubmissionDetail(submissionId) {
   return jsonFetch(DETAIL_URL, { body: { submission_id: submissionId } });
+}
+
+async function loadAdminSelectors(payload) {
+  return jsonFetch(SELECTORS_URL, { body: payload });
 }
 
 async function flushOutbox() {
@@ -1596,9 +1613,84 @@ async function fetchAdminDirectory() {
   );
 }
 
+/* =========================
+   ADMIN SELECTORS
+========================= */
+const selectorState = {
+  profiles: [],
+  sites: [],
+  assignments: []
+};
+
+const amProfileSelector = $('#am_profile_selector');
+const amSiteSelector = $('#am_site_selector');
+const amAssignmentSelector = $('#am_assignment_selector');
+const amAssignmentProfileSelector = $('#am_assignment_profile_selector');
+const amAssignmentSiteSelector = $('#am_assignment_site_selector');
+
+async function refreshAdminSelectors() {
+  try {
+    const data = await loadAdminSelectors({ kind: 'all', active_only: false, limit: 500 });
+    if (!data?.ok) throw new Error(data?.error || 'Selector load failed');
+
+    selectorState.profiles = data.profiles || [];
+    selectorState.sites = data.sites || [];
+    selectorState.assignments = data.assignments || [];
+
+    fillSelectOptions(amProfileSelector, selectorState.profiles, 'Select profile...');
+    fillSelectOptions(amSiteSelector, selectorState.sites, 'Select site...');
+    fillSelectOptions(amAssignmentSelector, selectorState.assignments, 'Select assignment...');
+    fillSelectOptions(amAssignmentProfileSelector, selectorState.profiles, 'Select profile...');
+    fillSelectOptions(amAssignmentSiteSelector, selectorState.sites, 'Select site...');
+  } catch (err) {
+    console.error('Failed to load admin selectors', err);
+  }
+}
+
+amProfileSelector?.addEventListener('change', () => {
+  const row = pickById(selectorState.profiles, amProfileSelector.value);
+  if (!row) return;
+  if ($('#am_profile_id')) $('#am_profile_id').value = row.id || '';
+  if ($('#am_profile_name')) $('#am_profile_name').value = row.full_name || '';
+  if ($('#am_profile_role')) $('#am_profile_role').value = row.role || '';
+  if ($('#am_profile_active')) $('#am_profile_active').checked = !!row.is_active;
+});
+
+amSiteSelector?.addEventListener('change', () => {
+  const row = pickById(selectorState.sites, amSiteSelector.value);
+  if (!row) return;
+  if ($('#am_site_id')) $('#am_site_id').value = row.id || '';
+  if ($('#am_site_code')) $('#am_site_code').value = row.site_code || '';
+  if ($('#am_site_name')) $('#am_site_name').value = row.site_name || '';
+  if ($('#am_site_address')) $('#am_site_address').value = row.address || '';
+  if ($('#am_site_active')) $('#am_site_active').checked = !!row.is_active;
+});
+
+amAssignmentSelector?.addEventListener('change', () => {
+  const row = pickById(selectorState.assignments, amAssignmentSelector.value);
+  if (!row) return;
+  if ($('#am_assignment_id')) $('#am_assignment_id').value = row.id || '';
+  if ($('#am_assignment_site_id')) $('#am_assignment_site_id').value = row.site_id || '';
+  if ($('#am_assignment_profile_id')) $('#am_assignment_profile_id').value = row.profile_id || '';
+  if ($('#am_assignment_role')) $('#am_assignment_role').value = row.assignment_role || 'worker';
+  if ($('#am_assignment_primary')) $('#am_assignment_primary').checked = !!row.is_primary;
+
+  if (amAssignmentSiteSelector) amAssignmentSiteSelector.value = row.site_id || '';
+  if (amAssignmentProfileSelector) amAssignmentProfileSelector.value = row.profile_id || '';
+});
+
+amAssignmentProfileSelector?.addEventListener('change', () => {
+  if ($('#am_assignment_profile_id')) $('#am_assignment_profile_id').value = amAssignmentProfileSelector.value || '';
+});
+
+amAssignmentSiteSelector?.addEventListener('change', () => {
+  if ($('#am_assignment_site_id')) $('#am_assignment_site_id').value = amAssignmentSiteSelector.value || '';
+});
+
 adLoad?.addEventListener('click', async () => {
   try {
     await fetchAdminDirectory();
+    await refreshAdminSelectors();
   } catch (err) {
     console.error(err);
     alert('Failed to load admin directory.');
@@ -1669,6 +1761,7 @@ amProfileSave?.addEventListener('click', async () => {
 
     setManageSummary(`Profile updated: ${resp?.record?.email || profileId}`);
     await fetchAdminDirectory();
+    await refreshAdminSelectors();
   } catch (err) {
     console.error(err);
     alert('Failed to save profile.');
@@ -1700,6 +1793,7 @@ amSiteCreate?.addEventListener('click', async () => {
     setManageSummary(`Site created: ${resp?.record?.site_code || siteCode}`);
     if (amSiteId) amSiteId.value = resp?.record?.id || '';
     await fetchAdminDirectory();
+    await refreshAdminSelectors();
   } catch (err) {
     console.error(err);
     alert('Failed to create site.');
@@ -1729,6 +1823,7 @@ amSiteUpdate?.addEventListener('click', async () => {
 
     setManageSummary(`Site updated: ${resp?.record?.site_code || siteId}`);
     await fetchAdminDirectory();
+    await refreshAdminSelectors();
   } catch (err) {
     console.error(err);
     alert('Failed to update site.');
@@ -1759,6 +1854,7 @@ amAssignmentCreate?.addEventListener('click', async () => {
     if (amAssignmentId) amAssignmentId.value = resp?.record?.id || '';
     setManageSummary(`Assignment created: ${resp?.record?.id || ''}`);
     await fetchAdminDirectory();
+    await refreshAdminSelectors();
   } catch (err) {
     console.error(err);
     alert('Failed to create assignment.');
@@ -1785,6 +1881,7 @@ amAssignmentUpdate?.addEventListener('click', async () => {
 
     setManageSummary(`Assignment updated: ${assignmentId}`);
     await fetchAdminDirectory();
+    await refreshAdminSelectors();
   } catch (err) {
     console.error(err);
     alert('Failed to update assignment.');
@@ -1813,6 +1910,7 @@ amAssignmentDelete?.addEventListener('click', async () => {
     setManageSummary(`Assignment deleted: ${assignmentId}`);
     if (amAssignmentId) amAssignmentId.value = '';
     await fetchAdminDirectory();
+    await refreshAdminSelectors();
   } catch (err) {
     console.error(err);
     alert('Failed to delete assignment.');
@@ -1841,6 +1939,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   clearReviewPanel();
   clearAdminDirectoryTables();
   setManageSummary('');
+  await refreshAdminSelectors();
 });
 
 window.addEventListener('hashchange', () => {
