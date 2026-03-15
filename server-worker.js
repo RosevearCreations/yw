@@ -1,29 +1,36 @@
-// =========================================================
-// Document 8: /server-worker.js
-// Purpose:
-// - Safe service worker for YWI HSE
-// - Cache only GET requests
-// - Ignore chrome-extension, browser-internal, and POST requests
-// - Basic offline support for app shell files
-// =========================================================
+'use strict';
 
-const CACHE_NAME = 'ywi-hse-v1';
-const APP_SHELL = [
+/* =========================================================
+   YWI HSE — server-worker.js
+   Purpose:
+   - Safe static asset caching only
+   - Never cache POST/PUT/PATCH/DELETE requests
+   - Ignore chrome-extension and other unsupported schemes
+   - Ignore Supabase API/Auth/Storage/Function requests
+   - Provide basic offline support for static frontend assets
+========================================================= */
+
+const CACHE_NAME = 'ywi-hse-static-v1';
+const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/style.css',
   '/app.js',
+  '/style.css',
   '/manifest.json'
 ];
 
+/* =========================
+   INSTALL
+========================= */
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
-      for (const url of APP_SHELL) {
+      for (const asset of STATIC_ASSETS) {
         try {
-          await cache.add(url);
+          await cache.add(asset);
         } catch (err) {
-          console.warn('SW install skip:', url, err);
+          // Ignore missing optional assets during install
+          console.warn('[SW] Failed to cache asset during install:', asset, err);
         }
       }
     })
@@ -31,6 +38,9 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
+/* =========================
+   ACTIVATE
+========================= */
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then(async (keys) => {
@@ -39,51 +49,105 @@ self.addEventListener('activate', (event) => {
           .filter((key) => key !== CACHE_NAME)
           .map((key) => caches.delete(key))
       );
-      await self.clients.claim();
     })
   );
+  self.clients.claim();
 });
 
+/* =========================
+   HELPERS
+========================= */
+function isHttpRequest(request) {
+  return request.url.startsWith('http://') || request.url.startsWith('https://');
+}
+
+function isGetRequest(request) {
+  return request.method === 'GET';
+}
+
+function isSupabaseRequest(url) {
+  return (
+    url.includes('/auth/v1/') ||
+    url.includes('/functions/v1/') ||
+    url.includes('/storage/v1/') ||
+    url.includes('/rest/v1/')
+  );
+}
+
+function isUnsupportedScheme(url) {
+  return (
+    url.startsWith('chrome-extension://') ||
+    url.startsWith('moz-extension://') ||
+    url.startsWith('ms-browser-extension://') ||
+    url.startsWith('file://')
+  );
+}
+
+function isNavigationRequest(request) {
+  return request.mode === 'navigate';
+}
+
+function shouldBypass(request) {
+  const url = request.url;
+
+  if (!isHttpRequest(request)) return true;
+  if (!isGetRequest(request)) return true;
+  if (isUnsupportedScheme(url)) return true;
+  if (isSupabaseRequest(url)) return true;
+
+  return false;
+}
+
+/* =========================
+   FETCH
+========================= */
 self.addEventListener('fetch', (event) => {
   const request = event.request;
-  const url = new URL(request.url);
 
-  // Only handle normal GET requests
-  if (request.method !== 'GET') return;
+  if (shouldBypass(request)) {
+    return;
+  }
 
-  // Ignore unsupported/browser/internal schemes
-  if (!['http:', 'https:'].includes(url.protocol)) return;
+  // Navigation requests: network first, fallback to cached index
+  if (isNavigationRequest(request)) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put('/index.html', copy).catch(() => {});
+          });
+          return response;
+        })
+        .catch(async () => {
+          const cached = await caches.match('/index.html');
+          if (cached) return cached;
+          return new Response('Offline', {
+            status: 503,
+            statusText: 'Offline',
+            headers: { 'Content-Type': 'text/plain' }
+          });
+        })
+    );
+    return;
+  }
 
-  // Ignore browser extensions and other origins if desired
-  if (url.protocol === 'chrome-extension:') return;
-
+  // Static asset requests: stale-while-revalidate
   event.respondWith(
-    caches.match(request).then(async (cached) => {
-      if (cached) return cached;
+    caches.match(request).then(async (cachedResponse) => {
+      const networkFetch = fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.ok) {
+            const copy = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, copy).catch(() => {});
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => cachedResponse || Response.error());
 
-      try {
-        const response = await fetch(request);
-
-        // Cache only successful basic responses
-        if (
-          response &&
-          response.status === 200 &&
-          (response.type === 'basic' || response.type === 'cors')
-        ) {
-          const cache = await caches.open(CACHE_NAME);
-          cache.put(request, response.clone()).catch(() => {});
-        }
-
-        return response;
-      } catch (err) {
-        // Fallback to cached index for navigation requests
-        if (request.mode === 'navigate') {
-          const fallback = await caches.match('/index.html');
-          if (fallback) return fallback;
-        }
-
-        throw err;
-      }
+      return cachedResponse || networkFetch;
     })
   );
 });
