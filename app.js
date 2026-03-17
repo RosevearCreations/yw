@@ -8,7 +8,7 @@
    - session persistence
    - secure JWT calls to Edge Functions
    - forms A/B/C/D/E
-   - image uploads
+   - secure image uploads via upload-image function
    - logbook + CSV export
    - submission detail
    - review workflow
@@ -25,12 +25,12 @@ const SB_KEY  = 'sb_publishable_Xyg1zQU9_vsAaME9BeHm_w_RRgtPs_e';
 
 const FUNCTION_URL    = `${SB_URL}/functions/v1/resend-email`;
 const LIST_URL        = `${SB_URL}/functions/v1/clever-endpoint`;
-const IMAGE_META_URL  = `${SB_URL}/functions/v1/submission-images`;
 const REVIEW_URL      = `${SB_URL}/functions/v1/review-submission`;
 const DIRECTORY_URL   = `${SB_URL}/functions/v1/admin-directory`;
 const MANAGE_URL      = `${SB_URL}/functions/v1/admin-manage`;
 const DETAIL_URL      = `${SB_URL}/functions/v1/submission-detail`;
 const SELECTORS_URL   = `${SB_URL}/functions/v1/admin-selectors`;
+const UPLOAD_URL      = `${SB_URL}/functions/v1/upload-image`;
 const STORAGE_BUCKET  = 'submission-images';
 
 const OUTBOX_KEY = 'ywi_outbox_v1';
@@ -131,15 +131,6 @@ function cleanAuthHash() {
   ) {
     history.replaceState({}, '', window.location.pathname + '#toolbox');
   }
-}
-
-function extFromName(name = '') {
-  const clean = name.toLowerCase().trim();
-  if (clean.endsWith('.png')) return 'png';
-  if (clean.endsWith('.webp')) return 'webp';
-  if (clean.endsWith('.gif')) return 'gif';
-  if (clean.endsWith('.jpeg')) return 'jpeg';
-  return 'jpg';
 }
 
 function bytesLabel(size) {
@@ -325,12 +316,37 @@ async function jsonFetch(url, { method = 'POST', headers = {}, body = null } = {
   catch { return text; }
 }
 
-async function sendToFunction(formType, payload) {
-  return jsonFetch(FUNCTION_URL, { body: { formType, payload } });
+async function uploadFormDataFetch(url, formData) {
+  let auth = await authHeader();
+
+  let res = await fetch(url, {
+    method: 'POST',
+    headers: { ...auth },
+    body: formData
+  });
+
+  if (res.status === 401 && sb) {
+    try { await sb.auth.refreshSession(); } catch {}
+    auth = await authHeader();
+    res = await fetch(url, {
+      method: 'POST',
+      headers: { ...auth },
+      body: formData
+    });
+  }
+
+  const text = await res.text();
+  if (!res.ok) {
+    console.error('HTTP error', res.status, text);
+    throw new Error(`HTTP ${res.status}: ${text}`);
+  }
+
+  try { return JSON.parse(text); }
+  catch { return text; }
 }
 
-async function attachSubmissionImages(submissionId, images) {
-  return jsonFetch(IMAGE_META_URL, { body: { submission_id: submissionId, images } });
+async function sendToFunction(formType, payload) {
+  return jsonFetch(FUNCTION_URL, { body: { formType, payload } });
 }
 
 async function saveSubmissionReview(payload) {
@@ -353,6 +369,30 @@ async function loadAdminSelectors(payload) {
   return jsonFetch(SELECTORS_URL, { body: payload });
 }
 
+async function uploadImageViaFunction(submissionId, image) {
+  const formData = new FormData();
+  formData.append('submission_id', String(submissionId));
+  formData.append('image_type', image.image_type || 'status');
+  formData.append('caption', image.caption || '');
+  formData.append('file', image.file, image.file_name || image.file?.name || 'upload.jpg');
+
+  return uploadFormDataFetch(UPLOAD_URL, formData);
+}
+
+async function uploadImagesForSubmission(localImages, submissionId) {
+  if (!localImages?.length) return [];
+  const inserted = [];
+
+  for (const image of localImages) {
+    const result = await uploadImageViaFunction(submissionId, image);
+    if (result?.ok && result?.image) {
+      inserted.push(result.image);
+    }
+  }
+
+  return inserted;
+}
+
 async function flushOutbox() {
   const outbox = getOutbox();
   if (!outbox.length) {
@@ -366,14 +406,7 @@ async function flushOutbox() {
       const resp = await sendToFunction(item.formType, item.payload);
       const submissionId = resp?.id;
       if (submissionId && item.localImages?.length) {
-        const uploadedImages = await uploadImagesForSubmission(
-          item.localImages,
-          submissionId,
-          item.imagePrefix || 'submission'
-        );
-        if (uploadedImages.length) {
-          await attachSubmissionImages(submissionId, uploadedImages);
-        }
+        await uploadImagesForSubmission(item.localImages, submissionId);
       }
     } catch (err) {
       console.warn('Outbox send failed', err);
@@ -465,39 +498,6 @@ function clearImageState(state, tbody, fileInput, captionInput) {
   if (tbody) tbody.innerHTML = '';
   if (fileInput) fileInput.value = '';
   if (captionInput) captionInput.value = '';
-}
-
-async function uploadImagesForSubmission(localImages, submissionId, prefix) {
-  if (!sb || !localImages.length) return [];
-
-  const uploaded = [];
-
-  for (const item of localImages) {
-    const ext = extFromName(item.file_name);
-    const safePrefix = prefix || 'submission';
-    const filePath = `${safePrefix}/${submissionId}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
-
-    const { error: uploadErr } = await sb.storage
-      .from(STORAGE_BUCKET)
-      .upload(filePath, item.file, {
-        cacheControl: '3600',
-        upsert: false,
-        contentType: item.content_type || item.file?.type || 'image/jpeg'
-      });
-
-    if (uploadErr) throw uploadErr;
-
-    uploaded.push({
-      image_type: item.image_type || 'status',
-      file_name: item.file_name,
-      file_path: filePath,
-      file_size_bytes: item.file_size_bytes ?? null,
-      content_type: item.content_type ?? null,
-      caption: item.caption || null
-    });
-  }
-
-  return uploaded;
 }
 
 function bindImageInput(fileInput, typeInput, captionInput, state, tbody) {
@@ -1002,10 +1002,7 @@ inspForm?.addEventListener('submit', async (e) => {
     const submissionId = resp?.id;
 
     if (submissionId && inspImageState.length) {
-      const uploadedImages = await uploadImagesForSubmission(inspImageState, submissionId, 'inspection');
-      if (uploadedImages.length) {
-        await attachSubmissionImages(submissionId, uploadedImages);
-      }
+      await uploadImagesForSubmission(inspImageState, submissionId);
     }
 
     alert('Site inspection submitted.');
@@ -1024,8 +1021,7 @@ inspForm?.addEventListener('submit', async (e) => {
       ts: Date.now(),
       formType: 'C',
       payload,
-      localImages: [...inspImageState],
-      imagePrefix: 'inspection'
+      localImages: [...inspImageState]
     });
     setOutbox(outbox);
     alert('Offline/server error. Saved to Outbox.');
@@ -1151,10 +1147,7 @@ drForm?.addEventListener('submit', async (e) => {
     const submissionId = resp?.id;
 
     if (submissionId && drImageState.length) {
-      const uploadedImages = await uploadImagesForSubmission(drImageState, submissionId, 'drill');
-      if (uploadedImages.length) {
-        await attachSubmissionImages(submissionId, uploadedImages);
-      }
+      await uploadImagesForSubmission(drImageState, submissionId);
     }
 
     alert('Drill submitted.');
@@ -1171,8 +1164,7 @@ drForm?.addEventListener('submit', async (e) => {
       ts: Date.now(),
       formType: 'A',
       payload,
-      localImages: [...drImageState],
-      imagePrefix: 'drill'
+      localImages: [...drImageState]
     });
     setOutbox(outbox);
     alert('Offline/server error. Saved to Outbox.');
@@ -1209,7 +1201,7 @@ function renderRows(rows) {
   if (!lgBody) return;
   lgBody.innerHTML = '';
 
-  const canReview = ['supervisor', 'hse', 'admin'].includes(window._logRole || '');
+  const canReview = ['site_leader', 'supervisor', 'hse', 'admin'].includes(window._logRole || '');
 
   rows.forEach(r => {
     const tr = document.createElement('tr');
