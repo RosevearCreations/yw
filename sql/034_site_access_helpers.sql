@@ -1,5 +1,5 @@
 -- =========================================================
--- Document 20: sql/034_site_access_helpers.sql
+-- Document 20 (replacement): sql/034_site_access_helpers.sql
 -- Purpose:
 -- - Create shared helper functions for access control
 -- - Standardize role and site-permission checks
@@ -10,12 +10,14 @@
 --   4) site_leader
 --   5) worker
 --
+-- This version avoids hard type assumptions by comparing IDs
+-- through text casts where needed.
+--
 -- Run this in Supabase SQL Editor.
 -- =========================================================
 
 -- ---------------------------------------------------------
 -- 1) Role rank helper
---    Returns numeric rank for a role string
 -- ---------------------------------------------------------
 create or replace function public.role_rank(input_role text)
 returns integer
@@ -54,10 +56,11 @@ comment on function public.profile_role_rank(uuid) is
 
 -- ---------------------------------------------------------
 -- 3) Get site-specific assignment role rank for a profile
+--    Uses text comparison to avoid uuid/bigint mismatch issues.
 -- ---------------------------------------------------------
 create or replace function public.site_assignment_role_rank(
   input_profile_id uuid,
-  input_site_id bigint
+  input_site_id text
 )
 returns integer
 language sql
@@ -68,25 +71,22 @@ as $$
   join public.profiles p
     on p.id = sa.profile_id
   join public.sites s
-    on s.id = sa.site_id
+    on s.id::text = sa.site_id::text
   where sa.profile_id = input_profile_id
-    and sa.site_id = input_site_id
+    and sa.site_id::text = input_site_id
     and p.is_active = true
     and s.is_active = true;
 $$;
 
-comment on function public.site_assignment_role_rank(uuid, bigint) is
-'Returns the highest active assignment role rank a profile has for a site.';
+comment on function public.site_assignment_role_rank(uuid, text) is
+'Returns the highest active assignment role rank a profile has for a site. Uses text ID comparison for compatibility.';
 
 -- ---------------------------------------------------------
 -- 4) Effective role rank for a site
---    Uses the higher of:
---    - global profile role rank
---    - site assignment role rank
 -- ---------------------------------------------------------
 create or replace function public.effective_site_role_rank(
   input_profile_id uuid,
-  input_site_id bigint
+  input_site_id text
 )
 returns integer
 language sql
@@ -98,8 +98,8 @@ as $$
   );
 $$;
 
-comment on function public.effective_site_role_rank(uuid, bigint) is
-'Returns the effective access rank for a user at a specific site.';
+comment on function public.effective_site_role_rank(uuid, text) is
+'Returns the effective access rank for a user at a specific site. Uses text ID comparison for compatibility.';
 
 -- ---------------------------------------------------------
 -- 5) Can manage site?
@@ -107,7 +107,7 @@ comment on function public.effective_site_role_rank(uuid, bigint) is
 -- ---------------------------------------------------------
 create or replace function public.can_manage_site(
   input_profile_id uuid,
-  input_site_id bigint
+  input_site_id text
 )
 returns boolean
 language sql
@@ -116,7 +116,7 @@ as $$
   select public.effective_site_role_rank(input_profile_id, input_site_id) >= 30;
 $$;
 
-comment on function public.can_manage_site(uuid, bigint) is
+comment on function public.can_manage_site(uuid, text) is
 'Returns true if the user can manage a site. supervisor and above.';
 
 -- ---------------------------------------------------------
@@ -125,7 +125,7 @@ comment on function public.can_manage_site(uuid, bigint) is
 -- ---------------------------------------------------------
 create or replace function public.can_review_site_submission(
   input_profile_id uuid,
-  input_site_id bigint
+  input_site_id text
 )
 returns boolean
 language sql
@@ -134,7 +134,7 @@ as $$
   select public.effective_site_role_rank(input_profile_id, input_site_id) >= 20;
 $$;
 
-comment on function public.can_review_site_submission(uuid, bigint) is
+comment on function public.can_review_site_submission(uuid, text) is
 'Returns true if the user can review submissions for a site. site_leader and above.';
 
 -- ---------------------------------------------------------
@@ -169,14 +169,15 @@ comment on function public.is_hse_or_admin(uuid) is
 
 -- ---------------------------------------------------------
 -- 9) Submission-site resolver view
---    Helps connect submissions.site text to sites.id
---    Current app stores site as text, often matching site_code
+--    Maps submissions.site text to sites.id when the text
+--    matches site_code. resolved_site_id is exposed as text
+--    for compatibility with mixed ID types.
 -- ---------------------------------------------------------
 create or replace view public.v_submission_site_resolved as
 select
   sub.id as submission_id,
   sub.site as submission_site_text,
-  s.id as resolved_site_id,
+  s.id::text as resolved_site_id,
   s.site_code,
   s.site_name,
   s.is_active
@@ -185,7 +186,7 @@ left join public.sites s
   on lower(trim(sub.site)) = lower(trim(s.site_code));
 
 comment on view public.v_submission_site_resolved is
-'Maps submissions.site text to sites.id when site text matches site_code.';
+'Maps submissions.site text to sites.id when site text matches site_code. resolved_site_id is returned as text.';
 
 grant select on public.v_submission_site_resolved to authenticated;
 
@@ -204,7 +205,7 @@ stable
 as $$
 declare
   v_owner uuid;
-  v_site_id bigint;
+  v_site_id text;
   v_rank integer;
 begin
   select s.submitted_by_profile_id
@@ -226,7 +227,6 @@ begin
   where r.submission_id = input_submission_id;
 
   if v_site_id is null then
-    -- fallback: only elevated global roles can access unresolved site submissions
     return public.profile_role_rank(input_profile_id) >= 40;
   end if;
 
@@ -252,7 +252,7 @@ language plpgsql
 stable
 as $$
 declare
-  v_site_id bigint;
+  v_site_id text;
   v_rank integer;
 begin
   select r.resolved_site_id
