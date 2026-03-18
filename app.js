@@ -5,9 +5,9 @@
    Main application controller
 
    Purpose:
-   - use shared bootstrap/auth layer instead of owning auth
-   - keep current forms, logbook, review, and admin tools working
-   - prepare for future split into smaller feature modules
+   - use shared bootstrap/auth layer
+   - keep forms, logbook, review, and admin save actions working
+   - hand admin dashboard UI behavior to js/admin-ui.js
 ========================================================= */
 
 /* =========================
@@ -37,6 +37,7 @@ const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
    APP DOM
 ========================= */
 const whoami = $('#whoami');
+const reviewPanel = $('#reviewPanel');
 
 const appState = {
   currentUser: null,
@@ -46,6 +47,8 @@ const appState = {
   adminLocked: true,
   bootReady: false
 };
+
+let adminUI = null;
 
 /* =========================
    BASIC HELPERS
@@ -116,6 +119,20 @@ function fmtDateTime(value) {
   }
 }
 
+function slugifyToken(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function statusChip(label) {
+  const safe = escHtml(label || 'submitted');
+  const slug = slugifyToken(label || 'submitted');
+  return `<span class="status-chip status-chip--${slug}">${safe}</span>`;
+}
+
 function boot() {
   return window.YWI_BOOT || null;
 }
@@ -135,97 +152,12 @@ function storagePreviewUrl(filePath) {
   return data?.publicUrl || '';
 }
 
-function fillSelectOptions(selectEl, rows, placeholder = 'Select...') {
-  if (!selectEl) return;
-  const current = selectEl.value || '';
-  selectEl.innerHTML = '';
-
-  const empty = document.createElement('option');
-  empty.value = '';
-  empty.textContent = placeholder;
-  selectEl.appendChild(empty);
-
-  rows.forEach((row) => {
-    const opt = document.createElement('option');
-    opt.value = String(row.id ?? '');
-    opt.textContent = row.option_label || row.display_label || row.email || row.site_code || String(row.id);
-    selectEl.appendChild(opt);
-  });
-
-  if (current && rows.some(r => String(r.id) === current)) {
-    selectEl.value = current;
-  }
-}
-
-function pickById(rows, id) {
-  return rows.find(r => String(r.id) === String(id)) || null;
-}
-
-function slugifyToken(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-function roleChip(label) {
-  const safe = escHtml(label || 'unknown');
-  const slug = slugifyToken(label || 'unknown');
-  return `<span class="role-chip role-chip--${slug}">${safe}</span>`;
-}
-
-function statusChip(label) {
-  const safe = escHtml(label || 'submitted');
-  const slug = slugifyToken(label || 'submitted');
-  return `<span class="status-chip status-chip--${slug}">${safe}</span>`;
-}
-
 /* =========================
    AUTH / ROLE VISIBILITY
 ========================= */
-const reviewPanel = $('#reviewPanel');
-
-function setAdminLocked(isLocked, message = '') {
-  const adminSection = document.getElementById('admin');
-  if (adminSection) {
-    adminSection.dataset.adminLocked = isLocked ? 'true' : 'false';
-  }
-
-  appState.adminLocked = !!isLocked;
-
-  const buttons = [
-    adLoad, adClear,
-    amProfileSave,
-    amSiteCreate, amSiteUpdate,
-    amAssignmentCreate, amAssignmentUpdate, amAssignmentDelete
-  ].filter(Boolean);
-
-  buttons.forEach((btn) => {
-    btn.disabled = !!isLocked;
-  });
-
-  [
-    amProfileSelector,
-    amSiteSelector,
-    amAssignmentSelector,
-    amAssignmentProfileSelector,
-    amAssignmentSiteSelector
-  ].forEach((el) => {
-    if (el) el.disabled = !!isLocked;
-  });
-
-  if (isLocked) {
-    setNotice(amSummary, message || 'Your role does not have admin dashboard access.');
-  } else if (message) {
-    setNotice(amSummary, message);
-  }
-}
-
 function applyRoleVisibility() {
   const role = appState.currentRole || 'worker';
   const canReview = ['site_leader', 'supervisor', 'hse', 'admin', 'job_admin', 'onsite_admin'].includes(role);
-  const canUseAdmin = ['admin'].includes(role);
 
   document.body.dataset.userRole = role || 'worker';
 
@@ -233,11 +165,12 @@ function applyRoleVisibility() {
     reviewPanel.style.display = canReview ? '' : 'none';
   }
 
-  setAdminLocked(!canUseAdmin, canUseAdmin ? '' : 'Admin tools are visible only to admin users.');
-
-  Array.from(document.querySelectorAll('[data-admin-mode]')).forEach((btn) => {
-    btn.disabled = !canUseAdmin;
-  });
+  if (adminUI?.applyRoleAccess) {
+    adminUI.applyRoleAccess();
+    appState.adminLocked = !!adminUI.state?.locked;
+  } else {
+    appState.adminLocked = role !== 'admin';
+  }
 }
 
 function syncAuthStateFromBoot(detail = {}) {
@@ -1505,379 +1438,7 @@ rvSubmit?.addEventListener('click', async () => {
 });
 
 /* =========================
-   ADMIN DIRECTORY
-========================= */
-const adSearch = $('#ad_search');
-const adSiteId = $('#ad_site_id');
-const adProfileId = $('#ad_profile_id');
-const adActiveOnly = $('#ad_active_only');
-const adLimit = $('#ad_limit');
-const adMode = $('#ad_mode');
-const adLoad = $('#ad_load');
-const adClear = $('#ad_clear');
-const adUsersBody = $('#ad_users_table')?.querySelector('tbody') || null;
-const adSitesBody = $('#ad_sites_table')?.querySelector('tbody') || null;
-const adAssignmentsBody = $('#ad_assignments_table')?.querySelector('tbody') || null;
-const adUsersCount = $('#ad_users_count');
-const adSitesCount = $('#ad_sites_count');
-const adAssignmentsCount = $('#ad_assignments_count');
-const adModeLabel = $('#ad_mode_label');
-
-const adminDirectoryState = {
-  users: [],
-  sites: [],
-  assignments: [],
-  selectedUserId: '',
-  selectedSiteId: '',
-  selectedAssignmentId: ''
-};
-
-function updateAdminStats({ users = 0, sites = 0, assignments = 0 } = {}) {
-  if (adUsersCount) adUsersCount.textContent = String(users);
-  if (adSitesCount) adSitesCount.textContent = String(sites);
-  if (adAssignmentsCount) adAssignmentsCount.textContent = String(assignments);
-  if (adModeLabel) {
-    const mode = adMode?.value || 'all';
-    adModeLabel.textContent = mode === 'all' ? 'All data' : mode.charAt(0).toUpperCase() + mode.slice(1);
-  }
-}
-
-function highlightAdminRow(tbody, selectedId) {
-  if (!tbody) return;
-  tbody.querySelectorAll('tr[data-admin-row-id]').forEach(tr => {
-    const isSelected = String(tr.dataset.adminRowId || '') === String(selectedId || '');
-    tr.classList.toggle('is-selected', isSelected);
-  });
-}
-
-function clearAdminDirectoryTables() {
-  if (adUsersBody) adUsersBody.innerHTML = '';
-  if (adSitesBody) adSitesBody.innerHTML = '';
-  if (adAssignmentsBody) adAssignmentsBody.innerHTML = '';
-  adminDirectoryState.users = [];
-  adminDirectoryState.sites = [];
-  adminDirectoryState.assignments = [];
-  adminDirectoryState.selectedUserId = '';
-  adminDirectoryState.selectedSiteId = '';
-  adminDirectoryState.selectedAssignmentId = '';
-  updateAdminStats({ users: 0, sites: 0, assignments: 0 });
-}
-
-function renderAdminEmptyRow(tbody, colspan, text) {
-  if (!tbody) return;
-  const tr = document.createElement('tr');
-  tr.innerHTML = `<td colspan="${colspan}" style="color:#9ca3af;">${escHtml(text)}</td>`;
-  tbody.appendChild(tr);
-}
-
-function renderAdminUsers(rows) {
-  if (!adUsersBody) return;
-  adUsersBody.innerHTML = '';
-
-  if (!rows.length) {
-    renderAdminEmptyRow(adUsersBody, 6, 'No profiles found for the current filter.');
-    return;
-  }
-
-  rows.forEach(row => {
-    const tr = document.createElement('tr');
-    tr.className = 'admin-table-row';
-    tr.dataset.adminType = 'user';
-    tr.dataset.adminRowId = String(row.id || '');
-
-    tr.innerHTML = `
-      <td>${escHtml(row.id || '')}</td>
-      <td>${escHtml(row.email || '')}</td>
-      <td>${escHtml(row.full_name || '')}</td>
-      <td>${roleChip(row.role || '')}</td>
-      <td>${row.is_active ? 'Yes' : 'No'}</td>
-      <td>${escHtml(row.primary_site_code || '')}</td>
-    `;
-    adUsersBody.appendChild(tr);
-  });
-
-  highlightAdminRow(adUsersBody, adminDirectoryState.selectedUserId);
-}
-
-function renderAdminSites(rows) {
-  if (!adSitesBody) return;
-  adSitesBody.innerHTML = '';
-
-  if (!rows.length) {
-    renderAdminEmptyRow(adSitesBody, 6, 'No sites found for the current filter.');
-    return;
-  }
-
-  rows.forEach(row => {
-    const tr = document.createElement('tr');
-    tr.className = 'admin-table-row';
-    tr.dataset.adminType = 'site';
-    tr.dataset.adminRowId = String(row.id || '');
-
-    tr.innerHTML = `
-      <td>${escHtml(row.id || '')}</td>
-      <td>${escHtml(row.site_code || '')}</td>
-      <td>${escHtml(row.site_name || '')}</td>
-      <td>${escHtml(row.address || '')}</td>
-      <td>${row.is_active ? 'Yes' : 'No'}</td>
-      <td>${escHtml(row.assignment_count || 0)}</td>
-    `;
-    adSitesBody.appendChild(tr);
-  });
-
-  highlightAdminRow(adSitesBody, adminDirectoryState.selectedSiteId);
-}
-
-function renderAdminAssignments(rows) {
-  if (!adAssignmentsBody) return;
-  adAssignmentsBody.innerHTML = '';
-
-  if (!rows.length) {
-    renderAdminEmptyRow(adAssignmentsBody, 7, 'No assignments found for the current filter.');
-    return;
-  }
-
-  rows.forEach(row => {
-    const tr = document.createElement('tr');
-    tr.className = 'admin-table-row';
-    tr.dataset.adminType = 'assignment';
-    tr.dataset.adminRowId = String(row.id || '');
-
-    tr.innerHTML = `
-      <td>${escHtml(row.id || '')}</td>
-      <td>${escHtml(row.site_code || '')}</td>
-      <td>${escHtml(row.site_name || '')}</td>
-      <td>${escHtml(row.email || '')}</td>
-      <td>${escHtml(row.full_name || '')}</td>
-      <td>${roleChip(row.assignment_role || '')}</td>
-      <td>${row.is_primary ? 'Yes' : 'No'}</td>
-    `;
-    adAssignmentsBody.appendChild(tr);
-  });
-
-  highlightAdminRow(adAssignmentsBody, adminDirectoryState.selectedAssignmentId);
-}
-
-async function fetchAdminDirectory() {
-  if (appState.adminLocked) {
-    clearAdminDirectoryTables();
-    updateAdminStats({ users: 0, sites: 0, assignments: 0 });
-    return;
-  }
-
-  const data = await loadAdminDirectory({
-    search: adSearch?.value?.trim?.() || undefined,
-    site_id: adSiteId?.value?.trim?.() || undefined,
-    profile_id: adProfileId?.value?.trim?.() || undefined,
-    active_only: !!adActiveOnly?.checked,
-    limit: Number(adLimit?.value || 200) || 200,
-    mode: adMode?.value || 'all'
-  });
-
-  if (!data?.ok) throw new Error(data?.error || 'Admin directory load failed');
-
-  adminDirectoryState.users = data.users || [];
-  adminDirectoryState.sites = data.sites || [];
-  adminDirectoryState.assignments = data.assignments || [];
-
-  renderAdminUsers(adminDirectoryState.users);
-  renderAdminSites(adminDirectoryState.sites);
-  renderAdminAssignments(adminDirectoryState.assignments);
-  updateAdminStats({
-    users: adminDirectoryState.users.length,
-    sites: adminDirectoryState.sites.length,
-    assignments: adminDirectoryState.assignments.length
-  });
-  setManageSummary('Admin directory loaded. Click any row to load it into the editor.');
-}
-
-/* =========================
-   ADMIN SELECTORS
-========================= */
-const selectorState = {
-  profiles: [],
-  sites: [],
-  assignments: []
-};
-
-const amProfileSelector = $('#am_profile_selector');
-const amSiteSelector = $('#am_site_selector');
-const amAssignmentSelector = $('#am_assignment_selector');
-const amAssignmentProfileSelector = $('#am_assignment_profile_selector');
-const amAssignmentSiteSelector = $('#am_assignment_site_selector');
-
-async function refreshAdminSelectors() {
-  if (appState.adminLocked) {
-    selectorState.profiles = [];
-    selectorState.sites = [];
-    selectorState.assignments = [];
-    fillSelectOptions(amProfileSelector, [], 'Admin access required');
-    fillSelectOptions(amSiteSelector, [], 'Admin access required');
-    fillSelectOptions(amAssignmentSelector, [], 'Admin access required');
-    fillSelectOptions(amAssignmentProfileSelector, [], 'Admin access required');
-    fillSelectOptions(amAssignmentSiteSelector, [], 'Admin access required');
-    return;
-  }
-
-  try {
-    const data = await loadAdminSelectors({ kind: 'all', active_only: false, limit: 500 });
-    if (!data?.ok) throw new Error(data?.error || 'Selector load failed');
-
-    selectorState.profiles = data.profiles || [];
-    selectorState.sites = data.sites || [];
-    selectorState.assignments = data.assignments || [];
-
-    fillSelectOptions(amProfileSelector, selectorState.profiles, 'Select profile...');
-    fillSelectOptions(amSiteSelector, selectorState.sites, 'Select site...');
-    fillSelectOptions(amAssignmentSelector, selectorState.assignments, 'Select assignment...');
-    fillSelectOptions(amAssignmentProfileSelector, selectorState.profiles, 'Select profile...');
-    fillSelectOptions(amAssignmentSiteSelector, selectorState.sites, 'Select site...');
-  } catch (err) {
-    console.error('Failed to load admin selectors', err);
-  }
-}
-
-amProfileSelector?.addEventListener('change', () => {
-  const row = pickById(selectorState.profiles, amProfileSelector.value);
-  if (!row) return;
-  loadProfileIntoManager(row);
-});
-
-amSiteSelector?.addEventListener('change', () => {
-  const row = pickById(selectorState.sites, amSiteSelector.value);
-  if (!row) return;
-  loadSiteIntoManager(row);
-});
-
-amAssignmentSelector?.addEventListener('change', () => {
-  const row = pickById(selectorState.assignments, amAssignmentSelector.value);
-  if (!row) return;
-  loadAssignmentIntoManager(row);
-});
-
-amAssignmentProfileSelector?.addEventListener('change', () => {
-  if ($('#am_assignment_profile_id')) $('#am_assignment_profile_id').value = amAssignmentProfileSelector.value || '';
-});
-
-amAssignmentSiteSelector?.addEventListener('change', () => {
-  if ($('#am_assignment_site_id')) $('#am_assignment_site_id').value = amAssignmentSiteSelector.value || '';
-});
-
-function loadProfileIntoManager(row) {
-  if (!row) return;
-  adminDirectoryState.selectedUserId = String(row.id || '');
-  highlightAdminRow(adUsersBody, adminDirectoryState.selectedUserId);
-  if (amProfileSelector) amProfileSelector.value = row.id || '';
-  if (amProfileId) amProfileId.value = row.id || '';
-  if (amProfileName) amProfileName.value = row.full_name || '';
-  if (amProfileRole) amProfileRole.value = row.role || '';
-  if (amProfileActive) amProfileActive.checked = !!row.is_active;
-  setManageSummary(`Loaded profile ${row.email || row.id || ''} into the editor.`);
-}
-
-function loadSiteIntoManager(row) {
-  if (!row) return;
-  adminDirectoryState.selectedSiteId = String(row.id || '');
-  highlightAdminRow(adSitesBody, adminDirectoryState.selectedSiteId);
-  if (amSiteSelector) amSiteSelector.value = row.id || '';
-  if (amSiteId) amSiteId.value = row.id || '';
-  if (amSiteCode) amSiteCode.value = row.site_code || '';
-  if (amSiteName) amSiteName.value = row.site_name || '';
-  if (amSiteAddress) amSiteAddress.value = row.address || '';
-  if (amSiteNotes) amSiteNotes.value = row.notes || '';
-  if (amSiteActive) amSiteActive.checked = !!row.is_active;
-  setManageSummary(`Loaded site ${row.site_code || row.id || ''} into the editor.`);
-}
-
-function loadAssignmentIntoManager(row) {
-  if (!row) return;
-  adminDirectoryState.selectedAssignmentId = String(row.id || '');
-  highlightAdminRow(adAssignmentsBody, adminDirectoryState.selectedAssignmentId);
-  if (amAssignmentSelector) amAssignmentSelector.value = row.id || '';
-  if (amAssignmentId) amAssignmentId.value = row.id || '';
-  if (amAssignmentSiteId) amAssignmentSiteId.value = row.site_id || '';
-  if (amAssignmentProfileId) amAssignmentProfileId.value = row.profile_id || '';
-  if (amAssignmentRole) amAssignmentRole.value = row.assignment_role || 'worker';
-  if (amAssignmentPrimary) amAssignmentPrimary.checked = !!row.is_primary;
-  if (amAssignmentSiteSelector) amAssignmentSiteSelector.value = row.site_id || '';
-  if (amAssignmentProfileSelector) amAssignmentProfileSelector.value = row.profile_id || '';
-  setManageSummary(`Loaded assignment ${row.id || ''} into the editor.`);
-}
-
-function onAdminFilterEnter(e) {
-  if (e.key !== 'Enter') return;
-  e.preventDefault();
-  adLoad?.click();
-}
-
-[adSearch, adSiteId, adProfileId, adLimit].forEach(el => {
-  el?.addEventListener('keydown', onAdminFilterEnter);
-});
-
-Array.from(document.querySelectorAll('[data-admin-mode]')).forEach(btn => {
-  btn.addEventListener('click', () => {
-    const nextMode = btn.getAttribute('data-admin-mode') || 'all';
-    if (adMode) adMode.value = nextMode;
-    updateAdminStats({
-      users: adminDirectoryState.users.length,
-      sites: adminDirectoryState.sites.length,
-      assignments: adminDirectoryState.assignments.length
-    });
-    adLoad?.click();
-  });
-});
-
-adUsersBody?.addEventListener('click', (e) => {
-  const tr = (e.target instanceof Element) ? e.target.closest('tr[data-admin-row-id]') : null;
-  if (!tr) return;
-  const row = adminDirectoryState.users.find(item => String(item.id || '') === String(tr.dataset.adminRowId || ''));
-  if (row) loadProfileIntoManager(row);
-});
-
-adSitesBody?.addEventListener('click', (e) => {
-  const tr = (e.target instanceof Element) ? e.target.closest('tr[data-admin-row-id]') : null;
-  if (!tr) return;
-  const row = adminDirectoryState.sites.find(item => String(item.id || '') === String(tr.dataset.adminRowId || ''));
-  if (row) loadSiteIntoManager(row);
-});
-
-adAssignmentsBody?.addEventListener('click', (e) => {
-  const tr = (e.target instanceof Element) ? e.target.closest('tr[data-admin-row-id]') : null;
-  if (!tr) return;
-  const row = adminDirectoryState.assignments.find(item => String(item.id || '') === String(tr.dataset.adminRowId || ''));
-  if (row) loadAssignmentIntoManager(row);
-});
-
-adMode?.addEventListener('change', () => {
-  updateAdminStats({
-    users: adminDirectoryState.users.length,
-    sites: adminDirectoryState.sites.length,
-    assignments: adminDirectoryState.assignments.length
-  });
-});
-
-adLoad?.addEventListener('click', async () => {
-  try {
-    await fetchAdminDirectory();
-    await refreshAdminSelectors();
-  } catch (err) {
-    console.error(err);
-    alert('Failed to load admin directory.');
-  }
-});
-
-adClear?.addEventListener('click', () => {
-  if (adSearch) adSearch.value = '';
-  if (adSiteId) adSiteId.value = '';
-  if (adProfileId) adProfileId.value = '';
-  if (adActiveOnly) adActiveOnly.checked = false;
-  if (adLimit) adLimit.value = '200';
-  if (adMode) adMode.value = 'all';
-  clearAdminDirectoryTables();
-});
-
-/* =========================
-   ADMIN MANAGEMENT
+   ADMIN MANAGEMENT ACTIONS
 ========================= */
 const amProfileId = $('#am_profile_id');
 const amProfileName = $('#am_profile_name');
@@ -1909,11 +1470,25 @@ function setManageSummary(text) {
   setNotice(amSummary, text);
 }
 
-amProfileSave?.addEventListener('click', async () => {
+function ensureAdminAllowed() {
   if (appState.adminLocked) {
     alert('Admin access is required for this action.');
-    return;
+    return false;
   }
+  return true;
+}
+
+async function refreshAdminModuleAfterSave() {
+  if (adminUI?.loadDirectory) {
+    await adminUI.loadDirectory();
+  }
+  if (adminUI?.refreshSelectors) {
+    await adminUI.refreshSelectors();
+  }
+}
+
+amProfileSave?.addEventListener('click', async () => {
+  if (!ensureAdminAllowed()) return;
 
   const profileId = amProfileId?.value?.trim?.() || '';
   if (!profileId) {
@@ -1934,8 +1509,7 @@ amProfileSave?.addEventListener('click', async () => {
     if (!resp?.ok) throw new Error(resp?.error || 'Profile save failed');
 
     setManageSummary(`Profile updated: ${resp?.record?.email || profileId}`);
-    await fetchAdminDirectory();
-    await refreshAdminSelectors();
+    await refreshAdminModuleAfterSave();
   } catch (err) {
     console.error(err);
     alert('Failed to save profile.');
@@ -1943,10 +1517,7 @@ amProfileSave?.addEventListener('click', async () => {
 });
 
 amSiteCreate?.addEventListener('click', async () => {
-  if (appState.adminLocked) {
-    alert('Admin access is required for this action.');
-    return;
-  }
+  if (!ensureAdminAllowed()) return;
 
   const siteCode = amSiteCode?.value?.trim?.() || '';
   const siteName = amSiteName?.value?.trim?.() || '';
@@ -1971,8 +1542,7 @@ amSiteCreate?.addEventListener('click', async () => {
 
     setManageSummary(`Site created: ${resp?.record?.site_code || siteCode}`);
     if (amSiteId) amSiteId.value = resp?.record?.id || '';
-    await fetchAdminDirectory();
-    await refreshAdminSelectors();
+    await refreshAdminModuleAfterSave();
   } catch (err) {
     console.error(err);
     alert('Failed to create site.');
@@ -1980,10 +1550,7 @@ amSiteCreate?.addEventListener('click', async () => {
 });
 
 amSiteUpdate?.addEventListener('click', async () => {
-  if (appState.adminLocked) {
-    alert('Admin access is required for this action.');
-    return;
-  }
+  if (!ensureAdminAllowed()) return;
 
   const siteId = amSiteId?.value?.trim?.() || '';
   if (!siteId) {
@@ -2006,8 +1573,7 @@ amSiteUpdate?.addEventListener('click', async () => {
     if (!resp?.ok) throw new Error(resp?.error || 'Site update failed');
 
     setManageSummary(`Site updated: ${resp?.record?.site_code || siteId}`);
-    await fetchAdminDirectory();
-    await refreshAdminSelectors();
+    await refreshAdminModuleAfterSave();
   } catch (err) {
     console.error(err);
     alert('Failed to update site.');
@@ -2015,10 +1581,7 @@ amSiteUpdate?.addEventListener('click', async () => {
 });
 
 amAssignmentCreate?.addEventListener('click', async () => {
-  if (appState.adminLocked) {
-    alert('Admin access is required for this action.');
-    return;
-  }
+  if (!ensureAdminAllowed()) return;
 
   const siteId = amAssignmentSiteId?.value?.trim?.() || '';
   const profileId = amAssignmentProfileId?.value?.trim?.() || '';
@@ -2042,8 +1605,7 @@ amAssignmentCreate?.addEventListener('click', async () => {
 
     if (amAssignmentId) amAssignmentId.value = resp?.record?.id || '';
     setManageSummary(`Assignment created: ${resp?.record?.id || ''}`);
-    await fetchAdminDirectory();
-    await refreshAdminSelectors();
+    await refreshAdminModuleAfterSave();
   } catch (err) {
     console.error(err);
     alert('Failed to create assignment.');
@@ -2051,10 +1613,7 @@ amAssignmentCreate?.addEventListener('click', async () => {
 });
 
 amAssignmentUpdate?.addEventListener('click', async () => {
-  if (appState.adminLocked) {
-    alert('Admin access is required for this action.');
-    return;
-  }
+  if (!ensureAdminAllowed()) return;
 
   const assignmentId = amAssignmentId?.value?.trim?.() || '';
   if (!assignmentId) {
@@ -2074,8 +1633,7 @@ amAssignmentUpdate?.addEventListener('click', async () => {
     if (!resp?.ok) throw new Error(resp?.error || 'Assignment update failed');
 
     setManageSummary(`Assignment updated: ${assignmentId}`);
-    await fetchAdminDirectory();
-    await refreshAdminSelectors();
+    await refreshAdminModuleAfterSave();
   } catch (err) {
     console.error(err);
     alert('Failed to update assignment.');
@@ -2083,10 +1641,7 @@ amAssignmentUpdate?.addEventListener('click', async () => {
 });
 
 amAssignmentDelete?.addEventListener('click', async () => {
-  if (appState.adminLocked) {
-    alert('Admin access is required for this action.');
-    return;
-  }
+  if (!ensureAdminAllowed()) return;
 
   const assignmentId = amAssignmentId?.value?.trim?.() || '';
   if (!assignmentId) {
@@ -2108,8 +1663,7 @@ amAssignmentDelete?.addEventListener('click', async () => {
 
     setManageSummary(`Assignment deleted: ${assignmentId}`);
     if (amAssignmentId) amAssignmentId.value = '';
-    await fetchAdminDirectory();
-    await refreshAdminSelectors();
+    await refreshAdminModuleAfterSave();
   } catch (err) {
     console.error(err);
     alert('Failed to delete assignment.');
@@ -2128,6 +1682,27 @@ function seedAllTables() {
 }
 
 /* =========================
+   ADMIN MODULE
+========================= */
+function initAdminModule() {
+  if (!window.YWIAdminUI?.create) return;
+
+  adminUI = window.YWIAdminUI.create({
+    loadAdminDirectory,
+    loadAdminSelectors,
+    manageSummary: setManageSummary,
+    getCurrentRole: () => appState.currentRole,
+    onProfileLoaded: () => {},
+    onSiteLoaded: () => {},
+    onAssignmentLoaded: () => {}
+  });
+
+  adminUI.init().catch((err) => {
+    console.error('Admin UI init failed', err);
+  });
+}
+
+/* =========================
    BOOTSTRAP / STARTUP
 ========================= */
 async function initializeAppShell() {
@@ -2135,9 +1710,11 @@ async function initializeAppShell() {
   seedAllTables();
   clearSubmissionDetail();
   clearReviewPanel();
-  clearAdminDirectoryTables();
   setManageSummary('');
-  updateAdminStats({ users: 0, sites: 0, assignments: 0 });
+
+  if (!adminUI) {
+    initAdminModule();
+  }
 
   const currentAuthState = auth()?.getState?.();
   if (currentAuthState) {
@@ -2146,11 +1723,9 @@ async function initializeAppShell() {
     applyRoleVisibility();
   }
 
-  await refreshAdminSelectors();
-
-  if (location.hash === '#admin' && appState.isAuthenticated) {
+  if (location.hash === '#admin' && appState.isAuthenticated && adminUI?.loadDirectory) {
     try {
-      await fetchAdminDirectory();
+      await adminUI.loadDirectory();
     } catch (err) {
       console.error('Admin auto-load failed', err);
     }
@@ -2165,18 +1740,23 @@ document.addEventListener('ywi:boot-ready', async (e) => {
 
 document.addEventListener('ywi:auth-changed', async (e) => {
   syncAuthStateFromBoot(e.detail || {});
-  await refreshAdminSelectors();
 
-  if (location.hash === '#admin' && appState.isAuthenticated) {
+  if (adminUI?.refreshSelectors) {
+    await adminUI.refreshSelectors();
+  }
+
+  if (location.hash === '#admin' && appState.isAuthenticated && adminUI?.loadDirectory) {
     try {
-      await fetchAdminDirectory();
+      await adminUI.loadDirectory();
     } catch (err) {
       console.error('Admin auth refresh failed', err);
     }
   } else if (!appState.isAuthenticated) {
-    clearAdminDirectoryTables();
     clearSubmissionDetail();
     clearReviewPanel();
+    if (adminUI?.clearDirectory) {
+      adminUI.clearDirectory();
+    }
   }
 });
 
@@ -2185,16 +1765,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   seedAllTables();
   clearSubmissionDetail();
   clearReviewPanel();
-  clearAdminDirectoryTables();
   setManageSummary('');
-  updateAdminStats({ users: 0, sites: 0, assignments: 0 });
+  initAdminModule();
   applyRoleVisibility();
 });
 
 window.addEventListener('hashchange', () => {
   setTimeout(seedAllTables, 0);
-  if (location.hash === '#admin' && appState.isAuthenticated) {
-    fetchAdminDirectory().catch(err => console.error('Admin hash load failed', err));
+  if (location.hash === '#admin' && appState.isAuthenticated && adminUI?.loadDirectory) {
+    adminUI.loadDirectory().catch(err => console.error('Admin hash load failed', err));
   }
 });
 
