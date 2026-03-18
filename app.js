@@ -1,78 +1,50 @@
 'use strict';
 
 /* =========================================================
-   YWI HSE — app.js
-   Full application script
-   Features:
-   - Supabase magic-link auth
-   - session persistence
-   - secure JWT calls to Edge Functions
-   - forms A/B/C/D/E
-   - secure image uploads via upload-image function
-   - logbook + CSV export
-   - submission detail
-   - review workflow
-   - admin directory
-   - admin management
-   - admin selectors / dropdown helpers
+   app.js
+   Main application controller
+
+   Purpose:
+   - use shared bootstrap/auth layer instead of owning auth
+   - keep current forms, logbook, review, and admin tools working
+   - prepare for future split into smaller feature modules
 ========================================================= */
 
 /* =========================
-   CONFIG
+   CONFIG / ENDPOINTS
 ========================= */
-const SB_URL  = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
-const SB_KEY  = 'sb_publishable_Xyg1zQU9_vsAaME9BeHm_w_RRgtPs_e';
+const SB_URL = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
 
-const FUNCTION_URL    = `${SB_URL}/functions/v1/resend-email`;
-const LIST_URL        = `${SB_URL}/functions/v1/clever-endpoint`;
-const REVIEW_URL      = `${SB_URL}/functions/v1/review-submission`;
-const DIRECTORY_URL   = `${SB_URL}/functions/v1/admin-directory`;
-const MANAGE_URL      = `${SB_URL}/functions/v1/admin-manage`;
-const DETAIL_URL      = `${SB_URL}/functions/v1/submission-detail`;
-const SELECTORS_URL   = `${SB_URL}/functions/v1/admin-selectors`;
-const UPLOAD_URL      = `${SB_URL}/functions/v1/upload-image`;
-const STORAGE_BUCKET  = 'submission-images';
+const FUNCTION_URL   = `${SB_URL}/functions/v1/resend-email`;
+const LIST_URL       = `${SB_URL}/functions/v1/clever-endpoint`;
+const REVIEW_URL     = `${SB_URL}/functions/v1/review-submission`;
+const DIRECTORY_URL  = `${SB_URL}/functions/v1/admin-directory`;
+const MANAGE_URL     = `${SB_URL}/functions/v1/admin-manage`;
+const DETAIL_URL     = `${SB_URL}/functions/v1/submission-detail`;
+const SELECTORS_URL  = `${SB_URL}/functions/v1/admin-selectors`;
+const UPLOAD_URL     = `${SB_URL}/functions/v1/upload-image`;
+const STORAGE_BUCKET = 'submission-images';
 
 const OUTBOX_KEY = 'ywi_outbox_v1';
-const IDLE_MS = 30 * 60 * 1000;
-
-/* =========================
-   SUPABASE CLIENT
-========================= */
-let sb = null;
-if (window.supabase && SB_URL && SB_KEY) {
-  sb = window.supabase.createClient(SB_URL, SB_KEY, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      storageKey: 'ywi-auth'
-    }
-  });
-  window._sb = sb;
-} else {
-  console.warn('Supabase client not loaded or missing config.');
-}
 
 /* =========================
    DOM HELPERS
 ========================= */
-const $  = (sel, root = document) => root.querySelector(sel);
+const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-const mainEl     = $('main.container');
-const loginView  = $('#loginView');
-const loginForm  = $('#loginForm');
-const emailInput = $('#loginEmail');
-const authInfo   = $('#authInfo');
-const whoami     = $('#whoami');
-const logoutBtn  = $('#logoutBtn');
+/* =========================
+   APP DOM
+========================= */
+const whoami = $('#whoami');
 
 const appState = {
   currentUser: null,
-  currentRole: '',
-  currentProfileActive: true,
-  adminLocked: true
+  currentRole: 'worker',
+  currentProfileActive: false,
+  isAuthenticated: false,
+  adminLocked: true,
+  bootReady: false
 };
 
 /* =========================
@@ -97,8 +69,11 @@ function ensureTBody(tableId) {
 }
 
 function getOutbox() {
-  try { return JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]'); }
-  catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(OUTBOX_KEY) || '[]');
+  } catch {
+    return [];
+  }
 }
 
 function setOutbox(list) {
@@ -112,32 +87,6 @@ function escHtml(value) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
-}
-
-function showLogin() {
-  if (loginView) loginView.style.display = 'block';
-  if (mainEl) mainEl.style.display = 'none';
-  if (authInfo) authInfo.hidden = true;
-}
-
-function showApp(session) {
-  if (loginView) loginView.style.display = 'none';
-  if (mainEl) mainEl.style.display = 'block';
-  if (authInfo) authInfo.hidden = false;
-  if (whoami) whoami.textContent = session?.user?.email || '';
-}
-
-function cleanAuthHash() {
-  const hash = window.location.hash || '';
-  if (
-    hash.startsWith('#access_token=') ||
-    hash.startsWith('#refresh_token=') ||
-    hash.includes('type=signup') ||
-    hash.includes('type=recovery') ||
-    hash.includes('expires_at=')
-  ) {
-    history.replaceState({}, '', window.location.pathname + '#toolbox');
-  }
 }
 
 function bytesLabel(size) {
@@ -167,9 +116,22 @@ function fmtDateTime(value) {
   }
 }
 
+function boot() {
+  return window.YWI_BOOT || null;
+}
+
+function auth() {
+  return window.YWI_AUTH || null;
+}
+
+function sb() {
+  return window.YWI_SB || window._sb || null;
+}
+
 function storagePreviewUrl(filePath) {
-  if (!sb || !filePath) return '';
-  const { data } = sb.storage.from(STORAGE_BUCKET).getPublicUrl(filePath);
+  const client = sb();
+  if (!client || !filePath) return '';
+  const { data } = client.storage.from(STORAGE_BUCKET).getPublicUrl(filePath);
   return data?.publicUrl || '';
 }
 
@@ -177,6 +139,7 @@ function fillSelectOptions(selectEl, rows, placeholder = 'Select...') {
   if (!selectEl) return;
   const current = selectEl.value || '';
   selectEl.innerHTML = '';
+
   const empty = document.createElement('option');
   empty.value = '';
   empty.textContent = placeholder;
@@ -218,6 +181,11 @@ function statusChip(label) {
   return `<span class="status-chip status-chip--${slug}">${safe}</span>`;
 }
 
+/* =========================
+   AUTH / ROLE VISIBILITY
+========================= */
+const reviewPanel = $('#reviewPanel');
+
 function setAdminLocked(isLocked, message = '') {
   const adminSection = document.getElementById('admin');
   if (adminSection) {
@@ -237,7 +205,13 @@ function setAdminLocked(isLocked, message = '') {
     btn.disabled = !!isLocked;
   });
 
-  [amProfileSelector, amSiteSelector, amAssignmentSelector, amAssignmentProfileSelector, amAssignmentSiteSelector].forEach((el) => {
+  [
+    amProfileSelector,
+    amSiteSelector,
+    amAssignmentSelector,
+    amAssignmentProfileSelector,
+    amAssignmentSiteSelector
+  ].forEach((el) => {
     if (el) el.disabled = !!isLocked;
   });
 
@@ -249,13 +223,12 @@ function setAdminLocked(isLocked, message = '') {
 }
 
 function applyRoleVisibility() {
-  const role = appState.currentRole || '';
-  const canReview = ['site_leader', 'supervisor', 'hse', 'admin'].includes(role);
-  const canUseAdmin = role === 'admin';
+  const role = appState.currentRole || 'worker';
+  const canReview = ['site_leader', 'supervisor', 'hse', 'admin', 'job_admin', 'onsite_admin'].includes(role);
+  const canUseAdmin = ['admin'].includes(role);
 
   document.body.dataset.userRole = role || 'worker';
 
-  const reviewPanel = document.getElementById('reviewPanel');
   if (reviewPanel) {
     reviewPanel.style.display = canReview ? '' : 'none';
   }
@@ -267,173 +240,53 @@ function applyRoleVisibility() {
   });
 }
 
-async function hydrateCurrentUserProfile() {
-  if (!sb) return null;
+function syncAuthStateFromBoot(detail = {}) {
+  const state = detail.state || auth()?.getState?.() || null;
+  const profile = state?.profile || null;
+  const user = state?.user || null;
 
-  const { data: { session } } = await sb.auth.getSession();
-  const user = session?.user || null;
-  if (!user?.id) {
-    appState.currentUser = null;
-    appState.currentRole = '';
-    appState.currentProfileActive = false;
-    applyRoleVisibility();
-    return null;
-  }
-
-  let profile = null;
-  try {
-    const { data, error } = await sb
-      .from('profiles')
-      .select('id,email,full_name,role,is_active')
-      .eq('id', user.id)
-      .single();
-
-    if (error) throw error;
-    profile = data || null;
-  } catch (err) {
-    console.warn('Profile hydrate failed, falling back to auth session only.', err);
-  }
-
-  appState.currentUser = profile || {
-    id: user.id,
-    email: user.email || '',
-    full_name: user.user_metadata?.full_name || '',
-    role: '',
-    is_active: true
-  };
-  appState.currentRole = appState.currentUser.role || '';
-  appState.currentProfileActive = appState.currentUser.is_active !== false;
+  appState.currentUser = profile || user || null;
+  appState.currentRole = state?.role || profile?.role || 'worker';
+  appState.currentProfileActive = profile?.is_active !== false && !!state?.isAuthenticated;
+  appState.isAuthenticated = !!state?.isAuthenticated;
 
   if (whoami) {
-    const email = appState.currentUser.email || user.email || '';
-    const roleLabel = appState.currentRole ? ` (${appState.currentRole})` : '';
-    whoami.textContent = `${email}${roleLabel}`;
+    const email = profile?.email || user?.email || '';
+    const roleLabel = state?.roleLabel || appState.currentRole || '';
+    whoami.textContent = email ? `${email} (${roleLabel})` : roleLabel;
   }
 
   applyRoleVisibility();
-  return appState.currentUser;
 }
-
-/* =========================
-   AUTH
-========================= */
-async function renderByAuth() {
-  if (!sb) {
-    showLogin();
-    return;
-  }
-
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    showApp(session);
-    await hydrateCurrentUserProfile();
-    seedAllTables();
-  } else {
-    showLogin();
-  }
-}
-
-async function bootAuth() {
-  if (!sb) {
-    showLogin();
-    return;
-  }
-
-  await sb.auth.getSession();
-  cleanAuthHash();
-  await renderByAuth();
-}
-
-if (sb) {
-  sb.auth.onAuthStateChange(async (_event, session) => {
-    cleanAuthHash();
-    if (session) {
-      showApp(session);
-      await hydrateCurrentUserProfile();
-    } else {
-      appState.currentUser = null;
-      appState.currentRole = '';
-      appState.currentProfileActive = false;
-      applyRoleVisibility();
-      showLogin();
-    }
-  });
-
-  if (IDLE_MS > 0) {
-    let idleTimer = null;
-    const resetIdle = () => {
-      clearTimeout(idleTimer);
-      idleTimer = setTimeout(async () => {
-        try { await sb.auth.signOut(); } catch {}
-      }, IDLE_MS);
-    };
-    ['click', 'mousemove', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
-      window.addEventListener(evt, resetIdle, { passive: true });
-    });
-    resetIdle();
-  }
-}
-
-loginForm?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  if (!sb) return alert('Auth client not available.');
-
-  const email = (emailInput?.value || '').trim();
-  if (!email) return alert('Please enter your email.');
-
-  const submitBtn = loginForm.querySelector('button[type="submit"]');
-  if (submitBtn) submitBtn.disabled = true;
-
-  try {
-    const { error } = await sb.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${window.location.origin}/#toolbox` }
-    });
-
-    if (error) {
-      alert(`Login error: ${error.message}`);
-    } else {
-      alert('Magic link sent. Please check your email.');
-    }
-  } finally {
-    setTimeout(() => {
-      if (submitBtn) submitBtn.disabled = false;
-    }, 65000);
-  }
-});
-
-logoutBtn?.addEventListener('click', async () => {
-  if (!sb) return;
-  await sb.auth.signOut();
-});
 
 /* =========================
    FETCH / AUTH HEADERS
 ========================= */
 async function authHeader() {
-  if (!sb) return {};
-  const { data: { session } } = await sb.auth.getSession();
-  if (session?.access_token) {
-    return { Authorization: `Bearer ${session.access_token}` };
+  const b = boot();
+  if (b?.authHeader) {
+    return b.authHeader();
   }
   return {};
 }
 
 async function jsonFetch(url, { method = 'POST', headers = {}, body = null } = {}) {
-  let auth = await authHeader();
+  let authHeaders = await authHeader();
 
   let res = await fetch(url, {
     method,
-    headers: { 'Content-Type': 'application/json', ...auth, ...headers },
+    headers: { 'Content-Type': 'application/json', ...authHeaders, ...headers },
     body: body ? (typeof body === 'string' ? body : JSON.stringify(body)) : null
   });
 
-  if (res.status === 401 && sb) {
-    try { await sb.auth.refreshSession(); } catch {}
-    auth = await authHeader();
+  if (res.status === 401 && auth()?.refresh) {
+    try {
+      await auth().refresh();
+    } catch {}
+    authHeaders = await authHeader();
     res = await fetch(url, {
       method,
-      headers: { 'Content-Type': 'application/json', ...auth, ...headers },
+      headers: { 'Content-Type': 'application/json', ...authHeaders, ...headers },
       body: body ? (typeof body === 'string' ? body : JSON.stringify(body)) : null
     });
   }
@@ -444,25 +297,30 @@ async function jsonFetch(url, { method = 'POST', headers = {}, body = null } = {
     throw new Error(`HTTP ${res.status}: ${text}`);
   }
 
-  try { return JSON.parse(text); }
-  catch { return text; }
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
 }
 
 async function uploadFormDataFetch(url, formData) {
-  let auth = await authHeader();
+  let authHeaders = await authHeader();
 
   let res = await fetch(url, {
     method: 'POST',
-    headers: { ...auth },
+    headers: { ...authHeaders },
     body: formData
   });
 
-  if (res.status === 401 && sb) {
-    try { await sb.auth.refreshSession(); } catch {}
-    auth = await authHeader();
+  if (res.status === 401 && auth()?.refresh) {
+    try {
+      await auth().refresh();
+    } catch {}
+    authHeaders = await authHeader();
     res = await fetch(url, {
       method: 'POST',
-      headers: { ...auth },
+      headers: { ...authHeaders },
       body: formData
     });
   }
@@ -473,8 +331,11 @@ async function uploadFormDataFetch(url, formData) {
     throw new Error(`HTTP ${res.status}: ${text}`);
   }
 
-  try { return JSON.parse(text); }
-  catch { return text; }
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
 }
 
 async function sendToFunction(formType, payload) {
@@ -507,7 +368,6 @@ async function uploadImageViaFunction(submissionId, image) {
   formData.append('image_type', image.image_type || 'general');
   formData.append('caption', image.caption || '');
   formData.append('file', image.file);
-
   return uploadFormDataFetch(UPLOAD_URL, formData);
 }
 
@@ -551,6 +411,11 @@ function applyDateFallback() {
    OUTBOX RETRY
 ========================= */
 async function retryOutbox() {
+  if (!appState.isAuthenticated) {
+    alert('Please sign in first.');
+    return;
+  }
+
   const outbox = getOutbox();
   if (!outbox.length) {
     alert('Outbox is empty.');
@@ -580,7 +445,7 @@ $$('[data-role="retry-outbox"]').forEach(btn => {
 });
 
 /* =========================
-   TOOLBOX / INSPECTION / DRILL IMAGE HELPERS
+   IMAGE HELPERS
 ========================= */
 function clearImageState(state, body, fileInput, captionInput) {
   state.splice(0, state.length);
@@ -649,6 +514,7 @@ function addAttendeeRow() {
     <td>
       <select class="att-role">
         <option value="worker">Worker</option>
+        <option value="staff">Staff</option>
         <option value="site_leader">Site Leader</option>
         <option value="supervisor">Supervisor</option>
         <option value="visitor">Visitor</option>
@@ -771,6 +637,7 @@ function addPPERow() {
     <td>
       <select class="ppe-role">
         <option value="worker">Worker</option>
+        <option value="staff">Staff</option>
         <option value="site_leader">Site Leader</option>
         <option value="supervisor">Supervisor</option>
         <option value="visitor">Visitor</option>
@@ -819,12 +686,12 @@ ppeForm?.addEventListener('submit', async (e) => {
     name: tr.querySelector('.ppe-name')?.value?.trim?.() || '',
     role_on_site: tr.querySelector('.ppe-role')?.value || 'worker',
     items: {
-      shoes:   !!tr.querySelector('.ppe-shoes')?.checked,
-      vest:    !!tr.querySelector('.ppe-vest')?.checked,
-      plugs:   !!tr.querySelector('.ppe-plugs')?.checked,
+      shoes: !!tr.querySelector('.ppe-shoes')?.checked,
+      vest: !!tr.querySelector('.ppe-vest')?.checked,
+      plugs: !!tr.querySelector('.ppe-plugs')?.checked,
       goggles: !!tr.querySelector('.ppe-goggles')?.checked,
-      muffs:   !!tr.querySelector('.ppe-muffs')?.checked,
-      gloves:  !!tr.querySelector('.ppe-gloves')?.checked,
+      muffs: !!tr.querySelector('.ppe-muffs')?.checked,
+      gloves: !!tr.querySelector('.ppe-gloves')?.checked
     }
   })).filter(r => r.name);
 
@@ -899,8 +766,8 @@ function within30Days(iso) {
 faForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  const site    = $('#fa_site')?.value?.trim?.() || '';
-  const date    = $('#fa_date')?.value || '';
+  const site = $('#fa_site')?.value?.trim?.() || '';
+  const date = $('#fa_date')?.value || '';
   const checker = $('#fa_checker')?.value?.trim?.() || '';
 
   if (!site || !date || !checker) {
@@ -911,9 +778,9 @@ faForm?.addEventListener('submit', async (e) => {
   const rows = faTableBody ? Array.from(faTableBody.querySelectorAll('tr')) : [];
   const items = rows.map(tr => {
     const name = tr.querySelector('.fa-name')?.value?.trim?.() || '';
-    const qty  = parseInt(tr.querySelector('.fa-qty')?.value || '0', 10);
-    const min  = parseInt(tr.querySelector('.fa-min')?.value || '0', 10);
-    const exp  = tr.querySelector('.fa-exp')?.value || null;
+    const qty = parseInt(tr.querySelector('.fa-qty')?.value || '0', 10);
+    const min = parseInt(tr.querySelector('.fa-min')?.value || '0', 10);
+    const exp = tr.querySelector('.fa-exp')?.value || null;
     return { name, quantity: qty, min, expiry: exp };
   }).filter(i => i.name);
 
@@ -978,6 +845,7 @@ function addInspWorkerRow() {
     <td>
       <select class="iw-role">
         <option value="worker">Worker</option>
+        <option value="staff">Staff</option>
         <option value="foreman">Foreman</option>
         <option value="supervisor">Supervisor</option>
         <option value="visitor">Visitor</option>
@@ -1186,6 +1054,7 @@ function addDrillParticipantRow() {
     <td>
       <select class="dr-role">
         <option value="worker">Worker</option>
+        <option value="staff">Staff</option>
         <option value="site_leader">Site Leader</option>
         <option value="supervisor">Supervisor</option>
         <option value="visitor">Visitor</option>
@@ -1314,14 +1183,14 @@ drForm?.addEventListener('submit', async (e) => {
 /* =========================
    LOGBOOK
 ========================= */
-const lgSite   = $('#lg_site');
-const lgFrom   = $('#lg_from');
-const lgTo     = $('#lg_to');
-const lgForm   = $('#lg_form');
+const lgSite = $('#lg_site');
+const lgFrom = $('#lg_from');
+const lgTo = $('#lg_to');
+const lgForm = $('#lg_form');
 const lgStatus = $('#lg_status');
-const lgLoad   = $('#lg_load');
+const lgLoad = $('#lg_load');
 const lgExport = $('#lg_export');
-const lgBody   = $('#lg_table')?.querySelector('tbody') || null;
+const lgBody = $('#lg_table')?.querySelector('tbody') || null;
 
 window._logRows = window._logRows || [];
 window._logRole = window._logRole || '';
@@ -1341,7 +1210,7 @@ function renderRows(rows) {
   if (!lgBody) return;
   lgBody.innerHTML = '';
 
-  const canReview = ['site_leader', 'supervisor', 'hse', 'admin'].includes(appState.currentRole || window._logRole || '');
+  const canReview = ['site_leader', 'supervisor', 'hse', 'admin', 'job_admin', 'onsite_admin'].includes(appState.currentRole || window._logRole || '');
 
   rows.forEach(r => {
     const tr = document.createElement('tr');
@@ -1370,13 +1239,7 @@ function renderRows(rows) {
 }
 
 async function fetchLog() {
-  if (!sb) {
-    alert('Please sign in first.');
-    return;
-  }
-
-  const { data: { session } } = await sb.auth.getSession();
-  if (!session) {
+  if (!appState.isAuthenticated) {
     alert('Please sign in to load the logbook.');
     return;
   }
@@ -1395,10 +1258,6 @@ async function fetchLog() {
 
   window._logRows = data.rows || [];
   window._logRole = data.role || appState.currentRole || '';
-  if (!appState.currentRole && data.role) {
-    appState.currentRole = data.role;
-    applyRoleVisibility();
-  }
   renderRows(window._logRows);
 }
 
@@ -2269,31 +2128,72 @@ function seedAllTables() {
 }
 
 /* =========================
-   BOOTSTRAP
+   BOOTSTRAP / STARTUP
 ========================= */
-document.addEventListener('DOMContentLoaded', async () => {
+async function initializeAppShell() {
   applyDateFallback();
-  await bootAuth();
-  await hydrateCurrentUserProfile();
   seedAllTables();
   clearSubmissionDetail();
   clearReviewPanel();
   clearAdminDirectoryTables();
   setManageSummary('');
+  updateAdminStats({ users: 0, sites: 0, assignments: 0 });
+
+  const currentAuthState = auth()?.getState?.();
+  if (currentAuthState) {
+    syncAuthStateFromBoot({ state: currentAuthState });
+  } else {
+    applyRoleVisibility();
+  }
+
   await refreshAdminSelectors();
 
-  if (location.hash === '#admin' && sb) {
+  if (location.hash === '#admin' && appState.isAuthenticated) {
     try {
       await fetchAdminDirectory();
     } catch (err) {
       console.error('Admin auto-load failed', err);
     }
   }
+}
+
+document.addEventListener('ywi:boot-ready', async (e) => {
+  appState.bootReady = true;
+  syncAuthStateFromBoot({ state: auth()?.getState?.() || null, ...e.detail });
+  await initializeAppShell();
+});
+
+document.addEventListener('ywi:auth-changed', async (e) => {
+  syncAuthStateFromBoot(e.detail || {});
+  await refreshAdminSelectors();
+
+  if (location.hash === '#admin' && appState.isAuthenticated) {
+    try {
+      await fetchAdminDirectory();
+    } catch (err) {
+      console.error('Admin auth refresh failed', err);
+    }
+  } else if (!appState.isAuthenticated) {
+    clearAdminDirectoryTables();
+    clearSubmissionDetail();
+    clearReviewPanel();
+  }
+});
+
+document.addEventListener('DOMContentLoaded', async () => {
+  applyDateFallback();
+  seedAllTables();
+  clearSubmissionDetail();
+  clearReviewPanel();
+  clearAdminDirectoryTables();
+  setManageSummary('');
+  updateAdminStats({ users: 0, sites: 0, assignments: 0 });
+  applyRoleVisibility();
 });
 
 window.addEventListener('hashchange', () => {
   setTimeout(seedAllTables, 0);
-  if (location.hash === '#admin' && sb) {
+  if (location.hash === '#admin' && appState.isAuthenticated) {
     fetchAdminDirectory().catch(err => console.error('Admin hash load failed', err));
   }
 });
