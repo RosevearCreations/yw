@@ -68,6 +68,13 @@ const authInfo   = $('#authInfo');
 const whoami     = $('#whoami');
 const logoutBtn  = $('#logoutBtn');
 
+const appState = {
+  currentUser: null,
+  currentRole: '',
+  currentProfileActive: true,
+  adminLocked: true
+};
+
 /* =========================
    BASIC HELPERS
 ========================= */
@@ -191,6 +198,122 @@ function pickById(rows, id) {
   return rows.find(r => String(r.id) === String(id)) || null;
 }
 
+function slugifyToken(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function roleChip(label) {
+  const safe = escHtml(label || 'unknown');
+  const slug = slugifyToken(label || 'unknown');
+  return `<span class="role-chip role-chip--${slug}">${safe}</span>`;
+}
+
+function statusChip(label) {
+  const safe = escHtml(label || 'submitted');
+  const slug = slugifyToken(label || 'submitted');
+  return `<span class="status-chip status-chip--${slug}">${safe}</span>`;
+}
+
+function setAdminLocked(isLocked, message = '') {
+  const adminSection = document.getElementById('admin');
+  if (adminSection) {
+    adminSection.dataset.adminLocked = isLocked ? 'true' : 'false';
+  }
+
+  appState.adminLocked = !!isLocked;
+
+  const buttons = [
+    adLoad, adClear,
+    amProfileSave,
+    amSiteCreate, amSiteUpdate,
+    amAssignmentCreate, amAssignmentUpdate, amAssignmentDelete
+  ].filter(Boolean);
+
+  buttons.forEach((btn) => {
+    btn.disabled = !!isLocked;
+  });
+
+  [amProfileSelector, amSiteSelector, amAssignmentSelector, amAssignmentProfileSelector, amAssignmentSiteSelector].forEach((el) => {
+    if (el) el.disabled = !!isLocked;
+  });
+
+  if (isLocked) {
+    setNotice(amSummary, message || 'Your role does not have admin dashboard access.');
+  } else if (message) {
+    setNotice(amSummary, message);
+  }
+}
+
+function applyRoleVisibility() {
+  const role = appState.currentRole || '';
+  const canReview = ['site_leader', 'supervisor', 'hse', 'admin'].includes(role);
+  const canUseAdmin = role === 'admin';
+
+  document.body.dataset.userRole = role || 'worker';
+
+  const reviewPanel = document.getElementById('reviewPanel');
+  if (reviewPanel) {
+    reviewPanel.style.display = canReview ? '' : 'none';
+  }
+
+  setAdminLocked(!canUseAdmin, canUseAdmin ? '' : 'Admin tools are visible only to admin users.');
+
+  Array.from(document.querySelectorAll('[data-admin-mode]')).forEach((btn) => {
+    btn.disabled = !canUseAdmin;
+  });
+}
+
+async function hydrateCurrentUserProfile() {
+  if (!sb) return null;
+
+  const { data: { session } } = await sb.auth.getSession();
+  const user = session?.user || null;
+  if (!user?.id) {
+    appState.currentUser = null;
+    appState.currentRole = '';
+    appState.currentProfileActive = false;
+    applyRoleVisibility();
+    return null;
+  }
+
+  let profile = null;
+  try {
+    const { data, error } = await sb
+      .from('profiles')
+      .select('id,email,full_name,role,is_active')
+      .eq('id', user.id)
+      .single();
+
+    if (error) throw error;
+    profile = data || null;
+  } catch (err) {
+    console.warn('Profile hydrate failed, falling back to auth session only.', err);
+  }
+
+  appState.currentUser = profile || {
+    id: user.id,
+    email: user.email || '',
+    full_name: user.user_metadata?.full_name || '',
+    role: '',
+    is_active: true
+  };
+  appState.currentRole = appState.currentUser.role || '';
+  appState.currentProfileActive = appState.currentUser.is_active !== false;
+
+  if (whoami) {
+    const email = appState.currentUser.email || user.email || '';
+    const roleLabel = appState.currentRole ? ` (${appState.currentRole})` : '';
+    whoami.textContent = `${email}${roleLabel}`;
+  }
+
+  applyRoleVisibility();
+  return appState.currentUser;
+}
+
 /* =========================
    AUTH
 ========================= */
@@ -203,6 +326,7 @@ async function renderByAuth() {
   const { data: { session } } = await sb.auth.getSession();
   if (session) {
     showApp(session);
+    await hydrateCurrentUserProfile();
     seedAllTables();
   } else {
     showLogin();
@@ -223,8 +347,16 @@ async function bootAuth() {
 if (sb) {
   sb.auth.onAuthStateChange(async (_event, session) => {
     cleanAuthHash();
-    if (session) showApp(session);
-    else showLogin();
+    if (session) {
+      showApp(session);
+      await hydrateCurrentUserProfile();
+    } else {
+      appState.currentUser = null;
+      appState.currentRole = '';
+      appState.currentProfileActive = false;
+      applyRoleVisibility();
+      showLogin();
+    }
   });
 
   if (IDLE_MS > 0) {
@@ -372,28 +504,53 @@ async function loadAdminSelectors(payload) {
 async function uploadImageViaFunction(submissionId, image) {
   const formData = new FormData();
   formData.append('submission_id', String(submissionId));
-  formData.append('image_type', image.image_type || 'status');
+  formData.append('image_type', image.image_type || 'general');
   formData.append('caption', image.caption || '');
-  formData.append('file', image.file, image.file_name || image.file?.name || 'upload.jpg');
+  formData.append('file', image.file);
 
   return uploadFormDataFetch(UPLOAD_URL, formData);
 }
 
-async function uploadImagesForSubmission(localImages, submissionId) {
-  if (!localImages?.length) return [];
-  const inserted = [];
+/* =========================
+   HASH NAV
+========================= */
+function route() {
+  const hash = location.hash || '#toolbox';
 
-  for (const image of localImages) {
-    const result = await uploadImageViaFunction(submissionId, image);
-    if (result?.ok && result?.image) {
-      inserted.push(result.image);
-    }
-  }
+  $$('nav a').forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === hash);
+  });
 
-  return inserted;
+  $$('main.container > section.card').forEach(sec => {
+    sec.classList.toggle('active', `#${sec.id}` === hash);
+  });
 }
 
-async function flushOutbox() {
+window.addEventListener('hashchange', route);
+window.addEventListener('load', route);
+
+/* =========================
+   DATE FALLBACKS
+========================= */
+function applyDateFallback() {
+  [
+    '#tb_date',
+    '#ppe_date',
+    '#fa_date',
+    '#insp_date',
+    '#dr_date',
+    '#lg_from',
+    '#lg_to'
+  ].forEach(sel => {
+    const el = $(sel);
+    if (el && !el.value) el.value = todayISO();
+  });
+}
+
+/* =========================
+   OUTBOX RETRY
+========================= */
+async function retryOutbox() {
   const outbox = getOutbox();
   if (!outbox.length) {
     alert('Outbox is empty.');
@@ -405,260 +562,192 @@ async function flushOutbox() {
     try {
       const resp = await sendToFunction(item.formType, item.payload);
       const submissionId = resp?.id;
-      if (submissionId && item.localImages?.length) {
+
+      if (submissionId && Array.isArray(item.localImages) && item.localImages.length) {
         await uploadImagesForSubmission(item.localImages, submissionId);
       }
-    } catch (err) {
-      console.warn('Outbox send failed', err);
+    } catch {
       remaining.push(item);
     }
   }
 
   setOutbox(remaining);
-  alert(remaining.length ? `Some failed, ${remaining.length} remain.` : 'All queued submissions sent.');
+  alert(remaining.length ? `Retried. ${remaining.length} item(s) remain.` : 'Outbox sent successfully.');
 }
 
 $$('[data-role="retry-outbox"]').forEach(btn => {
-  if (!btn.dataset.bound) {
-    btn.dataset.bound = '1';
-    btn.addEventListener('click', flushOutbox);
-  }
+  btn.addEventListener('click', retryOutbox);
 });
 
 /* =========================
-   DATE SUPPORT
+   TOOLBOX / INSPECTION / DRILL IMAGE HELPERS
 ========================= */
-function supportsDateInput() {
-  const i = document.createElement('input');
-  i.setAttribute('type', 'date');
-  return i.type === 'date';
-}
-
-function applyDateFallback() {
-  if (supportsDateInput()) return;
-  $$('input[type="date"]').forEach(inp => {
-    inp.setAttribute('type', 'text');
-    inp.setAttribute('placeholder', 'YYYY-MM-DD');
-    inp.setAttribute('inputmode', 'numeric');
-    inp.setAttribute('pattern', '\\d{4}-\\d{2}-\\d{2}');
-  });
-}
-
-/* =========================
-   IMAGE UPLOAD SUPPORT
-========================= */
-const inspImageState = [];
-const drImageState = [];
-
-const inspImageFiles = $('#insp_image_files');
-const inspImageType = $('#insp_image_type');
-const inspImageCaption = $('#insp_image_caption');
-const inspImageBody = ensureTBody('inspImageTable');
-
-const drImageFiles = $('#dr_image_files');
-const drImageType = $('#dr_image_type');
-const drImageCaption = $('#dr_image_caption');
-const drImageBody = ensureTBody('drImageTable');
-
-function renderImageRows(state, tbody) {
-  if (!tbody) return;
-  tbody.innerHTML = '';
-
-  state.forEach((img, index) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>
-        <img
-          src="${escHtml(img.preview_url)}"
-          alt="preview"
-          style="width:160px;max-width:100%;height:auto;border-radius:8px;border:1px solid rgba(255,255,255,.12);"
-        />
-      </td>
-      <td>
-        <div>${escHtml(img.file_name)}</div>
-        <div style="color:#9ca3af;font-size:.85rem;">${escHtml(bytesLabel(img.file_size_bytes))}</div>
-      </td>
-      <td>${escHtml(img.image_type)}</td>
-      <td>${escHtml(img.caption || '')}</td>
-      <td>
-        <div class="controls">
-          <button type="button" data-remove-image="${index}">Remove</button>
-        </div>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-function clearImageState(state, tbody, fileInput, captionInput) {
-  state.forEach(item => {
-    if (item.preview_url) URL.revokeObjectURL(item.preview_url);
-  });
-  state.length = 0;
-  if (tbody) tbody.innerHTML = '';
+function clearImageState(state, body, fileInput, captionInput) {
+  state.splice(0, state.length);
+  if (body) body.innerHTML = '';
   if (fileInput) fileInput.value = '';
   if (captionInput) captionInput.value = '';
 }
 
-function bindImageInput(fileInput, typeInput, captionInput, state, tbody) {
-  fileInput?.addEventListener('change', (e) => {
-    const files = Array.from(e.target.files || []);
-    const imageType = typeInput?.value || 'status';
-    const caption = captionInput?.value?.trim?.() || '';
+function renderImageRows(state, body) {
+  if (!body) return;
+  body.innerHTML = '';
 
-    files.forEach(file => {
-      state.push({
-        file,
-        file_name: file.name,
-        file_size_bytes: file.size,
-        content_type: file.type || 'image/jpeg',
-        image_type: imageType,
-        caption,
-        preview_url: URL.createObjectURL(file)
-      });
-    });
-
-    renderImageRows(state, tbody);
-
-    if (fileInput) fileInput.value = '';
-    if (captionInput) captionInput.value = '';
-  });
-
-  tbody?.addEventListener('click', (e) => {
-    const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
-    if (!btn) return;
-    const idx = btn.dataset.removeImage;
-    if (idx === undefined) return;
-
-    const index = Number(idx);
-    const item = state[index];
-    if (item?.preview_url) URL.revokeObjectURL(item.preview_url);
-    state.splice(index, 1);
-    renderImageRows(state, tbody);
+  state.forEach((img, idx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escHtml(img.file.name || '')}</td>
+      <td>${escHtml(img.image_type || '')}</td>
+      <td>${escHtml(bytesLabel(img.file.size || 0))}</td>
+      <td>${escHtml(img.caption || '')}</td>
+      <td><button type="button" data-remove-index="${idx}">Remove</button></td>
+    `;
+    body.appendChild(tr);
   });
 }
 
-bindImageInput(inspImageFiles, inspImageType, inspImageCaption, inspImageState, inspImageBody);
-bindImageInput(drImageFiles, drImageType, drImageCaption, drImageState, drImageBody);
+function wireImageRemover(state, body) {
+  body?.addEventListener('click', (e) => {
+    const btn = (e.target instanceof Element) ? e.target.closest('button[data-remove-index]') : null;
+    if (!btn) return;
+    const idx = Number(btn.dataset.removeIndex);
+    if (Number.isNaN(idx)) return;
+    state.splice(idx, 1);
+    renderImageRows(state, body);
+  });
+}
+
+async function uploadImagesForSubmission(state, submissionId) {
+  for (const image of state) {
+    await uploadImageViaFunction(submissionId, image);
+  }
+}
 
 /* =========================
    FORM E — TOOLBOX TALK
 ========================= */
-const tbForm = $('#toolboxForm');
+const toolboxForm = $('#toolboxForm');
 const tbDate = $('#tb_date');
 if (tbDate) tbDate.value = todayISO();
 
-const attendeesTableBody = ensureTBody('attendeesTable');
-const addRowBtn = $('#addRowBtn');
+const tbAttendeesBody = ensureTBody('tbAttendees');
+const tbAddRowBtn = $('#tbAddRowBtn');
 
-let tbRowCount = 0;
-const sigPads = new Map();
+const tbImageFiles = $('#tb_image_files');
+const tbImageType = $('#tb_image_type');
+const tbImageCaption = $('#tb_image_caption');
+const tbImageAddBtn = $('#tb_image_add');
+const tbImageBody = $('#tb_images_table')?.querySelector('tbody') || null;
+const toolboxImageState = [];
+wireImageRemover(toolboxImageState, tbImageBody);
 
-function addAttendeeRow(initialName = '', initialRole = 'worker') {
-  if (!attendeesTableBody) return;
-  tbRowCount++;
-  const id = `tb_row_${tbRowCount}`;
+function addAttendeeRow() {
+  if (!tbAttendeesBody) return;
   const tr = document.createElement('tr');
-  tr.dataset.rowId = id;
   tr.innerHTML = `
-    <td><input type="text" class="att-name" placeholder="Full name" value="${escHtml(initialName)}" required></td>
+    <td><input type="text" class="att-name" placeholder="Full name" required></td>
     <td>
       <select class="att-role">
-        <option value="worker" ${initialRole === 'worker' ? 'selected' : ''}>Worker</option>
-        <option value="foreman" ${initialRole === 'foreman' ? 'selected' : ''}>Foreman</option>
-        <option value="supervisor" ${initialRole === 'supervisor' ? 'selected' : ''}>Supervisor</option>
-        <option value="visitor" ${initialRole === 'visitor' ? 'selected' : ''}>Visitor</option>
+        <option value="worker">Worker</option>
+        <option value="site_leader">Site Leader</option>
+        <option value="supervisor">Supervisor</option>
+        <option value="visitor">Visitor</option>
       </select>
     </td>
-    <td>
-      <div class="canvas-wrap">
-        <canvas id="${id}_canvas" width="600" height="140"></canvas>
-        <div class="controls"><button type="button" data-act="clear">Clear</button></div>
-      </div>
-    </td>
+    <td><input type="text" class="att-company" placeholder="Company"></td>
     <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
   `;
-  attendeesTableBody.appendChild(tr);
-
-  const canvas = tr.querySelector('canvas');
-  if (window.SignaturePad && canvas) {
-    try {
-      const pad = new SignaturePad(canvas, { minWidth: 0.7, maxWidth: 2.5, throttle: 8 });
-      sigPads.set(id, pad);
-    } catch (err) {
-      console.warn('SignaturePad init failed:', err);
-    }
-  }
+  tbAttendeesBody.appendChild(tr);
 }
 
 function seedToolbox() {
-  if (attendeesTableBody && attendeesTableBody.children.length === 0) {
+  if (tbAttendeesBody && tbAttendeesBody.children.length === 0) {
     addAttendeeRow();
     addAttendeeRow();
   }
 }
 
-addRowBtn?.addEventListener('click', () => addAttendeeRow());
+tbAddRowBtn?.addEventListener('click', addAttendeeRow);
 
-attendeesTableBody?.addEventListener('click', (e) => {
+tbAttendeesBody?.addEventListener('click', (e) => {
   const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
   if (!btn) return;
-  const tr = btn.closest('tr');
-  const rowId = tr?.dataset.rowId || '';
-  const act = btn.dataset.act;
-
-  if (act === 'remove' && tr) {
-    sigPads.delete(rowId);
-    tr.remove();
-  }
-  if (act === 'clear') {
-    const pad = sigPads.get(rowId);
-    if (pad?.clear) pad.clear();
-  }
+  if (btn.dataset.act === 'remove') btn.closest('tr')?.remove();
 });
 
-tbForm?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-
-  const site   = $('#tb_site')?.value?.trim?.() || '';
-  const date   = $('#tb_date')?.value || '';
-  const leader = $('#tb_leader')?.value?.trim?.() || '';
-  const notes  = $('#tb_topics')?.value?.trim?.() || '';
-
-  if (!site || !date || !leader) {
-    alert('Please fill Site, Date, and Discussion Leader.');
+tbImageAddBtn?.addEventListener('click', () => {
+  const files = Array.from(tbImageFiles?.files || []);
+  if (!files.length) {
+    alert('Choose at least one image file.');
     return;
   }
 
-  const rows = attendeesTableBody ? Array.from(attendeesTableBody.querySelectorAll('tr')) : [];
+  files.forEach(file => {
+    toolboxImageState.push({
+      file,
+      image_type: tbImageType?.value || 'general',
+      caption: tbImageCaption?.value?.trim?.() || ''
+    });
+  });
+
+  renderImageRows(toolboxImageState, tbImageBody);
+  if (tbImageFiles) tbImageFiles.value = '';
+  if (tbImageCaption) tbImageCaption.value = '';
+});
+
+toolboxForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const site = $('#tb_site')?.value?.trim?.() || '';
+  const date = $('#tb_date')?.value || '';
+  const leader = $('#tb_leader')?.value?.trim?.() || '';
+  const topic = $('#tb_topic')?.value?.trim?.() || '';
+
+  if (!site || !date || !leader) {
+    alert('Please fill Site, Date, and Submitted By.');
+    return;
+  }
+
+  const rows = tbAttendeesBody ? Array.from(tbAttendeesBody.querySelectorAll('tr')) : [];
   const attendees = rows.map(tr => {
     const name = tr.querySelector('.att-name')?.value?.trim?.() || '';
     const role = tr.querySelector('.att-role')?.value || 'worker';
-    const rowId = tr.dataset.rowId;
-    const pad = rowId ? sigPads.get(rowId) : null;
-    const signed = pad && typeof pad.isEmpty === 'function' ? !pad.isEmpty() : false;
-    return {
-      name,
-      role_on_site: role,
-      signature_png: signed && pad?.toDataURL ? pad.toDataURL('image/png') : null
-    };
-  }).filter(a => a.name);
+    const company = tr.querySelector('.att-company')?.value?.trim?.() || '';
+    return { name, role_on_site: role, company };
+  }).filter(r => r.name);
 
-  const payload = { site, date, submitted_by: leader, topic_notes: notes, attendees };
+  const payload = {
+    site,
+    date,
+    submitted_by: leader,
+    topic_notes: topic,
+    attendees
+  };
 
   try {
-    await sendToFunction('E', payload);
-    alert('Toolbox submitted.');
-    tbForm.reset();
+    const resp = await sendToFunction('E', payload);
+    const submissionId = resp?.id;
+
+    if (submissionId && toolboxImageState.length) {
+      await uploadImagesForSubmission(toolboxImageState, submissionId);
+    }
+
+    alert('Toolbox talk submitted.');
+    toolboxForm.reset();
     if (tbDate) tbDate.value = todayISO();
-    if (attendeesTableBody) {
-      attendeesTableBody.innerHTML = '';
-      sigPads.clear();
+    if (tbAttendeesBody) {
+      tbAttendeesBody.innerHTML = '';
       seedToolbox();
     }
+    clearImageState(toolboxImageState, tbImageBody, tbImageFiles, tbImageCaption);
   } catch (err) {
     const outbox = getOutbox();
-    outbox.push({ ts: Date.now(), formType: 'E', payload });
+    outbox.push({
+      ts: Date.now(),
+      formType: 'E',
+      payload,
+      localImages: [...toolboxImageState]
+    });
     setOutbox(outbox);
     alert('Offline/server error. Saved to Outbox.');
   }
@@ -682,17 +771,17 @@ function addPPERow() {
     <td>
       <select class="ppe-role">
         <option value="worker">Worker</option>
-        <option value="foreman">Foreman</option>
+        <option value="site_leader">Site Leader</option>
         <option value="supervisor">Supervisor</option>
         <option value="visitor">Visitor</option>
       </select>
     </td>
-    <td><input type="checkbox" class="ppe-shoes" checked></td>
-    <td><input type="checkbox" class="ppe-vest" checked></td>
-    <td><input type="checkbox" class="ppe-plugs" checked></td>
-    <td><input type="checkbox" class="ppe-goggles" checked></td>
-    <td><input type="checkbox" class="ppe-muffs" checked></td>
-    <td><input type="checkbox" class="ppe-gloves" checked></td>
+    <td style="text-align:center"><input type="checkbox" class="ppe-shoes" checked></td>
+    <td style="text-align:center"><input type="checkbox" class="ppe-vest" checked></td>
+    <td style="text-align:center"><input type="checkbox" class="ppe-plugs" checked></td>
+    <td style="text-align:center"><input type="checkbox" class="ppe-goggles" checked></td>
+    <td style="text-align:center"><input type="checkbox" class="ppe-muffs" checked></td>
+    <td style="text-align:center"><input type="checkbox" class="ppe-gloves" checked></td>
     <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
   `;
   ppeTableBody.appendChild(tr);
@@ -716,8 +805,8 @@ ppeTableBody?.addEventListener('click', (e) => {
 ppeForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  const site    = $('#ppe_site')?.value?.trim?.() || '';
-  const date    = $('#ppe_date')?.value || '';
+  const site = $('#ppe_site')?.value?.trim?.() || '';
+  const date = $('#ppe_date')?.value || '';
   const checker = $('#ppe_checker')?.value?.trim?.() || '';
 
   if (!site || !date || !checker) {
@@ -735,7 +824,7 @@ ppeForm?.addEventListener('submit', async (e) => {
       plugs:   !!tr.querySelector('.ppe-plugs')?.checked,
       goggles: !!tr.querySelector('.ppe-goggles')?.checked,
       muffs:   !!tr.querySelector('.ppe-muffs')?.checked,
-      gloves:  !!tr.querySelector('.ppe-gloves')?.checked
+      gloves:  !!tr.querySelector('.ppe-gloves')?.checked,
     }
   })).filter(r => r.name);
 
@@ -942,6 +1031,34 @@ inspHazBody?.addEventListener('click', (e) => {
   if (btn.dataset.act === 'remove') btn.closest('tr')?.remove();
 });
 
+const inspImageFiles = $('#insp_image_files');
+const inspImageType = $('#insp_image_type');
+const inspImageCaption = $('#insp_image_caption');
+const inspImageAddBtn = $('#insp_image_add');
+const inspImageBody = $('#insp_images_table')?.querySelector('tbody') || null;
+const inspImageState = [];
+wireImageRemover(inspImageState, inspImageBody);
+
+inspImageAddBtn?.addEventListener('click', () => {
+  const files = Array.from(inspImageFiles?.files || []);
+  if (!files.length) {
+    alert('Choose at least one image file.');
+    return;
+  }
+
+  files.forEach(file => {
+    inspImageState.push({
+      file,
+      image_type: inspImageType?.value || 'general',
+      caption: inspImageCaption?.value?.trim?.() || ''
+    });
+  });
+
+  renderImageRows(inspImageState, inspImageBody);
+  if (inspImageFiles) inspImageFiles.value = '';
+  if (inspImageCaption) inspImageCaption.value = '';
+});
+
 inspForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -1038,44 +1155,46 @@ if (drDate) drDate.value = todayISO();
 const drRosterBody = ensureTBody('drRoster');
 const drAddPartBtn = $('#drAddPart');
 
-const drSigPads = new Map();
-let drRowCount = 0;
+const drImageFiles = $('#dr_image_files');
+const drImageType = $('#dr_image_type');
+const drImageCaption = $('#dr_image_caption');
+const drImageAddBtn = $('#dr_image_add');
+const drImageBody = $('#dr_images_table')?.querySelector('tbody') || null;
+const drillImageState = [];
+wireImageRemover(drillImageState, drImageBody);
+
+const drSigCanvas = $('#dr_supervisor_canvas');
+let drSigPad = null;
+
+if (window.SignaturePad && drSigCanvas) {
+  try {
+    drSigPad = new SignaturePad(drSigCanvas, { minWidth: 0.7, maxWidth: 2.2, throttle: 8 });
+  } catch (err) {
+    console.warn('SignaturePad init failed for drill', err);
+  }
+}
+
+$('#drClearSig')?.addEventListener('click', () => {
+  if (drSigPad?.clear) drSigPad.clear();
+});
 
 function addDrillParticipantRow() {
   if (!drRosterBody) return;
-  drRowCount++;
-  const id = `dr_row_${drRowCount}`;
   const tr = document.createElement('tr');
-  tr.dataset.rowId = id;
   tr.innerHTML = `
     <td><input type="text" class="dr-name" placeholder="Full name" required></td>
     <td>
       <select class="dr-role">
         <option value="worker">Worker</option>
-        <option value="foreman">Foreman</option>
+        <option value="site_leader">Site Leader</option>
         <option value="supervisor">Supervisor</option>
         <option value="visitor">Visitor</option>
       </select>
     </td>
-    <td>
-      <div class="canvas-wrap">
-        <canvas id="${id}_canvas" width="600" height="140"></canvas>
-        <div class="controls"><button type="button" data-act="clear">Clear</button></div>
-      </div>
-    </td>
+    <td><input type="text" class="dr-company" placeholder="Company"></td>
     <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
   `;
   drRosterBody.appendChild(tr);
-
-  const canvas = tr.querySelector('canvas');
-  if (window.SignaturePad && canvas) {
-    try {
-      const pad = new SignaturePad(canvas, { minWidth: 0.7, maxWidth: 2.2, throttle: 8 });
-      drSigPads.set(id, pad);
-    } catch (err) {
-      console.warn('SignaturePad init (drill) failed:', err);
-    }
-  }
 }
 
 function seedDrill() {
@@ -1090,17 +1209,27 @@ drAddPartBtn?.addEventListener('click', addDrillParticipantRow);
 drRosterBody?.addEventListener('click', (e) => {
   const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
   if (!btn) return;
-  const tr = btn.closest('tr');
-  const rowId = tr?.dataset.rowId || '';
-  const act = btn.dataset.act;
-  if (act === 'remove' && tr) {
-    drSigPads.delete(rowId);
-    tr.remove();
+  if (btn.dataset.act === 'remove') btn.closest('tr')?.remove();
+});
+
+drImageAddBtn?.addEventListener('click', () => {
+  const files = Array.from(drImageFiles?.files || []);
+  if (!files.length) {
+    alert('Choose at least one image file.');
+    return;
   }
-  if (act === 'clear') {
-    const pad = drSigPads.get(rowId);
-    if (pad?.clear) pad.clear();
-  }
+
+  files.forEach(file => {
+    drillImageState.push({
+      file,
+      image_type: drImageType?.value || 'general',
+      caption: drImageCaption?.value?.trim?.() || ''
+    });
+  });
+
+  renderImageRows(drillImageState, drImageBody);
+  if (drImageFiles) drImageFiles.value = '';
+  if (drImageCaption) drImageCaption.value = '';
 });
 
 drForm?.addEventListener('submit', async (e) => {
@@ -1109,62 +1238,73 @@ drForm?.addEventListener('submit', async (e) => {
   const site = $('#dr_site')?.value?.trim?.() || '';
   const date = $('#dr_date')?.value || '';
   const supervisor = $('#dr_supervisor')?.value?.trim?.() || '';
+  const drillType = $('#dr_type')?.value?.trim?.() || '';
+  const startTime = $('#dr_start')?.value || '';
+  const endTime = $('#dr_end')?.value || '';
+  const scenario = $('#dr_scenario')?.value?.trim?.() || '';
+  const evaluation = $('#dr_eval')?.value?.trim?.() || '';
+  const followUp = $('#dr_followup')?.value?.trim?.() || '';
+  const nextDrillDate = $('#dr_next_date')?.value || null;
 
-  if (!site || !date || !supervisor) {
-    alert('Please fill Site, Date, and Supervisor.');
+  if (!site || !date || !supervisor || !drillType || !startTime || !endTime) {
+    alert('Please fill Site, Date, Supervisor, Drill Type, Start Time, and End Time.');
+    return;
+  }
+
+  if (!drSigPad || (drSigPad.isEmpty && drSigPad.isEmpty())) {
+    alert('Supervisor signature is required.');
     return;
   }
 
   const participants = drRosterBody ? Array.from(drRosterBody.querySelectorAll('tr')).map(tr => {
     const name = tr.querySelector('.dr-name')?.value?.trim?.() || '';
     const role = tr.querySelector('.dr-role')?.value || 'worker';
-    const rowId = tr.dataset.rowId;
-    const pad = rowId ? drSigPads.get(rowId) : null;
-    return {
-      name,
-      role_on_site: role,
-      signature_png: (pad && !pad.isEmpty?.()) ? pad.toDataURL('image/png') : null
-    };
-  }).filter(p => p.name) : [];
+    const company = tr.querySelector('.dr-company')?.value?.trim?.() || '';
+    return { name, role_on_site: role, company };
+  }).filter(r => r.name) : [];
+
+  const issues = !!$('#dr_issues')?.checked;
 
   const payload = {
     site,
     date,
     supervisor,
-    drill_type: $('#dr_type')?.value || '',
-    start_time: $('#dr_start')?.value || '',
-    end_time: $('#dr_end')?.value || '',
-    scenario_notes: $('#dr_notes')?.value?.trim?.() || '',
+    drill_type: drillType,
+    start_time: startTime,
+    end_time: endTime,
+    scenario_notes: scenario,
     participants,
-    evaluation: $('#dr_eval')?.value?.trim?.() || '',
-    follow_up_actions: $('#dr_follow')?.value?.trim?.() || '',
-    next_drill_date: $('#dr_next')?.value || '',
-    issues: !!$('#dr_issues')?.checked
+    evaluation,
+    follow_up_actions: followUp,
+    next_drill_date: nextDrillDate,
+    issues,
+    supervisor_signature_png: drSigPad.toDataURL('image/png')
   };
 
   try {
     const resp = await sendToFunction('A', payload);
     const submissionId = resp?.id;
 
-    if (submissionId && drImageState.length) {
-      await uploadImagesForSubmission(drImageState, submissionId);
+    if (submissionId && drillImageState.length) {
+      await uploadImagesForSubmission(drillImageState, submissionId);
     }
 
-    alert('Drill submitted.');
+    alert('Emergency drill submitted.');
     drForm.reset();
     if (drDate) drDate.value = todayISO();
     if (drRosterBody) {
       drRosterBody.innerHTML = '';
       seedDrill();
     }
-    clearImageState(drImageState, drImageBody, drImageFiles, drImageCaption);
+    if (drSigPad?.clear) drSigPad.clear();
+    clearImageState(drillImageState, drImageBody, drImageFiles, drImageCaption);
   } catch (err) {
     const outbox = getOutbox();
     outbox.push({
       ts: Date.now(),
       formType: 'A',
       payload,
-      localImages: [...drImageState]
+      localImages: [...drillImageState]
     });
     setOutbox(outbox);
     alert('Offline/server error. Saved to Outbox.');
@@ -1201,7 +1341,7 @@ function renderRows(rows) {
   if (!lgBody) return;
   lgBody.innerHTML = '';
 
-  const canReview = ['site_leader', 'supervisor', 'hse', 'admin'].includes(window._logRole || '');
+  const canReview = ['site_leader', 'supervisor', 'hse', 'admin'].includes(appState.currentRole || window._logRole || '');
 
   rows.forEach(r => {
     const tr = document.createElement('tr');
@@ -1212,7 +1352,7 @@ function renderRows(rows) {
       <td>${escHtml(d)}</td>
       <td>${escHtml(r.form_type)}</td>
       <td>${escHtml(r.site || '')}</td>
-      <td>${escHtml(r.status || 'submitted')}</td>
+      <td>${statusChip(r.status || 'submitted')}</td>
       <td>${escHtml(fmtSummary(r))}</td>
       <td>
         <div class="controls" style="margin-bottom:8px;">
@@ -1254,7 +1394,11 @@ async function fetchLog() {
   if (!data.ok) throw new Error(data.error || 'load_failed');
 
   window._logRows = data.rows || [];
-  window._logRole = data.role || '';
+  window._logRole = data.role || appState.currentRole || '';
+  if (!appState.currentRole && data.role) {
+    appState.currentRole = data.role;
+    applyRoleVisibility();
+  }
   renderRows(window._logRows);
 }
 
@@ -1481,24 +1625,20 @@ rvSubmit?.addEventListener('click', async () => {
   try {
     const resp = await saveSubmissionReview({
       submission_id: submissionId,
-      status: status || undefined,
-      review_action: reviewAction || undefined,
-      review_note: reviewNote || undefined,
+      status,
+      review_action: reviewAction,
+      review_note: reviewNote,
       admin_notes: adminNotes
     });
 
     if (!resp?.ok) throw new Error(resp?.error || 'Review save failed');
 
     setNotice(rvSummary, `Review saved for submission #${submissionId}.`);
-
     await fetchLog();
+    await loadSubmissionDetail(submissionId);
 
-    const updatedRow = (window._logRows || []).find(r => Number(r.id) === submissionId);
-    if (updatedRow) setReviewPanelFromRow(updatedRow);
-
-    try { await loadSubmissionDetail(submissionId); } catch {}
-
-    alert('Review saved.');
+    const row = (window._logRows || []).find(r => Number(r.id) === submissionId);
+    if (row) setReviewPanelFromRow(row);
   } catch (err) {
     console.error(err);
     alert('Failed to save review.');
@@ -1508,23 +1648,21 @@ rvSubmit?.addEventListener('click', async () => {
 /* =========================
    ADMIN DIRECTORY
 ========================= */
-const adMode = $('#ad_mode');
 const adSearch = $('#ad_search');
 const adSiteId = $('#ad_site_id');
 const adProfileId = $('#ad_profile_id');
 const adActiveOnly = $('#ad_active_only');
 const adLimit = $('#ad_limit');
+const adMode = $('#ad_mode');
 const adLoad = $('#ad_load');
 const adClear = $('#ad_clear');
-
 const adUsersBody = $('#ad_users_table')?.querySelector('tbody') || null;
 const adSitesBody = $('#ad_sites_table')?.querySelector('tbody') || null;
 const adAssignmentsBody = $('#ad_assignments_table')?.querySelector('tbody') || null;
-const adSummary = $('#ad_summary');
 const adUsersCount = $('#ad_users_count');
 const adSitesCount = $('#ad_sites_count');
 const adAssignmentsCount = $('#ad_assignments_count');
-const adModeBadge = $('#ad_mode_badge');
+const adModeLabel = $('#ad_mode_label');
 
 const adminDirectoryState = {
   users: [],
@@ -1535,11 +1673,14 @@ const adminDirectoryState = {
   selectedAssignmentId: ''
 };
 
-function updateAdminStats(counts = {}) {
-  if (adUsersCount) adUsersCount.textContent = String(counts.users || 0);
-  if (adSitesCount) adSitesCount.textContent = String(counts.sites || 0);
-  if (adAssignmentsCount) adAssignmentsCount.textContent = String(counts.assignments || 0);
-  if (adModeBadge) adModeBadge.textContent = (adMode?.value || 'all').replaceAll('_', ' ');
+function updateAdminStats({ users = 0, sites = 0, assignments = 0 } = {}) {
+  if (adUsersCount) adUsersCount.textContent = String(users);
+  if (adSitesCount) adSitesCount.textContent = String(sites);
+  if (adAssignmentsCount) adAssignmentsCount.textContent = String(assignments);
+  if (adModeLabel) {
+    const mode = adMode?.value || 'all';
+    adModeLabel.textContent = mode === 'all' ? 'All data' : mode.charAt(0).toUpperCase() + mode.slice(1);
+  }
 }
 
 function highlightAdminRow(tbody, selectedId) {
@@ -1561,13 +1702,12 @@ function clearAdminDirectoryTables() {
   adminDirectoryState.selectedSiteId = '';
   adminDirectoryState.selectedAssignmentId = '';
   updateAdminStats({ users: 0, sites: 0, assignments: 0 });
-  setNotice(adSummary, '');
 }
 
-function renderEmptyAdminRow(tbody, message, colspan) {
+function renderAdminEmptyRow(tbody, colspan, text) {
   if (!tbody) return;
   const tr = document.createElement('tr');
-  tr.innerHTML = `<td colspan="${colspan}" style="white-space:normal;color:#94a3b8;">${escHtml(message)}</td>`;
+  tr.innerHTML = `<td colspan="${colspan}" style="color:#9ca3af;">${escHtml(text)}</td>`;
   tbody.appendChild(tr);
 }
 
@@ -1576,7 +1716,7 @@ function renderAdminUsers(rows) {
   adUsersBody.innerHTML = '';
 
   if (!rows.length) {
-    renderEmptyAdminRow(adUsersBody, 'No users matched the current filters.', 5);
+    renderAdminEmptyRow(adUsersBody, 6, 'No profiles found for the current filter.');
     return;
   }
 
@@ -1585,12 +1725,14 @@ function renderAdminUsers(rows) {
     tr.className = 'admin-table-row';
     tr.dataset.adminType = 'user';
     tr.dataset.adminRowId = String(row.id || '');
+
     tr.innerHTML = `
+      <td>${escHtml(row.id || '')}</td>
       <td>${escHtml(row.email || '')}</td>
       <td>${escHtml(row.full_name || '')}</td>
-      <td>${escHtml(row.role || '')}</td>
+      <td>${roleChip(row.role || '')}</td>
       <td>${row.is_active ? 'Yes' : 'No'}</td>
-      <td>${escHtml(row.id || '')}</td>
+      <td>${escHtml(row.primary_site_code || '')}</td>
     `;
     adUsersBody.appendChild(tr);
   });
@@ -1603,7 +1745,7 @@ function renderAdminSites(rows) {
   adSitesBody.innerHTML = '';
 
   if (!rows.length) {
-    renderEmptyAdminRow(adSitesBody, 'No sites matched the current filters.', 5);
+    renderAdminEmptyRow(adSitesBody, 6, 'No sites found for the current filter.');
     return;
   }
 
@@ -1612,12 +1754,14 @@ function renderAdminSites(rows) {
     tr.className = 'admin-table-row';
     tr.dataset.adminType = 'site';
     tr.dataset.adminRowId = String(row.id || '');
+
     tr.innerHTML = `
+      <td>${escHtml(row.id || '')}</td>
       <td>${escHtml(row.site_code || '')}</td>
       <td>${escHtml(row.site_name || '')}</td>
-      <td>${row.is_active ? 'Yes' : 'No'}</td>
       <td>${escHtml(row.address || '')}</td>
-      <td>${escHtml(row.id || '')}</td>
+      <td>${row.is_active ? 'Yes' : 'No'}</td>
+      <td>${escHtml(row.assignment_count || 0)}</td>
     `;
     adSitesBody.appendChild(tr);
   });
@@ -1630,7 +1774,7 @@ function renderAdminAssignments(rows) {
   adAssignmentsBody.innerHTML = '';
 
   if (!rows.length) {
-    renderEmptyAdminRow(adAssignmentsBody, 'No assignments matched the current filters.', 7);
+    renderAdminEmptyRow(adAssignmentsBody, 7, 'No assignments found for the current filter.');
     return;
   }
 
@@ -1639,13 +1783,14 @@ function renderAdminAssignments(rows) {
     tr.className = 'admin-table-row';
     tr.dataset.adminType = 'assignment';
     tr.dataset.adminRowId = String(row.id || '');
+
     tr.innerHTML = `
       <td>${escHtml(row.id || '')}</td>
-      <td>${escHtml(row?.sites?.site_code || '')}</td>
-      <td>${escHtml(row?.sites?.site_name || '')}</td>
-      <td>${escHtml(row?.profiles?.email || '')}</td>
-      <td>${escHtml(row?.profiles?.full_name || '')}</td>
-      <td>${escHtml(row.assignment_role || '')}</td>
+      <td>${escHtml(row.site_code || '')}</td>
+      <td>${escHtml(row.site_name || '')}</td>
+      <td>${escHtml(row.email || '')}</td>
+      <td>${escHtml(row.full_name || '')}</td>
+      <td>${roleChip(row.assignment_role || '')}</td>
       <td>${row.is_primary ? 'Yes' : 'No'}</td>
     `;
     adAssignmentsBody.appendChild(tr);
@@ -1655,17 +1800,22 @@ function renderAdminAssignments(rows) {
 }
 
 async function fetchAdminDirectory() {
-  const payload = {
-    mode: adMode?.value || 'all',
-    search: adSearch?.value?.trim?.() || '',
-    active_only: !!adActiveOnly?.checked,
-    site_id: adSiteId?.value?.trim?.() || '',
-    profile_id: adProfileId?.value?.trim?.() || '',
-    limit: Number(adLimit?.value || 200)
-  };
+  if (appState.adminLocked) {
+    clearAdminDirectoryTables();
+    updateAdminStats({ users: 0, sites: 0, assignments: 0 });
+    return;
+  }
 
-  const data = await loadAdminDirectory(payload);
-  if (!data?.ok) throw new Error(data?.error || 'Directory load failed');
+  const data = await loadAdminDirectory({
+    search: adSearch?.value?.trim?.() || undefined,
+    site_id: adSiteId?.value?.trim?.() || undefined,
+    profile_id: adProfileId?.value?.trim?.() || undefined,
+    active_only: !!adActiveOnly?.checked,
+    limit: Number(adLimit?.value || 200) || 200,
+    mode: adMode?.value || 'all'
+  });
+
+  if (!data?.ok) throw new Error(data?.error || 'Admin directory load failed');
 
   adminDirectoryState.users = data.users || [];
   adminDirectoryState.sites = data.sites || [];
@@ -1674,12 +1824,12 @@ async function fetchAdminDirectory() {
   renderAdminUsers(adminDirectoryState.users);
   renderAdminSites(adminDirectoryState.sites);
   renderAdminAssignments(adminDirectoryState.assignments);
-  updateAdminStats(data?.counts || {});
-
-  setNotice(
-    adSummary,
-    `Loaded users: ${data?.counts?.users || 0} | sites: ${data?.counts?.sites || 0} | assignments: ${data?.counts?.assignments || 0}`
-  );
+  updateAdminStats({
+    users: adminDirectoryState.users.length,
+    sites: adminDirectoryState.sites.length,
+    assignments: adminDirectoryState.assignments.length
+  });
+  setManageSummary('Admin directory loaded. Click any row to load it into the editor.');
 }
 
 /* =========================
@@ -1698,6 +1848,18 @@ const amAssignmentProfileSelector = $('#am_assignment_profile_selector');
 const amAssignmentSiteSelector = $('#am_assignment_site_selector');
 
 async function refreshAdminSelectors() {
+  if (appState.adminLocked) {
+    selectorState.profiles = [];
+    selectorState.sites = [];
+    selectorState.assignments = [];
+    fillSelectOptions(amProfileSelector, [], 'Admin access required');
+    fillSelectOptions(amSiteSelector, [], 'Admin access required');
+    fillSelectOptions(amAssignmentSelector, [], 'Admin access required');
+    fillSelectOptions(amAssignmentProfileSelector, [], 'Admin access required');
+    fillSelectOptions(amAssignmentSiteSelector, [], 'Admin access required');
+    return;
+  }
+
   try {
     const data = await loadAdminSelectors({ kind: 'all', active_only: false, limit: 500 });
     if (!data?.ok) throw new Error(data?.error || 'Selector load failed');
@@ -1889,6 +2051,11 @@ function setManageSummary(text) {
 }
 
 amProfileSave?.addEventListener('click', async () => {
+  if (appState.adminLocked) {
+    alert('Admin access is required for this action.');
+    return;
+  }
+
   const profileId = amProfileId?.value?.trim?.() || '';
   if (!profileId) {
     alert('Profile ID is required.');
@@ -1917,6 +2084,11 @@ amProfileSave?.addEventListener('click', async () => {
 });
 
 amSiteCreate?.addEventListener('click', async () => {
+  if (appState.adminLocked) {
+    alert('Admin access is required for this action.');
+    return;
+  }
+
   const siteCode = amSiteCode?.value?.trim?.() || '';
   const siteName = amSiteName?.value?.trim?.() || '';
 
@@ -1949,6 +2121,11 @@ amSiteCreate?.addEventListener('click', async () => {
 });
 
 amSiteUpdate?.addEventListener('click', async () => {
+  if (appState.adminLocked) {
+    alert('Admin access is required for this action.');
+    return;
+  }
+
   const siteId = amSiteId?.value?.trim?.() || '';
   if (!siteId) {
     alert('Site ID is required for update.');
@@ -1979,6 +2156,11 @@ amSiteUpdate?.addEventListener('click', async () => {
 });
 
 amAssignmentCreate?.addEventListener('click', async () => {
+  if (appState.adminLocked) {
+    alert('Admin access is required for this action.');
+    return;
+  }
+
   const siteId = amAssignmentSiteId?.value?.trim?.() || '';
   const profileId = amAssignmentProfileId?.value?.trim?.() || '';
 
@@ -2010,6 +2192,11 @@ amAssignmentCreate?.addEventListener('click', async () => {
 });
 
 amAssignmentUpdate?.addEventListener('click', async () => {
+  if (appState.adminLocked) {
+    alert('Admin access is required for this action.');
+    return;
+  }
+
   const assignmentId = amAssignmentId?.value?.trim?.() || '';
   if (!assignmentId) {
     alert('Assignment ID is required for update.');
@@ -2037,6 +2224,11 @@ amAssignmentUpdate?.addEventListener('click', async () => {
 });
 
 amAssignmentDelete?.addEventListener('click', async () => {
+  if (appState.adminLocked) {
+    alert('Admin access is required for this action.');
+    return;
+  }
+
   const assignmentId = amAssignmentId?.value?.trim?.() || '';
   if (!assignmentId) {
     alert('Assignment ID is required for delete.');
@@ -2082,6 +2274,7 @@ function seedAllTables() {
 document.addEventListener('DOMContentLoaded', async () => {
   applyDateFallback();
   await bootAuth();
+  await hydrateCurrentUserProfile();
   seedAllTables();
   clearSubmissionDetail();
   clearReviewPanel();
