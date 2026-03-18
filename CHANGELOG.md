@@ -1,320 +1,135 @@
 # CHANGELOG.md
-# YWI HSE Safety System Change Log
 
-This document records major structural changes to the YWI HSE Safety System.
+All notable changes to **YWI HSE** should be documented in this file.
 
-It should be updated whenever architecture, database schema, authentication, Edge Functions, or major features are modified.
-
-The goal is to provide a clear development history for developers, auditors, and AI assistants.
-
----
-
-## Purpose
-
-This file tracks:
-
-- major backend changes
-- database schema changes
-- authentication changes
-- storage changes
-- frontend structural changes
-- important bug fixes
-
-It is meant to act as the historical record of the project.
+This project is a Supabase-backed HSE web app with:
+- magic-link authentication
+- five structured safety/compliance forms
+- image evidence uploads
+- review workflow
+- logbook search/export
+- admin user/site/assignment management
 
 ---
 
-## Version Format
+## [Unreleased]
 
-Versions follow a simplified semantic format.
+### Added
+- Supabase magic-link authentication flow in the frontend.
+- Session persistence using the Supabase client.
+- Secure JWT-based requests from the frontend to Edge Functions.
+- Submission intake flow for all current form types:
+  - Form E — Toolbox Talk
+  - Form D — PPE Check
+  - Form B — First Aid Kit
+  - Form C — Site Inspection
+  - Form A — Emergency Drill
+- Dynamic table row support for attendee, roster, item, participant, and hazard entry.
+- Signature capture support for:
+  - Site Inspection approval
+  - Emergency Drill supervisor signoff
+- Image upload support for:
+  - Site Inspection
+  - Emergency Drill
+  - Toolbox Talk
+- Submission detail panel showing:
+  - submission metadata
+  - payload
+  - review history
+  - attached images
+- Review workflow panel for authorized users.
+- Admin directory endpoint integration for:
+  - profiles
+  - sites
+  - assignments
+- Admin management endpoint integration for:
+  - updating profiles
+  - creating/updating sites
+  - creating/updating/deleting assignments
+- Selector-based admin tools for:
+  - profile selection
+  - site selection
+  - assignment selection
+- Admin Dashboard summary cards showing:
+  - user count
+  - site count
+  - assignment count
+  - current dashboard mode
+- Click-to-load admin table rows that populate the matching admin editor.
+- Role/status badge styling for admin and logbook displays.
+- Auto-load behavior for the Admin Dashboard when entering the `#admin` route.
+- Enter-to-search support on admin dashboard filters.
+- Empty-state messaging in admin result tables.
+- Outbox retry support for failed/offline submissions.
 
-`MAJOR.MINOR.PATCH`
+### Changed
+- Admin UI updated from a raw utility layout to a clearer dashboard layout.
+- Admin tools now preserve existing `ad_*` and `am_*` DOM hooks while improving usability.
+- Role-aware frontend visibility now hides review tools from lower roles and locks admin management for non-admin users.
+- Current signed-in role is reflected in the signed-in identity display.
+- Admin dashboard visuals improved with:
+  - grouped dashboard panels
+  - summary cards
+  - selector-first editing flow
+  - reusable card layout
+- Logbook status cells now support status chip rendering.
+- Assignment and role data are displayed more clearly in admin tables.
+- Hash navigation handling is aligned with the one-page app structure.
 
-Example:
+### Security
+- Frontend continues to use the Supabase publishable key only.
+- Edge Function calls continue to rely on JWT auth from the active session.
+- Admin dashboard actions are frontend-locked for non-admin users.
+- Review visibility is restricted in the UI based on role.
+- Existing endpoint names, hash routes, status values, and storage bucket naming are preserved to avoid breaking deployed flows.
 
-`1.2.0`
+### Notes
+- Current supported roles:
+  - worker
+  - site_leader
+  - supervisor
+  - hse
+  - admin
 
-Meaning:
+- Current submission statuses:
+  - submitted
+  - under_review
+  - approved
+  - follow_up_required
+  - closed
 
-- **MAJOR** = breaking architecture change
-- **MINOR** = new feature added
-- **PATCH** = bug fix or small improvement
+- Current review actions:
+  - commented
+  - under_review
+  - approved
+  - follow_up_required
+  - closed
+  - reopened
 
----
-
-## Version 1.5.0
-### System Documentation Expansion
-
-**Date:** Current documentation phase
-
-Major documentation added.
-
-New documentation files:
-
-- `README.md`
-- `PROJECT_BRAIN.md`
-- `AI_CONTEXT.md`
-- `SYSTEM_ARCHITECTURE.md`
-- `PROJECT_STATE.md`
-- `CHANGELOG.md`
-
-Purpose:
-
-- improve maintainability
-- improve onboarding
-- improve future AI collaboration
-- preserve system understanding between chats
-
----
-
-## Version 1.4.0
-### Admin Management System
-
-Changes:
-
-Added `admin-directory` Edge Function.
-
-Added `admin-manage` Edge Function.
-
-Admin users can now:
-
-- edit user roles
-- create new sites
-- update sites
-- create assignments
-- update assignments
-- delete assignments
-
-Database structures used:
-
-- `profiles`
-- `sites`
-- `site_assignments`
-
-Impact:
-
-- expanded admin control
-- improved user and site management
-- established the admin architecture for future scaling
-
----
-
-## Version 1.3.0
-### Submission Detail Viewer
-
-Changes:
-
-Added `submission-detail` Edge Function.
-
-Users can now view:
-
-- submission payload
-- review history
-- attached images
-
-Logbook now links to a full submission detail view.
-
-Impact:
-
-- improved reviewer workflow
-- improved audit visibility
-- improved access to full submission history
-
----
-
-## Version 1.2.0
-### Image Upload Support
-
-Changes:
-
-Added `submission_images` table.
-
-Created storage bucket:
-
-`submission-images`
-
-Inspection and drill forms now support photo uploads.
-
-Images are linked to submissions through metadata records.
-
-Impact:
-
-- added visual evidence support
-- improved inspection documentation
-- improved drill verification workflow
+### Recommended next steps
+- Add assignment-based site restrictions throughout the UI and backend flows.
+- Verify deployed Edge Functions against repo versions.
+- Verify SQL schema against the current migration set.
+- Add print/PDF export support for review and submission packages.
+- Add better image evidence gallery/review tools.
+- Add reopen/edit workflow support where appropriate.
+- Add audit logging.
+- Enable and verify RLS across all required tables.
 
 ---
 
-## Version 1.1.0
-### Review System Enhancements
-
-Changes:
-
-Added `review-submission` Edge Function.
-
-Added new database table:
-
-`submission_reviews`
-
-Review actions added:
-
-- `commented`
-- `under_review`
-- `approved`
-- `follow_up_required`
-- `closed`
-- `reopened`
-
-Submission status updates are now recorded with:
-
-- reviewer ID
-- timestamp
-- notes
-
-Impact:
-
-- enabled formal review workflow
-- improved traceability
-- improved status tracking
-
----
-
-## Version 1.0.0
-### Initial Safety System Implementation
-
-**Date:** Project initialization phase
-
-Major components implemented:
-
-Authentication:
-- Supabase Magic Link login
-
-Forms:
-- Toolbox Talk
-- PPE Check
-- First Aid Kit Check
-- Site Inspection
-- Emergency Drill
-
-Backend:
-- Supabase Edge Functions
-
-Database:
-- core safety tables
-
-Logbook:
-- submission search and filtering
-
-Review System:
-- supervisor and HSE review capability
-
-Admin Interface:
-- user and site management foundation
-
-Storage:
-- image uploads for inspections and drills
-
-Impact:
-
-- established the complete initial application framework
-- created the base architecture for all future work
-
----
-
-## Known Issues
-
-Minor issues currently observed:
-
-- service worker may attempt to cache unsupported requests
-- some admin UI fields still require manual ID entry instead of dropdowns
-- calendar icon visibility can be weak on dark form fields
-
-These do not prevent operation but should be improved in future releases.
-
----
-
-## Planned Version 2.0.0
-
-Major improvements planned:
-
-Dashboard analytics:
-- inspection statistics
-- open hazard tracking
-- safety activity overview
-
-Follow-up reminder system:
-- notifications for unresolved hazards
-
-Improved admin UI:
-- dropdown selectors instead of raw ID entry
-
-Reporting system:
-- PDF inspection reports
-
-Offline capability:
-- queued form submissions
-
-Possible access improvements:
-- role-based site visibility
-- assignment-based permissions
-
----
-
-## How To Update This File
-
-When making changes:
-
-1. Add a new version section near the top
-2. Include the version number
-3. Include the date or development phase
-4. Summarize the change
-5. Note the affected components
-6. Keep entries concise but clear
-
-Example:
-
-```text
-## Version 1.6.0
-### Added dashboard analytics
-
-Changes:
-- added dashboard cards
-- added hazard count summary
-- added recent submission summary
-
-
----
-
-## 🔐 Recent Security & System Updates (Auto-Added)
-
-### Authentication
-- Supabase Magic Link login implemented
-- Session persistence via localStorage
-- JWT-based validation in Edge Functions
-
-### Role-Based Access (RBAC)
-Supported roles:
-- worker
-- site_leader
-- supervisor
-- hse
-- admin
-
-### Backend Security
-- Edge Functions now validate JWT
-- Admin-only endpoints enforced
-- `can_access_submission()` used for data protection
-
-### New Features Added
-- Image upload system (`upload-image`)
-- Submission review system (`review-submission`)
-- Admin management endpoint
-- Site + Assignment management
-- Storage integration for job images
-
-### Recommended Next Steps
-- Enable RLS on all tables
-- Add audit logging
-- Add session timeout
-- Add UI role-based visibility
-
+## [Project baseline]
+### Initial platform direction
+- Static frontend architecture:
+  - `index.html`
+  - `style.css`
+  - `app.js`
+- Supabase backend with Edge Functions for:
+  - submission intake
+  - logbook listing
+  - submission detail
+  - submission review
+  - admin directory
+  - admin management
+- Storage bucket for submission images:
+  - `submission-images`
