@@ -35,23 +35,108 @@
   </header>
 
   <section id="loginView" class="auth-card" style="display:none;">
-    <h2>Sign in</h2>
-    <p class="section-subtitle">Use your approved company email to receive a magic link.</p>
-    <form id="loginForm" class="auth-row" autocomplete="on">
-      <input
-        id="loginEmail"
-        type="email"
-        placeholder="you@company.com"
-        required
-        autocomplete="email"
-      />
-      <button class="primary" type="submit">Send magic link</button>
-    </form>
+    <div class="section-heading">
+      <div>
+        <h2>Sign in to YWI HSE</h2>
+        <p class="section-subtitle">
+          Use a magic link or password login. Password access prepares the app for staff, admin, job admin, and site-based security.
+        </p>
+      </div>
+    </div>
+
+    <div class="auth-tabs" role="tablist" aria-label="Authentication methods">
+      <button
+        type="button"
+        class="secondary active"
+        data-auth-tab="magic"
+        aria-selected="true"
+      >
+        Magic Link
+      </button>
+      <button
+        type="button"
+        class="secondary"
+        data-auth-tab="password"
+        aria-selected="false"
+      >
+        Email + Password
+      </button>
+    </div>
+
+    <div id="authNotice" class="notice" style="display:none;margin-top:14px;"></div>
+
+    <div class="auth-panels">
+      <section data-auth-panel="magic">
+        <form id="magicLoginForm" autocomplete="on">
+          <div class="grid">
+            <label>Email Address
+              <input
+                id="magicLoginEmail"
+                type="email"
+                placeholder="you@company.com"
+                required
+                autocomplete="email"
+              />
+            </label>
+          </div>
+
+          <div class="form-footer">
+            <button id="magicLoginBtn" class="primary" type="submit">Send Magic Link</button>
+          </div>
+
+          <div class="notice" style="margin-top:12px;">
+            Best for simple access right now. The email link signs you in without needing a password.
+          </div>
+        </form>
+      </section>
+
+      <section data-auth-panel="password" hidden style="display:none;">
+        <form id="passwordLoginForm" autocomplete="on">
+          <div class="grid">
+            <label>Email Address
+              <input
+                id="passwordLoginEmail"
+                type="email"
+                placeholder="you@company.com"
+                required
+                autocomplete="username email"
+              />
+            </label>
+
+            <label>Password
+              <input
+                id="passwordLoginPassword"
+                type="password"
+                placeholder="Enter password"
+                required
+                autocomplete="current-password"
+              />
+            </label>
+          </div>
+
+          <div class="form-footer">
+            <button id="passwordLoginBtn" class="primary" type="submit">Sign In</button>
+            <button id="passwordForgotBtn" class="secondary" type="button">Reset Password</button>
+          </div>
+
+          <div class="notice" style="margin-top:12px;">
+            This prepares the app for real in-app account security and future role-based access for Admin, Job Admin, Onsite Admin, and Staff.
+          </div>
+        </form>
+      </section>
+    </div>
   </section>
 
   <section id="authInfo" class="card" hidden>
-    <div class="auth-info">Signed in as <b id="whoami"></b></div>
-    <button id="logoutBtn" class="secondary" type="button">Log out</button>
+    <div class="section-heading">
+      <div>
+        <div class="auth-info">Signed in as <b id="whoami"></b></div>
+        <p class="section-subtitle">Your role controls which documents and admin tools you can see.</p>
+      </div>
+      <div class="admin-heading-actions">
+        <button id="logoutBtn" class="secondary" type="button">Log out</button>
+      </div>
+    </div>
   </section>
 
   <main class="container">
@@ -120,13 +205,7 @@
         </div>
 
         <div class="actions">
-          <input
-            type="file"
-            id="tb_image_files"
-            accept="image/*"
-            capture="environment"
-            multiple
-          />
+          <input type="file" id="tb_image_files" accept="image/*" capture="environment" multiple />
           <button type="button" id="tb_image_add">Add Image(s)</button>
         </div>
 
@@ -383,13 +462,7 @@
         </div>
 
         <div class="actions">
-          <input
-            type="file"
-            id="insp_image_files"
-            accept="image/*"
-            capture="environment"
-            multiple
-          />
+          <input type="file" id="insp_image_files" accept="image/*" capture="environment" multiple />
           <button type="button" id="insp_image_add">Add Image(s)</button>
         </div>
 
@@ -526,13 +599,7 @@
         </div>
 
         <div class="actions">
-          <input
-            type="file"
-            id="dr_image_files"
-            accept="image/*"
-            capture="environment"
-            multiple
-          />
+          <input type="file" id="dr_image_files" accept="image/*" capture="environment" multiple />
           <button type="button" id="dr_image_add">Add Image(s)</button>
         </div>
 
@@ -946,6 +1013,9 @@
               <select id="am_profile_role">
                 <option value="">No change</option>
                 <option value="worker">Worker</option>
+                <option value="staff">Staff</option>
+                <option value="onsite_admin">Onsite Admin</option>
+                <option value="job_admin">Job Admin</option>
                 <option value="site_leader">Site Leader</option>
                 <option value="supervisor">Supervisor</option>
                 <option value="hse">HSE</option>
@@ -1049,6 +1119,9 @@
             <label>Assignment Role
               <select id="am_assignment_role">
                 <option value="worker">Worker</option>
+                <option value="staff">Staff</option>
+                <option value="onsite_admin">Onsite Admin</option>
+                <option value="job_admin">Job Admin</option>
                 <option value="site_leader">Site Leader</option>
                 <option value="supervisor">Supervisor</option>
                 <option value="hse">HSE</option>
@@ -1074,6 +1147,9 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/ui-auth.js"></script>
   <script src="/app.js" defer></script>
 
   <script>
