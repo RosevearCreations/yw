@@ -7,6 +7,7 @@
    - visible calendar/date controls
    - readable auth/admin/review/detail panels
    - selector dropdown support
+   - modular auth UI support
    - responsive behavior
 ========================================================= */
 
@@ -116,22 +117,12 @@ main > section.card.active{
 }
 
 .auth-card{
-  max-width:680px;
+  max-width:760px;
   margin:24px auto 18px;
 }
 
 .auth-card h2{
   margin-top:0;
-}
-
-.auth-row{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-}
-
-.auth-row input{
-  flex:1 1 280px;
 }
 
 .auth-info{
@@ -170,10 +161,84 @@ h3{
   margin-top:10px;
 }
 
+.notice[data-state="success"]{
+  color:#d1fae5;
+  border-color:rgba(16,185,129,.35);
+  background:rgba(16,185,129,.10);
+}
+
+.notice[data-state="error"]{
+  color:#fee2e2;
+  border-color:rgba(239,68,68,.35);
+  background:rgba(239,68,68,.10);
+}
+
+.notice[data-state="warning"]{
+  color:#fef3c7;
+  border-color:rgba(245,158,11,.35);
+  background:rgba(245,158,11,.10);
+}
+
+.notice[data-state="info"]{
+  color:#dbeafe;
+  border-color:rgba(56,189,248,.35);
+  background:rgba(56,189,248,.10);
+}
+
+/* =========================
+   AUTH UI
+========================= */
+.auth-tabs{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin:14px 0 6px;
+}
+
+.auth-tabs button{
+  min-width:160px;
+}
+
+.auth-tabs button.active,
+.auth-tabs button[aria-selected="true"]{
+  background:var(--brand);
+  color:#062434;
+  font-weight:700;
+  border-color:transparent;
+}
+
+.auth-panels{
+  margin-top:14px;
+}
+
+.auth-panels > section{
+  background:rgba(255,255,255,.02);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:16px;
+}
+
+.auth-panels > section + section{
+  margin-top:12px;
+}
+
+.auth-row{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.auth-row input{
+  flex:1 1 280px;
+}
+
+body[data-user-role="worker"] .admin-only{
+  display:none !important;
+}
+
 /* =========================
    FORM LAYOUT
 ========================= */
-
 .role-chip,
 .status-chip{
   display:inline-flex;
@@ -191,6 +256,9 @@ h3{
 }
 
 .role-chip--worker{ background:rgba(148,163,184,.14); }
+.role-chip--staff{ background:rgba(99,102,241,.14); }
+.role-chip--onsite-admin{ background:rgba(14,165,233,.14); }
+.role-chip--job-admin{ background:rgba(168,85,247,.14); }
 .role-chip--site-leader,
 .role-chip--supervisor{ background:rgba(56,189,248,.14); }
 .role-chip--hse{ background:rgba(245,158,11,.14); }
@@ -218,6 +286,7 @@ label{
 
 input[type="text"],
 input[type="email"],
+input[type="password"],
 input[type="date"],
 input[type="time"],
 input[type="number"],
@@ -735,6 +804,14 @@ input[type="file"]{
   }
 
   .auth-row > *{
+    width:100%;
+  }
+
+  .auth-tabs{
+    flex-direction:column;
+  }
+
+  .auth-tabs > *{
     width:100%;
   }
 
