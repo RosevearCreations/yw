@@ -575,3 +575,40 @@ Internal company use.
 # Maintainers
 
 YWI HSE Development Team
+
+
+---
+
+## 🔐 Recent Security & System Updates (Auto-Added)
+
+### Authentication
+- Supabase Magic Link login implemented
+- Session persistence via localStorage
+- JWT-based validation in Edge Functions
+
+### Role-Based Access (RBAC)
+Supported roles:
+- worker
+- site_leader
+- supervisor
+- hse
+- admin
+
+### Backend Security
+- Edge Functions now validate JWT
+- Admin-only endpoints enforced
+- `can_access_submission()` used for data protection
+
+### New Features Added
+- Image upload system (`upload-image`)
+- Submission review system (`review-submission`)
+- Admin management endpoint
+- Site + Assignment management
+- Storage integration for job images
+
+### Recommended Next Steps
+- Enable RLS on all tables
+- Add audit logging
+- Add session timeout
+- Add UI role-based visibility
+
