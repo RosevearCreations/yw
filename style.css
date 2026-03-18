@@ -173,6 +173,35 @@ h3{
 /* =========================
    FORM LAYOUT
 ========================= */
+
+.role-chip,
+.status-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  min-height:28px;
+  padding:4px 10px;
+  border-radius:999px;
+  border:1px solid var(--line-strong);
+  background:rgba(255,255,255,.04);
+  color:var(--text);
+  font-size:.82rem;
+  font-weight:700;
+  letter-spacing:.01em;
+}
+
+.role-chip--worker{ background:rgba(148,163,184,.14); }
+.role-chip--site-leader,
+.role-chip--supervisor{ background:rgba(56,189,248,.14); }
+.role-chip--hse{ background:rgba(245,158,11,.14); }
+.role-chip--admin{ background:rgba(16,185,129,.14); }
+
+.status-chip--submitted{ background:rgba(148,163,184,.14); }
+.status-chip--under-review{ background:rgba(56,189,248,.14); }
+.status-chip--approved{ background:rgba(16,185,129,.14); }
+.status-chip--follow-up-required{ background:rgba(245,158,11,.14); }
+.status-chip--closed{ background:rgba(239,68,68,.14); }
+
 .grid{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
@@ -570,6 +599,43 @@ img{
 .admin-table-row td:last-child,
 .admin-table-row th:last-child{
   width:auto;
+}
+
+#admin[data-admin-locked="true"]{
+  position:relative;
+}
+
+#admin[data-admin-locked="true"] .admin-stats-grid,
+#admin[data-admin-locked="true"] .admin-directory-grid,
+#admin[data-admin-locked="true"] .admin-management-grid,
+#admin[data-admin-locked="true"] .admin-toolbar{
+  opacity:.5;
+  filter:saturate(.7);
+}
+
+#admin[data-admin-locked="true"]::after{
+  content:'Admin access required';
+  position:absolute;
+  top:20px;
+  right:20px;
+  padding:8px 12px;
+  border-radius:999px;
+  border:1px solid rgba(245,158,11,.35);
+  background:rgba(245,158,11,.12);
+  color:#fbbf24;
+  font-size:.85rem;
+  font-weight:700;
+  letter-spacing:.02em;
+}
+
+.admin-table-row td{
+  transition:background .15s ease, color .15s ease, outline-color .15s ease;
+}
+
+.admin-table-row:focus-within,
+.admin-table-row:focus{
+  outline:1px solid rgba(56,189,248,.55);
+  background:rgba(56,189,248,.06) !important;
 }
 
 /* =========================
