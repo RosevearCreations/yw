@@ -680,225 +680,309 @@
     <!-- ============================= -->
     <!-- ADMIN DIRECTORY + MANAGEMENT  -->
     <!-- ============================= -->
-    <section id="admin" class="card">
-      <h2>Admin Directory</h2>
+    <section id="admin" class="card admin-dashboard">
+      <div class="section-heading">
+        <div>
+          <h2>Admin Dashboard</h2>
+          <p class="section-subtitle">Manage users, sites, and assignments from one place.</p>
+        </div>
+        <div class="admin-heading-actions">
+          <button id="ad_load" class="primary" type="button">Load Directory</button>
+          <button id="ad_clear" class="secondary" type="button">Clear Results</button>
+        </div>
+      </div>
+
       <div class="notice">
-        Load users, sites, and assignments for management review.
+        Existing IDs and API endpoints are preserved. Row clicks and selectors help fill management forms faster.
       </div>
 
-      <div class="grid">
-        <label>Mode
-          <select id="ad_mode">
-            <option value="all">All</option>
-            <option value="users">Users</option>
-            <option value="sites">Sites</option>
-            <option value="assignments">Assignments</option>
-          </select>
-        </label>
-
-        <label>Search
-          <input type="text" id="ad_search" placeholder="Email, name, site code, site name" />
-        </label>
-
-        <label>Site ID (optional)
-          <input type="text" id="ad_site_id" placeholder="Filter assignments by site id" />
-        </label>
-
-        <label>Profile ID (optional)
-          <input type="text" id="ad_profile_id" placeholder="Filter assignments by profile id" />
-        </label>
+      <div class="admin-stats-grid">
+        <article class="admin-stat-card">
+          <div class="admin-stat-label">Users</div>
+          <div id="ad_users_count" class="admin-stat-value">0</div>
+          <div class="admin-stat-help">Profiles returned by current filters</div>
+        </article>
+        <article class="admin-stat-card">
+          <div class="admin-stat-label">Sites</div>
+          <div id="ad_sites_count" class="admin-stat-value">0</div>
+          <div class="admin-stat-help">Matching site records</div>
+        </article>
+        <article class="admin-stat-card">
+          <div class="admin-stat-label">Assignments</div>
+          <div id="ad_assignments_count" class="admin-stat-value">0</div>
+          <div class="admin-stat-help">Site-to-user relationships</div>
+        </article>
+        <article class="admin-stat-card">
+          <div class="admin-stat-label">View Mode</div>
+          <div id="ad_mode_badge" class="admin-stat-value admin-stat-value--small">all</div>
+          <div class="admin-stat-help">Current directory scope</div>
+        </article>
       </div>
 
-      <div class="grid" style="margin-top:12px;">
-        <label style="display:flex;align-items:center;gap:.5rem;">
-          <input type="checkbox" id="ad_active_only" />
-          Active only
-        </label>
-        <label>Limit
-          <input type="number" id="ad_limit" min="1" max="1000" value="200" />
-        </label>
-        <div></div>
-        <div></div>
+      <div class="admin-toolbar card-lite">
+        <div class="grid">
+          <label>Mode
+            <select id="ad_mode">
+              <option value="all">All</option>
+              <option value="users">Users</option>
+              <option value="sites">Sites</option>
+              <option value="assignments">Assignments</option>
+            </select>
+          </label>
+
+          <label>Search
+            <input type="text" id="ad_search" placeholder="Email, name, site code, site name" />
+          </label>
+
+          <label>Site ID (optional)
+            <input type="text" id="ad_site_id" placeholder="Filter assignments by site id" />
+          </label>
+
+          <label>Profile ID (optional)
+            <input type="text" id="ad_profile_id" placeholder="Filter assignments by profile id" />
+          </label>
+        </div>
+
+        <div class="grid admin-toolbar-row">
+          <label class="inline-check">
+            <input type="checkbox" id="ad_active_only" />
+            <span>Active only</span>
+          </label>
+          <label>Limit
+            <input type="number" id="ad_limit" min="1" max="1000" value="200" />
+          </label>
+          <div class="admin-quick-filters">
+            <span class="mini-label">Quick views</span>
+            <div class="controls">
+              <button type="button" class="secondary" data-admin-mode="all">All</button>
+              <button type="button" class="secondary" data-admin-mode="users">Users</button>
+              <button type="button" class="secondary" data-admin-mode="sites">Sites</button>
+              <button type="button" class="secondary" data-admin-mode="assignments">Assignments</button>
+            </div>
+          </div>
+          <div class="admin-tip">
+            <strong>Tip:</strong> Press Enter in a filter field to reload the directory.
+          </div>
+        </div>
       </div>
 
-      <div class="form-footer">
-        <button id="ad_load" class="primary" type="button">Load Directory</button>
-        <button id="ad_clear" class="secondary" type="button">Clear Results</button>
-      </div>
+      <div class="admin-directory-grid">
+        <section class="card-lite admin-panel-block">
+          <div class="panel-heading">
+            <div>
+              <h3>Users</h3>
+              <p>Click a row to open that profile in the management form.</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table id="ad_users_table">
+              <thead>
+                <tr>
+                  <th style="width:230px">Email</th>
+                  <th style="width:180px">Name</th>
+                  <th style="width:120px">Role</th>
+                  <th style="width:120px">Active</th>
+                  <th>ID</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
 
-      <h3>Users</h3>
-      <div class="table-wrap">
-        <table id="ad_users_table">
-          <thead>
-            <tr>
-              <th style="width:230px">Email</th>
-              <th style="width:180px">Name</th>
-              <th style="width:120px">Role</th>
-              <th style="width:120px">Active</th>
-              <th>ID</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
+        <section class="card-lite admin-panel-block">
+          <div class="panel-heading">
+            <div>
+              <h3>Sites</h3>
+              <p>Click a row to open that site in the site editor.</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table id="ad_sites_table">
+              <thead>
+                <tr>
+                  <th style="width:120px">Code</th>
+                  <th style="width:220px">Name</th>
+                  <th style="width:120px">Active</th>
+                  <th style="width:240px">Address</th>
+                  <th>ID</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
 
-      <h3>Sites</h3>
-      <div class="table-wrap">
-        <table id="ad_sites_table">
-          <thead>
-            <tr>
-              <th style="width:120px">Code</th>
-              <th style="width:220px">Name</th>
-              <th style="width:120px">Active</th>
-              <th style="width:240px">Address</th>
-              <th>ID</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-
-      <h3>Assignments</h3>
-      <div class="table-wrap">
-        <table id="ad_assignments_table">
-          <thead>
-            <tr>
-              <th style="width:90px">Assign ID</th>
-              <th style="width:120px">Site Code</th>
-              <th style="width:180px">Site Name</th>
-              <th style="width:230px">User Email</th>
-              <th style="width:160px">Name</th>
-              <th style="width:120px">Assign Role</th>
-              <th style="width:100px">Primary</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+        <section class="card-lite admin-panel-block admin-panel-block--full">
+          <div class="panel-heading">
+            <div>
+              <h3>Assignments</h3>
+              <p>Click a row to load that assignment into the assignment manager.</p>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table id="ad_assignments_table">
+              <thead>
+                <tr>
+                  <th style="width:90px">Assign ID</th>
+                  <th style="width:120px">Site Code</th>
+                  <th style="width:180px">Site Name</th>
+                  <th style="width:230px">User Email</th>
+                  <th style="width:160px">Name</th>
+                  <th style="width:120px">Assign Role</th>
+                  <th style="width:100px">Primary</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
       </div>
 
       <div id="ad_summary" class="notice" style="display:none;margin-top:14px;"></div>
 
-      <h3 style="margin-top:24px;">Admin Management</h3>
-      <div class="notice">
-        Use these forms to update profiles, sites, and assignments.
+      <div class="section-heading" style="margin-top:28px;">
+        <div>
+          <h3 style="margin:0;">Admin Management</h3>
+          <p class="section-subtitle">Use the editor cards below to update profiles, sites, and assignments.</p>
+        </div>
       </div>
 
-      <h3>Update Profile</h3>
-      <div class="grid">
-        <label>Profile Selector
-          <select id="am_profile_selector">
-            <option value="">Select profile...</option>
-          </select>
-        </label>
-        <label>Profile ID
-          <input type="text" id="am_profile_id" placeholder="Paste profile id" />
-        </label>
-        <label>Full Name
-          <input type="text" id="am_profile_name" placeholder="Full name" />
-        </label>
-        <label>Role
-          <select id="am_profile_role">
-            <option value="">No change</option>
-            <option value="worker">Worker</option>
-            <option value="supervisor">Supervisor</option>
-            <option value="hse">HSE</option>
-            <option value="admin">Admin</option>
-          </select>
-        </label>
-      </div>
-      <div class="grid" style="margin-top:12px;">
-        <label style="display:flex;align-items:center;gap:.5rem;">
-          <input type="checkbox" id="am_profile_active" />
-          Active
-        </label>
-        <div></div>
-        <div></div>
-        <div></div>
-      </div>
-      <div class="form-footer">
-        <button id="am_profile_save" class="primary" type="button">Save Profile</button>
-      </div>
+      <div class="admin-management-grid">
+        <section class="card-lite admin-form-card">
+          <div class="panel-heading">
+            <div>
+              <h3>Update Profile</h3>
+              <p>Select a profile or click a user row above.</p>
+            </div>
+          </div>
+          <div class="grid">
+            <label>Profile Selector
+              <select id="am_profile_selector">
+                <option value="">Select profile...</option>
+              </select>
+            </label>
+            <label>Profile ID
+              <input type="text" id="am_profile_id" placeholder="Paste profile id" />
+            </label>
+            <label>Full Name
+              <input type="text" id="am_profile_name" placeholder="Full name" />
+            </label>
+            <label>Role
+              <select id="am_profile_role">
+                <option value="">No change</option>
+                <option value="worker">Worker</option>
+                <option value="supervisor">Supervisor</option>
+                <option value="hse">HSE</option>
+                <option value="admin">Admin</option>
+              </select>
+            </label>
+          </div>
+          <div class="grid" style="margin-top:12px;">
+            <label class="inline-check">
+              <input type="checkbox" id="am_profile_active" />
+              <span>Active</span>
+            </label>
+          </div>
+          <div class="form-footer">
+            <button id="am_profile_save" class="primary" type="button">Save Profile</button>
+          </div>
+        </section>
 
-      <h3>Create / Update Site</h3>
-      <div class="grid">
-        <label>Site Selector
-          <select id="am_site_selector">
-            <option value="">Select site...</option>
-          </select>
-        </label>
-        <label>Site ID (blank = create)
-          <input type="text" id="am_site_id" placeholder="Existing site id for update" />
-        </label>
-        <label>Site Code
-          <input type="text" id="am_site_code" placeholder="SITE-A" />
-        </label>
-        <label>Site Name
-          <input type="text" id="am_site_name" placeholder="Site name" />
-        </label>
-      </div>
-      <div class="grid" style="margin-top:12px;">
-        <label>Address
-          <input type="text" id="am_site_address" placeholder="Address" />
-        </label>
-        <label>Notes
-          <input type="text" id="am_site_notes" placeholder="Notes" />
-        </label>
-        <label style="display:flex;align-items:center;gap:.5rem;">
-          <input type="checkbox" id="am_site_active" checked />
-          Active
-        </label>
-        <div></div>
-      </div>
-      <div class="form-footer">
-        <button id="am_site_create" class="primary" type="button">Create Site</button>
-        <button id="am_site_update" class="secondary" type="button">Update Site</button>
-      </div>
+        <section class="card-lite admin-form-card">
+          <div class="panel-heading">
+            <div>
+              <h3>Create / Update Site</h3>
+              <p>Select an existing site or fill in a new one.</p>
+            </div>
+          </div>
+          <div class="grid">
+            <label>Site Selector
+              <select id="am_site_selector">
+                <option value="">Select site...</option>
+              </select>
+            </label>
+            <label>Site ID (blank = create)
+              <input type="text" id="am_site_id" placeholder="Existing site id for update" />
+            </label>
+            <label>Site Code
+              <input type="text" id="am_site_code" placeholder="SITE-A" />
+            </label>
+            <label>Site Name
+              <input type="text" id="am_site_name" placeholder="Site name" />
+            </label>
+          </div>
+          <div class="grid" style="margin-top:12px;">
+            <label>Address
+              <input type="text" id="am_site_address" placeholder="Address" />
+            </label>
+            <label>Notes
+              <input type="text" id="am_site_notes" placeholder="Notes" />
+            </label>
+            <label class="inline-check">
+              <input type="checkbox" id="am_site_active" checked />
+              <span>Active</span>
+            </label>
+          </div>
+          <div class="form-footer">
+            <button id="am_site_create" class="primary" type="button">Create Site</button>
+            <button id="am_site_update" class="secondary" type="button">Update Site</button>
+          </div>
+        </section>
 
-      <h3>Create / Update / Delete Assignment</h3>
-      <div class="grid">
-        <label>Assignment Selector
-          <select id="am_assignment_selector">
-            <option value="">Select assignment...</option>
-          </select>
-        </label>
-        <label>Assignment ID (update/delete)
-          <input type="text" id="am_assignment_id" placeholder="Assignment id" />
-        </label>
-        <label>Site Selector
-          <select id="am_assignment_site_selector">
-            <option value="">Select site...</option>
-          </select>
-        </label>
-        <label>Profile Selector
-          <select id="am_assignment_profile_selector">
-            <option value="">Select profile...</option>
-          </select>
-        </label>
-      </div>
-      <div class="grid" style="margin-top:12px;">
-        <label>Site ID
-          <input type="text" id="am_assignment_site_id" placeholder="Site id" />
-        </label>
-        <label>Profile ID
-          <input type="text" id="am_assignment_profile_id" placeholder="Profile id" />
-        </label>
-        <label>Assignment Role
-          <select id="am_assignment_role">
-            <option value="worker">Worker</option>
-            <option value="supervisor">Supervisor</option>
-            <option value="hse">HSE</option>
-            <option value="admin">Admin</option>
-          </select>
-        </label>
-        <label style="display:flex;align-items:center;gap:.5rem;">
-          <input type="checkbox" id="am_assignment_primary" />
-          Primary assignment
-        </label>
-      </div>
-      <div class="form-footer">
-        <button id="am_assignment_create" class="primary" type="button">Create Assignment</button>
-        <button id="am_assignment_update" class="secondary" type="button">Update Assignment</button>
-        <button id="am_assignment_delete" class="secondary" type="button">Delete Assignment</button>
+        <section class="card-lite admin-form-card admin-form-card--full">
+          <div class="panel-heading">
+            <div>
+              <h3>Create / Update / Delete Assignment</h3>
+              <p>Choose selectors, then create or update the site-to-user assignment.</p>
+            </div>
+          </div>
+          <div class="grid">
+            <label>Assignment Selector
+              <select id="am_assignment_selector">
+                <option value="">Select assignment...</option>
+              </select>
+            </label>
+            <label>Assignment ID (update/delete)
+              <input type="text" id="am_assignment_id" placeholder="Assignment id" />
+            </label>
+            <label>Site Selector
+              <select id="am_assignment_site_selector">
+                <option value="">Select site...</option>
+              </select>
+            </label>
+            <label>Profile Selector
+              <select id="am_assignment_profile_selector">
+                <option value="">Select profile...</option>
+              </select>
+            </label>
+          </div>
+          <div class="grid" style="margin-top:12px;">
+            <label>Site ID
+              <input type="text" id="am_assignment_site_id" placeholder="Site id" />
+            </label>
+            <label>Profile ID
+              <input type="text" id="am_assignment_profile_id" placeholder="Profile id" />
+            </label>
+            <label>Assignment Role
+              <select id="am_assignment_role">
+                <option value="worker">Worker</option>
+                <option value="supervisor">Supervisor</option>
+                <option value="hse">HSE</option>
+                <option value="admin">Admin</option>
+              </select>
+            </label>
+            <label class="inline-check">
+              <input type="checkbox" id="am_assignment_primary" />
+              <span>Primary assignment</span>
+            </label>
+          </div>
+          <div class="form-footer">
+            <button id="am_assignment_create" class="primary" type="button">Create Assignment</button>
+            <button id="am_assignment_update" class="secondary" type="button">Update Assignment</button>
+            <button id="am_assignment_delete" class="secondary" type="button">Delete Assignment</button>
+          </div>
+        </section>
       </div>
 
       <div id="am_summary" class="notice" style="display:none;margin-top:14px;"></div>

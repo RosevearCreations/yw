@@ -1521,20 +1521,70 @@ const adUsersBody = $('#ad_users_table')?.querySelector('tbody') || null;
 const adSitesBody = $('#ad_sites_table')?.querySelector('tbody') || null;
 const adAssignmentsBody = $('#ad_assignments_table')?.querySelector('tbody') || null;
 const adSummary = $('#ad_summary');
+const adUsersCount = $('#ad_users_count');
+const adSitesCount = $('#ad_sites_count');
+const adAssignmentsCount = $('#ad_assignments_count');
+const adModeBadge = $('#ad_mode_badge');
+
+const adminDirectoryState = {
+  users: [],
+  sites: [],
+  assignments: [],
+  selectedUserId: '',
+  selectedSiteId: '',
+  selectedAssignmentId: ''
+};
+
+function updateAdminStats(counts = {}) {
+  if (adUsersCount) adUsersCount.textContent = String(counts.users || 0);
+  if (adSitesCount) adSitesCount.textContent = String(counts.sites || 0);
+  if (adAssignmentsCount) adAssignmentsCount.textContent = String(counts.assignments || 0);
+  if (adModeBadge) adModeBadge.textContent = (adMode?.value || 'all').replaceAll('_', ' ');
+}
+
+function highlightAdminRow(tbody, selectedId) {
+  if (!tbody) return;
+  tbody.querySelectorAll('tr[data-admin-row-id]').forEach(tr => {
+    const isSelected = String(tr.dataset.adminRowId || '') === String(selectedId || '');
+    tr.classList.toggle('is-selected', isSelected);
+  });
+}
 
 function clearAdminDirectoryTables() {
   if (adUsersBody) adUsersBody.innerHTML = '';
   if (adSitesBody) adSitesBody.innerHTML = '';
   if (adAssignmentsBody) adAssignmentsBody.innerHTML = '';
+  adminDirectoryState.users = [];
+  adminDirectoryState.sites = [];
+  adminDirectoryState.assignments = [];
+  adminDirectoryState.selectedUserId = '';
+  adminDirectoryState.selectedSiteId = '';
+  adminDirectoryState.selectedAssignmentId = '';
+  updateAdminStats({ users: 0, sites: 0, assignments: 0 });
   setNotice(adSummary, '');
+}
+
+function renderEmptyAdminRow(tbody, message, colspan) {
+  if (!tbody) return;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td colspan="${colspan}" style="white-space:normal;color:#94a3b8;">${escHtml(message)}</td>`;
+  tbody.appendChild(tr);
 }
 
 function renderAdminUsers(rows) {
   if (!adUsersBody) return;
   adUsersBody.innerHTML = '';
 
+  if (!rows.length) {
+    renderEmptyAdminRow(adUsersBody, 'No users matched the current filters.', 5);
+    return;
+  }
+
   rows.forEach(row => {
     const tr = document.createElement('tr');
+    tr.className = 'admin-table-row';
+    tr.dataset.adminType = 'user';
+    tr.dataset.adminRowId = String(row.id || '');
     tr.innerHTML = `
       <td>${escHtml(row.email || '')}</td>
       <td>${escHtml(row.full_name || '')}</td>
@@ -1544,14 +1594,24 @@ function renderAdminUsers(rows) {
     `;
     adUsersBody.appendChild(tr);
   });
+
+  highlightAdminRow(adUsersBody, adminDirectoryState.selectedUserId);
 }
 
 function renderAdminSites(rows) {
   if (!adSitesBody) return;
   adSitesBody.innerHTML = '';
 
+  if (!rows.length) {
+    renderEmptyAdminRow(adSitesBody, 'No sites matched the current filters.', 5);
+    return;
+  }
+
   rows.forEach(row => {
     const tr = document.createElement('tr');
+    tr.className = 'admin-table-row';
+    tr.dataset.adminType = 'site';
+    tr.dataset.adminRowId = String(row.id || '');
     tr.innerHTML = `
       <td>${escHtml(row.site_code || '')}</td>
       <td>${escHtml(row.site_name || '')}</td>
@@ -1561,14 +1621,24 @@ function renderAdminSites(rows) {
     `;
     adSitesBody.appendChild(tr);
   });
+
+  highlightAdminRow(adSitesBody, adminDirectoryState.selectedSiteId);
 }
 
 function renderAdminAssignments(rows) {
   if (!adAssignmentsBody) return;
   adAssignmentsBody.innerHTML = '';
 
+  if (!rows.length) {
+    renderEmptyAdminRow(adAssignmentsBody, 'No assignments matched the current filters.', 7);
+    return;
+  }
+
   rows.forEach(row => {
     const tr = document.createElement('tr');
+    tr.className = 'admin-table-row';
+    tr.dataset.adminType = 'assignment';
+    tr.dataset.adminRowId = String(row.id || '');
     tr.innerHTML = `
       <td>${escHtml(row.id || '')}</td>
       <td>${escHtml(row?.sites?.site_code || '')}</td>
@@ -1580,6 +1650,8 @@ function renderAdminAssignments(rows) {
     `;
     adAssignmentsBody.appendChild(tr);
   });
+
+  highlightAdminRow(adAssignmentsBody, adminDirectoryState.selectedAssignmentId);
 }
 
 async function fetchAdminDirectory() {
@@ -1595,9 +1667,14 @@ async function fetchAdminDirectory() {
   const data = await loadAdminDirectory(payload);
   if (!data?.ok) throw new Error(data?.error || 'Directory load failed');
 
-  renderAdminUsers(data.users || []);
-  renderAdminSites(data.sites || []);
-  renderAdminAssignments(data.assignments || []);
+  adminDirectoryState.users = data.users || [];
+  adminDirectoryState.sites = data.sites || [];
+  adminDirectoryState.assignments = data.assignments || [];
+
+  renderAdminUsers(adminDirectoryState.users);
+  renderAdminSites(adminDirectoryState.sites);
+  renderAdminAssignments(adminDirectoryState.assignments);
+  updateAdminStats(data?.counts || {});
 
   setNotice(
     adSummary,
@@ -1642,33 +1719,19 @@ async function refreshAdminSelectors() {
 amProfileSelector?.addEventListener('change', () => {
   const row = pickById(selectorState.profiles, amProfileSelector.value);
   if (!row) return;
-  if ($('#am_profile_id')) $('#am_profile_id').value = row.id || '';
-  if ($('#am_profile_name')) $('#am_profile_name').value = row.full_name || '';
-  if ($('#am_profile_role')) $('#am_profile_role').value = row.role || '';
-  if ($('#am_profile_active')) $('#am_profile_active').checked = !!row.is_active;
+  loadProfileIntoManager(row);
 });
 
 amSiteSelector?.addEventListener('change', () => {
   const row = pickById(selectorState.sites, amSiteSelector.value);
   if (!row) return;
-  if ($('#am_site_id')) $('#am_site_id').value = row.id || '';
-  if ($('#am_site_code')) $('#am_site_code').value = row.site_code || '';
-  if ($('#am_site_name')) $('#am_site_name').value = row.site_name || '';
-  if ($('#am_site_address')) $('#am_site_address').value = row.address || '';
-  if ($('#am_site_active')) $('#am_site_active').checked = !!row.is_active;
+  loadSiteIntoManager(row);
 });
 
 amAssignmentSelector?.addEventListener('change', () => {
   const row = pickById(selectorState.assignments, amAssignmentSelector.value);
   if (!row) return;
-  if ($('#am_assignment_id')) $('#am_assignment_id').value = row.id || '';
-  if ($('#am_assignment_site_id')) $('#am_assignment_site_id').value = row.site_id || '';
-  if ($('#am_assignment_profile_id')) $('#am_assignment_profile_id').value = row.profile_id || '';
-  if ($('#am_assignment_role')) $('#am_assignment_role').value = row.assignment_role || 'worker';
-  if ($('#am_assignment_primary')) $('#am_assignment_primary').checked = !!row.is_primary;
-
-  if (amAssignmentSiteSelector) amAssignmentSiteSelector.value = row.site_id || '';
-  if (amAssignmentProfileSelector) amAssignmentProfileSelector.value = row.profile_id || '';
+  loadAssignmentIntoManager(row);
 });
 
 amAssignmentProfileSelector?.addEventListener('change', () => {
@@ -1677,6 +1740,99 @@ amAssignmentProfileSelector?.addEventListener('change', () => {
 
 amAssignmentSiteSelector?.addEventListener('change', () => {
   if ($('#am_assignment_site_id')) $('#am_assignment_site_id').value = amAssignmentSiteSelector.value || '';
+});
+
+function loadProfileIntoManager(row) {
+  if (!row) return;
+  adminDirectoryState.selectedUserId = String(row.id || '');
+  highlightAdminRow(adUsersBody, adminDirectoryState.selectedUserId);
+  if (amProfileSelector) amProfileSelector.value = row.id || '';
+  if (amProfileId) amProfileId.value = row.id || '';
+  if (amProfileName) amProfileName.value = row.full_name || '';
+  if (amProfileRole) amProfileRole.value = row.role || '';
+  if (amProfileActive) amProfileActive.checked = !!row.is_active;
+  setManageSummary(`Loaded profile ${row.email || row.id || ''} into the editor.`);
+}
+
+function loadSiteIntoManager(row) {
+  if (!row) return;
+  adminDirectoryState.selectedSiteId = String(row.id || '');
+  highlightAdminRow(adSitesBody, adminDirectoryState.selectedSiteId);
+  if (amSiteSelector) amSiteSelector.value = row.id || '';
+  if (amSiteId) amSiteId.value = row.id || '';
+  if (amSiteCode) amSiteCode.value = row.site_code || '';
+  if (amSiteName) amSiteName.value = row.site_name || '';
+  if (amSiteAddress) amSiteAddress.value = row.address || '';
+  if (amSiteNotes) amSiteNotes.value = row.notes || '';
+  if (amSiteActive) amSiteActive.checked = !!row.is_active;
+  setManageSummary(`Loaded site ${row.site_code || row.id || ''} into the editor.`);
+}
+
+function loadAssignmentIntoManager(row) {
+  if (!row) return;
+  adminDirectoryState.selectedAssignmentId = String(row.id || '');
+  highlightAdminRow(adAssignmentsBody, adminDirectoryState.selectedAssignmentId);
+  if (amAssignmentSelector) amAssignmentSelector.value = row.id || '';
+  if (amAssignmentId) amAssignmentId.value = row.id || '';
+  if (amAssignmentSiteId) amAssignmentSiteId.value = row.site_id || '';
+  if (amAssignmentProfileId) amAssignmentProfileId.value = row.profile_id || '';
+  if (amAssignmentRole) amAssignmentRole.value = row.assignment_role || 'worker';
+  if (amAssignmentPrimary) amAssignmentPrimary.checked = !!row.is_primary;
+  if (amAssignmentSiteSelector) amAssignmentSiteSelector.value = row.site_id || '';
+  if (amAssignmentProfileSelector) amAssignmentProfileSelector.value = row.profile_id || '';
+  setManageSummary(`Loaded assignment ${row.id || ''} into the editor.`);
+}
+
+function onAdminFilterEnter(e) {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  adLoad?.click();
+}
+
+[adSearch, adSiteId, adProfileId, adLimit].forEach(el => {
+  el?.addEventListener('keydown', onAdminFilterEnter);
+});
+
+Array.from(document.querySelectorAll('[data-admin-mode]')).forEach(btn => {
+  btn.addEventListener('click', () => {
+    const nextMode = btn.getAttribute('data-admin-mode') || 'all';
+    if (adMode) adMode.value = nextMode;
+    updateAdminStats({
+      users: adminDirectoryState.users.length,
+      sites: adminDirectoryState.sites.length,
+      assignments: adminDirectoryState.assignments.length
+    });
+    adLoad?.click();
+  });
+});
+
+adUsersBody?.addEventListener('click', (e) => {
+  const tr = (e.target instanceof Element) ? e.target.closest('tr[data-admin-row-id]') : null;
+  if (!tr) return;
+  const row = adminDirectoryState.users.find(item => String(item.id || '') === String(tr.dataset.adminRowId || ''));
+  if (row) loadProfileIntoManager(row);
+});
+
+adSitesBody?.addEventListener('click', (e) => {
+  const tr = (e.target instanceof Element) ? e.target.closest('tr[data-admin-row-id]') : null;
+  if (!tr) return;
+  const row = adminDirectoryState.sites.find(item => String(item.id || '') === String(tr.dataset.adminRowId || ''));
+  if (row) loadSiteIntoManager(row);
+});
+
+adAssignmentsBody?.addEventListener('click', (e) => {
+  const tr = (e.target instanceof Element) ? e.target.closest('tr[data-admin-row-id]') : null;
+  if (!tr) return;
+  const row = adminDirectoryState.assignments.find(item => String(item.id || '') === String(tr.dataset.adminRowId || ''));
+  if (row) loadAssignmentIntoManager(row);
+});
+
+adMode?.addEventListener('change', () => {
+  updateAdminStats({
+    users: adminDirectoryState.users.length,
+    sites: adminDirectoryState.sites.length,
+    assignments: adminDirectoryState.assignments.length
+  });
 });
 
 adLoad?.addEventListener('click', async () => {
@@ -1932,10 +2088,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   clearAdminDirectoryTables();
   setManageSummary('');
   await refreshAdminSelectors();
+
+  if (location.hash === '#admin' && sb) {
+    try {
+      await fetchAdminDirectory();
+    } catch (err) {
+      console.error('Admin auto-load failed', err);
+    }
+  }
 });
 
 window.addEventListener('hashchange', () => {
   setTimeout(seedAllTables, 0);
+  if (location.hash === '#admin' && sb) {
+    fetchAdminDirectory().catch(err => console.error('Admin hash load failed', err));
+  }
 });
 
 document.addEventListener('visibilitychange', () => {

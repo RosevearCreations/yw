@@ -418,6 +418,161 @@ img{
 }
 
 /* =========================
+   ADMIN DASHBOARD
+========================= */
+.section-heading{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+}
+
+.section-subtitle{
+  margin:.35rem 0 0;
+  color:var(--muted);
+}
+
+.admin-heading-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.card-lite{
+  background:rgba(255,255,255,.025);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:14px;
+}
+
+.admin-stats-grid,
+.admin-directory-grid,
+.admin-management-grid{
+  display:grid;
+  gap:14px;
+}
+
+.admin-stats-grid{
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  margin:16px 0;
+}
+
+.admin-stat-card{
+  background:linear-gradient(180deg, rgba(15,23,42,.9), rgba(15,23,42,.68));
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:14px;
+}
+
+.admin-stat-label{
+  color:var(--muted);
+  font-size:.85rem;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+
+.admin-stat-value{
+  margin-top:8px;
+  font-size:1.9rem;
+  font-weight:800;
+  line-height:1;
+}
+
+.admin-stat-value--small{
+  font-size:1.2rem;
+  text-transform:capitalize;
+}
+
+.admin-stat-help{
+  margin-top:8px;
+  color:var(--muted);
+  font-size:.88rem;
+}
+
+.admin-toolbar{
+  margin:0 0 16px;
+}
+
+.admin-toolbar-row{
+  margin-top:12px;
+  align-items:end;
+}
+
+.inline-check{
+  display:flex;
+  flex-direction:row;
+  align-items:center;
+  gap:.55rem;
+  min-height:42px;
+}
+
+.inline-check input{
+  width:auto;
+}
+
+.admin-quick-filters{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.mini-label{
+  color:var(--muted);
+  font-size:.8rem;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+
+.admin-tip{
+  color:var(--muted);
+  font-size:.92rem;
+  align-self:center;
+}
+
+.admin-directory-grid,
+.admin-management-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+
+.admin-panel-block--full,
+.admin-form-card--full{
+  grid-column:1 / -1;
+}
+
+.panel-heading{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
+}
+
+.panel-heading h3{
+  margin:0;
+}
+
+.panel-heading p{
+  margin:.35rem 0 0;
+  color:var(--muted);
+  font-size:.92rem;
+}
+
+.admin-table-row{
+  cursor:pointer;
+}
+
+.admin-table-row.is-selected{
+  outline:1px solid rgba(56,189,248,.55);
+  background:rgba(56,189,248,.08) !important;
+}
+
+.admin-table-row td:last-child,
+.admin-table-row th:last-child{
+  width:auto;
+}
+
+/* =========================
    ADMIN / REVIEW / DETAIL
 ========================= */
 #sd_payload,
@@ -472,6 +627,11 @@ input[type="file"]{
   .form-footer > *{
     width:100%;
   }
+
+  .admin-directory-grid,
+  .admin-management-grid{
+    grid-template-columns:1fr;
+  }
 }
 
 @media (max-width: 640px){
@@ -509,6 +669,17 @@ input[type="file"]{
   }
 
   .auth-row > *{
+    width:100%;
+  }
+
+  .section-heading,
+  .admin-heading-actions{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .admin-heading-actions > *,
+  .admin-quick-filters .controls > *{
     width:100%;
   }
 }
