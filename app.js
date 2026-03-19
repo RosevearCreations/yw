@@ -11,6 +11,7 @@
    - hand logbook/detail/review UI to js/logbook-ui.js
    - hand Toolbox Talk form to js/forms-toolbox.js
    - hand PPE Check form to js/forms-ppe.js
+   - hand First Aid form to js/forms-firstaid.js
 ========================================================= */
 
 /* =========================
@@ -55,6 +56,7 @@ let adminUI = null;
 let logbookUI = null;
 let toolboxFormUI = null;
 let ppeFormUI = null;
+let firstAidFormUI = null;
 
 /* =========================
    BASIC HELPERS
@@ -411,96 +413,6 @@ async function uploadImagesForSubmission(state, submissionId) {
     await uploadImageViaFunction(submissionId, image);
   }
 }
-
-/* =========================
-   FORM B — FIRST AID
-========================= */
-const faForm = $('#faForm');
-const faDate = $('#fa_date');
-if (faDate) faDate.value = todayISO();
-
-const faTableBody = ensureTBody('faTable');
-const faAddRowBtn = $('#faAddRowBtn');
-
-function addItemRow() {
-  if (!faTableBody) return;
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td><input type="text" class="fa-name" list="fa-catalog" placeholder="Select or type…" required></td>
-    <td><input type="number" class="fa-qty" min="0" value="0"></td>
-    <td><input type="number" class="fa-min" min="0" value="0"></td>
-    <td><input type="date" class="fa-exp"></td>
-    <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
-  `;
-  faTableBody.appendChild(tr);
-}
-
-function seedFirstAid() {
-  if (faTableBody && faTableBody.children.length === 0) {
-    addItemRow();
-    addItemRow();
-  }
-}
-
-faAddRowBtn?.addEventListener('click', addItemRow);
-
-faTableBody?.addEventListener('click', (e) => {
-  const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
-  if (!btn) return;
-  if (btn.dataset.act === 'remove') btn.closest('tr')?.remove();
-});
-
-function within30Days(iso) {
-  if (!iso) return false;
-  const now = new Date();
-  const d = new Date(iso);
-  return ((d.getTime() - now.getTime()) / 86400000) <= 30;
-}
-
-faForm?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-
-  const site = $('#fa_site')?.value?.trim?.() || '';
-  const date = $('#fa_date')?.value || '';
-  const checker = $('#fa_checker')?.value?.trim?.() || '';
-
-  if (!site || !date || !checker) {
-    alert('Please fill Site, Date, and Checked By.');
-    return;
-  }
-
-  const rows = faTableBody ? Array.from(faTableBody.querySelectorAll('tr')) : [];
-  const items = rows.map(tr => {
-    const name = tr.querySelector('.fa-name')?.value?.trim?.() || '';
-    const qty = parseInt(tr.querySelector('.fa-qty')?.value || '0', 10);
-    const min = parseInt(tr.querySelector('.fa-min')?.value || '0', 10);
-    const exp = tr.querySelector('.fa-exp')?.value || null;
-    return { name, quantity: qty, min, expiry: exp };
-  }).filter(i => i.name);
-
-  const flagged = items.some(i =>
-    (i.quantity <= (i.min || 0)) ||
-    (i.expiry && (within30Days(i.expiry) || (new Date(i.expiry) < new Date())))
-  );
-
-  const payload = { site, date, checked_by: checker, items, flagged };
-
-  try {
-    await sendToFunction('B', payload);
-    alert('First aid check submitted.');
-    faForm.reset();
-    if (faDate) faDate.value = todayISO();
-    if (faTableBody) {
-      faTableBody.innerHTML = '';
-      seedFirstAid();
-    }
-  } catch (err) {
-    const outbox = getOutbox();
-    outbox.push({ ts: Date.now(), formType: 'B', payload });
-    setOutbox(outbox);
-    alert('Offline/server error. Saved to Outbox.');
-  }
-});
 
 /* =========================
    FORM C — SITE INSPECTION
@@ -1113,7 +1025,7 @@ amAssignmentDelete?.addEventListener('click', async () => {
 function seedAllTables() {
   toolboxFormUI?.seed?.();
   ppeFormUI?.seed?.();
-  seedFirstAid();
+  firstAidFormUI?.seed?.();
   seedInspection();
   seedDrill();
 }
@@ -1194,6 +1106,23 @@ function initPPEModule() {
 }
 
 /* =========================
+   FIRST AID MODULE
+========================= */
+function initFirstAidModule() {
+  if (!window.YWIFormsFirstAid?.create) return;
+
+  firstAidFormUI = window.YWIFormsFirstAid.create({
+    sendToFunction,
+    getOutbox,
+    setOutbox
+  });
+
+  firstAidFormUI.init().catch((err) => {
+    console.error('First Aid form init failed', err);
+  });
+}
+
+/* =========================
    BOOTSTRAP / STARTUP
 ========================= */
 async function initializeAppShell() {
@@ -1205,6 +1134,7 @@ async function initializeAppShell() {
   if (!logbookUI) initLogbookModule();
   if (!toolboxFormUI) initToolboxModule();
   if (!ppeFormUI) initPPEModule();
+  if (!firstAidFormUI) initFirstAidModule();
 
   const currentAuthState = auth()?.getState?.();
   if (currentAuthState) {
@@ -1252,6 +1182,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   applyDateFallback();
   initToolboxModule();
   initPPEModule();
+  initFirstAidModule();
   initAdminModule();
   initLogbookModule();
   seedAllTables();
