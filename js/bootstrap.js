@@ -6,10 +6,8 @@
 
    Purpose:
    - create shared Supabase client
-   - recover auth session from normal or malformed callback URLs
-   - handle magic-link token fragments even when URL contains
-     both an error hash and a second token hash
-   - expose shared boot helpers for the rest of the app
+   - recover session from normal or malformed auth callback URLs
+   - expose shared boot helpers/state for the app
 ========================================================= */
 
 (function () {
@@ -19,7 +17,7 @@
     window.__SUPABASE_ANON_KEY ||
     '';
 
-  if (!window.supabase || !window.supabase.createClient) {
+  if (!window.supabase?.createClient) {
     console.error('Supabase library is not loaded.');
     return;
   }
@@ -48,7 +46,7 @@
     user: null,
     profile: null,
     role: 'worker',
-    roleLabel: 'worker',
+    roleLabel: 'Worker',
     isAuthenticated: false
   };
 
@@ -60,7 +58,7 @@
     return String(value ?? '').trim();
   }
 
-  function roleLabel(role) {
+  function getRoleLabel(role) {
     const map = {
       worker: 'Worker',
       staff: 'Staff',
@@ -81,53 +79,49 @@
 
     source.split('&').forEach((pair) => {
       if (!pair) return;
+
       const idx = pair.indexOf('=');
       const key = idx >= 0 ? pair.slice(0, idx) : pair;
       const val = idx >= 0 ? pair.slice(idx + 1) : '';
+
       out[decodeURIComponent(key)] = decodeURIComponent(val.replace(/\+/g, ' '));
     });
 
     return out;
   }
 
-  function getAllHashSegments() {
+  function getHashSegments() {
     const href = window.location.href || '';
     const parts = href.split('#');
     return parts.length > 1 ? parts.slice(1) : [];
   }
 
-  function extractBestAuthParams() {
+  function extractAuthParams() {
     const href = window.location.href || '';
     const url = new URL(href);
-
-    const results = [];
-
-    if (url.hash) {
-      results.push(parseQueryStringLike(url.hash));
-    }
-
-    getAllHashSegments().forEach((seg) => {
-      results.push(parseQueryStringLike(seg));
-    });
+    const candidates = [];
 
     if (url.search) {
-      results.push(parseQueryStringLike(url.search));
+      candidates.push(parseQueryStringLike(url.search));
     }
 
-    let merged = {};
-    for (const obj of results) {
-      merged = { ...merged, ...obj };
+    if (url.hash) {
+      candidates.push(parseQueryStringLike(url.hash));
     }
 
-    return merged;
+    getHashSegments().forEach((segment) => {
+      candidates.push(parseQueryStringLike(segment));
+    });
+
+    return candidates.reduce((acc, obj) => ({ ...acc, ...obj }), {});
   }
 
-  function hasTokenSet(obj) {
-    return !!(obj && obj.access_token && obj.refresh_token);
+  function hasTokenSet(params) {
+    return !!(params?.access_token && params?.refresh_token);
   }
 
-  function hasAuthError(obj) {
-    return !!(obj && (obj.error || obj.error_code || obj.error_description));
+  function hasAuthError(params) {
+    return !!(params?.error || params?.error_code || params?.error_description);
   }
 
   function cleanUrlAfterAuth(targetHash = '#toolbox') {
@@ -152,15 +146,16 @@
 
       return data || null;
     } catch (err) {
-      console.warn('Profile lookup threw error:', err);
+      console.warn('Profile lookup error:', err);
       return null;
     }
   }
 
-  async function refreshStateFromSession(session, authError = '') {
+  async function applySession(session, authError = '') {
     state.session = session || null;
     state.user = session?.user || null;
     state.authError = authError || '';
+    state.isAuthenticated = !!session?.access_token;
 
     if (state.user?.id) {
       state.profile = await fetchProfile(state.user.id);
@@ -169,12 +164,11 @@
     }
 
     state.role = state.profile?.role || 'worker';
-    state.roleLabel = roleLabel(state.role);
-    state.isAuthenticated = !!session?.access_token;
+    state.roleLabel = getRoleLabel(state.role);
   }
 
   async function recoverSessionFromUrlIfNeeded() {
-    const params = extractBestAuthParams();
+    const params = extractAuthParams();
     const tokenPresent = hasTokenSet(params);
     const authErrorPresent = hasAuthError(params);
 
@@ -186,13 +180,12 @@
 
       if (error) {
         console.error('setSession failed:', error.message);
-        await refreshStateFromSession(null, error.message || params.error_description || '');
+        await applySession(null, error.message || params.error_description || '');
         return;
       }
 
       state.recoveredFromUrl = true;
-      await refreshStateFromSession(data?.session || null, '');
-
+      await applySession(data?.session || null, '');
       cleanUrlAfterAuth('#toolbox');
       return;
     }
@@ -203,12 +196,12 @@
         params.error_code ||
         params.error ||
         'Authentication failed.';
-      await refreshStateFromSession(null, msg);
+      await applySession(null, msg);
       return;
     }
 
     const { data } = await sb.auth.getSession();
-    await refreshStateFromSession(data?.session || null, '');
+    await applySession(data?.session || null, '');
   }
 
   async function authHeader() {
@@ -220,8 +213,13 @@
   async function refresh() {
     const { data, error } = await sb.auth.refreshSession();
     if (error) throw error;
-    await refreshStateFromSession(data?.session || null, '');
+
+    await applySession(data?.session || null, '');
     return data?.session || null;
+  }
+
+  function getState() {
+    return { ...state };
   }
 
   async function init() {
@@ -230,16 +228,16 @@
     await recoverSessionFromUrlIfNeeded();
 
     sb.auth.onAuthStateChange(async (_event, session) => {
-      await refreshStateFromSession(session || null, '');
+      await applySession(session || null, '');
       dispatch('ywi:auth-changed', {
-        state: { ...state }
+        state: getState()
       });
     });
 
     state.initialized = true;
 
     dispatch('ywi:boot-ready', {
-      state: { ...state }
+      state: getState()
     });
   }
 
@@ -247,14 +245,17 @@
     sb,
     state,
     init,
+    getState,
     authHeader,
     refresh
   };
 
   init().catch((err) => {
     console.error('Bootstrap init failed:', err);
+    state.authError = err?.message || 'Bootstrap failed.';
+
     dispatch('ywi:boot-ready', {
-      state: { ...state, authError: err?.message || 'Bootstrap failed.' }
+      state: getState()
     });
   });
 })();
