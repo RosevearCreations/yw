@@ -5,9 +5,9 @@
    Authentication UI controller
 
    Purpose:
-   - control login / logged-in screen visibility
-   - wait for bootstrap + auth recovery before showing logout state
-   - support magic link, password login, reset password, and logout
+   - manage login / logged-in UI states
+   - wait for bootstrap/auth recovery before showing login
+   - support magic link, password sign-in, reset, and logout
 ========================================================= */
 
 (function () {
@@ -24,6 +24,7 @@
     authInfo: document.getElementById('authInfo'),
     whoami: document.getElementById('whoami'),
     authNotice: document.getElementById('authNotice'),
+    authLoading: document.getElementById('authLoading'),
 
     magicForm: document.getElementById('magicLoginForm'),
     magicEmail: document.getElementById('magicLoginEmail'),
@@ -42,8 +43,9 @@
   };
 
   const uiState = {
-    ready: false,
-    activeTab: 'magic'
+    activeTab: 'magic',
+    bootReady: false,
+    initialized: false
   };
 
   function setNotice(message = '', isError = false) {
@@ -63,13 +65,14 @@
 
   function setBusy(button, busyText) {
     if (!button) return () => {};
-    const original = button.textContent;
+
+    const originalText = button.textContent;
     button.disabled = true;
     if (busyText) button.textContent = busyText;
 
-    return () => {
+    return function restore() {
       button.disabled = false;
-      button.textContent = original;
+      button.textContent = originalText;
     };
   }
 
@@ -89,6 +92,12 @@
     });
   }
 
+  function showLoading(show) {
+    if (!els.authLoading) return;
+    els.authLoading.classList.toggle('is-visible', !!show);
+    els.authLoading.setAttribute('aria-busy', show ? 'true' : 'false');
+  }
+
   function showLoggedOut() {
     if (els.loginView) els.loginView.style.display = '';
     if (els.authInfo) els.authInfo.hidden = true;
@@ -103,34 +112,40 @@
     if (!els.whoami) return;
 
     const email = state?.profile?.email || state?.user?.email || '';
-    const label = state?.roleLabel || state?.role || 'Worker';
+    const roleLabel = state?.roleLabel || state?.role || 'Worker';
+    els.whoami.textContent = email ? `${email} (${roleLabel})` : roleLabel;
+  }
 
-    els.whoami.textContent = email ? `${email} (${label})` : label;
+  function shouldHoldOnLoading(state) {
+    if (state?.pendingAuthResolution) return true;
+    if (!uiState.bootReady && !state?.isAuthenticated) return true;
+    return false;
   }
 
   function render(state) {
-    const pending =
-      !!state?.pendingAuthResolution ||
-      (!state?.isAuthenticated && !state?.bootReady && !uiState.ready);
+    const currentState = state || auth.getState?.() || {};
 
-    if (pending) {
+    if (shouldHoldOnLoading(currentState)) {
+      showLoading(true);
       if (els.loginView) els.loginView.style.display = 'none';
       if (els.authInfo) els.authInfo.hidden = true;
       return;
     }
 
-    renderWhoAmI(state);
+    showLoading(false);
+    renderWhoAmI(currentState);
 
-    if (state?.isAuthenticated) {
+    if (currentState.isAuthenticated) {
       showLoggedIn();
       setNotice('');
-    } else {
-      showLoggedOut();
+      return;
+    }
 
-      const authError = boot?.state?.authError || '';
-      if (authError) {
-        setNotice(authError, true);
-      }
+    showLoggedOut();
+
+    const authError = boot?.state?.authError || '';
+    if (authError) {
+      setNotice(authError, true);
     }
   }
 
@@ -143,7 +158,7 @@
       return;
     }
 
-    const done = setBusy(els.magicBtn, 'Sending...');
+    const restore = setBusy(els.magicBtn, 'Sending...');
     setNotice('');
 
     try {
@@ -153,7 +168,7 @@
       console.error(err);
       setNotice(err?.message || 'Failed to send magic link.', true);
     } finally {
-      done();
+      restore();
     }
   }
 
@@ -168,7 +183,7 @@
       return;
     }
 
-    const done = setBusy(els.passwordBtn, 'Signing In...');
+    const restore = setBusy(els.passwordBtn, 'Signing In...');
     setNotice('');
 
     try {
@@ -178,7 +193,7 @@
       console.error(err);
       setNotice(err?.message || 'Password sign-in failed.', true);
     } finally {
-      done();
+      restore();
     }
   }
 
@@ -192,7 +207,7 @@
       return;
     }
 
-    const done = setBusy(els.passwordForgotBtn, 'Sending...');
+    const restore = setBusy(els.passwordForgotBtn, 'Sending...');
     setNotice('');
 
     try {
@@ -202,12 +217,12 @@
       console.error(err);
       setNotice(err?.message || 'Failed to send password reset email.', true);
     } finally {
-      done();
+      restore();
     }
   }
 
   async function onLogout() {
-    const done = setBusy(els.logoutBtn, 'Logging out...');
+    const restore = setBusy(els.logoutBtn, 'Logging out...');
     setNotice('');
 
     try {
@@ -218,7 +233,7 @@
       console.error(err);
       setNotice(err?.message || 'Logout failed.', true);
     } finally {
-      done();
+      restore();
     }
   }
 
@@ -237,22 +252,22 @@
     els.logoutBtn?.addEventListener('click', onLogout);
 
     document.addEventListener('ywi:boot-ready', (e) => {
-      uiState.ready = true;
-      render(e.detail?.state || auth.getState());
+      uiState.bootReady = true;
+      render(e.detail?.state || auth.getState?.());
     });
 
     document.addEventListener('ywi:auth-changed', (e) => {
-      uiState.ready = true;
-      render(e.detail?.state || auth.getState());
+      render(e.detail?.state || auth.getState?.());
     });
   }
 
   function init() {
+    if (uiState.initialized) return;
+    uiState.initialized = true;
+
     setTab('magic');
     bindEvents();
-
-    const current = auth.getState?.() || {};
-    render(current);
+    render(auth.getState?.());
   }
 
   init();
