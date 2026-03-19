@@ -12,6 +12,7 @@
    - hand Toolbox Talk form to js/forms-toolbox.js
    - hand PPE Check form to js/forms-ppe.js
    - hand First Aid form to js/forms-firstaid.js
+   - hand Site Inspection form to js/forms-inspection.js
 ========================================================= */
 
 /* =========================
@@ -57,6 +58,7 @@ let logbookUI = null;
 let toolboxFormUI = null;
 let ppeFormUI = null;
 let firstAidFormUI = null;
+let inspectionFormUI = null;
 
 /* =========================
    BASIC HELPERS
@@ -413,211 +415,6 @@ async function uploadImagesForSubmission(state, submissionId) {
     await uploadImageViaFunction(submissionId, image);
   }
 }
-
-/* =========================
-   FORM C — SITE INSPECTION
-========================= */
-const inspForm = $('#inspForm');
-const inspDate = $('#insp_date');
-if (inspDate) inspDate.value = todayISO();
-
-const inspRosterBody = ensureTBody('inspRoster');
-const inspHazBody = ensureTBody('inspHazards');
-
-const inspAddWorker = $('#inspAddWorker');
-const inspAddHazard = $('#inspAddHazard');
-const inspApprover = $('#insp_approver');
-const inspApproverOther = $('#insp_approver_other');
-const inspSigCanvas = $('#insp_approver_canvas');
-let inspSigPad = null;
-
-if (window.SignaturePad && inspSigCanvas) {
-  try {
-    inspSigPad = new SignaturePad(inspSigCanvas, { minWidth: 0.7, maxWidth: 2.2, throttle: 8 });
-  } catch (err) {
-    console.warn('SignaturePad init failed for approval', err);
-  }
-}
-
-$('#inspClearSig')?.addEventListener('click', () => {
-  if (inspSigPad?.clear) inspSigPad.clear();
-});
-
-function addInspWorkerRow() {
-  if (!inspRosterBody) return;
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td><input type="text" class="iw-name" placeholder="Full name" required></td>
-    <td>
-      <select class="iw-role">
-        <option value="worker">Worker</option>
-        <option value="staff">Staff</option>
-        <option value="foreman">Foreman</option>
-        <option value="supervisor">Supervisor</option>
-        <option value="visitor">Visitor</option>
-      </select>
-    </td>
-    <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
-  `;
-  inspRosterBody.appendChild(tr);
-}
-
-function addInspHazardRow() {
-  if (!inspHazBody) return;
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td><input type="text" class="hz-desc" placeholder="Describe hazard" required></td>
-    <td><input type="text" class="hz-loc" placeholder="Where?"></td>
-    <td>
-      <select class="hz-risk">
-        <option value="Low">Low</option>
-        <option value="Medium">Medium</option>
-        <option value="High">High</option>
-      </select>
-    </td>
-    <td><input type="text" class="hz-action" placeholder="Action to fix"></td>
-    <td><input type="text" class="hz-assigned" placeholder="Assigned to"></td>
-    <td style="text-align:center"><input type="checkbox" class="hz-done"></td>
-    <td><input type="text" class="hz-doneby" placeholder="Completed by"></td>
-    <td><input type="date" class="hz-donedate"></td>
-    <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
-  `;
-  inspHazBody.appendChild(tr);
-}
-
-function seedInspection() {
-  if (inspRosterBody && inspRosterBody.children.length === 0) addInspWorkerRow();
-  if (inspHazBody && inspHazBody.children.length === 0) addInspHazardRow();
-}
-
-inspAddWorker?.addEventListener('click', addInspWorkerRow);
-inspAddHazard?.addEventListener('click', addInspHazardRow);
-
-inspRosterBody?.addEventListener('click', (e) => {
-  const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
-  if (!btn) return;
-  if (btn.dataset.act === 'remove') btn.closest('tr')?.remove();
-});
-
-inspHazBody?.addEventListener('click', (e) => {
-  const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
-  if (!btn) return;
-  if (btn.dataset.act === 'remove') btn.closest('tr')?.remove();
-});
-
-const inspImageFiles = $('#insp_image_files');
-const inspImageType = $('#insp_image_type');
-const inspImageCaption = $('#insp_image_caption');
-const inspImageAddBtn = $('#insp_image_add');
-const inspImageBody = $('#insp_images_table')?.querySelector('tbody') || null;
-const inspImageState = [];
-wireImageRemover(inspImageState, inspImageBody);
-
-inspImageAddBtn?.addEventListener('click', () => {
-  const files = Array.from(inspImageFiles?.files || []);
-  if (!files.length) {
-    alert('Choose at least one image file.');
-    return;
-  }
-
-  files.forEach(file => {
-    inspImageState.push({
-      file,
-      image_type: inspImageType?.value || 'general',
-      caption: inspImageCaption?.value?.trim?.() || ''
-    });
-  });
-
-  renderImageRows(inspImageState, inspImageBody);
-  if (inspImageFiles) inspImageFiles.value = '';
-  if (inspImageCaption) inspImageCaption.value = '';
-});
-
-inspForm?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-
-  const site = $('#insp_site')?.value?.trim?.() || '';
-  const date = $('#insp_date')?.value || '';
-  const inspector = $('#insp_inspector')?.value?.trim?.() || '';
-
-  if (!site || !date || !inspector) {
-    alert('Please fill Site, Date, and Inspector.');
-    return;
-  }
-
-  const roster = inspRosterBody ? Array.from(inspRosterBody.querySelectorAll('tr')).map(tr => ({
-    name: tr.querySelector('.iw-name')?.value?.trim?.() || '',
-    role_on_site: tr.querySelector('.iw-role')?.value || 'worker'
-  })).filter(r => r.name) : [];
-
-  const hazards = inspHazBody ? Array.from(inspHazBody.querySelectorAll('tr')).map(tr => ({
-    hazard: tr.querySelector('.hz-desc')?.value?.trim?.() || '',
-    location: tr.querySelector('.hz-loc')?.value?.trim?.() || '',
-    risk: tr.querySelector('.hz-risk')?.value || 'Low',
-    action: tr.querySelector('.hz-action')?.value?.trim?.() || '',
-    assigned_to: tr.querySelector('.hz-assigned')?.value?.trim?.() || '',
-    completed: !!tr.querySelector('.hz-done')?.checked,
-    completed_by: tr.querySelector('.hz-doneby')?.value?.trim?.() || '',
-    completed_date: tr.querySelector('.hz-donedate')?.value || null
-  })).filter(h => h.hazard) : [];
-
-  let approver_name = inspApprover ? inspApprover.value : '';
-  if (approver_name === 'Other') {
-    const other = inspApproverOther?.value?.trim?.() || '';
-    if (!other) {
-      alert('Please type the approver name.');
-      return;
-    }
-    approver_name = other;
-  }
-
-  if (!inspSigPad || (inspSigPad.isEmpty && inspSigPad.isEmpty())) {
-    alert('HSE approval signature is required.');
-    return;
-  }
-
-  const payload = {
-    site,
-    date,
-    inspector,
-    roster,
-    hazards,
-    openHazards: hazards.some(h => !h.completed),
-    approved: true,
-    approver_name,
-    approver_signature_png: inspSigPad.toDataURL('image/png')
-  };
-
-  try {
-    const resp = await sendToFunction('C', payload);
-    const submissionId = resp?.id;
-
-    if (submissionId && inspImageState.length) {
-      await uploadImagesForSubmission(inspImageState, submissionId);
-    }
-
-    alert('Site inspection submitted.');
-    inspForm.reset();
-    if (inspDate) inspDate.value = todayISO();
-    if (inspRosterBody) inspRosterBody.innerHTML = '';
-    if (inspHazBody) inspHazBody.innerHTML = '';
-    seedInspection();
-    if (inspSigPad?.clear) inspSigPad.clear();
-    if (inspApprover) inspApprover.value = 'Krista';
-    if (inspApproverOther) inspApproverOther.value = '';
-    clearImageState(inspImageState, inspImageBody, inspImageFiles, inspImageCaption);
-  } catch (err) {
-    const outbox = getOutbox();
-    outbox.push({
-      ts: Date.now(),
-      formType: 'C',
-      payload,
-      localImages: [...inspImageState]
-    });
-    setOutbox(outbox);
-    alert('Offline/server error. Saved to Outbox.');
-  }
-});
 
 /* =========================
    FORM A — EMERGENCY DRILL
@@ -1026,7 +823,7 @@ function seedAllTables() {
   toolboxFormUI?.seed?.();
   ppeFormUI?.seed?.();
   firstAidFormUI?.seed?.();
-  seedInspection();
+  inspectionFormUI?.seed?.();
   seedDrill();
 }
 
@@ -1123,6 +920,24 @@ function initFirstAidModule() {
 }
 
 /* =========================
+   INSPECTION MODULE
+========================= */
+function initInspectionModule() {
+  if (!window.YWIFormsInspection?.create) return;
+
+  inspectionFormUI = window.YWIFormsInspection.create({
+    sendToFunction,
+    uploadImagesForSubmission,
+    getOutbox,
+    setOutbox
+  });
+
+  inspectionFormUI.init().catch((err) => {
+    console.error('Inspection form init failed', err);
+  });
+}
+
+/* =========================
    BOOTSTRAP / STARTUP
 ========================= */
 async function initializeAppShell() {
@@ -1135,6 +950,7 @@ async function initializeAppShell() {
   if (!toolboxFormUI) initToolboxModule();
   if (!ppeFormUI) initPPEModule();
   if (!firstAidFormUI) initFirstAidModule();
+  if (!inspectionFormUI) initInspectionModule();
 
   const currentAuthState = auth()?.getState?.();
   if (currentAuthState) {
@@ -1183,6 +999,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initToolboxModule();
   initPPEModule();
   initFirstAidModule();
+  initInspectionModule();
   initAdminModule();
   initLogbookModule();
   seedAllTables();
