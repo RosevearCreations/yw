@@ -6,8 +6,9 @@
 
    Purpose:
    - use shared bootstrap/auth layer
-   - keep forms, logbook, review, and admin save actions working
-   - hand admin dashboard UI behavior to js/admin-ui.js
+   - keep forms and uploads working
+   - hand admin dashboard UI to js/admin-ui.js
+   - hand logbook/detail/review UI to js/logbook-ui.js
 ========================================================= */
 
 /* =========================
@@ -49,6 +50,7 @@ const appState = {
 };
 
 let adminUI = null;
+let logbookUI = null;
 
 /* =========================
    BASIC HELPERS
@@ -110,29 +112,6 @@ function setNotice(el, text) {
   }
 }
 
-function fmtDateTime(value) {
-  if (!value) return '';
-  try {
-    return new Date(value).toLocaleString();
-  } catch {
-    return String(value);
-  }
-}
-
-function slugifyToken(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-function statusChip(label) {
-  const safe = escHtml(label || 'submitted');
-  const slug = slugifyToken(label || 'submitted');
-  return `<span class="status-chip status-chip--${slug}">${safe}</span>`;
-}
-
 function boot() {
   return window.YWI_BOOT || null;
 }
@@ -170,6 +149,10 @@ function applyRoleVisibility() {
     appState.adminLocked = !!adminUI.state?.locked;
   } else {
     appState.adminLocked = role !== 'admin';
+  }
+
+  if (logbookUI?.applyRoleVisibility) {
+    logbookUI.applyRoleVisibility();
   }
 }
 
@@ -273,6 +256,10 @@ async function uploadFormDataFetch(url, formData) {
 
 async function sendToFunction(formType, payload) {
   return jsonFetch(FUNCTION_URL, { body: { formType, payload } });
+}
+
+async function fetchLogData(payload) {
+  return jsonFetch(LIST_URL, { body: payload });
 }
 
 async function saveSubmissionReview(payload) {
@@ -1114,330 +1101,6 @@ drForm?.addEventListener('submit', async (e) => {
 });
 
 /* =========================
-   LOGBOOK
-========================= */
-const lgSite = $('#lg_site');
-const lgFrom = $('#lg_from');
-const lgTo = $('#lg_to');
-const lgForm = $('#lg_form');
-const lgStatus = $('#lg_status');
-const lgLoad = $('#lg_load');
-const lgExport = $('#lg_export');
-const lgBody = $('#lg_table')?.querySelector('tbody') || null;
-
-window._logRows = window._logRows || [];
-window._logRole = window._logRole || '';
-
-function fmtSummary(row) {
-  const t = row.form_type;
-  const p = row.payload || {};
-  if (t === 'E') return `Leader: ${p.submitted_by || ''}; Attendees: ${Array.isArray(p.attendees) ? p.attendees.length : 0}`;
-  if (t === 'D') return `Checked by: ${p.checked_by || ''}; Non-compliance: ${p.nonCompliant ? 'YES' : 'No'}`;
-  if (t === 'B') return `Checked by: ${p.checked_by || ''}; Flagged: ${p.flagged ? 'YES' : 'No'}`;
-  if (t === 'C') return `Inspector: ${p.inspector || ''}; Open hazards: ${p.openHazards ? 'YES' : 'No'}`;
-  if (t === 'A') return `Supervisor: ${p.supervisor || ''}; Issues: ${p.issues ? 'YES' : 'No'}`;
-  return '';
-}
-
-function renderRows(rows) {
-  if (!lgBody) return;
-  lgBody.innerHTML = '';
-
-  const canReview = ['site_leader', 'supervisor', 'hse', 'admin', 'job_admin', 'onsite_admin'].includes(appState.currentRole || window._logRole || '');
-
-  rows.forEach(r => {
-    const tr = document.createElement('tr');
-    const d = (r.date || '').slice(0, 10);
-
-    tr.innerHTML = `
-      <td>${escHtml(r.id)}</td>
-      <td>${escHtml(d)}</td>
-      <td>${escHtml(r.form_type)}</td>
-      <td>${escHtml(r.site || '')}</td>
-      <td>${statusChip(r.status || 'submitted')}</td>
-      <td>${escHtml(fmtSummary(r))}</td>
-      <td>
-        <div class="controls" style="margin-bottom:8px;">
-          <button type="button" data-detail-id="${escHtml(r.id)}">View Detail</button>
-          ${canReview ? `<button type="button" data-review-id="${escHtml(r.id)}">Review</button>` : ''}
-        </div>
-        <details>
-          <summary>Quick View</summary>
-          <pre style="white-space:pre-wrap; word-break:break-word; max-width:60ch;">${escHtml(JSON.stringify(r.payload, null, 2))}</pre>
-        </details>
-      </td>
-    `;
-    lgBody.appendChild(tr);
-  });
-}
-
-async function fetchLog() {
-  if (!appState.isAuthenticated) {
-    alert('Please sign in to load the logbook.');
-    return;
-  }
-
-  const body = {
-    site: (lgSite && lgSite.value.trim()) || undefined,
-    formType: (lgForm && lgForm.value) || undefined,
-    from: (lgFrom && lgFrom.value) || undefined,
-    to: (lgTo && lgTo.value) || undefined,
-    status: (lgStatus && lgStatus.value) || undefined,
-    limit: 100
-  };
-
-  const data = await jsonFetch(LIST_URL, { body });
-  if (!data.ok) throw new Error(data.error || 'load_failed');
-
-  window._logRows = data.rows || [];
-  window._logRole = data.role || appState.currentRole || '';
-  renderRows(window._logRows);
-}
-
-function toCSV(rows) {
-  const header = ['id', 'date', 'form_type', 'site', 'status', 'summary'];
-  const lines = [header.join(',')];
-  const esc = v => `"${String(v).replaceAll('"', '""')}"`;
-
-  rows.forEach(r => {
-    const row = [
-      r.id,
-      (r.date || '').slice(0, 10),
-      r.form_type,
-      r.site || '',
-      r.status || '',
-      fmtSummary(r)
-    ];
-    lines.push(row.map(esc).join(','));
-  });
-
-  return lines.join('\n');
-}
-
-if (lgLoad && !lgLoad.dataset.bound) {
-  lgLoad.dataset.bound = '1';
-  lgLoad.addEventListener('click', async () => {
-    try {
-      await fetchLog();
-    } catch (err) {
-      console.error(err);
-      alert('Failed to load log.');
-    }
-  });
-}
-
-lgExport?.addEventListener('click', () => {
-  const rows = window._logRows || [];
-  if (!rows.length) {
-    alert('Nothing to export. Load the log first.');
-    return;
-  }
-
-  const blob = new Blob([toCSV(rows)], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'ywi-log.csv';
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-});
-
-/* =========================
-   SUBMISSION DETAIL
-========================= */
-const sdSubmissionId = $('#sd_submission_id');
-const sdFormType = $('#sd_form_type');
-const sdStatus = $('#sd_status');
-const sdSite = $('#sd_site');
-const sdDate = $('#sd_date');
-const sdSubmittedBy = $('#sd_submitted_by');
-const sdReviewedAt = $('#sd_reviewed_at');
-const sdReviewedBy = $('#sd_reviewed_by');
-const sdAdminNotes = $('#sd_admin_notes');
-const sdPayload = $('#sd_payload');
-const sdReviewsBody = $('#sd_reviews_table')?.querySelector('tbody') || null;
-const sdImagesBody = $('#sd_images_table')?.querySelector('tbody') || null;
-const sdSummary = $('#sd_summary');
-const sdClear = $('#sd_clear');
-
-function clearSubmissionDetail() {
-  if (sdSubmissionId) sdSubmissionId.value = '';
-  if (sdFormType) sdFormType.value = '';
-  if (sdStatus) sdStatus.value = '';
-  if (sdSite) sdSite.value = '';
-  if (sdDate) sdDate.value = '';
-  if (sdSubmittedBy) sdSubmittedBy.value = '';
-  if (sdReviewedAt) sdReviewedAt.value = '';
-  if (sdReviewedBy) sdReviewedBy.value = '';
-  if (sdAdminNotes) sdAdminNotes.value = '';
-  if (sdPayload) sdPayload.value = '';
-  if (sdReviewsBody) sdReviewsBody.innerHTML = '';
-  if (sdImagesBody) sdImagesBody.innerHTML = '';
-  setNotice(sdSummary, '');
-}
-
-function renderSubmissionReviews(rows) {
-  if (!sdReviewsBody) return;
-  sdReviewsBody.innerHTML = '';
-
-  rows.forEach(row => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${escHtml(row.id || '')}</td>
-      <td>${escHtml(row.review_action || '')}</td>
-      <td>${escHtml(row.reviewer_id || '')}</td>
-      <td>${escHtml(fmtDateTime(row.created_at))}</td>
-      <td>${escHtml(row.review_note || '')}</td>
-    `;
-    sdReviewsBody.appendChild(tr);
-  });
-}
-
-function renderSubmissionImages(rows) {
-  if (!sdImagesBody) return;
-  sdImagesBody.innerHTML = '';
-
-  rows.forEach(row => {
-    const preview = storagePreviewUrl(row.file_path);
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>
-        ${preview
-          ? `<img src="${escHtml(preview)}" alt="submission image" style="width:160px;max-width:100%;height:auto;border-radius:8px;border:1px solid rgba(255,255,255,.12);" />`
-          : ''}
-      </td>
-      <td>${escHtml(row.image_type || '')}</td>
-      <td>
-        <div>${escHtml(row.file_name || '')}</div>
-        <div style="color:#9ca3af;font-size:.85rem;">${escHtml(row.file_path || '')}</div>
-      </td>
-      <td>${escHtml(row.caption || '')}</td>
-      <td>${escHtml(fmtDateTime(row.created_at))}</td>
-    `;
-    sdImagesBody.appendChild(tr);
-  });
-}
-
-async function loadSubmissionDetail(submissionId) {
-  const data = await fetchSubmissionDetail(submissionId);
-  if (!data?.ok) throw new Error(data?.error || 'Detail load failed');
-
-  const s = data.submission || {};
-
-  if (sdSubmissionId) sdSubmissionId.value = String(s.id || '');
-  if (sdFormType) sdFormType.value = s.form_type || '';
-  if (sdStatus) sdStatus.value = s.status || '';
-  if (sdSite) sdSite.value = s.site || '';
-  if (sdDate) sdDate.value = s.date || '';
-  if (sdSubmittedBy) sdSubmittedBy.value = s.submitted_by || '';
-  if (sdReviewedAt) sdReviewedAt.value = fmtDateTime(s.reviewed_at);
-  if (sdReviewedBy) sdReviewedBy.value = s.reviewed_by || '';
-  if (sdAdminNotes) sdAdminNotes.value = s.admin_notes || '';
-  if (sdPayload) sdPayload.value = JSON.stringify(s.payload || {}, null, 2);
-
-  renderSubmissionReviews(data.reviews || []);
-  renderSubmissionImages(data.images || []);
-
-  setNotice(sdSummary, `Loaded submission #${s.id} with ${data.reviews?.length || 0} review entries and ${data.images?.length || 0} images.`);
-}
-
-lgBody?.addEventListener('click', async (e) => {
-  const detailBtn = (e.target instanceof Element) ? e.target.closest('button[data-detail-id]') : null;
-  if (detailBtn) {
-    const id = Number(detailBtn.dataset.detailId || 0);
-    if (!id) return;
-
-    try {
-      await loadSubmissionDetail(id);
-      location.hash = '#log';
-    } catch (err) {
-      console.error(err);
-      alert('Failed to load submission detail.');
-    }
-    return;
-  }
-
-  const reviewBtn = (e.target instanceof Element) ? e.target.closest('button[data-review-id]') : null;
-  if (reviewBtn) {
-    const id = Number(reviewBtn.dataset.reviewId || 0);
-    const row = (window._logRows || []).find(r => Number(r.id) === id);
-    if (!row) return;
-    setReviewPanelFromRow(row);
-    location.hash = '#log';
-  }
-});
-
-sdClear?.addEventListener('click', clearSubmissionDetail);
-
-/* =========================
-   REVIEW PANEL
-========================= */
-const rvSubmissionId = $('#rv_submission_id');
-const rvStatus = $('#rv_status');
-const rvAction = $('#rv_action');
-const rvNote = $('#rv_note');
-const rvAdminNotes = $('#rv_admin_notes');
-const rvSubmit = $('#rv_submit');
-const rvClear = $('#rv_clear');
-const rvSummary = $('#rv_summary');
-
-function clearReviewPanel() {
-  if (rvSubmissionId) rvSubmissionId.value = '';
-  if (rvStatus) rvStatus.value = '';
-  if (rvAction) rvAction.value = 'commented';
-  if (rvNote) rvNote.value = '';
-  if (rvAdminNotes) rvAdminNotes.value = '';
-  setNotice(rvSummary, '');
-}
-
-function setReviewPanelFromRow(row) {
-  if (!row) return;
-  if (rvSubmissionId) rvSubmissionId.value = String(row.id || '');
-  if (rvStatus) rvStatus.value = row.status || '';
-  if (rvAction) rvAction.value = 'commented';
-  if (rvNote) rvNote.value = '';
-  if (rvAdminNotes) rvAdminNotes.value = row.admin_notes || '';
-  setNotice(rvSummary, `Selected submission #${row.id} | ${row.form_type} | ${row.site || ''} | ${row.status || 'submitted'}`);
-}
-
-rvClear?.addEventListener('click', clearReviewPanel);
-
-rvSubmit?.addEventListener('click', async () => {
-  const submissionId = Number(rvSubmissionId?.value || 0);
-  const status = rvStatus?.value || '';
-  const reviewAction = rvAction?.value || 'commented';
-  const reviewNote = rvNote?.value?.trim?.() || '';
-  const adminNotes = rvAdminNotes?.value ?? '';
-
-  if (!submissionId) {
-    alert('Select a submission from the logbook first.');
-    return;
-  }
-
-  try {
-    const resp = await saveSubmissionReview({
-      submission_id: submissionId,
-      status,
-      review_action: reviewAction,
-      review_note: reviewNote,
-      admin_notes: adminNotes
-    });
-
-    if (!resp?.ok) throw new Error(resp?.error || 'Review save failed');
-
-    setNotice(rvSummary, `Review saved for submission #${submissionId}.`);
-    await fetchLog();
-    await loadSubmissionDetail(submissionId);
-
-    const row = (window._logRows || []).find(r => Number(r.id) === submissionId);
-    if (row) setReviewPanelFromRow(row);
-  } catch (err) {
-    console.error(err);
-    alert('Failed to save review.');
-  }
-});
-
-/* =========================
    ADMIN MANAGEMENT ACTIONS
 ========================= */
 const amProfileId = $('#am_profile_id');
@@ -1703,18 +1366,34 @@ function initAdminModule() {
 }
 
 /* =========================
+   LOGBOOK MODULE
+========================= */
+function initLogbookModule() {
+  if (!window.YWILogbookUI?.create) return;
+
+  logbookUI = window.YWILogbookUI.create({
+    fetchLogData,
+    fetchSubmissionDetail,
+    saveSubmissionReview,
+    storagePreviewUrl,
+    getCurrentRole: () => appState.currentRole
+  });
+
+  logbookUI.init().catch((err) => {
+    console.error('Logbook UI init failed', err);
+  });
+}
+
+/* =========================
    BOOTSTRAP / STARTUP
 ========================= */
 async function initializeAppShell() {
   applyDateFallback();
   seedAllTables();
-  clearSubmissionDetail();
-  clearReviewPanel();
   setManageSummary('');
 
-  if (!adminUI) {
-    initAdminModule();
-  }
+  if (!adminUI) initAdminModule();
+  if (!logbookUI) initLogbookModule();
 
   const currentAuthState = auth()?.getState?.();
   if (currentAuthState) {
@@ -1752,21 +1431,18 @@ document.addEventListener('ywi:auth-changed', async (e) => {
       console.error('Admin auth refresh failed', err);
     }
   } else if (!appState.isAuthenticated) {
-    clearSubmissionDetail();
-    clearReviewPanel();
-    if (adminUI?.clearDirectory) {
-      adminUI.clearDirectory();
-    }
+    if (adminUI?.clearDirectory) adminUI.clearDirectory();
+    if (logbookUI?.clearSubmissionDetail) logbookUI.clearSubmissionDetail();
+    if (logbookUI?.clearReviewPanel) logbookUI.clearReviewPanel();
   }
 });
 
 document.addEventListener('DOMContentLoaded', async () => {
   applyDateFallback();
   seedAllTables();
-  clearSubmissionDetail();
-  clearReviewPanel();
   setManageSummary('');
   initAdminModule();
+  initLogbookModule();
   applyRoleVisibility();
 });
 
