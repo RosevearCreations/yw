@@ -2,206 +2,259 @@
 
 /* =========================================================
    js/bootstrap.js
-   Application bootstrap / startup layer
+   YWI bootstrap / Supabase session recovery
 
    Purpose:
-   - create Supabase client once
-   - initialize shared auth service
-   - initialize auth UI
-   - expose app-wide globals for gradual refactor
-   - emit auth lifecycle events for other modules
+   - create shared Supabase client
+   - recover auth session from normal or malformed callback URLs
+   - handle magic-link token fragments even when URL contains
+     both an error hash and a second token hash
+   - expose shared boot helpers for the rest of the app
 ========================================================= */
 
 (function () {
-  const CONFIG = {
-    supabaseUrl: 'https://jmqvkgiqlimdhcofwkxr.supabase.co',
-    supabaseKey: 'sb_publishable_Xyg1zQU9_vsAaME9BeHm_w_RRgtPs_e',
-    authStorageKey: 'ywi-auth',
-    profileTable: 'profiles',
-    defaultRouteAfterLogin: '#toolbox',
-    idleTimeoutMs: 30 * 60 * 1000
+  const SUPABASE_URL = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
+  const SUPABASE_ANON_KEY =
+    window.SUPABASE_ANON_KEY ||
+    window.__SUPABASE_ANON_KEY ||
+    '';
+
+  if (!window.supabase || !window.supabase.createClient) {
+    console.error('Supabase library is not loaded.');
+    return;
+  }
+
+  if (!SUPABASE_ANON_KEY) {
+    console.error('Missing Supabase anon key.');
+    return;
+  }
+
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
+  });
+
+  window.YWI_SB = sb;
+  window._sb = sb;
+
+  const state = {
+    initialized: false,
+    recoveredFromUrl: false,
+    authError: '',
+    session: null,
+    user: null,
+    profile: null,
+    role: 'worker',
+    roleLabel: 'worker',
+    isAuthenticated: false
   };
 
-  function dispatchAppEvent(name, detail = {}) {
+  function dispatch(name, detail = {}) {
     document.dispatchEvent(new CustomEvent(name, { detail }));
   }
 
-  function normalizeHashRoute(hash) {
-    const value = String(hash || '');
-    const cleaned = value.startsWith('#') ? value : `#${value || 'toolbox'}`;
-    const raw = cleaned.slice(1);
-
-    if (/^(access_token|refresh_token|expires_at|expires_in|token_type|type|error|code)=/i.test(raw)) {
-      return CONFIG.defaultRouteAfterLogin;
-    }
-
-    return cleaned || CONFIG.defaultRouteAfterLogin;
+  function safeText(value) {
+    return String(value ?? '').trim();
   }
 
-  function ensureRoute() {
-    const safeHash = normalizeHashRoute(window.location.hash || CONFIG.defaultRouteAfterLogin);
-    if (window.location.hash !== safeHash) {
-      history.replaceState({}, '', window.location.pathname + safeHash);
-    }
-  }
-
-  function createSupabaseClient() {
-    if (!window.supabase?.createClient) {
-      throw new Error('Supabase library is not loaded.');
-    }
-
-    return window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        storageKey: CONFIG.authStorageKey
-      }
-    });
-  }
-
-  function setIdleLogout(auth) {
-    if (!auth || !CONFIG.idleTimeoutMs || CONFIG.idleTimeoutMs < 1) return;
-
-    let idleTimer = null;
-
-    const resetIdle = () => {
-      clearTimeout(idleTimer);
-      idleTimer = setTimeout(async () => {
-        try {
-          if (auth.isAuthenticated()) {
-            await auth.signOut();
-          }
-        } catch (err) {
-          console.error('Idle logout failed.', err);
-        }
-      }, CONFIG.idleTimeoutMs);
+  function roleLabel(role) {
+    const map = {
+      worker: 'Worker',
+      staff: 'Staff',
+      onsite_admin: 'Onsite Admin',
+      job_admin: 'Job Admin',
+      site_leader: 'Site Leader',
+      supervisor: 'Supervisor',
+      hse: 'HSE',
+      admin: 'Admin'
     };
+    return map[role] || role || 'Worker';
+  }
 
-    ['click', 'mousemove', 'keydown', 'touchstart', 'scroll'].forEach((evt) => {
-      window.addEventListener(evt, resetIdle, { passive: true });
+  function parseQueryStringLike(str) {
+    const out = {};
+    const source = safeText(str).replace(/^[?#&]+/, '');
+    if (!source) return out;
+
+    source.split('&').forEach((pair) => {
+      if (!pair) return;
+      const idx = pair.indexOf('=');
+      const key = idx >= 0 ? pair.slice(0, idx) : pair;
+      const val = idx >= 0 ? pair.slice(idx + 1) : '';
+      out[decodeURIComponent(key)] = decodeURIComponent(val.replace(/\+/g, ' '));
     });
 
-    resetIdle();
+    return out;
   }
 
-  function buildBootObject({ sb, auth, authUI }) {
-    return {
-      config: { ...CONFIG },
-      sb,
-      auth,
-      authUI,
-
-      async getAccessToken() {
-        return auth.getAccessToken();
-      },
-
-      async authHeader() {
-        const token = await auth.getAccessToken();
-        return token ? { Authorization: `Bearer ${token}` } : {};
-      },
-
-      currentUser() {
-        return auth.getUser();
-      },
-
-      currentProfile() {
-        return auth.getProfile();
-      },
-
-      currentRole() {
-        return auth.getRole();
-      },
-
-      can(role) {
-        return auth.can(role);
-      }
-    };
+  function getAllHashSegments() {
+    const href = window.location.href || '';
+    const parts = href.split('#');
+    return parts.length > 1 ? parts.slice(1) : [];
   }
 
-  async function start() {
+  function extractBestAuthParams() {
+    const href = window.location.href || '';
+    const url = new URL(href);
+
+    const results = [];
+
+    if (url.hash) {
+      results.push(parseQueryStringLike(url.hash));
+    }
+
+    getAllHashSegments().forEach((seg) => {
+      results.push(parseQueryStringLike(seg));
+    });
+
+    if (url.search) {
+      results.push(parseQueryStringLike(url.search));
+    }
+
+    let merged = {};
+    for (const obj of results) {
+      merged = { ...merged, ...obj };
+    }
+
+    return merged;
+  }
+
+  function hasTokenSet(obj) {
+    return !!(obj && obj.access_token && obj.refresh_token);
+  }
+
+  function hasAuthError(obj) {
+    return !!(obj && (obj.error || obj.error_code || obj.error_description));
+  }
+
+  function cleanUrlAfterAuth(targetHash = '#toolbox') {
+    const clean = `${window.location.origin}${window.location.pathname}${targetHash}`;
+    window.history.replaceState({}, document.title, clean);
+  }
+
+  async function fetchProfile(userId) {
+    if (!userId) return null;
+
     try {
-      ensureRoute();
+      const { data, error } = await sb
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
 
-      const sb = createSupabaseClient();
-      const auth = window.YWIAuth.create({
-        sb,
-        profileTable: CONFIG.profileTable
-      });
-
-      const authUI = window.YWIAuthUI.create({
-        auth
-      });
-
-      const boot = buildBootObject({ sb, auth, authUI });
-
-      window.YWI_CONFIG = { ...CONFIG };
-      window.YWI_SB = sb;
-      window.YWI_AUTH = auth;
-      window.YWI_AUTH_UI = authUI;
-      window.YWI_BOOT = boot;
-
-      /* backward compatibility for older code still using window._sb */
-      window._sb = sb;
-
-      auth.onChange((state) => {
-        dispatchAppEvent('ywi:auth-changed', {
-          state,
-          role: state.role,
-          roleLabel: state.roleLabel,
-          isAuthenticated: state.isAuthenticated,
-          profile: state.profile,
-          user: state.user
-        });
-
-        if (state.isAuthenticated) {
-          dispatchAppEvent('ywi:user-ready', {
-            state,
-            profile: state.profile,
-            role: state.role
-          });
-        }
-      });
-
-      dispatchAppEvent('ywi:boot-started', {
-        config: { ...CONFIG }
-      });
-
-      if (authUI?.init) {
-        await authUI.init();
-      } else {
-        await auth.init();
+      if (error) {
+        console.warn('Profile lookup failed:', error.message);
+        return null;
       }
 
-      setIdleLogout(auth);
-
-      dispatchAppEvent('ywi:boot-ready', {
-        config: { ...CONFIG },
-        role: auth.getRole(),
-        isAuthenticated: auth.isAuthenticated(),
-        profile: auth.getProfile()
-      });
-
-      console.info('YWI bootstrap ready.');
+      return data || null;
     } catch (err) {
-      console.error('YWI bootstrap failed.', err);
-
-      dispatchAppEvent('ywi:boot-error', {
-        message: err?.message || 'Unknown bootstrap error'
-      });
-
-      const authNotice = document.getElementById('authNotice');
-      if (authNotice) {
-        authNotice.style.display = 'block';
-        authNotice.textContent = `Startup error: ${err?.message || 'Could not initialize app.'}`;
-        authNotice.setAttribute('data-state', 'error');
-      }
+      console.warn('Profile lookup threw error:', err);
+      return null;
     }
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', start, { once: true });
-  } else {
-    start();
+  async function refreshStateFromSession(session, authError = '') {
+    state.session = session || null;
+    state.user = session?.user || null;
+    state.authError = authError || '';
+
+    if (state.user?.id) {
+      state.profile = await fetchProfile(state.user.id);
+    } else {
+      state.profile = null;
+    }
+
+    state.role = state.profile?.role || 'worker';
+    state.roleLabel = roleLabel(state.role);
+    state.isAuthenticated = !!session?.access_token;
   }
+
+  async function recoverSessionFromUrlIfNeeded() {
+    const params = extractBestAuthParams();
+    const tokenPresent = hasTokenSet(params);
+    const authErrorPresent = hasAuthError(params);
+
+    if (tokenPresent) {
+      const { data, error } = await sb.auth.setSession({
+        access_token: params.access_token,
+        refresh_token: params.refresh_token
+      });
+
+      if (error) {
+        console.error('setSession failed:', error.message);
+        await refreshStateFromSession(null, error.message || params.error_description || '');
+        return;
+      }
+
+      state.recoveredFromUrl = true;
+      await refreshStateFromSession(data?.session || null, '');
+
+      cleanUrlAfterAuth('#toolbox');
+      return;
+    }
+
+    if (authErrorPresent) {
+      const msg =
+        params.error_description ||
+        params.error_code ||
+        params.error ||
+        'Authentication failed.';
+      await refreshStateFromSession(null, msg);
+      return;
+    }
+
+    const { data } = await sb.auth.getSession();
+    await refreshStateFromSession(data?.session || null, '');
+  }
+
+  async function authHeader() {
+    const { data } = await sb.auth.getSession();
+    const token = data?.session?.access_token;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
+  async function refresh() {
+    const { data, error } = await sb.auth.refreshSession();
+    if (error) throw error;
+    await refreshStateFromSession(data?.session || null, '');
+    return data?.session || null;
+  }
+
+  async function init() {
+    if (state.initialized) return;
+
+    await recoverSessionFromUrlIfNeeded();
+
+    sb.auth.onAuthStateChange(async (_event, session) => {
+      await refreshStateFromSession(session || null, '');
+      dispatch('ywi:auth-changed', {
+        state: { ...state }
+      });
+    });
+
+    state.initialized = true;
+
+    dispatch('ywi:boot-ready', {
+      state: { ...state }
+    });
+  }
+
+  window.YWI_BOOT = {
+    sb,
+    state,
+    init,
+    authHeader,
+    refresh
+  };
+
+  init().catch((err) => {
+    console.error('Bootstrap init failed:', err);
+    dispatch('ywi:boot-ready', {
+      state: { ...state, authError: err?.message || 'Bootstrap failed.' }
+    });
+  });
 })();
