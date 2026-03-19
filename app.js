@@ -10,6 +10,7 @@
    - hand admin dashboard UI to js/admin-ui.js
    - hand logbook/detail/review UI to js/logbook-ui.js
    - hand Toolbox Talk form to js/forms-toolbox.js
+   - hand PPE Check form to js/forms-ppe.js
 ========================================================= */
 
 /* =========================
@@ -53,6 +54,7 @@ const appState = {
 let adminUI = null;
 let logbookUI = null;
 let toolboxFormUI = null;
+let ppeFormUI = null;
 
 /* =========================
    BASIC HELPERS
@@ -409,105 +411,6 @@ async function uploadImagesForSubmission(state, submissionId) {
     await uploadImageViaFunction(submissionId, image);
   }
 }
-
-/* =========================
-   FORM D — PPE CHECK
-========================= */
-const ppeForm = $('#ppeForm');
-const ppeDate = $('#ppe_date');
-if (ppeDate) ppeDate.value = todayISO();
-
-const ppeTableBody = ensureTBody('ppeTable');
-const ppeAddRowBtn = $('#ppeAddRowBtn');
-
-function addPPERow() {
-  if (!ppeTableBody) return;
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td><input type="text" class="ppe-name" placeholder="Full name" required></td>
-    <td>
-      <select class="ppe-role">
-        <option value="worker">Worker</option>
-        <option value="staff">Staff</option>
-        <option value="site_leader">Site Leader</option>
-        <option value="supervisor">Supervisor</option>
-        <option value="visitor">Visitor</option>
-      </select>
-    </td>
-    <td style="text-align:center"><input type="checkbox" class="ppe-shoes" checked></td>
-    <td style="text-align:center"><input type="checkbox" class="ppe-vest" checked></td>
-    <td style="text-align:center"><input type="checkbox" class="ppe-plugs" checked></td>
-    <td style="text-align:center"><input type="checkbox" class="ppe-goggles" checked></td>
-    <td style="text-align:center"><input type="checkbox" class="ppe-muffs" checked></td>
-    <td style="text-align:center"><input type="checkbox" class="ppe-gloves" checked></td>
-    <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
-  `;
-  ppeTableBody.appendChild(tr);
-}
-
-function seedPPE() {
-  if (ppeTableBody && ppeTableBody.children.length === 0) {
-    addPPERow();
-    addPPERow();
-  }
-}
-
-ppeAddRowBtn?.addEventListener('click', addPPERow);
-
-ppeTableBody?.addEventListener('click', (e) => {
-  const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
-  if (!btn) return;
-  if (btn.dataset.act === 'remove') btn.closest('tr')?.remove();
-});
-
-ppeForm?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-
-  const site = $('#ppe_site')?.value?.trim?.() || '';
-  const date = $('#ppe_date')?.value || '';
-  const checker = $('#ppe_checker')?.value?.trim?.() || '';
-
-  if (!site || !date || !checker) {
-    alert('Please fill Site, Date, and Checked By.');
-    return;
-  }
-
-  const rows = ppeTableBody ? Array.from(ppeTableBody.querySelectorAll('tr')) : [];
-  const roster = rows.map(tr => ({
-    name: tr.querySelector('.ppe-name')?.value?.trim?.() || '',
-    role_on_site: tr.querySelector('.ppe-role')?.value || 'worker',
-    items: {
-      shoes: !!tr.querySelector('.ppe-shoes')?.checked,
-      vest: !!tr.querySelector('.ppe-vest')?.checked,
-      plugs: !!tr.querySelector('.ppe-plugs')?.checked,
-      goggles: !!tr.querySelector('.ppe-goggles')?.checked,
-      muffs: !!tr.querySelector('.ppe-muffs')?.checked,
-      gloves: !!tr.querySelector('.ppe-gloves')?.checked
-    }
-  })).filter(r => r.name);
-
-  const nonCompliant = roster.some(r =>
-    !r.items.shoes || !r.items.vest || !r.items.plugs || !r.items.goggles || !r.items.muffs || !r.items.gloves
-  );
-
-  const payload = { site, date, checked_by: checker, roster, nonCompliant };
-
-  try {
-    await sendToFunction('D', payload);
-    alert('PPE check submitted.');
-    ppeForm.reset();
-    if (ppeDate) ppeDate.value = todayISO();
-    if (ppeTableBody) {
-      ppeTableBody.innerHTML = '';
-      seedPPE();
-    }
-  } catch (err) {
-    const outbox = getOutbox();
-    outbox.push({ ts: Date.now(), formType: 'D', payload });
-    setOutbox(outbox);
-    alert('Offline/server error. Saved to Outbox.');
-  }
-});
 
 /* =========================
    FORM B — FIRST AID
@@ -1209,7 +1112,7 @@ amAssignmentDelete?.addEventListener('click', async () => {
 ========================= */
 function seedAllTables() {
   toolboxFormUI?.seed?.();
-  seedPPE();
+  ppeFormUI?.seed?.();
   seedFirstAid();
   seedInspection();
   seedDrill();
@@ -1274,6 +1177,23 @@ function initToolboxModule() {
 }
 
 /* =========================
+   PPE MODULE
+========================= */
+function initPPEModule() {
+  if (!window.YWIFormsPPE?.create) return;
+
+  ppeFormUI = window.YWIFormsPPE.create({
+    sendToFunction,
+    getOutbox,
+    setOutbox
+  });
+
+  ppeFormUI.init().catch((err) => {
+    console.error('PPE form init failed', err);
+  });
+}
+
+/* =========================
    BOOTSTRAP / STARTUP
 ========================= */
 async function initializeAppShell() {
@@ -1284,6 +1204,7 @@ async function initializeAppShell() {
   if (!adminUI) initAdminModule();
   if (!logbookUI) initLogbookModule();
   if (!toolboxFormUI) initToolboxModule();
+  if (!ppeFormUI) initPPEModule();
 
   const currentAuthState = auth()?.getState?.();
   if (currentAuthState) {
@@ -1330,6 +1251,7 @@ document.addEventListener('ywi:auth-changed', async (e) => {
 document.addEventListener('DOMContentLoaded', async () => {
   applyDateFallback();
   initToolboxModule();
+  initPPEModule();
   initAdminModule();
   initLogbookModule();
   seedAllTables();
