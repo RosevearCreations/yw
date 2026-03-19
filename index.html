@@ -1210,7 +1210,6 @@
     (function () {
       const sections = Array.from(document.querySelectorAll('main > section.card'));
       const navLinks = Array.from(document.querySelectorAll('nav a[href^="#"]'));
-      const authLoading = document.getElementById('authLoading');
 
       function isAuthCallbackHash(raw) {
         return /(^|&)(access_token|refresh_token|expires_at|expires_in|token_type|type|error|error_code|error_description|code)=/i.test(raw || '');
@@ -1226,22 +1225,16 @@
         return raw.split('&')[0] || 'toolbox';
       }
 
-      function showAuthLoading(show) {
-        if (!authLoading) return;
-        authLoading.classList.toggle('is-visible', !!show);
-        authLoading.setAttribute('aria-busy', show ? 'true' : 'false');
-      }
-
       function showSection(id) {
         if (!id) return;
 
         const safeId = (id || 'toolbox').replace(/[^a-zA-Z0-9_-]/g, '') || 'toolbox';
 
-        sections.forEach(section => {
+        sections.forEach((section) => {
           section.classList.toggle('active', section.id === safeId);
         });
 
-        navLinks.forEach(link => {
+        navLinks.forEach((link) => {
           link.classList.toggle('active', link.getAttribute('href') === '#' + safeId);
         });
 
@@ -1256,14 +1249,6 @@
         window.scrollTo({ top: 0, behavior: 'instant' });
       }
 
-      document.addEventListener('ywi:boot-ready', () => {
-        showAuthLoading(false);
-      });
-
-      document.addEventListener('ywi:auth-changed', () => {
-        showAuthLoading(false);
-      });
-
       window.addEventListener('hashchange', () => showSection(current()));
 
       document.addEventListener('DOMContentLoaded', () => {
@@ -1271,12 +1256,9 @@
         if (routeId) {
           showSection(routeId);
         }
-
-        const raw = (location.hash || '').slice(1);
-        showAuthLoading(isAuthCallbackHash(raw));
       });
 
-      navLinks.forEach(link => {
+      navLinks.forEach((link) => {
         link.addEventListener('click', (e) => {
           e.preventDefault();
           showSection(link.getAttribute('href').slice(1));
