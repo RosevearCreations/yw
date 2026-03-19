@@ -9,6 +9,7 @@
    - keep forms and uploads working
    - hand admin dashboard UI to js/admin-ui.js
    - hand logbook/detail/review UI to js/logbook-ui.js
+   - hand Toolbox Talk form to js/forms-toolbox.js
 ========================================================= */
 
 /* =========================
@@ -51,6 +52,7 @@ const appState = {
 
 let adminUI = null;
 let logbookUI = null;
+let toolboxFormUI = null;
 
 /* =========================
    BASIC HELPERS
@@ -407,137 +409,6 @@ async function uploadImagesForSubmission(state, submissionId) {
     await uploadImageViaFunction(submissionId, image);
   }
 }
-
-/* =========================
-   FORM E — TOOLBOX TALK
-========================= */
-const toolboxForm = $('#toolboxForm');
-const tbDate = $('#tb_date');
-if (tbDate) tbDate.value = todayISO();
-
-const tbAttendeesBody = ensureTBody('tbAttendees');
-const tbAddRowBtn = $('#tbAddRowBtn');
-
-const tbImageFiles = $('#tb_image_files');
-const tbImageType = $('#tb_image_type');
-const tbImageCaption = $('#tb_image_caption');
-const tbImageAddBtn = $('#tb_image_add');
-const tbImageBody = $('#tb_images_table')?.querySelector('tbody') || null;
-const toolboxImageState = [];
-wireImageRemover(toolboxImageState, tbImageBody);
-
-function addAttendeeRow() {
-  if (!tbAttendeesBody) return;
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td><input type="text" class="att-name" placeholder="Full name" required></td>
-    <td>
-      <select class="att-role">
-        <option value="worker">Worker</option>
-        <option value="staff">Staff</option>
-        <option value="site_leader">Site Leader</option>
-        <option value="supervisor">Supervisor</option>
-        <option value="visitor">Visitor</option>
-      </select>
-    </td>
-    <td><input type="text" class="att-company" placeholder="Company"></td>
-    <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
-  `;
-  tbAttendeesBody.appendChild(tr);
-}
-
-function seedToolbox() {
-  if (tbAttendeesBody && tbAttendeesBody.children.length === 0) {
-    addAttendeeRow();
-    addAttendeeRow();
-  }
-}
-
-tbAddRowBtn?.addEventListener('click', addAttendeeRow);
-
-tbAttendeesBody?.addEventListener('click', (e) => {
-  const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
-  if (!btn) return;
-  if (btn.dataset.act === 'remove') btn.closest('tr')?.remove();
-});
-
-tbImageAddBtn?.addEventListener('click', () => {
-  const files = Array.from(tbImageFiles?.files || []);
-  if (!files.length) {
-    alert('Choose at least one image file.');
-    return;
-  }
-
-  files.forEach(file => {
-    toolboxImageState.push({
-      file,
-      image_type: tbImageType?.value || 'general',
-      caption: tbImageCaption?.value?.trim?.() || ''
-    });
-  });
-
-  renderImageRows(toolboxImageState, tbImageBody);
-  if (tbImageFiles) tbImageFiles.value = '';
-  if (tbImageCaption) tbImageCaption.value = '';
-});
-
-toolboxForm?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-
-  const site = $('#tb_site')?.value?.trim?.() || '';
-  const date = $('#tb_date')?.value || '';
-  const leader = $('#tb_leader')?.value?.trim?.() || '';
-  const topic = $('#tb_topic')?.value?.trim?.() || '';
-
-  if (!site || !date || !leader) {
-    alert('Please fill Site, Date, and Submitted By.');
-    return;
-  }
-
-  const rows = tbAttendeesBody ? Array.from(tbAttendeesBody.querySelectorAll('tr')) : [];
-  const attendees = rows.map(tr => {
-    const name = tr.querySelector('.att-name')?.value?.trim?.() || '';
-    const role = tr.querySelector('.att-role')?.value || 'worker';
-    const company = tr.querySelector('.att-company')?.value?.trim?.() || '';
-    return { name, role_on_site: role, company };
-  }).filter(r => r.name);
-
-  const payload = {
-    site,
-    date,
-    submitted_by: leader,
-    topic_notes: topic,
-    attendees
-  };
-
-  try {
-    const resp = await sendToFunction('E', payload);
-    const submissionId = resp?.id;
-
-    if (submissionId && toolboxImageState.length) {
-      await uploadImagesForSubmission(toolboxImageState, submissionId);
-    }
-
-    alert('Toolbox talk submitted.');
-    toolboxForm.reset();
-    if (tbDate) tbDate.value = todayISO();
-    if (tbAttendeesBody) {
-      tbAttendeesBody.innerHTML = '';
-      seedToolbox();
-    }
-    clearImageState(toolboxImageState, tbImageBody, tbImageFiles, tbImageCaption);
-  } catch (err) {
-    const outbox = getOutbox();
-    outbox.push({
-      ts: Date.now(),
-      formType: 'E',
-      payload,
-      localImages: [...toolboxImageState]
-    });
-    setOutbox(outbox);
-    alert('Offline/server error. Saved to Outbox.');
-  }
-});
 
 /* =========================
    FORM D — PPE CHECK
@@ -1337,7 +1208,7 @@ amAssignmentDelete?.addEventListener('click', async () => {
    TABLE SEEDING
 ========================= */
 function seedAllTables() {
-  seedToolbox();
+  toolboxFormUI?.seed?.();
   seedPPE();
   seedFirstAid();
   seedInspection();
@@ -1385,6 +1256,24 @@ function initLogbookModule() {
 }
 
 /* =========================
+   TOOLBOX MODULE
+========================= */
+function initToolboxModule() {
+  if (!window.YWIFormsToolbox?.create) return;
+
+  toolboxFormUI = window.YWIFormsToolbox.create({
+    sendToFunction,
+    uploadImagesForSubmission,
+    getOutbox,
+    setOutbox
+  });
+
+  toolboxFormUI.init().catch((err) => {
+    console.error('Toolbox form init failed', err);
+  });
+}
+
+/* =========================
    BOOTSTRAP / STARTUP
 ========================= */
 async function initializeAppShell() {
@@ -1394,6 +1283,7 @@ async function initializeAppShell() {
 
   if (!adminUI) initAdminModule();
   if (!logbookUI) initLogbookModule();
+  if (!toolboxFormUI) initToolboxModule();
 
   const currentAuthState = auth()?.getState?.();
   if (currentAuthState) {
@@ -1439,10 +1329,11 @@ document.addEventListener('ywi:auth-changed', async (e) => {
 
 document.addEventListener('DOMContentLoaded', async () => {
   applyDateFallback();
-  seedAllTables();
-  setManageSummary('');
+  initToolboxModule();
   initAdminModule();
   initLogbookModule();
+  seedAllTables();
+  setManageSummary('');
   applyRoleVisibility();
 });
 
