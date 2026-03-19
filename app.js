@@ -6,13 +6,10 @@
 
    Purpose:
    - use shared bootstrap/auth layer
-   - keep forms and uploads working
+   - keep shared uploads and outbox working
    - hand admin dashboard UI to js/admin-ui.js
    - hand logbook/detail/review UI to js/logbook-ui.js
-   - hand Toolbox Talk form to js/forms-toolbox.js
-   - hand PPE Check form to js/forms-ppe.js
-   - hand First Aid form to js/forms-firstaid.js
-   - hand Site Inspection form to js/forms-inspection.js
+   - hand all forms to dedicated modules
 ========================================================= */
 
 /* =========================
@@ -59,6 +56,7 @@ let toolboxFormUI = null;
 let ppeFormUI = null;
 let firstAidFormUI = null;
 let inspectionFormUI = null;
+let drillFormUI = null;
 
 /* =========================
    BASIC HELPERS
@@ -68,17 +66,6 @@ function todayISO() {
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   return `${d.getFullYear()}-${mm}-${dd}`;
-}
-
-function ensureTBody(tableId) {
-  const table = document.getElementById(tableId);
-  if (!table) return null;
-  let tbody = table.querySelector('tbody');
-  if (!tbody) {
-    tbody = document.createElement('tbody');
-    table.appendChild(tbody);
-  }
-  return tbody;
 }
 
 function getOutbox() {
@@ -91,22 +78,6 @@ function getOutbox() {
 
 function setOutbox(list) {
   localStorage.setItem(OUTBOX_KEY, JSON.stringify(list));
-}
-
-function escHtml(value) {
-  return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
-
-function bytesLabel(size) {
-  const n = Number(size || 0);
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / (1024 * 1024)).toFixed(2)} MB`;
 }
 
 function setNotice(el, text) {
@@ -207,6 +178,7 @@ async function jsonFetch(url, { method = 'POST', headers = {}, body = null } = {
     try {
       await auth().refresh();
     } catch {}
+
     authHeaders = await authHeader();
     res = await fetch(url, {
       method,
@@ -241,6 +213,7 @@ async function uploadFormDataFetch(url, formData) {
     try {
       await auth().refresh();
     } catch {}
+
     authHeaders = await authHeader();
     res = await fetch(url, {
       method: 'POST',
@@ -299,17 +272,23 @@ async function uploadImageViaFunction(submissionId, image) {
   return uploadFormDataFetch(UPLOAD_URL, formData);
 }
 
+async function uploadImagesForSubmission(state, submissionId) {
+  for (const image of state) {
+    await uploadImageViaFunction(submissionId, image);
+  }
+}
+
 /* =========================
    HASH NAV
 ========================= */
 function route() {
   const hash = location.hash || '#toolbox';
 
-  $$('nav a').forEach(a => {
+  $$('nav a').forEach((a) => {
     a.classList.toggle('active', a.getAttribute('href') === hash);
   });
 
-  $$('main.container > section.card').forEach(sec => {
+  $$('main.container > section.card').forEach((sec) => {
     sec.classList.toggle('active', `#${sec.id}` === hash);
   });
 }
@@ -329,7 +308,7 @@ function applyDateFallback() {
     '#dr_date',
     '#lg_from',
     '#lg_to'
-  ].forEach(sel => {
+  ].forEach((sel) => {
     const el = $(sel);
     if (el && !el.value) el.value = todayISO();
   });
@@ -351,6 +330,7 @@ async function retryOutbox() {
   }
 
   const remaining = [];
+
   for (const item of outbox) {
     try {
       const resp = await sendToFunction(item.formType, item.payload);
@@ -368,219 +348,8 @@ async function retryOutbox() {
   alert(remaining.length ? `Retried. ${remaining.length} item(s) remain.` : 'Outbox sent successfully.');
 }
 
-$$('[data-role="retry-outbox"]').forEach(btn => {
+$$('[data-role="retry-outbox"]').forEach((btn) => {
   btn.addEventListener('click', retryOutbox);
-});
-
-/* =========================
-   IMAGE HELPERS
-========================= */
-function clearImageState(state, body, fileInput, captionInput) {
-  state.splice(0, state.length);
-  if (body) body.innerHTML = '';
-  if (fileInput) fileInput.value = '';
-  if (captionInput) captionInput.value = '';
-}
-
-function renderImageRows(state, body) {
-  if (!body) return;
-  body.innerHTML = '';
-
-  state.forEach((img, idx) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${escHtml(img.file.name || '')}</td>
-      <td>${escHtml(img.image_type || '')}</td>
-      <td>${escHtml(bytesLabel(img.file.size || 0))}</td>
-      <td>${escHtml(img.caption || '')}</td>
-      <td><button type="button" data-remove-index="${idx}">Remove</button></td>
-    `;
-    body.appendChild(tr);
-  });
-}
-
-function wireImageRemover(state, body) {
-  body?.addEventListener('click', (e) => {
-    const btn = (e.target instanceof Element) ? e.target.closest('button[data-remove-index]') : null;
-    if (!btn) return;
-    const idx = Number(btn.dataset.removeIndex);
-    if (Number.isNaN(idx)) return;
-    state.splice(idx, 1);
-    renderImageRows(state, body);
-  });
-}
-
-async function uploadImagesForSubmission(state, submissionId) {
-  for (const image of state) {
-    await uploadImageViaFunction(submissionId, image);
-  }
-}
-
-/* =========================
-   FORM A — EMERGENCY DRILL
-========================= */
-const drForm = $('#drForm');
-const drDate = $('#dr_date');
-if (drDate) drDate.value = todayISO();
-
-const drRosterBody = ensureTBody('drRoster');
-const drAddPartBtn = $('#drAddPart');
-
-const drImageFiles = $('#dr_image_files');
-const drImageType = $('#dr_image_type');
-const drImageCaption = $('#dr_image_caption');
-const drImageAddBtn = $('#dr_image_add');
-const drImageBody = $('#dr_images_table')?.querySelector('tbody') || null;
-const drillImageState = [];
-wireImageRemover(drillImageState, drImageBody);
-
-const drSigCanvas = $('#dr_supervisor_canvas');
-let drSigPad = null;
-
-if (window.SignaturePad && drSigCanvas) {
-  try {
-    drSigPad = new SignaturePad(drSigCanvas, { minWidth: 0.7, maxWidth: 2.2, throttle: 8 });
-  } catch (err) {
-    console.warn('SignaturePad init failed for drill', err);
-  }
-}
-
-$('#drClearSig')?.addEventListener('click', () => {
-  if (drSigPad?.clear) drSigPad.clear();
-});
-
-function addDrillParticipantRow() {
-  if (!drRosterBody) return;
-  const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td><input type="text" class="dr-name" placeholder="Full name" required></td>
-    <td>
-      <select class="dr-role">
-        <option value="worker">Worker</option>
-        <option value="staff">Staff</option>
-        <option value="site_leader">Site Leader</option>
-        <option value="supervisor">Supervisor</option>
-        <option value="visitor">Visitor</option>
-      </select>
-    </td>
-    <td><input type="text" class="dr-company" placeholder="Company"></td>
-    <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
-  `;
-  drRosterBody.appendChild(tr);
-}
-
-function seedDrill() {
-  if (drRosterBody && drRosterBody.children.length === 0) {
-    addDrillParticipantRow();
-    addDrillParticipantRow();
-  }
-}
-
-drAddPartBtn?.addEventListener('click', addDrillParticipantRow);
-
-drRosterBody?.addEventListener('click', (e) => {
-  const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
-  if (!btn) return;
-  if (btn.dataset.act === 'remove') btn.closest('tr')?.remove();
-});
-
-drImageAddBtn?.addEventListener('click', () => {
-  const files = Array.from(drImageFiles?.files || []);
-  if (!files.length) {
-    alert('Choose at least one image file.');
-    return;
-  }
-
-  files.forEach(file => {
-    drillImageState.push({
-      file,
-      image_type: drImageType?.value || 'general',
-      caption: drImageCaption?.value?.trim?.() || ''
-    });
-  });
-
-  renderImageRows(drillImageState, drImageBody);
-  if (drImageFiles) drImageFiles.value = '';
-  if (drImageCaption) drImageCaption.value = '';
-});
-
-drForm?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-
-  const site = $('#dr_site')?.value?.trim?.() || '';
-  const date = $('#dr_date')?.value || '';
-  const supervisor = $('#dr_supervisor')?.value?.trim?.() || '';
-  const drillType = $('#dr_type')?.value?.trim?.() || '';
-  const startTime = $('#dr_start')?.value || '';
-  const endTime = $('#dr_end')?.value || '';
-  const scenario = $('#dr_scenario')?.value?.trim?.() || '';
-  const evaluation = $('#dr_eval')?.value?.trim?.() || '';
-  const followUp = $('#dr_followup')?.value?.trim?.() || '';
-  const nextDrillDate = $('#dr_next_date')?.value || null;
-
-  if (!site || !date || !supervisor || !drillType || !startTime || !endTime) {
-    alert('Please fill Site, Date, Supervisor, Drill Type, Start Time, and End Time.');
-    return;
-  }
-
-  if (!drSigPad || (drSigPad.isEmpty && drSigPad.isEmpty())) {
-    alert('Supervisor signature is required.');
-    return;
-  }
-
-  const participants = drRosterBody ? Array.from(drRosterBody.querySelectorAll('tr')).map(tr => {
-    const name = tr.querySelector('.dr-name')?.value?.trim?.() || '';
-    const role = tr.querySelector('.dr-role')?.value || 'worker';
-    const company = tr.querySelector('.dr-company')?.value?.trim?.() || '';
-    return { name, role_on_site: role, company };
-  }).filter(r => r.name) : [];
-
-  const issues = !!$('#dr_issues')?.checked;
-
-  const payload = {
-    site,
-    date,
-    supervisor,
-    drill_type: drillType,
-    start_time: startTime,
-    end_time: endTime,
-    scenario_notes: scenario,
-    participants,
-    evaluation,
-    follow_up_actions: followUp,
-    next_drill_date: nextDrillDate,
-    issues,
-    supervisor_signature_png: drSigPad.toDataURL('image/png')
-  };
-
-  try {
-    const resp = await sendToFunction('A', payload);
-    const submissionId = resp?.id;
-
-    if (submissionId && drillImageState.length) {
-      await uploadImagesForSubmission(drillImageState, submissionId);
-    }
-
-    alert('Emergency drill submitted.');
-    drForm.reset();
-    if (drDate) drDate.value = todayISO();
-    if (drRosterBody) {
-      drRosterBody.innerHTML = '';
-      seedDrill();
-    }
-    if (drSigPad?.clear) drSigPad.clear();
-    clearImageState(drillImageState, drImageBody, drImageFiles, drImageCaption);
-  } catch (err) {
-    const outbox = getOutbox();
-    outbox.push({
-      ts: Date.now(),
-      formType: 'A',
-      payload,
-      localImages: [...drillImageState]
-    });
-    setOutbox(outbox);
-    alert('Offline/server error. Saved to Outbox.');
-  }
 });
 
 /* =========================
@@ -824,7 +593,7 @@ function seedAllTables() {
   ppeFormUI?.seed?.();
   firstAidFormUI?.seed?.();
   inspectionFormUI?.seed?.();
-  seedDrill();
+  drillFormUI?.seed?.();
 }
 
 /* =========================
@@ -868,7 +637,7 @@ function initLogbookModule() {
 }
 
 /* =========================
-   TOOLBOX MODULE
+   FORM MODULES
 ========================= */
 function initToolboxModule() {
   if (!window.YWIFormsToolbox?.create) return;
@@ -885,9 +654,6 @@ function initToolboxModule() {
   });
 }
 
-/* =========================
-   PPE MODULE
-========================= */
 function initPPEModule() {
   if (!window.YWIFormsPPE?.create) return;
 
@@ -902,9 +668,6 @@ function initPPEModule() {
   });
 }
 
-/* =========================
-   FIRST AID MODULE
-========================= */
 function initFirstAidModule() {
   if (!window.YWIFormsFirstAid?.create) return;
 
@@ -919,9 +682,6 @@ function initFirstAidModule() {
   });
 }
 
-/* =========================
-   INSPECTION MODULE
-========================= */
 function initInspectionModule() {
   if (!window.YWIFormsInspection?.create) return;
 
@@ -934,6 +694,21 @@ function initInspectionModule() {
 
   inspectionFormUI.init().catch((err) => {
     console.error('Inspection form init failed', err);
+  });
+}
+
+function initDrillModule() {
+  if (!window.YWIFormsDrill?.create) return;
+
+  drillFormUI = window.YWIFormsDrill.create({
+    sendToFunction,
+    uploadImagesForSubmission,
+    getOutbox,
+    setOutbox
+  });
+
+  drillFormUI.init().catch((err) => {
+    console.error('Drill form init failed', err);
   });
 }
 
@@ -951,6 +726,7 @@ async function initializeAppShell() {
   if (!ppeFormUI) initPPEModule();
   if (!firstAidFormUI) initFirstAidModule();
   if (!inspectionFormUI) initInspectionModule();
+  if (!drillFormUI) initDrillModule();
 
   const currentAuthState = auth()?.getState?.();
   if (currentAuthState) {
@@ -1000,6 +776,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initPPEModule();
   initFirstAidModule();
   initInspectionModule();
+  initDrillModule();
   initAdminModule();
   initLogbookModule();
   seedAllTables();
@@ -1010,7 +787,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 window.addEventListener('hashchange', () => {
   setTimeout(seedAllTables, 0);
   if (location.hash === '#admin' && appState.isAuthenticated && adminUI?.loadDirectory) {
-    adminUI.loadDirectory().catch(err => console.error('Admin hash load failed', err));
+    adminUI.loadDirectory().catch((err) => console.error('Admin hash load failed', err));
   }
 });
 
