@@ -12,6 +12,59 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+  <style>
+    #authLoading {
+      display: none;
+      margin: 18px auto;
+      max-width: 1100px;
+    }
+
+    #authLoading.is-visible {
+      display: block;
+    }
+
+    .auth-loading-card {
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 16px;
+      padding: 18px 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    }
+
+    .auth-loading-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .auth-loading-spinner {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 2px solid rgba(148, 163, 184, 0.35);
+      border-top-color: rgba(255, 255, 255, 0.95);
+      animation: auth-spin 0.9s linear infinite;
+      flex: 0 0 auto;
+    }
+
+    .auth-loading-title {
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .auth-loading-subtitle {
+      margin: 6px 0 0;
+      opacity: 0.82;
+      font-size: 0.95rem;
+    }
+
+    @keyframes auth-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -33,6 +86,20 @@
       <a href="#admin">Admin</a>
     </nav>
   </header>
+
+  <section id="authLoading" class="container is-visible" aria-live="polite" aria-busy="true">
+    <div class="auth-loading-card">
+      <div class="auth-loading-row">
+        <div class="auth-loading-spinner" aria-hidden="true"></div>
+        <div>
+          <p class="auth-loading-title">Checking sign-in status…</p>
+          <p class="auth-loading-subtitle">
+            Please wait while the app restores your session from the email link.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <section id="loginView" class="auth-card" style="display:none;">
     <div class="section-heading">
@@ -1141,6 +1208,7 @@
     (function () {
       const sections = Array.from(document.querySelectorAll('main > section.card'));
       const navLinks = Array.from(document.querySelectorAll('nav a[href^="#"]'));
+      const authLoading = document.getElementById('authLoading');
 
       function isAuthCallbackHash(raw) {
         return /(^|&)(access_token|refresh_token|expires_at|expires_in|token_type|type|error|error_code|error_description|code)=/i.test(raw || '');
@@ -1154,6 +1222,12 @@
         }
 
         return raw.split('&')[0] || 'toolbox';
+      }
+
+      function showAuthLoading(show) {
+        if (!authLoading) return;
+        authLoading.classList.toggle('is-visible', !!show);
+        authLoading.setAttribute('aria-busy', show ? 'true' : 'false');
       }
 
       function showSection(id) {
@@ -1180,8 +1254,25 @@
         window.scrollTo({ top: 0, behavior: 'instant' });
       }
 
+      document.addEventListener('ywi:boot-ready', () => {
+        showAuthLoading(false);
+      });
+
+      document.addEventListener('ywi:auth-changed', () => {
+        showAuthLoading(false);
+      });
+
       window.addEventListener('hashchange', () => showSection(current()));
-      document.addEventListener('DOMContentLoaded', () => showSection(current()));
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const routeId = current();
+        if (routeId) {
+          showSection(routeId);
+        }
+
+        const raw = (location.hash || '').slice(1);
+        showAuthLoading(isAuthCallbackHash(raw));
+      });
 
       navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
