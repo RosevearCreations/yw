@@ -1208,61 +1208,100 @@
 
   <script>
     (function () {
-      const sections = Array.from(document.querySelectorAll('main > section.card'));
+      const DEFAULT_SECTION = 'toolbox';
+      const sectionSelector = 'main > section.card';
+      const sections = Array.from(document.querySelectorAll(sectionSelector));
       const navLinks = Array.from(document.querySelectorAll('nav a[href^="#"]'));
 
       function isAuthCallbackHash(raw) {
         return /(^|&)(access_token|refresh_token|expires_at|expires_in|token_type|type|error|error_code|error_description|code)=/i.test(raw || '');
       }
 
-      function current() {
-        const raw = (location.hash || '#toolbox').slice(1);
+      function normalizeSectionId(id) {
+        return String(id || DEFAULT_SECTION).replace(/[^a-zA-Z0-9_-]/g, '') || DEFAULT_SECTION;
+      }
+
+      function sectionExists(id) {
+        return sections.some((section) => section.id === id);
+      }
+
+      function getRequestedSection() {
+        const raw = (location.hash || `#${DEFAULT_SECTION}`).slice(1);
 
         if (isAuthCallbackHash(raw)) {
           return null;
         }
 
-        return raw.split('&')[0] || 'toolbox';
+        const firstPart = raw.split('&')[0] || DEFAULT_SECTION;
+        const normalized = normalizeSectionId(firstPart);
+
+        return sectionExists(normalized) ? normalized : DEFAULT_SECTION;
       }
 
-      function showSection(id) {
-        if (!id) return;
-
-        const safeId = (id || 'toolbox').replace(/[^a-zA-Z0-9_-]/g, '') || 'toolbox';
-
-        sections.forEach((section) => {
-          section.classList.toggle('active', section.id === safeId);
-        });
-
+      function updateNav(sectionId) {
         navLinks.forEach((link) => {
-          link.classList.toggle('active', link.getAttribute('href') === '#' + safeId);
+          link.classList.toggle('active', link.getAttribute('href') === `#${sectionId}`);
         });
+      }
 
-        const first = document.querySelector(`#${safeId} input, #${safeId} textarea, #${safeId} select`);
-        if (first) first.focus({ preventScroll: true });
+      function updateSections(sectionId) {
+        sections.forEach((section) => {
+          section.classList.toggle('active', section.id === sectionId);
+        });
+      }
 
+      function updateHash(sectionId) {
         const raw = (location.hash || '').slice(1);
-        if (!isAuthCallbackHash(raw) && location.hash !== '#' + safeId) {
-          history.replaceState(null, '', '#' + safeId);
+        if (!isAuthCallbackHash(raw) && location.hash !== `#${sectionId}`) {
+          history.replaceState(null, '', `#${sectionId}`);
         }
+      }
 
+      function focusSection(sectionId) {
+        const first = document.querySelector(
+          `#${sectionId} input, #${sectionId} textarea, #${sectionId} select`
+        );
+        if (first) {
+          first.focus({ preventScroll: true });
+        }
+      }
+
+      function showSection(sectionId) {
+        if (!sectionId) return;
+
+        updateSections(sectionId);
+        updateNav(sectionId);
+        updateHash(sectionId);
+        focusSection(sectionId);
         window.scrollTo({ top: 0, behavior: 'instant' });
       }
 
-      window.addEventListener('hashchange', () => showSection(current()));
+      function onNavClick(e) {
+        const link = e.currentTarget;
+        e.preventDefault();
+        const sectionId = normalizeSectionId(link.getAttribute('href').slice(1));
+        showSection(sectionId);
+      }
 
-      document.addEventListener('DOMContentLoaded', () => {
-        const routeId = current();
-        if (routeId) {
-          showSection(routeId);
+      function bindNav() {
+        navLinks.forEach((link) => {
+          link.addEventListener('click', onNavClick);
+        });
+      }
+
+      window.addEventListener('hashchange', () => {
+        const sectionId = getRequestedSection();
+        if (sectionId) {
+          showSection(sectionId);
         }
       });
 
-      navLinks.forEach((link) => {
-        link.addEventListener('click', (e) => {
-          e.preventDefault();
-          showSection(link.getAttribute('href').slice(1));
-        });
+      document.addEventListener('DOMContentLoaded', () => {
+        bindNav();
+        const sectionId = getRequestedSection();
+        if (sectionId) {
+          showSection(sectionId);
+        }
       });
     })();
   </script>
