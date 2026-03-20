@@ -6,8 +6,8 @@
 
    Purpose:
    - coordinate Supabase auth with bootstrap state
-   - avoid showing logged-out UI before magic-link recovery finishes
-   - support magic link, password sign-in, password reset, and logout
+   - expose a simple shared auth API for UI + app shell
+   - support magic link, password sign-in, reset, refresh, and logout
 ========================================================= */
 
 (function () {
@@ -43,7 +43,7 @@
     return `${window.location.origin}/`;
   }
 
-  function roleLabel(role) {
+  function getRoleLabel(role) {
     const map = {
       worker: 'Worker',
       staff: 'Staff',
@@ -91,8 +91,19 @@
     }
 
     state.role = state.profile?.role || 'worker';
-    state.roleLabel = roleLabel(state.role);
+    state.roleLabel = getRoleLabel(state.role);
     state.pendingAuthResolution = !state.bootReady && !state.isAuthenticated;
+  }
+
+  function applyBootState(bootState = {}) {
+    state.session = bootState.session || null;
+    state.user = bootState.user || bootState.session?.user || null;
+    state.profile = bootState.profile || null;
+    state.role = bootState.role || state.profile?.role || 'worker';
+    state.roleLabel = bootState.roleLabel || getRoleLabel(state.role);
+    state.isAuthenticated = !!bootState.isAuthenticated;
+    state.bootReady = true;
+    state.pendingAuthResolution = false;
   }
 
   async function refreshFromSupabase() {
@@ -136,7 +147,9 @@
     if (error) throw error;
 
     await applySession(data?.session || null);
-    dispatch('ywi:auth-changed', { state: { ...state } });
+    state.pendingAuthResolution = false;
+
+    dispatch('ywi:auth-changed', { state: getState() });
     return data;
   }
 
@@ -159,7 +172,9 @@
     if (error) throw error;
 
     await applySession(null);
-    dispatch('ywi:auth-changed', { state: { ...state } });
+    state.pendingAuthResolution = false;
+
+    dispatch('ywi:auth-changed', { state: getState() });
     return true;
   }
 
@@ -168,7 +183,9 @@
     if (error) throw error;
 
     await applySession(data?.session || null);
-    dispatch('ywi:auth-changed', { state: { ...state } });
+    state.pendingAuthResolution = false;
+
+    dispatch('ywi:auth-changed', { state: getState() });
     return data?.session || null;
   }
 
@@ -176,46 +193,46 @@
     return { ...state };
   }
 
-  async function init() {
-    if (state.initialized) return;
-
+  function bindBootEvents() {
     document.addEventListener('ywi:boot-ready', async (e) => {
       const bootState = e.detail?.state || {};
-      state.bootReady = true;
 
-      await applySession(bootState.session || null);
+      applyBootState(bootState);
 
-      if (bootState.profile) {
-        state.profile = bootState.profile;
-        state.role = bootState.role || bootState.profile.role || 'worker';
-        state.roleLabel = bootState.roleLabel || roleLabel(state.role);
-      } else if (bootState.user?.id && !state.profile) {
-        state.profile = await fetchProfile(bootState.user.id);
-        state.role = state.profile?.role || bootState.role || 'worker';
-        state.roleLabel = bootState.roleLabel || roleLabel(state.role);
-      } else {
-        state.role = bootState.role || state.role || 'worker';
-        state.roleLabel = bootState.roleLabel || roleLabel(state.role);
+      if (!state.profile && state.user?.id) {
+        state.profile = await fetchProfile(state.user.id);
+        state.role = state.profile?.role || state.role || 'worker';
+        state.roleLabel = getRoleLabel(state.role);
       }
 
-      state.user = bootState.user || state.user;
-      state.session = bootState.session || state.session;
-      state.isAuthenticated = !!(bootState.isAuthenticated ?? state.isAuthenticated);
-      state.pendingAuthResolution = false;
-
-      dispatch('ywi:auth-changed', { state: { ...state } });
+      dispatch('ywi:auth-changed', { state: getState() });
     });
+  }
 
+  function bindSupabaseAuthEvents() {
     sb.auth.onAuthStateChange(async (_event, session) => {
       await applySession(session || null);
 
       if (boot?.state?.initialized || state.bootReady) {
         state.pendingAuthResolution = false;
-        dispatch('ywi:auth-changed', { state: { ...state } });
+        dispatch('ywi:auth-changed', { state: getState() });
       }
     });
+  }
+
+  async function init() {
+    if (state.initialized) return;
+
+    bindBootEvents();
+    bindSupabaseAuthEvents();
 
     await refreshFromSupabase();
+
+    if (boot?.state?.initialized) {
+      state.bootReady = true;
+      state.pendingAuthResolution = false;
+    }
+
     state.initialized = true;
   }
 
