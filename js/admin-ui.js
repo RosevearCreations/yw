@@ -2,13 +2,13 @@
 
 /* =========================================================
    js/admin-ui.js
-   Admin dashboard UI module
+   Admin Dashboard UI controller
 
    Purpose:
-   - move admin dashboard behavior out of app.js
-   - manage directory tables, selectors, and form loading
-   - handle admin lock state and role-aware UI behavior
-   - keep existing DOM ids and endpoint payloads intact
+   - load and render admin directory data
+   - refresh selector dropdowns
+   - lock/unlock admin area by role
+   - let table rows populate the editor forms
 ========================================================= */
 
 (function () {
@@ -25,544 +25,614 @@
       .replaceAll("'", '&#39;');
   }
 
-  function slugifyToken(value) {
-    return String(value || '')
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-  }
-
-  function roleChip(label) {
-    const safe = escHtml(label || 'unknown');
-    const slug = slugifyToken(label || 'unknown');
-    return `<span class="role-chip role-chip--${slug}">${safe}</span>`;
-  }
-
-  function setNotice(el, text) {
-    if (!el) return;
-    if (text) {
-      el.style.display = 'block';
-      el.textContent = text;
-    } else {
-      el.style.display = 'none';
-      el.textContent = '';
-    }
-  }
-
-  function fillSelectOptions(selectEl, rows, placeholder = 'Select...') {
-    if (!selectEl) return;
-
-    const current = selectEl.value || '';
-    selectEl.innerHTML = '';
-
-    const empty = document.createElement('option');
-    empty.value = '';
-    empty.textContent = placeholder;
-    selectEl.appendChild(empty);
-
-    rows.forEach((row) => {
-      const opt = document.createElement('option');
-      opt.value = String(row.id ?? '');
-      opt.textContent = row.option_label || row.display_label || row.email || row.site_code || String(row.id);
-      selectEl.appendChild(opt);
-    });
-
-    if (current && rows.some(r => String(r.id) === current)) {
-      selectEl.value = current;
-    }
-  }
-
-  function pickById(rows, id) {
-    return rows.find(r => String(r.id) === String(id)) || null;
+  function textMatch(value, search) {
+    if (!search) return true;
+    return String(value ?? '').toLowerCase().includes(search.toLowerCase());
   }
 
   function createAdminUI(config = {}) {
     const loadAdminDirectory = config.loadAdminDirectory;
     const loadAdminSelectors = config.loadAdminSelectors;
-    const manageSummary = config.manageSummary || (() => {});
+    const manageSummary = config.manageSummary || function () {};
     const getCurrentRole = config.getCurrentRole || (() => 'worker');
-    const onProfileLoaded = config.onProfileLoaded || (() => {});
-    const onSiteLoaded = config.onSiteLoaded || (() => {});
-    const onAssignmentLoaded = config.onAssignmentLoaded || (() => {});
+    const onProfileLoaded = config.onProfileLoaded || function () {};
+    const onSiteLoaded = config.onSiteLoaded || function () {};
+    const onAssignmentLoaded = config.onAssignmentLoaded || function () {};
 
     const els = {
-      adminSection: $('#admin'),
+      section: $('#admin'),
 
-      adSearch: $('#ad_search'),
-      adSiteId: $('#ad_site_id'),
-      adProfileId: $('#ad_profile_id'),
-      adActiveOnly: $('#ad_active_only'),
-      adLimit: $('#ad_limit'),
-      adMode: $('#ad_mode'),
-      adLoad: $('#ad_load'),
-      adClear: $('#ad_clear'),
+      modeButtons: Array.from(document.querySelectorAll('[data-admin-mode]')),
+      modeSelect: $('#ad_mode'),
+      search: $('#ad_search'),
+      siteId: $('#ad_site_id'),
+      profileId: $('#ad_profile_id'),
+      activeOnly: $('#ad_active_only'),
+      limit: $('#ad_limit'),
+      loadBtn: $('#ad_load'),
+      clearBtn: $('#ad_clear'),
+      summary: $('#ad_summary'),
 
-      adUsersBody: $('#ad_users_table')?.querySelector('tbody') || null,
-      adSitesBody: $('#ad_sites_table')?.querySelector('tbody') || null,
-      adAssignmentsBody: $('#ad_assignments_table')?.querySelector('tbody') || null,
+      usersCount: $('#ad_users_count'),
+      sitesCount: $('#ad_sites_count'),
+      assignmentsCount: $('#ad_assignments_count'),
+      modeLabel: $('#ad_mode_label'),
 
-      adUsersCount: $('#ad_users_count'),
-      adSitesCount: $('#ad_sites_count'),
-      adAssignmentsCount: $('#ad_assignments_count'),
-      adModeLabel: $('#ad_mode_label'),
-      adSummary: $('#ad_summary'),
+      usersTable: $('#ad_users_table tbody'),
+      sitesTable: $('#ad_sites_table tbody'),
+      assignmentsTable: $('#ad_assignments_table tbody'),
 
-      amSummary: $('#am_summary'),
+      profileSelector: $('#am_profile_selector'),
+      siteSelector: $('#am_site_selector'),
+      assignmentSelector: $('#am_assignment_selector'),
+      assignmentSiteSelector: $('#am_assignment_site_selector'),
+      assignmentProfileSelector: $('#am_assignment_profile_selector'),
 
-      amProfileSelector: $('#am_profile_selector'),
-      amSiteSelector: $('#am_site_selector'),
-      amAssignmentSelector: $('#am_assignment_selector'),
-      amAssignmentProfileSelector: $('#am_assignment_profile_selector'),
-      amAssignmentSiteSelector: $('#am_assignment_site_selector'),
+      formProfileId: $('#am_profile_id'),
+      formProfileName: $('#am_profile_name'),
+      formProfileRole: $('#am_profile_role'),
+      formProfileActive: $('#am_profile_active'),
 
-      amProfileId: $('#am_profile_id'),
-      amProfileName: $('#am_profile_name'),
-      amProfileRole: $('#am_profile_role'),
-      amProfileActive: $('#am_profile_active'),
+      formSiteId: $('#am_site_id'),
+      formSiteCode: $('#am_site_code'),
+      formSiteName: $('#am_site_name'),
+      formSiteAddress: $('#am_site_address'),
+      formSiteNotes: $('#am_site_notes'),
+      formSiteActive: $('#am_site_active'),
 
-      amSiteId: $('#am_site_id'),
-      amSiteCode: $('#am_site_code'),
-      amSiteName: $('#am_site_name'),
-      amSiteAddress: $('#am_site_address'),
-      amSiteNotes: $('#am_site_notes'),
-      amSiteActive: $('#am_site_active'),
-
-      amAssignmentId: $('#am_assignment_id'),
-      amAssignmentSiteId: $('#am_assignment_site_id'),
-      amAssignmentProfileId: $('#am_assignment_profile_id'),
-      amAssignmentRole: $('#am_assignment_role'),
-      amAssignmentPrimary: $('#am_assignment_primary'),
-
-      adminModeButtons: Array.from(document.querySelectorAll('[data-admin-mode]'))
+      formAssignmentId: $('#am_assignment_id'),
+      formAssignmentSiteId: $('#am_assignment_site_id'),
+      formAssignmentProfileId: $('#am_assignment_profile_id'),
+      formAssignmentRole: $('#am_assignment_role'),
+      formAssignmentPrimary: $('#am_assignment_primary')
     };
 
     const state = {
       locked: true,
+      mode: 'all',
       users: [],
       sites: [],
       assignments: [],
-      selectorProfiles: [],
-      selectorSites: [],
-      selectorAssignments: [],
-      selectedUserId: '',
-      selectedSiteId: '',
-      selectedAssignmentId: ''
+      profilesById: new Map(),
+      sitesById: new Map(),
+      assignmentsById: new Map(),
+      selectorData: {
+        profiles: [],
+        sites: [],
+        assignments: []
+      }
     };
 
-    function setManageSummary(text) {
+    function setSummary(text) {
+      if (els.summary) {
+        if (text) {
+          els.summary.style.display = 'block';
+          els.summary.textContent = text;
+        } else {
+          els.summary.style.display = 'none';
+          els.summary.textContent = '';
+        }
+      }
       manageSummary(text);
-      setNotice(els.amSummary, text);
-    }
-
-    function updateStats({ users = 0, sites = 0, assignments = 0 } = {}) {
-      if (els.adUsersCount) els.adUsersCount.textContent = String(users);
-      if (els.adSitesCount) els.adSitesCount.textContent = String(sites);
-      if (els.adAssignmentsCount) els.adAssignmentsCount.textContent = String(assignments);
-
-      if (els.adModeLabel) {
-        const mode = els.adMode?.value || 'all';
-        els.adModeLabel.textContent = mode === 'all'
-          ? 'All data'
-          : mode.charAt(0).toUpperCase() + mode.slice(1);
-      }
-    }
-
-    function renderEmptyRow(tbody, colspan, text) {
-      if (!tbody) return;
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td colspan="${colspan}" style="color:#9ca3af;">${escHtml(text)}</td>`;
-      tbody.appendChild(tr);
-    }
-
-    function highlightRow(tbody, selectedId) {
-      if (!tbody) return;
-      tbody.querySelectorAll('tr[data-admin-row-id]').forEach((tr) => {
-        const isSelected = String(tr.dataset.adminRowId || '') === String(selectedId || '');
-        tr.classList.toggle('is-selected', isSelected);
-      });
-    }
-
-    function renderUsers(rows) {
-      if (!els.adUsersBody) return;
-      els.adUsersBody.innerHTML = '';
-
-      if (!rows.length) {
-        renderEmptyRow(els.adUsersBody, 6, 'No profiles found for the current filter.');
-        return;
-      }
-
-      rows.forEach((row) => {
-        const tr = document.createElement('tr');
-        tr.className = 'admin-table-row';
-        tr.dataset.adminType = 'user';
-        tr.dataset.adminRowId = String(row.id || '');
-
-        tr.innerHTML = `
-          <td>${escHtml(row.id || '')}</td>
-          <td>${escHtml(row.email || '')}</td>
-          <td>${escHtml(row.full_name || '')}</td>
-          <td>${roleChip(row.role || '')}</td>
-          <td>${row.is_active ? 'Yes' : 'No'}</td>
-          <td>${escHtml(row.primary_site_code || '')}</td>
-        `;
-        els.adUsersBody.appendChild(tr);
-      });
-
-      highlightRow(els.adUsersBody, state.selectedUserId);
-    }
-
-    function renderSites(rows) {
-      if (!els.adSitesBody) return;
-      els.adSitesBody.innerHTML = '';
-
-      if (!rows.length) {
-        renderEmptyRow(els.adSitesBody, 6, 'No sites found for the current filter.');
-        return;
-      }
-
-      rows.forEach((row) => {
-        const tr = document.createElement('tr');
-        tr.className = 'admin-table-row';
-        tr.dataset.adminType = 'site';
-        tr.dataset.adminRowId = String(row.id || '');
-
-        tr.innerHTML = `
-          <td>${escHtml(row.id || '')}</td>
-          <td>${escHtml(row.site_code || '')}</td>
-          <td>${escHtml(row.site_name || '')}</td>
-          <td>${escHtml(row.address || '')}</td>
-          <td>${row.is_active ? 'Yes' : 'No'}</td>
-          <td>${escHtml(row.assignment_count || 0)}</td>
-        `;
-        els.adSitesBody.appendChild(tr);
-      });
-
-      highlightRow(els.adSitesBody, state.selectedSiteId);
-    }
-
-    function renderAssignments(rows) {
-      if (!els.adAssignmentsBody) return;
-      els.adAssignmentsBody.innerHTML = '';
-
-      if (!rows.length) {
-        renderEmptyRow(els.adAssignmentsBody, 7, 'No assignments found for the current filter.');
-        return;
-      }
-
-      rows.forEach((row) => {
-        const tr = document.createElement('tr');
-        tr.className = 'admin-table-row';
-        tr.dataset.adminType = 'assignment';
-        tr.dataset.adminRowId = String(row.id || '');
-
-        tr.innerHTML = `
-          <td>${escHtml(row.id || '')}</td>
-          <td>${escHtml(row.site_code || '')}</td>
-          <td>${escHtml(row.site_name || '')}</td>
-          <td>${escHtml(row.email || '')}</td>
-          <td>${escHtml(row.full_name || '')}</td>
-          <td>${roleChip(row.assignment_role || '')}</td>
-          <td>${row.is_primary ? 'Yes' : 'No'}</td>
-        `;
-        els.adAssignmentsBody.appendChild(tr);
-      });
-
-      highlightRow(els.adAssignmentsBody, state.selectedAssignmentId);
-    }
-
-    function clearDirectory() {
-      if (els.adUsersBody) els.adUsersBody.innerHTML = '';
-      if (els.adSitesBody) els.adSitesBody.innerHTML = '';
-      if (els.adAssignmentsBody) els.adAssignmentsBody.innerHTML = '';
-
-      state.users = [];
-      state.sites = [];
-      state.assignments = [];
-      state.selectedUserId = '';
-      state.selectedSiteId = '';
-      state.selectedAssignmentId = '';
-
-      updateStats({ users: 0, sites: 0, assignments: 0 });
-      setNotice(els.adSummary, '');
-    }
-
-    function setLocked(isLocked, message = '') {
-      state.locked = !!isLocked;
-
-      if (els.adminSection) {
-        els.adminSection.dataset.adminLocked = isLocked ? 'true' : 'false';
-      }
-
-      [
-        els.adLoad,
-        els.adClear,
-        els.amProfileSelector,
-        els.amSiteSelector,
-        els.amAssignmentSelector,
-        els.amAssignmentProfileSelector,
-        els.amAssignmentSiteSelector,
-        ...els.adminModeButtons
-      ].forEach((el) => {
-        if (el) el.disabled = !!isLocked;
-      });
-
-      if (isLocked) {
-        setManageSummary(message || 'Admin access is required.');
-      }
     }
 
     function applyRoleAccess() {
-      const role = String(getCurrentRole() || 'worker');
-      const canUseAdmin = role === 'admin';
-      setLocked(!canUseAdmin, canUseAdmin ? '' : 'Admin tools are visible only to admin users.');
+      const role = getCurrentRole();
+      const allowed = role === 'admin';
+
+      state.locked = !allowed;
+
+      if (els.section) {
+        els.section.dataset.adminLocked = allowed ? 'false' : 'true';
+        els.section.classList.toggle('is-admin-locked', !allowed);
+      }
+
+      [
+        els.modeSelect,
+        els.search,
+        els.siteId,
+        els.profileId,
+        els.activeOnly,
+        els.limit,
+        els.loadBtn,
+        els.clearBtn,
+        els.profileSelector,
+        els.siteSelector,
+        els.assignmentSelector,
+        els.assignmentSiteSelector,
+        els.assignmentProfileSelector
+      ].forEach((el) => {
+        if (el) el.disabled = !allowed;
+      });
+
+      els.modeButtons.forEach((btn) => {
+        btn.disabled = !allowed;
+      });
+
+      if (!allowed) {
+        setSummary('Admin access is required to use this dashboard.');
+      } else if (!state.users.length && !state.sites.length && !state.assignments.length) {
+        setSummary('');
+      }
     }
 
-    function loadProfileIntoForm(row) {
-      if (!row) return;
+    function setMode(mode) {
+      state.mode = mode || 'all';
 
-      state.selectedUserId = String(row.id || '');
-      highlightRow(els.adUsersBody, state.selectedUserId);
+      if (els.modeSelect) {
+        els.modeSelect.value = state.mode;
+      }
 
-      if (els.amProfileSelector) els.amProfileSelector.value = row.id || '';
-      if (els.amProfileId) els.amProfileId.value = row.id || '';
-      if (els.amProfileName) els.amProfileName.value = row.full_name || '';
-      if (els.amProfileRole) els.amProfileRole.value = row.role || '';
-      if (els.amProfileActive) els.amProfileActive.checked = !!row.is_active;
+      els.modeButtons.forEach((btn) => {
+        const isActive = btn.dataset.adminMode === state.mode;
+        btn.classList.toggle('active', isActive);
+      });
 
-      setManageSummary(`Loaded profile ${row.email || row.id || ''} into the editor.`);
-      onProfileLoaded(row);
+      const labelMap = {
+        all: 'All data',
+        users: 'Users only',
+        sites: 'Sites only',
+        assignments: 'Assignments only'
+      };
+
+      if (els.modeLabel) {
+        els.modeLabel.textContent = labelMap[state.mode] || 'All data';
+      }
+
+      const showUsers = state.mode === 'all' || state.mode === 'users';
+      const showSites = state.mode === 'all' || state.mode === 'sites';
+      const showAssignments = state.mode === 'all' || state.mode === 'assignments';
+
+      const usersBlock = $('#ad_users_table')?.closest('.admin-panel-block');
+      const sitesBlock = $('#ad_sites_table')?.closest('.admin-panel-block');
+      const assignmentsBlock = $('#ad_assignments_table')?.closest('.admin-panel-block');
+
+      if (usersBlock) usersBlock.style.display = showUsers ? '' : 'none';
+      if (sitesBlock) sitesBlock.style.display = showSites ? '' : 'none';
+      if (assignmentsBlock) assignmentsBlock.style.display = showAssignments ? '' : 'none';
     }
 
-    function loadSiteIntoForm(row) {
-      if (!row) return;
-
-      state.selectedSiteId = String(row.id || '');
-      highlightRow(els.adSitesBody, state.selectedSiteId);
-
-      if (els.amSiteSelector) els.amSiteSelector.value = row.id || '';
-      if (els.amSiteId) els.amSiteId.value = row.id || '';
-      if (els.amSiteCode) els.amSiteCode.value = row.site_code || '';
-      if (els.amSiteName) els.amSiteName.value = row.site_name || '';
-      if (els.amSiteAddress) els.amSiteAddress.value = row.address || '';
-      if (els.amSiteNotes) els.amSiteNotes.value = row.notes || '';
-      if (els.amSiteActive) els.amSiteActive.checked = !!row.is_active;
-
-      setManageSummary(`Loaded site ${row.site_code || row.id || ''} into the editor.`);
-      onSiteLoaded(row);
+    function clearTableBody(tbody) {
+      if (tbody) tbody.innerHTML = '';
     }
 
-    function loadAssignmentIntoForm(row) {
-      if (!row) return;
+    function clearDirectory() {
+      state.users = [];
+      state.sites = [];
+      state.assignments = [];
+      state.profilesById.clear();
+      state.sitesById.clear();
+      state.assignmentsById.clear();
 
-      state.selectedAssignmentId = String(row.id || '');
-      highlightRow(els.adAssignmentsBody, state.selectedAssignmentId);
+      clearTableBody(els.usersTable);
+      clearTableBody(els.sitesTable);
+      clearTableBody(els.assignmentsTable);
 
-      if (els.amAssignmentSelector) els.amAssignmentSelector.value = row.id || '';
-      if (els.amAssignmentId) els.amAssignmentId.value = row.id || '';
-      if (els.amAssignmentSiteId) els.amAssignmentSiteId.value = row.site_id || '';
-      if (els.amAssignmentProfileId) els.amAssignmentProfileId.value = row.profile_id || '';
-      if (els.amAssignmentRole) els.amAssignmentRole.value = row.assignment_role || 'worker';
-      if (els.amAssignmentPrimary) els.amAssignmentPrimary.checked = !!row.is_primary;
-      if (els.amAssignmentSiteSelector) els.amAssignmentSiteSelector.value = row.site_id || '';
-      if (els.amAssignmentProfileSelector) els.amAssignmentProfileSelector.value = row.profile_id || '';
+      if (els.usersCount) els.usersCount.textContent = '0';
+      if (els.sitesCount) els.sitesCount.textContent = '0';
+      if (els.assignmentsCount) els.assignmentsCount.textContent = '0';
 
-      setManageSummary(`Loaded assignment ${row.id || ''} into the editor.`);
-      onAssignmentLoaded(row);
+      setSummary(state.locked ? 'Admin access is required to use this dashboard.' : '');
+    }
+
+    function fillSelect(selectEl, items, placeholder, valueKey, labelBuilder) {
+      if (!selectEl) return;
+
+      const current = selectEl.value;
+      selectEl.innerHTML = '';
+
+      const first = document.createElement('option');
+      first.value = '';
+      first.textContent = placeholder;
+      selectEl.appendChild(first);
+
+      items.forEach((item) => {
+        const option = document.createElement('option');
+        option.value = item[valueKey] ?? '';
+        option.textContent = labelBuilder(item);
+        selectEl.appendChild(option);
+      });
+
+      if (current && Array.from(selectEl.options).some((opt) => opt.value === current)) {
+        selectEl.value = current;
+      }
+    }
+
+    function refreshMaps() {
+      state.profilesById = new Map(state.users.map((item) => [String(item.id), item]));
+      state.sitesById = new Map(state.sites.map((item) => [String(item.id), item]));
+      state.assignmentsById = new Map(state.assignments.map((item) => [String(item.id), item]));
+    }
+
+    function getFilteredUsers() {
+      const search = els.search?.value?.trim?.() || '';
+      const profileId = els.profileId?.value?.trim?.() || '';
+      const siteId = els.siteId?.value?.trim?.() || '';
+      const activeOnly = !!els.activeOnly?.checked;
+      const limit = Math.max(1, Math.min(1000, Number(els.limit?.value || 200)));
+
+      return state.users
+        .filter((item) => !profileId || String(item.id) === profileId)
+        .filter((item) => !siteId || String(item.primary_site_id || '') === siteId)
+        .filter((item) => !activeOnly || !!item.is_active)
+        .filter((item) =>
+          !search ||
+          textMatch(item.email, search) ||
+          textMatch(item.full_name, search) ||
+          textMatch(item.role, search) ||
+          textMatch(item.primary_site_name, search) ||
+          textMatch(item.primary_site_code, search)
+        )
+        .slice(0, limit);
+    }
+
+    function getFilteredSites() {
+      const search = els.search?.value?.trim?.() || '';
+      const siteId = els.siteId?.value?.trim?.() || '';
+      const activeOnly = !!els.activeOnly?.checked;
+      const limit = Math.max(1, Math.min(1000, Number(els.limit?.value || 200)));
+
+      return state.sites
+        .filter((item) => !siteId || String(item.id) === siteId)
+        .filter((item) => !activeOnly || !!item.is_active)
+        .filter((item) =>
+          !search ||
+          textMatch(item.site_code, search) ||
+          textMatch(item.site_name, search) ||
+          textMatch(item.address, search) ||
+          textMatch(item.notes, search)
+        )
+        .slice(0, limit);
+    }
+
+    function getFilteredAssignments() {
+      const search = els.search?.value?.trim?.() || '';
+      const profileId = els.profileId?.value?.trim?.() || '';
+      const siteId = els.siteId?.value?.trim?.() || '';
+      const activeOnly = !!els.activeOnly?.checked;
+      const limit = Math.max(1, Math.min(1000, Number(els.limit?.value || 200)));
+
+      return state.assignments
+        .filter((item) => !profileId || String(item.profile_id) === profileId)
+        .filter((item) => !siteId || String(item.site_id) === siteId)
+        .filter((item) => !activeOnly || item.profile_is_active !== false)
+        .filter((item) =>
+          !search ||
+          textMatch(item.user_email, search) ||
+          textMatch(item.full_name, search) ||
+          textMatch(item.assignment_role, search) ||
+          textMatch(item.site_code, search) ||
+          textMatch(item.site_name, search)
+        )
+        .slice(0, limit);
+    }
+
+    function renderUsers() {
+      if (!els.usersTable) return;
+
+      const rows = getFilteredUsers();
+      els.usersTable.innerHTML = '';
+
+      rows.forEach((item) => {
+        const tr = document.createElement('tr');
+        tr.dataset.profileId = String(item.id || '');
+        tr.innerHTML = `
+          <td>${escHtml(item.id || '')}</td>
+          <td>${escHtml(item.email || '')}</td>
+          <td>${escHtml(item.full_name || '')}</td>
+          <td>${escHtml(item.role || '')}</td>
+          <td>${item.is_active ? 'Yes' : 'No'}</td>
+          <td>${escHtml(item.primary_site_name || item.primary_site_code || '')}</td>
+        `;
+        els.usersTable.appendChild(tr);
+      });
+
+      if (els.usersCount) {
+        els.usersCount.textContent = String(rows.length);
+      }
+    }
+
+    function renderSites() {
+      if (!els.sitesTable) return;
+
+      const rows = getFilteredSites();
+      els.sitesTable.innerHTML = '';
+
+      rows.forEach((item) => {
+        const tr = document.createElement('tr');
+        tr.dataset.siteId = String(item.id || '');
+        tr.innerHTML = `
+          <td>${escHtml(item.id || '')}</td>
+          <td>${escHtml(item.site_code || '')}</td>
+          <td>${escHtml(item.site_name || '')}</td>
+          <td>${escHtml(item.address || '')}</td>
+          <td>${item.is_active ? 'Yes' : 'No'}</td>
+          <td>${escHtml(item.assignment_count ?? 0)}</td>
+        `;
+        els.sitesTable.appendChild(tr);
+      });
+
+      if (els.sitesCount) {
+        els.sitesCount.textContent = String(rows.length);
+      }
+    }
+
+    function renderAssignments() {
+      if (!els.assignmentsTable) return;
+
+      const rows = getFilteredAssignments();
+      els.assignmentsTable.innerHTML = '';
+
+      rows.forEach((item) => {
+        const tr = document.createElement('tr');
+        tr.dataset.assignmentId = String(item.id || '');
+        tr.innerHTML = `
+          <td>${escHtml(item.id || '')}</td>
+          <td>${escHtml(item.site_code || '')}</td>
+          <td>${escHtml(item.site_name || '')}</td>
+          <td>${escHtml(item.user_email || '')}</td>
+          <td>${escHtml(item.full_name || '')}</td>
+          <td>${escHtml(item.assignment_role || '')}</td>
+          <td>${item.is_primary ? 'Yes' : 'No'}</td>
+        `;
+        els.assignmentsTable.appendChild(tr);
+      });
+
+      if (els.assignmentsCount) {
+        els.assignmentsCount.textContent = String(rows.length);
+      }
+    }
+
+    function renderDirectory() {
+      renderUsers();
+      renderSites();
+      renderAssignments();
+      setMode(state.mode);
+    }
+
+    function loadProfileIntoForm(profileId) {
+      const item = state.profilesById.get(String(profileId));
+      if (!item) return;
+
+      if (els.profileSelector) els.profileSelector.value = String(item.id || '');
+      if (els.formProfileId) els.formProfileId.value = String(item.id || '');
+      if (els.formProfileName) els.formProfileName.value = item.full_name || '';
+      if (els.formProfileRole) els.formProfileRole.value = item.role || '';
+      if (els.formProfileActive) els.formProfileActive.checked = !!item.is_active;
+
+      onProfileLoaded(item);
+    }
+
+    function loadSiteIntoForm(siteId) {
+      const item = state.sitesById.get(String(siteId));
+      if (!item) return;
+
+      if (els.siteSelector) els.siteSelector.value = String(item.id || '');
+      if (els.formSiteId) els.formSiteId.value = String(item.id || '');
+      if (els.formSiteCode) els.formSiteCode.value = item.site_code || '';
+      if (els.formSiteName) els.formSiteName.value = item.site_name || '';
+      if (els.formSiteAddress) els.formSiteAddress.value = item.address || '';
+      if (els.formSiteNotes) els.formSiteNotes.value = item.notes || '';
+      if (els.formSiteActive) els.formSiteActive.checked = !!item.is_active;
+
+      onSiteLoaded(item);
+    }
+
+    function loadAssignmentIntoForm(assignmentId) {
+      const item = state.assignmentsById.get(String(assignmentId));
+      if (!item) return;
+
+      if (els.assignmentSelector) els.assignmentSelector.value = String(item.id || '');
+      if (els.formAssignmentId) els.formAssignmentId.value = String(item.id || '');
+      if (els.formAssignmentSiteId) els.formAssignmentSiteId.value = String(item.site_id || '');
+      if (els.formAssignmentProfileId) els.formAssignmentProfileId.value = String(item.profile_id || '');
+      if (els.formAssignmentRole) els.formAssignmentRole.value = item.assignment_role || 'worker';
+      if (els.formAssignmentPrimary) els.formAssignmentPrimary.checked = !!item.is_primary;
+
+      if (els.assignmentSiteSelector) els.assignmentSiteSelector.value = String(item.site_id || '');
+      if (els.assignmentProfileSelector) els.assignmentProfileSelector.value = String(item.profile_id || '');
+
+      onAssignmentLoaded(item);
     }
 
     async function refreshSelectors() {
-      if (state.locked) {
-        state.selectorProfiles = [];
-        state.selectorSites = [];
-        state.selectorAssignments = [];
+      if (!loadAdminSelectors || state.locked) return;
 
-        fillSelectOptions(els.amProfileSelector, [], 'Admin access required');
-        fillSelectOptions(els.amSiteSelector, [], 'Admin access required');
-        fillSelectOptions(els.amAssignmentSelector, [], 'Admin access required');
-        fillSelectOptions(els.amAssignmentProfileSelector, [], 'Admin access required');
-        fillSelectOptions(els.amAssignmentSiteSelector, [], 'Admin access required');
-        return;
+      try {
+        const resp = await loadAdminSelectors({});
+        const profiles = Array.isArray(resp?.profiles) ? resp.profiles : [];
+        const sites = Array.isArray(resp?.sites) ? resp.sites : [];
+        const assignments = Array.isArray(resp?.assignments) ? resp.assignments : [];
+
+        state.selectorData = { profiles, sites, assignments };
+
+        fillSelect(
+          els.profileSelector,
+          profiles,
+          'Select profile...',
+          'id',
+          (item) => `${item.email || item.full_name || item.id}${item.role ? ` — ${item.role}` : ''}`
+        );
+
+        fillSelect(
+          els.assignmentProfileSelector,
+          profiles,
+          'Select profile...',
+          'id',
+          (item) => `${item.email || item.full_name || item.id}${item.role ? ` — ${item.role}` : ''}`
+        );
+
+        fillSelect(
+          els.siteSelector,
+          sites,
+          'Select site...',
+          'id',
+          (item) => `${item.site_code || item.site_name || item.id}${item.site_name ? ` — ${item.site_name}` : ''}`
+        );
+
+        fillSelect(
+          els.assignmentSiteSelector,
+          sites,
+          'Select site...',
+          'id',
+          (item) => `${item.site_code || item.site_name || item.id}${item.site_name ? ` — ${item.site_name}` : ''}`
+        );
+
+        fillSelect(
+          els.assignmentSelector,
+          assignments,
+          'Select assignment...',
+          'id',
+          (item) =>
+            `${item.site_code || item.site_name || item.site_id} — ${item.user_email || item.full_name || item.profile_id}`
+        );
+      } catch (err) {
+        console.error('Failed to load admin selectors', err);
       }
-
-      const data = await loadAdminSelectors({
-        kind: 'all',
-        active_only: false,
-        limit: 500
-      });
-
-      if (!data?.ok) {
-        throw new Error(data?.error || 'Selector load failed');
-      }
-
-      state.selectorProfiles = data.profiles || [];
-      state.selectorSites = data.sites || [];
-      state.selectorAssignments = data.assignments || [];
-
-      fillSelectOptions(els.amProfileSelector, state.selectorProfiles, 'Select profile...');
-      fillSelectOptions(els.amSiteSelector, state.selectorSites, 'Select site...');
-      fillSelectOptions(els.amAssignmentSelector, state.selectorAssignments, 'Select assignment...');
-      fillSelectOptions(els.amAssignmentProfileSelector, state.selectorProfiles, 'Select profile...');
-      fillSelectOptions(els.amAssignmentSiteSelector, state.selectorSites, 'Select site...');
     }
 
     async function loadDirectory() {
       if (state.locked) {
-        clearDirectory();
+        setSummary('Admin access is required to use this dashboard.');
         return;
       }
 
-      const data = await loadAdminDirectory({
-        search: els.adSearch?.value?.trim?.() || undefined,
-        site_id: els.adSiteId?.value?.trim?.() || undefined,
-        profile_id: els.adProfileId?.value?.trim?.() || undefined,
-        active_only: !!els.adActiveOnly?.checked,
-        limit: Number(els.adLimit?.value || 200) || 200,
-        mode: els.adMode?.value || 'all'
-      });
+      const payload = {
+        mode: els.modeSelect?.value || state.mode || 'all',
+        search: els.search?.value?.trim?.() || '',
+        site_id: els.siteId?.value?.trim?.() || '',
+        profile_id: els.profileId?.value?.trim?.() || '',
+        active_only: !!els.activeOnly?.checked,
+        limit: Math.max(1, Math.min(1000, Number(els.limit?.value || 200)))
+      };
 
-      if (!data?.ok) {
-        throw new Error(data?.error || 'Admin directory load failed');
-      }
+      try {
+        setSummary('Loading directory...');
+        const resp = await loadAdminDirectory(payload);
 
-      state.users = data.users || [];
-      state.sites = data.sites || [];
-      state.assignments = data.assignments || [];
+        state.users = Array.isArray(resp?.users) ? resp.users : [];
+        state.sites = Array.isArray(resp?.sites) ? resp.sites : [];
+        state.assignments = Array.isArray(resp?.assignments) ? resp.assignments : [];
 
-      renderUsers(state.users);
-      renderSites(state.sites);
-      renderAssignments(state.assignments);
-      updateStats({
-        users: state.users.length,
-        sites: state.sites.length,
-        assignments: state.assignments.length
-      });
-
-      setNotice(els.adSummary, 'Directory loaded. Click any row to load it into the matching editor.');
-      setManageSummary('Admin directory loaded. Click any row to load it into the editor.');
-    }
-
-    function onAdminFilterEnter(e) {
-      if (e.key !== 'Enter') return;
-      e.preventDefault();
-      loadDirectory().catch((err) => {
+        refreshMaps();
+        setMode(payload.mode);
+        renderDirectory();
+        setSummary(`Loaded ${state.users.length} users, ${state.sites.length} sites, and ${state.assignments.length} assignments.`);
+      } catch (err) {
         console.error(err);
-        alert('Failed to load admin directory.');
+        setSummary('Failed to load admin directory.');
+      }
+    }
+
+    function bindTableClicks() {
+      els.usersTable?.addEventListener('click', (e) => {
+        const tr = (e.target instanceof Element) ? e.target.closest('tr[data-profile-id]') : null;
+        if (!tr) return;
+        loadProfileIntoForm(tr.dataset.profileId);
+      });
+
+      els.sitesTable?.addEventListener('click', (e) => {
+        const tr = (e.target instanceof Element) ? e.target.closest('tr[data-site-id]') : null;
+        if (!tr) return;
+        loadSiteIntoForm(tr.dataset.siteId);
+      });
+
+      els.assignmentsTable?.addEventListener('click', (e) => {
+        const tr = (e.target instanceof Element) ? e.target.closest('tr[data-assignment-id]') : null;
+        if (!tr) return;
+        loadAssignmentIntoForm(tr.dataset.assignmentId);
       });
     }
 
-    function bindEvents() {
-      [els.adSearch, els.adSiteId, els.adProfileId, els.adLimit].forEach((el) => {
-        el?.addEventListener('keydown', onAdminFilterEnter);
-      });
-
-      els.adLoad?.addEventListener('click', async () => {
-        try {
-          await loadDirectory();
-          await refreshSelectors();
-        } catch (err) {
-          console.error(err);
-          alert('Failed to load admin directory.');
+    function bindSelectors() {
+      els.profileSelector?.addEventListener('change', () => {
+        if (els.profileSelector.value) {
+          loadProfileIntoForm(els.profileSelector.value);
         }
       });
 
-      els.adClear?.addEventListener('click', () => {
-        if (els.adSearch) els.adSearch.value = '';
-        if (els.adSiteId) els.adSiteId.value = '';
-        if (els.adProfileId) els.adProfileId.value = '';
-        if (els.adActiveOnly) els.adActiveOnly.checked = false;
-        if (els.adLimit) els.adLimit.value = '200';
-        if (els.adMode) els.adMode.value = 'all';
-        clearDirectory();
+      els.siteSelector?.addEventListener('change', () => {
+        if (els.siteSelector.value) {
+          loadSiteIntoForm(els.siteSelector.value);
+        }
       });
 
-      els.adminModeButtons.forEach((btn) => {
-        btn.addEventListener('click', async () => {
-          const mode = btn.getAttribute('data-admin-mode') || 'all';
-          if (els.adMode) els.adMode.value = mode;
+      els.assignmentSelector?.addEventListener('change', () => {
+        if (els.assignmentSelector.value) {
+          loadAssignmentIntoForm(els.assignmentSelector.value);
+        }
+      });
 
-          try {
-            await loadDirectory();
-          } catch (err) {
-            console.error(err);
-            alert('Failed to switch admin mode.');
-          }
+      els.assignmentSiteSelector?.addEventListener('change', () => {
+        if (els.formAssignmentSiteId) {
+          els.formAssignmentSiteId.value = els.assignmentSiteSelector.value || '';
+        }
+      });
+
+      els.assignmentProfileSelector?.addEventListener('change', () => {
+        if (els.formAssignmentProfileId) {
+          els.formAssignmentProfileId.value = els.assignmentProfileSelector.value || '';
+        }
+      });
+    }
+
+    function bindToolbar() {
+      els.modeButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const mode = btn.dataset.adminMode || 'all';
+          setMode(mode);
+          if (els.modeSelect) els.modeSelect.value = mode;
+          renderDirectory();
         });
       });
 
-      els.adMode?.addEventListener('change', async () => {
-        try {
-          await loadDirectory();
-        } catch (err) {
-          console.error(err);
-          alert('Failed to change admin mode.');
-        }
+      els.modeSelect?.addEventListener('change', () => {
+        setMode(els.modeSelect.value || 'all');
+        renderDirectory();
       });
 
-      els.adUsersBody?.addEventListener('click', (e) => {
-        const tr = (e.target instanceof Element) ? e.target.closest('tr[data-admin-row-id]') : null;
-        if (!tr) return;
-        const row = state.users.find(item => String(item.id || '') === String(tr.dataset.adminRowId || ''));
-        if (row) loadProfileIntoForm(row);
+      [els.search, els.siteId, els.profileId, els.activeOnly, els.limit].forEach((el) => {
+        el?.addEventListener('input', () => renderDirectory());
+        el?.addEventListener('change', () => renderDirectory());
       });
 
-      els.adSitesBody?.addEventListener('click', (e) => {
-        const tr = (e.target instanceof Element) ? e.target.closest('tr[data-admin-row-id]') : null;
-        if (!tr) return;
-        const row = state.sites.find(item => String(item.id || '') === String(tr.dataset.adminRowId || ''));
-        if (row) loadSiteIntoForm(row);
+      els.loadBtn?.addEventListener('click', () => {
+        loadDirectory();
       });
 
-      els.adAssignmentsBody?.addEventListener('click', (e) => {
-        const tr = (e.target instanceof Element) ? e.target.closest('tr[data-admin-row-id]') : null;
-        if (!tr) return;
-        const row = state.assignments.find(item => String(item.id || '') === String(tr.dataset.adminRowId || ''));
-        if (row) loadAssignmentIntoForm(row);
-      });
-
-      els.amProfileSelector?.addEventListener('change', () => {
-        const row = pickById(state.selectorProfiles, els.amProfileSelector.value);
-        if (row) loadProfileIntoForm(row);
-      });
-
-      els.amSiteSelector?.addEventListener('change', () => {
-        const row = pickById(state.selectorSites, els.amSiteSelector.value);
-        if (row) loadSiteIntoForm(row);
-      });
-
-      els.amAssignmentSelector?.addEventListener('change', () => {
-        const row = pickById(state.selectorAssignments, els.amAssignmentSelector.value);
-        if (row) loadAssignmentIntoForm(row);
-      });
-
-      els.amAssignmentProfileSelector?.addEventListener('change', () => {
-        if (els.amAssignmentProfileId) {
-          els.amAssignmentProfileId.value = els.amAssignmentProfileSelector.value || '';
-        }
-      });
-
-      els.amAssignmentSiteSelector?.addEventListener('change', () => {
-        if (els.amAssignmentSiteId) {
-          els.amAssignmentSiteId.value = els.amAssignmentSiteSelector.value || '';
-        }
+      els.clearBtn?.addEventListener('click', () => {
+        if (els.search) els.search.value = '';
+        if (els.siteId) els.siteId.value = '';
+        if (els.profileId) els.profileId.value = '';
+        if (els.activeOnly) els.activeOnly.checked = false;
+        if (els.limit) els.limit.value = '200';
+        setMode('all');
+        clearDirectory();
       });
     }
 
     async function init() {
-      bindEvents();
+      bindToolbar();
+      bindTableClicks();
+      bindSelectors();
+      setMode('all');
       applyRoleAccess();
-      clearDirectory();
-      await refreshSelectors();
+
+      if (!state.locked) {
+        await refreshSelectors();
+      }
     }
 
     return {
+      state,
       init,
       loadDirectory,
-      refreshSelectors,
       clearDirectory,
+      refreshSelectors,
       applyRoleAccess,
-      setLocked,
-      state
+      loadProfileIntoForm,
+      loadSiteIntoForm,
+      loadAssignmentIntoForm
     };
   }
 
