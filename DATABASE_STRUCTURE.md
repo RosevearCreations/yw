@@ -1,30 +1,47 @@
 # DATABASE_STRUCTURE.md
-# YWI HSE Safety System Database Structure
+# YWI HSE Safety System — Database Structure Reference
 
-This document describes the database structure used by the YWI HSE Safety System.
+This document describes the current database and storage structure expected by the YWI HSE Safety System.
 
-It is intended to help developers, administrators, and AI assistants understand the purpose of each table, the expected columns, and how records relate to one another.
+It is intended to help developers, administrators, and AI assistants understand the data model used by the frontend and Supabase backend.
 
----
-
-## Overview
-
-The database is built around a central submission model.
-
-Core ideas:
-
-- users authenticate with Supabase Auth
-- app-specific user data is stored in `profiles`
-- safety forms are stored in `submissions`
-- reviews are stored in `submission_reviews`
-- uploaded image metadata is stored in `submission_images`
-- sites and assignments support access management
+This document should stay aligned with the live schema and current frontend expectations.
 
 ---
 
-## Core Tables
+# Database Platform
 
-The current system uses these primary tables:
+Database engine:
+
+**Supabase Postgres**
+
+Related services:
+
+- Supabase Auth
+- Supabase Storage
+- Supabase Edge Functions
+
+---
+
+# Database Design Goals
+
+The database supports:
+
+- authenticated users
+- role-based access
+- site-based records
+- form submissions
+- review workflows
+- evidence image tracking
+- admin management of users, sites, and assignments
+
+The current model is designed around a flexible `submissions` table with related supporting tables.
+
+---
+
+# Main Tables
+
+Current expected main tables:
 
 - `profiles`
 - `sites`
@@ -36,110 +53,145 @@ The current system uses these primary tables:
 
 ---
 
-## Table: profiles
+# 1. profiles
 
 Purpose:
 
-Stores application user profile information and role assignments.
+Stores application-level user profile information tied to Supabase Auth users.
 
-This table is expected to map to Supabase Auth users by `id`.
+This table is the main source for:
 
-### Expected columns
+- role
+- active state
+- display information
+- future permission expansion
+
+## Expected relationship
+
+- linked to Supabase Auth user by `id`
+- one profile per authenticated user
+
+## Typical columns
 
 | Column | Type | Purpose |
 |---|---|---|
-| `id` | uuid | Primary key, matches Supabase Auth user id |
-| `email` | text | User email address |
-| `full_name` | text | User display or full name |
-| `role` | text | App role |
-| `is_active` | boolean | Whether the user is active |
-| `created_at` | timestamptz | Row creation time |
-| `updated_at` | timestamptz | Last update time |
+| `id` | uuid | primary key, matches auth user id |
+| `email` | text | user email |
+| `full_name` | text | display name |
+| `role` | text | application role |
+| `is_active` | boolean | whether account is active |
+| `created_at` | timestamptz | created timestamp |
+| `updated_at` | timestamptz | last updated timestamp |
 
-### Expected role values
+## Current role values
+
+The current project direction uses these role values:
 
 - `worker`
+- `staff`
+- `onsite_admin`
+- `job_admin`
+- `site_leader`
 - `supervisor`
 - `hse`
 - `admin`
 
----
-
-## Table: sites
-
-Purpose:
-
-Stores safety site records.
-
-### Expected columns
-
-| Column | Type | Purpose |
-|---|---|---|
-| `id` | bigserial or bigint | Primary key |
-| `site_code` | text | Short site code |
-| `site_name` | text | Full site name |
-| `address` | text | Site address |
-| `notes` | text | Internal notes |
-| `is_active` | boolean | Whether the site is active |
-| `created_at` | timestamptz | Row creation time |
-| `updated_at` | timestamptz | Last update time |
+These values are already reflected in the frontend and should remain stable unless changed intentionally across the full stack.
 
 ---
 
-## Table: site_assignments
+# 2. sites
 
 Purpose:
 
-Connects users to sites.
+Stores worksite/location records used by submissions and assignments.
 
-This allows future access control by site assignment.
-
-### Expected columns
+## Typical columns
 
 | Column | Type | Purpose |
 |---|---|---|
-| `id` | bigserial or bigint | Primary key |
-| `site_id` | bigint | References `sites.id` |
-| `profile_id` | uuid | References `profiles.id` |
-| `assignment_role` | text | Role at that site |
-| `is_primary` | boolean | Primary site assignment flag |
-| `created_at` | timestamptz | Row creation time |
+| `id` | uuid | primary key |
+| `site_code` | text | short site code |
+| `site_name` | text | full site name |
+| `address` | text | site address |
+| `notes` | text | internal notes |
+| `is_active` | boolean | active/inactive site |
+| `created_at` | timestamptz | created timestamp |
+| `updated_at` | timestamptz | last updated timestamp |
 
-### Expected assignment role values
+## Notes
 
-- `worker`
-- `supervisor`
-- `hse`
-- `admin`
+- `site_code` should be treated as human-friendly
+- `site_name` is what most users will recognize
+- `is_active` is used by admin UI filtering and management
 
 ---
 
-## Table: submissions
+# 3. site_assignments
 
 Purpose:
 
-Stores all submitted safety forms.
+Links users to sites.
 
-This is the central table of the entire system.
+This table is the current basis for future site-based permission expansion.
 
-### Expected columns
+## Typical columns
 
 | Column | Type | Purpose |
 |---|---|---|
-| `id` | bigserial or bigint | Primary key |
-| `site` | text | Site identifier/name used at submission time |
-| `form_type` | text | Form code |
-| `date` | date or text | Submission date |
-| `submitted_by` | text | Human-entered submitter name |
-| `submitted_by_profile_id` | uuid | References `profiles.id` |
-| `payload` | jsonb | Full form payload |
-| `status` | text | Current submission status |
-| `admin_notes` | text | Internal admin notes |
-| `reviewed_by` | uuid | References `profiles.id` |
-| `reviewed_at` | timestamptz | Last review timestamp |
-| `created_at` | timestamptz | Row creation time |
+| `id` | uuid | primary key |
+| `site_id` | uuid | references `sites.id` |
+| `profile_id` | uuid | references `profiles.id` |
+| `assignment_role` | text | role for that site assignment |
+| `is_primary` | boolean | whether this is the user’s primary site |
+| `created_at` | timestamptz | created timestamp |
+| `updated_at` | timestamptz | last updated timestamp |
 
-### Expected form types
+## Notes
+
+- a user may have multiple site assignments
+- assignment role may mirror or refine general profile role in future workflows
+- admin UI currently supports create/update/delete for these rows
+
+---
+
+# 4. submissions
+
+Purpose:
+
+Stores the main submission records for all safety form types.
+
+This is the core operational table in the system.
+
+## Design approach
+
+Rather than one large table per form type, the current system uses:
+
+- one common `submissions` table
+- related detail tables where needed
+- structured payload storage for form-specific fields
+
+## Typical columns
+
+| Column | Type | Purpose |
+|---|---|---|
+| `id` | uuid or bigint | primary key |
+| `form_type` | text | submission type code |
+| `site` | text | site value captured on submission |
+| `submission_date` | date | logical date of the form |
+| `submitted_by` | text | submitter display text |
+| `submitted_by_profile_id` | uuid | optional profile link |
+| `payload` | jsonb | form-specific structured data |
+| `status` | text | workflow status |
+| `admin_notes` | text | internal notes |
+| `reviewed_by` | text or uuid | who reviewed latest |
+| `reviewed_at` | timestamptz | when latest review occurred |
+| `created_at` | timestamptz | created timestamp |
+| `updated_at` | timestamptz | updated timestamp |
+
+## Current form type values
+
+These values are already used throughout the project and must stay consistent:
 
 - `A` = Emergency Drill
 - `B` = First Aid Kit Check
@@ -147,7 +199,9 @@ This is the central table of the entire system.
 - `D` = PPE Check
 - `E` = Toolbox Talk
 
-### Expected status values
+## Current status values
+
+Current status values in active use:
 
 - `submitted`
 - `under_review`
@@ -155,49 +209,64 @@ This is the central table of the entire system.
 - `follow_up_required`
 - `closed`
 
----
+These status values are used by:
 
-## Table: toolbox_attendees
-
-Purpose:
-
-Stores attendance rows for Toolbox Talk submissions.
-
-This separates attendee rows from the main submission payload for easier reporting if needed.
-
-### Expected columns
-
-| Column | Type | Purpose |
-|---|---|---|
-| `id` | bigserial or bigint | Primary key |
-| `submission_id` | bigint | References `submissions.id` |
-| `name` | text | Attendee name |
-| `role_on_site` | text | Worker role on site |
-| `signature_png_base64` | text | Optional signature image data |
-| `created_at` | timestamptz | Row creation time |
+- logbook filters
+- detail view
+- review panel
+- admin/reviewer workflows
 
 ---
 
-## Table: submission_reviews
+# 5. toolbox_attendees
 
 Purpose:
 
-Stores the review history for each submission.
+Stores the attendee rows for Toolbox Talk submissions.
 
-Each row is one review event.
+This table exists because attendee lists are naturally row-based and useful for reporting/searching.
 
-### Expected columns
+## Typical columns
 
 | Column | Type | Purpose |
 |---|---|---|
-| `id` | bigserial or bigint | Primary key |
-| `submission_id` | bigint | References `submissions.id` |
-| `reviewer_id` | uuid | References `profiles.id` |
-| `review_action` | text | Review action taken |
-| `review_note` | text | Optional note |
-| `created_at` | timestamptz | Review timestamp |
+| `id` | uuid or bigint | primary key |
+| `submission_id` | uuid or bigint | references `submissions.id` |
+| `name` | text | attendee name |
+| `role` | text | role on site |
+| `company` | text | optional company |
+| `created_at` | timestamptz | created timestamp |
 
-### Expected review action values
+## Notes
+
+- primarily used by Toolbox Talk form type `E`
+- frontend may still also carry attendee details inside payload depending on function implementation
+- if schema and payload both exist, backend should keep them in sync
+
+---
+
+# 6. submission_reviews
+
+Purpose:
+
+Stores review history for submissions.
+
+This provides an audit trail of review actions and comments.
+
+## Typical columns
+
+| Column | Type | Purpose |
+|---|---|---|
+| `id` | uuid or bigint | primary key |
+| `submission_id` | uuid or bigint | references `submissions.id` |
+| `reviewer_id` | uuid | references `profiles.id` or auth-linked profile |
+| `action` | text | review action taken |
+| `note` | text | review note |
+| `created_at` | timestamptz | created timestamp |
+
+## Current review action values
+
+Current review action values:
 
 - `commented`
 - `under_review`
@@ -206,270 +275,86 @@ Each row is one review event.
 - `closed`
 - `reopened`
 
+## Notes
+
+- every review action should ideally create one history row
+- `submissions.status` holds current state
+- `submission_reviews` holds historical changes/comments
+
 ---
 
-## Table: submission_images
+# 7. submission_images
 
 Purpose:
 
-Stores metadata for uploaded images linked to a submission.
+Stores metadata for uploaded evidence images.
 
-The actual files live in Supabase Storage.
+This table tracks what was uploaded, where it lives in storage, and how it is categorized.
 
-### Expected columns
+## Typical columns
 
 | Column | Type | Purpose |
 |---|---|---|
-| `id` | bigserial or bigint | Primary key |
-| `submission_id` | bigint | References `submissions.id` |
-| `image_type` | text | Type/category of image |
-| `file_name` | text | Original file name |
-| `file_path` | text | Storage path in bucket |
-| `file_size_bytes` | bigint | File size |
+| `id` | uuid or bigint | primary key |
+| `submission_id` | uuid or bigint | references `submissions.id` |
+| `file_path` | text | storage path |
+| `file_name` | text | original or stored file name |
+| `image_type` | text | image category |
+| `file_size_bytes` | bigint | file size |
 | `content_type` | text | MIME type |
-| `caption` | text | Optional caption |
-| `uploaded_by` | uuid | References `profiles.id` |
-| `created_at` | timestamptz | Upload record time |
+| `caption` | text | user caption |
+| `uploaded_by` | uuid | profile/user reference |
+| `created_at` | timestamptz | created timestamp |
 
-### Expected image type values
+## Current image type values seen in frontend direction
 
+- `general`
 - `hazard`
 - `status`
 - `repair`
 - `other`
 
----
-
-## Relationships
-
-### profiles → submissions
-
-- `submissions.submitted_by_profile_id` references `profiles.id`
-- `submissions.reviewed_by` references `profiles.id`
-
-### profiles → submission_reviews
-
-- `submission_reviews.reviewer_id` references `profiles.id`
-
-### profiles → submission_images
-
-- `submission_images.uploaded_by` references `profiles.id`
-
-### sites → site_assignments
-
-- `site_assignments.site_id` references `sites.id`
-
-### profiles → site_assignments
-
-- `site_assignments.profile_id` references `profiles.id`
-
-### submissions → toolbox_attendees
-
-- `toolbox_attendees.submission_id` references `submissions.id`
-
-### submissions → submission_reviews
-
-- `submission_reviews.submission_id` references `submissions.id`
-
-### submissions → submission_images
-
-- `submission_images.submission_id` references `submissions.id`
+These values appear in current forms and should remain aligned with UI options.
 
 ---
 
-## Storage Structure
+# Storage
 
-The database stores only image metadata.
+## Bucket
 
-Image files are stored in Supabase Storage bucket:
+Current bucket:
 
-`submission-images`
+- `submission-images`
 
-Typical paths:
+## Typical path conventions
+
+Current frontend/backend direction suggests paths like:
 
 - `inspection/<submission_id>/<filename>`
 - `drill/<submission_id>/<filename>`
 
-The `file_path` column in `submission_images` should match the path stored in the bucket.
+Other image categories may also be stored in the same bucket depending on current upload implementation.
+
+## Important note
+
+The current frontend uses an Edge Function path named:
+
+- `upload-image`
+
+Older docs may mention a different naming style, but the active frontend work is aligned to `upload-image`.
 
 ---
 
-## Submission Payload Notes
+# Relationships Overview
 
-The `payload` column in `submissions` stores full JSON data for each form.
+```text
+profiles
+  └──< site_assignments >── sites
 
-### Form E — Toolbox Talk
+profiles
+  └──< submissions (optional submitted_by_profile_id)
 
-Usually contains:
-
-- `site`
-- `date`
-- `submitted_by`
-- `topic_notes`
-- `attendees[]`
-
-### Form D — PPE Check
-
-Usually contains:
-
-- `site`
-- `date`
-- `checked_by`
-- `roster[]`
-- `nonCompliant`
-
-### Form B — First Aid Kit Check
-
-Usually contains:
-
-- `site`
-- `date`
-- `checked_by`
-- `items[]`
-- `flagged`
-
-### Form C — Site Inspection
-
-Usually contains:
-
-- `site`
-- `date`
-- `inspector`
-- `roster[]`
-- `hazards[]`
-- `openHazards`
-- `approved`
-- `approver_name`
-- `approver_signature_png`
-
-### Form A — Emergency Drill
-
-Usually contains:
-
-- `site`
-- `date`
-- `supervisor`
-- `drill_type`
-- `start_time`
-- `end_time`
-- `scenario_notes`
-- `participants[]`
-- `evaluation`
-- `follow_up_actions`
-- `next_drill_date`
-- `issues`
-
----
-
-## Recommended Indexes
-
-Recommended indexes for performance:
-
-### submissions
-
-- index on `status`
-- index on `(site, date desc)`
-- index on `(form_type, date desc)`
-- index on `submitted_by_profile_id`
-
-### submission_reviews
-
-- index on `submission_id`
-- index on `reviewer_id`
-- index on `created_at desc`
-
-### submission_images
-
-- index on `submission_id`
-- index on `uploaded_by`
-- index on `created_at desc`
-
-### site_assignments
-
-- index on `site_id`
-- index on `profile_id`
-
----
-
-## Row Level Security Notes
-
-The current architecture expects secure logic to be enforced mostly inside Edge Functions using the service role.
-
-However, if direct table reads are later needed from the frontend, RLS should be applied carefully.
-
-Recommended pattern:
-
-- workers can view only their own related submissions
-- supervisors, hse, and admin can view broader records
-- admin can manage profiles, sites, and assignments
-
----
-
-## Operational Assumptions
-
-The current system assumes:
-
-- `profiles.id` matches the authenticated Supabase user id
-- `submitted_by_profile_id` is populated on submissions
-- image records are linked only after successful storage upload
-- review history is append-only
-- status changes are controlled by review actions
-
----
-
-## Schema Change Rules
-
-When changing schema:
-
-1. update SQL migration files
-2. update this document
-3. update Edge Functions
-4. update frontend code if field names changed
-5. update README and AI context files if architecture changed
-
----
-
-## Maintainers
-
-YWI HSE Development Team
-
----
-
-End of Database Structure Document
-
-
----
-
-## 🔐 Recent Security & System Updates (Auto-Added)
-
-### Authentication
-- Supabase Magic Link login implemented
-- Session persistence via localStorage
-- JWT-based validation in Edge Functions
-
-### Role-Based Access (RBAC)
-Supported roles:
-- worker
-- site_leader
-- supervisor
-- hse
-- admin
-
-### Backend Security
-- Edge Functions now validate JWT
-- Admin-only endpoints enforced
-- `can_access_submission()` used for data protection
-
-### New Features Added
-- Image upload system (`upload-image`)
-- Submission review system (`review-submission`)
-- Admin management endpoint
-- Site + Assignment management
-- Storage integration for job images
-
-### Recommended Next Steps
-- Enable RLS on all tables
-- Add audit logging
-- Add session timeout
-- Add UI role-based visibility
-
+submissions
+  ├──< toolbox_attendees
+  ├──< submission_reviews
+  └──< submission_images
