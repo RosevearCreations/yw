@@ -1,24 +1,76 @@
 # AI_CONTEXT.md
+# YWI HSE Safety System — AI Context File
 
-## Mission for any AI assistant
-You are working on a Supabase-backed HSE web app called **YWI HSE**. Your first priority is to preserve working auth, submission intake, review flows, and admin tools. Do not casually refactor working IDs, DOM hooks, function names, storage bucket names, or status values.
+This document is the fast-start context file for any AI assistant or new development session working on the YWI HSE Safety System.
 
-## Repo purpose
-This repo contains a static frontend plus Supabase backend functions for:
-- site safety forms
-- image evidence uploads
-- review + approval workflows
-- logbook search/export
-- admin user/site/assignment management
+Its purpose is to explain:
 
-## Frontend architecture
-This project is intentionally simple:
-- `index.html` contains all app sections on one page
-- sections are shown/hidden using hash navigation
-- `app.js` contains nearly all logic
-- `style.css` handles layout and styling
+- what the project is
+- how it is currently structured
+- what is already working
+- what the current focus is
+- how to continue safely without breaking the app
 
-### Important frontend sections / hashes
+---
+
+# Project Identity
+
+Project name:
+
+**YWI HSE Safety System**
+
+Project type:
+
+**Supabase-backed HSE / safety compliance web application**
+
+Main purpose:
+
+Provide a lightweight web app for site safety workflows including:
+
+- daily toolbox talks
+- PPE compliance checks
+- first aid kit checks
+- site inspections
+- emergency drills
+- review workflows
+- admin management of users, sites, and assignments
+
+---
+
+# Current Development Reality
+
+The project is no longer best described as a simple `index.html + app.js` application.
+
+It has been actively refactored into a more modular frontend while still remaining a static browser-based app.
+
+Current frontend structure includes:
+
+- `index.html`
+- `style.css`
+- `app.js`
+- `js/bootstrap.js`
+- `js/auth.js`
+- `js/ui-auth.js`
+- `js/admin-ui.js`
+- `js/logbook-ui.js`
+- `js/forms-toolbox.js`
+- `js/forms-ppe.js`
+- `js/forms-firstaid.js`
+- `js/forms-inspection.js`
+- `js/forms-drill.js`
+
+This modular structure must be treated as the current direction of the project.
+
+Do not collapse this work back into one oversized file unless explicitly asked.
+
+---
+
+# Current Frontend Responsibilities
+
+## index.html
+
+Contains the single-page app shell and all visible sections:
+
 - `#toolbox`
 - `#ppe`
 - `#firstaid`
@@ -27,87 +79,235 @@ This project is intentionally simple:
 - `#log`
 - `#admin`
 
-### Critical frontend IDs that should not be changed casually
-Auth:
-- `loginView`
-- `loginForm`
-- `loginEmail`
-- `authInfo`
-- `whoami`
-- `logoutBtn`
+Also includes the auth UI shell and the small inline hash router used for section switching.
 
-Forms:
-- `toolboxForm`, `ppeForm`, `faForm`, `inspForm`, `drForm`
-- many JS handlers depend on exact IDs in `app.js`
+## app.js
 
-Logbook / review / detail:
-- `lg_*`
-- `rv_*`
-- `sd_*`
+Acts as the shared app shell.
 
-Admin:
-- `ad_*`
-- `am_*`
+Responsibilities include:
 
-## Backend architecture
-Supabase Edge Functions are the API layer.
+- app startup
+- module initialization
+- shared fetch helpers
+- upload helpers
+- outbox retry
+- shared admin action wiring
+- auth state reaction
+- route-based admin auto-load support
 
-### Current expected functions
+## js/bootstrap.js
+
+Responsible for:
+
+- creating the Supabase client
+- recovering auth sessions from callback URLs
+- handling malformed callback cases
+- exposing shared boot state/helpers
+
+## js/auth.js
+
+Shared auth controller.
+
+Responsible for:
+
+- auth state
+- sign-in methods
+- logout
+- reset password flow
+- session refresh
+- syncing with bootstrap
+
+## js/ui-auth.js
+
+Auth UI controller.
+
+Responsible for:
+
+- login screen
+- password/magic-link tabs
+- login state rendering
+- preventing the login screen from showing too early
+- logout button behavior
+
+## js/admin-ui.js
+
+Admin Dashboard UI controller.
+
+Responsible for:
+
+- directory load/render
+- summary cards
+- mode switching
+- row click-to-load behavior
+- selector syncing
+- admin role locking
+
+## js/logbook-ui.js
+
+Logbook/review/detail controller.
+
+Responsible for:
+
+- loading filtered submissions
+- CSV export
+- submission detail rendering
+- review history rendering
+- attached image rendering
+- review panel actions
+
+## js/forms-*.js modules
+
+Each main form is split into its own module.
+
+Current modules:
+
+- Toolbox Talk
+- PPE Check
+- First Aid
+- Site Inspection
+- Emergency Drill
+
+Each module is responsible for its own:
+
+- row handling
+- payload building
+- signature behavior where needed
+- optional image queue
+- submit behavior
+- outbox fallback
+
+---
+
+# Authentication Context
+
+Authentication uses Supabase.
+
+Current UI supports:
+
+- magic link sign-in
+- email + password sign-in
+- password reset email flow
+- logout
+
+## Important recent auth issue
+
+A major recent problem involved the magic link flow.
+
+Symptom:
+
+- user clicked the email link
+- the app returned to the login screen
+- URL sometimes contained both error data and valid auth tokens
+
+Cause:
+
+- auth callback hash data could be overwritten or read incorrectly too early
+- the UI could render the logged-out screen before session recovery finished
+
+Recent fixes focused on:
+
+- preserving callback auth data
+- not rewriting callback hashes too early
+- manually recovering sessions from malformed URLs containing both error and token fragments
+- delaying logged-out UI until auth recovery is finished
+
+This area is sensitive.
+
+If changing auth, do not casually remove these recovery protections.
+
+---
+
+# Current Roles
+
+The current documentation direction and frontend role model uses these values:
+
+- `worker`
+- `staff`
+- `onsite_admin`
+- `job_admin`
+- `site_leader`
+- `supervisor`
+- `hse`
+- `admin`
+
+## Role behavior direction
+
+- `worker` = standard form access
+- `staff` = operational access
+- `onsite_admin` = elevated site-level access
+- `job_admin` = elevated job/workflow access
+- `site_leader`, `supervisor`, `hse` = review-capable roles
+- `admin` = full admin dashboard access
+
+Frontend review visibility is role-aware.
+
+Frontend admin management is admin-locked.
+
+Do not reduce the role list back to the older smaller set unless the backend/schema is intentionally being simplified.
+
+---
+
+# Supported Form Types
+
+Current form codes:
+
+- `A` = Emergency Drill
+- `B` = First Aid Kit Check
+- `C` = Site Inspection
+- `D` = PPE Check
+- `E` = Toolbox Talk
+
+These values are already used across the app and documentation and should remain stable.
+
+---
+
+# Current Submission Status Values
+
+- `submitted`
+- `under_review`
+- `approved`
+- `follow_up_required`
+- `closed`
+
+Current review action values:
+
+- `commented`
+- `under_review`
+- `approved`
+- `follow_up_required`
+- `closed`
+- `reopened`
+
+Do not rename these casually because they are shared across UI/backend/docs.
+
+---
+
+# Current Backend / Function Expectations
+
+The frontend currently expects these Edge Functions:
+
 - `resend-email`
 - `clever-endpoint`
-- `submission-images`
 - `submission-detail`
 - `review-submission`
 - `admin-directory`
 - `admin-manage`
+- `admin-selectors`
+- `upload-image`
 
-### Function behavior summary
-#### `resend-email`
-Secure submission intake.
-- Validates JWT
-- Validates active profile
-- Creates submission
-- Seeds initial review entry
-- Inserts toolbox attendees when needed
-- Sends notification emails when required
+Important note:
 
-#### `clever-endpoint`
-Secure list endpoint for logbook.
-- Validates JWT
-- Returns filtered submissions
-- Returns current role
-- Supports filters by site, form, date range, status
+Older docs sometimes referred to `submission-images`, but current frontend work is aligned around `upload-image`.
 
-#### `submission-images`
-Accepts image metadata after storage upload.
-- Validates JWT
-- Validates access to the submission
-- Inserts rows into `submission_images`
+When documenting or wiring code, stay consistent with the frontend actually being built.
 
-#### `submission-detail`
-Returns one submission plus related review and image history.
+---
 
-#### `review-submission`
-Adds review history and can update:
-- `status`
-- `admin_notes`
-- `reviewed_by`
-- `reviewed_at`
+# Current Database Expectations
 
-#### `admin-directory`
-Read endpoint for:
-- profiles
-- sites
-- assignments
+Main tables:
 
-#### `admin-manage`
-Write endpoint for:
-- updating profiles
-- creating/updating sites
-- creating/updating/deleting assignments
-
-## Database model
-Main tables expected:
 - `profiles`
 - `sites`
 - `site_assignments`
@@ -116,174 +316,157 @@ Main tables expected:
 - `submission_reviews`
 - `submission_images`
 
-### Important column expectations
-#### `profiles`
-- `id`
-- `email`
-- `full_name`
-- `role`
-- `is_active`
+Storage bucket:
 
-#### `sites`
-- `id`
-- `site_code`
-- `site_name`
-- `address`
-- `notes`
-- `is_active`
-
-#### `site_assignments`
-- `id`
-- `site_id`
-- `profile_id`
-- `assignment_role`
-- `is_primary`
-
-#### `submissions`
-- `id`
-- `site`
-- `form_type`
-- `date`
-- `submitted_by`
-- `submitted_by_profile_id`
-- `payload`
-- `status`
-- `admin_notes`
-- `reviewed_by`
-- `reviewed_at`
-
-#### `submission_reviews`
-- `id`
-- `submission_id`
-- `reviewer_id`
-- `review_action`
-- `review_note`
-- `created_at`
-
-#### `submission_images`
-- `id`
-- `submission_id`
-- `image_type`
-- `file_name`
-- `file_path`
-- `file_size_bytes`
-- `content_type`
-- `caption`
-- `uploaded_by`
-- `created_at`
-
-## Auth model
-- Auth is Supabase magic link
-- Frontend uses publishable key, never service role key
-- Edge Functions should use Verify JWT ON
-- Functions validate user identity with `auth/v1/user`
-- Role checks are done using the `profiles` table
-
-## Storage model
-Bucket name:
 - `submission-images`
 
-Typical upload paths:
-- `inspection/<submission_id>/...`
-- `drill/<submission_id>/...`
+Expected image categories in current UI direction include:
 
-Frontend uploads binary files directly to storage, then records metadata through `submission-images`.
-
-## Status vocabulary
-Do not invent new status strings unless the database and UI are updated everywhere.
-Current statuses:
-- `submitted`
-- `under_review`
-- `approved`
-- `follow_up_required`
-- `closed`
-
-## Review action vocabulary
-Do not invent new action strings unless the database and UI are updated everywhere.
-Current actions:
-- `commented`
-- `under_review`
-- `approved`
-- `follow_up_required`
-- `closed`
-- `reopened`
-
-## Safe working rules for AI
-1. Preserve IDs and endpoint names unless explicitly doing a coordinated migration.
-2. Preserve payload shapes unless frontend + backend + DB are all updated together.
-3. Prefer full-document replacements over fragment edits when this repo is being updated conversationally.
-4. When modifying backend logic, keep role checks explicit.
-5. When modifying auth, never expose service role credentials to the frontend.
-6. When modifying uploads, keep the storage bucket name aligned with the frontend.
-7. When fixing logbook/review issues, check both:
-   - `clever-endpoint`
-   - `review-submission`
-   - `submission-detail`
-8. When fixing image issues, check both:
-   - storage policies
-   - `submission-images`
-   - frontend upload path generation
-
-## Common failure points
-- Wrong Supabase publishable key in frontend
-- Verify JWT ON but frontend not sending valid session token
-- Missing table columns such as `submitted_by_profile_id` or `status`
-- Missing storage bucket or storage policies
-- Hash router breaking because auth callback tokens stay in URL hash
-- Service worker trying to cache unsupported POST / extension requests
-
-## Best workflow for any new AI chat
-1. Read `README.md`
-2. Read `docs/PROJECT_BRAIN.md`
-3. Read `docs/REPO_BASE.md`
-4. Read `docs/DATABASE_STRUCTURE.md`
-5. Inspect `index.html`, `app.js`, and the relevant Edge Function(s)
-6. Confirm whether the user wants a full-document replacement or patch
-7. Make coordinated changes only
-
-## What to suggest next if asked
-Strong next improvements:
-- selector-based admin tools instead of raw IDs
-- dashboard summary cards
-- assignment-based site permissions
-- PDF export / print package
-- reopen/edit flows
-- better image gallery and evidence review tools
-- automated reminders for follow-up-required submissions
-
+- `general`
+- `hazard`
+- `status`
+- `repair`
+- `other`
 
 ---
 
-## 🔐 Recent Security & System Updates (Auto-Added)
+# Admin Dashboard Context
 
-### Authentication
-- Supabase Magic Link login implemented
-- Session persistence via localStorage
-- JWT-based validation in Edge Functions
+This is the current active focus area.
 
-### Role-Based Access (RBAC)
-Supported roles:
-- worker
-- site_leader
-- supervisor
-- hse
-- admin
+The Admin Dashboard work is moving toward:
 
-### Backend Security
-- Edge Functions now validate JWT
-- Admin-only endpoints enforced
-- `can_access_submission()` used for data protection
+- cleaner summary cards
+- better selector-driven editing
+- easier row-to-form loading
+- clearer separation of users / sites / assignments
+- better role-based locking
+- easier maintenance through `js/admin-ui.js`
 
-### New Features Added
-- Image upload system (`upload-image`)
-- Submission review system (`review-submission`)
-- Admin management endpoint
-- Site + Assignment management
-- Storage integration for job images
+If continuing development, Admin Dashboard UI is the primary place to resume unless told otherwise.
 
-### Recommended Next Steps
-- Enable RLS on all tables
-- Add audit logging
-- Add session timeout
-- Add UI role-based visibility
+---
 
+# Logbook Context
+
+The logbook is not just a list.
+
+Current intended features:
+
+- filter by site
+- filter by date range
+- filter by form type
+- filter by status
+- export CSV
+- load detail view
+- render review history
+- render images
+- support review actions for allowed roles
+
+The current code direction is to keep this in `js/logbook-ui.js` and not mix it back into unrelated form logic.
+
+---
+
+# Offline / Outbox Context
+
+The app has an outbox concept for failed submissions.
+
+When a form submission fails because of a server/network issue:
+
+- payload is saved locally
+- retry buttons can re-attempt queued submissions later
+
+This should be preserved when refactoring form code.
+
+---
+
+# Routing Context
+
+The app uses hash-based single-page navigation.
+
+Current sections:
+
+- `#toolbox`
+- `#ppe`
+- `#firstaid`
+- `#inspect`
+- `#drill`
+- `#log`
+- `#admin`
+
+The router was updated so auth callback hashes do not break normal page routing.
+
+This means auth-related hash handling is sensitive and should not be simplified carelessly.
+
+---
+
+# Development Rules For Future Sessions
+
+When continuing this project, follow these practical rules:
+
+1. Update one file at a time unless explicitly asked otherwise.
+2. Provide the full contents of the file in a complete code block.
+3. Keep existing IDs, selectors, routes, and naming stable unless there is a very good reason to change them.
+4. Preserve the modular structure that now exists.
+5. Do not remove auth recovery protections around magic links.
+6. Do not assume docs are current unless they were updated after code changes.
+7. Prefer extending existing modules over rebuilding the whole app structure.
+8. Keep admin functionality aligned with the current dashboard direction.
+9. When changing architecture, update the markdown docs too.
+
+---
+
+# Safe Continuation Starting Point
+
+If resuming work in a new chat, the best startup instruction is:
+
+“Read `AI_CONTEXT.md` and `PROJECT_BRAIN.md` first. Current focus: Admin Dashboard UI.”
+
+That should be enough to re-establish the correct working context quickly.
+
+---
+
+# Current Priority
+
+Current active priority:
+
+**Admin Dashboard UI**
+
+Secondary priorities:
+
+- keep auth stable after magic-link hardening
+- keep docs aligned with the modular frontend
+- continue cleanup/refactor without breaking current flows
+
+---
+
+# Known Caution Areas
+
+Sensitive areas that can break the app quickly:
+
+- auth callback handling
+- hash routing
+- role names
+- form type values
+- submission status values
+- Edge Function names
+- upload flow naming
+- shared DOM IDs used by current modules
+
+---
+
+# Related Documentation
+
+Other key files that should stay aligned with this one:
+
+- `README.md`
+- `PROJECT_BRAIN.md`
+- `PROJECT_STATE.md`
+- `SYSTEM_ARCHITECTURE.md`
+- `DATABASE_STRUCTURE.md`
+- `REPO_BASE.md`
+- `CHANGELOG.md`
+
+---
+
+# End of AI Context
