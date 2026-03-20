@@ -1,15 +1,9 @@
+/* File: js/admin-ui.js
+   Brief description: Admin Dashboard UI controller for loading users, sites, and assignments,
+   syncing selectors, filtering results, locking admin-only access, and loading rows into edit forms.
+*/
+
 'use strict';
-
-/* =========================================================
-   js/admin-ui.js
-   Admin Dashboard UI controller
-
-   Purpose:
-   - load and render admin directory data
-   - refresh selector dropdowns
-   - lock/unlock admin area by role
-   - let table rows populate the editor forms
-========================================================= */
 
 (function () {
   function $(sel, root = document) {
