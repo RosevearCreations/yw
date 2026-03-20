@@ -9,11 +9,13 @@ It should be updated whenever major architecture or feature changes occur.
 
 # Current Project Phase
 
-The system is currently in the **functional development stage**.
+The system is currently in the **active functional development and refactor stage**.
 
-Core features are implemented and the architecture is stable, but the system still requires final testing and some usability improvements.
+Core features are present and working in principle, but the frontend is in the middle of a structured cleanup and modularization pass.
 
-The backend architecture, authentication system, database structure, and Edge Functions are all established.
+The backend architecture, authentication foundation, database structure, storage usage, and Edge Function pattern are established.
+
+The current work is focused on improving maintainability, stabilizing authentication, and continuing the Admin Dashboard UI.
 
 ---------------------------------------------------------------------
 
@@ -21,16 +23,19 @@ The backend architecture, authentication system, database structure, and Edge Fu
 
 ## Authentication
 
-Supabase Magic Link authentication is implemented.
+Supabase authentication is implemented in the frontend.
 
-Features
+Current supported auth UI flows:
 
-• email login  
-• Supabase session handling  
-• JWT authentication for Edge Functions  
-• role validation using profiles table  
+- magic link sign-in
+- email + password sign-in UI
+- password reset email flow
+- logout
+- session refresh handling
 
-Users can log in and access the application interface.
+Recent frontend work has improved magic-link callback handling and session recovery.
+
+This includes protection against malformed callback URLs that may contain both error fragments and valid auth tokens.
 
 ---------------------------------------------------------------------
 
@@ -42,13 +47,16 @@ Five safety form types are implemented.
 
 Records safety meeting discussions.
 
-Includes
+Includes:
 
-• topic notes  
-• meeting discussion  
-• attendee list  
+- site
+- date
+- submitted by
+- topic notes
+- attendee list
+- optional images
 
-Attendees stored in `toolbox_attendees`.
+Attendees are stored through the toolbox attendee flow.
 
 ---------------------------------------------------------------------
 
@@ -56,93 +64,106 @@ Attendees stored in `toolbox_attendees`.
 
 Checks worker PPE compliance.
 
-Includes
+Includes:
 
-• worker roster  
-• PPE compliance checks  
-• non-compliance flags  
+- site
+- date
+- checked by
+- worker roster
+- PPE compliance checks
 
 ---------------------------------------------------------------------
 
 ### First Aid Kit Check (Form B)
 
-Tracks medical kit readiness.
+Tracks first aid kit readiness.
 
-Includes
+Includes:
 
-• checklist items  
-• missing supplies  
-• flagged issues  
+- site
+- date
+- checked by
+- stock rows
+- minimum stock checks
+- expiry tracking
 
 ---------------------------------------------------------------------
 
 ### Site Inspection (Form C)
 
-Records hazard inspections.
+Records inspection and hazard information.
 
-Includes
+Includes:
 
-• inspector name  
-• hazard list  
-• open hazards count  
-• signature approval  
-
-Supports photo uploads.
+- site
+- date
+- inspector
+- worker roster
+- hazards
+- approval signature
+- optional image uploads
 
 ---------------------------------------------------------------------
 
 ### Emergency Drill (Form A)
 
-Records safety drills.
+Records safety drill activity.
 
-Includes
+Includes:
 
-• drill type  
-• drill timing  
-• participants  
-• evaluation  
-• follow-up actions  
-
-Supports photo uploads.
+- site
+- date
+- supervisor
+- drill type
+- drill timing
+- participants
+- evaluation
+- follow-up actions
+- next drill date
+- issue flag
+- supervisor signature
+- optional image uploads
 
 ---------------------------------------------------------------------
 
 # Image Upload System
 
-Image uploads are functional.
+Image uploads are part of the active working flow.
 
 Images are stored in Supabase Storage.
 
-Bucket
+Bucket:
 
-submission-images
+`submission-images`
 
-Typical paths
+Image metadata is stored in:
 
-inspection/<submission_id>/<filename>  
-drill/<submission_id>/<filename>
+`submission_images`
 
-Image metadata is stored in
+Typical current storage path patterns include:
 
-submission_images
+- `inspection/<submission_id>/<filename>`
+- `drill/<submission_id>/<filename>`
+
+The frontend currently uses an `upload-image` function path in its upload flow.
 
 ---------------------------------------------------------------------
 
 # Logbook System
 
-The logbook interface allows users to
+The logbook interface allows users to:
 
-• view safety submissions  
-• filter by site  
-• filter by form type  
-• filter by date range  
-• filter by status  
+- view recent safety submissions
+- filter by site
+- filter by form type
+- filter by date range
+- filter by status
+- export rows to CSV
+- open full submission detail
+- review attached images
+- review status history
 
-The logbook supports CSV export.
-
-Data is retrieved through the
-
-clever-endpoint Edge Function.
+The logbook/review/detail UI has been separated into its own module.
 
 ---------------------------------------------------------------------
 
@@ -150,194 +171,314 @@ clever-endpoint Edge Function.
 
 The review system is implemented.
 
-Reviewers can
+Eligible roles can:
 
-• open submission detail  
-• add review notes  
-• change submission status  
+- open submission detail
+- add review notes
+- change submission status
+- update admin notes
+- inspect review history
 
-Review actions are stored in
+Review actions are stored in:
 
-submission_reviews
+`submission_reviews`
 
-Submission status is updated in
+Submission status and notes are updated in:
 
-submissions
+`submissions`
 
 ---------------------------------------------------------------------
 
 # Admin System
 
-Admin features exist and are functional.
+Admin features exist and are functional at the frontend/backend pattern level.
 
-Admin users can
+Admin users can:
 
-• view profiles  
-• edit user roles  
-• create sites  
-• edit sites  
-• assign users to sites  
+- view profiles
+- edit user roles
+- edit user active state
+- create sites
+- update sites
+- create assignments
+- update assignments
+- delete assignments
 
-These actions use
+Admin workflows currently use:
 
-admin-directory  
-admin-manage  
+- `admin-directory`
+- `admin-manage`
+- `admin-selectors`
 
-Edge Functions.
-
----------------------------------------------------------------------
-
-# Edge Functions Currently Implemented
-
-resend-email
-
-Handles safety form submissions.
-
-Responsibilities
-
-• validate user session  
-• create submission  
-• insert toolbox attendees  
-• send email notifications  
+The Admin Dashboard is the current main UI focus.
 
 ---------------------------------------------------------------------
 
-clever-endpoint
+# Current Frontend Architecture Status
+
+The frontend has been refactored away from a mostly single-file structure.
+
+## Current structure
+
+Main app shell:
+
+- `index.html`
+- `style.css`
+- `app.js`
+
+Auth/app boot layer:
+
+- `js/bootstrap.js`
+- `js/auth.js`
+- `js/ui-auth.js`
+
+Feature UI modules:
+
+- `js/admin-ui.js`
+- `js/logbook-ui.js`
+
+Form modules:
+
+- `js/forms-toolbox.js`
+- `js/forms-ppe.js`
+- `js/forms-firstaid.js`
+- `js/forms-inspection.js`
+- `js/forms-drill.js`
+
+Support files:
+
+- `manifest.json`
+- `server-worker.js`
+
+This modular architecture is now the current direction and should be treated as the active frontend design.
+
+---------------------------------------------------------------------
+
+# Edge Functions Currently Expected
+
+The frontend currently expects these Edge Functions:
+
+## resend-email
+
+Handles form submissions.
+
+Responsibilities:
+
+- validate user session
+- create submission records
+- insert additional row data where needed
+- trigger email/notification flow where applicable
+
+---------------------------------------------------------------------
+
+## clever-endpoint
 
 Handles logbook queries.
 
-Responsibilities
+Responsibilities:
 
-• validate JWT  
-• filter submissions  
-• return logbook data  
-
----------------------------------------------------------------------
-
-submission-images
-
-Registers uploaded images.
-
-Responsibilities
-
-• validate user  
-• verify submission exists  
-• insert image metadata  
+- validate JWT
+- filter submissions
+- return logbook rows
 
 ---------------------------------------------------------------------
 
-submission-detail
+## upload-image
 
-Returns full submission details.
+Handles image upload/registration flow used by the frontend.
 
-Includes
+Responsibilities:
 
-• payload  
-• review history  
-• image list  
+- validate authenticated user
+- verify submission exists
+- register or process image upload metadata
 
 ---------------------------------------------------------------------
 
-review-submission
+## submission-detail
+
+Returns a full submission record.
+
+Includes:
+
+- payload
+- review history
+- image list
+
+---------------------------------------------------------------------
+
+## review-submission
 
 Handles review actions.
 
-Responsibilities
+Responsibilities:
 
-• record review history  
-• update submission status  
-• update admin notes  
-
----------------------------------------------------------------------
-
-admin-directory
-
-Returns
-
-• profiles  
-• sites  
-• assignments  
+- record review history
+- update submission status
+- update admin notes
 
 ---------------------------------------------------------------------
 
-admin-manage
+## admin-directory
+
+Returns:
+
+- profiles
+- sites
+- assignments
+
+---------------------------------------------------------------------
+
+## admin-manage
 
 Handles admin updates.
 
-Allows
+Allows:
 
-• edit profiles  
-• create sites  
-• manage assignments  
+- edit profiles
+- create/update sites
+- create/update/delete assignments
+
+---------------------------------------------------------------------
+
+## admin-selectors
+
+Returns selector/dropdown data for the admin dashboard.
+
+Used for:
+
+- profile selectors
+- site selectors
+- assignment selectors
 
 ---------------------------------------------------------------------
 
 # Database Schema Status
 
-The following tables exist and are used by the application.
+The following tables are expected and used by the application:
 
-profiles  
-sites  
-site_assignments  
-submissions  
-toolbox_attendees  
-submission_reviews  
-submission_images  
+- `profiles`
+- `sites`
+- `site_assignments`
+- `submissions`
+- `toolbox_attendees`
+- `submission_reviews`
+- `submission_images`
 
-Schema matches the documentation in DATABASE_STRUCTURE.md.
+Schema documentation should remain aligned with `DATABASE_STRUCTURE.md`.
 
 ---------------------------------------------------------------------
 
 # Security Model
 
-Authentication
+## Authentication
 
-Supabase JWT sessions.
+Supabase session-based authentication.
 
-Authorization
+## Authorization
 
-Role validation through
+Role validation is based on the `profiles` table and current user role.
 
-profiles.role
+## Frontend behavior
 
-Roles supported
+- admin management is locked in the UI for non-admin users
+- review UI is hidden for lower roles
+- auth recovery waits before displaying a logged-out state
 
-worker  
-supervisor  
-hse  
-admin  
+## Backend expectation
 
-Backend protection
+Secure validation belongs in Edge Functions, not the browser.
 
-Service role keys are only used inside Edge Functions.
+Service role keys must remain backend-only.
 
 ---------------------------------------------------------------------
 
-# Known Minor Issues
+# Current Roles
 
-These are not architectural problems but may require attention.
+Current role values in active use/documentation direction:
 
-Service worker occasionally tries to cache unsupported requests.
+- `worker`
+- `staff`
+- `onsite_admin`
+- `job_admin`
+- `site_leader`
+- `supervisor`
+- `hse`
+- `admin`
 
-Some admin tools still require manual ID entry instead of dropdown selectors.
+These are broader than the older role list and reflect the current UI/security direction.
 
-UI styling for certain input icons (calendar icon visibility).
+---------------------------------------------------------------------
+
+# Current Submission Status Values
+
+Current status values:
+
+- `submitted`
+- `under_review`
+- `approved`
+- `follow_up_required`
+- `closed`
+
+Current review action values:
+
+- `commented`
+- `under_review`
+- `approved`
+- `follow_up_required`
+- `closed`
+- `reopened`
+
+---------------------------------------------------------------------
+
+# Known Important Changes Since Earlier Docs
+
+Older project docs often described the frontend as mostly:
+
+- `index.html`
+- `app.js`
+- `style.css`
+
+That is no longer an accurate description.
+
+Older docs also often described auth primarily as simple magic link only.
+
+That is also no longer complete.
+
+The current codebase includes:
+
+- modular JS files
+- explicit auth UI separation
+- stronger callback/session recovery logic
+- separate admin and logbook modules
+- separate form modules
+
+---------------------------------------------------------------------
+
+# Known Minor / Ongoing Issues
+
+These are current areas to keep watching:
+
+- deployed auth redirect configuration may still need verification
+- service worker behavior should be checked to ensure it does not interfere with auth or POST flows
+- docs may lag behind code unless updated after each architecture change
+- backend deployment/version alignment should be checked against the current frontend assumptions
+- assignment-based site restrictions are not yet the final completed model across the whole system
 
 ---------------------------------------------------------------------
 
 # Major Architecture Status
 
-Architecture is **stable and scalable**.
+Architecture is **stable enough to continue building on**, but the frontend is still actively being cleaned and organized.
 
-Key architectural strengths
+Key strengths now include:
 
-• backend logic isolated in Edge Functions  
-• structured database design  
-• Supabase managed authentication  
-• image storage separated from database  
-• simple frontend architecture  
-
-The system can easily scale or add new forms.
+- clearer module separation
+- auth handling isolated into dedicated files
+- form logic separated by feature
+- admin and logbook logic separated from general app shell
+- static frontend with Supabase-backed secure services
+- ability to continue scaling features without growing one monolithic script
 
 ---------------------------------------------------------------------
 
@@ -345,154 +486,129 @@ The system can easily scale or add new forms.
 
 Recommended next steps.
 
-1 Final system testing
+## 1. Continue Admin Dashboard UI work
 
-Test all forms end-to-end.
+This is the main active focus.
 
-2 Image upload testing
+Includes:
 
-Verify storage policies.
+- polish layout
+- improve selector flow
+- improve usability
+- verify data-loading behavior
+- continue keeping admin logic inside `js/admin-ui.js`
 
-3 Review workflow testing
+## 2. Verify auth end-to-end in deployment
 
-Ensure review updates status correctly.
+Includes:
 
-4 Admin workflow testing
+- magic link
+- password sign-in UI behavior
+- reset flow
+- callback/session recovery
+- redirect configuration
 
-Confirm site and assignment management works.
+## 3. Keep docs aligned with the modular frontend
 
-5 Service worker cleanup
+Several docs previously drifted behind the actual code.
 
-Prevent caching issues.
+## 4. Verify frontend assumptions against deployed Edge Functions
+
+Especially:
+
+- `upload-image`
+- `admin-selectors`
+- `review-submission`
+- `submission-detail`
+
+## 5. Continue cleanup without breaking current flows
+
+Refactoring should preserve:
+
+- DOM IDs
+- route hashes
+- role values
+- form codes
+- submission status values
 
 ---------------------------------------------------------------------
 
 # Medium-Term Improvements
 
-Planned enhancements.
+Planned or recommended enhancements:
 
-Dashboard metrics
-
-• number of inspections  
-• open hazards  
-• follow-up actions  
-
-Follow-up reminders
-
-Automatic alerts for unresolved hazards.
-
-PDF report generation
-
-Export inspection reports.
-
-Improved admin interface
-
-Dropdown selections for IDs.
-
-Offline submission queue
-
-Allow forms to save offline.
+- assignment-based site restrictions throughout UI/backend
+- better admin usability
+- improved image evidence gallery tools
+- print/PDF export support
+- better audit trail visibility
+- improved status/reopen flows
+- stronger RLS verification
+- service worker cleanup if needed
 
 ---------------------------------------------------------------------
 
 # Long-Term Improvements
 
-Future capabilities.
+Possible future capabilities:
 
-Multi-company support  
-Advanced analytics  
-Automated safety reports  
-Mobile-first UI redesign  
-API integration with other systems  
+- multi-company support
+- advanced dashboard analytics
+- automated reminders / overdue follow-up tracking
+- PDF safety reports
+- mobile-first refinement
+- deeper site-based permission controls
 
 ---------------------------------------------------------------------
 
 # Deployment Status
 
-Frontend
+## Frontend
 
 Static deployment supported.
 
-Examples
+Examples:
 
-Vercel  
-Cloudflare Pages  
-Netlify  
+- Vercel
+- Cloudflare Pages
+- Netlify
 
-Backend
+## Backend
 
-Supabase project.
+Supabase project
 
 ---------------------------------------------------------------------
 
 # Documentation Files
 
-Important documentation.
+Important documentation:
 
-README.md  
-PROJECT_BRAIN.md  
-AI_CONTEXT.md  
-SYSTEM_ARCHITECTURE.md  
-PROJECT_STATE.md  
-DATABASE_STRUCTURE.md  
+- `README.md`
+- `PROJECT_BRAIN.md`
+- `AI_CONTEXT.md`
+- `SYSTEM_ARCHITECTURE.md`
+- `PROJECT_STATE.md`
+- `DATABASE_STRUCTURE.md`
+- `REPO_BASE.md`
+- `CHANGELOG.md`
 
-These documents allow new developers and AI assistants to understand the project immediately.
+These files should be updated whenever architecture, auth, or workflow design changes.
 
 ---------------------------------------------------------------------
 
 # How To Start Development In A New Chat
 
-Paste the following documents first
+Paste or ask the assistant to read first:
 
-README.md  
-PROJECT_BRAIN.md  
-AI_CONTEXT.md  
-SYSTEM_ARCHITECTURE.md  
-PROJECT_STATE.md  
+- `AI_CONTEXT.md`
+- `PROJECT_BRAIN.md`
 
-Then describe the task.
+Then continue with a focused instruction.
 
-Example
+Recommended example:
 
-"Continue development on the YWI HSE system. We are currently finishing testing and improving the admin UI."
+“Read `AI_CONTEXT.md` and `PROJECT_BRAIN.md` first. Current focus: Admin Dashboard UI.”
 
 ---------------------------------------------------------------------
 
-END OF PROJECT STATE SNAPSHOT
-
-
----
-
-## 🔐 Recent Security & System Updates (Auto-Added)
-
-### Authentication
-- Supabase Magic Link login implemented
-- Session persistence via localStorage
-- JWT-based validation in Edge Functions
-
-### Role-Based Access (RBAC)
-Supported roles:
-- worker
-- site_leader
-- supervisor
-- hse
-- admin
-
-### Backend Security
-- Edge Functions now validate JWT
-- Admin-only endpoints enforced
-- `can_access_submission()` used for data protection
-
-### New Features Added
-- Image upload system (`upload-image`)
-- Submission review system (`review-submission`)
-- Admin management endpoint
-- Site + Assignment management
-- Storage integration for job images
-
-### Recommended Next Steps
-- Enable RLS on all tables
-- Add audit logging
-- Add session timeout
-- Add UI role-based visibility
-
+# End Of Project State Snapshot
