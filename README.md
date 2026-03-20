@@ -1,61 +1,105 @@
 # YWI HSE Safety System
 
-A Supabase-powered safety compliance application for field and site operations.
+YWI HSE is a Supabase-backed safety and compliance web app for field and site operations.
 
-This system allows teams to submit safety forms, attach evidence images, review submissions, track safety activity, and manage users and sites through an admin interface.
+It supports authenticated staff, structured daily forms, review workflows, image evidence, logbook lookup/export, and admin management for profiles, sites, and assignments.
 
-The application is designed to run as a **lightweight static frontend with Supabase providing authentication, database, storage, and backend functions.**
+---
+
+# Current System Status
+
+The system is in an active functional build stage.
+
+Core flows now exist for:
+
+- authentication
+- form submission
+- image upload
+- review workflow
+- submission detail
+- admin directory and management
+
+The frontend has recently been reorganized from a mostly single-file script into a modular browser app structure.
 
 ---
 
 # System Overview
 
-The YWI HSE system provides the following capabilities:
+The YWI HSE system currently provides:
 
-- Secure login via **Supabase Magic Link authentication**
-- Structured digital safety forms
-- Image uploads for inspections and drills
-- Submission review and approval workflow
-- Logbook lookup and CSV export
-- Admin management of users, sites, and assignments
-- Email notifications for important events
+- secure user authentication with Supabase
+- magic link sign-in
+- email + password sign-in UI
+- password reset email flow
+- structured digital safety forms
+- image uploads for inspections, drills, and other supported evidence flows
+- submission review and approval workflow
+- logbook lookup and CSV export
+- admin management of users, sites, and assignments
+- offline/outbox retry support for failed submissions
 
-The architecture keeps the frontend simple while moving all secure logic to **Supabase Edge Functions**.
+The architecture keeps the frontend lightweight while moving secure logic to Supabase Edge Functions.
 
 ---
 
 # Technology Stack
 
-Frontend
+## Frontend
 
 - HTML
 - CSS
 - Vanilla JavaScript
 - Progressive Web App support
 
-Backend
+## Backend
 
 - Supabase Auth
 - Supabase Postgres
 - Supabase Edge Functions
 - Supabase Storage
 
-Deployment
+## Deployment
 
 - Static hosting (Vercel / Cloudflare Pages / Netlify)
 - Supabase backend
 
 ---
 
+# Current Frontend Architecture
+
+The frontend is no longer documented accurately as just `index.html + app.js`.
+
+Current main files:
+
+- `index.html` — single-page app shell and all major sections
+- `style.css` — layout and visual styling
+- `app.js` — shared app shell, startup, upload helpers, outbox retry, admin action wiring
+- `js/bootstrap.js` — Supabase bootstrap and callback/session recovery
+- `js/auth.js` — shared authentication controller
+- `js/ui-auth.js` — auth UI and login/logout state control
+- `js/admin-ui.js` — Admin Dashboard UI controller
+- `js/logbook-ui.js` — logbook, detail viewer, CSV export, and review UI
+- `js/forms-toolbox.js` — Toolbox Talk form module
+- `js/forms-ppe.js` — PPE Check form module
+- `js/forms-firstaid.js` — First Aid Kit form module
+- `js/forms-inspection.js` — Site Inspection form module
+- `js/forms-drill.js` — Emergency Drill form module
+- `manifest.json` — PWA metadata
+- `server-worker.js` — service worker
+
+This modular split is important and should be preserved in future updates.
+
+---
+
 # Core System Workflow
 
-1. User signs in using a **magic email login link**
-2. User fills out a safety form
-3. Submission is stored in the database
-4. Optional images are uploaded to storage
-5. Supervisors or HSE staff review the submission
-6. Review actions update submission status
-7. Logbook shows historical safety activity
+1. User signs in.
+2. User fills out one of the supported safety forms.
+3. Submission is stored in the database.
+4. Optional images are uploaded and linked to the submission.
+5. Supervisors, HSE staff, or other permitted roles review the submission.
+6. Review actions update submission status and notes.
+7. Admin users manage profiles, sites, and assignments through the admin dashboard.
 
 ---
 
@@ -67,11 +111,14 @@ The system currently supports five safety form types.
 
 Used for documenting safety meetings.
 
-Includes
+Includes:
 
-- meeting topic
-- discussion notes
-- attendee sign-in list
+- site
+- date
+- submitted by
+- topic / notes
+- attendee sign-in rows
+- optional images
 
 Form code: `E`
 
@@ -81,11 +128,13 @@ Form code: `E`
 
 Used to verify workers are wearing required protective equipment.
 
-Includes
+Includes:
 
-- worker list
-- PPE compliance
-- non-compliant flag
+- site
+- date
+- checked by
+- worker roster
+- PPE compliance values
 
 Form code: `D`
 
@@ -95,11 +144,14 @@ Form code: `D`
 
 Ensures site medical kits are stocked.
 
-Includes
+Includes:
 
+- site
+- date
+- checked by
 - item checklist
-- missing items
-- flagged issues
+- quantity / minimum / expiry checks
+- flagged issue support
 
 Form code: `B`
 
@@ -109,12 +161,16 @@ Form code: `B`
 
 Full site hazard inspection.
 
-Includes
+Includes:
 
+- site
+- date
+- inspector
+- roster
 - hazard list
-- open hazards count
-- inspector details
-- approval signature
+- open hazard tracking
+- approver
+- signature
 - image evidence
 
 Form code: `C`
@@ -125,13 +181,19 @@ Form code: `C`
 
 Records evacuation or safety drills.
 
-Includes
+Includes:
 
+- site
+- date
+- supervisor
 - drill type
 - start and end time
 - participants
 - evaluation
 - follow-up actions
+- next drill date
+- issues flag
+- signature
 - image evidence
 
 Form code: `A`
@@ -140,16 +202,28 @@ Form code: `A`
 
 # Authentication
 
-Authentication uses **Supabase magic link login**.
+Authentication uses Supabase.
 
-User flow
+Current frontend support includes:
 
-1. Enter email
-2. Receive login link
-3. Click link
-4. Supabase session is created
+- magic link sign-in
+- email + password sign-in UI
+- password reset email flow
+- logout
+- session refresh handling
 
-The session token is used by Edge Functions to validate requests.
+## Important recent auth work
+
+Recent frontend changes hardened the login flow so the app can recover correctly from problematic callback URLs.
+
+The frontend now:
+
+- preserves auth callback data long enough for Supabase to process it
+- avoids overwriting callback hashes too early
+- recovers sessions from malformed callback URLs containing both error and token fragments
+- delays showing the logged-out UI until auth recovery is complete
+
+This work was done to fix cases where a valid email sign-in link could still return the user to the login screen.
 
 ---
 
@@ -157,20 +231,39 @@ The session token is used by Edge Functions to validate requests.
 
 Roles control access to features.
 
+Current role values used by the frontend/backend documentation set:
+
+- `worker`
+- `staff`
+- `onsite_admin`
+- `job_admin`
+- `site_leader`
+- `supervisor`
+- `hse`
+- `admin`
+
 ### Worker
 
 - submit forms
-- view personal submissions
+- use standard form flows
 
-### Supervisor
+### Staff
+
+- operational access as assigned
+
+### Onsite Admin
+
+- elevated site-level access
+
+### Job Admin
+
+- elevated job/workflow access
+
+### Site Leader / Supervisor / HSE
 
 - review submissions
 - comment on reports
-
-### HSE
-
-- review safety reports
-- request follow-up actions
+- change statuses where permitted
 
 ### Admin
 
@@ -178,148 +271,46 @@ Roles control access to features.
 - manage users
 - manage sites
 - manage assignments
+- use admin dashboard tools
 
 ---
 
 # Submission Status Flow
 
-Submissions move through the following status states.
+Submissions move through the following status states:
 
-
-submitted
-under_review
-approved
-follow_up_required
-closed
-
+- `submitted`
+- `under_review`
+- `approved`
+- `follow_up_required`
+- `closed`
 
 Review actions can move a submission between these states.
+
+Current review action values:
+
+- `commented`
+- `under_review`
+- `approved`
+- `follow_up_required`
+- `closed`
+- `reopened`
 
 ---
 
 # Database Structure
 
-Main tables used by the system.
+Main tables used by the system:
 
-## profiles
+- `profiles`
+- `sites`
+- `site_assignments`
+- `submissions`
+- `toolbox_attendees`
+- `submission_reviews`
+- `submission_images`
 
-Stores application user profiles.
-
-Important fields
-
-
-id
-email
-full_name
-role
-is_active
-
-
----
-
-## sites
-
-List of safety sites.
-
-Fields
-
-
-id
-site_code
-site_name
-address
-notes
-is_active
-
-
----
-
-## site_assignments
-
-Links users to sites.
-
-Fields
-
-
-id
-site_id
-profile_id
-assignment_role
-is_primary
-
-
----
-
-## submissions
-
-Main safety form records.
-
-Fields
-
-
-id
-site
-form_type
-date
-submitted_by
-submitted_by_profile_id
-payload
-status
-admin_notes
-reviewed_by
-reviewed_at
-created_at
-
-
----
-
-## toolbox_attendees
-
-Stores toolbox talk attendance.
-
-Fields
-
-
-submission_id
-name
-role
-
-
----
-
-## submission_reviews
-
-Tracks review history.
-
-Fields
-
-
-submission_id
-reviewer_id
-review_action
-review_note
-created_at
-
-
----
-
-## submission_images
-
-Metadata for uploaded evidence images.
-
-Fields
-
-
-submission_id
-image_type
-file_path
-file_name
-content_type
-file_size_bytes
-caption
-uploaded_by
-created_at
-
+See `DATABASE_STRUCTURE.md` for the more complete table and column reference.
 
 ---
 
@@ -327,18 +318,14 @@ created_at
 
 Images are stored in Supabase Storage.
 
-Bucket
+Bucket:
 
+- `submission-images`
 
-submission-images
+Typical upload paths:
 
-
-Typical upload paths
-
-
-inspection/<submission_id>/<filename>
-drill/<submission_id>/<filename>
-
+- `inspection/<submission_id>/<filename>`
+- `drill/<submission_id>/<filename>`
 
 Image metadata is stored in `submission_images`.
 
@@ -348,154 +335,133 @@ Image metadata is stored in `submission_images`.
 
 Edge Functions act as the secure backend API.
 
-Current functions
+Current functions expected by the project docs and frontend/backend flow:
 
 | Function | Purpose |
-|--------|--------|
-| resend-email | Submission intake + email routing |
-| clever-endpoint | Logbook query endpoint |
-| submission-images | Register uploaded image metadata |
-| submission-detail | Fetch a submission with reviews/images |
-| review-submission | Add review actions and update status |
-| admin-directory | Read users/sites/assignments |
-| admin-manage | Create/update/delete admin records |
+|---|---|
+| `resend-email` | Submission intake + notification routing |
+| `clever-endpoint` | Logbook query endpoint |
+| `submission-detail` | Fetch one submission with reviews/images |
+| `review-submission` | Add review actions and update status |
+| `admin-directory` | Read users/sites/assignments |
+| `admin-manage` | Create/update/delete admin records |
+| `admin-selectors` | Selector/dropdown data for admin UI |
+| `upload-image` | Image upload/registration flow used by the frontend |
 
-All functions validate JWT tokens and check the user's profile.
+All functions are expected to validate JWT tokens and check the user profile.
 
 ---
 
-# Frontend Files
+# Admin Dashboard
 
+The current frontend focus is the Admin Dashboard UI.
 
-index.html
-app.js
-style.css
-manifest.json
-server-worker.js
+Implemented direction includes:
 
+- dashboard mode switching
+- summary cards
+- directory tables for users, sites, and assignments
+- selector dropdown syncing
+- click-to-load rows into editor forms
+- role-based admin locking
+- cleaner module separation through `js/admin-ui.js`
 
-### index.html
+---
 
-Main application interface and page sections.
+# Logbook and Review UI
 
-### app.js
+The logbook flow now has its own UI module.
 
-Application logic including
+Capabilities include:
 
-- authentication
-- form submission
-- logbook queries
-- review workflow
-- admin tools
-- image upload logic
+- filtered submission loading
+- CSV export
+- submission detail viewing
+- review history display
+- attached image rendering
+- review panel for eligible roles
 
-### style.css
+This logic now lives in `js/logbook-ui.js`.
 
-UI layout and styling.
+---
 
-### server-worker.js
+# Offline / Retry Support
 
-PWA caching service worker.
+The frontend maintains an outbox for failed submissions.
+
+If a submission fails because of a connection or server issue, the payload is stored locally and can be retried later through the retry buttons.
+
+---
+
+# Frontend Routing
+
+The app is still a one-page application.
+
+Primary sections / hashes:
+
+- `#toolbox`
+- `#ppe`
+- `#firstaid`
+- `#inspect`
+- `#drill`
+- `#log`
+- `#admin`
+
+Hash routing has been updated so auth callback hashes do not break normal section navigation.
 
 ---
 
 # Deployment
 
-Frontend deployment
+## Frontend deployment
 
+- Vercel
+- Cloudflare Pages
+- Netlify
 
-Vercel
-Cloudflare Pages
-Netlify
+## Backend
 
+- Supabase project
 
-Backend
+## Important deployment checks
 
+Before production deployment verify:
 
-Supabase project
-
-
----
-
-# Setup Instructions
-
-## 1 Install Supabase CLI
-
-
-npm install -g supabase
-
+- correct Supabase URL and publishable key
+- correct auth redirect URLs
+- current Edge Functions deployed
+- storage bucket and policies configured
+- service worker not caching unsupported auth or POST flows
 
 ---
 
-## 2 Link project
+# Setup Notes
 
+## Frontend
 
-supabase link --project-ref YOUR_PROJECT_ID
+Set the correct Supabase project URL and publishable key in the frontend.
 
+Never expose the service role key in browser code.
 
----
+## Backend
 
-## 3 Deploy Edge Functions
-
-
-supabase functions deploy resend-email
-supabase functions deploy clever-endpoint
-supabase functions deploy submission-images
-supabase functions deploy submission-detail
-supabase functions deploy review-submission
-supabase functions deploy admin-directory
-supabase functions deploy admin-manage
-
-
----
-
-## 4 Create Storage Bucket
-
-Create bucket
-
-
-submission-images
-
-
-Configure appropriate access policies.
-
----
-
-## 5 Configure Environment Variables
-
-Edge functions require:
-
-
-SUPABASE_URL
-SUPABASE_SERVICE_ROLE_KEY
-SUPABASE_ANON_KEY
-
-
----
-
-## 6 Update Frontend Keys
-
-Set these in `app.js`.
-
-
-SUPABASE_URL
-SUPABASE_PUBLISHABLE_KEY
-
-
-Never expose the service role key in frontend code.
+Deploy the current Edge Functions and confirm any SQL migrations and storage configuration are applied.
 
 ---
 
 # Testing Checklist
 
-Before production deployment verify
+Before production deployment verify:
 
-Authentication
+## Authentication
 
 - magic link login works
+- password UI behaves correctly
+- reset password email flow works
 - session persists across reloads
+- callback recovery works after email sign-in
 
-Forms
+## Forms
 
 - toolbox talk submits
 - PPE check submits
@@ -503,66 +469,80 @@ Forms
 - site inspection submits
 - drill submits
 
-Uploads
+## Uploads
 
 - images upload successfully
 - images appear in submission detail
 
-Review
+## Review
 
 - reviewers can change status
 - review notes appear in history
 
-Admin
+## Admin
 
 - profiles can be edited
-- sites can be created
-- assignments can be created
+- sites can be created and updated
+- assignments can be created, updated, and deleted
+- selector dropdowns populate correctly
 
-Logbook
+## Logbook
 
 - filters work
 - CSV export works
+- detail panel loads correctly
 
 ---
 
 # Security Model
 
-Security rules
+Security rules:
 
 - frontend never uses service role keys
 - Edge Functions validate user sessions
-- role checks performed via `profiles`
-- image uploads recorded in database
-
----
-
-# Future Improvements
-
-Potential enhancements
-
-- dashboard safety metrics
-- follow-up reminders
-- PDF safety report exports
-- offline form submissions
-- assignment-based site permissions
-- improved admin interface
+- role checks are performed through `profiles`
+- image uploads are recorded in the database
+- admin UI remains locked for non-admin users in the frontend
+- review visibility is role-aware in the UI
 
 ---
 
 # Documentation
 
-Important repository documentation files
+Important repository documentation files:
 
+- `README.md`
+- `PROJECT_BRAIN.md`
+- `AI_CONTEXT.md`
+- `PROJECT_STATE.md`
+- `SYSTEM_ARCHITECTURE.md`
+- `DATABASE_STRUCTURE.md`
+- `REPO_BASE.md`
+- `CHANGELOG.md`
 
-README.md
-PROJECT_BRAIN.md
-AI_CONTEXT.md
-DATABASE_STRUCTURE.md
-REPO_BASE.md
+These documents should be kept aligned whenever architecture or workflow changes.
 
+---
 
-These documents allow new developers or AI assistants to understand the system quickly.
+# Current Priority
+
+Current active focus:
+
+- Admin Dashboard UI
+- keeping auth stable after magic-link changes
+- keeping docs synchronized with the new modular frontend structure
+
+---
+
+# Immediate Next Steps
+
+Recommended next steps:
+
+- continue Admin Dashboard UI polish
+- verify deployed auth redirect configuration
+- verify `upload-image`, `admin-selectors`, and review flows against deployed backend versions
+- continue reducing oversized inline/shared logic where useful
+- keep markdown docs current as modules and flows evolve
 
 ---
 
@@ -575,40 +555,3 @@ Internal company use.
 # Maintainers
 
 YWI HSE Development Team
-
-
----
-
-## 🔐 Recent Security & System Updates (Auto-Added)
-
-### Authentication
-- Supabase Magic Link login implemented
-- Session persistence via localStorage
-- JWT-based validation in Edge Functions
-
-### Role-Based Access (RBAC)
-Supported roles:
-- worker
-- site_leader
-- supervisor
-- hse
-- admin
-
-### Backend Security
-- Edge Functions now validate JWT
-- Admin-only endpoints enforced
-- `can_access_submission()` used for data protection
-
-### New Features Added
-- Image upload system (`upload-image`)
-- Submission review system (`review-submission`)
-- Admin management endpoint
-- Site + Assignment management
-- Storage integration for job images
-
-### Recommended Next Steps
-- Enable RLS on all tables
-- Add audit logging
-- Add session timeout
-- Add UI role-based visibility
-
