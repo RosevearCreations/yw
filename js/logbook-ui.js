@@ -1,15 +1,9 @@
+/* File: js/logbook-ui.js
+   Brief description: Logbook, submission detail, image history, CSV export, and review panel controller.
+   Handles filtered row loading, detail rendering, review submission, and role-based review visibility.
+*/
+
 'use strict';
-
-/* =========================================================
-   js/logbook-ui.js
-   Logbook / detail / review UI controller
-
-   Purpose:
-   - load and render logbook rows
-   - export filtered rows to CSV
-   - load and render one submission detail
-   - manage review panel state and review submission flow
-========================================================= */
 
 (function () {
   function $(sel, root = document) {
@@ -145,6 +139,9 @@
       if (row?.summary) return row.summary;
       if (row?.submitted_by) return `Submitted by ${row.submitted_by}`;
       if (row?.payload?.submitted_by) return `Submitted by ${row.payload.submitted_by}`;
+      if (row?.payload?.inspector) return `Inspector: ${row.payload.inspector}`;
+      if (row?.payload?.supervisor) return `Supervisor: ${row.payload.supervisor}`;
+      if (row?.payload?.checked_by) return `Checked by ${row.payload.checked_by}`;
       return '';
     }
 
@@ -215,7 +212,11 @@
         ].map(csvCell).join(','));
       });
 
-      downloadTextFile(`ywi-logbook-${new Date().toISOString().slice(0, 10)}.csv`, lines.join('\n'), 'text/csv;charset=utf-8');
+      downloadTextFile(
+        `ywi-logbook-${new Date().toISOString().slice(0, 10)}.csv`,
+        lines.join('\n'),
+        'text/csv;charset=utf-8'
+      );
     }
 
     function clearSubmissionDetail() {
@@ -275,7 +276,9 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>
-            ${preview ? `<img src="${escHtml(preview)}" alt="${escHtml(item.caption || item.file_name || 'Image')}" style="max-width:160px;max-height:110px;border-radius:8px;">` : ''}
+            ${preview
+              ? `<img src="${escHtml(preview)}" alt="${escHtml(item.caption || item.file_name || 'Image')}" style="max-width:160px;max-height:110px;border-radius:8px;">`
+              : ''}
           </td>
           <td>${escHtml(item.image_type || '')}</td>
           <td>${escHtml(item.file_name || item.file_path || '')}</td>
@@ -295,7 +298,14 @@
       if (els.sdStatus) els.sdStatus.value = submission.status || '';
       if (els.sdSite) els.sdSite.value = submission.site || submission.site_name || '';
       if (els.sdDate) els.sdDate.value = formatDateTime(submission.submission_date || submission.date || submission.created_at || '');
-      if (els.sdSubmittedBy) els.sdSubmittedBy.value = submission.submitted_by || submission.inspector || submission.supervisor || submission.checked_by || '';
+      if (els.sdSubmittedBy) {
+        els.sdSubmittedBy.value =
+          submission.submitted_by ||
+          submission.inspector ||
+          submission.supervisor ||
+          submission.checked_by ||
+          '';
+      }
       if (els.sdReviewedAt) els.sdReviewedAt.value = formatDateTime(submission.reviewed_at || '');
       if (els.sdReviewedBy) els.sdReviewedBy.value = submission.reviewed_by || '';
       if (els.sdAdminNotes) els.sdAdminNotes.value = submission.admin_notes || '';
@@ -385,7 +395,9 @@
     }
 
     function handleTableClick(e) {
-      const btn = (e.target instanceof Element) ? e.target.closest('button[data-action][data-id]') : null;
+      const btn = (e.target instanceof Element)
+        ? e.target.closest('button[data-action][data-id]')
+        : null;
       if (!btn) return;
 
       const submissionId = btn.dataset.id || '';
