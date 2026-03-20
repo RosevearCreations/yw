@@ -2,12 +2,13 @@
 
 /* =========================================================
    js/logbook-ui.js
-   Logbook / submission detail / review UI module
+   Logbook / detail / review UI controller
 
    Purpose:
-   - move logbook UI behavior out of app.js
-   - manage log rows, detail panel, review panel, and CSV export
-   - keep existing DOM ids and endpoint payloads intact
+   - load and render logbook rows
+   - export filtered rows to CSV
+   - load and render one submission detail
+   - manage review panel state and review submission flow
 ========================================================= */
 
 (function () {
@@ -24,38 +25,38 @@
       .replaceAll("'", '&#39;');
   }
 
-  function slugifyToken(value) {
-    return String(value || '')
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-  }
-
-  function statusChip(label) {
-    const safe = escHtml(label || 'submitted');
-    const slug = slugifyToken(label || 'submitted');
-    return `<span class="status-chip status-chip--${slug}">${safe}</span>`;
-  }
-
-  function setNotice(el, text) {
-    if (!el) return;
-    if (text) {
-      el.style.display = 'block';
-      el.textContent = text;
-    } else {
-      el.style.display = 'none';
-      el.textContent = '';
-    }
-  }
-
-  function fmtDateTime(value) {
+  function formatDateTime(value) {
     if (!value) return '';
-    try {
-      return new Date(value).toLocaleString();
-    } catch {
-      return String(value);
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value);
+    return d.toLocaleString();
+  }
+
+  function formatDate(value) {
+    if (!value) return '';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value);
+    return d.toLocaleDateString();
+  }
+
+  function csvCell(value) {
+    const text = String(value ?? '');
+    if (/[",\n]/.test(text)) {
+      return `"${text.replaceAll('"', '""')}"`;
     }
+    return text;
+  }
+
+  function downloadTextFile(filename, content, mime = 'text/plain;charset=utf-8') {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   function createLogbookUI(config = {}) {
@@ -66,14 +67,14 @@
     const getCurrentRole = config.getCurrentRole || (() => 'worker');
 
     const els = {
-      lgSite: $('#lg_site'),
-      lgFrom: $('#lg_from'),
-      lgTo: $('#lg_to'),
-      lgForm: $('#lg_form'),
-      lgStatus: $('#lg_status'),
-      lgLoad: $('#lg_load'),
-      lgExport: $('#lg_export'),
-      lgBody: $('#lg_table')?.querySelector('tbody') || null,
+      site: $('#lg_site'),
+      from: $('#lg_from'),
+      to: $('#lg_to'),
+      form: $('#lg_form'),
+      status: $('#lg_status'),
+      loadBtn: $('#lg_load'),
+      exportBtn: $('#lg_export'),
+      tableBody: $('#lg_table tbody'),
 
       sdSubmissionId: $('#sd_submission_id'),
       sdFormType: $('#sd_form_type'),
@@ -85,10 +86,10 @@
       sdReviewedBy: $('#sd_reviewed_by'),
       sdAdminNotes: $('#sd_admin_notes'),
       sdPayload: $('#sd_payload'),
-      sdReviewsBody: $('#sd_reviews_table')?.querySelector('tbody') || null,
-      sdImagesBody: $('#sd_images_table')?.querySelector('tbody') || null,
+      sdReviewsTable: $('#sd_reviews_table tbody'),
+      sdImagesTable: $('#sd_images_table tbody'),
+      sdClearBtn: $('#sd_clear'),
       sdSummary: $('#sd_summary'),
-      sdClear: $('#sd_clear'),
 
       reviewPanel: $('#reviewPanel'),
       rvSubmissionId: $('#rv_submission_id'),
@@ -103,91 +104,124 @@
 
     const state = {
       rows: [],
-      role: 'worker'
+      selectedSubmissionId: '',
+      selectedSummary: null,
+      selectedDetail: null
     };
 
+    function setNotice(el, text) {
+      if (!el) return;
+      if (text) {
+        el.style.display = 'block';
+        el.textContent = text;
+      } else {
+        el.style.display = 'none';
+        el.textContent = '';
+      }
+    }
+
     function canReview() {
-      const role = String(getCurrentRole() || state.role || 'worker');
+      const role = getCurrentRole();
       return ['site_leader', 'supervisor', 'hse', 'admin', 'job_admin', 'onsite_admin'].includes(role);
     }
 
-    function fmtSummary(row) {
-      const t = row.form_type;
-      const p = row.payload || {};
-      if (t === 'E') return `Leader: ${p.submitted_by || ''}; Attendees: ${Array.isArray(p.attendees) ? p.attendees.length : 0}`;
-      if (t === 'D') return `Checked by: ${p.checked_by || ''}; Non-compliance: ${p.nonCompliant ? 'YES' : 'No'}`;
-      if (t === 'B') return `Checked by: ${p.checked_by || ''}; Flagged: ${p.flagged ? 'YES' : 'No'}`;
-      if (t === 'C') return `Inspector: ${p.inspector || ''}; Open hazards: ${p.openHazards ? 'YES' : 'No'}`;
-      if (t === 'A') return `Supervisor: ${p.supervisor || ''}; Issues: ${p.issues ? 'YES' : 'No'}`;
+    function applyRoleVisibility() {
+      if (!els.reviewPanel) return;
+      els.reviewPanel.style.display = canReview() ? '' : 'none';
+    }
+
+    function buildFilters() {
+      return {
+        site: els.site?.value?.trim?.() || '',
+        from: els.from?.value || '',
+        to: els.to?.value || '',
+        formType: els.form?.value || '',
+        status: els.status?.value || '',
+        limit: 100
+      };
+    }
+
+    function getSummaryText(row) {
+      if (row?.summary) return row.summary;
+      if (row?.submitted_by) return `Submitted by ${row.submitted_by}`;
+      if (row?.payload?.submitted_by) return `Submitted by ${row.payload.submitted_by}`;
       return '';
     }
 
-    function renderRows(rows) {
-      if (!els.lgBody) return;
-      els.lgBody.innerHTML = '';
+    function clearTableBody(tbody) {
+      if (tbody) tbody.innerHTML = '';
+    }
 
-      rows.forEach((r) => {
+    function renderLogRows() {
+      if (!els.tableBody) return;
+
+      els.tableBody.innerHTML = '';
+
+      state.rows.forEach((row) => {
         const tr = document.createElement('tr');
-        const d = (r.date || '').slice(0, 10);
-
+        tr.dataset.submissionId = String(row.id || '');
         tr.innerHTML = `
-          <td>${escHtml(r.id)}</td>
-          <td>${escHtml(d)}</td>
-          <td>${escHtml(r.form_type)}</td>
-          <td>${escHtml(r.site || '')}</td>
-          <td>${statusChip(r.status || 'submitted')}</td>
-          <td>${escHtml(fmtSummary(r))}</td>
+          <td>${escHtml(row.id || '')}</td>
+          <td>${escHtml(formatDate(row.submission_date || row.date || row.created_at || ''))}</td>
+          <td>${escHtml(row.form_type || '')}</td>
+          <td>${escHtml(row.site || row.site_name || '')}</td>
+          <td>${escHtml(row.status || '')}</td>
+          <td>${escHtml(getSummaryText(row))}</td>
           <td>
-            <div class="controls" style="margin-bottom:8px;">
-              <button type="button" data-detail-id="${escHtml(r.id)}">View Detail</button>
-              ${canReview() ? `<button type="button" data-review-id="${escHtml(r.id)}">Review</button>` : ''}
+            <div class="controls">
+              <button type="button" data-action="view" data-id="${escHtml(row.id || '')}">View Detail</button>
+              <button type="button" data-action="review" data-id="${escHtml(row.id || '')}">Review</button>
             </div>
-            <details>
-              <summary>Quick View</summary>
-              <pre style="white-space:pre-wrap; word-break:break-word; max-width:60ch;">${escHtml(JSON.stringify(r.payload, null, 2))}</pre>
-            </details>
           </td>
         `;
-        els.lgBody.appendChild(tr);
+        els.tableBody.appendChild(tr);
       });
     }
 
-    function toCSV(rows) {
-      const header = ['id', 'date', 'form_type', 'site', 'status', 'summary'];
-      const lines = [header.join(',')];
-      const esc = (v) => `"${String(v).replaceAll('"', '""')}"`;
+    async function loadRows() {
+      setNotice(els.sdSummary, '');
+      setNotice(els.rvSummary, '');
 
-      rows.forEach((r) => {
-        const row = [
-          r.id,
-          (r.date || '').slice(0, 10),
-          r.form_type,
-          r.site || '',
-          r.status || '',
-          fmtSummary(r)
-        ];
-        lines.push(row.map(esc).join(','));
-      });
+      try {
+        const payload = buildFilters();
+        const resp = await fetchLogData(payload);
+        state.rows = Array.isArray(resp?.rows)
+          ? resp.rows
+          : Array.isArray(resp)
+            ? resp
+            : [];
 
-      return lines.join('\n');
-    }
-
-    function exportCSV() {
-      if (!state.rows.length) {
-        alert('Nothing to export. Load the log first.');
-        return;
+        renderLogRows();
+      } catch (err) {
+        console.error(err);
+        state.rows = [];
+        renderLogRows();
+        setNotice(els.sdSummary, 'Failed to load logbook rows.');
       }
+    }
 
-      const blob = new Blob([toCSV(state.rows)], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'ywi-log.csv';
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    function exportCsv() {
+      const headers = ['ID', 'Date', 'Form', 'Site', 'Status', 'Summary'];
+      const lines = [headers.map(csvCell).join(',')];
+
+      state.rows.forEach((row) => {
+        lines.push([
+          row.id || '',
+          formatDate(row.submission_date || row.date || row.created_at || ''),
+          row.form_type || '',
+          row.site || row.site_name || '',
+          row.status || '',
+          getSummaryText(row)
+        ].map(csvCell).join(','));
+      });
+
+      downloadTextFile(`ywi-logbook-${new Date().toISOString().slice(0, 10)}.csv`, lines.join('\n'), 'text/csv;charset=utf-8');
     }
 
     function clearSubmissionDetail() {
+      state.selectedSubmissionId = '';
+      state.selectedDetail = null;
+
       if (els.sdSubmissionId) els.sdSubmissionId.value = '';
       if (els.sdFormType) els.sdFormType.value = '';
       if (els.sdStatus) els.sdStatus.value = '';
@@ -198,77 +232,11 @@
       if (els.sdReviewedBy) els.sdReviewedBy.value = '';
       if (els.sdAdminNotes) els.sdAdminNotes.value = '';
       if (els.sdPayload) els.sdPayload.value = '';
-      if (els.sdReviewsBody) els.sdReviewsBody.innerHTML = '';
-      if (els.sdImagesBody) els.sdImagesBody.innerHTML = '';
+
+      clearTableBody(els.sdReviewsTable);
+      clearTableBody(els.sdImagesTable);
+
       setNotice(els.sdSummary, '');
-    }
-
-    function renderSubmissionReviews(rows) {
-      if (!els.sdReviewsBody) return;
-      els.sdReviewsBody.innerHTML = '';
-
-      rows.forEach((row) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${escHtml(row.id || '')}</td>
-          <td>${escHtml(row.review_action || '')}</td>
-          <td>${escHtml(row.reviewer_id || '')}</td>
-          <td>${escHtml(fmtDateTime(row.created_at))}</td>
-          <td>${escHtml(row.review_note || '')}</td>
-        `;
-        els.sdReviewsBody.appendChild(tr);
-      });
-    }
-
-    function renderSubmissionImages(rows) {
-      if (!els.sdImagesBody) return;
-      els.sdImagesBody.innerHTML = '';
-
-      rows.forEach((row) => {
-        const preview = storagePreviewUrl(row.file_path);
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>
-            ${preview
-              ? `<img src="${escHtml(preview)}" alt="submission image" style="width:160px;max-width:100%;height:auto;border-radius:8px;border:1px solid rgba(255,255,255,.12);" />`
-              : ''}
-          </td>
-          <td>${escHtml(row.image_type || '')}</td>
-          <td>
-            <div>${escHtml(row.file_name || '')}</div>
-            <div style="color:#9ca3af;font-size:.85rem;">${escHtml(row.file_path || '')}</div>
-          </td>
-          <td>${escHtml(row.caption || '')}</td>
-          <td>${escHtml(fmtDateTime(row.created_at))}</td>
-        `;
-        els.sdImagesBody.appendChild(tr);
-      });
-    }
-
-    async function loadSubmissionDetail(submissionId) {
-      const data = await fetchSubmissionDetail(submissionId);
-      if (!data?.ok) throw new Error(data?.error || 'Detail load failed');
-
-      const s = data.submission || {};
-
-      if (els.sdSubmissionId) els.sdSubmissionId.value = String(s.id || '');
-      if (els.sdFormType) els.sdFormType.value = s.form_type || '';
-      if (els.sdStatus) els.sdStatus.value = s.status || '';
-      if (els.sdSite) els.sdSite.value = s.site || '';
-      if (els.sdDate) els.sdDate.value = s.date || '';
-      if (els.sdSubmittedBy) els.sdSubmittedBy.value = s.submitted_by || '';
-      if (els.sdReviewedAt) els.sdReviewedAt.value = fmtDateTime(s.reviewed_at);
-      if (els.sdReviewedBy) els.sdReviewedBy.value = s.reviewed_by || '';
-      if (els.sdAdminNotes) els.sdAdminNotes.value = s.admin_notes || '';
-      if (els.sdPayload) els.sdPayload.value = JSON.stringify(s.payload || {}, null, 2);
-
-      renderSubmissionReviews(data.reviews || []);
-      renderSubmissionImages(data.images || []);
-
-      setNotice(
-        els.sdSummary,
-        `Loaded submission #${s.id} with ${data.reviews?.length || 0} review entries and ${data.images?.length || 0} images.`
-      );
     }
 
     function clearReviewPanel() {
@@ -277,153 +245,185 @@
       if (els.rvAction) els.rvAction.value = 'commented';
       if (els.rvNote) els.rvNote.value = '';
       if (els.rvAdminNotes) els.rvAdminNotes.value = '';
+
       setNotice(els.rvSummary, '');
     }
 
-    function setReviewPanelFromRow(row) {
+    function renderReviewHistory(reviews) {
+      if (!els.sdReviewsTable) return;
+      els.sdReviewsTable.innerHTML = '';
+
+      (reviews || []).forEach((item) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escHtml(item.id || '')}</td>
+          <td>${escHtml(item.action || '')}</td>
+          <td>${escHtml(item.reviewer_id || item.reviewed_by || '')}</td>
+          <td>${escHtml(formatDateTime(item.created_at || item.reviewed_at || ''))}</td>
+          <td>${escHtml(item.note || '')}</td>
+        `;
+        els.sdReviewsTable.appendChild(tr);
+      });
+    }
+
+    function renderImages(images) {
+      if (!els.sdImagesTable) return;
+      els.sdImagesTable.innerHTML = '';
+
+      (images || []).forEach((item) => {
+        const preview = storagePreviewUrl(item.file_path || item.storage_path || '');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>
+            ${preview ? `<img src="${escHtml(preview)}" alt="${escHtml(item.caption || item.file_name || 'Image')}" style="max-width:160px;max-height:110px;border-radius:8px;">` : ''}
+          </td>
+          <td>${escHtml(item.image_type || '')}</td>
+          <td>${escHtml(item.file_name || item.file_path || '')}</td>
+          <td>${escHtml(item.caption || '')}</td>
+          <td>${escHtml(formatDateTime(item.created_at || ''))}</td>
+        `;
+        els.sdImagesTable.appendChild(tr);
+      });
+    }
+
+    function renderSubmissionDetail(detail) {
+      state.selectedDetail = detail || null;
+      const submission = detail?.submission || detail || {};
+
+      if (els.sdSubmissionId) els.sdSubmissionId.value = submission.id || '';
+      if (els.sdFormType) els.sdFormType.value = submission.form_type || '';
+      if (els.sdStatus) els.sdStatus.value = submission.status || '';
+      if (els.sdSite) els.sdSite.value = submission.site || submission.site_name || '';
+      if (els.sdDate) els.sdDate.value = formatDateTime(submission.submission_date || submission.date || submission.created_at || '');
+      if (els.sdSubmittedBy) els.sdSubmittedBy.value = submission.submitted_by || submission.inspector || submission.supervisor || submission.checked_by || '';
+      if (els.sdReviewedAt) els.sdReviewedAt.value = formatDateTime(submission.reviewed_at || '');
+      if (els.sdReviewedBy) els.sdReviewedBy.value = submission.reviewed_by || '';
+      if (els.sdAdminNotes) els.sdAdminNotes.value = submission.admin_notes || '';
+
+      const payloadObj = submission.payload || detail?.payload || {};
+      if (els.sdPayload) {
+        try {
+          els.sdPayload.value = JSON.stringify(payloadObj, null, 2);
+        } catch {
+          els.sdPayload.value = String(payloadObj ?? '');
+        }
+      }
+
+      renderReviewHistory(detail?.reviews || []);
+      renderImages(detail?.images || []);
+      setNotice(els.sdSummary, '');
+    }
+
+    async function loadSubmissionDetail(submissionId) {
+      if (!submissionId) return;
+
+      setNotice(els.sdSummary, 'Loading submission detail...');
+      clearTableBody(els.sdReviewsTable);
+      clearTableBody(els.sdImagesTable);
+
+      try {
+        const detail = await fetchSubmissionDetail(submissionId);
+        state.selectedSubmissionId = String(submissionId);
+        renderSubmissionDetail(detail);
+      } catch (err) {
+        console.error(err);
+        clearSubmissionDetail();
+        setNotice(els.sdSummary, 'Failed to load submission detail.');
+      }
+    }
+
+    function populateReviewPanelFromRow(rowOrId) {
+      const row = typeof rowOrId === 'object'
+        ? rowOrId
+        : state.rows.find((item) => String(item.id) === String(rowOrId));
+
       if (!row) return;
-      if (els.rvSubmissionId) els.rvSubmissionId.value = String(row.id || '');
+
+      state.selectedSummary = row;
+
+      if (els.rvSubmissionId) els.rvSubmissionId.value = row.id || '';
       if (els.rvStatus) els.rvStatus.value = row.status || '';
       if (els.rvAction) els.rvAction.value = 'commented';
       if (els.rvNote) els.rvNote.value = '';
       if (els.rvAdminNotes) els.rvAdminNotes.value = row.admin_notes || '';
-      setNotice(
-        els.rvSummary,
-        `Selected submission #${row.id} | ${row.form_type} | ${row.site || ''} | ${row.status || 'submitted'}`
-      );
+
+      setNotice(els.rvSummary, '');
     }
 
-    async function saveReview() {
-      const submissionId = Number(els.rvSubmissionId?.value || 0);
-      const status = els.rvStatus?.value || '';
-      const reviewAction = els.rvAction?.value || 'commented';
-      const reviewNote = els.rvNote?.value?.trim?.() || '';
-      const adminNotes = els.rvAdminNotes?.value ?? '';
-
-      if (!submissionId) {
-        alert('Select a submission from the logbook first.');
+    async function submitReview() {
+      if (!canReview()) {
+        setNotice(els.rvSummary, 'Your role cannot review submissions.');
         return;
       }
 
-      const resp = await saveSubmissionReview({
+      const submissionId = els.rvSubmissionId?.value?.trim?.() || '';
+      if (!submissionId) {
+        setNotice(els.rvSummary, 'Select a submission first.');
+        return;
+      }
+
+      const payload = {
         submission_id: submissionId,
-        status,
-        review_action: reviewAction,
-        review_note: reviewNote,
-        admin_notes: adminNotes
-      });
-
-      if (!resp?.ok) throw new Error(resp?.error || 'Review save failed');
-
-      setNotice(els.rvSummary, `Review saved for submission #${submissionId}.`);
-      await load();
-      await loadSubmissionDetail(submissionId);
-
-      const row = state.rows.find((r) => Number(r.id) === submissionId);
-      if (row) setReviewPanelFromRow(row);
-    }
-
-    async function load() {
-      const body = {
-        site: (els.lgSite && els.lgSite.value.trim()) || undefined,
-        formType: (els.lgForm && els.lgForm.value) || undefined,
-        from: (els.lgFrom && els.lgFrom.value) || undefined,
-        to: (els.lgTo && els.lgTo.value) || undefined,
-        status: (els.lgStatus && els.lgStatus.value) || undefined,
-        limit: 100
+        status: els.rvStatus?.value || '',
+        action: els.rvAction?.value || 'commented',
+        note: els.rvNote?.value?.trim?.() || '',
+        admin_notes: els.rvAdminNotes?.value?.trim?.() || ''
       };
 
-      const data = await fetchLogData(body);
-      if (!data?.ok) throw new Error(data?.error || 'load_failed');
+      try {
+        setNotice(els.rvSummary, 'Saving review...');
+        await saveSubmissionReview(payload);
+        setNotice(els.rvSummary, 'Review saved.');
 
-      state.rows = data.rows || [];
-      state.role = data.role || getCurrentRole() || 'worker';
-      renderRows(state.rows);
+        await loadRows();
+        await loadSubmissionDetail(submissionId);
+        populateReviewPanelFromRow(submissionId);
+      } catch (err) {
+        console.error(err);
+        setNotice(els.rvSummary, 'Failed to save review.');
+      }
+    }
+
+    function handleTableClick(e) {
+      const btn = (e.target instanceof Element) ? e.target.closest('button[data-action][data-id]') : null;
+      if (!btn) return;
+
+      const submissionId = btn.dataset.id || '';
+      const action = btn.dataset.action || '';
+
+      if (action === 'view') {
+        loadSubmissionDetail(submissionId);
+      } else if (action === 'review') {
+        populateReviewPanelFromRow(submissionId);
+        if (canReview() && els.reviewPanel) {
+          els.reviewPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
     }
 
     function bindEvents() {
-      if (els.lgLoad && !els.lgLoad.dataset.bound) {
-        els.lgLoad.dataset.bound = '1';
-        els.lgLoad.addEventListener('click', async () => {
-          try {
-            await load();
-          } catch (err) {
-            console.error(err);
-            alert('Failed to load log.');
-          }
-        });
-      }
+      els.loadBtn?.addEventListener('click', loadRows);
+      els.exportBtn?.addEventListener('click', exportCsv);
+      els.tableBody?.addEventListener('click', handleTableClick);
 
-      els.lgExport?.addEventListener('click', exportCSV);
-
-      els.sdClear?.addEventListener('click', clearSubmissionDetail);
+      els.sdClearBtn?.addEventListener('click', clearSubmissionDetail);
       els.rvClear?.addEventListener('click', clearReviewPanel);
-
-      els.rvSubmit?.addEventListener('click', async () => {
-        try {
-          await saveReview();
-        } catch (err) {
-          console.error(err);
-          alert('Failed to save review.');
-        }
-      });
-
-      els.lgBody?.addEventListener('click', async (e) => {
-        const detailBtn = (e.target instanceof Element)
-          ? e.target.closest('button[data-detail-id]')
-          : null;
-
-        if (detailBtn) {
-          const id = Number(detailBtn.dataset.detailId || 0);
-          if (!id) return;
-
-          try {
-            await loadSubmissionDetail(id);
-            location.hash = '#log';
-          } catch (err) {
-            console.error(err);
-            alert('Failed to load submission detail.');
-          }
-          return;
-        }
-
-        const reviewBtn = (e.target instanceof Element)
-          ? e.target.closest('button[data-review-id]')
-          : null;
-
-        if (reviewBtn) {
-          const id = Number(reviewBtn.dataset.reviewId || 0);
-          const row = state.rows.find((r) => Number(r.id) === id);
-          if (!row) return;
-          setReviewPanelFromRow(row);
-          location.hash = '#log';
-        }
-      });
-    }
-
-    function applyRoleVisibility() {
-      if (els.reviewPanel) {
-        els.reviewPanel.style.display = canReview() ? '' : 'none';
-      }
-      renderRows(state.rows);
+      els.rvSubmit?.addEventListener('click', submitReview);
     }
 
     async function init() {
-      bindEvents();
-      clearSubmissionDetail();
-      clearReviewPanel();
       applyRoleVisibility();
+      bindEvents();
     }
 
     return {
+      state,
       init,
-      load,
+      applyRoleVisibility,
+      loadRows,
       loadSubmissionDetail,
       clearSubmissionDetail,
-      clearReviewPanel,
-      setReviewPanelFromRow,
-      applyRoleVisibility,
-      state
+      clearReviewPanel
     };
   }
 
