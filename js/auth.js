@@ -1,14 +1,9 @@
+/* File: js/auth.js
+   Brief description: Shared authentication controller that coordinates Supabase auth with bootstrap state,
+   exposes sign-in/logout/reset/refresh helpers, and keeps the app informed of current user/profile/role state.
+*/
+
 'use strict';
-
-/* =========================================================
-   js/auth.js
-   Shared authentication controller
-
-   Purpose:
-   - coordinate Supabase auth with bootstrap state
-   - expose a simple shared auth API for UI + app shell
-   - support magic link, password sign-in, reset, refresh, and logout
-========================================================= */
 
 (function () {
   const sb = window.YWI_SB || window._sb || null;
