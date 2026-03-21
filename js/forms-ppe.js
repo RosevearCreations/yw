@@ -1,19 +1,23 @@
+/* File: js/forms-ppe.js
+   Brief description: PPE Check form module.
+   Handles roster rows, PPE compliance values, payload building, submit flow,
+   and outbox fallback if the server or network is unavailable.
+*/
+
 'use strict';
-
-/* =========================================================
-   js/forms-ppe.js
-   PPE Check form module
-
-   Purpose:
-   - move PPE Check form logic out of app.js
-   - manage roster rows
-   - submit form D payload
-   - save failed submissions to outbox
-========================================================= */
 
 (function () {
   function $(sel, root = document) {
     return root.querySelector(sel);
+  }
+
+  function escHtml(value) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
   }
 
   function todayISO() {
@@ -36,6 +40,17 @@
     return tbody;
   }
 
+  function yesNoSelect(className, value = '') {
+    return `
+      <select class="${className}">
+        <option value="" ${value === '' ? 'selected' : ''}>—</option>
+        <option value="yes" ${value === 'yes' ? 'selected' : ''}>Yes</option>
+        <option value="no" ${value === 'no' ? 'selected' : ''}>No</option>
+        <option value="na" ${value === 'na' ? 'selected' : ''}>N/A</option>
+      </select>
+    `;
+  }
+
   function createPPEForm(config = {}) {
     const sendToFunction = config.sendToFunction;
     const getOutbox = config.getOutbox;
@@ -50,27 +65,27 @@
       addRowBtn: $('#ppeAddRowBtn')
     };
 
-    function addRow() {
+    function addRow(values = {}) {
       if (!els.tableBody) return;
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><input type="text" class="ppe-name" placeholder="Full name" required></td>
+        <td><input type="text" class="ppe-name" placeholder="Full name" value="${escHtml(values.name || '')}" required></td>
         <td>
           <select class="ppe-role">
-            <option value="worker">Worker</option>
-            <option value="staff">Staff</option>
-            <option value="site_leader">Site Leader</option>
-            <option value="supervisor">Supervisor</option>
-            <option value="visitor">Visitor</option>
+            <option value="worker" ${values.role_on_site === 'worker' ? 'selected' : ''}>Worker</option>
+            <option value="staff" ${values.role_on_site === 'staff' ? 'selected' : ''}>Staff</option>
+            <option value="site_leader" ${values.role_on_site === 'site_leader' ? 'selected' : ''}>Site Leader</option>
+            <option value="supervisor" ${values.role_on_site === 'supervisor' ? 'selected' : ''}>Supervisor</option>
+            <option value="visitor" ${values.role_on_site === 'visitor' ? 'selected' : ''}>Visitor</option>
           </select>
         </td>
-        <td style="text-align:center"><input type="checkbox" class="ppe-shoes" checked></td>
-        <td style="text-align:center"><input type="checkbox" class="ppe-vest" checked></td>
-        <td style="text-align:center"><input type="checkbox" class="ppe-plugs" checked></td>
-        <td style="text-align:center"><input type="checkbox" class="ppe-goggles" checked></td>
-        <td style="text-align:center"><input type="checkbox" class="ppe-muffs" checked></td>
-        <td style="text-align:center"><input type="checkbox" class="ppe-gloves" checked></td>
+        <td>${yesNoSelect('ppe-shoes', values.shoes || '')}</td>
+        <td>${yesNoSelect('ppe-vest', values.vest || '')}</td>
+        <td>${yesNoSelect('ppe-plugs', values.plugs || '')}</td>
+        <td>${yesNoSelect('ppe-goggles', values.goggles || '')}</td>
+        <td>${yesNoSelect('ppe-muffs', values.muffs || '')}</td>
+        <td>${yesNoSelect('ppe-gloves', values.gloves || '')}</td>
         <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
       `;
       els.tableBody.appendChild(tr);
@@ -109,38 +124,39 @@
         throw new Error('Please fill Site, Date, and Checked By.');
       }
 
-      const rows = els.tableBody
-        ? Array.from(els.tableBody.querySelectorAll('tr'))
+      const roster = els.tableBody
+        ? Array.from(els.tableBody.querySelectorAll('tr')).map((tr) => {
+            const name = tr.querySelector('.ppe-name')?.value?.trim?.() || '';
+            const role = tr.querySelector('.ppe-role')?.value || 'worker';
+            const shoes = tr.querySelector('.ppe-shoes')?.value || '';
+            const vest = tr.querySelector('.ppe-vest')?.value || '';
+            const plugs = tr.querySelector('.ppe-plugs')?.value || '';
+            const goggles = tr.querySelector('.ppe-goggles')?.value || '';
+            const muffs = tr.querySelector('.ppe-muffs')?.value || '';
+            const gloves = tr.querySelector('.ppe-gloves')?.value || '';
+
+            return {
+              name,
+              role_on_site: role,
+              shoes,
+              vest,
+              plugs,
+              goggles,
+              muffs,
+              gloves
+            };
+          }).filter((r) => r.name)
         : [];
 
-      const roster = rows.map((tr) => ({
-        name: tr.querySelector('.ppe-name')?.value?.trim?.() || '',
-        role_on_site: tr.querySelector('.ppe-role')?.value || 'worker',
-        items: {
-          shoes: !!tr.querySelector('.ppe-shoes')?.checked,
-          vest: !!tr.querySelector('.ppe-vest')?.checked,
-          plugs: !!tr.querySelector('.ppe-plugs')?.checked,
-          goggles: !!tr.querySelector('.ppe-goggles')?.checked,
-          muffs: !!tr.querySelector('.ppe-muffs')?.checked,
-          gloves: !!tr.querySelector('.ppe-gloves')?.checked
-        }
-      })).filter((r) => r.name);
-
-      const nonCompliant = roster.some((r) =>
-        !r.items.shoes ||
-        !r.items.vest ||
-        !r.items.plugs ||
-        !r.items.goggles ||
-        !r.items.muffs ||
-        !r.items.gloves
-      );
+      if (!roster.length) {
+        throw new Error('Please add at least one worker.');
+      }
 
       return {
         site,
         date,
         checked_by: checker,
-        roster,
-        nonCompliant
+        roster
       };
     }
 
@@ -157,7 +173,7 @@
 
       try {
         await sendToFunction('D', payload);
-        alert('PPE check submitted.');
+        alert('PPE Check submitted.');
         resetForm();
       } catch (err) {
         console.error(err);
@@ -166,7 +182,8 @@
         outbox.push({
           ts: Date.now(),
           formType: 'D',
-          payload
+          payload,
+          localImages: []
         });
         setOutbox(outbox);
 
@@ -175,7 +192,7 @@
     }
 
     function bindEvents() {
-      els.addRowBtn?.addEventListener('click', addRow);
+      els.addRowBtn?.addEventListener('click', () => addRow());
 
       els.tableBody?.addEventListener('click', (e) => {
         const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
