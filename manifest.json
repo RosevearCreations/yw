@@ -1,26 +1,34 @@
 {
-  "name": "YWI HSE",
+  "_file": "manifest.json",
+  "_description": "Progressive Web App manifest for YWI HSE. Defines app name, icons, theme colors, display mode, and start URL for installable app behavior.",
+
+  "name": "YWI HSE Safety System",
   "short_name": "YWI HSE",
-  "description": "YWI Health, Safety and Environment field forms and logbook",
+  "description": "Safety compliance web app for toolbox talks, PPE checks, first aid checks, inspections, drills, logbook review, and admin management.",
   "start_url": "/#toolbox",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0b6c3d",
   "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
   "lang": "en",
+  "categories": [
+    "business",
+    "productivity",
+    "utilities"
+  ],
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }
