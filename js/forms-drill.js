@@ -1,17 +1,10 @@
+/* File: js/forms-drill.js
+   Brief description: Emergency Drill form module.
+   Handles participant rows, supervisor signature, optional image queue,
+   payload building, submit flow, and outbox fallback when the server or network is unavailable.
+*/
+
 'use strict';
-
-/* =========================================================
-   js/forms-drill.js
-   Emergency Drill form module
-
-   Purpose:
-   - move Emergency Drill form logic out of app.js
-   - manage participant rows
-   - manage supervisor signature
-   - manage optional image queue
-   - submit form A payload
-   - save failed submissions to outbox
-========================================================= */
 
 (function () {
   function $(sel, root = document) {
@@ -68,28 +61,13 @@
     state.forEach((img, idx) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${escHtml(img.file.name || '')}</td>
+        <td>${escHtml(img.file?.name || '')}</td>
         <td>${escHtml(img.image_type || '')}</td>
-        <td>${escHtml(bytesLabel(img.file.size || 0))}</td>
+        <td>${escHtml(bytesLabel(img.file?.size || 0))}</td>
         <td>${escHtml(img.caption || '')}</td>
         <td><button type="button" data-remove-index="${idx}">Remove</button></td>
       `;
       body.appendChild(tr);
-    });
-  }
-
-  function wireImageRemover(state, body) {
-    body?.addEventListener('click', (e) => {
-      const btn = (e.target instanceof Element)
-        ? e.target.closest('button[data-remove-index]')
-        : null;
-      if (!btn) return;
-
-      const idx = Number(btn.dataset.removeIndex);
-      if (Number.isNaN(idx)) return;
-
-      state.splice(idx, 1);
-      renderImageRows(state, body);
     });
   }
 
@@ -131,22 +109,22 @@
       sigPad: null
     };
 
-    function addParticipantRow() {
+    function addParticipantRow(values = {}) {
       if (!els.rosterBody) return;
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><input type="text" class="dr-name" placeholder="Full name" required></td>
+        <td><input type="text" class="dr-name" placeholder="Full name" value="${escHtml(values.name || '')}" required></td>
         <td>
           <select class="dr-role">
-            <option value="worker">Worker</option>
-            <option value="staff">Staff</option>
-            <option value="site_leader">Site Leader</option>
-            <option value="supervisor">Supervisor</option>
-            <option value="visitor">Visitor</option>
+            <option value="worker" ${values.role_on_site === 'worker' ? 'selected' : ''}>Worker</option>
+            <option value="staff" ${values.role_on_site === 'staff' ? 'selected' : ''}>Staff</option>
+            <option value="site_leader" ${values.role_on_site === 'site_leader' ? 'selected' : ''}>Site Leader</option>
+            <option value="supervisor" ${values.role_on_site === 'supervisor' ? 'selected' : ''}>Supervisor</option>
+            <option value="visitor" ${values.role_on_site === 'visitor' ? 'selected' : ''}>Visitor</option>
           </select>
         </td>
-        <td><input type="text" class="dr-company" placeholder="Company"></td>
+        <td><input type="text" class="dr-company" placeholder="Company" value="${escHtml(values.company || '')}"></td>
         <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
       `;
       els.rosterBody.appendChild(tr);
@@ -281,9 +259,7 @@
     }
 
     function bindEvents() {
-      wireImageRemover(state.images, els.imageBody);
-
-      els.addPartBtn?.addEventListener('click', addParticipantRow);
+      els.addPartBtn?.addEventListener('click', () => addParticipantRow());
 
       els.rosterBody?.addEventListener('click', (e) => {
         const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
@@ -300,6 +276,19 @@
         }
       });
 
+      els.imageBody?.addEventListener('click', (e) => {
+        const btn = (e.target instanceof Element)
+          ? e.target.closest('button[data-remove-index]')
+          : null;
+        if (!btn) return;
+
+        const idx = Number(btn.dataset.removeIndex);
+        if (Number.isNaN(idx)) return;
+
+        state.images.splice(idx, 1);
+        renderImageRows(state.images, els.imageBody);
+      });
+
       els.imageAddBtn?.addEventListener('click', () => {
         const files = Array.from(els.imageFiles?.files || []);
         if (!files.length) {
@@ -310,7 +299,7 @@
         files.forEach((file) => {
           state.images.push({
             file,
-            image_type: els.imageType?.value || 'general',
+            image_type: els.imageType?.value || 'status',
             caption: els.imageCaption?.value?.trim?.() || ''
           });
         });
