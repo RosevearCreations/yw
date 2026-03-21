@@ -1,20 +1,23 @@
+/* File: js/forms-firstaid.js
+   Brief description: First Aid Kit Check form module.
+   Handles inventory rows, quantity/minimum/expiry tracking, payload building, submit flow,
+   and outbox fallback when the server or network is unavailable.
+*/
+
 'use strict';
-
-/* =========================================================
-   js/forms-firstaid.js
-   First Aid Kit Daily Check form module
-
-   Purpose:
-   - move First Aid Kit form logic out of app.js
-   - manage item rows
-   - calculate flagged state
-   - submit form B payload
-   - save failed submissions to outbox
-========================================================= */
 
 (function () {
   function $(sel, root = document) {
     return root.querySelector(sel);
+  }
+
+  function escHtml(value) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
   }
 
   function todayISO() {
@@ -37,11 +40,17 @@
     return tbody;
   }
 
-  function within30Days(iso) {
-    if (!iso) return false;
+  function daysUntil(dateString) {
+    if (!dateString) return null;
+
+    const target = new Date(dateString);
+    if (Number.isNaN(target.getTime())) return null;
+
     const now = new Date();
-    const d = new Date(iso);
-    return ((d.getTime() - now.getTime()) / 86400000) <= 30;
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const expiry = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+
+    return Math.round((expiry - today) / 86400000);
   }
 
   function createFirstAidForm(config = {}) {
@@ -58,15 +67,24 @@
       addRowBtn: $('#faAddRowBtn')
     };
 
-    function addRow() {
+    function addRow(values = {}) {
       if (!els.tableBody) return;
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><input type="text" class="fa-name" list="fa-catalog" placeholder="Select or type…" required></td>
-        <td><input type="number" class="fa-qty" min="0" value="0"></td>
-        <td><input type="number" class="fa-min" min="0" value="0"></td>
-        <td><input type="date" class="fa-exp"></td>
+        <td>
+          <input
+            type="text"
+            class="fa-item"
+            list="fa-catalog"
+            placeholder="Item name"
+            value="${escHtml(values.item_name || '')}"
+            required
+          >
+        </td>
+        <td><input type="number" class="fa-qty" min="0" step="1" value="${escHtml(values.quantity ?? '')}"></td>
+        <td><input type="number" class="fa-min" min="0" step="1" value="${escHtml(values.minimum_stock ?? '')}"></td>
+        <td><input type="date" class="fa-expiry" value="${escHtml(values.expiry_date || '')}"></td>
         <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
       `;
       els.tableBody.appendChild(tr);
@@ -78,8 +96,9 @@
       }
 
       if (els.tableBody && els.tableBody.children.length === 0) {
-        addRow();
-        addRow();
+        addRow({ item_name: 'Guidance Card', quantity: 1, minimum_stock: 1 });
+        addRow({ item_name: 'Plastic Band Aid', quantity: 0, minimum_stock: 10 });
+        addRow({ item_name: 'Adhesive Tapes', quantity: 0, minimum_stock: 2 });
       }
     }
 
@@ -105,35 +124,37 @@
         throw new Error('Please fill Site, Date, and Checked By.');
       }
 
-      const rows = els.tableBody
-        ? Array.from(els.tableBody.querySelectorAll('tr'))
+      const items = els.tableBody
+        ? Array.from(els.tableBody.querySelectorAll('tr')).map((tr) => {
+            const item_name = tr.querySelector('.fa-item')?.value?.trim?.() || '';
+            const quantity = Number(tr.querySelector('.fa-qty')?.value || 0);
+            const minimum_stock = Number(tr.querySelector('.fa-min')?.value || 0);
+            const expiry_date = tr.querySelector('.fa-expiry')?.value || '';
+
+            const low_stock = quantity <= minimum_stock;
+            const expiry_in_days = daysUntil(expiry_date);
+            const expiry_soon = expiry_in_days !== null && expiry_in_days <= 30;
+
+            return {
+              item_name,
+              quantity,
+              minimum_stock,
+              expiry_date: expiry_date || null,
+              low_stock,
+              expiry_soon
+            };
+          }).filter((r) => r.item_name)
         : [];
 
-      const items = rows.map((tr) => {
-        const name = tr.querySelector('.fa-name')?.value?.trim?.() || '';
-        const qty = parseInt(tr.querySelector('.fa-qty')?.value || '0', 10);
-        const min = parseInt(tr.querySelector('.fa-min')?.value || '0', 10);
-        const exp = tr.querySelector('.fa-exp')?.value || null;
-
-        return {
-          name,
-          quantity: qty,
-          min,
-          expiry: exp
-        };
-      }).filter((i) => i.name);
-
-      const flagged = items.some((i) =>
-        (i.quantity <= (i.min || 0)) ||
-        (i.expiry && (within30Days(i.expiry) || (new Date(i.expiry) < new Date())))
-      );
+      if (!items.length) {
+        throw new Error('Please add at least one kit item.');
+      }
 
       return {
         site,
         date,
         checked_by: checker,
-        items,
-        flagged
+        items
       };
     }
 
@@ -150,7 +171,7 @@
 
       try {
         await sendToFunction('B', payload);
-        alert('First aid check submitted.');
+        alert('First Aid Check submitted.');
         resetForm();
       } catch (err) {
         console.error(err);
@@ -159,7 +180,8 @@
         outbox.push({
           ts: Date.now(),
           formType: 'B',
-          payload
+          payload,
+          localImages: []
         });
         setOutbox(outbox);
 
@@ -168,7 +190,7 @@
     }
 
     function bindEvents() {
-      els.addRowBtn?.addEventListener('click', addRow);
+      els.addRowBtn?.addEventListener('click', () => addRow());
 
       els.tableBody?.addEventListener('click', (e) => {
         const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
