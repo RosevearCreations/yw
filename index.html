@@ -1,6 +1,6 @@
 <!-- File: index.html
-     Brief description: Main single-page app shell for YWI HSE.
-     Contains auth UI, navigation, all major app sections, script loading order, and safe hash routing.
+     Brief description: Main single-page app shell updated to use the shared router module.
+     Loads auth, admin, logbook, form modules, and js/router.js while removing the older inline routing script.
 -->
 
 <!DOCTYPE html>
@@ -1199,6 +1199,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
 
+  <script src="/js/router.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/ui-auth.js"></script>
   <script src="/js/bootstrap.js"></script>
@@ -1210,106 +1211,6 @@
   <script src="/js/forms-inspection.js"></script>
   <script src="/js/forms-drill.js"></script>
   <script src="/app.js" defer></script>
-
-  <script>
-    (function () {
-      const DEFAULT_SECTION = 'toolbox';
-      const sectionSelector = 'main > section.card';
-      const sections = Array.from(document.querySelectorAll(sectionSelector));
-      const navLinks = Array.from(document.querySelectorAll('nav a[href^="#"]'));
-
-      function isAuthCallbackHash(raw) {
-        return /(^|&)(access_token|refresh_token|expires_at|expires_in|token_type|type|error|error_code|error_description|code)=/i.test(raw || '');
-      }
-
-      function normalizeSectionId(id) {
-        return String(id || DEFAULT_SECTION).replace(/[^a-zA-Z0-9_-]/g, '') || DEFAULT_SECTION;
-      }
-
-      function sectionExists(id) {
-        return sections.some((section) => section.id === id);
-      }
-
-      function getRequestedSection() {
-        const raw = (location.hash || `#${DEFAULT_SECTION}`).slice(1);
-
-        if (isAuthCallbackHash(raw)) {
-          return null;
-        }
-
-        const firstPart = raw.split('&')[0] || DEFAULT_SECTION;
-        const normalized = normalizeSectionId(firstPart);
-
-        return sectionExists(normalized) ? normalized : DEFAULT_SECTION;
-      }
-
-      function updateNav(sectionId) {
-        navLinks.forEach((link) => {
-          link.classList.toggle('active', link.getAttribute('href') === `#${sectionId}`);
-        });
-      }
-
-      function updateSections(sectionId) {
-        sections.forEach((section) => {
-          section.classList.toggle('active', section.id === sectionId);
-        });
-      }
-
-      function updateHash(sectionId) {
-        const raw = (location.hash || '').slice(1);
-        if (!isAuthCallbackHash(raw) && location.hash !== `#${sectionId}`) {
-          history.replaceState(null, '', `#${sectionId}`);
-        }
-      }
-
-      function focusSection(sectionId) {
-        const first = document.querySelector(
-          `#${sectionId} input, #${sectionId} textarea, #${sectionId} select`
-        );
-        if (first) {
-          first.focus({ preventScroll: true });
-        }
-      }
-
-      function showSection(sectionId) {
-        if (!sectionId) return;
-
-        updateSections(sectionId);
-        updateNav(sectionId);
-        updateHash(sectionId);
-        focusSection(sectionId);
-        window.scrollTo({ top: 0, behavior: 'instant' });
-      }
-
-      function onNavClick(e) {
-        const link = e.currentTarget;
-        e.preventDefault();
-        const sectionId = normalizeSectionId(link.getAttribute('href').slice(1));
-        showSection(sectionId);
-      }
-
-      function bindNav() {
-        navLinks.forEach((link) => {
-          link.addEventListener('click', onNavClick);
-        });
-      }
-
-      window.addEventListener('hashchange', () => {
-        const sectionId = getRequestedSection();
-        if (sectionId) {
-          showSection(sectionId);
-        }
-      });
-
-      document.addEventListener('DOMContentLoaded', () => {
-        bindNav();
-        const sectionId = getRequestedSection();
-        if (sectionId) {
-          showSection(sectionId);
-        }
-      });
-    })();
-  </script>
 
   <noscript>
     <p style="padding:1rem">This app requires JavaScript enabled.</p>
