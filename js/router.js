@@ -1,13 +1,17 @@
 /* File: js/router.js
    Brief description: Shared hash router for the YWI HSE single-page app.
    Handles safe section navigation, ignores auth callback hashes, keeps nav state in sync,
-   and moves the current inline routing logic out of index.html into a reusable module.
+   and includes an init guard so it does not bind twice if called from both DOMContentLoaded and app code.
 */
 
 'use strict';
 
 (function () {
   const DEFAULT_SECTION = 'toolbox';
+
+  const state = {
+    initialized: false
+  };
 
   function getSections() {
     return Array.from(document.querySelectorAll('main > section.card'));
@@ -85,7 +89,8 @@
     const link = e.currentTarget;
     e.preventDefault();
 
-    const sectionId = normalizeSectionId(link.getAttribute('href').slice(1));
+    const href = link.getAttribute('href') || `#${DEFAULT_SECTION}`;
+    const sectionId = normalizeSectionId(href.slice(1));
     showSection(sectionId);
   }
 
@@ -98,6 +103,9 @@
   }
 
   function bindHashChange() {
+    if (window.__ywiRouterHashBound) return;
+    window.__ywiRouterHashBound = true;
+
     window.addEventListener('hashchange', () => {
       const sectionId = getRequestedSection();
       if (sectionId) {
@@ -107,6 +115,14 @@
   }
 
   function init() {
+    if (state.initialized) {
+      const sectionId = getRequestedSection();
+      if (sectionId) showSection(sectionId);
+      return;
+    }
+
+    state.initialized = true;
+
     bindNav();
     bindHashChange();
 
