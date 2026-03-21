@@ -1,14 +1,10 @@
+/* File: js/bootstrap.js
+   Brief description: Supabase bootstrap and session recovery layer.
+   Creates the shared Supabase client, restores sessions from normal or malformed auth callback URLs,
+   exposes boot state/helpers, and dispatches shared boot/auth events for the rest of the app.
+*/
+
 'use strict';
-
-/* =========================================================
-   js/bootstrap.js
-   YWI bootstrap / Supabase session recovery
-
-   Purpose:
-   - create shared Supabase client
-   - recover session from normal or malformed auth callback URLs
-   - expose shared boot helpers/state for the app
-========================================================= */
 
 (function () {
   const SUPABASE_URL = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
