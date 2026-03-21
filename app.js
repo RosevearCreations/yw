@@ -1,15 +1,9 @@
+/* File: app.js
+   Brief description: Shared application shell that initializes auth-aware modules,
+   provides shared API/upload helpers, retries queued submissions, and wires admin actions.
+*/
+
 'use strict';
-
-/* =========================================================
-   app.js
-   Main application controller
-
-   Purpose:
-   - shared bootstrap/auth wiring
-   - shared upload + outbox helpers
-   - admin dashboard actions
-   - initialize modular UI/form controllers
-========================================================= */
 
 /* =========================
    CONFIG / ENDPOINTS
