@@ -1,6 +1,6 @@
 <!-- File: index.html
-     Brief description: Main single-page app shell updated to use the shared router module.
-     Loads auth, admin, logbook, form modules, and js/router.js while removing the older inline routing script.
+     Brief description: Main single-page app shell with corrected script load order.
+     This version loads bootstrap before auth so the Supabase client exists before auth.js initializes.
 -->
 
 <!DOCTYPE html>
@@ -1200,9 +1200,9 @@
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
 
   <script src="/js/router.js"></script>
+  <script src="/js/bootstrap.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/ui-auth.js"></script>
-  <script src="/js/bootstrap.js"></script>
   <script src="/js/admin-ui.js"></script>
   <script src="/js/logbook-ui.js"></script>
   <script src="/js/forms-toolbox.js"></script>
