@@ -1,6 +1,7 @@
 /* File: app.js
-   Brief description: Shared application shell that initializes auth-aware modules,
-   provides shared API/upload helpers, retries queued submissions, and wires admin actions.
+   Brief description: Shared application shell updated to work with the extracted router module.
+   Initializes auth-aware modules, shared API/upload helpers, outbox retry, and admin actions
+   while removing the older inline routing dependency.
 */
 
 'use strict';
@@ -131,6 +132,10 @@ function auth() {
 
 function sb() {
   return window.YWI_SB || window._sb || null;
+}
+
+function router() {
+  return window.YWIRouter || null;
 }
 
 function storagePreviewUrl(filePath) {
@@ -314,20 +319,8 @@ async function uploadImagesForSubmission(images, submissionId) {
 }
 
 /* =========================
-   ROUTING / DEFAULT DATES
+   DEFAULT DATES
 ========================= */
-function route() {
-  const hash = location.hash || '#toolbox';
-
-  $$('nav a').forEach((a) => {
-    a.classList.toggle('active', a.getAttribute('href') === hash);
-  });
-
-  $$('main.container > section.card').forEach((sec) => {
-    sec.classList.toggle('active', `#${sec.id}` === hash);
-  });
-}
-
 function applyDateFallback() {
   [
     '#tb_date',
@@ -787,7 +780,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   appState.domReady = true;
 
   applyDateFallback();
-  route();
 
   if (!appState.initialized) {
     await initializeAppShell();
@@ -795,7 +787,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 window.addEventListener('hashchange', () => {
-  route();
   setTimeout(seedAllTables, 0);
 
   if (location.hash === '#admin' && appState.isAuthenticated && modules.adminUI?.loadDirectory) {
@@ -803,7 +794,9 @@ window.addEventListener('hashchange', () => {
   }
 });
 
-window.addEventListener('load', route);
+window.addEventListener('load', () => {
+  router()?.init?.();
+});
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
