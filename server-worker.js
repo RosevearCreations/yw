@@ -1,153 +1,112 @@
+/* File: server-worker.js
+   Brief description: Service worker for basic offline caching of static assets and safe navigation fallback.
+   It avoids caching auth callback requests, POST requests, and Supabase/API traffic to reduce login and data issues.
+*/
+
 'use strict';
 
-/* =========================================================
-   YWI HSE — server-worker.js
-   Purpose:
-   - Safe static asset caching only
-   - Never cache POST/PUT/PATCH/DELETE requests
-   - Ignore chrome-extension and other unsupported schemes
-   - Ignore Supabase API/Auth/Storage/Function requests
-   - Provide basic offline support for static frontend assets
-========================================================= */
-
-const CACHE_NAME = 'ywi-hse-static-v1';
-const STATIC_ASSETS = [
+const CACHE_NAME = 'ywi-hse-shell-v1';
+const APP_SHELL = [
   '/',
   '/index.html',
-  '/app.js',
   '/style.css',
-  '/manifest.json'
+  '/app.js',
+  '/manifest.json',
+  '/js/bootstrap.js',
+  '/js/auth.js',
+  '/js/ui-auth.js',
+  '/js/admin-ui.js',
+  '/js/logbook-ui.js',
+  '/js/forms-toolbox.js',
+  '/js/forms-ppe.js',
+  '/js/forms-firstaid.js',
+  '/js/forms-inspection.js',
+  '/js/forms-drill.js'
 ];
 
-/* =========================
-   INSTALL
-========================= */
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(async (cache) => {
-      for (const asset of STATIC_ASSETS) {
-        try {
-          await cache.add(asset);
-        } catch (err) {
-          // Ignore missing optional assets during install
-          console.warn('[SW] Failed to cache asset during install:', asset, err);
-        }
-      }
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting())
   );
-  self.skipWaiting();
 });
 
-/* =========================
-   ACTIVATE
-========================= */
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then(async (keys) => {
-      await Promise.all(
-        keys
-          .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
-      );
-    })
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+          return Promise.resolve();
+        })
+      )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-/* =========================
-   HELPERS
-========================= */
-function isHttpRequest(request) {
-  return request.url.startsWith('http://') || request.url.startsWith('https://');
-}
-
-function isGetRequest(request) {
-  return request.method === 'GET';
-}
-
 function isSupabaseRequest(url) {
-  return (
-    url.includes('/auth/v1/') ||
-    url.includes('/functions/v1/') ||
-    url.includes('/storage/v1/') ||
-    url.includes('/rest/v1/')
-  );
+  return url.origin.includes('supabase.co');
 }
 
-function isUnsupportedScheme(url) {
-  return (
-    url.startsWith('chrome-extension://') ||
-    url.startsWith('moz-extension://') ||
-    url.startsWith('ms-browser-extension://') ||
-    url.startsWith('file://')
-  );
+function isApiLikeRequest(url) {
+  return isSupabaseRequest(url) ||
+    url.pathname.includes('/functions/v1/') ||
+    url.pathname.includes('/auth/v1/') ||
+    url.pathname.includes('/storage/v1/') ||
+    url.pathname.includes('/rest/v1/');
 }
 
-function isNavigationRequest(request) {
-  return request.mode === 'navigate';
+function isAuthCallbackUrl(url) {
+  const hash = url.hash || '';
+  const search = url.search || '';
+  const combined = `${search}${hash}`;
+  return /(access_token|refresh_token|expires_at|expires_in|token_type|error|error_code|error_description|code)=/i.test(combined);
 }
 
-function shouldBypass(request) {
-  const url = request.url;
-
-  if (!isHttpRequest(request)) return true;
-  if (!isGetRequest(request)) return true;
-  if (isUnsupportedScheme(url)) return true;
-  if (isSupabaseRequest(url)) return true;
-
-  return false;
-}
-
-/* =========================
-   FETCH
-========================= */
 self.addEventListener('fetch', (event) => {
-  const request = event.request;
+  const req = event.request;
+  const url = new URL(req.url);
 
-  if (shouldBypass(request)) {
+  if (req.method !== 'GET') {
     return;
   }
 
-  // Navigation requests: network first, fallback to cached index
-  if (isNavigationRequest(request)) {
+  if (isApiLikeRequest(url) || isAuthCallbackUrl(url)) {
+    return;
+  }
+
+  if (req.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
+      fetch(req)
         .then((response) => {
           const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put('/index.html', copy).catch(() => {});
-          });
+          caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', copy)).catch(() => {});
           return response;
         })
-        .catch(async () => {
-          const cached = await caches.match('/index.html');
-          if (cached) return cached;
-          return new Response('Offline', {
-            status: 503,
-            statusText: 'Offline',
-            headers: { 'Content-Type': 'text/plain' }
-          });
-        })
+        .catch(() =>
+          caches.match(req).then((cached) => {
+            if (cached) return cached;
+            return caches.match('/index.html');
+          })
+        )
     );
     return;
   }
 
-  // Static asset requests: stale-while-revalidate
   event.respondWith(
-    caches.match(request).then(async (cachedResponse) => {
-      const networkFetch = fetch(request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.ok) {
-            const copy = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, copy).catch(() => {});
-            });
-          }
-          return networkResponse;
-        })
-        .catch(() => cachedResponse || Response.error());
+    caches.match(req).then((cached) => {
+      if (cached) return cached;
 
-      return cachedResponse || networkFetch;
+      return fetch(req).then((response) => {
+        const responseClone = response.clone();
+
+        if (response.ok && url.origin === self.location.origin) {
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, responseClone)).catch(() => {});
+        }
+
+        return response;
+      });
     })
   );
 });
