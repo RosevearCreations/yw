@@ -1,17 +1,10 @@
+/* File: js/forms-inspection.js
+   Brief description: Site Inspection form module.
+   Handles worker roster rows, hazard rows, approver signature, optional image queue,
+   payload building, submit flow, and outbox fallback when the server or network is unavailable.
+*/
+
 'use strict';
-
-/* =========================================================
-   js/forms-inspection.js
-   Site Inspection form module
-
-   Purpose:
-   - move Site Inspection form logic out of app.js
-   - manage roster rows and hazard rows
-   - manage approval signature
-   - manage optional image queue
-   - submit form C payload
-   - save failed submissions to outbox
-========================================================= */
 
 (function () {
   function $(sel, root = document) {
@@ -68,28 +61,13 @@
     state.forEach((img, idx) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${escHtml(img.file.name || '')}</td>
+        <td>${escHtml(img.file?.name || '')}</td>
         <td>${escHtml(img.image_type || '')}</td>
-        <td>${escHtml(bytesLabel(img.file.size || 0))}</td>
+        <td>${escHtml(bytesLabel(img.file?.size || 0))}</td>
         <td>${escHtml(img.caption || '')}</td>
         <td><button type="button" data-remove-index="${idx}">Remove</button></td>
       `;
       body.appendChild(tr);
-    });
-  }
-
-  function wireImageRemover(state, body) {
-    body?.addEventListener('click', (e) => {
-      const btn = (e.target instanceof Element)
-        ? e.target.closest('button[data-remove-index]')
-        : null;
-      if (!btn) return;
-
-      const idx = Number(btn.dataset.removeIndex);
-      if (Number.isNaN(idx)) return;
-
-      state.splice(idx, 1);
-      renderImageRows(state, body);
     });
   }
 
@@ -106,14 +84,15 @@
       inspector: $('#insp_inspector'),
 
       rosterBody: ensureTBody('inspRoster'),
-      hazardsBody: ensureTBody('inspHazards'),
       addWorkerBtn: $('#inspAddWorker'),
+
+      hazardsBody: ensureTBody('inspHazards'),
       addHazardBtn: $('#inspAddHazard'),
 
       approver: $('#insp_approver'),
       approverOther: $('#insp_approver_other'),
-      clearSigBtn: $('#inspClearSig'),
       sigCanvas: $('#insp_approver_canvas'),
+      clearSigBtn: $('#inspClearSig'),
 
       imageFiles: $('#insp_image_files'),
       imageType: $('#insp_image_type'),
@@ -127,46 +106,52 @@
       sigPad: null
     };
 
-    function addWorkerRow() {
+    function addWorkerRow(values = {}) {
       if (!els.rosterBody) return;
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><input type="text" class="iw-name" placeholder="Full name" required></td>
+        <td><input type="text" class="insp-worker-name" placeholder="Full name" value="${escHtml(values.name || '')}" required></td>
         <td>
-          <select class="iw-role">
-            <option value="worker">Worker</option>
-            <option value="staff">Staff</option>
-            <option value="foreman">Foreman</option>
-            <option value="supervisor">Supervisor</option>
-            <option value="visitor">Visitor</option>
+          <select class="insp-worker-role">
+            <option value="worker" ${values.role_on_site === 'worker' ? 'selected' : ''}>Worker</option>
+            <option value="staff" ${values.role_on_site === 'staff' ? 'selected' : ''}>Staff</option>
+            <option value="site_leader" ${values.role_on_site === 'site_leader' ? 'selected' : ''}>Site Leader</option>
+            <option value="supervisor" ${values.role_on_site === 'supervisor' ? 'selected' : ''}>Supervisor</option>
+            <option value="visitor" ${values.role_on_site === 'visitor' ? 'selected' : ''}>Visitor</option>
           </select>
         </td>
-        <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
+        <td><div class="controls"><button type="button" data-act="remove-worker">Remove</button></div></td>
       `;
       els.rosterBody.appendChild(tr);
     }
 
-    function addHazardRow() {
+    function addHazardRow(values = {}) {
       if (!els.hazardsBody) return;
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><input type="text" class="hz-desc" placeholder="Describe hazard" required></td>
-        <td><input type="text" class="hz-loc" placeholder="Where?"></td>
+        <td><input type="text" class="insp-hazard" placeholder="Hazard" value="${escHtml(values.hazard || '')}" required></td>
+        <td><input type="text" class="insp-location" placeholder="Location" value="${escHtml(values.location || '')}"></td>
         <td>
-          <select class="hz-risk">
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
+          <select class="insp-risk">
+            <option value="low" ${values.risk === 'low' ? 'selected' : ''}>Low</option>
+            <option value="medium" ${values.risk === 'medium' ? 'selected' : ''}>Medium</option>
+            <option value="high" ${values.risk === 'high' ? 'selected' : ''}>High</option>
+            <option value="critical" ${values.risk === 'critical' ? 'selected' : ''}>Critical</option>
           </select>
         </td>
-        <td><input type="text" class="hz-action" placeholder="Action to fix"></td>
-        <td><input type="text" class="hz-assigned" placeholder="Assigned to"></td>
-        <td style="text-align:center"><input type="checkbox" class="hz-done"></td>
-        <td><input type="text" class="hz-doneby" placeholder="Completed by"></td>
-        <td><input type="date" class="hz-donedate"></td>
-        <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
+        <td><input type="text" class="insp-action" placeholder="Action taken / required" value="${escHtml(values.action || '')}"></td>
+        <td><input type="text" class="insp-assigned" placeholder="Assigned to" value="${escHtml(values.assigned_to || '')}"></td>
+        <td>
+          <select class="insp-completed">
+            <option value="no" ${values.completed === 'no' ? 'selected' : ''}>No</option>
+            <option value="yes" ${values.completed === 'yes' ? 'selected' : ''}>Yes</option>
+          </select>
+        </td>
+        <td><input type="text" class="insp-completed-by" placeholder="Completed by" value="${escHtml(values.completed_by || '')}"></td>
+        <td><input type="date" class="insp-completed-date" value="${escHtml(values.completed_date || '')}"></td>
+        <td><div class="controls"><button type="button" data-act="remove-hazard">Remove</button></div></td>
       `;
       els.hazardsBody.appendChild(tr);
     }
@@ -182,10 +167,6 @@
 
       if (els.hazardsBody && els.hazardsBody.children.length === 0) {
         addHazardRow();
-      }
-
-      if (els.approver && !els.approver.value) {
-        els.approver.value = 'Krista';
       }
     }
 
@@ -224,14 +205,6 @@
         state.sigPad.clear();
       }
 
-      if (els.approver) {
-        els.approver.value = 'Krista';
-      }
-
-      if (els.approverOther) {
-        els.approverOther.value = '';
-      }
-
       clearImageState(state.images, els.imageBody, els.imageFiles, els.imageCaption);
     }
 
@@ -245,36 +218,53 @@
       }
 
       const roster = els.rosterBody
-        ? Array.from(els.rosterBody.querySelectorAll('tr')).map((tr) => ({
-            name: tr.querySelector('.iw-name')?.value?.trim?.() || '',
-            role_on_site: tr.querySelector('.iw-role')?.value || 'worker'
-          })).filter((r) => r.name)
+        ? Array.from(els.rosterBody.querySelectorAll('tr')).map((tr) => {
+            const name = tr.querySelector('.insp-worker-name')?.value?.trim?.() || '';
+            const role = tr.querySelector('.insp-worker-role')?.value || 'worker';
+            return { name, role_on_site: role };
+          }).filter((r) => r.name)
         : [];
 
       const hazards = els.hazardsBody
-        ? Array.from(els.hazardsBody.querySelectorAll('tr')).map((tr) => ({
-            hazard: tr.querySelector('.hz-desc')?.value?.trim?.() || '',
-            location: tr.querySelector('.hz-loc')?.value?.trim?.() || '',
-            risk: tr.querySelector('.hz-risk')?.value || 'Low',
-            action: tr.querySelector('.hz-action')?.value?.trim?.() || '',
-            assigned_to: tr.querySelector('.hz-assigned')?.value?.trim?.() || '',
-            completed: !!tr.querySelector('.hz-done')?.checked,
-            completed_by: tr.querySelector('.hz-doneby')?.value?.trim?.() || '',
-            completed_date: tr.querySelector('.hz-donedate')?.value || null
-          })).filter((h) => h.hazard)
+        ? Array.from(els.hazardsBody.querySelectorAll('tr')).map((tr) => {
+            const hazard = tr.querySelector('.insp-hazard')?.value?.trim?.() || '';
+            const location = tr.querySelector('.insp-location')?.value?.trim?.() || '';
+            const risk = tr.querySelector('.insp-risk')?.value || 'low';
+            const action = tr.querySelector('.insp-action')?.value?.trim?.() || '';
+            const assigned_to = tr.querySelector('.insp-assigned')?.value?.trim?.() || '';
+            const completed = tr.querySelector('.insp-completed')?.value || 'no';
+            const completed_by = tr.querySelector('.insp-completed-by')?.value?.trim?.() || '';
+            const completed_date = tr.querySelector('.insp-completed-date')?.value || '';
+
+            return {
+              hazard,
+              location,
+              risk,
+              action,
+              assigned_to,
+              completed,
+              completed_by,
+              completed_date: completed_date || null
+            };
+          }).filter((r) => r.hazard)
         : [];
 
-      let approverName = els.approver?.value || '';
-      if (approverName === 'Other') {
-        const other = els.approverOther?.value?.trim?.() || '';
-        if (!other) {
-          throw new Error('Please type the approver name.');
-        }
-        approverName = other;
+      if (!hazards.length) {
+        throw new Error('Please add at least one hazard row.');
+      }
+
+      const approverValue = els.approver?.value || '';
+      const approver =
+        approverValue === 'Other'
+          ? (els.approverOther?.value?.trim?.() || '')
+          : approverValue;
+
+      if (!approver) {
+        throw new Error('Please select or enter an approver.');
       }
 
       if (!state.sigPad || (state.sigPad.isEmpty && state.sigPad.isEmpty())) {
-        throw new Error('HSE approval signature is required.');
+        throw new Error('Approver signature is required.');
       }
 
       return {
@@ -283,9 +273,7 @@
         inspector,
         roster,
         hazards,
-        openHazards: hazards.some((h) => !h.completed),
-        approved: true,
-        approver_name: approverName,
+        approver,
         approver_signature_png: state.sigPad.toDataURL('image/png')
       };
     }
@@ -309,7 +297,7 @@
           await uploadImagesForSubmission(state.images, submissionId);
         }
 
-        alert('Site inspection submitted.');
+        alert('Site Inspection submitted.');
         resetForm();
       } catch (err) {
         console.error(err);
@@ -328,16 +316,14 @@
     }
 
     function bindEvents() {
-      wireImageRemover(state.images, els.imageBody);
-
-      els.addWorkerBtn?.addEventListener('click', addWorkerRow);
-      els.addHazardBtn?.addEventListener('click', addHazardRow);
+      els.addWorkerBtn?.addEventListener('click', () => addWorkerRow());
+      els.addHazardBtn?.addEventListener('click', () => addHazardRow());
 
       els.rosterBody?.addEventListener('click', (e) => {
         const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
         if (!btn) return;
 
-        if (btn.dataset.act === 'remove') {
+        if (btn.dataset.act === 'remove-worker') {
           btn.closest('tr')?.remove();
         }
       });
@@ -346,7 +332,7 @@
         const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
         if (!btn) return;
 
-        if (btn.dataset.act === 'remove') {
+        if (btn.dataset.act === 'remove-hazard') {
           btn.closest('tr')?.remove();
         }
       });
@@ -355,6 +341,19 @@
         if (state.sigPad?.clear) {
           state.sigPad.clear();
         }
+      });
+
+      els.imageBody?.addEventListener('click', (e) => {
+        const btn = (e.target instanceof Element)
+          ? e.target.closest('button[data-remove-index]')
+          : null;
+        if (!btn) return;
+
+        const idx = Number(btn.dataset.removeIndex);
+        if (Number.isNaN(idx)) return;
+
+        state.images.splice(idx, 1);
+        renderImageRows(state.images, els.imageBody);
       });
 
       els.imageAddBtn?.addEventListener('click', () => {
@@ -367,7 +366,7 @@
         files.forEach((file) => {
           state.images.push({
             file,
-            image_type: els.imageType?.value || 'general',
+            image_type: els.imageType?.value || 'hazard',
             caption: els.imageCaption?.value?.trim?.() || ''
           });
         });
