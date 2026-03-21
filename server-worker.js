@@ -1,17 +1,18 @@
 /* File: server-worker.js
-   Brief description: Service worker for basic offline caching of static assets and safe navigation fallback.
-   It avoids caching auth callback requests, POST requests, and Supabase/API traffic to reduce login and data issues.
+   Brief description: Service worker updated to include js/router.js in the cached app shell.
+   Keeps static assets available offline while still avoiding auth callback, POST, and Supabase/API traffic.
 */
 
 'use strict';
 
-const CACHE_NAME = 'ywi-hse-shell-v1';
+const CACHE_NAME = 'ywi-hse-shell-v2';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/style.css',
   '/app.js',
   '/manifest.json',
+  '/js/router.js',
   '/js/bootstrap.js',
   '/js/auth.js',
   '/js/ui-auth.js',
