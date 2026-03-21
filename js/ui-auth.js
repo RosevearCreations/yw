@@ -1,14 +1,9 @@
+/* File: js/ui-auth.js
+   Brief description: Authentication UI controller for magic link, password sign-in,
+   password reset, logout, and safe rendering while auth recovery is still in progress.
+*/
+
 'use strict';
-
-/* =========================================================
-   js/ui-auth.js
-   Authentication UI controller
-
-   Purpose:
-   - manage login / logged-in UI states
-   - wait for bootstrap/auth recovery before showing login
-   - support magic link, password sign-in, reset, and logout
-========================================================= */
 
 (function () {
   const auth = window.YWI_AUTH || null;
