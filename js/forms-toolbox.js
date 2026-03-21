@@ -1,16 +1,10 @@
+/* File: js/forms-toolbox.js
+   Brief description: Toolbox Talk form module.
+   Handles attendee rows, optional image queue, payload building, submit flow,
+   and outbox fallback when the server or network is unavailable.
+*/
+
 'use strict';
-
-/* =========================================================
-   js/forms-toolbox.js
-   Toolbox Talk form module
-
-   Purpose:
-   - move Toolbox Talk form logic out of app.js
-   - manage attendee rows
-   - manage optional image queue
-   - submit form E payload
-   - save failed submissions to outbox
-========================================================= */
 
 (function () {
   function $(sel, root = document) {
@@ -49,6 +43,7 @@
       tbody = document.createElement('tbody');
       table.appendChild(tbody);
     }
+
     return tbody;
   }
 
@@ -66,28 +61,13 @@
     state.forEach((img, idx) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td>${escHtml(img.file.name || '')}</td>
+        <td>${escHtml(img.file?.name || '')}</td>
         <td>${escHtml(img.image_type || '')}</td>
-        <td>${escHtml(bytesLabel(img.file.size || 0))}</td>
+        <td>${escHtml(bytesLabel(img.file?.size || 0))}</td>
         <td>${escHtml(img.caption || '')}</td>
         <td><button type="button" data-remove-index="${idx}">Remove</button></td>
       `;
       body.appendChild(tr);
-    });
-  }
-
-  function wireImageRemover(state, body) {
-    body?.addEventListener('click', (e) => {
-      const btn = (e.target instanceof Element)
-        ? e.target.closest('button[data-remove-index]')
-        : null;
-      if (!btn) return;
-
-      const idx = Number(btn.dataset.removeIndex);
-      if (Number.isNaN(idx)) return;
-
-      state.splice(idx, 1);
-      renderImageRows(state, body);
     });
   }
 
@@ -99,8 +79,8 @@
 
     const els = {
       form: $('#toolboxForm'),
-      date: $('#tb_date'),
       site: $('#tb_site'),
+      date: $('#tb_date'),
       leader: $('#tb_leader'),
       topic: $('#tb_topic'),
 
@@ -118,22 +98,22 @@
       images: []
     };
 
-    function addAttendeeRow() {
+    function addAttendeeRow(values = {}) {
       if (!els.attendeesBody) return;
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><input type="text" class="att-name" placeholder="Full name" required></td>
+        <td><input type="text" class="tb-name" placeholder="Full name" value="${escHtml(values.name || '')}" required></td>
         <td>
-          <select class="att-role">
-            <option value="worker">Worker</option>
-            <option value="staff">Staff</option>
-            <option value="site_leader">Site Leader</option>
-            <option value="supervisor">Supervisor</option>
-            <option value="visitor">Visitor</option>
+          <select class="tb-role">
+            <option value="worker" ${values.role_on_site === 'worker' ? 'selected' : ''}>Worker</option>
+            <option value="staff" ${values.role_on_site === 'staff' ? 'selected' : ''}>Staff</option>
+            <option value="site_leader" ${values.role_on_site === 'site_leader' ? 'selected' : ''}>Site Leader</option>
+            <option value="supervisor" ${values.role_on_site === 'supervisor' ? 'selected' : ''}>Supervisor</option>
+            <option value="visitor" ${values.role_on_site === 'visitor' ? 'selected' : ''}>Visitor</option>
           </select>
         </td>
-        <td><input type="text" class="att-company" placeholder="Company"></td>
+        <td><input type="text" class="tb-company" placeholder="Company" value="${escHtml(values.company || '')}"></td>
         <td><div class="controls"><button type="button" data-act="remove">Remove</button></div></td>
       `;
       els.attendeesBody.appendChild(tr);
@@ -175,21 +155,18 @@
         throw new Error('Please fill Site, Date, and Submitted By.');
       }
 
-      const rows = els.attendeesBody
-        ? Array.from(els.attendeesBody.querySelectorAll('tr'))
+      const attendees = els.attendeesBody
+        ? Array.from(els.attendeesBody.querySelectorAll('tr')).map((tr) => {
+            const name = tr.querySelector('.tb-name')?.value?.trim?.() || '';
+            const role = tr.querySelector('.tb-role')?.value || 'worker';
+            const company = tr.querySelector('.tb-company')?.value?.trim?.() || '';
+            return { name, role_on_site: role, company };
+          }).filter((r) => r.name)
         : [];
 
-      const attendees = rows.map((tr) => {
-        const name = tr.querySelector('.att-name')?.value?.trim?.() || '';
-        const role = tr.querySelector('.att-role')?.value || 'worker';
-        const company = tr.querySelector('.att-company')?.value?.trim?.() || '';
-
-        return {
-          name,
-          role_on_site: role,
-          company
-        };
-      }).filter((r) => r.name);
+      if (!attendees.length) {
+        throw new Error('Please add at least one attendee.');
+      }
 
       return {
         site,
@@ -219,7 +196,7 @@
           await uploadImagesForSubmission(state.images, submissionId);
         }
 
-        alert('Toolbox talk submitted.');
+        alert('Toolbox Talk submitted.');
         resetForm();
       } catch (err) {
         console.error(err);
@@ -238,16 +215,28 @@
     }
 
     function bindEvents() {
-      wireImageRemover(state.images, els.imageBody);
-
-      els.addRowBtn?.addEventListener('click', addAttendeeRow);
+      els.addRowBtn?.addEventListener('click', () => addAttendeeRow());
 
       els.attendeesBody?.addEventListener('click', (e) => {
         const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
         if (!btn) return;
+
         if (btn.dataset.act === 'remove') {
           btn.closest('tr')?.remove();
         }
+      });
+
+      els.imageBody?.addEventListener('click', (e) => {
+        const btn = (e.target instanceof Element)
+          ? e.target.closest('button[data-remove-index]')
+          : null;
+        if (!btn) return;
+
+        const idx = Number(btn.dataset.removeIndex);
+        if (Number.isNaN(idx)) return;
+
+        state.images.splice(idx, 1);
+        renderImageRows(state.images, els.imageBody);
       });
 
       els.imageAddBtn?.addEventListener('click', () => {
