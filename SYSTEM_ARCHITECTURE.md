@@ -1,49 +1,25 @@
-# SYSTEM_ARCHITECTURE.md
+# System Architecture
 
-YWI HSE uses a static modular frontend with Supabase backend services.
+## Frontend layers
 
-## Layers
+- auth bootstrap and recovery
+- auth UI and account security UI
+- security and route guards
+- API and outbox helpers
+- admin UI and admin actions
+- logbook/review UI
+- form modules
+- app shell
 
-### Frontend
+## Security model direction
 
-- route and UI shell: `index.html`, `style.css`, `js/router.js`
-- auth and session recovery: `js/bootstrap.js`, `js/auth.js`, `js/ui-auth.js`
-- role/tier logic: `js/security.js`
-- API helpers: `js/api.js`
-- account security UI: `js/account-ui.js`
-- feature modules: `js/admin-ui.js`, `js/logbook-ui.js`, `js/forms-*`
+Frontend now uses shared route and tier helpers so the app behaves consistently, but backend enforcement must validate:
+- current user role
+- current user active status
+- site assignment access
+- admin-only writes
+- supervisor/HSE/job admin read limits
 
-### Backend
+## Workforce model direction
 
-- Supabase Auth
-- Supabase Postgres
-- Supabase Edge Functions
-- Supabase Storage
-
-## Current frontend security flow
-
-1. Supabase callback/session is restored by `js/bootstrap.js`
-2. `js/auth.js` maintains shared auth state
-3. `js/security.js` maps the active role to an access profile
-4. UI modules show/hide or lock read-only/manage features accordingly
-5. real secure enforcement must still happen in Edge Functions and SQL/RLS
-
-## Current tier model
-
-- worker/staff
-- site_leader
-- supervisor
-- hse
-- job_admin
-- admin
-
-Frontend use:
-
-- review gate
-- directory view gate
-- management gate
-- account security rendering
-
-## Important note
-
-Frontend gating is convenience UX, not the final source of truth. Backend and SQL helper functions must enforce real access.
+The app is evolving from a simple safety app into a combined safety + workforce profile app for a construction company.

@@ -1,9 +1,6 @@
-# DATABASE_STRUCTURE.md
-
-Current database/storage expectations for YWI HSE.
+# Database Structure
 
 ## Main tables
-
 - `profiles`
 - `sites`
 - `site_assignments`
@@ -12,8 +9,25 @@ Current database/storage expectations for YWI HSE.
 - `submission_reviews`
 - `submission_images`
 
-## Current role values expected in docs/frontend
+## Expanded profiles direction
 
+`profiles` now needs to support:
+- `email`, `email_verified`
+- `full_name`
+- `role`, `is_active`
+- `phone`, `phone_verified`
+- `address_line1`, `address_line2`, `city`, `province`, `postal_code`
+- `emergency_contact_name`, `emergency_contact_phone`
+- `vehicle_make_model`, `vehicle_plate`
+- `years_employed`
+- `current_position`
+- `previous_employee`
+- `trade_specialty`
+- `certifications`
+- `feature_preferences`
+- `notes`
+
+## Role model
 - `worker`
 - `staff`
 - `onsite_admin`
@@ -23,24 +37,13 @@ Current database/storage expectations for YWI HSE.
 - `job_admin`
 - `admin`
 
-Important: some SQL files still focus on the narrower backend-enforced set (`worker`, `site_leader`, `supervisor`, `hse`, `admin`). Align backend rules deliberately before enabling broader UI-only roles everywhere.
+## Security helper SQL
 
-## Current security helpers direction
+Current helper direction is built around:
+- `role_rank()`
+- `profile_role_rank()`
+- `site_assignment_role_rank()`
+- `effective_site_role_rank()`
+- `can_manage_site()`
 
-SQL helpers are expected to support:
-
-- role rank lookup
-- site assignment rank lookup
-- submission access checks
-- review permission checks
-- admin/system role checks
-
-## Storage
-
-Bucket:
-
-- `submission-images`
-
-Current frontend upload helper endpoint:
-
-- `upload-image`
+See `sql/036_employee_profile_expansion.sql` and `sql/037_security_rls_verification_notes.sql` for the newest planning layer.

@@ -1,47 +1,36 @@
-# REPO_BASE.md
+# Repo Base
 
-Repository structure overview for YWI HSE.
+## Current important files
 
-## Main frontend files
-
+### Shell and routing
 - `index.html`
-- `style.css`
 - `app.js`
-- `manifest.json`
-- `server-worker.js`
-
-## Shared JS modules
-
+- `style.css`
 - `js/router.js`
-- `js/bootstrap.js`
 - `js/security.js`
+
+### Auth and account
+- `js/bootstrap.js`
 - `js/auth.js`
-- `js/api.js`
 - `js/ui-auth.js`
 - `js/account-ui.js`
+
+### Shared helpers
+- `js/api.js`
+- `js/outbox.js`
+
+### Admin and logbook
 - `js/admin-ui.js`
+- `js/admin-actions.js`
 - `js/logbook-ui.js`
 
-## Form modules
-
+### Forms
 - `js/forms-toolbox.js`
 - `js/forms-ppe.js`
 - `js/forms-firstaid.js`
 - `js/forms-inspection.js`
 - `js/forms-drill.js`
 
-## SQL folder
-
-Contains schema, role model, selector, and site-access helper SQL documents.
-
-## Working rule
-
-Keep logic separated by responsibility:
-
-- auth/session in auth/bootstrap
-- role checks in security
-- API calls in api
-- account password/session tools in account-ui
-- directory UI in admin-ui
-- logbook/review in logbook-ui
-- form behavior in individual form files
+### SQL planning layer
+- `sql/036_employee_profile_expansion.sql`
+- `sql/037_security_rls_verification_notes.sql`

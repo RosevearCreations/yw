@@ -1,178 +1,56 @@
 # YWI HSE Safety System
 
-YWI HSE is a Supabase-backed safety and compliance web app for field and site operations.
+YWI HSE is a modular Supabase-backed safety and workforce management app for a construction-type company.
 
-It supports structured safety forms, evidence images, review workflows, tiered access control, logbook lookup/export, and admin management for profiles, sites, and assignments.
+## Current direction
 
----
+The app now combines:
+- authentication with magic link and password login
+- in-app password creation/change and log out everywhere
+- tiered visibility for employees, supervisors, and admins
+- safety forms and image evidence
+- logbook review workflows
+- admin directory and profile management
+- richer employee records for construction operations
 
-# Current Status
+## Current frontend modules
 
-The current build is functional and now more modular than the earlier single-file version.
+- `js/bootstrap.js` — Supabase bootstrap and callback recovery
+- `js/auth.js` — shared auth controller
+- `js/ui-auth.js` — sign-in UI
+- `js/account-ui.js` — password and session security UI
+- `js/security.js` — role/tier and route guard rules
+- `js/router.js` — guarded hash routing
+- `js/api.js` — API and upload helpers
+- `js/outbox.js` — failed submission queue and retry
+- `js/admin-ui.js` — admin directory UI
+- `js/admin-actions.js` — admin CRUD actions
+- `js/logbook-ui.js` — logbook, detail, and review UI
+- `js/forms-*.js` — per-form modules
+- `app.js` — shared app shell and module initialization
 
-This pass adds:
+## Tier model
 
-- shared role/security helpers
-- an in-app account security panel
-- password create/change support after sign-in
-- global sign-out support
-- tiered admin directory access
-- more modular frontend separation
-- full markdown sync
+- `worker` and `staff` see their own working screens
+- `site_leader`, `supervisor`, `hse`, and `job_admin` can review and can open the admin directory in read-only mode where allowed
+- `admin` can manage profiles, sites, assignments, and see all tiers
 
----
+## Richer workforce profile fields
 
-# Frontend Architecture
+The project direction now includes profile data such as:
+- address
+- phone and verified phone
+- email and verified email direction
+- emergency contact
+- current position
+- years employed
+- previous employee flag
+- trade/specialty
+- certifications/tickets
+- vehicle and plate
+- feature preferences
+- general construction/company notes
 
-Main files:
+## Important note
 
-- `index.html` — single-page app shell
-- `style.css` — app styling
-- `app.js` — shared shell, state wiring, outbox/admin actions
-
-Shared modules:
-
-- `js/router.js` — hash routing
-- `js/bootstrap.js` — Supabase bootstrap and auth callback recovery
-- `js/security.js` — shared role tier and permission helpers
-- `js/auth.js` — auth controller
-- `js/api.js` — authenticated function/upload API helpers
-- `js/ui-auth.js` — login/logout UI
-- `js/account-ui.js` — in-app password/account security panel
-- `js/admin-ui.js` — admin directory and management UI
-- `js/logbook-ui.js` — logbook, detail, review, CSV export
-
-Form modules:
-
-- `js/forms-toolbox.js`
-- `js/forms-ppe.js`
-- `js/forms-firstaid.js`
-- `js/forms-inspection.js`
-- `js/forms-drill.js`
-
-Support files:
-
-- `manifest.json`
-- `server-worker.js`
-
----
-
-# Security Model
-
-Authentication uses Supabase Auth.
-
-Current frontend auth support:
-
-- magic link sign-in
-- email + password sign-in UI
-- password reset email flow
-- password create/change in-app after sign-in
-- logout
-- logout everywhere (global sign-out)
-- callback/session recovery for malformed auth URLs
-
-## Tiered access model
-
-Current role values used by the frontend/docs:
-
-- `worker`
-- `staff`
-- `onsite_admin`
-- `site_leader`
-- `supervisor`
-- `hse`
-- `job_admin`
-- `admin`
-
-Current UI behavior:
-
-- worker/staff: standard form access
-- site_leader and above: submission review access
-- supervisor/hse/job_admin/admin: directory view access
-- admin: full create/update/delete admin management
-
-Important: frontend visibility is only one layer. Real enforcement must still happen in Edge Functions, SQL helpers, and RLS/policies.
-
----
-
-# Main Features
-
-- Toolbox Talk form
-- PPE Check form
-- First Aid Kit Check form
-- Site Inspection form
-- Emergency Drill form
-- optional image uploads
-- submission detail viewer
-- review history and status updates
-- CSV export from the logbook
-- admin directory for users/sites/assignments
-- account security panel
-- outbox retry for failed submissions
-
----
-
-# Current Edge Functions Expected
-
-- `resend-email`
-- `clever-endpoint`
-- `submission-detail`
-- `review-submission`
-- `admin-directory`
-- `admin-manage`
-- `admin-selectors`
-- `upload-image`
-
----
-
-# Current Main Tables Expected
-
-- `profiles`
-- `sites`
-- `site_assignments`
-- `submissions`
-- `toolbox_attendees`
-- `submission_reviews`
-- `submission_images`
-
-Storage bucket:
-
-- `submission-images`
-
----
-
-# Active Priorities
-
-1. finish stronger end-to-end security enforcement in backend/RLS
-2. continue modular cleanup so `app.js` becomes smaller over time
-3. keep docs aligned with code and SQL helpers
-4. verify deployed auth redirect and password-change behavior
-5. verify tiered access rules for directory/review actions
-
----
-
-# Immediate Recommended Next Steps
-
-- add RLS/policy documentation and enforcement checklist
-- move admin CRUD actions into a dedicated module after this pass
-- move outbox helpers into their own shared module
-- add audit logging for role/site assignment changes
-- verify role/site access in backend helper functions
-
----
-
-# Documentation Files
-
-- `README.md`
-- `AI_CONTEXT.md`
-- `AI_START_PROMPT.md`
-- `PROJECT_BRAIN.md`
-- `PROJECT_STATE.md`
-- `SYSTEM_ARCHITECTURE.md`
-- `DATABASE_STRUCTURE.md`
-- `REPO_BASE.md`
-- `DEPLOYMENT_GUIDE.md`
-- `TESTING_CHECKLIST.md`
-- `CHANGELOG.md`
-
-These files should be updated whenever auth, architecture, or role rules change.
+Frontend tiering improves usability, but true security must still be enforced in Supabase Edge Functions and SQL/RLS.

@@ -215,7 +215,7 @@
     <div class="section-heading">
       <div>
         <h3>Account Security</h3>
-        <p class="section-subtitle">Create or change your password after magic-link sign-in, and sign out all sessions if needed.</p>
+        <p class="section-subtitle">Create your first password after magic-link sign-in, change it later, and sign out all sessions if needed.</p>
       </div>
       <div class="security-badge" id="account_role_badge">Account Protection</div>
     </div>
@@ -231,8 +231,8 @@
           </label>
         </div>
 
-        <div class="notice" style="margin-top:12px;">
-          Strong passwords are recommended for supervisor and admin roles. Magic link still works, but password login provides a more traditional sign-in option.
+        <div class="notice" id="account_password_hint" style="margin-top:12px;">
+          After your first magic-link sign-in, create a password here so you can use either password login or magic link next time.
         </div>
       </section>
 
@@ -1085,11 +1085,11 @@
       <div id="ad_summary" class="notice" style="display:none;margin-top:14px;"></div>
 
       <div class="admin-management-grid" style="margin-top:22px;">
-        <section class="card-lite admin-form-card">
+        <section class="card-lite admin-form-card admin-form-card--full">
           <div class="panel-heading">
             <div>
-              <h3>Update Profile</h3>
-              <p>Edit a profile’s display name, role, and active status.</p>
+              <h3>Update Employee / Supervisor / Admin Profile</h3>
+              <p>Edit role, contact data, vehicle, employment history, feature preferences, and construction-specific profile notes.</p>
             </div>
           </div>
 
@@ -1109,7 +1109,7 @@
               <select id="am_profile_role">
                 <option value="">No change</option>
                 <option value="worker">Worker</option>
-                <option value="staff">Staff</option>
+                <option value="staff">Employee</option>
                 <option value="onsite_admin">Onsite Admin</option>
                 <option value="job_admin">Job Admin</option>
                 <option value="site_leader">Site Leader</option>
@@ -1121,9 +1121,74 @@
           </div>
 
           <div class="grid" style="margin-top:12px;">
+            <label>Phone
+              <input type="text" id="am_profile_phone" placeholder="Phone number" />
+            </label>
+            <label>Address Line 1
+              <input type="text" id="am_profile_address1" placeholder="Street address" />
+            </label>
+            <label>Address Line 2
+              <input type="text" id="am_profile_address2" placeholder="Unit, suite, etc." />
+            </label>
+            <label>City
+              <input type="text" id="am_profile_city" placeholder="City" />
+            </label>
+            <label>Province / State
+              <input type="text" id="am_profile_province" placeholder="Province" />
+            </label>
+            <label>Postal / ZIP Code
+              <input type="text" id="am_profile_postal_code" placeholder="Postal code" />
+            </label>
+          </div>
+
+          <div class="grid" style="margin-top:12px;">
+            <label>Emergency Contact Name
+              <input type="text" id="am_profile_emergency_name" placeholder="Emergency contact" />
+            </label>
+            <label>Emergency Contact Phone
+              <input type="text" id="am_profile_emergency_phone" placeholder="Emergency phone" />
+            </label>
+            <label>Current Position
+              <input type="text" id="am_profile_current_position" placeholder="Current position" />
+            </label>
+            <label>Years Employed
+              <input type="number" id="am_profile_years_employed" min="0" step="0.1" placeholder="Years employed" />
+            </label>
+            <label>Trade / Specialty
+              <input type="text" id="am_profile_trade_specialty" placeholder="e.g. Framing, excavation, safety" />
+            </label>
+            <label>Certifications / Tickets
+              <input type="text" id="am_profile_certifications" placeholder="Forklift, WHMIS, fall arrest, first aid" />
+            </label>
+          </div>
+
+          <div class="grid" style="margin-top:12px;">
+            <label>Vehicle Make / Model
+              <input type="text" id="am_profile_vehicle" placeholder="Vehicle used for site work" />
+            </label>
+            <label>Vehicle Plate
+              <input type="text" id="am_profile_vehicle_plate" placeholder="Plate" />
+            </label>
+            <label>Feature Preferences
+              <input type="text" id="am_profile_feature_preferences" placeholder="Overlay, reminders, mobile-first, dark mode" />
+            </label>
+            <label>Notes
+              <input type="text" id="am_profile_notes" placeholder="Construction-related notes, specialties, restrictions" />
+            </label>
+          </div>
+
+          <div class="grid" style="margin-top:12px;">
             <label class="inline-check">
               <input type="checkbox" id="am_profile_active" />
               Active
+            </label>
+            <label class="inline-check">
+              <input type="checkbox" id="am_profile_phone_verified" />
+              Verified phone
+            </label>
+            <label class="inline-check">
+              <input type="checkbox" id="am_profile_previous_employee" />
+              Previous employee / returning worker
             </label>
           </div>
 
@@ -1252,6 +1317,8 @@
   <script src="/js/ui-auth.js"></script>
   <script src="/js/account-ui.js"></script>
   <script src="/js/admin-ui.js"></script>
+  <script src="/js/admin-actions.js"></script>
+  <script src="/js/outbox.js"></script>
   <script src="/js/logbook-ui.js"></script>
   <script src="/js/forms-toolbox.js"></script>
   <script src="/js/forms-ppe.js"></script>

@@ -1,7 +1,7 @@
 /* File: js/security.js
    Brief description: Shared role and security helper module.
-   Centralizes role ranks, review/admin tier checks, and permission profiles
-   so UI modules do not each hardcode security rules differently.
+   Centralizes role ranks, tier checks, route/view rules, and section guards
+   so UI modules and routing all follow the same security model.
 */
 
 'use strict';
@@ -16,6 +16,16 @@
     hse: 40,
     job_admin: 45,
     admin: 50
+  };
+
+  const SECTION_RULES = {
+    toolbox: 'worker',
+    ppe: 'worker',
+    firstaid: 'worker',
+    inspect: 'worker',
+    drill: 'worker',
+    log: 'worker',
+    admin: 'supervisor'
   };
 
   function normalizeRole(role) {
@@ -83,8 +93,24 @@
     };
   }
 
+  function canViewSection(sectionId, role) {
+    const minimum = SECTION_RULES[String(sectionId || '').trim()] || 'worker';
+    return hasMinRole(role, minimum);
+  }
+
+  function getDefaultSectionForRole(role) {
+    if (canViewSection('toolbox', role)) return 'toolbox';
+    return 'toolbox';
+  }
+
+  function getDeniedMessage(sectionId, role) {
+    const min = SECTION_RULES[String(sectionId || '').trim()] || 'worker';
+    return `${getRoleLabel(role)} cannot open #${sectionId}. ${getRoleLabel(min)} access is required.`;
+  }
+
   window.YWISecurity = {
     ROLE_RANK,
+    SECTION_RULES,
     normalizeRole,
     roleRank,
     hasMinRole,
@@ -95,6 +121,9 @@
     canManageSites,
     canManageAssignments,
     getRoleLabel,
-    getAccessProfile
+    getAccessProfile,
+    canViewSection,
+    getDefaultSectionForRole,
+    getDeniedMessage
   };
 })();

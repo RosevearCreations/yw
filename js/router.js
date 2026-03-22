@@ -1,17 +1,26 @@
 /* File: js/router.js
    Brief description: Shared hash router for the YWI HSE single-page app.
-   Handles safe section navigation, ignores auth callback hashes, keeps nav state in sync,
-   and includes an init guard so it does not bind twice if called from both DOMContentLoaded and app code.
+   Handles safe section navigation, ignores auth callback hashes, applies route guards,
+   and keeps nav state in sync without binding twice.
 */
 
 'use strict';
 
 (function () {
   const DEFAULT_SECTION = 'toolbox';
+  const state = { initialized: false };
 
-  const state = {
-    initialized: false
-  };
+  function security() {
+    return window.YWISecurity || null;
+  }
+
+  function auth() {
+    return window.YWI_AUTH || null;
+  }
+
+  function getRole() {
+    return auth()?.getState?.()?.role || 'worker';
+  }
 
   function getSections() {
     return Array.from(document.querySelectorAll('main > section.card'));
@@ -35,20 +44,26 @@
 
   function getRequestedSection() {
     const raw = (location.hash || `#${DEFAULT_SECTION}`).slice(1);
-
-    if (isAuthCallbackHash(raw)) {
-      return null;
-    }
-
+    if (isAuthCallbackHash(raw)) return null;
     const firstPart = raw.split('&')[0] || DEFAULT_SECTION;
     const normalized = normalizeSectionId(firstPart);
-
     return sectionExists(normalized) ? normalized : DEFAULT_SECTION;
+  }
+
+  function getAllowedSection(sectionId) {
+    const sec = security();
+    const role = getRole();
+    if (!sec?.canViewSection) return sectionId;
+    if (sec.canViewSection(sectionId, role)) return sectionId;
+    return sec.getDefaultSectionForRole?.(role) || DEFAULT_SECTION;
   }
 
   function updateNav(sectionId) {
     getNavLinks().forEach((link) => {
+      const linkId = normalizeSectionId((link.getAttribute('href') || '').slice(1));
+      const allowed = security()?.canViewSection ? security().canViewSection(linkId, getRole()) : true;
       link.classList.toggle('active', link.getAttribute('href') === `#${sectionId}`);
+      link.style.display = allowed ? '' : 'none';
     });
   }
 
@@ -66,32 +81,28 @@
   }
 
   function focusSection(sectionId) {
-    const first = document.querySelector(
-      `#${sectionId} input, #${sectionId} textarea, #${sectionId} select`
-    );
-
-    if (first) {
-      first.focus({ preventScroll: true });
-    }
+    const first = document.querySelector(`#${sectionId} input, #${sectionId} textarea, #${sectionId} select`);
+    if (first) first.focus({ preventScroll: true });
   }
 
-  function showSection(sectionId) {
+  function showSection(sectionId, options = {}) {
     if (!sectionId) return;
-
-    updateSections(sectionId);
-    updateNav(sectionId);
-    updateHash(sectionId);
-    focusSection(sectionId);
+    const allowedSection = getAllowedSection(sectionId);
+    updateSections(allowedSection);
+    updateNav(allowedSection);
+    updateHash(allowedSection);
+    if (!options.skipFocus) focusSection(allowedSection);
     window.scrollTo({ top: 0, behavior: 'instant' });
+    if (allowedSection !== sectionId) {
+      document.dispatchEvent(new CustomEvent('ywi:route-denied', { detail: { requested: sectionId, redirected: allowedSection, role: getRole() } }));
+    }
   }
 
   function onNavClick(e) {
     const link = e.currentTarget;
     e.preventDefault();
-
     const href = link.getAttribute('href') || `#${DEFAULT_SECTION}`;
-    const sectionId = normalizeSectionId(href.slice(1));
-    showSection(sectionId);
+    showSection(normalizeSectionId(href.slice(1)));
   }
 
   function bindNav() {
@@ -105,39 +116,26 @@
   function bindHashChange() {
     if (window.__ywiRouterHashBound) return;
     window.__ywiRouterHashBound = true;
-
     window.addEventListener('hashchange', () => {
       const sectionId = getRequestedSection();
-      if (sectionId) {
-        showSection(sectionId);
-      }
+      if (sectionId) showSection(sectionId);
     });
   }
 
   function init() {
     if (state.initialized) {
       const sectionId = getRequestedSection();
-      if (sectionId) showSection(sectionId);
+      if (sectionId) showSection(sectionId, { skipFocus: true });
       return;
     }
-
     state.initialized = true;
-
     bindNav();
     bindHashChange();
-
     const sectionId = getRequestedSection();
-    if (sectionId) {
-      showSection(sectionId);
-    }
+    if (sectionId) showSection(sectionId, { skipFocus: true });
   }
 
-  window.YWIRouter = {
-    init,
-    showSection,
-    getRequestedSection,
-    isAuthCallbackHash
-  };
-
+  window.YWIRouter = { init, showSection, getRequestedSection, isAuthCallbackHash };
   document.addEventListener('DOMContentLoaded', init);
+  document.addEventListener('ywi:auth-changed', init);
 })();

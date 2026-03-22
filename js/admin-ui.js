@@ -71,6 +71,24 @@
       formProfileName: $('#am_profile_name'),
       formProfileRole: $('#am_profile_role'),
       formProfileActive: $('#am_profile_active'),
+      formProfilePhone: $('#am_profile_phone'),
+      formProfilePhoneVerified: $('#am_profile_phone_verified'),
+      formProfileAddress1: $('#am_profile_address1'),
+      formProfileAddress2: $('#am_profile_address2'),
+      formProfileCity: $('#am_profile_city'),
+      formProfileProvince: $('#am_profile_province'),
+      formProfilePostalCode: $('#am_profile_postal_code'),
+      formProfileEmergencyName: $('#am_profile_emergency_name'),
+      formProfileEmergencyPhone: $('#am_profile_emergency_phone'),
+      formProfileVehicle: $('#am_profile_vehicle'),
+      formProfileVehiclePlate: $('#am_profile_vehicle_plate'),
+      formProfileYearsEmployed: $('#am_profile_years_employed'),
+      formProfileCurrentPosition: $('#am_profile_current_position'),
+      formProfilePreviousEmployee: $('#am_profile_previous_employee'),
+      formProfileTrade: $('#am_profile_trade_specialty'),
+      formProfileCerts: $('#am_profile_certifications'),
+      formProfilePrefs: $('#am_profile_feature_preferences'),
+      formProfileNotes: $('#am_profile_notes'),
       profileSave: $('#am_profile_save'),
 
       formSiteId: $('#am_site_id'),
@@ -130,6 +148,24 @@
       els.formProfileName,
       els.formProfileRole,
       els.formProfileActive,
+      els.formProfilePhone,
+      els.formProfilePhoneVerified,
+      els.formProfileAddress1,
+      els.formProfileAddress2,
+      els.formProfileCity,
+      els.formProfileProvince,
+      els.formProfilePostalCode,
+      els.formProfileEmergencyName,
+      els.formProfileEmergencyPhone,
+      els.formProfileVehicle,
+      els.formProfileVehiclePlate,
+      els.formProfileYearsEmployed,
+      els.formProfileCurrentPosition,
+      els.formProfilePreviousEmployee,
+      els.formProfileTrade,
+      els.formProfileCerts,
+      els.formProfilePrefs,
+      els.formProfileNotes,
       els.profileSave,
       els.formSiteId,
       els.formSiteCode,
@@ -443,6 +479,24 @@
       if (els.formProfileName) els.formProfileName.value = item.full_name || '';
       if (els.formProfileRole) els.formProfileRole.value = item.role || '';
       if (els.formProfileActive) els.formProfileActive.checked = !!item.is_active;
+      if (els.formProfilePhone) els.formProfilePhone.value = item.phone || '';
+      if (els.formProfilePhoneVerified) els.formProfilePhoneVerified.checked = !!item.phone_verified;
+      if (els.formProfileAddress1) els.formProfileAddress1.value = item.address_line1 || '';
+      if (els.formProfileAddress2) els.formProfileAddress2.value = item.address_line2 || '';
+      if (els.formProfileCity) els.formProfileCity.value = item.city || '';
+      if (els.formProfileProvince) els.formProfileProvince.value = item.province || '';
+      if (els.formProfilePostalCode) els.formProfilePostalCode.value = item.postal_code || '';
+      if (els.formProfileEmergencyName) els.formProfileEmergencyName.value = item.emergency_contact_name || '';
+      if (els.formProfileEmergencyPhone) els.formProfileEmergencyPhone.value = item.emergency_contact_phone || '';
+      if (els.formProfileVehicle) els.formProfileVehicle.value = item.vehicle_make_model || '';
+      if (els.formProfileVehiclePlate) els.formProfileVehiclePlate.value = item.vehicle_plate || '';
+      if (els.formProfileYearsEmployed) els.formProfileYearsEmployed.value = item.years_employed ?? '';
+      if (els.formProfileCurrentPosition) els.formProfileCurrentPosition.value = item.current_position || '';
+      if (els.formProfilePreviousEmployee) els.formProfilePreviousEmployee.checked = !!item.previous_employee;
+      if (els.formProfileTrade) els.formProfileTrade.value = item.trade_specialty || '';
+      if (els.formProfileCerts) els.formProfileCerts.value = item.certifications || '';
+      if (els.formProfilePrefs) els.formProfilePrefs.value = item.feature_preferences || '';
+      if (els.formProfileNotes) els.formProfileNotes.value = item.notes || '';
 
       onProfileLoaded(item);
     }

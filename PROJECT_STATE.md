@@ -1,49 +1,21 @@
-# PROJECT_STATE.md
+# Project State
 
-Current development snapshot for YWI HSE.
+## Current state
 
-## State summary
+The app is in an active security and modularization pass.
 
-The app is functional and in active cleanup/security hardening.
+## Recently completed
 
-This pass added:
+- extracted admin CRUD into `js/admin-actions.js`
+- extracted outbox logic into `js/outbox.js`
+- improved route/view guards with `js/security.js` + `js/router.js`
+- improved account messaging for first-time password creation
+- expanded profile editing direction for construction-company employee records
+- synced markdown and added new SQL planning docs
 
-- `js/security.js`
-- `js/account-ui.js`
-- stronger auth helper coverage in `js/auth.js`
-- tiered read-only vs manage behavior in `js/admin-ui.js`
-- logbook review visibility using shared role checks
-- full markdown sync
+## Next likely steps
 
-## What is currently working in principle
-
-- magic link login
-- password login UI
-- password reset flow
-- local logout
-- global logout
-- in-app password change
-- five form modules
-- image upload registration flow
-- review actions
-- admin directory load
-- admin management actions (admin only)
-- outbox retry
-
-## What changed in the security model
-
-Frontend role checks are now centralized through `js/security.js` instead of being scattered in multiple modules.
-
-Current tier behavior:
-
-- worker/staff: standard use
-- site_leader+: review
-- supervisor/hse/job_admin/admin: directory view
-- admin: management write actions
-
-## Current next steps
-
-- backend enforcement parity with these tiers
-- policy/RLS review
-- audit logging for admin changes
-- continue moving shell logic out of `app.js`
+- backend function updates for expanded profile fields
+- stricter RLS policies tied to role/site helpers
+- dedicated employee/self-service profile view
+- supervisor drill-down views filtered to their crews/sites

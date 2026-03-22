@@ -1,27 +1,24 @@
-# CHANGELOG.md
+# Changelog
 
 ## Current pass
 
-### Security improvements
+### Security and account improvements
+- kept magic-link recovery flow
+- kept password login and reset flow
+- added stronger first-time password messaging in the account panel
+- kept support for log out everywhere
+- added guarded route handling so restricted sections redirect cleanly
 
-- added `js/security.js` to centralize role ranks and permission helpers
-- added `js/account-ui.js` for password change and global logout
-- added `changePassword()` and `logoutEverywhere()` to `js/auth.js`
-- changed admin UI from single admin-only gate to tiered read-only vs manage access
-- changed logbook review visibility to use shared security helpers
+### Modularization
+- added `js/admin-actions.js`
+- added `js/outbox.js`
+- kept `js/api.js`, `js/security.js`, and `js/router.js` as shared foundation modules
+- reduced `app.js` back toward shell/init responsibilities
 
-### Modular cleanup
+### Workforce profile model
+- expanded the admin profile editor to include richer construction-company profile fields
+- added SQL planning for employee/supervisor/admin profile expansion in `sql/036_employee_profile_expansion.sql`
 
-- confirmed `app.js` now consumes `js/api.js`
-- fixed the missing `js/api.js` script load in `index.html`
-- added `js/security.js` and `js/account-ui.js` to script loading and service worker cache
-- continued reducing hardcoded role checks spread across modules
-
-### Documentation sync
-
-Updated all markdown docs to reflect:
-
-- the new modules
-- the current account security features
-- the current tier model
-- the current next steps
+### Backend/RLS planning
+- added `sql/037_security_rls_verification_notes.sql`
+- updated docs to call out backend enforcement requirements for role/site security

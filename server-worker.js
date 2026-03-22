@@ -21,6 +21,8 @@ const APP_SHELL = [
   '/js/account-ui.js',
   '/js/admin-ui.js',
   '/js/logbook-ui.js',
+  '/js/admin-actions.js',
+  '/js/outbox.js',
   '/js/forms-toolbox.js',
   '/js/forms-ppe.js',
   '/js/forms-firstaid.js',
