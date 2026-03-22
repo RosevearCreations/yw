@@ -1,27 +1,10 @@
 /* File: app.js
-   Brief description: Shared application shell updated to work with the extracted router module.
-   Initializes auth-aware modules, shared API/upload helpers, outbox retry, and admin actions
-   while removing the older inline routing dependency.
+   Brief description: Shared application shell refactored to use js/api.js.
+   Initializes auth-aware modules, shared outbox/admin behavior, and app-wide UI state
+   while moving API and upload helpers into the dedicated YWIAPI module.
 */
 
 'use strict';
-
-/* =========================
-   CONFIG / ENDPOINTS
-========================= */
-const SB_URL = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
-
-const FUNCTION_URL   = `${SB_URL}/functions/v1/resend-email`;
-const LIST_URL       = `${SB_URL}/functions/v1/clever-endpoint`;
-const REVIEW_URL     = `${SB_URL}/functions/v1/review-submission`;
-const DIRECTORY_URL  = `${SB_URL}/functions/v1/admin-directory`;
-const MANAGE_URL     = `${SB_URL}/functions/v1/admin-manage`;
-const DETAIL_URL     = `${SB_URL}/functions/v1/submission-detail`;
-const SELECTORS_URL  = `${SB_URL}/functions/v1/admin-selectors`;
-const UPLOAD_URL     = `${SB_URL}/functions/v1/upload-image`;
-const STORAGE_BUCKET = 'submission-images';
-
-const OUTBOX_KEY = 'ywi_outbox_v1';
 
 /* =========================
    DOM HELPERS
@@ -64,6 +47,8 @@ const amSummary = $('#am_summary');
 /* =========================
    APP STATE
 ========================= */
+const OUTBOX_KEY = 'ywi_outbox_v1';
+
 const appState = {
   currentUser: null,
   currentRole: 'worker',
@@ -122,27 +107,16 @@ function setManageSummary(text) {
   setNotice(amSummary, text);
 }
 
-function boot() {
-  return window.YWI_BOOT || null;
-}
-
 function auth() {
   return window.YWI_AUTH || null;
-}
-
-function sb() {
-  return window.YWI_SB || window._sb || null;
 }
 
 function router() {
   return window.YWIRouter || null;
 }
 
-function storagePreviewUrl(filePath) {
-  const client = sb();
-  if (!client || !filePath) return '';
-  const { data } = client.storage.from(STORAGE_BUCKET).getPublicUrl(filePath);
-  return data?.publicUrl || '';
+function api() {
+  return window.YWIAPI || null;
 }
 
 /* =========================
@@ -190,135 +164,6 @@ function syncAuthStateFromBoot(detail = {}) {
 }
 
 /* =========================
-   FETCH / AUTH HEADERS
-========================= */
-async function authHeader() {
-  const b = boot();
-  if (b?.authHeader) return b.authHeader();
-  return {};
-}
-
-async function jsonFetch(url, { method = 'POST', headers = {}, body = null } = {}) {
-  let authHeaders = await authHeader();
-
-  let res = await fetch(url, {
-    method,
-    headers: { 'Content-Type': 'application/json', ...authHeaders, ...headers },
-    body: body ? (typeof body === 'string' ? body : JSON.stringify(body)) : null
-  });
-
-  if (res.status === 401 && auth()?.refresh) {
-    try {
-      await auth().refresh();
-    } catch {}
-
-    authHeaders = await authHeader();
-
-    res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json', ...authHeaders, ...headers },
-      body: body ? (typeof body === 'string' ? body : JSON.stringify(body)) : null
-    });
-  }
-
-  const text = await res.text();
-
-  if (!res.ok) {
-    console.error('HTTP error', res.status, text);
-    throw new Error(`HTTP ${res.status}: ${text}`);
-  }
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
-}
-
-async function uploadFormDataFetch(url, formData) {
-  let authHeaders = await authHeader();
-
-  let res = await fetch(url, {
-    method: 'POST',
-    headers: { ...authHeaders },
-    body: formData
-  });
-
-  if (res.status === 401 && auth()?.refresh) {
-    try {
-      await auth().refresh();
-    } catch {}
-
-    authHeaders = await authHeader();
-
-    res = await fetch(url, {
-      method: 'POST',
-      headers: { ...authHeaders },
-      body: formData
-    });
-  }
-
-  const text = await res.text();
-
-  if (!res.ok) {
-    console.error('HTTP error', res.status, text);
-    throw new Error(`HTTP ${res.status}: ${text}`);
-  }
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
-}
-
-/* =========================
-   API WRAPPERS
-========================= */
-async function sendToFunction(formType, payload) {
-  return jsonFetch(FUNCTION_URL, { body: { formType, payload } });
-}
-
-async function fetchLogData(payload) {
-  return jsonFetch(LIST_URL, { body: payload });
-}
-
-async function saveSubmissionReview(payload) {
-  return jsonFetch(REVIEW_URL, { body: payload });
-}
-
-async function loadAdminDirectory(payload) {
-  return jsonFetch(DIRECTORY_URL, { body: payload });
-}
-
-async function manageAdminEntity(payload) {
-  return jsonFetch(MANAGE_URL, { body: payload });
-}
-
-async function fetchSubmissionDetail(submissionId) {
-  return jsonFetch(DETAIL_URL, { body: { submission_id: submissionId } });
-}
-
-async function loadAdminSelectors(payload) {
-  return jsonFetch(SELECTORS_URL, { body: payload });
-}
-
-async function uploadImageViaFunction(submissionId, image) {
-  const formData = new FormData();
-  formData.append('submission_id', String(submissionId));
-  formData.append('image_type', image.image_type || 'general');
-  formData.append('caption', image.caption || '');
-  formData.append('file', image.file);
-  return uploadFormDataFetch(UPLOAD_URL, formData);
-}
-
-async function uploadImagesForSubmission(images, submissionId) {
-  for (const image of images) {
-    await uploadImageViaFunction(submissionId, image);
-  }
-}
-
-/* =========================
    DEFAULT DATES
 ========================= */
 function applyDateFallback() {
@@ -345,6 +190,12 @@ async function retryOutbox() {
     return;
   }
 
+  const ywiApi = api();
+  if (!ywiApi) {
+    alert('API module is not ready.');
+    return;
+  }
+
   const outbox = getOutbox();
   if (!outbox.length) {
     alert('Outbox is empty.');
@@ -355,11 +206,11 @@ async function retryOutbox() {
 
   for (const item of outbox) {
     try {
-      const resp = await sendToFunction(item.formType, item.payload);
+      const resp = await ywiApi.sendToFunction(item.formType, item.payload);
       const submissionId = resp?.id;
 
       if (submissionId && Array.isArray(item.localImages) && item.localImages.length) {
-        await uploadImagesForSubmission(item.localImages, submissionId);
+        await ywiApi.uploadImagesForSubmission(item.localImages, submissionId);
       }
     } catch {
       remaining.push(item);
@@ -411,7 +262,7 @@ function bindAdminActions() {
       }
 
       try {
-        const resp = await manageAdminEntity({
+        const resp = await api().manageAdminEntity({
           entity: 'profile',
           action: 'update',
           profile_id: profileId,
@@ -445,7 +296,7 @@ function bindAdminActions() {
       }
 
       try {
-        const resp = await manageAdminEntity({
+        const resp = await api().manageAdminEntity({
           entity: 'site',
           action: 'create',
           site_code: siteCode,
@@ -479,7 +330,7 @@ function bindAdminActions() {
       }
 
       try {
-        const resp = await manageAdminEntity({
+        const resp = await api().manageAdminEntity({
           entity: 'site',
           action: 'update',
           site_id: siteId,
@@ -515,7 +366,7 @@ function bindAdminActions() {
       }
 
       try {
-        const resp = await manageAdminEntity({
+        const resp = await api().manageAdminEntity({
           entity: 'assignment',
           action: 'create',
           site_id: siteId,
@@ -548,7 +399,7 @@ function bindAdminActions() {
       }
 
       try {
-        const resp = await manageAdminEntity({
+        const resp = await api().manageAdminEntity({
           entity: 'assignment',
           action: 'update',
           assignment_id: assignmentId,
@@ -582,7 +433,7 @@ function bindAdminActions() {
       if (!confirmed) return;
 
       try {
-        const resp = await manageAdminEntity({
+        const resp = await api().manageAdminEntity({
           entity: 'assignment',
           action: 'delete',
           assignment_id: assignmentId
@@ -613,11 +464,11 @@ function seedAllTables() {
 }
 
 function initAdminModule() {
-  if (modules.adminUI || !window.YWIAdminUI?.create) return;
+  if (modules.adminUI || !window.YWIAdminUI?.create || !api()) return;
 
   modules.adminUI = window.YWIAdminUI.create({
-    loadAdminDirectory,
-    loadAdminSelectors,
+    loadAdminDirectory: api().loadAdminDirectory,
+    loadAdminSelectors: api().loadAdminSelectors,
     manageSummary: setManageSummary,
     getCurrentRole: () => appState.currentRole,
     onProfileLoaded: () => {},
@@ -631,13 +482,13 @@ function initAdminModule() {
 }
 
 function initLogbookModule() {
-  if (modules.logbookUI || !window.YWILogbookUI?.create) return;
+  if (modules.logbookUI || !window.YWILogbookUI?.create || !api()) return;
 
   modules.logbookUI = window.YWILogbookUI.create({
-    fetchLogData,
-    fetchSubmissionDetail,
-    saveSubmissionReview,
-    storagePreviewUrl,
+    fetchLogData: api().fetchLogData,
+    fetchSubmissionDetail: api().fetchSubmissionDetail,
+    saveSubmissionReview: api().saveSubmissionReview,
+    storagePreviewUrl: api().storagePreviewUrl,
     getCurrentRole: () => appState.currentRole
   });
 
@@ -647,10 +498,12 @@ function initLogbookModule() {
 }
 
 function initFormModules() {
+  if (!api()) return;
+
   if (!modules.toolboxFormUI && window.YWIFormsToolbox?.create) {
     modules.toolboxFormUI = window.YWIFormsToolbox.create({
-      sendToFunction,
-      uploadImagesForSubmission,
+      sendToFunction: api().sendToFunction,
+      uploadImagesForSubmission: api().uploadImagesForSubmission,
       getOutbox,
       setOutbox
     });
@@ -662,7 +515,7 @@ function initFormModules() {
 
   if (!modules.ppeFormUI && window.YWIFormsPPE?.create) {
     modules.ppeFormUI = window.YWIFormsPPE.create({
-      sendToFunction,
+      sendToFunction: api().sendToFunction,
       getOutbox,
       setOutbox
     });
@@ -674,7 +527,7 @@ function initFormModules() {
 
   if (!modules.firstAidFormUI && window.YWIFormsFirstAid?.create) {
     modules.firstAidFormUI = window.YWIFormsFirstAid.create({
-      sendToFunction,
+      sendToFunction: api().sendToFunction,
       getOutbox,
       setOutbox
     });
@@ -686,8 +539,8 @@ function initFormModules() {
 
   if (!modules.inspectionFormUI && window.YWIFormsInspection?.create) {
     modules.inspectionFormUI = window.YWIFormsInspection.create({
-      sendToFunction,
-      uploadImagesForSubmission,
+      sendToFunction: api().sendToFunction,
+      uploadImagesForSubmission: api().uploadImagesForSubmission,
       getOutbox,
       setOutbox
     });
@@ -699,8 +552,8 @@ function initFormModules() {
 
   if (!modules.drillFormUI && window.YWIFormsDrill?.create) {
     modules.drillFormUI = window.YWIFormsDrill.create({
-      sendToFunction,
-      uploadImagesForSubmission,
+      sendToFunction: api().sendToFunction,
+      uploadImagesForSubmission: api().uploadImagesForSubmission,
       getOutbox,
       setOutbox
     });
