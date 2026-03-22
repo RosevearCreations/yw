@@ -1,132 +1,65 @@
 # DEPLOYMENT_GUIDE.md
-# YWI HSE Safety System Deployment Guide
 
-This document describes how to deploy and configure the YWI HSE Safety System.
+Deployment guide for YWI HSE.
 
-It includes instructions for:
+## Core deployment checklist
 
-- Supabase project setup
-- database configuration
-- storage configuration
-- Edge Function deployment
-- frontend deployment
-- verification testing
+### Frontend
 
-This guide ensures a consistent deployment across development, staging, and production environments.
+Deploy these current frontend files together:
 
----
+- `index.html`
+- `style.css`
+- `app.js`
+- `manifest.json`
+- `server-worker.js`
+- all files in `js/`
 
-# System Components
+Important: `index.html` must load `js/api.js`, `js/security.js`, and `js/account-ui.js` in addition to the older files.
 
-The system consists of the following parts.
+### Supabase configuration
 
-Frontend
+Required values:
 
-- static HTML application
-- JavaScript logic
-- CSS styling
-- Progressive Web App support
+- project URL
+- anon/publishable key
+- redirect URLs
 
-Backend
+Important: the service role key must never be placed in frontend code.
 
-- Supabase authentication
-- Supabase Postgres database
-- Supabase Edge Functions
-- Supabase Storage bucket
+### Auth setup
 
-Deployment targets
+Enable email auth.
 
-- Vercel
-- Cloudflare Pages
-- Netlify
+Current frontend supports:
 
----
+- magic link login
+- password login
+- password reset
+- password change after sign-in
+- global sign-out
 
-# Step 1 — Create Supabase Project
+### Backend
 
-1. Go to
+Deploy current functions expected by the frontend:
 
-https://supabase.com
+- `resend-email`
+- `clever-endpoint`
+- `submission-detail`
+- `review-submission`
+- `admin-directory`
+- `admin-manage`
+- `admin-selectors`
+- `upload-image`
 
-2. Create a new project.
+### Security deployment note
 
-3. Record the following values:
+Frontend role gating is not enough.
 
-Project URL  
-Publishable key (anon key)  
-Service role key  
+Before production, verify:
 
-These will be used later.
-
-Important:
-
-The service role key must **never be placed in frontend code**.
-
----
-
-# Step 2 — Configure Authentication
-
-Open the Supabase dashboard.
-
-Navigate to:
-
-Authentication → Providers
-
-Enable:
-
-Email authentication
-
-Enable:
-
-Magic Link login
-
-Recommended settings:
-
-- disable password login
-- enable email verification
-- limit login rate if needed
-
----
-
-# Step 3 — Create Database Tables
-
-Run the SQL migration files located in the repository.
-
-Typical location:
-
-
----
-
-## 🔐 Recent Security & System Updates (Auto-Added)
-
-### Authentication
-- Supabase Magic Link login implemented
-- Session persistence via localStorage
-- JWT-based validation in Edge Functions
-
-### Role-Based Access (RBAC)
-Supported roles:
-- worker
-- site_leader
-- supervisor
-- hse
-- admin
-
-### Backend Security
-- Edge Functions now validate JWT
-- Admin-only endpoints enforced
-- `can_access_submission()` used for data protection
-
-### New Features Added
-- Image upload system (`upload-image`)
-- Submission review system (`review-submission`)
-- Admin management endpoint
-- Site + Assignment management
-- Storage integration for job images
-
-### Recommended Next Steps
-- Enable RLS on all tables
-- Add audit logging
-- Add session timeout
-- Add UI role-based visibility
-
+- SQL helper functions
+- RLS or function-level checks
+- admin-only write protection
+- review permission checks
+- site/submission access checks

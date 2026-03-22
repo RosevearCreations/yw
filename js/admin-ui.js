@@ -1,6 +1,6 @@
 /* File: js/admin-ui.js
    Brief description: Admin Dashboard UI controller for loading users, sites, and assignments,
-   syncing selectors, filtering results, locking admin-only access, and loading rows into edit forms.
+   syncing selectors, filtering results, applying tiered read-only vs manage access, and loading rows into edit forms.
 */
 
 'use strict';
@@ -29,6 +29,11 @@
     const loadAdminSelectors = config.loadAdminSelectors;
     const manageSummary = config.manageSummary || function () {};
     const getCurrentRole = config.getCurrentRole || (() => 'worker');
+    const getAccessProfile = config.getAccessProfile || (() => ({
+      canViewAdminDirectory: false,
+      canManageAdminDirectory: false,
+      roleLabel: 'Worker'
+    }));
     const onProfileLoaded = config.onProfileLoaded || function () {};
     const onSiteLoaded = config.onSiteLoaded || function () {};
     const onAssignmentLoaded = config.onAssignmentLoaded || function () {};
@@ -66,6 +71,7 @@
       formProfileName: $('#am_profile_name'),
       formProfileRole: $('#am_profile_role'),
       formProfileActive: $('#am_profile_active'),
+      profileSave: $('#am_profile_save'),
 
       formSiteId: $('#am_site_id'),
       formSiteCode: $('#am_site_code'),
@@ -73,16 +79,22 @@
       formSiteAddress: $('#am_site_address'),
       formSiteNotes: $('#am_site_notes'),
       formSiteActive: $('#am_site_active'),
+      siteCreate: $('#am_site_create'),
+      siteUpdate: $('#am_site_update'),
 
       formAssignmentId: $('#am_assignment_id'),
       formAssignmentSiteId: $('#am_assignment_site_id'),
       formAssignmentProfileId: $('#am_assignment_profile_id'),
       formAssignmentRole: $('#am_assignment_role'),
-      formAssignmentPrimary: $('#am_assignment_primary')
+      formAssignmentPrimary: $('#am_assignment_primary'),
+      assignmentCreate: $('#am_assignment_create'),
+      assignmentUpdate: $('#am_assignment_update'),
+      assignmentDelete: $('#am_assignment_delete')
     };
 
     const state = {
       locked: true,
+      manageLocked: true,
       mode: 'all',
       users: [],
       sites: [],
@@ -96,6 +108,46 @@
         assignments: []
       }
     };
+
+    const viewControls = [
+      els.modeSelect,
+      els.search,
+      els.siteId,
+      els.profileId,
+      els.activeOnly,
+      els.limit,
+      els.loadBtn,
+      els.clearBtn,
+      els.profileSelector,
+      els.siteSelector,
+      els.assignmentSelector,
+      els.assignmentSiteSelector,
+      els.assignmentProfileSelector
+    ];
+
+    const manageControls = [
+      els.formProfileId,
+      els.formProfileName,
+      els.formProfileRole,
+      els.formProfileActive,
+      els.profileSave,
+      els.formSiteId,
+      els.formSiteCode,
+      els.formSiteName,
+      els.formSiteAddress,
+      els.formSiteNotes,
+      els.formSiteActive,
+      els.siteCreate,
+      els.siteUpdate,
+      els.formAssignmentId,
+      els.formAssignmentSiteId,
+      els.formAssignmentProfileId,
+      els.formAssignmentRole,
+      els.formAssignmentPrimary,
+      els.assignmentCreate,
+      els.assignmentUpdate,
+      els.assignmentDelete
+    ];
 
     function setSummary(text) {
       if (els.summary) {
@@ -111,40 +163,38 @@
     }
 
     function applyRoleAccess() {
-      const role = getCurrentRole();
-      const allowed = role === 'admin';
+      const access = getAccessProfile(getCurrentRole());
+      const canView = !!access.canViewAdminDirectory;
+      const canManage = !!access.canManageAdminDirectory;
 
-      state.locked = !allowed;
+      state.locked = !canView;
+      state.manageLocked = !canManage;
 
       if (els.section) {
-        els.section.dataset.adminLocked = allowed ? 'false' : 'true';
-        els.section.classList.toggle('is-admin-locked', !allowed);
+        els.section.dataset.adminLocked = canView ? 'false' : 'true';
+        els.section.dataset.adminManageLocked = canManage ? 'false' : 'true';
       }
 
-      [
-        els.modeSelect,
-        els.search,
-        els.siteId,
-        els.profileId,
-        els.activeOnly,
-        els.limit,
-        els.loadBtn,
-        els.clearBtn,
-        els.profileSelector,
-        els.siteSelector,
-        els.assignmentSelector,
-        els.assignmentSiteSelector,
-        els.assignmentProfileSelector
-      ].forEach((el) => {
-        if (el) el.disabled = !allowed;
+      viewControls.forEach((el) => {
+        if (el) el.disabled = !canView;
       });
 
       els.modeButtons.forEach((btn) => {
-        btn.disabled = !allowed;
+        btn.disabled = !canView;
       });
 
-      if (!allowed) {
-        setSummary('Admin access is required to use this dashboard.');
+      manageControls.forEach((el) => {
+        if (!el) return;
+        el.disabled = !canManage;
+        if ('readOnly' in el && el.tagName !== 'SELECT' && el.type !== 'checkbox' && el.type !== 'button') {
+          el.readOnly = !canManage;
+        }
+      });
+
+      if (!canView) {
+        setSummary('Supervisor, HSE, Job Admin, or Admin access is required to use this directory.');
+      } else if (!canManage) {
+        setSummary(`Read-only directory mode for ${access.roleLabel}. Admin role is required for create/update/delete actions.`);
       } else if (!state.users.length && !state.sites.length && !state.assignments.length) {
         setSummary('');
       }
@@ -206,7 +256,7 @@
       if (els.sitesCount) els.sitesCount.textContent = '0';
       if (els.assignmentsCount) els.assignmentsCount.textContent = '0';
 
-      setSummary(state.locked ? 'Admin access is required to use this dashboard.' : '');
+      applyRoleAccess();
     }
 
     function fillSelect(selectEl, items, placeholder, valueKey, labelBuilder) {
@@ -477,8 +527,7 @@
           assignments,
           'Select assignment...',
           'id',
-          (item) =>
-            `${item.site_code || item.site_name || item.site_id} — ${item.user_email || item.full_name || item.profile_id}`
+          (item) => `${item.site_code || item.site_name || item.site_id} — ${item.user_email || item.full_name || item.profile_id}`
         );
       } catch (err) {
         console.error('Failed to load admin selectors', err);
@@ -487,7 +536,7 @@
 
     async function loadDirectory() {
       if (state.locked) {
-        setSummary('Admin access is required to use this dashboard.');
+        setSummary('Supervisor, HSE, Job Admin, or Admin access is required to use this directory.');
         return;
       }
 
@@ -511,7 +560,11 @@
         refreshMaps();
         setMode(payload.mode);
         renderDirectory();
-        setSummary(`Loaded ${state.users.length} users, ${state.sites.length} sites, and ${state.assignments.length} assignments.`);
+        applyRoleAccess();
+
+        if (!state.manageLocked) {
+          setSummary(`Loaded ${state.users.length} users, ${state.sites.length} sites, and ${state.assignments.length} assignments.`);
+        }
       } catch (err) {
         console.error(err);
         setSummary('Failed to load admin directory.');
@@ -573,6 +626,7 @@
     function bindToolbar() {
       els.modeButtons.forEach((btn) => {
         btn.addEventListener('click', () => {
+          if (state.locked) return;
           const mode = btn.dataset.adminMode || 'all';
           setMode(mode);
           if (els.modeSelect) els.modeSelect.value = mode;
@@ -581,13 +635,18 @@
       });
 
       els.modeSelect?.addEventListener('change', () => {
+        if (state.locked) return;
         setMode(els.modeSelect.value || 'all');
         renderDirectory();
       });
 
       [els.search, els.siteId, els.profileId, els.activeOnly, els.limit].forEach((el) => {
-        el?.addEventListener('input', () => renderDirectory());
-        el?.addEventListener('change', () => renderDirectory());
+        el?.addEventListener('input', () => {
+          if (!state.locked) renderDirectory();
+        });
+        el?.addEventListener('change', () => {
+          if (!state.locked) renderDirectory();
+        });
       });
 
       els.loadBtn?.addEventListener('click', () => {

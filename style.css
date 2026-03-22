@@ -705,3 +705,50 @@ body[data-user-role="admin"] #admin[data-admin-locked="false"] {
     width: auto;
   }
 }
+
+
+/* ---------------------------------
+   Account security panel
+--------------------------------- */
+
+.account-panel {
+  width: min(var(--max-width), calc(100% - 28px));
+  margin: 18px auto 0;
+}
+
+.account-security-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 18px;
+}
+
+@media (min-width: 980px) {
+  .account-security-grid {
+    grid-template-columns: 1.1fr 1fr;
+  }
+}
+
+.security-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(96, 165, 250, 0.28);
+  background: rgba(96, 165, 250, 0.1);
+  color: #dbeafe;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.notice[data-kind="error"] {
+  background: rgba(127, 29, 29, 0.18);
+  color: #ffd4d4;
+  border-color: rgba(248, 113, 113, 0.28);
+}
+
+.notice[data-kind="info"] {
+  background: rgba(8, 47, 73, 0.22);
+  color: #d8f5ff;
+  border-color: rgba(56, 189, 248, 0.22);
+}

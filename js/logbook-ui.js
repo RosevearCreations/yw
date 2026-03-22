@@ -59,6 +59,7 @@
     const saveSubmissionReview = config.saveSubmissionReview;
     const storagePreviewUrl = config.storagePreviewUrl || (() => '');
     const getCurrentRole = config.getCurrentRole || (() => 'worker');
+    const getAccessProfile = config.getAccessProfile || (() => ({ canReviewSubmissions: false }));
 
     const els = {
       site: $('#lg_site'),
@@ -115,8 +116,7 @@
     }
 
     function canReview() {
-      const role = getCurrentRole();
-      return ['site_leader', 'supervisor', 'hse', 'admin', 'job_admin', 'onsite_admin'].includes(role);
+      return !!getAccessProfile(getCurrentRole()).canReviewSubmissions;
     }
 
     function applyRoleVisibility() {
@@ -167,7 +167,7 @@
           <td>
             <div class="controls">
               <button type="button" data-action="view" data-id="${escHtml(row.id || '')}">View Detail</button>
-              <button type="button" data-action="review" data-id="${escHtml(row.id || '')}">Review</button>
+              ${canReview() ? `<button type="button" data-action="review" data-id="${escHtml(row.id || '')}">Review</button>` : ''}
             </div>
           </td>
         `;

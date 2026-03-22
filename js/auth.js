@@ -1,6 +1,6 @@
 /* File: js/auth.js
    Brief description: Shared authentication controller that coordinates Supabase auth with bootstrap state,
-   exposes sign-in/logout/reset/refresh helpers, and keeps the app informed of current user/profile/role state.
+   exposes sign-in/logout/reset/password-change helpers, and keeps the app informed of current user/profile/role state.
 */
 
 'use strict';
@@ -8,6 +8,7 @@
 (function () {
   const sb = window.YWI_SB || window._sb || null;
   const boot = window.YWI_BOOT || null;
+  const security = window.YWISecurity || null;
 
   if (!sb) {
     console.error('Auth module could not find Supabase client.');
@@ -39,9 +40,10 @@
   }
 
   function getRoleLabel(role) {
+    if (security?.getRoleLabel) return security.getRoleLabel(role);
     const map = {
       worker: 'Worker',
-      staff: 'Staff',
+      staff: 'Employee',
       onsite_admin: 'Onsite Admin',
       job_admin: 'Job Admin',
       site_leader: 'Site Leader',
@@ -162,8 +164,23 @@
     return true;
   }
 
-  async function logout() {
-    const { error } = await sb.auth.signOut();
+  async function changePassword(newPassword) {
+    const cleanPassword = String(newPassword ?? '');
+    if (!cleanPassword) {
+      throw new Error('New password is required.');
+    }
+
+    const { data, error } = await sb.auth.updateUser({ password: cleanPassword });
+    if (error) throw error;
+
+    await refreshFromSupabase();
+    dispatch('ywi:auth-changed', { state: getState() });
+    return data;
+  }
+
+  async function logout(scope = 'local') {
+    const signOutScope = scope === 'global' ? 'global' : 'local';
+    const { error } = await sb.auth.signOut({ scope: signOutScope });
     if (error) throw error;
 
     await applySession(null);
@@ -171,6 +188,10 @@
 
     dispatch('ywi:auth-changed', { state: getState() });
     return true;
+  }
+
+  async function logoutEverywhere() {
+    return logout('global');
   }
 
   async function refresh() {
@@ -238,7 +259,9 @@
     signInWithMagicLink,
     signInWithPassword,
     resetPassword,
-    logout
+    changePassword,
+    logout,
+    logoutEverywhere
   };
 
   init().catch((err) => {

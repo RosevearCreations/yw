@@ -1,11 +1,11 @@
 /* File: server-worker.js
-   Brief description: Service worker updated to include js/router.js in the cached app shell.
+   Brief description: Service worker updated for the new security/account/api modules.
    Keeps static assets available offline while still avoiding auth callback, POST, and Supabase/API traffic.
 */
 
 'use strict';
 
-const CACHE_NAME = 'ywi-hse-shell-v2';
+const CACHE_NAME = 'ywi-hse-shell-v3';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -13,9 +13,12 @@ const APP_SHELL = [
   '/app.js',
   '/manifest.json',
   '/js/router.js',
+  '/js/api.js',
+  '/js/security.js',
   '/js/bootstrap.js',
   '/js/auth.js',
   '/js/ui-auth.js',
+  '/js/account-ui.js',
   '/js/admin-ui.js',
   '/js/logbook-ui.js',
   '/js/forms-toolbox.js',

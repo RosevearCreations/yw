@@ -1,20 +1,14 @@
 /* File: app.js
-   Brief description: Shared application shell refactored to use js/api.js.
-   Initializes auth-aware modules, shared outbox/admin behavior, and app-wide UI state
-   while moving API and upload helpers into the dedicated YWIAPI module.
+   Brief description: Shared application shell refactored to use js/api.js and js/security.js.
+   Initializes auth-aware modules, shared outbox/admin behavior, tiered UI security,
+   and app-wide state while keeping API and account security logic in dedicated modules.
 */
 
 'use strict';
 
-/* =========================
-   DOM HELPERS
-========================= */
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-/* =========================
-   APP DOM
-========================= */
 const whoami = $('#whoami');
 const reviewPanel = $('#reviewPanel');
 
@@ -43,10 +37,6 @@ const amAssignmentUpdate = $('#am_assignment_update');
 const amAssignmentDelete = $('#am_assignment_delete');
 
 const amSummary = $('#am_summary');
-
-/* =========================
-   APP STATE
-========================= */
 const OUTBOX_KEY = 'ywi_outbox_v1';
 
 const appState = {
@@ -55,7 +45,6 @@ const appState = {
   currentProfileActive: false,
   isAuthenticated: false,
   adminLocked: true,
-  bootReady: false,
   domReady: false,
   initialized: false
 };
@@ -70,9 +59,6 @@ const modules = {
   drillFormUI: null
 };
 
-/* =========================
-   BASIC HELPERS
-========================= */
 function todayISO() {
   const d = new Date();
   const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -119,24 +105,35 @@ function api() {
   return window.YWIAPI || null;
 }
 
-/* =========================
-   ROLE / VISIBILITY
-========================= */
+function security() {
+  return window.YWISecurity || null;
+}
+
+function getAccessProfile(role = appState.currentRole) {
+  return security()?.getAccessProfile?.(role) || {
+    role,
+    roleLabel: role,
+    canReviewSubmissions: false,
+    canViewAdminDirectory: false,
+    canManageAdminDirectory: false
+  };
+}
+
 function applyRoleVisibility() {
   const role = appState.currentRole || 'worker';
-  const canReview = ['site_leader', 'supervisor', 'hse', 'admin', 'job_admin', 'onsite_admin'].includes(role);
+  const access = getAccessProfile(role);
 
   document.body.dataset.userRole = role;
 
   if (reviewPanel) {
-    reviewPanel.style.display = canReview ? '' : 'none';
+    reviewPanel.style.display = access.canReviewSubmissions ? '' : 'none';
   }
 
   if (modules.adminUI?.applyRoleAccess) {
     modules.adminUI.applyRoleAccess();
     appState.adminLocked = !!modules.adminUI.state?.locked;
   } else {
-    appState.adminLocked = role !== 'admin';
+    appState.adminLocked = !access.canViewAdminDirectory;
   }
 
   if (modules.logbookUI?.applyRoleVisibility) {
@@ -148,24 +145,22 @@ function syncAuthStateFromBoot(detail = {}) {
   const state = detail.state || auth()?.getState?.() || null;
   const profile = state?.profile || null;
   const user = state?.user || null;
+  const role = state?.role || profile?.role || 'worker';
+  const access = getAccessProfile(role);
 
   appState.currentUser = profile || user || null;
-  appState.currentRole = state?.role || profile?.role || 'worker';
+  appState.currentRole = role;
   appState.currentProfileActive = profile?.is_active !== false && !!state?.isAuthenticated;
   appState.isAuthenticated = !!state?.isAuthenticated;
 
   if (whoami) {
     const email = profile?.email || user?.email || '';
-    const roleLabel = state?.roleLabel || appState.currentRole || '';
-    whoami.textContent = email ? `${email} (${roleLabel})` : roleLabel;
+    whoami.textContent = email ? `${email} (${access.roleLabel})` : access.roleLabel;
   }
 
   applyRoleVisibility();
 }
 
-/* =========================
-   DEFAULT DATES
-========================= */
 function applyDateFallback() {
   [
     '#tb_date',
@@ -181,9 +176,6 @@ function applyDateFallback() {
   });
 }
 
-/* =========================
-   OUTBOX
-========================= */
 async function retryOutbox() {
   if (!appState.isAuthenticated) {
     alert('Please sign in first.');
@@ -229,12 +221,9 @@ function bindOutboxButtons() {
   });
 }
 
-/* =========================
-   ADMIN ACTIONS
-========================= */
-function ensureAdminAllowed() {
-  if (appState.adminLocked) {
-    alert('Admin access is required for this action.');
+function ensureAdminManageAllowed() {
+  if (!getAccessProfile().canManageAdminDirectory) {
+    alert('Admin role is required for this action.');
     return false;
   }
   return true;
@@ -253,7 +242,7 @@ function bindAdminActions() {
   if (amProfileSave && amProfileSave.dataset.boundClick !== '1') {
     amProfileSave.dataset.boundClick = '1';
     amProfileSave.addEventListener('click', async () => {
-      if (!ensureAdminAllowed()) return;
+      if (!ensureAdminManageAllowed()) return;
 
       const profileId = amProfileId?.value?.trim?.() || '';
       if (!profileId) {
@@ -285,7 +274,7 @@ function bindAdminActions() {
   if (amSiteCreate && amSiteCreate.dataset.boundClick !== '1') {
     amSiteCreate.dataset.boundClick = '1';
     amSiteCreate.addEventListener('click', async () => {
-      if (!ensureAdminAllowed()) return;
+      if (!ensureAdminManageAllowed()) return;
 
       const siteCode = amSiteCode?.value?.trim?.() || '';
       const siteName = amSiteName?.value?.trim?.() || '';
@@ -321,7 +310,7 @@ function bindAdminActions() {
   if (amSiteUpdate && amSiteUpdate.dataset.boundClick !== '1') {
     amSiteUpdate.dataset.boundClick = '1';
     amSiteUpdate.addEventListener('click', async () => {
-      if (!ensureAdminAllowed()) return;
+      if (!ensureAdminManageAllowed()) return;
 
       const siteId = amSiteId?.value?.trim?.() || '';
       if (!siteId) {
@@ -355,7 +344,7 @@ function bindAdminActions() {
   if (amAssignmentCreate && amAssignmentCreate.dataset.boundClick !== '1') {
     amAssignmentCreate.dataset.boundClick = '1';
     amAssignmentCreate.addEventListener('click', async () => {
-      if (!ensureAdminAllowed()) return;
+      if (!ensureAdminManageAllowed()) return;
 
       const siteId = amAssignmentSiteId?.value?.trim?.() || '';
       const profileId = amAssignmentProfileId?.value?.trim?.() || '';
@@ -390,7 +379,7 @@ function bindAdminActions() {
   if (amAssignmentUpdate && amAssignmentUpdate.dataset.boundClick !== '1') {
     amAssignmentUpdate.dataset.boundClick = '1';
     amAssignmentUpdate.addEventListener('click', async () => {
-      if (!ensureAdminAllowed()) return;
+      if (!ensureAdminManageAllowed()) return;
 
       const assignmentId = amAssignmentId?.value?.trim?.() || '';
       if (!assignmentId) {
@@ -421,7 +410,7 @@ function bindAdminActions() {
   if (amAssignmentDelete && amAssignmentDelete.dataset.boundClick !== '1') {
     amAssignmentDelete.dataset.boundClick = '1';
     amAssignmentDelete.addEventListener('click', async () => {
-      if (!ensureAdminAllowed()) return;
+      if (!ensureAdminManageAllowed()) return;
 
       const assignmentId = amAssignmentId?.value?.trim?.() || '';
       if (!assignmentId) {
@@ -452,9 +441,6 @@ function bindAdminActions() {
   }
 }
 
-/* =========================
-   MODULE INIT
-========================= */
 function seedAllTables() {
   modules.toolboxFormUI?.seed?.();
   modules.ppeFormUI?.seed?.();
@@ -471,6 +457,7 @@ function initAdminModule() {
     loadAdminSelectors: api().loadAdminSelectors,
     manageSummary: setManageSummary,
     getCurrentRole: () => appState.currentRole,
+    getAccessProfile,
     onProfileLoaded: () => {},
     onSiteLoaded: () => {},
     onAssignmentLoaded: () => {}
@@ -489,7 +476,8 @@ function initLogbookModule() {
     fetchSubmissionDetail: api().fetchSubmissionDetail,
     saveSubmissionReview: api().saveSubmissionReview,
     storagePreviewUrl: api().storagePreviewUrl,
-    getCurrentRole: () => appState.currentRole
+    getCurrentRole: () => appState.currentRole,
+    getAccessProfile
   });
 
   modules.logbookUI.init().catch((err) => {
@@ -564,9 +552,6 @@ function initFormModules() {
   }
 }
 
-/* =========================
-   APP START
-========================= */
 async function initializeAppShell() {
   applyDateFallback();
   bindOutboxButtons();
@@ -597,11 +582,7 @@ async function initializeAppShell() {
   }
 }
 
-/* =========================
-   EVENTS
-========================= */
 document.addEventListener('ywi:boot-ready', async (e) => {
-  appState.bootReady = true;
   syncAuthStateFromBoot({ state: auth()?.getState?.() || null, ...e.detail });
 
   if (appState.domReady && !appState.initialized) {
@@ -631,7 +612,6 @@ document.addEventListener('ywi:auth-changed', async (e) => {
 
 document.addEventListener('DOMContentLoaded', async () => {
   appState.domReady = true;
-
   applyDateFallback();
 
   if (!appState.initialized) {

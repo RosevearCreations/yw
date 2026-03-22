@@ -1,89 +1,49 @@
 # SYSTEM_ARCHITECTURE.md
 
-System architecture documentation for the **YWI HSE Safety Application**.
+YWI HSE uses a static modular frontend with Supabase backend services.
 
-This document explains how the frontend, Supabase backend, database, storage, and Edge Functions currently work together.
+## Layers
 
-It is written to help developers, administrators, and AI assistants quickly understand the system as it exists now.
+### Frontend
 
----
+- route and UI shell: `index.html`, `style.css`, `js/router.js`
+- auth and session recovery: `js/bootstrap.js`, `js/auth.js`, `js/ui-auth.js`
+- role/tier logic: `js/security.js`
+- API helpers: `js/api.js`
+- account security UI: `js/account-ui.js`
+- feature modules: `js/admin-ui.js`, `js/logbook-ui.js`, `js/forms-*`
 
-# System Overview
+### Backend
 
-The YWI HSE application is a **static frontend safety system backed by Supabase services**.
+- Supabase Auth
+- Supabase Postgres
+- Supabase Edge Functions
+- Supabase Storage
 
-The architecture separates responsibilities into clear layers:
+## Current frontend security flow
 
-## Frontend
+1. Supabase callback/session is restored by `js/bootstrap.js`
+2. `js/auth.js` maintains shared auth state
+3. `js/security.js` maps the active role to an access profile
+4. UI modules show/hide or lock read-only/manage features accordingly
+5. real secure enforcement must still happen in Edge Functions and SQL/RLS
 
-Handles:
+## Current tier model
 
-- user interaction
-- authentication UI
-- form entry
-- logbook viewing
-- review actions
-- admin dashboard interaction
+- worker/staff
+- site_leader
+- supervisor
+- hse
+- job_admin
+- admin
 
-## Supabase Auth
+Frontend use:
 
-Handles:
+- review gate
+- directory view gate
+- management gate
+- account security rendering
 
-- login
-- session creation
-- token refresh
-- password reset email flow
+## Important note
 
-## Edge Functions
-
-Handle:
-
-- secure backend logic
-- validation
-- submission intake
-- review actions
-- admin lookups
-- admin writes
-- image upload flow
-
-## Postgres Database
-
-Stores:
-
-- profiles
-- sites
-- assignments
-- submissions
-- reviews
-- image metadata
-- toolbox attendees
-
-## Supabase Storage
-
-Stores uploaded evidence images.
-
----
-
-# High-Level Architecture
-
-```text
-User Browser
-│
-▼
-Static Frontend Application
-(index.html + modular JS files)
-│
-├──────────────► Supabase Auth
-│                 │
-│                 ▼
-│             User Session JWT
-│
-▼
-Supabase Edge Functions
-│
-▼
-Postgres Database
-│
-▼
-Supabase Storage
-(submission-images)
+Frontend gating is convenience UX, not the final source of truth. Backend and SQL helper functions must enforce real access.

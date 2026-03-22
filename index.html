@@ -211,6 +211,51 @@
     </div>
   </section>
 
+  <section id="accountPanel" class="card-lite account-panel" hidden>
+    <div class="section-heading">
+      <div>
+        <h3>Account Security</h3>
+        <p class="section-subtitle">Create or change your password after magic-link sign-in, and sign out all sessions if needed.</p>
+      </div>
+      <div class="security-badge" id="account_role_badge">Account Protection</div>
+    </div>
+
+    <div class="account-security-grid">
+      <section class="card-lite">
+        <div class="grid">
+          <label>Email
+            <input type="text" id="account_email" readonly />
+          </label>
+          <label>Role
+            <input type="text" id="account_role" readonly />
+          </label>
+        </div>
+
+        <div class="notice" style="margin-top:12px;">
+          Strong passwords are recommended for supervisor and admin roles. Magic link still works, but password login provides a more traditional sign-in option.
+        </div>
+      </section>
+
+      <section class="card-lite">
+        <div class="grid">
+          <label>New Password
+            <input type="password" id="account_password" placeholder="At least 10 characters" autocomplete="new-password" />
+          </label>
+          <label>Confirm Password
+            <input type="password" id="account_password_confirm" placeholder="Re-enter password" autocomplete="new-password" />
+          </label>
+        </div>
+
+        <div class="form-footer">
+          <button id="account_password_save" class="primary" type="button">Save Password</button>
+          <button id="account_logout_all" class="secondary" type="button">Log Out Everywhere</button>
+        </div>
+
+        <div id="account_summary" class="notice" style="display:none;margin-top:14px;"></div>
+      </section>
+    </div>
+  </section>
+
   <main class="container">
     <section id="toolbox" class="card active">
       <div class="section-heading">
@@ -880,7 +925,7 @@
       <div class="section-heading">
         <div>
           <h2>Admin Dashboard</h2>
-          <p class="section-subtitle">Manage profiles, sites, assignments, and view admin-only directory data.</p>
+          <p class="section-subtitle">Manage profiles, sites, assignments, and view tiered directory data. Supervisors and above can view, Admin can manage.</p>
         </div>
         <div class="admin-heading-actions">
           <button type="button" class="secondary" data-admin-mode="all">All</button>
@@ -1201,8 +1246,11 @@
 
   <script src="/js/router.js"></script>
   <script src="/js/bootstrap.js"></script>
+  <script src="/js/security.js"></script>
   <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
   <script src="/js/ui-auth.js"></script>
+  <script src="/js/account-ui.js"></script>
   <script src="/js/admin-ui.js"></script>
   <script src="/js/logbook-ui.js"></script>
   <script src="/js/forms-toolbox.js"></script>
