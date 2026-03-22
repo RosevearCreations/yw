@@ -87,7 +87,10 @@
       <a href="#firstaid">First Aid Kit</a>
       <a href="#inspect">Site Inspection</a>
       <a href="#drill">Emergency Drill</a>
+      <a href="#me">My Profile</a>
+      <a href="#crew">Crew View</a>
       <a href="#log">Logbook</a>
+      <a href="#settings">Settings</a>
       <a href="#admin">Admin</a>
     </nav>
   </header>
@@ -206,6 +209,7 @@
         <p class="section-subtitle">Your role controls which documents and admin tools you can see.</p>
       </div>
       <div class="admin-heading-actions">
+        <button type="button" class="secondary" onclick="location.hash='#settings'">Settings</button>
         <button id="logoutBtn" class="secondary" type="button">Log out</button>
       </div>
     </div>
@@ -248,6 +252,7 @@
 
         <div class="form-footer">
           <button id="account_password_save" class="primary" type="button">Save Password</button>
+          <button id="account_logout_this" class="secondary" type="button">Clear This Session</button>
           <button id="account_logout_all" class="secondary" type="button">Log Out Everywhere</button>
         </div>
 
@@ -725,6 +730,160 @@
           <button type="button" class="secondary" data-role="retry-outbox">Retry Queued Submissions</button>
         </div>
       </form>
+    </section>
+
+    <section id="me" class="card">
+      <div class="section-heading">
+        <div>
+          <h2>My Profile</h2>
+          <p class="section-subtitle">Employees can view and update their own contact details, vehicle, position, and feature preferences.</p>
+        </div>
+      </div>
+
+      <div class="grid">
+        <label>Full Name
+          <input type="text" id="me_full_name" />
+        </label>
+        <label>Email
+          <input type="text" id="me_email" readonly />
+        </label>
+        <label>Role
+          <input type="text" id="me_role" readonly />
+        </label>
+      </div>
+
+      <div class="grid" style="margin-top:12px;">
+        <label>Phone
+          <input type="text" id="me_phone" />
+        </label>
+        <label>Address Line 1
+          <input type="text" id="me_address1" />
+        </label>
+        <label>Address Line 2
+          <input type="text" id="me_address2" />
+        </label>
+      </div>
+
+      <div class="grid" style="margin-top:12px;">
+        <label>City
+          <input type="text" id="me_city" />
+        </label>
+        <label>Province
+          <input type="text" id="me_province" />
+        </label>
+        <label>Postal Code
+          <input type="text" id="me_postal_code" />
+        </label>
+      </div>
+
+      <div class="grid" style="margin-top:12px;">
+        <label>Current Position
+          <input type="text" id="me_current_position" />
+        </label>
+        <label>Trade / Specialty
+          <input type="text" id="me_trade_specialty" />
+        </label>
+        <label>Vehicle
+          <input type="text" id="me_vehicle_make_model" />
+        </label>
+      </div>
+
+      <div class="grid" style="margin-top:12px;">
+        <label>Vehicle Plate
+          <input type="text" id="me_vehicle_plate" />
+        </label>
+        <label>Emergency Contact Name
+          <input type="text" id="me_emergency_contact_name" />
+        </label>
+        <label>Emergency Contact Phone
+          <input type="text" id="me_emergency_contact_phone" />
+        </label>
+      </div>
+
+      <div class="grid" style="margin-top:12px;">
+        <label>Feature Preferences
+          <textarea id="me_feature_preferences" rows="4" placeholder="Future feature preferences, reminders, dashboards, notifications..."></textarea>
+        </label>
+      </div>
+
+      <div class="form-footer">
+        <button id="me_save" class="primary" type="button">Save My Profile</button>
+        <button id="me_reload" class="secondary" type="button">Reload My Profile</button>
+      </div>
+
+      <div id="me_summary" class="notice" style="display:none;margin-top:14px;"></div>
+    </section>
+
+    <section id="crew" class="card">
+      <div class="section-heading">
+        <div>
+          <h2>Crew View</h2>
+          <p class="section-subtitle">Supervisors can see employee records. Admins can see supervisors, employees, and admins.</p>
+        </div>
+      </div>
+
+      <div class="grid">
+        <label>Search
+          <input type="text" id="crew_search" placeholder="Name, email, trade, position" />
+        </label>
+        <label>Role Filter
+          <select id="crew_role_filter">
+            <option value="">All visible roles</option>
+            <option value="worker">Worker</option>
+            <option value="staff">Employee</option>
+            <option value="site_leader">Site Leader</option>
+            <option value="supervisor">Supervisor</option>
+            <option value="hse">HSE</option>
+            <option value="job_admin">Job Admin</option>
+            <option value="admin">Admin</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="form-footer">
+        <button id="crew_load" class="primary" type="button">Load Crew</button>
+      </div>
+
+      <div class="table-wrap">
+        <table id="crew_table">
+          <thead>
+            <tr>
+              <th>Name</th><th>Email</th><th>Role</th><th>Position</th><th>Trade</th><th>Phone</th><th>Active</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div id="crew_summary" class="notice" style="display:none;margin-top:14px;"></div>
+    </section>
+
+    <section id="settings" class="card">
+      <div class="section-heading">
+        <div>
+          <h2>Settings & Session</h2>
+          <p class="section-subtitle">See who is logged in, review the active session, clear the current login session, and prepare for future user settings.</p>
+        </div>
+      </div>
+
+      <div class="grid">
+        <label>Signed In As
+          <input type="text" id="settings_whoami" readonly />
+        </label>
+        <label>Role
+          <input type="text" id="settings_role" readonly />
+        </label>
+        <label>Session Expires
+          <input type="text" id="settings_expires" readonly />
+        </label>
+      </div>
+
+      <div class="form-footer">
+        <button id="settings_logout" class="secondary" type="button">Clear Current Session</button>
+      </div>
+
+      <div id="settings_session_summary" class="notice" style="display:none;margin-top:14px;"></div>
+      <div id="settings_future_hint" class="notice" style="margin-top:14px;">Future settings can include notification preferences, dashboard layouts, shortcuts, accessibility, and feature toggles.</div>
     </section>
 
     <section id="log" class="card">
@@ -1316,6 +1475,7 @@
   <script src="/js/api.js"></script>
   <script src="/js/ui-auth.js"></script>
   <script src="/js/account-ui.js"></script>
+  <script src="/js/profile-ui.js"></script>
   <script src="/js/admin-ui.js"></script>
   <script src="/js/admin-actions.js"></script>
   <script src="/js/outbox.js"></script>

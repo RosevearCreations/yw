@@ -752,3 +752,9 @@ body[data-user-role="admin"] #admin[data-admin-locked="false"] {
   color: #d8f5ff;
   border-color: rgba(56, 189, 248, 0.22);
 }
+
+
+/* Added in backend/security pass: profile, crew, and settings views */
+#crew_table, #crew_table table { min-width: 760px; }
+.account-panel, #settings, #me, #crew { margin-top: 18px; }
+#settings_future_hint { opacity: 0.95; }

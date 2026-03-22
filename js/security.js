@@ -1,7 +1,7 @@
 /* File: js/security.js
    Brief description: Shared role and security helper module.
-   Centralizes role ranks, tier checks, route/view rules, and section guards
-   so UI modules and routing all follow the same security model.
+   Centralizes role ranks, tier checks, section guards, and people-visibility rules
+   for workers, supervisors, job admins, HSE, and admins.
 */
 
 'use strict';
@@ -24,8 +24,11 @@
     firstaid: 'worker',
     inspect: 'worker',
     drill: 'worker',
+    me: 'worker',
+    settings: 'worker',
+    crew: 'supervisor',
     log: 'worker',
-    admin: 'supervisor'
+    admin: 'admin'
   };
 
   function normalizeRole(role) {
@@ -44,6 +47,10 @@
     return roleRank(role) >= roleRank('site_leader');
   }
 
+  function canViewCrew(role) {
+    return roleRank(role) >= roleRank('supervisor');
+  }
+
   function canViewAdminDirectory(role) {
     return roleRank(role) >= roleRank('supervisor');
   }
@@ -52,16 +59,22 @@
     return roleRank(role) >= roleRank('admin');
   }
 
-  function canManageProfiles(role) {
-    return roleRank(role) >= roleRank('admin');
-  }
+  function canViewPerson(viewerRole, targetRole) {
+    const viewer = normalizeRole(viewerRole);
+    const target = normalizeRole(targetRole);
 
-  function canManageSites(role) {
-    return roleRank(role) >= roleRank('admin');
-  }
+    if (viewer === 'admin') return true;
+    if (viewer === target) return true;
 
-  function canManageAssignments(role) {
-    return roleRank(role) >= roleRank('admin');
+    if (viewer === 'supervisor') {
+      return roleRank(target) < roleRank('supervisor');
+    }
+
+    if (viewer === 'hse' || viewer === 'job_admin') {
+      return roleRank(target) < roleRank('admin');
+    }
+
+    return false;
   }
 
   function getRoleLabel(role) {
@@ -85,11 +98,9 @@
       roleLabel: getRoleLabel(normalized),
       rank: roleRank(normalized),
       canReviewSubmissions: canReviewSubmissions(normalized),
+      canViewCrew: canViewCrew(normalized),
       canViewAdminDirectory: canViewAdminDirectory(normalized),
-      canManageAdminDirectory: canManageAdminDirectory(normalized),
-      canManageProfiles: canManageProfiles(normalized),
-      canManageSites: canManageSites(normalized),
-      canManageAssignments: canManageAssignments(normalized)
+      canManageAdminDirectory: canManageAdminDirectory(normalized)
     };
   }
 
@@ -99,7 +110,10 @@
   }
 
   function getDefaultSectionForRole(role) {
-    if (canViewSection('toolbox', role)) return 'toolbox';
+    const normalized = normalizeRole(role);
+    if (normalized === 'worker' || normalized === 'staff' || normalized === 'onsite_admin') return 'me';
+    if (normalized === 'supervisor' || normalized === 'hse' || normalized === 'job_admin') return 'crew';
+    if (normalized === 'admin') return 'admin';
     return 'toolbox';
   }
 
@@ -115,11 +129,10 @@
     roleRank,
     hasMinRole,
     canReviewSubmissions,
+    canViewCrew,
     canViewAdminDirectory,
     canManageAdminDirectory,
-    canManageProfiles,
-    canManageSites,
-    canManageAssignments,
+    canViewPerson,
     getRoleLabel,
     getAccessProfile,
     canViewSection,

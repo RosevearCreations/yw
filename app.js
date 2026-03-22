@@ -30,7 +30,8 @@ const modules = {
   firstAidFormUI: null,
   inspectionFormUI: null,
   drillFormUI: null,
-  adminActions: null
+  adminActions: null,
+  profileUI: null
 };
 
 function todayISO() {
@@ -88,6 +89,10 @@ function applyRoleVisibility() {
   if (modules.logbookUI?.applyRoleVisibility) {
     modules.logbookUI.applyRoleVisibility();
   }
+
+  if (modules.profileUI?.applyRoleVisibility) {
+    modules.profileUI.applyRoleVisibility();
+  }
 }
 
 function syncAuthStateFromBoot(detail = {}) {
@@ -139,6 +144,21 @@ function initAdminModule() {
     onAssignmentLoaded: () => {}
   });
   modules.adminUI.init().catch((err) => console.error('Admin UI init failed', err));
+}
+
+function initProfileModule() {
+  if (modules.profileUI || !window.YWIProfileUI?.create || !api()) return;
+
+  modules.profileUI = window.YWIProfileUI.create({
+    api: api(),
+    getCurrentRole: () => appState.currentRole,
+    getAuthState: () => auth()?.getState?.() || {},
+    getAccessProfile
+  });
+
+  modules.profileUI.init().catch((err) => {
+    console.error('Profile UI init failed', err);
+  });
 }
 
 function initLogbookModule() {
@@ -200,6 +220,7 @@ async function initializeAppShell() {
   initFormModules();
   initAdminModule();
   initLogbookModule();
+  initProfileModule();
   initAdminActions();
   seedAllTables();
   const currentAuthState = auth()?.getState?.();

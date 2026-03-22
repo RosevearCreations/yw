@@ -23,6 +23,7 @@
     confirm: document.getElementById('account_password_confirm'),
     saveBtn: document.getElementById('account_password_save'),
     logoutAllBtn: document.getElementById('account_logout_all'),
+    logoutThisBtn: document.getElementById('account_logout_this'),
     summary: document.getElementById('account_summary'),
     badge: document.getElementById('account_role_badge'),
     hint: document.getElementById('account_password_hint')
@@ -108,6 +109,22 @@
     }
   }
 
+  async function onLogoutThis() {
+    const confirmed = window.confirm('Log out of this current session?');
+    if (!confirmed) return;
+    const restore = setBusy(els.logoutThisBtn, 'Logging out...');
+    setSummary('');
+    try {
+      await auth.logout();
+      setSummary('Current session cleared.');
+    } catch (err) {
+      console.error(err);
+      setSummary(err?.message || 'Failed to log out current session.', true);
+    } finally {
+      restore();
+    }
+  }
+
   async function onLogoutAll() {
     const confirmed = window.confirm('Sign out this account from all sessions and devices?');
     if (!confirmed) return;
@@ -126,6 +143,7 @@
 
   function bindEvents() {
     els.saveBtn?.addEventListener('click', onSavePassword);
+    els.logoutThisBtn?.addEventListener('click', onLogoutThis);
     els.logoutAllBtn?.addEventListener('click', onLogoutAll);
     document.addEventListener('ywi:boot-ready', (e) => render(e.detail?.state || auth.getState?.()));
     document.addEventListener('ywi:auth-changed', (e) => render(e.detail?.state || auth.getState?.()));
