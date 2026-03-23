@@ -38,7 +38,7 @@
   };
 
   const uiState = {
-    activeTab: 'magic',
+    activeTab: localStorage.getItem('ywi_auth_preferred_tab') || 'password',
     bootReady: false,
     initialized: false
   };
@@ -73,6 +73,7 @@
 
   function setTab(tabName) {
     uiState.activeTab = tabName;
+    try { localStorage.setItem('ywi_auth_preferred_tab', tabName); } catch {}
 
     els.tabButtons.forEach((btn) => {
       const isActive = btn.getAttribute('data-auth-tab') === tabName;
@@ -222,7 +223,7 @@
 
     try {
       await auth.logout();
-      setTab('magic');
+      setTab(uiState.activeTab || 'password');
       showLoggedOut();
     } catch (err) {
       console.error(err);
@@ -260,7 +261,7 @@
     if (uiState.initialized) return;
     uiState.initialized = true;
 
-    setTab('magic');
+    setTab(uiState.activeTab || 'password');
     bindEvents();
     render(auth.getState?.());
   }

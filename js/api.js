@@ -79,6 +79,8 @@
   async function manageAdminEntity(payload) { return jsonFetch(ENDPOINTS.MANAGE_URL, { body: payload }); }
   async function fetchSubmissionDetail(submissionId) { return jsonFetch(ENDPOINTS.DETAIL_URL, { body: { submission_id: submissionId } }); }
   async function loadAdminSelectors(payload = {}) { return jsonFetch(ENDPOINTS.SELECTORS_URL, { body: payload }); }
+  async function fetchReferenceData(payload = {}) { return jsonFetch(ENDPOINTS.REFERENCE_URL, { body: payload }); }
+  async function notifyAdmins(payload = {}) { return jsonFetch(ENDPOINTS.NOTIFY_URL, { body: payload }); }
 
   async function fetchProfileScope(scope = 'self', extra = {}) {
     return jsonFetch(ENDPOINTS.DIRECTORY_URL, { body: { scope, ...extra } });
@@ -121,6 +123,8 @@
     manageAdminEntity,
     fetchSubmissionDetail,
     loadAdminSelectors,
+    fetchReferenceData,
+    notifyAdmins,
     fetchProfileScope,
     saveMyProfile,
     uploadImageViaFunction,

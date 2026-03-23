@@ -41,3 +41,14 @@ Current people visibility direction:
 
 Important note:
 Frontend guards improve the UX, but real security must still be enforced by SQL, RLS, and Edge Functions.
+
+
+## Latest pass additions
+- `js/reference-data.js` — populated reference lists for sites, supervisors, employees, positions, and trades
+- `reference-data` Edge Function — scoped site/people/catalog reference data for form population
+- `notify-admins` Edge Function — queues admin notifications when supervisor-level sign-off requires admin review
+- `sql/040_reference_data_and_catalogs.sql` — catalog/reference tables and richer site metadata
+- `sql/041_submission_notifications_and_signoff.sql` — sign-off fields and admin notification queue
+- `sql/042_test_users_and_sites_seed.sql` — test profile/site seed data for login and assignment testing
+
+Password login now exists as a first-class sign-in path so existing accounts can bypass magic link and sign in directly with email and password.

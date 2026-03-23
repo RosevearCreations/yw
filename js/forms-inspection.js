@@ -111,7 +111,7 @@
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><input type="text" class="insp-worker-name" placeholder="Full name" value="${escHtml(values.name || '')}" required></td>
+        <td><input type="text" class="insp-worker-name" list="employee-options" placeholder="Full name" value="${escHtml(values.name || '')}" required></td>
         <td>
           <select class="insp-worker-role">
             <option value="worker" ${values.role_on_site === 'worker' ? 'selected' : ''}>Worker</option>
@@ -142,7 +142,7 @@
           </select>
         </td>
         <td><input type="text" class="insp-action" placeholder="Action taken / required" value="${escHtml(values.action || '')}"></td>
-        <td><input type="text" class="insp-assigned" placeholder="Assigned to" value="${escHtml(values.assigned_to || '')}"></td>
+        <td><input type="text" class="insp-assigned" list="employee-options" placeholder="Assigned to" value="${escHtml(values.assigned_to || '')}"></td>
         <td>
           <select class="insp-completed">
             <option value="no" ${values.completed === 'no' ? 'selected' : ''}>No</option>

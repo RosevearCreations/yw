@@ -114,7 +114,7 @@
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td><input type="text" class="dr-name" placeholder="Full name" value="${escHtml(values.name || '')}" required></td>
+        <td><input type="text" class="dr-name" list="employee-options" placeholder="Full name" value="${escHtml(values.name || '')}" required></td>
         <td>
           <select class="dr-role">
             <option value="worker" ${values.role_on_site === 'worker' ? 'selected' : ''}>Worker</option>

@@ -160,7 +160,7 @@
           </div>
 
           <div class="notice" style="margin-top:12px;">
-            Best for simple access right now. The email link signs you in without needing a password.
+            For first access or password-free entry. If you already have an account and password, use the Email + Password tab to sign in directly.
           </div>
         </form>
       </section>
@@ -195,7 +195,7 @@
           </div>
 
           <div class="notice" style="margin-top:12px;">
-            This prepares the app for real in-app account security and future role-based access for Admin, Job Admin, Onsite Admin, and Staff.
+            Use this when your account already has a password. This bypasses magic link and gives a normal sign-in screen for employees, supervisors, and admins.
           </div>
         </form>
       </section>
@@ -273,13 +273,13 @@
       <form id="toolboxForm">
         <div class="grid">
           <label>Site ID / Name
-            <input type="text" id="tb_site" required placeholder="e.g., Site-A" />
+            <input type="text" id="tb_site" list="site-options" required placeholder="e.g., SITE-001 — Main Yard" />
           </label>
           <label>Date
             <input type="date" id="tb_date" required />
           </label>
           <label>Submitted By
-            <input type="text" id="tb_leader" required placeholder="Foreman / Supervisor" />
+            <input type="text" id="tb_leader" list="supervisor-options" required placeholder="Foreman / Supervisor" />
           </label>
         </div>
 
@@ -361,13 +361,13 @@
       <form id="ppeForm">
         <div class="grid">
           <label>Site ID / Name
-            <input type="text" id="ppe_site" required placeholder="e.g., Site-A" />
+            <input type="text" id="ppe_site" list="site-options" required placeholder="e.g., SITE-001 — Main Yard" />
           </label>
           <label>Date
             <input type="date" id="ppe_date" required />
           </label>
           <label>Checked By
-            <input type="text" id="ppe_checker" required placeholder="Foreman / Supervisor" />
+            <input type="text" id="ppe_checker" list="supervisor-options" required placeholder="Foreman / Supervisor" />
           </label>
         </div>
 
@@ -413,13 +413,13 @@
       <form id="faForm">
         <div class="grid">
           <label>Site ID / Name
-            <input type="text" id="fa_site" required placeholder="e.g., Site-A" />
+            <input type="text" id="fa_site" list="site-options" required placeholder="e.g., SITE-001 — Main Yard" />
           </label>
           <label>Date
             <input type="date" id="fa_date" required />
           </label>
           <label>Checked By
-            <input type="text" id="fa_checker" required placeholder="Responsible person" />
+            <input type="text" id="fa_checker" list="supervisor-options" required placeholder="Responsible person" />
           </label>
         </div>
 
@@ -481,13 +481,13 @@
       <form id="inspForm">
         <div class="grid">
           <label>Site ID / Name
-            <input type="text" id="insp_site" required placeholder="e.g., Site-A" />
+            <input type="text" id="insp_site" list="site-options" required placeholder="e.g., SITE-001 — Main Yard" />
           </label>
           <label>Date
             <input type="date" id="insp_date" required />
           </label>
           <label>Inspector
-            <input type="text" id="insp_inspector" required placeholder="Your name" />
+            <input type="text" id="insp_inspector" list="supervisor-options" required placeholder="Your name" />
           </label>
         </div>
 
@@ -609,13 +609,13 @@
       <form id="drForm">
         <div class="grid">
           <label>Site ID / Name
-            <input type="text" id="dr_site" required placeholder="e.g., Site-A" />
+            <input type="text" id="dr_site" list="site-options" required placeholder="e.g., SITE-001 — Main Yard" />
           </label>
           <label>Date
             <input type="date" id="dr_date" required />
           </label>
           <label>Supervisor / Leader
-            <input type="text" id="dr_supervisor" required placeholder="Your name" />
+            <input type="text" id="dr_supervisor" list="supervisor-options" required placeholder="Your name" />
           </label>
         </div>
 
@@ -778,10 +778,10 @@
 
       <div class="grid" style="margin-top:12px;">
         <label>Current Position
-          <input type="text" id="me_current_position" />
+          <input type="text" id="me_current_position" list="position-options" />
         </label>
         <label>Trade / Specialty
-          <input type="text" id="me_trade_specialty" />
+          <input type="text" id="me_trade_specialty" list="trade-options" />
         </label>
         <label>Vehicle
           <input type="text" id="me_vehicle_make_model" />
@@ -1308,13 +1308,13 @@
               <input type="text" id="am_profile_emergency_phone" placeholder="Emergency phone" />
             </label>
             <label>Current Position
-              <input type="text" id="am_profile_current_position" placeholder="Current position" />
+              <input type="text" id="am_profile_current_position" list="position-options" placeholder="Current position" />
             </label>
             <label>Years Employed
               <input type="number" id="am_profile_years_employed" min="0" step="0.1" placeholder="Years employed" />
             </label>
             <label>Trade / Specialty
-              <input type="text" id="am_profile_trade_specialty" placeholder="e.g. Framing, excavation, safety" />
+              <input type="text" id="am_profile_trade_specialty" list="trade-options" placeholder="e.g. Framing, excavation, safety" />
             </label>
             <label>Certifications / Tickets
               <input type="text" id="am_profile_certifications" placeholder="Forklift, WHMIS, fall arrest, first aid" />
@@ -1466,6 +1466,13 @@
     </section>
   </main>
 
+
+  <datalist id="site-options"></datalist>
+  <datalist id="supervisor-options"></datalist>
+  <datalist id="employee-options"></datalist>
+  <datalist id="position-options"></datalist>
+  <datalist id="trade-options"></datalist>
+
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
 
   <script src="/js/router.js"></script>
@@ -1476,6 +1483,7 @@
   <script src="/js/ui-auth.js"></script>
   <script src="/js/account-ui.js"></script>
   <script src="/js/profile-ui.js"></script>
+  <script src="/js/reference-data.js"></script>
   <script src="/js/admin-ui.js"></script>
   <script src="/js/admin-actions.js"></script>
   <script src="/js/outbox.js"></script>

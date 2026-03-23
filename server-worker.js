@@ -5,7 +5,7 @@
 
 'use strict';
 
-const CACHE_NAME = 'ywi-hse-shell-v4';
+const CACHE_NAME = 'ywi-hse-shell-v5';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -20,6 +20,7 @@ const APP_SHELL = [
   '/js/ui-auth.js',
   '/js/account-ui.js',
   '/js/profile-ui.js',
+  '/js/reference-data.js',
   '/js/admin-ui.js',
   '/js/logbook-ui.js',
   '/js/admin-actions.js',

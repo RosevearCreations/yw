@@ -31,7 +31,8 @@ const modules = {
   inspectionFormUI: null,
   drillFormUI: null,
   adminActions: null,
-  profileUI: null
+  profileUI: null,
+  referenceDataUI: null
 };
 
 function todayISO() {
@@ -61,6 +62,7 @@ function router() { return window.YWIRouter || null; }
 function api() { return window.YWIAPI || null; }
 function security() { return window.YWISecurity || null; }
 function outbox() { return window.YWIOutbox || null; }
+function referenceData() { return window.YWIReferenceData || null; }
 
 function getAccessProfile(role = appState.currentRole) {
   return security()?.getAccessProfile?.(role) || {
@@ -108,8 +110,9 @@ function syncAuthStateFromBoot(detail = {}) {
   appState.isAuthenticated = !!state?.isAuthenticated;
 
   if (whoami) {
+    const fullName = profile?.full_name || user?.user_metadata?.full_name || '';
     const email = profile?.email || user?.email || '';
-    whoami.textContent = email ? `${email} (${access.roleLabel})` : access.roleLabel;
+    whoami.textContent = fullName ? `${fullName} (${access.roleLabel})` : (email ? `${email} (${access.roleLabel})` : access.roleLabel);
   }
 
   applyRoleVisibility();
@@ -159,6 +162,16 @@ function initProfileModule() {
   modules.profileUI.init().catch((err) => {
     console.error('Profile UI init failed', err);
   });
+}
+
+
+function initReferenceDataModule() {
+  if (modules.referenceDataUI || !window.YWIReferenceData?.create || !api()) return;
+  modules.referenceDataUI = window.YWIReferenceData.create({
+    api: api(),
+    getCurrentRole: () => appState.currentRole
+  });
+  modules.referenceDataUI.init();
 }
 
 function initLogbookModule() {
@@ -221,6 +234,7 @@ async function initializeAppShell() {
   initAdminModule();
   initLogbookModule();
   initProfileModule();
+  initReferenceDataModule();
   initAdminActions();
   seedAllTables();
   const currentAuthState = auth()?.getState?.();
