@@ -32,7 +32,8 @@ const modules = {
   drillFormUI: null,
   adminActions: null,
   profileUI: null,
-  referenceDataUI: null
+  referenceDataUI: null,
+  jobsUI: null
 };
 
 function todayISO() {
@@ -63,6 +64,7 @@ function api() { return window.YWIAPI || null; }
 function security() { return window.YWISecurity || null; }
 function outbox() { return window.YWIOutbox || null; }
 function referenceData() { return window.YWIReferenceData || null; }
+function jobsUIFactory() { return window.YWIJobsUI || null; }
 
 function getAccessProfile(role = appState.currentRole) {
   return security()?.getAccessProfile?.(role) || {
@@ -174,6 +176,17 @@ function initReferenceDataModule() {
   modules.referenceDataUI.init();
 }
 
+
+function initJobsModule() {
+  if (modules.jobsUI || !jobsUIFactory()?.create || !api()) return;
+  modules.jobsUI = jobsUIFactory().create({
+    api: api(),
+    getCurrentRole: () => appState.currentRole,
+    getAccessProfile
+  });
+  modules.jobsUI.init().catch((err) => console.error('Jobs UI init failed', err));
+}
+
 function initLogbookModule() {
   if (modules.logbookUI || !window.YWILogbookUI?.create || !api()) return;
   modules.logbookUI = window.YWILogbookUI.create({
@@ -235,6 +248,7 @@ async function initializeAppShell() {
   initLogbookModule();
   initProfileModule();
   initReferenceDataModule();
+  initJobsModule();
   initAdminActions();
   seedAllTables();
   const currentAuthState = auth()?.getState?.();
@@ -267,6 +281,13 @@ document.addEventListener('ywi:route-denied', (e) => {
   const detail = e.detail || {};
   if (detail.requested === 'admin') {
     setManageSummary(`Access redirected. ${detail.role || 'Current role'} cannot open Admin.`);
+  }
+  if (detail.requested === 'jobs' || detail.requested === 'equipment') {
+    const jobSummary = document.getElementById('job_summary');
+    if (jobSummary) {
+      jobSummary.style.display = 'block';
+      jobSummary.textContent = `Access redirected. ${detail.role || 'Current role'} cannot open ${detail.requested}.`;
+    }
   }
 });
 

@@ -33,10 +33,17 @@
       profileVehicle: $('#am_profile_vehicle'),
       profileVehiclePlate: $('#am_profile_vehicle_plate'),
       profileYearsEmployed: $('#am_profile_years_employed'),
+      profileStartDate: $('#am_profile_start_date'),
+      profileEmployeeNumber: $('#am_profile_employee_number'),
       profileCurrentPosition: $('#am_profile_current_position'),
       profilePreviousEmployee: $('#am_profile_previous_employee'),
       profileTrade: $('#am_profile_trade_specialty'),
+      profileStrengths: $('#am_profile_strengths'),
       profileCerts: $('#am_profile_certifications'),
+      profileDefaultSupervisorName: $('#am_profile_default_supervisor_name'),
+      profileOverrideSupervisorName: $('#am_profile_override_supervisor_name'),
+      profileDefaultAdminName: $('#am_profile_default_admin_name'),
+      profileOverrideAdminName: $('#am_profile_override_admin_name'),
       profilePrefs: $('#am_profile_feature_preferences'),
       profileNotes: $('#am_profile_notes'),
       profileSave: $('#am_profile_save'),
@@ -45,6 +52,13 @@
       siteCode: $('#am_site_code'),
       siteName: $('#am_site_name'),
       siteAddress: $('#am_site_address'),
+      siteRegion: $('#am_site_region'),
+      siteClientName: $('#am_site_client_name'),
+      siteProjectCode: $('#am_site_project_code'),
+      siteProjectStatus: $('#am_site_project_status'),
+      siteSupervisorName: $('#am_site_supervisor_name'),
+      siteSigningSupervisorName: $('#am_site_signing_supervisor_name'),
+      siteAdminName: $('#am_site_admin_name'),
       siteNotes: $('#am_site_notes'),
       siteActive: $('#am_site_active'),
       siteCreate: $('#am_site_create'),
@@ -55,6 +69,8 @@
       assignmentProfileId: $('#am_assignment_profile_id'),
       assignmentRole: $('#am_assignment_role'),
       assignmentPrimary: $('#am_assignment_primary'),
+      assignmentReportsToSupervisor: $('#am_assignment_reports_to_supervisor'),
+      assignmentReportsToAdmin: $('#am_assignment_reports_to_admin'),
       assignmentCreate: $('#am_assignment_create'),
       assignmentUpdate: $('#am_assignment_update'),
       assignmentDelete: $('#am_assignment_delete')
@@ -96,10 +112,17 @@
         vehicle_make_model: els.profileVehicle?.value?.trim?.() || null,
         vehicle_plate: els.profileVehiclePlate?.value?.trim?.() || null,
         years_employed: numOrNull(els.profileYearsEmployed?.value),
+        start_date: els.profileStartDate?.value || null,
+        employee_number: els.profileEmployeeNumber?.value?.trim?.() || null,
         current_position: els.profileCurrentPosition?.value?.trim?.() || null,
         previous_employee: !!els.profilePreviousEmployee?.checked,
         trade_specialty: els.profileTrade?.value?.trim?.() || null,
+        strengths: els.profileStrengths?.value?.trim?.() || null,
         certifications: els.profileCerts?.value?.trim?.() || null,
+        default_supervisor_name: els.profileDefaultSupervisorName?.value?.trim?.() || null,
+        override_supervisor_name: els.profileOverrideSupervisorName?.value?.trim?.() || null,
+        default_admin_name: els.profileDefaultAdminName?.value?.trim?.() || null,
+        override_admin_name: els.profileOverrideAdminName?.value?.trim?.() || null,
         feature_preferences: els.profilePrefs?.value?.trim?.() || null,
         notes: els.profileNotes?.value?.trim?.() || null
       };
@@ -134,6 +157,13 @@
           site_code: siteCode,
           site_name: siteName,
           address: els.siteAddress?.value?.trim?.() || null,
+          region: els.siteRegion?.value?.trim?.() || null,
+          client_name: els.siteClientName?.value?.trim?.() || null,
+          project_code: els.siteProjectCode?.value?.trim?.() || null,
+          project_status: els.siteProjectStatus?.value?.trim?.() || null,
+          site_supervisor_name: els.siteSupervisorName?.value?.trim?.() || null,
+          signing_supervisor_name: els.siteSigningSupervisorName?.value?.trim?.() || null,
+          admin_name: els.siteAdminName?.value?.trim?.() || null,
           notes: els.siteNotes?.value?.trim?.() || null,
           is_active: !!els.siteActive?.checked
         });
@@ -162,6 +192,13 @@
           site_code: els.siteCode?.value?.trim?.() || undefined,
           site_name: els.siteName?.value?.trim?.() || undefined,
           address: els.siteAddress?.value?.trim?.() || null,
+          region: els.siteRegion?.value?.trim?.() || null,
+          client_name: els.siteClientName?.value?.trim?.() || null,
+          project_code: els.siteProjectCode?.value?.trim?.() || null,
+          project_status: els.siteProjectStatus?.value?.trim?.() || null,
+          site_supervisor_name: els.siteSupervisorName?.value?.trim?.() || null,
+          signing_supervisor_name: els.siteSigningSupervisorName?.value?.trim?.() || null,
+          admin_name: els.siteAdminName?.value?.trim?.() || null,
           notes: els.siteNotes?.value?.trim?.() || null,
           is_active: !!els.siteActive?.checked
         });
@@ -189,7 +226,9 @@
           site_id: siteId,
           profile_id: profileId,
           assignment_role: els.assignmentRole?.value || 'worker',
-          is_primary: !!els.assignmentPrimary?.checked
+          is_primary: !!els.assignmentPrimary?.checked,
+          reports_to_supervisor_name: els.assignmentReportsToSupervisor?.value?.trim?.() || null,
+          reports_to_admin_name: els.assignmentReportsToAdmin?.value?.trim?.() || null
         });
         if (!resp?.ok) throw new Error(resp?.error || 'Assignment create failed');
         if (els.assignmentId) els.assignmentId.value = resp?.record?.id || '';
@@ -214,7 +253,9 @@
           action: 'update',
           assignment_id: assignmentId,
           assignment_role: els.assignmentRole?.value || 'worker',
-          is_primary: !!els.assignmentPrimary?.checked
+          is_primary: !!els.assignmentPrimary?.checked,
+          reports_to_supervisor_name: els.assignmentReportsToSupervisor?.value?.trim?.() || null,
+          reports_to_admin_name: els.assignmentReportsToAdmin?.value?.trim?.() || null
         });
         if (!resp?.ok) throw new Error(resp?.error || 'Assignment update failed');
         setSummary(`Assignment updated: ${assignmentId}`);

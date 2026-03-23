@@ -49,6 +49,15 @@
       mePlate: $('#me_vehicle_plate'),
       mePosition: $('#me_current_position'),
       meTrade: $('#me_trade_specialty'),
+      meStartDate: $('#me_start_date'),
+      meStrengths: $('#me_strengths'),
+      meEmployeeNumber: $('#me_employee_number'),
+      meDefaultSupervisorName: $('#me_default_supervisor_name'),
+      meOverrideSupervisorName: $('#me_override_supervisor_name'),
+      meDefaultAdminName: $('#me_default_admin_name'),
+      meOverrideAdminName: $('#me_override_admin_name'),
+      mePhoneVerified: $('#me_phone_verified'),
+      mePreviousEmployee: $('#me_previous_employee'),
       mePrefs: $('#me_feature_preferences'),
       meEmergencyName: $('#me_emergency_contact_name'),
       meEmergencyPhone: $('#me_emergency_contact_phone'),
@@ -102,6 +111,15 @@
       if (els.mePlate) els.mePlate.value = profile.vehicle_plate || '';
       if (els.mePosition) els.mePosition.value = profile.current_position || '';
       if (els.meTrade) els.meTrade.value = profile.trade_specialty || '';
+      if (els.meStartDate) els.meStartDate.value = profile.start_date || '';
+      if (els.meStrengths) els.meStrengths.value = profile.strengths || '';
+      if (els.meEmployeeNumber) els.meEmployeeNumber.value = profile.employee_number || '';
+      if (els.meDefaultSupervisorName) els.meDefaultSupervisorName.value = profile.default_supervisor_name || '';
+      if (els.meOverrideSupervisorName) els.meOverrideSupervisorName.value = profile.override_supervisor_name || '';
+      if (els.meDefaultAdminName) els.meDefaultAdminName.value = profile.default_admin_name || '';
+      if (els.meOverrideAdminName) els.meOverrideAdminName.value = profile.override_admin_name || '';
+      if (els.mePhoneVerified) els.mePhoneVerified.value = profile.phone_verified ? 'Yes' : 'No';
+      if (els.mePreviousEmployee) els.mePreviousEmployee.value = profile.previous_employee ? 'Yes' : 'No';
       if (els.mePrefs) els.mePrefs.value = profile.feature_preferences || '';
       if (els.meEmergencyName) els.meEmergencyName.value = profile.emergency_contact_name || '';
       if (els.meEmergencyPhone) els.meEmergencyPhone.value = profile.emergency_contact_phone || '';
@@ -154,6 +172,9 @@
           vehicle_plate: els.mePlate?.value?.trim?.() || null,
           current_position: els.mePosition?.value?.trim?.() || null,
           trade_specialty: els.meTrade?.value?.trim?.() || null,
+          start_date: els.meStartDate?.value || null,
+          strengths: els.meStrengths?.value?.trim?.() || null,
+          employee_number: els.meEmployeeNumber?.value?.trim?.() || null,
           feature_preferences: els.mePrefs?.value?.trim?.() || null,
           emergency_contact_name: els.meEmergencyName?.value?.trim?.() || null,
           emergency_contact_phone: els.meEmergencyPhone?.value?.trim?.() || null

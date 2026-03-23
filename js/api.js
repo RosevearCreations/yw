@@ -17,6 +17,10 @@
     MANAGE_URL:    `${SB_URL}/functions/v1/admin-manage`,
     DETAIL_URL:    `${SB_URL}/functions/v1/submission-detail`,
     SELECTORS_URL: `${SB_URL}/functions/v1/admin-selectors`,
+    REFERENCE_URL: `${SB_URL}/functions/v1/reference-data`,
+    NOTIFY_URL: `${SB_URL}/functions/v1/notify-admins`,
+    JOBS_DIRECTORY_URL: `${SB_URL}/functions/v1/jobs-directory`,
+    JOBS_MANAGE_URL: `${SB_URL}/functions/v1/jobs-manage`,
     UPLOAD_URL:    `${SB_URL}/functions/v1/upload-image`,
     STORAGE_BUCKET: 'submission-images'
   };
@@ -86,6 +90,14 @@
     return jsonFetch(ENDPOINTS.DIRECTORY_URL, { body: { scope, ...extra } });
   }
 
+  async function fetchJobsDirectory(payload = {}) {
+    return jsonFetch(ENDPOINTS.JOBS_DIRECTORY_URL, { body: payload });
+  }
+
+  async function manageJobsEntity(payload = {}) {
+    return jsonFetch(ENDPOINTS.JOBS_MANAGE_URL, { body: payload });
+  }
+
   async function saveMyProfile(payload) {
     return manageAdminEntity({ entity: 'profile', action: 'self_update', ...payload });
   }
@@ -126,6 +138,8 @@
     fetchReferenceData,
     notifyAdmins,
     fetchProfileScope,
+    fetchJobsDirectory,
+    manageJobsEntity,
     saveMyProfile,
     uploadImageViaFunction,
     uploadImagesForSubmission,

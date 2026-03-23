@@ -80,20 +80,38 @@
 </head>
 <body>
   <header class="app-header">
-    <h1>YWI HSE</h1>
-    <nav>
-      <a href="#toolbox" class="active">Toolbox Talk</a>
-      <a href="#ppe">PPE Check</a>
-      <a href="#firstaid">First Aid Kit</a>
-      <a href="#inspect">Site Inspection</a>
-      <a href="#drill">Emergency Drill</a>
-      <a href="#me">My Profile</a>
-      <a href="#crew">Crew View</a>
-      <a href="#log">Logbook</a>
-      <a href="#settings">Settings</a>
-      <a href="#admin">Admin</a>
-    </nav>
-  </header>
+  <div class="app-header-top">
+    <div class="app-branding">
+      <h1>YWI HSE</h1>
+      <div class="app-header-subtitle">Safety, people, jobs, and equipment</div>
+    </div>
+    <div id="headerSession" class="header-session" hidden>
+      <div class="header-session-text">
+        <div class="mini-label">Logged in</div>
+        <div id="headerWhoami" class="header-whoami">Not signed in</div>
+      </div>
+      <div class="header-session-actions">
+        <button id="headerLoginBtn" class="secondary" type="button">Login</button>
+        <button id="headerSettingsBtn" class="secondary" type="button">Settings</button>
+        <button id="headerLogoutBtn" class="secondary" type="button">Logout</button>
+      </div>
+    </div>
+  </div>
+  <nav>
+    <a href="#toolbox" class="active">Toolbox Talk</a>
+    <a href="#ppe">PPE Check</a>
+    <a href="#firstaid">First Aid Kit</a>
+    <a href="#inspect">Site Inspection</a>
+    <a href="#drill">Emergency Drill</a>
+    <a href="#me">My Profile</a>
+    <a href="#crew">Crew View</a>
+    <a href="#jobs">Jobs</a>
+    <a href="#equipment">Equipment</a>
+    <a href="#log">Logbook</a>
+    <a href="#settings">Settings</a>
+    <a href="#admin">Admin</a>
+  </nav>
+</header>
 
   <section id="authLoading" class="container is-visible" aria-live="polite" aria-busy="true">
     <div class="auth-loading-card">
@@ -203,17 +221,13 @@
   </section>
 
   <section id="authInfo" class="card" hidden>
-    <div class="section-heading">
-      <div>
-        <div class="auth-info">Signed in as <b id="whoami"></b></div>
-        <p class="section-subtitle">Your role controls which documents and admin tools you can see.</p>
-      </div>
-      <div class="admin-heading-actions">
-        <button type="button" class="secondary" onclick="location.hash='#settings'">Settings</button>
-        <button id="logoutBtn" class="secondary" type="button">Log out</button>
-      </div>
+  <div class="section-heading">
+    <div>
+      <div class="auth-info">Signed in as <b id="whoami"></b></div>
+      <p class="section-subtitle">Session controls are now available in the top right header.</p>
     </div>
-  </section>
+  </div>
+</section>
 
   <section id="accountPanel" class="card-lite account-panel" hidden>
     <div class="section-heading">
@@ -801,6 +815,42 @@
       </div>
 
       <div class="grid" style="margin-top:12px;">
+        <label>Start Date
+          <input type="date" id="me_start_date" />
+        </label>
+        <label>Strengths
+          <input type="text" id="me_strengths" placeholder="Safety checks, equipment, crew leadership" />
+        </label>
+        <label>Employee Number
+          <input type="text" id="me_employee_number" />
+        </label>
+      </div>
+
+      <div class="grid" style="margin-top:12px;">
+        <label>Default Supervisor
+          <input type="text" id="me_default_supervisor_name" readonly />
+        </label>
+        <label>Supervisor Override
+          <input type="text" id="me_override_supervisor_name" readonly />
+        </label>
+        <label>Admin Lead
+          <input type="text" id="me_default_admin_name" readonly />
+        </label>
+      </div>
+
+      <div class="grid" style="margin-top:12px;">
+        <label>Admin Override
+          <input type="text" id="me_override_admin_name" readonly />
+        </label>
+        <label>Verified Phone
+          <input type="text" id="me_phone_verified" readonly />
+        </label>
+        <label>Previous Employee
+          <input type="text" id="me_previous_employee" readonly />
+        </label>
+      </div>
+
+      <div class="grid" style="margin-top:12px;">
         <label>Feature Preferences
           <textarea id="me_feature_preferences" rows="4" placeholder="Future feature preferences, reminders, dashboards, notifications..."></textarea>
         </label>
@@ -848,7 +898,7 @@
         <table id="crew_table">
           <thead>
             <tr>
-              <th>Name</th><th>Email</th><th>Role</th><th>Position</th><th>Trade</th><th>Phone</th><th>Active</th>
+              <th>Name</th><th>Email</th><th>Role</th><th>Position</th><th>Trade</th><th>Supervisor</th><th>Admin</th><th>Start Date</th><th>Strengths</th><th>Active</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -884,6 +934,184 @@
 
       <div id="settings_session_summary" class="notice" style="display:none;margin-top:14px;"></div>
       <div id="settings_future_hint" class="notice" style="margin-top:14px;">Future settings can include notification preferences, dashboard layouts, shortcuts, accessibility, and feature toggles.</div>
+    </section>
+
+    <section id="jobs" class="card">
+      <div class="section-heading">
+        <div>
+          <h2>Jobs</h2>
+          <p class="section-subtitle">Create jobs, assign site leadership, and reserve required equipment for the work before it leaves the yard.</p>
+        </div>
+      </div>
+
+      <div class="grid">
+        <label>Job Code
+          <input type="text" id="job_code" placeholder="JOB-2026-001" />
+        </label>
+        <label>Job Name
+          <input type="text" id="job_name" placeholder="North lot excavation" />
+        </label>
+        <label>Site
+          <input type="text" id="job_site_name" list="site-options" placeholder="Select a site" />
+        </label>
+      </div>
+
+      <div class="grid" style="margin-top:12px;">
+        <label>Job Type
+          <input type="text" id="job_type" placeholder="Excavation, concrete, inspection, delivery" />
+        </label>
+        <label>Status
+          <select id="job_status">
+            <option value="planned">Planned</option>
+            <option value="ready">Ready</option>
+            <option value="active">Active</option>
+            <option value="on_hold">On Hold</option>
+            <option value="closed">Closed</option>
+          </select>
+        </label>
+        <label>Priority
+          <select id="job_priority">
+            <option value="normal">Normal</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="grid" style="margin-top:12px;">
+        <label>Start Date
+          <input type="date" id="job_start_date" />
+        </label>
+        <label>End Date
+          <input type="date" id="job_end_date" />
+        </label>
+        <label>Site Supervisor
+          <input type="text" id="job_supervisor_name" list="supervisor-options" placeholder="Default supervisor or override" />
+        </label>
+      </div>
+
+      <div class="grid" style="margin-top:12px;">
+        <label>Signing Supervisor
+          <input type="text" id="job_signing_supervisor_name" list="supervisor-options" placeholder="Who signs off if site supervisor is unavailable" />
+        </label>
+        <label>Admin Lead
+          <input type="text" id="job_admin_name" list="admin-options" placeholder="Default admin or override" />
+        </label>
+        <label>Client / Project
+          <input type="text" id="job_client_name" placeholder="Client name or internal project" />
+        </label>
+      </div>
+
+      <label style="margin-top:12px;">Job Notes
+        <textarea id="job_notes" rows="4" placeholder="Scope, safety notes, access instructions, special requirements..."></textarea>
+      </label>
+
+      <h3>Required Equipment</h3>
+      <div class="actions">
+        <button type="button" id="job_add_equipment">+ Add Equipment Requirement</button>
+      </div>
+      <div class="table-wrap">
+        <table id="job_equipment_table">
+          <thead>
+            <tr>
+              <th>Equipment Item / Type</th>
+              <th>Needed Qty</th>
+              <th>Reserved Qty</th>
+              <th>Status</th>
+              <th>Notes</th>
+              <th>Controls</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="form-footer">
+        <button id="job_save" class="primary" type="button">Save Job Draft</button>
+        <button id="job_load" class="secondary" type="button">Load Jobs</button>
+      </div>
+
+      <div id="job_summary" class="notice" style="display:none;margin-top:14px;"></div>
+
+      <div class="table-wrap" style="margin-top:16px;">
+        <table id="job_list_table">
+          <thead>
+            <tr>
+              <th>Job Code</th><th>Job Name</th><th>Site</th><th>Supervisor</th><th>Admin</th><th>Status</th><th>Dates</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="equipment" class="card">
+      <div class="section-heading">
+        <div>
+          <h2>Equipment</h2>
+          <p class="section-subtitle">Maintain the equipment list, see what is available, and track which job each item is signed out to.</p>
+        </div>
+      </div>
+
+      <div class="grid">
+        <label>Equipment Code
+          <input type="text" id="eq_code" placeholder="EQ-001" />
+        </label>
+        <label>Equipment Name
+          <input type="text" id="eq_name" placeholder="Skid steer" />
+        </label>
+        <label>Category
+          <input type="text" id="eq_category" placeholder="Heavy equipment, safety, small tools" />
+        </label>
+      </div>
+
+      <div class="grid" style="margin-top:12px;">
+        <label>Home Site
+          <input type="text" id="eq_home_site" list="site-options" placeholder="Yard / site" />
+        </label>
+        <label>Status
+          <select id="eq_status">
+            <option value="available">Available</option>
+            <option value="reserved">Reserved</option>
+            <option value="checked_out">Checked Out</option>
+            <option value="maintenance">Maintenance</option>
+            <option value="retired">Retired</option>
+          </select>
+        </label>
+        <label>Current Job Code
+          <input type="text" id="eq_current_job_code" placeholder="Blank if not assigned" />
+        </label>
+      </div>
+
+      <div class="grid" style="margin-top:12px;">
+        <label>Assigned To Supervisor
+          <input type="text" id="eq_assigned_supervisor" list="supervisor-options" placeholder="Who currently controls it" />
+        </label>
+        <label>Serial / Plate
+          <input type="text" id="eq_serial" placeholder="Serial, VIN, plate, or asset tag" />
+        </label>
+        <label>Notes
+          <input type="text" id="eq_notes" placeholder="Condition, restrictions, booking notes" />
+        </label>
+      </div>
+
+      <div class="form-footer">
+        <button id="eq_save" class="primary" type="button">Save Equipment</button>
+        <button id="eq_load" class="secondary" type="button">Load Equipment</button>
+      </div>
+
+      <div id="eq_summary" class="notice" style="display:none;margin-top:14px;"></div>
+
+      <div class="table-wrap" style="margin-top:16px;">
+        <table id="eq_list_table">
+          <thead>
+            <tr>
+              <th>Code</th><th>Name</th><th>Category</th><th>Home Site</th><th>Status</th><th>Current Job</th><th>Supervisor</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </section>
 
     <section id="log" class="card">
@@ -1313,13 +1541,39 @@
             <label>Years Employed
               <input type="number" id="am_profile_years_employed" min="0" step="0.1" placeholder="Years employed" />
             </label>
+            <label>Start Date
+              <input type="date" id="am_profile_start_date" />
+            </label>
+            <label>Employee Number
+              <input type="text" id="am_profile_employee_number" placeholder="Badge or employee number" />
+            </label>
+          </div>
+
+          <div class="grid" style="margin-top:12px;">
             <label>Trade / Specialty
               <input type="text" id="am_profile_trade_specialty" list="trade-options" placeholder="e.g. Framing, excavation, safety" />
+            </label>
+            <label>Strengths
+              <input type="text" id="am_profile_strengths" placeholder="Leadership, skid steer, inspections, first aid" />
             </label>
             <label>Certifications / Tickets
               <input type="text" id="am_profile_certifications" placeholder="Forklift, WHMIS, fall arrest, first aid" />
             </label>
+            <label>Default Supervisor
+              <input type="text" id="am_profile_default_supervisor_name" list="supervisor-options" placeholder="Default supervisor" />
+            </label>
+            <label>Supervisor Override
+              <input type="text" id="am_profile_override_supervisor_name" list="supervisor-options" placeholder="Override when default unavailable" />
+            </label>
+            <label>Default Admin
+              <input type="text" id="am_profile_default_admin_name" list="admin-options" placeholder="Default admin lead" />
+            </label>
           </div>
+
+          <div class="grid" style="margin-top:12px;">
+            <label>Admin Override
+              <input type="text" id="am_profile_override_admin_name" list="admin-options" placeholder="Admin override" />
+            </label>
 
           <div class="grid" style="margin-top:12px;">
             <label>Vehicle Make / Model
@@ -1384,6 +1638,30 @@
           <div class="grid" style="margin-top:12px;">
             <label>Address
               <input type="text" id="am_site_address" placeholder="Address" />
+            </label>
+            <label>Region
+              <input type="text" id="am_site_region" placeholder="Region" />
+            </label>
+            <label>Client Name
+              <input type="text" id="am_site_client_name" placeholder="Client" />
+            </label>
+            <label>Project Code
+              <input type="text" id="am_site_project_code" placeholder="Project code" />
+            </label>
+            <label>Project Status
+              <input type="text" id="am_site_project_status" placeholder="Planned, active, closed" />
+            </label>
+            <label>Site Supervisor
+              <input type="text" id="am_site_supervisor_name" list="supervisor-options" placeholder="Default site supervisor" />
+            </label>
+          </div>
+
+          <div class="grid" style="margin-top:12px;">
+            <label>Signing Supervisor
+              <input type="text" id="am_site_signing_supervisor_name" list="supervisor-options" placeholder="Sign-off supervisor" />
+            </label>
+            <label>Admin Lead
+              <input type="text" id="am_site_admin_name" list="admin-options" placeholder="Admin lead" />
             </label>
             <label>Notes
               <input type="text" id="am_site_notes" placeholder="Notes" />
@@ -1452,6 +1730,12 @@
               <input type="checkbox" id="am_assignment_primary" />
               Primary assignment
             </label>
+            <label>Reports To Supervisor
+              <input type="text" id="am_assignment_reports_to_supervisor" list="supervisor-options" placeholder="Optional override supervisor" />
+            </label>
+            <label>Reports To Admin
+              <input type="text" id="am_assignment_reports_to_admin" list="admin-options" placeholder="Optional override admin" />
+            </label>
           </div>
 
           <div class="form-footer">
@@ -1470,6 +1754,7 @@
   <datalist id="site-options"></datalist>
   <datalist id="supervisor-options"></datalist>
   <datalist id="employee-options"></datalist>
+  <datalist id="admin-options"></datalist>
   <datalist id="position-options"></datalist>
   <datalist id="trade-options"></datalist>
 
@@ -1484,6 +1769,7 @@
   <script src="/js/account-ui.js"></script>
   <script src="/js/profile-ui.js"></script>
   <script src="/js/reference-data.js"></script>
+  <script src="/js/jobs-ui.js"></script>
   <script src="/js/admin-ui.js"></script>
   <script src="/js/admin-actions.js"></script>
   <script src="/js/outbox.js"></script>

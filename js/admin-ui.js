@@ -83,10 +83,17 @@
       formProfileVehicle: $('#am_profile_vehicle'),
       formProfileVehiclePlate: $('#am_profile_vehicle_plate'),
       formProfileYearsEmployed: $('#am_profile_years_employed'),
+      formProfileStartDate: $('#am_profile_start_date'),
+      formProfileEmployeeNumber: $('#am_profile_employee_number'),
       formProfileCurrentPosition: $('#am_profile_current_position'),
       formProfilePreviousEmployee: $('#am_profile_previous_employee'),
       formProfileTrade: $('#am_profile_trade_specialty'),
+      formProfileStrengths: $('#am_profile_strengths'),
       formProfileCerts: $('#am_profile_certifications'),
+      formProfileDefaultSupervisorName: $('#am_profile_default_supervisor_name'),
+      formProfileOverrideSupervisorName: $('#am_profile_override_supervisor_name'),
+      formProfileDefaultAdminName: $('#am_profile_default_admin_name'),
+      formProfileOverrideAdminName: $('#am_profile_override_admin_name'),
       formProfilePrefs: $('#am_profile_feature_preferences'),
       formProfileNotes: $('#am_profile_notes'),
       profileSave: $('#am_profile_save'),
@@ -95,6 +102,13 @@
       formSiteCode: $('#am_site_code'),
       formSiteName: $('#am_site_name'),
       formSiteAddress: $('#am_site_address'),
+      formSiteRegion: $('#am_site_region'),
+      formSiteClientName: $('#am_site_client_name'),
+      formSiteProjectCode: $('#am_site_project_code'),
+      formSiteProjectStatus: $('#am_site_project_status'),
+      formSiteSupervisorName: $('#am_site_supervisor_name'),
+      formSiteSigningSupervisorName: $('#am_site_signing_supervisor_name'),
+      formSiteAdminName: $('#am_site_admin_name'),
       formSiteNotes: $('#am_site_notes'),
       formSiteActive: $('#am_site_active'),
       siteCreate: $('#am_site_create'),
@@ -105,6 +119,8 @@
       formAssignmentProfileId: $('#am_assignment_profile_id'),
       formAssignmentRole: $('#am_assignment_role'),
       formAssignmentPrimary: $('#am_assignment_primary'),
+      formAssignmentReportsToSupervisor: $('#am_assignment_reports_to_supervisor'),
+      formAssignmentReportsToAdmin: $('#am_assignment_reports_to_admin'),
       assignmentCreate: $('#am_assignment_create'),
       assignmentUpdate: $('#am_assignment_update'),
       assignmentDelete: $('#am_assignment_delete')
@@ -160,10 +176,17 @@
       els.formProfileVehicle,
       els.formProfileVehiclePlate,
       els.formProfileYearsEmployed,
+      els.formProfileStartDate,
+      els.formProfileEmployeeNumber,
       els.formProfileCurrentPosition,
       els.formProfilePreviousEmployee,
       els.formProfileTrade,
+      els.formProfileStrengths,
       els.formProfileCerts,
+      els.formProfileDefaultSupervisorName,
+      els.formProfileOverrideSupervisorName,
+      els.formProfileDefaultAdminName,
+      els.formProfileOverrideAdminName,
       els.formProfilePrefs,
       els.formProfileNotes,
       els.profileSave,
@@ -171,6 +194,13 @@
       els.formSiteCode,
       els.formSiteName,
       els.formSiteAddress,
+      els.formSiteRegion,
+      els.formSiteClientName,
+      els.formSiteProjectCode,
+      els.formSiteProjectStatus,
+      els.formSiteSupervisorName,
+      els.formSiteSigningSupervisorName,
+      els.formSiteAdminName,
       els.formSiteNotes,
       els.formSiteActive,
       els.siteCreate,
@@ -180,6 +210,8 @@
       els.formAssignmentProfileId,
       els.formAssignmentRole,
       els.formAssignmentPrimary,
+      els.formAssignmentReportsToSupervisor,
+      els.formAssignmentReportsToAdmin,
       els.assignmentCreate,
       els.assignmentUpdate,
       els.assignmentDelete
@@ -491,10 +523,17 @@
       if (els.formProfileVehicle) els.formProfileVehicle.value = item.vehicle_make_model || '';
       if (els.formProfileVehiclePlate) els.formProfileVehiclePlate.value = item.vehicle_plate || '';
       if (els.formProfileYearsEmployed) els.formProfileYearsEmployed.value = item.years_employed ?? '';
+      if (els.formProfileStartDate) els.formProfileStartDate.value = item.start_date || '';
+      if (els.formProfileEmployeeNumber) els.formProfileEmployeeNumber.value = item.employee_number || '';
       if (els.formProfileCurrentPosition) els.formProfileCurrentPosition.value = item.current_position || '';
       if (els.formProfilePreviousEmployee) els.formProfilePreviousEmployee.checked = !!item.previous_employee;
       if (els.formProfileTrade) els.formProfileTrade.value = item.trade_specialty || '';
+      if (els.formProfileStrengths) els.formProfileStrengths.value = item.strengths || '';
       if (els.formProfileCerts) els.formProfileCerts.value = item.certifications || '';
+      if (els.formProfileDefaultSupervisorName) els.formProfileDefaultSupervisorName.value = item.default_supervisor_name || '';
+      if (els.formProfileOverrideSupervisorName) els.formProfileOverrideSupervisorName.value = item.override_supervisor_name || '';
+      if (els.formProfileDefaultAdminName) els.formProfileDefaultAdminName.value = item.default_admin_name || '';
+      if (els.formProfileOverrideAdminName) els.formProfileOverrideAdminName.value = item.override_admin_name || '';
       if (els.formProfilePrefs) els.formProfilePrefs.value = item.feature_preferences || '';
       if (els.formProfileNotes) els.formProfileNotes.value = item.notes || '';
 
@@ -510,6 +549,13 @@
       if (els.formSiteCode) els.formSiteCode.value = item.site_code || '';
       if (els.formSiteName) els.formSiteName.value = item.site_name || '';
       if (els.formSiteAddress) els.formSiteAddress.value = item.address || '';
+      if (els.formSiteRegion) els.formSiteRegion.value = item.region || '';
+      if (els.formSiteClientName) els.formSiteClientName.value = item.client_name || '';
+      if (els.formSiteProjectCode) els.formSiteProjectCode.value = item.project_code || '';
+      if (els.formSiteProjectStatus) els.formSiteProjectStatus.value = item.project_status || '';
+      if (els.formSiteSupervisorName) els.formSiteSupervisorName.value = item.site_supervisor_name || '';
+      if (els.formSiteSigningSupervisorName) els.formSiteSigningSupervisorName.value = item.signing_supervisor_name || '';
+      if (els.formSiteAdminName) els.formSiteAdminName.value = item.admin_name || '';
       if (els.formSiteNotes) els.formSiteNotes.value = item.notes || '';
       if (els.formSiteActive) els.formSiteActive.checked = !!item.is_active;
 
@@ -526,6 +572,8 @@
       if (els.formAssignmentProfileId) els.formAssignmentProfileId.value = String(item.profile_id || '');
       if (els.formAssignmentRole) els.formAssignmentRole.value = item.assignment_role || 'worker';
       if (els.formAssignmentPrimary) els.formAssignmentPrimary.checked = !!item.is_primary;
+      if (els.formAssignmentReportsToSupervisor) els.formAssignmentReportsToSupervisor.value = item.reports_to_supervisor_name || '';
+      if (els.formAssignmentReportsToAdmin) els.formAssignmentReportsToAdmin.value = item.reports_to_admin_name || '';
 
       if (els.assignmentSiteSelector) els.assignmentSiteSelector.value = String(item.site_id || '');
       if (els.assignmentProfileSelector) els.assignmentProfileSelector.value = String(item.profile_id || '');

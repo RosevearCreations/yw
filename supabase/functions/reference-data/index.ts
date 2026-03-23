@@ -1,7 +1,6 @@
-
 // Detailed Edge Function: reference-data
 // Purpose:
-// - Return populated site, supervisor, employee, position, and trade lists for the frontend.
+// - Return populated site, supervisor, admin, employee, position, and trade lists for the frontend.
 // - Scope results based on the signed-in user's role and site assignments.
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
@@ -35,7 +34,7 @@ serve(async (req) => {
   if (!broad && mySiteIds.length) sitesQuery = sitesQuery.in('id', mySiteIds);
   const { data: sites } = await sitesQuery;
 
-  let peopleQuery = supabase.from('profiles').select('id,email,full_name,role,current_position,trade_specialty,is_active').eq('is_active', true).order('full_name');
+  let peopleQuery = supabase.from('v_people_directory').select('*').eq('is_active', true).order('full_name');
   if (!broad) {
     const { data: assignedProfiles } = await supabase.from('site_assignments').select('profile_id').in('site_id', mySiteIds.length ? mySiteIds : ['00000000-0000-0000-0000-000000000000']);
     const ids = [...new Set((assignedProfiles || []).map((x:any) => x.profile_id).concat([actorProfile.id]))];
@@ -43,12 +42,13 @@ serve(async (req) => {
   }
   const { data: people } = await peopleQuery;
 
-  const supervisors = (people || []).filter((p:any) => roleRank(p.role) >= roleRank('site_leader'))
-    .map((p:any) => ({ ...p, display_name: p.full_name || p.email }));
-  const employees = (people || []).map((p:any) => ({ ...p, display_name: p.full_name || p.email }));
+  const list = (people || []).map((p:any) => ({ ...p, display_name: p.full_name || p.email }));
+  const supervisors = list.filter((p:any) => roleRank(p.role) >= roleRank('site_leader') && roleRank(p.role) < roleRank('admin'));
+  const admins = list.filter((p:any) => p.role === 'admin');
+  const employees = list;
 
   const { data: positions } = await supabase.from('position_catalog').select('name,sort_order').eq('is_active', true).order('sort_order');
   const { data: trades } = await supabase.from('trade_catalog').select('name,sort_order').eq('is_active', true).order('sort_order');
 
-  return Response.json({ ok:true, sites: sites || [], supervisors, employees, positions: positions || [], trades: trades || [] }, { headers:corsHeaders });
+  return Response.json({ ok:true, sites: sites || [], supervisors, admins, employees, positions: positions || [], trades: trades || [] }, { headers:corsHeaders });
 });

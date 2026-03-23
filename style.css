@@ -124,6 +124,52 @@ main.container {
   letter-spacing: 0.02em;
 }
 
+
+.app-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.app-branding {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.app-header-subtitle {
+  color: var(--text-faint);
+  font-size: 0.88rem;
+}
+
+.header-session {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+
+.header-session-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.header-whoami {
+  font-weight: 700;
+}
+
+.header-session-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .app-header nav {
   display: flex;
   gap: 10px;
@@ -671,6 +717,21 @@ body[data-user-role="admin"] #admin[data-admin-locked="false"] {
 --------------------------------- */
 
 @media (max-width: 759px) {
+
+  .app-header-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header-session {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header-session-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
   .app-header {
     padding: 12px 14px;
   }

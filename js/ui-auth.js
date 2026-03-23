@@ -18,6 +18,11 @@
     loginView: document.getElementById('loginView'),
     authInfo: document.getElementById('authInfo'),
     whoami: document.getElementById('whoami'),
+    headerSession: document.getElementById('headerSession'),
+    headerWhoami: document.getElementById('headerWhoami'),
+    headerLoginBtn: document.getElementById('headerLoginBtn'),
+    headerSettingsBtn: document.getElementById('headerSettingsBtn'),
+    headerLogoutBtn: document.getElementById('headerLogoutBtn'),
     authNotice: document.getElementById('authNotice'),
     authLoading: document.getElementById('authLoading'),
 
@@ -97,11 +102,20 @@
   function showLoggedOut() {
     if (els.loginView) els.loginView.style.display = '';
     if (els.authInfo) els.authInfo.hidden = true;
+    if (els.headerSession) els.headerSession.hidden = false;
+    if (els.headerLoginBtn) els.headerLoginBtn.style.display = '';
+    if (els.headerSettingsBtn) els.headerSettingsBtn.style.display = 'none';
+    if (els.headerLogoutBtn) els.headerLogoutBtn.style.display = 'none';
+    if (els.headerWhoami) els.headerWhoami.textContent = 'Not signed in';
   }
 
   function showLoggedIn() {
     if (els.loginView) els.loginView.style.display = 'none';
-    if (els.authInfo) els.authInfo.hidden = false;
+    if (els.authInfo) els.authInfo.hidden = true;
+    if (els.headerSession) els.headerSession.hidden = false;
+    if (els.headerLoginBtn) els.headerLoginBtn.style.display = 'none';
+    if (els.headerSettingsBtn) els.headerSettingsBtn.style.display = '';
+    if (els.headerLogoutBtn) els.headerLogoutBtn.style.display = '';
   }
 
   function renderWhoAmI(state) {
@@ -109,7 +123,12 @@
 
     const email = state?.profile?.email || state?.user?.email || '';
     const roleLabel = state?.roleLabel || state?.role || 'Worker';
-    els.whoami.textContent = email ? `${email} (${roleLabel})` : roleLabel;
+    const label = email ? `${email} (${roleLabel})` : roleLabel;
+    els.whoami.textContent = label;
+    if (els.headerWhoami) {
+      const fullName = state?.profile?.full_name || state?.user?.user_metadata?.full_name || '';
+      els.headerWhoami.textContent = fullName ? `${fullName} • ${roleLabel}` : label;
+    }
   }
 
   function shouldHoldOnLoading(state) {
@@ -246,6 +265,21 @@
     els.passwordForm?.addEventListener('submit', onPasswordSubmit);
     els.passwordForgotBtn?.addEventListener('click', onForgotPassword);
     els.logoutBtn?.addEventListener('click', onLogout);
+    els.headerLogoutBtn?.addEventListener('click', onLogout);
+    els.headerLoginBtn?.addEventListener('click', () => {
+      window.location.hash = '#settings';
+      const preferred = uiState.activeTab || 'password';
+      setTab(preferred);
+      if (els.loginView) els.loginView.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (preferred === 'password') {
+        els.passwordEmail?.focus();
+      } else {
+        els.magicEmail?.focus();
+      }
+    });
+    els.headerSettingsBtn?.addEventListener('click', () => {
+      window.location.hash = '#settings';
+    });
 
     document.addEventListener('ywi:boot-ready', (e) => {
       uiState.bootReady = true;

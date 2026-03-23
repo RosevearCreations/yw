@@ -55,6 +55,10 @@
     return roleRank(role) >= roleRank('supervisor');
   }
 
+  function canManageJobs(role) {
+    return roleRank(role) >= roleRank('supervisor');
+  }
+
   function canManageAdminDirectory(role) {
     return roleRank(role) >= roleRank('admin');
   }
@@ -132,6 +136,7 @@
     canViewCrew,
     canViewAdminDirectory,
     canManageAdminDirectory,
+    canManageJobs,
     canViewPerson,
     getRoleLabel,
     getAccessProfile,

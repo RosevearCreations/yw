@@ -1,78 +1,52 @@
 # Project Brain
 
-## What the app is
+## What YWI HSE is
+A construction safety and operations app built on Supabase with a modular frontend.
 
-YWI HSE is a modular safety and workforce app for a construction-style company.
+## Main user areas
+- safety forms
+- my profile
+- crew view
+- settings/session
+- admin directory
+- jobs
+- equipment
+- logbook/review
 
-## Main current goals
+## Role model
+- worker
+- staff
+- onsite_admin
+- site_leader
+- supervisor
+- hse
+- job_admin
+- admin
 
-- secure sign-in/sign-out experience
-- password creation after first magic-link login
-- employee/supervisor/admin workforce records
-- cleaner role tiers and visibility
-- smaller reusable modules instead of a large `app.js`
+## Current hierarchy model
+Profiles now need to support:
+- employee number
+- start date
+- strengths
+- default supervisor
+- override supervisor
+- default admin
+- override admin
 
-## Current module map
+Sites also support:
+- site supervisor
+- signing supervisor
+- admin lead
+- region
+- client
+- project metadata
 
-- `bootstrap.js`, `auth.js`, `ui-auth.js`, `account-ui.js`
-- `security.js`, `router.js`
-- `api.js`, `outbox.js`
-- `admin-ui.js`, `admin-actions.js`
-- `logbook-ui.js`
-- form modules per form
-- `app.js`
+## Next major domain
+Jobs and equipment:
+- create job records
+- attach site leadership
+- reserve required equipment
+- track equipment sign-out to jobs
 
-## Workforce visibility direction
-
-- employee sees their own working screens
-- supervisor can inspect employee information and employee-facing operational records where permitted
-- admin can see supervisors, employees, and admins
-- final truth for security must remain backend-enforced
-
-## Important warning
-
-Do not treat frontend hiding as real security. Edge Functions and SQL/RLS must validate the same tier rules.
-
----
-
-## Latest Security and Backend Pass
-
-This documentation has been updated to reflect the latest project pass.
-
-New frontend/security work included:
-- added `js/profile-ui.js`
-- added employee self-profile screen (`#me`)
-- added supervisor/admin crew view (`#crew`)
-- added settings/session screen (`#settings`)
-- improved session visibility, logout, and clear-session flow
-- kept in-app password creation/change and logout-everywhere support
-- expanded routing/security rules for worker, supervisor, HSE, job admin, and admin users
-- continued splitting shared logic into dedicated modules
-
-New backend/database work included:
-- added `sql/038_profile_visibility_rls.sql`
-- added `sql/039_directory_scope_helpers.sql`
-- added detailed Edge Function examples for:
-  - `supabase/functions/admin-manage/index.ts`
-  - `supabase/functions/admin-directory/index.ts`
-  - `supabase/functions/admin-selectors/index.ts`
-
-Current people visibility direction:
-- employees/workers see only their own profile and screens
-- supervisors can view employee records and crew screens
-- HSE and Job Admin can view broader non-admin crew data
-- admins can view and manage employees, supervisors, and admins
-
-Important note:
-Frontend guards improve the UX, but real security must still be enforced by SQL, RLS, and Edge Functions.
-
-
-## Latest pass additions
-- `js/reference-data.js` — populated reference lists for sites, supervisors, employees, positions, and trades
-- `reference-data` Edge Function — scoped site/people/catalog reference data for form population
-- `notify-admins` Edge Function — queues admin notifications when supervisor-level sign-off requires admin review
-- `sql/040_reference_data_and_catalogs.sql` — catalog/reference tables and richer site metadata
-- `sql/041_submission_notifications_and_signoff.sql` — sign-off fields and admin notification queue
-- `sql/042_test_users_and_sites_seed.sql` — test profile/site seed data for login and assignment testing
-
-Password login now exists as a first-class sign-in path so existing accounts can bypass magic link and sign in directly with email and password.
+## Files to keep aligned
+All main markdown files plus SQL and Edge Function folders.

@@ -2,6 +2,7 @@
 // Purpose:
 // - Admin CRUD for profiles/sites/assignments
 // - Self profile updates for employee contact/preferences fields
+// - Resolve supervisor/admin name fields to profile ids for hierarchy management
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -11,42 +12,35 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function resolveProfileIdByNameOrEmail(supabase: any, value?: string | null) {
+  const clean = String(value || '').trim();
+  if (!clean) return null;
+  let { data } = await supabase.from('profiles').select('id').ilike('email', clean).limit(1).maybeSingle();
+  if (data?.id) return data.id;
+  ({ data } = await supabase.from('profiles').select('id').ilike('full_name', clean).limit(1).maybeSingle());
+  return data?.id || null;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  );
-
-  const authHeader = req.headers.get('Authorization') ?? '';
-  const token = authHeader.replace('Bearer ', '');
+  const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+  const token = (req.headers.get('Authorization') ?? '').replace('Bearer ', '');
   const { data: userData, error: userError } = await supabase.auth.getUser(token);
-  if (userError || !userData.user) {
-    return Response.json({ ok: false, error: 'Unauthorized' }, { status: 401, headers: corsHeaders });
-  }
+  if (userError || !userData.user) return Response.json({ ok: false, error: 'Unauthorized' }, { status: 401, headers: corsHeaders });
 
   const actorId = userData.user.id;
   const { data: actorProfile } = await supabase.from('profiles').select('*').eq('id', actorId).single();
-  if (!actorProfile?.is_active) {
-    return Response.json({ ok: false, error: 'Inactive profile' }, { status: 403, headers: corsHeaders });
-  }
+  if (!actorProfile?.is_active) return Response.json({ ok: false, error: 'Inactive profile' }, { status: 403, headers: corsHeaders });
 
   const body = await req.json();
   const entity = body.entity;
   const action = body.action;
-
   const isAdmin = actorProfile.role === 'admin';
-  const selfUpdateAllowedFields = [
-    'full_name','phone','address_line1','address_line2','city','province','postal_code',
-    'vehicle_make_model','vehicle_plate','current_position','trade_specialty',
-    'feature_preferences','emergency_contact_name','emergency_contact_phone'
-  ];
 
   try {
     if (entity === 'profile' && action === 'self_update') {
       const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
-      for (const field of selfUpdateAllowedFields) {
+      for (const field of ['full_name','phone','address_line1','address_line2','city','province','postal_code','vehicle_make_model','vehicle_plate','current_position','trade_specialty','feature_preferences','emergency_contact_name','emergency_contact_phone','start_date','strengths','employee_number']) {
         if (field in body) patch[field] = body[field] ?? null;
       }
       const { data, error } = await supabase.from('profiles').update(patch).eq('id', actorId).select('*').single();
@@ -54,12 +48,9 @@ serve(async (req) => {
       return Response.json({ ok: true, record: data }, { headers: corsHeaders });
     }
 
-    if (!isAdmin) {
-      return Response.json({ ok: false, error: 'Admin role required' }, { status: 403, headers: corsHeaders });
-    }
+    if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, { status: 403, headers: corsHeaders });
 
     if (entity === 'profile' && action === 'update') {
-      const profileId = body.profile_id;
       const patch = {
         full_name: body.full_name ?? null,
         role: body.role ?? undefined,
@@ -76,15 +67,22 @@ serve(async (req) => {
         vehicle_make_model: body.vehicle_make_model ?? null,
         vehicle_plate: body.vehicle_plate ?? null,
         years_employed: body.years_employed ?? null,
+        start_date: body.start_date ?? null,
+        employee_number: body.employee_number ?? null,
         current_position: body.current_position ?? null,
         previous_employee: !!body.previous_employee,
         trade_specialty: body.trade_specialty ?? null,
+        strengths: body.strengths ?? null,
         certifications: body.certifications ?? null,
         feature_preferences: body.feature_preferences ?? null,
         notes: body.notes ?? null,
+        default_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.default_supervisor_name),
+        override_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.override_supervisor_name),
+        default_admin_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.default_admin_name),
+        override_admin_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.override_admin_name),
         updated_at: new Date().toISOString(),
       };
-      const { data, error } = await supabase.from('profiles').update(patch).eq('id', profileId).select('*').single();
+      const { data, error } = await supabase.from('profiles').update(patch).eq('id', body.profile_id).select('*').single();
       if (error) throw error;
       return Response.json({ ok: true, record: data }, { headers: corsHeaders });
     }
@@ -94,6 +92,13 @@ serve(async (req) => {
         site_code: body.site_code,
         site_name: body.site_name,
         address: body.address ?? null,
+        region: body.region ?? null,
+        client_name: body.client_name ?? null,
+        project_code: body.project_code ?? null,
+        project_status: body.project_status ?? null,
+        site_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.site_supervisor_name),
+        signing_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.signing_supervisor_name),
+        admin_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.admin_name),
         notes: body.notes ?? null,
         is_active: body.is_active ?? true,
       }).select('*').single();
@@ -106,6 +111,13 @@ serve(async (req) => {
         site_code: body.site_code,
         site_name: body.site_name,
         address: body.address ?? null,
+        region: body.region ?? null,
+        client_name: body.client_name ?? null,
+        project_code: body.project_code ?? null,
+        project_status: body.project_status ?? null,
+        site_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.site_supervisor_name),
+        signing_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.signing_supervisor_name),
+        admin_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.admin_name),
         notes: body.notes ?? null,
         is_active: body.is_active ?? true,
         updated_at: new Date().toISOString(),
@@ -120,6 +132,8 @@ serve(async (req) => {
         profile_id: body.profile_id,
         assignment_role: body.assignment_role ?? 'worker',
         is_primary: !!body.is_primary,
+        reports_to_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.reports_to_supervisor_name),
+        reports_to_admin_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.reports_to_admin_name),
       }).select('*').single();
       if (error) throw error;
       return Response.json({ ok: true, record: data }, { headers: corsHeaders });
@@ -129,6 +143,8 @@ serve(async (req) => {
       const { data, error } = await supabase.from('site_assignments').update({
         assignment_role: body.assignment_role ?? 'worker',
         is_primary: !!body.is_primary,
+        reports_to_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.reports_to_supervisor_name),
+        reports_to_admin_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.reports_to_admin_name),
         updated_at: new Date().toISOString(),
       }).eq('id', body.assignment_id).select('*').single();
       if (error) throw error;
