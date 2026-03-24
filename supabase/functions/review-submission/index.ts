@@ -56,18 +56,18 @@ serve(async (req) => {
   if (roleRank(actorProfile.role) >= roleRank('supervisor') && (status === 'follow_up_required' || status === 'under_review')) {
     const { data: admins } = await supabase.from('profiles').select('id').eq('is_active', true).eq('role', 'admin');
     const noteRows = (admins || []).map((admin:any) => ({
-      event_type: 'submission_reviewed',
+      notification_type: 'submission_reviewed',
       submission_id: submission.id,
       site_id: submission.site_id,
-      actor_profile_id: actorProfile.id,
+      created_by_profile_id: actorProfile.id,
       actor_name: actorProfile.full_name || actorProfile.email,
       actor_role: actorProfile.role,
-      recipient_profile_id: admin.id,
+      target_profile_id: admin.id,
       title: 'Submission review update',
-      message: `${actorProfile.full_name || actorProfile.email} marked submission ${submission.id} as ${status}.`,
+      body: `${actorProfile.full_name || actorProfile.email} marked submission ${submission.id} as ${status}.`,
       payload: { action, status }
     }));
-    if (noteRows.length) await supabase.from('admin_notifications').insert(noteRows);
+    if (noteRows.length) await supabase.from('admin_notifications').insert(noteRows.map((row:any) => ({...row, recipient_role: 'admin', status: 'queued', email_subject: row.title || row.subject || 'Notification', message: row.body || row.message || '' })));
   }
 
   return Response.json({ ok:true, record: submission }, { headers:corsHeaders });

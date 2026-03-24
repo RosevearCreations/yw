@@ -1,6 +1,6 @@
 // Detailed Edge Function: jobs-directory
 // Purpose:
-// - Return jobs, requirements, equipment, and active signouts
+// - Return jobs, requirements, equipment, active signouts, notifications, and pool availability
 // - Supervisor+ can use this to plan reservations and track equipment movements
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
@@ -28,5 +28,7 @@ serve(async (req) => {
   const { data: equipment } = await supabase.from('v_equipment_directory').select('*').order('equipment_code');
   const { data: requirements } = await supabase.from('job_equipment_requirements').select('*').order('job_id');
   const { data: signouts } = await supabase.from('equipment_signouts').select('*').order('checked_out_at', { ascending:false });
-  return Response.json({ ok:true, jobs: jobs || [], equipment: equipment || [], requirements: requirements || [], signouts: signouts || [] }, { headers: corsHeaders });
+  const { data: pools } = await supabase.from('v_equipment_pool_availability').select('*').order('equipment_pool_key');
+  const { data: notifications } = await supabase.from('v_admin_notifications').select('*').in('notification_type', ['equipment_reservation_conflict','job_approval_requested','equipment_checkout','equipment_return']).order('created_at', { ascending:false }).limit(100);
+  return Response.json({ ok:true, jobs: jobs || [], equipment: equipment || [], requirements: requirements || [], signouts: signouts || [], pools: pools || [], notifications: notifications || [] }, { headers: corsHeaders });
 });

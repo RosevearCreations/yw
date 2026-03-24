@@ -1,7 +1,8 @@
 // Edge Function: account-maintenance
 // Purpose:
 // - Account validation workflows for authenticated users
-// - Currently supports phone verification requests routed to admins
+// - Supports admin-reviewed phone verification requests
+// - Supports optional Twilio Verify SMS flow when provider env vars are configured
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -10,6 +11,22 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+function hasTwilioVerify() {
+  return !!(Deno.env.get('TWILIO_ACCOUNT_SID') && Deno.env.get('TWILIO_AUTH_TOKEN') && Deno.env.get('TWILIO_VERIFY_SERVICE_SID'));
+}
+async function twilioVerify(path: string, payload: URLSearchParams) {
+  const sid = Deno.env.get('TWILIO_ACCOUNT_SID')!;
+  const token = Deno.env.get('TWILIO_AUTH_TOKEN')!;
+  const res = await fetch(`https://verify.twilio.com/v2/Services/${Deno.env.get('TWILIO_VERIFY_SERVICE_SID')}/${path}`, {
+    method: 'POST',
+    headers: { Authorization: `Basic ${btoa(`${sid}:${token}`)}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: payload.toString()
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(text);
+  try { return JSON.parse(text); } catch { return { ok:true, raw:text }; }
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -32,13 +49,38 @@ serve(async (req) => {
       target_table: 'profiles',
       target_id: actorId,
       recipient_role: 'admin',
+      title: `Phone verification requested for ${actorProfile.full_name || actorProfile.email}`,
       subject: `Phone verification requested for ${actorProfile.full_name || actorProfile.email}`,
       body: JSON.stringify({ profile_id: actorId, email: actorProfile.email, phone }),
+      payload: { profile_id: actorId, email: actorProfile.email, phone },
       status: 'queued',
       created_by_profile_id: actorId,
     }).select('*').single();
     if (error) return Response.json({ ok:false, error:String(error.message || error) }, { status:500, headers:corsHeaders });
-    return Response.json({ ok:true, record: data }, { headers:corsHeaders });
+    await supabase.from('profiles').update({ phone, phone_validation_requested_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', actorId);
+    return Response.json({ ok:true, record: data, mode: hasTwilioVerify() ? 'admin_or_sms' : 'admin_review' }, { headers:corsHeaders });
+  }
+
+  if (body.action === 'send_phone_verification_code') {
+    if (!hasTwilioVerify()) return Response.json({ ok:false, error:'SMS provider not configured. Use admin-reviewed verification instead.' }, { status:400, headers:corsHeaders });
+    const phone = String(body.phone || actorProfile.phone || '').trim();
+    if (!phone) return Response.json({ ok:false, error:'Phone number required' }, { status:400, headers:corsHeaders });
+    const verify = await twilioVerify('Verifications', new URLSearchParams({ To: phone, Channel: 'sms' }));
+    await supabase.from('profiles').update({ phone, phone_verification_provider: 'twilio_verify', phone_verification_sid: verify.sid || null, phone_validation_requested_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', actorId);
+    return Response.json({ ok:true, status: verify.status || 'pending', provider: 'twilio_verify' }, { headers:corsHeaders });
+  }
+
+  if (body.action === 'verify_phone_code') {
+    if (!hasTwilioVerify()) return Response.json({ ok:false, error:'SMS provider not configured.' }, { status:400, headers:corsHeaders });
+    const phone = String(body.phone || actorProfile.phone || '').trim();
+    const code = String(body.code || '').trim();
+    if (!phone || !code) return Response.json({ ok:false, error:'Phone number and code are required' }, { status:400, headers:corsHeaders });
+    const check = await twilioVerify('VerificationCheck', new URLSearchParams({ To: phone, Code: code }));
+    if (String(check.status || '').toLowerCase() !== 'approved') return Response.json({ ok:false, error:'Verification code was not approved' }, { status:400, headers:corsHeaders });
+    const now = new Date().toISOString();
+    const { data, error } = await supabase.from('profiles').update({ phone, phone_verified: true, phone_verified_at: now, phone_verification_provider: 'twilio_verify', phone_validation_requested_at: null, updated_at: now }).eq('id', actorId).select('*').single();
+    if (error) return Response.json({ ok:false, error:error.message }, { status:500, headers:corsHeaders });
+    return Response.json({ ok:true, record:data, provider:'twilio_verify' }, { headers:corsHeaders });
   }
 
   return Response.json({ ok:false, error:'Unsupported action' }, { status:400, headers:corsHeaders });

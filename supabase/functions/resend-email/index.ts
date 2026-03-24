@@ -73,18 +73,18 @@ serve(async (req) => {
   if (requiresAdminReview) {
     const { data: admins } = await supabase.from('profiles').select('id').eq('is_active', true).eq('role', 'admin');
     const noteRows = (admins || []).map((admin:any) => ({
-      event_type: 'submission_signed_off',
+      notification_type: 'submission_signed_off',
       submission_id: submission.id,
       site_id: siteId,
-      actor_profile_id: actorProfile.id,
+      created_by_profile_id: actorProfile.id,
       actor_name: actorProfile.full_name || actorProfile.email,
       actor_role: actorProfile.role,
-      recipient_profile_id: admin.id,
+      target_profile_id: admin.id,
       title: 'Supervisor sign-off submitted',
-      message: `${actorProfile.full_name || actorProfile.email} submitted ${formType} for admin review.`,
+      body: `${actorProfile.full_name || actorProfile.email} submitted ${formType} for admin review.`,
       payload: { formType, site: siteText }
     }));
-    if (noteRows.length) await supabase.from('admin_notifications').insert(noteRows);
+    if (noteRows.length) await supabase.from('admin_notifications').insert(noteRows.map((row:any) => ({...row, recipient_role: 'admin', status: 'queued', email_subject: row.title || row.subject || 'Notification', message: row.body || row.message || '' })));
   }
 
   return Response.json({ ok:true, id: submission.id, record: submission }, { headers:corsHeaders });

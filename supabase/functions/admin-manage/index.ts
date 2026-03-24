@@ -3,6 +3,7 @@
 // - Admin CRUD for profiles/sites/assignments
 // - Self profile updates for employee contact/preferences fields
 // - Resolve supervisor/admin name fields to profile ids for hierarchy management
+// - Admin approval / dismissal actions for notifications
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -49,6 +50,54 @@ serve(async (req) => {
     }
 
     if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, { status: 403, headers: corsHeaders });
+
+    if (entity === 'notification') {
+      const notificationId = body.notification_id;
+      if (!notificationId) return Response.json({ ok:false, error:'notification_id is required' }, { status:400, headers:corsHeaders });
+      const { data: notification, error: loadErr } = await supabase.from('admin_notifications').select('*').eq('id', notificationId).single();
+      if (loadErr || !notification) return Response.json({ ok:false, error:'Notification not found' }, { status:404, headers:corsHeaders });
+      const now = new Date().toISOString();
+      const patch: Record<string, unknown> = { read_at: notification.read_at || now };
+      if (action === 'mark_read') patch.status = 'read';
+      if (action === 'dismiss') {
+        patch.status = 'dismissed';
+        patch.decision_status = 'dismissed';
+        patch.decided_at = now;
+        patch.decided_by_profile_id = actorId;
+      }
+      if (action === 'resolve') {
+        patch.status = 'resolved';
+        patch.decision_status = 'resolved';
+        patch.decided_at = now;
+        patch.decided_by_profile_id = actorId;
+      }
+      if (action === 'approve') {
+        patch.status = 'approved';
+        patch.decision_status = 'approved';
+        patch.decision_notes = body.decision_notes ?? null;
+        patch.decided_at = now;
+        patch.decided_by_profile_id = actorId;
+      }
+      if (action === 'reject') {
+        patch.status = 'rejected';
+        patch.decision_status = 'rejected';
+        patch.decision_notes = body.decision_notes ?? null;
+        patch.decided_at = now;
+        patch.decided_by_profile_id = actorId;
+      }
+      const { data: updated, error: notifErr } = await supabase.from('admin_notifications').update(patch).eq('id', notificationId).select('*').single();
+      if (notifErr) throw notifErr;
+
+      if (action === 'approve' && notification.notification_type === 'phone_verification_request' && notification.target_id) {
+        let phone = '';
+        try { phone = JSON.parse(notification.body || '{}')?.phone || ''; } catch {}
+        await supabase.from('profiles').update({ phone: phone || undefined, phone_verified: true, phone_verified_at: now, phone_validation_requested_at: null, updated_at: now }).eq('id', notification.target_id);
+      }
+      if ((action === 'approve' || action === 'reject') && notification.target_table === 'jobs' && notification.target_id) {
+        await supabase.from('jobs').update({ approval_status: action === 'approve' ? 'approved' : 'rejected', approved_at: now, approved_by_profile_id: actorId, approval_notes: body.decision_notes ?? null, updated_at: now }).eq('id', Number(notification.target_id));
+      }
+      return Response.json({ ok:true, record: updated }, { headers:corsHeaders });
+    }
 
     if (entity === 'profile' && action === 'update') {
       const patch = {

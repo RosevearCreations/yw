@@ -155,6 +155,11 @@ create table if not exists public.jobs (
   admin_profile_id uuid references public.profiles(id),
   notes text,
   created_by_profile_id uuid references public.profiles(id),
+  approval_status text not null default 'not_requested',
+  approval_requested_at timestamptz,
+  approved_at timestamptz,
+  approved_by_profile_id uuid references public.profiles(id),
+  approval_notes text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -168,6 +173,7 @@ create table if not exists public.equipment_items (
   status text not null default 'available',
   current_job_id bigint references public.jobs(id) on delete set null,
   assigned_supervisor_profile_id uuid references public.profiles(id) on delete set null,
+  equipment_pool_key text,
   serial_number text,
   notes text,
   created_at timestamptz not null default now(),
@@ -180,9 +186,14 @@ create table if not exists public.job_equipment_requirements (
   equipment_item_id bigint references public.equipment_items(id) on delete set null,
   equipment_code text,
   equipment_name text not null,
+  equipment_pool_key text,
   needed_qty integer not null default 1,
   reserved_qty integer not null default 0,
   reservation_status text not null default 'needed',
+  approval_status text not null default 'not_required',
+  approval_notes text,
+  approved_at timestamptz,
+  approved_by_profile_id uuid references public.profiles(id),
   notes text,
   created_at timestamptz not null default now()
 );
@@ -202,13 +213,26 @@ create table if not exists public.admin_notifications (
   id bigserial primary key,
   notification_type text not null,
   recipient_role text not null default 'admin',
+  target_profile_id uuid references public.profiles(id),
   target_table text,
   target_id text,
+  title text,
   subject text,
   body text,
+  message text,
+  payload jsonb not null default '{}'::jsonb,
   status text not null default 'queued',
+  decision_status text not null default 'pending',
+  decision_notes text,
+  decided_by_profile_id uuid references public.profiles(id),
+  decided_at timestamptz,
+  email_to text,
+  email_subject text,
+  email_status text not null default 'pending',
+  email_error text,
   created_by_profile_id uuid references public.profiles(id),
   created_at timestamptz not null default now(),
+  read_at timestamptz,
   sent_at timestamptz
 );
 
@@ -263,3 +287,41 @@ from public.equipment_items e
 left join public.sites s on s.id = e.home_site_id
 left join public.jobs j on j.id = e.current_job_id
 left join public.profiles sup on sup.id = e.assigned_supervisor_profile_id;
+
+create or replace view public.v_equipment_pool_availability as
+select
+  e.equipment_pool_key,
+  min(e.category) as category,
+  count(*)::int as total_qty,
+  count(*) filter (where e.status = 'available')::int as available_qty,
+  count(*) filter (where e.status = 'reserved')::int as reserved_qty,
+  count(*) filter (where e.status = 'checked_out')::int as checked_out_qty,
+  array_agg(e.equipment_code order by e.equipment_code) as equipment_codes
+from public.equipment_items e
+where e.equipment_pool_key is not null
+group by e.equipment_pool_key;
+
+create or replace view public.v_admin_notifications as
+select
+  n.id,
+  n.notification_type,
+  coalesce(n.title, n.subject, 'Notification') as title,
+  coalesce(n.body, n.message, '') as message,
+  n.recipient_role,
+  n.target_profile_id,
+  n.target_table,
+  n.target_id,
+  n.payload,
+  n.status,
+  n.decision_status,
+  n.decision_notes,
+  n.created_at,
+  n.read_at,
+  n.decided_at,
+  n.sent_at,
+  n.email_to,
+  n.email_subject,
+  n.email_status,
+  n.email_error,
+  n.created_by_profile_id
+from public.admin_notifications n;

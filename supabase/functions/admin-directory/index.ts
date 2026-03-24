@@ -2,7 +2,7 @@
 // Purpose:
 // - self scope: current employee profile only
 // - crew scope: direct reports based on profile hierarchy and assignment reporting lines
-// - all/users/sites/assignments scopes for admin/senior directory
+// - all/users/sites/assignments/notifications scopes for admin/senior directory
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -53,7 +53,6 @@ serve(async (req) => {
   }
 
   const filteredPeople = people.filter((row: any) => {
-    const targetRank = roleRank(row.role || 'worker');
     if (scope === 'self') return row.id === actorId;
     if (scope === 'crew') {
       if (actorProfile.role === 'admin') return true;
@@ -69,13 +68,22 @@ serve(async (req) => {
       .some((v) => String(v || '').toLowerCase().includes(search));
   });
 
-  const response: Record<string, unknown> = { ok:true, profiles: filteredPeople };
+  const response: Record<string, unknown> = { ok:true, profiles: filteredPeople, users: filteredPeople };
   if ((scope === 'all' || scope === 'sites') && roleRank(actorProfile.role) >= roleRank('supervisor')) {
     const { data: sites } = await supabase.from('sites').select('*').order('site_code');
     response.sites = sites || [];
   }
   if ((scope === 'all' || scope === 'assignments') && roleRank(actorProfile.role) >= roleRank('supervisor')) {
     response.assignments = assignments;
+  }
+  if ((scope === 'all' || scope === 'notifications') && roleRank(actorProfile.role) >= roleRank('supervisor')) {
+    let q = supabase.from('v_admin_notifications').select('*').order('created_at', { ascending:false }).limit(Math.max(1, Math.min(500, Number(body.limit || 200))));
+    if (actorProfile.role !== 'admin') q = q.or(`recipient_role.eq.admin,target_profile_id.eq.${actorId}`);
+    const { data: notifications } = await q;
+    response.notifications = (notifications || []).filter((row: any) => {
+      if (!search) return true;
+      return [row.notification_type, row.title, row.message, row.status, row.decision_status, row.created_by_name].some((v) => String(v || '').toLowerCase().includes(search));
+    });
   }
   if (scope === 'self') response.profile = filteredPeople[0] || null;
   return Response.json(response, { headers: corsHeaders });
