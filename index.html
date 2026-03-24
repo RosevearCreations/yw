@@ -1,6 +1,6 @@
 <!-- File: index.html
-     Brief description: Main single-page app shell with corrected script load order.
-     This version loads bootstrap before auth so the Supabase client exists before auth.js initializes.
+     Brief description: Main single-page app shell with old inline router removed,
+     shared router/auth flow preserved, top-right session controls visible, and manifest icon paths corrected.
 -->
 
 <!DOCTYPE html>
@@ -63,6 +63,33 @@
       font-size: 0.95rem;
     }
 
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .header-session {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-left: auto;
+    }
+
+    .header-session-name {
+      color: #e5edf9;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .header-session.hidden {
+      display: none;
+    }
+
     @keyframes auth-spin {
       to {
         transform: rotate(360deg);
@@ -72,46 +99,43 @@
 
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/server-worker.js').catch(console.error);
+      window.addEventListener('load', async () => {
+        try {
+          await navigator.serviceWorker.register('/server-worker.js');
+        } catch (err) {
+          console.error('Service worker register failed:', err);
+        }
       });
     }
   </script>
 </head>
 <body>
   <header class="app-header">
-  <div class="app-header-top">
-    <div class="app-branding">
+    <div class="header-top">
       <h1>YWI HSE</h1>
-      <div class="app-header-subtitle">Safety, people, jobs, and equipment</div>
-    </div>
-    <div id="headerSession" class="header-session" hidden>
-      <div class="header-session-text">
-        <div class="mini-label">Logged in</div>
-        <div id="headerWhoami" class="header-whoami">Not signed in</div>
-      </div>
-      <div class="header-session-actions">
-        <button id="headerLoginBtn" class="secondary" type="button">Login</button>
-        <button id="headerSettingsBtn" class="secondary" type="button">Settings</button>
+
+      <div id="headerSession" class="header-session hidden">
+        <span id="headerSessionName" class="header-session-name"></span>
+        <a href="#settings" class="secondary" id="headerSettingsLink">Settings</a>
         <button id="headerLogoutBtn" class="secondary" type="button">Logout</button>
       </div>
     </div>
-  </div>
-  <nav>
-    <a href="#toolbox" class="active">Toolbox Talk</a>
-    <a href="#ppe">PPE Check</a>
-    <a href="#firstaid">First Aid Kit</a>
-    <a href="#inspect">Site Inspection</a>
-    <a href="#drill">Emergency Drill</a>
-    <a href="#me">My Profile</a>
-    <a href="#crew">Crew View</a>
-    <a href="#jobs">Jobs</a>
-    <a href="#equipment">Equipment</a>
-    <a href="#log">Logbook</a>
-    <a href="#settings">Settings</a>
-    <a href="#admin">Admin</a>
-  </nav>
-</header>
+
+    <nav>
+      <a href="#toolbox" class="active">Toolbox Talk</a>
+      <a href="#ppe">PPE Check</a>
+      <a href="#firstaid">First Aid Kit</a>
+      <a href="#inspect">Site Inspection</a>
+      <a href="#drill">Emergency Drill</a>
+      <a href="#log">Logbook</a>
+      <a href="#me">My Profile</a>
+      <a href="#crew">Crew</a>
+      <a href="#jobs">Jobs</a>
+      <a href="#equipment">Equipment</a>
+      <a href="#settings">Settings</a>
+      <a href="#admin">Admin</a>
+    </nav>
+  </header>
 
   <section id="authLoading" class="container is-visible" aria-live="polite" aria-busy="true">
     <div class="auth-loading-card">
@@ -132,7 +156,7 @@
       <div>
         <h2>Sign in to YWI HSE</h2>
         <p class="section-subtitle">
-          Use a magic link or password login. Password access prepares the app for staff, admin, job admin, and site-based security.
+          Existing users should use email and password. Magic link is available as a backup option.
         </p>
       </div>
     </div>
@@ -140,17 +164,17 @@
     <div class="auth-tabs" role="tablist" aria-label="Authentication methods">
       <button
         type="button"
-        class="secondary active"
+        class="secondary"
         data-auth-tab="magic"
-        aria-selected="true"
+        aria-selected="false"
       >
         Magic Link
       </button>
       <button
         type="button"
-        class="secondary"
+        class="secondary active"
         data-auth-tab="password"
-        aria-selected="false"
+        aria-selected="true"
       >
         Email + Password
       </button>
@@ -159,7 +183,7 @@
     <div id="authNotice" class="notice" style="display:none;margin-top:14px;"></div>
 
     <div class="auth-panels">
-      <section data-auth-panel="magic">
+      <section data-auth-panel="magic" hidden style="display:none;">
         <form id="magicLoginForm" autocomplete="on">
           <div class="grid">
             <label>Email Address
@@ -178,12 +202,12 @@
           </div>
 
           <div class="notice" style="margin-top:12px;">
-            For first access or password-free entry. If you already have an account and password, use the Email + Password tab to sign in directly.
+            Use this if you do not remember your password or prefer a sign-in link by email.
           </div>
         </form>
       </section>
 
-      <section data-auth-panel="password" hidden style="display:none;">
+      <section data-auth-panel="password">
         <form id="passwordLoginForm" autocomplete="on">
           <div class="grid">
             <label>Email Address
@@ -209,11 +233,11 @@
 
           <div class="form-footer">
             <button id="passwordLoginBtn" class="primary" type="submit">Sign In</button>
-            <button id="passwordForgotBtn" class="secondary" type="button">Reset Password</button>
+            <button id="passwordForgotBtn" class="secondary" type="button">Forgot Password</button>
           </div>
 
           <div class="notice" style="margin-top:12px;">
-            Use this when your account already has a password. This bypasses magic link and gives a normal sign-in screen for employees, supervisors, and admins.
+            If your account already exists, you do not need to wait for a magic link.
           </div>
         </form>
       </section>
@@ -221,1586 +245,94 @@
   </section>
 
   <section id="authInfo" class="card" hidden>
-  <div class="section-heading">
-    <div>
-      <div class="auth-info">Signed in as <b id="whoami"></b></div>
-      <p class="section-subtitle">Session controls are now available in the top right header.</p>
-    </div>
-  </div>
-</section>
-
-  <section id="accountPanel" class="card-lite account-panel" hidden>
     <div class="section-heading">
       <div>
-        <h3>Account Security</h3>
-        <p class="section-subtitle">Create your first password after magic-link sign-in, change it later, and sign out all sessions if needed.</p>
+        <div class="auth-info">Signed in as <b id="whoami"></b></div>
+        <p class="section-subtitle">Your role controls which screens and records you can access.</p>
       </div>
-      <div class="security-badge" id="account_role_badge">Account Protection</div>
-    </div>
-
-    <div class="account-security-grid">
-      <section class="card-lite">
-        <div class="grid">
-          <label>Email
-            <input type="text" id="account_email" readonly />
-          </label>
-          <label>Role
-            <input type="text" id="account_role" readonly />
-          </label>
-          <label>Email Status
-            <input type="text" id="account_email_status" readonly />
-          </label>
-          <label>Phone Status
-            <input type="text" id="account_phone_status" readonly />
-          </label>
-        </div>
-
-        <div class="form-footer">
-          <button id="account_resend_email_verification" class="secondary" type="button">Resend Email Verification</button>
-          <button id="account_request_phone_verification" class="secondary" type="button">Request Phone Verification</button>
-        </div>
-
-        <div class="notice" id="account_password_hint" style="margin-top:12px;">
-          After your first magic-link sign-in, create a password here so you can use either password login or magic link next time.
-        </div>
-      </section>
-
-      <section class="card-lite">
-        <div class="grid">
-          <label>New Password
-            <input type="password" id="account_password" placeholder="At least 10 characters" autocomplete="new-password" />
-          </label>
-          <label>Confirm Password
-            <input type="password" id="account_password_confirm" placeholder="Re-enter password" autocomplete="new-password" />
-          </label>
-        </div>
-
-        <div class="form-footer">
-          <button id="account_password_save" class="primary" type="button">Save Password</button>
-          <button id="account_logout_this" class="secondary" type="button">Clear This Session</button>
-          <button id="account_logout_all" class="secondary" type="button">Log Out Everywhere</button>
-        </div>
-
-        <div id="account_summary" class="notice" style="display:none;margin-top:14px;"></div>
-      </section>
+      <div class="admin-heading-actions">
+        <button id="logoutBtn" class="secondary" type="button">Log out</button>
+      </div>
     </div>
   </section>
 
   <main class="container">
-    <section id="toolbox" class="card active">
-      <div class="section-heading">
-        <div>
-          <h2>Daily Toolbox Talk</h2>
-          <p class="section-subtitle">Record the daily safety talk, attendees, and optional site images.</p>
-        </div>
-      </div>
-
-      <form id="toolboxForm">
-        <div class="grid">
-          <label>Site ID / Name
-            <input type="text" id="tb_site" list="site-options" required placeholder="e.g., SITE-001 — Main Yard" />
-          </label>
-          <label>Date
-            <input type="date" id="tb_date" required />
-          </label>
-          <label>Submitted By
-            <input type="text" id="tb_leader" list="supervisor-options" required placeholder="Foreman / Supervisor" />
-          </label>
-        </div>
-
-        <label>Topics / Notes
-          <textarea id="tb_topic" rows="4" placeholder="Hazards today, controls, reminders"></textarea>
-        </label>
-
-        <h3>Attendees</h3>
-        <div class="actions">
-          <button type="button" id="tbAddRowBtn">+ Add Attendee</button>
-        </div>
-
-        <div class="table-wrap">
-          <table id="tbAttendees">
-            <thead>
-              <tr>
-                <th style="width:34%">Name</th>
-                <th style="width:22%">Role on Site</th>
-                <th>Company</th>
-                <th style="width:110px">Controls</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-
-        <h3>Optional Images</h3>
-        <div class="notice">Add optional status or discussion images for the toolbox talk.</div>
-
-        <div class="grid">
-          <label>Image Type
-            <select id="tb_image_type">
-              <option value="general">General</option>
-              <option value="hazard">Hazard</option>
-              <option value="status">Status</option>
-              <option value="other">Other</option>
-            </select>
-          </label>
-          <label>Caption
-            <input type="text" id="tb_image_caption" placeholder="Short note about the photo" />
-          </label>
-        </div>
-
-        <div class="actions">
-          <input type="file" id="tb_image_files" accept="image/*" capture="environment" multiple />
-          <button type="button" id="tb_image_add">Add Image(s)</button>
-        </div>
-
-        <div class="table-wrap">
-          <table id="tb_images_table">
-            <thead>
-              <tr>
-                <th>File</th>
-                <th style="width:140px">Type</th>
-                <th style="width:120px">Size</th>
-                <th>Caption</th>
-                <th style="width:110px">Controls</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-
-        <div class="form-footer">
-          <button type="submit" class="primary">Submit Toolbox Talk</button>
-          <button type="button" class="secondary" data-role="retry-outbox">Retry Queued Submissions</button>
-        </div>
-      </form>
-    </section>
-
-    <section id="ppe" class="card">
-      <div class="section-heading">
-        <div>
-          <h2>PPE Compliance Check</h2>
-          <p class="section-subtitle">Quickly verify each worker has the required PPE for the day.</p>
-        </div>
-      </div>
-
-      <form id="ppeForm">
-        <div class="grid">
-          <label>Site ID / Name
-            <input type="text" id="ppe_site" list="site-options" required placeholder="e.g., SITE-001 — Main Yard" />
-          </label>
-          <label>Date
-            <input type="date" id="ppe_date" required />
-          </label>
-          <label>Checked By
-            <input type="text" id="ppe_checker" list="supervisor-options" required placeholder="Foreman / Supervisor" />
-          </label>
-        </div>
-
-        <h3>Roster</h3>
-        <div class="actions">
-          <button type="button" id="ppeAddRowBtn">+ Add Worker</button>
-        </div>
-
-        <div class="table-wrap">
-          <table id="ppeTable">
-            <thead>
-              <tr>
-                <th style="width:28%">Name</th>
-                <th style="width:18%">Role on Site</th>
-                <th>Shoes</th>
-                <th>Vest</th>
-                <th>Plugs</th>
-                <th>Goggles</th>
-                <th>Muffs</th>
-                <th>Gloves</th>
-                <th style="width:110px">Controls</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-
-        <div class="form-footer">
-          <button type="submit" class="primary">Submit PPE Check</button>
-          <button type="button" class="secondary" data-role="retry-outbox">Retry Queued Submissions</button>
-        </div>
-      </form>
-    </section>
-
-    <section id="firstaid" class="card">
-      <div class="section-heading">
-        <div>
-          <h2>First Aid Kit – Daily Check</h2>
-          <p class="section-subtitle">Track kit stock and expiry dates for site compliance.</p>
-        </div>
-      </div>
-
-      <form id="faForm">
-        <div class="grid">
-          <label>Site ID / Name
-            <input type="text" id="fa_site" list="site-options" required placeholder="e.g., SITE-001 — Main Yard" />
-          </label>
-          <label>Date
-            <input type="date" id="fa_date" required />
-          </label>
-          <label>Checked By
-            <input type="text" id="fa_checker" list="supervisor-options" required placeholder="Responsible person" />
-          </label>
-        </div>
-
-        <datalist id="fa-catalog">
-          <option value="Guidance Card"></option>
-          <option value="Plastic Band Aid"></option>
-          <option value="Adhesive Tapes"></option>
-          <option value="Absorbent Cotton Bundle"></option>
-          <option value="Gauze Bandage"></option>
-          <option value="Cotton Bandage"></option>
-          <option value="Anti-septic Solution (Dettol)"></option>
-          <option value="Surgical Scissor"></option>
-          <option value="Betadine Dry Powder Spray"></option>
-          <option value="Alcohol Solution"></option>
-          <option value="Antiseptic Cream"></option>
-          <option value="Deep Heat / Moov"></option>
-          <option value="Eye Pad"></option>
-          <option value="Gauze Roll"></option>
-          <option value="Antiseptic Ointment"></option>
-        </datalist>
-
-        <div class="notice">A flag is triggered when quantity is at or below minimum or an expiry is within 30 days.</div>
-
-        <h3>Items</h3>
-        <div class="actions">
-          <button type="button" id="faAddRowBtn">+ Add Item</button>
-        </div>
-
-        <div class="table-wrap">
-          <table id="faTable">
-            <thead>
-              <tr>
-                <th style="width:40%">Item</th>
-                <th style="width:15%">Quantity</th>
-                <th style="width:15%">Min Stock</th>
-                <th style="width:20%">Expiry</th>
-                <th style="width:110px">Controls</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-
-        <div class="form-footer">
-          <button type="submit" class="primary">Submit First Aid Check</button>
-          <button type="button" class="secondary" data-role="retry-outbox">Retry Queued Submissions</button>
-        </div>
-      </form>
-    </section>
-
-    <section id="inspect" class="card">
-      <div class="section-heading">
-        <div>
-          <h2>Site Inspection</h2>
-          <p class="section-subtitle">Capture site hazards, actions taken, approval, and supporting images.</p>
-        </div>
-      </div>
-
-      <form id="inspForm">
-        <div class="grid">
-          <label>Site ID / Name
-            <input type="text" id="insp_site" list="site-options" required placeholder="e.g., SITE-001 — Main Yard" />
-          </label>
-          <label>Date
-            <input type="date" id="insp_date" required />
-          </label>
-          <label>Inspector
-            <input type="text" id="insp_inspector" list="supervisor-options" required placeholder="Your name" />
-          </label>
-        </div>
-
-        <h3>Roster</h3>
-        <div class="actions">
-          <button type="button" id="inspAddWorker">+ Add Worker</button>
-        </div>
-
-        <div class="table-wrap">
-          <table id="inspRoster">
-            <thead>
-              <tr>
-                <th style="width:35%">Name</th>
-                <th style="width:30%">Role on Site</th>
-                <th style="width:110px">Controls</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-
-        <h3>Hazards</h3>
-        <div class="actions">
-          <button type="button" id="inspAddHazard">+ Add Hazard</button>
-        </div>
-
-        <div class="table-wrap">
-          <table id="inspHazards">
-            <thead>
-              <tr>
-                <th>Hazard</th>
-                <th>Location</th>
-                <th>Risk</th>
-                <th>Action</th>
-                <th>Assigned To</th>
-                <th>Completed?</th>
-                <th>Completed By</th>
-                <th>Completed Date</th>
-                <th style="width:110px">Controls</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-
-        <h3>HSE Approval</h3>
-        <div class="grid">
-          <label>Approver
-            <select id="insp_approver">
-              <option value="Krista">Krista</option>
-              <option value="Jack">Jack</option>
-              <option value="Other">Other</option>
-            </select>
-          </label>
-          <label>Approver (if Other)
-            <input type="text" id="insp_approver_other" placeholder="Name" />
-          </label>
-        </div>
-
-        <div class="canvas-wrap">
-          <canvas id="insp_approver_canvas" width="600" height="140"></canvas>
-          <div class="controls" style="margin-top:10px;">
-            <button type="button" id="inspClearSig">Clear</button>
-          </div>
-        </div>
-
-        <h3>Status / Hazard Images</h3>
-        <div class="notice">Add photos of hazards, repairs, or site status. Images are optional.</div>
-
-        <div class="grid">
-          <label>Image Type
-            <select id="insp_image_type">
-              <option value="hazard">Hazard</option>
-              <option value="status">Status</option>
-              <option value="repair">Repair</option>
-              <option value="other">Other</option>
-            </select>
-          </label>
-          <label>Caption
-            <input type="text" id="insp_image_caption" placeholder="Short note about the photo" />
-          </label>
-        </div>
-
-        <div class="actions">
-          <input type="file" id="insp_image_files" accept="image/*" capture="environment" multiple />
-          <button type="button" id="insp_image_add">Add Image(s)</button>
-        </div>
-
-        <div class="table-wrap">
-          <table id="insp_images_table">
-            <thead>
-              <tr>
-                <th>File</th>
-                <th style="width:140px">Type</th>
-                <th style="width:120px">Size</th>
-                <th>Caption</th>
-                <th style="width:110px">Controls</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-
-        <div class="form-footer">
-          <button type="submit" class="primary">Submit Site Inspection</button>
-          <button type="button" class="secondary" data-role="retry-outbox">Retry Queued Submissions</button>
-        </div>
-      </form>
-    </section>
-
-    <section id="drill" class="card">
-      <div class="section-heading">
-        <div>
-          <h2>Emergency Drill / Procedure Practice</h2>
-          <p class="section-subtitle">Record the drill, participants, issues, signature, and optional photos.</p>
-        </div>
-      </div>
-
-      <form id="drForm">
-        <div class="grid">
-          <label>Site ID / Name
-            <input type="text" id="dr_site" list="site-options" required placeholder="e.g., SITE-001 — Main Yard" />
-          </label>
-          <label>Date
-            <input type="date" id="dr_date" required />
-          </label>
-          <label>Supervisor / Leader
-            <input type="text" id="dr_supervisor" list="supervisor-options" required placeholder="Your name" />
-          </label>
-        </div>
-
-        <div class="grid">
-          <label>Drill Type
-            <select id="dr_type">
-              <option value="Fire">Fire</option>
-              <option value="Evacuation">Evacuation</option>
-              <option value="First Aid">First Aid</option>
-              <option value="Spill">Spill</option>
-              <option value="Rescue">Rescue</option>
-              <option value="Other">Other</option>
-            </select>
-          </label>
-          <label>Start Time
-            <input type="time" id="dr_start" />
-          </label>
-          <label>End Time
-            <input type="time" id="dr_end" />
-          </label>
-        </div>
-
-        <label>Scenario / Notes
-          <textarea id="dr_scenario" rows="3" placeholder="What was practiced, key steps, observations..."></textarea>
-        </label>
-
-        <h3>Participants</h3>
-        <div class="actions">
-          <button type="button" id="drAddPart">+ Add Participant</button>
-        </div>
-
-        <div class="table-wrap">
-          <table id="drRoster">
-            <thead>
-              <tr>
-                <th style="width:34%">Name</th>
-                <th style="width:22%">Role on Site</th>
-                <th>Company</th>
-                <th style="width:110px">Controls</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-
-        <h3>Outcome</h3>
-        <div class="grid">
-          <label>Evaluation / Result
-            <textarea id="dr_eval" rows="3" placeholder="How did it go? Any delays, misses, or successes?"></textarea>
-          </label>
-          <label>Follow-Up Actions
-            <textarea id="dr_followup" rows="3" placeholder="Actions required, by whom, by when"></textarea>
-          </label>
-        </div>
-
-        <div class="grid">
-          <label>Next Drill Date
-            <input type="date" id="dr_next_date" />
-          </label>
-          <label class="inline-check">
-            <input type="checkbox" id="dr_issues" />
-            Issues observed that need attention
-          </label>
-        </div>
-
-        <h3>Supervisor Signature</h3>
-        <div class="canvas-wrap">
-          <canvas id="dr_supervisor_canvas" width="600" height="140"></canvas>
-          <div class="controls" style="margin-top:10px;">
-            <button type="button" id="drClearSig">Clear</button>
-          </div>
-        </div>
-
-        <h3>Drill Status Images</h3>
-        <div class="notice">Add optional photos from the drill, setup, or follow-up actions.</div>
-
-        <div class="grid">
-          <label>Image Type
-            <select id="dr_image_type">
-              <option value="status">Status</option>
-              <option value="repair">Repair</option>
-              <option value="other">Other</option>
-            </select>
-          </label>
-          <label>Caption
-            <input type="text" id="dr_image_caption" placeholder="Short note about the photo" />
-          </label>
-        </div>
-
-        <div class="actions">
-          <input type="file" id="dr_image_files" accept="image/*" capture="environment" multiple />
-          <button type="button" id="dr_image_add">Add Image(s)</button>
-        </div>
-
-        <div class="table-wrap">
-          <table id="dr_images_table">
-            <thead>
-              <tr>
-                <th>File</th>
-                <th style="width:140px">Type</th>
-                <th style="width:120px">Size</th>
-                <th>Caption</th>
-                <th style="width:110px">Controls</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-
-        <div class="form-footer">
-          <button type="submit" class="primary">Submit Drill</button>
-          <button type="button" class="secondary" data-role="retry-outbox">Retry Queued Submissions</button>
-        </div>
-      </form>
-    </section>
-
-    <section id="me" class="card">
-      <div class="section-heading">
-        <div>
-          <h2>My Profile</h2>
-          <p class="section-subtitle">Employees can view and update their own contact details, vehicle, position, and feature preferences.</p>
-        </div>
-      </div>
-
-      <div class="grid">
-        <label>Full Name
-          <input type="text" id="me_full_name" />
-        </label>
-        <label>Email
-          <input type="text" id="me_email" readonly />
-        </label>
-        <label>Role
-          <input type="text" id="me_role" readonly />
-        </label>
-      </div>
-
-      <div class="grid" style="margin-top:12px;">
-        <label>Phone
-          <input type="text" id="me_phone" />
-        </label>
-        <label>Address Line 1
-          <input type="text" id="me_address1" />
-        </label>
-        <label>Address Line 2
-          <input type="text" id="me_address2" />
-        </label>
-      </div>
-
-      <div class="grid" style="margin-top:12px;">
-        <label>City
-          <input type="text" id="me_city" />
-        </label>
-        <label>Province
-          <input type="text" id="me_province" />
-        </label>
-        <label>Postal Code
-          <input type="text" id="me_postal_code" />
-        </label>
-      </div>
-
-      <div class="grid" style="margin-top:12px;">
-        <label>Current Position
-          <input type="text" id="me_current_position" list="position-options" />
-        </label>
-        <label>Trade / Specialty
-          <input type="text" id="me_trade_specialty" list="trade-options" />
-        </label>
-        <label>Vehicle
-          <input type="text" id="me_vehicle_make_model" />
-        </label>
-      </div>
-
-      <div class="grid" style="margin-top:12px;">
-        <label>Vehicle Plate
-          <input type="text" id="me_vehicle_plate" />
-        </label>
-        <label>Emergency Contact Name
-          <input type="text" id="me_emergency_contact_name" />
-        </label>
-        <label>Emergency Contact Phone
-          <input type="text" id="me_emergency_contact_phone" />
-        </label>
-      </div>
-
-      <div class="grid" style="margin-top:12px;">
-        <label>Start Date
-          <input type="date" id="me_start_date" />
-        </label>
-        <label>Strengths
-          <input type="text" id="me_strengths" placeholder="Safety checks, equipment, crew leadership" />
-        </label>
-        <label>Employee Number
-          <input type="text" id="me_employee_number" />
-        </label>
-      </div>
-
-      <div class="grid" style="margin-top:12px;">
-        <label>Default Supervisor
-          <input type="text" id="me_default_supervisor_name" readonly />
-        </label>
-        <label>Supervisor Override
-          <input type="text" id="me_override_supervisor_name" readonly />
-        </label>
-        <label>Admin Lead
-          <input type="text" id="me_default_admin_name" readonly />
-        </label>
-      </div>
-
-      <div class="grid" style="margin-top:12px;">
-        <label>Admin Override
-          <input type="text" id="me_override_admin_name" readonly />
-        </label>
-        <label>Verified Phone
-          <input type="text" id="me_phone_verified" readonly />
-        </label>
-        <label>Previous Employee
-          <input type="text" id="me_previous_employee" readonly />
-        </label>
-      </div>
-
-      <div class="grid" style="margin-top:12px;">
-        <label>Feature Preferences
-          <textarea id="me_feature_preferences" rows="4" placeholder="Future feature preferences, reminders, dashboards, notifications..."></textarea>
-        </label>
-      </div>
-
-      <div class="form-footer">
-        <button id="me_save" class="primary" type="button">Save My Profile</button>
-        <button id="me_reload" class="secondary" type="button">Reload My Profile</button>
-      </div>
-
-      <div id="me_summary" class="notice" style="display:none;margin-top:14px;"></div>
-    </section>
-
-    <section id="crew" class="card">
-      <div class="section-heading">
-        <div>
-          <h2>Crew View</h2>
-          <p class="section-subtitle">Supervisors can see employee records. Admins can see supervisors, employees, and admins.</p>
-        </div>
-      </div>
-
-      <div class="grid">
-        <label>Search
-          <input type="text" id="crew_search" placeholder="Name, email, trade, position" />
-        </label>
-        <label>Role Filter
-          <select id="crew_role_filter">
-            <option value="">All visible roles</option>
-            <option value="worker">Worker</option>
-            <option value="staff">Employee</option>
-            <option value="site_leader">Site Leader</option>
-            <option value="supervisor">Supervisor</option>
-            <option value="hse">HSE</option>
-            <option value="job_admin">Job Admin</option>
-            <option value="admin">Admin</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="form-footer">
-        <button id="crew_load" class="primary" type="button">Load Crew</button>
-      </div>
-
-      <div class="table-wrap">
-        <table id="crew_table">
-          <thead>
-            <tr>
-              <th>Name</th><th>Email</th><th>Role</th><th>Position</th><th>Trade</th><th>Supervisor</th><th>Admin</th><th>Start Date</th><th>Strengths</th><th>Active</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-
-      <div id="crew_summary" class="notice" style="display:none;margin-top:14px;"></div>
-    </section>
-
-    <section id="settings" class="card">
-      <div class="section-heading">
-        <div>
-          <h2>Settings & Session</h2>
-          <p class="section-subtitle">See who is logged in, review the active session, clear the current login session, and prepare for future user settings.</p>
-        </div>
-      </div>
-
-      <div class="grid">
-        <label>Signed In As
-          <input type="text" id="settings_whoami" readonly />
-        </label>
-        <label>Role
-          <input type="text" id="settings_role" readonly />
-        </label>
-        <label>Session Expires
-          <input type="text" id="settings_expires" readonly />
-        </label>
-        <label>Email Validation
-          <input type="text" id="settings_email_validation" readonly />
-        </label>
-        <label>Phone Validation
-          <input type="text" id="settings_phone_validation" readonly />
-        </label>
-      </div>
-
-      <div class="form-footer">
-        <button id="settings_logout" class="secondary" type="button">Clear Current Session</button>
-      </div>
-
-      <div id="settings_session_summary" class="notice" style="display:none;margin-top:14px;"></div>
-      <div id="settings_future_hint" class="notice" style="margin-top:14px;">Future settings can include notification preferences, dashboard layouts, shortcuts, accessibility, and feature toggles.</div>
-    </section>
-
-    <section id="jobs" class="card">
-      <div class="section-heading">
-        <div>
-          <h2>Jobs</h2>
-          <p class="section-subtitle">Create jobs, assign site leadership, and reserve required equipment for the work before it leaves the yard.</p>
-        </div>
-      </div>
-
-      <div class="grid">
-        <label>Job Code
-          <input type="text" id="job_code" placeholder="JOB-2026-001" />
-        </label>
-        <label>Job Name
-          <input type="text" id="job_name" placeholder="North lot excavation" />
-        </label>
-        <label>Site
-          <input type="text" id="job_site_name" list="site-options" placeholder="Select a site" />
-        </label>
-      </div>
-
-      <div class="grid" style="margin-top:12px;">
-        <label>Job Type
-          <input type="text" id="job_type" placeholder="Excavation, concrete, inspection, delivery" />
-        </label>
-        <label>Status
-          <select id="job_status">
-            <option value="planned">Planned</option>
-            <option value="ready">Ready</option>
-            <option value="active">Active</option>
-            <option value="on_hold">On Hold</option>
-            <option value="closed">Closed</option>
-          </select>
-        </label>
-        <label>Priority
-          <select id="job_priority">
-            <option value="normal">Normal</option>
-            <option value="high">High</option>
-            <option value="critical">Critical</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="grid" style="margin-top:12px;">
-        <label>Start Date
-          <input type="date" id="job_start_date" />
-        </label>
-        <label>End Date
-          <input type="date" id="job_end_date" />
-        </label>
-        <label>Site Supervisor
-          <input type="text" id="job_supervisor_name" list="supervisor-options" placeholder="Default supervisor or override" />
-        </label>
-      </div>
-
-      <div class="grid" style="margin-top:12px;">
-        <label>Signing Supervisor
-          <input type="text" id="job_signing_supervisor_name" list="supervisor-options" placeholder="Who signs off if site supervisor is unavailable" />
-        </label>
-        <label>Admin Lead
-          <input type="text" id="job_admin_name" list="admin-options" placeholder="Default admin or override" />
-        </label>
-        <label>Client / Project
-          <input type="text" id="job_client_name" placeholder="Client name or internal project" />
-        </label>
-      </div>
-
-      <label style="margin-top:12px;">Job Notes
-        <textarea id="job_notes" rows="4" placeholder="Scope, safety notes, access instructions, special requirements..."></textarea>
-      </label>
-
-      <h3>Required Equipment</h3>
-      <div class="actions">
-        <button type="button" id="job_add_equipment">+ Add Equipment Requirement</button>
-      </div>
-      <div class="table-wrap">
-        <table id="job_equipment_table">
-          <thead>
-            <tr>
-              <th>Equipment Item / Type</th>
-              <th>Needed Qty</th>
-              <th>Reserved Qty</th>
-              <th>Status</th>
-              <th>Notes</th>
-              <th>Controls</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-
-      <div class="form-footer">
-        <button id="job_save" class="primary" type="button">Save Job Draft</button>
-        <button id="job_load" class="secondary" type="button">Load Jobs</button>
-      </div>
-
-      <div id="job_summary" class="notice" style="display:none;margin-top:14px;"></div>
-
-      <div class="table-wrap" style="margin-top:16px;">
-        <table id="job_list_table">
-          <thead>
-            <tr>
-              <th>Job Code</th><th>Job Name</th><th>Site</th><th>Supervisor</th><th>Admin</th><th>Status</th><th>Dates</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section id="equipment" class="card">
-      <div class="section-heading">
-        <div>
-          <h2>Equipment</h2>
-          <p class="section-subtitle">Maintain the equipment list, see what is available, and track which job each item is signed out to.</p>
-        </div>
-      </div>
-
-      <div class="grid">
-        <label>Equipment Code
-          <input type="text" id="eq_code" placeholder="EQ-001" />
-        </label>
-        <label>Equipment Name
-          <input type="text" id="eq_name" placeholder="Skid steer" />
-        </label>
-        <label>Category
-          <input type="text" id="eq_category" placeholder="Heavy equipment, safety, small tools" />
-        </label>
-      </div>
-
-      <div class="grid" style="margin-top:12px;">
-        <label>Home Site
-          <input type="text" id="eq_home_site" list="site-options" placeholder="Yard / site" />
-        </label>
-        <label>Status
-          <select id="eq_status">
-            <option value="available">Available</option>
-            <option value="reserved">Reserved</option>
-            <option value="checked_out">Checked Out</option>
-            <option value="maintenance">Maintenance</option>
-            <option value="retired">Retired</option>
-          </select>
-        </label>
-        <label>Current Job Code
-          <input type="text" id="eq_current_job_code" placeholder="Blank if not assigned" />
-        </label>
-      </div>
-
-      <div class="grid" style="margin-top:12px;">
-        <label>Assigned To Supervisor
-          <input type="text" id="eq_assigned_supervisor" list="supervisor-options" placeholder="Who currently controls it" />
-        </label>
-        <label>Serial / Plate
-          <input type="text" id="eq_serial" placeholder="Serial, VIN, plate, or asset tag" />
-        </label>
-        <label>Notes
-          <input type="text" id="eq_notes" placeholder="Condition, restrictions, booking notes" />
-        </label>
-      </div>
-
-      <div class="form-footer">
-        <button id="eq_save" class="primary" type="button">Save Equipment</button>
-        <button id="eq_load" class="secondary" type="button">Load Equipment</button>
-        <button id="eq_checkout" class="secondary" type="button">Check Out To Job</button>
-        <button id="eq_return" class="secondary" type="button">Return Equipment</button>
-      </div>
-
-      <div class="notice">Checkout requires an equipment code, current job code, and assigned supervisor. Return uses the equipment code.</div>
-
-      <div id="eq_summary" class="notice" style="display:none;margin-top:14px;"></div>
-
-      <div class="table-wrap" style="margin-top:16px;">
-        <table id="eq_list_table">
-          <thead>
-            <tr>
-              <th>Code</th><th>Name</th><th>Category</th><th>Home Site</th><th>Status</th><th>Current Job</th><th>Supervisor</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section id="log" class="card">
-      <div class="section-heading">
-        <div>
-          <h2>Logbook</h2>
-          <p class="section-subtitle">Load, review, and inspect recent submissions across all form types.</p>
-        </div>
-      </div>
-
-      <div class="grid">
-        <label>Site
-          <input type="text" id="lg_site" placeholder="e.g., Site-A" />
-        </label>
-        <label>From
-          <input type="date" id="lg_from" />
-        </label>
-        <label>To
-          <input type="date" id="lg_to" />
-        </label>
-        <label>Form Type
-          <select id="lg_form">
-            <option value="">All</option>
-            <option value="A">A – Emergency Drill</option>
-            <option value="B">B – First Aid Kit</option>
-            <option value="C">C – Site Inspection</option>
-            <option value="D">D – PPE Check</option>
-            <option value="E">E – Toolbox Talk</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="grid" style="margin-top:12px;">
-        <label>Status
-          <select id="lg_status">
-            <option value="">All</option>
-            <option value="submitted">Submitted</option>
-            <option value="under_review">Under Review</option>
-            <option value="approved">Approved</option>
-            <option value="follow_up_required">Follow-Up Required</option>
-            <option value="closed">Closed</option>
-          </select>
-        </label>
-      </div>
-
-      <div class="form-footer">
-        <button id="lg_load" class="primary" type="button">Load Last 100</button>
-        <button id="lg_export" class="secondary" type="button">Export CSV</button>
-      </div>
-
-      <div class="table-wrap">
-        <table id="lg_table">
-          <thead>
-            <tr>
-              <th style="width:80px">ID</th>
-              <th style="width:120px">Date</th>
-              <th style="width:90px">Form</th>
-              <th style="width:160px">Site</th>
-              <th style="width:150px">Status</th>
-              <th>Summary</th>
-              <th style="width:190px">Actions</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-
-      <h3 style="margin-top:22px;">Submission Detail</h3>
-      <div class="notice">Use the View Detail button from the logbook to load one complete submission.</div>
-
-      <div class="grid">
-        <label>Submission ID
-          <input type="text" id="sd_submission_id" placeholder="Select from logbook" readonly />
-        </label>
-        <label>Form Type
-          <input type="text" id="sd_form_type" readonly />
-        </label>
-        <label>Status
-          <input type="text" id="sd_status" readonly />
-        </label>
-        <label>Site
-          <input type="text" id="sd_site" readonly />
-        </label>
-      </div>
-
-      <div class="grid" style="margin-top:12px;">
-        <label>Date
-          <input type="text" id="sd_date" readonly />
-        </label>
-        <label>Submitted By
-          <input type="text" id="sd_submitted_by" readonly />
-        </label>
-        <label>Reviewed At
-          <input type="text" id="sd_reviewed_at" readonly />
-        </label>
-        <label>Reviewed By
-          <input type="text" id="sd_reviewed_by" readonly />
-        </label>
-      </div>
-
-      <div class="grid" style="margin-top:12px;">
-        <label>Admin Notes
-          <textarea id="sd_admin_notes" rows="3" readonly></textarea>
-        </label>
-        <label>Payload
-          <textarea id="sd_payload" rows="8" readonly></textarea>
-        </label>
-      </div>
-
-      <h3>Review History</h3>
-      <div class="table-wrap">
-        <table id="sd_reviews_table">
-          <thead>
-            <tr>
-              <th style="width:90px">ID</th>
-              <th style="width:150px">Action</th>
-              <th style="width:180px">Reviewer ID</th>
-              <th style="width:180px">Created</th>
-              <th>Note</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-
-      <h3>Attached Images</h3>
-      <div class="table-wrap">
-        <table id="sd_images_table">
-          <thead>
-            <tr>
-              <th style="width:180px">Preview</th>
-              <th style="width:140px">Type</th>
-              <th>File</th>
-              <th>Caption</th>
-              <th style="width:180px">Created</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-
-      <div class="form-footer">
-        <button id="sd_clear" class="secondary" type="button">Clear Detail</button>
-      </div>
-
-      <div id="sd_summary" class="notice" style="display:none;margin-top:14px;"></div>
-
-      <section id="reviewPanel" class="card-lite" style="margin-top:22px;">
-        <h3>Review Selected Submission</h3>
-        <div class="notice">Load the logbook, then use the Review button for a row to populate this panel.</div>
-
-        <div class="grid">
-          <label>Submission ID
-            <input type="text" id="rv_submission_id" placeholder="Select from logbook" readonly />
-          </label>
-
-          <label>New Status
-            <select id="rv_status">
-              <option value="">No status change</option>
-              <option value="under_review">Under Review</option>
-              <option value="approved">Approved</option>
-              <option value="follow_up_required">Follow-Up Required</option>
-              <option value="closed">Closed</option>
-            </select>
-          </label>
-
-          <label>Review Action
-            <select id="rv_action">
-              <option value="commented">Commented</option>
-              <option value="under_review">Under Review</option>
-              <option value="approved">Approved</option>
-              <option value="follow_up_required">Follow-Up Required</option>
-              <option value="closed">Closed</option>
-              <option value="reopened">Reopened</option>
-            </select>
-          </label>
-        </div>
-
-        <div class="grid" style="margin-top:12px;">
-          <label>Review Note
-            <textarea id="rv_note" rows="4" placeholder="Add review notes, follow-up details, approvals, or closure comments"></textarea>
-          </label>
-          <label>Admin Notes
-            <textarea id="rv_admin_notes" rows="4" placeholder="Internal admin notes saved on the submission"></textarea>
-          </label>
-        </div>
-
-        <div class="form-footer">
-          <button id="rv_submit" class="primary" type="button">Save Review</button>
-          <button id="rv_clear" class="secondary" type="button">Clear Review Panel</button>
-        </div>
-
-        <div id="rv_summary" class="notice" style="display:none;margin-top:14px;"></div>
-      </section>
-    </section>
-
-    <section id="admin" class="card" data-admin-locked="true">
-      <div class="section-heading">
-        <div>
-          <h2>Admin Dashboard</h2>
-          <p class="section-subtitle">Manage profiles, sites, assignments, and view tiered directory data. Supervisors and above can view, Admin can manage.</p>
-        </div>
-        <div class="admin-heading-actions">
-          <button type="button" class="secondary" data-admin-mode="all">All</button>
-          <button type="button" class="secondary" data-admin-mode="users">Users</button>
-          <button type="button" class="secondary" data-admin-mode="sites">Sites</button>
-          <button type="button" class="secondary" data-admin-mode="assignments">Assignments</button>
-        </div>
-      </div>
-
-      <div class="admin-stats-grid">
-        <div class="admin-stat-card">
-          <div class="admin-stat-label">Users</div>
-          <div class="admin-stat-value" id="ad_users_count">0</div>
-          <div class="admin-stat-help">Profiles returned by the current filter.</div>
-        </div>
-        <div class="admin-stat-card">
-          <div class="admin-stat-label">Sites</div>
-          <div class="admin-stat-value" id="ad_sites_count">0</div>
-          <div class="admin-stat-help">Site records currently shown.</div>
-        </div>
-        <div class="admin-stat-card">
-          <div class="admin-stat-label">Assignments</div>
-          <div class="admin-stat-value" id="ad_assignments_count">0</div>
-          <div class="admin-stat-help">Role-to-site assignments loaded.</div>
-        </div>
-        <div class="admin-stat-card">
-          <div class="admin-stat-label">Current Mode</div>
-          <div class="admin-stat-value admin-stat-value--small" id="ad_mode_label">All data</div>
-          <div class="admin-stat-help">Switch mode to focus on one dataset.</div>
-        </div>
-      </div>
-
-      <div class="card-lite admin-toolbar">
-        <div class="grid">
-          <label>Mode
-            <select id="ad_mode">
-              <option value="all">All</option>
-              <option value="users">Users</option>
-              <option value="sites">Sites</option>
-              <option value="assignments">Assignments</option>
-            </select>
-          </label>
-
-          <label>Search
-            <input type="text" id="ad_search" placeholder="Email, name, site code, site name" />
-          </label>
-
-          <label>Site ID
-            <input type="text" id="ad_site_id" placeholder="Optional site id filter" />
-          </label>
-
-          <label>Profile ID
-            <input type="text" id="ad_profile_id" placeholder="Optional profile id filter" />
-          </label>
-        </div>
-
-        <div class="grid admin-toolbar-row">
-          <label class="admin-quick-filters">
-            <span class="mini-label">Quick filter</span>
-            <span class="inline-check">
-              <input type="checkbox" id="ad_active_only" />
-              Active only
-            </span>
-          </label>
-
-          <label>Limit
-            <input type="number" id="ad_limit" min="1" max="1000" value="200" />
-          </label>
-
-          <div class="admin-tip">Click any row below to load it into the matching editor form.</div>
-        </div>
-
-        <div class="form-footer">
-          <button id="ad_load" class="primary" type="button">Load Directory</button>
-          <button id="ad_clear" class="secondary" type="button">Clear Results</button>
-        </div>
-      </div>
-
-      <div class="admin-directory-grid">
-        <div class="card-lite admin-panel-block">
-          <div class="panel-heading">
-            <div>
-              <h3>Users</h3>
-              <p>Profiles and current role assignment summary.</p>
-            </div>
-          </div>
-
-          <div class="table-wrap">
-            <table id="ad_users_table">
-              <thead>
-                <tr>
-                  <th style="width:220px">ID</th>
-                  <th style="width:250px">Email</th>
-                  <th style="width:180px">Name</th>
-                  <th style="width:120px">Role</th>
-                  <th style="width:90px">Active</th>
-                  <th>Primary Site</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="card-lite admin-panel-block">
-          <div class="panel-heading">
-            <div>
-              <h3>Sites</h3>
-              <p>Site records with address and assignment count.</p>
-            </div>
-          </div>
-
-          <div class="table-wrap">
-            <table id="ad_sites_table">
-              <thead>
-                <tr>
-                  <th style="width:180px">ID</th>
-                  <th style="width:120px">Code</th>
-                  <th style="width:220px">Name</th>
-                  <th>Address</th>
-                  <th style="width:90px">Active</th>
-                  <th style="width:120px">Assignments</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="card-lite admin-panel-block admin-panel-block--full">
-          <div class="panel-heading">
-            <div>
-              <h3>Assignments</h3>
-              <p>Link a person to a site with the role they hold there.</p>
-            </div>
-          </div>
-
-          <div class="table-wrap">
-            <table id="ad_assignments_table">
-              <thead>
-                <tr>
-                  <th style="width:110px">Assign ID</th>
-                  <th style="width:120px">Site Code</th>
-                  <th style="width:220px">Site Name</th>
-                  <th style="width:240px">User Email</th>
-                  <th style="width:170px">Name</th>
-                  <th style="width:130px">Assign Role</th>
-                  <th style="width:90px">Primary</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div id="ad_summary" class="notice" style="display:none;margin-top:14px;"></div>
-
-      <div class="admin-management-grid" style="margin-top:22px;">
-        <section class="card-lite admin-form-card admin-form-card--full">
-          <div class="panel-heading">
-            <div>
-              <h3>Update Employee / Supervisor / Admin Profile</h3>
-              <p>Edit role, contact data, vehicle, employment history, feature preferences, and construction-specific profile notes.</p>
-            </div>
-          </div>
-
-          <div class="grid">
-            <label>Profile Selector
-              <select id="am_profile_selector">
-                <option value="">Select profile...</option>
-              </select>
-            </label>
-            <label>Profile ID
-              <input type="text" id="am_profile_id" placeholder="Profile id" />
-            </label>
-            <label>Full Name
-              <input type="text" id="am_profile_name" placeholder="Full name" />
-            </label>
-            <label>Role
-              <select id="am_profile_role">
-                <option value="">No change</option>
-                <option value="worker">Worker</option>
-                <option value="staff">Employee</option>
-                <option value="onsite_admin">Onsite Admin</option>
-                <option value="job_admin">Job Admin</option>
-                <option value="site_leader">Site Leader</option>
-                <option value="supervisor">Supervisor</option>
-                <option value="hse">HSE</option>
-                <option value="admin">Admin</option>
-              </select>
-            </label>
-          </div>
-
-          <div class="grid" style="margin-top:12px;">
-            <label>Phone
-              <input type="text" id="am_profile_phone" placeholder="Phone number" />
-            </label>
-            <label>Address Line 1
-              <input type="text" id="am_profile_address1" placeholder="Street address" />
-            </label>
-            <label>Address Line 2
-              <input type="text" id="am_profile_address2" placeholder="Unit, suite, etc." />
-            </label>
-            <label>City
-              <input type="text" id="am_profile_city" placeholder="City" />
-            </label>
-            <label>Province / State
-              <input type="text" id="am_profile_province" placeholder="Province" />
-            </label>
-            <label>Postal / ZIP Code
-              <input type="text" id="am_profile_postal_code" placeholder="Postal code" />
-            </label>
-          </div>
-
-          <div class="grid" style="margin-top:12px;">
-            <label>Emergency Contact Name
-              <input type="text" id="am_profile_emergency_name" placeholder="Emergency contact" />
-            </label>
-            <label>Emergency Contact Phone
-              <input type="text" id="am_profile_emergency_phone" placeholder="Emergency phone" />
-            </label>
-            <label>Current Position
-              <input type="text" id="am_profile_current_position" list="position-options" placeholder="Current position" />
-            </label>
-            <label>Years Employed
-              <input type="number" id="am_profile_years_employed" min="0" step="0.1" placeholder="Years employed" />
-            </label>
-            <label>Start Date
-              <input type="date" id="am_profile_start_date" />
-            </label>
-            <label>Employee Number
-              <input type="text" id="am_profile_employee_number" placeholder="Badge or employee number" />
-            </label>
-          </div>
-
-          <div class="grid" style="margin-top:12px;">
-            <label>Trade / Specialty
-              <input type="text" id="am_profile_trade_specialty" list="trade-options" placeholder="e.g. Framing, excavation, safety" />
-            </label>
-            <label>Strengths
-              <input type="text" id="am_profile_strengths" placeholder="Leadership, skid steer, inspections, first aid" />
-            </label>
-            <label>Certifications / Tickets
-              <input type="text" id="am_profile_certifications" placeholder="Forklift, WHMIS, fall arrest, first aid" />
-            </label>
-            <label>Default Supervisor
-              <input type="text" id="am_profile_default_supervisor_name" list="supervisor-options" placeholder="Default supervisor" />
-            </label>
-            <label>Supervisor Override
-              <input type="text" id="am_profile_override_supervisor_name" list="supervisor-options" placeholder="Override when default unavailable" />
-            </label>
-            <label>Default Admin
-              <input type="text" id="am_profile_default_admin_name" list="admin-options" placeholder="Default admin lead" />
-            </label>
-          </div>
-
-          <div class="grid" style="margin-top:12px;">
-            <label>Admin Override
-              <input type="text" id="am_profile_override_admin_name" list="admin-options" placeholder="Admin override" />
-            </label>
-
-          <div class="grid" style="margin-top:12px;">
-            <label>Vehicle Make / Model
-              <input type="text" id="am_profile_vehicle" placeholder="Vehicle used for site work" />
-            </label>
-            <label>Vehicle Plate
-              <input type="text" id="am_profile_vehicle_plate" placeholder="Plate" />
-            </label>
-            <label>Feature Preferences
-              <input type="text" id="am_profile_feature_preferences" placeholder="Overlay, reminders, mobile-first, dark mode" />
-            </label>
-            <label>Notes
-              <input type="text" id="am_profile_notes" placeholder="Construction-related notes, specialties, restrictions" />
-            </label>
-          </div>
-
-          <div class="grid" style="margin-top:12px;">
-            <label class="inline-check">
-              <input type="checkbox" id="am_profile_active" />
-              Active
-            </label>
-            <label class="inline-check">
-              <input type="checkbox" id="am_profile_phone_verified" />
-              Verified phone
-            </label>
-            <label class="inline-check">
-              <input type="checkbox" id="am_profile_previous_employee" />
-              Previous employee / returning worker
-            </label>
-          </div>
-
-          <div class="form-footer">
-            <button id="am_profile_save" class="primary" type="button">Save Profile</button>
-          </div>
-        </section>
-
-        <section class="card-lite admin-form-card">
-          <div class="panel-heading">
-            <div>
-              <h3>Create / Update Site</h3>
-              <p>Create a new site or update an existing record.</p>
-            </div>
-          </div>
-
-          <div class="grid">
-            <label>Site Selector
-              <select id="am_site_selector">
-                <option value="">Select site...</option>
-              </select>
-            </label>
-            <label>Site ID
-              <input type="text" id="am_site_id" placeholder="Blank = create / existing = update" />
-            </label>
-            <label>Site Code
-              <input type="text" id="am_site_code" placeholder="SITE-A" />
-            </label>
-            <label>Site Name
-              <input type="text" id="am_site_name" placeholder="Site name" />
-            </label>
-          </div>
-
-          <div class="grid" style="margin-top:12px;">
-            <label>Address
-              <input type="text" id="am_site_address" placeholder="Address" />
-            </label>
-            <label>Region
-              <input type="text" id="am_site_region" placeholder="Region" />
-            </label>
-            <label>Client Name
-              <input type="text" id="am_site_client_name" placeholder="Client" />
-            </label>
-            <label>Project Code
-              <input type="text" id="am_site_project_code" placeholder="Project code" />
-            </label>
-            <label>Project Status
-              <input type="text" id="am_site_project_status" placeholder="Planned, active, closed" />
-            </label>
-            <label>Site Supervisor
-              <input type="text" id="am_site_supervisor_name" list="supervisor-options" placeholder="Default site supervisor" />
-            </label>
-          </div>
-
-          <div class="grid" style="margin-top:12px;">
-            <label>Signing Supervisor
-              <input type="text" id="am_site_signing_supervisor_name" list="supervisor-options" placeholder="Sign-off supervisor" />
-            </label>
-            <label>Admin Lead
-              <input type="text" id="am_site_admin_name" list="admin-options" placeholder="Admin lead" />
-            </label>
-            <label>Notes
-              <input type="text" id="am_site_notes" placeholder="Notes" />
-            </label>
-            <label class="inline-check">
-              <input type="checkbox" id="am_site_active" checked />
-              Active
-            </label>
-          </div>
-
-          <div class="form-footer">
-            <button id="am_site_create" class="primary" type="button">Create Site</button>
-            <button id="am_site_update" class="secondary" type="button">Update Site</button>
-          </div>
-        </section>
-
-        <section class="card-lite admin-form-card admin-form-card--full">
-          <div class="panel-heading">
-            <div>
-              <h3>Create / Update / Delete Assignment</h3>
-              <p>Link a profile to a site and control the role for that assignment.</p>
-            </div>
-          </div>
-
-          <div class="grid">
-            <label>Assignment Selector
-              <select id="am_assignment_selector">
-                <option value="">Select assignment...</option>
-              </select>
-            </label>
-            <label>Assignment ID
-              <input type="text" id="am_assignment_id" placeholder="Assignment id" />
-            </label>
-            <label>Site Selector
-              <select id="am_assignment_site_selector">
-                <option value="">Select site...</option>
-              </select>
-            </label>
-            <label>Profile Selector
-              <select id="am_assignment_profile_selector">
-                <option value="">Select profile...</option>
-              </select>
-            </label>
-          </div>
-
-          <div class="grid" style="margin-top:12px;">
-            <label>Site ID
-              <input type="text" id="am_assignment_site_id" placeholder="Site id" />
-            </label>
-            <label>Profile ID
-              <input type="text" id="am_assignment_profile_id" placeholder="Profile id" />
-            </label>
-            <label>Assignment Role
-              <select id="am_assignment_role">
-                <option value="worker">Worker</option>
-                <option value="staff">Staff</option>
-                <option value="onsite_admin">Onsite Admin</option>
-                <option value="job_admin">Job Admin</option>
-                <option value="site_leader">Site Leader</option>
-                <option value="supervisor">Supervisor</option>
-                <option value="hse">HSE</option>
-                <option value="admin">Admin</option>
-              </select>
-            </label>
-            <label class="inline-check">
-              <input type="checkbox" id="am_assignment_primary" />
-              Primary assignment
-            </label>
-            <label>Reports To Supervisor
-              <input type="text" id="am_assignment_reports_to_supervisor" list="supervisor-options" placeholder="Optional override supervisor" />
-            </label>
-            <label>Reports To Admin
-              <input type="text" id="am_assignment_reports_to_admin" list="admin-options" placeholder="Optional override admin" />
-            </label>
-          </div>
-
-          <div class="form-footer">
-            <button id="am_assignment_create" class="primary" type="button">Create Assignment</button>
-            <button id="am_assignment_update" class="secondary" type="button">Update Assignment</button>
-            <button id="am_assignment_delete" class="secondary" type="button">Delete Assignment</button>
-          </div>
-        </section>
-      </div>
-
-      <div id="am_summary" class="notice" style="display:none;margin-top:14px;"></div>
-    </section>
+    <section id="toolbox" class="card active"><h2>Toolbox Talk</h2></section>
+    <section id="ppe" class="card"><h2>PPE Check</h2></section>
+    <section id="firstaid" class="card"><h2>First Aid Kit</h2></section>
+    <section id="inspect" class="card"><h2>Site Inspection</h2></section>
+    <section id="drill" class="card"><h2>Emergency Drill</h2></section>
+    <section id="log" class="card"><h2>Logbook</h2></section>
+    <section id="me" class="card"><h2>My Profile</h2></section>
+    <section id="crew" class="card"><h2>Crew</h2></section>
+    <section id="jobs" class="card"><h2>Jobs</h2></section>
+    <section id="equipment" class="card"><h2>Equipment</h2></section>
+    <section id="settings" class="card"><h2>Settings</h2></section>
+    <section id="admin" class="card"><h2>Admin</h2></section>
   </main>
-
-
-  <datalist id="site-options"></datalist>
-  <datalist id="supervisor-options"></datalist>
-  <datalist id="employee-options"></datalist>
-  <datalist id="admin-options"></datalist>
-  <datalist id="position-options"></datalist>
-  <datalist id="trade-options"></datalist>
 
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
 
+  <!-- Correct module order -->
   <script src="/js/router.js"></script>
   <script src="/js/bootstrap.js"></script>
-  <script src="/js/security.js"></script>
   <script src="/js/auth.js"></script>
+  <script src="/js/security.js"></script>
   <script src="/js/api.js"></script>
+  <script src="/js/outbox.js"></script>
+  <script src="/js/admin-actions.js"></script>
   <script src="/js/ui-auth.js"></script>
   <script src="/js/account-ui.js"></script>
   <script src="/js/profile-ui.js"></script>
   <script src="/js/reference-data.js"></script>
-  <script src="/js/jobs-ui.js"></script>
   <script src="/js/admin-ui.js"></script>
-  <script src="/js/admin-actions.js"></script>
-  <script src="/js/outbox.js"></script>
   <script src="/js/logbook-ui.js"></script>
+  <script src="/js/jobs-ui.js"></script>
   <script src="/js/forms-toolbox.js"></script>
   <script src="/js/forms-ppe.js"></script>
   <script src="/js/forms-firstaid.js"></script>
   <script src="/js/forms-inspection.js"></script>
   <script src="/js/forms-drill.js"></script>
   <script src="/app.js" defer></script>
+
+  <script>
+    document.addEventListener('ywi:auth-changed', (e) => {
+      const state = e.detail?.state || {};
+      const profile = state.profile || {};
+      const user = state.user || {};
+      const displayName =
+        profile.full_name ||
+        user.user_metadata?.full_name ||
+        profile.email ||
+        user.email ||
+        '';
+
+      const headerSession = document.getElementById('headerSession');
+      const headerSessionName = document.getElementById('headerSessionName');
+      const headerLogoutBtn = document.getElementById('headerLogoutBtn');
+
+      if (state.isAuthenticated) {
+        headerSession?.classList.remove('hidden');
+        if (headerSessionName) {
+          headerSessionName.textContent = displayName
+            ? `${displayName} (${state.roleLabel || state.role || ''})`
+            : (state.roleLabel || state.role || '');
+        }
+      } else {
+        headerSession?.classList.add('hidden');
+        if (headerSessionName) headerSessionName.textContent = '';
+      }
+
+      if (headerLogoutBtn && !headerLogoutBtn.dataset.bound) {
+        headerLogoutBtn.dataset.bound = '1';
+        headerLogoutBtn.addEventListener('click', async () => {
+          if (window.YWI_AUTH?.logout) {
+            await window.YWI_AUTH.logout();
+          }
+        });
+      }
+    });
+  </script>
 
   <noscript>
     <p style="padding:1rem">This app requires JavaScript enabled.</p>
