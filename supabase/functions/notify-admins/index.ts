@@ -56,7 +56,6 @@ serve(async (req) => {
     target_table: body.target_table || null,
     target_id: body.target_id != null ? String(body.target_id) : null,
     title,
-    subject: title,
     body: message,
     message,
     payload: body.payload ?? {},

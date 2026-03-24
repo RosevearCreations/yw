@@ -217,7 +217,6 @@ create table if not exists public.admin_notifications (
   target_table text,
   target_id text,
   title text,
-  subject text,
   body text,
   message text,
   payload jsonb not null default '{}'::jsonb,
@@ -305,7 +304,7 @@ create or replace view public.v_admin_notifications as
 select
   n.id,
   n.notification_type,
-  coalesce(n.title, n.subject, 'Notification') as title,
+  coalesce(n.title, 'Notification') as title,
   coalesce(n.body, n.message, '') as message,
   n.recipient_role,
   n.target_profile_id,

@@ -103,6 +103,18 @@
     return jsonFetch(ENDPOINTS.ACCOUNT_URL, { body: { action: 'request_phone_verification', ...payload } });
   }
 
+  async function sendPhoneVerificationCode(payload = {}) {
+    return jsonFetch(ENDPOINTS.ACCOUNT_URL, { body: { action: 'send_phone_verification_code', ...payload } });
+  }
+
+  async function verifyPhoneCode(payload = {}) {
+    return jsonFetch(ENDPOINTS.ACCOUNT_URL, { body: { action: 'verify_phone_code', ...payload } });
+  }
+
+  async function retryPhoneVerificationCode(payload = {}) {
+    return jsonFetch(ENDPOINTS.ACCOUNT_URL, { body: { action: 'retry_phone_verification_code', ...payload } });
+  }
+
   async function saveMyProfile(payload) {
     return manageAdminEntity({ entity: 'profile', action: 'self_update', ...payload });
   }
@@ -146,6 +158,9 @@
     fetchJobsDirectory,
     manageJobsEntity,
     requestPhoneVerification,
+    sendPhoneVerificationCode,
+    verifyPhoneCode,
+    retryPhoneVerificationCode,
     saveMyProfile,
     uploadImageViaFunction,
     uploadImagesForSubmission,

@@ -13,6 +13,28 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function sendEmailIfConfigured(row: any, overrides: Record<string, unknown> = {}) {
+  const apiKey = Deno.env.get('RESEND_API_KEY');
+  const from = Deno.env.get('RESEND_FROM_EMAIL') || Deno.env.get('EMAIL_FROM');
+  const to = String(overrides.email_to || row?.email_to || Deno.env.get('ADMIN_NOTIFICATION_TO') || '').trim();
+  if (!apiKey || !from || !to) return { attempted: false, status: 'pending', error: '' };
+  const subject = String(overrides.email_subject || row?.email_subject || row?.title || 'YWI HSE notification');
+  const text = String(overrides.body || row?.body || row?.message || JSON.stringify(row?.payload || {}));
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      from,
+      to: to.split(/[;,]/).map((v) => v.trim()).filter(Boolean),
+      subject,
+      text,
+    })
+  });
+  const body = await res.text();
+  if (!res.ok) throw new Error(body);
+  return { attempted: true, status: 'sent', error: '' };
+}
+
 async function resolveProfileIdByNameOrEmail(supabase: any, value?: string | null) {
   const clean = String(value || '').trim();
   if (!clean) return null;
@@ -57,6 +79,43 @@ serve(async (req) => {
       const { data: notification, error: loadErr } = await supabase.from('admin_notifications').select('*').eq('id', notificationId).single();
       if (loadErr || !notification) return Response.json({ ok:false, error:'Notification not found' }, { status:404, headers:corsHeaders });
       const now = new Date().toISOString();
+
+      if (action === 'preview_email') {
+        return Response.json({ ok:true, preview: {
+          to: body.email_to || notification.email_to || Deno.env.get('ADMIN_NOTIFICATION_TO') || '',
+          subject: body.email_subject || notification.email_subject || notification.title || 'YWI HSE notification',
+          body: body.email_body || notification.body || notification.message || JSON.stringify(notification.payload || {})
+        } }, { headers:corsHeaders });
+      }
+
+      if (action === 'test_send' || action === 'retry_send') {
+        try {
+          const sent = await sendEmailIfConfigured(notification, {
+            email_to: body.email_to,
+            email_subject: body.email_subject,
+            body: body.email_body
+          });
+          if (sent.attempted) {
+            const patch = {
+              email_to: body.email_to || notification.email_to || null,
+              email_subject: body.email_subject || notification.email_subject || notification.title || 'YWI HSE notification',
+              email_status: sent.status,
+              email_error: null,
+              sent_at: now,
+              status: 'sent',
+              read_at: notification.read_at || now,
+            };
+            const { data: updated, error: updateErr } = await supabase.from('admin_notifications').update(patch).eq('id', notificationId).select('*').single();
+            if (updateErr) throw updateErr;
+            return Response.json({ ok:true, record: updated, preview: patch }, { headers:corsHeaders });
+          }
+          return Response.json({ ok:false, error:'Outbound email is not configured.' }, { status:400, headers:corsHeaders });
+        } catch (err) {
+          await supabase.from('admin_notifications').update({ email_status: 'failed', email_error: String(err), status: 'failed', read_at: notification.read_at || now }).eq('id', notificationId);
+          return Response.json({ ok:false, error:String(err) }, { status:500, headers:corsHeaders });
+        }
+      }
+
       const patch: Record<string, unknown> = { read_at: notification.read_at || now };
       if (action === 'mark_read') patch.status = 'read';
       if (action === 'dismiss') {
@@ -68,6 +127,7 @@ serve(async (req) => {
       if (action === 'resolve') {
         patch.status = 'resolved';
         patch.decision_status = 'resolved';
+        patch.decision_notes = body.decision_notes ?? null;
         patch.decided_at = now;
         patch.decided_by_profile_id = actorId;
       }
@@ -90,11 +150,51 @@ serve(async (req) => {
 
       if (action === 'approve' && notification.notification_type === 'phone_verification_request' && notification.target_id) {
         let phone = '';
-        try { phone = JSON.parse(notification.body || '{}')?.phone || ''; } catch {}
+        const payload = typeof notification.payload === 'object' && notification.payload ? notification.payload : null;
+        try { phone = String(payload?.phone || JSON.parse(notification.body || '{}')?.phone || '').trim(); } catch {}
         await supabase.from('profiles').update({ phone: phone || undefined, phone_verified: true, phone_verified_at: now, phone_validation_requested_at: null, updated_at: now }).eq('id', notification.target_id);
       }
       if ((action === 'approve' || action === 'reject') && notification.target_table === 'jobs' && notification.target_id) {
         await supabase.from('jobs').update({ approval_status: action === 'approve' ? 'approved' : 'rejected', approved_at: now, approved_by_profile_id: actorId, approval_notes: body.decision_notes ?? null, updated_at: now }).eq('id', Number(notification.target_id));
+      }
+      if ((action === 'approve' || action === 'reject') && notification.target_table === 'job_equipment_requirements' && notification.target_id) {
+        await supabase.from('job_equipment_requirements').update({ approval_status: action === 'approve' ? 'approved' : 'rejected', approval_notes: body.decision_notes ?? null, approved_at: now, approved_by_profile_id: actorId }).eq('id', Number(notification.target_id));
+      }
+      return Response.json({ ok:true, record: updated }, { headers:corsHeaders });
+    }
+
+    if (entity === 'job_requirement') {
+      if (!body.requirement_id) return Response.json({ ok:false, error:'requirement_id is required' }, { status:400, headers:corsHeaders });
+      const now = new Date().toISOString();
+      const patch: Record<string, unknown> = { approval_notes: body.decision_notes ?? null };
+      if (action === 'approve') {
+        patch.approval_status = 'approved';
+        patch.approved_at = now;
+        patch.approved_by_profile_id = actorId;
+      }
+      if (action === 'reject') {
+        patch.approval_status = 'rejected';
+        patch.approved_at = now;
+        patch.approved_by_profile_id = actorId;
+      }
+      if (action === 'request_approval') {
+        patch.approval_status = 'pending';
+      }
+      const { data: updated, error: reqErr } = await supabase.from('job_equipment_requirements').update(patch).eq('id', body.requirement_id).select('*').single();
+      if (reqErr) throw reqErr;
+      if (action === 'request_approval') {
+        await supabase.from('admin_notifications').insert({
+          notification_type: 'job_requirement_approval_requested',
+          recipient_role: 'admin',
+          target_table: 'job_equipment_requirements',
+          target_id: String(updated.id),
+          title: `Requirement approval requested: ${updated.equipment_name || updated.equipment_code || updated.id}`,
+          body: JSON.stringify({ requirement_id: updated.id, equipment_name: updated.equipment_name, needed_qty: updated.needed_qty, reserved_qty: updated.reserved_qty }),
+          payload: { requirement_id: updated.id, job_id: updated.job_id, equipment_name: updated.equipment_name, needed_qty: updated.needed_qty, reserved_qty: updated.reserved_qty },
+          status: 'queued',
+          email_subject: `YWI HSE requirement approval requested: ${updated.equipment_name || updated.equipment_code || updated.id}`,
+          created_by_profile_id: actorId,
+        });
       }
       return Response.json({ ok:true, record: updated }, { headers:corsHeaders });
     }

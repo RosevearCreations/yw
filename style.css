@@ -819,3 +819,27 @@ body[data-user-role="admin"] #admin[data-admin-locked="false"] {
 #crew_table, #crew_table table { min-width: 760px; }
 .account-panel, #settings, #me, #crew { margin-top: 18px; }
 #settings_future_hint { opacity: 0.95; }
+
+.table-scroll {
+  width: 100%;
+  overflow: auto;
+}
+
+.table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+#admin table,
+#jobs table,
+#equipment table {
+  width: 100%;
+}
+
+#admin textarea,
+#jobs textarea,
+#equipment textarea,
+#settings textarea {
+  width: 100%;
+}

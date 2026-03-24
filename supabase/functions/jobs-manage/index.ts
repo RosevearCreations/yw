@@ -60,7 +60,7 @@ async function sendEmailIfConfigured(notification: any) {
   const to = notification?.email_to || Deno.env.get('ADMIN_NOTIFICATION_TO');
   if (!apiKey || !from || !to) return { attempted: false, status: 'pending' };
 
-  const subject = notification?.email_subject || notification?.subject || notification?.title || 'YWI HSE notification';
+  const subject = notification?.email_subject || notification?.title || 'YWI HSE notification';
   const text = notification?.body || notification?.message || JSON.stringify(notification?.payload || {});
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -79,14 +79,13 @@ async function insertNotification(supabase: any, row: any) {
     target_profile_id: row.target_profile_id || null,
     target_table: row.target_table || null,
     target_id: row.target_id != null ? String(row.target_id) : null,
-    title: row.title || row.subject || 'Notification',
-    subject: row.subject || row.title || 'Notification',
+    title: row.title || 'Notification',
     body: row.body || row.message || JSON.stringify(payload),
     message: row.message || row.body || JSON.stringify(payload),
     payload,
     status: row.status || 'queued',
     email_to: row.email_to || null,
-    email_subject: row.email_subject || row.subject || row.title || 'Notification',
+    email_subject: row.email_subject || row.title || 'Notification',
     email_status: 'pending',
     created_by_profile_id: row.created_by_profile_id || null,
   };

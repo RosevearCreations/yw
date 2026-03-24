@@ -24,7 +24,9 @@
     profile: null,
     role: 'worker',
     roleLabel: 'Worker',
-    isAuthenticated: false
+    isAuthenticated: false,
+    authError: '',
+    authFlow: 'idle'
   };
 
   function dispatch(name, detail = {}) {
@@ -99,6 +101,8 @@
     state.role = bootState.role || state.profile?.role || 'worker';
     state.roleLabel = bootState.roleLabel || getRoleLabel(state.role);
     state.isAuthenticated = !!bootState.isAuthenticated;
+    state.authError = bootState.authError || '';
+    state.authFlow = bootState.authFlow || state.authFlow || 'idle';
     state.bootReady = true;
     state.pendingAuthResolution = false;
   }
@@ -107,6 +111,8 @@
     const { data, error } = await sb.auth.getSession();
     if (error) throw error;
     await applySession(data?.session || null);
+    state.authError = boot?.state?.authError || state.authError || '';
+    state.authFlow = boot?.state?.authFlow || state.authFlow || 'idle';
     return state.session;
   }
 
@@ -144,6 +150,8 @@
     if (error) throw error;
 
     await applySession(data?.session || null);
+    state.authError = boot?.state?.authError || state.authError || '';
+    state.authFlow = boot?.state?.authFlow || state.authFlow || 'idle';
     state.pendingAuthResolution = false;
 
     dispatch('ywi:auth-changed', { state: getState() });
@@ -216,6 +224,8 @@
     if (error) throw error;
 
     await applySession(data?.session || null);
+    state.authError = boot?.state?.authError || state.authError || '';
+    state.authFlow = boot?.state?.authFlow || state.authFlow || 'idle';
     state.pendingAuthResolution = false;
 
     dispatch('ywi:auth-changed', { state: getState() });
@@ -276,6 +286,7 @@
     signInWithMagicLink,
     signInWithPassword,
     resetPassword,
+    resendEmailVerification,
     changePassword,
     logout,
     logoutEverywhere

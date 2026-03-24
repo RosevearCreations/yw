@@ -1,7 +1,7 @@
 /* File: js/bootstrap.js
-   Brief description: Supabase bootstrap and session recovery layer.
-   Creates the shared Supabase client, restores sessions from normal or malformed auth callback URLs,
-   exposes boot state/helpers, and dispatches shared boot/auth events for the rest of the app.
+   Brief description: Shared bootstrap/auth recovery layer.
+   Restores Supabase sessions from PKCE code, token hash, or existing storage,
+   cleans callback URLs safely, and exposes boot/auth header helpers to the app.
 */
 
 'use strict';
@@ -27,7 +27,7 @@
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: true
+      detectSessionInUrl: false
     }
   });
 
@@ -38,6 +38,7 @@
     initialized: false,
     recoveredFromUrl: false,
     authError: '',
+    authFlow: 'idle',
     session: null,
     user: null,
     profile: null,
@@ -72,17 +73,13 @@
     const out = {};
     const source = safeText(str).replace(/^[?#&]+/, '');
     if (!source) return out;
-
     source.split('&').forEach((pair) => {
       if (!pair) return;
-
       const idx = pair.indexOf('=');
       const key = idx >= 0 ? pair.slice(0, idx) : pair;
       const val = idx >= 0 ? pair.slice(idx + 1) : '';
-
       out[decodeURIComponent(key)] = decodeURIComponent(val.replace(/\+/g, ' '));
     });
-
     return out;
   }
 
@@ -96,19 +93,9 @@
     const href = window.location.href || '';
     const url = new URL(href);
     const candidates = [];
-
-    if (url.search) {
-      candidates.push(parseQueryStringLike(url.search));
-    }
-
-    if (url.hash) {
-      candidates.push(parseQueryStringLike(url.hash));
-    }
-
-    getHashSegments().forEach((segment) => {
-      candidates.push(parseQueryStringLike(segment));
-    });
-
+    if (url.search) candidates.push(parseQueryStringLike(url.search));
+    if (url.hash) candidates.push(parseQueryStringLike(url.hash));
+    getHashSegments().forEach((segment) => candidates.push(parseQueryStringLike(segment)));
     return candidates.reduce((acc, obj) => ({ ...acc, ...obj }), {});
   }
 
@@ -116,8 +103,18 @@
     return !!(params?.access_token && params?.refresh_token);
   }
 
+  function hasAuthCode(params) {
+    return !!safeText(params?.code);
+  }
+
   function hasAuthError(params) {
     return !!(params?.error || params?.error_code || params?.error_description);
+  }
+
+  function getPostAuthHash(params = {}) {
+    const type = safeText(params.type).toLowerCase();
+    if (type === 'recovery') return '#settings';
+    return '#toolbox';
   }
 
   function cleanUrlAfterAuth(targetHash = '#toolbox') {
@@ -127,19 +124,12 @@
 
   async function fetchProfile(userId) {
     if (!userId) return null;
-
     try {
-      const { data, error } = await sb
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
+      const { data, error } = await sb.from('profiles').select('*').eq('id', userId).maybeSingle();
       if (error) {
         console.warn('Profile lookup failed:', error.message);
         return null;
       }
-
       return data || null;
     } catch (err) {
       console.warn('Profile lookup error:', err);
@@ -147,57 +137,62 @@
     }
   }
 
-  async function applySession(session, authError = '') {
+  async function applySession(session, authError = '', authFlow = state.authFlow) {
     state.session = session || null;
     state.user = session?.user || null;
     state.authError = authError || '';
+    state.authFlow = authFlow || 'idle';
     state.isAuthenticated = !!session?.access_token;
-
-    if (state.user?.id) {
-      state.profile = await fetchProfile(state.user.id);
-    } else {
-      state.profile = null;
-    }
-
+    if (state.user?.id) state.profile = await fetchProfile(state.user.id);
+    else state.profile = null;
     state.role = state.profile?.role || 'worker';
     state.roleLabel = getRoleLabel(state.role);
   }
 
   async function recoverSessionFromUrlIfNeeded() {
     const params = extractAuthParams();
-    const tokenPresent = hasTokenSet(params);
-    const authErrorPresent = hasAuthError(params);
+    const authFlow = safeText(params.type).toLowerCase() || 'signin';
 
-    if (tokenPresent) {
+    if (hasAuthCode(params)) {
+      const { data, error } = await sb.auth.exchangeCodeForSession(params.code);
+      if (error) {
+        console.error('exchangeCodeForSession failed:', error.message);
+        await applySession(null, error.message || params.error_description || '', authFlow);
+        cleanUrlAfterAuth('#settings');
+        return;
+      }
+      state.recoveredFromUrl = true;
+      await applySession(data?.session || null, '', authFlow);
+      cleanUrlAfterAuth(getPostAuthHash(params));
+      return;
+    }
+
+    if (hasTokenSet(params)) {
       const { data, error } = await sb.auth.setSession({
         access_token: params.access_token,
         refresh_token: params.refresh_token
       });
-
       if (error) {
         console.error('setSession failed:', error.message);
-        await applySession(null, error.message || params.error_description || '');
+        await applySession(null, error.message || params.error_description || '', authFlow);
+        cleanUrlAfterAuth('#settings');
         return;
       }
-
       state.recoveredFromUrl = true;
-      await applySession(data?.session || null, '');
-      cleanUrlAfterAuth('#toolbox');
+      await applySession(data?.session || null, '', authFlow);
+      cleanUrlAfterAuth(getPostAuthHash(params));
       return;
     }
 
-    if (authErrorPresent) {
-      const msg =
-        params.error_description ||
-        params.error_code ||
-        params.error ||
-        'Authentication failed.';
-      await applySession(null, msg);
+    if (hasAuthError(params)) {
+      const msg = params.error_description || params.error_code || params.error || 'Authentication failed.';
+      await applySession(null, msg, authFlow);
+      cleanUrlAfterAuth('#settings');
       return;
     }
 
     const { data } = await sb.auth.getSession();
-    await applySession(data?.session || null, '');
+    await applySession(data?.session || null, '', 'idle');
   }
 
   async function authHeader() {
@@ -209,8 +204,7 @@
   async function refresh() {
     const { data, error } = await sb.auth.refreshSession();
     if (error) throw error;
-
-    await applySession(data?.session || null, '');
+    await applySession(data?.session || null, '', 'refresh');
     return data?.session || null;
   }
 
@@ -220,38 +214,21 @@
 
   async function init() {
     if (state.initialized) return;
-
     await recoverSessionFromUrlIfNeeded();
-
-    sb.auth.onAuthStateChange(async (_event, session) => {
-      await applySession(session || null, '');
-      dispatch('ywi:auth-changed', {
-        state: getState()
-      });
+    sb.auth.onAuthStateChange(async (event, session) => {
+      const nextFlow = event === 'PASSWORD_RECOVERY' ? 'recovery' : (state.authFlow || 'session');
+      await applySession(session || null, '', nextFlow);
+      dispatch('ywi:auth-changed', { state: getState() });
     });
-
     state.initialized = true;
-
-    dispatch('ywi:boot-ready', {
-      state: getState()
-    });
+    dispatch('ywi:boot-ready', { state: getState() });
   }
 
-  window.YWI_BOOT = {
-    sb,
-    state,
-    init,
-    getState,
-    authHeader,
-    refresh
-  };
+  window.YWI_BOOT = { sb, state, init, getState, authHeader, refresh };
 
   init().catch((err) => {
     console.error('Bootstrap init failed:', err);
     state.authError = err?.message || 'Bootstrap failed.';
-
-    dispatch('ywi:boot-ready', {
-      state: getState()
-    });
+    dispatch('ywi:boot-ready', { state: getState() });
   });
 })();

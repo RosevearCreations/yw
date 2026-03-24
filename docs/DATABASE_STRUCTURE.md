@@ -151,3 +151,26 @@ This pass updates the repo toward the next high-value workflow layer:
 - add per-notification email preview/test send controls
 - add requirement-level approve/reject buttons directly from job/equipment screens
 - add provider-specific retry / dead-letter handling for email and SMS failures
+
+## Password-First Auth / Admin Approval UI Pass (March 24, 2026)
+
+This pass shifts the app to a password-first daily login flow while keeping magic link as backup/recovery only, and brings the approval/email workflow into the live frontend.
+
+### Included in this pass
+- bootstrap now restores Supabase sessions from `code=` callbacks as well as token hashes
+- login screen is now clearly password-first with forgot-password support and cleaner auth-wall behavior
+- settings now renders a live account security panel with password save/change, email verification resend, phone verification request, SMS code send/verify, and logout controls
+- admin now renders a visible approval queue with approve/reject/resolve actions
+- admin now includes email preview, test-send, and retry-send controls for notifications
+- jobs/equipment screens now render live forms inside the frontend shell instead of depending on missing static markup
+- jobs now support direct requirement review buttons for request / approve / reject actions
+- backend notification actions now support preview_email, test_send, and retry_send
+- account maintenance now supports retry_phone_verification_code
+- functions no longer depend on `admin_notifications.subject` existing
+
+### Most valuable next pass after this
+- add richer job editing/loading from saved rows back into the form
+- add stronger per-role UI hiding for approve/reject buttons
+- add provider-specific delivery attempt counters and dead-letter handling
+- add full admin CRUD layout restoration if broad directory management becomes the next focus
+
