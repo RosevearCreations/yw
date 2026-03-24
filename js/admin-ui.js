@@ -200,12 +200,13 @@
           <td>${escHtml(row.created_at || '')}</td>
           <td>
             <div class="table-actions" style="display:flex;flex-wrap:wrap;gap:6px;">
+${state.manageLocked ? `<span class="muted">View only</span>` : `
               <button class="secondary" data-notification-action="approve" data-id="${escHtml(row.id)}">Approve</button>
               <button class="secondary" data-notification-action="reject" data-id="${escHtml(row.id)}">Reject</button>
               <button class="secondary" data-notification-action="resolve" data-id="${escHtml(row.id)}">Resolve</button>
               <button class="secondary" data-notification-action="preview_email" data-id="${escHtml(row.id)}">Preview</button>
               <button class="secondary" data-notification-action="test_send" data-id="${escHtml(row.id)}">Test Send</button>
-              <button class="secondary" data-notification-action="retry_send" data-id="${escHtml(row.id)}">Retry</button>
+              <button class="secondary" data-notification-action="retry_send" data-id="${escHtml(row.id)}">Retry</button>`}
             </div>
           </td>
         `;

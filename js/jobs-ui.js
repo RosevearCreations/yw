@@ -1,7 +1,7 @@
 /* File: js/jobs-ui.js
    Brief description: Jobs and equipment planning UI.
    Renders live forms inside the Jobs and Equipment sections, supports pool-aware reservation requests,
-   and adds requirement-level approval buttons directly in the job workflow.
+   restores saved jobs into the form, and adds role-aware requirement approval controls.
 */
 
 'use strict';
@@ -28,7 +28,9 @@
       requirements: [],
       signouts: [],
       pools: [],
-      notifications: []
+      notifications: [],
+      editingJobId: null,
+      editingEquipmentCode: ''
     };
 
     function ensureLayout() {
@@ -40,10 +42,11 @@
           <div class="section-heading">
             <div>
               <h2>Jobs</h2>
-              <p class="section-subtitle">Create jobs, request pool-based reservations, and approve or reject requirement exceptions.</p>
+              <p class="section-subtitle">Create jobs, restore saved jobs back into the form, request pool-based reservations, and approve or reject requirement exceptions.</p>
             </div>
             <div class="admin-heading-actions">
               <button id="job_load" class="secondary" type="button">Reload</button>
+              <button id="job_clear" class="secondary" type="button">New Job</button>
             </div>
           </div>
           <div class="grid">
@@ -92,7 +95,7 @@
               <table id="job_list_table">
                 <thead>
                   <tr>
-                    <th>Code</th><th>Name</th><th>Site</th><th>Status</th><th>Approval</th><th>Dates</th>
+                    <th>Code</th><th>Name</th><th>Site</th><th>Status</th><th>Approval</th><th>Dates</th><th>Action</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -111,6 +114,7 @@
             </div>
             <div class="admin-heading-actions">
               <button id="eq_load" class="secondary" type="button">Reload</button>
+              <button id="eq_clear" class="secondary" type="button">New Item</button>
             </div>
           </div>
           <div class="grid">
@@ -145,7 +149,7 @@
             <h3 style="margin-top:0;">Equipment List</h3>
             <div class="table-scroll">
               <table id="eq_list_table">
-                <thead><tr><th>Code</th><th>Name</th><th>Status</th><th>Job</th><th>Pool</th></tr></thead>
+                <thead><tr><th>Code</th><th>Name</th><th>Status</th><th>Job</th><th>Pool</th><th>Action</th></tr></thead>
                 <tbody></tbody>
               </table>
             </div>
@@ -176,6 +180,7 @@
         jobEquipmentBody: $('#job_equipment_table tbody'),
         jobSave: $('#job_save'),
         jobLoad: $('#job_load'),
+        jobClear: $('#job_clear'),
         jobSummary: $('#job_summary'),
         jobListBody: $('#job_list_table tbody'),
         eqCode: $('#eq_code'),
@@ -189,6 +194,7 @@
         eqNotes: $('#eq_notes'),
         eqSave: $('#eq_save'),
         eqLoad: $('#eq_load'),
+        eqClear: $('#eq_clear'),
         eqCheckout: $('#eq_checkout'),
         eqReturn: $('#eq_return'),
         eqSummary: $('#eq_summary'),
@@ -222,9 +228,11 @@
 
     function applyRoleVisibility() {
       const e = els();
-      const allowed = !!getAccessProfile(getCurrentRole()).canManageJobs || canApprove();
+      const access = getAccessProfile(getCurrentRole());
+      const allowed = !!access.canManageJobs || !!access.canManageAdminDirectory;
       if (e.jobsSection) e.jobsSection.style.display = allowed ? '' : 'none';
       if (e.equipmentSection) e.equipmentSection.style.display = allowed ? '' : 'none';
+      document.body.dataset.canApproveJobs = canApprove() ? 'true' : 'false';
     }
 
     function fillSiteSelect(selectEl) {
@@ -240,6 +248,7 @@
     function addEquipmentRequirementRow(row = {}) {
       const e = els();
       if (!e.jobEquipmentBody) return;
+      const lockedApproval = !canApprove();
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><input type="text" class="job-eq-name" placeholder="Harness / Lift / specific asset" value="${escHtml(row.equipment_name || row.name || '')}"></td>
@@ -247,7 +256,7 @@
         <td><input type="number" class="job-eq-needed" min="1" step="1" value="${escHtml(row.needed_qty ?? 1)}"></td>
         <td><input type="number" class="job-eq-reserved" min="0" step="1" value="${escHtml(row.reserved_qty ?? 0)}"></td>
         <td>
-          <select class="job-eq-approval">
+          <select class="job-eq-approval" ${lockedApproval ? 'disabled' : ''}>
             <option value="not_required" ${(row.approval_status || '') === 'not_required' ? 'selected' : ''}>Not required</option>
             <option value="pending" ${(row.approval_status || '') === 'pending' ? 'selected' : ''}>Pending</option>
             <option value="approved" ${(row.approval_status || '') === 'approved' ? 'selected' : ''}>Approved</option>
@@ -270,13 +279,79 @@
       })).filter((row) => row.name || row.pool_key);
     }
 
+    function clearJobForm() {
+      const e = els();
+      state.editingJobId = null;
+      [e.jobCode, e.jobName, e.jobType, e.jobStatus, e.jobPriority, e.jobStartDate, e.jobEndDate, e.jobSupervisorName, e.jobSigningSupervisorName, e.jobAdminName, e.jobClientName].forEach((el) => { if (el) el.value = ''; });
+      if (e.jobStatus) e.jobStatus.value = 'planned';
+      if (e.jobPriority) e.jobPriority.value = 'normal';
+      if (e.jobSiteName) e.jobSiteName.value = '';
+      if (e.jobNotes) e.jobNotes.value = '';
+      if (e.jobRequestApproval) e.jobRequestApproval.checked = false;
+      if (e.jobEquipmentBody) e.jobEquipmentBody.innerHTML = '';
+      addEquipmentRequirementRow({ needed_qty: 1, reserved_qty: 0 });
+      setNotice(e.jobSummary, 'Ready for a new job entry.');
+    }
+
+    function clearEquipmentForm() {
+      const e = els();
+      state.editingEquipmentCode = '';
+      [e.eqCode, e.eqName, e.eqCategory, e.eqStatus, e.eqCurrentJobCode, e.eqAssignedSupervisor, e.eqSerial].forEach((el) => { if (el) el.value = ''; });
+      if (e.eqStatus) e.eqStatus.value = 'available';
+      if (e.eqHomeSite) e.eqHomeSite.value = '';
+      if (e.eqNotes) e.eqNotes.value = '';
+      setNotice(e.eqSummary, 'Ready for a new equipment entry.');
+    }
+
+    function loadJobIntoForm(jobRow) {
+      const e = els();
+      if (!jobRow) return;
+      state.editingJobId = jobRow.id;
+      e.jobCode.value = jobRow.job_code || '';
+      e.jobName.value = jobRow.job_name || '';
+      e.jobSiteName.value = jobRow.site_code || jobRow.site_name || '';
+      e.jobType.value = jobRow.job_type || '';
+      e.jobStatus.value = jobRow.status || 'planned';
+      e.jobPriority.value = jobRow.priority || 'normal';
+      e.jobStartDate.value = jobRow.start_date || '';
+      e.jobEndDate.value = jobRow.end_date || '';
+      e.jobSupervisorName.value = jobRow.supervisor_name || '';
+      e.jobSigningSupervisorName.value = jobRow.signing_supervisor_name || '';
+      e.jobAdminName.value = jobRow.admin_name || '';
+      e.jobClientName.value = jobRow.client_name || '';
+      e.jobNotes.value = jobRow.notes || '';
+      e.jobRequestApproval.checked = ['requested','pending'].includes(String(jobRow.approval_status || '').toLowerCase());
+      e.jobEquipmentBody.innerHTML = '';
+      const reqs = state.requirements.filter((row) => Number(row.job_id) === Number(jobRow.id));
+      (reqs.length ? reqs : [{ needed_qty: 1, reserved_qty: 0 }]).forEach(addEquipmentRequirementRow);
+      setNotice(e.jobSummary, `Loaded job ${jobRow.job_code} into the form for editing.`);
+      window.YWIRouter?.showSection?.('jobs', { skipFocus: true });
+    }
+
+    function loadEquipmentIntoForm(row) {
+      const e = els();
+      if (!row) return;
+      state.editingEquipmentCode = row.equipment_code || '';
+      e.eqCode.value = row.equipment_code || '';
+      e.eqName.value = row.equipment_name || '';
+      e.eqCategory.value = row.category || '';
+      e.eqHomeSite.value = row.home_site_code || row.home_site_name || '';
+      e.eqStatus.value = row.status || 'available';
+      e.eqCurrentJobCode.value = row.current_job_code || '';
+      e.eqAssignedSupervisor.value = row.assigned_supervisor_name || '';
+      e.eqSerial.value = row.serial_number || '';
+      e.eqNotes.value = row.notes || '';
+      setNotice(e.eqSummary, `Loaded equipment ${row.equipment_code} into the form for editing.`);
+      window.YWIRouter?.showSection?.('equipment', { skipFocus: true });
+    }
+
     function renderJobs() {
       const e = els();
       if (!e.jobListBody) return;
       e.jobListBody.innerHTML = '';
       state.jobs.forEach((row) => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${escHtml(row.job_code)}</td><td>${escHtml(row.job_name)}</td><td>${escHtml(row.site_name || row.site_code || '')}</td><td>${escHtml(row.status || '')}</td><td>${escHtml(row.approval_status || '')}</td><td>${escHtml(row.start_date || '')}${row.end_date ? ` → ${escHtml(row.end_date)}` : ''}</td>`;
+        tr.innerHTML = `<td>${escHtml(row.job_code)}</td><td>${escHtml(row.job_name)}</td><td>${escHtml(row.site_name || row.site_code || '')}</td><td>${escHtml(row.status || '')}</td><td>${escHtml(row.approval_status || '')}</td><td>${escHtml(row.start_date || '')}${row.end_date ? ` → ${escHtml(row.end_date)}` : ''}</td><td><button type="button" class="secondary" data-job-load="${escHtml(row.id)}">Load</button></td>`;
         e.jobListBody.appendChild(tr);
       });
     }
@@ -287,7 +362,7 @@
         e.eqListBody.innerHTML = '';
         state.equipment.forEach((row) => {
           const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${escHtml(row.equipment_code)}</td><td>${escHtml(row.equipment_name)}</td><td>${escHtml(row.status)}</td><td>${escHtml(row.current_job_code || '')}</td><td>${escHtml(row.equipment_pool_key || '')}</td>`;
+          tr.innerHTML = `<td>${escHtml(row.equipment_code)}</td><td>${escHtml(row.equipment_name)}</td><td>${escHtml(row.status)}</td><td>${escHtml(row.current_job_code || '')}</td><td>${escHtml(row.equipment_pool_key || '')}</td><td><button type="button" class="secondary" data-equipment-load="${escHtml(row.equipment_code)}">Load</button></td>`;
           e.eqListBody.appendChild(tr);
         });
       }
@@ -422,6 +497,8 @@
       if (existing) existing.remove();
       const pending = state.requirements.filter((row) => ['pending', 'rejected', 'approved'].includes(String(row.approval_status || '').toLowerCase()) || Number(row.reserved_qty || 0) < Number(row.needed_qty || 0));
       if (!pending.length || !e.jobsSection) return;
+      const allowApprove = canApprove();
+      const allowRequest = canManage();
       const block = document.createElement('div');
       block.id = 'job_requirement_review_block';
       block.className = 'admin-panel-block';
@@ -442,9 +519,10 @@
                   <td>${escHtml(row.approval_status || '')}</td>
                   <td>
                     <div class="table-actions" style="display:flex;flex-wrap:wrap;gap:6px;">
-                      <button type="button" class="secondary" data-requirement-action="request_approval" data-id="${escHtml(row.id)}">Request</button>
-                      <button type="button" class="secondary" data-requirement-action="approve" data-id="${escHtml(row.id)}">Approve</button>
-                      <button type="button" class="secondary" data-requirement-action="reject" data-id="${escHtml(row.id)}">Reject</button>
+                      ${allowRequest ? `<button type="button" class="secondary" data-requirement-action="request_approval" data-id="${escHtml(row.id)}">Request</button>` : ''}
+                      ${allowApprove ? `<button type="button" class="secondary" data-requirement-action="approve" data-id="${escHtml(row.id)}">Approve</button>` : ''}
+                      ${allowApprove ? `<button type="button" class="secondary" data-requirement-action="reject" data-id="${escHtml(row.id)}">Reject</button>` : ''}
+                      ${!allowApprove && !allowRequest ? `<span class="muted">View only</span>` : ''}
                     </div>
                   </td>
                 </tr>
@@ -457,11 +535,16 @@
       block.addEventListener('click', (event) => {
         const btn = event.target.closest('[data-requirement-action]');
         if (!btn) return;
-        if (!canApprove()) {
+        const action = btn.getAttribute('data-requirement-action');
+        if ((action === 'approve' || action === 'reject') && !canApprove()) {
           setNotice(e.jobSummary, 'Admin access is required for requirement approvals.', true);
           return;
         }
-        updateRequirementApproval(btn.getAttribute('data-id'), btn.getAttribute('data-requirement-action'));
+        if (action === 'request_approval' && !canManage()) {
+          setNotice(e.jobSummary, 'Supervisor+ access is required to request approval.', true);
+          return;
+        }
+        updateRequirementApproval(btn.getAttribute('data-id'), action);
       });
     }
 
@@ -479,6 +562,24 @@
           btn.closest('tr')?.remove();
         });
       }
+      if (e.jobListBody && e.jobListBody.dataset.bound !== '1') {
+        e.jobListBody.dataset.bound = '1';
+        e.jobListBody.addEventListener('click', (event) => {
+          const btn = event.target.closest('[data-job-load]');
+          if (!btn) return;
+          const row = state.jobs.find((job) => String(job.id) === String(btn.getAttribute('data-job-load')));
+          loadJobIntoForm(row);
+        });
+      }
+      if (e.eqListBody && e.eqListBody.dataset.bound !== '1') {
+        e.eqListBody.dataset.bound = '1';
+        e.eqListBody.addEventListener('click', (event) => {
+          const btn = event.target.closest('[data-equipment-load]');
+          if (!btn) return;
+          const row = state.equipment.find((item) => String(item.equipment_code) === String(btn.getAttribute('data-equipment-load')));
+          loadEquipmentIntoForm(row);
+        });
+      }
       if (e.jobSave && e.jobSave.dataset.bound !== '1') {
         e.jobSave.dataset.bound = '1';
         e.jobSave.addEventListener('click', saveJob);
@@ -487,6 +588,10 @@
         e.jobLoad.dataset.bound = '1';
         e.jobLoad.addEventListener('click', loadData);
       }
+      if (e.jobClear && e.jobClear.dataset.bound !== '1') {
+        e.jobClear.dataset.bound = '1';
+        e.jobClear.addEventListener('click', clearJobForm);
+      }
       if (e.eqSave && e.eqSave.dataset.bound !== '1') {
         e.eqSave.dataset.bound = '1';
         e.eqSave.addEventListener('click', saveEquipment);
@@ -494,6 +599,10 @@
       if (e.eqLoad && e.eqLoad.dataset.bound !== '1') {
         e.eqLoad.dataset.bound = '1';
         e.eqLoad.addEventListener('click', loadData);
+      }
+      if (e.eqClear && e.eqClear.dataset.bound !== '1') {
+        e.eqClear.dataset.bound = '1';
+        e.eqClear.addEventListener('click', clearEquipmentForm);
       }
       if (e.eqCheckout && e.eqCheckout.dataset.bound !== '1') {
         e.eqCheckout.dataset.bound = '1';
@@ -510,6 +619,8 @@
       bind();
       applyRoleVisibility();
       await loadData();
+      if (!state.jobs.length) clearJobForm();
+      if (!state.equipment.length) clearEquipmentForm();
       renderRequirementReviewPanel();
     }
 

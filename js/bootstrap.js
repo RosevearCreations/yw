@@ -1,7 +1,7 @@
 /* File: js/bootstrap.js
    Brief description: Shared bootstrap/auth recovery layer.
    Restores Supabase sessions from PKCE code, token hash, or existing storage,
-   cleans callback URLs safely, and exposes boot/auth header helpers to the app.
+   preserves route fragments safely, cleans callback URLs, and exposes boot/auth header helpers to the app.
 */
 
 'use strict';
@@ -44,7 +44,8 @@
     profile: null,
     role: 'worker',
     roleLabel: 'Worker',
-    isAuthenticated: false
+    isAuthenticated: false,
+    lastRouteHash: '#toolbox'
   };
 
   function dispatch(name, detail = {}) {
@@ -83,20 +84,40 @@
     return out;
   }
 
-  function getHashSegments() {
-    const href = window.location.href || '';
-    const parts = href.split('#');
-    return parts.length > 1 ? parts.slice(1) : [];
+  function isAuthParamBlock(text) {
+    return /(^|&)(access_token|refresh_token|expires_at|expires_in|token_type|type|error|error_code|error_description|code)=/i.test(String(text || ''));
   }
 
-  function extractAuthParams() {
+  function normalizeHashCandidate(value) {
+    const clean = String(value || '').replace(/^#+/, '').trim();
+    if (!clean || isAuthParamBlock(clean)) return '';
+    const first = clean.split('&')[0].split('?')[0].trim();
+    const normalized = first.replace(/[^a-zA-Z0-9_-]/g, '');
+    return normalized ? `#${normalized}` : '';
+  }
+
+  function extractAuthContext() {
     const href = window.location.href || '';
     const url = new URL(href);
+    const fragments = href.split('#').slice(1);
     const candidates = [];
+    let routeHash = normalizeHashCandidate(url.hash);
+
     if (url.search) candidates.push(parseQueryStringLike(url.search));
-    if (url.hash) candidates.push(parseQueryStringLike(url.hash));
-    getHashSegments().forEach((segment) => candidates.push(parseQueryStringLike(segment)));
-    return candidates.reduce((acc, obj) => ({ ...acc, ...obj }), {});
+    if (url.hash && isAuthParamBlock(url.hash.replace(/^#/, ''))) candidates.push(parseQueryStringLike(url.hash));
+
+    fragments.forEach((fragment) => {
+      const clean = String(fragment || '').trim();
+      if (!clean) return;
+      if (isAuthParamBlock(clean)) {
+        candidates.push(parseQueryStringLike(clean));
+      } else if (!routeHash) {
+        routeHash = normalizeHashCandidate(clean);
+      }
+    });
+
+    const params = candidates.reduce((acc, obj) => ({ ...acc, ...obj }), {});
+    return { params, routeHash: routeHash || state.lastRouteHash || '#toolbox' };
   }
 
   function hasTokenSet(params) {
@@ -111,14 +132,16 @@
     return !!(params?.error || params?.error_code || params?.error_description);
   }
 
-  function getPostAuthHash(params = {}) {
+  function getPostAuthHash(params = {}, fallbackHash = '#toolbox') {
     const type = safeText(params.type).toLowerCase();
     if (type === 'recovery') return '#settings';
-    return '#toolbox';
+    return normalizeHashCandidate(fallbackHash) || '#toolbox';
   }
 
   function cleanUrlAfterAuth(targetHash = '#toolbox') {
-    const clean = `${window.location.origin}${window.location.pathname}${targetHash}`;
+    const cleanHash = normalizeHashCandidate(targetHash) || '#toolbox';
+    state.lastRouteHash = cleanHash;
+    const clean = `${window.location.origin}${window.location.pathname}${cleanHash}`;
     window.history.replaceState({}, document.title, clean);
   }
 
@@ -150,7 +173,8 @@
   }
 
   async function recoverSessionFromUrlIfNeeded() {
-    const params = extractAuthParams();
+    const { params, routeHash } = extractAuthContext();
+    state.lastRouteHash = normalizeHashCandidate(routeHash) || '#toolbox';
     const authFlow = safeText(params.type).toLowerCase() || 'signin';
 
     if (hasAuthCode(params)) {
@@ -163,7 +187,7 @@
       }
       state.recoveredFromUrl = true;
       await applySession(data?.session || null, '', authFlow);
-      cleanUrlAfterAuth(getPostAuthHash(params));
+      cleanUrlAfterAuth(getPostAuthHash(params, routeHash));
       return;
     }
 
@@ -180,7 +204,7 @@
       }
       state.recoveredFromUrl = true;
       await applySession(data?.session || null, '', authFlow);
-      cleanUrlAfterAuth(getPostAuthHash(params));
+      cleanUrlAfterAuth(getPostAuthHash(params, routeHash));
       return;
     }
 
@@ -193,6 +217,7 @@
 
     const { data } = await sb.auth.getSession();
     await applySession(data?.session || null, '', 'idle');
+    if (!window.location.hash && state.isAuthenticated) cleanUrlAfterAuth(routeHash || '#toolbox');
   }
 
   async function authHeader() {

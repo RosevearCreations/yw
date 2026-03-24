@@ -22,6 +22,7 @@
     JOBS_DIRECTORY_URL: `${SB_URL}/functions/v1/jobs-directory`,
     JOBS_MANAGE_URL: `${SB_URL}/functions/v1/jobs-manage`,
     ACCOUNT_URL: `${SB_URL}/functions/v1/account-maintenance`,
+    BOOTSTRAP_ADMIN_URL: `${SB_URL}/functions/v1/bootstrap-admin`,
     UPLOAD_URL:    `${SB_URL}/functions/v1/upload-image`,
     STORAGE_BUCKET: 'submission-images'
   };
@@ -119,6 +120,10 @@
     return manageAdminEntity({ entity: 'profile', action: 'self_update', ...payload });
   }
 
+  async function bootstrapAdmin(payload = {}) {
+    return jsonFetch(ENDPOINTS.BOOTSTRAP_ADMIN_URL, { body: payload });
+  }
+
   async function uploadImageViaFunction(submissionId, image) {
     const formData = new FormData();
     formData.append('submission_id', String(submissionId));
@@ -162,6 +167,7 @@
     verifyPhoneCode,
     retryPhoneVerificationCode,
     saveMyProfile,
+    bootstrapAdmin,
     uploadImageViaFunction,
     uploadImagesForSubmission,
     storagePreviewUrl

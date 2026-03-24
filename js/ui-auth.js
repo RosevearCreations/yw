@@ -135,7 +135,7 @@
     if (state.authError) {
       setNotice(state.authError, true);
     } else {
-      setNotice('Use email and password for daily sign-in. Magic link is only a backup or recovery option.', false);
+      setNotice('Use email and password for daily sign-in. Magic link is only for first validation, backup access, or recovery.', false);
     }
   }
 
@@ -160,7 +160,7 @@
     const restore = setBusy(els.passwordForgotBtn, 'Sending reset...');
     try {
       await auth.resetPassword(email);
-      setNotice('Password reset email sent. Open the newest email and then set your new password in Settings.', false);
+      setNotice('Password reset email sent. Open the newest email, let the app finish signing you in, then set your new password in Settings.', false);
     } catch (err) {
       setNotice(err?.message || 'Password reset failed.', true);
     } finally {
@@ -173,7 +173,7 @@
     const restore = setBusy(els.magicBtn, 'Sending link...');
     try {
       await auth.signInWithMagicLink(els.magicEmail?.value || '');
-      setNotice('Magic link sent. Use it only when you need backup access or account recovery.', false);
+      setNotice('Magic link sent. Use it only for backup access, first-time validation, or recovery.', false);
       setTab('password');
     } catch (err) {
       setNotice(err?.message || 'Magic link sign-in failed.', true);

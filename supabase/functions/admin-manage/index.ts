@@ -13,6 +13,31 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+
+async function updateDeliveryState(supabase: any, notificationId: any, kind: 'email' | 'sms', provider: string, ok: boolean, errorText = '') {
+  if (!notificationId) return;
+  const countField = kind === 'sms' ? 'sms_attempt_count' : 'email_attempt_count';
+  const providerField = kind === 'sms' ? 'sms_provider' : 'email_provider';
+  const attemptField = kind === 'sms' ? 'sms_last_attempt_at' : 'email_last_attempt_at';
+  const { data: current } = await supabase.from('admin_notifications').select(`id,${countField}`).eq('id', notificationId).maybeSingle();
+  const attemptCount = Number(current?.[countField] || 0) + 1;
+  const patch: Record<string, unknown> = {
+    [countField]: attemptCount,
+    [providerField]: provider,
+    [attemptField]: new Date().toISOString(),
+  };
+  if (kind === 'email') {
+    patch.email_status = ok ? 'sent' : 'failed';
+    patch.email_error = ok ? null : String(errorText || '');
+  }
+  if (!ok && attemptCount >= 3) {
+    patch.dead_lettered_at = new Date().toISOString();
+    patch.dead_letter_reason = `${kind}:${String(errorText || 'delivery failed')}`;
+    patch.status = 'dead_letter';
+  }
+  await supabase.from('admin_notifications').update(patch).eq('id', notificationId);
+}
+
 async function sendEmailIfConfigured(row: any, overrides: Record<string, unknown> = {}) {
   const apiKey = Deno.env.get('RESEND_API_KEY');
   const from = Deno.env.get('RESEND_FROM_EMAIL') || Deno.env.get('EMAIL_FROM');
@@ -100,6 +125,7 @@ serve(async (req) => {
               email_to: body.email_to || notification.email_to || null,
               email_subject: body.email_subject || notification.email_subject || notification.title || 'YWI HSE notification',
               email_status: sent.status,
+              email_provider: 'resend',
               email_error: null,
               sent_at: now,
               status: 'sent',
@@ -107,11 +133,13 @@ serve(async (req) => {
             };
             const { data: updated, error: updateErr } = await supabase.from('admin_notifications').update(patch).eq('id', notificationId).select('*').single();
             if (updateErr) throw updateErr;
+            await updateDeliveryState(supabase, notificationId, 'email', 'resend', true, '');
             return Response.json({ ok:true, record: updated, preview: patch }, { headers:corsHeaders });
           }
           return Response.json({ ok:false, error:'Outbound email is not configured.' }, { status:400, headers:corsHeaders });
         } catch (err) {
-          await supabase.from('admin_notifications').update({ email_status: 'failed', email_error: String(err), status: 'failed', read_at: notification.read_at || now }).eq('id', notificationId);
+          await updateDeliveryState(supabase, notificationId, 'email', 'resend', false, String(err));
+          await supabase.from('admin_notifications').update({ status: 'failed', read_at: notification.read_at || now }).eq('id', notificationId);
           return Response.json({ ok:false, error:String(err) }, { status:500, headers:corsHeaders });
         }
       }

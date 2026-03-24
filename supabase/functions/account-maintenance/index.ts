@@ -72,6 +72,7 @@ serve(async (req) => {
     if (!phone) return Response.json({ ok: false, error: 'Phone number required' }, { status: 400, headers: corsHeaders });
     const verify = await twilioVerify('Verifications', new URLSearchParams({ To: phone, Channel: 'sms' }));
     await supabase.from('profiles').update({ phone, phone_verification_provider: 'twilio_verify', phone_verification_sid: verify.sid || null, phone_validation_requested_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', actorId);
+    await supabase.from('admin_notifications').insert({ notification_type: 'phone_verification_sms_attempt', recipient_role: 'admin', target_table: 'profiles', target_id: actorId, title: `SMS verification sent for ${actorProfile.full_name || actorProfile.email}`, body: JSON.stringify({ profile_id: actorId, phone, provider: 'twilio_verify' }), payload: { profile_id: actorId, phone, provider: 'twilio_verify' }, sms_provider: 'twilio_verify', sms_attempt_count: 1, sms_last_attempt_at: new Date().toISOString(), status: 'queued', created_by_profile_id: actorId });
     return Response.json({ ok: true, status: verify.status || 'pending', provider: 'twilio_verify', retry: action === 'retry_phone_verification_code' }, { headers: corsHeaders });
   }
 
@@ -81,7 +82,10 @@ serve(async (req) => {
     const code = String(body.code || '').trim();
     if (!phone || !code) return Response.json({ ok: false, error: 'Phone number and code are required' }, { status: 400, headers: corsHeaders });
     const check = await twilioVerify('VerificationCheck', new URLSearchParams({ To: phone, Code: code }));
-    if (String(check.status || '').toLowerCase() !== 'approved') return Response.json({ ok: false, error: 'Verification code was not approved' }, { status: 400, headers: corsHeaders });
+    if (String(check.status || '').toLowerCase() !== 'approved') {
+      await supabase.from('admin_notifications').insert({ notification_type: 'phone_verification_sms_failed', recipient_role: 'admin', target_table: 'profiles', target_id: actorId, title: `SMS verification failed for ${actorProfile.full_name || actorProfile.email}`, body: JSON.stringify({ profile_id: actorId, phone, provider: 'twilio_verify' }), payload: { profile_id: actorId, phone, provider: 'twilio_verify' }, sms_provider: 'twilio_verify', sms_attempt_count: 1, sms_last_attempt_at: new Date().toISOString(), dead_lettered_at: new Date().toISOString(), dead_letter_reason: 'sms:verification_not_approved', status: 'dead_letter', created_by_profile_id: actorId });
+      return Response.json({ ok: false, error: 'Verification code was not approved' }, { status: 400, headers: corsHeaders });
+    }
     const now = new Date().toISOString();
     const { data, error } = await supabase.from('profiles').update({ phone, phone_verified: true, phone_verified_at: now, phone_verification_provider: 'twilio_verify', phone_validation_requested_at: null, updated_at: now }).eq('id', actorId).select('*').single();
     if (error) return Response.json({ ok: false, error: error.message }, { status: 500, headers: corsHeaders });

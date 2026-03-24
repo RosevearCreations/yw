@@ -115,3 +115,17 @@ This pass shifts the app to a password-first daily login flow while keeping magi
 - add provider-specific delivery attempt counters and dead-letter handling
 - add full admin CRUD layout restoration if broad directory management becomes the next focus
 
+## 2026-03-24 pass: auth, approvals, delivery retries, and saved-job restore
+
+This pass adds four major improvements:
+- password-first sign-in remains the normal path after first validation, with magic link kept as backup/recovery only
+- auth callback parsing now safely handles Supabase `code=` links and broken multi-hash URLs like `#toolbox#access_token=...`
+- saved jobs and equipment rows can now be loaded back into the live form for editing
+- admin notifications now support provider-specific delivery attempt counters plus dead-letter tracking for failed email/SMS retry workflows
+
+Additional notes for this pass:
+- added a compatibility `bootstrap-admin` Edge Function for stale cached callers
+- added stronger per-role hiding for job requirement approve/reject buttons
+- added schema migration `049_auth_delivery_attempts_and_dead_letters.sql`
+- updated `000_full_schema_reference.sql` to include email/SMS provider and attempt tracking fields
+- next broad admin focus can restore full CRUD directory layouts without conflicting with this pass

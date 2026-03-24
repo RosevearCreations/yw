@@ -45,7 +45,7 @@
   function getRequestedSection() {
     const raw = (location.hash || `#${DEFAULT_SECTION}`).slice(1);
     if (isAuthCallbackHash(raw)) return null;
-    const firstPart = raw.split('&')[0] || DEFAULT_SECTION;
+    const firstPart = (raw.split('#')[0] || '').split('&')[0] || DEFAULT_SECTION;
     const normalized = normalizeSectionId(firstPart);
     return sectionExists(normalized) ? normalized : DEFAULT_SECTION;
   }

@@ -13,6 +13,31 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+
+async function updateDeliveryState(supabase: any, notificationId: any, kind: 'email' | 'sms', provider: string, ok: boolean, errorText = '') {
+  if (!notificationId) return;
+  const countField = kind === 'sms' ? 'sms_attempt_count' : 'email_attempt_count';
+  const providerField = kind === 'sms' ? 'sms_provider' : 'email_provider';
+  const attemptField = kind === 'sms' ? 'sms_last_attempt_at' : 'email_last_attempt_at';
+  const { data: current } = await supabase.from('admin_notifications').select(`id,${countField}`).eq('id', notificationId).maybeSingle();
+  const attemptCount = Number(current?.[countField] || 0) + 1;
+  const patch: Record<string, unknown> = {
+    [countField]: attemptCount,
+    [providerField]: provider,
+    [attemptField]: new Date().toISOString(),
+  };
+  if (kind === 'email') {
+    patch.email_status = ok ? 'sent' : 'failed';
+    patch.email_error = ok ? null : String(errorText || '');
+  }
+  if (!ok && attemptCount >= 3) {
+    patch.dead_lettered_at = new Date().toISOString();
+    patch.dead_letter_reason = `${kind}:${String(errorText || 'delivery failed')}`;
+    patch.status = 'dead_letter';
+  }
+  await supabase.from('admin_notifications').update(patch).eq('id', notificationId);
+}
+
 function roleRank(role: string) {
   return { worker:10, staff:15, onsite_admin:18, site_leader:20, supervisor:30, hse:40, job_admin:45, admin:50 }[role] ?? 0;
 }
@@ -94,10 +119,12 @@ async function insertNotification(supabase: any, row: any) {
   try {
     const sent = await sendEmailIfConfigured(insertRow);
     if (sent.attempted) {
-      await supabase.from('admin_notifications').update({ email_status: sent.status, status: 'sent', sent_at: new Date().toISOString() }).eq('id', data.id);
+      await updateDeliveryState(supabase, data.id, 'email', 'resend', true, '');
+      await supabase.from('admin_notifications').update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', data.id);
     }
   } catch (err) {
-    await supabase.from('admin_notifications').update({ email_status: 'failed', email_error: String(err), status: 'failed' }).eq('id', data.id);
+    await updateDeliveryState(supabase, data.id, 'email', 'resend', false, String(err));
+    await supabase.from('admin_notifications').update({ status: 'failed' }).eq('id', data.id);
   }
   return data;
 }

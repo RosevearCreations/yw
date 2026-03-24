@@ -12,6 +12,31 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+
+async function updateDeliveryState(supabase: any, notificationId: any, kind: 'email' | 'sms', provider: string, ok: boolean, errorText = '') {
+  if (!notificationId) return;
+  const countField = kind === 'sms' ? 'sms_attempt_count' : 'email_attempt_count';
+  const providerField = kind === 'sms' ? 'sms_provider' : 'email_provider';
+  const attemptField = kind === 'sms' ? 'sms_last_attempt_at' : 'email_last_attempt_at';
+  const { data: current } = await supabase.from('admin_notifications').select(`id,${countField}`).eq('id', notificationId).maybeSingle();
+  const attemptCount = Number(current?.[countField] || 0) + 1;
+  const patch: Record<string, unknown> = {
+    [countField]: attemptCount,
+    [providerField]: provider,
+    [attemptField]: new Date().toISOString(),
+  };
+  if (kind === 'email') {
+    patch.email_status = ok ? 'sent' : 'failed';
+    patch.email_error = ok ? null : String(errorText || '');
+  }
+  if (!ok && attemptCount >= 3) {
+    patch.dead_lettered_at = new Date().toISOString();
+    patch.dead_letter_reason = `${kind}:${String(errorText || 'delivery failed')}`;
+    patch.status = 'dead_letter';
+  }
+  await supabase.from('admin_notifications').update(patch).eq('id', notificationId);
+}
+
 async function sendEmailIfConfigured(row: any) {
   const apiKey = Deno.env.get('RESEND_API_KEY');
   const from = Deno.env.get('RESEND_FROM_EMAIL') || Deno.env.get('EMAIL_FROM');
@@ -70,9 +95,10 @@ serve(async (req) => {
     for (const row of data || []) {
       try {
         const sent = await sendEmailIfConfigured(row);
-        if (sent.attempted) await supabase.from('admin_notifications').update({ email_status: sent.status, status: 'sent', sent_at: new Date().toISOString() }).eq('id', row.id);
+        if (sent.attempted) { await updateDeliveryState(supabase, row.id, 'email', 'resend', true, ''); await supabase.from('admin_notifications').update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', row.id); }
       } catch (err) {
-        await supabase.from('admin_notifications').update({ email_status: 'failed', email_error: String(err), status: 'failed' }).eq('id', row.id);
+        await updateDeliveryState(supabase, row.id, 'email', 'resend', false, String(err));
+        await supabase.from('admin_notifications').update({ status: 'failed' }).eq('id', row.id);
       }
     }
   }
