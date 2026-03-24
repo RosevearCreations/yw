@@ -247,6 +247,17 @@
           <label>Role
             <input type="text" id="account_role" readonly />
           </label>
+          <label>Email Status
+            <input type="text" id="account_email_status" readonly />
+          </label>
+          <label>Phone Status
+            <input type="text" id="account_phone_status" readonly />
+          </label>
+        </div>
+
+        <div class="form-footer">
+          <button id="account_resend_email_verification" class="secondary" type="button">Resend Email Verification</button>
+          <button id="account_request_phone_verification" class="secondary" type="button">Request Phone Verification</button>
         </div>
 
         <div class="notice" id="account_password_hint" style="margin-top:12px;">
@@ -926,6 +937,12 @@
         <label>Session Expires
           <input type="text" id="settings_expires" readonly />
         </label>
+        <label>Email Validation
+          <input type="text" id="settings_email_validation" readonly />
+        </label>
+        <label>Phone Validation
+          <input type="text" id="settings_phone_validation" readonly />
+        </label>
       </div>
 
       <div class="form-footer">
@@ -1098,7 +1115,11 @@
       <div class="form-footer">
         <button id="eq_save" class="primary" type="button">Save Equipment</button>
         <button id="eq_load" class="secondary" type="button">Load Equipment</button>
+        <button id="eq_checkout" class="secondary" type="button">Check Out To Job</button>
+        <button id="eq_return" class="secondary" type="button">Return Equipment</button>
       </div>
+
+      <div class="notice">Checkout requires an equipment code, current job code, and assigned supervisor. Return uses the equipment code.</div>
 
       <div id="eq_summary" class="notice" style="display:none;margin-top:14px;"></div>
 

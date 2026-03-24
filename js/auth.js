@@ -164,6 +164,23 @@
     return true;
   }
 
+
+  async function resendEmailVerification(emailOverride) {
+    const email = safeText(emailOverride || state.profile?.email || state.user?.email || '');
+    if (!email) {
+      throw new Error('Email is required.');
+    }
+
+    const { error } = await sb.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: getRedirectUrl() }
+    });
+
+    if (error) throw error;
+    return true;
+  }
+
   async function changePassword(newPassword) {
     const cleanPassword = String(newPassword ?? '');
     if (!cleanPassword) {

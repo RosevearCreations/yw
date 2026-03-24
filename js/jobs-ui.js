@@ -63,6 +63,8 @@
       eqNotes: $('#eq_notes'),
       eqSave: $('#eq_save'),
       eqLoad: $('#eq_load'),
+      eqCheckout: $('#eq_checkout'),
+      eqReturn: $('#eq_return'),
       eqSummary: $('#eq_summary'),
       eqListBody: $('#eq_list_table tbody')
     };
@@ -140,6 +142,32 @@
         `;
         els.jobListBody.appendChild(tr);
       });
+    }
+
+    async function checkoutEquipment() {
+      const equipment_code = els.eqCode?.value?.trim?.() || '';
+      const job_code = els.eqCurrentJobCode?.value?.trim?.() || '';
+      const supervisor_name = els.eqAssignedSupervisor?.value?.trim?.() || '';
+      if (!equipment_code || !job_code || !supervisor_name) { setNotice(els.eqSummary, 'Equipment code, current job code, and assigned supervisor are required.'); return; }
+      try {
+        if (api?.manageJobsEntity) {
+          const resp = await api.manageJobsEntity({ entity:'equipment', action:'checkout', equipment_code, job_code, supervisor_name, notes: els.eqNotes?.value?.trim?.() || '' });
+          if (resp?.ok) setNotice(els.eqSummary, 'Equipment checked out to the job.');
+        }
+        await loadJobs();
+      } catch (err) { console.error(err); setNotice(els.eqSummary, err?.message || 'Checkout failed.'); }
+    }
+
+    async function returnEquipment() {
+      const equipment_code = els.eqCode?.value?.trim?.() || '';
+      if (!equipment_code) { setNotice(els.eqSummary, 'Equipment code is required to return an item.'); return; }
+      try {
+        if (api?.manageJobsEntity) {
+          const resp = await api.manageJobsEntity({ entity:'equipment', action:'return', equipment_code });
+          if (resp?.ok) setNotice(els.eqSummary, 'Equipment returned and marked available.');
+        }
+        await loadJobs();
+      } catch (err) { console.error(err); setNotice(els.eqSummary, err?.message || 'Return failed.'); }
     }
 
     function renderEquipmentList() {
@@ -259,6 +287,8 @@
       els.jobLoad?.addEventListener('click', loadJobs);
       els.eqSave?.addEventListener('click', saveEquipment);
       els.eqLoad?.addEventListener('click', loadJobs);
+      els.eqCheckout?.addEventListener('click', checkoutEquipment);
+      els.eqReturn?.addEventListener('click', returnEquipment);
       document.addEventListener('ywi:auth-changed', () => applyRoleVisibility());
     }
 

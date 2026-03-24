@@ -1,8 +1,8 @@
 // Detailed Edge Function: admin-directory
 // Purpose:
 // - self scope: current employee profile only
-// - crew scope: supervisor/hse/job_admin/admin people list based on role visibility
-// - all/users/sites/assignments scopes for admin directory
+// - crew scope: direct reports based on profile hierarchy and assignment reporting lines
+// - all/users/sites/assignments scopes for admin/senior directory
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -34,40 +34,49 @@ serve(async (req) => {
   const roleFilter = String(body.role_filter || body.profile_role || '').trim().toLowerCase();
 
   const { data: peopleRaw } = await supabase.from('v_people_directory').select('*');
-  const people = (peopleRaw || []).filter((row: any) => {
+  const { data: assignmentsRaw } = await supabase.from('v_assignments_directory').select('*');
+  const people = peopleRaw || [];
+  const assignments = assignmentsRaw || [];
+
+  const directReportIds = new Set<string>();
+  for (const row of people) {
+    if (row.id === actorId) continue;
+    if (row.default_supervisor_profile_id === actorId || row.override_supervisor_profile_id === actorId) directReportIds.add(String(row.id));
+    if ((actorProfile.role === 'admin' || actorProfile.role === 'job_admin' || actorProfile.role === 'hse') && (row.default_admin_profile_id === actorId || row.override_admin_profile_id === actorId)) {
+      directReportIds.add(String(row.id));
+    }
+  }
+  for (const a of assignments) {
+    if (String(a.reports_to_supervisor_profile_id || '') === actorId || String(a.reports_to_admin_profile_id || '') === actorId) {
+      directReportIds.add(String(a.profile_id));
+    }
+  }
+
+  const filteredPeople = people.filter((row: any) => {
     const targetRank = roleRank(row.role || 'worker');
     if (scope === 'self') return row.id === actorId;
     if (scope === 'crew') {
       if (actorProfile.role === 'admin') return true;
-      if (actorProfile.role === 'supervisor') return targetRank < roleRank('supervisor');
-      if (actorProfile.role === 'hse' || actorProfile.role === 'job_admin') return targetRank < roleRank('admin');
+      if (roleRank(actorProfile.role) >= roleRank('supervisor')) return row.id === actorId || directReportIds.has(String(row.id));
       return row.id === actorId;
     }
-    if (scope === 'all' || scope === 'users') {
-      return roleRank(actorProfile.role) >= roleRank('supervisor');
-    }
+    if (scope === 'all' || scope === 'users') return roleRank(actorProfile.role) >= roleRank('supervisor');
     return true;
   }).filter((row: any) => {
     if (roleFilter && row.role !== roleFilter) return false;
     if (!search) return true;
-    return [row.full_name, row.email, row.current_position, row.trade_specialty, row.phone, row.primary_site_name, row.primary_site_code]
+    return [row.full_name, row.email, row.current_position, row.trade_specialty, row.phone, row.default_supervisor_name, row.default_admin_name]
       .some((v) => String(v || '').toLowerCase().includes(search));
   });
 
-  const response: Record<string, unknown> = { ok:true, profiles: people };
-
+  const response: Record<string, unknown> = { ok:true, profiles: filteredPeople };
   if ((scope === 'all' || scope === 'sites') && roleRank(actorProfile.role) >= roleRank('supervisor')) {
     const { data: sites } = await supabase.from('sites').select('*').order('site_code');
     response.sites = sites || [];
   }
-
   if ((scope === 'all' || scope === 'assignments') && roleRank(actorProfile.role) >= roleRank('supervisor')) {
-    const { data: assignments } = await supabase
-      .from('site_assignments')
-      .select('id, site_id, profile_id, assignment_role, is_primary, profiles!inner(email,full_name,is_active), sites!inner(site_code,site_name)');
-    response.assignments = assignments || [];
+    response.assignments = assignments;
   }
-
-  if (scope === 'self') response.profile = people[0] || null;
+  if (scope === 'self') response.profile = filteredPeople[0] || null;
   return Response.json(response, { headers: corsHeaders });
 });

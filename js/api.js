@@ -21,6 +21,7 @@
     NOTIFY_URL: `${SB_URL}/functions/v1/notify-admins`,
     JOBS_DIRECTORY_URL: `${SB_URL}/functions/v1/jobs-directory`,
     JOBS_MANAGE_URL: `${SB_URL}/functions/v1/jobs-manage`,
+    ACCOUNT_URL: `${SB_URL}/functions/v1/account-maintenance`,
     UPLOAD_URL:    `${SB_URL}/functions/v1/upload-image`,
     STORAGE_BUCKET: 'submission-images'
   };
@@ -98,6 +99,10 @@
     return jsonFetch(ENDPOINTS.JOBS_MANAGE_URL, { body: payload });
   }
 
+  async function requestPhoneVerification(payload = {}) {
+    return jsonFetch(ENDPOINTS.ACCOUNT_URL, { body: { action: 'request_phone_verification', ...payload } });
+  }
+
   async function saveMyProfile(payload) {
     return manageAdminEntity({ entity: 'profile', action: 'self_update', ...payload });
   }
@@ -140,6 +145,7 @@
     fetchProfileScope,
     fetchJobsDirectory,
     manageJobsEntity,
+    requestPhoneVerification,
     saveMyProfile,
     uploadImageViaFunction,
     uploadImagesForSubmission,

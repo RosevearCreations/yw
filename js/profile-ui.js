@@ -33,6 +33,8 @@
       sessionWhoami: $('#settings_whoami'),
       sessionRole: $('#settings_role'),
       sessionExpires: $('#settings_expires'),
+      sessionEmailValidation: $('#settings_email_validation'),
+      sessionPhoneValidation: $('#settings_phone_validation'),
       sessionLogout: $('#settings_logout'),
       sessionSettingsHint: $('#settings_future_hint'),
 
@@ -93,6 +95,8 @@
         const expiresAt = authState.session?.expires_at ? new Date(authState.session.expires_at * 1000).toLocaleString() : '';
         els.sessionExpires.value = expiresAt;
       }
+      if (els.sessionEmailValidation) els.sessionEmailValidation.value = authState.user?.email_confirmed_at ? 'Verified' : 'Verification pending';
+      if (els.sessionPhoneValidation) els.sessionPhoneValidation.value = authState.profile?.phone_verified ? 'Verified' : 'Verification pending';
     }
 
     function renderSelf(profile) {

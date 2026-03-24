@@ -1,6 +1,7 @@
 // Detailed Edge Function: jobs-directory
 // Purpose:
-// - Return jobs and equipment directory data for supervisor/admin workflows
+// - Return jobs, requirements, equipment, and active signouts
+// - Supervisor+ can use this to plan reservations and track equipment movements
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -25,5 +26,7 @@ serve(async (req) => {
 
   const { data: jobs } = await supabase.from('v_jobs_directory').select('*').order('start_date', { ascending: false });
   const { data: equipment } = await supabase.from('v_equipment_directory').select('*').order('equipment_code');
-  return Response.json({ ok:true, jobs: jobs || [], equipment: equipment || [] }, { headers: corsHeaders });
+  const { data: requirements } = await supabase.from('job_equipment_requirements').select('*').order('job_id');
+  const { data: signouts } = await supabase.from('equipment_signouts').select('*').order('checked_out_at', { ascending:false });
+  return Response.json({ ok:true, jobs: jobs || [], equipment: equipment || [], requirements: requirements || [], signouts: signouts || [] }, { headers: corsHeaders });
 });

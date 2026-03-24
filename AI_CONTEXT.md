@@ -39,3 +39,8 @@ Admins should see all levels.
 - RLS and role visibility verification
 - real equipment sign-out workflow
 - job requirement to reservation conversion
+
+
+## Latest security and workflow pass
+
+This pass adds password/account maintenance improvements, email verification resend, phone verification request workflow, direct-report crew filtering, equipment checkout/return workflow, reservation enforcement hooks, and a refreshed full schema reference. New backend pieces include `supabase/functions/account-maintenance`, expanded `jobs-manage`, expanded `jobs-directory`, and updated `admin-directory`. New SQL references include `046_account_validation_and_notifications.sql` and `047_password_validation_equipment_workflow.sql`.

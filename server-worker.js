@@ -14,6 +14,7 @@ const APP_SHELL = [
   '/manifest.json',
   '/js/router.js',
   '/js/api.js',
+  '/js/account-ui.js',
   '/js/security.js',
   '/js/bootstrap.js',
   '/js/auth.js',
