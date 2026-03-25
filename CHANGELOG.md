@@ -153,3 +153,23 @@ This pass extends the existing jobs / equipment / notification work in four prac
 - add scheduled service / inspection reminders using the due-date fields now in schema
 - restore broader admin CRUD layout if directory management becomes the main focus again
 
+---
+
+## 2026-03-24e pass
+
+This pass focused on app-shell access reliability, visible login behavior, and equipment screen discoverability.
+
+Implemented in this pass:
+- the login form now remains visible even while auth/session restore is still running
+- a readable cached-files / auth-not-restored warning now appears when service-worker cache or callback restore may be involved
+- Equipment is now kept visible in the main nav for signed-in users instead of disappearing silently
+- Jobs and Equipment sections now show clear permission notices instead of hiding the whole section
+- quick access buttons were added to the signed-in dashboard area for Equipment, Jobs, and Settings
+- silent section hiding for Jobs / Equipment was removed from the jobs module
+- service worker cache version was bumped again to reduce stale shell problems
+
+Schema status for this pass:
+- no new database migration was required for the app-shell visibility changes in this pass
+- `sql/000_full_schema_reference.sql` remains the full schema reference snapshot
+- the latest live migration for equipment maintenance / lockout remains `sql/051_equipment_maintenance_lockout_and_history.sql`
+

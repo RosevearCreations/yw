@@ -101,7 +101,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-03-24d');
+          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-03-24e');
           if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
           }
@@ -188,7 +188,7 @@
     </div>
 
     <div id="authNotice" class="notice" style="display:none;margin-top:14px;"></div>
-
+    <div id="authRestoreWarning" class="notice" style="display:none;margin-top:14px;"></div>
 
     <div id="runtimeConfigPanel" class="notice" hidden style="display:none;margin-top:14px;">
       <strong>App configuration</strong>
@@ -269,6 +269,14 @@
   </section>
 
   <section id="authInfo" class="card" hidden>
+    <div id="dashboardQuickLinks" class="notice" style="display:none;margin-bottom:14px;">
+      <strong>Quick access</strong>
+      <div class="form-footer" style="margin-top:10px;">
+        <a href="#equipment" class="secondary" id="dashboardEquipmentLink">Open Equipment</a>
+        <a href="#jobs" class="secondary">Open Jobs</a>
+        <a href="#settings" class="secondary">Open Settings</a>
+      </div>
+    </div>
     <div class="section-heading">
       <div>
         <div class="auth-info">Signed in as <b id="whoami"></b></div>
@@ -299,25 +307,25 @@
 
   <!-- Correct module order -->
   <script src="/js/router.js"></script>
-  <script src="/js/bootstrap.js?v=2026-03-24d"></script>
-  <script src="/js/auth.js?v=2026-03-24d"></script>
+  <script src="/js/bootstrap.js?v=2026-03-24e"></script>
+  <script src="/js/auth.js?v=2026-03-24e"></script>
   <script src="/js/security.js"></script>
-  <script src="/js/api.js?v=2026-03-24d"></script>
+  <script src="/js/api.js?v=2026-03-24e"></script>
   <script src="/js/outbox.js"></script>
   <script src="/js/admin-actions.js"></script>
-  <script src="/js/ui-auth.js?v=2026-03-24d"></script>
+  <script src="/js/ui-auth.js?v=2026-03-24e"></script>
   <script src="/js/account-ui.js"></script>
   <script src="/js/profile-ui.js"></script>
   <script src="/js/reference-data.js"></script>
-  <script src="/js/admin-ui.js?v=2026-03-24d"></script>
+  <script src="/js/admin-ui.js?v=2026-03-24e"></script>
   <script src="/js/logbook-ui.js"></script>
-  <script src="/js/jobs-ui.js?v=2026-03-24d"></script>
+  <script src="/js/jobs-ui.js?v=2026-03-24e"></script>
   <script src="/js/forms-toolbox.js"></script>
   <script src="/js/forms-ppe.js"></script>
   <script src="/js/forms-firstaid.js"></script>
   <script src="/js/forms-inspection.js"></script>
   <script src="/js/forms-drill.js"></script>
-  <script src="/app.js?v=2026-03-24d" defer></script>
+  <script src="/app.js?v=2026-03-24e" defer></script>
 
   <script>
     document.addEventListener('ywi:auth-changed', (e) => {

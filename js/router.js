@@ -61,9 +61,10 @@
   function updateNav(sectionId) {
     getNavLinks().forEach((link) => {
       const linkId = normalizeSectionId((link.getAttribute('href') || '').slice(1));
+      const alwaysVisible = ['toolbox','ppe','firstaid','inspect','drill','log','me','jobs','equipment','settings'];
       const allowed = security()?.canViewSection ? security().canViewSection(linkId, getRole()) : true;
       link.classList.toggle('active', link.getAttribute('href') === `#${sectionId}`);
-      link.style.display = allowed ? '' : 'none';
+      link.style.display = (allowed || alwaysVisible.includes(linkId)) ? '' : 'none';
     });
   }
 

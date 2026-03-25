@@ -1,3 +1,7 @@
+-- Full schema reference snapshot
+-- Updated through 2026-03-24e app-shell visibility and equipment discoverability pass.
+-- No new schema objects were required in this pass; latest incremental schema migration remains 051.
+
 -- =========================================================
 -- YWI HSE Full Schema Reference
 -- Purpose:

@@ -28,7 +28,9 @@
     settings: 'worker',
     crew: 'supervisor',
     log: 'worker',
-    admin: 'admin'
+    admin: 'admin',
+    jobs: 'worker',
+    equipment: 'worker'
   };
 
   function normalizeRole(role) {
@@ -104,7 +106,8 @@
       canReviewSubmissions: canReviewSubmissions(normalized),
       canViewCrew: canViewCrew(normalized),
       canViewAdminDirectory: canViewAdminDirectory(normalized),
-      canManageAdminDirectory: canManageAdminDirectory(normalized)
+      canManageAdminDirectory: canManageAdminDirectory(normalized),
+      canManageJobs: canManageJobs(normalized)
     };
   }
 

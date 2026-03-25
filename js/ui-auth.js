@@ -22,6 +22,7 @@
     headerSettingsLink: document.getElementById('headerSettingsLink'),
     headerLogoutBtn: document.getElementById('headerLogoutBtn'),
     authNotice: document.getElementById('authNotice'),
+    authRestoreWarning: document.getElementById('authRestoreWarning'),
     authLoading: document.getElementById('authLoading'),
     magicForm: document.getElementById('magicLoginForm'),
     magicEmail: document.getElementById('magicLoginEmail'),
@@ -72,6 +73,31 @@
     els.configStatus.style.display = 'block';
     els.configStatus.textContent = message;
     els.configStatus.dataset.kind = isError ? 'error' : 'info';
+  }
+
+
+  function setRestoreWarning(message = '', isError = false) {
+    if (!els.authRestoreWarning) return;
+    if (!message) {
+      els.authRestoreWarning.style.display = 'none';
+      els.authRestoreWarning.textContent = '';
+      els.authRestoreWarning.dataset.kind = '';
+      return;
+    }
+    els.authRestoreWarning.style.display = 'block';
+    els.authRestoreWarning.textContent = message;
+    els.authRestoreWarning.dataset.kind = isError ? 'error' : 'info';
+  }
+
+  function getCacheOrRestoreMessage(state = {}) {
+    const hasController = !!navigator.serviceWorker?.controller;
+    if (state.pendingAuthResolution) {
+      return 'Still restoring sign-in. If this does not clear in a moment, hard refresh the app. If the old wall keeps appearing, unregister the service worker and reload.';
+    }
+    if (!state.isAuthenticated && (state.authError || state.configError) && hasController) {
+      return 'You may be viewing cached files or an auth callback was not restored cleanly. Hard refresh the app. If needed, unregister the service worker, reload, then sign in again.';
+    }
+    return '';
   }
 
   function setBusy(button, busyText) {
@@ -128,12 +154,8 @@
       els.whoami.textContent = profile.full_name || profile.email || user.email || state.roleLabel || 'User';
     }
 
-    if (state.pendingAuthResolution) {
-      showLoading(true);
-      return;
-    }
-
-    showLoading(false);
+    showLoading(!!state.pendingAuthResolution);
+    setRestoreWarning(getCacheOrRestoreMessage(state), !!(state.authError || state.configError));
 
     if (els.configPanel) {
       const showConfig = !!state.configError || !window.YWI_SB;
@@ -146,7 +168,11 @@
 
     if (isAuthenticated) {
       if (els.loginView) els.loginView.style.display = 'none';
-      if (els.authInfo) els.authInfo.hidden = false;
+      if (els.authInfo) {
+        els.authInfo.hidden = false;
+        const quick = document.getElementById('dashboardQuickLinks');
+        if (quick) quick.style.display = '';
+      }
       if (state.authFlow === 'recovery') {
         setNotice('Recovery link accepted. Please set a new password in Settings.', false);
         if (window.YWIRouter?.showSection) window.YWIRouter.showSection('settings', { skipFocus: true });
@@ -168,6 +194,9 @@
       setConfigStatus('Enter the Supabase anon key once, save it, then reload the app.');
     } else if (state.authError) {
       setNotice(state.authError, true);
+      setConfigStatus('');
+    } else if (state.pendingAuthResolution) {
+      setNotice('The login form is ready below even while the app finishes checking your session.', false);
       setConfigStatus('');
     } else {
       setNotice('Use email and password for daily sign-in. Magic link is only for first validation, backup access, or recovery.', false);

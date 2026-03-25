@@ -91,6 +91,7 @@
               <tbody></tbody>
             </table>
           </div>
+          <div id="job_access_notice" class="notice" style="display:none;margin-top:14px;"></div>
           <div id="job_summary" class="notice" style="display:none;margin-top:14px;"></div>
           <div class="admin-panel-block" style="margin-top:16px;">
             <h3 style="margin-top:0;">Saved Jobs</h3>
@@ -173,6 +174,7 @@
             <button id="eq_lockout" class="secondary" type="button">Lockout</button>
             <button id="eq_clear_lockout" class="secondary" type="button">Clear Lockout</button>
           </div>
+          <div id="equipment_access_notice" class="notice" style="display:none;margin-top:14px;"></div>
           <div id="eq_summary" class="notice" style="display:none;margin-top:14px;"></div>
           <div class="admin-panel-block" style="margin-top:16px;">
             <h3 style="margin-top:0;">Availability by Pool</h3>
@@ -246,6 +248,7 @@
         jobSave: $('#job_save'),
         jobLoad: $('#job_load'),
         jobClear: $('#job_clear'),
+        jobAccessNotice: $('#job_access_notice'),
         jobSummary: $('#job_summary'),
         jobListBody: $('#job_list_table tbody'),
         eqCode: $('#eq_code'),
@@ -274,6 +277,7 @@
         eqDefectNotes: $('#eq_defect_notes'),
         eqIsLockedOut: $('#eq_is_locked_out'),
         eqComments: $('#eq_comments'),
+        eqAccessNotice: $('#equipment_access_notice'),
         eqWorkerSignature: $('#eq_worker_signature'),
         eqSupervisorSignature: $('#eq_supervisor_signature'),
         eqAdminSignature: $('#eq_admin_signature'),
@@ -325,9 +329,46 @@
       const e = els();
       const access = getAccessProfile(getCurrentRole());
       const allowed = !!access.canManageJobs || !!access.canManageAdminDirectory;
-      if (e.jobsSection) e.jobsSection.style.display = allowed ? '' : 'none';
-      if (e.equipmentSection) e.equipmentSection.style.display = allowed ? '' : 'none';
+      if (e.jobsSection) e.jobsSection.style.display = '';
+      if (e.equipmentSection) e.equipmentSection.style.display = '';
+      setNotice(
+        e.jobAccessNotice,
+        allowed
+          ? 'You can manage jobs from this screen.'
+          : 'You can view the Jobs area, but your role cannot create or edit jobs yet. Ask a supervisor, job admin, or admin for access.',
+        !allowed
+      );
+      setNotice(
+        e.eqAccessNotice,
+        allowed
+          ? 'You can manage equipment from this screen.'
+          : 'You can view the Equipment area, but your role cannot check out, return, or edit equipment yet. Ask a supervisor, job admin, or admin for access.',
+        !allowed
+      );
       document.body.dataset.canApproveJobs = canApprove() ? 'true' : 'false';
+      syncActionLocks();
+    }
+
+
+    function syncActionLocks() {
+      const allowed = canManage();
+      const editableIds = [
+        'job_code','job_name','job_site_name','job_type','job_status','job_priority','job_start_date','job_end_date',
+        'job_supervisor_name','job_signing_supervisor_name','job_admin_name','job_client_name','job_notes',
+        'eq_code','eq_name','eq_category','eq_pool_key','eq_home_site','eq_status','eq_current_job_code','eq_assigned_supervisor',
+        'eq_serial','eq_asset_tag','eq_manufacturer','eq_model','eq_year','eq_purchase_date','eq_purchase_price','eq_condition',
+        'eq_image_url','eq_service_interval_days','eq_last_service_date','eq_next_service_due_date','eq_last_inspection_at',
+        'eq_next_inspection_due_date','eq_defect_status','eq_defect_notes','eq_is_locked_out','eq_comments','eq_notes',
+        'eq_worker_signature','eq_supervisor_signature','eq_admin_signature','eq_checkout_condition','eq_return_condition'
+      ];
+      editableIds.forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = !allowed;
+      });
+      ['job_add_equipment','job_request_approval','job_save','job_clear','eq_save','eq_checkout','eq_return','eq_add_inspection','eq_add_maintenance','eq_lockout','eq_clear_lockout','eq_clear'].forEach((id)=>{
+        const el = document.getElementById(id);
+        if (el) el.disabled = !allowed;
+      });
     }
 
     function fillSiteSelect(selectEl) {
