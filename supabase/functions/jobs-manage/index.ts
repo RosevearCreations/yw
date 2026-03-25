@@ -269,6 +269,16 @@ serve(async (req) => {
         purchase_price: body.purchase_price ?? null,
         condition_status: body.condition_status ?? null,
         image_url: body.image_url ?? null,
+        service_interval_days: body.service_interval_days ?? null,
+        last_service_date: body.last_service_date ?? null,
+        next_service_due_date: body.next_service_due_date ?? null,
+        last_inspection_at: body.last_inspection_at ?? null,
+        next_inspection_due_date: body.next_inspection_due_date ?? null,
+        defect_status: body.defect_status ?? 'clear',
+        defect_notes: body.defect_notes ?? null,
+        is_locked_out: body.is_locked_out ?? false,
+        locked_out_at: body.is_locked_out ? new Date().toISOString() : null,
+        locked_out_by_profile_id: body.is_locked_out ? actorProfile.id : null,
         comments: body.comments ?? null,
         notes: body.notes ?? null,
         updated_at: new Date().toISOString(),
@@ -283,12 +293,89 @@ serve(async (req) => {
       if (!equipmentId || !jobId) return Response.json({ ok:false, error:'Equipment and job are required' }, { status:400, headers:corsHeaders });
       const { data: item } = await supabase.from('equipment_items').select('*').eq('id', equipmentId).single();
       if (!item) return Response.json({ ok:false, error:'Equipment not found' }, { status:404, headers:corsHeaders });
+      if (item.is_locked_out) return Response.json({ ok:false, error:'Equipment is locked out for a defect or failed inspection' }, { status:409, headers:corsHeaders });
       if (!['available','reserved'].includes(item.status)) return Response.json({ ok:false, error:'Equipment is not available for checkout' }, { status:409, headers:corsHeaders });
       await supabase.from('equipment_items').update({ status:'checked_out', current_job_id: jobId, assigned_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.supervisor_name), condition_status: body.checkout_condition ?? item.condition_status ?? null, updated_at:new Date().toISOString() }).eq('id', equipmentId);
       const { data, error } = await supabase.from('equipment_signouts').insert({ equipment_item_id: equipmentId, job_id: jobId, checked_out_by_profile_id: actorProfile.id, checked_out_to_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.supervisor_name), signout_notes: body.notes ?? null, checkout_worker_signature_name: body.worker_signature_name ?? null, checkout_supervisor_signature_name: body.supervisor_signature_name ?? null, checkout_admin_signature_name: body.admin_signature_name ?? null, checkout_condition: body.checkout_condition ?? null }).select('*').single();
       if (error) throw error;
       await insertNotification(supabase, { notification_type:'equipment_checkout', target_table:'equipment_signouts', target_id:data.id, recipient_role:'admin', title:`Equipment checked out: ${body.equipment_code}`, body: JSON.stringify({ equipment_code: body.equipment_code, job_code: body.job_code }), created_by_profile_id: actorProfile.id, email_subject: `YWI HSE equipment checkout: ${body.equipment_code}`, payload: { equipment_code: body.equipment_code, job_code: body.job_code } });
       return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+    }
+
+
+    if (body.entity === 'equipment' && body.action === 'inspect') {
+      const equipmentId = await resolveEquipmentIdByCode(supabase, body.equipment_code);
+      if (!equipmentId) return Response.json({ ok:false, error:'Equipment required' }, { status:400, headers:corsHeaders });
+      const inspectedAt = body.inspected_at || new Date().toISOString();
+      const nextDueDate = body.next_due_date || null;
+      const inspectionStatus = String(body.inspection_status || 'pass');
+      const { data, error } = await supabase.from('equipment_inspection_history').insert({
+        equipment_item_id: equipmentId,
+        inspected_by_profile_id: actorProfile.id,
+        inspected_at: inspectedAt,
+        inspection_status: inspectionStatus,
+        notes: body.notes ?? null,
+        next_due_date: nextDueDate
+      }).select('*').single();
+      if (error) throw error;
+      await supabase.from('equipment_items').update({
+        last_inspection_at: inspectedAt,
+        next_inspection_due_date: nextDueDate,
+        defect_status: inspectionStatus === 'pass' ? 'clear' : 'open',
+        defect_notes: body.notes ?? null,
+        is_locked_out: inspectionStatus === 'pass' ? false : true,
+        locked_out_at: inspectionStatus === 'pass' ? null : new Date().toISOString(),
+        locked_out_by_profile_id: inspectionStatus === 'pass' ? null : actorProfile.id,
+        updated_at: new Date().toISOString()
+      }).eq('id', equipmentId);
+      await insertNotification(supabase, { notification_type:'equipment_inspection', target_table:'equipment_items', target_id:equipmentId, recipient_role:'admin', title:`Equipment inspection: ${body.equipment_code}`, body: JSON.stringify({ equipment_code: body.equipment_code, inspection_status: inspectionStatus, next_due_date: nextDueDate, notes: body.notes || null }), created_by_profile_id: actorProfile.id, email_subject: `YWI HSE equipment inspection: ${body.equipment_code}`, payload: { equipment_code: body.equipment_code, inspection_status: inspectionStatus, next_due_date: nextDueDate } });
+      return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+    }
+
+    if (body.entity === 'equipment' && body.action === 'maintenance') {
+      const equipmentId = await resolveEquipmentIdByCode(supabase, body.equipment_code);
+      if (!equipmentId) return Response.json({ ok:false, error:'Equipment required' }, { status:400, headers:corsHeaders });
+      const performedAt = body.performed_at || new Date().toISOString();
+      const nextDueDate = body.next_due_date || null;
+      const { data, error } = await supabase.from('equipment_maintenance_history').insert({
+        equipment_item_id: equipmentId,
+        performed_by_profile_id: actorProfile.id,
+        performed_at: performedAt,
+        maintenance_type: body.maintenance_type || 'service',
+        provider_name: body.provider_name ?? null,
+        cost_amount: body.cost_amount ?? null,
+        notes: body.notes ?? null,
+        next_due_date: nextDueDate
+      }).select('*').single();
+      if (error) throw error;
+      await supabase.from('equipment_items').update({
+        last_service_date: performedAt,
+        next_service_due_date: nextDueDate,
+        defect_status: 'clear',
+        defect_notes: null,
+        is_locked_out: false,
+        locked_out_at: null,
+        locked_out_by_profile_id: null,
+        updated_at: new Date().toISOString()
+      }).eq('id', equipmentId);
+      await insertNotification(supabase, { notification_type:'equipment_maintenance', target_table:'equipment_items', target_id:equipmentId, recipient_role:'admin', title:`Equipment service: ${body.equipment_code}`, body: JSON.stringify({ equipment_code: body.equipment_code, maintenance_type: body.maintenance_type || 'service', provider_name: body.provider_name || null, next_due_date: nextDueDate }), created_by_profile_id: actorProfile.id, email_subject: `YWI HSE equipment service: ${body.equipment_code}`, payload: { equipment_code: body.equipment_code, maintenance_type: body.maintenance_type || 'service', provider_name: body.provider_name || null, next_due_date: nextDueDate } });
+      return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+    }
+
+    if (body.entity === 'equipment' && body.action === 'defect_lockout') {
+      const equipmentId = await resolveEquipmentIdByCode(supabase, body.equipment_code);
+      if (!equipmentId) return Response.json({ ok:false, error:'Equipment required' }, { status:400, headers:corsHeaders });
+      await supabase.from('equipment_items').update({ defect_status:'open', defect_notes: body.notes ?? null, is_locked_out:true, locked_out_at:new Date().toISOString(), locked_out_by_profile_id: actorProfile.id, updated_at:new Date().toISOString() }).eq('id', equipmentId);
+      await insertNotification(supabase, { notification_type:'equipment_lockout', target_table:'equipment_items', target_id:equipmentId, recipient_role:'admin', title:`Equipment locked out: ${body.equipment_code}`, body: JSON.stringify({ equipment_code: body.equipment_code, notes: body.notes || null }), created_by_profile_id: actorProfile.id, email_subject: `YWI HSE equipment lockout: ${body.equipment_code}`, payload: { equipment_code: body.equipment_code, notes: body.notes || null } });
+      return Response.json({ ok:true }, { headers:corsHeaders });
+    }
+
+    if (body.entity === 'equipment' && body.action === 'defect_clear') {
+      const equipmentId = await resolveEquipmentIdByCode(supabase, body.equipment_code);
+      if (!equipmentId) return Response.json({ ok:false, error:'Equipment required' }, { status:400, headers:corsHeaders });
+      await supabase.from('equipment_items').update({ defect_status:'clear', defect_notes: body.notes ?? null, is_locked_out:false, locked_out_at:null, locked_out_by_profile_id:null, updated_at:new Date().toISOString() }).eq('id', equipmentId);
+      await insertNotification(supabase, { notification_type:'equipment_lockout_cleared', target_table:'equipment_items', target_id:equipmentId, recipient_role:'admin', title:`Equipment lockout cleared: ${body.equipment_code}`, body: JSON.stringify({ equipment_code: body.equipment_code, notes: body.notes || null }), created_by_profile_id: actorProfile.id, email_subject: `YWI HSE equipment lockout cleared: ${body.equipment_code}`, payload: { equipment_code: body.equipment_code, notes: body.notes || null } });
+      return Response.json({ ok:true }, { headers:corsHeaders });
     }
 
     if (body.entity === 'equipment' && body.action === 'return') {

@@ -29,7 +29,9 @@ serve(async (req) => {
   const { data: requirements } = await supabase.from('job_equipment_requirements').select('*').order('job_id');
   const { data: signouts } = await supabase.from('equipment_signouts').select('*, equipment_items(equipment_code,equipment_name), jobs(job_code,job_name)').order('checked_out_at', { ascending:false });
   const { data: pools } = await supabase.from('v_equipment_pool_availability').select('*').order('equipment_pool_key');
-  const { data: notifications } = await supabase.from('v_admin_notifications').select('*').in('notification_type', ['equipment_reservation_conflict','job_approval_requested','equipment_checkout','equipment_return']).order('created_at', { ascending:false }).limit(100);
+  const { data: notifications } = await supabase.from('v_admin_notifications').select('*').in('notification_type', ['equipment_reservation_conflict','job_approval_requested','equipment_checkout','equipment_return','equipment_inspection','equipment_maintenance','equipment_lockout','equipment_lockout_cleared']).order('created_at', { ascending:false }).limit(150);
+  const { data: inspections } = await supabase.from('v_equipment_inspection_history').select('*').order('inspected_at', { ascending:false }).limit(200);
+  const { data: maintenance } = await supabase.from('v_equipment_maintenance_history').select('*').order('performed_at', { ascending:false }).limit(200);
   const signoutRows = (signouts || []).map((row: any) => ({ ...row, equipment_code: row.equipment_items?.equipment_code || null, equipment_name: row.equipment_items?.equipment_name || null, job_code: row.jobs?.job_code || null, job_name: row.jobs?.job_name || null }));
-  return Response.json({ ok:true, jobs: jobs || [], equipment: equipment || [], requirements: requirements || [], signouts: signoutRows, pools: pools || [], notifications: notifications || [] }, { headers: corsHeaders });
+  return Response.json({ ok:true, jobs: jobs || [], equipment: equipment || [], requirements: requirements || [], signouts: signoutRows, pools: pools || [], notifications: notifications || [], inspections: inspections || [], maintenance: maintenance || [] }, { headers: corsHeaders });
 });

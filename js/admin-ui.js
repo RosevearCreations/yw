@@ -76,6 +76,7 @@
                 <option value="rejected">Rejected</option>
                 <option value="resolved">Resolved</option>
                 <option value="failed">Failed delivery</option>
+                <option value="dead_letter">Dead letter</option>
               </select>
             </label>
           </div>
@@ -87,7 +88,7 @@
                   <th>Type</th>
                   <th>Title</th>
                   <th>Decision</th>
-                  <th>Email</th>
+                  <th>Delivery</th>
                   <th>Created</th>
                   <th>Actions</th>
                 </tr>

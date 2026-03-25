@@ -183,6 +183,16 @@ create table if not exists public.equipment_items (
   purchase_price numeric(12,2),
   condition_status text,
   image_url text,
+  service_interval_days integer,
+  last_service_date date,
+  next_service_due_date date,
+  last_inspection_at date,
+  next_inspection_due_date date,
+  defect_status text default 'clear',
+  defect_notes text,
+  is_locked_out boolean not null default false,
+  locked_out_at timestamptz,
+  locked_out_by_profile_id uuid references public.profiles(id),
   comments text,
   notes text,
   created_at timestamptz not null default now(),
@@ -225,6 +235,31 @@ create table if not exists public.equipment_signouts (
   return_condition text,
   signout_notes text,
   return_notes text
+);
+
+
+create table if not exists public.equipment_inspection_history (
+  id bigserial primary key,
+  equipment_item_id bigint not null references public.equipment_items(id) on delete cascade,
+  inspected_by_profile_id uuid references public.profiles(id) on delete set null,
+  inspected_at timestamptz not null default now(),
+  inspection_status text not null default 'pass',
+  notes text,
+  next_due_date date,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.equipment_maintenance_history (
+  id bigserial primary key,
+  equipment_item_id bigint not null references public.equipment_items(id) on delete cascade,
+  performed_by_profile_id uuid references public.profiles(id) on delete set null,
+  performed_at timestamptz not null default now(),
+  maintenance_type text not null default 'service',
+  provider_name text,
+  cost_amount numeric(12,2),
+  notes text,
+  next_due_date date,
+  created_at timestamptz not null default now()
 );
 
 create table if not exists public.admin_notifications (
@@ -338,6 +373,27 @@ from public.equipment_signouts s
 left join public.equipment_items e on e.id = s.equipment_item_id
 left join public.jobs j on j.id = s.job_id;
 
+
+create or replace view public.v_equipment_inspection_history as
+select
+  h.*,
+  e.equipment_code,
+  e.equipment_name,
+  p.full_name as inspector_name
+from public.equipment_inspection_history h
+left join public.equipment_items e on e.id = h.equipment_item_id
+left join public.profiles p on p.id = h.inspected_by_profile_id;
+
+create or replace view public.v_equipment_maintenance_history as
+select
+  h.*,
+  e.equipment_code,
+  e.equipment_name,
+  p.full_name as performed_by_name
+from public.equipment_maintenance_history h
+left join public.equipment_items e on e.id = h.equipment_item_id
+left join public.profiles p on p.id = h.performed_by_profile_id;
+
 create or replace view public.v_admin_notifications as
 select
   n.id,
@@ -359,6 +415,14 @@ select
   n.email_to,
   n.email_subject,
   n.email_status,
+  n.email_provider,
+  n.email_attempt_count,
+  n.email_last_attempt_at,
   n.email_error,
+  n.sms_provider,
+  n.sms_attempt_count,
+  n.sms_last_attempt_at,
+  n.dead_lettered_at,
+  n.dead_letter_reason,
   n.created_by_profile_id
 from public.admin_notifications n;

@@ -29,6 +29,8 @@
       signouts: [],
       pools: [],
       notifications: [],
+      inspections: [],
+      maintenance: [],
       editingJobId: null,
       editingEquipmentCode: ''
     };
@@ -45,6 +47,7 @@
               <p class="section-subtitle">Create jobs, restore saved jobs back into the form, request pool-based reservations, and approve or reject requirement exceptions.</p>
             </div>
             <div class="admin-heading-actions">
+              <a href="#equipment" class="secondary" id="job_open_equipment_link">Open Equipment Interface</a>
               <button id="job_load" class="secondary" type="button">Reload</button>
               <button id="job_clear" class="secondary" type="button">New Job</button>
             </div>
@@ -113,6 +116,7 @@
               <p class="section-subtitle">Manage rental-style asset records, pool keys, serials, images, purchase history, and signed checkout/return events.</p>
             </div>
             <div class="admin-heading-actions">
+              <a href="#admin" class="secondary" id="eq_open_admin_link">Open Admin Queue</a>
               <button id="eq_load" class="secondary" type="button">Reload</button>
               <button id="eq_clear" class="secondary" type="button">New Item</button>
             </div>
@@ -135,6 +139,14 @@
             <label>Purchase Price<input id="eq_purchase_price" type="number" min="0" step="0.01" /></label>
             <label>Condition<input id="eq_condition" type="text" value="ready" /></label>
             <label>Image URL<input id="eq_image_url" type="url" /></label>
+            <label>Service Interval (days)<input id="eq_service_interval_days" type="number" min="0" step="1" /></label>
+            <label>Last Service<input id="eq_last_service_date" type="date" /></label>
+            <label>Next Service Due<input id="eq_next_service_due_date" type="date" /></label>
+            <label>Last Inspection<input id="eq_last_inspection_at" type="date" /></label>
+            <label>Next Inspection Due<input id="eq_next_inspection_due_date" type="date" /></label>
+            <label>Defect Status<input id="eq_defect_status" type="text" value="clear" /></label>
+            <label>Defect Notes<input id="eq_defect_notes" type="text" /></label>
+            <label style="display:flex;align-items:center;gap:8px;"> <input id="eq_is_locked_out" type="checkbox" /> Locked Out </label>
           </div>
           <label style="display:block;margin-top:12px;">Comments
             <textarea id="eq_comments" rows="2" placeholder="Damage notes, maintenance notes, rental comments"></textarea>
@@ -156,6 +168,10 @@
             <button id="eq_save" class="primary" type="button">Save Equipment</button>
             <button id="eq_checkout" class="secondary" type="button">Check Out</button>
             <button id="eq_return" class="secondary" type="button">Return</button>
+            <button id="eq_add_inspection" class="secondary" type="button">Record Inspection</button>
+            <button id="eq_add_maintenance" class="secondary" type="button">Record Service</button>
+            <button id="eq_lockout" class="secondary" type="button">Lockout</button>
+            <button id="eq_clear_lockout" class="secondary" type="button">Clear Lockout</button>
           </div>
           <div id="eq_summary" class="notice" style="display:none;margin-top:14px;"></div>
           <div class="admin-panel-block" style="margin-top:16px;">
@@ -171,7 +187,7 @@
             <h3 style="margin-top:0;">Equipment List</h3>
             <div class="table-scroll">
               <table id="eq_list_table">
-                <thead><tr><th>Code</th><th>Name</th><th>Status</th><th>Serial</th><th>Pool</th><th>Action</th></tr></thead>
+                <thead><tr><th>Code</th><th>Name</th><th>Status</th><th>Serial</th><th>Pool</th><th>Service Due</th><th>Inspection Due</th><th>Lockout</th><th>Action</th></tr></thead>
                 <tbody></tbody>
               </table>
             </div>
@@ -181,6 +197,24 @@
             <div class="table-scroll">
               <table id="eq_history_table">
                 <thead><tr><th>Equipment</th><th>Job</th><th>Out</th><th>Return</th><th>Worker</th><th>Supervisor</th><th>Admin</th><th>Condition</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="admin-panel-block" style="margin-top:16px;">
+            <h3 style="margin-top:0;">Inspection History</h3>
+            <div class="table-scroll">
+              <table id="eq_inspection_table">
+                <thead><tr><th>Equipment</th><th>Date</th><th>Status</th><th>Inspector</th><th>Due</th><th>Notes</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="admin-panel-block" style="margin-top:16px;">
+            <h3 style="margin-top:0;">Maintenance / Service History</h3>
+            <div class="table-scroll">
+              <table id="eq_maintenance_table">
+                <thead><tr><th>Equipment</th><th>Date</th><th>Type</th><th>Provider</th><th>Cost</th><th>Notes</th></tr></thead>
                 <tbody></tbody>
               </table>
             </div>
@@ -231,6 +265,14 @@
         eqPurchasePrice: $('#eq_purchase_price'),
         eqCondition: $('#eq_condition'),
         eqImageUrl: $('#eq_image_url'),
+        eqServiceIntervalDays: $('#eq_service_interval_days'),
+        eqLastServiceDate: $('#eq_last_service_date'),
+        eqNextServiceDueDate: $('#eq_next_service_due_date'),
+        eqLastInspectionAt: $('#eq_last_inspection_at'),
+        eqNextInspectionDueDate: $('#eq_next_inspection_due_date'),
+        eqDefectStatus: $('#eq_defect_status'),
+        eqDefectNotes: $('#eq_defect_notes'),
+        eqIsLockedOut: $('#eq_is_locked_out'),
         eqComments: $('#eq_comments'),
         eqWorkerSignature: $('#eq_worker_signature'),
         eqSupervisorSignature: $('#eq_supervisor_signature'),
@@ -243,10 +285,16 @@
         eqClear: $('#eq_clear'),
         eqCheckout: $('#eq_checkout'),
         eqReturn: $('#eq_return'),
+        eqAddInspection: $('#eq_add_inspection'),
+        eqAddMaintenance: $('#eq_add_maintenance'),
+        eqLockout: $('#eq_lockout'),
+        eqClearLockout: $('#eq_clear_lockout'),
         eqSummary: $('#eq_summary'),
         eqListBody: $('#eq_list_table tbody'),
         eqPoolBody: $('#eq_pool_table tbody'),
-        eqHistoryBody: $('#eq_history_table tbody')
+        eqHistoryBody: $('#eq_history_table tbody'),
+        eqInspectionBody: $('#eq_inspection_table tbody'),
+        eqMaintenanceBody: $('#eq_maintenance_table tbody')
       };
     }
 
@@ -420,7 +468,7 @@
         e.eqListBody.innerHTML = '';
         state.equipment.forEach((row) => {
           const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${escHtml(row.equipment_code)}</td><td>${escHtml(row.equipment_name)}</td><td>${escHtml(row.status)}</td><td>${escHtml(row.serial_number || '')}</td><td>${escHtml(row.equipment_pool_key || '')}</td><td><button type="button" class="secondary" data-equipment-load="${escHtml(row.equipment_code)}">Load</button></td>`;
+          tr.innerHTML = `<td>${escHtml(row.equipment_code)}</td><td>${escHtml(row.equipment_name)}</td><td>${escHtml(row.status)}</td><td>${escHtml(row.serial_number || '')}</td><td>${escHtml(row.equipment_pool_key || '')}</td><td>${escHtml(row.next_service_due_date || '')}</td><td>${escHtml(row.next_inspection_due_date || '')}</td><td>${row.is_locked_out ? 'Yes' : 'No'}</td><td><button type="button" class="secondary" data-equipment-load="${escHtml(row.equipment_code)}">Load</button></td>`;
           e.eqListBody.appendChild(tr);
         });
       }
@@ -440,6 +488,22 @@
           e.eqHistoryBody.appendChild(tr);
         });
       }
+      if (e.eqInspectionBody) {
+        e.eqInspectionBody.innerHTML = '';
+        state.inspections.forEach((row) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${escHtml(row.equipment_code || '')}</td><td>${escHtml(row.inspected_at || '')}</td><td>${escHtml(row.inspection_status || '')}</td><td>${escHtml(row.inspector_name || '')}</td><td>${escHtml(row.next_due_date || '')}</td><td>${escHtml(row.notes || '')}</td>`;
+          e.eqInspectionBody.appendChild(tr);
+        });
+      }
+      if (e.eqMaintenanceBody) {
+        e.eqMaintenanceBody.innerHTML = '';
+        state.maintenance.forEach((row) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${escHtml(row.equipment_code || '')}</td><td>${escHtml(row.performed_at || '')}</td><td>${escHtml(row.maintenance_type || '')}</td><td>${escHtml(row.provider_name || '')}</td><td>${escHtml(row.cost_amount || '')}</td><td>${escHtml(row.notes || '')}</td>`;
+          e.eqMaintenanceBody.appendChild(tr);
+        });
+      }
     }
 
     async function loadData() {
@@ -452,6 +516,8 @@
         state.signouts = Array.isArray(resp?.signouts) ? resp.signouts : [];
         state.pools = Array.isArray(resp?.pools) ? resp.pools : [];
         state.notifications = Array.isArray(resp?.notifications) ? resp.notifications : [];
+        state.inspections = Array.isArray(resp?.inspections) ? resp.inspections : [];
+        state.maintenance = Array.isArray(resp?.maintenance) ? resp.maintenance : [];
         fillSiteSelect(e.jobSiteName);
         fillSiteSelect(e.eqHomeSite);
         renderJobs();
@@ -519,6 +585,14 @@
           purchase_price: e.eqPurchasePrice?.value ? Number(e.eqPurchasePrice.value) : null,
           condition_status: e.eqCondition?.value?.trim?.() || '',
           image_url: e.eqImageUrl?.value?.trim?.() || '',
+          service_interval_days: e.eqServiceIntervalDays?.value ? Number(e.eqServiceIntervalDays.value) : null,
+          last_service_date: e.eqLastServiceDate?.value || null,
+          next_service_due_date: e.eqNextServiceDueDate?.value || null,
+          last_inspection_at: e.eqLastInspectionAt?.value || null,
+          next_inspection_due_date: e.eqNextInspectionDueDate?.value || null,
+          defect_status: e.eqDefectStatus?.value?.trim?.() || 'clear',
+          defect_notes: e.eqDefectNotes?.value?.trim?.() || '',
+          is_locked_out: !!e.eqIsLockedOut?.checked,
           comments: e.eqComments?.value?.trim?.() || '',
           notes: e.eqNotes?.value?.trim?.() || ''
         });
@@ -554,6 +628,52 @@
       }
     }
 
+
+    async function recordInspection() {
+      const e = els();
+      try {
+        const inspection_status = window.prompt('Inspection status (pass / fail / needs_service):', e.eqDefectStatus?.value || 'pass') || 'pass';
+        const notes = window.prompt('Inspection notes:', e.eqDefectNotes?.value || '') || '';
+        const next_due_date = window.prompt('Next inspection due date (YYYY-MM-DD):', e.eqNextInspectionDueDate?.value || '') || '';
+        const resp = await api.manageJobsEntity({ entity: 'equipment', action: 'inspect', equipment_code: e.eqCode?.value?.trim?.() || '', inspection_status, notes, next_due_date });
+        if (!resp?.ok) throw new Error(resp?.error || 'Inspection save failed');
+        setNotice(e.eqSummary, `Inspection recorded for ${e.eqCode?.value || ''}.`);
+        await loadData();
+      } catch (err) {
+        setNotice(e.eqSummary, err?.message || 'Inspection save failed.', true);
+      }
+    }
+
+    async function recordMaintenance() {
+      const e = els();
+      try {
+        const maintenance_type = window.prompt('Service type:', 'service') || 'service';
+        const provider_name = window.prompt('Provider / technician:', '') || '';
+        const cost_amount = window.prompt('Cost amount:', '') || '';
+        const performed_at = window.prompt('Performed date (YYYY-MM-DD):', e.eqLastServiceDate?.value || '') || '';
+        const next_due_date = window.prompt('Next service due date (YYYY-MM-DD):', e.eqNextServiceDueDate?.value || '') || '';
+        const notes = window.prompt('Service notes:', e.eqNotes?.value || '') || '';
+        const resp = await api.manageJobsEntity({ entity: 'equipment', action: 'maintenance', equipment_code: e.eqCode?.value?.trim?.() || '', maintenance_type, provider_name, cost_amount, performed_at, next_due_date, notes });
+        if (!resp?.ok) throw new Error(resp?.error || 'Maintenance save failed');
+        setNotice(e.eqSummary, `Maintenance recorded for ${e.eqCode?.value || ''}.`);
+        await loadData();
+      } catch (err) {
+        setNotice(e.eqSummary, err?.message || 'Maintenance save failed.', true);
+      }
+    }
+
+    async function setLockout(isLocked) {
+      const e = els();
+      try {
+        const notes = window.prompt(isLocked ? 'Lockout reason:' : 'Clear lockout notes:', e.eqDefectNotes?.value || '') || '';
+        const resp = await api.manageJobsEntity({ entity: 'equipment', action: isLocked ? 'defect_lockout' : 'defect_clear', equipment_code: e.eqCode?.value?.trim?.() || '', notes });
+        if (!resp?.ok) throw new Error(resp?.error || 'Lockout update failed');
+        setNotice(e.eqSummary, isLocked ? `Equipment ${e.eqCode?.value || ''} locked out.` : `Lockout cleared for ${e.eqCode?.value || ''}.`);
+        await loadData();
+      } catch (err) {
+        setNotice(e.eqSummary, err?.message || 'Lockout update failed.', true);
+      }
+    }
     async function updateRequirementApproval(requirementId, action) {
       const e = els();
       try {
@@ -687,6 +807,22 @@
       if (e.eqReturn && e.eqReturn.dataset.bound !== '1') {
         e.eqReturn.dataset.bound = '1';
         e.eqReturn.addEventListener('click', returnEquipment);
+      }
+      if (e.eqAddInspection && e.eqAddInspection.dataset.bound !== '1') {
+        e.eqAddInspection.dataset.bound = '1';
+        e.eqAddInspection.addEventListener('click', recordInspection);
+      }
+      if (e.eqAddMaintenance && e.eqAddMaintenance.dataset.bound !== '1') {
+        e.eqAddMaintenance.dataset.bound = '1';
+        e.eqAddMaintenance.addEventListener('click', recordMaintenance);
+      }
+      if (e.eqLockout && e.eqLockout.dataset.bound !== '1') {
+        e.eqLockout.dataset.bound = '1';
+        e.eqLockout.addEventListener('click', () => setLockout(true));
+      }
+      if (e.eqClearLockout && e.eqClearLockout.dataset.bound !== '1') {
+        e.eqClearLockout.dataset.bound = '1';
+        e.eqClearLockout.addEventListener('click', () => setLockout(false));
       }
     }
 

@@ -122,3 +122,32 @@ This pass fixes the remaining auth wall problem by making the app render a real 
 - add equipment maintenance / service intervals, inspection history, and defect lockout workflow
 - restore the broader admin CRUD directory layout when that becomes the next focus
 
+## Pass Update — 2026-03-24 equipment maintenance + visible approval tools
+
+This pass extends the existing jobs / equipment / notification work in four practical ways:
+- the equipment interface is now easier to find from the top navigation and directly from the Jobs screen using **Open Equipment Interface**
+- the equipment module now supports maintenance/service intervals, inspection history, defect notes, and lockout status in both schema and UI
+- the live Equipment screen now includes **Record Inspection**, **Record Service**, **Lockout**, and **Clear Lockout** actions plus history tables
+- the jobs/equipment data directory now returns maintenance and inspection history alongside pool availability, signout history, and approval notifications
+
+### SQL added in this pass
+- `sql/051_equipment_maintenance_lockout_and_history.sql`
+
+### Main code updated in this pass
+- `js/jobs-ui.js`
+- `supabase/functions/jobs-manage/index.ts`
+- `supabase/functions/jobs-directory/index.ts`
+- `sql/000_full_schema_reference.sql`
+
+### Notes
+- the visible admin approval queue and email preview/test-send controls remain in the Admin screen
+- requirement approval actions remain role-aware, and the Jobs screen now includes a direct link to the Equipment interface
+- typed signature names are still the current device-friendly sign-off approach; true signature capture storage remains a later pass
+- broader admin CRUD restoration is still possible later without conflicting with this equipment/history pass
+
+### Best next pass after this
+- move typed sign-off names to real signature capture storage when the device workflow is ready
+- add image/file attachments to maintenance and inspection events
+- add scheduled service / inspection reminders using the due-date fields now in schema
+- restore broader admin CRUD layout if directory management becomes the main focus again
+
