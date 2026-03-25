@@ -116,6 +116,10 @@
     return jsonFetch(ENDPOINTS.ACCOUNT_URL, { body: { action: 'retry_phone_verification_code', ...payload } });
   }
 
+  async function accountRecoveryAction(payload = {}) {
+    return jsonFetch(ENDPOINTS.ACCOUNT_URL, { body: payload });
+  }
+
   async function saveMyProfile(payload) {
     return manageAdminEntity({ entity: 'profile', action: 'self_update', ...payload });
   }
@@ -166,6 +170,7 @@
     sendPhoneVerificationCode,
     verifyPhoneCode,
     retryPhoneVerificationCode,
+    accountRecoveryAction,
     saveMyProfile,
     bootstrapAdmin,
     uploadImageViaFunction,

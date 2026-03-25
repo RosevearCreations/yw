@@ -10,6 +10,7 @@
   const boot = window.YWI_BOOT || null;
   const security = window.YWISecurity || null;
   let sb = window.YWI_SB || window._sb || null;
+  const ACCOUNT_FUNCTION_URL = 'https://jmqvkgiqlimdhcofwkxr.supabase.co/functions/v1/account-maintenance';
 
   const state = {
     initialized: false,
@@ -105,6 +106,24 @@
     return state.session;
   }
 
+
+  async function resolveLoginIdentifier(login) {
+    const cleanLogin = safeText(login);
+    if (!cleanLogin || cleanLogin.includes('@')) return cleanLogin;
+    try {
+      const res = await fetch(ACCOUNT_FUNCTION_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'resolve_login_identifier', login: cleanLogin })
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload?.error || 'Unable to resolve login identifier.');
+      return safeText(payload?.email || cleanLogin);
+    } catch (err) {
+      throw new Error(err?.message || 'Unable to resolve username.');
+    }
+  }
+
   async function signInWithMagicLink(email) {
     const cleanEmail = safeText(email);
     if (!cleanEmail) throw new Error('Email is required.');
@@ -118,11 +137,12 @@
   }
 
   async function signInWithPassword(email, password) {
-    const cleanEmail = safeText(email);
+    const cleanLogin = safeText(email);
     const cleanPassword = String(password ?? '');
-    if (!cleanEmail || !cleanPassword) throw new Error('Email and password are required.');
+    if (!cleanLogin || !cleanPassword) throw new Error('Email/username and password are required.');
+    const resolvedEmail = await resolveLoginIdentifier(cleanLogin);
     const client = requireClient();
-    const { data, error } = await client.auth.signInWithPassword({ email: cleanEmail, password: cleanPassword });
+    const { data, error } = await client.auth.signInWithPassword({ email: resolvedEmail, password: cleanPassword });
     if (error) throw error;
     await applySession(data?.session || null);
     state.authError = '';

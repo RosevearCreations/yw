@@ -1,6 +1,6 @@
 -- Full schema reference snapshot
--- Updated through 2026-03-24e app-shell visibility and equipment discoverability pass.
--- No new schema objects were required in this pass; latest incremental schema migration remains 051.
+-- Updated through 2026-03-25 account recovery and equipment signature capture pass.
+-- Latest incremental schema migration: 052_account_recovery_and_equipment_signature_capture.sql
 
 -- =========================================================
 -- YWI HSE Full Schema Reference
@@ -16,6 +16,8 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text not null unique,
   full_name text,
+  username text,
+  recovery_email text,
   role text not null default 'worker',
   is_active boolean not null default true,
   phone text,
@@ -44,6 +46,8 @@ create table if not exists public.profiles (
   default_admin_profile_id uuid references public.profiles(id) on delete set null,
   override_admin_profile_id uuid references public.profiles(id) on delete set null,
   notes text,
+  password_changed_at timestamptz,
+  last_login_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -64,6 +68,20 @@ create table if not exists public.sites (
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
+);
+
+create table if not exists public.account_recovery_requests (
+  id bigserial primary key,
+  lookup_kind text not null default 'lookup',
+  employee_number text,
+  phone_last4 text,
+  last_name text,
+  matched_profile_id uuid references public.profiles(id) on delete set null,
+  masked_email text,
+  masked_username text,
+  request_status text not null default 'pending',
+  notes text,
+  created_at timestamptz not null default now()
 );
 
 create table if not exists public.site_assignments (
@@ -232,9 +250,15 @@ create table if not exists public.equipment_signouts (
   checkout_worker_signature_name text,
   checkout_supervisor_signature_name text,
   checkout_admin_signature_name text,
+  checkout_worker_signature_png text,
+  checkout_supervisor_signature_png text,
+  checkout_admin_signature_png text,
   return_worker_signature_name text,
   return_supervisor_signature_name text,
   return_admin_signature_name text,
+  return_worker_signature_png text,
+  return_supervisor_signature_png text,
+  return_admin_signature_png text,
   checkout_condition text,
   return_condition text,
   signout_notes text,
@@ -430,3 +454,14 @@ select
   n.dead_letter_reason,
   n.created_by_profile_id
 from public.admin_notifications n;
+
+
+create unique index if not exists idx_profiles_username_unique
+  on public.profiles (lower(username))
+  where username is not null and btrim(username) <> '';
+
+create index if not exists idx_account_recovery_requests_created_at
+  on public.account_recovery_requests(created_at desc);
+
+create index if not exists idx_account_recovery_requests_profile
+  on public.account_recovery_requests(matched_profile_id, created_at desc);

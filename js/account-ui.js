@@ -32,6 +32,12 @@
           <label>Email
             <input id="account_email" type="email" readonly />
           </label>
+          <label>Username
+            <input id="account_username" type="text" placeholder="Choose a username" />
+          </label>
+          <label>Recovery email
+            <input id="account_recovery_email" type="email" placeholder="Optional backup email" />
+          </label>
           <label>Role
             <input id="account_role" type="text" readonly />
           </label>
@@ -56,7 +62,8 @@
         </div>
         <div id="account_password_hint" class="notice" style="margin-top:12px;"></div>
         <div class="form-footer" style="margin-top:14px;flex-wrap:wrap;">
-          <button id="account_password_save" class="primary" type="button">Save Password</button>
+          <button id="account_recovery_save" class="primary" type="button">Save Login Details</button>
+          <button id="account_password_save" class="secondary" type="button">Save Password</button>
           <button id="account_resend_email_verification" class="secondary" type="button">Resend Email Verification</button>
           <button id="account_request_phone_verification" class="secondary" type="button">Request Phone Verification</button>
           <button id="account_send_phone_code" class="secondary" type="button">Send SMS Code</button>
@@ -78,6 +85,8 @@
     panel: document.getElementById('accountPanel'),
     email: document.getElementById('account_email'),
     role: document.getElementById('account_role'),
+    username: document.getElementById('account_username'),
+    recoveryEmail: document.getElementById('account_recovery_email'),
     emailStatus: document.getElementById('account_email_status'),
     phoneStatus: document.getElementById('account_phone_status'),
     phone: document.getElementById('account_phone'),
@@ -88,6 +97,7 @@
     verifyPhoneCodeBtn: document.getElementById('account_verify_phone_code'),
     password: document.getElementById('account_password'),
     confirm: document.getElementById('account_password_confirm'),
+    saveRecoveryBtn: document.getElementById('account_recovery_save'),
     saveBtn: document.getElementById('account_password_save'),
     logoutAllBtn: document.getElementById('account_logout_all'),
     logoutThisBtn: document.getElementById('account_logout_this'),
@@ -142,6 +152,8 @@
     if (!isAuthenticated) return;
 
     if (els.email) els.email.value = current.profile?.email || current.user?.email || '';
+    if (els.username) els.username.value = current.profile?.username || '';
+    if (els.recoveryEmail) els.recoveryEmail.value = current.profile?.recovery_email || '';
     if (els.role) els.role.value = access.roleLabel || role;
     if (els.emailStatus) els.emailStatus.value = emailVerified ? 'Verified' : 'Verification pending';
     if (els.phoneStatus) els.phoneStatus.value = phoneVerified ? 'Verified' : 'Verification pending';
@@ -152,6 +164,25 @@
         : (emailVerified
           ? 'Your email is verified. Use the password fields below for normal sign-in going forward.'
           : 'Verify your email once, then save a strong password for normal sign-in.');
+    }
+  }
+
+
+  async function onSaveRecoveryProfile() {
+    const restore = setBusy(els.saveRecoveryBtn, 'Saving...');
+    try {
+      if (!api?.accountRecoveryAction) throw new Error('Account maintenance API is not ready.');
+      await api.accountRecoveryAction({
+        action: 'update_recovery_profile',
+        username: els.username?.value?.trim?.() || '',
+        recovery_email: els.recoveryEmail?.value?.trim?.() || '',
+        phone: els.phone?.value?.trim?.() || ''
+      });
+      setSummary('Login details saved. You can now sign in with email or username, and your recovery details are updated.', false);
+    } catch (err) {
+      setSummary(err?.message || 'Failed to save login details.', true);
+    } finally {
+      restore();
     }
   }
 
@@ -239,6 +270,10 @@
   }
 
   function bind() {
+    if (els.saveRecoveryBtn && els.saveRecoveryBtn.dataset.bound !== '1') {
+      els.saveRecoveryBtn.dataset.bound = '1';
+      els.saveRecoveryBtn.addEventListener('click', onSaveRecoveryProfile);
+    }
     if (els.saveBtn && els.saveBtn.dataset.bound !== '1') {
       els.saveBtn.dataset.bound = '1';
       els.saveBtn.addEventListener('click', onSavePassword);

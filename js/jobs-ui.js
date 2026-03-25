@@ -32,7 +32,8 @@
       inspections: [],
       maintenance: [],
       editingJobId: null,
-      editingEquipmentCode: ''
+      editingEquipmentCode: '',
+      signaturePads: { worker: null, supervisor: null, admin: null }
     };
 
     function ensureLayout() {
@@ -164,6 +165,23 @@
               <label>Checkout Condition<input id="eq_checkout_condition" type="text" placeholder="Ready / worn / damaged" /></label>
               <label>Return Condition<input id="eq_return_condition" type="text" placeholder="Returned condition" /></label>
             </div>
+            <div class="grid" style="margin-top:12px;">
+              <div class="signature-capture-block">
+                <label style="display:block;">Worker Signature Capture</label>
+                <canvas id="eq_worker_signature_canvas" class="signature-canvas" width="320" height="120"></canvas>
+                <div class="form-footer" style="margin-top:8px;"><button id="eq_worker_signature_clear" class="secondary" type="button">Clear Worker Signature</button></div>
+              </div>
+              <div class="signature-capture-block">
+                <label style="display:block;">Supervisor Signature Capture</label>
+                <canvas id="eq_supervisor_signature_canvas" class="signature-canvas" width="320" height="120"></canvas>
+                <div class="form-footer" style="margin-top:8px;"><button id="eq_supervisor_signature_clear" class="secondary" type="button">Clear Supervisor Signature</button></div>
+              </div>
+              <div class="signature-capture-block">
+                <label style="display:block;">Admin Signature Capture</label>
+                <canvas id="eq_admin_signature_canvas" class="signature-canvas" width="320" height="120"></canvas>
+                <div class="form-footer" style="margin-top:8px;"><button id="eq_admin_signature_clear" class="secondary" type="button">Clear Admin Signature</button></div>
+              </div>
+            </div>
           </div>
           <div class="form-footer" style="margin-top:12px;">
             <button id="eq_save" class="primary" type="button">Save Equipment</button>
@@ -281,6 +299,12 @@
         eqWorkerSignature: $('#eq_worker_signature'),
         eqSupervisorSignature: $('#eq_supervisor_signature'),
         eqAdminSignature: $('#eq_admin_signature'),
+        eqWorkerSignatureCanvas: $('#eq_worker_signature_canvas'),
+        eqSupervisorSignatureCanvas: $('#eq_supervisor_signature_canvas'),
+        eqAdminSignatureCanvas: $('#eq_admin_signature_canvas'),
+        eqWorkerSignatureClear: $('#eq_worker_signature_clear'),
+        eqSupervisorSignatureClear: $('#eq_supervisor_signature_clear'),
+        eqAdminSignatureClear: $('#eq_admin_signature_clear'),
         eqCheckoutCondition: $('#eq_checkout_condition'),
         eqReturnCondition: $('#eq_return_condition'),
         eqNotes: $('#eq_notes'),
@@ -299,6 +323,38 @@
         eqHistoryBody: $('#eq_history_table tbody'),
         eqInspectionBody: $('#eq_inspection_table tbody'),
         eqMaintenanceBody: $('#eq_maintenance_table tbody')
+      };
+    }
+
+
+    function initSignaturePads() {
+      const e = els();
+      const pairs = [
+        ['worker', e.eqWorkerSignatureCanvas, e.eqWorkerSignatureClear],
+        ['supervisor', e.eqSupervisorSignatureCanvas, e.eqSupervisorSignatureClear],
+        ['admin', e.eqAdminSignatureCanvas, e.eqAdminSignatureClear]
+      ];
+      pairs.forEach(([key, canvas, clearBtn]) => {
+        if (!canvas || typeof window.SignaturePad !== 'function') return;
+        if (!state.signaturePads[key]) {
+          state.signaturePads[key] = new window.SignaturePad(canvas, { minWidth: 0.8, maxWidth: 2.1 });
+        }
+        if (clearBtn && clearBtn.dataset.bound !== '1') {
+          clearBtn.dataset.bound = '1';
+          clearBtn.addEventListener('click', () => state.signaturePads[key]?.clear());
+        }
+      });
+    }
+
+    function clearSignaturePads() {
+      Object.values(state.signaturePads).forEach((pad) => pad?.clear?.());
+    }
+
+    function collectSignaturePayload() {
+      return {
+        worker_signature_png: state.signaturePads.worker && !state.signaturePads.worker.isEmpty() ? state.signaturePads.worker.toDataURL('image/png') : null,
+        supervisor_signature_png: state.signaturePads.supervisor && !state.signaturePads.supervisor.isEmpty() ? state.signaturePads.supervisor.toDataURL('image/png') : null,
+        admin_signature_png: state.signaturePads.admin && !state.signaturePads.admin.isEmpty() ? state.signaturePads.admin.toDataURL('image/png') : null,
       };
     }
 
@@ -437,6 +493,7 @@
       if (e.eqCondition) e.eqCondition.value = 'ready';
       if (e.eqHomeSite) e.eqHomeSite.value = '';
       if (e.eqNotes) e.eqNotes.value = '';
+      clearSignaturePads();
       setNotice(e.eqSummary, 'Ready for a new equipment entry.');
     }
 
@@ -488,6 +545,7 @@
       e.eqImageUrl.value = row.image_url || '';
       e.eqComments.value = row.comments || '';
       e.eqNotes.value = row.notes || '';
+      clearSignaturePads();
       setNotice(e.eqSummary, `Loaded equipment ${row.equipment_code} into the form for editing.`);
       window.YWIRouter?.showSection?.('equipment', { skipFocus: true });
     }
@@ -648,7 +706,7 @@
     async function checkoutEquipment() {
       const e = els();
       try {
-        const resp = await api.manageJobsEntity({ entity: 'equipment', action: 'checkout', equipment_code: e.eqCode?.value?.trim?.() || '', job_code: e.eqCurrentJobCode?.value?.trim?.() || '', supervisor_name: e.eqAssignedSupervisor?.value?.trim?.() || '', worker_signature_name: e.eqWorkerSignature?.value?.trim?.() || '', supervisor_signature_name: e.eqSupervisorSignature?.value?.trim?.() || '', admin_signature_name: e.eqAdminSignature?.value?.trim?.() || '', checkout_condition: e.eqCheckoutCondition?.value?.trim?.() || '', notes: e.eqNotes?.value?.trim?.() || '' });
+        const resp = await api.manageJobsEntity({ entity: 'equipment', action: 'checkout', equipment_code: e.eqCode?.value?.trim?.() || '', job_code: e.eqCurrentJobCode?.value?.trim?.() || '', supervisor_name: e.eqAssignedSupervisor?.value?.trim?.() || '', worker_signature_name: e.eqWorkerSignature?.value?.trim?.() || '', supervisor_signature_name: e.eqSupervisorSignature?.value?.trim?.() || '', admin_signature_name: e.eqAdminSignature?.value?.trim?.() || '', checkout_condition: e.eqCheckoutCondition?.value?.trim?.() || '', notes: e.eqNotes?.value?.trim?.() || '', ...collectSignaturePayload() });
         if (!resp?.ok) throw new Error(resp?.error || 'Checkout failed');
         setNotice(e.eqSummary, `Equipment ${e.eqCode?.value || ''} checked out.`);
         await loadData();
@@ -660,7 +718,7 @@
     async function returnEquipment() {
       const e = els();
       try {
-        const resp = await api.manageJobsEntity({ entity: 'equipment', action: 'return', equipment_code: e.eqCode?.value?.trim?.() || '', worker_signature_name: e.eqWorkerSignature?.value?.trim?.() || '', supervisor_signature_name: e.eqSupervisorSignature?.value?.trim?.() || '', admin_signature_name: e.eqAdminSignature?.value?.trim?.() || '', return_condition: e.eqReturnCondition?.value?.trim?.() || '', return_notes: e.eqNotes?.value?.trim?.() || '' });
+        const resp = await api.manageJobsEntity({ entity: 'equipment', action: 'return', equipment_code: e.eqCode?.value?.trim?.() || '', worker_signature_name: e.eqWorkerSignature?.value?.trim?.() || '', supervisor_signature_name: e.eqSupervisorSignature?.value?.trim?.() || '', admin_signature_name: e.eqAdminSignature?.value?.trim?.() || '', return_condition: e.eqReturnCondition?.value?.trim?.() || '', return_notes: e.eqNotes?.value?.trim?.() || '', ...collectSignaturePayload() });
         if (!resp?.ok) throw new Error(resp?.error || 'Return failed');
         setNotice(e.eqSummary, `Equipment ${e.eqCode?.value || ''} returned.`);
         await loadData();
@@ -874,6 +932,7 @@
       await loadData();
       if (!state.jobs.length) clearJobForm();
       if (!state.equipment.length) clearEquipmentForm();
+      initSignaturePads();
       renderRequirementReviewPanel();
     }
 

@@ -101,7 +101,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-03-24e');
+          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-03-25a');
           if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
           }
@@ -163,7 +163,7 @@
       <div>
         <h2>Sign in to YWI HSE</h2>
         <p class="section-subtitle">
-          Existing users should use email and password. Magic link is available as a backup option.
+          Existing users should use email, username, and password. Magic link is available only as backup access or recovery.
         </p>
       </div>
     </div>
@@ -233,11 +233,11 @@
       <section data-auth-panel="password">
         <form id="passwordLoginForm" autocomplete="on">
           <div class="grid">
-            <label>Email Address
+            <label>Email or Username
               <input
                 id="passwordLoginEmail"
-                type="email"
-                placeholder="you@company.com"
+                type="text"
+                placeholder="you@company.com or username"
                 required
                 autocomplete="username email"
               />
@@ -262,6 +262,27 @@
 
           <div class="notice" style="margin-top:12px;">
             If your account already exists, you do not need to wait for a magic link.
+          </div>
+
+          <div class="admin-panel-block" style="margin-top:16px;">
+            <h3 style="margin-top:0;">Account Recovery</h3>
+            <p class="section-subtitle">Find the right sign-in details using employee number plus a second check, then request a password reset email.</p>
+            <div class="grid">
+              <label>Employee Number
+                <input id="recoveryEmployeeNumber" type="text" placeholder="Employee number" autocomplete="off" />
+              </label>
+              <label>Phone Last 4
+                <input id="recoveryPhoneLast4" type="text" placeholder="1234" maxlength="4" inputmode="numeric" autocomplete="off" />
+              </label>
+              <label>Last Name
+                <input id="recoveryLastName" type="text" placeholder="Last name" autocomplete="family-name" />
+              </label>
+            </div>
+            <div class="form-footer">
+              <button id="accountLookupBtn" class="secondary" type="button">Find My Login</button>
+              <button id="accountRecoverySendBtn" class="secondary" type="button">Send Recovery Email</button>
+            </div>
+            <div id="accountRecoveryResult" class="notice" style="display:none;margin-top:12px;"></div>
           </div>
         </form>
       </section>
@@ -307,25 +328,25 @@
 
   <!-- Correct module order -->
   <script src="/js/router.js"></script>
-  <script src="/js/bootstrap.js?v=2026-03-24e"></script>
-  <script src="/js/auth.js?v=2026-03-24e"></script>
+  <script src="/js/bootstrap.js?v=2026-03-25a"></script>
+  <script src="/js/auth.js?v=2026-03-25a"></script>
   <script src="/js/security.js"></script>
-  <script src="/js/api.js?v=2026-03-24e"></script>
+  <script src="/js/api.js?v=2026-03-25a"></script>
   <script src="/js/outbox.js"></script>
   <script src="/js/admin-actions.js"></script>
-  <script src="/js/ui-auth.js?v=2026-03-24e"></script>
+  <script src="/js/ui-auth.js?v=2026-03-25a"></script>
   <script src="/js/account-ui.js"></script>
   <script src="/js/profile-ui.js"></script>
   <script src="/js/reference-data.js"></script>
-  <script src="/js/admin-ui.js?v=2026-03-24e"></script>
+  <script src="/js/admin-ui.js?v=2026-03-25a"></script>
   <script src="/js/logbook-ui.js"></script>
-  <script src="/js/jobs-ui.js?v=2026-03-24e"></script>
+  <script src="/js/jobs-ui.js?v=2026-03-25a"></script>
   <script src="/js/forms-toolbox.js"></script>
   <script src="/js/forms-ppe.js"></script>
   <script src="/js/forms-firstaid.js"></script>
   <script src="/js/forms-inspection.js"></script>
   <script src="/js/forms-drill.js"></script>
-  <script src="/app.js?v=2026-03-24e" defer></script>
+  <script src="/app.js?v=2026-03-25a" defer></script>
 
   <script>
     document.addEventListener('ywi:auth-changed', (e) => {

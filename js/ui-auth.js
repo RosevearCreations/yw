@@ -33,6 +33,12 @@
     passwordBtn: document.getElementById('passwordLoginBtn'),
     passwordForgotBtn: document.getElementById('passwordForgotBtn'),
     forgotEmailBtn: document.getElementById('forgotEmailBtn'),
+    recoveryEmployeeNumber: document.getElementById('recoveryEmployeeNumber'),
+    recoveryPhoneLast4: document.getElementById('recoveryPhoneLast4'),
+    recoveryLastName: document.getElementById('recoveryLastName'),
+    accountLookupBtn: document.getElementById('accountLookupBtn'),
+    accountRecoverySendBtn: document.getElementById('accountRecoverySendBtn'),
+    accountRecoveryResult: document.getElementById('accountRecoveryResult'),
     logoutBtn: document.getElementById('logoutBtn'),
     configPanel: document.getElementById('runtimeConfigPanel'),
     configForm: document.getElementById('runtimeConfigForm'),
@@ -60,6 +66,28 @@
     els.authNotice.style.display = 'block';
     els.authNotice.textContent = message;
     els.authNotice.dataset.kind = isError ? 'error' : 'info';
+  }
+
+
+  function setRecoveryResult(message = '', isError = false) {
+    if (!els.accountRecoveryResult) return;
+    if (!message) {
+      els.accountRecoveryResult.style.display = 'none';
+      els.accountRecoveryResult.textContent = '';
+      els.accountRecoveryResult.dataset.kind = '';
+      return;
+    }
+    els.accountRecoveryResult.style.display = 'block';
+    els.accountRecoveryResult.textContent = message;
+    els.accountRecoveryResult.dataset.kind = isError ? 'error' : 'info';
+  }
+
+  function getRecoveryPayload() {
+    return {
+      employee_number: els.recoveryEmployeeNumber?.value?.trim?.() || '',
+      phone_last4: els.recoveryPhoneLast4?.value?.trim?.() || '',
+      last_name: els.recoveryLastName?.value?.trim?.() || ''
+    };
   }
 
   function setConfigStatus(message = '', isError = false) {
@@ -272,7 +300,39 @@
   }
 
   function onForgotEmail() {
-    setNotice('This app signs in with your email address. If you forgot which email was used, contact your admin or use the account details in Settings after you regain access.', false);
+    setNotice('Use the account recovery box below to look up your masked email or request a reset email.', false);
+    els.recoveryEmployeeNumber?.focus?.();
+  }
+
+  async function onAccountLookup() {
+    const api = window.YWIAPI;
+    const restore = setBusy(els.accountLookupBtn, 'Checking...');
+    try {
+      const payload = await api.accountRecoveryAction({ action: 'lookup_account_help', ...getRecoveryPayload() });
+      const parts = [];
+      if (payload?.masked_email) parts.push(`Email: ${payload.masked_email}`);
+      if (payload?.masked_username) parts.push(`Username: ${payload.masked_username}`);
+      if (!parts.length) parts.push('Account found. Use Forgot Password if you remember the email, or ask admin to review your recovery details.');
+      setRecoveryResult(parts.join(' • '), false);
+      if (payload?.masked_email && els.passwordEmail && !els.passwordEmail.value) els.passwordEmail.value = payload.masked_email;
+    } catch (err) {
+      setRecoveryResult(err?.message || 'Recovery lookup failed.', true);
+    } finally {
+      restore();
+    }
+  }
+
+  async function onAccountRecoverySend() {
+    const api = window.YWIAPI;
+    const restore = setBusy(els.accountRecoverySendBtn, 'Sending...');
+    try {
+      const payload = await api.accountRecoveryAction({ action: 'send_recovery_email', ...getRecoveryPayload(), redirect_to: `${window.location.origin}/` });
+      setRecoveryResult(payload?.message || 'Recovery email sent.', false);
+    } catch (err) {
+      setRecoveryResult(err?.message || 'Recovery email failed.', true);
+    } finally {
+      restore();
+    }
   }
 
   async function onLogout() {
@@ -298,6 +358,14 @@
     if (els.forgotEmailBtn && els.forgotEmailBtn.dataset.bound !== '1') {
       els.forgotEmailBtn.dataset.bound = '1';
       els.forgotEmailBtn.addEventListener('click', onForgotEmail);
+    }
+    if (els.accountLookupBtn && els.accountLookupBtn.dataset.bound !== '1') {
+      els.accountLookupBtn.dataset.bound = '1';
+      els.accountLookupBtn.addEventListener('click', onAccountLookup);
+    }
+    if (els.accountRecoverySendBtn && els.accountRecoverySendBtn.dataset.bound !== '1') {
+      els.accountRecoverySendBtn.dataset.bound = '1';
+      els.accountRecoverySendBtn.addEventListener('click', onAccountRecoverySend);
     }
     if (els.magicForm && els.magicForm.dataset.bound !== '1') {
       els.magicForm.dataset.bound = '1';

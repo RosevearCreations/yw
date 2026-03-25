@@ -180,3 +180,22 @@ Schema status for this pass:
 - `sql/000_full_schema_reference.sql` remains the full schema reference snapshot
 - the latest live migration for equipment maintenance / lockout remains `sql/051_equipment_maintenance_lockout_and_history.sql`
 
+## 2026-03-25 pass: account recovery, credentials polish, and equipment signature capture
+
+Completed in this pass:
+- Password sign-in now accepts either email or username. The frontend resolves usernames through the account-maintenance function before Supabase password login.
+- Login screen now includes an account recovery helper that verifies employee number + phone last 4 + last name, returns masked login hints, and can send a recovery email.
+- Settings account panel now supports saving username and recovery email in addition to phone/password actions.
+- Equipment checkout/return now supports real signature image capture on device and stores PNG data on signout history rows instead of relying only on typed names.
+- Added migration `sql/052_account_recovery_and_equipment_signature_capture.sql`.
+- Full schema reference updated to include recovery fields, recovery request history, and equipment signature PNG fields.
+
+Operational note:
+- On existing databases, run only `sql/052_account_recovery_and_equipment_signature_capture.sql` for this pass.
+- Do not run `sql/000_full_schema_reference.sql` on a live existing database unless rebuilding from scratch.
+
+Most valuable next pass after this:
+- replace PNG/base64 signature storage with uploaded file storage plus signed URLs
+- add admin review screens for account recovery attempts and failed login help requests
+- move more duplicated selector/reference JSON into database-backed catalogs where the app already reads database-first
+- harden per-role credential and settings visibility with clearer audit history

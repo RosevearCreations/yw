@@ -843,3 +843,7 @@ body[data-user-role="admin"] #admin[data-admin-locked="false"] {
 #settings textarea {
   width: 100%;
 }
+
+.signature-capture-block { display:block; }
+.signature-canvas { width:100%; max-width:320px; height:120px; border:1px dashed rgba(148,163,184,0.45); border-radius:12px; background:#fff; touch-action:none; }
+
