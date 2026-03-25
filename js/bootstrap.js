@@ -2,37 +2,26 @@
    Brief description: Shared bootstrap/auth recovery layer.
    Restores Supabase sessions from PKCE code, token hash, or existing storage,
    preserves route fragments safely, cleans callback URLs, and exposes boot/auth header helpers to the app.
+   Now supports local runtime anon-key storage so the login screen can always render a usable config error instead of a blank wall.
 */
 
 'use strict';
 
 (function () {
   const SUPABASE_URL = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
-  const SUPABASE_ANON_KEY =
-    window.SUPABASE_ANON_KEY ||
-    window.__SUPABASE_ANON_KEY ||
-    '';
 
-  if (!window.supabase?.createClient) {
-    console.error('Supabase library is not loaded.');
-    return;
-  }
-
-  if (!SUPABASE_ANON_KEY) {
-    console.error('Missing Supabase anon key.');
-    return;
-  }
-
-  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: false
+  function readStoredAnonKey() {
+    try {
+      return String(
+        window.SUPABASE_ANON_KEY ||
+        window.__SUPABASE_ANON_KEY ||
+        localStorage.getItem('ywi_supabase_anon_key') ||
+        ''
+      ).trim();
+    } catch {
+      return String(window.SUPABASE_ANON_KEY || window.__SUPABASE_ANON_KEY || '').trim();
     }
-  });
-
-  window.YWI_SB = sb;
-  window._sb = sb;
+  }
 
   const state = {
     initialized: false,
@@ -45,7 +34,11 @@
     role: 'worker',
     roleLabel: 'Worker',
     isAuthenticated: false,
-    lastRouteHash: '#toolbox'
+    lastRouteHash: '#toolbox',
+    configError: '',
+    supabaseUrl: SUPABASE_URL,
+    hasSupabaseKey: false,
+    pendingAuthResolution: false
   };
 
   function dispatch(name, detail = {}) {
@@ -68,6 +61,10 @@
       admin: 'Admin'
     };
     return map[role] || role || 'Worker';
+  }
+
+  function getState() {
+    return { ...state };
   }
 
   function parseQueryStringLike(str) {
@@ -145,8 +142,33 @@
     window.history.replaceState({}, document.title, clean);
   }
 
-  async function fetchProfile(userId) {
-    if (!userId) return null;
+  async function authHeader() {
+    const token = state.session?.access_token;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
+  async function refresh() {
+    if (!window.YWI_SB?.auth?.refreshSession) throw new Error(state.configError || 'Supabase is not configured.');
+    const { data, error } = await window.YWI_SB.auth.refreshSession();
+    if (error) throw error;
+    state.session = data?.session || null;
+    state.user = state.session?.user || null;
+    state.isAuthenticated = !!state.session?.access_token;
+    return data?.session || null;
+  }
+
+  window.YWI_BOOT = { sb: null, state, init, getState, authHeader, refresh };
+
+  async function finishWithoutClient(message) {
+    state.initialized = true;
+    state.pendingAuthResolution = false;
+    state.authError = message || state.authError || '';
+    if (message) state.configError = message;
+    dispatch('ywi:boot-ready', { state: getState() });
+  }
+
+  async function fetchProfile(userId, sb) {
+    if (!userId || !sb) return null;
     try {
       const { data, error } = await sb.from('profiles').select('*').eq('id', userId).maybeSingle();
       if (error) {
@@ -160,19 +182,19 @@
     }
   }
 
-  async function applySession(session, authError = '', authFlow = state.authFlow) {
+  async function applySession(session, authError = '', authFlow = state.authFlow, sb = window.YWI_SB) {
     state.session = session || null;
     state.user = session?.user || null;
     state.authError = authError || '';
     state.authFlow = authFlow || 'idle';
     state.isAuthenticated = !!session?.access_token;
-    if (state.user?.id) state.profile = await fetchProfile(state.user.id);
+    if (state.user?.id) state.profile = await fetchProfile(state.user.id, sb);
     else state.profile = null;
     state.role = state.profile?.role || 'worker';
     state.roleLabel = getRoleLabel(state.role);
   }
 
-  async function recoverSessionFromUrlIfNeeded() {
+  async function recoverSessionFromUrlIfNeeded(sb) {
     const { params, routeHash } = extractAuthContext();
     state.lastRouteHash = normalizeHashCandidate(routeHash) || '#toolbox';
     const authFlow = safeText(params.type).toLowerCase() || 'signin';
@@ -181,12 +203,12 @@
       const { data, error } = await sb.auth.exchangeCodeForSession(params.code);
       if (error) {
         console.error('exchangeCodeForSession failed:', error.message);
-        await applySession(null, error.message || params.error_description || '', authFlow);
+        await applySession(null, error.message || params.error_description || '', authFlow, sb);
         cleanUrlAfterAuth('#settings');
         return;
       }
       state.recoveredFromUrl = true;
-      await applySession(data?.session || null, '', authFlow);
+      await applySession(data?.session || null, '', authFlow, sb);
       cleanUrlAfterAuth(getPostAuthHash(params, routeHash));
       return;
     }
@@ -198,62 +220,65 @@
       });
       if (error) {
         console.error('setSession failed:', error.message);
-        await applySession(null, error.message || params.error_description || '', authFlow);
+        await applySession(null, error.message || params.error_description || '', authFlow, sb);
         cleanUrlAfterAuth('#settings');
         return;
       }
       state.recoveredFromUrl = true;
-      await applySession(data?.session || null, '', authFlow);
+      await applySession(data?.session || null, '', authFlow, sb);
       cleanUrlAfterAuth(getPostAuthHash(params, routeHash));
       return;
     }
 
     if (hasAuthError(params)) {
       const msg = params.error_description || params.error_code || params.error || 'Authentication failed.';
-      await applySession(null, msg, authFlow);
+      await applySession(null, msg, authFlow, sb);
       cleanUrlAfterAuth('#settings');
       return;
     }
 
     const { data } = await sb.auth.getSession();
-    await applySession(data?.session || null, '', 'idle');
+    await applySession(data?.session || null, '', 'idle', sb);
     if (!window.location.hash && state.isAuthenticated) cleanUrlAfterAuth(routeHash || '#toolbox');
-  }
-
-  async function authHeader() {
-    const { data } = await sb.auth.getSession();
-    const token = data?.session?.access_token;
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  }
-
-  async function refresh() {
-    const { data, error } = await sb.auth.refreshSession();
-    if (error) throw error;
-    await applySession(data?.session || null, '', 'refresh');
-    return data?.session || null;
-  }
-
-  function getState() {
-    return { ...state };
   }
 
   async function init() {
     if (state.initialized) return;
-    await recoverSessionFromUrlIfNeeded();
+    state.pendingAuthResolution = true;
+    const anonKey = readStoredAnonKey();
+    state.hasSupabaseKey = !!anonKey;
+
+    if (!window.supabase?.createClient) {
+      return finishWithoutClient('Supabase library did not load. Refresh the app. If it still fails, clear the service worker cache and try again.');
+    }
+    if (!anonKey) {
+      return finishWithoutClient('App configuration is incomplete. Add the Supabase anon key in the login screen settings, then reload the app.');
+    }
+
+    const sb = window.supabase.createClient(SUPABASE_URL, anonKey, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+    });
+    window.YWI_SB = sb;
+    window._sb = sb;
+    window.YWI_BOOT.sb = sb;
+
+    await recoverSessionFromUrlIfNeeded(sb);
     sb.auth.onAuthStateChange(async (event, session) => {
       const nextFlow = event === 'PASSWORD_RECOVERY' ? 'recovery' : (state.authFlow || 'session');
-      await applySession(session || null, '', nextFlow);
+      await applySession(session || null, '', nextFlow, sb);
       dispatch('ywi:auth-changed', { state: getState() });
     });
+    state.pendingAuthResolution = false;
     state.initialized = true;
     dispatch('ywi:boot-ready', { state: getState() });
   }
 
-  window.YWI_BOOT = { sb, state, init, getState, authHeader, refresh };
-
   init().catch((err) => {
     console.error('Bootstrap init failed:', err);
     state.authError = err?.message || 'Bootstrap failed.';
+    state.configError = state.authError;
+    state.pendingAuthResolution = false;
+    state.initialized = true;
     dispatch('ywi:boot-ready', { state: getState() });
   });
 })();

@@ -110,7 +110,7 @@
           <div class="section-heading">
             <div>
               <h2>Equipment</h2>
-              <p class="section-subtitle">Manage assets, pool keys, checkout/return, and availability snapshots.</p>
+              <p class="section-subtitle">Manage rental-style asset records, pool keys, serials, images, purchase history, and signed checkout/return events.</p>
             </div>
             <div class="admin-heading-actions">
               <button id="eq_load" class="secondary" type="button">Reload</button>
@@ -121,15 +121,37 @@
             <label>Equipment Code<input id="eq_code" type="text" /></label>
             <label>Equipment Name<input id="eq_name" type="text" /></label>
             <label>Category<input id="eq_category" type="text" /></label>
+            <label>Pool Key<input id="eq_pool_key" type="text" /></label>
             <label>Home Site<select id="eq_home_site"></select></label>
             <label>Status<input id="eq_status" type="text" value="available" /></label>
             <label>Current Job<input id="eq_current_job_code" type="text" /></label>
             <label>Assigned Supervisor<input id="eq_assigned_supervisor" type="text" /></label>
             <label>Serial<input id="eq_serial" type="text" /></label>
+            <label>Asset Tag<input id="eq_asset_tag" type="text" /></label>
+            <label>Manufacturer<input id="eq_manufacturer" type="text" /></label>
+            <label>Model<input id="eq_model" type="text" /></label>
+            <label>Year<input id="eq_year" type="number" min="1900" max="2100" /></label>
+            <label>Purchase Date<input id="eq_purchase_date" type="date" /></label>
+            <label>Purchase Price<input id="eq_purchase_price" type="number" min="0" step="0.01" /></label>
+            <label>Condition<input id="eq_condition" type="text" value="ready" /></label>
+            <label>Image URL<input id="eq_image_url" type="url" /></label>
           </div>
+          <label style="display:block;margin-top:12px;">Comments
+            <textarea id="eq_comments" rows="2" placeholder="Damage notes, maintenance notes, rental comments"></textarea>
+          </label>
           <label style="display:block;margin-top:12px;">Notes
             <textarea id="eq_notes" rows="3"></textarea>
           </label>
+          <div class="admin-panel-block" style="margin-top:16px;">
+            <h3 style="margin-top:0;">Checkout / Return Signatures</h3>
+            <div class="grid">
+              <label>Worker Signature<input id="eq_worker_signature" type="text" placeholder="Worker sign-off name" /></label>
+              <label>Supervisor Signature<input id="eq_supervisor_signature" type="text" placeholder="Supervisor sign-off name" /></label>
+              <label>Admin Signature<input id="eq_admin_signature" type="text" placeholder="Admin sign-off name" /></label>
+              <label>Checkout Condition<input id="eq_checkout_condition" type="text" placeholder="Ready / worn / damaged" /></label>
+              <label>Return Condition<input id="eq_return_condition" type="text" placeholder="Returned condition" /></label>
+            </div>
+          </div>
           <div class="form-footer" style="margin-top:12px;">
             <button id="eq_save" class="primary" type="button">Save Equipment</button>
             <button id="eq_checkout" class="secondary" type="button">Check Out</button>
@@ -149,7 +171,16 @@
             <h3 style="margin-top:0;">Equipment List</h3>
             <div class="table-scroll">
               <table id="eq_list_table">
-                <thead><tr><th>Code</th><th>Name</th><th>Status</th><th>Job</th><th>Pool</th><th>Action</th></tr></thead>
+                <thead><tr><th>Code</th><th>Name</th><th>Status</th><th>Serial</th><th>Pool</th><th>Action</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="admin-panel-block" style="margin-top:16px;">
+            <h3 style="margin-top:0;">Checkout / Return History</h3>
+            <div class="table-scroll">
+              <table id="eq_history_table">
+                <thead><tr><th>Equipment</th><th>Job</th><th>Out</th><th>Return</th><th>Worker</th><th>Supervisor</th><th>Admin</th><th>Condition</th></tr></thead>
                 <tbody></tbody>
               </table>
             </div>
@@ -191,6 +222,21 @@
         eqCurrentJobCode: $('#eq_current_job_code'),
         eqAssignedSupervisor: $('#eq_assigned_supervisor'),
         eqSerial: $('#eq_serial'),
+        eqPoolKey: $('#eq_pool_key'),
+        eqAssetTag: $('#eq_asset_tag'),
+        eqManufacturer: $('#eq_manufacturer'),
+        eqModel: $('#eq_model'),
+        eqYear: $('#eq_year'),
+        eqPurchaseDate: $('#eq_purchase_date'),
+        eqPurchasePrice: $('#eq_purchase_price'),
+        eqCondition: $('#eq_condition'),
+        eqImageUrl: $('#eq_image_url'),
+        eqComments: $('#eq_comments'),
+        eqWorkerSignature: $('#eq_worker_signature'),
+        eqSupervisorSignature: $('#eq_supervisor_signature'),
+        eqAdminSignature: $('#eq_admin_signature'),
+        eqCheckoutCondition: $('#eq_checkout_condition'),
+        eqReturnCondition: $('#eq_return_condition'),
         eqNotes: $('#eq_notes'),
         eqSave: $('#eq_save'),
         eqLoad: $('#eq_load'),
@@ -199,7 +245,8 @@
         eqReturn: $('#eq_return'),
         eqSummary: $('#eq_summary'),
         eqListBody: $('#eq_list_table tbody'),
-        eqPoolBody: $('#eq_pool_table tbody')
+        eqPoolBody: $('#eq_pool_table tbody'),
+        eqHistoryBody: $('#eq_history_table tbody')
       };
     }
 
@@ -296,8 +343,9 @@
     function clearEquipmentForm() {
       const e = els();
       state.editingEquipmentCode = '';
-      [e.eqCode, e.eqName, e.eqCategory, e.eqStatus, e.eqCurrentJobCode, e.eqAssignedSupervisor, e.eqSerial].forEach((el) => { if (el) el.value = ''; });
+      [e.eqCode, e.eqName, e.eqCategory, e.eqStatus, e.eqCurrentJobCode, e.eqAssignedSupervisor, e.eqSerial, e.eqPoolKey, e.eqAssetTag, e.eqManufacturer, e.eqModel, e.eqYear, e.eqPurchaseDate, e.eqPurchasePrice, e.eqCondition, e.eqImageUrl, e.eqComments, e.eqWorkerSignature, e.eqSupervisorSignature, e.eqAdminSignature, e.eqCheckoutCondition, e.eqReturnCondition].forEach((el) => { if (el) el.value = ''; });
       if (e.eqStatus) e.eqStatus.value = 'available';
+      if (e.eqCondition) e.eqCondition.value = 'ready';
       if (e.eqHomeSite) e.eqHomeSite.value = '';
       if (e.eqNotes) e.eqNotes.value = '';
       setNotice(e.eqSummary, 'Ready for a new equipment entry.');
@@ -340,6 +388,16 @@
       e.eqCurrentJobCode.value = row.current_job_code || '';
       e.eqAssignedSupervisor.value = row.assigned_supervisor_name || '';
       e.eqSerial.value = row.serial_number || '';
+      e.eqPoolKey.value = row.equipment_pool_key || '';
+      e.eqAssetTag.value = row.asset_tag || '';
+      e.eqManufacturer.value = row.manufacturer || '';
+      e.eqModel.value = row.model_number || '';
+      e.eqYear.value = row.purchase_year || '';
+      e.eqPurchaseDate.value = row.purchase_date || '';
+      e.eqPurchasePrice.value = row.purchase_price ?? '';
+      e.eqCondition.value = row.condition_status || 'ready';
+      e.eqImageUrl.value = row.image_url || '';
+      e.eqComments.value = row.comments || '';
       e.eqNotes.value = row.notes || '';
       setNotice(e.eqSummary, `Loaded equipment ${row.equipment_code} into the form for editing.`);
       window.YWIRouter?.showSection?.('equipment', { skipFocus: true });
@@ -362,7 +420,7 @@
         e.eqListBody.innerHTML = '';
         state.equipment.forEach((row) => {
           const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${escHtml(row.equipment_code)}</td><td>${escHtml(row.equipment_name)}</td><td>${escHtml(row.status)}</td><td>${escHtml(row.current_job_code || '')}</td><td>${escHtml(row.equipment_pool_key || '')}</td><td><button type="button" class="secondary" data-equipment-load="${escHtml(row.equipment_code)}">Load</button></td>`;
+          tr.innerHTML = `<td>${escHtml(row.equipment_code)}</td><td>${escHtml(row.equipment_name)}</td><td>${escHtml(row.status)}</td><td>${escHtml(row.serial_number || '')}</td><td>${escHtml(row.equipment_pool_key || '')}</td><td><button type="button" class="secondary" data-equipment-load="${escHtml(row.equipment_code)}">Load</button></td>`;
           e.eqListBody.appendChild(tr);
         });
       }
@@ -372,6 +430,14 @@
           const tr = document.createElement('tr');
           tr.innerHTML = `<td>${escHtml(row.equipment_pool_key)}</td><td>${escHtml(row.category || '')}</td><td>${escHtml(row.total_qty)}</td><td>${escHtml(row.available_qty)}</td><td>${escHtml(row.reserved_qty)}</td><td>${escHtml(row.checked_out_qty)}</td>`;
           e.eqPoolBody.appendChild(tr);
+        });
+      }
+      if (e.eqHistoryBody) {
+        e.eqHistoryBody.innerHTML = '';
+        state.signouts.forEach((row) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${escHtml(row.equipment_code || row.equipment_item_id || '')}</td><td>${escHtml(row.job_code || row.job_id || '')}</td><td>${escHtml(row.checked_out_at || '')}</td><td>${escHtml(row.returned_at || '')}</td><td>${escHtml(row.checkout_worker_signature_name || row.return_worker_signature_name || '')}</td><td>${escHtml(row.checkout_supervisor_signature_name || row.return_supervisor_signature_name || '')}</td><td>${escHtml(row.checkout_admin_signature_name || row.return_admin_signature_name || '')}</td><td>${escHtml(row.checkout_condition || '')}${row.return_condition ? ` → ${escHtml(row.return_condition)}` : ''}</td>`;
+          e.eqHistoryBody.appendChild(tr);
         });
       }
     }
@@ -444,6 +510,16 @@
           current_job_code: e.eqCurrentJobCode?.value?.trim?.() || '',
           assigned_supervisor_name: e.eqAssignedSupervisor?.value?.trim?.() || '',
           serial_number: e.eqSerial?.value?.trim?.() || '',
+          equipment_pool_key: e.eqPoolKey?.value?.trim?.() || '',
+          asset_tag: e.eqAssetTag?.value?.trim?.() || '',
+          manufacturer: e.eqManufacturer?.value?.trim?.() || '',
+          model_number: e.eqModel?.value?.trim?.() || '',
+          purchase_year: e.eqYear?.value ? Number(e.eqYear.value) : null,
+          purchase_date: e.eqPurchaseDate?.value || null,
+          purchase_price: e.eqPurchasePrice?.value ? Number(e.eqPurchasePrice.value) : null,
+          condition_status: e.eqCondition?.value?.trim?.() || '',
+          image_url: e.eqImageUrl?.value?.trim?.() || '',
+          comments: e.eqComments?.value?.trim?.() || '',
           notes: e.eqNotes?.value?.trim?.() || ''
         });
         if (!resp?.ok) throw new Error(resp?.error || 'Equipment save failed');
@@ -457,7 +533,7 @@
     async function checkoutEquipment() {
       const e = els();
       try {
-        const resp = await api.manageJobsEntity({ entity: 'equipment', action: 'checkout', equipment_code: e.eqCode?.value?.trim?.() || '', job_code: e.eqCurrentJobCode?.value?.trim?.() || '', supervisor_name: e.eqAssignedSupervisor?.value?.trim?.() || '', notes: e.eqNotes?.value?.trim?.() || '' });
+        const resp = await api.manageJobsEntity({ entity: 'equipment', action: 'checkout', equipment_code: e.eqCode?.value?.trim?.() || '', job_code: e.eqCurrentJobCode?.value?.trim?.() || '', supervisor_name: e.eqAssignedSupervisor?.value?.trim?.() || '', worker_signature_name: e.eqWorkerSignature?.value?.trim?.() || '', supervisor_signature_name: e.eqSupervisorSignature?.value?.trim?.() || '', admin_signature_name: e.eqAdminSignature?.value?.trim?.() || '', checkout_condition: e.eqCheckoutCondition?.value?.trim?.() || '', notes: e.eqNotes?.value?.trim?.() || '' });
         if (!resp?.ok) throw new Error(resp?.error || 'Checkout failed');
         setNotice(e.eqSummary, `Equipment ${e.eqCode?.value || ''} checked out.`);
         await loadData();
@@ -469,7 +545,7 @@
     async function returnEquipment() {
       const e = els();
       try {
-        const resp = await api.manageJobsEntity({ entity: 'equipment', action: 'return', equipment_code: e.eqCode?.value?.trim?.() || '' });
+        const resp = await api.manageJobsEntity({ entity: 'equipment', action: 'return', equipment_code: e.eqCode?.value?.trim?.() || '', worker_signature_name: e.eqWorkerSignature?.value?.trim?.() || '', supervisor_signature_name: e.eqSupervisorSignature?.value?.trim?.() || '', admin_signature_name: e.eqAdminSignature?.value?.trim?.() || '', return_condition: e.eqReturnCondition?.value?.trim?.() || '', return_notes: e.eqNotes?.value?.trim?.() || '' });
         if (!resp?.ok) throw new Error(resp?.error || 'Return failed');
         setNotice(e.eqSummary, `Equipment ${e.eqCode?.value || ''} returned.`);
         await loadData();

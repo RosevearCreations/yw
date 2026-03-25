@@ -1,6 +1,6 @@
 /* File: js/ui-auth.js
    Brief description: Authentication UI controller for password-first login,
-   backup magic-link login, password reset, and clean auth-wall handling.
+   backup magic-link login, password reset, runtime app-config storage, and clean auth-wall handling.
 */
 
 'use strict';
@@ -17,9 +17,9 @@
     authInfo: document.getElementById('authInfo'),
     whoami: document.getElementById('whoami'),
     headerSession: document.getElementById('headerSession'),
-    headerWhoami: document.getElementById('headerWhoami'),
+    headerSessionName: document.getElementById('headerSessionName'),
     headerLoginBtn: document.getElementById('headerLoginBtn'),
-    headerSettingsBtn: document.getElementById('headerSettingsBtn'),
+    headerSettingsLink: document.getElementById('headerSettingsLink'),
     headerLogoutBtn: document.getElementById('headerLogoutBtn'),
     authNotice: document.getElementById('authNotice'),
     authLoading: document.getElementById('authLoading'),
@@ -31,7 +31,14 @@
     passwordPassword: document.getElementById('passwordLoginPassword'),
     passwordBtn: document.getElementById('passwordLoginBtn'),
     passwordForgotBtn: document.getElementById('passwordForgotBtn'),
+    forgotEmailBtn: document.getElementById('forgotEmailBtn'),
     logoutBtn: document.getElementById('logoutBtn'),
+    configPanel: document.getElementById('runtimeConfigPanel'),
+    configForm: document.getElementById('runtimeConfigForm'),
+    configAnonKey: document.getElementById('runtimeSupabaseAnonKey'),
+    configSaveBtn: document.getElementById('runtimeConfigSaveBtn'),
+    configClearBtn: document.getElementById('runtimeConfigClearBtn'),
+    configStatus: document.getElementById('runtimeConfigStatus'),
     tabButtons: Array.from(document.querySelectorAll('[data-auth-tab]')),
     panels: Array.from(document.querySelectorAll('[data-auth-panel]'))
   };
@@ -52,6 +59,19 @@
     els.authNotice.style.display = 'block';
     els.authNotice.textContent = message;
     els.authNotice.dataset.kind = isError ? 'error' : 'info';
+  }
+
+  function setConfigStatus(message = '', isError = false) {
+    if (!els.configStatus) return;
+    if (!message) {
+      els.configStatus.style.display = 'none';
+      els.configStatus.textContent = '';
+      els.configStatus.dataset.kind = '';
+      return;
+    }
+    els.configStatus.style.display = 'block';
+    els.configStatus.textContent = message;
+    els.configStatus.dataset.kind = isError ? 'error' : 'info';
   }
 
   function setBusy(button, busyText) {
@@ -90,11 +110,13 @@
     const profile = state?.profile || {};
     const user = state?.user || {};
     const displayName = profile.full_name || profile.email || user.email || 'Not signed in';
-    if (els.headerWhoami) els.headerWhoami.textContent = state?.isAuthenticated ? `${displayName} · ${state.roleLabel || state.role || 'User'}` : 'Not signed in';
+    if (els.headerSessionName) {
+      els.headerSessionName.textContent = state?.isAuthenticated ? `${displayName} · ${state.roleLabel || state.role || 'User'}` : 'Not signed in';
+    }
     if (els.headerLoginBtn) els.headerLoginBtn.style.display = state?.isAuthenticated ? 'none' : '';
-    if (els.headerSettingsBtn) els.headerSettingsBtn.style.display = state?.isAuthenticated ? '' : 'none';
+    if (els.headerSettingsLink) els.headerSettingsLink.style.display = state?.isAuthenticated ? '' : 'none';
     if (els.headerLogoutBtn) els.headerLogoutBtn.style.display = state?.isAuthenticated ? '' : 'none';
-    if (els.headerSession) els.headerSession.hidden = !state?.isAuthenticated;
+    if (els.headerSession) els.headerSession.classList.toggle('hidden', !state?.isAuthenticated);
   }
 
   function render(state = auth.getState?.() || {}) {
@@ -112,6 +134,15 @@
     }
 
     showLoading(false);
+
+    if (els.configPanel) {
+      const showConfig = !!state.configError || !window.YWI_SB;
+      els.configPanel.hidden = !showConfig;
+      els.configPanel.style.display = showConfig ? '' : 'none';
+      if (els.configAnonKey && !els.configAnonKey.value) {
+        try { els.configAnonKey.value = localStorage.getItem('ywi_supabase_anon_key') || ''; } catch {}
+      }
+    }
 
     if (isAuthenticated) {
       if (els.loginView) els.loginView.style.display = 'none';
@@ -132,10 +163,15 @@
     if (els.loginView) els.loginView.style.display = '';
     if (els.authInfo) els.authInfo.hidden = true;
 
-    if (state.authError) {
+    if (state.configError) {
+      setNotice(state.configError, true);
+      setConfigStatus('Enter the Supabase anon key once, save it, then reload the app.');
+    } else if (state.authError) {
       setNotice(state.authError, true);
+      setConfigStatus('');
     } else {
       setNotice('Use email and password for daily sign-in. Magic link is only for first validation, backup access, or recovery.', false);
+      setConfigStatus('');
     }
   }
 
@@ -182,6 +218,34 @@
     }
   }
 
+  async function onSaveConfig(e) {
+    e.preventDefault();
+    const restore = setBusy(els.configSaveBtn, 'Saving...');
+    try {
+      await auth.saveRuntimeConfig({ anonKey: els.configAnonKey?.value || '' });
+      setConfigStatus('Runtime key saved. Reloading app...');
+      window.location.reload();
+    } catch (err) {
+      setConfigStatus(err?.message || 'Failed to save runtime config.', true);
+    } finally {
+      restore();
+    }
+  }
+
+  function onClearConfig() {
+    try {
+      auth.clearRuntimeConfig();
+      if (els.configAnonKey) els.configAnonKey.value = '';
+      setConfigStatus('Stored runtime key removed.', false);
+    } catch (err) {
+      setConfigStatus(err?.message || 'Failed to clear runtime config.', true);
+    }
+  }
+
+  function onForgotEmail() {
+    setNotice('This app signs in with your email address. If you forgot which email was used, contact your admin or use the account details in Settings after you regain access.', false);
+  }
+
   async function onLogout() {
     try {
       await auth.logout();
@@ -202,9 +266,21 @@
       els.passwordForgotBtn.dataset.bound = '1';
       els.passwordForgotBtn.addEventListener('click', onForgotPassword);
     }
+    if (els.forgotEmailBtn && els.forgotEmailBtn.dataset.bound !== '1') {
+      els.forgotEmailBtn.dataset.bound = '1';
+      els.forgotEmailBtn.addEventListener('click', onForgotEmail);
+    }
     if (els.magicForm && els.magicForm.dataset.bound !== '1') {
       els.magicForm.dataset.bound = '1';
       els.magicForm.addEventListener('submit', onMagicLogin);
+    }
+    if (els.configForm && els.configForm.dataset.bound !== '1') {
+      els.configForm.dataset.bound = '1';
+      els.configForm.addEventListener('submit', onSaveConfig);
+    }
+    if (els.configClearBtn && els.configClearBtn.dataset.bound !== '1') {
+      els.configClearBtn.dataset.bound = '1';
+      els.configClearBtn.addEventListener('click', onClearConfig);
     }
     if (els.logoutBtn && els.logoutBtn.dataset.bound !== '1') {
       els.logoutBtn.dataset.bound = '1';
@@ -220,10 +296,6 @@
         setTab('password');
         if (window.YWIRouter?.showSection) window.YWIRouter.showSection('toolbox', { skipFocus: true });
       });
-    }
-    if (els.headerSettingsBtn && els.headerSettingsBtn.dataset.boundAuth !== '1') {
-      els.headerSettingsBtn.dataset.boundAuth = '1';
-      els.headerSettingsBtn.addEventListener('click', () => window.YWIRouter?.showSection?.('settings', { skipFocus: true }));
     }
     els.tabButtons.forEach((btn) => {
       if (btn.dataset.bound !== '1') {

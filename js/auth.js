@@ -1,19 +1,15 @@
 /* File: js/auth.js
    Brief description: Shared authentication controller that coordinates Supabase auth with bootstrap state,
    exposes sign-in/logout/reset/password-change helpers, and keeps the app informed of current user/profile/role state.
+   Falls back to a readable configuration state when Supabase is not yet configured so the login screen still renders.
 */
 
 'use strict';
 
 (function () {
-  const sb = window.YWI_SB || window._sb || null;
   const boot = window.YWI_BOOT || null;
   const security = window.YWISecurity || null;
-
-  if (!sb) {
-    console.error('Auth module could not find Supabase client.');
-    return;
-  }
+  let sb = window.YWI_SB || window._sb || null;
 
   const state = {
     initialized: false,
@@ -26,7 +22,8 @@
     roleLabel: 'Worker',
     isAuthenticated: false,
     authError: '',
-    authFlow: 'idle'
+    authFlow: 'idle',
+    configError: boot?.state?.configError || ''
   };
 
   function dispatch(name, detail = {}) {
@@ -57,23 +54,12 @@
   }
 
   async function fetchProfile(userId) {
-    if (!userId) return null;
-
+    if (!userId || !sb) return null;
     try {
-      const { data, error } = await sb
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (error) {
-        console.warn('Profile lookup failed:', error.message);
-        return null;
-      }
-
+      const { data, error } = await sb.from('profiles').select('*').eq('id', userId).maybeSingle();
+      if (error) return null;
       return data || null;
-    } catch (err) {
-      console.warn('Profile lookup error:', err);
+    } catch {
       return null;
     }
   }
@@ -82,13 +68,8 @@
     state.session = session || null;
     state.user = session?.user || null;
     state.isAuthenticated = !!session?.access_token;
-
-    if (state.user?.id) {
-      state.profile = await fetchProfile(state.user.id);
-    } else {
-      state.profile = null;
-    }
-
+    if (state.user?.id) state.profile = await fetchProfile(state.user.id);
+    else state.profile = null;
     state.role = state.profile?.role || 'worker';
     state.roleLabel = getRoleLabel(state.role);
     state.pendingAuthResolution = !state.bootReady && !state.isAuthenticated;
@@ -103,12 +84,20 @@
     state.isAuthenticated = !!bootState.isAuthenticated;
     state.authError = bootState.authError || '';
     state.authFlow = bootState.authFlow || state.authFlow || 'idle';
+    state.configError = bootState.configError || state.configError || '';
     state.bootReady = true;
     state.pendingAuthResolution = false;
   }
 
+  function requireClient() {
+    sb = window.YWI_SB || window._sb || sb || null;
+    if (!sb) throw new Error(state.configError || boot?.state?.configError || 'Supabase is not configured.');
+    return sb;
+  }
+
   async function refreshFromSupabase() {
-    const { data, error } = await sb.auth.getSession();
+    const client = requireClient();
+    const { data, error } = await client.auth.getSession();
     if (error) throw error;
     await applySession(data?.session || null);
     state.authError = boot?.state?.authError || state.authError || '';
@@ -118,18 +107,12 @@
 
   async function signInWithMagicLink(email) {
     const cleanEmail = safeText(email);
-    if (!cleanEmail) {
-      throw new Error('Email is required.');
-    }
-
-    const { error } = await sb.auth.signInWithOtp({
+    if (!cleanEmail) throw new Error('Email is required.');
+    const client = requireClient();
+    const { error } = await client.auth.signInWithOtp({
       email: cleanEmail,
-      options: {
-        emailRedirectTo: getRedirectUrl(),
-        shouldCreateUser: false
-      }
+      options: { emailRedirectTo: getRedirectUrl(), shouldCreateUser: false }
     });
-
     if (error) throw error;
     return true;
   }
@@ -137,67 +120,42 @@
   async function signInWithPassword(email, password) {
     const cleanEmail = safeText(email);
     const cleanPassword = String(password ?? '');
-
-    if (!cleanEmail || !cleanPassword) {
-      throw new Error('Email and password are required.');
-    }
-
-    const { data, error } = await sb.auth.signInWithPassword({
-      email: cleanEmail,
-      password: cleanPassword
-    });
-
+    if (!cleanEmail || !cleanPassword) throw new Error('Email and password are required.');
+    const client = requireClient();
+    const { data, error } = await client.auth.signInWithPassword({ email: cleanEmail, password: cleanPassword });
     if (error) throw error;
-
     await applySession(data?.session || null);
-    state.authError = boot?.state?.authError || state.authError || '';
+    state.authError = '';
     state.authFlow = boot?.state?.authFlow || state.authFlow || 'idle';
     state.pendingAuthResolution = false;
-
     dispatch('ywi:auth-changed', { state: getState() });
     return data;
   }
 
   async function resetPassword(email) {
     const cleanEmail = safeText(email);
-    if (!cleanEmail) {
-      throw new Error('Email is required.');
-    }
-
-    const { error } = await sb.auth.resetPasswordForEmail(cleanEmail, {
-      redirectTo: getRedirectUrl()
-    });
-
+    if (!cleanEmail) throw new Error('Email is required.');
+    const client = requireClient();
+    const { error } = await client.auth.resetPasswordForEmail(cleanEmail, { redirectTo: getRedirectUrl() });
     if (error) throw error;
     return true;
   }
 
-
   async function resendEmailVerification(emailOverride) {
     const email = safeText(emailOverride || state.profile?.email || state.user?.email || '');
-    if (!email) {
-      throw new Error('Email is required.');
-    }
-
-    const { error } = await sb.auth.resend({
-      type: 'signup',
-      email,
-      options: { emailRedirectTo: getRedirectUrl() }
-    });
-
+    if (!email) throw new Error('Email is required.');
+    const client = requireClient();
+    const { error } = await client.auth.resend({ type: 'signup', email, options: { emailRedirectTo: getRedirectUrl() } });
     if (error) throw error;
     return true;
   }
 
   async function changePassword(newPassword) {
     const cleanPassword = String(newPassword ?? '');
-    if (!cleanPassword) {
-      throw new Error('New password is required.');
-    }
-
-    const { data, error } = await sb.auth.updateUser({ password: cleanPassword });
+    if (!cleanPassword) throw new Error('New password is required.');
+    const client = requireClient();
+    const { data, error } = await client.auth.updateUser({ password: cleanPassword });
     if (error) throw error;
-
     await refreshFromSupabase();
     dispatch('ywi:auth-changed', { state: getState() });
     return data;
@@ -205,12 +163,11 @@
 
   async function logout(scope = 'local') {
     const signOutScope = scope === 'global' ? 'global' : 'local';
-    const { error } = await sb.auth.signOut({ scope: signOutScope });
+    const client = requireClient();
+    const { error } = await client.auth.signOut({ scope: signOutScope });
     if (error) throw error;
-
     await applySession(null);
     state.pendingAuthResolution = false;
-
     dispatch('ywi:auth-changed', { state: getState() });
     return true;
   }
@@ -220,16 +177,28 @@
   }
 
   async function refresh() {
-    const { data, error } = await sb.auth.refreshSession();
+    const client = requireClient();
+    const { data, error } = await client.auth.refreshSession();
     if (error) throw error;
-
     await applySession(data?.session || null);
     state.authError = boot?.state?.authError || state.authError || '';
     state.authFlow = boot?.state?.authFlow || state.authFlow || 'idle';
     state.pendingAuthResolution = false;
-
     dispatch('ywi:auth-changed', { state: getState() });
     return data?.session || null;
+  }
+
+  async function saveRuntimeConfig({ anonKey } = {}) {
+    const clean = safeText(anonKey);
+    if (!clean) throw new Error('Supabase anon key is required.');
+    localStorage.setItem('ywi_supabase_anon_key', clean);
+    window.__SUPABASE_ANON_KEY = clean;
+    return true;
+  }
+
+  function clearRuntimeConfig() {
+    localStorage.removeItem('ywi_supabase_anon_key');
+    window.__SUPABASE_ANON_KEY = '';
   }
 
   function getState() {
@@ -239,23 +208,21 @@
   function bindBootEvents() {
     document.addEventListener('ywi:boot-ready', async (e) => {
       const bootState = e.detail?.state || {};
-
       applyBootState(bootState);
-
       if (!state.profile && state.user?.id) {
         state.profile = await fetchProfile(state.user.id);
         state.role = state.profile?.role || state.role || 'worker';
         state.roleLabel = getRoleLabel(state.role);
       }
-
       dispatch('ywi:auth-changed', { state: getState() });
     });
   }
 
   function bindSupabaseAuthEvents() {
+    sb = window.YWI_SB || window._sb || sb || null;
+    if (!sb?.auth?.onAuthStateChange) return;
     sb.auth.onAuthStateChange(async (_event, session) => {
       await applySession(session || null);
-
       if (boot?.state?.initialized || state.bootReady) {
         state.pendingAuthResolution = false;
         dispatch('ywi:auth-changed', { state: getState() });
@@ -265,18 +232,28 @@
 
   async function init() {
     if (state.initialized) return;
-
     bindBootEvents();
     bindSupabaseAuthEvents();
-
-    await refreshFromSupabase();
-
-    if (boot?.state?.initialized) {
-      state.bootReady = true;
+    try {
+      if (window.YWI_SB || window._sb) {
+        await refreshFromSupabase();
+        if (boot?.state?.initialized) {
+          state.bootReady = true;
+          state.pendingAuthResolution = false;
+        }
+      } else {
+        state.pendingAuthResolution = false;
+        state.bootReady = !!boot?.state;
+        state.authError = boot?.state?.authError || '';
+        state.configError = boot?.state?.configError || state.configError || '';
+      }
+    } catch (err) {
       state.pendingAuthResolution = false;
+      state.authError = err?.message || 'Authentication init failed.';
+      state.configError = state.authError;
     }
-
     state.initialized = true;
+    dispatch('ywi:auth-changed', { state: getState() });
   }
 
   window.YWI_AUTH = {
@@ -289,10 +266,15 @@
     resendEmailVerification,
     changePassword,
     logout,
-    logoutEverywhere
+    logoutEverywhere,
+    saveRuntimeConfig,
+    clearRuntimeConfig
   };
 
   init().catch((err) => {
     console.error('Auth init failed:', err);
+    state.pendingAuthResolution = false;
+    state.authError = err?.message || 'Auth init failed.';
+    dispatch('ywi:auth-changed', { state: getState() });
   });
 })();

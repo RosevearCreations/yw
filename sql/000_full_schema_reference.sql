@@ -175,6 +175,15 @@ create table if not exists public.equipment_items (
   assigned_supervisor_profile_id uuid references public.profiles(id) on delete set null,
   equipment_pool_key text,
   serial_number text,
+  asset_tag text,
+  manufacturer text,
+  model_number text,
+  purchase_year integer,
+  purchase_date date,
+  purchase_price numeric(12,2),
+  condition_status text,
+  image_url text,
+  comments text,
   notes text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -206,7 +215,16 @@ create table if not exists public.equipment_signouts (
   checked_out_to_supervisor_profile_id uuid references public.profiles(id),
   checked_out_at timestamptz not null default now(),
   returned_at timestamptz,
-  signout_notes text
+  checkout_worker_signature_name text,
+  checkout_supervisor_signature_name text,
+  checkout_admin_signature_name text,
+  return_worker_signature_name text,
+  return_supervisor_signature_name text,
+  return_admin_signature_name text,
+  checkout_condition text,
+  return_condition text,
+  signout_notes text,
+  return_notes text
 );
 
 create table if not exists public.admin_notifications (
@@ -307,6 +325,18 @@ select
 from public.equipment_items e
 where e.equipment_pool_key is not null
 group by e.equipment_pool_key;
+
+
+create or replace view public.v_equipment_signout_history as
+select
+  s.*,
+  e.equipment_code,
+  e.equipment_name,
+  j.job_code,
+  j.job_name
+from public.equipment_signouts s
+left join public.equipment_items e on e.id = s.equipment_item_id
+left join public.jobs j on j.id = s.job_id;
 
 create or replace view public.v_admin_notifications as
 select

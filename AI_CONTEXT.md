@@ -118,3 +118,38 @@ Additional notes for this pass:
 - added schema migration `049_auth_delivery_attempts_and_dead_letters.sql`
 - updated `000_full_schema_reference.sql` to include email/SMS provider and attempt tracking fields
 - next broad admin focus can restore full CRUD directory layouts without conflicting with this pass
+
+## 2026-03-24 pass: password-first auth hardening and equipment asset history
+
+This pass fixes the remaining auth wall problem by making the app render a real login screen even when runtime auth configuration is missing or broken.
+
+### What changed
+- login remains email + password first, with magic link kept as backup / recovery only
+- bootstrap now reports a readable configuration error instead of trapping the user behind a blank magic-link wall
+- a one-time runtime Supabase anon key entry panel is available on the login screen for deployments that missed frontend auth config
+- header now shows login while signed out, then login name + settings + logout while signed in
+- settings continue to expose password save/change, resend verification, phone verification, and logout controls
+- equipment records now support rental-style asset fields: pool key, serial, asset tag, manufacturer, model, year, purchase date, purchase price, condition, image URL, comments
+- equipment checkout / return now capture typed worker, supervisor, and admin sign-off names plus checkout/return condition notes
+- equipment history is returned to the frontend for traceability
+
+### Files added / updated in this pass
+- `sql/050_equipment_asset_history_and_auth_runtime.sql`
+- `sql/000_full_schema_reference.sql`
+- `js/bootstrap.js`
+- `js/auth.js`
+- `js/ui-auth.js`
+- `js/jobs-ui.js`
+- `index.html`
+- `supabase/functions/jobs-manage/index.ts`
+- `supabase/functions/jobs-directory/index.ts`
+
+### What to run on an existing database
+- run `sql/050_equipment_asset_history_and_auth_runtime.sql`
+- keep `sql/000_full_schema_reference.sql` as the reference snapshot, not the normal migration to run over a live database
+
+### Best next pass after this
+- move typed sign-off names to real signature capture storage when the device workflow is ready
+- add equipment maintenance / service intervals, inspection history, and defect lockout workflow
+- restore the broader admin CRUD directory layout when that becomes the next focus
+

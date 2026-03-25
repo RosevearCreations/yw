@@ -260,6 +260,16 @@ serve(async (req) => {
         assigned_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.assigned_supervisor_name),
         equipment_pool_key: poolKey || null,
         serial_number: body.serial_number ?? null,
+        equipment_pool_key: poolKey || null,
+        asset_tag: body.asset_tag ?? null,
+        manufacturer: body.manufacturer ?? null,
+        model_number: body.model_number ?? null,
+        purchase_year: body.purchase_year ?? null,
+        purchase_date: body.purchase_date ?? null,
+        purchase_price: body.purchase_price ?? null,
+        condition_status: body.condition_status ?? null,
+        image_url: body.image_url ?? null,
+        comments: body.comments ?? null,
         notes: body.notes ?? null,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'equipment_code' }).select('*').single();
@@ -274,8 +284,8 @@ serve(async (req) => {
       const { data: item } = await supabase.from('equipment_items').select('*').eq('id', equipmentId).single();
       if (!item) return Response.json({ ok:false, error:'Equipment not found' }, { status:404, headers:corsHeaders });
       if (!['available','reserved'].includes(item.status)) return Response.json({ ok:false, error:'Equipment is not available for checkout' }, { status:409, headers:corsHeaders });
-      await supabase.from('equipment_items').update({ status:'checked_out', current_job_id: jobId, assigned_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.supervisor_name), updated_at:new Date().toISOString() }).eq('id', equipmentId);
-      const { data, error } = await supabase.from('equipment_signouts').insert({ equipment_item_id: equipmentId, job_id: jobId, checked_out_by_profile_id: actorProfile.id, checked_out_to_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.supervisor_name), signout_notes: body.notes ?? null }).select('*').single();
+      await supabase.from('equipment_items').update({ status:'checked_out', current_job_id: jobId, assigned_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.supervisor_name), condition_status: body.checkout_condition ?? item.condition_status ?? null, updated_at:new Date().toISOString() }).eq('id', equipmentId);
+      const { data, error } = await supabase.from('equipment_signouts').insert({ equipment_item_id: equipmentId, job_id: jobId, checked_out_by_profile_id: actorProfile.id, checked_out_to_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.supervisor_name), signout_notes: body.notes ?? null, checkout_worker_signature_name: body.worker_signature_name ?? null, checkout_supervisor_signature_name: body.supervisor_signature_name ?? null, checkout_admin_signature_name: body.admin_signature_name ?? null, checkout_condition: body.checkout_condition ?? null }).select('*').single();
       if (error) throw error;
       await insertNotification(supabase, { notification_type:'equipment_checkout', target_table:'equipment_signouts', target_id:data.id, recipient_role:'admin', title:`Equipment checked out: ${body.equipment_code}`, body: JSON.stringify({ equipment_code: body.equipment_code, job_code: body.job_code }), created_by_profile_id: actorProfile.id, email_subject: `YWI HSE equipment checkout: ${body.equipment_code}`, payload: { equipment_code: body.equipment_code, job_code: body.job_code } });
       return Response.json({ ok:true, record:data }, { headers:corsHeaders });
@@ -284,9 +294,9 @@ serve(async (req) => {
     if (body.entity === 'equipment' && body.action === 'return') {
       const equipmentId = await resolveEquipmentIdByCode(supabase, body.equipment_code);
       if (!equipmentId) return Response.json({ ok:false, error:'Equipment required' }, { status:400, headers:corsHeaders });
-      await supabase.from('equipment_items').update({ status:'available', current_job_id:null, assigned_supervisor_profile_id:null, updated_at:new Date().toISOString() }).eq('id', equipmentId);
+      await supabase.from('equipment_items').update({ status:'available', current_job_id:null, assigned_supervisor_profile_id:null, condition_status: body.return_condition ?? null, updated_at:new Date().toISOString() }).eq('id', equipmentId);
       const { data: signout } = await supabase.from('equipment_signouts').select('*').eq('equipment_item_id', equipmentId).is('returned_at', null).order('checked_out_at', { ascending:false }).limit(1).maybeSingle();
-      if (signout?.id) await supabase.from('equipment_signouts').update({ returned_at:new Date().toISOString() }).eq('id', signout.id);
+      if (signout?.id) await supabase.from('equipment_signouts').update({ returned_at:new Date().toISOString(), return_worker_signature_name: body.worker_signature_name ?? null, return_supervisor_signature_name: body.supervisor_signature_name ?? null, return_admin_signature_name: body.admin_signature_name ?? null, return_condition: body.return_condition ?? null, return_notes: body.return_notes ?? null }).eq('id', signout.id);
       await insertNotification(supabase, { notification_type:'equipment_return', target_table:'equipment_items', target_id:equipmentId, recipient_role:'admin', title:`Equipment returned: ${body.equipment_code}`, body: JSON.stringify({ equipment_code: body.equipment_code }), created_by_profile_id: actorProfile.id, email_subject: `YWI HSE equipment return: ${body.equipment_code}`, payload: { equipment_code: body.equipment_code } });
       return Response.json({ ok:true }, { headers:corsHeaders });
     }

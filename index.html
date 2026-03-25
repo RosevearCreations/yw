@@ -101,7 +101,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-03-24c');
+          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-03-24d');
           if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
           }
@@ -117,10 +117,14 @@
     <div class="header-top">
       <h1>YWI HSE</h1>
 
+      <div class="header-session-actions">
+        <button id="headerLoginBtn" class="secondary" type="button">Login</button>
+      </div>
+
       <div id="headerSession" class="header-session hidden">
         <span id="headerSessionName" class="header-session-name"></span>
-        <a href="#settings" class="secondary" id="headerSettingsLink">Settings</a>
-        <button id="headerLogoutBtn" class="secondary" type="button">Logout</button>
+        <a href="#settings" class="secondary" id="headerSettingsLink" style="display:none;">Settings</a>
+        <button id="headerLogoutBtn" class="secondary" type="button" style="display:none;">Logout</button>
       </div>
     </div>
 
@@ -185,6 +189,22 @@
 
     <div id="authNotice" class="notice" style="display:none;margin-top:14px;"></div>
 
+
+    <div id="runtimeConfigPanel" class="notice" hidden style="display:none;margin-top:14px;">
+      <strong>App configuration</strong>
+      <p style="margin:8px 0;">If this app was deployed without the Supabase anon key, enter it here once so the real login form can work instead of the magic wall.</p>
+      <form id="runtimeConfigForm">
+        <label>Supabase anon key
+          <input id="runtimeSupabaseAnonKey" type="text" placeholder="Paste anon key" autocomplete="off" />
+        </label>
+        <div class="form-footer" style="margin-top:12px;">
+          <button id="runtimeConfigSaveBtn" class="primary" type="submit">Save Key + Reload</button>
+          <button id="runtimeConfigClearBtn" class="secondary" type="button">Clear Saved Key</button>
+        </div>
+        <div id="runtimeConfigStatus" class="notice" style="display:none;margin-top:12px;"></div>
+      </form>
+    </div>
+
     <div class="auth-panels">
       <section data-auth-panel="magic" hidden style="display:none;">
         <form id="magicLoginForm" autocomplete="on">
@@ -237,6 +257,7 @@
           <div class="form-footer">
             <button id="passwordLoginBtn" class="primary" type="submit">Sign In</button>
             <button id="passwordForgotBtn" class="secondary" type="button">Forgot Password</button>
+            <button id="forgotEmailBtn" class="secondary" type="button">Forgot Email</button>
           </div>
 
           <div class="notice" style="margin-top:12px;">
@@ -278,25 +299,25 @@
 
   <!-- Correct module order -->
   <script src="/js/router.js"></script>
-  <script src="/js/bootstrap.js?v=2026-03-24c"></script>
-  <script src="/js/auth.js?v=2026-03-24c"></script>
+  <script src="/js/bootstrap.js?v=2026-03-24d"></script>
+  <script src="/js/auth.js?v=2026-03-24d"></script>
   <script src="/js/security.js"></script>
-  <script src="/js/api.js?v=2026-03-24c"></script>
+  <script src="/js/api.js?v=2026-03-24d"></script>
   <script src="/js/outbox.js"></script>
   <script src="/js/admin-actions.js"></script>
-  <script src="/js/ui-auth.js?v=2026-03-24c"></script>
+  <script src="/js/ui-auth.js?v=2026-03-24d"></script>
   <script src="/js/account-ui.js"></script>
   <script src="/js/profile-ui.js"></script>
   <script src="/js/reference-data.js"></script>
-  <script src="/js/admin-ui.js?v=2026-03-24c"></script>
+  <script src="/js/admin-ui.js?v=2026-03-24d"></script>
   <script src="/js/logbook-ui.js"></script>
-  <script src="/js/jobs-ui.js?v=2026-03-24c"></script>
+  <script src="/js/jobs-ui.js?v=2026-03-24d"></script>
   <script src="/js/forms-toolbox.js"></script>
   <script src="/js/forms-ppe.js"></script>
   <script src="/js/forms-firstaid.js"></script>
   <script src="/js/forms-inspection.js"></script>
   <script src="/js/forms-drill.js"></script>
-  <script src="/app.js?v=2026-03-24c" defer></script>
+  <script src="/app.js?v=2026-03-24d" defer></script>
 
   <script>
     document.addEventListener('ywi:auth-changed', (e) => {
