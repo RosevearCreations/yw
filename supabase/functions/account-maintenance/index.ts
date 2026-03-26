@@ -1,10 +1,9 @@
 // Edge Function: account-maintenance
 // Purpose:
-// - Account validation workflows for authenticated users
-// - Supports admin-reviewed phone verification requests
-// - Supports optional Twilio Verify SMS flow when provider env vars are configured
-// - Supports retrying SMS verification sends
-// - Supports account setup completion and richer contact/profile updates
+// - Public account lookup and password recovery helpers
+// - Authenticated account/profile maintenance and onboarding helpers
+// - Admin-reviewed / SMS phone verification workflows
+// - Username/email change request workflows with validation
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -17,7 +16,6 @@ const corsHeaders = {
 function hasTwilioVerify() {
   return !!(Deno.env.get('TWILIO_ACCOUNT_SID') && Deno.env.get('TWILIO_AUTH_TOKEN') && Deno.env.get('TWILIO_VERIFY_SERVICE_SID'));
 }
-
 
 function maskEmail(email: string) {
   const clean = String(email || '').trim().toLowerCase();
@@ -41,10 +39,36 @@ function digitsOnly(value: string) {
   return String(value || '').replace(/\D+/g, '');
 }
 
+function normalizeUsername(value: string) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+}
+
+function isValidPostalCode(value: string) {
+  const clean = String(value || '').trim();
+  if (!clean) return true;
+  return /^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/.test(clean);
+}
+
+function isValidProvince(value: string) {
+  const clean = String(value || '').trim();
+  if (!clean) return true;
+  return /^[A-Za-z][A-Za-z ]{1,30}$/.test(clean);
+}
+
+function isLikelyAddress(value: string) {
+  const clean = String(value || '').trim();
+  if (!clean) return true;
+  return clean.length >= 4;
+}
+
 async function logRecoveryRequest(supabase: any, payload: Record<string, unknown>) {
   try {
     await supabase.from('account_recovery_requests').insert(payload);
-  } catch (_err) {
+  } catch {
     // ignore logging failures
   }
 }
@@ -69,6 +93,53 @@ async function findRecoveryProfile(supabase: any, body: Record<string, unknown>)
   });
   if (!match) throw new Error('We could not confirm that recovery request. Check the employee number, phone last 4, and last name.');
   return match;
+}
+
+async function usernameExists(supabase: any, username: string, excludeId?: string | null) {
+  const clean = normalizeUsername(username);
+  if (!clean) return false;
+  let query = supabase.from('profiles').select('id,username').ilike('username', clean).limit(10);
+  if (excludeId) query = query.neq('id', excludeId);
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data || []).some((row: any) => normalizeUsername(row.username || '') === clean);
+}
+
+async function emailExistsInProfiles(supabase: any, email: string, excludeId?: string | null) {
+  const clean = String(email || '').trim().toLowerCase();
+  if (!clean) return false;
+  let query = supabase.from('profiles').select('id,email,recovery_email').or(`email.ilike.${clean},recovery_email.ilike.${clean}`).limit(10);
+  if (excludeId) query = query.neq('id', excludeId);
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data || []).some((row: any) => String(row.email || '').trim().toLowerCase() === clean || String(row.recovery_email || '').trim().toLowerCase() === clean);
+}
+
+async function validateProfilePatch(supabase: any, patch: Record<string, unknown>, actorId?: string | null) {
+  const errors: string[] = [];
+  const username = normalizeUsername(String(patch.username || ''));
+  const recoveryEmail = String(patch.recovery_email || '').trim().toLowerCase();
+  const pendingEmail = String(patch.pending_email || '').trim().toLowerCase();
+  const address1 = String(patch.address_line1 || '').trim();
+  const province = String(patch.province || '').trim();
+  const postalCode = String(patch.postal_code || '').trim();
+
+  if ('username' in patch) {
+    if (!username) errors.push('Username is required.');
+    else if (!/^[a-z0-9._-]{3,32}$/i.test(username)) errors.push('Username must be 3-32 characters and use only letters, numbers, dot, underscore, or dash.');
+    else if (await usernameExists(supabase, username, actorId)) errors.push('That username is already in use.');
+  }
+  if (recoveryEmail) {
+    if (!isValidEmail(recoveryEmail)) errors.push('Recovery email format is invalid.');
+  }
+  if (pendingEmail) {
+    if (!isValidEmail(pendingEmail)) errors.push('New account email format is invalid.');
+    else if (await emailExistsInProfiles(supabase, pendingEmail, actorId)) errors.push('That email is already attached to another profile.');
+  }
+  if (!isLikelyAddress(address1)) errors.push('Address line 1 looks incomplete.');
+  if (!isValidProvince(province)) errors.push('Province format is invalid.');
+  if (!isValidPostalCode(postalCode)) errors.push('Postal code must use a valid Canadian format like N0N 0N0.');
+  return errors;
 }
 
 async function twilioVerify(path: string, payload: URLSearchParams) {
@@ -100,7 +171,7 @@ serve(async (req) => {
     return Response.json({ ok: true, email: match.email, masked_username: maskUsername(match.username || '') }, { headers: corsHeaders });
   }
 
-  if (action === 'lookup_account_help') {
+  if (action === 'lookup_account_help' || action === 'find_login') {
     try {
       const profile = await findRecoveryProfile(supabase, body);
       await logRecoveryRequest(supabase, { lookup_kind: 'lookup', employee_number: body.employee_number || null, phone_last4: body.phone_last4 || null, last_name: body.last_name || null, matched_profile_id: profile.id, masked_email: maskEmail(profile.email || ''), masked_username: maskUsername(profile.username || ''), request_status: 'matched' });
@@ -134,13 +205,10 @@ serve(async (req) => {
   if (!actorProfile?.is_active) return Response.json({ ok: false, error: 'Inactive profile' }, { status: 403, headers: corsHeaders });
 
   if (action === 'update_recovery_profile') {
-    const username = String(body.username || '').trim() || null;
-    const recoveryEmail = String(body.recovery_email || '').trim() || null;
-    const phone = String(body.phone || actorProfile.phone || '').trim() || null;
     const patch: Record<string, unknown> = {
-      username,
-      recovery_email: recoveryEmail,
-      phone,
+      username: String(body.username || actorProfile.username || '').trim() || null,
+      recovery_email: String(body.recovery_email || actorProfile.recovery_email || '').trim() || null,
+      phone: String(body.phone || actorProfile.phone || '').trim() || null,
       full_name: String(body.full_name || actorProfile.full_name || '').trim() || null,
       address_line1: String(body.address_line1 || actorProfile.address_line1 || '').trim() || null,
       address_line2: String(body.address_line2 || actorProfile.address_line2 || '').trim() || null,
@@ -149,22 +217,19 @@ serve(async (req) => {
       postal_code: String(body.postal_code || actorProfile.postal_code || '').trim() || null,
       updated_at: new Date().toISOString()
     };
+    const errors = await validateProfilePatch(supabase, patch, actorId);
+    if (errors.length) return Response.json({ ok: false, error: errors.join(' ') }, { status: 400, headers: corsHeaders });
     const { data, error } = await supabase.from('profiles').update(patch).eq('id', actorId).select('*').single();
     if (error) return Response.json({ ok: false, error: String(error.message || error) }, { status: 500, headers: corsHeaders });
     return Response.json({ ok: true, record: data }, { headers: corsHeaders });
   }
 
   if (action === 'complete_account_setup') {
-    const username = String(body.username || '').trim();
-    const recoveryEmail = String(body.recovery_email || '').trim() || null;
-    const phone = String(body.phone || actorProfile.phone || '').trim() || null;
-    const fullName = String(body.full_name || actorProfile.full_name || '').trim() || null;
-    if (!username) return Response.json({ ok: false, error: 'Username is required.' }, { status: 400, headers: corsHeaders });
     const patch: Record<string, unknown> = {
-      username,
-      recovery_email: recoveryEmail,
-      phone,
-      full_name: fullName,
+      username: String(body.username || '').trim(),
+      recovery_email: String(body.recovery_email || '').trim() || null,
+      phone: String(body.phone || actorProfile.phone || '').trim() || null,
+      full_name: String(body.full_name || actorProfile.full_name || '').trim() || null,
       address_line1: String(body.address_line1 || actorProfile.address_line1 || '').trim() || null,
       address_line2: String(body.address_line2 || actorProfile.address_line2 || '').trim() || null,
       city: String(body.city || actorProfile.city || '').trim() || null,
@@ -172,11 +237,63 @@ serve(async (req) => {
       postal_code: String(body.postal_code || actorProfile.postal_code || '').trim() || null,
       password_login_ready: true,
       account_setup_completed_at: new Date().toISOString(),
+      onboarding_completed_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
+    const errors = await validateProfilePatch(supabase, patch, actorId);
+    if (errors.length) return Response.json({ ok: false, error: errors.join(' ') }, { status: 400, headers: corsHeaders });
     const { data, error } = await supabase.from('profiles').update(patch).eq('id', actorId).select('*').single();
     if (error) return Response.json({ ok: false, error: String(error.message || error) }, { status: 500, headers: corsHeaders });
     return Response.json({ ok: true, record: data, message: 'Account setup completed.' }, { headers: corsHeaders });
+  }
+
+  if (action === 'complete_onboarding') {
+    const now = new Date().toISOString();
+    const { data, error } = await supabase.from('profiles').update({ onboarding_completed_at: now, updated_at: now }).eq('id', actorId).select('*').single();
+    if (error) return Response.json({ ok: false, error: String(error.message || error) }, { status: 500, headers: corsHeaders });
+    return Response.json({ ok: true, record: data, message: 'Onboarding completed.' }, { headers: corsHeaders });
+  }
+
+  if (action === 'request_identity_change') {
+    const requestedUsername = normalizeUsername(String(body.requested_username || '').trim());
+    const requestedEmail = String(body.requested_email || '').trim().toLowerCase();
+    if (!requestedUsername && !requestedEmail) return Response.json({ ok: false, error: 'Enter a new username, a new email, or both.' }, { status: 400, headers: corsHeaders });
+    const patch: Record<string, unknown> = {
+      username: requestedUsername || actorProfile.username || '',
+      pending_email: requestedEmail || null,
+      address_line1: actorProfile.address_line1 || '',
+      province: actorProfile.province || '',
+      postal_code: actorProfile.postal_code || ''
+    };
+    const errors = await validateProfilePatch(supabase, patch, actorId);
+    if (errors.length) return Response.json({ ok: false, error: errors.join(' ') }, { status: 400, headers: corsHeaders });
+
+    const { data: changeRequest, error: reqError } = await supabase.from('account_identity_change_requests').insert({
+      profile_id: actorId,
+      current_email: actorProfile.email || userData.user.email || null,
+      current_username: actorProfile.username || null,
+      requested_email: requestedEmail || null,
+      requested_username: requestedUsername || null,
+      request_status: 'pending',
+      created_by_profile_id: actorId,
+    }).select('*').single();
+    if (reqError) return Response.json({ ok: false, error: String(reqError.message || reqError) }, { status: 500, headers: corsHeaders });
+
+    await supabase.from('profiles').update({ pending_email: requestedEmail || null, pending_username: requestedUsername || null, updated_at: new Date().toISOString() }).eq('id', actorId);
+    await supabase.from('admin_notifications').insert({
+      notification_type: 'account_identity_change_requested',
+      recipient_role: 'admin',
+      target_table: 'account_identity_change_requests',
+      target_id: String(changeRequest.id),
+      target_profile_id: actorId,
+      title: `Identity change requested for ${actorProfile.full_name || actorProfile.email || actorId}`,
+      body: JSON.stringify({ requested_username: requestedUsername || null, requested_email: requestedEmail || null }),
+      payload: { request_id: changeRequest.id, profile_id: actorId, requested_username: requestedUsername || null, requested_email: requestedEmail || null },
+      status: 'queued',
+      email_subject: `YWI HSE identity change requested: ${actorProfile.full_name || actorProfile.email || actorId}`,
+      created_by_profile_id: actorId,
+    });
+    return Response.json({ ok: true, record: changeRequest, message: 'Identity change request submitted for confirmation.' }, { headers: corsHeaders });
   }
 
   if (action === 'request_phone_verification') {
@@ -218,7 +335,7 @@ serve(async (req) => {
     if (!phone || !code) return Response.json({ ok: false, error: 'Phone number and code are required' }, { status: 400, headers: corsHeaders });
     const check = await twilioVerify('VerificationCheck', new URLSearchParams({ To: phone, Code: code }));
     if (String(check.status || '').toLowerCase() !== 'approved') {
-      await supabase.from('admin_notifications').insert({ notification_type: 'phone_verification_sms_failed', recipient_role: 'admin', target_table: 'profiles', target_id: actorId, title: `SMS verification failed for ${actorProfile.full_name || actorProfile.email}`, body: JSON.stringify({ profile_id: actorId, phone, provider: 'twilio_verify' }), payload: { profile_id: actorId, phone, provider: 'twilio_verify' }, sms_provider: 'twilio_verify', sms_attempt_count: 1, sms_last_attempt_at: new Date().toISOString(), dead_lettered_at: new Date().toISOString(), dead_letter_reason: 'sms:verification_not_approved', status: 'dead_letter', created_by_profile_id: actorId });
+      await supabase.from('admin_notifications').insert({ notification_type: 'phone_verification_sms_failed', recipient_role: 'admin', target_table: 'profiles', target_id: actorId, title: `SMS verification failed for ${actorProfile.full_name || actorProfile.email}`, body: JSON.stringify({ profile_id: actorId, phone, provider: 'twilio_verify' }), payload: { profile_id: actorId, phone, provider: 'twilio_verify' }, sms_provider: 'twilio_verify', sms_attempt_count: 1, sms_last_attempt_at: new Date().toISOString(), sms_dead_lettered_at: new Date().toISOString(), sms_dead_letter_reason: 'sms:verification_not_approved', status: 'dead_letter', created_by_profile_id: actorId });
       return Response.json({ ok: false, error: 'Verification code was not approved' }, { status: 400, headers: corsHeaders });
     }
     const now = new Date().toISOString();

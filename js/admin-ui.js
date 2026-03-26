@@ -35,6 +35,31 @@
       counts: { users: 0, sites: 0, assignments: 0 }
     };
 
+
+    const DRAFT_KEY = 'ywi_admin_email_preview_draft_v1';
+    function loadDraft() {
+      try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}'); } catch { return {}; }
+    }
+    function saveDraft() {
+      const e = els();
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({
+          notification_id: e.emailNotificationId?.value || '',
+          email_to: e.emailTo?.value || '',
+          email_subject: e.emailSubject?.value || '',
+          email_body: e.emailBody?.value || ''
+        }));
+      } catch {}
+    }
+    function restoreDraft() {
+      const e = els();
+      const draft = loadDraft();
+      if (e.emailNotificationId && !e.emailNotificationId.value) e.emailNotificationId.value = draft.notification_id || '';
+      if (e.emailTo && !e.emailTo.value) e.emailTo.value = draft.email_to || '';
+      if (e.emailSubject && !e.emailSubject.value) e.emailSubject.value = draft.email_subject || '';
+      if (e.emailBody && !e.emailBody.value) e.emailBody.value = draft.email_body || '';
+    }
+
     function ensureLayout() {
       const section = document.getElementById('admin');
       if (!section) return;
@@ -171,6 +196,7 @@
       const e = els();
       if (e.section) e.section.dataset.adminLocked = state.locked ? 'true' : 'false';
       if (state.locked) setSummary('Supervisor, HSE, Job Admin, or Admin access is required to use this screen.', true);
+      restoreDraft();
     }
 
     function filteredNotifications() {
@@ -221,6 +247,7 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
       if (e.emailTo) e.emailTo.value = preview.to || '';
       if (e.emailSubject) e.emailSubject.value = preview.subject || '';
       if (e.emailBody) e.emailBody.value = preview.body || '';
+      saveDraft();
     }
 
     async function runNotificationAction(action, notificationId, extra = {}) {
@@ -264,6 +291,7 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
           email_body: e.emailBody?.value || ''
         });
         if (resp?.preview) hydratePreview(notificationId, resp.preview);
+        saveDraft();
         setSummary(action === 'preview_email' ? `Preview ready for notification ${notificationId}.` : `Notification ${notificationId} ${action.replace('_', ' ')} complete.`);
         await loadDirectory();
       } catch (err) {
@@ -310,6 +338,13 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
 
     function bind() {
       const e = els();
+      ['emailTo','emailSubject','emailBody'].forEach((key) => {
+        const field = e[key];
+        if (field && field.dataset.boundDraft !== '1') {
+          field.dataset.boundDraft = '1';
+          field.addEventListener('input', saveDraft);
+        }
+      });
       if (e.reloadBtn && e.reloadBtn.dataset.bound !== '1') {
         e.reloadBtn.dataset.bound = '1';
         e.reloadBtn.addEventListener('click', loadDirectory);

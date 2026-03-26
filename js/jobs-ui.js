@@ -35,7 +35,9 @@
       editingEquipmentCode: '',
       signaturePads: { worker: null, supervisor: null, admin: null },
       checkoutPhotos: [],
-      returnPhotos: []
+      returnPhotos: [],
+      checkoutPhotoFiles: [],
+      returnPhotoFiles: []
     };
 
     function ensureLayout() {
@@ -371,13 +373,34 @@
     }
 
     function collectSignaturePayload() {
-      return {
-        worker_signature_png: state.signaturePads.worker && !state.signaturePads.worker.isEmpty() ? state.signaturePads.worker.toDataURL('image/png') : null,
-        supervisor_signature_png: state.signaturePads.supervisor && !state.signaturePads.supervisor.isEmpty() ? state.signaturePads.supervisor.toDataURL('image/png') : null,
-        admin_signature_png: state.signaturePads.admin && !state.signaturePads.admin.isEmpty() ? state.signaturePads.admin.toDataURL('image/png') : null,
-        checkout_photos_json: JSON.stringify(state.checkoutPhotos || []),
-        return_photos_json: JSON.stringify(state.returnPhotos || []),
-      };
+      return {};
+    }
+
+    function dataUrlToFile(dataUrl, fileName) {
+      const parts = String(dataUrl || '').split(',');
+      const header = parts[0] || '';
+      const body = parts[1] || '';
+      const mimeMatch = header.match(/data:([^;]+);base64/i);
+      const mimeType = mimeMatch ? mimeMatch[1] : 'image/png';
+      const binary = atob(body);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+      return new File([bytes], fileName, { type: mimeType });
+    }
+
+    async function uploadEquipmentEvidence(signoutId, stage) {
+      if (!signoutId || !api?.uploadEquipmentEvidenceBatch) return [];
+      const uploads = [];
+      const photoFiles = stage === 'checkout' ? state.checkoutPhotoFiles : state.returnPhotoFiles;
+      photoFiles.forEach((file, index) => uploads.push({ signoutId, stage, evidenceKind: 'photo', caption: `${stage} evidence ${index + 1}`, file }));
+      ['worker','supervisor','admin'].forEach((role) => {
+        const pad = state.signaturePads[role];
+        if (pad && !pad.isEmpty()) {
+          uploads.push({ signoutId, stage, evidenceKind: 'signature', signerRole: role, caption: `${stage} ${role} signature`, file: dataUrlToFile(pad.toDataURL('image/png'), `${stage}-${role}-signature.png`) });
+        }
+      });
+      if (!uploads.length) return [];
+      return api.uploadEquipmentEvidenceBatch(uploads);
     }
 
     function normalizePhotoList(value) {
@@ -418,6 +441,7 @@
       const files = input?.files;
       if (!files?.length) return;
       state[bucket] = await filesToDataUrls(files);
+      state[bucket === 'checkoutPhotos' ? 'checkoutPhotoFiles' : 'returnPhotoFiles'] = Array.from(files);
       renderPhotoPreviews();
     }
 
@@ -710,6 +734,8 @@
       if (e.eqNotes) e.eqNotes.value = '';
       state.checkoutPhotos = [];
       state.returnPhotos = [];
+      state.checkoutPhotoFiles = [];
+      state.returnPhotoFiles = [];
       if (e.eqCheckoutPhotos) e.eqCheckoutPhotos.value = '';
       if (e.eqReturnPhotos) e.eqReturnPhotos.value = '';
       renderPhotoPreviews();
@@ -805,7 +831,7 @@
         state.signouts.forEach((row) => {
           const tr = document.createElement('tr');
           const photoCount = Number(row.checkout_photo_count || 0) + Number(row.return_photo_count || 0);
-          tr.innerHTML = `<td>${escHtml(row.equipment_code || row.equipment_item_id || '')}</td><td>${escHtml(row.job_code || row.job_id || '')}</td><td>${escHtml(row.checked_out_at || '')}</td><td>${escHtml(row.returned_at || '')}</td><td>${escHtml(row.checkout_worker_signature_name || row.return_worker_signature_name || '')}</td><td>${escHtml(row.checkout_supervisor_signature_name || row.return_supervisor_signature_name || '')}</td><td>${escHtml(row.checkout_admin_signature_name || row.return_admin_signature_name || '')}</td><td>${escHtml(row.checkout_condition || '')}${row.return_condition ? ` → ${escHtml(row.return_condition)}` : ''}</td><td>${photoCount ? `${photoCount} photo(s)` : '—'}</td><td>${row.damage_reported ? escHtml(row.damage_notes || 'Damage noted') : '—'}</td>`;
+          tr.innerHTML = `<td>${escHtml(row.equipment_code || row.equipment_item_id || '')}</td><td>${escHtml(row.job_code || row.job_id || '')}</td><td>${escHtml(row.checked_out_at || '')}</td><td>${escHtml(row.returned_at || '')}</td><td>${escHtml(row.checkout_worker_signature_name || row.return_worker_signature_name || '')}</td><td>${escHtml(row.checkout_supervisor_signature_name || row.return_supervisor_signature_name || '')}</td><td>${escHtml(row.checkout_admin_signature_name || row.return_admin_signature_name || '')}</td><td>${escHtml(row.checkout_condition || '')}${row.return_condition ? ` → ${escHtml(row.return_condition)}` : ''}</td><td>${photoCount ? `${photoCount} file(s)` : '—'}</td><td>${row.damage_reported ? escHtml(row.damage_notes || 'Damage noted') : '—'}</td>`;
           e.eqHistoryBody.appendChild(tr);
         });
       }
@@ -932,6 +958,7 @@
       try {
         const resp = await api.manageJobsEntity({ entity: 'equipment', action: 'checkout', equipment_code: e.eqCode?.value?.trim?.() || '', job_code: e.eqCurrentJobCode?.value?.trim?.() || '', supervisor_name: e.eqAssignedSupervisor?.value?.trim?.() || '', worker_signature_name: e.eqWorkerSignature?.value?.trim?.() || '', supervisor_signature_name: e.eqSupervisorSignature?.value?.trim?.() || '', admin_signature_name: e.eqAdminSignature?.value?.trim?.() || '', checkout_condition: e.eqCheckoutCondition?.value?.trim?.() || '', notes: e.eqNotes?.value?.trim?.() || '', ...collectSignaturePayload() });
         if (!resp?.ok) throw new Error(resp?.error || 'Checkout failed');
+        try { await uploadEquipmentEvidence(resp?.signout_id || resp?.record?.id, 'checkout'); } catch (uploadErr) { setNotice(e.eqSummary, `Equipment checked out, but evidence upload failed: ${uploadErr?.message || uploadErr}`, true); }
         clearDrafts('equipment');
         setNotice(e.eqSummary, `Equipment ${e.eqCode?.value || ''} checked out.`);
         await loadData();
@@ -945,6 +972,7 @@
       try {
         const resp = await api.manageJobsEntity({ entity: 'equipment', action: 'return', equipment_code: e.eqCode?.value?.trim?.() || '', worker_signature_name: e.eqWorkerSignature?.value?.trim?.() || '', supervisor_signature_name: e.eqSupervisorSignature?.value?.trim?.() || '', admin_signature_name: e.eqAdminSignature?.value?.trim?.() || '', return_condition: e.eqReturnCondition?.value?.trim?.() || '', return_notes: e.eqNotes?.value?.trim?.() || '', damage_reported: !!e.eqDamageReported?.checked, damage_notes: e.eqDamageNotes?.value?.trim?.() || '', ...collectSignaturePayload() });
         if (!resp?.ok) throw new Error(resp?.error || 'Return failed');
+        try { await uploadEquipmentEvidence(resp?.signout_id || resp?.record?.id, 'return'); } catch (uploadErr) { setNotice(e.eqSummary, `Equipment returned, but evidence upload failed: ${uploadErr?.message || uploadErr}`, true); }
         clearDrafts('equipment');
         setNotice(e.eqSummary, `Equipment ${e.eqCode?.value || ''} returned.`);
         await loadData();

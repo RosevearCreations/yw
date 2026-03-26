@@ -1,7 +1,7 @@
 // Detailed Edge Function: jobs-directory
 // Purpose:
 // - Return jobs, requirements, equipment, active signouts, notifications, and pool availability
-// - Supervisor+ can use this to plan reservations and track equipment movements
+// - Include storage-backed equipment evidence metadata and signed preview URLs
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -29,13 +29,48 @@ serve(async (req) => {
   const { data: requirements } = await supabase.from('job_equipment_requirements').select('*').order('job_id');
   const { data: signouts } = await supabase.from('equipment_signouts').select('*, equipment_items(equipment_code,equipment_name), jobs(job_code,job_name)').order('checked_out_at', { ascending:false });
   const { data: pools } = await supabase.from('v_equipment_pool_availability').select('*').order('equipment_pool_key');
-  const { data: notifications } = await supabase.from('v_admin_notifications').select('*').in('notification_type', ['equipment_reservation_conflict','job_approval_requested','equipment_checkout','equipment_return','equipment_inspection','equipment_maintenance','equipment_lockout','equipment_lockout_cleared']).order('created_at', { ascending:false }).limit(150);
+  const { data: notifications } = await supabase.from('v_admin_notifications').select('*').in('notification_type', ['equipment_reservation_conflict','job_approval_requested','equipment_checkout','equipment_return','equipment_inspection','equipment_maintenance','equipment_lockout','equipment_lockout_cleared','account_identity_change_requested']).order('created_at', { ascending:false }).limit(150);
   const { data: inspections } = await supabase.from('v_equipment_inspection_history').select('*').order('inspected_at', { ascending:false }).limit(200);
   const { data: maintenance } = await supabase.from('v_equipment_maintenance_history').select('*').order('performed_at', { ascending:false }).limit(200);
+  const { data: evidenceAssetsRaw } = await supabase.from('equipment_evidence_assets').select('*').order('created_at', { ascending:false }).limit(1000);
+
+  const evidenceAssets = await Promise.all((evidenceAssetsRaw || []).map(async (row: any) => {
+    let preview_url = row.preview_url || null;
+    if (!preview_url && row.storage_bucket && row.storage_path) {
+      const { data } = await supabase.storage.from(row.storage_bucket).createSignedUrl(row.storage_path, 60 * 60 * 24 * 7);
+      preview_url = data?.signedUrl || null;
+    }
+    return { ...row, preview_url };
+  }));
+  const evidenceBySignout = new Map<number, any[]>();
+  for (const row of evidenceAssets) {
+    const key = Number(row.signout_id || 0);
+    if (!key) continue;
+    const list = evidenceBySignout.get(key) || [];
+    list.push(row);
+    evidenceBySignout.set(key, list);
+  }
+
   const signoutRows = (signouts || []).map((row: any) => {
-  const checkoutPhotos = Array.isArray(row.checkout_photos_json) ? row.checkout_photos_json : (() => { try { return JSON.parse(row.checkout_photos_json || '[]'); } catch { return []; } })();
-  const returnPhotos = Array.isArray(row.return_photos_json) ? row.return_photos_json : (() => { try { return JSON.parse(row.return_photos_json || '[]'); } catch { return []; } })();
-  return { ...row, equipment_code: row.equipment_items?.equipment_code || null, equipment_name: row.equipment_items?.equipment_name || null, job_code: row.jobs?.job_code || null, job_name: row.jobs?.job_name || null, has_checkout_signatures: !!(row.checkout_worker_signature_png || row.checkout_supervisor_signature_png || row.checkout_admin_signature_png), has_return_signatures: !!(row.return_worker_signature_png || row.return_supervisor_signature_png || row.return_admin_signature_png), checkout_photo_count: checkoutPhotos.length, return_photo_count: returnPhotos.length, damage_reported: !!row.damage_reported, damage_notes: row.damage_notes || '' };
-});
-  return Response.json({ ok:true, jobs: jobs || [], equipment: equipment || [], requirements: requirements || [], signouts: signoutRows, pools: pools || [], notifications: notifications || [], inspections: inspections || [], maintenance: maintenance || [] }, { headers: corsHeaders });
+    const assets = evidenceBySignout.get(Number(row.id)) || [];
+    const checkoutAssets = assets.filter((asset) => asset.stage === 'checkout');
+    const returnAssets = assets.filter((asset) => asset.stage === 'return');
+    const signatureAssets = assets.filter((asset) => asset.evidence_kind === 'signature');
+    return {
+      ...row,
+      equipment_code: row.equipment_items?.equipment_code || null,
+      equipment_name: row.equipment_items?.equipment_name || null,
+      job_code: row.jobs?.job_code || null,
+      job_name: row.jobs?.job_name || null,
+      has_checkout_signatures: !!(signatureAssets.find((asset) => asset.stage === 'checkout') || row.checkout_worker_signature_name || row.checkout_supervisor_signature_name || row.checkout_admin_signature_name),
+      has_return_signatures: !!(signatureAssets.find((asset) => asset.stage === 'return') || row.return_worker_signature_name || row.return_supervisor_signature_name || row.return_admin_signature_name),
+      checkout_photo_count: checkoutAssets.filter((asset) => asset.evidence_kind === 'photo').length,
+      return_photo_count: returnAssets.filter((asset) => asset.evidence_kind === 'photo').length,
+      signature_asset_count: signatureAssets.length,
+      damage_reported: !!row.damage_reported,
+      damage_notes: row.damage_notes || '',
+      evidence_assets: assets,
+    };
+  });
+  return Response.json({ ok:true, jobs: jobs || [], equipment: equipment || [], requirements: requirements || [], signouts: signoutRows, pools: pools || [], notifications: notifications || [], inspections: inspections || [], maintenance: maintenance || [], evidence_assets: evidenceAssets }, { headers: corsHeaders });
 });

@@ -1,7 +1,8 @@
 /* File: js/account-ui.js
-   Brief description: In-app account security module.
-   Renders the account panel inside Settings, supports first-time account setup after magic-link validation,
-   password setup/change/reset, contact/address updates, phone verification, and session controls.
+   Brief description: In-app account security and onboarding module.
+   Renders onboarding + Settings panels, supports account setup after magic-link validation,
+   password setup/change/reset, contact/address updates, autosave drafts, phone verification,
+   and username/email change request workflows.
 */
 
 'use strict';
@@ -16,10 +17,45 @@
     return;
   }
 
+  const DRAFT_KEY = 'ywi_account_settings_draft_v1';
+
+  function ensureOnboardingSection() {
+    if (document.getElementById('onboarding')) return;
+    const main = document.querySelector('main') || document.body;
+    const section = document.createElement('section');
+    section.id = 'onboarding';
+    section.className = 'section';
+    section.hidden = true;
+    section.innerHTML = `
+      <div class="section-heading">
+        <div>
+          <h2>Account Onboarding</h2>
+          <p class="section-subtitle">Finish your first-run setup before using the app normally.</p>
+        </div>
+      </div>
+      <div id="onboardingNotice" class="notice" style="display:none;margin-top:12px;"></div>
+      <div class="admin-panel-block">
+        <ol class="simple-list" style="padding-left:18px;margin:0;">
+          <li>Confirm your full name, phone, and address details.</li>
+          <li>Choose a username for daily sign-in.</li>
+          <li>Save a password so you no longer depend on magic links.</li>
+          <li>Complete onboarding, then continue into the app.</li>
+        </ol>
+        <div class="form-footer" style="margin-top:16px;">
+          <button id="onboarding_open_settings" class="primary" type="button">Open Account Setup</button>
+          <button id="onboarding_complete" class="secondary" type="button">Mark Onboarding Complete</button>
+        </div>
+      </div>
+    `;
+    const settings = document.getElementById('settings');
+    if (settings && settings.parentNode) settings.parentNode.insertBefore(section, settings);
+    else main.appendChild(section);
+  }
+
   function ensureLayout() {
+    ensureOnboardingSection();
     const section = document.getElementById('settings');
     if (!section) return;
-    if (document.getElementById('accountPanel')) return;
     section.innerHTML = `
       <div class="section-heading">
         <div>
@@ -34,6 +70,8 @@
           <label>Email<input id="account_email" type="email" readonly /></label>
           <label>Username<input id="account_username" type="text" placeholder="Choose a username" /></label>
           <label>Recovery email<input id="account_recovery_email" type="email" placeholder="Optional backup email" /></label>
+          <label>Requested new username<input id="account_requested_username" type="text" placeholder="Optional requested username change" /></label>
+          <label>Requested new email<input id="account_requested_email" type="email" placeholder="Optional requested account email change" /></label>
           <label>Role<input id="account_role" type="text" readonly /></label>
           <label>Email status<input id="account_email_status" type="text" readonly /></label>
           <label>Phone status<input id="account_phone_status" type="text" readonly /></label>
@@ -42,7 +80,7 @@
           <label>Address line 2<input id="account_address_line2" type="text" placeholder="Unit / suite" /></label>
           <label>City<input id="account_city" type="text" /></label>
           <label>Province<input id="account_province" type="text" /></label>
-          <label>Postal code<input id="account_postal_code" type="text" /></label>
+          <label>Postal code<input id="account_postal_code" type="text" placeholder="N0N 0N0" /></label>
           <label>Verification code<input id="account_phone_code" type="text" placeholder="SMS code" /></label>
           <label>New password<input id="account_password" type="password" autocomplete="new-password" placeholder="Choose a strong password" /></label>
           <label>Confirm password<input id="account_password_confirm" type="password" autocomplete="new-password" placeholder="Confirm password" /></label>
@@ -52,6 +90,7 @@
           <button id="account_setup_complete" class="primary" type="button">Complete Account Setup</button>
           <button id="account_recovery_save" class="secondary" type="button">Save Contact Details</button>
           <button id="account_password_save" class="secondary" type="button">Save Password</button>
+          <button id="account_request_identity_change" class="secondary" type="button">Request Email / Username Change</button>
           <button id="account_reset_password_email" class="secondary" type="button">Send Password Reset Email</button>
           <button id="account_resend_email_verification" class="secondary" type="button">Resend Email Verification</button>
           <button id="account_request_phone_verification" class="secondary" type="button">Request Phone Verification</button>
@@ -62,15 +101,17 @@
         </div>
         <div id="account_summary" class="notice" style="display:none;margin-top:14px;"></div>
       </div>
-      <div id="accountSignedOutNotice" class="notice" style="display:none;margin-top:14px;">
-        Sign in to manage your account, password, and recovery settings.
-      </div>
+      <div id="accountSignedOutNotice" class="notice" style="display:none;margin-top:14px;">Sign in to manage your account, password, and recovery settings.</div>
     `;
   }
 
   ensureLayout();
 
   const els = {
+    onboarding: document.getElementById('onboarding'),
+    onboardingNotice: document.getElementById('onboardingNotice'),
+    onboardingOpenSettings: document.getElementById('onboarding_open_settings'),
+    onboardingCompleteBtn: document.getElementById('onboarding_complete'),
     panel: document.getElementById('accountPanel'),
     setupNotice: document.getElementById('accountSetupNotice'),
     fullName: document.getElementById('account_full_name'),
@@ -78,6 +119,8 @@
     role: document.getElementById('account_role'),
     username: document.getElementById('account_username'),
     recoveryEmail: document.getElementById('account_recovery_email'),
+    requestedUsername: document.getElementById('account_requested_username'),
+    requestedEmail: document.getElementById('account_requested_email'),
     address1: document.getElementById('account_address_line1'),
     address2: document.getElementById('account_address_line2'),
     city: document.getElementById('account_city'),
@@ -96,6 +139,7 @@
     setupCompleteBtn: document.getElementById('account_setup_complete'),
     saveRecoveryBtn: document.getElementById('account_recovery_save'),
     saveBtn: document.getElementById('account_password_save'),
+    requestIdentityChangeBtn: document.getElementById('account_request_identity_change'),
     resetPasswordEmailBtn: document.getElementById('account_reset_password_email'),
     logoutAllBtn: document.getElementById('account_logout_all'),
     logoutThisBtn: document.getElementById('account_logout_this'),
@@ -104,17 +148,17 @@
     signedOutNotice: document.getElementById('accountSignedOutNotice')
   };
 
-  function setSummary(text = '', isError = false) {
-    if (!els.summary) return;
+  function setNotice(el, text = '', isError = false) {
+    if (!el) return;
     if (!text) {
-      els.summary.style.display = 'none';
-      els.summary.textContent = '';
-      els.summary.dataset.kind = '';
+      el.style.display = 'none';
+      el.textContent = '';
+      el.dataset.kind = '';
       return;
     }
-    els.summary.style.display = 'block';
-    els.summary.textContent = text;
-    els.summary.dataset.kind = isError ? 'error' : 'info';
+    el.style.display = 'block';
+    el.textContent = text;
+    el.dataset.kind = isError ? 'error' : 'info';
   }
 
   function setBusy(button, busyText) {
@@ -131,10 +175,65 @@
   function validatePassword(password, confirm) {
     if (!password) throw new Error('Enter a new password.');
     if (password.length < 10) throw new Error('Password must be at least 10 characters long.');
-    if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
-      throw new Error('Password must include upper, lower, and number characters.');
-    }
+    if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) throw new Error('Password must include upper, lower, and number characters.');
     if (password !== confirm) throw new Error('Password confirmation does not match.');
+  }
+
+  function getDraft() {
+    try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}'); } catch { return {}; }
+  }
+
+  function saveDraft() {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+        full_name: els.fullName?.value || '',
+        username: els.username?.value || '',
+        recovery_email: els.recoveryEmail?.value || '',
+        requested_username: els.requestedUsername?.value || '',
+        requested_email: els.requestedEmail?.value || '',
+        phone: els.phone?.value || '',
+        address_line1: els.address1?.value || '',
+        address_line2: els.address2?.value || '',
+        city: els.city?.value || '',
+        province: els.province?.value || '',
+        postal_code: els.postalCode?.value || ''
+      }));
+    } catch {}
+  }
+
+  function restoreDraft(state) {
+    const draft = getDraft();
+    const profile = state.profile || {};
+    const pick = (draftValue, profileValue) => draftValue || profileValue || '';
+    if (els.fullName) els.fullName.value = pick(draft.full_name, profile.full_name);
+    if (els.username) els.username.value = pick(draft.username, profile.username);
+    if (els.recoveryEmail) els.recoveryEmail.value = pick(draft.recovery_email, profile.recovery_email);
+    if (els.requestedUsername) els.requestedUsername.value = pick(draft.requested_username, profile.pending_username);
+    if (els.requestedEmail) els.requestedEmail.value = pick(draft.requested_email, profile.pending_email);
+    if (els.phone) els.phone.value = pick(draft.phone, profile.phone);
+    if (els.address1) els.address1.value = pick(draft.address_line1, profile.address_line1);
+    if (els.address2) els.address2.value = pick(draft.address_line2, profile.address_line2);
+    if (els.city) els.city.value = pick(draft.city, profile.city);
+    if (els.province) els.province.value = pick(draft.province, profile.province);
+    if (els.postalCode) els.postalCode.value = pick(draft.postal_code, profile.postal_code);
+  }
+
+  function clearDraft() {
+    try { localStorage.removeItem(DRAFT_KEY); } catch {}
+  }
+
+  function collectProfilePayload() {
+    return {
+      full_name: els.fullName?.value?.trim?.() || '',
+      username: els.username?.value?.trim?.() || '',
+      recovery_email: els.recoveryEmail?.value?.trim?.() || '',
+      phone: els.phone?.value?.trim?.() || '',
+      address_line1: els.address1?.value?.trim?.() || '',
+      address_line2: els.address2?.value?.trim?.() || '',
+      city: els.city?.value?.trim?.() || '',
+      province: els.province?.value?.trim?.() || '',
+      postal_code: els.postalCode?.value?.trim?.() || ''
+    };
   }
 
   function render(state) {
@@ -144,202 +243,209 @@
     const access = security?.getAccessProfile ? security.getAccessProfile(role) : { roleLabel: role };
     const emailVerified = !!(current.user?.email_confirmed_at || current.user?.confirmed_at || current.profile?.email_verified);
     const phoneVerified = !!(current.profile?.phone_verified || current.profile?.phone_verified_at);
+    const needsOnboarding = !!(isAuthenticated && (current.needsAccountSetup || !current.profile?.onboarding_completed_at));
 
     if (els.panel) els.panel.hidden = !isAuthenticated;
     if (els.signedOutNotice) els.signedOutNotice.style.display = isAuthenticated ? 'none' : 'block';
+    if (els.onboarding) els.onboarding.hidden = !needsOnboarding;
     if (!isAuthenticated) return;
 
     if (els.email) els.email.value = current.profile?.email || current.user?.email || '';
-    if (els.username) els.username.value = current.profile?.username || '';
-    if (els.recoveryEmail) els.recoveryEmail.value = current.profile?.recovery_email || '';
     if (els.role) els.role.value = access.roleLabel || role;
     if (els.emailStatus) els.emailStatus.value = emailVerified ? 'Verified' : 'Verification pending';
     if (els.phoneStatus) els.phoneStatus.value = phoneVerified ? 'Verified' : 'Verification pending';
-    if (els.phone && !els.phone.value) els.phone.value = current.profile?.phone || '';
+    restoreDraft(current);
     if (els.hint) {
+      const pending = [];
+      if (current.profile?.pending_username) pending.push(`Username change pending: ${current.profile.pending_username}`);
+      if (current.profile?.pending_email) pending.push(`Email change pending: ${current.profile.pending_email}`);
       els.hint.textContent = current.authFlow === 'recovery'
-        ? 'Recovery sign-in complete. Save your new password now, then return to normal email + password login.'
-        : (emailVerified
-          ? 'Your email is verified. Use the password fields below for normal sign-in going forward.'
-          : 'Verify your email once, then save a strong password for normal sign-in.');
+        ? 'Recovery sign-in complete. Save your new password now, then complete onboarding if this is your first password setup.'
+        : pending.length
+          ? pending.join(' • ')
+          : (emailVerified ? 'Your email is verified. Use the password fields below for normal sign-in going forward.' : 'Verify your email once, then save a strong password for normal sign-in.');
     }
+    setNotice(els.setupNotice, needsOnboarding ? 'First-run onboarding is still required. Complete your profile, choose a username, save a password, then mark onboarding complete.' : '');
+    setNotice(els.onboardingNotice, needsOnboarding ? 'New users should finish onboarding before continuing into the rest of the app.' : '');
   }
 
-
-  async function onSaveRecoveryProfile() {
+  async function saveProfile() {
     const restore = setBusy(els.saveRecoveryBtn, 'Saving...');
     try {
-      if (!api?.accountRecoveryAction) throw new Error('Account maintenance API is not ready.');
-      await api.accountRecoveryAction({
-        action: 'update_recovery_profile',
-        username: els.username?.value?.trim?.() || '',
-        recovery_email: els.recoveryEmail?.value?.trim?.() || '',
-        phone: els.phone?.value?.trim?.() || ''
-      });
-      setSummary('Login details saved. You can now sign in with email or username, and your recovery details are updated.', false);
+      const payload = collectProfilePayload();
+      const resp = await api.accountRecoveryAction({ action: 'update_recovery_profile', ...payload });
+      if (!resp?.ok) throw new Error(resp?.error || 'Unable to save profile details.');
+      clearDraft();
+      setNotice(els.summary, 'Contact details saved.', false);
+      await auth.refresh();
     } catch (err) {
-      setSummary(err?.message || 'Failed to save login details.', true);
+      setNotice(els.summary, err?.message || 'Unable to save contact details.', true);
     } finally {
       restore();
     }
   }
 
-  async function onSavePassword() {
+  async function savePassword() {
     const restore = setBusy(els.saveBtn, 'Saving...');
     try {
-      const password = String(els.password?.value || '');
-      const confirm = String(els.confirm?.value || '');
-      validatePassword(password, confirm);
-      await auth.changePassword(password);
+      validatePassword(els.password?.value || '', els.confirm?.value || '');
+      await auth.changePassword(els.password?.value || '');
       if (els.password) els.password.value = '';
       if (els.confirm) els.confirm.value = '';
-      setSummary('Password saved. Use email + password for sign-in from now on.', false);
+      setNotice(els.summary, 'Password saved. Daily sign-in should now use username/email + password.', false);
     } catch (err) {
-      setSummary(err?.message || 'Failed to save password.', true);
+      setNotice(els.summary, err?.message || 'Unable to save password.', true);
     } finally {
       restore();
     }
   }
 
-  async function onResendEmail() {
+  async function completeSetup() {
+    const restore = setBusy(els.setupCompleteBtn, 'Completing...');
+    try {
+      validatePassword(els.password?.value || '', els.confirm?.value || '');
+      await auth.changePassword(els.password?.value || '');
+      const resp = await auth.markAccountSetupComplete(collectProfilePayload());
+      if (!resp?.ok) throw new Error(resp?.error || 'Unable to complete account setup.');
+      clearDraft();
+      if (els.password) els.password.value = '';
+      if (els.confirm) els.confirm.value = '';
+      setNotice(els.summary, 'Account setup completed. You can now sign in normally with username/email + password.', false);
+      if (window.YWIRouter?.showSection) window.YWIRouter.showSection('toolbox', { skipFocus: true });
+    } catch (err) {
+      setNotice(els.summary, err?.message || 'Unable to complete account setup.', true);
+    } finally {
+      restore();
+    }
+  }
+
+  async function sendResetFromSettings() {
+    const restore = setBusy(els.resetPasswordEmailBtn, 'Sending...');
+    try {
+      const login = els.username?.value?.trim?.() || els.email?.value?.trim?.() || '';
+      await auth.resetPassword(login);
+      setNotice(els.summary, 'Password reset email sent. Use the newest email, then return here to save your new password.', false);
+    } catch (err) {
+      setNotice(els.summary, err?.message || 'Unable to send password reset email.', true);
+    } finally {
+      restore();
+    }
+  }
+
+  async function requestIdentityChange() {
+    const restore = setBusy(els.requestIdentityChangeBtn, 'Requesting...');
+    try {
+      const resp = await api.accountRecoveryAction({
+        action: 'request_identity_change',
+        requested_username: els.requestedUsername?.value?.trim?.() || '',
+        requested_email: els.requestedEmail?.value?.trim?.() || ''
+      });
+      if (!resp?.ok) throw new Error(resp?.error || 'Unable to request identity change.');
+      setNotice(els.summary, resp?.message || 'Identity change request sent.', false);
+      await auth.refresh();
+    } catch (err) {
+      setNotice(els.summary, err?.message || 'Unable to request identity change.', true);
+    } finally {
+      restore();
+    }
+  }
+
+  async function resendEmailVerification() {
     const restore = setBusy(els.resendEmailBtn, 'Sending...');
     try {
       await auth.resendEmailVerification();
-      setSummary('Verification email sent.', false);
+      setNotice(els.summary, 'Email verification sent.', false);
     } catch (err) {
-      setSummary(err?.message || 'Failed to resend email verification.', true);
+      setNotice(els.summary, err?.message || 'Unable to resend email verification.', true);
     } finally {
       restore();
     }
   }
 
-  async function onRequestPhoneVerification() {
+  async function requestPhoneVerification() {
     const restore = setBusy(els.requestPhoneBtn, 'Requesting...');
     try {
-      if (!api?.requestPhoneVerification) throw new Error('Account maintenance API is not ready.');
-      const phone = els.phone?.value?.trim?.() || '';
-      await api.requestPhoneVerification({ phone });
-      setSummary('Phone verification request sent for admin review.', false);
+      const resp = await api.requestPhoneVerification({ phone: els.phone?.value?.trim?.() || '' });
+      if (!resp?.ok) throw new Error(resp?.error || 'Phone verification request failed.');
+      setNotice(els.summary, 'Phone verification requested.', false);
+      await auth.refresh();
     } catch (err) {
-      setSummary(err?.message || 'Phone verification request failed.', true);
+      setNotice(els.summary, err?.message || 'Phone verification request failed.', true);
     } finally {
       restore();
     }
   }
 
-  async function onSendPhoneCode() {
+  async function sendPhoneCode() {
     const restore = setBusy(els.sendPhoneCodeBtn, 'Sending...');
     try {
-      if (!api?.sendPhoneVerificationCode) throw new Error('SMS verification API is not ready.');
-      const phone = els.phone?.value?.trim?.() || '';
-      const resp = await api.sendPhoneVerificationCode({ phone });
-      setSummary(resp?.provider === 'twilio_verify' ? 'SMS code sent.' : 'SMS provider is not configured. Use admin review instead.', false);
+      const resp = await api.sendPhoneVerificationCode({ phone: els.phone?.value?.trim?.() || '' });
+      if (!resp?.ok) throw new Error(resp?.error || 'SMS code send failed.');
+      setNotice(els.summary, 'SMS verification code sent.', false);
     } catch (err) {
-      setSummary(err?.message || 'Failed to send SMS code.', true);
+      setNotice(els.summary, err?.message || 'SMS code send failed.', true);
     } finally {
       restore();
     }
   }
 
-  async function onVerifyPhoneCode() {
+  async function verifyPhoneCode() {
     const restore = setBusy(els.verifyPhoneCodeBtn, 'Verifying...');
     try {
-      if (!api?.verifyPhoneCode) throw new Error('SMS verification API is not ready.');
-      const phone = els.phone?.value?.trim?.() || '';
-      const code = els.code?.value?.trim?.() || '';
-      await api.verifyPhoneCode({ phone, code });
-      if (els.code) els.code.value = '';
-      setSummary('Phone verified successfully.', false);
-      render(auth.getState?.() || {});
+      const resp = await api.verifyPhoneCode({ phone: els.phone?.value?.trim?.() || '', code: els.code?.value?.trim?.() || '' });
+      if (!resp?.ok) throw new Error(resp?.error || 'SMS verification failed.');
+      setNotice(els.summary, 'Phone verified.', false);
+      await auth.refresh();
     } catch (err) {
-      setSummary(err?.message || 'Failed to verify SMS code.', true);
+      setNotice(els.summary, err?.message || 'SMS verification failed.', true);
     } finally {
       restore();
     }
   }
 
-  async function onLogout(scope = 'local') {
+  async function completeOnboarding() {
+    const restore = setBusy(els.onboardingCompleteBtn, 'Saving...');
     try {
-      await auth.logout(scope);
-      setSummary(scope === 'global' ? 'Logged out of all sessions.' : 'Logged out.', false);
+      const resp = await api.accountRecoveryAction({ action: 'complete_onboarding' });
+      if (!resp?.ok) throw new Error(resp?.error || 'Unable to complete onboarding.');
+      setNotice(els.onboardingNotice, 'Onboarding complete. You can continue using the app normally.', false);
+      await auth.refresh();
+      if (window.YWIRouter?.showSection) window.YWIRouter.showSection('settings', { skipFocus: true });
     } catch (err) {
-      setSummary(err?.message || 'Logout failed.', true);
+      setNotice(els.onboardingNotice, err?.message || 'Unable to complete onboarding.', true);
+    } finally {
+      restore();
     }
   }
 
-
-  async function completeAccountSetup() {
-    try {
-      const password = els.password?.value || '';
-      const confirm = els.confirm?.value || '';
-      if (!els.username?.value?.trim?.()) throw new Error('Username is required.');
-      if (password || confirm) {
-        if (password !== confirm) throw new Error('Passwords do not match.');
-        if (password.length < 8) throw new Error('Use at least 8 characters for the password.');
-        await auth.changePassword(password);
-      }
-      const resp = await auth.markAccountSetupComplete({
-        full_name: els.fullName?.value?.trim?.() || '',
-        username: els.username?.value?.trim?.() || '',
-        recovery_email: els.recoveryEmail?.value?.trim?.() || '',
-        phone: els.phone?.value?.trim?.() || '',
-        address_line1: els.address1?.value?.trim?.() || '',
-        address_line2: els.address2?.value?.trim?.() || '',
-        city: els.city?.value?.trim?.() || '',
-        province: els.province?.value?.trim?.() || '',
-        postal_code: els.postalCode?.value?.trim?.() || ''
-      });
-      setSummary(resp?.message || 'Account setup completed.');
-      els.password.value = '';
-      els.confirm.value = '';
-    } catch (err) {
-      setSummary(err?.message || 'Failed to complete account setup.', true);
-    }
+  async function logoutEverywhere() {
+    try { await auth.logoutEverywhere(); } catch (err) { setNotice(els.summary, err?.message || 'Unable to log out everywhere.', true); }
   }
 
-  async function sendResetPasswordEmailFromSettings() {
-    try {
-      const login = els.email?.value?.trim?.() || els.username?.value?.trim?.() || '';
-      await auth.resetPassword(login);
-      setSummary('Password reset email sent. Use the link, then come back here to choose the new password if prompted.', false);
-    } catch (err) {
-      setSummary(err?.message || 'Failed to send password reset email.', true);
-    }
+  async function logoutThisDevice() {
+    try { await auth.logout(); } catch (err) { setNotice(els.summary, err?.message || 'Unable to log out.', true); }
   }
 
   function bind() {
-    if (els.saveRecoveryBtn && els.saveRecoveryBtn.dataset.bound !== '1') {
-      els.saveRecoveryBtn.dataset.bound = '1';
-      els.saveRecoveryBtn.addEventListener('click', onSaveRecoveryProfile);
-    }
-    if (els.saveBtn && els.saveBtn.dataset.bound !== '1') {
-      els.saveBtn.dataset.bound = '1';
-      els.saveBtn.addEventListener('click', onSavePassword);
-    }
-    if (els.resendEmailBtn && els.resendEmailBtn.dataset.bound !== '1') {
-      els.resendEmailBtn.dataset.bound = '1';
-      els.resendEmailBtn.addEventListener('click', onResendEmail);
-    }
-    if (els.requestPhoneBtn && els.requestPhoneBtn.dataset.bound !== '1') {
-      els.requestPhoneBtn.dataset.bound = '1';
-      els.requestPhoneBtn.addEventListener('click', onRequestPhoneVerification);
-    }
-    if (els.sendPhoneCodeBtn && els.sendPhoneCodeBtn.dataset.bound !== '1') {
-      els.sendPhoneCodeBtn.dataset.bound = '1';
-      els.sendPhoneCodeBtn.addEventListener('click', onSendPhoneCode);
-    }
-    if (els.verifyPhoneCodeBtn && els.verifyPhoneCodeBtn.dataset.bound !== '1') {
-      els.verifyPhoneCodeBtn.dataset.bound = '1';
-      els.verifyPhoneCodeBtn.addEventListener('click', onVerifyPhoneCode);
-    }
-    if (els.logoutThisBtn && els.logoutThisBtn.dataset.bound !== '1') {
-      els.logoutThisBtn.dataset.bound = '1';
-      els.logoutThisBtn.addEventListener('click', () => onLogout('local'));
-    }
-    if (els.logoutAllBtn && els.logoutAllBtn.dataset.bound !== '1') {
-      els.logoutAllBtn.dataset.bound = '1';
-      els.logoutAllBtn.addEventListener('click', () => onLogout('global'));
-    }
+    [els.fullName, els.username, els.recoveryEmail, els.requestedUsername, els.requestedEmail, els.phone, els.address1, els.address2, els.city, els.province, els.postalCode].forEach((el) => {
+      if (el && el.dataset.boundDraft !== '1') {
+        el.dataset.boundDraft = '1';
+        el.addEventListener('input', saveDraft);
+      }
+    });
+    if (els.saveRecoveryBtn) els.saveRecoveryBtn.addEventListener('click', saveProfile);
+    if (els.saveBtn) els.saveBtn.addEventListener('click', savePassword);
+    if (els.setupCompleteBtn) els.setupCompleteBtn.addEventListener('click', completeSetup);
+    if (els.requestIdentityChangeBtn) els.requestIdentityChangeBtn.addEventListener('click', requestIdentityChange);
+    if (els.resetPasswordEmailBtn) els.resetPasswordEmailBtn.addEventListener('click', sendResetFromSettings);
+    if (els.resendEmailBtn) els.resendEmailBtn.addEventListener('click', resendEmailVerification);
+    if (els.requestPhoneBtn) els.requestPhoneBtn.addEventListener('click', requestPhoneVerification);
+    if (els.sendPhoneCodeBtn) els.sendPhoneCodeBtn.addEventListener('click', sendPhoneCode);
+    if (els.verifyPhoneCodeBtn) els.verifyPhoneCodeBtn.addEventListener('click', verifyPhoneCode);
+    if (els.logoutAllBtn) els.logoutAllBtn.addEventListener('click', logoutEverywhere);
+    if (els.logoutThisBtn) els.logoutThisBtn.addEventListener('click', logoutThisDevice);
+    if (els.onboardingOpenSettings) els.onboardingOpenSettings.addEventListener('click', () => window.YWIRouter?.showSection?.('settings', { skipFocus: true }));
+    if (els.onboardingCompleteBtn) els.onboardingCompleteBtn.addEventListener('click', completeOnboarding);
   }
 
   bind();

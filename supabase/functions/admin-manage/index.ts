@@ -188,6 +188,28 @@ serve(async (req) => {
       if ((action === 'approve' || action === 'reject') && notification.target_table === 'job_equipment_requirements' && notification.target_id) {
         await supabase.from('job_equipment_requirements').update({ approval_status: action === 'approve' ? 'approved' : 'rejected', approval_notes: body.decision_notes ?? null, approved_at: now, approved_by_profile_id: actorId }).eq('id', Number(notification.target_id));
       }
+      if ((action === 'approve' || action === 'reject') && notification.target_table === 'account_identity_change_requests' && notification.target_id) {
+        const requestId = Number(notification.target_id);
+        const { data: requestRow } = await supabase.from('account_identity_change_requests').select('*').eq('id', requestId).maybeSingle();
+        if (requestRow?.profile_id) {
+          if (action === 'approve') {
+            const profilePatch: Record<string, unknown> = {
+              pending_email: null,
+              pending_username: null,
+              updated_at: now,
+            };
+            if (requestRow.requested_username) profilePatch.username = requestRow.requested_username;
+            if (requestRow.requested_email) {
+              profilePatch.email = requestRow.requested_email;
+              profilePatch.recovery_email = requestRow.requested_email;
+            }
+            await supabase.from('profiles').update(profilePatch).eq('id', requestRow.profile_id);
+          } else {
+            await supabase.from('profiles').update({ pending_email: null, pending_username: null, updated_at: now }).eq('id', requestRow.profile_id);
+          }
+          await supabase.from('account_identity_change_requests').update({ request_status: action === 'approve' ? 'approved' : 'rejected', reviewed_by_profile_id: actorId, reviewed_at: now, notes: body.decision_notes ?? null }).eq('id', requestId);
+        }
+      }
       return Response.json({ ok:true, record: updated }, { headers:corsHeaders });
     }
 

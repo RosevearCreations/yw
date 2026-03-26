@@ -34,7 +34,9 @@
       ACCOUNT_URL: `${SB_URL}/functions/v1/account-maintenance`,
       BOOTSTRAP_ADMIN_URL: `${SB_URL}/functions/v1/bootstrap-admin`,
       UPLOAD_URL: `${SB_URL}/functions/v1/upload-image`,
-      STORAGE_BUCKET: 'submission-images'
+      UPLOAD_EQUIPMENT_EVIDENCE_URL: `${SB_URL}/functions/v1/upload-equipment-evidence`,
+      STORAGE_BUCKET: 'submission-images',
+      EQUIPMENT_EVIDENCE_BUCKET: 'equipment-evidence'
     };
   }
 
@@ -42,9 +44,35 @@
   function auth() { return window.YWI_AUTH || null; }
   function sb() { return window.YWI_SB || window._sb || null; }
 
+  function getAnonKey() {
+    try {
+      return String(
+        getRuntimeConfig().SUPABASE_ANON_KEY ||
+        window.SUPABASE_ANON_KEY ||
+        window.__SUPABASE_ANON_KEY ||
+        localStorage.getItem('ywi_supabase_anon_key') ||
+        ''
+      ).trim();
+    } catch {
+      return String(getRuntimeConfig().SUPABASE_ANON_KEY || window.SUPABASE_ANON_KEY || window.__SUPABASE_ANON_KEY || '').trim();
+    }
+  }
+
+  function publicAuthHeaders() {
+    const anonKey = getAnonKey();
+    if (!anonKey) return {};
+    return {
+      apikey: anonKey,
+      Authorization: `Bearer ${anonKey}`
+    };
+  }
+
   async function authHeader() {
     const b = boot();
-    if (b?.authHeader) return b.authHeader();
+    if (b?.authHeader) {
+      const headers = await b.authHeader();
+      if (headers && Object.keys(headers).length) return headers;
+    }
     return {};
   }
 
@@ -54,9 +82,12 @@
     }
   }
 
-  async function jsonFetch(url, { method = 'POST', headers = {}, body = null } = {}) {
+  async function jsonFetch(url, { method = 'POST', headers = {}, body = null, allowPublicAuthFallback = false } = {}) {
     ensureOnline('Offline. Reconnect to the internet or your Supabase server, then try again.');
     let authHeaders = await authHeader();
+    if (allowPublicAuthFallback && !authHeaders?.Authorization && !authHeaders?.authorization) {
+      authHeaders = { ...publicAuthHeaders(), ...authHeaders };
+    }
 
     let res = await fetch(url, {
       method,
@@ -64,9 +95,12 @@
       body: body ? (typeof body === 'string' ? body : JSON.stringify(body)) : null
     });
 
-    if (res.status === 401 && auth()?.refresh) {
+    if (res.status === 401 && auth()?.refresh && authHeaders?.Authorization) {
       try { await auth().refresh(); } catch {}
       authHeaders = await authHeader();
+      if (allowPublicAuthFallback && !authHeaders?.Authorization && !authHeaders?.authorization) {
+        authHeaders = { ...publicAuthHeaders(), ...authHeaders };
+      }
       res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json', ...authHeaders, ...headers },
@@ -136,7 +170,29 @@
   }
 
   async function accountRecoveryAction(payload = {}) {
-    return jsonFetch(getEndpoints().ACCOUNT_URL, { body: payload });
+    return jsonFetch(getEndpoints().ACCOUNT_URL, { body: payload, allowPublicAuthFallback: true });
+  }
+
+  async function uploadEquipmentEvidenceAsset({ signoutId, stage = 'checkout', evidenceKind = 'photo', signerRole = '', caption = '', file, equipmentItemId = '', jobId = '' } = {}) {
+    const formData = new FormData();
+    formData.append('signout_id', String(signoutId || ''));
+    formData.append('stage', String(stage || 'checkout'));
+    formData.append('evidence_kind', String(evidenceKind || 'photo'));
+    if (signerRole) formData.append('signer_role', String(signerRole));
+    if (caption) formData.append('caption', String(caption));
+    if (equipmentItemId) formData.append('equipment_item_id', String(equipmentItemId));
+    if (jobId) formData.append('job_id', String(jobId));
+    formData.append('file', file);
+    return uploadFormDataFetch(getEndpoints().UPLOAD_EQUIPMENT_EVIDENCE_URL, formData);
+  }
+
+  async function uploadEquipmentEvidenceBatch(items = []) {
+    const results = [];
+    for (const item of Array.isArray(items) ? items : []) {
+      if (!item?.file || !item?.signoutId) continue;
+      results.push(await uploadEquipmentEvidenceAsset(item));
+    }
+    return results;
   }
 
   async function saveMyProfile(payload) {
@@ -212,6 +268,8 @@
     verifyPhoneCode,
     retryPhoneVerificationCode,
     accountRecoveryAction,
+    uploadEquipmentEvidenceAsset,
+    uploadEquipmentEvidenceBatch,
     saveMyProfile,
     bootstrapAdmin,
     uploadImageViaFunction,

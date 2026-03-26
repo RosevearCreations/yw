@@ -2,8 +2,8 @@
 -- No schema changes in this pass. This file is refreshed as the current reference snapshot after the runtime-config/app-shell update.
 
 -- Full schema reference snapshot
--- Updated through 2026-03-26 account setup, password recovery, and profile reliability pass.
--- Latest incremental schema migration: 054_account_setup_and_profile_reliability.sql
+-- Updated through 2026-03-26 storage-backed equipment evidence, onboarding, and identity-change workflow pass.
+-- Latest incremental schema migration: 055_storage_onboarding_identity_change_and_bootstrap.sql
 
 -- =========================================================
 -- YWI HSE Full Schema Reference
@@ -21,8 +21,11 @@ create table if not exists public.profiles (
   full_name text,
   username text,
   recovery_email text,
+  pending_email text,
+  pending_username text,
   password_login_ready boolean not null default false,
   account_setup_completed_at timestamptz,
+  onboarding_completed_at timestamptz,
   role text not null default 'worker',
   is_active boolean not null default true,
   phone text,
@@ -86,6 +89,22 @@ create table if not exists public.account_recovery_requests (
   masked_username text,
   request_status text not null default 'pending',
   notes text,
+  created_at timestamptz not null default now()
+);
+
+
+create table if not exists public.account_identity_change_requests (
+  id bigserial primary key,
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  current_email text,
+  current_username text,
+  requested_email text,
+  requested_username text,
+  request_status text not null default 'pending',
+  notes text,
+  reviewed_by_profile_id uuid references public.profiles(id) on delete set null,
+  reviewed_at timestamptz,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now()
 );
 
@@ -272,6 +291,27 @@ create table if not exists public.equipment_signouts (
   return_photos_json jsonb not null default '[]'::jsonb,
   damage_reported boolean not null default false,
   damage_notes text
+);
+
+
+
+create table if not exists public.equipment_evidence_assets (
+  id bigserial primary key,
+  signout_id bigint not null references public.equipment_signouts(id) on delete cascade,
+  equipment_item_id bigint references public.equipment_items(id) on delete cascade,
+  job_id bigint references public.jobs(id) on delete set null,
+  stage text not null default 'checkout',
+  evidence_kind text not null default 'photo',
+  signer_role text,
+  storage_bucket text not null default 'equipment-evidence',
+  storage_path text not null,
+  preview_url text,
+  file_name text,
+  content_type text,
+  file_size_bytes bigint,
+  caption text,
+  uploaded_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now()
 );
 
 

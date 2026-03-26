@@ -210,11 +210,11 @@
         if (quick) quick.style.display = '';
       }
       if (state.needsAccountSetup) {
-        setNotice('Finish account setup in Settings now. Choose a username, set your password, and confirm your contact details.', true);
-        if (window.YWIRouter?.showSection) window.YWIRouter.showSection('settings', { skipFocus: true });
+        setNotice('Finish first-run onboarding now. Confirm your profile details, choose a username, and save a password.', true);
+        if (window.YWIRouter?.showSection) window.YWIRouter.showSection('onboarding', { skipFocus: true });
       } else if (state.authFlow === 'recovery') {
-        setNotice('Recovery link accepted. Please set a new password in Settings.', false);
-        if (window.YWIRouter?.showSection) window.YWIRouter.showSection('settings', { skipFocus: true });
+        setNotice('Recovery link accepted. Continue through onboarding or Settings to save your new password.', false);
+        if (window.YWIRouter?.showSection) window.YWIRouter.showSection('onboarding', { skipFocus: true });
       } else if (state.recoveredFromUrl) {
         setNotice('Signed in successfully.', false);
       } else if (state.authError) {

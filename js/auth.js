@@ -170,7 +170,7 @@
     if (!cleanEmail) throw new Error('Email or username is required.');
     const resolvedEmail = await resolveLoginIdentifier(cleanEmail);
     const client = requireClient();
-    const { error } = await client.auth.resetPasswordForEmail(resolvedEmail, { redirectTo: getRedirectUrl() + '#settings' });
+    const { error } = await client.auth.resetPasswordForEmail(resolvedEmail, { redirectTo: getRedirectUrl() + '#onboarding' });
     if (error) throw error;
     return true;
   }
