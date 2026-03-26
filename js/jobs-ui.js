@@ -545,6 +545,145 @@
       })).filter((row) => row.name || row.pool_key);
     }
 
+
+    function safeLocalSet(key, value) {
+      try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+    }
+
+    function safeLocalGet(key) {
+      try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch { return null; }
+    }
+
+    function saveJobDraft() {
+      const e = els();
+      safeLocalSet(JOB_DRAFT_KEY, {
+        job_code: e.jobCode?.value || '',
+        job_name: e.jobName?.value || '',
+        site_name: e.jobSiteName?.value || '',
+        job_type: e.jobType?.value || '',
+        status: e.jobStatus?.value || '',
+        priority: e.jobPriority?.value || '',
+        start_date: e.jobStartDate?.value || '',
+        end_date: e.jobEndDate?.value || '',
+        supervisor_name: e.jobSupervisorName?.value || '',
+        signing_supervisor_name: e.jobSigningSupervisorName?.value || '',
+        admin_name: e.jobAdminName?.value || '',
+        client_name: e.jobClientName?.value || '',
+        notes: e.jobNotes?.value || '',
+        request_approval: !!e.jobRequestApproval?.checked,
+        requirements: collectRequirements()
+      });
+    }
+
+    function saveEquipmentDraft() {
+      const e = els();
+      safeLocalSet(EQUIPMENT_DRAFT_KEY, {
+        equipment_code: e.eqCode?.value || '',
+        equipment_name: e.eqName?.value || '',
+        category: e.eqCategory?.value || '',
+        equipment_pool_key: e.eqPoolKey?.value || '',
+        home_site: e.eqHomeSite?.value || '',
+        status: e.eqStatus?.value || '',
+        current_job_code: e.eqCurrentJobCode?.value || '',
+        assigned_supervisor_name: e.eqAssignedSupervisor?.value || '',
+        serial_number: e.eqSerial?.value || '',
+        asset_tag: e.eqAssetTag?.value || '',
+        manufacturer: e.eqManufacturer?.value || '',
+        model_number: e.eqModel?.value || '',
+        purchase_year: e.eqYear?.value || '',
+        purchase_date: e.eqPurchaseDate?.value || '',
+        purchase_price: e.eqPurchasePrice?.value || '',
+        condition_status: e.eqCondition?.value || '',
+        image_url: e.eqImageUrl?.value || '',
+        service_interval_days: e.eqServiceIntervalDays?.value || '',
+        last_service_date: e.eqLastServiceDate?.value || '',
+        next_service_due_date: e.eqNextServiceDueDate?.value || '',
+        last_inspection_at: e.eqLastInspectionAt?.value || '',
+        next_inspection_due_date: e.eqNextInspectionDueDate?.value || '',
+        defect_status: e.eqDefectStatus?.value || '',
+        defect_notes: e.eqDefectNotes?.value || '',
+        is_locked_out: !!e.eqIsLockedOut?.checked,
+        comments: e.eqComments?.value || '',
+        notes: e.eqNotes?.value || '',
+        worker_signature_name: e.eqWorkerSignature?.value || '',
+        supervisor_signature_name: e.eqSupervisorSignature?.value || '',
+        admin_signature_name: e.eqAdminSignature?.value || '',
+        checkout_condition: e.eqCheckoutCondition?.value || '',
+        return_condition: e.eqReturnCondition?.value || '',
+        damage_reported: !!e.eqDamageReported?.checked,
+        damage_notes: e.eqDamageNotes?.value || ''
+      });
+    }
+
+    function restoreDrafts() {
+      const e = els();
+      const jobDraft = safeLocalGet(JOB_DRAFT_KEY);
+      const eqDraft = safeLocalGet(EQUIPMENT_DRAFT_KEY);
+      if (jobDraft && !state.editingJobId && !e.jobCode?.value && !state.jobs.length) {
+        e.jobCode.value = jobDraft.job_code || '';
+        e.jobName.value = jobDraft.job_name || '';
+        e.jobSiteName.value = jobDraft.site_name || '';
+        e.jobType.value = jobDraft.job_type || '';
+        e.jobStatus.value = jobDraft.status || 'planned';
+        e.jobPriority.value = jobDraft.priority || 'normal';
+        e.jobStartDate.value = jobDraft.start_date || '';
+        e.jobEndDate.value = jobDraft.end_date || '';
+        e.jobSupervisorName.value = jobDraft.supervisor_name || '';
+        e.jobSigningSupervisorName.value = jobDraft.signing_supervisor_name || '';
+        e.jobAdminName.value = jobDraft.admin_name || '';
+        e.jobClientName.value = jobDraft.client_name || '';
+        e.jobNotes.value = jobDraft.notes || '';
+        e.jobRequestApproval.checked = !!jobDraft.request_approval;
+        if (e.jobEquipmentBody) e.jobEquipmentBody.innerHTML = '';
+        (Array.isArray(jobDraft.requirements) && jobDraft.requirements.length ? jobDraft.requirements : [{ needed_qty: 1, reserved_qty: 0 }]).forEach(addEquipmentRequirementRow);
+        setNotice(e.jobSummary, 'Recovered unsaved job draft from this device.');
+      }
+      if (eqDraft && !state.editingEquipmentCode && !e.eqCode?.value && !state.equipment.length) {
+        e.eqCode.value = eqDraft.equipment_code || '';
+        e.eqName.value = eqDraft.equipment_name || '';
+        e.eqCategory.value = eqDraft.category || '';
+        e.eqPoolKey.value = eqDraft.equipment_pool_key || '';
+        e.eqHomeSite.value = eqDraft.home_site || '';
+        e.eqStatus.value = eqDraft.status || 'available';
+        e.eqCurrentJobCode.value = eqDraft.current_job_code || '';
+        e.eqAssignedSupervisor.value = eqDraft.assigned_supervisor_name || '';
+        e.eqSerial.value = eqDraft.serial_number || '';
+        e.eqAssetTag.value = eqDraft.asset_tag || '';
+        e.eqManufacturer.value = eqDraft.manufacturer || '';
+        e.eqModel.value = eqDraft.model_number || '';
+        e.eqYear.value = eqDraft.purchase_year || '';
+        e.eqPurchaseDate.value = eqDraft.purchase_date || '';
+        e.eqPurchasePrice.value = eqDraft.purchase_price || '';
+        e.eqCondition.value = eqDraft.condition_status || 'ready';
+        e.eqImageUrl.value = eqDraft.image_url || '';
+        e.eqServiceIntervalDays.value = eqDraft.service_interval_days || '';
+        e.eqLastServiceDate.value = eqDraft.last_service_date || '';
+        e.eqNextServiceDueDate.value = eqDraft.next_service_due_date || '';
+        e.eqLastInspectionAt.value = eqDraft.last_inspection_at || '';
+        e.eqNextInspectionDueDate.value = eqDraft.next_inspection_due_date || '';
+        e.eqDefectStatus.value = eqDraft.defect_status || 'clear';
+        e.eqDefectNotes.value = eqDraft.defect_notes || '';
+        e.eqIsLockedOut.checked = !!eqDraft.is_locked_out;
+        e.eqComments.value = eqDraft.comments || '';
+        e.eqNotes.value = eqDraft.notes || '';
+        e.eqWorkerSignature.value = eqDraft.worker_signature_name || '';
+        e.eqSupervisorSignature.value = eqDraft.supervisor_signature_name || '';
+        e.eqAdminSignature.value = eqDraft.admin_signature_name || '';
+        e.eqCheckoutCondition.value = eqDraft.checkout_condition || '';
+        e.eqReturnCondition.value = eqDraft.return_condition || '';
+        e.eqDamageReported.checked = !!eqDraft.damage_reported;
+        e.eqDamageNotes.value = eqDraft.damage_notes || '';
+        setNotice(e.eqSummary, 'Recovered unsaved equipment draft from this device.');
+      }
+    }
+
+    function clearDrafts(kind = 'all') {
+      try {
+        if (kind === 'all' || kind === 'job') localStorage.removeItem(JOB_DRAFT_KEY);
+        if (kind === 'all' || kind === 'equipment') localStorage.removeItem(EQUIPMENT_DRAFT_KEY);
+      } catch {}
+    }
+
     function clearJobForm() {
       const e = els();
       state.editingJobId = null;
@@ -556,6 +695,7 @@
       if (e.jobRequestApproval) e.jobRequestApproval.checked = false;
       if (e.jobEquipmentBody) e.jobEquipmentBody.innerHTML = '';
       addEquipmentRequirementRow({ needed_qty: 1, reserved_qty: 0 });
+      clearDrafts('job');
       setNotice(e.jobSummary, 'Ready for a new job entry.');
     }
 
@@ -574,6 +714,7 @@
       if (e.eqReturnPhotos) e.eqReturnPhotos.value = '';
       renderPhotoPreviews();
       clearSignaturePads();
+      clearDrafts('equipment');
       setNotice(e.eqSummary, 'Ready for a new equipment entry.');
     }
 
@@ -735,6 +876,7 @@
         };
         const resp = await api.manageJobsEntity(payload);
         if (!resp?.ok) throw new Error(resp?.error || 'Job save failed');
+        clearDrafts('job');
         setNotice(e.jobSummary, `Job ${payload.job_code} saved. Reservation checks were applied across matching equipment pools.`);
         await loadData();
       } catch (err) {
@@ -777,6 +919,7 @@
           notes: e.eqNotes?.value?.trim?.() || ''
         });
         if (!resp?.ok) throw new Error(resp?.error || 'Equipment save failed');
+        clearDrafts('equipment');
         setNotice(e.eqSummary, `Equipment ${e.eqCode?.value || ''} saved.`);
         await loadData();
       } catch (err) {
@@ -789,6 +932,7 @@
       try {
         const resp = await api.manageJobsEntity({ entity: 'equipment', action: 'checkout', equipment_code: e.eqCode?.value?.trim?.() || '', job_code: e.eqCurrentJobCode?.value?.trim?.() || '', supervisor_name: e.eqAssignedSupervisor?.value?.trim?.() || '', worker_signature_name: e.eqWorkerSignature?.value?.trim?.() || '', supervisor_signature_name: e.eqSupervisorSignature?.value?.trim?.() || '', admin_signature_name: e.eqAdminSignature?.value?.trim?.() || '', checkout_condition: e.eqCheckoutCondition?.value?.trim?.() || '', notes: e.eqNotes?.value?.trim?.() || '', ...collectSignaturePayload() });
         if (!resp?.ok) throw new Error(resp?.error || 'Checkout failed');
+        clearDrafts('equipment');
         setNotice(e.eqSummary, `Equipment ${e.eqCode?.value || ''} checked out.`);
         await loadData();
       } catch (err) {
@@ -801,6 +945,7 @@
       try {
         const resp = await api.manageJobsEntity({ entity: 'equipment', action: 'return', equipment_code: e.eqCode?.value?.trim?.() || '', worker_signature_name: e.eqWorkerSignature?.value?.trim?.() || '', supervisor_signature_name: e.eqSupervisorSignature?.value?.trim?.() || '', admin_signature_name: e.eqAdminSignature?.value?.trim?.() || '', return_condition: e.eqReturnCondition?.value?.trim?.() || '', return_notes: e.eqNotes?.value?.trim?.() || '', damage_reported: !!e.eqDamageReported?.checked, damage_notes: e.eqDamageNotes?.value?.trim?.() || '', ...collectSignaturePayload() });
         if (!resp?.ok) throw new Error(resp?.error || 'Return failed');
+        clearDrafts('equipment');
         setNotice(e.eqSummary, `Equipment ${e.eqCode?.value || ''} returned.`);
         await loadData();
       } catch (err) {
@@ -1004,6 +1149,11 @@
         e.eqClearLockout.dataset.bound = '1';
         e.eqClearLockout.addEventListener('click', () => setLockout(false));
       }
+      if (e.jobsSection && e.jobsSection.dataset.autosaveBound !== '1') {
+        e.jobsSection.dataset.autosaveBound = '1';
+        e.jobsSection.addEventListener('input', () => { saveJobDraft(); saveEquipmentDraft(); });
+        e.jobsSection.addEventListener('change', () => { saveJobDraft(); saveEquipmentDraft(); });
+      }
     }
 
     async function init() {
@@ -1013,6 +1163,7 @@
       await loadData();
       if (!state.jobs.length) clearJobForm();
       if (!state.equipment.length) clearEquipmentForm();
+      restoreDrafts();
       initSignaturePads();
       renderRequirementReviewPanel();
     }

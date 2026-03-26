@@ -4,6 +4,7 @@
 // - Supports admin-reviewed phone verification requests
 // - Supports optional Twilio Verify SMS flow when provider env vars are configured
 // - Supports retrying SMS verification sends
+// - Supports account setup completion and richer contact/profile updates
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -136,10 +137,46 @@ serve(async (req) => {
     const username = String(body.username || '').trim() || null;
     const recoveryEmail = String(body.recovery_email || '').trim() || null;
     const phone = String(body.phone || actorProfile.phone || '').trim() || null;
-    const patch: Record<string, unknown> = { username, recovery_email: recoveryEmail, phone, updated_at: new Date().toISOString() };
+    const patch: Record<string, unknown> = {
+      username,
+      recovery_email: recoveryEmail,
+      phone,
+      full_name: String(body.full_name || actorProfile.full_name || '').trim() || null,
+      address_line1: String(body.address_line1 || actorProfile.address_line1 || '').trim() || null,
+      address_line2: String(body.address_line2 || actorProfile.address_line2 || '').trim() || null,
+      city: String(body.city || actorProfile.city || '').trim() || null,
+      province: String(body.province || actorProfile.province || '').trim() || null,
+      postal_code: String(body.postal_code || actorProfile.postal_code || '').trim() || null,
+      updated_at: new Date().toISOString()
+    };
     const { data, error } = await supabase.from('profiles').update(patch).eq('id', actorId).select('*').single();
     if (error) return Response.json({ ok: false, error: String(error.message || error) }, { status: 500, headers: corsHeaders });
     return Response.json({ ok: true, record: data }, { headers: corsHeaders });
+  }
+
+  if (action === 'complete_account_setup') {
+    const username = String(body.username || '').trim();
+    const recoveryEmail = String(body.recovery_email || '').trim() || null;
+    const phone = String(body.phone || actorProfile.phone || '').trim() || null;
+    const fullName = String(body.full_name || actorProfile.full_name || '').trim() || null;
+    if (!username) return Response.json({ ok: false, error: 'Username is required.' }, { status: 400, headers: corsHeaders });
+    const patch: Record<string, unknown> = {
+      username,
+      recovery_email: recoveryEmail,
+      phone,
+      full_name: fullName,
+      address_line1: String(body.address_line1 || actorProfile.address_line1 || '').trim() || null,
+      address_line2: String(body.address_line2 || actorProfile.address_line2 || '').trim() || null,
+      city: String(body.city || actorProfile.city || '').trim() || null,
+      province: String(body.province || actorProfile.province || '').trim() || null,
+      postal_code: String(body.postal_code || actorProfile.postal_code || '').trim() || null,
+      password_login_ready: true,
+      account_setup_completed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    const { data, error } = await supabase.from('profiles').update(patch).eq('id', actorId).select('*').single();
+    if (error) return Response.json({ ok: false, error: String(error.message || error) }, { status: 500, headers: corsHeaders });
+    return Response.json({ ok: true, record: data, message: 'Account setup completed.' }, { headers: corsHeaders });
   }
 
   if (action === 'request_phone_verification') {

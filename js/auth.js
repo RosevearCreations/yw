@@ -34,7 +34,8 @@
     isAuthenticated: false,
     authError: '',
     authFlow: 'idle',
-    configError: boot?.state?.configError || ''
+    configError: boot?.state?.configError || '',
+    needsAccountSetup: false
   };
 
   function dispatch(name, detail = {}) {
@@ -83,6 +84,7 @@
     else state.profile = null;
     state.role = state.profile?.role || 'worker';
     state.roleLabel = getRoleLabel(state.role);
+    state.needsAccountSetup = !!(state.isAuthenticated && (state.authFlow === 'recovery' || state.profile?.password_login_ready === false || !safeText(state.profile?.username)));
     state.pendingAuthResolution = !state.bootReady && !state.isAuthenticated;
   }
 
@@ -96,6 +98,7 @@
     state.authError = bootState.authError || '';
     state.authFlow = bootState.authFlow || state.authFlow || 'idle';
     state.configError = bootState.configError || state.configError || '';
+    state.needsAccountSetup = !!bootState.needsAccountSetup;
     state.bootReady = true;
     state.pendingAuthResolution = false;
   }
@@ -164,9 +167,10 @@
 
   async function resetPassword(email) {
     const cleanEmail = safeText(email);
-    if (!cleanEmail) throw new Error('Email is required.');
+    if (!cleanEmail) throw new Error('Email or username is required.');
+    const resolvedEmail = await resolveLoginIdentifier(cleanEmail);
     const client = requireClient();
-    const { error } = await client.auth.resetPasswordForEmail(cleanEmail, { redirectTo: getRedirectUrl() });
+    const { error } = await client.auth.resetPasswordForEmail(resolvedEmail, { redirectTo: getRedirectUrl() + '#settings' });
     if (error) throw error;
     return true;
   }
@@ -189,6 +193,24 @@
     await refreshFromSupabase();
     dispatch('ywi:auth-changed', { state: getState() });
     return data;
+  }
+
+
+  async function markAccountSetupComplete(payload = {}) {
+    const client = requireClient();
+    const { data: sessionData } = await client.auth.getSession();
+    const token = sessionData?.session?.access_token;
+    if (!token) throw new Error('Sign in again before finishing account setup.');
+    const response = await fetch(getAccountFunctionUrl(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: 'complete_account_setup', ...payload })
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(body?.error || 'Unable to finish account setup.');
+    await refreshFromSupabase();
+    dispatch('ywi:auth-changed', { state: getState() });
+    return body;
   }
 
   async function logout(scope = 'local') {
@@ -295,6 +317,7 @@
     resetPassword,
     resendEmailVerification,
     changePassword,
+    markAccountSetupComplete,
     logout,
     logoutEverywhere,
     saveRuntimeConfig,

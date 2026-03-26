@@ -2,8 +2,8 @@
 -- No schema changes in this pass. This file is refreshed as the current reference snapshot after the runtime-config/app-shell update.
 
 -- Full schema reference snapshot
--- Updated through 2026-03-25 account recovery and equipment signature capture pass.
--- Latest incremental schema migration: 052_account_recovery_and_equipment_signature_capture.sql
+-- Updated through 2026-03-26 account setup, password recovery, and profile reliability pass.
+-- Latest incremental schema migration: 054_account_setup_and_profile_reliability.sql
 
 -- =========================================================
 -- YWI HSE Full Schema Reference
@@ -21,6 +21,8 @@ create table if not exists public.profiles (
   full_name text,
   username text,
   recovery_email text,
+  password_login_ready boolean not null default false,
+  account_setup_completed_at timestamptz,
   role text not null default 'worker',
   is_active boolean not null default true,
   phone text,

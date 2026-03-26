@@ -209,7 +209,10 @@
         const quick = document.getElementById('dashboardQuickLinks');
         if (quick) quick.style.display = '';
       }
-      if (state.authFlow === 'recovery') {
+      if (state.needsAccountSetup) {
+        setNotice('Finish account setup in Settings now. Choose a username, set your password, and confirm your contact details.', true);
+        if (window.YWIRouter?.showSection) window.YWIRouter.showSection('settings', { skipFocus: true });
+      } else if (state.authFlow === 'recovery') {
         setNotice('Recovery link accepted. Please set a new password in Settings.', false);
         if (window.YWIRouter?.showSection) window.YWIRouter.showSection('settings', { skipFocus: true });
       } else if (state.recoveredFromUrl) {
@@ -235,7 +238,7 @@
       setNotice('The login form is ready below even while the app finishes checking your session.', false);
       setConfigStatus('');
     } else {
-      setNotice('Use email and password for daily sign-in. Magic link is only for first validation, backup access, or recovery. Normal deployments should load the Supabase key from js/app-config.js.', false);
+      setNotice('Use username/email and password for daily sign-in. Magic link is only for first validation, backup access, or recovery. Normal deployments should load the Supabase key from js/app-config.js.', false);
       setConfigStatus('');
     }
   }

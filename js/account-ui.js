@@ -1,7 +1,7 @@
 /* File: js/account-ui.js
    Brief description: In-app account security module.
-   Renders the account panel inside Settings, supports password setup/change,
-   email verification resend, phone verification request/code entry, and session controls.
+   Renders the account panel inside Settings, supports first-time account setup after magic-link validation,
+   password setup/change/reset, contact/address updates, phone verification, and session controls.
 */
 
 'use strict';
@@ -24,46 +24,35 @@
       <div class="section-heading">
         <div>
           <h2>Settings</h2>
-          <p class="section-subtitle">Account security now uses email + password for normal login. Magic link is optional backup only.</p>
+          <p class="section-subtitle">Daily sign-in uses username/email + password. Magic link is only for first validation, recovery, or backup access.</p>
         </div>
       </div>
+      <div id="accountSetupNotice" class="notice" style="display:none;margin-top:12px;"></div>
       <div id="accountPanel" class="admin-panel-block" hidden>
         <div class="admin-panel-grid">
-          <label>Email
-            <input id="account_email" type="email" readonly />
-          </label>
-          <label>Username
-            <input id="account_username" type="text" placeholder="Choose a username" />
-          </label>
-          <label>Recovery email
-            <input id="account_recovery_email" type="email" placeholder="Optional backup email" />
-          </label>
-          <label>Role
-            <input id="account_role" type="text" readonly />
-          </label>
-          <label>Email status
-            <input id="account_email_status" type="text" readonly />
-          </label>
-          <label>Phone status
-            <input id="account_phone_status" type="text" readonly />
-          </label>
-          <label>Phone number
-            <input id="account_phone" type="tel" placeholder="+1 555 555 5555" />
-          </label>
-          <label>Verification code
-            <input id="account_phone_code" type="text" placeholder="SMS code" />
-          </label>
-          <label>New password
-            <input id="account_password" type="password" autocomplete="new-password" placeholder="Choose a strong password" />
-          </label>
-          <label>Confirm password
-            <input id="account_password_confirm" type="password" autocomplete="new-password" placeholder="Confirm password" />
-          </label>
+          <label>Full name<input id="account_full_name" type="text" placeholder="Full legal or display name" /></label>
+          <label>Email<input id="account_email" type="email" readonly /></label>
+          <label>Username<input id="account_username" type="text" placeholder="Choose a username" /></label>
+          <label>Recovery email<input id="account_recovery_email" type="email" placeholder="Optional backup email" /></label>
+          <label>Role<input id="account_role" type="text" readonly /></label>
+          <label>Email status<input id="account_email_status" type="text" readonly /></label>
+          <label>Phone status<input id="account_phone_status" type="text" readonly /></label>
+          <label>Phone number<input id="account_phone" type="tel" placeholder="+1 555 555 5555" /></label>
+          <label>Address line 1<input id="account_address_line1" type="text" placeholder="Street address" /></label>
+          <label>Address line 2<input id="account_address_line2" type="text" placeholder="Unit / suite" /></label>
+          <label>City<input id="account_city" type="text" /></label>
+          <label>Province<input id="account_province" type="text" /></label>
+          <label>Postal code<input id="account_postal_code" type="text" /></label>
+          <label>Verification code<input id="account_phone_code" type="text" placeholder="SMS code" /></label>
+          <label>New password<input id="account_password" type="password" autocomplete="new-password" placeholder="Choose a strong password" /></label>
+          <label>Confirm password<input id="account_password_confirm" type="password" autocomplete="new-password" placeholder="Confirm password" /></label>
         </div>
         <div id="account_password_hint" class="notice" style="margin-top:12px;"></div>
         <div class="form-footer" style="margin-top:14px;flex-wrap:wrap;">
-          <button id="account_recovery_save" class="primary" type="button">Save Login Details</button>
+          <button id="account_setup_complete" class="primary" type="button">Complete Account Setup</button>
+          <button id="account_recovery_save" class="secondary" type="button">Save Contact Details</button>
           <button id="account_password_save" class="secondary" type="button">Save Password</button>
+          <button id="account_reset_password_email" class="secondary" type="button">Send Password Reset Email</button>
           <button id="account_resend_email_verification" class="secondary" type="button">Resend Email Verification</button>
           <button id="account_request_phone_verification" class="secondary" type="button">Request Phone Verification</button>
           <button id="account_send_phone_code" class="secondary" type="button">Send SMS Code</button>
@@ -83,10 +72,17 @@
 
   const els = {
     panel: document.getElementById('accountPanel'),
+    setupNotice: document.getElementById('accountSetupNotice'),
+    fullName: document.getElementById('account_full_name'),
     email: document.getElementById('account_email'),
     role: document.getElementById('account_role'),
     username: document.getElementById('account_username'),
     recoveryEmail: document.getElementById('account_recovery_email'),
+    address1: document.getElementById('account_address_line1'),
+    address2: document.getElementById('account_address_line2'),
+    city: document.getElementById('account_city'),
+    province: document.getElementById('account_province'),
+    postalCode: document.getElementById('account_postal_code'),
     emailStatus: document.getElementById('account_email_status'),
     phoneStatus: document.getElementById('account_phone_status'),
     phone: document.getElementById('account_phone'),
@@ -97,8 +93,10 @@
     verifyPhoneCodeBtn: document.getElementById('account_verify_phone_code'),
     password: document.getElementById('account_password'),
     confirm: document.getElementById('account_password_confirm'),
+    setupCompleteBtn: document.getElementById('account_setup_complete'),
     saveRecoveryBtn: document.getElementById('account_recovery_save'),
     saveBtn: document.getElementById('account_password_save'),
+    resetPasswordEmailBtn: document.getElementById('account_reset_password_email'),
     logoutAllBtn: document.getElementById('account_logout_all'),
     logoutThisBtn: document.getElementById('account_logout_this'),
     summary: document.getElementById('account_summary'),
@@ -266,6 +264,46 @@
       setSummary(scope === 'global' ? 'Logged out of all sessions.' : 'Logged out.', false);
     } catch (err) {
       setSummary(err?.message || 'Logout failed.', true);
+    }
+  }
+
+
+  async function completeAccountSetup() {
+    try {
+      const password = els.password?.value || '';
+      const confirm = els.confirm?.value || '';
+      if (!els.username?.value?.trim?.()) throw new Error('Username is required.');
+      if (password || confirm) {
+        if (password !== confirm) throw new Error('Passwords do not match.');
+        if (password.length < 8) throw new Error('Use at least 8 characters for the password.');
+        await auth.changePassword(password);
+      }
+      const resp = await auth.markAccountSetupComplete({
+        full_name: els.fullName?.value?.trim?.() || '',
+        username: els.username?.value?.trim?.() || '',
+        recovery_email: els.recoveryEmail?.value?.trim?.() || '',
+        phone: els.phone?.value?.trim?.() || '',
+        address_line1: els.address1?.value?.trim?.() || '',
+        address_line2: els.address2?.value?.trim?.() || '',
+        city: els.city?.value?.trim?.() || '',
+        province: els.province?.value?.trim?.() || '',
+        postal_code: els.postalCode?.value?.trim?.() || ''
+      });
+      setSummary(resp?.message || 'Account setup completed.');
+      els.password.value = '';
+      els.confirm.value = '';
+    } catch (err) {
+      setSummary(err?.message || 'Failed to complete account setup.', true);
+    }
+  }
+
+  async function sendResetPasswordEmailFromSettings() {
+    try {
+      const login = els.email?.value?.trim?.() || els.username?.value?.trim?.() || '';
+      await auth.resetPassword(login);
+      setSummary('Password reset email sent. Use the link, then come back here to choose the new password if prompted.', false);
+    } catch (err) {
+      setSummary(err?.message || 'Failed to send password reset email.', true);
     }
   }
 

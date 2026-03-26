@@ -67,7 +67,8 @@
     supabaseUrl: readConfiguredSupabaseUrl(),
     hasSupabaseKey: false,
     pendingAuthResolution: false,
-    isOffline: typeof navigator !== 'undefined' ? !navigator.onLine : false
+    isOffline: typeof navigator !== 'undefined' ? !navigator.onLine : false,
+    needsAccountSetup: false
   };
 
   function dispatch(name, detail = {}) {
@@ -242,6 +243,7 @@
     else state.profile = null;
     state.role = state.profile?.role || 'worker';
     state.roleLabel = getRoleLabel(state.role);
+    state.needsAccountSetup = !!(state.isAuthenticated && (state.authFlow === 'recovery' || state.profile?.password_login_ready === false || !String(state.profile?.username || '').trim()));
   }
 
   async function recoverSessionFromUrlIfNeeded(sb) {
