@@ -1,3 +1,6 @@
+-- 2026-03-25 runtime config pass
+-- No schema changes in this pass. This file is refreshed as the current reference snapshot after the runtime-config/app-shell update.
+
 -- Full schema reference snapshot
 -- Updated through 2026-03-25 account recovery and equipment signature capture pass.
 -- Latest incremental schema migration: 052_account_recovery_and_equipment_signature_capture.sql

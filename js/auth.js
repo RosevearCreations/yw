@@ -10,7 +10,17 @@
   const boot = window.YWI_BOOT || null;
   const security = window.YWISecurity || null;
   let sb = window.YWI_SB || window._sb || null;
-  const ACCOUNT_FUNCTION_URL = 'https://jmqvkgiqlimdhcofwkxr.supabase.co/functions/v1/account-maintenance';
+  function getRuntimeConfig() {
+    return window.YWI_RUNTIME_CONFIG || window.__YWI_RUNTIME_CONFIG || {};
+  }
+
+  function getSupabaseUrl() {
+    return String(getRuntimeConfig().SUPABASE_URL || window.YWI_BOOT?.state?.supabaseUrl || 'https://jmqvkgiqlimdhcofwkxr.supabase.co').trim();
+  }
+
+  function getAccountFunctionUrl() {
+    return `${getSupabaseUrl()}/functions/v1/account-maintenance`;
+  }
 
   const state = {
     initialized: false,
@@ -111,7 +121,7 @@
     const cleanLogin = safeText(login);
     if (!cleanLogin || cleanLogin.includes('@')) return cleanLogin;
     try {
-      const res = await fetch(ACCOUNT_FUNCTION_URL, {
+      const res = await fetch(getAccountFunctionUrl(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'resolve_login_identifier', login: cleanLogin })
@@ -210,7 +220,7 @@
 
   async function saveRuntimeConfig({ anonKey } = {}) {
     const clean = safeText(anonKey);
-    if (!clean) throw new Error('Supabase anon key is required.');
+    if (!clean) throw new Error('Supabase anon/public key is required.');
     localStorage.setItem('ywi_supabase_anon_key', clean);
     window.__SUPABASE_ANON_KEY = clean;
     return true;

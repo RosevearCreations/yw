@@ -5,7 +5,7 @@
 
 'use strict';
 
-const CACHE_NAME = 'ywi-hse-shell-v8';
+const CACHE_NAME = 'ywi-hse-shell-v9';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -13,6 +13,7 @@ const APP_SHELL = [
   '/app.js',
   '/manifest.json',
   '/js/router.js',
+  '/js/app-config.js',
   '/js/api.js',
   '/js/account-ui.js',
   '/js/security.js',
@@ -59,6 +60,11 @@ function isSupabaseRequest(url) {
   return url.origin.includes('supabase.co');
 }
 
+
+function isRuntimeConfigRequest(url) {
+  return url.pathname === '/js/app-config.js';
+}
+
 function isApiLikeRequest(url) {
   return isSupabaseRequest(url) ||
     url.pathname.includes('/functions/v1/') ||
@@ -83,6 +89,19 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (isApiLikeRequest(url) || isAuthCallbackUrl(url)) {
+    return;
+  }
+
+  if (isRuntimeConfigRequest(url)) {
+    event.respondWith(
+      fetch(req)
+        .then((response) => {
+          const copy = response.clone();
+          if (response.ok) caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
+          return response;
+        })
+        .catch(() => caches.match(req))
+    );
     return;
   }
 

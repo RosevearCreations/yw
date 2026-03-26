@@ -8,7 +8,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>YWI HSE</title>
+  <title>YWI HSE App</title>
+  <meta name="description" content="YWI HSE app for field forms, jobs, equipment tracking, account security, and admin workflows." />
   <meta name="theme-color" content="#0f172a" />
   <meta name="color-scheme" content="dark light" />
 
@@ -16,6 +17,7 @@
   <link rel="stylesheet" href="/style.css" />
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/app-config.js?v=2026-03-25b"></script>
 
   <style>
     #authLoading {
@@ -101,7 +103,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-03-25a');
+          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-03-25b');
           if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
           }
@@ -192,14 +194,14 @@
 
     <div id="runtimeConfigPanel" class="notice" hidden style="display:none;margin-top:14px;">
       <strong>App configuration</strong>
-      <p style="margin:8px 0;">If this app was deployed without the Supabase anon key, enter it here once so the real login form can work instead of the magic wall.</p>
+      <p style="margin:8px 0;">Normal deployments should load the Supabase anon/public key from <code>js/app-config.js</code>. Use the save box below only as an emergency fallback if the deployed config file is missing or stale.</p>
       <form id="runtimeConfigForm">
-        <label>Supabase anon key
-          <input id="runtimeSupabaseAnonKey" type="text" placeholder="Paste anon key" autocomplete="off" />
+        <label>Emergency fallback Supabase anon/public key
+          <input id="runtimeSupabaseAnonKey" type="text" placeholder="Paste anon/public key" autocomplete="off" />
         </label>
         <div class="form-footer" style="margin-top:12px;">
-          <button id="runtimeConfigSaveBtn" class="primary" type="submit">Save Key + Reload</button>
-          <button id="runtimeConfigClearBtn" class="secondary" type="button">Clear Saved Key</button>
+          <button id="runtimeConfigSaveBtn" class="primary" type="submit">Save Fallback Key + Reload</button>
+          <button id="runtimeConfigClearBtn" class="secondary" type="button">Clear Fallback Key</button>
         </div>
         <div id="runtimeConfigStatus" class="notice" style="display:none;margin-top:12px;"></div>
       </form>
@@ -328,25 +330,25 @@
 
   <!-- Correct module order -->
   <script src="/js/router.js"></script>
-  <script src="/js/bootstrap.js?v=2026-03-25a"></script>
-  <script src="/js/auth.js?v=2026-03-25a"></script>
+  <script src="/js/bootstrap.js?v=2026-03-25b"></script>
+  <script src="/js/auth.js?v=2026-03-25b"></script>
   <script src="/js/security.js"></script>
-  <script src="/js/api.js?v=2026-03-25a"></script>
+  <script src="/js/api.js?v=2026-03-25b"></script>
   <script src="/js/outbox.js"></script>
   <script src="/js/admin-actions.js"></script>
-  <script src="/js/ui-auth.js?v=2026-03-25a"></script>
+  <script src="/js/ui-auth.js?v=2026-03-25b"></script>
   <script src="/js/account-ui.js"></script>
   <script src="/js/profile-ui.js"></script>
   <script src="/js/reference-data.js"></script>
-  <script src="/js/admin-ui.js?v=2026-03-25a"></script>
+  <script src="/js/admin-ui.js?v=2026-03-25b"></script>
   <script src="/js/logbook-ui.js"></script>
-  <script src="/js/jobs-ui.js?v=2026-03-25a"></script>
+  <script src="/js/jobs-ui.js?v=2026-03-25b"></script>
   <script src="/js/forms-toolbox.js"></script>
   <script src="/js/forms-ppe.js"></script>
   <script src="/js/forms-firstaid.js"></script>
   <script src="/js/forms-inspection.js"></script>
   <script src="/js/forms-drill.js"></script>
-  <script src="/app.js?v=2026-03-25a" defer></script>
+  <script src="/app.js?v=2026-03-25b" defer></script>
 
   <script>
     document.addEventListener('ywi:auth-changed', (e) => {

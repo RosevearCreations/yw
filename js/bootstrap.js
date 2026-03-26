@@ -8,18 +8,46 @@
 'use strict';
 
 (function () {
-  const SUPABASE_URL = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
+  const DEFAULT_SUPABASE_URL = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
+
+  function getRuntimeConfig() {
+    return window.YWI_RUNTIME_CONFIG || window.__YWI_RUNTIME_CONFIG || {};
+  }
+
+  function readConfiguredSupabaseUrl() {
+    const cfg = getRuntimeConfig();
+    return String(
+      cfg.SUPABASE_URL ||
+      window.SUPABASE_URL ||
+      DEFAULT_SUPABASE_URL
+    ).trim() || DEFAULT_SUPABASE_URL;
+  }
+
+  function isPlaceholderKey(value) {
+    const clean = String(value || '').trim();
+    if (!clean) return true;
+    return /PASTE_SUPABASE_ANON_PUBLIC_KEY_HERE|YOUR_SUPABASE_ANON_KEY|__SUPABASE_ANON_KEY__|changeme/i.test(clean);
+  }
 
   function readStoredAnonKey() {
+    const cfg = getRuntimeConfig();
     try {
-      return String(
+      const candidate = String(
+        cfg.SUPABASE_ANON_KEY ||
         window.SUPABASE_ANON_KEY ||
         window.__SUPABASE_ANON_KEY ||
         localStorage.getItem('ywi_supabase_anon_key') ||
         ''
       ).trim();
+      return isPlaceholderKey(candidate) ? '' : candidate;
     } catch {
-      return String(window.SUPABASE_ANON_KEY || window.__SUPABASE_ANON_KEY || '').trim();
+      const candidate = String(
+        cfg.SUPABASE_ANON_KEY ||
+        window.SUPABASE_ANON_KEY ||
+        window.__SUPABASE_ANON_KEY ||
+        ''
+      ).trim();
+      return isPlaceholderKey(candidate) ? '' : candidate;
     }
   }
 
@@ -36,7 +64,7 @@
     isAuthenticated: false,
     lastRouteHash: '#toolbox',
     configError: '',
-    supabaseUrl: SUPABASE_URL,
+    supabaseUrl: readConfiguredSupabaseUrl(),
     hasSupabaseKey: false,
     pendingAuthResolution: false
   };
@@ -252,7 +280,7 @@
       return finishWithoutClient('Supabase library did not load. Refresh the app. If it still fails, clear the service worker cache and try again.');
     }
     if (!anonKey) {
-      return finishWithoutClient('App configuration is incomplete. Add the Supabase anon key in the login screen settings, then reload the app.');
+      return finishWithoutClient('App configuration is incomplete. Add the Supabase anon/public key to js/app-config.js or use the emergency login-screen override, then reload the app.');
     }
 
     const sb = window.supabase.createClient(SUPABASE_URL, anonKey, {

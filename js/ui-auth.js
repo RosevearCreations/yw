@@ -219,7 +219,7 @@
 
     if (state.configError) {
       setNotice(state.configError, true);
-      setConfigStatus('Enter the Supabase anon key once, save it, then reload the app.');
+      setConfigStatus('Add the Supabase anon/public key to js/app-config.js for normal use. The save box below is only an emergency fallback.');
     } else if (state.authError) {
       setNotice(state.authError, true);
       setConfigStatus('');
@@ -227,7 +227,7 @@
       setNotice('The login form is ready below even while the app finishes checking your session.', false);
       setConfigStatus('');
     } else {
-      setNotice('Use email and password for daily sign-in. Magic link is only for first validation, backup access, or recovery.', false);
+      setNotice('Use email and password for daily sign-in. Magic link is only for first validation, backup access, or recovery. Normal deployments should load the Supabase key from js/app-config.js.', false);
       setConfigStatus('');
     }
   }
@@ -280,7 +280,7 @@
     const restore = setBusy(els.configSaveBtn, 'Saving...');
     try {
       await auth.saveRuntimeConfig({ anonKey: els.configAnonKey?.value || '' });
-      setConfigStatus('Runtime key saved. Reloading app...');
+      setConfigStatus('Emergency fallback key saved. Reloading app...');
       window.location.reload();
     } catch (err) {
       setConfigStatus(err?.message || 'Failed to save runtime config.', true);
@@ -293,7 +293,7 @@
     try {
       auth.clearRuntimeConfig();
       if (els.configAnonKey) els.configAnonKey.value = '';
-      setConfigStatus('Stored runtime key removed.', false);
+      setConfigStatus('Emergency fallback key removed.', false);
     } catch (err) {
       setConfigStatus(err?.message || 'Failed to clear runtime config.', true);
     }

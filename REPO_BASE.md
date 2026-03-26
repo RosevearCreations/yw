@@ -95,7 +95,7 @@ This pass fixes the remaining auth wall problem by making the app render a real 
 ### What changed
 - login remains email + password first, with magic link kept as backup / recovery only
 - bootstrap now reports a readable configuration error instead of trapping the user behind a blank magic-link wall
-- a one-time runtime Supabase anon key entry panel is available on the login screen for deployments that missed frontend auth config
+- a one-time emergency fallback Supabase anon/public key entry panel remains available on the login screen if `js/app-config.js` is missing or stale
 - header now shows login while signed out, then login name + settings + logout while signed in
 - settings continue to expose password save/change, resend verification, phone verification, and logout controls
 - equipment records now support rental-style asset fields: pool key, serial, asset tag, manufacturer, model, year, purchase date, purchase price, condition, image URL, comments
@@ -190,3 +190,11 @@ Most valuable next pass after this:
 - add admin review screens for account recovery attempts and failed login help requests
 - move more duplicated selector/reference JSON into database-backed catalogs where the app already reads database-first
 - harden per-role credential and settings visibility with clearer audit history
+
+
+## 2026-03-25 runtime config pass
+- frontend auth config now loads from `js/app-config.js` first, using `window.YWI_RUNTIME_CONFIG` as the primary source of truth
+- runtime localStorage anon-key entry remains available only as an emergency fallback from the login screen
+- service worker now treats `js/app-config.js` as network-first to reduce stale cached credential/config problems
+- bootstrap/auth errors now direct deployment fixes toward `js/app-config.js` instead of treating manual runtime entry as the normal path
+- no database migration was added in this pass; `sql/000_full_schema_reference.sql` was refreshed as the current reference snapshot
