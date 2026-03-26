@@ -33,7 +33,9 @@
       maintenance: [],
       editingJobId: null,
       editingEquipmentCode: '',
-      signaturePads: { worker: null, supervisor: null, admin: null }
+      signaturePads: { worker: null, supervisor: null, admin: null },
+      checkoutPhotos: [],
+      returnPhotos: []
     };
 
     function ensureLayout() {
@@ -115,7 +117,7 @@
           <div class="section-heading">
             <div>
               <h2>Equipment</h2>
-              <p class="section-subtitle">Manage rental-style asset records, pool keys, serials, images, purchase history, and signed checkout/return events.</p>
+              <p class="section-subtitle">Manage rental-style asset records, pool keys, serials, images, purchase history, signed checkout/return events, and post-return damage evidence.</p>
             </div>
             <div class="admin-heading-actions">
               <a href="#admin" class="secondary" id="eq_open_admin_link">Open Admin Queue</a>
@@ -164,6 +166,18 @@
               <label>Admin Signature<input id="eq_admin_signature" type="text" placeholder="Admin sign-off name" /></label>
               <label>Checkout Condition<input id="eq_checkout_condition" type="text" placeholder="Ready / worn / damaged" /></label>
               <label>Return Condition<input id="eq_return_condition" type="text" placeholder="Returned condition" /></label>
+              <label style="display:flex;align-items:center;gap:8px;"><input id="eq_damage_reported" type="checkbox" /> Damage noted on return</label>
+            </div>
+            <label style="display:block;margin-top:12px;">Damage Notes
+              <textarea id="eq_damage_notes" rows="2" placeholder="Describe cracks, dents, missing parts, or new wear found on return."></textarea>
+            </label>
+            <div class="grid" style="margin-top:12px;">
+              <label>Checkout Photos<input id="eq_checkout_photos" type="file" accept="image/*" multiple /></label>
+              <label>Return / Damage Photos<input id="eq_return_photos" type="file" accept="image/*" multiple /></label>
+            </div>
+            <div class="grid compact" style="margin-top:8px;">
+              <div><strong>Checkout Evidence</strong><div id="eq_checkout_photo_preview" class="photo-preview-grid"></div></div>
+              <div><strong>Return / Damage Evidence</strong><div id="eq_return_photo_preview" class="photo-preview-grid"></div></div>
             </div>
             <div class="grid" style="margin-top:12px;">
               <div class="signature-capture-block">
@@ -216,7 +230,7 @@
             <h3 style="margin-top:0;">Checkout / Return History</h3>
             <div class="table-scroll">
               <table id="eq_history_table">
-                <thead><tr><th>Equipment</th><th>Job</th><th>Out</th><th>Return</th><th>Worker</th><th>Supervisor</th><th>Admin</th><th>Condition</th></tr></thead>
+                <thead><tr><th>Equipment</th><th>Job</th><th>Out</th><th>Return</th><th>Worker</th><th>Supervisor</th><th>Admin</th><th>Condition</th><th>Photos</th><th>Damage</th></tr></thead>
                 <tbody></tbody>
               </table>
             </div>
@@ -307,6 +321,12 @@
         eqAdminSignatureClear: $('#eq_admin_signature_clear'),
         eqCheckoutCondition: $('#eq_checkout_condition'),
         eqReturnCondition: $('#eq_return_condition'),
+        eqDamageReported: $('#eq_damage_reported'),
+        eqDamageNotes: $('#eq_damage_notes'),
+        eqCheckoutPhotos: $('#eq_checkout_photos'),
+        eqReturnPhotos: $('#eq_return_photos'),
+        eqCheckoutPhotoPreview: $('#eq_checkout_photo_preview'),
+        eqReturnPhotoPreview: $('#eq_return_photo_preview'),
         eqNotes: $('#eq_notes'),
         eqSave: $('#eq_save'),
         eqLoad: $('#eq_load'),
@@ -355,7 +375,61 @@
         worker_signature_png: state.signaturePads.worker && !state.signaturePads.worker.isEmpty() ? state.signaturePads.worker.toDataURL('image/png') : null,
         supervisor_signature_png: state.signaturePads.supervisor && !state.signaturePads.supervisor.isEmpty() ? state.signaturePads.supervisor.toDataURL('image/png') : null,
         admin_signature_png: state.signaturePads.admin && !state.signaturePads.admin.isEmpty() ? state.signaturePads.admin.toDataURL('image/png') : null,
+        checkout_photos_json: JSON.stringify(state.checkoutPhotos || []),
+        return_photos_json: JSON.stringify(state.returnPhotos || []),
       };
+    }
+
+    function normalizePhotoList(value) {
+      if (!value) return [];
+      if (Array.isArray(value)) return value.filter(Boolean);
+      if (typeof value === 'string') {
+        try {
+          const parsed = JSON.parse(value);
+          return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+        } catch {
+          return value ? [value] : [];
+        }
+      }
+      return [];
+    }
+
+    function renderPhotoPreviews() {
+      const e = els();
+      const renderInto = (host, items) => {
+        if (!host) return;
+        host.innerHTML = normalizePhotoList(items).map((src) => `<a href="${escHtml(src)}" target="_blank" rel="noopener"><img src="${escHtml(src)}" alt="Evidence photo" class="evidence-thumb" /></a>`).join('') || '<span class="muted">No photos selected.</span>';
+      };
+      renderInto(e.eqCheckoutPhotoPreview, state.checkoutPhotos);
+      renderInto(e.eqReturnPhotoPreview, state.returnPhotos);
+    }
+
+    function filesToDataUrls(fileList) {
+      const files = Array.from(fileList || []).filter((file) => /^image\//i.test(file.type || ''));
+      return Promise.all(files.map((file) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(new Error(`Failed to read image ${file.name}`));
+        reader.readAsDataURL(file);
+      })));
+    }
+
+    async function handleEvidenceFiles(input, bucket) {
+      const files = input?.files;
+      if (!files?.length) return;
+      state[bucket] = await filesToDataUrls(files);
+      renderPhotoPreviews();
+    }
+
+    async function runConnectionDiagnostics(targetEl) {
+      if (!api?.diagnoseConnections) return;
+      try {
+        const diag = await api.diagnoseConnections();
+        const failed = (diag.checks || []).filter((row) => !row.ok);
+        if (failed.length) setNotice(targetEl, failed.map((row) => row.message).join(' '), true);
+      } catch (err) {
+        setNotice(targetEl, err?.message || 'Connection diagnostics failed.', true);
+      }
     }
 
     function setNotice(el, text = '', isError = false) {
@@ -415,7 +489,7 @@
         'eq_serial','eq_asset_tag','eq_manufacturer','eq_model','eq_year','eq_purchase_date','eq_purchase_price','eq_condition',
         'eq_image_url','eq_service_interval_days','eq_last_service_date','eq_next_service_due_date','eq_last_inspection_at',
         'eq_next_inspection_due_date','eq_defect_status','eq_defect_notes','eq_is_locked_out','eq_comments','eq_notes',
-        'eq_worker_signature','eq_supervisor_signature','eq_admin_signature','eq_checkout_condition','eq_return_condition'
+        'eq_worker_signature','eq_supervisor_signature','eq_admin_signature','eq_checkout_condition','eq_return_condition','eq_damage_notes','eq_damage_reported','eq_checkout_photos','eq_return_photos'
       ];
       editableIds.forEach((id) => {
         const el = document.getElementById(id);
@@ -488,11 +562,17 @@
     function clearEquipmentForm() {
       const e = els();
       state.editingEquipmentCode = '';
-      [e.eqCode, e.eqName, e.eqCategory, e.eqStatus, e.eqCurrentJobCode, e.eqAssignedSupervisor, e.eqSerial, e.eqPoolKey, e.eqAssetTag, e.eqManufacturer, e.eqModel, e.eqYear, e.eqPurchaseDate, e.eqPurchasePrice, e.eqCondition, e.eqImageUrl, e.eqComments, e.eqWorkerSignature, e.eqSupervisorSignature, e.eqAdminSignature, e.eqCheckoutCondition, e.eqReturnCondition].forEach((el) => { if (el) el.value = ''; });
+      [e.eqCode, e.eqName, e.eqCategory, e.eqStatus, e.eqCurrentJobCode, e.eqAssignedSupervisor, e.eqSerial, e.eqPoolKey, e.eqAssetTag, e.eqManufacturer, e.eqModel, e.eqYear, e.eqPurchaseDate, e.eqPurchasePrice, e.eqCondition, e.eqImageUrl, e.eqComments, e.eqWorkerSignature, e.eqSupervisorSignature, e.eqAdminSignature, e.eqCheckoutCondition, e.eqReturnCondition, e.eqDamageNotes].forEach((el) => { if (el) el.value = ''; });
       if (e.eqStatus) e.eqStatus.value = 'available';
       if (e.eqCondition) e.eqCondition.value = 'ready';
       if (e.eqHomeSite) e.eqHomeSite.value = '';
+      if (e.eqDamageReported) e.eqDamageReported.checked = false;
       if (e.eqNotes) e.eqNotes.value = '';
+      state.checkoutPhotos = [];
+      state.returnPhotos = [];
+      if (e.eqCheckoutPhotos) e.eqCheckoutPhotos.value = '';
+      if (e.eqReturnPhotos) e.eqReturnPhotos.value = '';
+      renderPhotoPreviews();
       clearSignaturePads();
       setNotice(e.eqSummary, 'Ready for a new equipment entry.');
     }
@@ -583,7 +663,8 @@
         e.eqHistoryBody.innerHTML = '';
         state.signouts.forEach((row) => {
           const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${escHtml(row.equipment_code || row.equipment_item_id || '')}</td><td>${escHtml(row.job_code || row.job_id || '')}</td><td>${escHtml(row.checked_out_at || '')}</td><td>${escHtml(row.returned_at || '')}</td><td>${escHtml(row.checkout_worker_signature_name || row.return_worker_signature_name || '')}</td><td>${escHtml(row.checkout_supervisor_signature_name || row.return_supervisor_signature_name || '')}</td><td>${escHtml(row.checkout_admin_signature_name || row.return_admin_signature_name || '')}</td><td>${escHtml(row.checkout_condition || '')}${row.return_condition ? ` → ${escHtml(row.return_condition)}` : ''}</td>`;
+          const photoCount = Number(row.checkout_photo_count || 0) + Number(row.return_photo_count || 0);
+          tr.innerHTML = `<td>${escHtml(row.equipment_code || row.equipment_item_id || '')}</td><td>${escHtml(row.job_code || row.job_id || '')}</td><td>${escHtml(row.checked_out_at || '')}</td><td>${escHtml(row.returned_at || '')}</td><td>${escHtml(row.checkout_worker_signature_name || row.return_worker_signature_name || '')}</td><td>${escHtml(row.checkout_supervisor_signature_name || row.return_supervisor_signature_name || '')}</td><td>${escHtml(row.checkout_admin_signature_name || row.return_admin_signature_name || '')}</td><td>${escHtml(row.checkout_condition || '')}${row.return_condition ? ` → ${escHtml(row.return_condition)}` : ''}</td><td>${photoCount ? `${photoCount} photo(s)` : '—'}</td><td>${row.damage_reported ? escHtml(row.damage_notes || 'Damage noted') : '—'}</td>`;
           e.eqHistoryBody.appendChild(tr);
         });
       }
@@ -718,7 +799,7 @@
     async function returnEquipment() {
       const e = els();
       try {
-        const resp = await api.manageJobsEntity({ entity: 'equipment', action: 'return', equipment_code: e.eqCode?.value?.trim?.() || '', worker_signature_name: e.eqWorkerSignature?.value?.trim?.() || '', supervisor_signature_name: e.eqSupervisorSignature?.value?.trim?.() || '', admin_signature_name: e.eqAdminSignature?.value?.trim?.() || '', return_condition: e.eqReturnCondition?.value?.trim?.() || '', return_notes: e.eqNotes?.value?.trim?.() || '', ...collectSignaturePayload() });
+        const resp = await api.manageJobsEntity({ entity: 'equipment', action: 'return', equipment_code: e.eqCode?.value?.trim?.() || '', worker_signature_name: e.eqWorkerSignature?.value?.trim?.() || '', supervisor_signature_name: e.eqSupervisorSignature?.value?.trim?.() || '', admin_signature_name: e.eqAdminSignature?.value?.trim?.() || '', return_condition: e.eqReturnCondition?.value?.trim?.() || '', return_notes: e.eqNotes?.value?.trim?.() || '', damage_reported: !!e.eqDamageReported?.checked, damage_notes: e.eqDamageNotes?.value?.trim?.() || '', ...collectSignaturePayload() });
         if (!resp?.ok) throw new Error(resp?.error || 'Return failed');
         setNotice(e.eqSummary, `Equipment ${e.eqCode?.value || ''} returned.`);
         await loadData();

@@ -265,7 +265,11 @@ create table if not exists public.equipment_signouts (
   checkout_condition text,
   return_condition text,
   signout_notes text,
-  return_notes text
+  return_notes text,
+  checkout_photos_json jsonb not null default '[]'::jsonb,
+  return_photos_json jsonb not null default '[]'::jsonb,
+  damage_reported boolean not null default false,
+  damage_notes text
 );
 
 
@@ -398,8 +402,12 @@ select
   s.*,
   e.equipment_code,
   e.equipment_name,
+  e.serial_number,
+  e.asset_tag,
   j.job_code,
-  j.job_name
+  j.job_name,
+  jsonb_array_length(coalesce(s.checkout_photos_json, '[]'::jsonb)) as checkout_photo_count,
+  jsonb_array_length(coalesce(s.return_photos_json, '[]'::jsonb)) as return_photo_count
 from public.equipment_signouts s
 left join public.equipment_items e on e.id = s.equipment_item_id
 left join public.jobs j on j.id = s.job_id;

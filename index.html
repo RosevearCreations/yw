@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="/style.css" />
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/js/app-config.js?v=2026-03-25b"></script>
+  <script src="/js/app-config.js?v=2026-03-25c"></script>
 
   <style>
     #authLoading {
@@ -103,7 +103,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-03-25b');
+          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-03-25c');
           if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
           }
@@ -145,6 +145,8 @@
       <a href="#admin">Admin</a>
     </nav>
   </header>
+
+  <div id="offlineBanner" class="notice" style="display:none;max-width:1100px;margin:14px auto 0;">You are offline or disconnected from the server. Some forms may still open, but sign-in, sync, uploads, and live data actions will not work until the connection returns.</div>
 
   <section id="authLoading" class="container is-visible" aria-live="polite" aria-busy="true">
     <div class="auth-loading-card">

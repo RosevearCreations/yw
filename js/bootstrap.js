@@ -66,7 +66,8 @@
     configError: '',
     supabaseUrl: readConfiguredSupabaseUrl(),
     hasSupabaseKey: false,
-    pendingAuthResolution: false
+    pendingAuthResolution: false,
+    isOffline: typeof navigator !== 'undefined' ? !navigator.onLine : false
   };
 
   function dispatch(name, detail = {}) {
@@ -187,6 +188,27 @@
 
   window.YWI_BOOT = { sb: null, state, init, getState, authHeader, refresh };
 
+  function updateConnectivityState() {
+    state.isOffline = typeof navigator !== 'undefined' ? !navigator.onLine : false;
+    dispatch('ywi:connectivity-changed', { offline: !!state.isOffline, state: getState() });
+  }
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('online', updateConnectivityState);
+    window.addEventListener('offline', updateConnectivityState);
+    window.addEventListener('error', (event) => {
+      const message = event?.error?.message || event?.message || 'Unexpected application error.';
+      console.error('Global error:', message, event?.error || event);
+      dispatch('ywi:app-error', { scope: 'window', message });
+    });
+    window.addEventListener('unhandledrejection', (event) => {
+      const message = event?.reason?.message || String(event?.reason || 'Unhandled promise rejection.');
+      console.error('Unhandled promise rejection:', event?.reason || message);
+      dispatch('ywi:app-error', { scope: 'promise', message });
+    });
+  }
+  updateConnectivityState();
+
   async function finishWithoutClient(message) {
     state.initialized = true;
     state.pendingAuthResolution = false;
@@ -283,7 +305,7 @@
       return finishWithoutClient('App configuration is incomplete. Add the Supabase anon/public key to js/app-config.js or use the emergency login-screen override, then reload the app.');
     }
 
-    const sb = window.supabase.createClient(SUPABASE_URL, anonKey, {
+    const sb = window.supabase.createClient(state.supabaseUrl || readConfiguredSupabaseUrl(), anonKey, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
     });
     window.YWI_SB = sb;

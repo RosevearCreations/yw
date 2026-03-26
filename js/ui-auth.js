@@ -23,6 +23,7 @@
     headerLogoutBtn: document.getElementById('headerLogoutBtn'),
     authNotice: document.getElementById('authNotice'),
     authRestoreWarning: document.getElementById('authRestoreWarning'),
+    offlineBanner: document.getElementById('offlineBanner'),
     authLoading: document.getElementById('authLoading'),
     magicForm: document.getElementById('magicLoginForm'),
     magicEmail: document.getElementById('magicLoginEmail'),
@@ -117,6 +118,12 @@
     els.authRestoreWarning.dataset.kind = isError ? 'error' : 'info';
   }
 
+  function syncOfflineBanner() {
+    if (!els.offlineBanner) return;
+    const offline = typeof navigator !== 'undefined' ? !navigator.onLine : false;
+    els.offlineBanner.style.display = offline ? 'block' : 'none';
+  }
+
   function getCacheOrRestoreMessage(state = {}) {
     const hasController = !!navigator.serviceWorker?.controller;
     if (state.pendingAuthResolution) {
@@ -174,6 +181,7 @@
   }
 
   function render(state = auth.getState?.() || {}) {
+    syncOfflineBanner();
     const isAuthenticated = !!state.isAuthenticated;
     syncHeader(state);
     if (els.whoami) {
@@ -411,6 +419,10 @@
     document.addEventListener('ywi:auth-changed', (e) => render(e.detail?.state || auth.getState?.() || {}));
     document.addEventListener('ywi:boot-ready', (e) => render(e.detail?.state || auth.getState?.() || {}));
   }
+
+  window.addEventListener('online', () => render(auth.getState?.() || {}));
+  window.addEventListener('offline', () => render(auth.getState?.() || {}));
+  document.addEventListener('ywi:connectivity-changed', (event) => render(event.detail?.state || auth.getState?.() || {}));
 
   init();
 })();

@@ -847,3 +847,26 @@ body[data-user-role="admin"] #admin[data-admin-locked="false"] {
 .signature-capture-block { display:block; }
 .signature-canvas { width:100%; max-width:320px; height:120px; border:1px dashed rgba(148,163,184,0.45); border-radius:12px; background:#fff; touch-action:none; }
 
+
+
+.photo-preview-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 40px;
+  margin-top: 6px;
+}
+
+.evidence-thumb {
+  width: 88px;
+  height: 88px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid rgba(148,163,184,0.25);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+}
+
+.muted {
+  opacity: 0.72;
+  font-size: 0.92rem;
+}

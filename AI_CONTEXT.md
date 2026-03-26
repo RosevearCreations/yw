@@ -229,3 +229,15 @@ Most valuable next pass after this:
 - service worker now treats `js/app-config.js` as network-first to reduce stale cached credential/config problems
 - bootstrap/auth errors now direct deployment fixes toward `js/app-config.js` instead of treating manual runtime entry as the normal path
 - no database migration was added in this pass; `sql/000_full_schema_reference.sql` was refreshed as the current reference snapshot
+
+## Pass Update - 2026-03-25 Runtime Config, Offline UX, and Equipment Return Evidence
+
+This pass fixes the remaining frontend runtime-config crash path by removing the last bare `SUPABASE_URL` client creation call and standardizing frontend API routing on the runtime config object. The app now uses `js/app-config.js` as the primary normal-use source, keeps the login-screen anon key entry as emergency fallback only, and surfaces offline/disconnected state in the shell so mobile users know when sign-in, uploads, and sync are unavailable.
+
+Equipment tracking was extended to support post-return evidence handling. Checkout and return now accept multiple evidence photos in the Equipment screen, store counts in history, and track explicit return damage flags and notes alongside captured signatures. The next storage-focused pass can move large image payloads out of row storage into object storage with signed URLs.
+
+Additional quality changes in this pass:
+- clearer offline and connection-aware error handling in frontend fetch helpers
+- runtime connection diagnostics helper for auth/config troubleshooting
+- continued consolidation of duplicate frontend connection settings so Supabase URL handling is no longer split between hardcoded and runtime-only paths
+- schema and view updates for richer equipment signout history
