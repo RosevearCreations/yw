@@ -2,8 +2,9 @@
 -- No schema changes in this pass. This file is refreshed as the current reference snapshot after the runtime-config/app-shell update.
 
 -- Full schema reference snapshot
--- Updated through 2026-03-26 storage-backed equipment evidence, onboarding, and identity-change workflow pass.
+-- Updated through 2026-03-26 confirmation history and autosave reliability pass.
 -- Latest incremental schema migration: 055_storage_onboarding_identity_change_and_bootstrap.sql
+-- No new schema migration was required for this pass; the changes were frontend + function workflow updates on top of migration 055.
 
 -- =========================================================
 -- YWI HSE Full Schema Reference

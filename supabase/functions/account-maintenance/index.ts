@@ -254,6 +254,17 @@ serve(async (req) => {
     return Response.json({ ok: true, record: data, message: 'Onboarding completed.' }, { headers: corsHeaders });
   }
 
+  if (action === 'list_identity_change_requests') {
+    const { data, error } = await supabase
+      .from('account_identity_change_requests')
+      .select('*')
+      .eq('profile_id', actorId)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    if (error) return Response.json({ ok: false, error: String(error.message || error) }, { status: 500, headers: corsHeaders });
+    return Response.json({ ok: true, records: data || [] }, { headers: corsHeaders });
+  }
+
   if (action === 'request_identity_change') {
     const requestedUsername = normalizeUsername(String(body.requested_username || '').trim());
     const requestedEmail = String(body.requested_email || '').trim().toLowerCase();

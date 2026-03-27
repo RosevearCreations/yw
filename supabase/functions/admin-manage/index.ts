@@ -208,6 +208,32 @@ serve(async (req) => {
             await supabase.from('profiles').update({ pending_email: null, pending_username: null, updated_at: now }).eq('id', requestRow.profile_id);
           }
           await supabase.from('account_identity_change_requests').update({ request_status: action === 'approve' ? 'approved' : 'rejected', reviewed_by_profile_id: actorId, reviewed_at: now, notes: body.decision_notes ?? null }).eq('id', requestId);
+          await supabase.from('admin_notifications').insert({
+            notification_type: action === 'approve' ? 'account_identity_change_approved' : 'account_identity_change_rejected',
+            recipient_role: 'worker',
+            target_table: 'account_identity_change_requests',
+            target_id: String(requestId),
+            target_profile_id: requestRow.profile_id,
+            title: action === 'approve' ? 'Your account identity change was approved' : 'Your account identity change was rejected',
+            body: JSON.stringify({
+              request_id: requestId,
+              request_status: action === 'approve' ? 'approved' : 'rejected',
+              requested_username: requestRow.requested_username || null,
+              requested_email: requestRow.requested_email || null,
+              notes: body.decision_notes ?? null,
+            }),
+            payload: {
+              request_id: requestId,
+              profile_id: requestRow.profile_id,
+              request_status: action === 'approve' ? 'approved' : 'rejected',
+              requested_username: requestRow.requested_username || null,
+              requested_email: requestRow.requested_email || null,
+              notes: body.decision_notes ?? null,
+            },
+            status: 'queued',
+            email_subject: action === 'approve' ? 'YWI HSE identity change approved' : 'YWI HSE identity change rejected',
+            created_by_profile_id: actorId,
+          });
         }
       }
       return Response.json({ ok:true, record: updated }, { headers:corsHeaders });

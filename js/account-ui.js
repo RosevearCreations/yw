@@ -2,7 +2,7 @@
    Brief description: In-app account security and onboarding module.
    Renders onboarding + Settings panels, supports account setup after magic-link validation,
    password setup/change/reset, contact/address updates, autosave drafts, phone verification,
-   and username/email change request workflows.
+   and username/email change request workflows with confirmation history.
 */
 
 'use strict';
@@ -100,6 +100,24 @@
           <button id="account_logout_all" class="secondary" type="button">Log Out Everywhere</button>
         </div>
         <div id="account_summary" class="notice" style="display:none;margin-top:14px;"></div>
+        <div class="admin-panel-block" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
+              <h3 style="margin:0;">Identity Change History</h3>
+              <p class="section-subtitle">Track pending, approved, or rejected username and email change requests.</p>
+            </div>
+            <div class="admin-heading-actions">
+              <button id="account_reload_identity_requests" class="secondary" type="button">Reload</button>
+            </div>
+          </div>
+          <div id="account_identity_requests_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
+          <div class="table-scroll">
+            <table id="account_identity_requests_table">
+              <thead><tr><th>Requested</th><th>Username</th><th>Email</th><th>Status</th><th>Reviewed</th><th>Notes</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
       </div>
       <div id="accountSignedOutNotice" class="notice" style="display:none;margin-top:14px;">Sign in to manage your account, password, and recovery settings.</div>
     `;
@@ -145,7 +163,10 @@
     logoutThisBtn: document.getElementById('account_logout_this'),
     summary: document.getElementById('account_summary'),
     hint: document.getElementById('account_password_hint'),
-    signedOutNotice: document.getElementById('accountSignedOutNotice')
+    signedOutNotice: document.getElementById('accountSignedOutNotice'),
+    reloadIdentityRequestsBtn: document.getElementById('account_reload_identity_requests'),
+    identityRequestsSummary: document.getElementById('account_identity_requests_summary'),
+    identityRequestsBody: document.querySelector('#account_identity_requests_table tbody')
   };
 
   function setNotice(el, text = '', isError = false) {
@@ -159,6 +180,44 @@
     el.style.display = 'block';
     el.textContent = text;
     el.dataset.kind = isError ? 'error' : 'info';
+  }
+
+
+  function escHtml(value) {
+    return String(value ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+
+  function setTableSummary(text = '', isError = false) {
+    setNotice(els.identityRequestsSummary, text, isError);
+  }
+
+  async function loadIdentityChangeRequests() {
+    if (!els.identityRequestsBody) return;
+    try {
+      setTableSummary('Loading request history...');
+      const resp = await api.accountRecoveryAction({ action: 'list_identity_change_requests' });
+      if (!resp?.ok) throw new Error(resp?.error || 'Unable to load identity change history.');
+      const rows = Array.isArray(resp.records) ? resp.records : [];
+      els.identityRequestsBody.innerHTML = rows.map((row) => `
+        <tr>
+          <td>${escHtml(row.created_at || '')}</td>
+          <td>${escHtml(row.requested_username || '—')}</td>
+          <td>${escHtml(row.requested_email || '—')}</td>
+          <td>${escHtml(row.request_status || 'pending')}</td>
+          <td>${escHtml(row.reviewed_at || '—')}</td>
+          <td>${escHtml(row.notes || '—')}</td>
+        </tr>
+      `).join('') || '<tr><td colspan="6" class="muted">No identity change requests yet.</td></tr>';
+      setTableSummary(rows.length ? `Loaded ${rows.length} identity change request(s).` : 'No identity change requests yet.');
+    } catch (err) {
+      els.identityRequestsBody.innerHTML = '<tr><td colspan="6" class="muted">Unable to load request history.</td></tr>';
+      setTableSummary(err?.message || 'Unable to load identity change request history.', true);
+    }
   }
 
   function setBusy(button, busyText) {
@@ -248,7 +307,10 @@
     if (els.panel) els.panel.hidden = !isAuthenticated;
     if (els.signedOutNotice) els.signedOutNotice.style.display = isAuthenticated ? 'none' : 'block';
     if (els.onboarding) els.onboarding.hidden = !needsOnboarding;
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      if (els.identityRequestsBody) els.identityRequestsBody.innerHTML = '<tr><td colspan="6" class="muted">Sign in to review identity change history.</td></tr>';
+      return;
+    }
 
     if (els.email) els.email.value = current.profile?.email || current.user?.email || '';
     if (els.role) els.role.value = access.roleLabel || role;
@@ -267,6 +329,7 @@
     }
     setNotice(els.setupNotice, needsOnboarding ? 'First-run onboarding is still required. Complete your profile, choose a username, save a password, then mark onboarding complete.' : '');
     setNotice(els.onboardingNotice, needsOnboarding ? 'New users should finish onboarding before continuing into the rest of the app.' : '');
+    loadIdentityChangeRequests();
   }
 
   async function saveProfile() {
@@ -278,6 +341,7 @@
       clearDraft();
       setNotice(els.summary, 'Contact details saved.', false);
       await auth.refresh();
+      await loadIdentityChangeRequests();
     } catch (err) {
       setNotice(els.summary, err?.message || 'Unable to save contact details.', true);
     } finally {
@@ -343,6 +407,7 @@
       if (!resp?.ok) throw new Error(resp?.error || 'Unable to request identity change.');
       setNotice(els.summary, resp?.message || 'Identity change request sent.', false);
       await auth.refresh();
+      await loadIdentityChangeRequests();
     } catch (err) {
       setNotice(els.summary, err?.message || 'Unable to request identity change.', true);
     } finally {
@@ -446,6 +511,7 @@
     if (els.logoutThisBtn) els.logoutThisBtn.addEventListener('click', logoutThisDevice);
     if (els.onboardingOpenSettings) els.onboardingOpenSettings.addEventListener('click', () => window.YWIRouter?.showSection?.('settings', { skipFocus: true }));
     if (els.onboardingCompleteBtn) els.onboardingCompleteBtn.addEventListener('click', completeOnboarding);
+    if (els.reloadIdentityRequestsBtn) els.reloadIdentityRequestsBtn.addEventListener('click', loadIdentityChangeRequests);
   }
 
   bind();

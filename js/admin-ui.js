@@ -36,7 +36,7 @@
     };
 
 
-    const DRAFT_KEY = 'ywi_admin_email_preview_draft_v1';
+    const DRAFT_KEY = 'ywi_admin_workspace_draft_v1';
     function loadDraft() {
       try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}'); } catch { return {}; }
     }
@@ -47,7 +47,9 @@
           notification_id: e.emailNotificationId?.value || '',
           email_to: e.emailTo?.value || '',
           email_subject: e.emailSubject?.value || '',
-          email_body: e.emailBody?.value || ''
+          email_body: e.emailBody?.value || '',
+          queue_search: e.search?.value || '',
+          queue_status: e.filterStatus?.value || ''
         }));
       } catch {}
     }
@@ -58,6 +60,8 @@
       if (e.emailTo && !e.emailTo.value) e.emailTo.value = draft.email_to || '';
       if (e.emailSubject && !e.emailSubject.value) e.emailSubject.value = draft.email_subject || '';
       if (e.emailBody && !e.emailBody.value) e.emailBody.value = draft.email_body || '';
+      if (e.search && !e.search.value) e.search.value = draft.queue_search || '';
+      if (e.filterStatus && !e.filterStatus.value) e.filterStatus.value = draft.queue_status || '';
     }
 
     function ensureLayout() {

@@ -352,3 +352,17 @@ Additional quality changes in this pass:
 ## 2026-03-26 login/bootstrap stability pass
 
 This pass focused on the app-shell and auth startup problems that were leaving users stuck on **Checking sign-in status...** or showing half-loaded worker screens. The frontend now defers protected module loading until an authenticated session exists, restores missing Jobs draft constants, aligns local asset cache-busting to one release tag, adds packaged icons/favicons to stop manifest 404s, and adds a bootstrap timeout so the login form can recover if email-link session restoration hangs. No new schema migration was added in this pass; `sql/000_full_schema_reference.sql` remains the current reference snapshot.
+
+
+## 2026-03-26 confirmation history and autosave reliability pass
+- Kept Supabase Storage + `equipment_evidence_assets` as the primary evidence path for equipment photos/signatures; no new inline JSON/base64 evidence storage was introduced in this pass.
+- Added self-service identity-change history loading in Settings so users can see pending, approved, and rejected username/email requests without waiting on admin replies.
+- Added user-facing confirmation notifications when admins approve or reject identity-change requests.
+- Expanded autosave/recovery coverage into the self-profile screen and the admin queue workspace (filters plus email preview fields).
+- Refreshed the app documentation to reflect that no new SQL migration was required beyond `055_storage_onboarding_identity_change_and_bootstrap.sql` for this pass.
+
+### Best next steps
+1. Add a dedicated user inbox/activity panel that surfaces admin notifications and approval results without requiring the Settings screen.
+2. Move profile-form autosave drafts into a shared outbox/replay queue for true offline-first syncing.
+3. Add admin-side approval controls that can trigger real Auth email-change workflows after request approval.
+4. Add thumbnail galleries and delete/replace actions for Storage-backed equipment evidence assets.

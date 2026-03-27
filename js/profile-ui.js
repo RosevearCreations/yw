@@ -72,7 +72,66 @@
       crewTableBody: $('#crew_table tbody')
     };
 
+    const PROFILE_DRAFT_KEY = 'ywi_profile_self_draft_v1';
     const state = { selfProfile: null, crewRows: [] };
+
+
+    function loadDraft() {
+      try { return JSON.parse(localStorage.getItem(PROFILE_DRAFT_KEY) || '{}'); } catch { return {}; }
+    }
+
+    function saveDraft() {
+      try {
+        localStorage.setItem(PROFILE_DRAFT_KEY, JSON.stringify({
+          full_name: els.meName?.value || '',
+          phone: els.mePhone?.value || '',
+          address_line1: els.meAddress1?.value || '',
+          address_line2: els.meAddress2?.value || '',
+          city: els.meCity?.value || '',
+          province: els.meProvince?.value || '',
+          postal_code: els.mePostal?.value || '',
+          vehicle_make_model: els.meVehicle?.value || '',
+          vehicle_plate: els.mePlate?.value || '',
+          current_position: els.mePosition?.value || '',
+          trade_specialty: els.meTrade?.value || '',
+          start_date: els.meStartDate?.value || '',
+          strengths: els.meStrengths?.value || '',
+          employee_number: els.meEmployeeNumber?.value || '',
+          feature_preferences: els.mePrefs?.value || '',
+          emergency_contact_name: els.meEmergencyName?.value || '',
+          emergency_contact_phone: els.meEmergencyPhone?.value || ''
+        }));
+      } catch {}
+    }
+
+    function clearDraft() {
+      try { localStorage.removeItem(PROFILE_DRAFT_KEY); } catch {}
+    }
+
+    function restoreDraft() {
+      const draft = loadDraft();
+      if (!draft || !Object.keys(draft).length) return false;
+      const assign = (el, value) => { if (el && !el.value) el.value = value || ''; };
+      assign(els.meName, draft.full_name);
+      assign(els.mePhone, draft.phone);
+      assign(els.meAddress1, draft.address_line1);
+      assign(els.meAddress2, draft.address_line2);
+      assign(els.meCity, draft.city);
+      assign(els.meProvince, draft.province);
+      assign(els.mePostal, draft.postal_code);
+      assign(els.meVehicle, draft.vehicle_make_model);
+      assign(els.mePlate, draft.vehicle_plate);
+      assign(els.mePosition, draft.current_position);
+      assign(els.meTrade, draft.trade_specialty);
+      assign(els.meStartDate, draft.start_date);
+      assign(els.meStrengths, draft.strengths);
+      assign(els.meEmployeeNumber, draft.employee_number);
+      assign(els.mePrefs, draft.feature_preferences);
+      assign(els.meEmergencyName, draft.emergency_contact_name);
+      assign(els.meEmergencyPhone, draft.emergency_contact_phone);
+      setNotice(els.meSummary, 'Recovered unsaved profile draft from this device.');
+      return true;
+    }
 
     function setNotice(el, text) {
       if (!el) return;
@@ -154,6 +213,7 @@
         const resp = await api.fetchProfileScope('self');
         const profile = resp?.profile || resp?.profiles?.[0] || null;
         renderSelf(profile);
+        restoreDraft();
         setNotice(els.meSummary, profile ? '' : 'No profile record was returned.');
       } catch (err) {
         console.error(err);
@@ -184,6 +244,7 @@
           emergency_contact_phone: els.meEmergencyPhone?.value?.trim?.() || null
         });
         if (!resp?.ok) throw new Error(resp?.error || 'Profile save failed');
+        clearDraft();
         setNotice(els.meSummary, 'Your profile was saved.');
         await loadSelfProfile();
       } catch (err) {
