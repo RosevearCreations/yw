@@ -137,7 +137,7 @@ function seedAllTables() {
 }
 
 function initAdminModule() {
-  if (modules.adminUI || !window.YWIAdminUI?.create || !api()) return;
+  if (!hasAuthenticatedSession() || modules.adminUI || !window.YWIAdminUI?.create || !api()) return;
   modules.adminUI = window.YWIAdminUI.create({
     loadAdminDirectory: api().loadAdminDirectory,
     loadAdminSelectors: api().loadAdminSelectors,
@@ -151,8 +151,22 @@ function initAdminModule() {
   modules.adminUI.init().catch((err) => console.error('Admin UI init failed', err));
 }
 
+function hasAuthenticatedSession() {
+  return !!(auth()?.getState?.()?.isAuthenticated || appState.isAuthenticated);
+}
+
+function initProtectedModules() {
+  if (!hasAuthenticatedSession()) return;
+  initAdminModule();
+  initLogbookModule();
+  initProfileModule();
+  initReferenceDataModule();
+  initJobsModule();
+  initAdminActions();
+}
+
 function initProfileModule() {
-  if (modules.profileUI || !window.YWIProfileUI?.create || !api()) return;
+  if (!hasAuthenticatedSession() || modules.profileUI || !window.YWIProfileUI?.create || !api()) return;
 
   modules.profileUI = window.YWIProfileUI.create({
     api: api(),
@@ -168,7 +182,7 @@ function initProfileModule() {
 
 
 function initReferenceDataModule() {
-  if (modules.referenceDataUI || !window.YWIReferenceData?.create || !api()) return;
+  if (!hasAuthenticatedSession() || modules.referenceDataUI || !window.YWIReferenceData?.create || !api()) return;
   modules.referenceDataUI = window.YWIReferenceData.create({
     api: api(),
     getCurrentRole: () => appState.currentRole
@@ -178,7 +192,7 @@ function initReferenceDataModule() {
 
 
 function initJobsModule() {
-  if (modules.jobsUI || !jobsUIFactory()?.create || !api()) return;
+  if (!hasAuthenticatedSession() || modules.jobsUI || !jobsUIFactory()?.create || !api()) return;
   modules.jobsUI = jobsUIFactory().create({
     api: api(),
     getCurrentRole: () => appState.currentRole,
@@ -188,7 +202,7 @@ function initJobsModule() {
 }
 
 function initLogbookModule() {
-  if (modules.logbookUI || !window.YWILogbookUI?.create || !api()) return;
+  if (!hasAuthenticatedSession() || modules.logbookUI || !window.YWILogbookUI?.create || !api()) return;
   modules.logbookUI = window.YWILogbookUI.create({
     fetchLogData: api().fetchLogData,
     fetchSubmissionDetail: api().fetchSubmissionDetail,
@@ -225,7 +239,7 @@ function initFormModules() {
 }
 
 function initAdminActions() {
-  if (modules.adminActions || !window.YWIAdminActions?.create || !api()) return;
+  if (!hasAuthenticatedSession() || modules.adminActions || !window.YWIAdminActions?.create || !api()) return;
   modules.adminActions = window.YWIAdminActions.create({
     api: api(),
     getCurrentRole: () => appState.currentRole,
@@ -244,12 +258,7 @@ async function initializeAppShell() {
   outbox()?.bindRetryButtons?.({ isAuthenticated: () => appState.isAuthenticated, sendToFunction: api()?.sendToFunction, uploadImagesForSubmission: api()?.uploadImagesForSubmission });
   setManageSummary('');
   initFormModules();
-  initAdminModule();
-  initLogbookModule();
-  initProfileModule();
-  initReferenceDataModule();
-  initJobsModule();
-  initAdminActions();
+  initProtectedModules();
   seedAllTables();
   const currentAuthState = auth()?.getState?.();
   if (currentAuthState) syncAuthStateFromBoot({ state: currentAuthState });
@@ -267,6 +276,7 @@ document.addEventListener('ywi:boot-ready', async (e) => {
 
 document.addEventListener('ywi:auth-changed', async (e) => {
   syncAuthStateFromBoot(e.detail || {});
+  if (appState.isAuthenticated) initProtectedModules();
   if (modules.adminUI?.refreshSelectors) await modules.adminUI.refreshSelectors();
   if (location.hash === '#admin' && appState.isAuthenticated && modules.adminUI?.loadDirectory) {
     try { await modules.adminUI.loadDirectory(); } catch (err) { console.error('Admin auth refresh failed', err); }

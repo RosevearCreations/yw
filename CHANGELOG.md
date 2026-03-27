@@ -248,3 +248,11 @@ Additional quality changes in this pass:
 3. Add retry queue / outbox support for failed equipment evidence uploads while offline.
 4. Extend autosave coverage into more admin CRUD forms if broader directory management becomes the next focus.
 
+
+
+## 2026-03-26
+- Fixed stuck auth restore state by adding a bootstrap timeout and cleaner fallback to the visible login form.
+- Deferred protected modules until authenticated to stop startup 401s against reference-data, profile, jobs, and admin endpoints.
+- Restored missing `JOB_DRAFT_KEY` / `EQUIPMENT_DRAFT_KEY` constants that were crashing Jobs UI startup.
+- Unified app-shell version tags and added packaged icons/favicon to reduce stale mixed-cache releases.
+- No new SQL migration in this pass; schema reference snapshot remains current.

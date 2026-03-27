@@ -5,13 +5,16 @@
 
 'use strict';
 
-const CACHE_NAME = 'ywi-hse-shell-v11';
+const CACHE_NAME = 'ywi-hse-shell-v12';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/style.css',
   '/app.js',
   '/manifest.json',
+  '/favicon.ico',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
   '/js/router.js',
   '/js/app-config.js',
   '/js/api.js',

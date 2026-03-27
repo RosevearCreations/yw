@@ -7,6 +7,9 @@
 'use strict';
 
 (function () {
+  const JOB_DRAFT_KEY = 'ywi_job_draft_v1';
+  const EQUIPMENT_DRAFT_KEY = 'ywi_equipment_draft_v1';
+
   function $(sel, root = document) { return root.querySelector(sel); }
   function escHtml(value) {
     return String(value ?? '')

@@ -9,6 +9,7 @@
 
 (function () {
   const DEFAULT_SUPABASE_URL = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
+  const AUTH_RESOLUTION_TIMEOUT_MS = 12000;
 
   function getRuntimeConfig() {
     return window.YWI_RUNTIME_CONFIG || window.__YWI_RUNTIME_CONFIG || {};
@@ -187,6 +188,27 @@
     return data?.session || null;
   }
 
+  let authResolutionTimer = null;
+
+  function clearAuthResolutionTimer() {
+    if (authResolutionTimer) {
+      clearTimeout(authResolutionTimer);
+      authResolutionTimer = null;
+    }
+  }
+
+  function startAuthResolutionTimer() {
+    clearAuthResolutionTimer();
+    authResolutionTimer = setTimeout(() => {
+      if (!state.pendingAuthResolution) return;
+      console.warn('Auth restore timed out. Falling back to the regular sign-in screen.');
+      state.pendingAuthResolution = false;
+      state.authError = state.authError || 'Session restore took too long. You can sign in again below.';
+      state.initialized = true;
+      dispatch('ywi:boot-ready', { state: getState(), timedOut: true });
+    }, AUTH_RESOLUTION_TIMEOUT_MS);
+  }
+
   window.YWI_BOOT = { sb: null, state, init, getState, authHeader, refresh };
 
   function updateConnectivityState() {
@@ -211,6 +233,7 @@
   updateConnectivityState();
 
   async function finishWithoutClient(message) {
+    clearAuthResolutionTimer();
     state.initialized = true;
     state.pendingAuthResolution = false;
     state.authError = message || state.authError || '';
@@ -297,6 +320,7 @@
   async function init() {
     if (state.initialized) return;
     state.pendingAuthResolution = true;
+    startAuthResolutionTimer();
     const anonKey = readStoredAnonKey();
     state.hasSupabaseKey = !!anonKey;
 
@@ -320,6 +344,7 @@
       await applySession(session || null, '', nextFlow, sb);
       dispatch('ywi:auth-changed', { state: getState() });
     });
+    clearAuthResolutionTimer();
     state.pendingAuthResolution = false;
     state.initialized = true;
     dispatch('ywi:boot-ready', { state: getState() });
@@ -329,6 +354,8 @@
     console.error('Bootstrap init failed:', err);
     state.authError = err?.message || 'Bootstrap failed.';
     state.configError = state.authError;
+    clearAuthResolutionTimer();
+    clearAuthResolutionTimer();
     state.pendingAuthResolution = false;
     state.initialized = true;
     dispatch('ywi:boot-ready', { state: getState() });

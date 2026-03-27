@@ -288,3 +288,8 @@ Additional quality changes in this pass:
 3. Add retry queue / outbox support for failed equipment evidence uploads while offline.
 4. Extend autosave coverage into more admin CRUD forms if broader directory management becomes the next focus.
 
+
+
+## 2026-03-26 login/bootstrap stability pass
+
+This pass focused on the app-shell and auth startup problems that were leaving users stuck on **Checking sign-in status...** or showing half-loaded worker screens. The frontend now defers protected module loading until an authenticated session exists, restores missing Jobs draft constants, aligns local asset cache-busting to one release tag, adds packaged icons/favicons to stop manifest 404s, and adds a bootstrap timeout so the login form can recover if email-link session restoration hangs. No new schema migration was added in this pass; `sql/000_full_schema_reference.sql` remains the current reference snapshot.
