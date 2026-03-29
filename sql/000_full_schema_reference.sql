@@ -1,18 +1,10 @@
--- 2026-03-25 runtime config pass
--- No schema changes in this pass. This file is refreshed as the current reference snapshot after the runtime-config/app-shell update.
+-- 2026-03-29 diagnostics and identity-sync pass
+-- No schema changes in this pass. This file is refreshed as the current reference snapshot after the diagnostics/auth-sync update.
 
 -- Full schema reference snapshot
--- Updated through 2026-03-26 confirmation history and autosave reliability pass.
+-- Updated through 2026-03-29 diagnostics and identity-sync pass.
 -- Latest incremental schema migration: 055_storage_onboarding_identity_change_and_bootstrap.sql
 -- No new schema migration was required for this pass; the changes were frontend + function workflow updates on top of migration 055.
-
--- =========================================================
--- YWI HSE Full Schema Reference
--- Purpose:
--- - Up-to-date schema reference for the current app direction
--- - Includes user hierarchy, validation workflow, jobs, equipment, reservations, signouts,
---   notifications, reference data, and helper views expected by the frontend/backend
--- =========================================================
 
 create extension if not exists pgcrypto;
 

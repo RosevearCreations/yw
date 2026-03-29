@@ -36,6 +36,12 @@ const modules = {
   jobsUI: null
 };
 
+const diagnostics = {
+  items: [],
+  maxItems: 12,
+  bound: false
+};
+
 function todayISO() {
   const d = new Date();
   const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -56,6 +62,87 @@ function setNotice(el, text) {
 
 function setManageSummary(text) {
   setNotice(amSummary, text);
+}
+
+function ensureDiagnosticsPanel() {
+  let panel = document.getElementById('diagnosticsBanner');
+  if (panel) return panel;
+  const offlineBanner = document.getElementById('offlineBanner');
+  panel = document.createElement('section');
+  panel.id = 'diagnosticsBanner';
+  panel.className = 'notice';
+  panel.style.display = 'none';
+  panel.style.maxWidth = '1100px';
+  panel.style.margin = '14px auto 0';
+  panel.innerHTML = `
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+      <div>
+        <strong>Diagnostics</strong>
+        <div id="diagnosticsSummary" style="margin-top:6px;">Recent startup and sync issues will appear here.</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button id="diagnosticsRetryBtn" class="secondary" type="button">Retry protected screens</button>
+        <button id="diagnosticsDismissBtn" class="secondary" type="button">Dismiss</button>
+      </div>
+    </div>
+    <ul id="diagnosticsList" style="margin:10px 0 0 18px;padding:0;"></ul>
+  `;
+  if (offlineBanner?.parentNode) {
+    offlineBanner.parentNode.insertBefore(panel, offlineBanner.nextSibling);
+  } else {
+    document.body.insertBefore(panel, document.body.firstChild);
+  }
+  panel.querySelector('#diagnosticsDismissBtn')?.addEventListener('click', () => {
+    panel.style.display = 'none';
+  });
+  panel.querySelector('#diagnosticsRetryBtn')?.addEventListener('click', () => {
+    panel.style.display = 'none';
+    initProtectedModules();
+    modules.adminUI?.loadDirectory?.();
+    modules.profileUI?.load?.();
+    modules.jobsUI?.load?.();
+  });
+  return panel;
+}
+
+function renderDiagnostics() {
+  const panel = ensureDiagnosticsPanel();
+  const list = panel.querySelector('#diagnosticsList');
+  const summary = panel.querySelector('#diagnosticsSummary');
+  if (!diagnostics.items.length) {
+    panel.style.display = 'none';
+    if (list) list.innerHTML = '';
+    if (summary) summary.textContent = 'Recent startup and sync issues will appear here.';
+    return;
+  }
+  panel.style.display = 'block';
+  if (summary) summary.textContent = `${diagnostics.items.length} recent issue(s) captured. You can retry the protected screens after sign-in.`;
+  if (list) {
+    list.innerHTML = diagnostics.items.map((item) => `<li><strong>${item.scope}</strong>: ${item.message}</li>`).join('');
+  }
+}
+
+function pushDiagnostic(scope, message) {
+  const cleanScope = String(scope || 'app');
+  const cleanMessage = String(message || 'Unexpected application issue.');
+  diagnostics.items = diagnostics.items.filter((item) => !(item.scope === cleanScope && item.message === cleanMessage));
+  diagnostics.items.unshift({ scope: cleanScope, message: cleanMessage, at: new Date().toISOString() });
+  diagnostics.items = diagnostics.items.slice(0, diagnostics.maxItems);
+  renderDiagnostics();
+}
+
+function clearDiagnosticsMatching(scopePrefix) {
+  if (!scopePrefix) return;
+  diagnostics.items = diagnostics.items.filter((item) => !String(item.scope || '').startsWith(scopePrefix));
+  renderDiagnostics();
+}
+
+function bindDiagnosticsEvents() {
+  if (diagnostics.bound) return;
+  diagnostics.bound = true;
+  window.addEventListener('ywi:app-error', (event) => {
+    pushDiagnostic(event?.detail?.scope || 'app', event?.detail?.message || 'Unexpected application issue.');
+  });
 }
 
 function auth() { return window.YWI_AUTH || null; }
@@ -118,6 +205,10 @@ function syncAuthStateFromBoot(detail = {}) {
   }
 
   applyRoleVisibility();
+  if (appState.isAuthenticated) {
+    clearDiagnosticsMatching('auth');
+    clearDiagnosticsMatching('bootstrap');
+  }
   router()?.init?.();
 }
 
@@ -148,7 +239,7 @@ function initAdminModule() {
     onSiteLoaded: () => {},
     onAssignmentLoaded: () => {}
   });
-  modules.adminUI.init().catch((err) => console.error('Admin UI init failed', err));
+  modules.adminUI.init().catch((err) => { console.error('Admin UI init failed', err); pushDiagnostic('admin-ui', err?.message || 'Admin UI failed to initialize.'); });
 }
 
 function hasAuthenticatedSession() {
@@ -177,6 +268,7 @@ function initProfileModule() {
 
   modules.profileUI.init().catch((err) => {
     console.error('Profile UI init failed', err);
+    pushDiagnostic('profile-ui', err?.message || 'Profile screen failed to initialize.');
   });
 }
 
@@ -187,7 +279,7 @@ function initReferenceDataModule() {
     api: api(),
     getCurrentRole: () => appState.currentRole
   });
-  modules.referenceDataUI.init();
+  modules.referenceDataUI.init().catch?.((err) => { console.error('Reference data init failed', err); pushDiagnostic('reference-data', err?.message || 'Reference data failed to initialize.'); });
 }
 
 
@@ -198,7 +290,7 @@ function initJobsModule() {
     getCurrentRole: () => appState.currentRole,
     getAccessProfile
   });
-  modules.jobsUI.init().catch((err) => console.error('Jobs UI init failed', err));
+  modules.jobsUI.init().catch((err) => { console.error('Jobs UI init failed', err); pushDiagnostic('jobs-ui', err?.message || 'Jobs or Equipment screens failed to initialize.'); });
 }
 
 function initLogbookModule() {
@@ -211,30 +303,30 @@ function initLogbookModule() {
     getCurrentRole: () => appState.currentRole,
     getAccessProfile
   });
-  modules.logbookUI.init().catch((err) => console.error('Logbook UI init failed', err));
+  modules.logbookUI.init().catch((err) => { console.error('Logbook UI init failed', err); pushDiagnostic('logbook-ui', err?.message || 'Logbook failed to initialize.'); });
 }
 
 function initFormModules() {
   if (!api() || !outbox()) return;
   if (!modules.toolboxFormUI && window.YWIFormsToolbox?.create) {
     modules.toolboxFormUI = window.YWIFormsToolbox.create({ sendToFunction: api().sendToFunction, uploadImagesForSubmission: api().uploadImagesForSubmission, getOutbox: outbox().getItems, setOutbox: outbox().setItems });
-    modules.toolboxFormUI.init().catch((err) => console.error('Toolbox form init failed', err));
+    modules.toolboxFormUI.init().catch((err) => { console.error('Toolbox form init failed', err); pushDiagnostic('toolbox-form', err?.message || 'Toolbox Talk failed to initialize.'); });
   }
   if (!modules.ppeFormUI && window.YWIFormsPPE?.create) {
     modules.ppeFormUI = window.YWIFormsPPE.create({ sendToFunction: api().sendToFunction, getOutbox: outbox().getItems, setOutbox: outbox().setItems });
-    modules.ppeFormUI.init().catch((err) => console.error('PPE form init failed', err));
+    modules.ppeFormUI.init().catch((err) => { console.error('PPE form init failed', err); pushDiagnostic('ppe-form', err?.message || 'PPE Check failed to initialize.'); });
   }
   if (!modules.firstAidFormUI && window.YWIFormsFirstAid?.create) {
     modules.firstAidFormUI = window.YWIFormsFirstAid.create({ sendToFunction: api().sendToFunction, getOutbox: outbox().getItems, setOutbox: outbox().setItems });
-    modules.firstAidFormUI.init().catch((err) => console.error('First Aid form init failed', err));
+    modules.firstAidFormUI.init().catch((err) => { console.error('First Aid form init failed', err); pushDiagnostic('first-aid-form', err?.message || 'First Aid form failed to initialize.'); });
   }
   if (!modules.inspectionFormUI && window.YWIFormsInspection?.create) {
     modules.inspectionFormUI = window.YWIFormsInspection.create({ sendToFunction: api().sendToFunction, uploadImagesForSubmission: api().uploadImagesForSubmission, getOutbox: outbox().getItems, setOutbox: outbox().setItems });
-    modules.inspectionFormUI.init().catch((err) => console.error('Inspection form init failed', err));
+    modules.inspectionFormUI.init().catch((err) => { console.error('Inspection form init failed', err); pushDiagnostic('inspection-form', err?.message || 'Site Inspection failed to initialize.'); });
   }
   if (!modules.drillFormUI && window.YWIFormsDrill?.create) {
     modules.drillFormUI = window.YWIFormsDrill.create({ sendToFunction: api().sendToFunction, uploadImagesForSubmission: api().uploadImagesForSubmission, getOutbox: outbox().getItems, setOutbox: outbox().setItems });
-    modules.drillFormUI.init().catch((err) => console.error('Drill form init failed', err));
+    modules.drillFormUI.init().catch((err) => { console.error('Drill form init failed', err); pushDiagnostic('drill-form', err?.message || 'Emergency Drill failed to initialize.'); });
   }
 }
 
@@ -254,6 +346,8 @@ function initAdminActions() {
 }
 
 async function initializeAppShell() {
+  bindDiagnosticsEvents();
+  ensureDiagnosticsPanel();
   applyDateFallback();
   outbox()?.bindRetryButtons?.({ isAuthenticated: () => appState.isAuthenticated, sendToFunction: api()?.sendToFunction, uploadImagesForSubmission: api()?.uploadImagesForSubmission });
   setManageSummary('');

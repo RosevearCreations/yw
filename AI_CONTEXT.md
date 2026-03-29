@@ -274,3 +274,11 @@ This pass focused on the app-shell and auth startup problems that were leaving u
 2. Move profile-form autosave drafts into a shared outbox/replay queue for true offline-first syncing.
 3. Add admin-side approval controls that can trigger real Auth email-change workflows after request approval.
 4. Add thumbnail galleries and delete/replace actions for Storage-backed equipment evidence assets.
+
+## 2026-03-29 diagnostics and identity-sync pass
+- Added a visible diagnostics banner so startup/auth/module failures are surfaced in the app instead of only in DevTools.
+- Added protected-screen retry controls from the diagnostics banner after auth/bootstrap failures.
+- Wired admin approval of `account_identity_change_requests` to also sync the Auth user record (email and username metadata) before the profile change is finalized.
+- Removed a duplicated Deploy Smoke Check block from the Admin screen and refreshed the docs/schema snapshot notes.
+- No new SQL migration was required for this pass; schema remains current through `055_storage_onboarding_identity_change_and_bootstrap.sql`.
+

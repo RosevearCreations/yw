@@ -203,6 +203,30 @@ serve(async (req) => {
               profilePatch.email = requestRow.requested_email;
               profilePatch.recovery_email = requestRow.requested_email;
             }
+
+            const authPatch: Record<string, unknown> = {
+              user_metadata: {
+                requested_username: null,
+                requested_email: null,
+              }
+            };
+            if (requestRow.requested_email) {
+              authPatch.email = requestRow.requested_email;
+              authPatch.email_confirm = true;
+            }
+            if (requestRow.requested_username) {
+              authPatch.user_metadata = {
+                ...(authPatch.user_metadata as Record<string, unknown>),
+                username: requestRow.requested_username,
+              };
+            }
+            const shouldSyncAuth = !!(requestRow.requested_email || requestRow.requested_username);
+            if (shouldSyncAuth) {
+              const { error: authSyncError } = await supabase.auth.admin.updateUserById(requestRow.profile_id, authPatch);
+              if (authSyncError) {
+                throw new Error(`Auth identity sync failed: ${authSyncError.message}`);
+              }
+            }
             await supabase.from('profiles').update(profilePatch).eq('id', requestRow.profile_id);
           } else {
             await supabase.from('profiles').update({ pending_email: null, pending_username: null, updated_at: now }).eq('id', requestRow.profile_id);
@@ -221,6 +245,7 @@ serve(async (req) => {
               requested_username: requestRow.requested_username || null,
               requested_email: requestRow.requested_email || null,
               notes: body.decision_notes ?? null,
+              auth_sync_applied: action === 'approve',
             }),
             payload: {
               request_id: requestId,
@@ -229,6 +254,7 @@ serve(async (req) => {
               requested_username: requestRow.requested_username || null,
               requested_email: requestRow.requested_email || null,
               notes: body.decision_notes ?? null,
+              auth_sync_applied: action === 'approve',
             },
             status: 'queued',
             email_subject: action === 'approve' ? 'YWI HSE identity change approved' : 'YWI HSE identity change rejected',

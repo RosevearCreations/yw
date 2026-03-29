@@ -35,3 +35,16 @@ This is where we list known issues and gaps that need to be addressed
 - Added an admin deploy smoke-check panel that verifies runtime config and bootstrap endpoint reachability before release.
 - Added equipment evidence gallery viewing plus delete/replace actions for Storage-backed equipment evidence assets.
 - Refreshed documentation and schema snapshot notes; no new SQL migration was required for this pass.
+
+## 2026-03-29 diagnostics and identity-sync pass
+- Added a visible diagnostics banner so startup/auth/module failures are surfaced in the app instead of only in DevTools.
+- Added protected-screen retry controls from the diagnostics banner after auth/bootstrap failures.
+- Wired admin approval of `account_identity_change_requests` to also sync the Auth user record (email and username metadata) before the profile change is finalized.
+- Removed a duplicated Deploy Smoke Check block from the Admin screen and refreshed the docs/schema snapshot notes.
+- No new SQL migration was required for this pass; schema remains current through `055_storage_onboarding_identity_change_and_bootstrap.sql`.
+### Remaining best next steps after the 2026-03-29 pass
+1. Add conflict-aware replay for the shared outbox so queued profile/admin actions can be merged safely after reconnect.
+2. Add thumbnail progress states and bulk actions for Storage-backed equipment evidence assets.
+3. Add a release checklist step that verifies the diagnostics banner stays empty on a clean authenticated boot.
+4. Expand the diagnostics feed to include server-side validation details for failed approval or profile save attempts.
+

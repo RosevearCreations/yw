@@ -211,6 +211,7 @@
       state.authFlow = 'idle';
       state.authError = state.authError || 'Session restore took too long. You can sign in again below.';
       state.initialized = true;
+      dispatch('ywi:app-error', { scope: 'auth-restore', message: state.authError });
       dispatch('ywi:boot-ready', { state: getState(), timedOut: true });
     }, AUTH_RESOLUTION_TIMEOUT_MS);
   }
