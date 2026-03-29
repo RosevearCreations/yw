@@ -265,3 +265,10 @@ This pass focused on the app-shell and auth startup problems that were leaving u
 2. Move profile-form autosave drafts into a shared outbox/replay queue for true offline-first syncing.
 3. Add admin-side approval controls that can trigger real Auth email-change workflows after request approval.
 4. Add thumbnail galleries and delete/replace actions for Storage-backed equipment evidence assets.
+
+## 2026-03-28 login stability and compatibility pass
+- Added a Vercel-host compatibility endpoint at `api/auth/bootstrap-admin.js` so older cached shells no longer hit an HTML 404 and crash on JSON parsing when they call `/api/auth/bootstrap-admin`.
+- Hardened `js/api.js` error handling so HTML error pages are reported as readable compatibility/deployment issues instead of raw JSON parse failures.
+- Strengthened `js/bootstrap.js` timeout fallback so timed-out email-link restores explicitly clear stale recovered session state before showing the regular sign-in screen.
+- Updated `server-worker.js` to use a stronger network-first strategy for the app shell (`index.html`, `app.js`, `style.css`, `/js/*`, icons, manifest, favicon) to reduce mixed old/new cached shell behavior.
+- Refreshed documentation and schema snapshot notes; no new SQL migration was required for this pass.

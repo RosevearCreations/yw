@@ -13,3 +13,17 @@ This is where we list known issues and gaps that need to be addressed
 2. Move profile-form autosave drafts into a shared outbox/replay queue for true offline-first syncing.
 3. Add admin-side approval controls that can trigger real Auth email-change workflows after request approval.
 4. Add thumbnail galleries and delete/replace actions for Storage-backed equipment evidence assets.
+
+## 2026-03-28 login stability and compatibility pass
+- Added a Vercel-host compatibility endpoint at `api/auth/bootstrap-admin.js` so older cached shells no longer hit an HTML 404 and crash on JSON parsing when they call `/api/auth/bootstrap-admin`.
+- Hardened `js/api.js` error handling so HTML error pages are reported as readable compatibility/deployment issues instead of raw JSON parse failures.
+- Strengthened `js/bootstrap.js` timeout fallback so timed-out email-link restores explicitly clear stale recovered session state before showing the regular sign-in screen.
+- Updated `server-worker.js` to use a stronger network-first strategy for the app shell (`index.html`, `app.js`, `style.css`, `/js/*`, icons, manifest, favicon) to reduce mixed old/new cached shell behavior.
+- Refreshed documentation and schema snapshot notes; no new SQL migration was required for this pass.
+
+
+### Remaining best next steps after the 2026-03-28 pass
+1. Add a visible user inbox/activity panel so approval results and account-change decisions are visible outside Settings.
+2. Move profile/admin autosave into a shared offline outbox/replay queue with conflict indicators.
+3. Add thumbnail gallery, replace, and delete actions for Storage-backed equipment evidence assets.
+4. Add a deploy-time smoke check that verifies the frontend shell version, `js/app-config.js`, and Edge Function reachability before release.

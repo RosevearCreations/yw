@@ -82,6 +82,17 @@
     }
   }
 
+  function looksLikeHtml(text) {
+    return /^\s*</.test(String(text || ''));
+  }
+
+  function summarizeErrorBody(text) {
+    const body = String(text || '').trim();
+    if (!body) return 'Empty response body.';
+    if (looksLikeHtml(body)) return 'HTML response returned instead of JSON. This usually means an old cached route or missing endpoint is being hit.';
+    return body;
+  }
+
   async function jsonFetch(url, { method = 'POST', headers = {}, body = null, allowPublicAuthFallback = false } = {}) {
     ensureOnline('Offline. Reconnect to the internet or your Supabase server, then try again.');
     let authHeaders = await authHeader();
@@ -109,7 +120,9 @@
     }
 
     const text = await res.text();
-    if (!res.ok) throw new Error(`HTTP ${res.status}: ${text}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${summarizeErrorBody(text)}`);
+    if (!String(text || '').trim()) return {};
+    if (looksLikeHtml(text)) return { ok: false, html_response: true, message: summarizeErrorBody(text) };
     try { return JSON.parse(text); } catch { return text; }
   }
 

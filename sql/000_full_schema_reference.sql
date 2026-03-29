@@ -519,3 +519,8 @@ create index if not exists idx_account_recovery_requests_created_at
 
 create index if not exists idx_account_recovery_requests_profile
   on public.account_recovery_requests(matched_profile_id, created_at desc);
+
+
+-- 2026-03-28 login stability and compatibility pass
+-- No structural schema changes were introduced in this pass.
+-- This snapshot remains aligned with migration 055 and the current runtime/auth compatibility updates.

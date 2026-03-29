@@ -203,6 +203,12 @@
       if (!state.pendingAuthResolution) return;
       console.warn('Auth restore timed out. Falling back to the regular sign-in screen.');
       state.pendingAuthResolution = false;
+      state.recoveredFromUrl = false;
+      state.session = null;
+      state.user = null;
+      state.profile = null;
+      state.isAuthenticated = false;
+      state.authFlow = 'idle';
       state.authError = state.authError || 'Session restore took too long. You can sign in again below.';
       state.initialized = true;
       dispatch('ywi:boot-ready', { state: getState(), timedOut: true });

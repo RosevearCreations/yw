@@ -5,7 +5,7 @@
 
 'use strict';
 
-const CACHE_NAME = 'ywi-hse-shell-v12';
+const CACHE_NAME = 'ywi-hse-shell-v13';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -68,6 +68,19 @@ function isRuntimeConfigRequest(url) {
   return url.pathname === '/js/app-config.js';
 }
 
+function isShellAssetRequest(url) {
+  return url.origin === self.location.origin && (
+    url.pathname === '/' ||
+    url.pathname === '/index.html' ||
+    url.pathname === '/style.css' ||
+    url.pathname === '/app.js' ||
+    url.pathname === '/manifest.json' ||
+    url.pathname.startsWith('/js/') ||
+    url.pathname.startsWith('/icons/') ||
+    url.pathname === '/favicon.ico'
+  );
+}
+
 function isApiLikeRequest(url) {
   return isSupabaseRequest(url) ||
     url.pathname.includes('/functions/v1/') ||
@@ -108,18 +121,21 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (req.mode === 'navigate') {
+  if (req.mode === 'navigate' || isShellAssetRequest(url)) {
     event.respondWith(
       fetch(req)
         .then((response) => {
           const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', copy)).catch(() => {});
+          if (response.ok) {
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
+            if (req.mode === 'navigate') caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', response.clone())).catch(() => {});
+          }
           return response;
         })
         .catch(() =>
           caches.match(req).then((cached) => {
             if (cached) return cached;
-            return caches.match('/index.html');
+            return req.mode === 'navigate' ? caches.match('/index.html') : Response.error();
           })
         )
     );
