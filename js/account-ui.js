@@ -103,6 +103,25 @@
         <div class="admin-panel-block" style="margin-top:16px;">
           <div class="section-heading">
             <div>
+              <h3 style="margin:0;">Activity Inbox</h3>
+              <p class="section-subtitle">Recent approval results, account-change notifications, and account activity.</p>
+            </div>
+            <div class="admin-heading-actions">
+              <button id="account_retry_sync" class="secondary" type="button">Retry Pending Sync</button>
+              <button id="account_reload_notifications" class="secondary" type="button">Reload Inbox</button>
+            </div>
+          </div>
+          <div id="account_notifications_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
+          <div class="table-scroll">
+            <table id="account_notifications_table">
+              <thead><tr><th>Created</th><th>Type</th><th>Title</th><th>Status</th><th>Decision</th><th>Message</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="admin-panel-block" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
               <h3 style="margin:0;">Identity Change History</h3>
               <p class="section-subtitle">Track pending, approved, or rejected username and email change requests.</p>
             </div>
@@ -165,6 +184,10 @@
     hint: document.getElementById('account_password_hint'),
     signedOutNotice: document.getElementById('accountSignedOutNotice'),
     reloadIdentityRequestsBtn: document.getElementById('account_reload_identity_requests'),
+    notificationsSummary: document.getElementById('account_notifications_summary'),
+    notificationsBody: document.querySelector('#account_notifications_table tbody'),
+    retrySyncBtn: document.getElementById('account_retry_sync'),
+    reloadNotificationsBtn: document.getElementById('account_reload_notifications'),
     identityRequestsSummary: document.getElementById('account_identity_requests_summary'),
     identityRequestsBody: document.querySelector('#account_identity_requests_table tbody')
   };
@@ -195,6 +218,60 @@
   function setTableSummary(text = '', isError = false) {
     setNotice(els.identityRequestsSummary, text, isError);
   }
+
+  function setNotificationsSummary(text = '', isError = false) {
+    setNotice(els.notificationsSummary, text, isError);
+  }
+
+  async function loadNotifications() {
+    if (!els.notificationsBody) return;
+    try {
+      const outboxSummary = window.YWIOutbox?.getActionSummary?.('account') || { total: 0, conflicts: 0 };
+      setNotificationsSummary(outboxSummary.total ? `Loading inbox… Pending local sync: ${outboxSummary.total}.` : 'Loading inbox...');
+      const resp = await api.accountRecoveryAction({ action: 'list_my_notifications' });
+      if (!resp?.ok) throw new Error(resp?.error || 'Unable to load activity inbox.');
+      const rows = Array.isArray(resp.records) ? resp.records : [];
+      els.notificationsBody.innerHTML = rows.map((row) => `
+        <tr>
+          <td>${escHtml(row.created_at || '')}</td>
+          <td>${escHtml(row.notification_type || 'general')}</td>
+          <td>${escHtml(row.title || 'Notification')}</td>
+          <td>${escHtml(row.status || 'queued')}</td>
+          <td>${escHtml(row.decision_status || 'pending')}</td>
+          <td>${escHtml(row.message || row.body || '')}</td>
+        </tr>
+      `).join('') || '<tr><td colspan="6" class="muted">No account activity yet.</td></tr>';
+      setNotificationsSummary(rows.length ? `Loaded ${rows.length} activity item(s).${outboxSummary.total ? ` Pending local sync: ${outboxSummary.total}.` : ''}` : 'No account activity yet.');
+    } catch (err) {
+      els.notificationsBody.innerHTML = '<tr><td colspan="6" class="muted">Unable to load activity inbox.</td></tr>';
+      setNotificationsSummary(err?.message || 'Unable to load activity inbox.', true);
+    }
+  }
+
+  function queueAccountAction(actionType, payload, label) {
+    window.YWIOutbox?.queueAction?.({ scope: 'account', action_type: actionType, payload, label });
+    const summary = window.YWIOutbox?.getActionSummary?.('account');
+    setNotice(els.summary, `Saved locally for retry when the connection returns.${summary?.total ? ` Pending sync items: ${summary.total}.` : ''}`, false);
+  }
+
+  async function retryPendingSync() {
+    try {
+      const result = await window.YWIOutbox?.retryQueuedActions?.({
+        scope: 'account',
+        handlers: {
+          update_recovery_profile: (payload) => api.accountRecoveryAction({ action: 'update_recovery_profile', ...payload }),
+          request_identity_change: (payload) => api.accountRecoveryAction({ action: 'request_identity_change', ...payload })
+        }
+      });
+      await auth.refresh();
+      await loadIdentityChangeRequests();
+      await loadNotifications();
+      setNotificationsSummary(result?.remaining ? `Retried sync. ${result.remaining} item(s) still need attention.` : 'All pending account sync items were sent.');
+    } catch (err) {
+      setNotificationsSummary(err?.message || 'Unable to retry pending account sync.', true);
+    }
+  }
+
 
   async function loadIdentityChangeRequests() {
     if (!els.identityRequestsBody) return;
@@ -309,6 +386,7 @@
     if (els.onboarding) els.onboarding.hidden = !needsOnboarding;
     if (!isAuthenticated) {
       if (els.identityRequestsBody) els.identityRequestsBody.innerHTML = '<tr><td colspan="6" class="muted">Sign in to review identity change history.</td></tr>';
+      if (els.notificationsBody) els.notificationsBody.innerHTML = '<tr><td colspan="6" class="muted">Sign in to view account activity.</td></tr>';
       return;
     }
 
@@ -330,6 +408,7 @@
     setNotice(els.setupNotice, needsOnboarding ? 'First-run onboarding is still required. Complete your profile, choose a username, save a password, then mark onboarding complete.' : '');
     setNotice(els.onboardingNotice, needsOnboarding ? 'New users should finish onboarding before continuing into the rest of the app.' : '');
     loadIdentityChangeRequests();
+    loadNotifications();
   }
 
   async function saveProfile() {
@@ -343,7 +422,11 @@
       await auth.refresh();
       await loadIdentityChangeRequests();
     } catch (err) {
-      setNotice(els.summary, err?.message || 'Unable to save contact details.', true);
+      if (String(err?.message || '').toLowerCase().includes('offline') || String(err?.message || '').includes('HTTP 5')) {
+        queueAccountAction('update_recovery_profile', collectProfilePayload(), 'Save account profile');
+      } else {
+        setNotice(els.summary, err?.message || 'Unable to save contact details.', true);
+      }
     } finally {
       restore();
     }
@@ -409,7 +492,11 @@
       await auth.refresh();
       await loadIdentityChangeRequests();
     } catch (err) {
-      setNotice(els.summary, err?.message || 'Unable to request identity change.', true);
+      if (String(err?.message || '').toLowerCase().includes('offline') || String(err?.message || '').includes('HTTP 5')) {
+        queueAccountAction('request_identity_change', { requested_username: els.requestedUsername?.value?.trim?.() || '', requested_email: els.requestedEmail?.value?.trim?.() || '' }, 'Request identity change');
+      } else {
+        setNotice(els.summary, err?.message || 'Unable to request identity change.', true);
+      }
     } finally {
       restore();
     }
@@ -512,6 +599,8 @@
     if (els.onboardingOpenSettings) els.onboardingOpenSettings.addEventListener('click', () => window.YWIRouter?.showSection?.('settings', { skipFocus: true }));
     if (els.onboardingCompleteBtn) els.onboardingCompleteBtn.addEventListener('click', completeOnboarding);
     if (els.reloadIdentityRequestsBtn) els.reloadIdentityRequestsBtn.addEventListener('click', loadIdentityChangeRequests);
+    if (els.reloadNotificationsBtn) els.reloadNotificationsBtn.addEventListener('click', loadNotifications);
+    if (els.retrySyncBtn) els.retrySyncBtn.addEventListener('click', retryPendingSync);
   }
 
   bind();

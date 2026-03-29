@@ -27,3 +27,11 @@ This is where we list known issues and gaps that need to be addressed
 2. Move profile/admin autosave into a shared offline outbox/replay queue with conflict indicators.
 3. Add thumbnail gallery, replace, and delete actions for Storage-backed equipment evidence assets.
 4. Add a deploy-time smoke check that verifies the frontend shell version, `js/app-config.js`, and Edge Function reachability before release.
+
+
+## 2026-03-28 inbox, smoke-check, and evidence gallery pass
+- Added a visible user activity inbox in Settings so approval results and account-change notifications are available outside the identity-request table.
+- Added shared offline action outbox support for account/profile and admin notification actions, including retry controls and conflict-style pending counts.
+- Added an admin deploy smoke-check panel that verifies runtime config and bootstrap endpoint reachability before release.
+- Added equipment evidence gallery viewing plus delete/replace actions for Storage-backed equipment evidence assets.
+- Refreshed documentation and schema snapshot notes; no new SQL migration was required for this pass.

@@ -236,6 +236,31 @@
     return data?.publicUrl || '';
   }
 
+  async function runSmokeCheck() {
+    const checks = [];
+    const shellVersion = Array.from(document.scripts || []).map((s) => s.src || '').filter(Boolean);
+    checks.push({ scope: 'shell-scripts', ok: shellVersion.some((src) => src.includes('/js/bootstrap.js')), message: `Loaded ${shellVersion.length} script(s).` });
+    try {
+      const cfgResp = await fetch('/js/app-config.js', { cache: 'no-store' });
+      checks.push({ scope: 'app-config', ok: cfgResp.ok, status: cfgResp.status, message: cfgResp.ok ? 'app-config.js reachable.' : 'app-config.js missing.' });
+    } catch (err) {
+      checks.push({ scope: 'app-config', ok: false, message: err?.message || 'app-config.js check failed.' });
+    }
+    try {
+      const compatResp = await fetch('/api/auth/bootstrap-admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ smoke: true }) });
+      checks.push({ scope: 'bootstrap-compat', ok: compatResp.ok, status: compatResp.status, message: compatResp.ok ? 'Compatibility bootstrap endpoint reachable.' : 'Compatibility bootstrap endpoint failed.' });
+    } catch (err) {
+      checks.push({ scope: 'bootstrap-compat', ok: false, message: err?.message || 'Compatibility bootstrap check failed.' });
+    }
+    try {
+      const bootResp = await bootstrapAdmin({ smoke: true });
+      checks.push({ scope: 'bootstrap-admin', ok: bootResp?.ok !== false, message: bootResp?.message || 'Supabase bootstrap endpoint reachable.' });
+    } catch (err) {
+      checks.push({ scope: 'bootstrap-admin', ok: false, message: err?.message || 'Supabase bootstrap check failed.' });
+    }
+    return { ok: checks.every((row) => row.ok), checks };
+  }
+
   async function diagnoseConnections() {
     const result = {
       online: typeof navigator !== 'undefined' ? navigator.onLine : true,

@@ -89,6 +89,25 @@
         <div class="admin-panel-block" style="margin-top:16px;">
           <div class="section-heading">
             <div>
+              <h3 style="margin:0;">Deploy Smoke Check</h3>
+              <p class="section-subtitle">Check shell version, runtime config reachability, and bootstrap endpoint health before release.</p>
+            </div>
+            <div class="admin-heading-actions">
+              <button id="ad_run_smoke" class="secondary" type="button">Run Smoke Check</button>
+              <button id="ad_retry_sync" class="secondary" type="button">Retry Pending Admin Sync</button>
+            </div>
+          </div>
+          <div id="ad_smoke_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
+          <div class="table-scroll">
+            <table id="ad_smoke_table">
+              <thead><tr><th>Check</th><th>Status</th><th>Details</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="admin-panel-block" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
               <h3 style="margin:0;">Approval Queue</h3>
               <p class="section-subtitle">Approve, reject, resolve, preview email, test send, or retry failed delivery.</p>
             </div>
@@ -122,6 +141,25 @@
                   <th>Actions</th>
                 </tr>
               </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="admin-panel-block" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
+              <h3 style="margin:0;">Deploy Smoke Check</h3>
+              <p class="section-subtitle">Check shell version, runtime config reachability, and bootstrap endpoint health before release.</p>
+            </div>
+            <div class="admin-heading-actions">
+              <button id="ad_run_smoke" class="secondary" type="button">Run Smoke Check</button>
+              <button id="ad_retry_sync" class="secondary" type="button">Retry Pending Admin Sync</button>
+            </div>
+          </div>
+          <div id="ad_smoke_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
+          <div class="table-scroll">
+            <table id="ad_smoke_table">
+              <thead><tr><th>Check</th><th>Status</th><th>Details</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -168,6 +206,10 @@
         search: document.getElementById('ad_notification_search'),
         filterStatus: document.getElementById('ad_notification_filter_status'),
         notificationsBody: document.querySelector('#ad_notifications_table tbody'),
+        smokeBtn: document.getElementById('ad_run_smoke'),
+        retrySyncBtn: document.getElementById('ad_retry_sync'),
+        smokeSummary: document.getElementById('ad_smoke_summary'),
+        smokeBody: document.querySelector('#ad_smoke_table tbody'),
         emailNotificationId: document.getElementById('ad_email_notification_id'),
         emailTo: document.getElementById('ad_email_to'),
         emailSubject: document.getElementById('ad_email_subject'),
@@ -277,7 +319,13 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
         setSummary(`Notification ${notificationId} ${action.replace('_', ' ')} complete.`);
         await loadDirectory();
       } catch (err) {
-        setSummary(err?.message || 'Notification action failed.', true);
+        const msg = String(err?.message || 'Notification action failed.');
+        if (msg.toLowerCase().includes('offline') || msg.includes('HTTP 5')) {
+          window.YWIOutbox?.queueAction?.({ scope: 'admin', action_type: 'admin_notification_action', payload: { entity: 'notification', action, notification_id: notificationId, decision_notes: decisionNotes }, label: `Notification ${action}` });
+          setSummary('Notification action saved to the admin outbox for retry.', false);
+        } else {
+          setSummary(msg, true);
+        }
       }
     }
 
@@ -299,7 +347,13 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
         setSummary(action === 'preview_email' ? `Preview ready for notification ${notificationId}.` : `Notification ${notificationId} ${action.replace('_', ' ')} complete.`);
         await loadDirectory();
       } catch (err) {
-        setSummary(err?.message || 'Email action failed.', true);
+        const msg = String(err?.message || 'Email action failed.');
+        if (msg.toLowerCase().includes('offline') || msg.includes('HTTP 5')) {
+          window.YWIOutbox?.queueAction?.({ scope: 'admin', action_type: 'admin_notification_action', payload: { entity: 'notification', action, notification_id: notificationId, email_to: e.emailTo?.value || '', email_subject: e.emailSubject?.value || '', email_body: e.emailBody?.value || '' }, label: `Email ${action}` });
+          setSummary('Email action saved to the admin outbox for retry.', false);
+        } else {
+          setSummary(msg, true);
+        }
       }
     }
 
@@ -377,12 +431,21 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
         e.retryBtn.dataset.bound = '1';
         e.retryBtn.addEventListener('click', () => onPreviewButton('retry_send'));
       }
+      if (e.smokeBtn && e.smokeBtn.dataset.bound !== '1') {
+        e.smokeBtn.dataset.bound = '1';
+        e.smokeBtn.addEventListener('click', runSmokeCheck);
+      }
+      if (e.retrySyncBtn && e.retrySyncBtn.dataset.bound !== '1') {
+        e.retrySyncBtn.dataset.bound = '1';
+        e.retrySyncBtn.addEventListener('click', retryPendingAdminSync);
+      }
     }
 
     async function init() {
       ensureLayout();
       bind();
       applyRoleAccess();
+      renderSmokeChecks({ checks: [] });
       await loadDirectory();
     }
 

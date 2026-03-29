@@ -241,6 +241,11 @@
             </div>
           </div>
           <div class="admin-panel-block" style="margin-top:16px;">
+            <h3 style="margin-top:0;">Evidence Gallery</h3>
+            <div id="eq_gallery_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
+            <div id="eq_gallery" class="photo-preview-grid"><span class="muted">Select a history row gallery to view equipment evidence.</span></div>
+          </div>
+          <div class="admin-panel-block" style="margin-top:16px;">
             <h3 style="margin-top:0;">Inspection History</h3>
             <div class="table-scroll">
               <table id="eq_inspection_table">
@@ -346,6 +351,8 @@
         eqListBody: $('#eq_list_table tbody'),
         eqPoolBody: $('#eq_pool_table tbody'),
         eqHistoryBody: $('#eq_history_table tbody'),
+        eqGallery: $('#eq_gallery'),
+        eqGallerySummary: $('#eq_gallery_summary'),
         eqInspectionBody: $('#eq_inspection_table tbody'),
         eqMaintenanceBody: $('#eq_maintenance_table tbody')
       };
@@ -811,6 +818,34 @@
       });
     }
 
+
+
+    function renderGallery(signoutId = null) {
+      const e = els();
+      if (!e.eqGallery) return;
+      const row = state.signouts.find((item) => Number(item.id) === Number(signoutId || state.selectedGallerySignoutId));
+      if (!row || !Array.isArray(row.evidence_assets) || !row.evidence_assets.length) {
+        e.eqGallery.innerHTML = '<span class="muted">Select a history row gallery to view equipment evidence.</span>';
+        setNotice(e.eqGallerySummary, signoutId ? 'No evidence assets were found for that checkout / return record.' : '');
+        return;
+      }
+      state.selectedGallerySignoutId = Number(row.id);
+      e.eqGallery.innerHTML = row.evidence_assets.map((asset) => `
+        <div class="evidence-asset-card">
+          <a href="${escHtml(asset.public_url || asset.storage_path || '#')}" target="_blank" rel="noopener">
+            <img src="${escHtml(asset.public_url || asset.storage_path || '')}" alt="${escHtml(asset.caption || asset.evidence_kind || 'Evidence asset')}" class="evidence-thumb" />
+          </a>
+          <div class="muted" style="font-size:12px;">${escHtml(asset.stage || '')} • ${escHtml(asset.evidence_kind || '')} ${asset.signer_role ? `• ${escHtml(asset.signer_role)}` : ''}</div>
+          <div class="muted" style="font-size:12px;">${escHtml(asset.caption || '')}</div>
+          <div class="form-footer" style="margin-top:8px;">
+            <label class="secondary" style="cursor:pointer;">Replace<input type="file" accept="image/*" data-replace-evidence="${escHtml(asset.id)}" data-signout-id="${escHtml(row.id)}" data-stage="${escHtml(asset.stage || 'return')}" data-kind="${escHtml(asset.evidence_kind || 'photo')}" data-role="${escHtml(asset.signer_role || '')}" style="display:none;" /></label>
+            <button type="button" class="secondary" data-delete-evidence="${escHtml(asset.id)}">Delete</button>
+          </div>
+        </div>
+      `).join('');
+      setNotice(e.eqGallerySummary, `Viewing ${row.evidence_assets.length} evidence asset(s) for ${row.equipment_code || row.equipment_item_id}.`);
+    }
+
     function renderEquipment() {
       const e = els();
       if (e.eqListBody) {
@@ -834,7 +869,7 @@
         state.signouts.forEach((row) => {
           const tr = document.createElement('tr');
           const photoCount = Number(row.checkout_photo_count || 0) + Number(row.return_photo_count || 0);
-          tr.innerHTML = `<td>${escHtml(row.equipment_code || row.equipment_item_id || '')}</td><td>${escHtml(row.job_code || row.job_id || '')}</td><td>${escHtml(row.checked_out_at || '')}</td><td>${escHtml(row.returned_at || '')}</td><td>${escHtml(row.checkout_worker_signature_name || row.return_worker_signature_name || '')}</td><td>${escHtml(row.checkout_supervisor_signature_name || row.return_supervisor_signature_name || '')}</td><td>${escHtml(row.checkout_admin_signature_name || row.return_admin_signature_name || '')}</td><td>${escHtml(row.checkout_condition || '')}${row.return_condition ? ` → ${escHtml(row.return_condition)}` : ''}</td><td>${photoCount ? `${photoCount} file(s)` : '—'}</td><td>${row.damage_reported ? escHtml(row.damage_notes || 'Damage noted') : '—'}</td>`;
+          tr.innerHTML = `<td>${escHtml(row.equipment_code || row.equipment_item_id || '')}</td><td>${escHtml(row.job_code || row.job_id || '')}</td><td>${escHtml(row.checked_out_at || '')}</td><td>${escHtml(row.returned_at || '')}</td><td>${escHtml(row.checkout_worker_signature_name || row.return_worker_signature_name || '')}</td><td>${escHtml(row.checkout_supervisor_signature_name || row.return_supervisor_signature_name || '')}</td><td>${escHtml(row.checkout_admin_signature_name || row.return_admin_signature_name || '')}</td><td>${escHtml(row.checkout_condition || '')}${row.return_condition ? ` → ${escHtml(row.return_condition)}` : ''}</td><td>${photoCount ? `<button type="button" class="secondary" data-view-gallery="${escHtml(row.id)}">View (${photoCount})</button>` : '—'}</td><td>${row.damage_reported ? escHtml(row.damage_notes || 'Damage noted') : '—'}</td>`;
           e.eqHistoryBody.appendChild(tr);
         });
       }
@@ -846,6 +881,7 @@
           e.eqInspectionBody.appendChild(tr);
         });
       }
+      renderGallery();
       if (e.eqMaintenanceBody) {
         e.eqMaintenanceBody.innerHTML = '';
         state.maintenance.forEach((row) => {
@@ -854,6 +890,27 @@
           e.eqMaintenanceBody.appendChild(tr);
         });
       }
+    }
+
+
+
+    async function deleteEvidenceAsset(assetId) {
+      if (!assetId) return;
+      await api.manageJobsEntity({ entity: 'equipment_evidence_asset', action: 'delete', asset_id: assetId });
+      await loadData();
+      renderGallery(state.selectedGallerySignoutId);
+    }
+
+    async function replaceEvidenceAsset(inputEl) {
+      const file = inputEl?.files?.[0];
+      if (!file) return;
+      const assetId = Number(inputEl.dataset.replaceEvidence || 0);
+      const signoutId = Number(inputEl.dataset.signoutId || 0);
+      if (!assetId || !signoutId) return;
+      await api.manageJobsEntity({ entity: 'equipment_evidence_asset', action: 'delete', asset_id: assetId });
+      await api.uploadEquipmentEvidenceBatch([{ signoutId, stage: inputEl.dataset.stage || 'return', evidenceKind: inputEl.dataset.kind || 'photo', signerRole: inputEl.dataset.role || '', caption: 'Replacement evidence upload', file }]);
+      await loadData();
+      renderGallery(signoutId);
     }
 
     async function loadData() {

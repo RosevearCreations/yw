@@ -272,3 +272,11 @@ This pass focused on the app-shell and auth startup problems that were leaving u
 - Strengthened `js/bootstrap.js` timeout fallback so timed-out email-link restores explicitly clear stale recovered session state before showing the regular sign-in screen.
 - Updated `server-worker.js` to use a stronger network-first strategy for the app shell (`index.html`, `app.js`, `style.css`, `/js/*`, icons, manifest, favicon) to reduce mixed old/new cached shell behavior.
 - Refreshed documentation and schema snapshot notes; no new SQL migration was required for this pass.
+
+
+## 2026-03-28 inbox, smoke-check, and evidence gallery pass
+- Added a visible user activity inbox in Settings so approval results and account-change notifications are available outside the identity-request table.
+- Added shared offline action outbox support for account/profile and admin notification actions, including retry controls and conflict-style pending counts.
+- Added an admin deploy smoke-check panel that verifies runtime config and bootstrap endpoint reachability before release.
+- Added equipment evidence gallery viewing plus delete/replace actions for Storage-backed equipment evidence assets.
+- Refreshed documentation and schema snapshot notes; no new SQL migration was required for this pass.
