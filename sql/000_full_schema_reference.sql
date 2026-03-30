@@ -1,11 +1,9 @@
--- Snapshot note: Current through the 2026-03-30 session-health, staging-smoke, and auth-runbook pass.
--- Latest live migration remains 055_storage_onboarding_identity_change_and_bootstrap.sql.
--- 2026-03-30 conflict save-back, bundled support export, authenticated smoke-check, and evidence relabel pass
--- No new schema migration was required for this pass. This file remains the current reference snapshot.
--- Auth recovery now prefers profiles.recovery_email when sending password-reset emails, and evidence relabel/move behavior uses existing equipment_evidence_assets metadata columns.
+-- Reference snapshot refreshed after 2026-03-30 offline evidence retry, admin review data, and operations runbook pass.
+-- 2026-03-29 diagnostics and identity-sync pass
+-- No schema changes in this pass. This file is refreshed as the current reference snapshot after the diagnostics/auth-sync update.
 
 -- Full schema reference snapshot
--- Updated through 2026-03-30 conflict save-back, bundled support export, authenticated smoke-check, and evidence relabel pass.
+-- Updated through 2026-03-29 diagnostics and identity-sync pass.
 -- Latest incremental schema migration: 055_storage_onboarding_identity_change_and_bootstrap.sql
 -- No new schema migration was required for this pass; the changes were frontend + function workflow updates on top of migration 055.
 

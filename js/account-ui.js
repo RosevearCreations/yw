@@ -44,9 +44,7 @@
         <div class="form-footer" style="margin-top:16px;">
           <button id="onboarding_open_settings" class="primary" type="button">Open Account Setup</button>
           <button id="onboarding_complete" class="secondary" type="button">Mark Onboarding Complete</button>
-          <button id="onboarding_run_session_health" class="secondary" type="button">Run Session Health Check</button>
         </div>
-        <div id="onboarding_session_health" class="notice" style="display:none;margin-top:12px;"></div>
       </div>
     `;
     const settings = document.getElementById('settings');
@@ -139,19 +137,6 @@
             </table>
           </div>
         </div>
-        <div class="admin-panel-block" style="margin-top:16px;">
-          <div class="section-heading">
-            <div>
-              <h3 style="margin:0;">Pending Sync Conflicts</h3>
-              <p class="section-subtitle">Review queued account changes, compare them with the current form, and save a merged result immediately.</p>
-            </div>
-            <div class="admin-heading-actions">
-              <button id="account_reload_conflicts" class="secondary" type="button">Reload Conflicts</button>
-            </div>
-          </div>
-          <div id="account_conflicts_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
-          <div id="account_conflicts"></div>
-        </div>
       </div>
       <div id="accountSignedOutNotice" class="notice" style="display:none;margin-top:14px;">Sign in to manage your account, password, and recovery settings.</div>
     `;
@@ -164,8 +149,6 @@
     onboardingNotice: document.getElementById('onboardingNotice'),
     onboardingOpenSettings: document.getElementById('onboarding_open_settings'),
     onboardingCompleteBtn: document.getElementById('onboarding_complete'),
-    onboardingSessionHealthBtn: document.getElementById('onboarding_run_session_health'),
-    onboardingSessionHealthNotice: document.getElementById('onboarding_session_health'),
     panel: document.getElementById('accountPanel'),
     setupNotice: document.getElementById('accountSetupNotice'),
     fullName: document.getElementById('account_full_name'),
@@ -265,90 +248,6 @@
     }
   }
 
-  function setConflictSummary(text = '', isError = false) {
-    setNotice(els.conflictsSummary, text, isError);
-  }
-
-  function getAccountConflictItems() {
-    return (window.YWIOutbox?.getActionSummary?.('account')?.items || []).filter((item) => item.status === 'conflict');
-  }
-
-  function renderConflictItems() {
-    if (!els.conflictsHost) return;
-    const items = getAccountConflictItems();
-    if (!items.length) {
-      els.conflictsHost.innerHTML = '<div class="muted">No account sync conflicts are waiting for review.</div>';
-      setConflictSummary('No account sync conflicts are waiting for review.');
-      return;
-    }
-    els.conflictsHost.innerHTML = items.map((item) => {
-      const payload = item.payload || {};
-      const current = item.action_type === 'request_identity_change' ? { requested_username: els.requestedUsername?.value || '', requested_email: els.requestedEmail?.value || '' } : collectProfilePayload();
-      const fields = item.action_type === 'request_identity_change' ? ['requested_username','requested_email'] : ['full_name','username','recovery_email','phone','address_line1','address_line2','city','province','postal_code'];
-      return `
-        <div class="admin-panel-block" style="margin-bottom:12px;">
-          <div class="muted" style="margin-bottom:8px;">${escHtml(item.label || item.action_type || 'Queued account action')} • ${escHtml(item.error || 'Conflict')}</div>
-          <div class="table-scroll">
-            <table>
-              <thead><tr><th>Field</th><th>Current form</th><th>Queued value</th><th>Keep</th></tr></thead>
-              <tbody>
-                ${fields.map((field) => `
-                  <tr>
-                    <td>${escHtml(field)}</td>
-                    <td>${escHtml(current[field] || '—')}</td>
-                    <td>${escHtml(payload[field] || '—')}</td>
-                    <td>
-                      <select data-account-conflict-choice="${escHtml(item.id)}" data-field="${escHtml(field)}">
-                        <option value="current">Current</option>
-                        <option value="queued">Queued</option>
-                      </select>
-                    </td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-          <div class="form-footer" style="margin-top:10px;flex-wrap:wrap;">
-            <button type="button" class="secondary" data-account-conflict-save="${escHtml(item.id)}">Save Merged Now</button>
-            <button type="button" class="secondary" data-account-conflict-retry="${escHtml(item.id)}">Mark for Retry</button>
-            <button type="button" class="secondary" data-account-conflict-dismiss="${escHtml(item.id)}">Dismiss</button>
-          </div>
-        </div>
-      `;
-    }).join('');
-    setConflictSummary(`${items.length} account conflict item(s) need review.`);
-  }
-
-  function updateAccountConflictItem(itemId, updater) {
-    const list = window.YWIOutbox?.getActionItems?.() || [];
-    const next = list.map((item) => String(item.id) === String(itemId) ? updater({ ...item }) : item);
-    window.YWIOutbox?.setActionItems?.(next);
-    renderConflictItems();
-  }
-
-  async function saveMergedAccountConflict(itemId) {
-    const item = getAccountConflictItems().find((entry) => String(entry.id) === String(itemId));
-    if (!item) return;
-    const merged = item.action_type === 'request_identity_change' ? { requested_username: els.requestedUsername?.value || '', requested_email: els.requestedEmail?.value || '' } : { ...collectProfilePayload() };
-    Array.from(document.querySelectorAll(`[data-account-conflict-choice="${itemId}"]`)).forEach((select) => {
-      const field = select.dataset.field;
-      if (!field) return;
-      merged[field] = select.value === 'queued' ? String(item.payload?.[field] || '') : String(merged[field] || '');
-    });
-    const action = item.action_type === 'request_identity_change' ? 'request_identity_change' : 'update_recovery_profile';
-    const payload = action === 'request_identity_change'
-      ? { requested_username: merged.requested_username || '', requested_email: merged.requested_email || '' }
-      : merged;
-    const resp = await api.accountRecoveryAction({ action, ...payload });
-    if (!resp?.ok) throw new Error(resp?.error || 'Merged save failed.');
-    const next = (window.YWIOutbox?.getActionItems?.() || []).filter((entry) => String(entry.id) !== String(itemId));
-    window.YWIOutbox?.setActionItems?.(next);
-    await auth.refresh();
-    renderConflictItems();
-    setConflictSummary('Merged account change saved successfully.');
-  }
-
-
   function queueAccountAction(actionType, payload, label) {
     window.YWIOutbox?.queueAction?.({ scope: 'account', action_type: actionType, payload, label });
     const summary = window.YWIOutbox?.getActionSummary?.('account');
@@ -367,7 +266,6 @@
       await auth.refresh();
       await loadIdentityChangeRequests();
       await loadNotifications();
-      renderConflictItems();
       setNotificationsSummary(result?.remaining ? `Retried sync. ${result.remaining} item(s) still need attention.` : 'All pending account sync items were sent.');
     } catch (err) {
       setNotificationsSummary(err?.message || 'Unable to retry pending account sync.', true);
@@ -672,26 +570,6 @@
     }
   }
 
-
-  async function runSessionHealthCheck() {
-    const restore = setBusy(els.onboardingSessionHealthBtn, 'Checking...');
-    try {
-      const resp = await api.accountSessionHealth();
-      if (!resp?.ok) throw new Error(resp?.error || 'Unable to run session health check.');
-      const parts = [];
-      parts.push(resp.is_authenticated ? 'Authenticated session detected.' : 'No authenticated session was found.');
-      if (resp.user_email) parts.push(`Auth email: ${resp.user_email}`);
-      if (resp.profile_email) parts.push(`Profile email: ${resp.profile_email}`);
-      if (resp.recovery_email) parts.push(`Recovery email: ${resp.recovery_email}`);
-      if (Array.isArray(resp.warnings) && resp.warnings.length) parts.push(`Warnings: ${resp.warnings.join(' | ')}`);
-      setNotice(els.onboardingSessionHealthNotice, parts.join(' '), false);
-    } catch (err) {
-      setNotice(els.onboardingSessionHealthNotice, err?.message || 'Unable to run session health check.', true);
-    } finally {
-      restore();
-    }
-  }
-
   async function logoutEverywhere() {
     try { await auth.logoutEverywhere(); } catch (err) { setNotice(els.summary, err?.message || 'Unable to log out everywhere.', true); }
   }
@@ -720,33 +598,9 @@
     if (els.logoutThisBtn) els.logoutThisBtn.addEventListener('click', logoutThisDevice);
     if (els.onboardingOpenSettings) els.onboardingOpenSettings.addEventListener('click', () => window.YWIRouter?.showSection?.('settings', { skipFocus: true }));
     if (els.onboardingCompleteBtn) els.onboardingCompleteBtn.addEventListener('click', completeOnboarding);
-    if (els.onboardingSessionHealthBtn) els.onboardingSessionHealthBtn.addEventListener('click', runSessionHealthCheck);
     if (els.reloadIdentityRequestsBtn) els.reloadIdentityRequestsBtn.addEventListener('click', loadIdentityChangeRequests);
     if (els.reloadNotificationsBtn) els.reloadNotificationsBtn.addEventListener('click', loadNotifications);
     if (els.retrySyncBtn) els.retrySyncBtn.addEventListener('click', retryPendingSync);
-
-    if (els.reloadConflictsBtn) els.reloadConflictsBtn.addEventListener('click', renderConflictItems);
-    if (els.conflictsHost && els.conflictsHost.dataset.bound !== '1') {
-      els.conflictsHost.dataset.bound = '1';
-      els.conflictsHost.addEventListener('click', async (event) => {
-        const saveBtn = event.target.closest('[data-account-conflict-save]');
-        const retryBtn = event.target.closest('[data-account-conflict-retry]');
-        const dismissBtn = event.target.closest('[data-account-conflict-dismiss]');
-        if (saveBtn) {
-          try { await saveMergedAccountConflict(saveBtn.getAttribute('data-account-conflict-save')); } catch (err) { setConflictSummary(err?.message || 'Merged save failed.', true); }
-        }
-        if (retryBtn) {
-          updateAccountConflictItem(retryBtn.getAttribute('data-account-conflict-retry'), (item) => ({ ...item, status: 'pending', error: '' }));
-          setConflictSummary('Conflict marked for retry.');
-        }
-        if (dismissBtn) {
-          const next = (window.YWIOutbox?.getActionItems?.() || []).filter((entry) => String(entry.id) !== String(dismissBtn.getAttribute('data-account-conflict-dismiss')));
-          window.YWIOutbox?.setActionItems?.(next);
-          renderConflictItems();
-          setConflictSummary('Conflict dismissed.');
-        }
-      });
-    }
   }
 
   bind();

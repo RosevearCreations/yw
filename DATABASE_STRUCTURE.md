@@ -1,32 +1,18 @@
-## 2026-03-30 session-health, staging-smoke, and auth-runbook pass
-- Added a server-backed `session_health` action in `account-maintenance` so signed-in onboarding and recovery users can verify Auth email, profile email, recovery email, password-ready state, and onboarding completion from the live shell.
-- Added an onboarding **Run Session Health Check** control so auth/recovery problems can be diagnosed without opening DevTools.
-- Added `accountSessionHealth()` to the frontend API layer and kept the result visible in the onboarding screen.
-- Added `.github/workflows/deploy-smoke-check.yml` so shell checks now validate the single-H1 rule, required client hooks, recovery redirect handling, and optional staging probes when secrets are configured.
-- Added `RUNBOOK_AUTH_BOOTSTRAP.md` to move bootstrap/reset handling toward a safer operational runbook instead of relying only on embedded notes.
+## 2026-03-30 offline evidence retry, admin review data, and operations runbook pass
+- Added a true local retry queue for failed equipment evidence uploads so checkout/return photo and signature uploads can replay after reconnect.
+- Added a visible **Retry Pending Evidence Sync** control and pending-queue count in the Equipment evidence workflow.
+- Expanded `admin-directory` to return review-ready `identity_requests` and `evidence_assets` datasets for broader admin tooling.
+- Added `RUNBOOK_AUTH_BOOTSTRAP.md` for safer account bootstrap and password-reset operations.
+- Added `.github/workflows/deploy-smoke-check.yml` to validate shell hooks and the single-H1 rule in CI.
 - No new SQL migration was required. `sql/000_full_schema_reference.sql` remains the schema snapshot and `055_storage_onboarding_identity_change_and_bootstrap.sql` remains the latest live migration.
 
-### Best next steps after the 2026-03-30 session-health pass
-1. Add a true offline retry queue for equipment evidence uploads so captured photos/signatures can replay after reconnect.
-2. Add dedicated admin review comments and filters for account identity requests and evidence records.
-3. Add staging smoke checks that exercise a real signed-in worker journey end-to-end.
-4. Continue reducing duplicated selectors/catalog data by moving more reference values from JSON into database-backed catalogs.
+### Best next steps after the 2026-03-30 offline evidence retry pass
+1. Persist the evidence retry queue server-side for multi-device recovery.
+2. Add inline admin comments and disposition states for evidence assets and identity requests.
+3. Expand staging smoke checks into true signed-in worker/admin journey tests.
+4. Continue moving duplicated selector/catalog values from JSON into database-backed catalogs.
 
 # DATABASE_STRUCTURE.md
-
-## 2026-03-30 conflict save-back, bundled support export, authenticated smoke-check, and evidence relabel pass
-- Added direct conflict save-back tools for queued account/admin actions so merged values can be pushed immediately instead of waiting for replay alone.
-- Added a bundled support export from the diagnostics banner that includes diagnostics, latest smoke-check results, runtime-config state, and per-module startup timing.
-- Expanded smoke checks to retain the latest result and support authenticated admin/jobs directory checks when a signed-in session is present.
-- Added equipment evidence metadata save controls so gallery assets can be relabeled and moved between checkout/return groupings without re-uploading.
-- Added richer bulk replace progress messaging in the equipment evidence gallery.
-- Added a GitHub Actions smoke-check workflow that validates shell hooks and the single-H1 rule in the exposed page.
-- No new SQL migration was required. `sql/000_full_schema_reference.sql` remains the current schema snapshot and `055_storage_onboarding_identity_change_and_bootstrap.sql` remains the latest live migration.
-
-### Status after this pass
-- The currently documented Known Issues / Gaps list has been completed through the items tracked in this file.
-- The next stage can now shift from gap closure into broader application build-out, staging verification, and workflow expansion.
-
 # YWI HSE Safety System — Database Structure Reference
 
 This document summarizes the current intended schema for the YWI HSE system. The SQL source of truth for the latest full reference is:
@@ -424,19 +410,3 @@ This pass focused on the app-shell and auth startup problems that were leaving u
 - Diagnostics banner now shows validation detail arrays.
 - Smoke check now verifies diagnostics banner is empty after clean boot.
 - Equipment evidence gallery now supports bulk select/delete and clearer replace progress messaging.
-
-## 2026-03-30 auth recovery, smoke-check export, and evidence bulk-replace pass
-- Fixed the Admin startup issue by exporting `runSmokeCheck` through `window.YWIAPI`, so the Deploy Smoke Check panel no longer crashes when clicked.
-- Fixed account recovery so password-reset emails prefer `recovery_email` over stale `profiles.email` values when available, and account lookup masks the same target email.
-- Updated the recovery redirect target so reset links return users to `#settings` in the current shell instead of drifting into an older cached route.
-- Added diagnostics export from the in-app banner for remote support and troubleshooting.
-- Added multi-file bulk replace support for selected equipment evidence assets, with visible progress text during replacement.
-- Added a GitHub Actions smoke-check workflow that verifies the shell, recovery hooks, smoke-check export, and the single-H1 rule on the exposed page.
-- No new SQL migration was required. `sql/000_full_schema_reference.sql` remains the current schema snapshot and `055_storage_onboarding_identity_change_and_bootstrap.sql` remains the latest live migration.
-
-### Remaining best next steps after the 2026-03-30 pass
-1. Add backend-assisted field-by-field save-back for conflict merges so resolved drafts can be pushed without waiting for replay.
-2. Extend the automated smoke check to run authenticated worker/admin boot tests against a staging deployment.
-3. Add evidence relabel/move actions and richer thumbnail progress bars for larger replacement batches.
-4. Add a bundled support export that combines diagnostics, smoke-check results, runtime config state, and module boot timing.
-

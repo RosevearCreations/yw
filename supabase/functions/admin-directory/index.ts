@@ -85,6 +85,26 @@ serve(async (req) => {
       return [row.notification_type, row.title, row.message, row.status, row.decision_status, row.created_by_name].some((v) => String(v || '').toLowerCase().includes(search));
     });
   }
+
+  if ((scope === 'all' || scope === 'identity_requests') && roleRank(actorProfile.role) >= roleRank('supervisor')) {
+    let q = supabase.from('account_identity_change_requests').select('*').order('created_at', { ascending:false }).limit(Math.max(1, Math.min(500, Number(body.limit || 200))));
+    const { data: identityRequests } = await q;
+    response.identity_requests = (identityRequests || []).filter((row: any) => {
+      if (!search) return true;
+      return [row.current_email, row.current_username, row.requested_email, row.requested_username, row.request_status, row.review_notes]
+        .some((v) => String(v || '').toLowerCase().includes(search));
+    });
+  }
+  if ((scope === 'all' || scope === 'evidence_assets') && roleRank(actorProfile.role) >= roleRank('supervisor')) {
+    let q = supabase.from('equipment_evidence_assets').select('*').order('created_at', { ascending:false }).limit(Math.max(1, Math.min(500, Number(body.limit || 200))));
+    const { data: evidenceAssets } = await q;
+    response.evidence_assets = (evidenceAssets || []).filter((row: any) => {
+      if (!search) return true;
+      return [row.caption, row.evidence_kind, row.stage, row.signer_role, row.storage_path, row.public_url]
+        .some((v) => String(v || '').toLowerCase().includes(search));
+    });
+  }
+
   if (scope === 'self') response.profile = filteredPeople[0] || null;
   return Response.json(response, { headers: corsHeaders });
 });

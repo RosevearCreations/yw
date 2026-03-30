@@ -1,0 +1,399 @@
+<!-- File: index.html
+     Brief description: Main single-page app shell with old inline router removed,
+     shared router/auth flow preserved, top-right session controls visible, and manifest icon paths corrected.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>YWI HSE App</title>
+  <meta name="description" content="YWI HSE app for field forms, jobs, equipment tracking, account security, and admin workflows." />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="color-scheme" content="dark light" />
+
+  <link rel="manifest" href="/manifest.json?v=2026-03-26b" />
+  <link rel="icon" href="/icons/icon-192.png?v=2026-03-26b" sizes="192x192" />
+  <link rel="stylesheet" href="/style.css?v=2026-03-26b" />
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/js/app-config.js?v=2026-03-26b"></script>
+
+  <style>
+    #authLoading {
+      display: none;
+      margin: 18px auto;
+      max-width: 1100px;
+    }
+
+    #authLoading.is-visible {
+      display: block;
+    }
+
+    .auth-loading-card {
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 16px;
+      padding: 18px 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    }
+
+    .auth-loading-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .auth-loading-spinner {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 2px solid rgba(148, 163, 184, 0.35);
+      border-top-color: rgba(255, 255, 255, 0.95);
+      animation: auth-spin 0.9s linear infinite;
+      flex: 0 0 auto;
+    }
+
+    .auth-loading-title {
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .auth-loading-subtitle {
+      margin: 6px 0 0;
+      opacity: 0.82;
+      font-size: 0.95rem;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .header-session {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-left: auto;
+    }
+
+    .header-session-name {
+      color: #e5edf9;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .header-session.hidden {
+      display: none;
+    }
+
+    @keyframes auth-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', async () => {
+        try {
+          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-03-26b');
+          if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
+          }
+        } catch (err) {
+          console.error('Service worker register failed:', err);
+        }
+      });
+    }
+  </script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-top">
+      <h1>YWI HSE</h1>
+
+      <div class="header-session-actions">
+        <button id="headerLoginBtn" class="secondary" type="button">Login</button>
+      </div>
+
+      <div id="headerSession" class="header-session hidden">
+        <span id="headerSessionName" class="header-session-name"></span>
+        <a href="#settings" class="secondary" id="headerSettingsLink" style="display:none;">Settings</a>
+        <button id="headerLogoutBtn" class="secondary" type="button" style="display:none;">Logout</button>
+      </div>
+    </div>
+
+    <nav>
+      <a href="#toolbox" class="active">Toolbox Talk</a>
+      <a href="#ppe">PPE Check</a>
+      <a href="#firstaid">First Aid Kit</a>
+      <a href="#inspect">Site Inspection</a>
+      <a href="#drill">Emergency Drill</a>
+      <a href="#log">Logbook</a>
+      <a href="#me">My Profile</a>
+      <a href="#crew">Crew</a>
+      <a href="#jobs">Jobs</a>
+      <a href="#equipment">Equipment</a>
+      <a href="#settings">Settings</a>
+      <a href="#admin">Admin</a>
+    </nav>
+  </header>
+
+  <div id="offlineBanner" class="notice" style="display:none;max-width:1100px;margin:14px auto 0;">You are offline or disconnected from the server. Some forms may still open, but sign-in, sync, uploads, and live data actions will not work until the connection returns.</div>
+
+  <section id="authLoading" class="container is-visible" aria-live="polite" aria-busy="true">
+    <div class="auth-loading-card">
+      <div class="auth-loading-row">
+        <div class="auth-loading-spinner" aria-hidden="true"></div>
+        <div>
+          <p class="auth-loading-title">Checking sign-in status…</p>
+          <p class="auth-loading-subtitle">
+            Please wait while the app restores your session from the email link.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="loginView" class="auth-card" style="display:none;">
+    <div class="section-heading">
+      <div>
+        <h2>Sign in to YWI HSE</h2>
+        <p class="section-subtitle">
+          Existing users should use email, username, and password. Magic link is available only as backup access or recovery.
+        </p>
+      </div>
+    </div>
+
+    <div class="auth-tabs" role="tablist" aria-label="Authentication methods">
+      <button
+        type="button"
+        class="secondary"
+        data-auth-tab="magic"
+        aria-selected="false"
+      >
+        Magic Link
+      </button>
+      <button
+        type="button"
+        class="secondary active"
+        data-auth-tab="password"
+        aria-selected="true"
+      >
+        Email + Password
+      </button>
+    </div>
+
+    <div id="authNotice" class="notice" style="display:none;margin-top:14px;"></div>
+    <div id="authRestoreWarning" class="notice" style="display:none;margin-top:14px;"></div>
+
+    <div id="runtimeConfigPanel" class="notice" hidden style="display:none;margin-top:14px;">
+      <strong>App configuration</strong>
+      <p style="margin:8px 0;">Normal deployments should load the Supabase anon/public key from <code>js/app-config.js</code>. Use the save box below only as an emergency fallback if the deployed config file is missing or stale.</p>
+      <form id="runtimeConfigForm">
+        <label>Emergency fallback Supabase anon/public key
+          <input id="runtimeSupabaseAnonKey" type="text" placeholder="Paste anon/public key" autocomplete="off" />
+        </label>
+        <div class="form-footer" style="margin-top:12px;">
+          <button id="runtimeConfigSaveBtn" class="primary" type="submit">Save Fallback Key + Reload</button>
+          <button id="runtimeConfigClearBtn" class="secondary" type="button">Clear Fallback Key</button>
+        </div>
+        <div id="runtimeConfigStatus" class="notice" style="display:none;margin-top:12px;"></div>
+      </form>
+    </div>
+
+    <div class="auth-panels">
+      <section data-auth-panel="magic" hidden style="display:none;">
+        <form id="magicLoginForm" autocomplete="on">
+          <div class="grid">
+            <label>Email Address
+              <input
+                id="magicLoginEmail"
+                type="email"
+                placeholder="you@company.com"
+                required
+                autocomplete="email"
+              />
+            </label>
+          </div>
+
+          <div class="form-footer">
+            <button id="magicLoginBtn" class="primary" type="submit">Send Magic Link</button>
+          </div>
+
+          <div class="notice" style="margin-top:12px;">
+            Use this if you do not remember your password or prefer a sign-in link by email.
+          </div>
+        </form>
+      </section>
+
+      <section data-auth-panel="password">
+        <form id="passwordLoginForm" autocomplete="on">
+          <div class="grid">
+            <label>Email or Username
+              <input
+                id="passwordLoginEmail"
+                type="text"
+                placeholder="you@company.com or username"
+                required
+                autocomplete="username email"
+              />
+            </label>
+
+            <label>Password
+              <input
+                id="passwordLoginPassword"
+                type="password"
+                placeholder="Enter password"
+                required
+                autocomplete="current-password"
+              />
+            </label>
+          </div>
+
+          <div class="form-footer">
+            <button id="passwordLoginBtn" class="primary" type="submit">Sign In</button>
+            <button id="passwordForgotBtn" class="secondary" type="button">Forgot Password</button>
+            <button id="forgotEmailBtn" class="secondary" type="button">Forgot Email</button>
+          </div>
+
+          <div class="notice" style="margin-top:12px;">
+            If your account already exists, you do not need to wait for a magic link.
+          </div>
+
+          <div class="admin-panel-block" style="margin-top:16px;">
+            <h3 style="margin-top:0;">Account Recovery</h3>
+            <p class="section-subtitle">Find the right sign-in details using employee number plus a second check, then request a password reset email.</p>
+            <div class="grid">
+              <label>Employee Number
+                <input id="recoveryEmployeeNumber" type="text" placeholder="Employee number" autocomplete="off" />
+              </label>
+              <label>Phone Last 4
+                <input id="recoveryPhoneLast4" type="text" placeholder="1234" maxlength="4" inputmode="numeric" autocomplete="off" />
+              </label>
+              <label>Last Name
+                <input id="recoveryLastName" type="text" placeholder="Last name" autocomplete="family-name" />
+              </label>
+            </div>
+            <div class="form-footer">
+              <button id="accountLookupBtn" class="secondary" type="button">Find My Login</button>
+              <button id="accountRecoverySendBtn" class="secondary" type="button">Send Recovery Email</button>
+            </div>
+            <div id="accountRecoveryResult" class="notice" style="display:none;margin-top:12px;"></div>
+          </div>
+        </form>
+      </section>
+    </div>
+  </section>
+
+  <section id="authInfo" class="card" hidden>
+    <div id="dashboardQuickLinks" class="notice" style="display:none;margin-bottom:14px;">
+      <strong>Quick access</strong>
+      <div class="form-footer" style="margin-top:10px;">
+        <a href="#equipment" class="secondary" id="dashboardEquipmentLink">Open Equipment</a>
+        <a href="#jobs" class="secondary">Open Jobs</a>
+        <a href="#settings" class="secondary">Open Settings</a>
+      </div>
+    </div>
+    <div class="section-heading">
+      <div>
+        <div class="auth-info">Signed in as <b id="whoami"></b></div>
+        <p class="section-subtitle">Your role controls which screens and records you can access.</p>
+      </div>
+      <div class="admin-heading-actions">
+        <button id="logoutBtn" class="secondary" type="button">Log out</button>
+      </div>
+    </div>
+  </section>
+
+  <main class="container">
+    <section id="toolbox" class="card active"><h2>Toolbox Talk</h2></section>
+    <section id="ppe" class="card"><h2>PPE Check</h2></section>
+    <section id="firstaid" class="card"><h2>First Aid Kit</h2></section>
+    <section id="inspect" class="card"><h2>Site Inspection</h2></section>
+    <section id="drill" class="card"><h2>Emergency Drill</h2></section>
+    <section id="log" class="card"><h2>Logbook</h2></section>
+    <section id="me" class="card"><h2>My Profile</h2></section>
+    <section id="crew" class="card"><h2>Crew</h2></section>
+    <section id="jobs" class="card"><h2>Jobs</h2></section>
+    <section id="equipment" class="card"><h2>Equipment</h2></section>
+    <section id="settings" class="card"><h2>Settings</h2></section>
+    <section id="admin" class="card"><h2>Admin</h2></section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
+
+  <!-- Correct module order -->
+  <script src="/js/router.js?v=2026-03-26b"></script>
+  <script src="/js/bootstrap.js?v=2026-03-26b"></script>
+  <script src="/js/auth.js?v=2026-03-26b"></script>
+  <script src="/js/security.js?v=2026-03-26b"></script>
+  <script src="/js/api.js?v=2026-03-26b"></script>
+  <script src="/js/outbox.js?v=2026-03-26b"></script>
+  <script src="/js/admin-actions.js?v=2026-03-26b"></script>
+  <script src="/js/ui-auth.js?v=2026-03-26b"></script>
+  <script src="/js/account-ui.js?v=2026-03-26b"></script>
+  <script src="/js/profile-ui.js?v=2026-03-26b"></script>
+  <script src="/js/reference-data.js?v=2026-03-26b"></script>
+  <script src="/js/admin-ui.js?v=2026-03-26b"></script>
+  <script src="/js/logbook-ui.js?v=2026-03-26b"></script>
+  <script src="/js/jobs-ui.js?v=2026-03-26b"></script>
+  <script src="/js/forms-toolbox.js?v=2026-03-26b"></script>
+  <script src="/js/forms-ppe.js?v=2026-03-26b"></script>
+  <script src="/js/forms-firstaid.js?v=2026-03-26b"></script>
+  <script src="/js/forms-inspection.js?v=2026-03-26b"></script>
+  <script src="/js/forms-drill.js?v=2026-03-26b"></script>
+  <script src="/app.js?v=2026-03-26b" defer></script>
+
+  <script>
+    document.addEventListener('ywi:auth-changed', (e) => {
+      const state = e.detail?.state || {};
+      const profile = state.profile || {};
+      const user = state.user || {};
+      const displayName =
+        profile.full_name ||
+        user.user_metadata?.full_name ||
+        profile.email ||
+        user.email ||
+        '';
+
+      const headerSession = document.getElementById('headerSession');
+      const headerSessionName = document.getElementById('headerSessionName');
+      const headerLogoutBtn = document.getElementById('headerLogoutBtn');
+
+      if (state.isAuthenticated) {
+        headerSession?.classList.remove('hidden');
+        if (headerSessionName) {
+          headerSessionName.textContent = displayName
+            ? `${displayName} (${state.roleLabel || state.role || ''})`
+            : (state.roleLabel || state.role || '');
+        }
+      } else {
+        headerSession?.classList.add('hidden');
+        if (headerSessionName) headerSessionName.textContent = '';
+      }
+
+      if (headerLogoutBtn && !headerLogoutBtn.dataset.bound) {
+        headerLogoutBtn.dataset.bound = '1';
+        headerLogoutBtn.addEventListener('click', async () => {
+          if (window.YWI_AUTH?.logout) {
+            await window.YWI_AUTH.logout();
+          }
+        });
+      }
+    });
+  </script>
+
+  <noscript>
+    <p style="padding:1rem">This app requires JavaScript enabled.</p>
+  </noscript>
+</body>
+</html>

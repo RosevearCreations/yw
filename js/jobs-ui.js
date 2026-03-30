@@ -241,7 +241,7 @@
             </div>
           </div>
           <div class="admin-panel-block" style="margin-top:16px;">
-            <h3 style="margin-top:0;">Evidence Gallery</h3>
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;"><h3 style="margin-top:0;">Evidence Gallery</h3><button id="eq_retry_pending_uploads" class="secondary" type="button">Retry Pending Evidence Sync</button></div>
             <div id="eq_gallery_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
             <div id="eq_gallery" class="photo-preview-grid"><span class="muted">Select a history row gallery to view equipment evidence.</span></div>
           </div>
@@ -353,6 +353,7 @@
         eqHistoryBody: $('#eq_history_table tbody'),
         eqGallery: $('#eq_gallery'),
         eqGallerySummary: $('#eq_gallery_summary'),
+        eqRetryPendingUploads: $('#eq_retry_pending_uploads'),
         eqInspectionBody: $('#eq_inspection_table tbody'),
         eqMaintenanceBody: $('#eq_maintenance_table tbody')
       };
@@ -386,6 +387,53 @@
       return {};
     }
 
+
+    const EVIDENCE_QUEUE_KEY = 'ywi_equipment_evidence_queue_v1';
+
+    function readEvidenceQueue() {
+      try { return JSON.parse(localStorage.getItem(EVIDENCE_QUEUE_KEY) || '[]'); } catch { return []; }
+    }
+    function writeEvidenceQueue(items) {
+      try { localStorage.setItem(EVIDENCE_QUEUE_KEY, JSON.stringify(Array.isArray(items) ? items : [])); } catch {}
+    }
+    function queueEvidenceUploads(items = [], reason = '') {
+      if (!Array.isArray(items) || !items.length) return;
+      const queue = readEvidenceQueue();
+      const safe = items.map((item) => ({
+        signoutId: item.signoutId,
+        stage: item.stage || 'checkout',
+        evidenceKind: item.evidenceKind || 'photo',
+        signerRole: item.signerRole || '',
+        caption: item.caption || '',
+        equipmentItemId: item.equipmentItemId || '',
+        jobId: item.jobId || '',
+        fileName: item.file?.name || 'upload.png',
+        fileType: item.file?.type || 'image/png',
+        fileDataUrl: item.fileDataUrl || '',
+        queuedAt: new Date().toISOString(),
+        reason: String(reason || '')
+      })).filter((item) => item.signoutId && item.fileDataUrl);
+      writeEvidenceQueue(queue.concat(safe));
+    }
+    function queuedEvidenceCount() { return readEvidenceQueue().length; }
+    async function retryPendingEvidenceUploads() {
+      const queue = readEvidenceQueue();
+      if (!queue.length) return { retried: 0, remaining: 0 };
+      let retried = 0;
+      const remaining = [];
+      for (const item of queue) {
+        try {
+          const file = dataUrlToFile(item.fileDataUrl, item.fileName || 'upload.png');
+          await api.uploadEquipmentEvidenceBatch([{ signoutId: item.signoutId, stage: item.stage, evidenceKind: item.evidenceKind, signerRole: item.signerRole, caption: item.caption, equipmentItemId: item.equipmentItemId, jobId: item.jobId, file }]);
+          retried += 1;
+        } catch {
+          remaining.push(item);
+        }
+      }
+      writeEvidenceQueue(remaining);
+      return { retried, remaining: remaining.length };
+    }
+
     function dataUrlToFile(dataUrl, fileName) {
       const parts = String(dataUrl || '').split(',');
       const header = parts[0] || '';
@@ -410,7 +458,18 @@
         }
       });
       if (!uploads.length) return [];
-      return api.uploadEquipmentEvidenceBatch(uploads);
+      try {
+        return await api.uploadEquipmentEvidenceBatch(uploads);
+      } catch (err) {
+        const uploadsWithData = await Promise.all(uploads.map(async (item) => ({ ...item, fileDataUrl: await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result || ''));
+          reader.onerror = () => reject(new Error(`Failed to read ${item.file?.name || 'evidence file'}`));
+          reader.readAsDataURL(item.file);
+        }) })));
+        queueEvidenceUploads(uploadsWithData, err?.message || 'upload_failed');
+        throw err;
+      }
     }
 
     function normalizePhotoList(value) {
@@ -833,7 +892,6 @@
       e.eqGallery.innerHTML = `
         <div class="form-footer" style="margin-bottom:10px;">
           <button type="button" class="secondary" data-gallery-select-all="1">Select all</button>
-          <label class="secondary" style="cursor:pointer;">Replace selected<input type="file" accept="image/*" multiple data-gallery-bulk-replace="${escHtml(row.id)}" style="display:none;" /></label>
           <button type="button" class="secondary" data-gallery-bulk-delete="${escHtml(row.id)}">Delete selected</button>
         </div>
       ` + row.evidence_assets.map((asset) => `
@@ -845,21 +903,13 @@
           <div class="muted" style="font-size:12px;">${escHtml(asset.stage || '')} • ${escHtml(asset.evidence_kind || '')} ${asset.signer_role ? `• ${escHtml(asset.signer_role)}` : ''}</div>
           <div class="muted" style="font-size:12px;">${escHtml(asset.caption || '')}</div>
           <div class="muted" style="font-size:12px;">Progress: Ready</div>
-          <label style="display:block;margin-top:8px;">Caption<input type="text" data-asset-caption="${escHtml(asset.id)}" value="${escHtml(asset.caption || '')}" /></label>
-          <label style="display:block;margin-top:6px;">Stage
-            <select data-asset-stage="${escHtml(asset.id)}">
-              <option value="checkout" ${(asset.stage || '') === 'checkout' ? 'selected' : ''}>Checkout</option>
-              <option value="return" ${(asset.stage || '') === 'return' ? 'selected' : ''}>Return</option>
-            </select>
-          </label>
-          <div class="form-footer" style="margin-top:8px;flex-wrap:wrap;">
-            <button type="button" class="secondary" data-save-evidence-meta="${escHtml(asset.id)}">Save Details</button>
+          <div class="form-footer" style="margin-top:8px;">
             <label class="secondary" style="cursor:pointer;">Replace<input type="file" accept="image/*" data-replace-evidence="${escHtml(asset.id)}" data-signout-id="${escHtml(row.id)}" data-stage="${escHtml(asset.stage || 'return')}" data-kind="${escHtml(asset.evidence_kind || 'photo')}" data-role="${escHtml(asset.signer_role || '')}" style="display:none;" /></label>
             <button type="button" class="secondary" data-delete-evidence="${escHtml(asset.id)}">Delete</button>
           </div>
         </div>
       `).join('');
-      setNotice(e.eqGallerySummary, `Viewing ${row.evidence_assets.length} evidence asset(s) for ${row.equipment_code || row.equipment_item_id}. Use Select all, Replace selected, Delete selected, or Save Details to relabel and move evidence between checkout and return.`);
+      setNotice(e.eqGallerySummary, `Viewing ${row.evidence_assets.length} evidence asset(s) for ${row.equipment_code || row.equipment_item_id}. Use Select all and Delete selected for bulk cleanup.${queuedEvidenceCount() ? ` Pending offline uploads: ${queuedEvidenceCount()}.` : ''}`);
     }
 
     function renderEquipment() {
@@ -918,18 +968,6 @@
       renderGallery(state.selectedGallerySignoutId);
     }
 
-    async function updateEvidenceAssetMetadata(assetId, signoutId) {
-      const gallery = els().eqGallery;
-      const caption = gallery?.querySelector(`[data-asset-caption="${assetId}"]`)?.value || '';
-      const stage = gallery?.querySelector(`[data-asset-stage="${assetId}"]`)?.value || 'return';
-      setNotice(els().eqGallerySummary, 'Saving evidence details…');
-      await api.manageJobsEntity({ entity: 'equipment_evidence_asset', action: 'update_metadata', asset_id: assetId, caption, stage });
-      await loadData();
-      renderGallery(signoutId || state.selectedGallerySignoutId);
-      setNotice(els().eqGallerySummary, 'Evidence details saved.');
-    }
-
-
     async function bulkDeleteEvidenceAssets(signoutId) {
       const selected = Array.from(document.querySelectorAll('[data-gallery-asset]:checked')).map((el) => Number(el.value || el.dataset.galleryAsset || 0)).filter(Boolean);
       if (!selected.length) {
@@ -944,48 +982,18 @@
       renderGallery(signoutId || state.selectedGallerySignoutId);
     }
 
-
     async function replaceEvidenceAsset(inputEl) {
       const file = inputEl?.files?.[0];
       if (!file) return;
       const assetId = Number(inputEl.dataset.replaceEvidence || 0);
       const signoutId = Number(inputEl.dataset.signoutId || 0);
       if (!assetId || !signoutId) return;
-      setNotice(els().eqGallerySummary, `Replacing evidence asset… Uploading 1 of 1 (100%).`);
+      setNotice(els().eqGallerySummary, 'Replacing evidence asset… Upload in progress.');
       await api.manageJobsEntity({ entity: 'equipment_evidence_asset', action: 'delete', asset_id: assetId });
       await api.uploadEquipmentEvidenceBatch([{ signoutId, stage: inputEl.dataset.stage || 'return', evidenceKind: inputEl.dataset.kind || 'photo', signerRole: inputEl.dataset.role || '', caption: 'Replacement evidence upload', file }]);
       await loadData();
       renderGallery(signoutId);
       setNotice(els().eqGallerySummary, 'Evidence asset replaced successfully.');
-    }
-
-    async function bulkReplaceEvidenceAssets(inputEl) {
-      const files = Array.from(inputEl?.files || []);
-      const signoutId = Number(inputEl.dataset.galleryBulkReplace || 0);
-      const selectedInputs = Array.from(document.querySelectorAll('[data-gallery-asset]:checked'));
-      const selectedIds = selectedInputs.map((el) => Number(el.value || el.dataset.galleryAsset || 0)).filter(Boolean);
-      if (!signoutId || !files.length || !selectedIds.length) {
-        setNotice(els().eqGallerySummary, 'Select one or more evidence assets and choose one or more replacement files first.');
-        return;
-      }
-      const row = state.signouts.find((item) => Number(item.id) === signoutId);
-      const assets = Array.isArray(row?.evidence_assets) ? row.evidence_assets.filter((asset) => selectedIds.includes(Number(asset.id))) : [];
-      if (!assets.length) {
-        setNotice(els().eqGallerySummary, 'No matching evidence assets were found for bulk replace.');
-        return;
-      }
-      setNotice(els().eqGallerySummary, `Replacing ${assets.length} evidence asset(s)… 0%.`);
-      for (let i = 0; i < assets.length; i += 1) {
-        const asset = assets[i];
-        const file = files[Math.min(i, files.length - 1)];
-        setNotice(els().eqGallerySummary, `Replacing ${i + 1} of ${assets.length} evidence asset(s)… ${Math.round(((i + 1) / assets.length) * 100)}%.`);
-        await api.manageJobsEntity({ entity: 'equipment_evidence_asset', action: 'delete', asset_id: asset.id });
-        await api.uploadEquipmentEvidenceBatch([{ signoutId, stage: asset.stage || 'return', evidenceKind: asset.evidence_kind || 'photo', signerRole: asset.signer_role || '', caption: asset.caption || 'Bulk replacement evidence upload', file }]);
-      }
-      await loadData();
-      renderGallery(signoutId);
-      setNotice(els().eqGallerySummary, `Bulk evidence replace complete for ${assets.length} asset(s).`);
-      inputEl.value = '';
     }
 
     async function loadData() {
@@ -1264,41 +1272,6 @@
           loadEquipmentIntoForm(row);
         });
       }
-
-      if (e.eqHistoryBody && e.eqHistoryBody.dataset.boundGallery !== '1') {
-        e.eqHistoryBody.dataset.boundGallery = '1';
-        e.eqHistoryBody.addEventListener('click', (event) => {
-          const btn = event.target.closest('[data-view-gallery]');
-          if (!btn) return;
-          renderGallery(btn.getAttribute('data-view-gallery'));
-        });
-      }
-      if (e.eqGallery && e.eqGallery.dataset.bound !== '1') {
-        e.eqGallery.dataset.bound = '1';
-        e.eqGallery.addEventListener('click', (event) => {
-          const target = event.target.closest('[data-delete-evidence],[data-delete-selected],[data-save-evidence-meta]');
-          if (!target) return;
-          if (target.hasAttribute('data-delete-evidence')) deleteEvidenceAsset(target.getAttribute('data-delete-evidence'));
-          if (target.hasAttribute('data-delete-selected')) bulkDeleteEvidenceAssets(state.selectedGallerySignoutId);
-          if (target.hasAttribute('data-save-evidence-meta')) updateEvidenceAssetMetadata(target.getAttribute('data-save-evidence-meta'), state.selectedGallerySignoutId);
-        });
-        e.eqGallery.addEventListener('change', (event) => {
-          const target = event.target;
-          if (target.matches('[data-gallery-select-all]')) {
-            const checked = !!target.checked;
-            e.eqGallery.querySelectorAll('[data-gallery-asset]').forEach((box) => { box.checked = checked; });
-            return;
-          }
-          if (target.matches('[data-replace-evidence]')) {
-            replaceEvidenceAsset(target);
-            return;
-          }
-          if (target.matches('[data-gallery-bulk-replace]')) {
-            bulkReplaceEvidenceAssets(target);
-          }
-        });
-      }
-
       if (e.jobSave && e.jobSave.dataset.bound !== '1') {
         e.jobSave.dataset.bound = '1';
         e.jobSave.addEventListener('click', saveJob);

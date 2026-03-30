@@ -12,35 +12,58 @@
 3. Expand staging smoke checks into true signed-in worker/admin journey tests.
 4. Continue moving duplicated selector/catalog values from JSON into database-backed catalogs.
 
-# System Architecture
+# Project Brain
 
-## Frontend
-Static modular SPA.
+## What YWI HSE is
+A construction safety and operations app built on Supabase with a modular frontend.
 
-Key modules now include auth, security, profile, admin, jobs, equipment, logbook, and form modules.
+## Main user areas
+- safety forms
+- my profile
+- crew view
+- settings/session
+- admin directory
+- jobs
+- equipment
+- logbook/review
 
-## Backend
-Supabase Auth, Postgres, Storage, Edge Functions.
+## Role model
+- worker
+- staff
+- onsite_admin
+- site_leader
+- supervisor
+- hse
+- job_admin
+- admin
 
-## New backend scope in this pass
-- hierarchy fields on `profiles`
-- richer `sites` metadata
-- `jobs`
-- `equipment_items`
-- `job_equipment_requirements`
-- `equipment_signouts`
-- `v_people_directory`
-- `v_jobs_directory`
-- `v_equipment_directory`
+## Current hierarchy model
+Profiles now need to support:
+- employee number
+- start date
+- strengths
+- default supervisor
+- override supervisor
+- default admin
+- override admin
 
-## New Edge Functions in this pass
-- `jobs-directory`
-- `jobs-manage`
+Sites also support:
+- site supervisor
+- signing supervisor
+- admin lead
+- region
+- client
+- project metadata
 
-Updated functions:
-- `reference-data`
-- `admin-manage`
-- `admin-selectors`
+## Next major domain
+Jobs and equipment:
+- create job records
+- attach site leadership
+- reserve required equipment
+- track equipment sign-out to jobs
+
+## Files to keep aligned
+All main markdown files plus SQL and Edge Function folders.
 
 
 ## Latest security and workflow pass
@@ -83,6 +106,28 @@ This pass updates the repo toward the next high-value workflow layer:
 - add per-notification email preview/test send controls
 - add requirement-level approve/reject buttons directly from job/equipment screens
 - add provider-specific retry / dead-letter handling for email and SMS failures
+
+## Password-First Auth / Admin Approval UI Pass (March 24, 2026)
+
+This pass shifts the app to a password-first daily login flow while keeping magic link as backup/recovery only, and brings the approval/email workflow into the live frontend.
+
+### Included in this pass
+- bootstrap now restores Supabase sessions from `code=` callbacks as well as token hashes
+- login screen is now clearly password-first with forgot-password support and cleaner auth-wall behavior
+- settings now renders a live account security panel with password save/change, email verification resend, phone verification request, SMS code send/verify, and logout controls
+- admin now renders a visible approval queue with approve/reject/resolve actions
+- admin now includes email preview, test-send, and retry-send controls for notifications
+- jobs/equipment screens now render live forms inside the frontend shell instead of depending on missing static markup
+- jobs now support direct requirement review buttons for request / approve / reject actions
+- backend notification actions now support preview_email, test_send, and retry_send
+- account maintenance now supports retry_phone_verification_code
+- functions no longer depend on `admin_notifications.subject` existing
+
+### Most valuable next pass after this
+- add richer job editing/loading from saved rows back into the form
+- add stronger per-role UI hiding for approve/reject buttons
+- add provider-specific delivery attempt counters and dead-letter handling
+- add full admin CRUD layout restoration if broad directory management becomes the next focus
 
 ## 2026-03-24 pass: auth, approvals, delivery retries, and saved-job restore
 
@@ -299,10 +344,3 @@ This pass focused on the app-shell and auth startup problems that were leaving u
 - Removed a duplicated Deploy Smoke Check block from the Admin screen and refreshed the docs/schema snapshot notes.
 - No new SQL migration was required for this pass; schema remains current through `055_storage_onboarding_identity_change_and_bootstrap.sql`.
 
-
-
-## 2026-03-29 conflict-aware replay, diagnostics detail, and evidence bulk-actions pass
-- Conflict-aware action outbox replay/merge.
-- Diagnostics banner now shows validation detail arrays.
-- Smoke check now verifies diagnostics banner is empty after clean boot.
-- Equipment evidence gallery now supports bulk select/delete and clearer replace progress messaging.
