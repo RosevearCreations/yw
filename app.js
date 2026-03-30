@@ -285,7 +285,7 @@ function initReferenceDataModule() {
     api: api(),
     getCurrentRole: () => appState.currentRole
   });
-  modules.referenceDataUI.init().catch?.((err) => { console.error('Reference data init failed', err); pushDiagnostic('reference-data', err?.message || 'Reference data failed to initialize.'); });
+  Promise.resolve(modules.referenceDataUI.init()).catch((err) => { console.error('Reference data init failed', err); pushDiagnostic('reference-data', err?.message || 'Reference data failed to initialize.'); });
 }
 
 
@@ -377,8 +377,10 @@ document.addEventListener('ywi:boot-ready', async (e) => {
 
 document.addEventListener('ywi:auth-changed', async (e) => {
   syncAuthStateFromBoot(e.detail || {});
-  if (appState.isAuthenticated) initProtectedModules();
-  if (modules.adminUI?.refreshSelectors) await modules.adminUI.refreshSelectors();
+  if (appState.isAuthenticated) {
+    initProtectedModules();
+    if (modules.adminUI?.refreshSelectors) await modules.adminUI.refreshSelectors();
+  }
   if (location.hash === '#admin' && appState.isAuthenticated && modules.adminUI?.loadDirectory) {
     try { await modules.adminUI.loadDirectory(); } catch (err) { console.error('Admin auth refresh failed', err); }
   } else if (!appState.isAuthenticated) {

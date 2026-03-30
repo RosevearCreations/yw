@@ -65,6 +65,15 @@ function isLikelyAddress(value: string) {
   return clean.length >= 4;
 }
 
+
+function pickRecoveryEmail(profile: Record<string, unknown> | null | undefined) {
+  const recoveryEmail = String(profile?.recovery_email || '').trim().toLowerCase();
+  const primaryEmail = String(profile?.email || '').trim().toLowerCase();
+  if (recoveryEmail && isValidEmail(recoveryEmail)) return recoveryEmail;
+  if (primaryEmail && isValidEmail(primaryEmail)) return primaryEmail;
+  return '';
+}
+
 async function logRecoveryRequest(supabase: any, payload: Record<string, unknown>) {
   try {
     await supabase.from('account_recovery_requests').insert(payload);
@@ -82,7 +91,7 @@ async function findRecoveryProfile(supabase: any, body: Record<string, unknown>)
   }
   const { data, error } = await supabase
     .from('profiles')
-    .select('id,email,username,full_name,phone,is_active')
+    .select('id,email,recovery_email,username,full_name,phone,is_active')
     .eq('employee_number', employeeNumber)
     .eq('is_active', true);
   if (error) throw error;
@@ -174,8 +183,8 @@ serve(async (req) => {
   if (action === 'lookup_account_help' || action === 'find_login') {
     try {
       const profile = await findRecoveryProfile(supabase, body);
-      await logRecoveryRequest(supabase, { lookup_kind: 'lookup', employee_number: body.employee_number || null, phone_last4: body.phone_last4 || null, last_name: body.last_name || null, matched_profile_id: profile.id, masked_email: maskEmail(profile.email || ''), masked_username: maskUsername(profile.username || ''), request_status: 'matched' });
-      return Response.json({ ok: true, masked_email: maskEmail(profile.email || ''), masked_username: maskUsername(profile.username || '') }, { headers: corsHeaders });
+      await logRecoveryRequest(supabase, { lookup_kind: 'lookup', employee_number: body.employee_number || null, phone_last4: body.phone_last4 || null, last_name: body.last_name || null, matched_profile_id: profile.id, masked_email: maskEmail(pickRecoveryEmail(profile) || profile.email || ''), masked_username: maskUsername(profile.username || ''), request_status: 'matched' });
+      return Response.json({ ok: true, masked_email: maskEmail(pickRecoveryEmail(profile) || profile.email || ''), masked_username: maskUsername(profile.username || '') }, { headers: corsHeaders });
     } catch (err) {
       await logRecoveryRequest(supabase, { lookup_kind: 'lookup', employee_number: body.employee_number || null, phone_last4: body.phone_last4 || null, last_name: body.last_name || null, request_status: 'failed', notes: String(err?.message || err) });
       return Response.json({ ok: false, error: err?.message || 'Account lookup failed.' }, { status: 400, headers: corsHeaders });
@@ -188,7 +197,7 @@ serve(async (req) => {
       const redirectTo = String(body.redirect_to || `${Deno.env.get('SITE_URL') || ''}`).trim() || undefined;
       const { error } = await supabase.auth.resetPasswordForEmail(profile.email, redirectTo ? { redirectTo } : undefined);
       if (error) throw error;
-      await logRecoveryRequest(supabase, { lookup_kind: 'send_recovery_email', employee_number: body.employee_number || null, phone_last4: body.phone_last4 || null, last_name: body.last_name || null, matched_profile_id: profile.id, masked_email: maskEmail(profile.email || ''), masked_username: maskUsername(profile.username || ''), request_status: 'sent' });
+      await logRecoveryRequest(supabase, { lookup_kind: 'send_recovery_email', employee_number: body.employee_number || null, phone_last4: body.phone_last4 || null, last_name: body.last_name || null, matched_profile_id: profile.id, masked_email: maskEmail(pickRecoveryEmail(profile) || profile.email || ''), masked_username: maskUsername(profile.username || ''), request_status: 'sent' });
       return Response.json({ ok: true, message: `Recovery email sent to ${maskEmail(profile.email || '')}.` }, { headers: corsHeaders });
     } catch (err) {
       await logRecoveryRequest(supabase, { lookup_kind: 'send_recovery_email', employee_number: body.employee_number || null, phone_last4: body.phone_last4 || null, last_name: body.last_name || null, request_status: 'failed', notes: String(err?.message || err) });
@@ -203,6 +212,24 @@ serve(async (req) => {
   const actorId = userData.user.id;
   const { data: actorProfile } = await supabase.from('profiles').select('*').eq('id', actorId).single();
   if (!actorProfile?.is_active) return Response.json({ ok: false, error: 'Inactive profile' }, { status: 403, headers: corsHeaders });
+
+
+  if (action === 'session_health') {
+    return Response.json({
+      ok: true,
+      auth_user_id: userData.user.id,
+      auth_email: userData.user.email || null,
+      profile_email: actorProfile?.email || null,
+      recovery_email: actorProfile?.recovery_email || null,
+      password_login_ready: !!actorProfile?.password_login_ready,
+      onboarding_completed_at: actorProfile?.onboarding_completed_at || null,
+      warnings: [
+        actorProfile?.email && userData.user.email && String(actorProfile.email).toLowerCase() !== String(userData.user.email).toLowerCase() ? 'Profile email does not match Auth email.' : null,
+        !actorProfile?.recovery_email ? 'Recovery email is not set.' : null,
+        !actorProfile?.password_login_ready ? 'Password-first account setup is not marked complete.' : null,
+      ].filter(Boolean)
+    }, { headers: corsHeaders });
+  }
 
   if (action === 'update_recovery_profile') {
     const patch: Record<string, unknown> = {

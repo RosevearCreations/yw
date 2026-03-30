@@ -47,7 +47,7 @@
   }
 
   function getRedirectUrl() {
-    return `${window.location.origin}/`;
+    return `${window.location.origin}/#settings`;
   }
 
   function getRoleLabel(role) {
@@ -198,8 +198,13 @@
 
   async function markAccountSetupComplete(payload = {}) {
     const client = requireClient();
-    const { data: sessionData } = await client.auth.getSession();
-    const token = sessionData?.session?.access_token;
+    let { data: sessionData } = await client.auth.getSession();
+    let token = sessionData?.session?.access_token;
+    if (!token) {
+      const refreshed = await client.auth.refreshSession().catch(() => ({ data: { session: null } }));
+      sessionData = refreshed?.data || sessionData;
+      token = sessionData?.session?.access_token;
+    }
     if (!token) throw new Error('Sign in again before finishing account setup.');
     const response = await fetch(getAccountFunctionUrl(), {
       method: 'POST',

@@ -241,7 +241,7 @@
             </div>
           </div>
           <div class="admin-panel-block" style="margin-top:16px;">
-            <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;"><h3 style="margin-top:0;">Evidence Gallery</h3><button id="eq_retry_pending_uploads" class="secondary" type="button">Retry Pending Evidence Sync</button></div>
+            <h3 style="margin-top:0;">Evidence Gallery</h3>
             <div id="eq_gallery_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
             <div id="eq_gallery" class="photo-preview-grid"><span class="muted">Select a history row gallery to view equipment evidence.</span></div>
           </div>
@@ -353,7 +353,6 @@
         eqHistoryBody: $('#eq_history_table tbody'),
         eqGallery: $('#eq_gallery'),
         eqGallerySummary: $('#eq_gallery_summary'),
-        eqRetryPendingUploads: $('#eq_retry_pending_uploads'),
         eqInspectionBody: $('#eq_inspection_table tbody'),
         eqMaintenanceBody: $('#eq_maintenance_table tbody')
       };
@@ -387,53 +386,6 @@
       return {};
     }
 
-
-    const EVIDENCE_QUEUE_KEY = 'ywi_equipment_evidence_queue_v1';
-
-    function readEvidenceQueue() {
-      try { return JSON.parse(localStorage.getItem(EVIDENCE_QUEUE_KEY) || '[]'); } catch { return []; }
-    }
-    function writeEvidenceQueue(items) {
-      try { localStorage.setItem(EVIDENCE_QUEUE_KEY, JSON.stringify(Array.isArray(items) ? items : [])); } catch {}
-    }
-    function queueEvidenceUploads(items = [], reason = '') {
-      if (!Array.isArray(items) || !items.length) return;
-      const queue = readEvidenceQueue();
-      const safe = items.map((item) => ({
-        signoutId: item.signoutId,
-        stage: item.stage || 'checkout',
-        evidenceKind: item.evidenceKind || 'photo',
-        signerRole: item.signerRole || '',
-        caption: item.caption || '',
-        equipmentItemId: item.equipmentItemId || '',
-        jobId: item.jobId || '',
-        fileName: item.file?.name || 'upload.png',
-        fileType: item.file?.type || 'image/png',
-        fileDataUrl: item.fileDataUrl || '',
-        queuedAt: new Date().toISOString(),
-        reason: String(reason || '')
-      })).filter((item) => item.signoutId && item.fileDataUrl);
-      writeEvidenceQueue(queue.concat(safe));
-    }
-    function queuedEvidenceCount() { return readEvidenceQueue().length; }
-    async function retryPendingEvidenceUploads() {
-      const queue = readEvidenceQueue();
-      if (!queue.length) return { retried: 0, remaining: 0 };
-      let retried = 0;
-      const remaining = [];
-      for (const item of queue) {
-        try {
-          const file = dataUrlToFile(item.fileDataUrl, item.fileName || 'upload.png');
-          await api.uploadEquipmentEvidenceBatch([{ signoutId: item.signoutId, stage: item.stage, evidenceKind: item.evidenceKind, signerRole: item.signerRole, caption: item.caption, equipmentItemId: item.equipmentItemId, jobId: item.jobId, file }]);
-          retried += 1;
-        } catch {
-          remaining.push(item);
-        }
-      }
-      writeEvidenceQueue(remaining);
-      return { retried, remaining: remaining.length };
-    }
-
     function dataUrlToFile(dataUrl, fileName) {
       const parts = String(dataUrl || '').split(',');
       const header = parts[0] || '';
@@ -458,18 +410,7 @@
         }
       });
       if (!uploads.length) return [];
-      try {
-        return await api.uploadEquipmentEvidenceBatch(uploads);
-      } catch (err) {
-        const uploadsWithData = await Promise.all(uploads.map(async (item) => ({ ...item, fileDataUrl: await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(String(reader.result || ''));
-          reader.onerror = () => reject(new Error(`Failed to read ${item.file?.name || 'evidence file'}`));
-          reader.readAsDataURL(item.file);
-        }) })));
-        queueEvidenceUploads(uploadsWithData, err?.message || 'upload_failed');
-        throw err;
-      }
+      return api.uploadEquipmentEvidenceBatch(uploads);
     }
 
     function normalizePhotoList(value) {
@@ -909,7 +850,7 @@
           </div>
         </div>
       `).join('');
-      setNotice(e.eqGallerySummary, `Viewing ${row.evidence_assets.length} evidence asset(s) for ${row.equipment_code || row.equipment_item_id}. Use Select all and Delete selected for bulk cleanup.${queuedEvidenceCount() ? ` Pending offline uploads: ${queuedEvidenceCount()}.` : ''}`);
+      setNotice(e.eqGallerySummary, `Viewing ${row.evidence_assets.length} evidence asset(s) for ${row.equipment_code || row.equipment_item_id}. Use Select all and Delete selected for bulk cleanup.`);
     }
 
     function renderEquipment() {

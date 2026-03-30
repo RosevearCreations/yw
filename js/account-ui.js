@@ -452,6 +452,7 @@
     try {
       validatePassword(els.password?.value || '', els.confirm?.value || '');
       await auth.changePassword(els.password?.value || '');
+      await auth.refresh();
       const resp = await auth.markAccountSetupComplete(collectProfilePayload());
       if (!resp?.ok) throw new Error(resp?.error || 'Unable to complete account setup.');
       clearDraft();

@@ -1,16 +1,11 @@
-## 2026-03-30 offline evidence retry, admin review data, and operations runbook pass
-- Added a true local retry queue for failed equipment evidence uploads so checkout/return photo and signature uploads can replay after reconnect.
-- Added a visible **Retry Pending Evidence Sync** control and pending-queue count in the Equipment evidence workflow.
-- Expanded `admin-directory` to return review-ready `identity_requests` and `evidence_assets` datasets for broader admin tooling.
-- Added `RUNBOOK_AUTH_BOOTSTRAP.md` for safer account bootstrap and password-reset operations.
-- Added `.github/workflows/deploy-smoke-check.yml` to validate shell hooks and the single-H1 rule in CI.
+## 2026-03-31 build repair pass
+- Fixed the service-worker duplicate cache entry that was causing `Cache.addAll(): duplicate requests` during install.
+- Restored Admin smoke-check wiring by exporting `runSmokeCheck` through `window.YWIAPI` and rebinding the Admin screen to that helper.
+- Hardened protected-module startup so Reference Data init no longer throws when a module init returns no Promise.
+- Increased bootstrap session-restore timeout and refreshed account setup flow so password save is followed by a session refresh before setup completion is submitted.
+- Fixed recovery email handling so password reset prefers `recovery_email` when available and returns to `#settings` in the current shell.
+- Added a `session_health` account-maintenance action for signed-in diagnostics.
 - No new SQL migration was required. `sql/000_full_schema_reference.sql` remains the schema snapshot and `055_storage_onboarding_identity_change_and_bootstrap.sql` remains the latest live migration.
-
-### Best next steps after the 2026-03-30 offline evidence retry pass
-1. Persist the evidence retry queue server-side for multi-device recovery.
-2. Add inline admin comments and disposition states for evidence assets and identity requests.
-3. Expand staging smoke checks into true signed-in worker/admin journey tests.
-4. Continue moving duplicated selector/catalog values from JSON into database-backed catalogs.
 
 # Testing Checklist
 

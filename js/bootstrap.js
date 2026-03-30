@@ -9,7 +9,7 @@
 
 (function () {
   const DEFAULT_SUPABASE_URL = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
-  const AUTH_RESOLUTION_TIMEOUT_MS = 12000;
+  const AUTH_RESOLUTION_TIMEOUT_MS = 20000;
 
   function getRuntimeConfig() {
     return window.YWI_RUNTIME_CONFIG || window.__YWI_RUNTIME_CONFIG || {};

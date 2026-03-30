@@ -268,53 +268,6 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
       });
     }
 
-
-    function renderSmokeChecks(result = {}) {
-      const e = els();
-      const checks = Array.isArray(result.checks) ? result.checks : [];
-      if (!e.smokeBody) return;
-      e.smokeBody.innerHTML = checks.map((row) => `
-        <tr>
-          <td>${escHtml(row.scope || '')}</td>
-          <td>${row.ok ? 'OK' : 'Issue'}</td>
-          <td>${escHtml(row.message || '')}</td>
-        </tr>`).join('') || '<tr><td colspan="3" class="muted">No smoke check results yet.</td></tr>';
-      if (e.smokeSummary) {
-        if (!checks.length) {
-          e.smokeSummary.style.display = 'none';
-          e.smokeSummary.textContent = '';
-        } else {
-          e.smokeSummary.style.display = 'block';
-          e.smokeSummary.textContent = result.ok ? 'Smoke checks passed.' : 'Smoke checks found one or more issues.';
-          e.smokeSummary.dataset.kind = result.ok ? 'info' : 'error';
-        }
-      }
-    }
-
-    async function runSmokeCheck() {
-      try {
-        setSummary('Running deploy smoke checks…');
-        const result = await runSmokeCheckApi();
-        renderSmokeChecks(result || {});
-        setSummary(result?.ok ? 'Smoke checks passed.' : 'Smoke checks completed with issues.', !result?.ok);
-      } catch (err) {
-        renderSmokeChecks({ ok:false, checks:[{ scope:'smoke-check', ok:false, message: String(err?.message || err || 'Smoke check failed.') }] });
-        setSummary(err?.message || 'Smoke check failed.', true);
-      }
-    }
-
-    async function retryPendingAdminSync() {
-      try {
-        const resp = await retryAdminScope();
-        const retried = Number(resp?.retried || 0);
-        const conflicts = Number(resp?.conflicts || 0);
-        setSummary(`Admin sync retried ${retried} item(s).${conflicts ? ` ${conflicts} conflict(s) still need attention.` : ''}`);
-        await loadDirectory();
-      } catch (err) {
-        setSummary(err?.message || 'Pending admin sync retry failed.', true);
-      }
-    }
-
     function hydratePreview(notificationId, preview = {}) {
       const e = els();
       if (e.emailNotificationId) e.emailNotificationId.value = notificationId ? String(notificationId) : '';
@@ -381,6 +334,54 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
           setSummary('Email action saved to the admin outbox for retry.', false);
         } else {
           setSummary(msg, true);
+        }
+      }
+    }
+
+
+
+    function renderSmokeChecks(resp = {}) {
+      const e = els();
+      const checks = Array.isArray(resp?.checks) ? resp.checks : [];
+      if (e.smokeBody) {
+        e.smokeBody.innerHTML = checks.map((row) => `
+          <tr>
+            <td>${escHtml(row.scope || '')}</td>
+            <td>${row.ok ? 'OK' : 'Issue'}</td>
+            <td>${escHtml(row.message || '')}</td>
+          </tr>`).join('') || '<tr><td colspan="3" class="muted">No smoke checks run yet.</td></tr>';
+      }
+      if (e.smokeSummary) {
+        const failed = checks.filter((row) => !row.ok).length;
+        e.smokeSummary.style.display = 'block';
+        e.smokeSummary.dataset.kind = failed ? 'error' : 'info';
+        e.smokeSummary.textContent = checks.length ? (failed ? `${failed} smoke check(s) need attention.` : 'Smoke checks passed for the current shell.') : 'Run smoke checks to verify the deployment shell.';
+      }
+    }
+
+    async function runSmokeCheck() {
+      const e = els();
+      if (!window.YWIAPI?.runSmokeCheck) {
+        setSummary('Smoke check helper is unavailable in this build.', true);
+        renderSmokeChecks({ checks: [{ scope: 'smoke-check', ok: false, message: 'runSmokeCheck helper is unavailable.' }] });
+        return;
+      }
+      const original = e.smokeBtn?.textContent || 'Run Smoke Check';
+      if (e.smokeBtn) {
+        e.smokeBtn.disabled = true;
+        e.smokeBtn.textContent = 'Running…';
+      }
+      try {
+        const result = await window.YWIAPI.runSmokeCheck();
+        renderSmokeChecks(result || { checks: [] });
+        setSummary(result?.ok ? 'Smoke check completed successfully.' : 'Smoke check found issues that need attention.', !result?.ok);
+      } catch (err) {
+        renderSmokeChecks({ checks: [{ scope: 'smoke-check', ok: false, message: err?.message || 'Smoke check failed.' }] });
+        setSummary(err?.message || 'Smoke check failed.', true);
+      } finally {
+        if (e.smokeBtn) {
+          e.smokeBtn.disabled = false;
+          e.smokeBtn.textContent = original;
         }
       }
     }
@@ -462,7 +463,7 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
       }
       if (e.smokeBtn && e.smokeBtn.dataset.bound !== '1') {
         e.smokeBtn.dataset.bound = '1';
-        e.smokeBtn.addEventListener('click', runSmokeCheck);
+        e.smokeBtn.addEventListener('click', () => { runSmokeCheck().catch((err) => setSummary(err?.message || 'Smoke check failed.', true)); });
       }
       if (e.retrySyncBtn && e.retrySyncBtn.dataset.bound !== '1') {
         e.retrySyncBtn.dataset.bound = '1';
