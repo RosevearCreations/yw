@@ -388,6 +388,37 @@ serve(async (req) => {
       return Response.json({ ok:true, signout_id: signout?.id || null }, { headers:corsHeaders });
     }
 
+
+    if (body.entity === 'equipment_evidence_asset' && body.action === 'delete') {
+      const assetId = Number(body.asset_id || 0);
+      if (!assetId) return Response.json({ ok:false, error:'Evidence asset required' }, { status:400, headers:corsHeaders });
+      const { data: asset } = await supabase.from('equipment_evidence_assets').select('*').eq('id', assetId).single();
+      if (!asset) return Response.json({ ok:false, error:'Evidence asset not found' }, { status:404, headers:corsHeaders });
+      if (asset.storage_bucket && asset.storage_path) {
+        try { await supabase.storage.from(String(asset.storage_bucket)).remove([String(asset.storage_path)]); } catch {}
+      }
+      const { error } = await supabase.from('equipment_evidence_assets').delete().eq('id', assetId);
+      if (error) throw error;
+      return Response.json({ ok:true }, { headers:corsHeaders });
+    }
+
+    if (body.entity === 'equipment_evidence_asset' && body.action === 'update_metadata') {
+      const assetId = Number(body.asset_id || 0);
+      if (!assetId) return Response.json({ ok:false, error:'Evidence asset required' }, { status:400, headers:corsHeaders });
+      const payload: Record<string, unknown> = {
+        caption: body.caption ?? null,
+        stage: body.stage ?? 'return',
+        evidence_kind: body.evidence_kind ?? 'photo',
+        signer_role: body.signer_role ?? null,
+        preview_url: body.preview_url ?? null,
+        file_name: body.file_name ?? null,
+        content_type: body.content_type ?? null,
+      };
+      const { data, error } = await supabase.from('equipment_evidence_assets').update(payload).eq('id', assetId).select('*').single();
+      if (error) throw error;
+      return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+    }
+
     return Response.json({ ok:false, error:'Unsupported entity/action' }, { status:400, headers:corsHeaders });
   } catch (error) {
     return Response.json({ ok:false, error:String(error) }, { status:500, headers:corsHeaders });

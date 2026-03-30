@@ -255,7 +255,9 @@
     return data?.publicUrl || '';
   }
 
-  async function runSmokeCheck() {
+  let lastSmokeCheckResult = null;
+
+  async function runSmokeCheck(options = {}) {
     const checks = [];
     const shellVersion = Array.from(document.scripts || []).map((s) => s.src || '').filter(Boolean);
     checks.push({ scope: 'shell-scripts', ok: shellVersion.some((src) => src.includes('/js/bootstrap.js')), message: `Loaded ${shellVersion.length} script(s).` });
@@ -279,7 +281,22 @@
     } catch (err) {
       checks.push({ scope: 'bootstrap-admin', ok: false, message: err?.message || 'Supabase bootstrap check failed.' });
     }
-    return { ok: checks.every((row) => row.ok), checks };
+    if (options.includeAuthenticated && auth()?.getState?.()?.isAuthenticated) {
+      try {
+        const adminResp = await loadAdminDirectory({ scope: 'all', limit: 1 });
+        checks.push({ scope: 'authenticated-admin-directory', ok: adminResp?.ok !== false, message: adminResp?.ok === false ? (adminResp?.error || 'Admin directory returned an error.') : 'Authenticated admin directory reachable.' });
+      } catch (err) {
+        checks.push({ scope: 'authenticated-admin-directory', ok: false, message: err?.message || 'Authenticated admin directory check failed.' });
+      }
+      try {
+        const jobsResp = await fetchJobsDirectory({ scope: 'all', limit: 1 });
+        checks.push({ scope: 'authenticated-jobs-directory', ok: jobsResp?.ok !== false, message: jobsResp?.ok === false ? (jobsResp?.error || 'Jobs directory returned an error.') : 'Authenticated jobs directory reachable.' });
+      } catch (err) {
+        checks.push({ scope: 'authenticated-jobs-directory', ok: false, message: err?.message || 'Authenticated jobs directory check failed.' });
+      }
+    }
+    lastSmokeCheckResult = { ok: checks.every((row) => row.ok), checks, ran_at: new Date().toISOString() };
+    return lastSmokeCheckResult;
   }
 
   async function diagnoseConnections() {
@@ -335,6 +352,7 @@
     uploadImagesForSubmission,
     storagePreviewUrl,
     runSmokeCheck,
-    diagnoseConnections
+    diagnoseConnections,
+    getLastSmokeCheckResult: () => lastSmokeCheckResult
   };
 })();

@@ -1,5 +1,19 @@
 # Project State
 
+## 2026-03-30 conflict save-back, bundled support export, authenticated smoke-check, and evidence relabel pass
+- Added direct conflict save-back tools for queued account/admin actions so merged values can be pushed immediately instead of waiting for replay alone.
+- Added a bundled support export from the diagnostics banner that includes diagnostics, latest smoke-check results, runtime-config state, and per-module startup timing.
+- Expanded smoke checks to retain the latest result and support authenticated admin/jobs directory checks when a signed-in session is present.
+- Added equipment evidence metadata save controls so gallery assets can be relabeled and moved between checkout/return groupings without re-uploading.
+- Added richer bulk replace progress messaging in the equipment evidence gallery.
+- Added a GitHub Actions smoke-check workflow that validates shell hooks and the single-H1 rule in the exposed page.
+- No new SQL migration was required. `sql/000_full_schema_reference.sql` remains the current schema snapshot and `055_storage_onboarding_identity_change_and_bootstrap.sql` remains the latest live migration.
+
+### Status after this pass
+- The currently documented Known Issues / Gaps list has been completed through the items tracked in this file.
+- The next stage can now shift from gap closure into broader application build-out, staging verification, and workflow expansion.
+
+
 ## Current pass complete
 - top-right user/session controls
 - self profile and crew view retained and expanded

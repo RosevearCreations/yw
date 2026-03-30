@@ -83,6 +83,7 @@ function ensureDiagnosticsPanel() {
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button id="diagnosticsRetryBtn" class="secondary" type="button">Retry protected screens</button>
         <button id="diagnosticsExportBtn" class="secondary" type="button">Export diagnostics</button>
+        <button id="diagnosticsSupportExportBtn" class="secondary" type="button">Export support bundle</button>
         <button id="diagnosticsDismissBtn" class="secondary" type="button">Dismiss</button>
       </div>
     </div>
@@ -145,7 +146,7 @@ function pushDiagnostic(scope, message, details = []) {
   const cleanScope = String(scope || 'app');
   const cleanMessage = String(message || 'Unexpected application issue.');
   diagnostics.items = diagnostics.items.filter((item) => !(item.scope === cleanScope && item.message === cleanMessage));
-  diagnostics.items.unshift({ scope: cleanScope, message: cleanMessage, details: Array.isArray(details) ? details : [], at: new Date().toISOString() });
+  diagnostics.items.unshift({ scope: cleanScope, message: cleanMessage, details: Array.isArray(details) ? details : [], at: new Date().toISOString(), elapsed_ms: startupMetrics.modules[cleanScope]?.elapsed_ms || null });
   diagnostics.items = diagnostics.items.slice(0, diagnostics.maxItems);
   renderDiagnostics();
 }
@@ -251,6 +252,7 @@ function seedAllTables() {
 
 function initAdminModule() {
   if (!hasAuthenticatedSession() || modules.adminUI || !window.YWIAdminUI?.create || !api()) return;
+  const startedAt = Date.now();
   modules.adminUI = window.YWIAdminUI.create({
     loadAdminDirectory: api().loadAdminDirectory,
     loadAdminSelectors: api().loadAdminSelectors,
@@ -261,7 +263,7 @@ function initAdminModule() {
     onSiteLoaded: () => {},
     onAssignmentLoaded: () => {}
   });
-  modules.adminUI.init().catch((err) => { console.error('Admin UI init failed', err); pushDiagnostic('admin-ui', err?.message || 'Admin UI failed to initialize.'); });
+  modules.adminUI.init().then(() => { markModuleTiming('admin-ui', startedAt, 'ok'); }).catch((err) => { markModuleTiming('admin-ui', startedAt, 'error', { message: err?.message || 'Admin UI failed to initialize.' }); console.error('Admin UI init failed', err); pushDiagnostic('admin-ui', err?.message || 'Admin UI failed to initialize.'); });
 }
 
 function hasAuthenticatedSession() {
@@ -280,6 +282,7 @@ function initProtectedModules() {
 
 function initProfileModule() {
   if (!hasAuthenticatedSession() || modules.profileUI || !window.YWIProfileUI?.create || !api()) return;
+  const startedAt = Date.now();
 
   modules.profileUI = window.YWIProfileUI.create({
     api: api(),
@@ -288,7 +291,8 @@ function initProfileModule() {
     getAccessProfile
   });
 
-  modules.profileUI.init().catch((err) => {
+  modules.profileUI.init().then(() => { markModuleTiming('profile-ui', startedAt, 'ok'); }).catch((err) => {
+    markModuleTiming('profile-ui', startedAt, 'error', { message: err?.message || 'Profile screen failed to initialize.' });
     console.error('Profile UI init failed', err);
     pushDiagnostic('profile-ui', err?.message || 'Profile screen failed to initialize.');
   });
@@ -297,26 +301,29 @@ function initProfileModule() {
 
 function initReferenceDataModule() {
   if (!hasAuthenticatedSession() || modules.referenceDataUI || !window.YWIReferenceData?.create || !api()) return;
+  const startedAt = Date.now();
   modules.referenceDataUI = window.YWIReferenceData.create({
     api: api(),
     getCurrentRole: () => appState.currentRole
   });
-  modules.referenceDataUI.init().catch?.((err) => { console.error('Reference data init failed', err); pushDiagnostic('reference-data', err?.message || 'Reference data failed to initialize.'); });
+  modules.referenceDataUI.init().then?.(() => { markModuleTiming('reference-data', startedAt, 'ok'); }).catch?.((err) => { markModuleTiming('reference-data', startedAt, 'error', { message: err?.message || 'Reference data failed to initialize.' }); console.error('Reference data init failed', err); pushDiagnostic('reference-data', err?.message || 'Reference data failed to initialize.'); });
 }
 
 
 function initJobsModule() {
   if (!hasAuthenticatedSession() || modules.jobsUI || !jobsUIFactory()?.create || !api()) return;
+  const startedAt = Date.now();
   modules.jobsUI = jobsUIFactory().create({
     api: api(),
     getCurrentRole: () => appState.currentRole,
     getAccessProfile
   });
-  modules.jobsUI.init().catch((err) => { console.error('Jobs UI init failed', err); pushDiagnostic('jobs-ui', err?.message || 'Jobs or Equipment screens failed to initialize.'); });
+  modules.jobsUI.init().then(() => { markModuleTiming('jobs-ui', startedAt, 'ok'); }).catch((err) => { markModuleTiming('jobs-ui', startedAt, 'error', { message: err?.message || 'Jobs or Equipment screens failed to initialize.' }); console.error('Jobs UI init failed', err); pushDiagnostic('jobs-ui', err?.message || 'Jobs or Equipment screens failed to initialize.'); });
 }
 
 function initLogbookModule() {
   if (!hasAuthenticatedSession() || modules.logbookUI || !window.YWILogbookUI?.create || !api()) return;
+  const startedAt = Date.now();
   modules.logbookUI = window.YWILogbookUI.create({
     fetchLogData: api().fetchLogData,
     fetchSubmissionDetail: api().fetchSubmissionDetail,
@@ -325,7 +332,7 @@ function initLogbookModule() {
     getCurrentRole: () => appState.currentRole,
     getAccessProfile
   });
-  modules.logbookUI.init().catch((err) => { console.error('Logbook UI init failed', err); pushDiagnostic('logbook-ui', err?.message || 'Logbook failed to initialize.'); });
+  modules.logbookUI.init().then(() => { markModuleTiming('logbook-ui', startedAt, 'ok'); }).catch((err) => { markModuleTiming('logbook-ui', startedAt, 'error', { message: err?.message || 'Logbook failed to initialize.' }); console.error('Logbook UI init failed', err); pushDiagnostic('logbook-ui', err?.message || 'Logbook failed to initialize.'); });
 }
 
 function initFormModules() {
@@ -369,7 +376,7 @@ function initAdminActions() {
 
 async function initializeAppShell() {
   bindDiagnosticsEvents();
-window.YWIAppDiagnostics = { getItems: () => diagnostics.items.slice(), clear: renderDiagnostics, exportItems: () => diagnostics.items.slice() };
+window.YWIAppDiagnostics = { getItems: () => diagnostics.items.slice(), clear: renderDiagnostics, exportItems: () => diagnostics.items.slice(), getSupportSnapshot: getRuntimeSupportSnapshot, getModuleTimings: () => Object.values(startupMetrics.modules) };
   ensureDiagnosticsPanel();
   applyDateFallback();
   outbox()?.bindRetryButtons?.({ isAuthenticated: () => appState.isAuthenticated, sendToFunction: api()?.sendToFunction, uploadImagesForSubmission: api()?.uploadImagesForSubmission });

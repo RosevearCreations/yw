@@ -89,6 +89,19 @@
         <div class="admin-panel-block" style="margin-top:16px;">
           <div class="section-heading">
             <div>
+              <h3 style="margin:0;">Pending Admin Conflicts</h3>
+              <p class="section-subtitle">Review queued admin notification/email actions and save a merged result directly from the preview workspace.</p>
+            </div>
+            <div class="admin-heading-actions">
+              <button id="ad_reload_conflicts" class="secondary" type="button">Reload Conflicts</button>
+            </div>
+          </div>
+          <div id="ad_conflicts_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
+          <div id="ad_conflicts"></div>
+        </div>
+        <div class="admin-panel-block" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
               <h3 style="margin:0;">Deploy Smoke Check</h3>
               <p class="section-subtitle">Check shell version, runtime config reachability, and bootstrap endpoint health before release.</p>
             </div>
@@ -104,6 +117,19 @@
               <tbody></tbody>
             </table>
           </div>
+        </div>
+        <div class="admin-panel-block" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
+              <h3 style="margin:0;">Pending Admin Conflicts</h3>
+              <p class="section-subtitle">Review queued admin notification/email actions and save a merged result directly from the preview workspace.</p>
+            </div>
+            <div class="admin-heading-actions">
+              <button id="ad_reload_conflicts" class="secondary" type="button">Reload Conflicts</button>
+            </div>
+          </div>
+          <div id="ad_conflicts_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
+          <div id="ad_conflicts"></div>
         </div>
         <div class="admin-panel-block" style="margin-top:16px;">
           <div class="section-heading">
@@ -144,6 +170,19 @@
               <tbody></tbody>
             </table>
           </div>
+        </div>
+        <div class="admin-panel-block" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
+              <h3 style="margin:0;">Pending Admin Conflicts</h3>
+              <p class="section-subtitle">Review queued admin notification/email actions and save a merged result directly from the preview workspace.</p>
+            </div>
+            <div class="admin-heading-actions">
+              <button id="ad_reload_conflicts" class="secondary" type="button">Reload Conflicts</button>
+            </div>
+          </div>
+          <div id="ad_conflicts_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
+          <div id="ad_conflicts"></div>
         </div>
         <div class="admin-panel-block" style="margin-top:16px;">
           <div class="section-heading">
@@ -338,6 +377,94 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
       }
     }
 
+    function setConflictSummary(text = '', isError = false) {
+      const e = els();
+      if (e.conflictsSummary) {
+        e.conflictsSummary.style.display = text ? 'block' : 'none';
+        e.conflictsSummary.dataset.kind = isError ? 'error' : 'info';
+        e.conflictsSummary.textContent = text || '';
+      }
+    }
+
+    function getAdminConflictItems() {
+      return (window.YWIOutbox?.getActionSummary?.('admin')?.items || []).filter((item) => item.status === 'conflict');
+    }
+
+    function renderAdminConflicts() {
+      const e = els();
+      if (!e.conflictsHost) return;
+      const items = getAdminConflictItems();
+      if (!items.length) {
+        e.conflictsHost.innerHTML = '<div class="muted">No admin sync conflicts are waiting for review.</div>';
+        setConflictSummary('No admin sync conflicts are waiting for review.');
+        return;
+      }
+      const current = {
+        email_to: e.emailTo?.value || '',
+        email_subject: e.emailSubject?.value || '',
+        email_body: e.emailBody?.value || ''
+      };
+      e.conflictsHost.innerHTML = items.map((item) => {
+        const payload = item.payload || {};
+        const fields = ['email_to','email_subject','email_body'];
+        return `
+          <div class="admin-panel-block" style="margin-bottom:12px;">
+            <div class="muted" style="margin-bottom:8px;">${escHtml(item.label || item.action_type || 'Queued admin action')} • ${escHtml(item.error || 'Conflict')}</div>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th>Field</th><th>Current preview</th><th>Queued value</th><th>Keep</th></tr></thead>
+                <tbody>
+                  ${fields.map((field) => `
+                    <tr>
+                      <td>${escHtml(field)}</td>
+                      <td>${escHtml(current[field] || '—')}</td>
+                      <td>${escHtml(payload[field] || '—')}</td>
+                      <td>
+                        <select data-admin-conflict-choice="${escHtml(item.id)}" data-field="${escHtml(field)}">
+                          <option value="current">Current</option>
+                          <option value="queued">Queued</option>
+                        </select>
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+            <div class="form-footer" style="margin-top:10px;flex-wrap:wrap;">
+              <button type="button" class="secondary" data-admin-conflict-save="${escHtml(item.id)}">Save Merged Now</button>
+              <button type="button" class="secondary" data-admin-conflict-retry="${escHtml(item.id)}">Mark for Retry</button>
+              <button type="button" class="secondary" data-admin-conflict-dismiss="${escHtml(item.id)}">Dismiss</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      setConflictSummary(`${items.length} admin conflict item(s) need review.`);
+    }
+
+    async function saveMergedAdminConflict(itemId) {
+      const item = getAdminConflictItems().find((entry) => String(entry.id) === String(itemId));
+      if (!item) return;
+      const e = els();
+      const merged = {
+        email_to: e.emailTo?.value || '',
+        email_subject: e.emailSubject?.value || '',
+        email_body: e.emailBody?.value || ''
+      };
+      Array.from(document.querySelectorAll(`[data-admin-conflict-choice="${itemId}"]`)).forEach((select) => {
+        const field = select.dataset.field;
+        if (!field) return;
+        merged[field] = select.value === 'queued' ? String(item.payload?.[field] || '') : String(merged[field] || '');
+      });
+      const payload = { ...item.payload, ...merged };
+      const resp = await runNotificationAction(payload.action || 'preview_email', payload.notification_id, payload);
+      if (resp?.preview) hydratePreview(payload.notification_id, resp.preview);
+      const next = (window.YWIOutbox?.getActionItems?.() || []).filter((entry) => String(entry.id) !== String(itemId));
+      window.YWIOutbox?.setActionItems?.(next);
+      renderAdminConflicts();
+      setConflictSummary('Merged admin action saved successfully.');
+    }
+
+
     async function loadDirectory() {
       applyRoleAccess();
       if (state.locked) return;
@@ -355,6 +482,7 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
         if (e.assignmentsCount) e.assignmentsCount.textContent = String(state.counts.assignments);
         renderNotifications();
         const outboxSummary = window.YWIOutbox?.getActionSummary?.('admin') || { total: 0, conflicts: 0 };
+        renderAdminConflicts();
         setSummary(state.manageLocked ? 'Read-only admin view loaded. Admin role is required for approval actions.' : `Admin view loaded.${outboxSummary.total ? ` Pending admin sync: ${outboxSummary.total} item(s), ${outboxSummary.conflicts || 0} conflict(s).` : ''}`);
       } catch (err) {
         setSummary(err?.message || 'Failed to load admin data.', true);
@@ -464,6 +592,33 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
       if (e.retrySyncBtn && e.retrySyncBtn.dataset.bound !== '1') {
         e.retrySyncBtn.dataset.bound = '1';
         e.retrySyncBtn.addEventListener('click', retryPendingAdminSync);
+      }
+      if (e.reloadConflictsBtn && e.reloadConflictsBtn.dataset.bound !== '1') {
+        e.reloadConflictsBtn.dataset.bound = '1';
+        e.reloadConflictsBtn.addEventListener('click', renderAdminConflicts);
+      }
+      if (e.conflictsHost && e.conflictsHost.dataset.bound !== '1') {
+        e.conflictsHost.dataset.bound = '1';
+        e.conflictsHost.addEventListener('click', async (event) => {
+          const saveBtn = event.target.closest('[data-admin-conflict-save]');
+          const retryBtn = event.target.closest('[data-admin-conflict-retry]');
+          const dismissBtn = event.target.closest('[data-admin-conflict-dismiss]');
+          if (saveBtn) {
+            try { await saveMergedAdminConflict(saveBtn.getAttribute('data-admin-conflict-save')); } catch (err) { setConflictSummary(err?.message || 'Merged admin save failed.', true); }
+          }
+          if (retryBtn) {
+            const next = (window.YWIOutbox?.getActionItems?.() || []).map((entry) => String(entry.id) === String(retryBtn.getAttribute('data-admin-conflict-retry')) ? { ...entry, status: 'pending', error: '' } : entry);
+            window.YWIOutbox?.setActionItems?.(next);
+            renderAdminConflicts();
+            setConflictSummary('Conflict marked for retry.');
+          }
+          if (dismissBtn) {
+            const next = (window.YWIOutbox?.getActionItems?.() || []).filter((entry) => String(entry.id) !== String(dismissBtn.getAttribute('data-admin-conflict-dismiss')));
+            window.YWIOutbox?.setActionItems?.(next);
+            renderAdminConflicts();
+            setConflictSummary('Conflict dismissed.');
+          }
+        });
       }
     }
 
