@@ -91,18 +91,38 @@
     localStorage.setItem(ACTION_QUEUE_KEY, JSON.stringify(Array.isArray(list) ? list : []));
   }
 
+  function buildConflictKey(item = {}) {
+    const payload = item?.payload || {};
+    const base = [
+      item?.scope || 'general',
+      item?.action_type || 'unknown',
+      payload.entity || '',
+      payload.notification_id || payload.request_id || payload.profile_id || payload.asset_id || payload.job_id || payload.equipment_code || ''
+    ].join(':');
+    return base || `${item?.scope || 'general'}:${item?.action_type || 'unknown'}`;
+  }
+
   function queueAction(item) {
     const list = getActionItems();
-    list.push({
-      id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      queued_at: new Date().toISOString(),
+    const conflictKey = item?.conflict_key || buildConflictKey(item);
+    const existingIndex = list.findIndex((entry) => String(entry.conflict_key || '') === String(conflictKey) && entry.status !== 'sent');
+    const merged = {
+      id: existingIndex >= 0 ? list[existingIndex].id : `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      queued_at: existingIndex >= 0 ? list[existingIndex].queued_at : new Date().toISOString(),
+      updated_at: new Date().toISOString(),
       status: 'pending',
       scope: item?.scope || 'general',
       action_type: item?.action_type || 'unknown',
       payload: item?.payload || {},
       label: item?.label || '',
-      error: ''
-    });
+      error: '',
+      attempts: existingIndex >= 0 ? Number(list[existingIndex].attempts || 0) : 0,
+      merge_count: existingIndex >= 0 ? Number(list[existingIndex].merge_count || 0) + 1 : 0,
+      conflict_key: conflictKey,
+      conflict_details: []
+    };
+    if (existingIndex >= 0) list[existingIndex] = merged;
+    else list.push(merged);
     setActionItems(list);
     return list.length;
   }
@@ -121,16 +141,21 @@
       }
       const handler = handlers[item.action_type];
       if (typeof handler !== 'function') {
-        remaining.push({ ...item, status: 'conflict', error: `No handler for ${item.action_type}` });
-        conflicts.push(item);
+        const failed = { ...item, status: 'conflict', error: `No handler for ${item.action_type}`, attempts: Number(item.attempts || 0) + 1, conflict_details: ['Missing replay handler.'] };
+        remaining.push(failed);
+        conflicts.push(failed);
         continue;
       }
       try {
         await handler(item.payload || {}, item);
         retried += 1;
       } catch (err) {
-        remaining.push({ ...item, status: 'conflict', error: err?.message || String(err || 'Retry failed') });
-        conflicts.push(item);
+        const msg = String(err?.message || err || 'Retry failed');
+        const detail = Array.isArray(err?.details) ? err.details : [];
+        const isConflict = /conflict|already|duplicate|stale|merge/i.test(msg);
+        const failed = { ...item, status: isConflict ? 'conflict' : 'pending', error: msg, attempts: Number(item.attempts || 0) + 1, conflict_details: detail };
+        remaining.push(failed);
+        if (isConflict) conflicts.push(failed);
       }
     }
     setActionItems(remaining);
@@ -143,6 +168,7 @@
       total: items.length,
       conflicts: items.filter((item) => item.status === 'conflict').length,
       pending: items.filter((item) => item.status !== 'conflict').length,
+      merged: items.filter((item) => Number(item.merge_count || 0) > 0).length,
       items
     };
   }

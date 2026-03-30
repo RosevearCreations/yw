@@ -297,3 +297,10 @@ This pass focused on the app-shell and auth startup problems that were leaving u
 - Removed a duplicated Deploy Smoke Check block from the Admin screen and refreshed the docs/schema snapshot notes.
 - No new SQL migration was required for this pass; schema remains current through `055_storage_onboarding_identity_change_and_bootstrap.sql`.
 
+
+
+## 2026-03-29 conflict-aware replay, diagnostics detail, and evidence bulk-actions pass
+- Conflict-aware action outbox replay/merge.
+- Diagnostics banner now shows validation detail arrays.
+- Smoke check now verifies diagnostics banner is empty after clean boot.
+- Equipment evidence gallery now supports bulk select/delete and clearer replace progress messaging.

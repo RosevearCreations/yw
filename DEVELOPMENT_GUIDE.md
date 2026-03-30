@@ -89,3 +89,10 @@ This pass focused on the app-shell and auth startup problems that were leaving u
 3. Surface diagnostics banner entries inside a dedicated support/export screen for easier remote troubleshooting.
 4. Add release automation that smoke-checks runtime config, auth bootstrap, and an authenticated worker boot before publish.
 
+
+
+## 2026-03-29 conflict-aware replay, diagnostics detail, and evidence bulk-actions pass
+- Conflict-aware action outbox replay/merge.
+- Diagnostics banner now shows validation detail arrays.
+- Smoke check now verifies diagnostics banner is empty after clean boot.
+- Equipment evidence gallery now supports bulk select/delete and clearer replace progress messaging.

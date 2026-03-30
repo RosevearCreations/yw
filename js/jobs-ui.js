@@ -830,20 +830,27 @@
         return;
       }
       state.selectedGallerySignoutId = Number(row.id);
-      e.eqGallery.innerHTML = row.evidence_assets.map((asset) => `
+      e.eqGallery.innerHTML = `
+        <div class="form-footer" style="margin-bottom:10px;">
+          <button type="button" class="secondary" data-gallery-select-all="1">Select all</button>
+          <button type="button" class="secondary" data-gallery-bulk-delete="${escHtml(row.id)}">Delete selected</button>
+        </div>
+      ` + row.evidence_assets.map((asset) => `
         <div class="evidence-asset-card">
+          <label class="muted" style="display:flex;gap:6px;align-items:center;font-size:12px;"><input type="checkbox" data-gallery-asset="${escHtml(asset.id)}" />Select</label>
           <a href="${escHtml(asset.public_url || asset.storage_path || '#')}" target="_blank" rel="noopener">
             <img src="${escHtml(asset.public_url || asset.storage_path || '')}" alt="${escHtml(asset.caption || asset.evidence_kind || 'Evidence asset')}" class="evidence-thumb" />
           </a>
           <div class="muted" style="font-size:12px;">${escHtml(asset.stage || '')} • ${escHtml(asset.evidence_kind || '')} ${asset.signer_role ? `• ${escHtml(asset.signer_role)}` : ''}</div>
           <div class="muted" style="font-size:12px;">${escHtml(asset.caption || '')}</div>
+          <div class="muted" style="font-size:12px;">Progress: Ready</div>
           <div class="form-footer" style="margin-top:8px;">
             <label class="secondary" style="cursor:pointer;">Replace<input type="file" accept="image/*" data-replace-evidence="${escHtml(asset.id)}" data-signout-id="${escHtml(row.id)}" data-stage="${escHtml(asset.stage || 'return')}" data-kind="${escHtml(asset.evidence_kind || 'photo')}" data-role="${escHtml(asset.signer_role || '')}" style="display:none;" /></label>
             <button type="button" class="secondary" data-delete-evidence="${escHtml(asset.id)}">Delete</button>
           </div>
         </div>
       `).join('');
-      setNotice(e.eqGallerySummary, `Viewing ${row.evidence_assets.length} evidence asset(s) for ${row.equipment_code || row.equipment_item_id}.`);
+      setNotice(e.eqGallerySummary, `Viewing ${row.evidence_assets.length} evidence asset(s) for ${row.equipment_code || row.equipment_item_id}. Use Select all and Delete selected for bulk cleanup.`);
     }
 
     function renderEquipment() {
@@ -896,9 +903,24 @@
 
     async function deleteEvidenceAsset(assetId) {
       if (!assetId) return;
+      setNotice(els().eqGallerySummary, 'Deleting evidence asset…');
       await api.manageJobsEntity({ entity: 'equipment_evidence_asset', action: 'delete', asset_id: assetId });
       await loadData();
       renderGallery(state.selectedGallerySignoutId);
+    }
+
+    async function bulkDeleteEvidenceAssets(signoutId) {
+      const selected = Array.from(document.querySelectorAll('[data-gallery-asset]:checked')).map((el) => Number(el.value || el.dataset.galleryAsset || 0)).filter(Boolean);
+      if (!selected.length) {
+        setNotice(els().eqGallerySummary, 'Select one or more evidence assets first.');
+        return;
+      }
+      setNotice(els().eqGallerySummary, `Deleting ${selected.length} selected evidence asset(s)…`);
+      for (const assetId of selected) {
+        await api.manageJobsEntity({ entity: 'equipment_evidence_asset', action: 'delete', asset_id: assetId });
+      }
+      await loadData();
+      renderGallery(signoutId || state.selectedGallerySignoutId);
     }
 
     async function replaceEvidenceAsset(inputEl) {
@@ -907,10 +929,12 @@
       const assetId = Number(inputEl.dataset.replaceEvidence || 0);
       const signoutId = Number(inputEl.dataset.signoutId || 0);
       if (!assetId || !signoutId) return;
+      setNotice(els().eqGallerySummary, 'Replacing evidence asset… Upload in progress.');
       await api.manageJobsEntity({ entity: 'equipment_evidence_asset', action: 'delete', asset_id: assetId });
       await api.uploadEquipmentEvidenceBatch([{ signoutId, stage: inputEl.dataset.stage || 'return', evidenceKind: inputEl.dataset.kind || 'photo', signerRole: inputEl.dataset.role || '', caption: 'Replacement evidence upload', file }]);
       await loadData();
       renderGallery(signoutId);
+      setNotice(els().eqGallerySummary, 'Evidence asset replaced successfully.');
     }
 
     async function loadData() {

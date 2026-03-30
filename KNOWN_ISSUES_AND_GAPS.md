@@ -48,3 +48,17 @@ This is where we list known issues and gaps that need to be addressed
 3. Add a release checklist step that verifies the diagnostics banner stays empty on a clean authenticated boot.
 4. Expand the diagnostics feed to include server-side validation details for failed approval or profile save attempts.
 
+
+
+## 2026-03-29 conflict-aware replay, diagnostics detail, and evidence bulk-actions pass
+- Added conflict-aware replay behavior for the shared action outbox so repeated profile/admin actions merge by conflict key, keep attempt counts, and surface true conflict states instead of silently piling up duplicates.
+- Expanded the diagnostics feed so validation/detail arrays returned from API and approval/profile save failures are shown in the in-app diagnostics banner instead of only a generic message.
+- Added a diagnostics-empty smoke-check result so release checks now verify the diagnostics banner is clear on a clean authenticated boot.
+- Added equipment evidence gallery bulk-select/bulk-delete controls plus visible upload-progress state text for replace/delete actions on Storage-backed evidence assets.
+- Refreshed documentation and schema snapshot notes; no new SQL migration was required for this pass.
+
+### Remaining best next steps after the 2026-03-29 conflict-aware replay pass
+1. Add true side-by-side conflict merge UI for queued profile/admin drafts when local and server values differ.
+2. Add thumbnail upload progress bars and multi-file bulk replace for equipment evidence assets.
+3. Add automated deploy smoke-check execution in CI/CD so release verification is not manual.
+4. Expand diagnostics collection into per-module success/failure timing for deeper startup tracing.

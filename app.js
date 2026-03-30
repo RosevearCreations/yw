@@ -118,15 +118,18 @@ function renderDiagnostics() {
   panel.style.display = 'block';
   if (summary) summary.textContent = `${diagnostics.items.length} recent issue(s) captured. You can retry the protected screens after sign-in.`;
   if (list) {
-    list.innerHTML = diagnostics.items.map((item) => `<li><strong>${item.scope}</strong>: ${item.message}</li>`).join('');
+    list.innerHTML = diagnostics.items.map((item) => {
+      const details = Array.isArray(item.details) && item.details.length ? `<ul style="margin-top:6px;">${item.details.map((detail) => `<li>${detail}</li>`).join('')}</ul>` : '';
+      return `<li><strong>${item.scope}</strong>: ${item.message}${details}</li>`;
+    }).join('');
   }
 }
 
-function pushDiagnostic(scope, message) {
+function pushDiagnostic(scope, message, details = []) {
   const cleanScope = String(scope || 'app');
   const cleanMessage = String(message || 'Unexpected application issue.');
   diagnostics.items = diagnostics.items.filter((item) => !(item.scope === cleanScope && item.message === cleanMessage));
-  diagnostics.items.unshift({ scope: cleanScope, message: cleanMessage, at: new Date().toISOString() });
+  diagnostics.items.unshift({ scope: cleanScope, message: cleanMessage, details: Array.isArray(details) ? details : [], at: new Date().toISOString() });
   diagnostics.items = diagnostics.items.slice(0, diagnostics.maxItems);
   renderDiagnostics();
 }
@@ -141,7 +144,10 @@ function bindDiagnosticsEvents() {
   if (diagnostics.bound) return;
   diagnostics.bound = true;
   window.addEventListener('ywi:app-error', (event) => {
-    pushDiagnostic(event?.detail?.scope || 'app', event?.detail?.message || 'Unexpected application issue.');
+    pushDiagnostic(event?.detail?.scope || 'app', event?.detail?.message || 'Unexpected application issue.', event?.detail?.details || []);
+  });
+  window.addEventListener('ywi:api-validation', (event) => {
+    pushDiagnostic('validation', event?.detail?.message || 'Validation failed.', event?.detail?.details || []);
   });
 }
 
@@ -347,6 +353,7 @@ function initAdminActions() {
 
 async function initializeAppShell() {
   bindDiagnosticsEvents();
+window.YWIAppDiagnostics = { getItems: () => diagnostics.items.slice(), clear: renderDiagnostics };
   ensureDiagnosticsPanel();
   applyDateFallback();
   outbox()?.bindRetryButtons?.({ isAuthenticated: () => appState.isAuthenticated, sendToFunction: api()?.sendToFunction, uploadImagesForSubmission: api()?.uploadImagesForSubmission });

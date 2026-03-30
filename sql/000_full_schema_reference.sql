@@ -516,3 +516,9 @@ create index if not exists idx_account_recovery_requests_profile
 -- 2026-03-28 login stability and compatibility pass
 -- No structural schema changes were introduced in this pass.
 -- This snapshot remains aligned with migration 055 and the current runtime/auth compatibility updates.
+
+## 2026-03-29 conflict-aware replay, diagnostics detail, and evidence bulk-actions pass
+- Conflict-aware action outbox replay/merge.
+- Diagnostics banner now shows validation detail arrays.
+- Smoke check now verifies diagnostics banner is empty after clean boot.
+- Equipment evidence gallery now supports bulk select/delete and clearer replace progress messaging.

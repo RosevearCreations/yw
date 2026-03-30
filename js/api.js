@@ -93,6 +93,12 @@
     return body;
   }
 
+  function buildError(message, details = []) {
+    const err = new Error(message);
+    err.details = Array.isArray(details) ? details : [];
+    return err;
+  }
+
   async function jsonFetch(url, { method = 'POST', headers = {}, body = null, allowPublicAuthFallback = false } = {}) {
     ensureOnline('Offline. Reconnect to the internet or your Supabase server, then try again.');
     let authHeaders = await authHeader();
@@ -120,7 +126,20 @@
     }
 
     const text = await res.text();
-    if (!res.ok) throw new Error(`HTTP ${res.status}: ${summarizeErrorBody(text)}`);
+    if (!res.ok) {
+      let details = [];
+      let message = summarizeErrorBody(text);
+      try {
+        const parsed = JSON.parse(text);
+        if (parsed?.error) message = parsed.error;
+        if (Array.isArray(parsed?.details)) details = parsed.details;
+      } catch {}
+      const err = buildError(`HTTP ${res.status}: ${message}`, details);
+      if (details.length) {
+        window.dispatchEvent(new CustomEvent('ywi:api-validation', { detail: { url, message: err.message, details } }));
+      }
+      throw err;
+    }
     if (!String(text || '').trim()) return {};
     if (looksLikeHtml(text)) return { ok: false, html_response: true, message: summarizeErrorBody(text) };
     try { return JSON.parse(text); } catch { return text; }
@@ -138,7 +157,7 @@
     }
 
     const text = await res.text();
-    if (!res.ok) throw new Error(`HTTP ${res.status}: ${text}`);
+    if (!res.ok) throw buildError(`HTTP ${res.status}: ${summarizeErrorBody(text)}`);
     try { return JSON.parse(text); } catch { return text; }
   }
 
@@ -255,6 +274,8 @@
     try {
       const bootResp = await bootstrapAdmin({ smoke: true });
       checks.push({ scope: 'bootstrap-admin', ok: bootResp?.ok !== false, message: bootResp?.message || 'Supabase bootstrap endpoint reachable.' });
+      const diagItems = Array.isArray(window.YWIAppDiagnostics?.getItems?.()) ? window.YWIAppDiagnostics.getItems() : [];
+      checks.push({ scope: 'diagnostics-banner', ok: diagItems.length === 0, message: diagItems.length ? `${diagItems.length} diagnostic item(s) are still present after boot.` : 'Diagnostics banner is empty on the current boot.' });
     } catch (err) {
       checks.push({ scope: 'bootstrap-admin', ok: false, message: err?.message || 'Supabase bootstrap check failed.' });
     }

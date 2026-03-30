@@ -218,7 +218,7 @@ serve(async (req) => {
       updated_at: new Date().toISOString()
     };
     const errors = await validateProfilePatch(supabase, patch, actorId);
-    if (errors.length) return Response.json({ ok: false, error: errors.join(' ') }, { status: 400, headers: corsHeaders });
+    if (errors.length) return Response.json({ ok: false, error: errors.join(' '), details: errors }, { status: 400, headers: corsHeaders });
     const { data, error } = await supabase.from('profiles').update(patch).eq('id', actorId).select('*').single();
     if (error) return Response.json({ ok: false, error: String(error.message || error) }, { status: 500, headers: corsHeaders });
     return Response.json({ ok: true, record: data }, { headers: corsHeaders });
@@ -241,7 +241,7 @@ serve(async (req) => {
       updated_at: new Date().toISOString()
     };
     const errors = await validateProfilePatch(supabase, patch, actorId);
-    if (errors.length) return Response.json({ ok: false, error: errors.join(' ') }, { status: 400, headers: corsHeaders });
+    if (errors.length) return Response.json({ ok: false, error: errors.join(' '), details: errors }, { status: 400, headers: corsHeaders });
     const { data, error } = await supabase.from('profiles').update(patch).eq('id', actorId).select('*').single();
     if (error) return Response.json({ ok: false, error: String(error.message || error) }, { status: 500, headers: corsHeaders });
     return Response.json({ ok: true, record: data, message: 'Account setup completed.' }, { headers: corsHeaders });
@@ -289,7 +289,7 @@ serve(async (req) => {
       postal_code: actorProfile.postal_code || ''
     };
     const errors = await validateProfilePatch(supabase, patch, actorId);
-    if (errors.length) return Response.json({ ok: false, error: errors.join(' ') }, { status: 400, headers: corsHeaders });
+    if (errors.length) return Response.json({ ok: false, error: errors.join(' '), details: errors }, { status: 400, headers: corsHeaders });
 
     const { data: changeRequest, error: reqError } = await supabase.from('account_identity_change_requests').insert({
       profile_id: actorId,

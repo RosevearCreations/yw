@@ -148,25 +148,6 @@
         <div class="admin-panel-block" style="margin-top:16px;">
           <div class="section-heading">
             <div>
-              <h3 style="margin:0;">Deploy Smoke Check</h3>
-              <p class="section-subtitle">Check shell version, runtime config reachability, and bootstrap endpoint health before release.</p>
-            </div>
-            <div class="admin-heading-actions">
-              <button id="ad_run_smoke" class="secondary" type="button">Run Smoke Check</button>
-              <button id="ad_retry_sync" class="secondary" type="button">Retry Pending Admin Sync</button>
-            </div>
-          </div>
-          <div id="ad_smoke_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
-          <div class="table-scroll">
-            <table id="ad_smoke_table">
-              <thead><tr><th>Check</th><th>Status</th><th>Details</th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
-        <div class="admin-panel-block" style="margin-top:16px;">
-          <div class="section-heading">
-            <div>
               <h3 style="margin:0;">Email Preview / Test Send</h3>
               <p class="section-subtitle">Choose a notification from the queue, preview the message, then test-send or retry it.</p>
             </div>
@@ -373,7 +354,8 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
         if (e.sitesCount) e.sitesCount.textContent = String(state.counts.sites);
         if (e.assignmentsCount) e.assignmentsCount.textContent = String(state.counts.assignments);
         renderNotifications();
-        setSummary(state.manageLocked ? 'Read-only admin view loaded. Admin role is required for approval actions.' : 'Admin view loaded.');
+        const outboxSummary = window.YWIOutbox?.getActionSummary?.('admin') || { total: 0, conflicts: 0 };
+        setSummary(state.manageLocked ? 'Read-only admin view loaded. Admin role is required for approval actions.' : `Admin view loaded.${outboxSummary.total ? ` Pending admin sync: ${outboxSummary.total} item(s), ${outboxSummary.conflicts || 0} conflict(s).` : ''}`);
       } catch (err) {
         setSummary(err?.message || 'Failed to load admin data.', true);
       }

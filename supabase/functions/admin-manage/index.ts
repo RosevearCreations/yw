@@ -140,7 +140,7 @@ serve(async (req) => {
         } catch (err) {
           await updateDeliveryState(supabase, notificationId, 'email', 'resend', false, String(err));
           await supabase.from('admin_notifications').update({ status: 'failed', read_at: notification.read_at || now }).eq('id', notificationId);
-          return Response.json({ ok:false, error:String(err) }, { status:500, headers:corsHeaders });
+          return Response.json({ ok:false, error:String(err?.message || err), details:Array.isArray((err as any)?.details) ? (err as any).details : [] }, { status:500, headers:corsHeaders });
         }
       }
 
@@ -224,7 +224,9 @@ serve(async (req) => {
             if (shouldSyncAuth) {
               const { error: authSyncError } = await supabase.auth.admin.updateUserById(requestRow.profile_id, authPatch);
               if (authSyncError) {
-                throw new Error(`Auth identity sync failed: ${authSyncError.message}`);
+                const syncError: any = new Error(`Auth identity sync failed: ${authSyncError.message}`);
+                syncError.details = ['The approved profile change was not applied to the Auth user record.', authSyncError.message];
+                throw syncError;
               }
             }
             await supabase.from('profiles').update(profilePatch).eq('id', requestRow.profile_id);
