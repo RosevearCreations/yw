@@ -1,13 +1,12 @@
 /* File: js/admin-ui.js
    Brief description: Admin Dashboard UI controller.
    Renders a live approval/notification panel with approve/reject/resolve actions,
-   email preview/test-send/retry controls, and lightweight directory counts.
+   deploy smoke checks, queued admin action retry, and lightweight directory counts.
 */
 
 'use strict';
 
 (function () {
-  function $(sel, root = document) { return root.querySelector(sel); }
   function escHtml(value) {
     return String(value ?? '')
       .replaceAll('&', '&amp;')
@@ -32,14 +31,20 @@
       locked: true,
       manageLocked: true,
       notifications: [],
-      counts: { users: 0, sites: 0, assignments: 0 }
+      counts: { users: 0, sites: 0, assignments: 0 },
+      smokeChecks: []
     };
 
+    const DRAFT_KEY = 'ywi_admin_workspace_draft_v2';
 
-    const DRAFT_KEY = 'ywi_admin_workspace_draft_v1';
     function loadDraft() {
-      try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}'); } catch { return {}; }
+      try {
+        return JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}');
+      } catch {
+        return {};
+      }
     }
+
     function saveDraft() {
       const e = els();
       try {
@@ -49,10 +54,12 @@
           email_subject: e.emailSubject?.value || '',
           email_body: e.emailBody?.value || '',
           queue_search: e.search?.value || '',
-          queue_status: e.filterStatus?.value || ''
+          queue_status: e.filterStatus?.value || '',
+          smoke_summary: e.smokeSummary?.textContent || ''
         }));
       } catch {}
     }
+
     function restoreDraft() {
       const e = els();
       const draft = loadDraft();
@@ -73,24 +80,27 @@
         <div class="section-heading">
           <div>
             <h2>Admin</h2>
-            <p class="section-subtitle">Visible approval queue, notification email tools, and high-level directory counts.</p>
+            <p class="section-subtitle">Visible approval queue, notification tools, retry controls, and high-level directory counts.</p>
           </div>
           <div class="admin-heading-actions">
             <button id="ad_reload" class="secondary" type="button">Reload</button>
           </div>
         </div>
+
         <div id="ad_summary" class="notice" style="display:none;margin-bottom:14px;"></div>
+
         <div class="admin-stats-grid" id="ad_stats_grid">
           <div class="admin-stat-card"><span>Users</span><strong id="ad_users_count">0</strong></div>
           <div class="admin-stat-card"><span>Sites</span><strong id="ad_sites_count">0</strong></div>
           <div class="admin-stat-card"><span>Assignments</span><strong id="ad_assignments_count">0</strong></div>
           <div class="admin-stat-card"><span>Queue</span><strong id="ad_notifications_count">0</strong></div>
         </div>
+
         <div class="admin-panel-block" style="margin-top:16px;">
           <div class="section-heading">
             <div>
               <h3 style="margin:0;">Deploy Smoke Check</h3>
-              <p class="section-subtitle">Check shell version, runtime config reachability, and bootstrap endpoint health before release.</p>
+              <p class="section-subtitle">Check shell files, runtime config reachability, diagnostics state, and bootstrap endpoints.</p>
             </div>
             <div class="admin-heading-actions">
               <button id="ad_run_smoke" class="secondary" type="button">Run Smoke Check</button>
@@ -100,11 +110,14 @@
           <div id="ad_smoke_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
           <div class="table-scroll">
             <table id="ad_smoke_table">
-              <thead><tr><th>Check</th><th>Status</th><th>Details</th></tr></thead>
+              <thead>
+                <tr><th>Check</th><th>Status</th><th>Details</th></tr>
+              </thead>
               <tbody></tbody>
             </table>
           </div>
         </div>
+
         <div class="admin-panel-block" style="margin-top:16px;">
           <div class="section-heading">
             <div>
@@ -145,6 +158,7 @@
             </table>
           </div>
         </div>
+
         <div class="admin-panel-block" style="margin-top:16px;">
           <div class="section-heading">
             <div>
@@ -222,8 +236,9 @@
       state.manageLocked = !access.canManageAdminDirectory;
       const e = els();
       if (e.section) e.section.dataset.adminLocked = state.locked ? 'true' : 'false';
-      if (state.locked) setSummary('Supervisor, HSE, Job Admin, or Admin access is required to use this screen.', true);
-      restoreDraft();
+      if (state.locked) {
+        setSummary('Supervisor, HSE, Job Admin, or Admin access is required to use this section.', true);
+      }
     }
 
     function filteredNotifications() {
@@ -231,8 +246,17 @@
       const search = String(e.search?.value || '').trim().toLowerCase();
       const status = String(e.filterStatus?.value || '').trim().toLowerCase();
       return state.notifications.filter((row) => {
-        const hay = [row.id, row.notification_type, row.title, row.message, row.status, row.decision_status, row.created_by_name].join(' ').toLowerCase();
-        const statusMatch = !status || String(row.decision_status || row.status || '').toLowerCase() === status || String(row.email_status || '').toLowerCase() === status;
+        const hay = [
+          row.id,
+          row.notification_type,
+          row.title,
+          row.message,
+          row.status,
+          row.decision_status,
+          row.created_by_name
+        ].join(' ').toLowerCase();
+        const statusValue = String(row.decision_status || row.status || row.email_status || '').toLowerCase();
+        const statusMatch = !status || statusValue === status;
         return (!search || hay.includes(search)) && statusMatch;
       });
     }
@@ -254,18 +278,50 @@
           <td>${escHtml(row.created_at || '')}</td>
           <td>
             <div class="table-actions" style="display:flex;flex-wrap:wrap;gap:6px;">
-${state.manageLocked ? `<span class="muted">View only</span>` : `
-              <button class="secondary" data-notification-action="approve" data-id="${escHtml(row.id)}">Approve</button>
-              <button class="secondary" data-notification-action="reject" data-id="${escHtml(row.id)}">Reject</button>
-              <button class="secondary" data-notification-action="resolve" data-id="${escHtml(row.id)}">Resolve</button>
-              <button class="secondary" data-notification-action="preview_email" data-id="${escHtml(row.id)}">Preview</button>
-              <button class="secondary" data-notification-action="test_send" data-id="${escHtml(row.id)}">Test Send</button>
-              <button class="secondary" data-notification-action="retry_send" data-id="${escHtml(row.id)}">Retry</button>`}
+              ${state.manageLocked ? `<span class="muted">View only</span>` : `
+                <button class="secondary" data-notification-action="approve" data-id="${escHtml(row.id)}">Approve</button>
+                <button class="secondary" data-notification-action="reject" data-id="${escHtml(row.id)}">Reject</button>
+                <button class="secondary" data-notification-action="resolve" data-id="${escHtml(row.id)}">Resolve</button>
+                <button class="secondary" data-notification-action="preview_email" data-id="${escHtml(row.id)}">Preview</button>
+                <button class="secondary" data-notification-action="test_send" data-id="${escHtml(row.id)}">Test Send</button>
+                <button class="secondary" data-notification-action="retry_send" data-id="${escHtml(row.id)}">Retry</button>
+              `}
             </div>
           </td>
         `;
         e.notificationsBody.appendChild(tr);
       });
+    }
+
+    function renderSmokeChecks(result = {}) {
+      const e = els();
+      if (!e.smokeBody) return;
+      const checks = Array.isArray(result.checks) ? result.checks : [];
+      state.smokeChecks = checks;
+      e.smokeBody.innerHTML = '';
+      for (const row of checks) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escHtml(row.scope || row.name || 'check')}</td>
+          <td>${row.ok ? 'OK' : 'Fail'}</td>
+          <td>${escHtml(row.message || row.details || '')}</td>
+        `;
+        e.smokeBody.appendChild(tr);
+      }
+      if (e.smokeSummary) {
+        if (!checks.length) {
+          e.smokeSummary.style.display = 'none';
+          e.smokeSummary.textContent = '';
+        } else {
+          const failures = checks.filter((row) => !row.ok).length;
+          e.smokeSummary.style.display = 'block';
+          e.smokeSummary.dataset.kind = failures ? 'error' : 'info';
+          e.smokeSummary.textContent = failures
+            ? `Smoke check found ${failures} failing item(s).`
+            : 'Smoke check passed.';
+        }
+      }
+      saveDraft();
     }
 
     function hydratePreview(notificationId, preview = {}) {
@@ -279,7 +335,12 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
 
     async function runNotificationAction(action, notificationId, extra = {}) {
       if (!manageAdminEntity) throw new Error('Admin manage API is unavailable.');
-      const resp = await manageAdminEntity({ entity: 'notification', action, notification_id: notificationId, ...extra });
+      const resp = await manageAdminEntity({
+        entity: 'notification',
+        action,
+        notification_id: notificationId,
+        ...extra
+      });
       if (!resp?.ok) throw new Error(resp?.error || `Notification ${action} failed`);
       return resp;
     }
@@ -290,8 +351,9 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
       const action = btn.getAttribute('data-notification-action');
       const notificationId = btn.getAttribute('data-id');
       if (!notificationId) return;
+
+      let decisionNotes = '';
       try {
-        let decisionNotes = '';
         if (action === 'approve' || action === 'reject' || action === 'resolve') {
           decisionNotes = window.prompt(`Optional note for ${action}:`, '') || '';
         }
@@ -302,8 +364,18 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
       } catch (err) {
         const msg = String(err?.message || 'Notification action failed.');
         if (msg.toLowerCase().includes('offline') || msg.includes('HTTP 5')) {
-          window.YWIOutbox?.queueAction?.({ scope: 'admin', action_type: 'admin_notification_action', payload: { entity: 'notification', action, notification_id: notificationId, decision_notes: decisionNotes }, label: `Notification ${action}` });
-          setSummary('Notification action saved to the admin outbox for retry.', false);
+          window.YWIOutbox?.queueAction?.({
+            scope: 'admin',
+            action_type: 'admin_notification_action',
+            payload: {
+              entity: 'notification',
+              action,
+              notification_id: notificationId,
+              decision_notes: decisionNotes
+            },
+            label: `Notification ${action}`
+          });
+          setSummary('Notification action saved to the admin outbox for retry.');
         } else {
           setSummary(msg, true);
         }
@@ -325,63 +397,168 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
         });
         if (resp?.preview) hydratePreview(notificationId, resp.preview);
         saveDraft();
-        setSummary(action === 'preview_email' ? `Preview ready for notification ${notificationId}.` : `Notification ${notificationId} ${action.replace('_', ' ')} complete.`);
+        setSummary(
+          action === 'preview_email'
+            ? `Preview ready for notification ${notificationId}.`
+            : `Notification ${notificationId} ${action.replace('_', ' ')} complete.`
+        );
         await loadDirectory();
       } catch (err) {
         const msg = String(err?.message || 'Email action failed.');
         if (msg.toLowerCase().includes('offline') || msg.includes('HTTP 5')) {
-          window.YWIOutbox?.queueAction?.({ scope: 'admin', action_type: 'admin_notification_action', payload: { entity: 'notification', action, notification_id: notificationId, email_to: e.emailTo?.value || '', email_subject: e.emailSubject?.value || '', email_body: e.emailBody?.value || '' }, label: `Email ${action}` });
-          setSummary('Email action saved to the admin outbox for retry.', false);
+          window.YWIOutbox?.queueAction?.({
+            scope: 'admin',
+            action_type: 'admin_notification_action',
+            payload: {
+              entity: 'notification',
+              action,
+              notification_id: notificationId,
+              email_to: e.emailTo?.value || '',
+              email_subject: e.emailSubject?.value || '',
+              email_body: e.emailBody?.value || ''
+            },
+            label: `Email ${action}`
+          });
+          setSummary('Email action saved to the admin outbox for retry.');
         } else {
           setSummary(msg, true);
         }
       }
     }
 
-
-
-    function renderSmokeChecks(resp = {}) {
-      const e = els();
-      const checks = Array.isArray(resp?.checks) ? resp.checks : [];
-      if (e.smokeBody) {
-        e.smokeBody.innerHTML = checks.map((row) => `
-          <tr>
-            <td>${escHtml(row.scope || '')}</td>
-            <td>${row.ok ? 'OK' : 'Issue'}</td>
-            <td>${escHtml(row.message || '')}</td>
-          </tr>`).join('') || '<tr><td colspan="3" class="muted">No smoke checks run yet.</td></tr>';
-      }
-      if (e.smokeSummary) {
-        const failed = checks.filter((row) => !row.ok).length;
-        e.smokeSummary.style.display = 'block';
-        e.smokeSummary.dataset.kind = failed ? 'error' : 'info';
-        e.smokeSummary.textContent = checks.length ? (failed ? `${failed} smoke check(s) need attention.` : 'Smoke checks passed for the current shell.') : 'Run smoke checks to verify the deployment shell.';
-      }
-    }
-
     async function runSmokeCheck() {
       const e = els();
-      if (!window.YWIAPI?.runSmokeCheck) {
-        setSummary('Smoke check helper is unavailable in this build.', true);
-        renderSmokeChecks({ checks: [{ scope: 'smoke-check', ok: false, message: 'runSmokeCheck helper is unavailable.' }] });
-        return;
-      }
-      const original = e.smokeBtn?.textContent || 'Run Smoke Check';
       if (e.smokeBtn) {
         e.smokeBtn.disabled = true;
-        e.smokeBtn.textContent = 'Running…';
+        e.smokeBtn.textContent = 'Running...';
       }
+
       try {
-        const result = await window.YWIAPI.runSmokeCheck();
-        renderSmokeChecks(result || { checks: [] });
-        setSummary(result?.ok ? 'Smoke check completed successfully.' : 'Smoke check found issues that need attention.', !result?.ok);
+        if (typeof window.YWIAPI?.runSmokeCheck === 'function') {
+          const result = await window.YWIAPI.runSmokeCheck();
+          renderSmokeChecks(result);
+          setSummary(result?.ok ? 'Smoke check completed successfully.' : 'Smoke check completed with failures.', !result?.ok);
+          return result;
+        }
+
+        const checks = [];
+        const loadedScripts = Array.from(document.scripts || [])
+          .map((script) => script.src || '')
+          .filter(Boolean);
+        checks.push({
+          scope: 'shell-scripts',
+          ok: loadedScripts.some((src) => src.includes('/js/bootstrap.js')),
+          message: `Loaded ${loadedScripts.length} script(s).`
+        });
+
+        try {
+          const cfgResp = await fetch('/js/app-config.js', { cache: 'no-store' });
+          checks.push({
+            scope: 'app-config',
+            ok: cfgResp.ok,
+            status: cfgResp.status,
+            message: cfgResp.ok ? 'app-config.js reachable.' : 'app-config.js missing.'
+          });
+        } catch (err) {
+          checks.push({
+            scope: 'app-config',
+            ok: false,
+            message: err?.message || 'app-config.js check failed.'
+          });
+        }
+
+        try {
+          const compatResp = await fetch('/api/auth/bootstrap-admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ smoke: true })
+          });
+          checks.push({
+            scope: 'bootstrap-compat',
+            ok: compatResp.ok,
+            status: compatResp.status,
+            message: compatResp.ok
+              ? 'Compatibility bootstrap endpoint reachable.'
+              : 'Compatibility bootstrap endpoint failed.'
+          });
+        } catch (err) {
+          checks.push({
+            scope: 'bootstrap-compat',
+            ok: false,
+            message: err?.message || 'Compatibility bootstrap check failed.'
+          });
+        }
+
+        const diagItems = Array.isArray(window.YWIAppDiagnostics?.getItems?.())
+          ? window.YWIAppDiagnostics.getItems()
+          : [];
+        checks.push({
+          scope: 'diagnostics-banner',
+          ok: diagItems.length === 0,
+          message: diagItems.length
+            ? `${diagItems.length} diagnostic item(s) are present.`
+            : 'Diagnostics banner is empty on the current boot.'
+        });
+
+        const result = { ok: checks.every((row) => row.ok), checks };
+        renderSmokeChecks(result);
+        setSummary(result.ok ? 'Smoke check completed successfully.' : 'Smoke check completed with failures.', !result.ok);
+        return result;
       } catch (err) {
-        renderSmokeChecks({ checks: [{ scope: 'smoke-check', ok: false, message: err?.message || 'Smoke check failed.' }] });
-        setSummary(err?.message || 'Smoke check failed.', true);
+        const message = String(err?.message || 'Smoke check failed.');
+        renderSmokeChecks({ ok: false, checks: [{ scope: 'smoke-check', ok: false, message }] });
+        setSummary(message, true);
+        return { ok: false, checks: [{ scope: 'smoke-check', ok: false, message }] };
       } finally {
         if (e.smokeBtn) {
           e.smokeBtn.disabled = false;
-          e.smokeBtn.textContent = original;
+          e.smokeBtn.textContent = 'Run Smoke Check';
+        }
+      }
+    }
+
+    async function retryPendingAdminSync() {
+      const e = els();
+      if (e.retrySyncBtn) {
+        e.retrySyncBtn.disabled = true;
+        e.retrySyncBtn.textContent = 'Retrying...';
+      }
+
+      try {
+        const result = await window.YWIOutbox?.retryQueuedActions?.({
+          scope: 'admin',
+          handlers: {
+            admin_notification_action: async (payload = {}) => {
+              if (!manageAdminEntity) {
+                throw new Error('Admin manage API is unavailable.');
+              }
+              const resp = await manageAdminEntity(payload);
+              if (!resp?.ok) {
+                const err = new Error(resp?.error || 'Admin notification retry failed.');
+                err.details = resp?.details || [];
+                throw err;
+              }
+              return resp;
+            }
+          }
+        });
+
+        const summary = result || { total: 0, retried: 0, remaining: 0, conflicts: [] };
+        const conflictCount = Array.isArray(summary.conflicts) ? summary.conflicts.length : 0;
+        setSummary(
+          summary.total
+            ? `Admin sync retried ${summary.retried} of ${summary.total}. Remaining: ${summary.remaining}. Conflicts: ${conflictCount}.`
+            : 'No pending admin sync items were queued.'
+        );
+        await loadDirectory();
+        return summary;
+      } catch (err) {
+        setSummary(String(err?.message || 'Failed to retry pending admin sync.'), true);
+        return { ok: false };
+      } finally {
+        if (e.retrySyncBtn) {
+          e.retrySyncBtn.disabled = false;
+          e.retrySyncBtn.textContent = 'Retry Pending Admin Sync';
         }
       }
     }
@@ -389,6 +566,7 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
     async function loadDirectory() {
       applyRoleAccess();
       if (state.locked) return;
+
       try {
         const resp = await loadAdminDirectory({ scope: 'all', limit: 200 });
         state.notifications = Array.isArray(resp?.notifications) ? resp.notifications : [];
@@ -397,13 +575,20 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
           sites: Array.isArray(resp?.sites) ? resp.sites.length : 0,
           assignments: Array.isArray(resp?.assignments) ? resp.assignments.length : 0
         };
+
         const e = els();
         if (e.usersCount) e.usersCount.textContent = String(state.counts.users);
         if (e.sitesCount) e.sitesCount.textContent = String(state.counts.sites);
         if (e.assignmentsCount) e.assignmentsCount.textContent = String(state.counts.assignments);
+
         renderNotifications();
+
         const outboxSummary = window.YWIOutbox?.getActionSummary?.('admin') || { total: 0, conflicts: 0 };
-        setSummary(state.manageLocked ? 'Read-only admin view loaded. Admin role is required for approval actions.' : `Admin view loaded.${outboxSummary.total ? ` Pending admin sync: ${outboxSummary.total} item(s), ${outboxSummary.conflicts || 0} conflict(s).` : ''}`);
+        setSummary(
+          state.manageLocked
+            ? 'Read-only admin view loaded. Admin role is required for approval actions.'
+            : `Admin view loaded.${outboxSummary.total ? ` Pending admin sync: ${outboxSummary.total} item(s), ${outboxSummary.conflicts || 0} conflict(s).` : ''}`
+        );
       } catch (err) {
         setSummary(err?.message || 'Failed to load admin data.', true);
       }
@@ -418,6 +603,7 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
       if (e.assignmentsCount) e.assignmentsCount.textContent = '0';
       if (e.notificationsCount) e.notificationsCount.textContent = '0';
       hydratePreview('', {});
+      renderSmokeChecks({ checks: [] });
     }
 
     async function refreshSelectors() {
@@ -426,24 +612,32 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
 
     function bind() {
       const e = els();
-      ['emailTo','emailSubject','emailBody'].forEach((key) => {
+
+      ['emailTo', 'emailSubject', 'emailBody'].forEach((key) => {
         const field = e[key];
         if (field && field.dataset.boundDraft !== '1') {
           field.dataset.boundDraft = '1';
           field.addEventListener('input', saveDraft);
         }
       });
+
       if (e.reloadBtn && e.reloadBtn.dataset.bound !== '1') {
         e.reloadBtn.dataset.bound = '1';
-        e.reloadBtn.addEventListener('click', loadDirectory);
+        e.reloadBtn.addEventListener('click', () => loadDirectory());
       }
       if (e.search && e.search.dataset.bound !== '1') {
         e.search.dataset.bound = '1';
-        e.search.addEventListener('input', renderNotifications);
+        e.search.addEventListener('input', () => {
+          saveDraft();
+          renderNotifications();
+        });
       }
       if (e.filterStatus && e.filterStatus.dataset.bound !== '1') {
         e.filterStatus.dataset.bound = '1';
-        e.filterStatus.addEventListener('change', renderNotifications);
+        e.filterStatus.addEventListener('change', () => {
+          saveDraft();
+          renderNotifications();
+        });
       }
       if (e.notificationsBody && e.notificationsBody.dataset.bound !== '1') {
         e.notificationsBody.dataset.bound = '1';
@@ -463,23 +657,33 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
       }
       if (e.smokeBtn && e.smokeBtn.dataset.bound !== '1') {
         e.smokeBtn.dataset.bound = '1';
-        e.smokeBtn.addEventListener('click', () => { runSmokeCheck().catch((err) => setSummary(err?.message || 'Smoke check failed.', true)); });
+        e.smokeBtn.addEventListener('click', () => runSmokeCheck());
       }
       if (e.retrySyncBtn && e.retrySyncBtn.dataset.bound !== '1') {
         e.retrySyncBtn.dataset.bound = '1';
-        e.retrySyncBtn.addEventListener('click', retryPendingAdminSync);
+        e.retrySyncBtn.addEventListener('click', () => retryPendingAdminSync());
       }
     }
 
     async function init() {
       ensureLayout();
+      restoreDraft();
       bind();
       applyRoleAccess();
       renderSmokeChecks({ checks: [] });
       await loadDirectory();
     }
 
-    return { state, init, loadDirectory, clearDirectory, refreshSelectors, applyRoleAccess };
+    return {
+      state,
+      init,
+      loadDirectory,
+      clearDirectory,
+      refreshSelectors,
+      applyRoleAccess,
+      runSmokeCheck,
+      retryPendingAdminSync
+    };
   }
 
   window.YWIAdminUI = { create: createAdminUI };
