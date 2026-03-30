@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin Upload | Rosie Dazzlers</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <meta name="description" content="Mobile-friendly admin upload tool for Rosie Dazzlers progress media." />
+  <link rel="stylesheet" href="/assets/site.css" />
+  <style>
+    .grid2{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.muted{color:rgba(234,242,255,.7)}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.cardImg{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:16px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04)} pre{white-space:pre-wrap;word-break:break-word;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:10px}.stack{display:grid;gap:12px}@media(max-width:980px){.grid2{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="nav"><div class="nav-inner"><a class="brand" href="/"><img data-logo alt="Rosie Dazzlers logo" /><strong>Rosie Dazzlers</strong></a><button class="btn small ghost nav-toggle" id="navToggle" type="button" aria-expanded="false">Menu</button><div class="nav-links" id="navLinks"></div><a class="btn primary" href="/admin">Admin</a></div></div>
+  <div class="container">
+    <div class="panel">
+      <div class="row" style="justify-content:space-between"><div><h1 style="margin:0 0 6px">Upload Helper</h1><p class="kicker" style="margin:0">Use your signed-in staff session to upload media directly from mobile and post progress notes.</p></div><div id="actorBox" class="notice" style="display:none"></div></div>
+      <div id="status" class="notice" style="display:none;margin-top:12px"></div>
+    </div>
+    <div class="section grid2">
+      <div class="panel stack">
+        <div>
+          <label for="booking_id">Booking ID</label>
+          <input id="booking_id" class="mono" type="text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+        </div>
+        <div>
+          <label for="media_file">Photo or file</label>
+          <input id="media_file" type="file" accept="image/*,video/*" capture="environment" />
+        </div>
+        <div class="row">
+          <div style="flex:1;min-width:180px"><label for="visibility">Visibility</label><select id="visibility"><option value="customer">Visible to customer</option><option value="internal">Internal only</option></select></div>
+          <div style="flex:1;min-width:180px"><label for="media_type">Media type</label><select id="media_type"><option value="image">Image</option><option value="video">Video</option><option value="file">File</option></select></div>
+        </div>
+        <div>
+          <label for="caption">Caption</label>
+          <input id="caption" type="text" placeholder="Before vacuum, wheel clean, finished interior..." />
+        </div>
+        <div>
+          <label for="note">Optional progress note</label>
+          <textarea id="note" placeholder="Short customer-facing or internal note..."></textarea>
+        </div>
+        <div class="row"><button class="btn primary" id="uploadBtn" type="button">Upload and Save</button><button class="btn ghost" id="refreshBtn" type="button">Refresh Latest</button><a class="btn ghost" href="/admin">Back</a></div>
+        <div class="muted">This page now uses the signed-in staff session first. The old shared admin password is only a fallback on the API side.</div>
+      </div>
+      <div class="panel stack">
+        <div>
+          <h2 style="margin:0 0 6px">Latest media</h2>
+          <img id="previewImg" class="cardImg" alt="Latest uploaded preview" style="display:none" />
+          <div id="previewText" class="muted" style="margin-top:10px">No media loaded yet.</div>
+        </div>
+        <pre id="raw">{}</pre>
+      </div>
+    </div>
+    <div class="footer" data-footer></div>
+  </div>
+  <script src="/assets/admin-auth.js"></script>
+  <script src="/assets/admin-shell.js"></script>
+  <script>
+    (function(){
+      const qs=(s)=>document.querySelector(s);
+      let actor=null;
+      function show(msg, kind=""){ const el=qs('#status'); el.style.display='block'; el.className='notice '+(kind||''); el.textContent=msg; }
+      function hide(){ qs('#status').style.display='none'; }
+      function actorHeaders(){ return actor?.email ? { 'x-staff-email': actor.email } : {}; }
+      async function postJson(url,payload){ const res=await fetch(url,{method:'POST',credentials:'include',headers:{'content-type':'application/json',...actorHeaders()},body:JSON.stringify(payload)}); return { ok:res.ok, status:res.status, out: await res.json().catch(()=>null)}; }
+      async function loadLatest(){ hide(); const booking_id=(qs('#booking_id').value||'').trim(); if(!booking_id) return show('Enter a booking ID first.','bad'); const r=await postJson('/api/admin/progress_list',{booking_id}); qs('#raw').textContent=JSON.stringify(r.out||{},null,2); if(!r.ok||!r.out?.ok) return show(r.out?.error||`Request failed (${r.status})`,'bad'); const media=Array.isArray(r.out.media)?r.out.media:[]; const latest=media.find((m)=>m.media_url)||null; const img=qs('#previewImg'); if(latest?.media_url && String(latest.kind||'').toLowerCase()!=='file'){ img.style.display='block'; img.src=latest.media_url; img.onerror=()=>{img.style.display='none';}; } else { img.style.display='none'; img.src=''; }
+        qs('#previewText').textContent = latest ? `${latest.kind || 'media'} · ${latest.caption || 'No caption'} · ${latest.visibility || ''}` : 'No media loaded yet.';
+        show('Latest booking media loaded.','ok'); setTimeout(hide,1000);
+      }
+      async function uploadFlow(){ hide(); const booking_id=(qs('#booking_id').value||'').trim(); const file=qs('#media_file').files?.[0]||null; if(!booking_id) return show('Enter a booking ID first.','bad'); if(!file) return show('Choose a file first.','bad'); qs('#uploadBtn').disabled=true; qs('#uploadBtn').textContent='Uploading…';
+        try {
+          const sign=await postJson('/api/admin/progress_upload_url',{booking_id,filename:file.name,content_type:file.type||'application/octet-stream'});
+          if(!sign.ok||!sign.out?.ok) throw new Error(sign.out?.error || `Could not prepare upload (${sign.status})`);
+          const put=await fetch(sign.out.upload_url,{ method:'PUT', headers:{'Content-Type': file.type || 'application/octet-stream'}, body:file });
+          if(!put.ok) throw new Error(`Upload failed (${put.status})`);
+          const media=await postJson('/api/admin/media_save',{ booking_id, media_url: sign.out.public_url, media_type: qs('#media_type').value, visibility: qs('#visibility').value, caption: (qs('#caption').value||'').trim() || file.name, staff_name: actor?.full_name || 'Staff' });
+          if(!media.ok||!media.out?.ok) throw new Error(media.out?.error || `Could not save media (${media.status})`);
+          const note=(qs('#note').value||'').trim();
+          if(note){ const upd=await postJson('/api/admin/progress_post',{ booking_id, note, visibility: qs('#visibility').value }); if(!upd.ok||!upd.out?.ok) throw new Error(upd.out?.error || `Media saved but note failed (${upd.status})`); }
+          show('Upload complete. Media saved to the booking.','ok');
+          qs('#caption').value=''; qs('#note').value=''; qs('#media_file').value='';
+          await loadLatest();
+        } catch(err){ show(err.message || 'Upload failed.','bad'); }
+        finally { qs('#uploadBtn').disabled=false; qs('#uploadBtn').textContent='Upload and Save'; }
+      }
+      qs('#uploadBtn').addEventListener('click', uploadFlow);
+      qs('#refreshBtn').addEventListener('click', loadLatest);
+      window.AdminShell.boot({ pageKey:'upload', onReady: async ({actor:current}) => { actor=current||null; const box=qs('#actorBox'); if(actor){ box.style.display='block'; box.textContent=`Signed in as ${actor.full_name || actor.email || 'staff'} (${actor.role_code || 'staff'})`; } } });
+    })();
+  </script>
+</body>
+</html>

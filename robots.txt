@@ -1,0 +1,5 @@
+
+User-agent: *
+Allow: /
+
+Sitemap: https://dev.rosiedazzlers.pages.dev/sitemap.xml

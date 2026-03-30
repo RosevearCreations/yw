@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Book Mobile Auto Detailing in Oxford & Norfolk Counties | Rosie Dazzlers</title>
+  <meta name="description" content="Book Rosie Dazzlers mobile auto detailing in Oxford County and Norfolk County. Choose an available day, match your vehicle from your garage, pick the right package and add-ons, then pay your deposit online." />
+  <link rel="canonical" href="https://rosiedazzlers.ca/book" />
+  <meta property="og:title" content="Book Mobile Auto Detailing | Rosie Dazzlers" />
+  <meta property="og:description" content="Choose your date, vehicle, package, add-ons, and deposit payment for mobile detailing in Oxford and Norfolk counties." />
+  <meta name="robots" content="index,follow" />
+  <link rel="stylesheet" href="/assets/site.css?v=20260327mobile1" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "AutoDetailing",
+    "name": "Rosie Dazzlers",
+    "url": "https://rosiedazzlers.ca/book",
+    "image": "https://assets.rosiedazzlers.ca/brand/Untitled.png",
+    "areaServed": [
+      {"@type":"AdministrativeArea","name":"Oxford County, Ontario"},
+      {"@type":"AdministrativeArea","name":"Norfolk County, Ontario"}
+    ],
+    "address": {"@type":"PostalAddress","addressRegion":"ON","addressCountry":"CA"},
+    "telephone": "+1-226-752-7613"
+  }
+  </script>
+
+  <style>
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .muted{color:rgba(234,242,255,.68)}
+    .mini{font-size:.92rem}
+    .summary-box{display:grid;gap:8px}
+    .summary-row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+    .summary-row strong{font-weight:800}
+    .wizard-step[hidden]{display:none !important}
+    .wizard-actions{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px}
+    .wizard-actions .right{display:flex;gap:10px;flex-wrap:wrap}
+    .step-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+    .step-head h2{margin:0}
+    .slot-row{display:flex;gap:10px;flex-wrap:wrap}
+    .slot-row .btn{flex:1 1 0;color:rgba(248,250,252,.96)!important}
+    .slot-row .btn.active{background:linear-gradient(135deg,var(--accent),#2b5bff);border-color:rgba(77,119,255,.55);color:#fff !important}
+    .hidden-helper{position:absolute;left:-9999px;opacity:0;pointer-events:none;width:1px;height:1px}
+    .requirements-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .requirements-grid label{display:flex;gap:10px;align-items:flex-start;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;background:rgba(255,255,255,.03)}
+    .package-note{min-height:44px}
+    .mobile-toolbar{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+    .page-kicker{margin:0;color:rgba(234,242,255,.7)}
+    .date-pill,.date-pill strong,.date-pill span,#availabilityNote,.wizard-nav button{color:rgba(248,250,252,.96)!important}
+    @media (max-width:980px){
+      .grid2,.grid3,.requirements-grid{grid-template-columns:1fr}
+      .wizard-actions .btn{width:100%}
+      .slot-row{display:grid;grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="/">
+        <img data-logo alt="Rosie Dazzlers logo" />
+        <strong>Rosie Dazzlers</strong>
+      </a>
+      <button class="btn small ghost nav-toggle" id="navToggle" type="button" aria-expanded="false">Menu</button>
+      <div class="nav-links" id="navLinks"></div>
+      <a class="btn primary" href="/book">Book now</a>
+    </div>
+  </div>
+
+  <main class="container wizard-shell">
+    <section class="panel wizard-top" id="wizardTop">
+      <div class="step-head">
+        <div>
+          <h1>Book mobile detailing</h1>
+          <p class="page-kicker">Phone-friendly booking for Oxford County and Norfolk County. Pick your date, vehicle, package, add-ons, then lock in your booking with a deposit.</p>
+        </div>
+        <div class="row">
+          <button class="btn ghost" id="openSizeChartBtn" type="button">Size chart</button>
+          <button class="btn ghost" id="openPriceChartBtn" type="button">Price chart</button>
+          <a class="btn ghost" href="/pricing">Pricing page</a>
+        </div>
+      </div>
+      <div id="bookingStatus" class="notice" style="display:none;margin-top:12px"></div>
+      <div class="wizard-nav" id="wizardNav" style="margin-top:14px"></div>
+      <div class="mobile-toolbar" style="margin-top:14px">
+        <div class="kicker" id="wizardHint">Step 1 of 5</div>
+        <div class="row">
+          <button class="btn ghost" id="prevStepBtn" type="button">Back</button>
+          <button class="btn primary" id="nextStepBtn" type="button">Step 2</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section panel wizard-card wizard-step" data-step="1">
+      <div class="step-head"><div><h2>Step 1 — Date, time, and vehicle</h2><p class="muted">Choose an available day, then confirm which vehicle you want us to detail.</p></div></div>
+      <div class="grid2" style="margin-top:12px">
+        <div>
+          <label for="service_date">Preferred date</label>
+          <input id="service_date" type="date" required />
+          <div class="mini muted" style="margin-top:6px">Use the quick choices below or pick another date from the calendar.</div>
+        </div>
+        <div>
+          <label for="service_area">Service area</label>
+          <select id="service_area">
+            <option value="Norfolk">Norfolk County</option>
+            <option value="Oxford">Oxford County</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="kicker">Quick available dates</div>
+        <div id="availableDates" class="calendar-strip" style="margin-top:8px"></div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="kicker">Time slot</div>
+        <div class="slot-row" style="margin-top:8px">
+          <button class="btn ghost" type="button" data-slot="AM">AM half day</button>
+          <button class="btn ghost" type="button" data-slot="PM">PM half day</button>
+          <button class="btn ghost" type="button" data-slot="FULL">Full day</button>
+        </div>
+        <div id="availabilityNote" class="mini muted" style="margin-top:8px">Choose a date to load available time slots.</div>
+      </div>
+      <div class="hr"></div>
+      <div class="step-head"><div><h3 style="margin:0">Vehicle</h3><p class="muted">Use a saved garage vehicle if you already have an account, or enter the vehicle now.</p></div><a class="btn ghost" href="/login">Login / create account</a></div>
+      <div id="garagePickerWrap" style="margin-top:12px;display:none">
+        <div class="kicker">Saved garage vehicles</div>
+        <div id="garageVehicleList" class="vehicle-quick-list" style="margin-top:8px"></div>
+      </div>
+      <div class="grid3" style="margin-top:12px">
+        <div><label for="veh_year">Year</label><select id="veh_year" autocomplete="off"><option value="">Select year</option></select></div>
+        <div><label for="veh_make">Make</label><select id="veh_make" autocomplete="off"><option value="">Select make</option></select></div>
+        <div><label for="veh_model">Model</label><select id="veh_model" autocomplete="off"><option value="">Select model</option></select></div>
+      </div>
+      <div class="grid3" style="margin-top:12px">
+        <div><label for="veh_color">Colour</label><input id="veh_color" type="text" placeholder="Black, silver, blue" /></div>
+        <div><label for="vehicle_size">Vehicle size</label><select id="vehicle_size"><option value="">Select size</option><option value="small">Small car</option><option value="mid">Mid-sized</option><option value="oversize">Oversized / large</option></select></div>
+        <div><label for="veh_category">Vehicle category</label><select id="veh_category"><option value="">Select category</option><option value="small">Small car</option><option value="mid">Medium / standard</option><option value="oversize">Oversized</option><option value="exotic">Exotic / luxury</option></select></div>
+      </div>
+      <div class="grid2" style="margin-top:12px">
+        <div><label for="veh_body">Body style</label><select id="veh_body"><option value="">Select body style</option><option value="sedan">Sedan / Coupe</option><option value="hatch">Hatchback</option><option value="crossover">Crossover</option><option value="suv">SUV</option><option value="truck">Truck</option><option value="van">Van</option><option value="exotic">Exotic / Supercar</option></select></div>
+        <div><label for="veh_plate">Plate (optional)</label><input id="veh_plate" type="text" placeholder="ABC123" /></div>
+      </div>
+      <div id="sizeHint" class="notice" style="display:none;margin-top:12px"></div>
+      <div id="step1Error" class="field-error"></div>
+    </section>
+
+    <section class="section panel wizard-card wizard-step" data-step="2" hidden>
+      <div class="step-head"><div><h2>Step 2 — Choose your main service</h2><p class="muted">Packages are shown using the price for the vehicle size you selected.</p></div></div>
+      <div id="packageCards" class="service-card-grid" style="margin-top:12px"></div>
+      <div id="step2Error" class="field-error"></div>
+    </section>
+
+    <section class="section panel wizard-card wizard-step" data-step="3" hidden>
+      <div class="step-head"><div><h2>Step 3 — Add-ons</h2><p class="muted">Optional extras. Quote-required items are requested now but not charged automatically.</p></div></div>
+      <div id="addonsBox" class="addon-grid" style="margin-top:12px"></div>
+      <div class="grid2" style="margin-top:12px">
+        <div><label for="gift_code">Gift code (optional)</label><input id="gift_code" type="text" placeholder="RD-XXXX-XXXX" /></div>
+        <div><label for="promo_code">Promo code (optional)</label><input id="promo_code" type="text" placeholder="SPRING10" /></div>
+      </div>
+      <div id="step3Error" class="field-error"></div>
+    </section>
+
+    <section class="section panel wizard-card wizard-step" data-step="4" hidden>
+      <div class="step-head"><div><h2>Step 4 — Review vehicle, requirements, and notes</h2><p class="muted">Confirm setup needs before you continue to payment.</p></div></div>
+      <div class="summary-box" id="reviewVehicleBox" style="margin-top:12px"></div>
+      <div class="requirements-grid" style="margin-top:16px">
+        <label><input id="ack_driveway" type="checkbox" /><span><strong>Driveway required</strong><br>We need safe working space at the vehicle.</span></label>
+        <label><input id="ack_power_water" type="checkbox" /><span><strong>Customer provides power and water</strong><br>Extra fees can apply if either is unavailable.</span></label>
+        <label><input id="ack_bylaw" type="checkbox" /><span><strong>Environmental / bylaw responsibility acknowledged</strong><br>Customer confirms any local bylaw requirements.</span></label>
+        <label><input id="ack_cancellation" type="checkbox" /><span><strong>Deposit and weather rescheduling policy acknowledged</strong><br>Unsafe weather or site conditions can require rescheduling.</span></label>
+      </div>
+      <div class="grid2" style="margin-top:12px">
+        <div><label for="special_notes">Special notes</label><textarea id="special_notes" placeholder="Pet hair, stains, access notes, allergies, observed damage, or anything else we should know."></textarea></div>
+        <div><label for="veh_photo">Vehicle photo link (optional)</label><input id="veh_photo" type="url" placeholder="https://..." /><div class="mini muted" style="margin-top:6px">Helpful for size verification and planning, but not required.</div></div>
+      </div>
+      <div id="step4Error" class="field-error"></div>
+    </section>
+
+    <section class="section panel wizard-card wizard-step" data-step="5" hidden>
+      <div class="step-head"><div><h2>Step 5 — Contact details, summary, and pay</h2><p class="muted">Finalize your booking, save the vehicle to your garage later if you create an account, and continue to deposit payment.</p></div></div>
+      <div class="grid2" style="margin-top:12px">
+        <div><label for="customer_name">Full name</label><input id="customer_name" type="text" required /></div>
+        <div><label for="customer_email">Email</label><input id="customer_email" type="email" required /></div>
+      </div>
+      <div class="grid2" style="margin-top:12px">
+        <div><label for="customer_phone">Phone</label><input id="customer_phone" type="tel" placeholder="(555) 555-5555" /></div>
+        <div><label for="address_line1">Service address</label><input id="address_line1" type="text" placeholder="123 Main St" required /></div>
+      </div>
+      <div class="grid2" style="margin-top:12px">
+        <div><label for="city">City</label><input id="city" type="text" /></div>
+        <div><label for="postal_code">Postal code</label><input id="postal_code" type="text" placeholder="N0E 1W0" /></div>
+      </div>
+      <div class="hr"></div>
+      <div id="finalSummary" class="summary-box"></div>
+      <div id="step5Error" class="field-error"></div>
+      <div class="wizard-actions">
+        <a class="btn ghost" href="/waiver">Terms, waiver, and requirements</a>
+        <button class="btn primary" id="checkoutBtn" type="button">Book and pay deposit</button>
+      </div>
+    </section>
+
+    <div class="footer" data-footer></div>
+  </main>
+
+  <div class="modalBack" id="modalBack" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="modalHead">
+        <strong id="modalTitle">Preview</strong>
+        <button class="btn ghost" id="modalCloseBtn" type="button">Close</button>
+      </div>
+      <img id="modalImg" alt="Preview image" />
+    </div>
+  </div>
+
+  <script type="module">
+    const DATA_URL = "/api/pricing_catalog_public?v=20260327mobile1";
+    const VEHICLE_MAKES_URL = "/api/vehicle_makes";
+    const VEHICLE_MODELS_URL = "/api/vehicle_models";
+    const qs = (s)=>document.querySelector(s);
+    const qsa = (s)=>[...document.querySelectorAll(s)];
+    const money = (cad)=> new Intl.NumberFormat('en-CA',{style:'currency',currency:'CAD'}).format(Number(cad||0));
+    const BRAND_BASE = 'https://assets.rosiedazzlers.ca/brand';
+    const steps = [
+      { title:'Step 1', subtitle:'Date & vehicle' },
+      { title:'Step 2', subtitle:'Main service' },
+      { title:'Step 3', subtitle:'Add-ons' },
+      { title:'Step 4', subtitle:'Verify & requirements' },
+      { title:'Step 5', subtitle:'Review & pay' }
+    ];
+    let currentStep = 1;
+    let pricing = null;
+    let addonsState = new Set();
+    let selectedPackageCode = '';
+    let selectedSlotChoice = '';
+    let garageVehicles = [];
+
+    function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g,(m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
+    function showStatus(msg, kind=''){ const el=qs('#bookingStatus'); el.style.display='block'; el.className='notice '+(kind||''); el.textContent=msg; }
+    function hideStatus(){ qs('#bookingStatus').style.display='none'; }
+    function showFieldError(step, msg){ const el = qs(`#step${step}Error`); if (el) el.textContent = msg || ''; }
+    function clearFieldErrors(){ steps.forEach((_,idx)=>showFieldError(idx+1,'')); }
+    async function fetchJsonStrict(url){ const res = await fetch(url,{credentials:'include',cache:'no-store'}); const text = await res.text(); try{return JSON.parse(text);}catch{throw new Error(`Expected JSON from ${url}`);} }
+    function packagePrice(pkg, size){ return pkg?.prices_cad?.[size] ?? null; }
+    function packageImageForSize(pkg, size){ return pkg?.images_by_size?.[size] || Object.values(pkg?.images_by_size || {})[0] || ''; }
+    function openModal(title,imgUrl){ qs('#modalTitle').textContent=title; qs('#modalImg').src=imgUrl; qs('#modalBack').style.display='flex'; }
+    function closeModal(){ qs('#modalBack').style.display='none'; qs('#modalImg').src=''; }
+    qs('#modalCloseBtn').addEventListener('click', closeModal); qs('#modalBack').addEventListener('click',(e)=>{ if(e.target.id==='modalBack') closeModal(); });
+    qs('#openSizeChartBtn').addEventListener('click',()=>openModal('Vehicle size chart','https://assets.rosiedazzlers.ca/packages/CarSizeChart.PNG'));
+    qs('#openPriceChartBtn').addEventListener('click',()=>openModal('Vehicle price chart','https://assets.rosiedazzlers.ca/brand/CarPrice2025.PNG'));
+
+    function selectedPackage(){ return (pricing?.packages || []).find((pkg)=>pkg.code===selectedPackageCode) || null; }
+    function selectedSize(){ return qs('#vehicle_size').value; }
+    function selectedDate(){ return qs('#service_date').value; }
+
+    function renderWizardNav(){
+      const nav = qs('#wizardNav');
+      nav.innerHTML = steps.map((step, idx)=>`<button class="btn ${idx+1===currentStep?'primary':'ghost'}" type="button" data-step-nav="${idx+1}" ${idx+1>currentStep+1?'disabled':''}><span>${step.title}</span><br><small>${step.subtitle}</small></button>`).join('');
+      qsa('[data-step-nav]').forEach((btn)=>btn.addEventListener('click', async ()=>{
+        const target = Number(btn.getAttribute('data-step-nav'));
+        if (target <= currentStep) return gotoStep(target);
+        const valid = await validateStep(currentStep);
+        if (valid) gotoStep(target);
+      }));
+      qs('#wizardHint').textContent = `${steps[currentStep-1].title} of ${steps.length}`;
+      qs('#prevStepBtn').disabled = currentStep === 1;
+      qs('#nextStepBtn').style.display = currentStep === steps.length ? 'none' : 'inline-flex';
+      qs('#nextStepBtn').textContent = currentStep < steps.length ? `Go to ${steps[currentStep].title}` : 'Next';
+    }
+    function gotoStep(step){
+      currentStep = Math.max(1, Math.min(steps.length, step));
+      qsa('.wizard-step').forEach((panel)=>{ panel.hidden = Number(panel.dataset.step)!==currentStep; });
+      renderWizardNav();
+      const activePanel = document.querySelector(`.wizard-step[data-step="${currentStep}"]`);
+      if (activePanel) {
+        const top = Math.max(0, activePanel.getBoundingClientRect().top + window.scrollY - 92);
+        window.scrollTo({ top, behavior:'smooth' });
+      }
+      if (currentStep===4) renderReviewVehicle();
+      if (currentStep===5) renderFinalSummary();
+    }
+    qs('#prevStepBtn').addEventListener('click', ()=>gotoStep(currentStep-1));
+    qs('#nextStepBtn').addEventListener('click', async ()=>{ if (await validateStep(currentStep)) gotoStep(currentStep+1); });
+
+    function recommendedSize(){
+      const body = (qs('#veh_body').value || '').toLowerCase();
+      const category = (qs('#veh_category').value || '').toLowerCase();
+      const exotic = category === 'exotic' || body === 'exotic';
+      if (exotic) return 'oversize';
+      if (['truck','van','suv'].includes(body)) return 'oversize';
+      if (['crossover'].includes(body)) return 'mid';
+      if (['sedan','coupe','hatchback','hatch'].includes(body)) return 'small';
+      return category && ['small','mid','oversize'].includes(category) ? category : null;
+    }
+    function updateSizeHint(){
+      const hint = qs('#sizeHint');
+      const rec = recommendedSize();
+      const chosen = selectedSize();
+      if (rec && chosen && rec !== chosen) {
+        hint.style.display='block';
+        hint.className='notice warn';
+        hint.textContent=`Based on the vehicle details, we suggest "${rec}" instead of "${chosen}".`;
+      } else if (rec) {
+        hint.style.display='block';
+        hint.className='notice ok';
+        hint.textContent=`Suggested size for this vehicle: ${rec}.`;
+      } else {
+        hint.style.display='none';
+      }
+      renderPackages();
+      renderAddons();
+    }
+
+    async function loadGarageVehicles(){
+      try {
+        const authRes = await fetch('/api/client/auth_me', { credentials:'include', cache:'no-store' });
+        const authOut = await authRes.json().catch(()=>null);
+        if (!authRes.ok || !authOut?.ok || !authOut?.authenticated) return;
+        const res = await fetch('/api/client/dashboard', { credentials:'include', cache:'no-store' });
+        const out = await res.json().catch(()=>null);
+        if (!res.ok || !out?.ok) return;
+        garageVehicles = Array.isArray(out.vehicles) ? out.vehicles : [];
+        if (out.customer) {
+          if (!qs('#customer_name').value) qs('#customer_name').value = out.customer.full_name || '';
+          if (!qs('#customer_email').value) qs('#customer_email').value = out.customer.email || '';
+          if (!qs('#customer_phone').value) qs('#customer_phone').value = out.customer.phone || out.customer.sms_phone || '';
+          if (!qs('#address_line1').value) qs('#address_line1').value = out.customer.address_line1 || '';
+          if (!qs('#city').value) qs('#city').value = out.customer.city || '';
+          if (!qs('#postal_code').value) qs('#postal_code').value = out.customer.postal_code || '';
+        }
+        const wrap = qs('#garagePickerWrap');
+        const list = qs('#garageVehicleList');
+        if (!garageVehicles.length) { wrap.style.display='none'; return; }
+        wrap.style.display='block';
+        list.innerHTML = garageVehicles.map((vehicle, idx)=>`<button class="vehicle-option" type="button" data-garage-index="${idx}"><strong>${escapeHtml(vehicle.vehicle_name || [vehicle.model_year, vehicle.make, vehicle.model].filter(Boolean).join(' '))}</strong><span class="kicker">${escapeHtml([vehicle.color, vehicle.vehicle_size, vehicle.vehicle_category].filter(Boolean).join(' · '))}</span></button>`).join('');
+        qsa('[data-garage-index]').forEach((btn)=>btn.addEventListener('click', ()=>applyGarageVehicle(Number(btn.getAttribute('data-garage-index')))));
+      } catch {}
+    }
+    function applyGarageVehicle(index){
+      const vehicle = garageVehicles[index];
+      if (!vehicle) return;
+      qsa('[data-garage-index]').forEach((btn, idx)=>btn.classList.toggle('active', idx===index));
+      qs('#veh_year').value = vehicle.model_year || '';
+      qs('#veh_make').value = vehicle.make || '';
+      qs('#veh_color').value = vehicle.color || '';
+      qs('#vehicle_size').value = vehicle.vehicle_size || '';
+      qs('#veh_category').value = vehicle.vehicle_category || '';
+      qs('#veh_body').value = vehicle.body_style || '';
+      qs('#veh_plate').value = vehicle.plate || '';
+      loadVehicleModels().then(()=>{ qs('#veh_model').value = vehicle.model || ''; updateSizeHint(); });
+      showStatus('Garage vehicle loaded into the booking form.', 'ok');
+    }
+
+    async function loadVehicleMakes(){
+      const out = await fetchJsonStrict(VEHICLE_MAKES_URL);
+      const years = Array.isArray(out.years) ? out.years : [];
+      const makes = Array.isArray(out.makes) ? out.makes : [];
+      qs('#veh_year').innerHTML = '<option value="">Select year</option>' + years.map((y)=>`<option value="${y}">${y}</option>`).join('');
+      qs('#veh_make').innerHTML = '<option value="">Select make</option>' + makes.map((row)=>`<option value="${escapeHtml(row.make)}">${escapeHtml(row.make)}</option>`).join('');
+      qs('#veh_model').innerHTML = '<option value="">Select model</option>';
+    }
+    async function loadVehicleModels(){
+      const year = qs('#veh_year').value;
+      const make = qs('#veh_make').value;
+      const modelSel = qs('#veh_model');
+      if (!year || !make) { modelSel.innerHTML = '<option value="">Select model</option>'; return; }
+      modelSel.innerHTML = '<option value="">Loading models…</option>';
+      const out = await fetchJsonStrict(`${VEHICLE_MODELS_URL}?year=${encodeURIComponent(year)}&make=${encodeURIComponent(make)}`);
+      const models = Array.isArray(out.models) ? out.models : [];
+      modelSel.innerHTML = '<option value="">Select model</option>' + models.map((row)=>`<option value="${escapeHtml(row.model)}" data-size="${escapeHtml(row.size_bucket || '')}" data-type="${escapeHtml(row.vehicle_type || '')}" data-exotic="${row.is_exotic ? '1' : '0'}">${escapeHtml(row.model)}${row.category_label ? ` — ${escapeHtml(row.category_label)}` : ''}</option>`).join('');
+    }
+    qs('#veh_year').addEventListener('change', loadVehicleModels); qs('#veh_make').addEventListener('change', loadVehicleModels);
+    qs('#veh_model').addEventListener('change', ()=>{
+      const opt = qs('#veh_model').selectedOptions[0];
+      if (!opt) return;
+      if (opt.dataset.size && !qs('#vehicle_size').value) qs('#vehicle_size').value = opt.dataset.size;
+      if (opt.dataset.type && !qs('#veh_body').value) {
+        const t = opt.dataset.type.toLowerCase();
+        qs('#veh_body').value = t.includes('truck') ? 'truck' : t.includes('multipurpose') ? 'suv' : t.includes('van') ? 'van' : 'sedan';
+      }
+      if (opt.dataset.exotic === '1' && !qs('#veh_category').value) qs('#veh_category').value = 'exotic';
+      updateSizeHint();
+    });
+    ['#veh_body','#veh_category','#vehicle_size'].forEach((selector)=>qs(selector).addEventListener('change', updateSizeHint));
+
+    async function loadAvailabilityOptions(){
+      const today = new Date();
+      const buttons = [];
+      for (let i=0; i<14; i++) {
+        const d = new Date(today); d.setDate(today.getDate()+i);
+        const iso = d.toISOString().slice(0,10);
+        try {
+          const res = await fetch(`/api/availability?date=${encodeURIComponent(iso)}`, { cache:'no-store' });
+          const out = await res.json().catch(()=>null);
+          if (!res.ok || !out?.ok || out.blocked || (!out.AM && !out.PM)) continue;
+          buttons.push({ iso, AM: out.AM, PM: out.PM });
+        } catch {}
+      }
+      const wrap = qs('#availableDates');
+      if (!buttons.length) {
+        wrap.innerHTML = '<div class="notice">No open dates were found in the next two weeks. Choose another date in the calendar.</div>';
+        return;
+      }
+      wrap.innerHTML = buttons.map((item)=>{
+        const dt = new Date(item.iso + 'T12:00:00');
+        const label = dt.toLocaleDateString('en-CA', { weekday:'short', month:'short', day:'numeric' });
+        return `<button class="date-pill ${item.iso===selectedDate()?'is-selected':''}" type="button" data-date-pill="${item.iso}"><strong>${label}</strong><span>${item.AM ? 'AM open' : 'AM booked'} · ${item.PM ? 'PM open' : 'PM booked'}</span></button>`;
+      }).join('');
+      qsa('[data-date-pill]').forEach((btn)=>btn.addEventListener('click', ()=>{
+        qs('#service_date').value = btn.getAttribute('data-date-pill');
+        refreshAvailability();
+        loadAvailabilityOptions();
+      }));
+      if (!selectedDate() && buttons[0]) qs('#service_date').value = buttons[0].iso;
+    }
+    async function refreshAvailability(){
+      const date = selectedDate();
+      if (!date) return;
+      const res = await fetch(`/api/availability?date=${encodeURIComponent(date)}`, { cache:'no-store' });
+      const out = await res.json().catch(()=>null);
+      if (!res.ok || !out?.ok) {
+        qs('#availabilityNote').textContent = out?.error || 'Could not load availability.';
+        return;
+      }
+      const map = { AM: !!out.AM, PM: !!out.PM, FULL: !!out.AM && !!out.PM };
+      qsa('[data-slot]').forEach((btn)=>{
+        const slot = btn.getAttribute('data-slot');
+        const open = map[slot];
+        btn.disabled = !open;
+        btn.classList.toggle('active', selectedSlotChoice === slot);
+        if (!open) btn.textContent = slot === 'FULL' ? 'Full day unavailable' : `${slot} unavailable`;
+        else btn.textContent = slot === 'FULL' ? 'Full day' : `${slot} half day`;
+      });
+      qs('#availabilityNote').textContent = `Availability for ${date}: AM ${out.AM ? 'open' : 'booked'}, PM ${out.PM ? 'open' : 'booked'}.`;
+      if (!map[selectedSlotChoice]) selectedSlotChoice = out.AM ? 'AM' : out.PM ? 'PM' : '';
+      qsa('[data-slot]').forEach((btn)=>btn.classList.toggle('active', btn.getAttribute('data-slot')===selectedSlotChoice));
+      renderFinalSummary();
+    }
+    qsa('[data-slot]').forEach((btn)=>btn.addEventListener('click', ()=>{ if (btn.disabled) return; selectedSlotChoice = btn.getAttribute('data-slot'); qsa('[data-slot]').forEach((node)=>node.classList.toggle('active', node===btn)); renderFinalSummary(); }));
+    qs('#service_date').addEventListener('change', refreshAvailability);
+
+    function renderPackages(){
+      const wrap = qs('#packageCards');
+      const size = selectedSize();
+      const packages = pricing?.packages || [];
+      wrap.innerHTML = packages.map((pkg)=>{
+        const price = size ? packagePrice(pkg, size) : null;
+        const img = packageImageForSize(pkg, size || 'small');
+        return `<button class="service-card ${selectedPackageCode===pkg.code?'active':''}" type="button" data-package="${escapeHtml(pkg.code)}"><img src="${escapeHtml(img)}" alt="${escapeHtml(pkg.name)}" loading="lazy" /><strong>${escapeHtml(pkg.name)}</strong><span class="muted package-note">${escapeHtml(pkg.subtitle || '')}</span><span class="tag ok">${price != null ? money(price) : 'Choose size first'}</span><span class="muted mini">Deposit ${money(pkg.deposit_cad || 0)}</span></button>`;
+      }).join('');
+      qsa('[data-package]').forEach((btn)=>btn.addEventListener('click', ()=>{ selectedPackageCode = btn.getAttribute('data-package'); renderPackages(); renderFinalSummary(); }));
+    }
+    function addonDisplayPrice(addon){ const size = selectedSize(); if (addon.quote_required) return 'Quote required'; if (addon.prices_cad && addon.prices_cad[size] != null) return money(addon.prices_cad[size]); if (addon.price_cad != null) return money(addon.price_cad); return 'Included in quote'; }
+    function renderAddons(){
+      const wrap = qs('#addonsBox');
+      const addons = pricing?.addons || [];
+      wrap.innerHTML = addons.map((addon)=>`<button class="addon-card ${addonsState.has(addon.code)?'active':''}" type="button" data-addon="${escapeHtml(addon.code)}"><img class="addon-thumb" src="${escapeHtml(addon.image_url || '/assets/addons/generic_addon.svg')}" alt="${escapeHtml(addon.name)}" loading="lazy" /><strong>${escapeHtml(addon.name)}</strong><span class="muted mini">${escapeHtml(addon.category || '')}${addon.type ? ` · ${escapeHtml(addon.type)}` : ''}</span><span class="tag ${addon.quote_required ? 'warn' : 'ok'}">${escapeHtml(addonDisplayPrice(addon))}</span><span class="muted mini">${escapeHtml((addon.notes || []).join(' • '))}</span></button>`).join('');
+      qsa('[data-addon]').forEach((btn)=>btn.addEventListener('click', ()=>{ const code = btn.getAttribute('data-addon'); if (addonsState.has(code)) addonsState.delete(code); else addonsState.add(code); renderAddons(); renderFinalSummary(); }));
+    }
+    function renderReviewVehicle(){
+      const rows = [
+        ['Date', selectedDate() || 'Not chosen'],
+        ['Time', selectedSlotChoice || 'Not chosen'],
+        ['Vehicle', [qs('#veh_year').value, qs('#veh_make').value, qs('#veh_model').value, qs('#veh_color').value].filter(Boolean).join(' · ') || 'Vehicle details incomplete'],
+        ['Vehicle size', selectedSize() || 'Not chosen'],
+        ['Category', qs('#veh_category').value || 'Not chosen']
+      ];
+      qs('#reviewVehicleBox').innerHTML = rows.map(([label,value])=>`<div class="summary-row"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join('');
+    }
+    function selectedAddons(){ return (pricing?.addons || []).filter((addon)=>addonsState.has(addon.code)); }
+    function computeTotals(){
+      const pkg = selectedPackage();
+      const size = selectedSize();
+      let subtotal = Number(pkg?.prices_cad?.[size] || 0);
+      let quoteOnly = false;
+      selectedAddons().forEach((addon)=>{
+        if (addon.quote_required) quoteOnly = true;
+        else if (addon.prices_cad && addon.prices_cad[size] != null) subtotal += Number(addon.prices_cad[size] || 0);
+        else if (addon.price_cad != null) subtotal += Number(addon.price_cad || 0);
+      });
+      return { subtotal, deposit: Number(pkg?.deposit_cad || 0), quoteOnly };
+    }
+    function renderFinalSummary(){
+      const pkg = selectedPackage();
+      const totals = computeTotals();
+      const rows = [
+        ['Date', selectedDate() || 'Not chosen'],
+        ['Time', selectedSlotChoice || 'Not chosen'],
+        ['Package', pkg ? `${pkg.name} (${selectedSize() || 'size pending'})` : 'Not chosen'],
+        ['Add-ons', selectedAddons().length ? selectedAddons().map((addon)=>addon.name).join(', ') : 'None'],
+        ['Estimated subtotal', totals.subtotal ? money(totals.subtotal) : 'Package required'],
+        ['Deposit due now', money(totals.deposit)],
+        ['Quote-only extras', totals.quoteOnly ? 'Some selected extras are quote-required and will be confirmed separately.' : 'None']
+      ];
+      qs('#finalSummary').innerHTML = rows.map(([label,value])=>`<div class="summary-row"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join('');
+    }
+
+    async function validateStep(step){
+      clearFieldErrors(); hideStatus();
+      if (step === 1) {
+        if (!selectedDate()) return showFieldError(1, 'Choose a date.');
+        if (!selectedSlotChoice) return showFieldError(1, 'Choose an available time slot.');
+        if (!qs('#veh_year').value || !qs('#veh_make').value || !qs('#veh_model').value) return showFieldError(1, 'Choose the vehicle year, make, and model.');
+        if (!selectedSize()) return showFieldError(1, 'Choose the vehicle size.');
+        return true;
+      }
+      if (step === 2) {
+        if (!selectedPackageCode) return showFieldError(2, 'Choose a main service package.');
+        return true;
+      }
+      if (step === 3) return true;
+      if (step === 4) {
+        if (!qs('#ack_driveway').checked || !qs('#ack_power_water').checked || !qs('#ack_bylaw').checked || !qs('#ack_cancellation').checked) {
+          return showFieldError(4, 'Please confirm all requirements and policy acknowledgements before moving on.');
+        }
+        return true;
+      }
+      if (step === 5) {
+        if (!qs('#customer_name').value.trim()) return showFieldError(5, 'Enter your full name.');
+        if (!qs('#customer_email').value.trim()) return showFieldError(5, 'Enter your email address.');
+        if (!qs('#address_line1').value.trim()) return showFieldError(5, 'Enter the service address.');
+        return true;
+      }
+      return true;
+    }
+
+    qs('#checkoutBtn').addEventListener('click', async ()=>{
+      for (let i=1;i<=5;i++) { const ok = await validateStep(i); if (!ok) { gotoStep(i); return; } }
+      const slotChoice = selectedSlotChoice;
+      const start_slot = slotChoice === 'FULL' ? 'AM' : slotChoice;
+      const duration_slots = slotChoice === 'FULL' ? 2 : 1;
+      const payload = {
+        service_date: selectedDate(),
+        start_slot,
+        duration_slots,
+        service_area: qs('#service_area').value,
+        package_code: selectedPackageCode,
+        vehicle_size: selectedSize(),
+        customer_name: qs('#customer_name').value.trim(),
+        customer_email: qs('#customer_email').value.trim(),
+        customer_phone: qs('#customer_phone').value.trim() || null,
+        address_line1: qs('#address_line1').value.trim(),
+        city: qs('#city').value.trim() || null,
+        postal_code: qs('#postal_code').value.trim() || null,
+        addon_codes: Array.from(addonsState),
+        gift_code: qs('#gift_code').value.trim() || null,
+        promo_code: qs('#promo_code').value.trim() || null,
+        vehicle: {
+          year: Number(qs('#veh_year').value),
+          make: qs('#veh_make').value,
+          model: qs('#veh_model').value,
+          plate: qs('#veh_plate').value.trim() || null,
+          photo_url: qs('#veh_photo').value.trim() || null,
+          body_style: qs('#veh_body').value || null,
+          category: qs('#veh_category').value || null,
+          color: qs('#veh_color').value.trim() || null
+        },
+        special_notes: qs('#special_notes').value.trim() || null,
+        ack_driveway: true,
+        ack_power_water: true,
+        ack_bylaw: true,
+        ack_cancellation: true
+      };
+      const btn = qs('#checkoutBtn');
+      btn.disabled = true; btn.textContent = 'Preparing payment…';
+      try {
+        const res = await fetch('/api/checkout', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify(payload) });
+        const out = await res.json().catch(()=>null);
+        if (!res.ok || !out?.ok || !out?.checkout_url) throw new Error(out?.error || 'Checkout failed.');
+        location.href = out.checkout_url;
+      } catch (err) {
+        showStatus(err.message || 'Checkout failed.', 'bad');
+        btn.disabled = false; btn.textContent = 'Book and pay deposit';
+      }
+    });
+
+    try {
+      pricing = await fetchJsonStrict(DATA_URL);
+      await Promise.all([loadVehicleMakes(), loadGarageVehicles(), loadAvailabilityOptions()]);
+      if (!selectedDate()) {
+        const today = new Date();
+        qs('#service_date').value = today.toISOString().slice(0,10);
+      }
+      await refreshAvailability();
+      renderPackages();
+      renderAddons();
+      renderFinalSummary();
+      gotoStep(1);
+    } catch (err) {
+      showStatus(`Failed to load booking data: ${err.message || err}`, 'bad');
+    }
+  </script>
+  <script type="module" src="/assets/chrome.js?v=20260327mobile1"></script>
+</body>
+</html>

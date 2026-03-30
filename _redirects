@@ -1,0 +1,25 @@
+# Public canonical pretty URLs
+/services.html        /services         301
+/pricing.html         /pricing          301
+
+# Admin pretty URLs
+/admin.html           /admin            301
+/admin-booking.html   /admin-booking    301
+/admin-blocks.html    /admin-blocks     301
+/admin-progress.html  /admin-progress   301
+/admin-jobsite.html   /admin-jobsite    301
+/admin-live.html      /admin-live       301
+/admin-staff.html     /admin-staff      301
+/admin-promos.html    /admin-promos     301
+
+# Normalize optional trailing slashes
+/services/            /services         301
+/pricing/             /pricing          301
+/admin/               /admin            301
+/admin-booking/       /admin-booking    301
+/admin-blocks/        /admin-blocks     301
+/admin-progress/      /admin-progress   301
+/admin-jobsite/       /admin-jobsite    301
+/admin-live/          /admin-live       301
+/admin-staff/         /admin-staff      301
+/admin-promos/        /admin-promos     301

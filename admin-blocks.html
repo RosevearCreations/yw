@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin Blocks | Rosie Dazzlers</title>
+  <meta name="description" content="Admin availability blocks for Rosie Dazzlers." />
+  <link rel="stylesheet" href="/assets/site.css" />
+</head>
+<body data-page="admin-blocks">
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="/admin.html">
+        <img data-logo alt="Rosie Dazzlers logo" />
+        <strong>Rosie Dazzlers Admin</strong>
+      </a>
+
+      <button id="navToggle" class="btn small ghost nav-toggle" type="button" aria-expanded="false" aria-controls="navLinks">
+        Menu
+      </button>
+
+      <nav id="navLinks" class="nav-links">
+        <a href="/admin.html">Dashboard</a>
+        <a href="/admin-booking.html">Bookings</a>
+        <a href="/admin-blocks.html">Blocks</a>
+        <a href="/admin-progress.html">Progress</a>
+        <a href="/admin-promos.html">Promos</a>
+        <a href="/book">Public Site</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="section">
+      <div class="panel">
+        <img data-banner alt="Rosie Dazzlers banner" style="display:block;width:100%;height:auto;object-fit:contain" />
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="hero">
+        <div>
+          <div class="badge">Admin Blocks</div>
+          <h1>Control booking availability</h1>
+          <p>Block full dates or just AM / PM slots so customers cannot book unavailable times.</p>
+        </div>
+        <div class="panel">
+          <div class="kicker">Current view</div>
+          <h3 style="margin:6px 0 8px">Availability blocks</h3>
+          <div class="kicker">Use this page to add and remove date-based availability restrictions.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div id="pageNotice" class="notice">Ready.</div>
+    </section>
+
+    <section class="section">
+      <div class="grid cards">
+        <div class="panel">
+          <h2>Staff session</h2>
+          <form id="adminForm" class="form">
+            <label>
+              Signed-in staff session
+              <input id="adminPassword" name="adminPassword" type="password" autocomplete="off" placeholder="Optional legacy fallback" />
+            </label>
+
+            <div>
+              <button class="btn primary" type="submit">Load blocks</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h2>Quick note</h2>
+          <div class="kicker">
+            Full-date blocks prevent all booking for that day.
+            Slot blocks only prevent AM or PM.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="grid cards">
+        <div class="panel">
+          <h2>Block full date</h2>
+          <form id="blockDateForm" class="form">
+            <label>
+              Date
+              <input id="blockDate" name="blockDate" type="date" required />
+            </label>
+
+            <label>
+              Reason
+              <input id="blockDateReason" name="blockDateReason" type="text" placeholder="Optional reason" />
+            </label>
+
+            <div>
+              <button id="blockDateBtn" class="btn primary" type="submit" disabled>Block date</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h2>Block slot</h2>
+          <form id="blockSlotForm" class="form">
+            <label>
+              Date
+              <input id="blockSlotDate" name="blockSlotDate" type="date" required />
+            </label>
+
+            <label>
+              Slot
+              <select id="blockSlotValue" name="blockSlotValue">
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
+            </label>
+
+            <label>
+              Reason
+              <input id="blockSlotReason" name="blockSlotReason" type="text" placeholder="Optional reason" />
+            </label>
+
+            <div>
+              <button id="blockSlotBtn" class="btn primary" type="submit" disabled>Block slot</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="grid cards">
+        <div class="panel">
+          <h2>Blocked dates</h2>
+          <div id="dateBlocksList" class="grid" style="margin-top:12px">
+            <div class="notice">Blocks not loaded yet.</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Blocked slots</h2>
+          <div id="slotBlocksList" class="grid" style="margin-top:12px">
+            <div class="notice">Blocks not loaded yet.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer container" data-footer></footer>
+
+  <script src="/assets/chrome.js"></script>
+  <script type="module">
+    import { setBrandImages, setFooter } from "/assets/site.js";
+
+    let currentPassword = "";
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function setNotice(message, kind = "") {
+      const el = document.querySelector("#pageNotice");
+      if (!el) return;
+      el.className = kind ? `notice ${kind}` : "notice";
+      el.textContent = message;
+    }
+
+    async function apiPost(url, password, body) {
+      const headers = { "Content-Type": "application/json" };
+      if (password) headers["x-admin-password"] = password;
+      const res = await fetch(url, {
+        method: "POST",
+        headers,
+        credentials: "include",
+        body: JSON.stringify(body || {})
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || `Request failed for ${url}`);
+      }
+      return data;
+    }
+
+    function renderDateBlocks(data) {
+      const wrap = document.querySelector("#dateBlocksList");
+      if (!wrap) return;
+
+      const items = Array.isArray(data.date_blocks) ? data.date_blocks : [];
+      if (!items.length) {
+        wrap.innerHTML = `<div class="notice">No blocked dates.</div>`;
+        return;
+      }
+
+      wrap.innerHTML = items.map((item) => `
+        <article class="card">
+          <h3>${escapeHtml(item.blocked_date || "—")}</h3>
+          <p>${escapeHtml(item.reason || "No reason provided")}</p>
+          <div class="hr"></div>
+          <button class="btn small ghost" type="button" data-unblock-date="${escapeHtml(item.blocked_date || "")}">Unblock date</button>
+        </article>
+      `).join("");
+
+      wrap.querySelectorAll("[data-unblock-date]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          try {
+            setNotice("Removing date block…");
+            await apiPost("/api/admin/unblock_date", currentPassword, {
+              blocked_date: btn.getAttribute("data-unblock-date")
+            });
+            await refreshBlocks();
+            setNotice("Date block removed.", "ok");
+          } catch (err) {
+            setNotice(err.message || "Could not remove date block.", "bad");
+          }
+        });
+      });
+    }
+
+    function renderSlotBlocks(data) {
+      const wrap = document.querySelector("#slotBlocksList");
+      if (!wrap) return;
+
+      const items = Array.isArray(data.slot_blocks) ? data.slot_blocks : [];
+      if (!items.length) {
+        wrap.innerHTML = `<div class="notice">No blocked slots.</div>`;
+        return;
+      }
+
+      wrap.innerHTML = items.map((item) => `
+        <article class="card">
+          <h3>${escapeHtml(item.blocked_date || "—")} · ${escapeHtml(item.slot || "—")}</h3>
+          <p>${escapeHtml(item.reason || "No reason provided")}</p>
+          <div class="hr"></div>
+          <button
+            class="btn small ghost"
+            type="button"
+            data-unblock-slot-date="${escapeHtml(item.blocked_date || "")}"
+            data-unblock-slot-value="${escapeHtml(item.slot || "")}"
+          >Unblock slot</button>
+        </article>
+      `).join("");
+
+      wrap.querySelectorAll("[data-unblock-slot-date]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          try {
+            setNotice("Removing slot block…");
+            await apiPost("/api/admin/unblock_slot", currentPassword, {
+              blocked_date: btn.getAttribute("data-unblock-slot-date"),
+              slot: btn.getAttribute("data-unblock-slot-value")
+            });
+            await refreshBlocks();
+            setNotice("Slot block removed.", "ok");
+          } catch (err) {
+            setNotice(err.message || "Could not remove slot block.", "bad");
+          }
+        });
+      });
+    }
+
+    async function refreshBlocks() {
+      const data = await apiPost("/api/admin/blocks", currentPassword, {});
+      renderDateBlocks(data);
+      renderSlotBlocks(data);
+
+      document.querySelector("#blockDateBtn").disabled = false;
+      document.querySelector("#blockSlotBtn").disabled = false;
+    }
+
+    async function boot() {
+      setBrandImages();
+      setFooter();
+
+      document.querySelector("#adminForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const password = document.querySelector("#adminPassword").value.trim();
+        try {
+          currentPassword = password;
+          setNotice("Loading current blocks…");
+          await refreshBlocks();
+          setNotice("Blocks loaded.", "ok");
+        } catch (err) {
+          setNotice(err.message || "Could not load blocks.", "bad");
+        }
+      });
+
+      document.querySelector("#blockDateForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        try {
+          setNotice("Blocking date…");
+          await apiPost("/api/admin/block_date", currentPassword, {
+            blocked_date: document.querySelector("#blockDate").value,
+            reason: document.querySelector("#blockDateReason").value.trim()
+          });
+          document.querySelector("#blockDateReason").value = "";
+          await refreshBlocks();
+          setNotice("Date blocked.", "ok");
+        } catch (err) {
+          setNotice(err.message || "Could not block date.", "bad");
+        }
+      });
+
+      document.querySelector("#blockSlotForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        try {
+          setNotice("Blocking slot…");
+          await apiPost("/api/admin/block_slot", currentPassword, {
+            blocked_date: document.querySelector("#blockSlotDate").value,
+            slot: document.querySelector("#blockSlotValue").value,
+            reason: document.querySelector("#blockSlotReason").value.trim()
+          });
+          document.querySelector("#blockSlotReason").value = "";
+          await refreshBlocks();
+          setNotice("Slot blocked.", "ok");
+        } catch (err) {
+          setNotice(err.message || "Could not block slot.", "bad");
+        }
+      });
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => { await boot(); document.querySelector("#adminForm").requestSubmit(); });
+  </script>
+</body>
+</html>

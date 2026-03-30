@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Progress | Rosie Dazzlers</title>
+  <meta name="description" content="View your Rosie Dazzlers service progress updates." />
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="canonical" href="https://rosiedazzlers.ca/progress" />
+  <link rel="stylesheet" href="/assets/site.css" />
+</head>
+<body data-page="progress">
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="/">
+        <img data-logo alt="Rosie Dazzlers logo" />
+        <strong>Rosie Dazzlers</strong>
+      </a>
+
+      <button id="navToggle" class="btn small ghost nav-toggle" type="button" aria-expanded="false" aria-controls="navLinks">
+        Menu
+      </button>
+
+      <nav id="navLinks" class="nav-links">
+        <a href="/services">Services</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/gear">Gear</a>
+        <a href="/consumables">Consumables</a>
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
+        <a href="/book">Book</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="section">
+      <div class="panel">
+        <img data-banner alt="Rosie Dazzlers banner" style="display:block;width:100%;height:auto;object-fit:contain" />
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="hero">
+        <div>
+          <div class="badge">Customer Progress</div>
+          <h1>Your service progress</h1>
+          <p>Use this page to view updates, photos, current status, and completion information for your booking.</p>
+          <div class="badges">
+            <div class="badge" id="statusBadge">Waiting for token</div>
+            <div class="badge" id="jobStatusBadge">No status yet</div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="kicker">Booking</div>
+          <h3 id="bookingTitle" style="margin:6px 0 8px">No booking loaded</h3>
+          <div id="bookingMeta" class="kicker">Add your progress token to the URL to view updates.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div id="pageNotice" class="notice">Loading progress information…</div>
+    </section>
+
+    <section class="section">
+      <div class="grid cards">
+        <div class="panel">
+          <h2>Customer links</h2>
+          <div id="customerLinksBox" class="kicker">Your account, garage, and completion links will appear here when your booking is loaded.</div>
+        </div>
+        <div class="panel">
+          <h2>Service summary</h2>
+          <div id="summaryBox" class="kicker">No summary loaded yet.</div>
+        </div>
+
+        <div class="panel">
+          <h2>Signoff</h2>
+          <div id="signoffBox" class="kicker">No signoff recorded yet.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="panel">
+        <h2>Completion signoff</h2>
+        <form id="signoffForm" class="form">
+          <label>
+            Your name
+            <input id="signerName" name="signerName" type="text" required />
+          </label>
+
+          <label>
+            Your email
+            <input id="signerEmail" name="signerEmail" type="email" required />
+          </label>
+
+          <label>
+            Drawn signature
+            <canvas id="signoffSignaturePad" class="signature-pad" width="900" height="220"></canvas>
+          </label>
+          <div><button id="clearProgressSignatureBtn" class="btn ghost" type="button">Clear signature</button></div>
+
+          <label>
+            Notes (optional)
+            <textarea id="signoffNotes" name="signoffNotes" rows="4" placeholder="Optional note about your service or completion."></textarea>
+          </label>
+
+          <div>
+            <button id="signoffBtn" class="btn primary" type="submit" disabled>Submit signoff</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="grid cards">
+        <div class="panel"><h2>After-detail checklist</h2><div id="checklistBox" class="kicker">Checklist not available yet.</div></div>
+        <div class="panel"><h2>Products used</h2><div id="productsUsedBox" class="kicker">No products used have been shared yet.</div></div>
+        <div class="panel"><h2>Job timeline</h2><div id="workflowBox" class="kicker">Workflow timeline not available yet.</div></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="panel">
+        <h2>Progress updates</h2>
+        <div id="updatesList" class="grid" style="margin-top:12px">
+          <div class="notice">No updates yet.</div>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="panel">
+        <h2>Send a message</h2>
+        <p class="kicker">Share a question or note with Rosie Dazzlers while the job is active. Your messages stay customer-visible; internal staff notes stay private.</p>
+        <form id="commentForm" class="form">
+          <label>
+            Your name
+            <input id="commentName" name="commentName" type="text" required />
+          </label>
+          <label>
+            Message
+            <textarea id="commentNote" name="commentNote" rows="4" placeholder="Ask a question, confirm a detail, or leave a note for the team." required></textarea>
+          </label>
+          <div>
+            <button id="commentBtn" class="btn primary" type="submit">Send message</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+
+    <section class="section">
+      <div class="panel">
+        <h2>Photos and media</h2>
+        <div id="mediaGrid" class="grid cards" style="margin-top:12px">
+          <div class="notice">No media yet.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="panel">
+        <h2>Need help?</h2>
+        <p>If you have questions about your booking or updates, please contact Rosie Dazzlers directly.</p>
+        <div class="badges" style="margin-top:10px">
+          <div class="badge">Phone: <span data-phone></span></div>
+          <div class="badge">Email: <span data-email></span></div>
+          <div class="badge">Service Area: <span data-service-area></span></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer container" data-footer></footer>
+
+  <script src="/assets/chrome.js"></script>
+  <script type="module">
+    import { setBrandImages, setFooter } from "/assets/site.js";
+
+    let currentToken = "";
+    let hasSignoff = false;
+    let currentBooking = null;
+
+    function formatDateTime(value) {
+      if (!value) return "—";
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return String(value);
+      return new Intl.DateTimeFormat("en-CA", {
+        dateStyle: "medium",
+        timeStyle: "short"
+      }).format(d);
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function getToken() {
+      const params = new URLSearchParams(window.location.search);
+      return (params.get("token") || "").trim();
+    }
+
+    function setNotice(message, kind = "") {
+      const el = document.querySelector("#pageNotice");
+      if (!el) return;
+      el.className = kind ? `notice ${kind}` : "notice";
+      el.textContent = message;
+    }
+
+    function renderSummary(data) {
+      const summary = document.querySelector("#summaryBox");
+      if (!summary) return;
+
+      const booking = data.booking || {};
+      currentBooking = booking || null;
+      const lines = [
+        booking.customer_name ? `<div><strong>Customer:</strong> ${escapeHtml(booking.customer_name)}</div>` : "",
+        booking.package_name ? `<div><strong>Package:</strong> ${escapeHtml(booking.package_name)}</div>` : "",
+        booking.vehicle_size ? `<div><strong>Vehicle Size:</strong> ${escapeHtml(booking.vehicle_size)}</div>` : "",
+        booking.service_date ? `<div><strong>Date:</strong> ${escapeHtml(booking.service_date)}</div>` : "",
+        booking.start_slot ? `<div><strong>Slot:</strong> ${escapeHtml(booking.start_slot)}</div>` : "",
+        booking.assigned_to ? `<div><strong>Assigned To:</strong> ${escapeHtml(booking.assigned_to)}</div>` : ""
+      ].filter(Boolean);
+
+      summary.innerHTML = lines.length ? lines.join("") : "No summary available.";
+      renderChecklist(data.checklist || null);
+      renderProductsUsed(Array.isArray(data.products_used) ? data.products_used : []);
+    }
+
+
+    function renderChecklist(checklist) {
+      const box = document.querySelector("#checklistBox");
+      if (!box) return;
+      if (!checklist) { box.innerHTML = 'Checklist not available yet.'; return; }
+      box.innerHTML = [
+        `<div><strong>Keys returned:</strong> ${checklist.keys_returned === true ? 'Yes' : checklist.keys_returned === false ? 'No' : '—'}</div>`,
+        `<div><strong>Water shut off:</strong> ${checklist.water_disconnected === true ? 'Yes' : checklist.water_disconnected === false ? 'No' : '—'}</div>`,
+        `<div><strong>Power disconnected:</strong> ${checklist.electricity_disconnected === true ? 'Yes' : checklist.electricity_disconnected === false ? 'No' : '—'}</div>`,
+        `<div><strong>Debrief completed:</strong> ${checklist.debrief_completed === true ? 'Yes' : checklist.debrief_completed === false ? 'No' : '—'}</div>`,
+        checklist.suggested_next_steps ? `<div><strong>Suggested next steps:</strong> ${escapeHtml(checklist.suggested_next_steps)}</div>` : '',
+        checklist.recommended_interval_days ? `<div><strong>Suggested return interval:</strong> ${escapeHtml(checklist.recommended_interval_days)} days</div>` : ''
+      ].filter(Boolean).join('');
+    }
+
+
+    function renderWorkflow(events, booking) {
+      const box = document.querySelector("#workflowBox");
+      if (!box) return;
+      const rows = [];
+      if (booking.current_workflow_stage) rows.push(`<div><strong>Current stage:</strong> ${escapeHtml(booking.current_workflow_stage)}</div>`);
+      if (booking.detailer_response_status) rows.push(`<div><strong>Detailer response:</strong> ${escapeHtml(booking.detailer_response_status)}</div>`);
+      if (booking.detailer_response_reason) rows.push(`<div><strong>Response note:</strong> ${escapeHtml(booking.detailer_response_reason)}</div>`);
+      for (const item of Array.isArray(events)?events:[]) {
+        rows.push(`<div><strong>${escapeHtml(formatDateTime(item.created_at))}</strong> — ${escapeHtml(item.event_type || 'update')}${item.event_note ? ` · ${escapeHtml(item.event_note)}` : ''}${item.actor_name ? ` · ${escapeHtml(item.actor_name)}` : ''}</div>`);
+      }
+      box.innerHTML = rows.length ? rows.join('') : 'Workflow timeline not available yet.';
+    }
+
+    function renderProductsUsed(rows) {
+      const box = document.querySelector("#productsUsedBox");
+      if (!box) return;
+      if (!Array.isArray(rows) || !rows.length) { box.innerHTML = 'No products used have been shared yet.'; return; }
+      box.innerHTML = rows.map((row)=>`<div><strong>${escapeHtml(row.item_name || row.item_key || 'Inventory item')}</strong> · ${escapeHtml(Math.abs(Number(row.qty_delta || 0)))} used${row.note ? `<div class="kicker">${escapeHtml(row.note)}</div>` : ''}</div>`).join('');
+    }
+
+    function renderHeader(data) {
+      const booking = data.booking || {};
+      currentBooking = booking || null;
+
+      const bookingTitle = document.querySelector("#bookingTitle");
+      const bookingMeta = document.querySelector("#bookingMeta");
+      const statusBadge = document.querySelector("#statusBadge");
+      const jobStatusBadge = document.querySelector("#jobStatusBadge");
+
+      if (bookingTitle) {
+        bookingTitle.textContent = booking.package_name || booking.package_code || "Booking loaded";
+      }
+
+      if (bookingMeta) {
+        const meta = [];
+        if (booking.customer_name) meta.push(booking.customer_name);
+        if (booking.service_date) meta.push(booking.service_date);
+        if (booking.start_slot) meta.push(booking.start_slot);
+        bookingMeta.textContent = meta.length ? meta.join(" · ") : "Booking information loaded.";
+      }
+
+      if (statusBadge) {
+        statusBadge.textContent = booking.status ? `Booking: ${booking.status}` : "Booking loaded";
+      }
+
+      if (jobStatusBadge) {
+        jobStatusBadge.textContent = booking.job_status ? `Job: ${booking.job_status}` : "Job status not set";
+      }
+      const links = document.querySelector('#customerLinksBox');
+      if (links) {
+        links.innerHTML = `
+          <div><a class="btn ghost" href="/my-account">My account & garage</a></div>
+          <div style="margin-top:10px" class="row"><a class="btn ghost" href="/complete?token=${encodeURIComponent(currentToken)}">Completion signoff</a><a class="btn ghost" href="/my-account.html">My Account & Garage</a></div>
+          <div class="kicker" style="margin-top:10px">Use My Account for your garage, booking history, next cleaning dates, and future scheduling.</div>
+        `;
+      }
+    }
+
+    function renderUpdates(data) {
+      const wrap = document.querySelector("#updatesList");
+      if (!wrap) return;
+
+      const updates = Array.isArray(data.updates) ? data.updates : [];
+      if (!updates.length) {
+        wrap.innerHTML = `<div class="notice">No updates have been posted yet.</div>`;
+        return;
+      }
+
+      wrap.innerHTML = updates.map((item) => `
+        <article class="card">
+          <div class="kicker">${escapeHtml(formatDateTime(item.created_at))}</div>
+          <h3>${escapeHtml(item.created_by || "Rosie Dazzlers")}</h3>
+          <p>${escapeHtml(item.note || "Update posted.")}</p>
+          <div class="kicker">Visibility: ${escapeHtml(item.visibility || "customer")}</div>
+        </article>
+      `).join("");
+    }
+
+    function renderMedia(data) {
+      const wrap = document.querySelector("#mediaGrid");
+      if (!wrap) return;
+
+      const media = Array.isArray(data.media) ? data.media : [];
+      if (!media.length) {
+        wrap.innerHTML = `<div class="notice">No photos or media have been posted yet.</div>`;
+        return;
+      }
+
+      wrap.innerHTML = media.map((item) => `
+        <article class="card">
+          ${item.media_url ? `<img class="img" loading="lazy" src="${escapeHtml(item.media_url)}" alt="${escapeHtml(item.caption || "Progress media")}" onerror="this.style.display='none'">` : ""}
+          <h3>${escapeHtml(item.caption || item.kind || "Progress media")}</h3>
+          <p>${escapeHtml(item.created_by || "Rosie Dazzlers")}</p>
+          <div class="kicker">${escapeHtml(formatDateTime(item.created_at))}</div>
+        </article>
+      `).join("");
+    }
+
+    function renderSignoff(data) {
+      const wrap = document.querySelector("#signoffBox");
+      const form = document.querySelector("#signoffForm");
+      const btn = document.querySelector("#signoffBtn");
+      if (!wrap || !form || !btn) return;
+
+      const signoffs = Array.isArray(data.signoffs) ? data.signoffs : [];
+      hasSignoff = signoffs.length > 0;
+
+      if (!signoffs.length) {
+        wrap.innerHTML = "No signoff recorded yet.";
+        btn.disabled = false;
+        return;
+      }
+
+      const latest = signoffs[0];
+      wrap.innerHTML = `
+        <div><strong>Signed by:</strong> ${escapeHtml(latest.signer_name || "Unknown")}</div>
+        <div><strong>Email:</strong> ${escapeHtml(latest.signer_email || "—")}</div>
+        <div><strong>When:</strong> ${escapeHtml(formatDateTime(latest.signed_at))}</div>
+        ${latest.notes ? `<div><strong>Notes:</strong> ${escapeHtml(latest.notes)}</div>` : ""}
+      `;
+
+      btn.disabled = true;
+    }
+
+    const signCanvas = document.querySelector("#signoffSignaturePad");
+    const signCtx = signCanvas ? signCanvas.getContext("2d") : null;
+    let signDrawing = false;
+    let signHasInk = false;
+    function resizeSignCanvas(){ if(!signCanvas || !signCtx) return; const ratio=Math.max(window.devicePixelRatio||1,1); const rect=signCanvas.getBoundingClientRect(); signCanvas.width=Math.max(600, Math.floor(rect.width*ratio)); signCanvas.height=Math.floor(220*ratio); signCtx.setTransform(1,0,0,1,0,0); signCtx.scale(ratio, ratio); signCtx.fillStyle="#ffffff"; signCtx.fillRect(0,0,rect.width,220); signCtx.strokeStyle="#111827"; signCtx.lineWidth=2; signCtx.lineCap="round"; signCtx.lineJoin="round"; }
+    function signPoint(evt){ const rect=signCanvas.getBoundingClientRect(); const p=evt.touches&&evt.touches[0]?evt.touches[0]:evt; return {x:p.clientX-rect.left,y:p.clientY-rect.top}; }
+    function signStart(evt){ if(!signCtx) return; signDrawing=true; signHasInk=true; const p=signPoint(evt); signCtx.beginPath(); signCtx.moveTo(p.x,p.y); evt.preventDefault(); }
+    function signMove(evt){ if(!signDrawing||!signCtx) return; const p=signPoint(evt); signCtx.lineTo(p.x,p.y); signCtx.stroke(); evt.preventDefault(); }
+    function signEnd(){ signDrawing=false; }
+    if(signCanvas&&signCtx){ resizeSignCanvas(); window.addEventListener("resize", resizeSignCanvas); ["mousedown","touchstart"].forEach(ev=>signCanvas.addEventListener(ev,signStart,{passive:false})); ["mousemove","touchmove"].forEach(ev=>signCanvas.addEventListener(ev,signMove,{passive:false})); ["mouseup","mouseleave","touchend","touchcancel"].forEach(ev=>signCanvas.addEventListener(ev,signEnd)); document.querySelector("#clearProgressSignatureBtn")?.addEventListener("click",()=>{ resizeSignCanvas(); signHasInk=false; }); }
+
+    async function postCustomerComment() {
+      const name = (document.querySelector('#commentName')?.value || '').trim();
+      const note = (document.querySelector('#commentNote')?.value || '').trim();
+      if (!currentToken) return setNotice('Missing progress token.', 'bad');
+      if (!name || !note) return setNotice('Your name and message are required.', 'bad');
+      const btn = document.querySelector('#commentBtn');
+      if (btn) btn.disabled = true;
+      try {
+        const res = await fetch('/api/progress/comment_post', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: currentToken, created_by: name, note })
+        });
+        const out = await res.json().catch(()=>null);
+        if (!res.ok || !out?.ok) throw new Error(out?.error || 'Could not send your message.');
+        document.querySelector('#commentNote').value = '';
+        setNotice('Your message was added to the live job feed.', 'ok');
+        await loadProgress();
+      } catch (err) {
+        setNotice(err?.message || 'Could not send your message.', 'bad');
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function loadProgress() {
+      const token = getToken();
+
+      setBrandImages();
+      setFooter();
+
+      if (!token) {
+        setNotice("Missing progress token. Add ?token=YOUR_TOKEN to the page URL.", "warn");
+        return;
+      }
+
+      currentToken = token;
+
+      try {
+        const res = await fetch(`/api/progress/view?token=${encodeURIComponent(token)}`, {
+          method: "GET",
+          headers: {
+            "Accept": "application/json"
+          }
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data.error || "Could not load progress information.");
+        }
+
+        renderHeader(data);
+        renderSummary(data);
+      if (document.querySelector('#commentName') && data.booking?.customer_name && !document.querySelector('#commentName').value) document.querySelector('#commentName').value = data.booking.customer_name;
+        renderUpdates(data);
+        renderMedia(data);
+        renderSignoff(data);
+        setNotice("Progress information loaded.", "ok");
+      } catch (err) {
+        setNotice(err.message || "Could not load progress information.", "bad");
+      }
+    }
+
+    async function submitSignoff(event) {
+      event.preventDefault();
+
+      const btn = document.querySelector("#signoffBtn");
+      if (!currentToken) {
+        setNotice("Missing progress token.", "bad");
+        return;
+      }
+
+      if (hasSignoff) {
+        setNotice("A signoff has already been recorded.", "warn");
+        return;
+      }
+
+      const signer_name = document.querySelector("#signerName").value.trim();
+      const signer_email = document.querySelector("#signerEmail").value.trim();
+      const notes = document.querySelector("#signoffNotes").value.trim();
+
+      if (!signer_name) {
+        setNotice("Your name is required.", "bad");
+        return;
+      }
+
+      if (!signer_email) {
+        setNotice("Your email is required.", "bad");
+        return;
+      }
+
+      try {
+        btn.disabled = true;
+        setNotice("Submitting signoff…");
+
+        const res = await fetch("/api/progress/signoff", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify({
+            token: currentToken,
+            signer_name,
+            signer_email,
+            notes
+          })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || "Could not submit signoff.");
+        }
+
+        document.querySelector("#signoffNotes").value = "";
+        await loadProgress();
+        setNotice("Signoff submitted.", "ok");
+      } catch (err) {
+        btn.disabled = false;
+        setNotice(err.message || "Could not submit signoff.", "bad");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadProgress();
+      document.querySelector("#signoffForm")?.addEventListener("submit", submitSignoff);
+    });
+  </script>
+</body>
+</html>

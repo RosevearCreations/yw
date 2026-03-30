@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Detailing Gear We Use in Oxford & Norfolk Counties | Rosie Dazzlers</title>
+  <meta name="description" content="Browse Rosie Dazzlers gear and tools used in mobile detailing across Oxford County and Norfolk County, with stock, ratings, and manufacturer details when available." />
+  <link rel="canonical" href="https://rosiedazzlers.ca/gear" />
+  <meta property="og:title" content="Detailing Gear We Use | Rosie Dazzlers" />
+  <meta property="og:description" content="See the tools and equipment Rosie Dazzlers uses for mobile detailing in Oxford County and Norfolk County." />
+  <link rel="stylesheet" href="/assets/site.css?v=20260326d" />
+  <style>
+    .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    @media (max-width:1100px){ .grid3{grid-template-columns:repeat(2,1fr)} }
+    @media (max-width:980px){ .grid3{grid-template-columns:1fr} }
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .muted{color:rgba(234,242,255,.62)} .mini{font-size:.92rem}
+    .cardImg{width:100%;aspect-ratio:16/10;object-fit:contain;border-radius:16px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);padding:10px}
+    .tag{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);font-size:.9rem}
+    .inputs input,.inputs select{min-width:180px}
+  </style>
+</head>
+<body>
+  <div class="nav"><div class="nav-inner"><a class="brand" href="/"><img data-logo alt="Rosie Dazzlers logo" /><strong>Rosie Dazzlers</strong></a><button class="btn small ghost nav-toggle" id="navToggle" type="button" aria-expanded="false">Menu</button><div class="nav-links" id="navLinks"></div><a class="btn primary" href="/book">Book now</a></div></div>
+  <div class="container">
+    <div class="panel">
+      <h1 style="margin:0 0 6px">Gear</h1>
+      <p class="kicker" style="margin:0">The equipment, towels, machines, scrubbers, and accessories we use to detail vehicles across Oxford and Norfolk counties.</p>
+      <div class="hr"></div>
+      <div class="row inputs" autocomplete="off">
+        <input type="text" tabindex="-1" aria-hidden="true" autocomplete="username" style="position:absolute;left:-9999px;opacity:0;pointer-events:none" />
+        <input type="password" tabindex="-1" aria-hidden="true" autocomplete="current-password" style="position:absolute;left:-9999px;opacity:0;pointer-events:none" />
+        <input id="q" name="catalog_search" class="search-input search-input-generic" type="text" inputmode="search" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Type to search gear" aria-label="Search gear" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="text" enterkeyhint="search" autocomplete="new-password" name="catalog_keyword_gear_generic" data-form-type="other" readonly />
+        <select id="cat"><option value="">All categories</option></select>
+        <select id="typeFilter"><option value="">All types</option></select>
+        <select id="sort"><option value="title_asc">Sort: Title (A→Z)</option><option value="title_desc">Sort: Title (Z→A)</option><option value="category_asc">Sort: Category</option><option value="stock_desc">Sort: Stock (high→low)</option><option value="stock_asc">Sort: Stock (low→high)</option><option value="rating_desc">Sort: Rating</option><option value="vendor_asc">Sort: Vendor</option><option value="custom_asc">Sort: Saved order</option></select>
+        <button class="btn ghost" id="clearBtn" type="button">Clear</button>
+      </div>
+      <div id="loadErr" class="notice bad" style="display:none;margin-top:12px"></div>
+      <div class="muted mini" id="count" style="margin-top:10px"></div>
+    </div>
+    <div class="section"><div class="grid3" id="grid"></div></div>
+    <div class="footer" data-footer></div>
+  </div>
+  <script type="module">
+    const DATA_URL = "/data/systems_catalog.json?v=20260326d";
+    const DB_URL = "/api/catalog_public?kind=tool";
+    const AMAZON_CA_SEARCH = "https://www.amazon.ca/s?k=";
+    const qs=(s)=>document.querySelector(s);
+    function escapeHtml(s){return String(s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");}
+    async function fetchJsonStrict(url){const res=await fetch(url,{cache:"no-store"});const text=await res.text();try{return JSON.parse(text);}catch{throw new Error(`Expected JSON from ${url}`);}}
+    function amazonUrl(name,given){return given&&String(given).trim()?String(given).trim():(AMAZON_CA_SEARCH+encodeURIComponent(name||''));}
+    function normalizeItem(x){const name=x.name||x.title||x.item||x.filename||"Item";const notes=x.notes||x.description||x.caption||"";const image_url=x.image_url||x.image||x.r2_url||x.url||null;const category=x.category||'other';const type=x.subcategory||x.item_type_label||x.item_type||'';const vendor=x.preferred_vendor||x.brand_guess||x.manufacturer||''; const vendorTag=vendor ? '#'+String(vendor).replace(/[^A-Za-z0-9]+/g,'').trim() : ''; return {name,notes,image_url,category,type,vendor,vendorTag,qty_on_hand:x.qty_on_hand??null,unit_label:x.unit_label||'',rating_value:x.rating_value??x.rating??null,rating_count:Number(x.rating_count||0),sort_key:Number(x.sort_key||0),reuse_policy:x.reuse_policy||'reorder',amazon_url:amazonUrl(name,x.amazon_url||x.amazon||x.link||null)};}
+    function hardenTextInput(el){ if(!el) return; const wipe=()=>{ if(/@/.test(el.value||'')) el.value=''; }; const unlock=()=>{ el.removeAttribute('readonly'); wipe(); }; el.value=''; el.setAttribute('autocomplete','new-password'); el.setAttribute('autocapitalize','none'); el.setAttribute('autocorrect','off'); el.setAttribute('spellcheck','false'); el.setAttribute('data-lpignore','true'); el.setAttribute('data-1p-ignore','true'); el.setAttribute('data-form-type','other'); setTimeout(wipe,25); setTimeout(wipe,250); window.addEventListener('pageshow', wipe); el.addEventListener('focus', unlock, { once:true }); el.addEventListener('pointerdown', unlock, { once:true }); el.addEventListener('input', wipe); el.addEventListener('keydown', wipe); }
+    function fillSelect(id, values, label){ const sel=qs(id); const list=[...new Set(values.filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b))); sel.innerHTML=`<option value="">All ${label}</option>`+list.map(v=>`<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join(''); }
+    function render(list){ const q=(qs('#q').value||'').trim().toLowerCase(); const cat=qs('#cat').value||''; const type=qs('#typeFilter').value||''; const mode=qs('#sort').value; let out=list.filter(it=>(!cat||it.category===cat)&&(!type||it.type===type)&&(!q||`${it.name} ${it.notes} ${it.category} ${it.type} ${it.vendor}`.toLowerCase().includes(q))); out=[...out]; if(mode==='title_asc') out.sort((a,b)=>a.name.localeCompare(b.name)); if(mode==='title_desc') out.sort((a,b)=>b.name.localeCompare(a.name)); if(mode==='category_asc') out.sort((a,b)=>(a.category||'').localeCompare(b.category||'')||(a.type||'').localeCompare(b.type||'')||a.name.localeCompare(b.name)); if(mode==='stock_desc') out.sort((a,b)=>Number(b.qty_on_hand||0)-Number(a.qty_on_hand||0)); if(mode==='stock_asc') out.sort((a,b)=>Number(a.qty_on_hand||0)-Number(b.qty_on_hand||0)); if(mode==='rating_desc') out.sort((a,b)=>Number(b.rating_value||0)-Number(a.rating_value||0)); if(mode==='vendor_asc') out.sort((a,b)=>(a.vendor||'').localeCompare(b.vendor||'')||a.name.localeCompare(b.name)); if(mode==='custom_asc') out.sort((a,b)=>Number(a.sort_key||0)-Number(b.sort_key||0)||a.name.localeCompare(b.name)); qs('#count').textContent=`${out.length} items`; const grid=qs('#grid'); grid.innerHTML=out.map(it=>`<div class="panel">${it.image_url?`<img class="cardImg" alt="${escapeHtml(it.name)}" src="${escapeHtml(it.image_url)}" loading="lazy" decoding="async" onerror="this.style.display='none'" />`:''}<div style="margin-top:${it.image_url?'10px':'0'}"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap"><div><h2 style="margin:0;font-size:1.1rem">${escapeHtml(it.name)}</h2><div class="muted mini">${escapeHtml(it.category)}</div></div><div class="row"><span class="tag">${escapeHtml(it.category)}</span>${it.type?`<span class="tag">${escapeHtml(it.type)}</span>`:''}</div></div>${it.vendor?`<div class="muted mini" style="margin-top:4px">Manufacturer: ${escapeHtml(it.vendor)} ${it.vendorTag?`<span class=\"tag\" style=\"margin-left:6px\">${escapeHtml(it.vendorTag)}</span>`:''}</div>`:''}${it.notes?`<div class="muted mini" style="margin-top:6px">${escapeHtml(it.notes)}</div>`:''}${it.rating_value!=null?`<div class="muted mini" style="margin-top:6px">Rated ${escapeHtml(Number(it.rating_value).toFixed(1))}/5${it.rating_count?` from ${escapeHtml(it.rating_count)}`:''}</div>`:''}${it.qty_on_hand!=null?`<div class="muted mini" style="margin-top:4px">Stock: ${escapeHtml(it.qty_on_hand)} ${escapeHtml(it.unit_label||'')}</div>`:''}<div class="row" style="margin-top:12px"><a class="btn primary" target="_blank" rel="noopener" href="${escapeHtml(it.amazon_url)}">View on Amazon</a></div></div></div>`).join('') || '<div class="notice warn">No gear matches the current filters.</div>'; }
+    hardenTextInput(qs('#q'));
+    try { let arr=[]; try{const dbRes=await fetch(DB_URL,{cache:'no-store'}); const dbJson=await dbRes.json(); if(dbRes.ok&&dbJson?.ok&&Array.isArray(dbJson.items)&&dbJson.items.length) arr=dbJson.items;}catch{} if(!arr.length){const raw=await fetchJsonStrict(DATA_URL); arr=Array.isArray(raw)?raw:(Array.isArray(raw.items)?raw.items:[]);} const list=arr.map(normalizeItem).filter(it=>it.name); fillSelect('#cat', list.map(x=>x.category), 'categories'); fillSelect('#typeFilter', list.map(x=>x.type), 'types'); render(list); ['q','cat','typeFilter','sort'].forEach(id=>qs('#'+id).addEventListener(id==='q'?'input':'change',()=>render(list))); qs('#clearBtn').addEventListener('click',()=>{qs('#q').value='';qs('#cat').value='';qs('#typeFilter').value='';qs('#sort').value='title_asc';render(list);}); } catch(e){ qs('#loadErr').style.display='block'; qs('#loadErr').textContent=`Failed to load gear catalog: ${e.message||e}`; }
+  </script>
+  <script type="module" src="/assets/chrome.js?v=20260326d"></script>
+</body>
+</html>

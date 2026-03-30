@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Client or Staff Login | Rosie Dazzlers</title>
+  <link rel="canonical" href="https://www.rosiedazzlers.ca/login" />
+  <meta name="description" content="Sign in to your Rosie Dazzlers client account, or use the same page to reach staff tools when you are part of the Rosie Dazzlers team." />
+  <meta name="robots" content="noindex,follow" />
+  <link rel="stylesheet" href="/assets/site.css" />
+</head>
+<body>
+  <div class="nav"><div class="nav-inner"><a class="brand" href="/"><img data-logo alt="Rosie Dazzlers logo" /><strong>Rosie Dazzlers</strong></a><div class="nav-links" id="navLinks"></div><a class="btn primary" href="/book">Book now</a></div></div>
+  <div class="container">
+    <div class="grid cards" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start;">
+      <section class="panel">
+        <h1 style="margin-top:0">Client or Staff Login</h1>
+        <p class="muted">Customers can sign in to view bookings and gifts. Staff can also use this page and will be sent to the admin tools automatically.</p>
+        <form id="loginForm">
+          <div class="field"><label for="loginEmail">Email</label><input id="loginEmail" type="email" required /></div>
+          <div class="field"><label for="loginPassword">Password</label><input id="loginPassword" type="password" required /></div>
+          <button class="btn primary" id="loginBtn" type="submit">Sign In</button>
+          <div id="loginStatus" class="muted" style="margin-top:12px"></div>
+        </form>
+        <div class="hr"></div>
+        <p class="muted" style="margin:0">Staff tip: if you are already signed in as staff, your public account widget will also show an Admin shortcut.</p>
+      </section>
+      <section class="panel">
+        <h2 style="margin-top:0">Create Client Account</h2>
+        <p class="muted">Create a customer login with your most important profile details.</p>
+        <form id="signupForm">
+          <div class="field"><label for="signupName">Full Name</label><input id="signupName" required /></div>
+          <div class="field"><label for="signupEmail">Email</label><input id="signupEmail" type="email" required /></div>
+          <div class="field"><label for="signupPhone">Phone</label><input id="signupPhone" /></div>
+          <div class="field"><label for="signupPassword">Password</label><input id="signupPassword" type="password" required minlength="8" /></div>
+          <div class="field"><label for="signupAddress1">Address</label><input id="signupAddress1" /></div>
+          <div class="field"><label for="signupCity">City</label><input id="signupCity" /></div>
+          <div class="field"><label for="signupProvince">Province</label><input id="signupProvince" value="ON" /></div>
+          <div class="field"><label for="signupPostal">Postal Code</label><input id="signupPostal" /></div>
+          <div class="field"><label for="signupVehicleNotes">Vehicle Details</label><textarea id="signupVehicleNotes"></textarea></div>
+          <button class="btn primary" id="signupBtn" type="submit">Create Account</button>
+          <div id="signupStatus" class="muted" style="margin-top:12px"></div>
+        </form>
+      </section>
+    </div>
+    <div class="footer" data-footer></div>
+  </div>
+  <script src="/assets/client-auth.js"></script>
+  <script src="/assets/admin-auth.js"></script>
+  <script type="module" src="/assets/chrome.js"></script>
+  <script>
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    function status(el, msg, ok=false){ el.textContent = msg || ''; el.style.color = ok ? '#86efac' : '#fca5a5'; }
+    function nextUrl(fallback){ const u=new URL(location.href); const n=u.searchParams.get('next'); if(!n || !n.startsWith('/') || n.startsWith('//')) return fallback; return n; }
+
+    async function signInWithFallback(email, password){
+      try {
+        const client = await window.ClientAuth.signIn({ email, password });
+        return { kind: 'client', result: client, redirect: nextUrl('/my-account') };
+      } catch (clientErr) {
+        try {
+          const staff = await window.AdminAuth.signIn({ email, password });
+          return { kind: 'staff', result: staff, redirect: nextUrl('/admin') };
+        } catch (staffErr) {
+          throw new Error((clientErr && clientErr.message) || (staffErr && staffErr.message) || 'Login failed.');
+        }
+      }
+    }
+
+    loginForm.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const out=document.getElementById('loginStatus');
+      status(out,'');
+      try {
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        const auth = await signInWithFallback(email, password);
+        status(out, auth.kind === 'staff' ? 'Staff login accepted. Redirecting…' : 'Signed in. Redirecting…', true);
+        setTimeout(()=>location.replace(auth.redirect),300);
+      } catch(err){ status(out, err.message || 'Login failed.'); }
+    });
+
+    signupForm.addEventListener('submit', async (e)=>{ e.preventDefault(); const out=document.getElementById('signupStatus'); status(out,''); try { await window.ClientAuth.signUp({ full_name: document.getElementById('signupName').value.trim(), email: document.getElementById('signupEmail').value.trim(), phone: document.getElementById('signupPhone').value.trim(), password: document.getElementById('signupPassword').value, address_line1: document.getElementById('signupAddress1').value.trim(), city: document.getElementById('signupCity').value.trim(), province: document.getElementById('signupProvince').value.trim(), postal_code: document.getElementById('signupPostal').value.trim(), vehicle_notes: document.getElementById('signupVehicleNotes').value.trim() }); status(out,'Account created. Redirecting...',true); setTimeout(()=>location.replace('/my-account'),300); } catch(err){ status(out, err.message || 'Sign-up failed.'); } });
+  </script>
+</body>
+</html>

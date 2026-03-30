@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Rosie Dazzlers — Notifications</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="stylesheet" href="/assets/site.css" />
+  <style>
+    body{margin:0;min-height:100vh;background:radial-gradient(circle at top, rgba(255,255,255,.08), transparent 35%),linear-gradient(180deg,#0f172a 0%,#111827 100%);color:#f8fafc}
+    .shell{max-width:1320px;margin:0 auto;padding:24px}.topbar{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;margin-bottom:20px}
+    .card,.actorcard{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:18px;box-shadow:0 14px 35px rgba(0,0,0,.22)}
+    .card{padding:20px}.actorcard{min-width:280px;padding:16px 18px}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}.span-8{grid-column:span 12}.span-4{grid-column:span 12}
+    @media(min-width:960px){.span-8{grid-column:span 8}.span-4{grid-column:span 4}}
+    .table-wrap{overflow:auto;border-radius:14px;border:1px solid rgba(255,255,255,.08)}table{width:100%;border-collapse:collapse;min-width:1180px;background:rgba(255,255,255,.03)}
+    th,td{padding:12px 14px;text-align:left;border-bottom:1px solid rgba(255,255,255,.07);vertical-align:top}th{color:#93c5fd;background:rgba(255,255,255,.03)}
+    .pill{display:inline-flex;padding:4px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);font-size:.82rem}.muted{color:#94a3b8}
+    .loading{display:grid;place-items:center;min-height:60vh;color:#cbd5e1}.status{margin-bottom:16px;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.05);display:none}.status[data-state="error"],.status[data-state="success"]{display:block}
+    .status[data-state="error"]{background:rgba(220,38,38,.12);border-color:rgba(248,113,113,.25)}.status[data-state="success"]{background:rgba(34,197,94,.10);border-color:rgba(134,239,172,.22)}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.btn{appearance:none;border:0;border-radius:12px;padding:10px 14px;background:#2563eb;color:#fff;font-weight:700;cursor:pointer}.btn.secondary{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12)}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="loading" data-admin-shell-loading>Loading notifications…</div>
+    <div data-admin-shell-ready hidden>
+      <header class="topbar">
+        <div><h1 style="margin:0 0 6px">Notifications</h1><p class="muted" style="margin:0">Review queued email and SMS hook activity across progress updates, comments, media events, and retries.</p></div>
+        <section class="actorcard"><div><strong>Name:</strong> <span data-actor-name></span></div><div><strong>Role:</strong> <span data-actor-role></span></div><div><strong>Email:</strong> <span data-actor-email></span></div><button class="btn" type="button" data-admin-logout style="margin-top:10px">Sign Out</button></section>
+      </header>
+      <div class="grid">
+        <aside class="span-4"><div data-admin-menu-mount></div></aside>
+        <section class="span-8">
+          <div class="status" data-admin-shell-status></div>
+          <article class="card">
+            <div class="actions" style="margin-bottom:16px">
+              <label>Filter <select id="statusFilter"><option value="">All</option><option value="queued">Queued</option><option value="sent">Sent</option><option value="failed">Failed</option></select></label>
+              <button class="btn" id="refreshBtn" type="button">Refresh</button>
+              <button class="btn secondary" id="retryVisibleBtn" type="button">Retry visible queued/failed</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>When</th><th>Event</th><th>Channel</th><th>Recipient</th><th>Status</th><th>Attempts</th><th>Booking</th><th>Details</th><th>Action</th></tr></thead>
+                <tbody id="rows"><tr><td colspan="9" class="muted">Loading…</td></tr></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+      </div>
+    </div>
+  </main>
+  <script src="/assets/admin-auth.js"></script><script src="/assets/admin-shell.js"></script><script src="/assets/admin-menu.js"></script><script src="/assets/admin-page-init.js"></script>
+  <script>
+    (function(){
+      const rows = document.getElementById('rows'); const filter=document.getElementById('statusFilter'); const refreshBtn=document.getElementById('refreshBtn'); const retryVisibleBtn=document.getElementById('retryVisibleBtn'); let currentRows=[];
+      function setShellStatus(message, type) { const node = document.querySelector('[data-admin-shell-status]'); if (!node) return; node.textContent = message || ''; node.dataset.state = type || ''; }
+      function escapeHtml(v){return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+      async function process(ids, action='retry'){ const res=await fetch('/api/admin/notifications_process',{ method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ ids, action })}); const out=await res.json().catch(()=>null); if(!res.ok) throw new Error(out?.error || 'Could not process notifications.'); return out; }
+      async function loadRows() {
+        setShellStatus('', ''); rows.innerHTML = '<tr><td colspan="9" class="muted">Loading…</td></tr>';
+        try {
+          const res = await fetch('/api/admin/notifications_list', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ status: filter.value || null, limit: 150 }) });
+          const out = await res.json().catch(() => null); if (!res.ok) throw new Error(out?.error || 'Could not load notifications.');
+          currentRows = Array.isArray(out?.notifications) ? out.notifications : [];
+          if (!currentRows.length) { rows.innerHTML = '<tr><td colspan="9" class="muted">No notifications found.</td></tr>'; return; }
+          rows.innerHTML = '';
+          for (const item of currentRows) {
+            const tr = document.createElement('tr'); const recipient = item.recipient_email || item.recipient_phone || '—'; const detail = item.last_error ? `Error: ${item.last_error}` : JSON.stringify(item.payload || {});
+            tr.innerHTML = `<td>${escapeHtml(item.created_at || '—')}</td><td>${escapeHtml(item.event_type || '—')}</td><td>${escapeHtml(item.channel || '—')}</td><td>${escapeHtml(recipient)}</td><td><span class="pill">${escapeHtml(item.status || 'queued')}</span></td><td>${escapeHtml(item.attempt_count ?? 0)}</td><td>${escapeHtml(item.booking_id || '—')}</td><td class="muted" style="max-width:280px;word-break:break-word">${escapeHtml(detail)}</td><td><button class="btn secondary mini-retry">Retry</button></td>`;
+            tr.querySelector('.mini-retry').addEventListener('click', async ()=>{ try{ const out=await process([item.id],'retry'); setShellStatus(`Processed ${out.processed} notification(s).`,'success'); await loadRows(); }catch(err){ setShellStatus(err?.message || 'Could not retry notification.','error'); } });
+            rows.appendChild(tr);
+          }
+        } catch (err) { rows.innerHTML = '<tr><td colspan="9" class="muted">Could not load notifications.</td></tr>'; setShellStatus(err?.message || 'Could not load notifications.','error'); }
+      }
+      refreshBtn.addEventListener('click', loadRows); filter.addEventListener('change', loadRows);
+      retryVisibleBtn.addEventListener('click', async ()=>{ try{ const ids=currentRows.filter(r=>['queued','failed'].includes(String(r.status||'queued'))).map(r=>r.id); if(!ids.length) return setShellStatus('No queued or failed notifications in current view.','success'); const out=await process(ids,'retry'); setShellStatus(`Processed ${out.processed} notification(s).`,'success'); await loadRows(); }catch(err){ setShellStatus(err?.message || 'Could not retry notifications.','error'); } });
+      window.AdminPageInit.init({ pageKey: 'admin-notifications', onReady: async function () { await loadRows(); } });
+    })();
+  </script>
+</body>
+</html>

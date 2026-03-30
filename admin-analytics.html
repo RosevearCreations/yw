@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Rosie Dazzlers — Analytics</title>
+<meta name="robots" content="noindex,nofollow" />
+<link rel="stylesheet" href="/assets/site.css" />
+<style>
+body{margin:0;min-height:100vh;background:radial-gradient(circle at top, rgba(255,255,255,.08), transparent 35%),linear-gradient(180deg,#0f172a 0%,#111827 100%);color:#f8fafc}.shell{max-width:1320px;margin:0 auto;padding:24px}.loading{display:grid;place-items:center;min-height:60vh;color:#cbd5e1}.topbar{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;margin-bottom:20px}.titleblock h1{margin:0 0 6px;font-size:1.8rem}.titleblock p{margin:0;color:#cbd5e1}.actorcard{min-width:280px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:16px 18px;box-shadow:0 14px 35px rgba(0,0,0,.22)}.actorline{margin:4px 0}.actorlabel{color:#93c5fd;font-weight:700;margin-right:6px}.logout-btn,.btn,.ghost-btn,select{appearance:none;border:0;border-radius:10px;padding:10px 14px;background:#2563eb;color:white;font-weight:700;cursor:pointer}.ghost-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12)}select{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12)}.status{margin-bottom:16px;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.05);color:#e5e7eb}.status[data-state="error"]{background:rgba(220,38,38,.12);border-color:rgba(248,113,113,.25);color:#fecaca}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}.card{grid-column:span 12;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:20px;box-shadow:0 14px 35px rgba(0,0,0,.22)}.kpi{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}.kpi .box{padding:14px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}.box strong{display:block;font-size:1.3rem}.list{display:grid;gap:10px}.item{padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}.muted{color:#94a3b8;font-size:.92rem}.toolbar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.toolbar-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}@media(max-width:980px){.kpi{grid-template-columns:1fr 1fr}}@media(max-width:640px){.kpi{grid-template-columns:1fr}}
+</style>
+</head>
+<body><main class="shell"><div class="loading" data-admin-shell-loading>Loading analytics...</div><div data-admin-shell-ready hidden>
+<header class="topbar"><div class="titleblock"><h1>Analytics & Recovery</h1><p>Live sessions, visitor journeys, historical traffic, referrers, cart activity, and abandoned checkout recovery controls.</p></div><section class="actorcard"><div class="actorline"><span class="actorlabel">Name:</span><span data-actor-name></span></div><div class="actorline"><span class="actorlabel">Role:</span><span data-actor-role></span></div><div class="actorline"><span class="actorlabel">Email:</span><span data-actor-email></span></div><button class="logout-btn" type="button" data-admin-logout>Sign Out</button></section></header>
+<div class="status" data-admin-shell-status hidden></div>
+<section class="grid">
+<article class="card"><div class="toolbar"><h2 style="margin:0">Overview</h2><div class="toolbar-actions"><label class="muted" for="analyticsDays">Window</label><select id="analyticsDays"><option value="7">7 days</option><option value="14">14 days</option><option value="30" selected>30 days</option><option value="90">90 days</option></select><button class="ghost-btn" id="refreshAnalyticsBtn" type="button">Refresh</button></div></div><div class="kpi" id="kpi-grid"><div class="box"><div class="muted">Loading…</div><strong>—</strong></div></div></article>
+<article class="card"><h2>Live Online Now</h2><div id="live-online" class="list"></div></article>
+<article class="card"><h2>Daily Traffic</h2><div id="daily-traffic" class="list"></div></article>
+<article class="card"><h2>Recent Cart Signals</h2><div id="cart-signals" class="list"></div></article>
+<article class="card"><h2>Top Pages</h2><div id="top-pages" class="list"></div></article>
+<article class="card"><h2>Top Countries</h2><div id="top-countries" class="list"></div></article>
+<article class="card"><h2>Top Referrers</h2><div id="top-referrers" class="list"></div></article>
+<article class="card"><h2>Checkout State Mix</h2><div id="checkout-states" class="list"></div></article>
+<article class="card"><h2>Session Journeys</h2><div id="session-journeys" class="list"></div></article>
+<article class="card"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap"><h2 style="margin:0">Abandoned Orders</h2><button class="btn" id="queue-all-recovery-btn" type="button">Queue Recovery Emails</button></div><div id="abandoned-orders" class="list"></div></article>
+</section></div></main>
+<script src="/assets/admin-auth.js"></script><script src="/assets/admin-shell.js"></script>
+<script>
+(function(){
+  const els={kpi:document.getElementById("kpi-grid"),pages:document.getElementById("top-pages"),countries:document.getElementById("top-countries"),referrers:document.getElementById("top-referrers"),journeys:document.getElementById("session-journeys"),live:document.getElementById("live-online"),cart:document.getElementById("cart-signals"),abandoned:document.getElementById("abandoned-orders"),queueAll:document.getElementById("queue-all-recovery-btn"),days:document.getElementById('analyticsDays'),refresh:document.getElementById('refreshAnalyticsBtn'),daily:document.getElementById('daily-traffic'),checkoutStates:document.getElementById('checkout-states')};
+  let abandonedRows=[];
+  let autoRefreshTimer=null;
+  function setShellStatus(message,type){document.querySelectorAll("[data-admin-shell-status]").forEach(node=>{node.hidden=!message;node.textContent=message||"";node.dataset.state=type||"";});}
+  function esc(v){return String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
+  function renderList(node, rows, formatter, empty='No data.'){node.innerHTML=""; if(!rows||!rows.length){node.innerHTML=`<div class="item muted">${esc(empty)}</div>`; return;} rows.forEach(r=>{const div=document.createElement("div"); div.className="item"; div.innerHTML=formatter(r); node.appendChild(div);});}
+  async function load(){
+    const days = Number(els.days.value || 30);
+    const [analyticsRes, abandonedRes] = await Promise.all([
+      fetch("/api/admin/analytics_overview",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({days})}),
+      fetch("/api/admin/abandoned_orders_list",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({days})})
+    ]);
+    const analytics=await analyticsRes.json().catch(()=>null); const abandoned=await abandonedRes.json().catch(()=>null);
+    if(!analyticsRes.ok) throw new Error(analytics?.error||"Could not load analytics.");
+    if(!abandonedRes.ok) throw new Error(abandoned?.error||"Could not load abandoned orders.");
+    els.kpi.innerHTML=`
+      <div class="box"><div class="muted">Events</div><strong>${Number(analytics.summary?.events||0)}</strong></div>
+      <div class="box"><div class="muted">Page Views</div><strong>${Number(analytics.summary?.page_views||0)}</strong></div>
+      <div class="box"><div class="muted">Visitors</div><strong>${Number(analytics.summary?.unique_visitors||0)}</strong></div>
+      <div class="box"><div class="muted">Sessions</div><strong>${Number(analytics.summary?.unique_sessions||0)}</strong></div>
+      <div class="box"><div class="muted">Abandoned</div><strong>${Number(analytics.summary?.abandoned_sessions||0)}</strong></div>
+      <div class="box"><div class="muted">Live Online</div><strong>${Number(analytics.summary?.live_online_sessions||0)}</strong></div>`;
+    renderList(els.live, analytics.live_online_sessions||[], r=>`<strong>${esc(r.country||'Unknown')}</strong><div class="muted">${esc((r.path||[]).join(" → "))}</div><div class="muted">Seen: ${esc(r.ended_at||'')}</div>`, 'No live sessions right now.');
+    renderList(els.cart, analytics.cart_snapshots||[], r=>`<strong>${esc(r.session_id||'unknown')}</strong><div class="muted">${esc(r.page_path||'')}</div><div class="muted">Items: ${Number(r.item_count||0)}${r.cart_key?` • ${esc(r.cart_key)}`:''}</div>`, 'No cart activity yet.');
+    renderList(els.pages, analytics.top_pages||[], r=>`<strong>${esc(r.label)}</strong><div class="muted">${Number(r.count||0)} views</div>`);
+    renderList(els.countries, analytics.top_countries||[], r=>`<strong>${esc(r.label)}</strong><div class="muted">${Number(r.count||0)} sessions</div>`);
+    renderList(els.referrers, analytics.top_referrers||[], r=>`<strong>${esc(r.label)}</strong><div class="muted">${Number(r.count||0)} referrals</div>`);
+    renderList(els.checkoutStates, analytics.checkout_states||[], r=>`<strong>${esc(r.label)}</strong><div class="muted">${Number(r.count||0)} events</div>`, 'No checkout-state data yet.');
+    renderList(els.daily, analytics.daily_traffic||[], r=>`<strong>${esc(r.day)}</strong><div class="muted">${Number(r.page_views||0)} page views • ${Number(r.unique_visitors||0)} visitors • ${Number(r.unique_sessions||0)} sessions • ${Number(r.abandoned_sessions||0)} abandoned</div>`,'No daily traffic data yet.');
+    renderList(els.journeys, (analytics.session_journeys||[]).slice(0,20), r=>`<strong>${esc(r.session_id)}</strong><div class="muted">${esc((r.path||[]).join(" → "))}</div><div class="muted">Events: ${Number(r.event_count||0)}</div>`);
+    abandonedRows=abandoned.abandoned_orders||[];
+    renderList(els.abandoned, abandonedRows, r=>`<strong>${esc(r.customer_email||r.session_id)}</strong><div class="muted">${esc((r.path||[]).join(" → "))}</div><div class="muted">Recovery possible: ${r.recovery_possible?"Yes":"No"}</div>`, 'No abandoned orders in this window.');
+  }
+  els.queueAll.addEventListener("click", async ()=>{
+    const recoverable=abandonedRows.filter(r=>r.recovery_possible);
+    if(!recoverable.length){setShellStatus("No recoverable abandoned orders found.","error"); return;}
+    let queued=0;
+    for(const row of recoverable){
+      const res=await fetch("/api/admin/abandoned_recovery_enqueue",{method:"POST",credentials:"include",headers:{"Content-Type":"application/json"},body:JSON.stringify({customer_email:row.customer_email,session_id:row.session_id})});
+      if(res.ok) queued+=1;
+    }
+    setShellStatus(`Queued ${queued} recovery email(s).`,`success`);
+  });
+  els.days.addEventListener('change', ()=>load().catch(err=>setShellStatus(err?.message||'Could not refresh analytics.','error')));
+  els.refresh.addEventListener('click', ()=>load().catch(err=>setShellStatus(err?.message||'Could not refresh analytics.','error')));
+  window.AdminShell.boot({pageKey:"admin-analytics", onReady: async ()=>{try{await load(); clearInterval(autoRefreshTimer); autoRefreshTimer=setInterval(()=>load().catch(()=>{}),30000);}catch(err){setShellStatus(err?.message||"Could not initialize analytics.","error");}}});
+})();
+</script></body></html>

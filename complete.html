@@ -1,0 +1,283 @@
+<!-- /complete.html
+     REPLACE ENTIRE FILE
+
+     Customer completion/sign-off page:
+       /complete?token=UUID
+
+     What it does:
+     - Loads booking header via /api/progress/view?token=...
+     - Collects typed signature + optional notes
+     - Posts to /api/progress/signoff (we’ll add/verify that endpoint next if needed)
+-->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Completion Signoff | Rosie Dazzlers</title>
+  <meta name="description" content="Customer completion and signoff page for Rosie Dazzlers detailing jobs." />
+  <link rel="canonical" href="https://rosiedazzlers.ca/complete" />
+  <meta property="og:title" content="Completion Signoff | Rosie Dazzlers" />
+  <meta property="og:description" content="Customer completion and signoff page for Rosie Dazzlers detailing jobs." />
+  <link rel="stylesheet" href="/assets/site.css?v=20260309y" />
+  <style>
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:980px){ .grid2{grid-template-columns:1fr} }
+    .muted{color:rgba(234,242,255,.62)}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+    textarea{min-height:120px}
+    .tag{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);font-size:.9rem}
+  </style>
+</head>
+
+<body>
+  <div class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="/">
+        <img data-logo alt="Rosie Dazzlers logo" />
+        <strong>Rosie Dazzlers</strong>
+      </a>
+      <button class="btn small ghost nav-toggle" id="navToggle" type="button" aria-expanded="false">Menu</button>
+      <div class="nav-links" id="navLinks"></div>
+      <a class="btn primary" href="/book">Book now</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="panel">
+      <h1 style="margin:0 0 6px">Completion Sign-off</h1>
+      <p class="kicker" style="margin:0">
+        Confirm your detail is complete with your typed name, email, and a drawn signature.
+      </p>
+
+      <div id="tokenNote" class="notice warn" style="margin-top:12px;display:none"></div>
+      <div id="err" class="notice bad" style="margin-top:12px;display:none"></div>
+      <div id="ok" class="notice ok" style="margin-top:12px;display:none"></div>
+    </div>
+
+    <div class="section grid2">
+      <div class="panel">
+        <h2 style="margin-top:0">Booking</h2>
+        <div id="bookingBox" class="notice"></div>
+
+        <div class="row" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">
+          <a id="progressLink" class="btn ghost" href="#">Back to progress</a>
+          <a id="accountLink" class="btn ghost" href="/my-account">My account & garage</a>
+          <a class="btn ghost" href="/waiver">Service waiver</a>
+        </div>
+        <div id="completionFlowHelp" class="muted" style="margin-top:10px">Use My Account for your garage, booking history, and future scheduling. Use the progress page link for live job updates, photos, comments, products used, and completion status.</div>
+      </div>
+
+      <div class="panel">
+        <h2 style="margin-top:0">Sign-off</h2>
+
+        <form id="signForm">
+          <div class="grid2">
+            <div>
+              <label for="signer_name">Your name (typed signature)</label>
+              <input id="signer_name" type="text" required placeholder="Full name" />
+            </div>
+            <div>
+              <label for="signer_email">Your email</label>
+              <input id="signer_email" type="email" required placeholder="you@example.com" />
+            </div>
+          </div>
+
+          <label for="notes" style="margin-top:10px">Notes (optional)</label>
+          <textarea id="notes" placeholder="Anything we should know? e.g., 'Please revisit the rear mats next time.'"></textarea>
+
+          
+          <label style="margin-top:10px">Draw your signature</label>
+          <canvas id="signaturePad" class="signature-pad" width="900" height="220"></canvas>
+          <div class="row" style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap">
+            <button id="clearSignatureBtn" class="btn ghost" type="button">Clear signature</button>
+          </div>
+
+          <label style="display:flex;gap:10px;align-items:flex-start;margin-top:10px">
+            <input id="agree" type="checkbox" required />
+            <span>
+              <strong>I confirm the service is complete</strong> to my satisfaction (or I have left notes above).
+            </span>
+          </label>
+
+          <div class="row" style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+            <button id="submitBtn" class="btn primary" type="submit">Sign completion</button>
+          </div>
+
+          <div class="muted" style="margin-top:10px">
+            This will record your sign-off timestamp for this booking.
+          </div>
+        </form>
+      </div>
+    </div>
+
+
+    <div class="section grid2">
+      <div class="panel">
+        <h2 style="margin-top:0">After-detail checklist</h2>
+        <div id="checklistBox" class="kicker">Checklist not available yet.</div>
+      </div>
+      <div class="panel">
+        <h2 style="margin-top:0">Products used</h2>
+        <div id="productsUsedBox" class="kicker">No product usage has been shared yet.</div>
+      </div>
+    </div>
+
+    <div class="section grid2"><div class="panel"><h2 style="margin-top:0">Leave a review</h2><p class="muted">Save an in-app review now and then continue to Google if you wish.</p><form id="reviewForm"><div class="grid2"><div><label for="review_rating">Rating</label><select id="review_rating"><option value="5">5 stars</option><option value="4">4 stars</option><option value="3">3 stars</option><option value="2">2 stars</option><option value="1">1 star</option></select></div><div><label for="review_title">Title</label><input id="review_title" type="text" placeholder="Quick headline" /></div></div><label for="review_text" style="margin-top:10px">Review</label><textarea id="review_text" placeholder="Tell us what went well and what we should improve."></textarea><label style="display:flex;gap:10px;align-items:flex-start;margin-top:10px"><input id="review_public" type="checkbox" /><span>Allow Rosie Dazzlers to reuse this review publicly after approval.</span></label><div class="row" style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap"><button id="reviewBtn" class="btn" type="button">Save in-app review</button><a id="googleReviewLink" class="btn ghost" href="https://www.google.com/search?q=Rosie+Dazzlers+review" target="_blank" rel="noopener">Google review</a></div></form></div></div>
+
+    <div class="footer" data-footer></div>
+  </div>
+
+  <script type="module">
+    const qs = (s) => document.querySelector(s);
+
+    function escapeHtml(s){
+      return String(s || "")
+        .replaceAll("&","&amp;").replaceAll("<","&lt;")
+        .replaceAll(">","&gt;").replaceAll('"',"&quot;")
+        .replaceAll("'","&#39;");
+    }
+
+    function fmtTime(iso){
+      try {
+        const d = new Date(iso);
+        return d.toLocaleString("en-CA", { dateStyle:"medium", timeStyle:"short" });
+      } catch {
+        return iso || "";
+      }
+    }
+
+    function show(id, msg){
+      const el = qs("#"+id);
+      el.style.display = "block";
+      el.textContent = msg;
+    }
+    function hide(id){ qs("#"+id).style.display = "none"; }
+    function renderChecklist(checklist){
+      const box = qs('#checklistBox');
+      if (!box) return;
+      if (!checklist) { box.innerHTML = 'Checklist not available yet.'; return; }
+      const rows = [
+        ['Keys returned', checklist.keys_returned],
+        ['Water shut off', checklist.water_disconnected],
+        ['Power disconnected', checklist.electricity_disconnected],
+        ['Customer debrief completed', checklist.debrief_completed]
+      ].map(([label,val])=>`<div><strong>${escapeHtml(label)}:</strong> ${val === true ? 'Yes' : val === false ? 'No' : '—'}</div>`);
+      if (checklist.suggested_next_steps) rows.push(`<div><strong>Suggested next steps:</strong> ${escapeHtml(checklist.suggested_next_steps)}</div>`);
+      if (checklist.recommended_interval_days) rows.push(`<div><strong>Suggested return interval:</strong> ${escapeHtml(checklist.recommended_interval_days)} days</div>`);
+      box.innerHTML = rows.join('');
+    }
+    function renderProductsUsed(rows){
+      const box = qs('#productsUsedBox');
+      if (!box) return;
+      if (!Array.isArray(rows) || !rows.length) { box.innerHTML = 'No product usage has been shared yet.'; return; }
+      box.innerHTML = rows.map((row)=>`<div><strong>${escapeHtml(row.item_name || row.item_key || 'Inventory item')}</strong> · ${escapeHtml(Math.abs(Number(row.qty_delta || 0)))} used${row.note ? `<div class="muted">${escapeHtml(row.note)}</div>` : ''}</div>`).join('');
+    }
+
+    const p = new URLSearchParams(location.search);
+    const token = (p.get("token") || "").trim();
+
+    if (!token) {
+      qs("#tokenNote").style.display = "block";
+      qs("#tokenNote").innerHTML = `Missing token. Use a link like <span class="mono">/complete?token=UUID</span>.`;
+      throw new Error("Missing token");
+    }
+
+    qs("#tokenNote").style.display = "block";
+    qs("#tokenNote").innerHTML = `Token: <span class="mono">${escapeHtml(token)}</span>`;
+
+    qs("#progressLink").href = `/progress?token=${encodeURIComponent(token)}`;
+
+    // Load booking header (reuse progress view endpoint)
+    async function loadBooking(){
+      const res = await fetch(`/api/progress/view?token=${encodeURIComponent(token)}`, { cache:"no-store" });
+      const out = await res.json().catch(()=>null);
+
+      if (!res.ok || !out?.ok) {
+        qs("#err").style.display = "block";
+        qs("#err").textContent = out?.error ? `Error: ${out.error}` : "Error loading booking.";
+        return;
+      }
+
+      const b = out.booking || {};
+      qs("#bookingBox").innerHTML = `
+        <div><strong>${escapeHtml(b.customer_name || "Customer")}</strong></div>
+        <div class="muted">Date: <strong>${escapeHtml(b.service_date || "")}</strong></div>
+        <div class="muted">Package: <strong>${escapeHtml(b.package_code || "")}</strong> (${escapeHtml(b.vehicle_size || "")})</div>
+        <div class="muted">Job status: <span class="tag">${escapeHtml(b.job_status || "scheduled")}</span></div>
+        ${b.completed_at ? `<div class="muted">Completed at: ${escapeHtml(fmtTime(b.completed_at))}</div>` : ``}
+      `;
+      renderChecklist(out.checklist || null);
+      renderProductsUsed(Array.isArray(out.products_used) ? out.products_used : []);
+    }
+
+    loadBooking();
+
+    qs("#reviewBtn").addEventListener("click", async () => { hide("err"); hide("ok"); const rating = Number(qs("#review_rating").value || 0); const review_title = (qs("#review_title").value || "").trim(); const review_text = (qs("#review_text").value || "").trim(); const is_public = qs("#review_public").checked; const res = await fetch("/api/client/reviews_save", { method:"POST", credentials:"include", headers:{"content-type":"application/json"}, body: JSON.stringify({ rating, review_title, review_text, is_public, review_source:"app", google_review_url: qs("#googleReviewLink").href }) }); const out = await res.json().catch(()=>null); if (!res.ok || !out?.ok) return show("err", out?.error || "Could not save review."); show("ok", "Review saved. Thank you."); });
+
+    const signatureCanvas = qs('#signaturePad');
+    const signatureCtx = signatureCanvas ? signatureCanvas.getContext('2d') : null;
+    let drawing = false;
+    let drewSignature = false;
+    function resizeSignatureCanvas(){ if(!signatureCanvas || !signatureCtx) return; const ratio = Math.max(window.devicePixelRatio || 1, 1); const rect = signatureCanvas.getBoundingClientRect(); signatureCanvas.width = Math.max(600, Math.floor(rect.width * ratio)); signatureCanvas.height = Math.floor(220 * ratio); signatureCtx.setTransform(1,0,0,1,0,0); signatureCtx.scale(ratio, ratio); signatureCtx.fillStyle = '#ffffff'; signatureCtx.fillRect(0,0,rect.width,220); signatureCtx.strokeStyle = '#111827'; signatureCtx.lineWidth = 2; signatureCtx.lineCap = 'round'; signatureCtx.lineJoin = 'round'; }
+    function pointFromEvent(evt){ const rect = signatureCanvas.getBoundingClientRect(); const point = evt.touches && evt.touches[0] ? evt.touches[0] : evt; return { x: point.clientX - rect.left, y: point.clientY - rect.top }; }
+    function startDraw(evt){ if(!signatureCtx) return; drawing = true; drewSignature = true; const p = pointFromEvent(evt); signatureCtx.beginPath(); signatureCtx.moveTo(p.x, p.y); evt.preventDefault(); }
+    function moveDraw(evt){ if(!drawing || !signatureCtx) return; const p = pointFromEvent(evt); signatureCtx.lineTo(p.x, p.y); signatureCtx.stroke(); evt.preventDefault(); }
+    function endDraw(){ drawing = false; }
+    if (signatureCanvas && signatureCtx) { resizeSignatureCanvas(); window.addEventListener('resize', resizeSignatureCanvas); ['mousedown','touchstart'].forEach(ev=>signatureCanvas.addEventListener(ev,startDraw,{passive:false})); ['mousemove','touchmove'].forEach(ev=>signatureCanvas.addEventListener(ev,moveDraw,{passive:false})); ['mouseup','mouseleave','touchend','touchcancel'].forEach(ev=>signatureCanvas.addEventListener(ev,endDraw)); qs('#clearSignatureBtn').addEventListener('click', ()=>{ resizeSignatureCanvas(); drewSignature = false; }); }
+
+    // Submit signoff
+    qs("#signForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      hide("err"); hide("ok");
+
+      const signer_name = (qs("#signer_name").value || "").trim();
+      const signer_email = (qs("#signer_email").value || "").trim();
+      const notes = (qs("#notes").value || "").trim() || null;
+      const agree = qs("#agree").checked;
+
+      if (!signer_name || !signer_email || !agree) {
+        return show("err", "Please fill name, email, and check the confirmation box.");
+      }
+      if (!drewSignature) {
+        return show("err", "Please draw your signature before submitting.");
+      }
+
+      qs("#submitBtn").disabled = true;
+      qs("#submitBtn").textContent = "Submitting…";
+
+      try {
+        const res = await fetch("/api/progress/signoff", {
+          method: "POST",
+          headers: { "content-type":"application/json" },
+          body: JSON.stringify({
+            token,
+            signer_name,
+            signer_email,
+            notes,
+            signer_type: "customer",
+            signature_data_url: signatureCanvas ? signatureCanvas.toDataURL("image/png") : null,
+          }),
+        });
+
+        const out = await res.json().catch(()=>null);
+
+        if (!res.ok || !out?.ok) {
+          qs("#submitBtn").disabled = false;
+          qs("#submitBtn").textContent = "Sign completion";
+          return show("err", out?.error ? `Error: ${out.error}` : "Signoff failed.");
+        }
+
+        show("ok", "Thank you! Completion recorded.");
+        qs("#submitBtn").textContent = "Signed";
+      } catch (err) {
+        qs("#submitBtn").disabled = false;
+        qs("#submitBtn").textContent = "Sign completion";
+        return show("err", String(err));
+      }
+    });
+  </script>
+
+  <script type="module" src="/assets/chrome.js?v=20260309y"></script>
+</body>
+</html>

@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Live Job Monitor | Rosie Dazzlers</title>
+  <meta name="description" content="Live admin monitoring for Rosie Dazzlers jobs." />
+  <link rel="stylesheet" href="/assets/site.css" />
+</head>
+<body data-page="admin-live">
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="/admin.html">
+        <img data-logo alt="Rosie Dazzlers logo" />
+        <strong>Rosie Dazzlers Admin</strong>
+      </a>
+
+      <button id="navToggle" class="btn small ghost nav-toggle" type="button" aria-expanded="false" aria-controls="navLinks">
+        Menu
+      </button>
+
+      <nav id="navLinks" class="nav-links">
+        <a href="/admin.html">Dashboard</a>
+        <a href="/admin-booking.html">Bookings</a>
+        <a href="/admin-blocks.html">Blocks</a>
+        <a href="/admin-progress.html">Progress</a>
+        <a href="/admin-jobsite.html">Job Site</a>
+        <a href="/admin-live.html">Live Monitor</a>
+        <a href="/admin-staff.html">Staff</a>
+        <a href="/admin-promos.html">Promos</a>
+        <a href="/book">Public Site</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="section">
+      <div class="panel">
+        <img data-banner alt="Rosie Dazzlers banner" style="display:block;width:100%;height:auto;object-fit:contain" />
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="hero">
+        <div>
+          <div class="badge">Live Admin Monitor</div>
+          <h1>Watch a job site live</h1>
+          <p>
+            This screen is for Admin monitoring while the detailer is actively working.
+            It refreshes automatically and shows intake, time tracking, progress notes, media, and signoffs.
+          </p>
+          <div class="badges">
+            <div class="badge">Auto Refresh</div>
+            <div class="badge">Time Tracking</div>
+            <div class="badge">Progress Notes</div>
+            <div class="badge">Media Feed</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="kicker">Current booking</div>
+          <h3 id="liveBookingTitle" style="margin:6px 0 8px">No booking loaded</h3>
+          <div id="liveBookingMeta" class="kicker">Load a booking id below.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div id="pageNotice" class="notice">Ready.</div>
+    </section>
+
+    <section class="section">
+      <div class="grid cards">
+        <div class="panel">
+          <h2>Load live job</h2>
+          <form id="liveLoadForm" class="form">
+            <label>
+              Admin password
+              <input id="adminPassword" type="password" autocomplete="current-password" required />
+            </label>
+
+            <label>
+              Booking ID
+              <input id="bookingId" type="text" placeholder="Paste booking id" required />
+            </label>
+
+            <label>
+              Refresh interval
+              <select id="refreshSeconds">
+                <option value="10">10 seconds</option>
+                <option value="15" selected>15 seconds</option>
+                <option value="30">30 seconds</option>
+                <option value="60">60 seconds</option>
+              </select>
+            </label>
+
+            <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
+              <button class="btn primary" type="submit">Load live job</button>
+              <button id="toggleRefreshBtn" class="btn ghost" type="button" disabled>Pause refresh</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h2>Live summary</h2>
+          <div class="grid" style="gap:10px">
+            <div class="badge">Refresh: <span id="refreshStatusText">Stopped</span></div>
+            <div class="badge">Last update: <span id="lastRefreshText">—</span></div>
+            <div class="badge">Current status: <span id="jobStatusText">Idle</span></div>
+            <div class="badge">Tracked work: <span id="trackedWorkText">00:00:00</span></div>
+            <div class="badge">Paused time: <span id="pausedTimeText">00:00:00</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="grid cards">
+        <div class="panel">
+          <h2>Booking</h2>
+          <div id="bookingBox" class="kicker">No booking loaded.</div>
+        </div>
+
+        <div class="panel">
+          <h2>Job-site intake</h2>
+          <div id="intakeBox" class="kicker">No intake loaded.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="grid cards">
+        <div class="panel">
+          <h2>Time entries</h2>
+          <div id="timeEntriesList" class="grid" style="margin-top:12px">
+            <div class="notice">No time entries yet.</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Progress updates</h2>
+          <div id="updatesList" class="grid" style="margin-top:12px">
+            <div class="notice">No updates yet.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="grid cards">
+        <div class="panel">
+          <h2>Media feed</h2>
+          <div id="mediaGrid" class="grid cards" style="margin-top:12px">
+            <div class="notice">No media yet.</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Signoffs</h2>
+          <div id="signoffsList" class="grid" style="margin-top:12px">
+            <div class="notice">No signoffs yet.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer container" data-footer></footer>
+
+  <script src="/assets/chrome.js"></script>
+  <script type="module">
+    import { setBrandImages, setFooter } from "/assets/site.js";
+
+    let currentPassword = "";
+    let currentBookingId = "";
+    let refreshTimer = null;
+    let refreshPaused = false;
+
+    function setNotice(message, kind = "") {
+      const el = document.querySelector("#pageNotice");
+      if (!el) return;
+      el.className = kind ? `notice ${kind}` : "notice";
+      el.textContent = message;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function formatDateTime(value) {
+      if (!value) return "—";
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return String(value);
+      return new Intl.DateTimeFormat("en-CA", {
+        dateStyle: "medium",
+        timeStyle: "short"
+      }).format(d);
+    }
+
+    function formatDuration(ms) {
+      const totalSeconds = Math.max(0, Math.floor((Number(ms) || 0) / 1000));
+      const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
+      const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
+      const seconds = String(totalSeconds % 60).padStart(2, "0");
+      return `${hours}:${minutes}:${seconds}`;
+    }
+
+    async function apiPost(url, body) {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(currentPassword ? { "x-admin-password": currentPassword } : {})
+        },
+        body: JSON.stringify(body || {})
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Request failed for ${url}`);
+      return data;
+    }
+
+    function renderBooking(booking) {
+      document.querySelector("#liveBookingTitle").textContent =
+        booking?.customer_name || booking?.package_code || "Booking loaded";
+
+      document.querySelector("#liveBookingMeta").textContent = [
+        booking?.service_date || "—",
+        booking?.start_slot || "—",
+        booking?.package_code || "—",
+        booking?.vehicle_size || "—",
+        booking?.assigned_to || "unassigned"
+      ].join(" · ");
+
+      document.querySelector("#bookingBox").innerHTML = `
+        <div><strong>Customer:</strong> ${escapeHtml(booking?.customer_name || "—")}</div>
+        <div><strong>Email:</strong> ${escapeHtml(booking?.customer_email || "—")}</div>
+        <div><strong>Status:</strong> ${escapeHtml(booking?.status || "—")}</div>
+        <div><strong>Job Status:</strong> ${escapeHtml(booking?.job_status || "—")}</div>
+        <div><strong>Assigned:</strong> ${escapeHtml(booking?.assigned_to || "—")}</div>
+        <div><strong>Progress Enabled:</strong> ${booking?.progress_enabled ? "Yes" : "No"}</div>
+      `;
+    }
+
+    function renderIntake(intake) {
+      if (!intake) {
+        document.querySelector("#intakeBox").innerHTML = "No intake saved yet.";
+        return;
+      }
+
+      document.querySelector("#intakeBox").innerHTML = `
+        <div><strong>Detailer:</strong> ${escapeHtml(intake.detailer_name || "—")}</div>
+        <div><strong>Keys Collected:</strong> ${intake.keys_collected ? "Yes" : "No"}</div>
+        <div><strong>Owner Inspection:</strong> ${intake.owner_present_for_visual_inspection ? "Yes" : "No"}</div>
+        <div><strong>Water Tested:</strong> ${intake.water_tested ? "Yes" : "No"}</div>
+        <div><strong>Power Tested:</strong> ${intake.power_tested ? "Yes" : "No"}</div>
+        <div><strong>Extra Debris Charge Possible:</strong> ${
+          intake.extra_debris_charge_possible === null || intake.extra_debris_charge_possible === undefined
+            ? "—"
+            : intake.extra_debris_charge_possible ? "Yes" : "No"
+        }</div>
+        <div><strong>Intake Complete:</strong> ${escapeHtml(intake.intake_complete || "—")}</div>
+      `;
+    }
+
+    function renderTimeSummary(summary) {
+      document.querySelector("#jobStatusText").textContent = summary?.current_status || "idle";
+      document.querySelector("#trackedWorkText").textContent = formatDuration(summary?.total_work_ms || 0);
+      document.querySelector("#pausedTimeText").textContent = formatDuration(summary?.total_pause_ms || 0);
+    }
+
+    function renderTimeEntries(entries) {
+      const wrap = document.querySelector("#timeEntriesList");
+      if (!wrap) return;
+
+      if (!entries.length) {
+        wrap.innerHTML = `<div class="notice">No time entries yet.</div>`;
+        return;
+      }
+
+      wrap.innerHTML = entries.map((entry) => `
+        <article class="card">
+          <div class="kicker">${escapeHtml(formatDateTime(entry.event_time))}</div>
+          <h3>${escapeHtml(entry.entry_type || "entry")}</h3>
+          <p>${escapeHtml(entry.created_by_name || "Rosie Dazzlers")}</p>
+          ${entry.note ? `<div class="hr"></div><p>${escapeHtml(entry.note)}</p>` : ""}
+        </article>
+      `).join("");
+    }
+
+    function renderUpdates(updates) {
+      const wrap = document.querySelector("#updatesList");
+      if (!wrap) return;
+
+      if (!updates.length) {
+        wrap.innerHTML = `<div class="notice">No updates yet.</div>`;
+        return;
+      }
+
+      wrap.innerHTML = updates.map((item) => `
+        <article class="card">
+          <div class="kicker">${escapeHtml(formatDateTime(item.created_at))}</div>
+          <h3>${escapeHtml(item.created_by || "Rosie Dazzlers")}</h3>
+          <p>${escapeHtml(item.note || "Update posted.")}</p>
+          <div class="kicker">Visibility: ${escapeHtml(item.visibility || "customer")}</div>
+        </article>
+      `).join("");
+    }
+
+    function renderMedia(media) {
+      const wrap = document.querySelector("#mediaGrid");
+      if (!wrap) return;
+
+      if (!media.length) {
+        wrap.innerHTML = `<div class="notice">No media yet.</div>`;
+        return;
+      }
+
+      wrap.innerHTML = media.map((item) => `
+        <article class="card">
+          ${item.media_url ? `<img class="img" loading="lazy" src="${escapeHtml(item.media_url)}" alt="${escapeHtml(item.caption || "Progress media")}" onerror="this.style.display='none'">` : ""}
+          <h3>${escapeHtml(item.caption || item.kind || "Media")}</h3>
+          <p>${escapeHtml(item.created_by || "Rosie Dazzlers")}</p>
+          <div class="kicker">${escapeHtml(formatDateTime(item.created_at))}</div>
+          <div class="kicker">Visibility: ${escapeHtml(item.visibility || "customer")}</div>
+        </article>
+      `).join("");
+    }
+
+    function renderSignoffs(signoffs) {
+      const wrap = document.querySelector("#signoffsList");
+      if (!wrap) return;
+
+      if (!signoffs.length) {
+        wrap.innerHTML = `<div class="notice">No signoffs yet.</div>`;
+        return;
+      }
+
+      wrap.innerHTML = signoffs.map((item) => `
+        <article class="card">
+          <div class="kicker">${escapeHtml(formatDateTime(item.signed_at))}</div>
+          <h3>${escapeHtml(item.signer_name || "Unknown signer")}</h3>
+          <p>${escapeHtml(item.signer_email || "—")}</p>
+          <div class="kicker">Type: ${escapeHtml(item.signer_type || "customer")}</div>
+          ${item.notes ? `<div class="hr"></div><p>${escapeHtml(item.notes)}</p>` : ""}
+        </article>
+      `).join("");
+    }
+
+    async function refreshLiveData(showNotice = false) {
+      if (!currentPassword || !currentBookingId) return;
+
+      if (showNotice) setNotice("Refreshing live job data…");
+
+      const [intakeData, timeData, bookingData] = await Promise.all([
+        apiPost("/api/admin/jobsite_intake_get", { booking_id: currentBookingId }),
+        apiPost("/api/admin/job_time_summary_get", { booking_id: currentBookingId }),
+        apiPost("/api/admin/bookings", {})
+      ]);
+
+      const allBookings = Array.isArray(bookingData.bookings) ? bookingData.bookings : [];
+      const booking = allBookings.find((b) => b.id === currentBookingId) || intakeData.booking || null;
+
+      let progressData = {
+        updates: [],
+        media: [],
+        signoffs: []
+      };
+
+      if (booking?.progress_token) {
+        progressData = await apiPost("/api/admin/progress_list", {
+          token: booking.progress_token
+        });
+      }
+
+      renderBooking(booking || intakeData.booking || null);
+      renderIntake(intakeData.intake || null);
+      renderTimeSummary(timeData.summary || {});
+      renderTimeEntries(Array.isArray(timeData.time_entries) ? timeData.time_entries : []);
+      renderUpdates(Array.isArray(progressData.updates) ? progressData.updates : []);
+      renderMedia(Array.isArray(progressData.media) ? progressData.media : []);
+      renderSignoffs(Array.isArray(progressData.signoffs) ? progressData.signoffs : []);
+
+      document.querySelector("#lastRefreshText").textContent = formatDateTime(new Date().toISOString());
+
+      if (showNotice) {
+        setNotice("Live job data refreshed.", "ok");
+      }
+    }
+
+    function stopRefreshLoop() {
+      if (refreshTimer) {
+        clearInterval(refreshTimer);
+        refreshTimer = null;
+      }
+      document.querySelector("#refreshStatusText").textContent = "Stopped";
+      document.querySelector("#toggleRefreshBtn").textContent = "Start refresh";
+      refreshPaused = true;
+    }
+
+    function startRefreshLoop() {
+      stopRefreshLoop();
+      const seconds = Number(document.querySelector("#refreshSeconds").value || 15);
+
+      refreshTimer = setInterval(() => {
+        refreshLiveData(false).catch((err) => {
+          setNotice(err.message || "Live refresh failed.", "bad");
+        });
+      }, seconds * 1000);
+
+      document.querySelector("#refreshStatusText").textContent = `Running every ${seconds}s`;
+      document.querySelector("#toggleRefreshBtn").textContent = "Pause refresh";
+      refreshPaused = false;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      setBrandImages();
+      setFooter();
+
+      const loadForm = document.querySelector("#liveLoadForm");
+      const toggleBtn = document.querySelector("#toggleRefreshBtn");
+
+      loadForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const password = document.querySelector("#adminPassword").value.trim();
+        const bookingId = document.querySelector("#bookingId").value.trim();
+
+        if (!password) {
+          setNotice("Admin password is required.", "bad");
+          return;
+        }
+
+        if (!bookingId) {
+          setNotice("Booking ID is required.", "bad");
+          return;
+        }
+
+        try {
+          currentPassword = password;
+          currentBookingId = bookingId;
+          toggleBtn.disabled = false;
+
+          await refreshLiveData(true);
+          startRefreshLoop();
+        } catch (err) {
+          setNotice(err.message || "Could not load live job.", "bad");
+        }
+      });
+
+      toggleBtn.addEventListener("click", async () => {
+        if (!currentBookingId) return;
+
+        if (refreshPaused) {
+          try {
+            await refreshLiveData(true);
+            startRefreshLoop();
+          } catch (err) {
+            setNotice(err.message || "Could not restart refresh.", "bad");
+          }
+          return;
+        }
+
+        stopRefreshLoop();
+        setNotice("Auto refresh paused.", "warn");
+      });
+    });
+  </script>
+</body>
+</html>

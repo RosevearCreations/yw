@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin App Management | Rosie Dazzlers</title>
+  <link rel="stylesheet" href="/assets/site.css" />
+  <style>
+    body{background:#08111f;color:#e6eef8;font-family:Inter,Arial,sans-serif}
+    .shell{max-width:1280px;margin:0 auto;padding:20px}.topbar{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-bottom:18px}
+    .titleblock h1{margin:0 0 6px}.titleblock p{margin:0;color:#9fb0c8}.actorcard{min-width:260px;padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+    .actorline{display:flex;gap:8px;margin:4px 0}.actorlabel{font-weight:700;color:#9fb0c8}.logout-btn,.btn{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.07);color:#f8fbff;border-radius:12px;padding:10px 14px;cursor:pointer}
+    .btn.primary{background:#7c3aed;border-color:#7c3aed}.status{padding:12px 14px;border-radius:12px;margin-bottom:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09)}
+    .status[data-state="success"]{border-color:rgba(34,197,94,.35)} .status[data-state="error"]{border-color:rgba(248,113,113,.35)}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}.card{grid-column:span 12;padding:18px;border-radius:18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07)}
+    .card h2,.card h3{margin:0 0 12px}.field{display:grid;gap:6px;margin-bottom:10px}.field input,.field textarea,.field select{width:100%;box-sizing:border-box;border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:11px 12px;background:rgba(255,255,255,.04);color:#f8fafc}
+    .field textarea{min-height:110px;resize:vertical}.checkrow{display:flex;gap:10px;align-items:center;margin:8px 0}.actions{display:flex;gap:10px;flex-wrap:wrap}.muted{color:#9fb0c8;font-size:.94rem}
+    .preview{white-space:pre-wrap;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);min-height:82px}
+    .subgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.note{font-size:.92rem;color:#9fb0c8}
+    @media(min-width:980px){.span-6{grid-column:span 6}.span-4{grid-column:span 4}.span-8{grid-column:span 8}}
+    @media(max-width:900px){.subgrid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<main class="shell">
+  <div class="loading" data-admin-shell-loading>Loading app management...</div>
+  <div data-admin-shell-ready hidden>
+    <header class="topbar">
+      <div class="titleblock"><h1>App Management</h1><p>Control feature flags, recovery messaging, provider rules, and moderation defaults.</p></div>
+      <section class="actorcard" aria-label="Signed in staff">
+        <div class="actorline"><span class="actorlabel">Name:</span><span data-actor-name></span></div>
+        <div class="actorline"><span class="actorlabel">Role:</span><span data-actor-role></span></div>
+        <div class="actorline"><span class="actorlabel">Email:</span><span data-actor-email></span></div>
+        <button class="logout-btn" type="button" data-admin-logout>Sign Out</button>
+      </section>
+    </header>
+    <div class="status" data-admin-shell-status hidden></div>
+
+    <section class="grid">
+      <article class="card span-6">
+        <h2>Visibility Matrix</h2>
+        <div class="checkrow"><input id="vis_customer_detailer_notes" type="checkbox"><label for="vis_customer_detailer_notes">Customer/detailer notes visible when allowed</label></div>
+        <div class="checkrow"><input id="vis_customer_admin_notes" type="checkbox"><label for="vis_customer_admin_notes">Customer/admin notes stay admin only</label></div>
+        <div class="checkrow"><input id="vis_detailer_admin_notes" type="checkbox"><label for="vis_detailer_admin_notes">Detailer/admin notes stay admin only</label></div>
+        <div class="actions"><button class="btn" type="button" id="saveVisibilityBtn">Save visibility</button></div>
+      </article>
+
+      <article class="card span-6">
+        <h2>Scheduling Policy</h2>
+        <div class="checkrow"><input id="manual_schedule_admin_only" type="checkbox"><label for="manual_schedule_admin_only">Manual scheduling remains admin only</label></div>
+        <div class="checkrow"><input id="blocking_admin_only" type="checkbox"><label for="blocking_admin_only">Blocking and blackout controls remain admin only</label></div>
+        <div class="field"><label for="manual_schedule_notes">Notes</label><textarea id="manual_schedule_notes"></textarea></div>
+        <div class="actions"><button class="btn" type="button" id="saveSchedulingBtn">Save scheduling policy</button></div>
+      </article>
+
+      <article class="card span-6">
+        <h2>Feature Flags</h2>
+        <div class="checkrow"><input id="flag_live_updates_default" type="checkbox"><label for="flag_live_updates_default">Live updates enabled by default</label></div>
+        <div class="checkrow"><input id="flag_customer_chat_enabled" type="checkbox"><label for="flag_customer_chat_enabled">Customer chat enabled</label></div>
+        <div class="checkrow"><input id="flag_picture_first_observations" type="checkbox"><label for="flag_picture_first_observations">Picture-first observations enabled</label></div>
+        <div class="checkrow"><input id="flag_tier_discount_badges" type="checkbox"><label for="flag_tier_discount_badges">Tier discount badges enabled</label></div>
+        <div class="checkrow"><input id="flag_annotation_moderation_enabled" type="checkbox"><label for="flag_annotation_moderation_enabled">Annotation moderation enabled</label></div>
+        <div class="checkrow"><input id="flag_two_sided_thread_controls_enabled" type="checkbox"><label for="flag_two_sided_thread_controls_enabled">Two-sided thread controls enabled</label></div>
+        <div class="checkrow"><input id="flag_low_stock_alerts_enabled" type="checkbox"><label for="flag_low_stock_alerts_enabled">Low-stock alerts enabled</label></div>
+        <div class="actions"><button class="btn" type="button" id="saveFlagsBtn">Save feature flags</button></div>
+      </article>
+
+      <article class="card span-6">
+        <h2>Moderation Defaults</h2>
+        <div class="checkrow"><input id="mod_annotation_customer_visibility_default" type="checkbox"><label for="mod_annotation_customer_visibility_default">Customer-visible annotations by default</label></div>
+        <div class="checkrow"><input id="mod_comment_customer_visibility_default" type="checkbox"><label for="mod_comment_customer_visibility_default">Customer-visible staff comments by default</label></div>
+        <div class="field"><label for="mod_client_reply_depth_limit">Client reply depth limit</label><input id="mod_client_reply_depth_limit" type="number" min="1" value="4"></div>
+        <div class="field"><label for="mod_staff_reply_depth_limit">Staff reply depth limit</label><input id="mod_staff_reply_depth_limit" type="number" min="1" value="8"></div>
+        <div class="checkrow"><input id="mod_allow_client_annotation_replies" type="checkbox"><label for="mod_allow_client_annotation_replies">Allow client replies directly on annotations</label></div>
+        <div class="checkrow"><input id="mod_allow_staff_hide_without_delete" type="checkbox"><label for="mod_allow_staff_hide_without_delete">Allow staff to hide instead of delete</label></div>
+        <div class="actions"><button class="btn" type="button" id="saveModerationBtn">Save moderation defaults</button></div>
+      </article>
+
+      <article class="card span-8">
+        <h2>Recovery Templates & Rules</h2>
+        <div class="field"><label for="recovery_subject">Recovery subject</label><input id="recovery_subject" placeholder="Complete your Rosie Dazzlers booking"></div>
+        <div class="field"><label for="recovery_body_text">Recovery body (text)</label><textarea id="recovery_body_text" placeholder="Use tokens like {{customer_name}} and {{recovery_url}}"></textarea></div>
+        <div class="field"><label for="recovery_body_html">Recovery body (HTML)</label><textarea id="recovery_body_html" placeholder="Optional HTML version"></textarea></div>
+        <div class="subgrid">
+          <div>
+            <div class="checkrow"><input id="recovery_enabled" type="checkbox"><label for="recovery_enabled">Enable abandoned-order recovery</label></div>
+            <div class="field"><label for="recovery_min_events">Minimum tracked events</label><input id="recovery_min_events" type="number" min="0" value="2"></div>
+            <div class="field"><label for="recovery_cooldown_hours">Cooldown hours</label><input id="recovery_cooldown_hours" type="number" min="0" value="24"></div>
+            <div class="field"><label for="recovery_default_channel">Default recovery channel</label><select id="recovery_default_channel"><option value="email">Email</option><option value="sms">SMS</option></select></div>
+          </div>
+          <div>
+            <div class="note">Tokens supported: <code>{{customer_name}}</code>, <code>{{recovery_url}}</code>, <code>{{service_date}}</code>, <code>{{package_name}}</code>, <code>{{gift_code}}</code></div>
+            <div class="actions" style="margin-top:10px"><button class="btn" type="button" id="saveRecoveryBtn">Save recovery settings</button></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="card span-4">
+        <h2>Provider-Specific Recovery Rules</h2>
+        <h3>Email</h3>
+        <div class="checkrow"><input id="provider_email_enabled" type="checkbox"><label for="provider_email_enabled">Email recovery enabled</label></div>
+        <div class="field"><label for="provider_email_key">Provider label</label><input id="provider_email_key"></div>
+        <div class="field"><label for="provider_email_webhook">Recovery webhook URL override</label><input id="provider_email_webhook"></div>
+        <div class="field"><label for="provider_email_test_to">Default test recipient</label><input id="provider_email_test_to"></div>
+        <h3>SMS</h3>
+        <div class="checkrow"><input id="provider_sms_enabled" type="checkbox"><label for="provider_sms_enabled">SMS recovery enabled</label></div>
+        <div class="field"><label for="provider_sms_key">Provider label</label><input id="provider_sms_key"></div>
+        <div class="field"><label for="provider_sms_webhook">Recovery webhook URL override</label><input id="provider_sms_webhook"></div>
+        <div class="field"><label for="provider_sms_test_to">Default test recipient</label><input id="provider_sms_test_to"></div>
+        <div class="actions"><button class="btn" type="button" id="saveProviderRulesBtn">Save provider rules</button></div>
+      </article>
+
+      <article class="card span-12">
+        <h2>Recovery Preview & Testing</h2>
+        <div class="subgrid">
+          <div>
+            <div class="field"><label for="preview_channel">Channel</label><select id="preview_channel"><option value="email">Email</option><option value="sms">SMS</option></select></div>
+            <div class="field"><label for="preview_customer_name">Customer name</label><input id="preview_customer_name" value="Valued Customer"></div>
+            <div class="field"><label for="preview_customer_email">Customer email</label><input id="preview_customer_email"></div>
+            <div class="field"><label for="preview_recipient_phone">Recipient phone</label><input id="preview_recipient_phone"></div>
+            <div class="field"><label for="preview_test_recipient">Test recipient override</label><input id="preview_test_recipient" placeholder="Optional test email or SMS number"></div>
+            <div class="field"><label for="preview_recovery_url">Recovery URL</label><input id="preview_recovery_url" placeholder="https://.../book"></div>
+            <div class="actions"><button class="btn" type="button" id="previewRecoveryBtn">Generate preview</button><button class="btn primary" type="button" id="sendTestRecoveryBtn">Send test</button></div>
+          </div>
+          <div>
+            <div class="field"><label>Preview subject</label><div id="previewSubject" class="preview"></div></div>
+            <div class="field"><label>Preview text</label><div id="previewText" class="preview"></div></div>
+            <div class="field"><label>Preview HTML</label><div id="previewHtml" class="preview"></div></div>
+          </div>
+        </div>
+      </article>
+    </section>
+  </div>
+</main>
+<script src="/assets/admin-auth.js"></script>
+<script src="/assets/admin-shell.js"></script>
+<script src="/assets/admin-menu.js"></script>
+<script src="/assets/admin-page-init.js"></script>
+<script>
+(function(){
+  function setShellStatus(message, type) {
+    const node = document.querySelector('[data-admin-shell-status]');
+    if (!node) return;
+    node.hidden = !message;
+    node.textContent = message || '';
+    node.dataset.state = type || '';
+  }
+  async function saveSetting(key, value, successText) {
+    const res = await fetch('/api/admin/app_settings_save', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ key, value }) });
+    const out = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(out?.error || 'Could not save settings.');
+    setShellStatus(successText, 'success');
+    return out;
+  }
+  function applySetting(setting, fallback={}){ return setting && typeof setting.value === 'object' ? setting.value : fallback; }
+  function readVisibility(){ return { customer_detailer_notes: byId('vis_customer_detailer_notes').checked, customer_admin_notes_admin_only: byId('vis_customer_admin_notes').checked, detailer_admin_notes_admin_only: byId('vis_detailer_admin_notes').checked }; }
+  function readScheduling(){ return { manual_schedule_admin_only: byId('manual_schedule_admin_only').checked, blocking_admin_only: byId('blocking_admin_only').checked, notes: byId('manual_schedule_notes').value || '' }; }
+  function readFlags(){ return { live_updates_default: byId('flag_live_updates_default').checked, customer_chat_enabled: byId('flag_customer_chat_enabled').checked, picture_first_observations: byId('flag_picture_first_observations').checked, tier_discount_badges: byId('flag_tier_discount_badges').checked, annotation_moderation_enabled: byId('flag_annotation_moderation_enabled').checked, two_sided_thread_controls_enabled: byId('flag_two_sided_thread_controls_enabled').checked, low_stock_alerts_enabled: byId('flag_low_stock_alerts_enabled').checked }; }
+  function readModeration(){ return { annotation_customer_visibility_default: byId('mod_annotation_customer_visibility_default').checked, comment_customer_visibility_default: byId('mod_comment_customer_visibility_default').checked, client_reply_depth_limit: Number(byId('mod_client_reply_depth_limit').value || 4), staff_reply_depth_limit: Number(byId('mod_staff_reply_depth_limit').value || 8), allow_client_annotation_replies: byId('mod_allow_client_annotation_replies').checked, allow_staff_hide_without_delete: byId('mod_allow_staff_hide_without_delete').checked }; }
+  function readRecoveryTemplates(){ return { abandoned_checkout_subject: byId('recovery_subject').value || '', abandoned_checkout_body_text: byId('recovery_body_text').value || '', abandoned_checkout_body_html: byId('recovery_body_html').value || '' }; }
+  function readRecoveryRules(){ return { abandoned_recovery_enabled: byId('recovery_enabled').checked, minimum_page_events: Number(byId('recovery_min_events').value || 0), require_email: true, cooldown_hours: Number(byId('recovery_cooldown_hours').value || 24), default_recovery_channel: byId('recovery_default_channel').value || 'email' }; }
+  function readProviderRules(){ return { email: { enabled: byId('provider_email_enabled').checked, provider_key: byId('provider_email_key').value || 'default_email', recovery_webhook_url: byId('provider_email_webhook').value || '', send_test_to: byId('provider_email_test_to').value || '' }, sms: { enabled: byId('provider_sms_enabled').checked, provider_key: byId('provider_sms_key').value || 'default_sms', recovery_webhook_url: byId('provider_sms_webhook').value || '', send_test_to: byId('provider_sms_test_to').value || '' } }; }
+  async function loadSettings(){
+    const res = await fetch('/api/admin/app_settings_get', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({}) });
+    const out = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(out?.error || 'Could not load settings.');
+    const s = out?.settings || {};
+    const visibility = applySetting(s.visibility_matrix);
+    const scheduling = applySetting(s.manual_scheduling_rules);
+    const flags = applySetting(s.feature_flags);
+    const moderation = applySetting(s.moderation_rules);
+    const recoveryTemplates = applySetting(s.recovery_templates);
+    const recoveryRules = applySetting(s.recovery_rules);
+    const providerRules = applySetting(s.recovery_provider_rules);
+
+    byId('vis_customer_detailer_notes').checked = !!visibility.customer_detailer_notes;
+    byId('vis_customer_admin_notes').checked = visibility.customer_admin_notes_admin_only !== false;
+    byId('vis_detailer_admin_notes').checked = visibility.detailer_admin_notes_admin_only !== false;
+    byId('manual_schedule_admin_only').checked = scheduling.manual_schedule_admin_only !== false;
+    byId('blocking_admin_only').checked = scheduling.blocking_admin_only !== false;
+    byId('manual_schedule_notes').value = scheduling.notes || '';
+
+    byId('flag_live_updates_default').checked = !!flags.live_updates_default;
+    byId('flag_customer_chat_enabled').checked = flags.customer_chat_enabled !== false;
+    byId('flag_picture_first_observations').checked = flags.picture_first_observations !== false;
+    byId('flag_tier_discount_badges').checked = flags.tier_discount_badges !== false;
+    byId('flag_annotation_moderation_enabled').checked = flags.annotation_moderation_enabled !== false;
+    byId('flag_two_sided_thread_controls_enabled').checked = flags.two_sided_thread_controls_enabled !== false;
+    byId('flag_low_stock_alerts_enabled').checked = flags.low_stock_alerts_enabled !== false;
+
+    byId('mod_annotation_customer_visibility_default').checked = moderation.annotation_customer_visibility_default !== false;
+    byId('mod_comment_customer_visibility_default').checked = moderation.comment_customer_visibility_default !== false;
+    byId('mod_client_reply_depth_limit').value = moderation.client_reply_depth_limit ?? 4;
+    byId('mod_staff_reply_depth_limit').value = moderation.staff_reply_depth_limit ?? 8;
+    byId('mod_allow_client_annotation_replies').checked = moderation.allow_client_annotation_replies !== false;
+    byId('mod_allow_staff_hide_without_delete').checked = moderation.allow_staff_hide_without_delete !== false;
+
+    byId('recovery_subject').value = recoveryTemplates.abandoned_checkout_subject || '';
+    byId('recovery_body_text').value = recoveryTemplates.abandoned_checkout_body_text || '';
+    byId('recovery_body_html').value = recoveryTemplates.abandoned_checkout_body_html || '';
+    byId('recovery_enabled').checked = recoveryRules.abandoned_recovery_enabled !== false;
+    byId('recovery_min_events').value = recoveryRules.minimum_page_events ?? 2;
+    byId('recovery_cooldown_hours').value = recoveryRules.cooldown_hours ?? 24;
+    byId('recovery_default_channel').value = recoveryRules.default_recovery_channel || 'email';
+
+    byId('provider_email_enabled').checked = providerRules?.email?.enabled !== false;
+    byId('provider_email_key').value = providerRules?.email?.provider_key || 'default_email';
+    byId('provider_email_webhook').value = providerRules?.email?.recovery_webhook_url || '';
+    byId('provider_email_test_to').value = providerRules?.email?.send_test_to || '';
+    byId('provider_sms_enabled').checked = providerRules?.sms?.enabled === true;
+    byId('provider_sms_key').value = providerRules?.sms?.provider_key || 'default_sms';
+    byId('provider_sms_webhook').value = providerRules?.sms?.recovery_webhook_url || '';
+    byId('provider_sms_test_to').value = providerRules?.sms?.send_test_to || '';
+  }
+  function byId(id){ return document.getElementById(id); }
+  async function previewRecovery(sendTest){
+    const res = await fetch('/api/admin/recovery_message_preview', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ channel: byId('preview_channel').value, customer_name: byId('preview_customer_name').value, customer_email: byId('preview_customer_email').value, recipient_phone: byId('preview_recipient_phone').value, test_recipient: byId('preview_test_recipient').value, recovery_url: byId('preview_recovery_url').value, send_test: sendTest === true }) });
+    const out = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(out?.error || 'Could not build recovery preview.');
+    byId('previewSubject').textContent = out?.preview?.subject || '';
+    byId('previewText').textContent = out?.preview?.body_text || '';
+    byId('previewHtml').textContent = out?.preview?.body_html || '';
+    if (sendTest) {
+      if (out?.dispatch?.ok) setShellStatus('Recovery test sent successfully.', 'success');
+      else throw new Error(out?.dispatch?.error || 'Preview generated but the test send failed.');
+    }
+  }
+
+  byId('saveVisibilityBtn').addEventListener('click', async ()=>{ try{ await saveSetting('visibility_matrix', readVisibility(), 'Visibility settings saved.'); } catch(err){ setShellStatus(err?.message || 'Could not save visibility settings.', 'error'); } });
+  byId('saveSchedulingBtn').addEventListener('click', async ()=>{ try{ await saveSetting('manual_scheduling_rules', readScheduling(), 'Scheduling policy saved.'); } catch(err){ setShellStatus(err?.message || 'Could not save scheduling policy.', 'error'); } });
+  byId('saveFlagsBtn').addEventListener('click', async ()=>{ try{ await saveSetting('feature_flags', readFlags(), 'Feature flags saved.'); } catch(err){ setShellStatus(err?.message || 'Could not save feature flags.', 'error'); } });
+  byId('saveModerationBtn').addEventListener('click', async ()=>{ try{ await saveSetting('moderation_rules', readModeration(), 'Moderation defaults saved.'); } catch(err){ setShellStatus(err?.message || 'Could not save moderation defaults.', 'error'); } });
+  byId('saveRecoveryBtn').addEventListener('click', async ()=>{ try{ await saveSetting('recovery_templates', readRecoveryTemplates(), 'Recovery templates saved.'); await saveSetting('recovery_rules', readRecoveryRules(), 'Recovery rules saved.'); } catch(err){ setShellStatus(err?.message || 'Could not save recovery settings.', 'error'); } });
+  byId('saveProviderRulesBtn').addEventListener('click', async ()=>{ try{ await saveSetting('recovery_provider_rules', readProviderRules(), 'Recovery provider rules saved.'); } catch(err){ setShellStatus(err?.message || 'Could not save provider rules.', 'error'); } });
+  byId('previewRecoveryBtn').addEventListener('click', async ()=>{ try{ await previewRecovery(false); setShellStatus('Recovery preview generated.', 'success'); } catch(err){ setShellStatus(err?.message || 'Could not build recovery preview.', 'error'); } });
+  byId('sendTestRecoveryBtn').addEventListener('click', async ()=>{ try{ await previewRecovery(true); } catch(err){ setShellStatus(err?.message || 'Could not send recovery test.', 'error'); } });
+
+  window.AdminPageInit.init({ pageKey:'admin-app', onReady: async ()=>{ try { await loadSettings(); } catch(err){ setShellStatus(err?.message || 'Could not initialize app management.', 'error'); } } });
+})();
+</script>
+</body>
+</html>

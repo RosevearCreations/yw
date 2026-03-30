@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin Staff | Rosie Dazzlers</title>
+  <meta name="description" content="Manage staff access and customer tiers for Rosie Dazzlers." />
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="stylesheet" href="/assets/site.css" />
+</head>
+<body data-page="admin-staff">
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="/admin.html">
+        <img data-logo alt="Rosie Dazzlers logo" />
+        <strong>Rosie Dazzlers Admin</strong>
+      </a>
+      <button id="navToggle" class="btn small ghost nav-toggle" type="button" aria-expanded="false" aria-controls="navLinks">Menu</button>
+      <nav id="navLinks" class="nav-links">
+        <a href="/admin.html">Dashboard</a>
+        <a href="/admin-booking.html">Bookings</a>
+        <a href="/admin-blocks.html">Blocks</a>
+        <a href="/admin-progress.html">Progress</a>
+        <a href="/admin-staff.html">Staff</a>
+        <a href="/book">Public Site</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="section">
+      <div class="hero">
+        <div>
+          <div class="badge">Admin Staff</div>
+          <h1>Manage staff access</h1>
+          <p>Create and update Admin, Senior Detailer, and Detailer records using the signed-in staff session.</p>
+          <div class="badges">
+            <div class="badge">Admins</div>
+            <div class="badge">Senior Detailers</div>
+            <div class="badge">Detailers</div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="kicker">Selected staff user</div>
+          <h3 id="staffTitle" style="margin:6px 0 8px">No staff selected</h3>
+          <div id="staffMeta" class="kicker">Staff list will load automatically when your session is active.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section"><div id="pageNotice" class="notice">Ready.</div></section>
+
+    <section class="section">
+      <div class="grid cards">
+        <div class="panel">
+          <h2>Staff session</h2>
+          <p id="sessionMeta" class="kicker">Signed-in staff access is required. Optional password fallback can still be supplied while older endpoints are being retired.</p>
+          <form id="adminForm" class="form">
+            <label>
+              Optional legacy fallback
+              <input id="adminPassword" type="password" autocomplete="off" placeholder="Only needed if temporary fallback is enabled" />
+            </label>
+            <div><button class="btn primary" type="submit">Refresh staff</button></div>
+          </form>
+        </div>
+        <div class="panel">
+          <h2>Customer tiers</h2>
+          <div id="tiersBox" class="kicker">Not loaded yet.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="grid cards">
+        <div class="panel">
+          <h2>Staff list</h2>
+          <div id="staffList" class="grid" style="margin-top:12px"><div class="notice">Staff have not been loaded yet.</div></div>
+        </div>
+
+        <div class="panel">
+          <h2>Create / edit staff</h2>
+          <form id="staffForm" class="form">
+            <input id="staffId" type="hidden" />
+            <label>Full name<input id="fullName" type="text" placeholder="Full name" required /></label>
+            <label>Email<input id="email" type="email" placeholder="Email address" required /></label>
+            <label>Role
+              <select id="roleCode" required>
+                <option value="detailer">detailer</option>
+                <option value="senior_detailer">senior_detailer</option>
+                <option value="admin">admin</option>
+              </select>
+            </label>
+            <label>Active
+              <select id="isActive">
+                <option value="true">true</option>
+                <option value="false">false</option>
+              </select>
+            </label>
+
+            <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+              <label class="row"><input id="canOverride" type="checkbox" /> <div><strong>Can override lower entries</strong></div></label>
+              <label class="row"><input id="canManageBookings" type="checkbox" /> <div><strong>Can manage bookings</strong></div></label>
+              <label class="row"><input id="canManageBlocks" type="checkbox" /> <div><strong>Can manage blocks</strong></div></label>
+              <label class="row"><input id="canManageProgress" type="checkbox" /> <div><strong>Can manage progress</strong></div></label>
+              <label class="row"><input id="canManagePromos" type="checkbox" /> <div><strong>Can manage promos</strong></div></label>
+              <label class="row"><input id="canManageStaff" type="checkbox" /> <div><strong>Can manage staff</strong></div></label>
+            </div>
+
+            <label>Notes<textarea id="notes" rows="4" placeholder="Optional internal notes"></textarea></label>
+            <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
+              <button id="saveStaffBtn" class="btn primary" type="submit" disabled>Save staff user</button>
+              <button id="newStaffBtn" class="btn ghost" type="button" disabled>Create new</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer container" data-footer></footer>
+
+  <script src="/assets/chrome.js"></script>
+  <script type="module">
+    import { setBrandImages, setFooter } from "/assets/site.js";
+
+    let currentPassword = "";
+    let staffUsers = [];
+    let customerTiers = [];
+    let selectedStaffId = "";
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+    function setNotice(message, kind = "") {
+      const el = document.querySelector("#pageNotice");
+      el.className = kind ? `notice ${kind}` : "notice";
+      el.textContent = message;
+    }
+    async function apiPost(url, password, body) {
+      const headers = { "Content-Type": "application/json" };
+      if (password) headers["x-admin-password"] = password;
+      const res = await fetch(url, { method: "POST", headers, credentials: "include", body: JSON.stringify(body || {}) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Request failed for ${url}`);
+      return data;
+    }
+    function renderTiers() {
+      const box = document.querySelector("#tiersBox");
+      box.innerHTML = customerTiers.length
+        ? customerTiers.map((tier) => `<div><strong>${escapeHtml(tier.label || tier.code)}</strong> — ${escapeHtml(tier.description || "")}</div>`).join("")
+        : "No customer tiers loaded.";
+    }
+    function fillForm(row) {
+      document.querySelector("#staffId").value = row?.id || "";
+      document.querySelector("#fullName").value = row?.full_name || "";
+      document.querySelector("#email").value = row?.email || "";
+      document.querySelector("#roleCode").value = row?.role_code || "detailer";
+      document.querySelector("#isActive").value = String(row?.is_active !== false);
+      document.querySelector("#canOverride").checked = row?.can_override_lower_entries === true;
+      document.querySelector("#canManageBookings").checked = row?.can_manage_bookings === true;
+      document.querySelector("#canManageBlocks").checked = row?.can_manage_blocks === true;
+      document.querySelector("#canManageProgress").checked = row?.can_manage_progress === true;
+      document.querySelector("#canManagePromos").checked = row?.can_manage_promos === true;
+      document.querySelector("#canManageStaff").checked = row?.can_manage_staff === true;
+      document.querySelector("#notes").value = row?.notes || "";
+    }
+    function renderSelectedStaff() {
+      const row = staffUsers.find((s) => s.id === selectedStaffId) || null;
+      document.querySelector("#staffTitle").textContent = row?.full_name || "No staff selected";
+      document.querySelector("#staffMeta").textContent = row ? `${row.role_code || "detailer"} · ${row.email || "—"}` : "Choose a staff user from the list or create a new one.";
+    }
+    function clearForm() { selectedStaffId = ""; fillForm(null); renderSelectedStaff(); }
+    function renderStaffList() {
+      const wrap = document.querySelector("#staffList");
+      if (!staffUsers.length) { wrap.innerHTML = `<div class="notice">No staff users found.</div>`; return; }
+      wrap.innerHTML = staffUsers.map((row) => `
+        <article class="card">
+          <div class="kicker">${escapeHtml(row.role_code || "detailer")} · ${row.is_active ? "active" : "inactive"}</div>
+          <h3>${escapeHtml(row.full_name || "Unnamed")}</h3>
+          <p>${escapeHtml(row.email || "—")}</p>
+          <div class="hr"></div>
+          <button class="btn primary" type="button" data-staff-id="${escapeHtml(row.id)}">Edit staff</button>
+        </article>`).join("");
+      wrap.querySelectorAll("[data-staff-id]").forEach((btn) => {
+        btn.addEventListener("click", () => { selectedStaffId = btn.getAttribute("data-staff-id"); fillForm(staffUsers.find((s) => s.id === selectedStaffId) || null); renderSelectedStaff(); });
+      });
+    }
+    async function refreshStaff() {
+      const data = await apiPost("/api/admin/staff_list", currentPassword, {});
+      staffUsers = Array.isArray(data.staff_users) ? data.staff_users : [];
+      customerTiers = Array.isArray(data.customer_tiers) ? data.customer_tiers : [];
+      document.querySelector("#sessionMeta").textContent = data?.actor?.full_name ? `Signed in as ${data.actor.full_name}.` : "Signed-in staff access is required.";
+      renderStaffList(); renderTiers(); renderSelectedStaff();
+      document.querySelector("#saveStaffBtn").disabled = false;
+      document.querySelector("#newStaffBtn").disabled = false;
+      if (selectedStaffId) fillForm(staffUsers.find((s) => s.id === selectedStaffId) || null);
+    }
+    function collectPayload() {
+      return {
+        id: document.querySelector("#staffId").value.trim() || null,
+        full_name: document.querySelector("#fullName").value.trim(),
+        email: document.querySelector("#email").value.trim(),
+        role_code: document.querySelector("#roleCode").value,
+        is_active: document.querySelector("#isActive").value === "true",
+        can_override_lower_entries: document.querySelector("#canOverride").checked,
+        can_manage_bookings: document.querySelector("#canManageBookings").checked,
+        can_manage_blocks: document.querySelector("#canManageBlocks").checked,
+        can_manage_progress: document.querySelector("#canManageProgress").checked,
+        can_manage_promos: document.querySelector("#canManagePromos").checked,
+        can_manage_staff: document.querySelector("#canManageStaff").checked,
+        notes: document.querySelector("#notes").value.trim()
+      };
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      setBrandImages();
+      setFooter();
+      document.querySelector("#adminForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        currentPassword = document.querySelector("#adminPassword").value.trim();
+        try { setNotice("Loading staff users…"); await refreshStaff(); setNotice("Staff users loaded.", "ok"); }
+        catch (err) { setNotice(err.message || "Could not load staff users.", "bad"); }
+      });
+      document.querySelector("#staffForm").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        try { setNotice("Saving staff user…"); await apiPost("/api/admin/staff_save", currentPassword, collectPayload()); await refreshStaff(); setNotice("Staff user saved.", "ok"); }
+        catch (err) { setNotice(err.message || "Could not save staff user.", "bad"); }
+      });
+      document.querySelector("#newStaffBtn").addEventListener("click", () => { clearForm(); setNotice("Ready to create a new staff user."); });
+      document.querySelector("#adminForm").requestSubmit();
+    });
+  </script>
+</body>
+</html>

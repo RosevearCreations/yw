@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Rosie Dazzlers — Customer Management</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="stylesheet" href="/assets/site.css" />
+  <style>
+    :root { color-scheme: dark; }
+    body { margin:0; min-height:100vh; background:radial-gradient(circle at top, rgba(255,255,255,.08), transparent 35%), linear-gradient(180deg,#0f172a 0%,#111827 100%); color:#f8fafc; }
+    .shell { max-width:1320px; margin:0 auto; padding:24px; }
+    .loading { display:grid; place-items:center; min-height:60vh; color:#cbd5e1; }
+    .topbar { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:20px; }
+    .actorcard,.card { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); border-radius:18px; box-shadow:0 14px 35px rgba(0,0,0,.22); }
+    .actorcard { min-width:280px; padding:16px 18px; } .actorline{margin:4px 0;} .actorlabel{color:#93c5fd;font-weight:700;margin-right:6px}
+    .logout-btn,.btn{appearance:none;border:0;border-radius:10px;padding:10px 14px;background:#2563eb;color:#fff;font-weight:700;cursor:pointer}.btn.secondary{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12)}
+    .status{margin-bottom:16px;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.05);color:#e5e7eb}.status[data-state="error"]{background:rgba(220,38,38,.12);border-color:rgba(248,113,113,.25);color:#fecaca}.status[data-state="success"]{background:rgba(34,197,94,.10);border-color:rgba(134,239,172,.22);color:#bbf7d0}
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}.card{grid-column:span 12;padding:20px}.table-wrap{overflow:auto;border-radius:14px;border:1px solid rgba(255,255,255,.08)} table{width:100%;border-collapse:collapse;min-width:880px;background:rgba(255,255,255,.03)} th,td{padding:12px 14px;text-align:left;border-bottom:1px solid rgba(255,255,255,.07);vertical-align:top} th{color:#93c5fd}
+    .pill{display:inline-flex;align-items:center;border-radius:999px;padding:6px 10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);font-size:.82rem;color:#e5e7eb;margin-right:6px;margin-bottom:6px}.muted{color:#94a3b8;font-size:.92rem}.list{display:grid;gap:10px}.list-item{border-radius:14px;padding:12px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}.detail-box{border-radius:14px;padding:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}.detail-box pre{margin:0;white-space:pre-wrap;word-break:break-word;color:#dbeafe;font-size:.92rem;line-height:1.45;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+    @media (min-width:900px){.span-7{grid-column:span 7}.span-5{grid-column:span 5}.span-6{grid-column:span 6}.span-4{grid-column:span 4}.span-8{grid-column:span 8}}
+  </style>
+</head>
+<body>
+<main class="shell">
+<div class="loading" data-admin-shell-loading>Loading customer screen...</div>
+<div data-admin-shell-ready hidden>
+<header class="topbar">
+  <div><h1 style="margin:0 0 6px">Customer screen management</h1><p style="margin:0;color:#cbd5e1;line-height:1.5">Admin view of customer profiles, garage vehicles, tier pricing, detailer-visible notes, admin-only notes, booking history, and gift redemption history.</p></div>
+  <section class="actorcard"><div class="actorline"><span class="actorlabel">Name:</span><span data-actor-name></span></div><div class="actorline"><span class="actorlabel">Role:</span><span data-actor-role></span></div><div class="actorline"><span class="actorlabel">Email:</span><span data-actor-email></span></div><button class="logout-btn" type="button" data-admin-logout>Sign Out</button></section>
+</header>
+<div class="status" data-admin-shell-status hidden></div>
+<section class="grid">
+  <article class="card span-7"><h2>Customer directory</h2><div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Tier</th><th>Action</th></tr></thead><tbody id="customerResultsBody"><tr><td colspan="5" class="muted">Loading customer profiles…</td></tr></tbody></table></div></article>
+  <article class="card span-5"><h2>Selected customer summary</h2><div id="customerPills"></div><div id="customerSummary" class="detail-box"><pre>Select a customer.</pre></div></article>
+  <article class="card span-6"><h2>Customer profile / note zones</h2><div id="customerProfileBox" class="detail-box"><pre>No customer selected.</pre></div></article>
+  <article class="card span-6"><h2>Booking & gift summary</h2><div id="customerBookingBox" class="detail-box"><pre>No customer selected.</pre></div></article>
+  <article class="card span-8"><h2>Vehicle garage</h2><div id="vehicleList" class="list"><div class="list-item muted">No vehicles yet.</div></div></article>
+  <article class="card span-4"><h2>Gift redemption history</h2><div id="redeemList" class="list"><div class="list-item muted">No redemptions yet.</div></div></article>
+  <article class="card"><h2>Bookings</h2><div id="bookingList" class="list"><div class="list-item muted">No bookings yet.</div></div></article>
+</section>
+</div>
+</main>
+<script src="/assets/admin-auth.js"></script><script src="/assets/admin-shell.js"></script>
+<script>
+(function(){ const $=s=>document.querySelector(s); let rows=[];
+ function setStatus(m,t=''){ const n=document.querySelector('[data-admin-shell-status]'); n.hidden=!m; n.textContent=m||''; n.dataset.state=t||''; }
+ function esc(v){ return String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+ function money(c){ return new Intl.NumberFormat('en-CA',{style:'currency',currency:'CAD'}).format((Number(c||0))/100); }
+ function renderDirectory(items){ $('#customerResultsBody').innerHTML = items.length ? items.map(r=>`<tr><td>${esc(r.customer_name || r.full_name || '—')}</td><td>${esc(r.customer_email || r.email || '—')}</td><td>${esc(r.customer_phone || r.phone || '—')}</td><td>${esc(r.tier_code || '—')}</td><td><button class="btn secondary" data-open="${esc(r.id)}" type="button">Open</button></td></tr>`).join('') : '<tr><td colspan="5" class="muted">No customers found.</td></tr>'; document.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>loadDetail(b.getAttribute('data-open')))); }
+ function renderDetail(data){ const p=data.customer_profile||{}, tier=data.customer_tier||null, summary=data.booking_summary||{}; $('#customerPills').innerHTML=`<span class="pill">Tier: ${esc(tier?.name || p.tier_code || '—')}</span><span class="pill">Bookings: ${esc(String(summary.booking_count||0))}</span><span class="pill">Completed: ${esc(String(summary.completed_count||0))}</span><span class="pill">Active gifts: ${esc(String((data.gift_certificates||[]).length))}</span>`; $('#customerSummary').innerHTML=`<pre>${JSON.stringify({ name:p.full_name||p.customer_name||null, email:p.email||null, phone:p.phone||null, preferred_contact_name:p.preferred_contact_name||null, notification_channel:p.notification_channel||null, live_updates_enabled:p.live_updates_enabled||false, billing_profile_enabled:p.billing_profile_enabled||false, tier:tier },null,2)}</pre>`; $('#customerProfileBox').innerHTML=`<pre>${JSON.stringify({ customer_notes:p.notes||null, detailer_visible_notes:p.detailer_visible_notes||null, admin_private_notes:p.admin_private_notes||null, client_private_notes:p.client_private_notes||null, alternate_address_label:p.alternate_address_label||null, alternate_address_line1:p.alternate_address_line1||null, alternate_city:p.alternate_city||null },null,2)}</pre>`; $('#customerBookingBox').innerHTML=`<pre>${JSON.stringify({ booking_summary:summary, gifts:(data.gift_certificates||[]).map(g=>({code:g.code,status:g.status,remaining_cents:g.remaining_cents,expires_at:g.expires_at})) },null,2)}</pre>`;
+ $('#vehicleList').innerHTML=(data.vehicles||[]).length?(data.vehicles||[]).map(v=>`<div class="list-item"><strong>${esc(v.vehicle_name || [v.model_year,v.make,v.model].filter(Boolean).join(' ') || 'Vehicle')}</strong><div>${esc([v.color, v.contact_phone || v.contact_email].filter(Boolean).join(' · ') || 'No vehicle contact override')}</div><div class="muted">Detailer notes: ${esc(v.detailer_visible_notes || '—')}</div><div class="muted">Admin notes: ${esc(v.admin_private_notes || '—')}</div><div class="muted">Alt service address: ${esc(v.alternate_service_address || '—')}</div></div>`).join(''):'<div class="list-item muted">No vehicles yet.</div>';
+ $('#redeemList').innerHTML=(data.redemptions||[]).length?(data.redemptions||[]).map(r=>`<div class="list-item"><strong>${esc(r.gift_certificate?.code||'Gift')}</strong><div>${money(r.amount_cents||0)} redeemed</div><div class="muted">${esc(r.created_at||'—')}</div></div>`).join(''):'<div class="list-item muted">No redemptions yet.</div>';
+ $('#bookingList').innerHTML=(data.bookings||[]).length?(data.bookings||[]).map(b=>`<div class="list-item"><strong>${esc(b.service_date||'—')} · ${esc(b.package_code||'—')}</strong><div>Status: ${esc(b.status||'—')} / ${esc(b.job_status||'—')}</div><div class="muted">Vehicle size: ${esc(b.vehicle_size||'—')} · Total ${money(b.price_total_cents||0)}</div></div>`).join(''):'<div class="list-item muted">No bookings yet.</div>';
+ }
+ async function loadList(){ const res=await fetch('/api/admin/customers_list',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:'{}'}); const data=await res.json().catch(()=>null); if(!res.ok) throw new Error(data?.error||'Could not load customers.'); rows=Array.isArray(data.customer_profiles)?data.customer_profiles:Array.isArray(data.customers)?data.customers:[]; renderDirectory(rows); }
+ async function loadDetail(id){ const res=await fetch('/api/admin/customers_detail',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({customer_profile_id:id})}); const data=await res.json().catch(()=>null); if(!res.ok) return setStatus(data?.error||'Could not load customer.','error'); renderDetail(data); setStatus('Customer screen loaded.','success'); }
+ window.AdminShell.boot({ pageKey:'admin-customers', onReady: async()=>{ try{ await loadList(); } catch(err){ setStatus(err.message||'Could not initialize customer screen.','error'); } } });
+})();
+</script>
+</body></html>

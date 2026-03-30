@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Gift Certificates | Rosie Dazzlers Mobile Detailing</title>
+  <meta name="description" content="Buy Rosie Dazzlers gift certificates for mobile detailing packages or dollar-value gifts in Norfolk and Oxford Counties." />
+  <link rel="canonical" href="https://rosiedazzlers.ca/gifts" />
+  <meta property="og:title" content="Gift Certificates | Rosie Dazzlers Mobile Detailing" />
+  <meta property="og:description" content="Buy Rosie Dazzlers gift certificates for mobile detailing packages or dollar-value gifts in Norfolk and Oxford Counties." />
+  <link rel="stylesheet" href="/assets/site.css?v=20260309b" />
+  <style>
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    .muted{color:rgba(234,242,255,.62)}
+    .req{color:rgba(239,68,68,.92);font-weight:800}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .tab{cursor:pointer}
+    .hidden{display:none !important}
+    .mini{font-size:.92rem;color:rgba(234,242,255,.62)}
+    @media (max-width: 980px){ .grid2,.grid3{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+  <div class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="/">
+        <img data-logo alt="Rosie Dazzlers logo" />
+        <strong>Rosie Dazzlers</strong>
+      </a>
+      <button class="btn small ghost nav-toggle" id="navToggle" type="button" aria-expanded="false">Menu</button>
+      <div class="nav-links" id="navLinks"></div>
+      <a class="btn primary" href="/book">Book now</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="panel">
+      <div class="badges">
+        <span class="badge">Valid 1 year</span>
+        <span class="badge">No refunds</span>
+        <span class="badge">Service gift or Dollar gift</span>
+      </div>
+      <h1 style="margin:12px 0 8px">Gift Certificates</h1>
+      <p class="kicker">
+        Buy a gift certificate for a friend or family member. Service gifts cover a specific package + size.
+        Dollar gifts deduct from any booking total.
+      </p>
+      <div class="notice warn" style="margin-top:12px">
+        <strong>Important:</strong> Gift certificates are valid for <strong>1 year</strong> from purchase and are <strong>non-refundable</strong>.
+      </div>
+    </div>
+
+    <div class="section grid2">
+      <div class="panel">
+        <h2 style="margin-top:0">Choose gift type</h2>
+
+        <div class="tabs">
+          <button class="btn tab primary" id="tabDollar" type="button">Dollar Gift</button>
+          <button class="btn tab ghost" id="tabService" type="button">Service Gift</button>
+          <button class="btn tab ghost" id="tabLookup" type="button">Lookup / Receipt</button>
+        </div>
+
+        <!-- DOLLAR GIFT -->
+        <div id="dollarPane" style="margin-top:14px">
+          <h3 style="margin:0 0 8px">Dollar Amount Gift</h3>
+          <p class="muted">Pick an amount and enter recipient info. This gift deducts from any booking.</p>
+
+          <div class="grid3">
+            <div>
+              <label for="dollarSku">Gift amount <span class="req">*</span></label>
+              <select id="dollarSku">
+                <option value="">Select…</option>
+                <option value="GIFT-100">$100</option>
+                <option value="GIFT-200">$200</option>
+                <option value="GIFT-300">$300</option>
+              </select>
+            </div>
+            <div>
+              <label for="dPurchEmail">Purchaser email <span class="req">*</span></label>
+              <input id="dPurchEmail" type="email" placeholder="you@example.com" />
+            </div>
+            <div>
+              <label for="dRecipEmail">Recipient email <span class="req">*</span></label>
+              <input id="dRecipEmail" type="email" placeholder="friend@example.com" />
+            </div>
+          </div>
+
+          <div class="grid2" style="margin-top:10px">
+            <div>
+              <label for="dMessage">Message (optional)</label>
+              <input id="dMessage" type="text" placeholder="Happy Birthday! Enjoy a clean ride." />
+            </div>
+            <div class="row" style="align-items:flex-end">
+              <button class="btn primary" id="buyDollarBtn" type="button">Buy Dollar Gift</button>
+            </div>
+          </div>
+
+          <div id="dollarStatus" class="notice" style="display:none;margin-top:12px"></div>
+        </div>
+
+        <!-- SERVICE GIFT -->
+        <div id="servicePane" class="hidden" style="margin-top:14px">
+          <h3 style="margin:0 0 8px">Service Gift</h3>
+          <p class="muted">This covers a specific package + vehicle size (recommended for best match).</p>
+
+          <div class="grid2">
+            <div>
+              <label for="sPackage">Package <span class="req">*</span></label>
+              <select id="sPackage"><option value="">Loading…</option></select>
+            </div>
+            <div>
+              <label for="sSize">Vehicle size <span class="req">*</span></label>
+              <select id="sSize">
+                <option value="">Select…</option>
+                <option value="small">Small</option>
+                <option value="mid">Mid-sized</option>
+                <option value="oversize">Over-size / Exotic</option>
+              </select>
+              <div class="mini">
+                Size chart:
+                <a href="https://assets.rosiedazzlers.ca/packages/CarSizeChart.PNG" target="_blank" rel="noopener">Open</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid3" style="margin-top:10px">
+            <div>
+              <label for="sPurchEmail">Purchaser email <span class="req">*</span></label>
+              <input id="sPurchEmail" type="email" placeholder="you@example.com" />
+            </div>
+            <div>
+              <label for="sRecipEmail">Recipient email <span class="req">*</span></label>
+              <input id="sRecipEmail" type="email" placeholder="friend@example.com" />
+            </div>
+            <div>
+              <label for="sMessage">Message (optional)</label>
+              <input id="sMessage" type="text" placeholder="Enjoy your detail!" />
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:12px">
+            <button class="btn primary" id="buyServiceBtn" type="button">Buy Service Gift</button>
+          </div>
+
+          <div id="serviceStatus" class="notice" style="display:none;margin-top:12px"></div>
+        </div>
+
+        <!-- LOOKUP -->
+        <div id="lookupPane" class="hidden" style="margin-top:14px">
+          <h3 style="margin:0 0 8px">Lookup a Gift Receipt</h3>
+          <p class="muted">If you just purchased, paste your Stripe session_id and your email to view the gift code.</p>
+
+          <div class="grid2">
+            <div>
+              <label for="lkSession">Stripe session_id <span class="req">*</span></label>
+              <input id="lkSession" class="mono" type="text" placeholder="cs_test_..." />
+            </div>
+            <div>
+              <label for="lkEmail">Email used at purchase <span class="req">*</span></label>
+              <input id="lkEmail" type="email" placeholder="you@example.com" />
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:12px">
+            <button class="btn primary" id="lookupBtn" type="button">Lookup</button>
+          </div>
+
+          <div id="lookupStatus" class="notice" style="display:none;margin-top:12px"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2 style="margin-top:0">How gifts work</h2>
+        <ul>
+          <li><strong>Dollar gifts</strong> deduct from the booking total.</li>
+          <li><strong>Service gifts</strong> require the recipient to select the matching package + size when booking.</li>
+          <li>Gift certificates are valid for <strong>1 year</strong> and are <strong>non-refundable</strong>.</li>
+          <li>Redeem gifts during booking using the gift code.</li>
+        </ul>
+
+        <div class="hr"></div>
+
+        <h2>Need help?</h2>
+        <p class="muted">
+          Email us at <a href="mailto:info@rosiedazzlers.ca">info@rosiedazzlers.ca</a>.
+        </p>
+
+        <div class="hr"></div>
+
+        <div class="notice">
+          <strong>Tip:</strong> After purchase, you’ll return to the site with
+          <span class="mono">?gift=success&amp;session_id=cs_...</span>. Use that session_id in the Lookup tab if needed.
+        </div>
+      </div>
+    </div>
+
+    <div class="footer" data-footer></div>
+  </div>
+
+  <script type="module">
+    const DATA_URL = "/api/pricing_catalog_public?v=20260309b";
+
+    const qs = (s) => document.querySelector(s);
+    const show = (el, msg, kind="") => {
+      el.style.display = "block";
+      el.className = "notice " + (kind || "");
+      el.innerHTML = msg;
+    };
+
+    async function fetchJsonStrict(url) {
+      const res = await fetch(url, { cache: "no-store" });
+      const text = await res.text();
+      try { return JSON.parse(text); }
+      catch {
+        const head = text.slice(0, 140).replace(/\s+/g, " ");
+        throw new Error(`Expected JSON from ${url} but got: ${head}`);
+      }
+    }
+
+    function setTab(which){
+      const dollar = qs("#dollarPane");
+      const service = qs("#servicePane");
+      const lookup = qs("#lookupPane");
+      const tD = qs("#tabDollar");
+      const tS = qs("#tabService");
+      const tL = qs("#tabLookup");
+
+      dollar.classList.toggle("hidden", which !== "dollar");
+      service.classList.toggle("hidden", which !== "service");
+      lookup.classList.toggle("hidden", which !== "lookup");
+
+      tD.classList.toggle("primary", which === "dollar");
+      tD.classList.toggle("ghost", which !== "dollar");
+      tS.classList.toggle("primary", which === "service");
+      tS.classList.toggle("ghost", which !== "service");
+      tL.classList.toggle("primary", which === "lookup");
+      tL.classList.toggle("ghost", which !== "lookup");
+    }
+
+    qs("#tabDollar").addEventListener("click", ()=>setTab("dollar"));
+    qs("#tabService").addEventListener("click", ()=>setTab("service"));
+    qs("#tabLookup").addEventListener("click", ()=>setTab("lookup"));
+
+    // Load packages into service gift selector
+    let data = null;
+    try {
+      data = await fetchJsonStrict(DATA_URL);
+      const pkgs = data.packages || [];
+      qs("#sPackage").innerHTML = `<option value="">Select…</option>` + pkgs.map(p =>
+        `<option value="${p.code}">${p.name} — ${p.subtitle || ""}</option>`
+      ).join("");
+    } catch (e) {
+      qs("#sPackage").innerHTML = `<option value="">(Could not load packages)</option>`;
+    }
+
+    // Detect return from Stripe
+    const params = new URLSearchParams(location.search);
+    const giftStatus = params.get("gift");
+    const sid = params.get("session_id");
+    if (giftStatus === "success" && sid) {
+      setTab("lookup");
+      qs("#lkSession").value = sid;
+      show(qs("#lookupStatus"),
+        `<strong>Purchase complete.</strong><br>Paste the purchase email and click Lookup to reveal the gift code.`,
+        "ok"
+      );
+    }
+
+    async function postJson(url, payload){
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "content-type":"application/json" },
+        body: JSON.stringify(payload),
+      });
+      const out = await res.json().catch(()=>null);
+      return { ok: res.ok, status: res.status, out };
+    }
+
+    // Dollar gift purchase
+    qs("#buyDollarBtn").addEventListener("click", async () => {
+      const sku = qs("#dollarSku").value;
+      const purchaser_email = (qs("#dPurchEmail").value || "").trim();
+      const recipient_email = (qs("#dRecipEmail").value || "").trim();
+      const message = (qs("#dMessage").value || "").trim();
+
+      if (!sku) return show(qs("#dollarStatus"), "Pick a gift amount.", "bad");
+      if (!purchaser_email.includes("@")) return show(qs("#dollarStatus"), "Enter purchaser email.", "bad");
+      if (!recipient_email.includes("@")) return show(qs("#dollarStatus"), "Enter recipient email.", "bad");
+
+      show(qs("#dollarStatus"), "Creating Stripe checkout…");
+
+      const payload = {
+        items: [{ sku, qty: 1 }],
+        purchaser_email,
+        recipient_email,
+        message: message || null,
+      };
+
+      const r = await postJson("/api/gifts/checkout", payload);
+      if (!r.ok || !r.out?.ok || !r.out.checkout_url) {
+        return show(qs("#dollarStatus"), `Checkout error: ${escapeHtml(r.out?.error || "Unknown error")}`, "bad");
+      }
+
+      location.href = r.out.checkout_url;
+    });
+
+    // Service gift purchase
+    qs("#buyServiceBtn").addEventListener("click", async () => {
+      const package_code = qs("#sPackage").value;
+      const vehicle_size = qs("#sSize").value;
+      const purchaser_email = (qs("#sPurchEmail").value || "").trim();
+      const recipient_email = (qs("#sRecipEmail").value || "").trim();
+      const message = (qs("#sMessage").value || "").trim();
+
+      if (!package_code) return show(qs("#serviceStatus"), "Pick a package.", "bad");
+      if (!vehicle_size) return show(qs("#serviceStatus"), "Pick a vehicle size.", "bad");
+      if (!purchaser_email.includes("@")) return show(qs("#serviceStatus"), "Enter purchaser email.", "bad");
+      if (!recipient_email.includes("@")) return show(qs("#serviceStatus"), "Enter recipient email.", "bad");
+
+      show(qs("#serviceStatus"), "Creating Stripe checkout…");
+
+      const payload = {
+        items: [{ sku: `SERVICE-${package_code}-${vehicle_size}`, qty: 1 }],
+        purchaser_email,
+        recipient_email,
+        message: message || null,
+      };
+
+      const r = await postJson("/api/gifts/checkout", payload);
+      if (!r.ok || !r.out?.ok || !r.out.checkout_url) {
+        return show(qs("#serviceStatus"), `Checkout error: ${escapeHtml(r.out?.error || "Unknown error")}`, "bad");
+      }
+
+      location.href = r.out.checkout_url;
+    });
+
+    // Receipt lookup
+    qs("#lookupBtn").addEventListener("click", async () => {
+      const session_id = (qs("#lkSession").value || "").trim();
+      const email = (qs("#lkEmail").value || "").trim();
+
+      if (!session_id) return show(qs("#lookupStatus"), "Enter session_id.", "bad");
+      if (!email.includes("@")) return show(qs("#lookupStatus"), "Enter email used at purchase.", "bad");
+
+      show(qs("#lookupStatus"), "Looking up receipt…");
+
+      const r = await postJson("/api/gifts/receipt", { session_id, email });
+      if (!r.ok || !r.out?.ok) {
+        return show(qs("#lookupStatus"), `Lookup error: ${escapeHtml(r.out?.error || "Not found")}`, "bad");
+      }
+
+      const rows = r.out.gifts || [];
+      if (!rows.length) return show(qs("#lookupStatus"), "No gift certificates found for that session/email.", "bad");
+
+      const html = rows.map(g => {
+        return `
+          <div class="notice ok" style="margin-top:10px">
+            <div><strong>Gift code:</strong> <span class="mono">${escapeHtml(g.code)}</span></div>
+            <div><strong>Type:</strong> ${escapeHtml(g.type)}</div>
+            <div><strong>Remaining:</strong> ${escapeHtml(g.remaining)}</div>
+            <div><strong>Expires:</strong> ${escapeHtml(g.expires_at)}</div>
+          </div>
+        `;
+      }).join("");
+
+      show(qs("#lookupStatus"), html, "ok");
+    });
+
+    function escapeHtml(s){
+      return String(s||"")
+        .replaceAll("&","&amp;").replaceAll("<","&lt;")
+        .replaceAll(">","&gt;").replaceAll('"',"&quot;")
+        .replaceAll("'","&#39;");
+    }
+  </script>
+
+  <script type="module" src="/assets/chrome.js?v=20260309b"></script>
+</body>
+</html>
