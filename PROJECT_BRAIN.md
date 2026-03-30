@@ -13,44 +13,19 @@ A construction safety and operations app built on Supabase with a modular fronte
 - equipment
 - logbook/review
 
-## Role model
-- worker
-- staff
-- onsite_admin
-- site_leader
-- supervisor
-- hse
-- job_admin
-- admin
+## Current active workflow layer
+- password-first sign-in with recovery and onboarding support
+- storage-backed equipment evidence
+- user inbox and admin approval tools
+- shared offline action outbox
+- side-by-side conflict review panels in Settings and Admin
+- startup diagnostics banner with module timing details
 
-## Current hierarchy model
-Profiles now need to support:
-- employee number
-- start date
-- strengths
-- default supervisor
-- override supervisor
-- default admin
-- override admin
-
-Sites also support:
-- site supervisor
-- signing supervisor
-- admin lead
-- region
-- client
-- project metadata
-
-## Next major domain
-Jobs and equipment:
-- create job records
-- attach site leadership
-- reserve required equipment
-- track equipment sign-out to jobs
-
-## Files to keep aligned
-All main markdown files plus SQL and Edge Function folders.
-
+## Next major domain focus
+- true merge resolution for conflicted queued actions
+- stronger evidence bulk workflows and progress feedback
+- release automation and smoke checks
+- deeper remote diagnostics/support tooling
 
 ## Latest security and workflow pass
 

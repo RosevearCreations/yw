@@ -1,6 +1,14 @@
 # Changelog
 
-## Current pass
+## 2026-03-29 conflict-review and diagnostics-timing pass
+- added side-by-side conflict review panels to `js/account-ui.js` and `js/admin-ui.js`
+- added queued-item dismiss and mark-for-retry controls through new helpers in `js/outbox.js`
+- added queued-vs-current field comparison tables so account/admin conflicts can be reviewed before replay
+- expanded `app.js` diagnostics to retain per-module startup timing details in the in-app banner
+- refreshed markdown docs and schema reference notes to match the current repo state
+- no new SQL migration was required in this pass
+
+## Previous foundation pass
 - added top-right session controls with signed-in name, settings, and logout
 - expanded user hierarchy model with default/override supervisor/admin fields
 - added start date, employee number, and strengths support

@@ -1,8 +1,8 @@
--- 2026-03-29 diagnostics and identity-sync pass
--- No schema changes in this pass. This file is refreshed as the current reference snapshot after the diagnostics/auth-sync update.
+-- 2026-03-29 conflict-review and diagnostics-timing pass
+-- No schema changes in this pass. This file remains the current reference snapshot after the conflict-review UI and diagnostics timing update.
 
 -- Full schema reference snapshot
--- Updated through 2026-03-29 diagnostics and identity-sync pass.
+-- Updated through 2026-03-29 conflict-review and diagnostics-timing pass.
 -- Latest incremental schema migration: 055_storage_onboarding_identity_change_and_bootstrap.sql
 -- No new schema migration was required for this pass; the changes were frontend + function workflow updates on top of migration 055.
 

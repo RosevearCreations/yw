@@ -1,24 +1,22 @@
 # Project State
 
 ## Current pass complete
-- top-right user/session controls
-- self profile and crew view retained and expanded
-- richer hierarchy fields added to profile model
-- admin profile/site/assignment forms expanded
-- jobs/equipment planning screens added
-- backend SQL and Edge Function scaffolding added for jobs and hierarchy
+- Settings now shows side-by-side account sync conflict review for queued profile and identity-change actions
+- Admin now shows side-by-side conflict review for queued notification approval and email actions
+- shared outbox now supports dismissing conflicted items or marking them for retry after review
+- diagnostics now keep per-module startup timing details for easier support and deploy troubleshooting
+- markdown docs and schema snapshot notes were refreshed to match the current codebase
 
 ## Still required for live enforcement
-- run new SQL files
-- deploy updated/new Edge Functions
-- verify RLS and view outputs against live schema
+- run live SQL through `055_storage_onboarding_identity_change_and_bootstrap.sql` on databases that are not current yet
+- deploy updated frontend shell plus the current Edge Functions
+- verify RLS and directory/view outputs against the live schema
 
 ## Main gaps after this pass
-- full equipment checkout lifecycle UI
-- deeper supervisor-scoped crew filtering by direct reporting lines
-- production-ready notifications around jobs and equipment reservations
-
-
+- true side-by-side merge saving back to the server for conflicted profile/admin drafts
+- multi-file bulk replace and richer progress bars for equipment evidence assets
+- automated CI/CD smoke-check execution instead of manual release checks
+- deeper diagnostics export/support tooling for remote troubleshooting
 ## Latest security and workflow pass
 
 This pass adds password/account maintenance improvements, email verification resend, phone verification request workflow, direct-report crew filtering, equipment checkout/return workflow, reservation enforcement hooks, and a refreshed full schema reference. New backend pieces include `supabase/functions/account-maintenance`, expanded `jobs-manage`, expanded `jobs-directory`, and updated `admin-directory`. New SQL references include `046_account_validation_and_notifications.sql` and `047_password_validation_equipment_workflow.sql`.

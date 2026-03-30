@@ -1,5 +1,16 @@
-This is where we list known issues and gaps that need to be addressed
+# Known Issues and Gaps
 
+## 2026-03-29 conflict-review and diagnostics-timing pass
+- Added side-by-side conflict review panels in Settings and Admin so queued outbox items can be compared against current workspace values before replay.
+- Added local controls to use queued values in the form/workspace, mark a conflicted item for retry, or dismiss it from the outbox.
+- Expanded startup diagnostics so module failures now carry elapsed timing in the diagnostics banner for deeper troubleshooting.
+- Refreshed markdown and schema snapshot notes to reflect that no new SQL migration was required in this pass.
+
+### Remaining best next steps after the 2026-03-29 conflict-review pass
+1. Add true side-by-side merge actions that can selectively keep local or server values per field and save the resolved result back to the backend.
+2. Add thumbnail upload progress bars and multi-file bulk replace for equipment evidence assets.
+3. Add automated deploy smoke-check execution in CI/CD so release verification is not manual.
+4. Expand diagnostics collection into exportable per-module success/failure traces for remote support.
 
 ## 2026-03-26 confirmation history and autosave reliability pass
 - Kept Supabase Storage + `equipment_evidence_assets` as the primary evidence path for equipment photos/signatures; no new inline JSON/base64 evidence storage was introduced in this pass.

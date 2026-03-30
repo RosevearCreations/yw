@@ -39,7 +39,8 @@ const modules = {
 const diagnostics = {
   items: [],
   maxItems: 12,
-  bound: false
+  bound: false,
+  timings: {}
 };
 
 function todayISO() {
@@ -119,19 +120,39 @@ function renderDiagnostics() {
   if (summary) summary.textContent = `${diagnostics.items.length} recent issue(s) captured. You can retry the protected screens after sign-in.`;
   if (list) {
     list.innerHTML = diagnostics.items.map((item) => {
+      const timingText = item.elapsed_ms ? ` <span class="muted">(${item.elapsed_ms} ms)</span>` : '';
       const details = Array.isArray(item.details) && item.details.length ? `<ul style="margin-top:6px;">${item.details.map((detail) => `<li>${detail}</li>`).join('')}</ul>` : '';
-      return `<li><strong>${item.scope}</strong>: ${item.message}${details}</li>`;
+      return `<li><strong>${item.scope}</strong>: ${item.message}${timingText}${details}</li>`;
     }).join('');
   }
 }
 
-function pushDiagnostic(scope, message, details = []) {
+function pushDiagnostic(scope, message, details = [], meta = {}) {
   const cleanScope = String(scope || 'app');
   const cleanMessage = String(message || 'Unexpected application issue.');
   diagnostics.items = diagnostics.items.filter((item) => !(item.scope === cleanScope && item.message === cleanMessage));
-  diagnostics.items.unshift({ scope: cleanScope, message: cleanMessage, details: Array.isArray(details) ? details : [], at: new Date().toISOString() });
+  diagnostics.items.unshift({
+    scope: cleanScope,
+    message: cleanMessage,
+    details: Array.isArray(details) ? details : [],
+    at: new Date().toISOString(),
+    elapsed_ms: meta?.elapsed_ms || 0
+  });
   diagnostics.items = diagnostics.items.slice(0, diagnostics.maxItems);
   renderDiagnostics();
+}
+
+function markModuleTiming(scope, status, startedAt, details = []) {
+  const elapsed = Math.max(0, Date.now() - Number(startedAt || Date.now()));
+  diagnostics.timings[scope] = {
+    status,
+    elapsed_ms: elapsed,
+    at: new Date().toISOString(),
+    details: Array.isArray(details) ? details : []
+  };
+  if (status === 'error') {
+    pushDiagnostic(scope, 'Module failed during startup.', details, { elapsed_ms: elapsed });
+  }
 }
 
 function clearDiagnosticsMatching(scopePrefix) {
@@ -245,7 +266,13 @@ function initAdminModule() {
     onSiteLoaded: () => {},
     onAssignmentLoaded: () => {}
   });
-  modules.adminUI.init().catch((err) => { console.error('Admin UI init failed', err); pushDiagnostic('admin-ui', err?.message || 'Admin UI failed to initialize.'); });
+  const adminStartedAt = Date.now();
+  modules.adminUI.init()
+    .then(() => markModuleTiming('admin-ui', 'ok', adminStartedAt))
+    .catch((err) => {
+      console.error('Admin UI init failed', err);
+      markModuleTiming('admin-ui', 'error', adminStartedAt, [err?.message || 'Admin UI failed to initialize.']);
+    });
 }
 
 function hasAuthenticatedSession() {
@@ -272,9 +299,12 @@ function initProfileModule() {
     getAccessProfile
   });
 
-  modules.profileUI.init().catch((err) => {
+  const profileStartedAt = Date.now();
+  modules.profileUI.init().then(() => {
+    markModuleTiming('profile-ui', 'ok', profileStartedAt);
+  }).catch((err) => {
     console.error('Profile UI init failed', err);
-    pushDiagnostic('profile-ui', err?.message || 'Profile screen failed to initialize.');
+    markModuleTiming('profile-ui', 'error', profileStartedAt, [err?.message || 'Profile screen failed to initialize.']);
   });
 }
 
@@ -285,7 +315,13 @@ function initReferenceDataModule() {
     api: api(),
     getCurrentRole: () => appState.currentRole
   });
-  modules.referenceDataUI.init().catch?.((err) => { console.error('Reference data init failed', err); pushDiagnostic('reference-data', err?.message || 'Reference data failed to initialize.'); });
+  const referenceStartedAt = Date.now();
+  modules.referenceDataUI.init().then?.(() => {
+    markModuleTiming('reference-data', 'ok', referenceStartedAt);
+  }).catch?.((err) => {
+    console.error('Reference data init failed', err);
+    markModuleTiming('reference-data', 'error', referenceStartedAt, [err?.message || 'Reference data failed to initialize.']);
+  });
 }
 
 
@@ -296,7 +332,13 @@ function initJobsModule() {
     getCurrentRole: () => appState.currentRole,
     getAccessProfile
   });
-  modules.jobsUI.init().catch((err) => { console.error('Jobs UI init failed', err); pushDiagnostic('jobs-ui', err?.message || 'Jobs or Equipment screens failed to initialize.'); });
+  const jobsStartedAt = Date.now();
+  modules.jobsUI.init()
+    .then(() => markModuleTiming('jobs-ui', 'ok', jobsStartedAt))
+    .catch((err) => {
+      console.error('Jobs UI init failed', err);
+      markModuleTiming('jobs-ui', 'error', jobsStartedAt, [err?.message || 'Jobs or Equipment screens failed to initialize.']);
+    });
 }
 
 function initLogbookModule() {
@@ -309,30 +351,66 @@ function initLogbookModule() {
     getCurrentRole: () => appState.currentRole,
     getAccessProfile
   });
-  modules.logbookUI.init().catch((err) => { console.error('Logbook UI init failed', err); pushDiagnostic('logbook-ui', err?.message || 'Logbook failed to initialize.'); });
+  const logbookStartedAt = Date.now();
+  modules.logbookUI.init()
+    .then(() => markModuleTiming('logbook-ui', 'ok', logbookStartedAt))
+    .catch((err) => {
+      console.error('Logbook UI init failed', err);
+      markModuleTiming('logbook-ui', 'error', logbookStartedAt, [err?.message || 'Logbook failed to initialize.']);
+    });
 }
 
 function initFormModules() {
   if (!api() || !outbox()) return;
   if (!modules.toolboxFormUI && window.YWIFormsToolbox?.create) {
     modules.toolboxFormUI = window.YWIFormsToolbox.create({ sendToFunction: api().sendToFunction, uploadImagesForSubmission: api().uploadImagesForSubmission, getOutbox: outbox().getItems, setOutbox: outbox().setItems });
-    modules.toolboxFormUI.init().catch((err) => { console.error('Toolbox form init failed', err); pushDiagnostic('toolbox-form', err?.message || 'Toolbox Talk failed to initialize.'); });
+    const toolboxStartedAt = Date.now();
+    modules.toolboxFormUI.init()
+      .then(() => markModuleTiming('toolbox-form', 'ok', toolboxStartedAt))
+      .catch((err) => {
+        console.error('Toolbox form init failed', err);
+        markModuleTiming('toolbox-form', 'error', toolboxStartedAt, [err?.message || 'Toolbox Talk failed to initialize.']);
+      });
   }
   if (!modules.ppeFormUI && window.YWIFormsPPE?.create) {
     modules.ppeFormUI = window.YWIFormsPPE.create({ sendToFunction: api().sendToFunction, getOutbox: outbox().getItems, setOutbox: outbox().setItems });
-    modules.ppeFormUI.init().catch((err) => { console.error('PPE form init failed', err); pushDiagnostic('ppe-form', err?.message || 'PPE Check failed to initialize.'); });
+    const ppeStartedAt = Date.now();
+    modules.ppeFormUI.init()
+      .then(() => markModuleTiming('ppe-form', 'ok', ppeStartedAt))
+      .catch((err) => {
+        console.error('PPE form init failed', err);
+        markModuleTiming('ppe-form', 'error', ppeStartedAt, [err?.message || 'PPE Check failed to initialize.']);
+      });
   }
   if (!modules.firstAidFormUI && window.YWIFormsFirstAid?.create) {
     modules.firstAidFormUI = window.YWIFormsFirstAid.create({ sendToFunction: api().sendToFunction, getOutbox: outbox().getItems, setOutbox: outbox().setItems });
-    modules.firstAidFormUI.init().catch((err) => { console.error('First Aid form init failed', err); pushDiagnostic('first-aid-form', err?.message || 'First Aid form failed to initialize.'); });
+    const firstAidStartedAt = Date.now();
+    modules.firstAidFormUI.init()
+      .then(() => markModuleTiming('first-aid-form', 'ok', firstAidStartedAt))
+      .catch((err) => {
+        console.error('First Aid form init failed', err);
+        markModuleTiming('first-aid-form', 'error', firstAidStartedAt, [err?.message || 'First Aid form failed to initialize.']);
+      });
   }
   if (!modules.inspectionFormUI && window.YWIFormsInspection?.create) {
     modules.inspectionFormUI = window.YWIFormsInspection.create({ sendToFunction: api().sendToFunction, uploadImagesForSubmission: api().uploadImagesForSubmission, getOutbox: outbox().getItems, setOutbox: outbox().setItems });
-    modules.inspectionFormUI.init().catch((err) => { console.error('Inspection form init failed', err); pushDiagnostic('inspection-form', err?.message || 'Site Inspection failed to initialize.'); });
+    const inspectionStartedAt = Date.now();
+    modules.inspectionFormUI.init()
+      .then(() => markModuleTiming('inspection-form', 'ok', inspectionStartedAt))
+      .catch((err) => {
+        console.error('Inspection form init failed', err);
+        markModuleTiming('inspection-form', 'error', inspectionStartedAt, [err?.message || 'Site Inspection failed to initialize.']);
+      });
   }
   if (!modules.drillFormUI && window.YWIFormsDrill?.create) {
     modules.drillFormUI = window.YWIFormsDrill.create({ sendToFunction: api().sendToFunction, uploadImagesForSubmission: api().uploadImagesForSubmission, getOutbox: outbox().getItems, setOutbox: outbox().setItems });
-    modules.drillFormUI.init().catch((err) => { console.error('Drill form init failed', err); pushDiagnostic('drill-form', err?.message || 'Emergency Drill failed to initialize.'); });
+    const drillStartedAt = Date.now();
+    modules.drillFormUI.init()
+      .then(() => markModuleTiming('drill-form', 'ok', drillStartedAt))
+      .catch((err) => {
+        console.error('Drill form init failed', err);
+        markModuleTiming('drill-form', 'error', drillStartedAt, [err?.message || 'Emergency Drill failed to initialize.']);
+      });
   }
 }
 
@@ -353,7 +431,11 @@ function initAdminActions() {
 
 async function initializeAppShell() {
   bindDiagnosticsEvents();
-window.YWIAppDiagnostics = { getItems: () => diagnostics.items.slice(), clear: renderDiagnostics };
+window.YWIAppDiagnostics = {
+  getItems: () => diagnostics.items.slice(),
+  getTimings: () => ({ ...diagnostics.timings }),
+  clear: renderDiagnostics
+};
   ensureDiagnosticsPanel();
   applyDateFallback();
   outbox()?.bindRetryButtons?.({ isAuthenticated: () => appState.isAuthenticated, sendToFunction: api()?.sendToFunction, uploadImagesForSubmission: api()?.uploadImagesForSubmission });

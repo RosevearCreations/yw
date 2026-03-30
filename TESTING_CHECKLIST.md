@@ -18,6 +18,8 @@
 - profile save with hierarchy fields
 - site save with site leadership fields
 - assignment save with reporting overrides
+- queued admin conflict review renders side-by-side values
+- queued admin conflict can be dismissed or marked for retry
 
 ## Jobs and equipment
 - jobs screen visible to supervisor+
@@ -25,7 +27,11 @@
 - local draft fallback works
 - backend load works after function deployment
 
-
+## Diagnostics and offline replay
+- queued account conflict review renders side-by-side values
+- queued account conflict can copy values back into the form
+- diagnostics banner shows timing details when a module fails to initialize
+- clean boot still leaves the diagnostics banner empty
 ## Latest security and workflow pass
 
 This pass adds password/account maintenance improvements, email verification resend, phone verification request workflow, direct-report crew filtering, equipment checkout/return workflow, reservation enforcement hooks, and a refreshed full schema reference. New backend pieces include `supabase/functions/account-maintenance`, expanded `jobs-manage`, expanded `jobs-directory`, and updated `admin-directory`. New SQL references include `046_account_validation_and_notifications.sql` and `047_password_validation_equipment_workflow.sql`.

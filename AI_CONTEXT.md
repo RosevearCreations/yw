@@ -13,33 +13,15 @@ The app is now a modular static frontend on top of Supabase.
 - admin CRUD for profiles, sites, assignments
 - safety form submission and review
 - job and equipment planning scaffold
-
-## User hierarchy direction
-Each employee can have:
-- default supervisor
-- override supervisor
-- default admin
-- override admin
-- start date
-- employee number
-- strengths
-
-Supervisors should see their level and lower.
-Admins should see all levels.
-
-## New files this pass
-- `js/jobs-ui.js`
-- `sql/043_user_hierarchy_and_strengths.sql`
-- `sql/044_jobs_equipment_and_reservations.sql`
-- `sql/045_directory_views_and_scope_helpers.sql`
-- `supabase/functions/jobs-directory/index.ts`
-- `supabase/functions/jobs-manage/index.ts`
+- shared outbox replay for account/admin actions
+- side-by-side conflict review panels for queued account/admin items
+- diagnostics banner with module timing details
 
 ## Continue next with
-- RLS and role visibility verification
-- real equipment sign-out workflow
-- job requirement to reservation conversion
-
+- true field-by-field merge resolution for conflicted queued drafts
+- richer equipment evidence progress UI and bulk replace flows
+- automated deploy smoke checks in CI/CD
+- exportable diagnostics/support trace view
 
 ## Latest security and workflow pass
 

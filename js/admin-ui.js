@@ -89,6 +89,19 @@
         <div class="admin-panel-block" style="margin-top:16px;">
           <div class="section-heading">
             <div>
+              <h3 style="margin:0;">Pending Admin Conflict Review</h3>
+              <p class="section-subtitle">Review queued approval and email actions before replaying them after reconnect.</p>
+            </div>
+            <div class="admin-heading-actions">
+              <button id="ad_reload_conflicts" class="secondary" type="button">Refresh</button>
+            </div>
+          </div>
+          <div id="ad_conflicts_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
+          <div id="ad_conflicts_panel" class="stack"></div>
+        </div>
+        <div class="admin-panel-block" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
               <h3 style="margin:0;">Deploy Smoke Check</h3>
               <p class="section-subtitle">Check shell version, runtime config reachability, and bootstrap endpoint health before release.</p>
             </div>
@@ -214,6 +227,104 @@
         e.summary.dataset.kind = isError ? 'error' : 'info';
       }
       manageSummary(text);
+    }
+
+
+    function setConflictsSummary(text = '', isError = false) {
+      const e = els();
+      if (!e.conflictsSummary) return;
+      if (!text) {
+        e.conflictsSummary.style.display = 'none';
+        e.conflictsSummary.textContent = '';
+        e.conflictsSummary.dataset.kind = '';
+        return;
+      }
+      e.conflictsSummary.style.display = 'block';
+      e.conflictsSummary.textContent = text;
+      e.conflictsSummary.dataset.kind = isError ? 'error' : 'info';
+    }
+
+    function collectCurrentAdminValues() {
+      const e = els();
+      return {
+        notification_id: e.emailNotificationId?.value || '',
+        email_to: e.emailTo?.value || '',
+        email_subject: e.emailSubject?.value || '',
+        email_body: e.emailBody?.value || ''
+      };
+    }
+
+    function renderConflictValuePairs(localPayload = {}, currentValues = {}) {
+      const keys = Array.from(new Set([...Object.keys(localPayload || {}), ...Object.keys(currentValues || {})]));
+      const changed = keys.filter((key) => String(localPayload?.[key] ?? '') !== String(currentValues?.[key] ?? ''));
+      if (!changed.length) return '<div class="muted">No field differences were detected. This item may only need a replay.</div>';
+      return `
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Field</th><th>Queued value</th><th>Current workspace value</th></tr></thead>
+            <tbody>
+              ${changed.map((key) => `<tr><td>${escHtml(key)}</td><td>${escHtml(localPayload?.[key] || '—')}</td><td>${escHtml(currentValues?.[key] || '—')}</td></tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function hydrateQueuedAdminConflict(itemId) {
+      const item = (window.YWIOutbox?.getActionItems?.() || []).find((row) => String(row.id) === String(itemId));
+      if (!item) return;
+      hydratePreview(item?.payload?.notification_id || '', {
+        to: item?.payload?.email_to || '',
+        subject: item?.payload?.email_subject || '',
+        body: item?.payload?.email_body || ''
+      });
+      setSummary('Queued admin values were copied into the email workspace. Review and replay when ready.', false);
+      renderConflictPanel();
+    }
+
+    function dismissAdminConflict(itemId) {
+      window.YWIOutbox?.removeActionItem?.(itemId);
+      renderConflictPanel();
+      const summary = window.YWIOutbox?.getActionSummary?.('admin') || { conflicts: 0 };
+      setConflictsSummary(summary.conflicts ? `${summary.conflicts} admin conflict(s) still need review.` : 'No pending admin conflicts.');
+    }
+
+    function keepAdminConflict(itemId) {
+      window.YWIOutbox?.updateActionItem?.(itemId, { status: 'pending', error: '', conflict_details: [] });
+      renderConflictPanel();
+      setConflictsSummary('Conflict marked for retry. Use Retry Pending Admin Sync when ready.', false);
+    }
+
+    function renderConflictPanel() {
+      const e = els();
+      if (!e.conflictsPanel) return;
+      const summary = window.YWIOutbox?.getActionSummary?.('admin') || { conflicts: 0, items: [] };
+      const conflicts = (summary.items || []).filter((item) => item.status === 'conflict');
+      if (!conflicts.length) {
+        e.conflictsPanel.innerHTML = '<div class="muted">No pending admin conflicts.</div>';
+        setConflictsSummary('No pending admin conflicts.');
+        return;
+      }
+      const currentValues = collectCurrentAdminValues();
+      e.conflictsPanel.innerHTML = conflicts.map((item) => `
+        <div class="admin-panel-block" style="margin-top:12px;">
+          <div class="section-heading">
+            <div>
+              <h4 style="margin:0;">${escHtml(item.label || item.action_type || 'Queued admin action')}</h4>
+              <p class="section-subtitle">Queued ${escHtml(item.queued_at || '')} • attempts ${escHtml(item.attempts || 0)} • merges ${escHtml(item.merge_count || 0)}</p>
+            </div>
+          </div>
+          <div class="muted" style="margin-bottom:8px;">${escHtml(item.error || 'Conflict detected during replay.')}</div>
+          ${Array.isArray(item.conflict_details) && item.conflict_details.length ? `<ul>${item.conflict_details.map((detail) => `<li>${escHtml(detail)}</li>`).join('')}</ul>` : ''}
+          ${renderConflictValuePairs(item.payload || {}, currentValues)}
+          <div class="form-footer" style="margin-top:10px;">
+            <button type="button" class="secondary" data-admin-conflict-use="${escHtml(item.id)}">Use queued values in workspace</button>
+            <button type="button" class="secondary" data-admin-conflict-retry="${escHtml(item.id)}">Mark for retry</button>
+            <button type="button" class="secondary" data-admin-conflict-dismiss="${escHtml(item.id)}">Dismiss queued item</button>
+          </div>
+        </div>
+      `).join('');
+      setConflictsSummary(`${conflicts.length} admin conflict(s) need review. Compare queued values with the current workspace before replay.`, true);
     }
 
     function applyRoleAccess() {
@@ -355,6 +466,7 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
         if (e.assignmentsCount) e.assignmentsCount.textContent = String(state.counts.assignments);
         renderNotifications();
         const outboxSummary = window.YWIOutbox?.getActionSummary?.('admin') || { total: 0, conflicts: 0 };
+        renderConflictPanel();
         setSummary(state.manageLocked ? 'Read-only admin view loaded. Admin role is required for approval actions.' : `Admin view loaded.${outboxSummary.total ? ` Pending admin sync: ${outboxSummary.total} item(s), ${outboxSummary.conflicts || 0} conflict(s).` : ''}`);
       } catch (err) {
         setSummary(err?.message || 'Failed to load admin data.', true);
@@ -420,6 +532,21 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
       if (e.retrySyncBtn && e.retrySyncBtn.dataset.bound !== '1') {
         e.retrySyncBtn.dataset.bound = '1';
         e.retrySyncBtn.addEventListener('click', retryPendingAdminSync);
+      }
+      if (e.reloadConflictsBtn && e.reloadConflictsBtn.dataset.bound !== '1') {
+        e.reloadConflictsBtn.dataset.bound = '1';
+        e.reloadConflictsBtn.addEventListener('click', renderConflictPanel);
+      }
+      if (e.conflictsPanel && e.conflictsPanel.dataset.bound !== '1') {
+        e.conflictsPanel.dataset.bound = '1';
+        e.conflictsPanel.addEventListener('click', (event) => {
+          const useBtn = event.target.closest('[data-admin-conflict-use]');
+          if (useBtn) return hydrateQueuedAdminConflict(useBtn.getAttribute('data-admin-conflict-use'));
+          const retryBtn = event.target.closest('[data-admin-conflict-retry]');
+          if (retryBtn) return keepAdminConflict(retryBtn.getAttribute('data-admin-conflict-retry'));
+          const dismissBtn = event.target.closest('[data-admin-conflict-dismiss]');
+          if (dismissBtn) return dismissAdminConflict(dismissBtn.getAttribute('data-admin-conflict-dismiss'));
+        });
       }
     }
 
