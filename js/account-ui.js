@@ -44,7 +44,9 @@
         <div class="form-footer" style="margin-top:16px;">
           <button id="onboarding_open_settings" class="primary" type="button">Open Account Setup</button>
           <button id="onboarding_complete" class="secondary" type="button">Mark Onboarding Complete</button>
+          <button id="onboarding_run_session_health" class="secondary" type="button">Run Session Health Check</button>
         </div>
+        <div id="onboarding_session_health" class="notice" style="display:none;margin-top:12px;"></div>
       </div>
     `;
     const settings = document.getElementById('settings');
@@ -162,6 +164,8 @@
     onboardingNotice: document.getElementById('onboardingNotice'),
     onboardingOpenSettings: document.getElementById('onboarding_open_settings'),
     onboardingCompleteBtn: document.getElementById('onboarding_complete'),
+    onboardingSessionHealthBtn: document.getElementById('onboarding_run_session_health'),
+    onboardingSessionHealthNotice: document.getElementById('onboarding_session_health'),
     panel: document.getElementById('accountPanel'),
     setupNotice: document.getElementById('accountSetupNotice'),
     fullName: document.getElementById('account_full_name'),
@@ -668,6 +672,26 @@
     }
   }
 
+
+  async function runSessionHealthCheck() {
+    const restore = setBusy(els.onboardingSessionHealthBtn, 'Checking...');
+    try {
+      const resp = await api.accountSessionHealth();
+      if (!resp?.ok) throw new Error(resp?.error || 'Unable to run session health check.');
+      const parts = [];
+      parts.push(resp.is_authenticated ? 'Authenticated session detected.' : 'No authenticated session was found.');
+      if (resp.user_email) parts.push(`Auth email: ${resp.user_email}`);
+      if (resp.profile_email) parts.push(`Profile email: ${resp.profile_email}`);
+      if (resp.recovery_email) parts.push(`Recovery email: ${resp.recovery_email}`);
+      if (Array.isArray(resp.warnings) && resp.warnings.length) parts.push(`Warnings: ${resp.warnings.join(' | ')}`);
+      setNotice(els.onboardingSessionHealthNotice, parts.join(' '), false);
+    } catch (err) {
+      setNotice(els.onboardingSessionHealthNotice, err?.message || 'Unable to run session health check.', true);
+    } finally {
+      restore();
+    }
+  }
+
   async function logoutEverywhere() {
     try { await auth.logoutEverywhere(); } catch (err) { setNotice(els.summary, err?.message || 'Unable to log out everywhere.', true); }
   }
@@ -696,6 +720,7 @@
     if (els.logoutThisBtn) els.logoutThisBtn.addEventListener('click', logoutThisDevice);
     if (els.onboardingOpenSettings) els.onboardingOpenSettings.addEventListener('click', () => window.YWIRouter?.showSection?.('settings', { skipFocus: true }));
     if (els.onboardingCompleteBtn) els.onboardingCompleteBtn.addEventListener('click', completeOnboarding);
+    if (els.onboardingSessionHealthBtn) els.onboardingSessionHealthBtn.addEventListener('click', runSessionHealthCheck);
     if (els.reloadIdentityRequestsBtn) els.reloadIdentityRequestsBtn.addEventListener('click', loadIdentityChangeRequests);
     if (els.reloadNotificationsBtn) els.reloadNotificationsBtn.addEventListener('click', loadNotifications);
     if (els.retrySyncBtn) els.retrySyncBtn.addEventListener('click', retryPendingSync);

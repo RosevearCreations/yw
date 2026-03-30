@@ -1,3 +1,17 @@
+## 2026-03-30 session-health, staging-smoke, and auth-runbook pass
+- Added a server-backed `session_health` action in `account-maintenance` so signed-in onboarding and recovery users can verify Auth email, profile email, recovery email, password-ready state, and onboarding completion from the live shell.
+- Added an onboarding **Run Session Health Check** control so auth/recovery problems can be diagnosed without opening DevTools.
+- Added `accountSessionHealth()` to the frontend API layer and kept the result visible in the onboarding screen.
+- Added `.github/workflows/deploy-smoke-check.yml` so shell checks now validate the single-H1 rule, required client hooks, recovery redirect handling, and optional staging probes when secrets are configured.
+- Added `RUNBOOK_AUTH_BOOTSTRAP.md` to move bootstrap/reset handling toward a safer operational runbook instead of relying only on embedded notes.
+- No new SQL migration was required. `sql/000_full_schema_reference.sql` remains the schema snapshot and `055_storage_onboarding_identity_change_and_bootstrap.sql` remains the latest live migration.
+
+### Best next steps after the 2026-03-30 session-health pass
+1. Add a true offline retry queue for equipment evidence uploads so captured photos/signatures can replay after reconnect.
+2. Add dedicated admin review comments and filters for account identity requests and evidence records.
+3. Add staging smoke checks that exercise a real signed-in worker journey end-to-end.
+4. Continue reducing duplicated selectors/catalog data by moving more reference values from JSON into database-backed catalogs.
+
 # DATABASE_STRUCTURE.md
 
 ## 2026-03-30 conflict save-back, bundled support export, authenticated smoke-check, and evidence relabel pass

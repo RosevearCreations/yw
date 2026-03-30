@@ -231,6 +231,10 @@
     return manageAdminEntity({ entity: 'profile', action: 'self_update', ...payload });
   }
 
+  async function accountSessionHealth() {
+    return accountRecoveryAction({ action: 'session_health' });
+  }
+
   async function bootstrapAdmin(payload = {}) {
     return jsonFetch(getEndpoints().BOOTSTRAP_ADMIN_URL, { body: payload });
   }
@@ -347,6 +351,7 @@
     uploadEquipmentEvidenceAsset,
     uploadEquipmentEvidenceBatch,
     saveMyProfile,
+    accountSessionHealth,
     bootstrapAdmin,
     uploadImageViaFunction,
     uploadImagesForSubmission,
