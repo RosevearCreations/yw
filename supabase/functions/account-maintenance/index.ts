@@ -59,6 +59,15 @@ function isValidProvince(value: string) {
   return /^[A-Za-z][A-Za-z ]{1,30}$/.test(clean);
 }
 
+
+function pickRecoveryEmail(profile: Record<string, unknown> | null | undefined) {
+  const recoveryEmail = String(profile?.recovery_email || '').trim().toLowerCase();
+  const primaryEmail = String(profile?.email || '').trim().toLowerCase();
+  if (recoveryEmail && isValidEmail(recoveryEmail)) return recoveryEmail;
+  if (primaryEmail && isValidEmail(primaryEmail)) return primaryEmail;
+  return '';
+}
+
 function isLikelyAddress(value: string) {
   const clean = String(value || '').trim();
   if (!clean) return true;
@@ -174,8 +183,9 @@ serve(async (req) => {
   if (action === 'lookup_account_help' || action === 'find_login') {
     try {
       const profile = await findRecoveryProfile(supabase, body);
-      await logRecoveryRequest(supabase, { lookup_kind: 'lookup', employee_number: body.employee_number || null, phone_last4: body.phone_last4 || null, last_name: body.last_name || null, matched_profile_id: profile.id, masked_email: maskEmail(profile.email || ''), masked_username: maskUsername(profile.username || ''), request_status: 'matched' });
-      return Response.json({ ok: true, masked_email: maskEmail(profile.email || ''), masked_username: maskUsername(profile.username || '') }, { headers: corsHeaders });
+      const recoveryTarget = pickRecoveryEmail(profile);
+      await logRecoveryRequest(supabase, { lookup_kind: 'lookup', employee_number: body.employee_number || null, phone_last4: body.phone_last4 || null, last_name: body.last_name || null, matched_profile_id: profile.id, masked_email: maskEmail(recoveryTarget || String(profile.email || '')), masked_username: maskUsername(profile.username || ''), request_status: 'matched' });
+      return Response.json({ ok: true, masked_email: maskEmail(recoveryTarget || String(profile.email || '')), masked_username: maskUsername(profile.username || '') }, { headers: corsHeaders });
     } catch (err) {
       await logRecoveryRequest(supabase, { lookup_kind: 'lookup', employee_number: body.employee_number || null, phone_last4: body.phone_last4 || null, last_name: body.last_name || null, request_status: 'failed', notes: String(err?.message || err) });
       return Response.json({ ok: false, error: err?.message || 'Account lookup failed.' }, { status: 400, headers: corsHeaders });
@@ -185,11 +195,13 @@ serve(async (req) => {
   if (action === 'send_recovery_email') {
     try {
       const profile = await findRecoveryProfile(supabase, body);
+      const targetEmail = pickRecoveryEmail(profile);
+      if (!targetEmail) throw new Error('No valid recovery email is available for this account.');
       const redirectTo = String(body.redirect_to || `${Deno.env.get('SITE_URL') || ''}`).trim() || undefined;
-      const { error } = await supabase.auth.resetPasswordForEmail(profile.email, redirectTo ? { redirectTo } : undefined);
+      const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, redirectTo ? { redirectTo } : undefined);
       if (error) throw error;
-      await logRecoveryRequest(supabase, { lookup_kind: 'send_recovery_email', employee_number: body.employee_number || null, phone_last4: body.phone_last4 || null, last_name: body.last_name || null, matched_profile_id: profile.id, masked_email: maskEmail(profile.email || ''), masked_username: maskUsername(profile.username || ''), request_status: 'sent' });
-      return Response.json({ ok: true, message: `Recovery email sent to ${maskEmail(profile.email || '')}.` }, { headers: corsHeaders });
+      await logRecoveryRequest(supabase, { lookup_kind: 'send_recovery_email', employee_number: body.employee_number || null, phone_last4: body.phone_last4 || null, last_name: body.last_name || null, matched_profile_id: profile.id, masked_email: maskEmail(targetEmail), masked_username: maskUsername(profile.username || ''), request_status: 'sent' });
+      return Response.json({ ok: true, message: `Recovery email sent to ${maskEmail(targetEmail)}.` }, { headers: corsHeaders });
     } catch (err) {
       await logRecoveryRequest(supabase, { lookup_kind: 'send_recovery_email', employee_number: body.employee_number || null, phone_last4: body.phone_last4 || null, last_name: body.last_name || null, request_status: 'failed', notes: String(err?.message || err) });
       return Response.json({ ok: false, error: err?.message || 'Recovery email failed.' }, { status: 400, headers: corsHeaders });

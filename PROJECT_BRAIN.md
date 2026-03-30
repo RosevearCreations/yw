@@ -330,3 +330,18 @@ This pass focused on the app-shell and auth startup problems that were leaving u
 - Removed a duplicated Deploy Smoke Check block from the Admin screen and refreshed the docs/schema snapshot notes.
 - No new SQL migration was required for this pass; schema remains current through `055_storage_onboarding_identity_change_and_bootstrap.sql`.
 
+## 2026-03-30 auth recovery, smoke-check export, and evidence bulk-replace pass
+- Fixed the Admin startup issue by exporting `runSmokeCheck` through `window.YWIAPI`, so the Deploy Smoke Check panel no longer crashes when clicked.
+- Fixed account recovery so password-reset emails prefer `recovery_email` over stale `profiles.email` values when available, and account lookup masks the same target email.
+- Updated the recovery redirect target so reset links return users to `#settings` in the current shell instead of drifting into an older cached route.
+- Added diagnostics export from the in-app banner for remote support and troubleshooting.
+- Added multi-file bulk replace support for selected equipment evidence assets, with visible progress text during replacement.
+- Added a GitHub Actions smoke-check workflow that verifies the shell, recovery hooks, smoke-check export, and the single-H1 rule on the exposed page.
+- No new SQL migration was required. `sql/000_full_schema_reference.sql` remains the current schema snapshot and `055_storage_onboarding_identity_change_and_bootstrap.sql` remains the latest live migration.
+
+### Remaining best next steps after the 2026-03-30 pass
+1. Add backend-assisted field-by-field save-back for conflict merges so resolved drafts can be pushed without waiting for replay.
+2. Extend the automated smoke check to run authenticated worker/admin boot tests against a staging deployment.
+3. Add evidence relabel/move actions and richer thumbnail progress bars for larger replacement batches.
+4. Add a bundled support export that combines diagnostics, smoke-check results, runtime config state, and module boot timing.
+

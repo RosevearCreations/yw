@@ -361,6 +361,50 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
       }
     }
 
+
+    function renderSmokeChecks(result = {}) {
+      const e = els();
+      const checks = Array.isArray(result?.checks) ? result.checks : [];
+      if (e.smokeBody) {
+        e.smokeBody.innerHTML = checks.map((row) => `
+          <tr>
+            <td>${escHtml(row.scope || '')}</td>
+            <td>${row.ok ? 'OK' : 'Issue'}</td>
+            <td>${escHtml(row.status ?? '')}</td>
+            <td>${escHtml(row.message || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="4" class="muted">Run the smoke check to verify the active shell and endpoint wiring.</td></tr>';
+      }
+      if (e.smokeSummary) {
+        if (!checks.length) {
+          e.smokeSummary.style.display = 'none';
+          e.smokeSummary.textContent = '';
+        } else {
+          e.smokeSummary.style.display = 'block';
+          e.smokeSummary.dataset.kind = result?.ok === false ? 'error' : 'info';
+          const failed = checks.filter((row) => !row.ok).length;
+          e.smokeSummary.textContent = failed ? `Smoke check found ${failed} issue(s).` : 'Smoke check passed for the current shell.';
+        }
+      }
+    }
+
+    async function onSmokeCheck() {
+      const runCheck = window.YWIAPI?.runSmokeCheck;
+      if (!runCheck) {
+        setSummary('Smoke check is unavailable in this build.', true);
+        return;
+      }
+      try {
+        setSummary('Running deploy smoke check…');
+        const result = await runCheck();
+        renderSmokeChecks(result);
+        setSummary(result?.ok ? 'Smoke check passed.' : 'Smoke check found one or more issues.', !result?.ok);
+      } catch (err) {
+        renderSmokeChecks({ ok: false, checks: [{ scope: 'smoke-check', ok: false, message: String(err?.message || err) }] });
+        setSummary(err?.message || 'Smoke check failed.', true);
+      }
+    }
+
     function clearDirectory() {
       state.notifications = [];
       renderNotifications();
@@ -415,7 +459,7 @@ ${state.manageLocked ? `<span class="muted">View only</span>` : `
       }
       if (e.smokeBtn && e.smokeBtn.dataset.bound !== '1') {
         e.smokeBtn.dataset.bound = '1';
-        e.smokeBtn.addEventListener('click', runSmokeCheck);
+        e.smokeBtn.addEventListener('click', onSmokeCheck);
       }
       if (e.retrySyncBtn && e.retrySyncBtn.dataset.bound !== '1') {
         e.retrySyncBtn.dataset.bound = '1';

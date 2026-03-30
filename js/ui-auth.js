@@ -337,7 +337,7 @@
     const api = window.YWIAPI;
     const restore = setBusy(els.accountRecoverySendBtn, 'Sending...');
     try {
-      const payload = await api.accountRecoveryAction({ action: 'send_recovery_email', ...getRecoveryPayload(), redirect_to: `${window.location.origin}/` });
+      const payload = await api.accountRecoveryAction({ action: 'send_recovery_email', ...getRecoveryPayload(), redirect_to: `${window.location.origin}/#settings` });
       setRecoveryResult(payload?.message || 'Recovery email sent.', false);
     } catch (err) {
       setRecoveryResult(err?.message || 'Recovery email failed.', true);

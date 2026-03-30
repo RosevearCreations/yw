@@ -82,6 +82,7 @@ function ensureDiagnosticsPanel() {
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button id="diagnosticsRetryBtn" class="secondary" type="button">Retry protected screens</button>
+        <button id="diagnosticsExportBtn" class="secondary" type="button">Export diagnostics</button>
         <button id="diagnosticsDismissBtn" class="secondary" type="button">Dismiss</button>
       </div>
     </div>
@@ -94,6 +95,21 @@ function ensureDiagnosticsPanel() {
   }
   panel.querySelector('#diagnosticsDismissBtn')?.addEventListener('click', () => {
     panel.style.display = 'none';
+  });
+  panel.querySelector('#diagnosticsExportBtn')?.addEventListener('click', () => {
+    const payload = {
+      exported_at: new Date().toISOString(),
+      location: window.location.href,
+      user_agent: navigator.userAgent,
+      diagnostics: diagnostics.items.slice()
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `ywi-diagnostics-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
   });
   panel.querySelector('#diagnosticsRetryBtn')?.addEventListener('click', () => {
     panel.style.display = 'none';
@@ -353,7 +369,7 @@ function initAdminActions() {
 
 async function initializeAppShell() {
   bindDiagnosticsEvents();
-window.YWIAppDiagnostics = { getItems: () => diagnostics.items.slice(), clear: renderDiagnostics };
+window.YWIAppDiagnostics = { getItems: () => diagnostics.items.slice(), clear: renderDiagnostics, exportItems: () => diagnostics.items.slice() };
   ensureDiagnosticsPanel();
   applyDateFallback();
   outbox()?.bindRetryButtons?.({ isAuthenticated: () => appState.isAuthenticated, sendToFunction: api()?.sendToFunction, uploadImagesForSubmission: api()?.uploadImagesForSubmission });

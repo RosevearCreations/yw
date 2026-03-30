@@ -833,6 +833,7 @@
       e.eqGallery.innerHTML = `
         <div class="form-footer" style="margin-bottom:10px;">
           <button type="button" class="secondary" data-gallery-select-all="1">Select all</button>
+          <label class="secondary" style="cursor:pointer;">Replace selected<input type="file" accept="image/*" multiple data-gallery-bulk-replace="${escHtml(row.id)}" style="display:none;" /></label>
           <button type="button" class="secondary" data-gallery-bulk-delete="${escHtml(row.id)}">Delete selected</button>
         </div>
       ` + row.evidence_assets.map((asset) => `
@@ -850,7 +851,7 @@
           </div>
         </div>
       `).join('');
-      setNotice(e.eqGallerySummary, `Viewing ${row.evidence_assets.length} evidence asset(s) for ${row.equipment_code || row.equipment_item_id}. Use Select all and Delete selected for bulk cleanup.`);
+      setNotice(e.eqGallerySummary, `Viewing ${row.evidence_assets.length} evidence asset(s) for ${row.equipment_code || row.equipment_item_id}. Use Select all, Replace selected, or Delete selected for bulk cleanup.`);
     }
 
     function renderEquipment() {
@@ -923,18 +924,48 @@
       renderGallery(signoutId || state.selectedGallerySignoutId);
     }
 
+
     async function replaceEvidenceAsset(inputEl) {
       const file = inputEl?.files?.[0];
       if (!file) return;
       const assetId = Number(inputEl.dataset.replaceEvidence || 0);
       const signoutId = Number(inputEl.dataset.signoutId || 0);
       if (!assetId || !signoutId) return;
-      setNotice(els().eqGallerySummary, 'Replacing evidence asset… Upload in progress.');
+      setNotice(els().eqGallerySummary, `Replacing evidence asset… Uploading 1 of 1.`);
       await api.manageJobsEntity({ entity: 'equipment_evidence_asset', action: 'delete', asset_id: assetId });
       await api.uploadEquipmentEvidenceBatch([{ signoutId, stage: inputEl.dataset.stage || 'return', evidenceKind: inputEl.dataset.kind || 'photo', signerRole: inputEl.dataset.role || '', caption: 'Replacement evidence upload', file }]);
       await loadData();
       renderGallery(signoutId);
       setNotice(els().eqGallerySummary, 'Evidence asset replaced successfully.');
+    }
+
+    async function bulkReplaceEvidenceAssets(inputEl) {
+      const files = Array.from(inputEl?.files || []);
+      const signoutId = Number(inputEl.dataset.galleryBulkReplace || 0);
+      const selectedInputs = Array.from(document.querySelectorAll('[data-gallery-asset]:checked'));
+      const selectedIds = selectedInputs.map((el) => Number(el.value || el.dataset.galleryAsset || 0)).filter(Boolean);
+      if (!signoutId || !files.length || !selectedIds.length) {
+        setNotice(els().eqGallerySummary, 'Select one or more evidence assets and choose one or more replacement files first.');
+        return;
+      }
+      const row = state.signouts.find((item) => Number(item.id) === signoutId);
+      const assets = Array.isArray(row?.evidence_assets) ? row.evidence_assets.filter((asset) => selectedIds.includes(Number(asset.id))) : [];
+      if (!assets.length) {
+        setNotice(els().eqGallerySummary, 'No matching evidence assets were found for bulk replace.');
+        return;
+      }
+      setNotice(els().eqGallerySummary, `Replacing ${assets.length} evidence asset(s)…`);
+      for (let i = 0; i < assets.length; i += 1) {
+        const asset = assets[i];
+        const file = files[Math.min(i, files.length - 1)];
+        setNotice(els().eqGallerySummary, `Replacing ${i + 1} of ${assets.length} evidence asset(s)…`);
+        await api.manageJobsEntity({ entity: 'equipment_evidence_asset', action: 'delete', asset_id: asset.id });
+        await api.uploadEquipmentEvidenceBatch([{ signoutId, stage: asset.stage || 'return', evidenceKind: asset.evidence_kind || 'photo', signerRole: asset.signer_role || '', caption: asset.caption || 'Bulk replacement evidence upload', file }]);
+      }
+      await loadData();
+      renderGallery(signoutId);
+      setNotice(els().eqGallerySummary, `Bulk evidence replace complete for ${assets.length} asset(s).`);
+      inputEl.value = '';
     }
 
     async function loadData() {

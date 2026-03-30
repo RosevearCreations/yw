@@ -1,3 +1,4 @@
+-- 2026-03-30 note: Auth recovery now prefers profiles.recovery_email when sending password-reset emails; no new migration was required for this behavior.
 -- 2026-03-29 diagnostics and identity-sync pass
 -- No schema changes in this pass. This file is refreshed as the current reference snapshot after the diagnostics/auth-sync update.
 

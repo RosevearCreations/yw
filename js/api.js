@@ -334,6 +334,7 @@
     uploadImageViaFunction,
     uploadImagesForSubmission,
     storagePreviewUrl,
+    runSmokeCheck,
     diagnoseConnections
   };
 })();
