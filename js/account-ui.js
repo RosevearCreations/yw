@@ -122,19 +122,6 @@
         <div class="admin-panel-block" style="margin-top:16px;">
           <div class="section-heading">
             <div>
-              <h3 style="margin:0;">Pending Sync Conflict Review</h3>
-              <p class="section-subtitle">Compare queued account changes against the current form and choose what to keep.</p>
-            </div>
-            <div class="admin-heading-actions">
-              <button id="account_reload_conflicts" class="secondary" type="button">Refresh</button>
-            </div>
-          </div>
-          <div id="account_conflicts_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
-          <div id="account_conflicts_panel" class="stack"></div>
-        </div>
-        <div class="admin-panel-block" style="margin-top:16px;">
-          <div class="section-heading">
-            <div>
               <h3 style="margin:0;">Identity Change History</h3>
               <p class="section-subtitle">Track pending, approved, or rejected username and email change requests.</p>
             </div>
@@ -201,9 +188,6 @@
     notificationsBody: document.querySelector('#account_notifications_table tbody'),
     retrySyncBtn: document.getElementById('account_retry_sync'),
     reloadNotificationsBtn: document.getElementById('account_reload_notifications'),
-    reloadConflictsBtn: document.getElementById('account_reload_conflicts'),
-    conflictsSummary: document.getElementById('account_conflicts_summary'),
-    conflictsPanel: document.getElementById('account_conflicts_panel'),
     identityRequestsSummary: document.getElementById('account_identity_requests_summary'),
     identityRequestsBody: document.querySelector('#account_identity_requests_table tbody')
   };
@@ -237,108 +221,6 @@
 
   function setNotificationsSummary(text = '', isError = false) {
     setNotice(els.notificationsSummary, text, isError);
-  }
-
-
-  function setConflictsSummary(text = '', isError = false) {
-    setNotice(els.conflictsSummary, text, isError);
-  }
-
-  function collectCurrentAccountValues() {
-    return {
-      full_name: els.fullName?.value?.trim?.() || '',
-      username: els.username?.value?.trim?.() || '',
-      recovery_email: els.recoveryEmail?.value?.trim?.() || '',
-      requested_username: els.requestedUsername?.value?.trim?.() || '',
-      requested_email: els.requestedEmail?.value?.trim?.() || '',
-      phone: els.phone?.value?.trim?.() || '',
-      address_line1: els.address1?.value?.trim?.() || '',
-      address_line2: els.address2?.value?.trim?.() || '',
-      city: els.city?.value?.trim?.() || '',
-      province: els.province?.value?.trim?.() || '',
-      postal_code: els.postalCode?.value?.trim?.() || ''
-    };
-  }
-
-  function renderConflictValuePairs(localPayload = {}, currentValues = {}) {
-    const keys = Array.from(new Set([...Object.keys(localPayload || {}), ...Object.keys(currentValues || {})]));
-    const changed = keys.filter((key) => String(localPayload?.[key] ?? '') !== String(currentValues?.[key] ?? ''));
-    if (!changed.length) return '<div class="muted">No field differences were detected. This conflict may only need a retry or dismissal.</div>';
-    return `
-      <div class="table-scroll">
-        <table>
-          <thead><tr><th>Field</th><th>Queued value</th><th>Current form value</th></tr></thead>
-          <tbody>
-            ${changed.map((key) => `<tr><td>${escHtml(key)}</td><td>${escHtml(localPayload?.[key] || '—')}</td><td>${escHtml(currentValues?.[key] || '—')}</td></tr>`).join('')}
-          </tbody>
-        </table>
-      </div>
-    `;
-  }
-
-  function applyQueuedAccountConflict(itemId) {
-    const item = (window.YWIOutbox?.getActionItems?.() || []).find((row) => String(row.id) === String(itemId));
-    if (!item) return;
-    const payload = item.payload || {};
-    const assign = (el, value) => { if (el) el.value = value || ''; };
-    assign(els.fullName, payload.full_name);
-    assign(els.username, payload.username);
-    assign(els.recoveryEmail, payload.recovery_email);
-    assign(els.requestedUsername, payload.requested_username);
-    assign(els.requestedEmail, payload.requested_email);
-    assign(els.phone, payload.phone);
-    assign(els.address1, payload.address_line1);
-    assign(els.address2, payload.address_line2);
-    assign(els.city, payload.city);
-    assign(els.province, payload.province);
-    assign(els.postalCode, payload.postal_code);
-    saveDraft();
-    setNotice(els.summary, 'Queued values were copied into the current form. Review and save or retry sync when ready.', false);
-    renderConflictPanel();
-  }
-
-  function dismissAccountConflict(itemId) {
-    window.YWIOutbox?.removeActionItem?.(itemId);
-    renderConflictPanel();
-    const summary = window.YWIOutbox?.getActionSummary?.('account') || { total: 0, conflicts: 0 };
-    setConflictsSummary(summary.conflicts ? `${summary.conflicts} account conflict(s) still need review.` : 'No pending account conflicts.');
-  }
-
-  function keepQueuedAccountConflict(itemId) {
-    window.YWIOutbox?.updateActionItem?.(itemId, { status: 'pending', error: '', conflict_details: [] });
-    renderConflictPanel();
-    setConflictsSummary('Conflict marked for retry. Use Retry Pending Sync to send it again.', false);
-  }
-
-  function renderConflictPanel() {
-    if (!els.conflictsPanel) return;
-    const summary = window.YWIOutbox?.getActionSummary?.('account') || { conflicts: 0, items: [] };
-    const conflicts = (summary.items || []).filter((item) => item.status === 'conflict');
-    if (!conflicts.length) {
-      els.conflictsPanel.innerHTML = '<div class="muted">No pending account conflicts.</div>';
-      setConflictsSummary('No pending account conflicts.');
-      return;
-    }
-    const currentValues = collectCurrentAccountValues();
-    els.conflictsPanel.innerHTML = conflicts.map((item) => `
-      <div class="admin-panel-block" style="margin-top:12px;">
-        <div class="section-heading">
-          <div>
-            <h4 style="margin:0;">${escHtml(item.label || item.action_type || 'Queued account action')}</h4>
-            <p class="section-subtitle">Queued ${escHtml(item.queued_at || '')} • attempts ${escHtml(item.attempts || 0)} • merges ${escHtml(item.merge_count || 0)}</p>
-          </div>
-        </div>
-        <div class="muted" style="margin-bottom:8px;">${escHtml(item.error || 'Conflict detected during replay.')}</div>
-        ${Array.isArray(item.conflict_details) && item.conflict_details.length ? `<ul>${item.conflict_details.map((detail) => `<li>${escHtml(detail)}</li>`).join('')}</ul>` : ''}
-        ${renderConflictValuePairs(item.payload || {}, currentValues)}
-        <div class="form-footer" style="margin-top:10px;">
-          <button type="button" class="secondary" data-account-conflict-use="${escHtml(item.id)}">Use queued values in form</button>
-          <button type="button" class="secondary" data-account-conflict-retry="${escHtml(item.id)}">Mark for retry</button>
-          <button type="button" class="secondary" data-account-conflict-dismiss="${escHtml(item.id)}">Dismiss queued item</button>
-        </div>
-      </div>
-    `).join('');
-    setConflictsSummary(`${conflicts.length} account conflict(s) need review. Compare the queued values with the current form below.`, true);
   }
 
   async function loadNotifications() {
@@ -384,7 +266,6 @@
       await auth.refresh();
       await loadIdentityChangeRequests();
       await loadNotifications();
-      renderConflictPanel();
       setNotificationsSummary(result?.remaining ? `Retried sync. ${result.remaining} item(s) still need attention.` : 'All pending account sync items were sent.');
     } catch (err) {
       setNotificationsSummary(err?.message || 'Unable to retry pending account sync.', true);
@@ -528,7 +409,6 @@
     setNotice(els.onboardingNotice, needsOnboarding ? 'New users should finish onboarding before continuing into the rest of the app.' : '');
     loadIdentityChangeRequests();
     loadNotifications();
-    renderConflictPanel();
   }
 
   async function saveProfile() {
@@ -720,19 +600,7 @@
     if (els.onboardingCompleteBtn) els.onboardingCompleteBtn.addEventListener('click', completeOnboarding);
     if (els.reloadIdentityRequestsBtn) els.reloadIdentityRequestsBtn.addEventListener('click', loadIdentityChangeRequests);
     if (els.reloadNotificationsBtn) els.reloadNotificationsBtn.addEventListener('click', loadNotifications);
-    if (els.reloadConflictsBtn) els.reloadConflictsBtn.addEventListener('click', renderConflictPanel);
     if (els.retrySyncBtn) els.retrySyncBtn.addEventListener('click', retryPendingSync);
-    if (els.conflictsPanel && els.conflictsPanel.dataset.bound !== '1') {
-      els.conflictsPanel.dataset.bound = '1';
-      els.conflictsPanel.addEventListener('click', (event) => {
-        const useBtn = event.target.closest('[data-account-conflict-use]');
-        if (useBtn) return applyQueuedAccountConflict(useBtn.getAttribute('data-account-conflict-use'));
-        const retryBtn = event.target.closest('[data-account-conflict-retry]');
-        if (retryBtn) return keepQueuedAccountConflict(retryBtn.getAttribute('data-account-conflict-retry'));
-        const dismissBtn = event.target.closest('[data-account-conflict-dismiss]');
-        if (dismissBtn) return dismissAccountConflict(dismissBtn.getAttribute('data-account-conflict-dismiss'));
-      });
-    }
   }
 
   bind();

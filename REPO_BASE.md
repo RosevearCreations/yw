@@ -25,17 +25,13 @@
 - `supabase/functions/`
 
 ## Current repo direction
-- keep database reference and markdown aligned on every pass
-- continue database-first reduction of duplicate failure points
-- improve offline replay and conflict resolution workflows
-- strengthen diagnostics and release smoke-check tooling
+Prepare the app for:
+- richer people hierarchy
+- scoped visibility
+- admin-maintained populated reference data
+- jobs and equipment planning
 
-## Files touched in the current pass
-- `app.js`
-- `js/outbox.js`
-- `js/account-ui.js`
-- `js/admin-ui.js`
-- markdown and schema reference notes
+
 ## Latest security and workflow pass
 
 This pass adds password/account maintenance improvements, email verification resend, phone verification request workflow, direct-report crew filtering, equipment checkout/return workflow, reservation enforcement hooks, and a refreshed full schema reference. New backend pieces include `supabase/functions/account-maintenance`, expanded `jobs-manage`, expanded `jobs-directory`, and updated `admin-directory`. New SQL references include `046_account_validation_and_notifications.sql` and `047_password_validation_equipment_workflow.sql`.

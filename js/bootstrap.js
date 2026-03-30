@@ -10,6 +10,8 @@
 (function () {
   const DEFAULT_SUPABASE_URL = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
   const AUTH_RESOLUTION_TIMEOUT_MS = 12000;
+  const SUPABASE_AUTH_CALL_TIMEOUT_MS = 5000;
+  const PROFILE_LOOKUP_TIMEOUT_MS = 5000;
 
   function getRuntimeConfig() {
     return window.YWI_RUNTIME_CONFIG || window.__YWI_RUNTIME_CONFIG || {};
@@ -78,6 +80,13 @@
 
   function safeText(value) {
     return String(value ?? '').trim();
+  }
+
+  function withTimeout(promise, timeoutMs, message) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error(message || `Timed out after ${timeoutMs} ms.`)), timeoutMs))
+    ]);
   }
 
   function getRoleLabel(role) {
@@ -209,7 +218,7 @@
       state.profile = null;
       state.isAuthenticated = false;
       state.authFlow = 'idle';
-      state.authError = state.authError || 'Session restore took too long. You can sign in again below.';
+      state.authError = state.authError || 'Session restore took too long. The sign-in form is ready below. Hard refresh once if cached files are stale, then sign in again.';
       state.initialized = true;
       dispatch('ywi:app-error', { scope: 'auth-restore', message: state.authError });
       dispatch('ywi:boot-ready', { state: getState(), timedOut: true });
@@ -251,7 +260,11 @@
   async function fetchProfile(userId, sb) {
     if (!userId || !sb) return null;
     try {
-      const { data, error } = await sb.from('profiles').select('*').eq('id', userId).maybeSingle();
+      const { data, error } = await withTimeout(
+        sb.from('profiles').select('*').eq('id', userId).maybeSingle(),
+        PROFILE_LOOKUP_TIMEOUT_MS,
+        'Profile lookup timed out.'
+      );
       if (error) {
         console.warn('Profile lookup failed:', error.message);
         return null;
@@ -282,7 +295,11 @@
     const authFlow = safeText(params.type).toLowerCase() || 'signin';
 
     if (hasAuthCode(params)) {
-      const { data, error } = await sb.auth.exchangeCodeForSession(params.code);
+      const { data, error } = await withTimeout(
+        sb.auth.exchangeCodeForSession(params.code),
+        SUPABASE_AUTH_CALL_TIMEOUT_MS,
+        'Session restore from email link timed out.'
+      );
       if (error) {
         console.error('exchangeCodeForSession failed:', error.message);
         await applySession(null, error.message || params.error_description || '', authFlow, sb);
@@ -296,10 +313,13 @@
     }
 
     if (hasTokenSet(params)) {
-      const { data, error } = await sb.auth.setSession({
+      const { data, error } = await withTimeout(sb.auth.setSession({
         access_token: params.access_token,
         refresh_token: params.refresh_token
-      });
+      }),
+        SUPABASE_AUTH_CALL_TIMEOUT_MS,
+        'Session restore from tokens timed out.'
+      );
       if (error) {
         console.error('setSession failed:', error.message);
         await applySession(null, error.message || params.error_description || '', authFlow, sb);
@@ -319,7 +339,11 @@
       return;
     }
 
-    const { data } = await sb.auth.getSession();
+    const { data } = await withTimeout(
+      sb.auth.getSession(),
+      SUPABASE_AUTH_CALL_TIMEOUT_MS,
+      'Session check timed out.'
+    );
     await applySession(data?.session || null, '', 'idle', sb);
     if (!window.location.hash && state.isAuthenticated) cleanUrlAfterAuth(routeHash || '#toolbox');
   }

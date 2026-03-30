@@ -46,6 +46,13 @@
     return String(value ?? '').trim();
   }
 
+  function withTimeout(promise, timeoutMs, message) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error(message || `Timed out after ${timeoutMs} ms.`)), timeoutMs))
+    ]);
+  }
+
   function getRedirectUrl() {
     return `${window.location.origin}/`;
   }
@@ -124,11 +131,11 @@
     const cleanLogin = safeText(login);
     if (!cleanLogin || cleanLogin.includes('@')) return cleanLogin;
     try {
-      const res = await fetch(getAccountFunctionUrl(), {
+      const res = await withTimeout(fetch(getAccountFunctionUrl(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'resolve_login_identifier', login: cleanLogin })
-      });
+      }), 8000, 'Login lookup timed out.');
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(payload?.error || 'Unable to resolve login identifier.');
       return safeText(payload?.email || cleanLogin);
@@ -155,7 +162,11 @@
     if (!cleanLogin || !cleanPassword) throw new Error('Email/username and password are required.');
     const resolvedEmail = await resolveLoginIdentifier(cleanLogin);
     const client = requireClient();
-    const { data, error } = await client.auth.signInWithPassword({ email: resolvedEmail, password: cleanPassword });
+    const { data, error } = await withTimeout(
+      client.auth.signInWithPassword({ email: resolvedEmail, password: cleanPassword }),
+      12000,
+      'Password sign-in timed out. Check the connection, then try again.'
+    );
     if (error) throw error;
     await applySession(data?.session || null);
     state.authError = '';
@@ -170,7 +181,11 @@
     if (!cleanEmail) throw new Error('Email or username is required.');
     const resolvedEmail = await resolveLoginIdentifier(cleanEmail);
     const client = requireClient();
-    const { error } = await client.auth.resetPasswordForEmail(resolvedEmail, { redirectTo: getRedirectUrl() + '#onboarding' });
+    const { error } = await withTimeout(
+      client.auth.resetPasswordForEmail(resolvedEmail, { redirectTo: getRedirectUrl() + '#onboarding' }),
+      12000,
+      'Password reset request timed out. Please try again.'
+    );
     if (error) throw error;
     return true;
   }

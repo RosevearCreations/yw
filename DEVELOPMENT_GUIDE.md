@@ -1,16 +1,4 @@
-# Development Guide
-
-## 2026-03-29 conflict-review and diagnostics-timing pass
-- Added side-by-side conflict review panels in Settings and Admin.
-- Added local conflict controls to copy queued values into the active form/workspace, mark a conflict for retry, or dismiss it from the action outbox.
-- Added per-module startup timing capture in the diagnostics system so support issues show elapsed module boot time in-app.
-- No new SQL migration was required. Keep `sql/000_full_schema_reference.sql` as the latest schema snapshot and `055_storage_onboarding_identity_change_and_bootstrap.sql` as the latest live migration.
-
-### Best next steps
-1. Add true field-by-field merge and save-back actions for conflicted queued drafts.
-2. Add multi-file bulk replace and richer upload progress bars in the equipment evidence gallery.
-3. Automate deploy smoke checks in CI/CD.
-4. Add exportable diagnostics traces for support and remote troubleshooting.
+Enter next development steps here
 
 ## 2026-03-26 security/account/equipment reliability pass
 - Switched the app toward a true account-setup flow after magic-link validation or password recovery.

@@ -1,10 +1,10 @@
 # Deployment Guide
 
 ## Apply SQL in order
-Run the newest files after the older schema files until the live database is current through:
-- `055_storage_onboarding_identity_change_and_bootstrap.sql`
-
-Do not run `sql/000_full_schema_reference.sql` over an existing live database. Keep it as the reference snapshot only.
+Run the newest files after the older schema files:
+- `043_user_hierarchy_and_strengths.sql`
+- `044_jobs_equipment_and_reservations.sql`
+- `045_directory_views_and_scope_helpers.sql`
 
 ## Deploy Edge Functions
 Deploy or update:
@@ -14,20 +14,10 @@ Deploy or update:
 - `admin-directory`
 - `jobs-directory`
 - `jobs-manage`
-- `account-maintenance`
-- `bootstrap-admin`
-- `upload-equipment-evidence`
 - `resend-email`
 - `review-submission`
 - `submission-detail`
 - `upload-image`
-
-## Deploy frontend shell
-Refresh the frontend bundle that includes:
-- `app.js`
-- `js/outbox.js`
-- `js/account-ui.js`
-- `js/admin-ui.js`
 
 ## Test after deploy
 - password login
@@ -37,8 +27,8 @@ Refresh the frontend bundle that includes:
 - admin profile/site save
 - jobs load/save
 - equipment load/save
-- queued account/admin conflict review panels load correctly
-- diagnostics banner stays empty on a clean authenticated boot
+
+
 ## Latest security and workflow pass
 
 This pass adds password/account maintenance improvements, email verification resend, phone verification request workflow, direct-report crew filtering, equipment checkout/return workflow, reservation enforcement hooks, and a refreshed full schema reference. New backend pieces include `supabase/functions/account-maintenance`, expanded `jobs-manage`, expanded `jobs-directory`, and updated `admin-directory`. New SQL references include `046_account_validation_and_notifications.sql` and `047_password_validation_equipment_workflow.sql`.

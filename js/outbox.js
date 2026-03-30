@@ -173,26 +173,6 @@
     };
   }
 
-
-  function removeActionItem(id) {
-    const list = getActionItems().filter((item) => String(item.id) !== String(id));
-    setActionItems(list);
-    return list;
-  }
-
-  function updateActionItem(id, patch = {}) {
-    const list = getActionItems();
-    const index = list.findIndex((item) => String(item.id) === String(id));
-    if (index < 0) return null;
-    list[index] = {
-      ...list[index],
-      ...patch,
-      updated_at: new Date().toISOString()
-    };
-    setActionItems(list);
-    return list[index];
-  }
-
   function bindRetryButtons(config = {}) {
     const buttons = Array.from(document.querySelectorAll('[data-role="retry-outbox"]'));
 
@@ -227,8 +207,6 @@
     setActionItems,
     queueAction,
     retryQueuedActions,
-    getActionSummary,
-    removeActionItem,
-    updateActionItem
+    getActionSummary
   };
 })();

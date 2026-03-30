@@ -11,9 +11,6 @@ YWI HSE is a Supabase-backed safety, people, jobs, and equipment web app for con
 - toolbox, PPE, first aid, inspection, and drill forms
 - logbook and review workflow
 - jobs and equipment planning scaffold
-- shared offline action outbox with conflict-aware replay
-- account and admin conflict review panels with side-by-side queued-vs-current values
-- startup diagnostics banner with per-module timing details
 
 ## Current frontend modules
 - `js/bootstrap.js`
@@ -51,14 +48,6 @@ YWI HSE is a Supabase-backed safety, people, jobs, and equipment web app for con
 1. finish user hierarchy and permissions
 2. finish backend enforcement with SQL/RLS and Edge Functions
 3. continue job creation and equipment reservation workflows
-4. continue smoothing offline replay, evidence management, and deploy smoke checks
-
-## Latest pass summary
-- added side-by-side conflict review panels in Settings and Admin for queued outbox items
-- added dismiss and mark-for-retry controls for conflicted account/admin actions
-- surfaced module startup timing in the diagnostics system for deeper troubleshooting
-- refreshed markdown and schema reference notes to keep the repo aligned with the live codebase
-- verified public shell heading structure still uses one exposed H1 in `index.html`
 
 
 ## Latest security and workflow pass
