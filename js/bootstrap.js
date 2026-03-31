@@ -18,7 +18,9 @@
   function readConfiguredSupabaseUrl() {
     const cfg = getRuntimeConfig();
     return String(
+      cfg.SB_URL ||
       cfg.SUPABASE_URL ||
+      window.SB_URL ||
       window.SUPABASE_URL ||
       DEFAULT_SUPABASE_URL
     ).trim() || DEFAULT_SUPABASE_URL;
@@ -34,7 +36,9 @@
     const cfg = getRuntimeConfig();
     try {
       const candidate = String(
+        cfg.SB_ANON_KEY ||
         cfg.SUPABASE_ANON_KEY ||
+        window.SB_ANON_KEY ||
         window.SUPABASE_ANON_KEY ||
         window.__SUPABASE_ANON_KEY ||
         localStorage.getItem('ywi_supabase_anon_key') ||
@@ -43,7 +47,9 @@
       return isPlaceholderKey(candidate) ? '' : candidate;
     } catch {
       const candidate = String(
+        cfg.SB_ANON_KEY ||
         cfg.SUPABASE_ANON_KEY ||
+        window.SB_ANON_KEY ||
         window.SUPABASE_ANON_KEY ||
         window.__SUPABASE_ANON_KEY ||
         ''

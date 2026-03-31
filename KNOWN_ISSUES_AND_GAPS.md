@@ -71,3 +71,12 @@ This is where we list known issues and gaps that need to be addressed
 2. Add thumbnail upload progress bars and multi-file bulk replace for equipment evidence assets.
 3. Add automated deploy smoke-check execution in CI/CD so release verification is not manual.
 4. Expand diagnostics collection into per-module success/failure timing for deeper startup tracing.
+
+## 2026-03-31 Runtime/Auth alignment pass
+
+Current state after this pass:
+- Frontend runtime config now prefers custom `SB_URL` and `SB_ANON_KEY` first, while keeping `SUPABASE_*` as compatibility fallbacks.
+- Edge Functions now prefer custom `SB_URL` and `SB_SERVICE_ROLE_KEY` first, while keeping `SUPABASE_*` as compatibility fallbacks.
+- `account-maintenance` now uses the incoming bearer token with the service-role client and has `verify_jwt = false` configured so function auth is handled in-code instead of by the edge gateway.
+- Remaining live verification after deploy should focus on `account-maintenance` save/update paths, then `admin-directory`, `reference-data`, and `jobs-directory` if any 401s remain.
+- The next chat should start from verifying the live deployed `SB_*` runtime path, then checking the first failing function response body if any auth error remains.

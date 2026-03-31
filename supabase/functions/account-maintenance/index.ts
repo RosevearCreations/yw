@@ -13,6 +13,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function sbUrl() {
+  return Deno.env.get("SB_URL") || Deno.env.get("SUPABASE_URL") || "";
+}
+
+function sbServiceRoleKey() {
+  return Deno.env.get("SB_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+}
+
 function hasTwilioVerify() {
   return !!(
     Deno.env.get("TWILIO_ACCOUNT_SID") &&
@@ -238,14 +246,6 @@ async function twilioVerify(path: string, payload: URLSearchParams) {
   }
 }
 
-function sbUrl() {
-  return Deno.env.get("SB_URL") || Deno.env.get("SUPABASE_URL") || "";
-}
-
-function sbServiceRoleKey() {
-  return Deno.env.get("SB_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -382,20 +382,15 @@ serve(async (req) => {
     }
   }
 
-  const authHeader =
-    req.headers.get("Authorization") ||
-    req.headers.get("authorization") ||
-    "";
-
+  const authHeader = req.headers.get("Authorization") || req.headers.get("authorization") || "";
   if (!authHeader.startsWith("Bearer ")) {
     return Response.json(
-      { ok: false, error: "Unauthorized" },
+      { ok: false, error: "Unauthorized", details: ["Missing bearer token"] },
       { status: 401, headers: corsHeaders },
     );
   }
 
   const token = authHeader.replace("Bearer ", "").trim();
-
   const { data: authUserData, error: userError } = await supabase.auth.getUser(token);
 
   if (userError || !authUserData.user) {
@@ -410,6 +405,7 @@ serve(async (req) => {
   }
 
   const actorId = authUserData.user.id;
+
   const { data: actorProfile } = await supabase
     .from("profiles")
     .select("*")
@@ -430,10 +426,7 @@ serve(async (req) => {
         user: {
           id: authUserData.user.id,
           email: authUserData.user.email || null,
-          email_confirmed_at:
-            authUserData.user.email_confirmed_at ||
-            authUserData.user.confirmed_at ||
-            null,
+          email_confirmed_at: authUserData.user.email_confirmed_at || authUserData.user.confirmed_at || null,
         },
         profile: {
           id: actorProfile.id,
@@ -447,18 +440,10 @@ serve(async (req) => {
           account_setup_completed_at: actorProfile.account_setup_completed_at || null,
         },
         warnings: [
-          actorProfile.email !== authUserData.user.email
-            ? "Profile email does not match Auth email."
-            : null,
-          !actorProfile.password_login_ready
-            ? "Password login is not marked ready."
-            : null,
-          !actorProfile.onboarding_completed_at
-            ? "Onboarding is not marked complete."
-            : null,
-          !actorProfile.username
-            ? "Username is not set."
-            : null,
+          actorProfile.email !== authUserData.user.email ? "Profile email does not match Auth email." : null,
+          !actorProfile.password_login_ready ? "Password login is not marked ready." : null,
+          !actorProfile.onboarding_completed_at ? "Onboarding is not marked complete." : null,
+          !actorProfile.username ? "Username is not set." : null,
         ].filter(Boolean),
       },
       { headers: corsHeaders },
@@ -468,14 +453,11 @@ serve(async (req) => {
   if (action === "update_recovery_profile") {
     const patch: Record<string, unknown> = {
       username: String(body.username || actorProfile.username || "").trim() || null,
-      recovery_email:
-        String(body.recovery_email || actorProfile.recovery_email || "").trim() || null,
+      recovery_email: String(body.recovery_email || actorProfile.recovery_email || "").trim() || null,
       phone: String(body.phone || actorProfile.phone || "").trim() || null,
       full_name: String(body.full_name || actorProfile.full_name || "").trim() || null,
-      address_line1:
-        String(body.address_line1 || actorProfile.address_line1 || "").trim() || null,
-      address_line2:
-        String(body.address_line2 || actorProfile.address_line2 || "").trim() || null,
+      address_line1: String(body.address_line1 || actorProfile.address_line1 || "").trim() || null,
+      address_line2: String(body.address_line2 || actorProfile.address_line2 || "").trim() || null,
       city: String(body.city || actorProfile.city || "").trim() || null,
       province: String(body.province || actorProfile.province || "").trim() || null,
       postal_code: String(body.postal_code || actorProfile.postal_code || "").trim() || null,
@@ -513,10 +495,8 @@ serve(async (req) => {
       recovery_email: String(body.recovery_email || "").trim() || null,
       phone: String(body.phone || actorProfile.phone || "").trim() || null,
       full_name: String(body.full_name || actorProfile.full_name || "").trim() || null,
-      address_line1:
-        String(body.address_line1 || actorProfile.address_line1 || "").trim() || null,
-      address_line2:
-        String(body.address_line2 || actorProfile.address_line2 || "").trim() || null,
+      address_line1: String(body.address_line1 || actorProfile.address_line1 || "").trim() || null,
+      address_line2: String(body.address_line2 || actorProfile.address_line2 || "").trim() || null,
       city: String(body.city || actorProfile.city || "").trim() || null,
       province: String(body.province || actorProfile.province || "").trim() || null,
       postal_code: String(body.postal_code || actorProfile.postal_code || "").trim() || null,
@@ -579,9 +559,7 @@ serve(async (req) => {
   if (action === "list_my_notifications") {
     const { data, error } = await supabase
       .from("admin_notifications")
-      .select(
-        "id,notification_type,title,body,message,status,decision_status,decision_notes,created_at,read_at,decided_at,email_status,target_table,target_id,payload",
-      )
+      .select("id,notification_type,title,body,message,status,decision_status,decision_notes,created_at,read_at,decided_at,email_status,target_table,target_id,payload")
       .or(`target_profile_id.eq.${actorId},created_by_profile_id.eq.${actorId}`)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -645,7 +623,7 @@ serve(async (req) => {
       .from("account_identity_change_requests")
       .insert({
         profile_id: actorId,
-        current_email: actorProfile.email || authUserData.user.email || null,
+        current_email: actorProfile.email || null,
         current_username: actorProfile.username || null,
         requested_email: requestedEmail || null,
         requested_username: requestedUsername || null,

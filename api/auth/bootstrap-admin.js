@@ -5,8 +5,8 @@
 */
 
 export default async function handler(req, res) {
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const anonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  const supabaseUrl = process.env.SB_URL || process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const anonKey = process.env.SB_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
   const target = supabaseUrl ? `${supabaseUrl.replace(/\/$/, '')}/functions/v1/bootstrap-admin` : '';
 
   if (req.method !== 'POST') {

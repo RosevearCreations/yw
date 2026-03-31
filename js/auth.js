@@ -15,7 +15,7 @@
   }
 
   function getSupabaseUrl() {
-    return String(getRuntimeConfig().SUPABASE_URL || window.YWI_BOOT?.state?.supabaseUrl || 'https://jmqvkgiqlimdhcofwkxr.supabase.co').trim();
+    return String(getRuntimeConfig().SB_URL || getRuntimeConfig().SUPABASE_URL || window.SB_URL || window.YWI_BOOT?.state?.supabaseUrl || 'https://jmqvkgiqlimdhcofwkxr.supabase.co').trim();
   }
 
   function getAccountFunctionUrl() {

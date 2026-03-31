@@ -309,3 +309,12 @@ Additional quality changes in this pass:
 - Diagnostics banner now shows validation detail arrays.
 - Smoke check now verifies diagnostics banner is empty after clean boot.
 - Equipment evidence gallery now supports bulk select/delete and clearer replace progress messaging.
+
+## 2026-03-31 Runtime/Auth alignment pass
+
+Current state after this pass:
+- Frontend runtime config now prefers custom `SB_URL` and `SB_ANON_KEY` first, while keeping `SUPABASE_*` as compatibility fallbacks.
+- Edge Functions now prefer custom `SB_URL` and `SB_SERVICE_ROLE_KEY` first, while keeping `SUPABASE_*` as compatibility fallbacks.
+- `account-maintenance` now uses the incoming bearer token with the service-role client and has `verify_jwt = false` configured so function auth is handled in-code instead of by the edge gateway.
+- Remaining live verification after deploy should focus on `account-maintenance` save/update paths, then `admin-directory`, `reference-data`, and `jobs-directory` if any 401s remain.
+- The next chat should start from verifying the live deployed `SB_*` runtime path, then checking the first failing function response body if any auth error remains.
