@@ -2,7 +2,7 @@
    Brief description: Shared API client for YWI HSE frontend.
    Handles auth-aware fetches to Supabase Edge Functions, storage preview URLs,
    smoke checks, evidence uploads, account maintenance actions, and admin/entity helpers.
-   This version always pulls the live session token from Supabase before protected calls.
+   This version always sends both the live bearer token and the Supabase anon/public apikey.
 */
 
 'use strict';
@@ -21,6 +21,17 @@
       window.SUPABASE_URL ||
       window.YWI_BOOT?.state?.supabaseUrl ||
       'https://jmqvkgiqlimdhcofwkxr.supabase.co'
+    ).trim();
+  }
+
+  function getSupabaseAnonKey() {
+    const cfg = getRuntimeConfig();
+    return String(
+      cfg.SUPABASE_ANON_KEY ||
+      cfg.SUPABASE_PUBLISHABLE_KEY ||
+      window.SUPABASE_ANON_KEY ||
+      window.SUPABASE_PUBLISHABLE_KEY ||
+      ''
     ).trim();
   }
 
@@ -79,8 +90,11 @@
   }
 
   async function buildHeaders(extraHeaders = {}, requireAuth = true) {
+    const anonKey = getSupabaseAnonKey();
+
     const headers = {
       'Content-Type': 'application/json',
+      ...(anonKey ? { apikey: anonKey } : {}),
       ...extraHeaders
     };
 
@@ -90,6 +104,7 @@
     if (!token) {
       throw new Error('Missing authorization header');
     }
+
     headers.Authorization = `Bearer ${token}`;
     return headers;
   }
@@ -199,13 +214,18 @@
 
   async function uploadEquipmentEvidence(formData, requireAuth = true) {
     const token = requireAuth ? await getAccessToken() : '';
+    const anonKey = getSupabaseAnonKey();
+
     if (requireAuth && !token) {
       throw new Error('Missing authorization header');
     }
 
     const response = await fetch(`${getFunctionsBaseUrl()}/upload-equipment-evidence`, {
       method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: {
+        ...(anonKey ? { apikey: anonKey } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
       body: formData
     });
 
@@ -342,6 +362,14 @@
         : 'Supabase URL is missing.'
     });
 
+    checks.push({
+      scope: 'runtime-anon-key',
+      ok: !!getSupabaseAnonKey(),
+      message: getSupabaseAnonKey()
+        ? 'Supabase anon/public key is configured.'
+        : 'Supabase anon/public key is missing.'
+    });
+
     try {
       const cfgResp = await fetch('/js/app-config.js', { cache: 'no-store' });
       checks.push({
@@ -423,6 +451,7 @@
       runtime: {
         supabaseUrl: getSupabaseUrl(),
         hasSession: !!session?.access_token,
+        hasAnonKey: !!getSupabaseAnonKey(),
         authFlow: state.authFlow || 'idle',
         needsAccountSetup: !!state.needsAccountSetup,
         pendingAuthResolution: !!state.pendingAuthResolution
