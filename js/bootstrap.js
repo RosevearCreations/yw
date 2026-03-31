@@ -2,14 +2,14 @@
    Brief description: Shared bootstrap/auth recovery layer.
    Restores Supabase sessions from PKCE code, token hash, or existing storage,
    preserves route fragments safely, cleans callback URLs, and exposes boot/auth header helpers to the app.
-   Now supports local runtime anon-key storage so the login screen can always render a usable config error instead of a blank wall.
+   Includes safer live-session header retrieval and more forgiving auth resolution timing.
 */
 
 'use strict';
 
 (function () {
   const DEFAULT_SUPABASE_URL = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
-  const AUTH_RESOLUTION_TIMEOUT_MS = 20000;
+  const AUTH_RESOLUTION_TIMEOUT_MS = 15000;
 
   function getRuntimeConfig() {
     return window.YWI_RUNTIME_CONFIG || window.__YWI_RUNTIME_CONFIG || {};
@@ -132,7 +132,9 @@
     let routeHash = normalizeHashCandidate(url.hash);
 
     if (url.search) candidates.push(parseQueryStringLike(url.search));
-    if (url.hash && isAuthParamBlock(url.hash.replace(/^#/, ''))) candidates.push(parseQueryStringLike(url.hash));
+    if (url.hash && isAuthParamBlock(url.hash.replace(/^#/, ''))) {
+      candidates.push(parseQueryStringLike(url.hash));
+    }
 
     fragments.forEach((fragment) => {
       const clean = String(fragment || '').trim();
@@ -174,18 +176,16 @@
   }
 
   async function authHeader() {
-    const token = state.session?.access_token;
+    try {
+      const sb = window.YWI_SB || window._sb;
+      if (sb?.auth?.getSession) {
+        const { data } = await sb.auth.getSession();
+        const token = data?.session?.access_token || state.session?.access_token || '';
+        return token ? { Authorization: `Bearer ${token}` } : {};
+      }
+    } catch {}
+    const token = state.session?.access_token || '';
     return token ? { Authorization: `Bearer ${token}` } : {};
-  }
-
-  async function refresh() {
-    if (!window.YWI_SB?.auth?.refreshSession) throw new Error(state.configError || 'Supabase is not configured.');
-    const { data, error } = await window.YWI_SB.auth.refreshSession();
-    if (error) throw error;
-    state.session = data?.session || null;
-    state.user = state.session?.user || null;
-    state.isAuthenticated = !!state.session?.access_token;
-    return data?.session || null;
   }
 
   let authResolutionTimer = null;
@@ -269,11 +269,33 @@
     state.authError = authError || '';
     state.authFlow = authFlow || 'idle';
     state.isAuthenticated = !!session?.access_token;
-    if (state.user?.id) state.profile = await fetchProfile(state.user.id, sb);
-    else state.profile = null;
+
+    if (state.user?.id) {
+      state.profile = await fetchProfile(state.user.id, sb);
+    } else {
+      state.profile = null;
+    }
+
     state.role = state.profile?.role || 'worker';
     state.roleLabel = getRoleLabel(state.role);
-    state.needsAccountSetup = !!(state.isAuthenticated && (state.authFlow === 'recovery' || state.profile?.password_login_ready === false || !String(state.profile?.username || '').trim()));
+    state.needsAccountSetup = !!(
+      state.isAuthenticated &&
+      (
+        state.authFlow === 'recovery' ||
+        state.profile?.password_login_ready === false ||
+        !String(state.profile?.username || '').trim()
+      )
+    );
+  }
+
+  async function refresh() {
+    if (!window.YWI_SB?.auth?.refreshSession) {
+      throw new Error(state.configError || 'Supabase is not configured.');
+    }
+    const { data, error } = await window.YWI_SB.auth.refreshSession();
+    if (error) throw error;
+    await applySession(data?.session || null, '', state.authFlow || 'session', window.YWI_SB);
+    return data?.session || null;
   }
 
   async function recoverSessionFromUrlIfNeeded(sb) {
@@ -321,36 +343,47 @@
 
     const { data } = await sb.auth.getSession();
     await applySession(data?.session || null, '', 'idle', sb);
-    if (!window.location.hash && state.isAuthenticated) cleanUrlAfterAuth(routeHash || '#toolbox');
+    if (!window.location.hash && state.isAuthenticated) {
+      cleanUrlAfterAuth(routeHash || '#toolbox');
+    }
   }
 
   async function init() {
     if (state.initialized) return;
     state.pendingAuthResolution = true;
     startAuthResolutionTimer();
+
     const anonKey = readStoredAnonKey();
     state.hasSupabaseKey = !!anonKey;
 
     if (!window.supabase?.createClient) {
       return finishWithoutClient('Supabase library did not load. Refresh the app. If it still fails, clear the service worker cache and try again.');
     }
+
     if (!anonKey) {
       return finishWithoutClient('App configuration is incomplete. Add the Supabase anon/public key to js/app-config.js or use the emergency login-screen override, then reload the app.');
     }
 
     const sb = window.supabase.createClient(state.supabaseUrl || readConfiguredSupabaseUrl(), anonKey, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false
+      }
     });
+
     window.YWI_SB = sb;
     window._sb = sb;
     window.YWI_BOOT.sb = sb;
 
     await recoverSessionFromUrlIfNeeded(sb);
+
     sb.auth.onAuthStateChange(async (event, session) => {
       const nextFlow = event === 'PASSWORD_RECOVERY' ? 'recovery' : (state.authFlow || 'session');
       await applySession(session || null, '', nextFlow, sb);
       dispatch('ywi:auth-changed', { state: getState() });
     });
+
     clearAuthResolutionTimer();
     state.pendingAuthResolution = false;
     state.initialized = true;
@@ -361,7 +394,6 @@
     console.error('Bootstrap init failed:', err);
     state.authError = err?.message || 'Bootstrap failed.';
     state.configError = state.authError;
-    clearAuthResolutionTimer();
     clearAuthResolutionTimer();
     state.pendingAuthResolution = false;
     state.initialized = true;
