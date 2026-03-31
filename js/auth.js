@@ -1,7 +1,7 @@
 /* File: js/auth.js
    Brief description: Shared authentication controller that coordinates Supabase auth with bootstrap state,
    exposes sign-in/logout/reset/password-change helpers, and keeps the app informed of current user/profile/role state.
-   This version avoids hanging refreshSession() calls after onboarding/save actions and sends apikey on direct function calls.
+   This version avoids hanging getSession()/refreshSession() calls during onboarding and account setup.
 */
 
 'use strict';
@@ -91,7 +91,11 @@
   async function fetchProfile(userId) {
     if (!userId || !sb) return null;
     try {
-      const { data, error } = await sb.from('profiles').select('*').eq('id', userId).maybeSingle();
+      const { data, error } = await withTimeout(
+        sb.from('profiles').select('*').eq('id', userId).maybeSingle(),
+        5000,
+        'Profile lookup timed out.'
+      );
       if (error) return null;
       return data || null;
     } catch {
@@ -103,13 +107,19 @@
     state.session = session || null;
     state.user = session?.user || null;
     state.isAuthenticated = !!session?.access_token;
+
     if (state.user?.id) state.profile = await fetchProfile(state.user.id);
     else state.profile = null;
+
     state.role = state.profile?.role || 'worker';
     state.roleLabel = getRoleLabel(state.role);
     state.needsAccountSetup = !!(
       state.isAuthenticated &&
-      (state.authFlow === 'recovery' || state.profile?.password_login_ready === false || !safeText(state.profile?.username))
+      (
+        state.authFlow === 'recovery' ||
+        state.profile?.password_login_ready === false ||
+        !safeText(state.profile?.username)
+      )
     );
     state.pendingAuthResolution = !state.bootReady && !state.isAuthenticated;
   }
@@ -226,22 +236,29 @@
     const cleanPassword = String(newPassword ?? '');
     if (!cleanPassword) throw new Error('New password is required.');
     const client = requireClient();
-    const { data, error } = await client.auth.updateUser({ password: cleanPassword });
+    const { data, error } = await withTimeout(
+      client.auth.updateUser({ password: cleanPassword }),
+      8000,
+      'Password update timed out.'
+    );
     if (error) throw error;
+
     await refreshFromSupabase().catch(() => null);
+    state.pendingAuthResolution = false;
     dispatch('ywi:auth-changed', { state: getState() });
     return data;
   }
 
   async function markAccountSetupComplete(payload = {}) {
     const client = requireClient();
+
     let session = await getStableSession().catch(() => null);
     let token = session?.access_token || '';
 
     if (!token) {
       const refreshed = await withTimeout(
         client.auth.refreshSession(),
-        5000,
+        8000,
         'Session refresh timed out.'
       ).catch(() => ({ data: { session: null } }));
       token = refreshed?.data?.session?.access_token || '';
@@ -249,22 +266,41 @@
 
     if (!token) throw new Error('Sign in again before finishing account setup.');
 
-    const response = await fetch(getAccountFunctionUrl(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(getSupabaseAnonKey() ? { apikey: getSupabaseAnonKey() } : {}),
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ action: 'complete_account_setup', ...payload })
-    });
+    const response = await withTimeout(
+      fetch(getAccountFunctionUrl(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(getSupabaseAnonKey() ? { apikey: getSupabaseAnonKey() } : {}),
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ action: 'complete_account_setup', ...payload })
+      }),
+      10000,
+      'Account setup request timed out.'
+    );
 
     const body = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(body?.error || 'Unable to finish account setup.');
 
-    await refreshFromSupabase().catch(() => null);
     state.pendingAuthResolution = false;
     state.needsAccountSetup = false;
+
+    await refreshFromSupabase().catch(() => {
+      state.needsAccountSetup = false;
+      state.pendingAuthResolution = false;
+      state.profile = {
+        ...(state.profile || {}),
+        ...(body?.record || {}),
+        password_login_ready: true,
+        onboarding_completed_at: body?.record?.onboarding_completed_at || new Date().toISOString(),
+        account_setup_completed_at: body?.record?.account_setup_completed_at || new Date().toISOString()
+      };
+      state.role = state.profile?.role || state.role || 'worker';
+      state.roleLabel = getRoleLabel(state.role);
+      state.isAuthenticated = true;
+    });
+
     dispatch('ywi:auth-changed', { state: getState() });
     return body;
   }
@@ -346,6 +382,7 @@
     if (state.initialized) return;
     bindBootEvents();
     bindSupabaseAuthEvents();
+
     try {
       if (window.YWI_SB || window._sb) {
         await refreshFromSupabase().catch(() => null);
@@ -364,6 +401,7 @@
       state.authError = err?.message || 'Authentication init failed.';
       state.configError = state.authError;
     }
+
     state.initialized = true;
     dispatch('ywi:auth-changed', { state: getState() });
   }
