@@ -2,7 +2,7 @@
    Brief description: Shared API client for YWI HSE frontend.
    Handles auth-aware fetches to Supabase Edge Functions, storage preview URLs,
    smoke checks, evidence uploads, account maintenance actions, and admin/entity helpers.
-   This version always sends both the live bearer token and the Supabase anon/public apikey.
+   This version uses SB_* runtime config values and always sends both apikey and bearer token.
 */
 
 'use strict';
@@ -17,7 +17,9 @@
   function getSupabaseUrl() {
     const cfg = getRuntimeConfig();
     return String(
+      cfg.SB_URL ||
       cfg.SUPABASE_URL ||
+      window.SB_URL ||
       window.SUPABASE_URL ||
       window.YWI_BOOT?.state?.supabaseUrl ||
       'https://jmqvkgiqlimdhcofwkxr.supabase.co'
@@ -27,8 +29,10 @@
   function getSupabaseAnonKey() {
     const cfg = getRuntimeConfig();
     return String(
+      cfg.SB_ANON_KEY ||
       cfg.SUPABASE_ANON_KEY ||
       cfg.SUPABASE_PUBLISHABLE_KEY ||
+      window.SB_ANON_KEY ||
       window.SUPABASE_ANON_KEY ||
       window.SUPABASE_PUBLISHABLE_KEY ||
       ''
@@ -121,6 +125,7 @@
 
       const retriedHeaders = {
         ...(options.headers || {}),
+        ...(getSupabaseAnonKey() ? { apikey: getSupabaseAnonKey() } : {}),
         Authorization: `Bearer ${data.session.access_token}`
       };
 
@@ -356,8 +361,8 @@
 
     checks.push({
       scope: 'runtime-config',
-      ok: !!(runtimeCfg.SUPABASE_URL || state.supabaseUrl),
-      message: (runtimeCfg.SUPABASE_URL || state.supabaseUrl)
+      ok: !!(runtimeCfg.SB_URL || runtimeCfg.SUPABASE_URL || state.supabaseUrl),
+      message: (runtimeCfg.SB_URL || runtimeCfg.SUPABASE_URL || state.supabaseUrl)
         ? 'Supabase URL is configured.'
         : 'Supabase URL is missing.'
     });
