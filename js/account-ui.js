@@ -3,6 +3,7 @@
    Renders onboarding + Settings panels, supports account setup after magic-link validation,
    password setup/change/reset, contact/address updates, autosave drafts, phone verification,
    and username/email change request workflows with confirmation history.
+   Includes onboarding-safe guards so authenticated inbox/history calls do not fire too early.
 */
 
 'use strict';
@@ -30,118 +31,178 @@
       <div class="section-heading">
         <div>
           <h2>Account Onboarding</h2>
-          <p class="section-subtitle">Finish your first-run setup before using the app normally.</p>
+          <p class="section-subtitle">Finish your account details, save a password, and complete first-run onboarding.</p>
         </div>
       </div>
-      <div id="onboardingNotice" class="notice" style="display:none;margin-top:12px;"></div>
-      <div class="admin-panel-block">
-        <ol class="simple-list" style="padding-left:18px;margin:0;">
-          <li>Confirm your full name, phone, and address details.</li>
-          <li>Choose a username for daily sign-in.</li>
-          <li>Save a password so you no longer depend on magic links.</li>
-          <li>Complete onboarding, then continue into the app.</li>
-        </ol>
-        <div class="form-footer" style="margin-top:16px;">
-          <button id="onboarding_open_settings" class="primary" type="button">Open Account Setup</button>
-          <button id="onboarding_complete" class="secondary" type="button">Mark Onboarding Complete</button>
-        </div>
+      <div id="onboardingNotice" class="notice" style="display:none;margin-bottom:12px;"></div>
+      <div class="form-footer">
+        <button id="onboarding_open_settings" class="secondary" type="button">Open Settings</button>
+        <button id="onboarding_complete" class="primary" type="button">Mark Onboarding Complete</button>
       </div>
     `;
-    const settings = document.getElementById('settings');
-    if (settings && settings.parentNode) settings.parentNode.insertBefore(section, settings);
-    else main.appendChild(section);
+    main.prepend(section);
   }
 
   function ensureLayout() {
-    ensureOnboardingSection();
-    const section = document.getElementById('settings');
-    if (!section) return;
-    section.innerHTML = `
+    if (document.getElementById('accountPanel')) return;
+    const section = document.getElementById('settings') || document.querySelector('main') || document.body;
+    const wrap = document.createElement('div');
+    wrap.id = 'accountPanel';
+    wrap.innerHTML = `
       <div class="section-heading">
         <div>
-          <h2>Settings</h2>
-          <p class="section-subtitle">Daily sign-in uses username/email + password. Magic link is only for first validation, recovery, or backup access.</p>
+          <h2>Account & Security</h2>
+          <p class="section-subtitle">Profile, password, recovery, verification, and identity change tools.</p>
         </div>
       </div>
-      <div id="accountSetupNotice" class="notice" style="display:none;margin-top:12px;"></div>
-      <div id="accountPanel" class="admin-panel-block" hidden>
-        <div class="admin-panel-grid">
-          <label>Full name<input id="account_full_name" type="text" placeholder="Full legal or display name" /></label>
-          <label>Email<input id="account_email" type="email" readonly /></label>
-          <label>Username<input id="account_username" type="text" placeholder="Choose a username" /></label>
-          <label>Recovery email<input id="account_recovery_email" type="email" placeholder="Optional backup email" /></label>
-          <label>Requested new username<input id="account_requested_username" type="text" placeholder="Optional requested username change" /></label>
-          <label>Requested new email<input id="account_requested_email" type="email" placeholder="Optional requested account email change" /></label>
-          <label>Role<input id="account_role" type="text" readonly /></label>
-          <label>Email status<input id="account_email_status" type="text" readonly /></label>
-          <label>Phone status<input id="account_phone_status" type="text" readonly /></label>
-          <label>Phone number<input id="account_phone" type="tel" placeholder="+1 555 555 5555" /></label>
-          <label>Address line 1<input id="account_address_line1" type="text" placeholder="Street address" /></label>
-          <label>Address line 2<input id="account_address_line2" type="text" placeholder="Unit / suite" /></label>
-          <label>City<input id="account_city" type="text" /></label>
-          <label>Province<input id="account_province" type="text" /></label>
-          <label>Postal code<input id="account_postal_code" type="text" placeholder="N0N 0N0" /></label>
-          <label>Verification code<input id="account_phone_code" type="text" placeholder="SMS code" /></label>
-          <label>New password<input id="account_password" type="password" autocomplete="new-password" placeholder="Choose a strong password" /></label>
-          <label>Confirm password<input id="account_password_confirm" type="password" autocomplete="new-password" placeholder="Confirm password" /></label>
-        </div>
-        <div id="account_password_hint" class="notice" style="margin-top:12px;"></div>
-        <div class="form-footer" style="margin-top:14px;flex-wrap:wrap;">
-          <button id="account_setup_complete" class="primary" type="button">Complete Account Setup</button>
-          <button id="account_recovery_save" class="secondary" type="button">Save Contact Details</button>
-          <button id="account_password_save" class="secondary" type="button">Save Password</button>
-          <button id="account_request_identity_change" class="secondary" type="button">Request Email / Username Change</button>
-          <button id="account_reset_password_email" class="secondary" type="button">Send Password Reset Email</button>
-          <button id="account_resend_email_verification" class="secondary" type="button">Resend Email Verification</button>
-          <button id="account_request_phone_verification" class="secondary" type="button">Request Phone Verification</button>
-          <button id="account_send_phone_code" class="secondary" type="button">Send SMS Code</button>
-          <button id="account_verify_phone_code" class="secondary" type="button">Verify SMS Code</button>
-          <button id="account_logout_this" class="secondary" type="button">Log Out</button>
-          <button id="account_logout_all" class="secondary" type="button">Log Out Everywhere</button>
-        </div>
-        <div id="account_summary" class="notice" style="display:none;margin-top:14px;"></div>
-        <div class="admin-panel-block" style="margin-top:16px;">
-          <div class="section-heading">
-            <div>
-              <h3 style="margin:0;">Activity Inbox</h3>
-              <p class="section-subtitle">Recent approval results, account-change notifications, and account activity.</p>
-            </div>
-            <div class="admin-heading-actions">
-              <button id="account_retry_sync" class="secondary" type="button">Retry Pending Sync</button>
-              <button id="account_reload_notifications" class="secondary" type="button">Reload Inbox</button>
-            </div>
-          </div>
-          <div id="account_notifications_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
-          <div class="table-scroll">
-            <table id="account_notifications_table">
-              <thead><tr><th>Created</th><th>Type</th><th>Title</th><th>Status</th><th>Decision</th><th>Message</th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
-        <div class="admin-panel-block" style="margin-top:16px;">
-          <div class="section-heading">
-            <div>
-              <h3 style="margin:0;">Identity Change History</h3>
-              <p class="section-subtitle">Track pending, approved, or rejected username and email change requests.</p>
-            </div>
-            <div class="admin-heading-actions">
-              <button id="account_reload_identity_requests" class="secondary" type="button">Reload</button>
-            </div>
-          </div>
-          <div id="account_identity_requests_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
-          <div class="table-scroll">
-            <table id="account_identity_requests_table">
-              <thead><tr><th>Requested</th><th>Username</th><th>Email</th><th>Status</th><th>Reviewed</th><th>Notes</th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
+
+      <div id="accountSetupNotice" class="notice" style="display:none;margin-bottom:14px;"></div>
+      <div id="account_summary" class="notice" style="display:none;margin-bottom:14px;"></div>
+
+      <div class="grid">
+        <label>Full Name
+          <input id="account_full_name" type="text" placeholder="Full name" />
+        </label>
+        <label>Email
+          <input id="account_email" type="email" readonly />
+        </label>
+        <label>Role
+          <input id="account_role" type="text" readonly />
+        </label>
+        <label>Username
+          <input id="account_username" type="text" placeholder="Choose a username" />
+        </label>
+        <label>Recovery Email
+          <input id="account_recovery_email" type="email" placeholder="Recovery email" />
+        </label>
+        <label>Phone
+          <input id="account_phone" type="text" placeholder="Phone" />
+        </label>
+        <label>Address Line 1
+          <input id="account_address_line1" type="text" placeholder="Address line 1" />
+        </label>
+        <label>Address Line 2
+          <input id="account_address_line2" type="text" placeholder="Address line 2" />
+        </label>
+        <label>City
+          <input id="account_city" type="text" placeholder="City" />
+        </label>
+        <label>Province
+          <input id="account_province" type="text" placeholder="Province" />
+        </label>
+        <label>Postal Code
+          <input id="account_postal_code" type="text" placeholder="Postal code" />
+        </label>
+      </div>
+
+      <div class="grid" style="margin-top:14px;">
+        <label>Email Status
+          <input id="account_email_status" type="text" readonly />
+        </label>
+        <label>Phone Status
+          <input id="account_phone_status" type="text" readonly />
+        </label>
+      </div>
+
+      <div class="grid" style="margin-top:14px;">
+        <label>New Password
+          <input id="account_password" type="password" placeholder="New password" />
+        </label>
+        <label>Confirm Password
+          <input id="account_password_confirm" type="password" placeholder="Confirm password" />
+        </label>
+        <label>Verification Code
+          <input id="account_phone_code" type="text" placeholder="SMS code" />
+        </label>
+      </div>
+
+      <div id="account_password_hint" class="muted" style="margin-top:10px;"></div>
+
+      <div class="form-footer" style="margin-top:14px;">
+        <button id="account_recovery_save" class="secondary" type="button">Save Contact Details</button>
+        <button id="account_password_save" class="secondary" type="button">Save Password</button>
+        <button id="account_setup_complete" class="primary" type="button">Complete Account Setup</button>
+      </div>
+
+      <hr style="margin:18px 0;" />
+
+      <div class="section-heading">
+        <div>
+          <h3 style="margin:0;">Verification</h3>
+          <p class="section-subtitle">Email verification, phone review, and device/session actions.</p>
         </div>
       </div>
+
+      <div class="form-footer">
+        <button id="account_resend_email_verification" class="secondary" type="button">Resend Email Verification</button>
+        <button id="account_request_phone_verification" class="secondary" type="button">Request Phone Verification</button>
+        <button id="account_send_phone_code" class="secondary" type="button">Send Phone Code</button>
+        <button id="account_verify_phone_code" class="secondary" type="button">Verify Phone Code</button>
+        <button id="account_reset_password_email" class="secondary" type="button">Send Password Reset Email</button>
+        <button id="account_logout_all" class="secondary" type="button">Log Out Everywhere</button>
+        <button id="account_logout_this" class="secondary" type="button">Log Out This Device</button>
+      </div>
+
+      <hr style="margin:18px 0;" />
+
+      <div class="section-heading">
+        <div>
+          <h3 style="margin:0;">Identity Change Request</h3>
+          <p class="section-subtitle">Request username or email changes for approval.</p>
+        </div>
+      </div>
+
+      <div class="grid">
+        <label>Requested Username
+          <input id="account_requested_username" type="text" placeholder="New username" />
+        </label>
+        <label>Requested Email
+          <input id="account_requested_email" type="email" placeholder="New email" />
+        </label>
+      </div>
+      <div class="form-footer" style="margin-top:12px;">
+        <button id="account_request_identity_change" class="secondary" type="button">Request Identity Change</button>
+      </div>
+
+      <div class="section-heading" style="margin-top:18px;">
+        <div>
+          <h3 style="margin:0;">Activity Inbox</h3>
+        </div>
+        <div class="admin-heading-actions">
+          <button id="account_retry_sync" class="secondary" type="button">Retry Pending Sync</button>
+          <button id="account_reload_notifications" class="secondary" type="button">Reload Inbox</button>
+        </div>
+      </div>
+      <div id="account_notifications_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
+      <div class="table-scroll">
+        <table id="account_notifications_table">
+          <thead><tr><th>Created</th><th>Type</th><th>Title</th><th>Status</th><th>Decision</th><th>Message</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="section-heading" style="margin-top:18px;">
+        <div>
+          <h3 style="margin:0;">Identity Change History</h3>
+        </div>
+        <div class="admin-heading-actions">
+          <button id="account_reload_identity_requests" class="secondary" type="button">Reload History</button>
+        </div>
+      </div>
+      <div id="account_identity_requests_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
+      <div class="table-scroll">
+        <table id="account_identity_requests_table">
+          <thead><tr><th>Requested</th><th>Username</th><th>Email</th><th>Status</th><th>Reviewed</th><th>Notes</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
       <div id="accountSignedOutNotice" class="notice" style="display:none;margin-top:14px;">Sign in to manage your account, password, and recovery settings.</div>
     `;
+    section.appendChild(wrap);
   }
 
+  ensureOnboardingSection();
   ensureLayout();
 
   const els = {
@@ -205,7 +266,6 @@
     el.dataset.kind = isError ? 'error' : 'info';
   }
 
-
   function escHtml(value) {
     return String(value ?? '')
       .replaceAll('&', '&amp;')
@@ -223,8 +283,29 @@
     setNotice(els.notificationsSummary, text, isError);
   }
 
+  function getAuthState() {
+    return window.YWI_AUTH?.getState?.() || auth.getState?.() || {};
+  }
+
+  function isSafeForProtectedAccountCalls() {
+    const authState = getAuthState();
+    return !!(
+      authState.isAuthenticated &&
+      !authState.pendingAuthResolution &&
+      !authState.needsAccountSetup &&
+      authState.session?.access_token
+    );
+  }
+
   async function loadNotifications() {
     if (!els.notificationsBody) return;
+
+    if (!isSafeForProtectedAccountCalls()) {
+      els.notificationsBody.innerHTML = '<tr><td colspan="6" class="muted">Available after account setup is complete.</td></tr>';
+      setNotificationsSummary('Inbox will load after account setup is complete.');
+      return;
+    }
+
     try {
       const outboxSummary = window.YWIOutbox?.getActionSummary?.('account') || { total: 0, conflicts: 0 };
       setNotificationsSummary(outboxSummary.total ? `Loading inbox… Pending local sync: ${outboxSummary.total}.` : 'Loading inbox...');
@@ -272,9 +353,15 @@
     }
   }
 
-
   async function loadIdentityChangeRequests() {
     if (!els.identityRequestsBody) return;
+
+    if (!isSafeForProtectedAccountCalls()) {
+      els.identityRequestsBody.innerHTML = '<tr><td colspan="6" class="muted">Available after account setup is complete.</td></tr>';
+      setTableSummary('Identity change history will load after account setup is complete.');
+      return;
+    }
+
     try {
       setTableSummary('Loading request history...');
       const resp = await api.accountRecoveryAction({ action: 'list_identity_change_requests' });
@@ -311,12 +398,18 @@
   function validatePassword(password, confirm) {
     if (!password) throw new Error('Enter a new password.');
     if (password.length < 10) throw new Error('Password must be at least 10 characters long.');
-    if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) throw new Error('Password must include upper, lower, and number characters.');
+    if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password)) {
+      throw new Error('Password must include upper, lower, and number characters.');
+    }
     if (password !== confirm) throw new Error('Password confirmation does not match.');
   }
 
   function getDraft() {
-    try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}'); } catch { return {}; }
+    try {
+      return JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}');
+    } catch {
+      return {};
+    }
   }
 
   function saveDraft() {
@@ -355,7 +448,9 @@
   }
 
   function clearDraft() {
-    try { localStorage.removeItem(DRAFT_KEY); } catch {}
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {}
   }
 
   function collectProfilePayload() {
@@ -373,7 +468,7 @@
   }
 
   function render(state) {
-    const current = state || auth.getState?.() || {};
+    const current = state || getAuthState();
     const isAuthenticated = !!current.isAuthenticated;
     const role = current.role || current.profile?.role || 'worker';
     const access = security?.getAccessProfile ? security.getAccessProfile(role) : { roleLabel: role };
@@ -384,9 +479,14 @@
     if (els.panel) els.panel.hidden = !isAuthenticated;
     if (els.signedOutNotice) els.signedOutNotice.style.display = isAuthenticated ? 'none' : 'block';
     if (els.onboarding) els.onboarding.hidden = !needsOnboarding;
+
     if (!isAuthenticated) {
-      if (els.identityRequestsBody) els.identityRequestsBody.innerHTML = '<tr><td colspan="6" class="muted">Sign in to review identity change history.</td></tr>';
-      if (els.notificationsBody) els.notificationsBody.innerHTML = '<tr><td colspan="6" class="muted">Sign in to view account activity.</td></tr>';
+      if (els.identityRequestsBody) {
+        els.identityRequestsBody.innerHTML = '<tr><td colspan="6" class="muted">Sign in to review identity change history.</td></tr>';
+      }
+      if (els.notificationsBody) {
+        els.notificationsBody.innerHTML = '<tr><td colspan="6" class="muted">Sign in to view account activity.</td></tr>';
+      }
       return;
     }
 
@@ -394,7 +494,9 @@
     if (els.role) els.role.value = access.roleLabel || role;
     if (els.emailStatus) els.emailStatus.value = emailVerified ? 'Verified' : 'Verification pending';
     if (els.phoneStatus) els.phoneStatus.value = phoneVerified ? 'Verified' : 'Verification pending';
+
     restoreDraft(current);
+
     if (els.hint) {
       const pending = [];
       if (current.profile?.pending_username) pending.push(`Username change pending: ${current.profile.pending_username}`);
@@ -405,8 +507,21 @@
           ? pending.join(' • ')
           : (emailVerified ? 'Your email is verified. Use the password fields below for normal sign-in going forward.' : 'Verify your email once, then save a strong password for normal sign-in.');
     }
-    setNotice(els.setupNotice, needsOnboarding ? 'First-run onboarding is still required. Complete your profile, choose a username, save a password, then mark onboarding complete.' : '');
-    setNotice(els.onboardingNotice, needsOnboarding ? 'New users should finish onboarding before continuing into the rest of the app.' : '');
+
+    setNotice(
+      els.setupNotice,
+      needsOnboarding
+        ? 'First-run onboarding is still required. Complete your profile, choose a username, save a password, then mark onboarding complete.'
+        : ''
+    );
+
+    setNotice(
+      els.onboardingNotice,
+      needsOnboarding
+        ? 'New users should finish onboarding before continuing into the rest of the app.'
+        : ''
+    );
+
     loadIdentityChangeRequests();
     loadNotifications();
   }
@@ -422,7 +537,8 @@
       await auth.refresh();
       await loadIdentityChangeRequests();
     } catch (err) {
-      if (String(err?.message || '').toLowerCase().includes('offline') || String(err?.message || '').includes('HTTP 5')) {
+      const message = String(err?.message || '');
+      if (message.toLowerCase().includes('offline') || message.includes('HTTP 5')) {
         queueAccountAction('update_recovery_profile', collectProfilePayload(), 'Save account profile');
       } else {
         setNotice(els.summary, err?.message || 'Unable to save contact details.', true);
@@ -459,7 +575,9 @@
       if (els.password) els.password.value = '';
       if (els.confirm) els.confirm.value = '';
       setNotice(els.summary, 'Account setup completed. You can now sign in normally with username/email + password.', false);
-      if (window.YWIRouter?.showSection) window.YWIRouter.showSection('toolbox', { skipFocus: true });
+      if (window.YWIRouter?.showSection) {
+        window.YWIRouter.showSection('toolbox', { skipFocus: true });
+      }
     } catch (err) {
       setNotice(els.summary, err?.message || 'Unable to complete account setup.', true);
     } finally {
@@ -493,8 +611,16 @@
       await auth.refresh();
       await loadIdentityChangeRequests();
     } catch (err) {
-      if (String(err?.message || '').toLowerCase().includes('offline') || String(err?.message || '').includes('HTTP 5')) {
-        queueAccountAction('request_identity_change', { requested_username: els.requestedUsername?.value?.trim?.() || '', requested_email: els.requestedEmail?.value?.trim?.() || '' }, 'Request identity change');
+      const message = String(err?.message || '');
+      if (message.toLowerCase().includes('offline') || message.includes('HTTP 5')) {
+        queueAccountAction(
+          'request_identity_change',
+          {
+            requested_username: els.requestedUsername?.value?.trim?.() || '',
+            requested_email: els.requestedEmail?.value?.trim?.() || ''
+          },
+          'Request identity change'
+        );
       } else {
         setNotice(els.summary, err?.message || 'Unable to request identity change.', true);
       }
@@ -545,7 +671,10 @@
   async function verifyPhoneCode() {
     const restore = setBusy(els.verifyPhoneCodeBtn, 'Verifying...');
     try {
-      const resp = await api.verifyPhoneCode({ phone: els.phone?.value?.trim?.() || '', code: els.code?.value?.trim?.() || '' });
+      const resp = await api.verifyPhoneCode({
+        phone: els.phone?.value?.trim?.() || '',
+        code: els.code?.value?.trim?.() || ''
+      });
       if (!resp?.ok) throw new Error(resp?.error || 'SMS verification failed.');
       setNotice(els.summary, 'Phone verified.', false);
       await auth.refresh();
@@ -563,7 +692,9 @@
       if (!resp?.ok) throw new Error(resp?.error || 'Unable to complete onboarding.');
       setNotice(els.onboardingNotice, 'Onboarding complete. You can continue using the app normally.', false);
       await auth.refresh();
-      if (window.YWIRouter?.showSection) window.YWIRouter.showSection('settings', { skipFocus: true });
+      if (window.YWIRouter?.showSection) {
+        window.YWIRouter.showSection('settings', { skipFocus: true });
+      }
     } catch (err) {
       setNotice(els.onboardingNotice, err?.message || 'Unable to complete onboarding.', true);
     } finally {
@@ -572,20 +703,41 @@
   }
 
   async function logoutEverywhere() {
-    try { await auth.logoutEverywhere(); } catch (err) { setNotice(els.summary, err?.message || 'Unable to log out everywhere.', true); }
+    try {
+      await auth.logoutEverywhere();
+    } catch (err) {
+      setNotice(els.summary, err?.message || 'Unable to log out everywhere.', true);
+    }
   }
 
   async function logoutThisDevice() {
-    try { await auth.logout(); } catch (err) { setNotice(els.summary, err?.message || 'Unable to log out.', true); }
+    try {
+      await auth.logout();
+    } catch (err) {
+      setNotice(els.summary, err?.message || 'Unable to log out.', true);
+    }
   }
 
   function bind() {
-    [els.fullName, els.username, els.recoveryEmail, els.requestedUsername, els.requestedEmail, els.phone, els.address1, els.address2, els.city, els.province, els.postalCode].forEach((el) => {
+    [
+      els.fullName,
+      els.username,
+      els.recoveryEmail,
+      els.requestedUsername,
+      els.requestedEmail,
+      els.phone,
+      els.address1,
+      els.address2,
+      els.city,
+      els.province,
+      els.postalCode
+    ].forEach((el) => {
       if (el && el.dataset.boundDraft !== '1') {
         el.dataset.boundDraft = '1';
         el.addEventListener('input', saveDraft);
       }
     });
+
     if (els.saveRecoveryBtn) els.saveRecoveryBtn.addEventListener('click', saveProfile);
     if (els.saveBtn) els.saveBtn.addEventListener('click', savePassword);
     if (els.setupCompleteBtn) els.setupCompleteBtn.addEventListener('click', completeSetup);
@@ -597,7 +749,9 @@
     if (els.verifyPhoneCodeBtn) els.verifyPhoneCodeBtn.addEventListener('click', verifyPhoneCode);
     if (els.logoutAllBtn) els.logoutAllBtn.addEventListener('click', logoutEverywhere);
     if (els.logoutThisBtn) els.logoutThisBtn.addEventListener('click', logoutThisDevice);
-    if (els.onboardingOpenSettings) els.onboardingOpenSettings.addEventListener('click', () => window.YWIRouter?.showSection?.('settings', { skipFocus: true }));
+    if (els.onboardingOpenSettings) {
+      els.onboardingOpenSettings.addEventListener('click', () => window.YWIRouter?.showSection?.('settings', { skipFocus: true }));
+    }
     if (els.onboardingCompleteBtn) els.onboardingCompleteBtn.addEventListener('click', completeOnboarding);
     if (els.reloadIdentityRequestsBtn) els.reloadIdentityRequestsBtn.addEventListener('click', loadIdentityChangeRequests);
     if (els.reloadNotificationsBtn) els.reloadNotificationsBtn.addEventListener('click', loadNotifications);
@@ -605,6 +759,6 @@
   }
 
   bind();
-  render(auth.getState?.() || {});
-  document.addEventListener('ywi:auth-changed', (e) => render(e.detail?.state || auth.getState?.() || {}));
+  render(getAuthState());
+  document.addEventListener('ywi:auth-changed', (e) => render(e.detail?.state || getAuthState()));
 })();
