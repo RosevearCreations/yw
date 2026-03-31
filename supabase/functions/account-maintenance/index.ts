@@ -386,23 +386,17 @@ serve(async (req) => {
     );
   }
 
-  const authClient = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_ANON_KEY")!,
-    {
-      global: {
-        headers: {
-          Authorization: authHeader,
-        },
-      },
-    },
-  );
+  const token = authHeader.replace("Bearer ", "").trim();
 
-  const { data: authUserData, error: userError } = await authClient.auth.getUser();
+  const { data: authUserData, error: userError } = await supabase.auth.getUser(token);
 
   if (userError || !authUserData.user) {
     return Response.json(
-      { ok: false, error: "Unauthorized" },
+      {
+        ok: false,
+        error: "Unauthorized",
+        details: [userError?.message || "Token verification failed"],
+      },
       { status: 401, headers: corsHeaders },
     );
   }
