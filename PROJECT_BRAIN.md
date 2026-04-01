@@ -1,3 +1,8 @@
+## 2026-03-31 session health and onboarding completion pass
+- Fixed the separate onboarding-complete path so it can also finalize `account_setup_completed_at` when username and password readiness are already satisfied.
+- Added signed-in session health probing to the frontend API/smoke checks and added a Support & Session Health panel in Settings with exportable troubleshooting snapshots.
+- No new SQL migration was required in this pass; `sql/000_full_schema_reference.sql` remains the refreshed reference snapshot and `055_storage_onboarding_identity_change_and_bootstrap.sql` remains the latest live migration.
+
 ## 2026-03-31 build repair pass
 - Fixed the service-worker duplicate cache entry that was causing `Cache.addAll(): duplicate requests` during install.
 - Restored Admin smoke-check wiring by exporting `runSmokeCheck` through `window.YWIAPI` and rebinding the Admin screen to that helper.

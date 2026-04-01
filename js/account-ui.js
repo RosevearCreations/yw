@@ -170,6 +170,19 @@
 
       <div class="section-heading" style="margin-top:18px;">
         <div>
+          <h3 style="margin:0;">Support & Session Health</h3>
+          <p class="section-subtitle">Run a signed-in health check and export diagnostics for troubleshooting.</p>
+        </div>
+        <div class="admin-heading-actions">
+          <button id="account_run_session_health" class="secondary" type="button">Run Session Health Check</button>
+          <button id="account_export_support" class="secondary" type="button">Export Support Snapshot</button>
+        </div>
+      </div>
+      <div id="account_session_health_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
+      <pre id="account_session_health_output" class="code-block" style="display:none;max-height:260px;overflow:auto;white-space:pre-wrap;"></pre>
+
+      <div class="section-heading" style="margin-top:18px;">
+        <div>
           <h3 style="margin:0;">Activity Inbox</h3>
         </div>
         <div class="admin-heading-actions">
@@ -242,6 +255,10 @@
     saveRecoveryBtn: document.getElementById('account_recovery_save'),
     saveBtn: document.getElementById('account_password_save'),
     requestIdentityChangeBtn: document.getElementById('account_request_identity_change'),
+    sessionHealthBtn: document.getElementById('account_run_session_health'),
+    exportSupportBtn: document.getElementById('account_export_support'),
+    sessionHealthSummary: document.getElementById('account_session_health_summary'),
+    sessionHealthOutput: document.getElementById('account_session_health_output'),
     resetPasswordEmailBtn: document.getElementById('account_reset_password_email'),
     logoutAllBtn: document.getElementById('account_logout_all'),
     logoutThisBtn: document.getElementById('account_logout_this'),
@@ -268,6 +285,19 @@
     el.style.display = 'block';
     el.textContent = text;
     el.dataset.kind = isError ? 'error' : 'info';
+  }
+
+
+  function setPreformatted(el, value = '') {
+    if (!el) return;
+    const text = String(value || '').trim();
+    if (!text) {
+      el.style.display = 'none';
+      el.textContent = '';
+      return;
+    }
+    el.style.display = 'block';
+    el.textContent = text;
   }
 
   function escHtml(value) {
@@ -486,8 +516,13 @@
     if (els.panel) els.panel.hidden = !isAuthenticated;
     if (els.signedOutNotice) els.signedOutNotice.style.display = isAuthenticated ? 'none' : 'block';
     if (els.onboarding) els.onboarding.hidden = !needsOnboarding;
+    if (!needsOnboarding) {
+      setNotice(els.onboardingNotice, '');
+    }
 
     if (!isAuthenticated) {
+      setNotice(els.sessionHealthSummary, '');
+      setPreformatted(els.sessionHealthOutput, '');
       if (els.identityRequestsBody) {
         els.identityRequestsBody.innerHTML = '<tr><td colspan="6" class="muted">Sign in to review identity change history.</td></tr>';
       }
@@ -692,6 +727,69 @@
     }
   }
 
+
+  async function runSessionHealthCheck() {
+    const restore = setBusy(els.sessionHealthBtn, 'Checking...');
+    try {
+      const payload = await api.fetchSessionHealth();
+      const warnings = Array.isArray(payload?.warnings) ? payload.warnings : [];
+      setNotice(
+        els.sessionHealthSummary,
+        warnings.length
+          ? `Session health completed with ${warnings.length} warning(s).`
+          : 'Session health completed with no warnings.',
+        warnings.length > 0
+      );
+      setPreformatted(els.sessionHealthOutput, JSON.stringify(payload || {}, null, 2));
+    } catch (err) {
+      setNotice(els.sessionHealthSummary, err?.message || 'Session health check failed.', true);
+      setPreformatted(els.sessionHealthOutput, '');
+    } finally {
+      restore();
+    }
+  }
+
+  async function exportSupportSnapshot() {
+    const restore = setBusy(els.exportSupportBtn, 'Exporting...');
+    try {
+      let sessionHealth = null;
+      try {
+        sessionHealth = await api.fetchSessionHealth();
+      } catch (err) {
+        sessionHealth = { ok: false, error: err?.message || 'Session health unavailable.' };
+      }
+      const supportSnapshot = {
+        exported_at: new Date().toISOString(),
+        location_hash: window.location.hash || '',
+        runtime: window.YWI_BOOT?.getState?.() || {},
+        auth: window.YWI_AUTH?.getState?.() || {},
+        diagnostics: window.YWIAppDiagnostics?.getItems?.() || [],
+        smoke_check: window.__YWI_LAST_SMOKE_CHECK || null,
+        session_health: sessionHealth
+      };
+      const blob = new Blob([JSON.stringify(supportSnapshot, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ywi-support-snapshot-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setNotice(els.sessionHealthSummary, 'Support snapshot exported.', false);
+      setPreformatted(els.sessionHealthOutput, JSON.stringify({
+        exported_at: supportSnapshot.exported_at,
+        diagnostics_count: supportSnapshot.diagnostics.length,
+        has_smoke_check: !!supportSnapshot.smoke_check,
+        session_health_ok: !!supportSnapshot.session_health?.ok
+      }, null, 2));
+    } catch (err) {
+      setNotice(els.sessionHealthSummary, err?.message || 'Support snapshot export failed.', true);
+    } finally {
+      restore();
+    }
+  }
+
   async function completeOnboarding() {
     const restore = setBusy(els.onboardingCompleteBtn, 'Saving...');
     try {
@@ -749,6 +847,8 @@
     if (els.saveBtn) els.saveBtn.addEventListener('click', savePassword);
     if (els.setupCompleteBtn) els.setupCompleteBtn.addEventListener('click', completeSetup);
     if (els.requestIdentityChangeBtn) els.requestIdentityChangeBtn.addEventListener('click', requestIdentityChange);
+    if (els.sessionHealthBtn) els.sessionHealthBtn.addEventListener('click', runSessionHealthCheck);
+    if (els.exportSupportBtn) els.exportSupportBtn.addEventListener('click', exportSupportSnapshot);
     if (els.resetPasswordEmailBtn) els.resetPasswordEmailBtn.addEventListener('click', sendResetFromSettings);
     if (els.resendEmailBtn) els.resendEmailBtn.addEventListener('click', resendEmailVerification);
     if (els.requestPhoneBtn) els.requestPhoneBtn.addEventListener('click', requestPhoneVerification);

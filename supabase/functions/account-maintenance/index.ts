@@ -536,9 +536,20 @@ serve(async (req) => {
 
   if (action === "complete_onboarding") {
     const now = new Date().toISOString();
+    const usernameReady = !!String(actorProfile.username || body.username || "").trim();
+    const passwordReady = actorProfile.password_login_ready === true;
+    const patch: Record<string, unknown> = {
+      onboarding_completed_at: now,
+      updated_at: now,
+    };
+
+    if (usernameReady && passwordReady && !actorProfile.account_setup_completed_at) {
+      patch.account_setup_completed_at = now;
+    }
+
     const { data, error } = await supabase
       .from("profiles")
-      .update({ onboarding_completed_at: now, updated_at: now })
+      .update(patch)
       .eq("id", actorId)
       .select("*")
       .single();

@@ -329,6 +329,10 @@
     return accountRecoveryAction({ action: 'verify_phone_code', ...payload }, true);
   }
 
+  async function fetchSessionHealth() {
+    return accountRecoveryAction({ action: 'session_health' }, true);
+  }
+
   async function fetchLogData(payload = {}) {
     return jsonFetch('review-list', {
       method: 'POST',
@@ -447,6 +451,40 @@
           message: err?.message || 'Authenticated jobs-directory probe failed.'
         });
       }
+
+      try {
+        const refResp = await fetchReferenceData({ scope: 'lists' });
+        checks.push({
+          scope: 'authenticated-reference-data',
+          ok: !!refResp,
+          message: 'Authenticated reference-data probe completed.'
+        });
+      } catch (err) {
+        checks.push({
+          scope: 'authenticated-reference-data',
+          ok: false,
+          message: err?.message || 'Authenticated reference-data probe failed.'
+        });
+      }
+
+      try {
+        const sessionHealth = await fetchSessionHealth();
+        const warnings = Array.isArray(sessionHealth?.warnings) ? sessionHealth.warnings : [];
+        checks.push({
+          scope: 'authenticated-session-health',
+          ok: !!sessionHealth?.ok && warnings.length === 0,
+          message: warnings.length
+            ? `Session health returned ${warnings.length} warning(s).`
+            : 'Authenticated session-health probe completed.',
+          details: warnings
+        });
+      } catch (err) {
+        checks.push({
+          scope: 'authenticated-session-health',
+          ok: false,
+          message: err?.message || 'Authenticated session-health probe failed.'
+        });
+      }
     } else {
       checks.push({
         scope: 'authenticated-probes',
@@ -496,6 +534,7 @@
     requestPhoneVerification,
     sendPhoneVerificationCode,
     verifyPhoneCode,
+    fetchSessionHealth,
     fetchLogData,
     fetchSubmissionDetail,
     saveSubmissionReview,

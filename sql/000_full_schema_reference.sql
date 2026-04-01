@@ -1,8 +1,8 @@
--- 2026-03-31 build repair pass
--- No schema changes in this pass. This file is refreshed as the current reference snapshot after the boot/auth/cache repair update.
+-- 2026-03-31 session health and onboarding completion pass
+-- No schema changes in this pass. This file is refreshed as the current reference snapshot after the onboarding/session diagnostics workflow update.
 
 -- Full schema reference snapshot
--- Updated through 2026-03-31 build repair pass.
+-- Updated through 2026-03-31 session health and onboarding completion pass.
 -- Latest incremental schema migration: 055_storage_onboarding_identity_change_and_bootstrap.sql
 -- No new schema migration was required for this pass; the changes were frontend + function workflow updates on top of migration 055.
 
