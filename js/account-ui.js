@@ -18,7 +18,11 @@
     return;
   }
 
-  const DRAFT_KEY = 'ywi_account_settings_draft_v1';
+  function draftKey() {
+    const authState = window.YWI_AUTH?.getState?.() || {};
+    const userId = authState.user?.id || authState.profile?.id || 'anonymous';
+    return `ywi_account_settings_draft_v1:${userId}`;
+  }
 
   function ensureOnboardingSection() {
     if (document.getElementById('onboarding')) return;
@@ -406,7 +410,7 @@
 
   function getDraft() {
     try {
-      return JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}');
+      return JSON.parse(localStorage.getItem(draftKey()) || '{}');
     } catch {
       return {};
     }
@@ -414,7 +418,7 @@
 
   function saveDraft() {
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      localStorage.setItem(draftKey(), JSON.stringify({
         full_name: els.fullName?.value || '',
         username: els.username?.value || '',
         recovery_email: els.recoveryEmail?.value || '',
@@ -449,7 +453,7 @@
 
   function clearDraft() {
     try {
-      localStorage.removeItem(DRAFT_KEY);
+      localStorage.removeItem(draftKey());
     } catch {}
   }
 
@@ -474,7 +478,10 @@
     const access = security?.getAccessProfile ? security.getAccessProfile(role) : { roleLabel: role };
     const emailVerified = !!(current.user?.email_confirmed_at || current.user?.confirmed_at || current.profile?.email_verified);
     const phoneVerified = !!(current.profile?.phone_verified || current.profile?.phone_verified_at);
-    const needsOnboarding = !!(isAuthenticated && (current.needsAccountSetup || !current.profile?.onboarding_completed_at));
+    const usernameReady = !!String(current.profile?.username || '').trim();
+    const passwordReady = current.profile?.password_login_ready === true;
+    const setupComplete = !!current.profile?.account_setup_completed_at;
+    const needsOnboarding = !!(isAuthenticated && (!usernameReady || !passwordReady || !setupComplete));
 
     if (els.panel) els.panel.hidden = !isAuthenticated;
     if (els.signedOutNotice) els.signedOutNotice.style.display = isAuthenticated ? 'none' : 'block';

@@ -113,13 +113,12 @@
 
     state.role = state.profile?.role || 'worker';
     state.roleLabel = getRoleLabel(state.role);
+    const username = safeText(state.profile?.username);
+    const passwordReady = state.profile?.password_login_ready === true;
+    const setupComplete = !!state.profile?.account_setup_completed_at;
     state.needsAccountSetup = !!(
       state.isAuthenticated &&
-      (
-        state.authFlow === 'recovery' ||
-        state.profile?.password_login_ready === false ||
-        !safeText(state.profile?.username)
-      )
+      (!username || !passwordReady || !setupComplete)
     );
     state.pendingAuthResolution = !state.bootReady && !state.isAuthenticated;
   }
@@ -160,7 +159,7 @@
     const session = await getStableSession();
     await applySession(session);
     state.authError = boot?.state?.authError || state.authError || '';
-    state.authFlow = boot?.state?.authFlow || state.authFlow || 'idle';
+    state.authFlow = 'password';
     state.pendingAuthResolution = false;
     return state.session;
   }
@@ -244,6 +243,7 @@
     if (error) throw error;
 
     await refreshFromSupabase().catch(() => null);
+    state.authFlow = 'password';
     state.pendingAuthResolution = false;
     dispatch('ywi:auth-changed', { state: getState() });
     return data;
@@ -283,6 +283,7 @@
     const body = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(body?.error || 'Unable to finish account setup.');
 
+    state.authFlow = 'password';
     state.pendingAuthResolution = false;
     state.needsAccountSetup = false;
 

@@ -9,7 +9,7 @@
 
 (function () {
   const DEFAULT_SUPABASE_URL = 'https://jmqvkgiqlimdhcofwkxr.supabase.co';
-  const AUTH_RESOLUTION_TIMEOUT_MS = 15000;
+  const AUTH_RESOLUTION_TIMEOUT_MS = 25000;
 
   function getRuntimeConfig() {
     return window.YWI_RUNTIME_CONFIG || window.__YWI_RUNTIME_CONFIG || {};
@@ -284,13 +284,12 @@
 
     state.role = state.profile?.role || 'worker';
     state.roleLabel = getRoleLabel(state.role);
+    const username = String(state.profile?.username || '').trim();
+    const passwordReady = state.profile?.password_login_ready === true;
+    const setupComplete = !!state.profile?.account_setup_completed_at;
     state.needsAccountSetup = !!(
       state.isAuthenticated &&
-      (
-        state.authFlow === 'recovery' ||
-        state.profile?.password_login_ready === false ||
-        !String(state.profile?.username || '').trim()
-      )
+      (!username || !passwordReady || !setupComplete)
     );
   }
 

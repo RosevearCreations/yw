@@ -80,3 +80,10 @@ Current state after this pass:
 - `account-maintenance` now uses the incoming bearer token with the service-role client and has `verify_jwt = false` configured so function auth is handled in-code instead of by the edge gateway.
 - Remaining live verification after deploy should focus on `account-maintenance` save/update paths, then `admin-directory`, `reference-data`, and `jobs-directory` if any 401s remain.
 - The next chat should start from verifying the live deployed `SB_*` runtime path, then checking the first failing function response body if any auth error remains.
+
+
+## 2026-03-31 Auth and onboarding status
+- Runtime auth now prefers SB_URL / SB_ANON_KEY / SB_SERVICE_ROLE_KEY across frontend, Vercel compatibility route, and Edge Functions.
+- `needsAccountSetup` is now computed from profile flags (`username`, `password_login_ready`, `account_setup_completed_at`) instead of lingering recovery state alone.
+- Worker default route was corrected back to `toolbox` so normal screens open after sign-in.
+- Remaining focus for next pass: verify worker pages render after fresh login without stale session state; keep onboarding banner hidden once account setup flags are complete.

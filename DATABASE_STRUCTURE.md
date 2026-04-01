@@ -414,3 +414,9 @@ Current state after this pass:
 - `account-maintenance` now uses the incoming bearer token with the service-role client and has `verify_jwt = false` configured so function auth is handled in-code instead of by the edge gateway.
 - Remaining live verification after deploy should focus on `account-maintenance` save/update paths, then `admin-directory`, `reference-data`, and `jobs-directory` if any 401s remain.
 - The next chat should start from verifying the live deployed `SB_*` runtime path, then checking the first failing function response body if any auth error remains.
+
+
+## 2026-03-31 account setup reliability note
+- Profile completion gating now depends on `username`, `password_login_ready`, and `account_setup_completed_at`.
+- Frontend setup flow should not treat recovery state by itself as unfinished onboarding.
+- No new schema change was added in this pass; current auth/setup work uses existing profile columns.

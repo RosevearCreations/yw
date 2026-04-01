@@ -265,11 +265,16 @@
   }
 
   async function fetchProfileScope(payload = {}) {
+    const body = typeof payload === 'string' ? { scope: payload } : payload;
     return jsonFetch('admin-directory', {
       method: 'POST',
-      body: payload,
+      body,
       requireAuth: true
     });
+  }
+
+  async function saveMyProfile(payload = {}) {
+    return accountRecoveryAction({ action: 'update_recovery_profile', ...payload }, true);
   }
 
   async function fetchJobsDirectory(payload = {}) {
@@ -482,6 +487,7 @@
     uploadEquipmentEvidence,
     fetchReferenceData,
     fetchProfileScope,
+    saveMyProfile,
     fetchJobsDirectory,
     loadAdminDirectory,
     loadAdminSelectors,

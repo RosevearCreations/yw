@@ -118,7 +118,7 @@
 
   function getDefaultSectionForRole(role) {
     const normalized = normalizeRole(role);
-    if (normalized === 'worker' || normalized === 'staff' || normalized === 'onsite_admin') return 'me';
+    if (normalized === 'worker' || normalized === 'staff' || normalized === 'onsite_admin') return 'toolbox';
     if (normalized === 'supervisor' || normalized === 'hse' || normalized === 'job_admin') return 'crew';
     if (normalized === 'admin') return 'admin';
     return 'toolbox';

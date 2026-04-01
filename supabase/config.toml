@@ -1,0 +1,2 @@
+[functions.account-maintenance]
+verify_jwt = false
