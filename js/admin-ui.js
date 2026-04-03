@@ -100,7 +100,7 @@
           <div class="section-heading">
             <div>
               <h3 style="margin:0;">Deploy Smoke Check</h3>
-              <p class="section-subtitle">Check shell files, runtime config reachability, diagnostics state, and bootstrap endpoints.</p>
+              <p class="section-subtitle">Check shell files, runtime config reachability, diagnostics state, startup timing, and bootstrap endpoints.</p>
             </div>
             <div class="admin-heading-actions">
               <button id="ad_run_smoke" class="secondary" type="button">Run Smoke Check</button>
@@ -113,6 +113,25 @@
               <thead>
                 <tr><th>Check</th><th>Status</th><th>Details</th></tr>
               </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="admin-panel-block" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
+              <h3 style="margin:0;">Conflict Review</h3>
+              <p class="section-subtitle">Review queued admin sync conflicts, compare local payloads, and decide whether to retry, keep the local draft, or discard it.</p>
+            </div>
+            <div class="admin-heading-actions">
+              <button id="ad_reload_conflicts" class="secondary" type="button">Refresh Conflicts</button>
+            </div>
+          </div>
+          <div id="ad_conflict_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
+          <div class="table-scroll">
+            <table id="ad_conflicts_table">
+              <thead><tr><th>Queued</th><th>Action</th><th>Status</th><th>Local Payload</th><th>Conflict</th><th>Actions</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -205,6 +224,9 @@
         retrySyncBtn: document.getElementById('ad_retry_sync'),
         smokeSummary: document.getElementById('ad_smoke_summary'),
         smokeBody: document.querySelector('#ad_smoke_table tbody'),
+        conflictSummary: document.getElementById('ad_conflict_summary'),
+        conflictBody: document.querySelector('#ad_conflicts_table tbody'),
+        reloadConflictsBtn: document.getElementById('ad_reload_conflicts'),
         emailNotificationId: document.getElementById('ad_email_notification_id'),
         emailTo: document.getElementById('ad_email_to'),
         emailSubject: document.getElementById('ad_email_subject'),
@@ -360,7 +382,8 @@
         const resp = await runNotificationAction(action, notificationId, { decision_notes: decisionNotes });
         if (resp?.preview) hydratePreview(notificationId, resp.preview);
         setSummary(`Notification ${notificationId} ${action.replace('_', ' ')} complete.`);
-        await loadDirectory();
+        renderConflictTable();
+      await loadDirectory();
       } catch (err) {
         const msg = String(err?.message || 'Notification action failed.');
         if (msg.toLowerCase().includes('offline') || msg.includes('HTTP 5')) {
@@ -492,12 +515,22 @@
         const diagItems = Array.isArray(window.YWIAppDiagnostics?.getItems?.())
           ? window.YWIAppDiagnostics.getItems()
           : [];
+        const timingItems = Array.isArray(window.YWIModuleTimings?.getItems?.())
+          ? window.YWIModuleTimings.getItems()
+          : [];
         checks.push({
           scope: 'diagnostics-banner',
           ok: diagItems.length === 0,
           message: diagItems.length
             ? `${diagItems.length} diagnostic item(s) are present.`
             : 'Diagnostics banner is empty on the current boot.'
+        });
+        checks.push({
+          scope: 'module-timings',
+          ok: timingItems.length > 0,
+          message: timingItems.length
+            ? `Captured ${timingItems.length} timing trace(s). Latest: ${timingItems[0]?.scope || 'n/a'} in ${timingItems[0]?.duration_ms || 0} ms.`
+            : 'No module timing traces have been captured yet.'
         });
 
         const result = { ok: checks.every((row) => row.ok), checks };
@@ -610,6 +643,66 @@
       return true;
     }
 
+
+    function renderConflictTable() {
+      const e = els();
+      if (!e.conflictBody) return;
+      const summary = window.YWIOutbox?.getActionSummary?.('admin') || { items: [], conflicts: 0, total: 0 };
+      const rows = Array.isArray(summary.items) ? summary.items.filter((item) => item.status === 'conflict' || Number(item.merge_count || 0) > 0) : [];
+      e.conflictBody.innerHTML = rows.map((item) => `
+        <tr>
+          <td>${escHtml(item.updated_at || item.queued_at || '')}</td>
+          <td>${escHtml(item.label || item.action_type || '')}</td>
+          <td>${escHtml(item.status || 'pending')}</td>
+          <td><pre class="code-block" style="max-width:280px;white-space:pre-wrap;">${escHtml(JSON.stringify(item.payload || {}, null, 2))}</pre></td>
+          <td><div>${escHtml(item.error || 'Merged local change pending review.')}</div>${Array.isArray(item.conflict_details) && item.conflict_details.length ? `<ul>${item.conflict_details.map((detail) => `<li>${escHtml(detail)}</li>`).join('')}</ul>` : ''}</td>
+          <td>
+            <div class="table-actions" style="display:flex;flex-wrap:wrap;gap:6px;">
+              <button class="secondary" data-conflict-action="retry" data-id="${escHtml(item.id)}">Retry</button>
+              <button class="secondary" data-conflict-action="keep_local" data-id="${escHtml(item.id)}">Keep Local</button>
+              <button class="secondary" data-conflict-action="discard" data-id="${escHtml(item.id)}">Discard</button>
+            </div>
+          </td>
+        </tr>
+      `).join('') || '<tr><td colspan="6" class="muted">No admin conflicts are waiting for review.</td></tr>';
+      setSummary(rows.length ? `Conflict review shows ${rows.length} admin item(s) needing attention.` : 'No admin conflicts are waiting for review.');
+      if (e.conflictSummary) {
+        e.conflictSummary.style.display = 'block';
+        e.conflictSummary.dataset.kind = rows.length ? 'error' : 'info';
+        e.conflictSummary.textContent = rows.length
+          ? `${rows.length} queued admin item(s) need review before the next retry.`
+          : 'No admin conflicts are waiting for review.';
+      }
+    }
+
+    async function handleConflictClick(event) {
+      const btn = event.target.closest('[data-conflict-action]');
+      if (!btn) return;
+      const action = btn.getAttribute('data-conflict-action');
+      const id = btn.getAttribute('data-id');
+      if (!id) return;
+      try {
+        if (action === 'discard') {
+          window.YWIOutbox?.removeActionItem?.(id);
+          renderConflictTable();
+          return;
+        }
+        if (action === 'keep_local') {
+          window.YWIOutbox?.resolveActionConflict?.(id, { status: 'pending', error: '' });
+          renderConflictTable();
+          return;
+        }
+        if (action === 'retry') {
+          const item = window.YWIOutbox?.getActionItem?.(id);
+          if (!item) throw new Error('Queued item was not found.');
+          await retryQueuedActions({ scope: 'admin', handlers: { admin_notification_action: (payload) => manageAdminEntity(payload) } });
+          renderConflictTable();
+        }
+      } catch (err) {
+        setSummary(err?.message || 'Unable to update the conflict item.', true);
+      }
+    }
+
     function bind() {
       const e = els();
 
@@ -658,6 +751,14 @@
       if (e.smokeBtn && e.smokeBtn.dataset.bound !== '1') {
         e.smokeBtn.dataset.bound = '1';
         e.smokeBtn.addEventListener('click', () => runSmokeCheck());
+      }
+      if (e.conflictBody && e.conflictBody.dataset.bound !== '1') {
+        e.conflictBody.dataset.bound = '1';
+        e.conflictBody.addEventListener('click', handleConflictClick);
+      }
+      if (e.reloadConflictsBtn && e.reloadConflictsBtn.dataset.bound !== '1') {
+        e.reloadConflictsBtn.dataset.bound = '1';
+        e.reloadConflictsBtn.addEventListener('click', () => renderConflictTable());
       }
       if (e.retrySyncBtn && e.retrySyncBtn.dataset.bound !== '1') {
         e.retrySyncBtn.dataset.bound = '1';

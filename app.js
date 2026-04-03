@@ -45,6 +45,11 @@ const diagnostics = {
   bound: false
 };
 
+const moduleTimings = {
+  entries: [],
+  maxEntries: 80
+};
+
 function todayISO() {
   const d = new Date();
   const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -121,7 +126,8 @@ function renderDiagnostics() {
     return;
   }
   panel.style.display = 'block';
-  if (summary) summary.textContent = `${diagnostics.items.length} recent issue(s) captured. You can retry the protected screens after sign-in.`;
+  const timingCount = moduleTimings.entries.length;
+  if (summary) summary.textContent = `${diagnostics.items.length} recent issue(s) captured. You can retry the protected screens after sign-in.${timingCount ? ` Module timings captured: ${timingCount}.` : ''}`;
   if (list) {
     list.innerHTML = diagnostics.items.map((item) => {
       const details = Array.isArray(item.details) && item.details.length
@@ -150,6 +156,37 @@ function clearDiagnosticsMatching(scopePrefix) {
   if (!scopePrefix) return;
   diagnostics.items = diagnostics.items.filter((item) => !String(item.scope || '').startsWith(scopePrefix));
   renderDiagnostics();
+}
+
+function recordTiming(scope, stage, start, extra = {}) {
+  const started = Number(start || performance.now());
+  const finished = performance.now();
+  const entry = {
+    scope: String(scope || 'app'),
+    stage: String(stage || 'run'),
+    started_at_ms: started,
+    finished_at_ms: finished,
+    duration_ms: Number((finished - started).toFixed(2)),
+    at: new Date().toISOString(),
+    ...extra
+  };
+  moduleTimings.entries.unshift(entry);
+  moduleTimings.entries = moduleTimings.entries.slice(0, moduleTimings.maxEntries);
+  window.__YWI_MODULE_TIMINGS = moduleTimings.entries.slice();
+  window.dispatchEvent(new CustomEvent('ywi:timing', { detail: entry }));
+  return entry;
+}
+
+async function timedRun(scope, fn) {
+  const started = performance.now();
+  try {
+    const result = await fn();
+    recordTiming(scope, 'success', started, { ok: true });
+    return result;
+  } catch (err) {
+    recordTiming(scope, 'failure', started, { ok: false, message: err?.message || 'Failed.' });
+    throw err;
+  }
 }
 
 function bindDiagnosticsEvents() {
@@ -274,7 +311,7 @@ function initAdminModule() {
     onSiteLoaded: () => {},
     onAssignmentLoaded: () => {}
   });
-  Promise.resolve(modules.adminUI.init()).catch((err) => {
+  timedRun('admin-ui.init', () => Promise.resolve(modules.adminUI.init())).catch((err) => {
     console.error('Admin UI init failed', err);
     pushDiagnostic('admin-ui', err?.message || 'Admin UI failed to initialize.');
   });
@@ -307,7 +344,7 @@ function initProfileModule() {
     getAccessProfile
   });
 
-  Promise.resolve(modules.profileUI.init()).catch((err) => {
+  timedRun('profile-ui.init', () => Promise.resolve(modules.profileUI.init())).catch((err) => {
     console.error('Profile UI init failed', err);
     pushDiagnostic('profile-ui', err?.message || 'Profile screen failed to initialize.');
   });
@@ -319,7 +356,7 @@ function initReferenceDataModule() {
     api: api(),
     getCurrentRole: () => appState.currentRole
   });
-  Promise.resolve(modules.referenceDataUI.init()).catch((err) => {
+  timedRun('reference-data.init', () => Promise.resolve(modules.referenceDataUI.init())).catch((err) => {
     console.error('Reference data init failed', err);
     pushDiagnostic('reference-data', err?.message || 'Reference data failed to initialize.');
   });
@@ -332,7 +369,7 @@ function initJobsModule() {
     getCurrentRole: () => appState.currentRole,
     getAccessProfile
   });
-  Promise.resolve(modules.jobsUI.init()).catch((err) => {
+  timedRun('jobs-ui.init', () => Promise.resolve(modules.jobsUI.init())).catch((err) => {
     console.error('Jobs UI init failed', err);
     pushDiagnostic('jobs-ui', err?.message || 'Jobs or Equipment screens failed to initialize.');
   });
@@ -348,7 +385,7 @@ function initLogbookModule() {
     getCurrentRole: () => appState.currentRole,
     getAccessProfile
   });
-  Promise.resolve(modules.logbookUI.init()).catch((err) => {
+  timedRun('logbook-ui.init', () => Promise.resolve(modules.logbookUI.init())).catch((err) => {
     console.error('Logbook UI init failed', err);
     pushDiagnostic('logbook-ui', err?.message || 'Logbook failed to initialize.');
   });
@@ -364,7 +401,7 @@ function initFormModules() {
       getOutbox: outbox().getItems,
       setOutbox: outbox().setItems
     });
-    Promise.resolve(modules.toolboxFormUI.init()).catch((err) => {
+    timedRun('toolbox-form.init', () => Promise.resolve(modules.toolboxFormUI.init())).catch((err) => {
       console.error('Toolbox form init failed', err);
       pushDiagnostic('toolbox-form', err?.message || 'Toolbox Talk failed to initialize.');
     });
@@ -376,7 +413,7 @@ function initFormModules() {
       getOutbox: outbox().getItems,
       setOutbox: outbox().setItems
     });
-    Promise.resolve(modules.ppeFormUI.init()).catch((err) => {
+    timedRun('ppe-form.init', () => Promise.resolve(modules.ppeFormUI.init())).catch((err) => {
       console.error('PPE form init failed', err);
       pushDiagnostic('ppe-form', err?.message || 'PPE Check failed to initialize.');
     });
@@ -388,7 +425,7 @@ function initFormModules() {
       getOutbox: outbox().getItems,
       setOutbox: outbox().setItems
     });
-    Promise.resolve(modules.firstAidFormUI.init()).catch((err) => {
+    timedRun('first-aid-form.init', () => Promise.resolve(modules.firstAidFormUI.init())).catch((err) => {
       console.error('First Aid form init failed', err);
       pushDiagnostic('first-aid-form', err?.message || 'First Aid form failed to initialize.');
     });
@@ -401,7 +438,7 @@ function initFormModules() {
       getOutbox: outbox().getItems,
       setOutbox: outbox().setItems
     });
-    Promise.resolve(modules.inspectionFormUI.init()).catch((err) => {
+    timedRun('inspection-form.init', () => Promise.resolve(modules.inspectionFormUI.init())).catch((err) => {
       console.error('Inspection form init failed', err);
       pushDiagnostic('inspection-form', err?.message || 'Site Inspection failed to initialize.');
     });
@@ -414,7 +451,7 @@ function initFormModules() {
       getOutbox: outbox().getItems,
       setOutbox: outbox().setItems
     });
-    Promise.resolve(modules.drillFormUI.init()).catch((err) => {
+    timedRun('drill-form.init', () => Promise.resolve(modules.drillFormUI.init())).catch((err) => {
       console.error('Drill form init failed', err);
       pushDiagnostic('drill-form', err?.message || 'Emergency Drill failed to initialize.');
     });
@@ -443,6 +480,13 @@ async function initializeAppShell() {
     clear: () => {
       diagnostics.items = [];
       renderDiagnostics();
+    }
+  };
+  window.YWIModuleTimings = {
+    getItems: () => moduleTimings.entries.slice(),
+    clear: () => {
+      moduleTimings.entries = [];
+      window.__YWI_MODULE_TIMINGS = [];
     }
   };
 

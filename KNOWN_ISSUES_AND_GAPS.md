@@ -1,13 +1,21 @@
 ## 2026-03-31 session health and onboarding completion pass
+
+## 2026-04-01 conflict review, CI smoke-check, and diagnostics timing pass
+- Added visible conflict review panels in Settings and Admin so queued local actions can be compared, retried, kept local, or discarded instead of staying as opaque conflict rows.
+- Added module/startup timing capture and exposed it through in-app diagnostics, support snapshot export, and smoke-check reporting for deeper boot troubleshooting.
+- Added a repository smoke-check script plus GitHub Actions workflow so baseline release verification now runs automatically in CI/CD instead of being manual-only.
+- No new SQL migration was required. `sql/000_full_schema_reference.sql` remains the current schema snapshot and `055_storage_onboarding_identity_change_and_bootstrap.sql` remains the latest live migration.
+
+### Remaining sign-off item
+- Live deployed auth/runtime verification still needs to be confirmed against your actual environment because that cannot be completed from the zip alone. The codebase is now prepared with better conflict review, smoke automation, and timing diagnostics for that final live verification.
+
 - Fixed the separate onboarding-complete path so it can also finalize `account_setup_completed_at` when username and password readiness are already satisfied.
 - Added signed-in session health probing to the frontend API/smoke checks and added a Support & Session Health panel in Settings with exportable troubleshooting snapshots.
 - No new SQL migration was required in this pass; `sql/000_full_schema_reference.sql` remains the refreshed reference snapshot and `055_storage_onboarding_identity_change_and_bootstrap.sql` remains the latest live migration.
 
 ### Remaining active gaps after this pass
 1. Verify the live deployed `SB_*` runtime path and capture the first failing function response body if any 401 remains.
-2. Add true side-by-side conflict merge UI for queued profile/admin drafts when local and server values differ.
-3. Add automated smoke-check execution in CI/CD instead of manual-only release verification.
-4. Expand diagnostics into per-module timing traces for deeper startup troubleshooting.
+2. Validate the new conflict-review controls and timing traces against a real authenticated deployment.
 
 ## 2026-03-31 build repair pass
 - Fixed the service-worker duplicate cache entry that was causing `Cache.addAll(): duplicate requests` during install.
@@ -77,11 +85,11 @@ This is where we list known issues and gaps that need to be addressed
 - Added equipment evidence gallery bulk-select/bulk-delete controls plus visible upload-progress state text for replace/delete actions on Storage-backed evidence assets.
 - Refreshed documentation and schema snapshot notes; no new SQL migration was required for this pass.
 
-### Remaining best next steps after the 2026-03-29 conflict-aware replay pass
-1. Add true side-by-side conflict merge UI for queued profile/admin drafts when local and server values differ.
-2. Add thumbnail upload progress bars and multi-file bulk replace for equipment evidence assets.
-3. Add automated deploy smoke-check execution in CI/CD so release verification is not manual.
-4. Expand diagnostics collection into per-module success/failure timing for deeper startup tracing.
+### Status after the 2026-04-01 sign-off prep pass
+1. Side-by-side conflict review controls are now in the live Settings and Admin screens for queued local actions.
+2. Automated repository smoke-check execution is now wired into GitHub Actions CI/CD.
+3. Diagnostics collection now includes startup and module timing traces for deeper troubleshooting.
+4. Remaining work is limited to live environment verification and any follow-up fixes from real deployment testing.
 
 ## 2026-03-31 Runtime/Auth alignment pass
 

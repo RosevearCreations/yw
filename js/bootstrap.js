@@ -82,6 +82,21 @@
     document.dispatchEvent(new CustomEvent(name, { detail }));
   }
 
+  function emitTiming(scope, startedAt, extra = {}) {
+    const start = Number(startedAt || performance.now());
+    const end = performance.now();
+    const detail = {
+      scope,
+      duration_ms: Number((end - start).toFixed(2)),
+      started_at_ms: start,
+      finished_at_ms: end,
+      at: new Date().toISOString(),
+      ...extra
+    };
+    window.dispatchEvent(new CustomEvent('ywi:timing', { detail }));
+    return detail;
+  }
+
   function safeText(value) {
     return String(value ?? '').trim();
   }
@@ -251,6 +266,7 @@
     state.pendingAuthResolution = false;
     state.authError = message || state.authError || '';
     if (message) state.configError = message;
+    emitTiming('bootstrap.init', initStartedAt, { ok: true, isAuthenticated: !!state.isAuthenticated, needsAccountSetup: !!state.needsAccountSetup });
     dispatch('ywi:boot-ready', { state: getState() });
   }
 
@@ -354,6 +370,7 @@
   }
 
   async function init() {
+    const initStartedAt = performance.now();
     if (state.initialized) return;
     state.pendingAuthResolution = true;
     startAuthResolutionTimer();
@@ -366,6 +383,7 @@
     }
 
     if (!anonKey) {
+      emitTiming('bootstrap.init', initStartedAt, { ok: false, message: 'App configuration is incomplete.' });
       return finishWithoutClient('App configuration is incomplete. Add the Supabase anon/public key to js/app-config.js or use the emergency login-screen override, then reload the app.');
     }
 

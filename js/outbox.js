@@ -162,6 +162,41 @@
     return { total: list.length, retried, remaining: remaining.length, conflicts };
   }
 
+  function getActionItem(id) {
+    return getActionItems().find((item) => String(item.id || '') === String(id || '')) || null;
+  }
+
+  function removeActionItem(id) {
+    const filtered = getActionItems().filter((item) => String(item.id || '') !== String(id || ''));
+    setActionItems(filtered);
+    return filtered.length;
+  }
+
+  function updateActionItem(id, updater = {}) {
+    const list = getActionItems();
+    const index = list.findIndex((item) => String(item.id || '') === String(id || ''));
+    if (index < 0) return null;
+    const current = list[index] || {};
+    const next = {
+      ...current,
+      ...(typeof updater === 'function' ? updater(current) : updater),
+      updated_at: new Date().toISOString()
+    };
+    list[index] = next;
+    setActionItems(list);
+    return next;
+  }
+
+  function resolveActionConflict(id, updates = {}) {
+    return updateActionItem(id, (current) => ({
+      ...current,
+      ...updates,
+      status: updates.status || 'pending',
+      error: updates.error || '',
+      conflict_details: Array.isArray(updates.conflict_details) ? updates.conflict_details : []
+    }));
+  }
+
   function getActionSummary(scope = '') {
     const items = getActionItems().filter((item) => !scope || item.scope === scope);
     return {
@@ -207,6 +242,10 @@
     setActionItems,
     queueAction,
     retryQueuedActions,
+    getActionItem,
+    updateActionItem,
+    resolveActionConflict,
+    removeActionItem,
     getActionSummary
   };
 })();

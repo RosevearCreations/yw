@@ -1,10 +1,10 @@
--- 2026-03-31 session health and onboarding completion pass
--- No schema changes in this pass. This file is refreshed as the current reference snapshot after the onboarding/session diagnostics workflow update.
+-- 2026-04-01 conflict review, CI smoke-check, and diagnostics timing pass
+-- No schema changes in this pass. This file is refreshed as the current reference snapshot after the conflict review, startup timing, and CI smoke-check workflow update.
 
 -- Full schema reference snapshot
--- Updated through 2026-03-31 session health and onboarding completion pass.
+-- Updated through 2026-04-01 conflict review, CI smoke-check, and diagnostics timing pass.
 -- Latest incremental schema migration: 055_storage_onboarding_identity_change_and_bootstrap.sql
--- No new schema migration was required for this pass; the changes were frontend + function workflow updates on top of migration 055.
+-- No new schema migration was required for this pass; the changes were frontend, diagnostics, CI workflow, and documentation updates on top of migration 055.
 
 create extension if not exists pgcrypto;
 

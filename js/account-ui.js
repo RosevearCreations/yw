@@ -181,6 +181,24 @@
       <div id="account_session_health_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
       <pre id="account_session_health_output" class="code-block" style="display:none;max-height:260px;overflow:auto;white-space:pre-wrap;"></pre>
 
+
+      <div class="section-heading" style="margin-top:18px;">
+        <div>
+          <h3 style="margin:0;">Conflict Review</h3>
+          <p class="section-subtitle">Compare queued local account updates against the current server-backed profile and decide whether to retry, keep the local version, or discard it.</p>
+        </div>
+        <div class="admin-heading-actions">
+          <button id="account_reload_conflicts" class="secondary" type="button">Refresh Conflicts</button>
+        </div>
+      </div>
+      <div id="account_conflict_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
+      <div class="table-scroll">
+        <table id="account_conflicts_table">
+          <thead><tr><th>Queued</th><th>Action</th><th>Status</th><th>Local Draft</th><th>Current Server Values</th><th>Actions</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
       <div class="section-heading" style="margin-top:18px;">
         <div>
           <h3 style="margin:0;">Activity Inbox</h3>
@@ -266,6 +284,9 @@
     hint: document.getElementById('account_password_hint'),
     signedOutNotice: document.getElementById('accountSignedOutNotice'),
     reloadIdentityRequestsBtn: document.getElementById('account_reload_identity_requests'),
+    conflictSummary: document.getElementById('account_conflict_summary'),
+    conflictBody: document.querySelector('#account_conflicts_table tbody'),
+    reloadConflictsBtn: document.getElementById('account_reload_conflicts'),
     notificationsSummary: document.getElementById('account_notifications_summary'),
     notificationsBody: document.querySelector('#account_notifications_table tbody'),
     retrySyncBtn: document.getElementById('account_retry_sync'),
@@ -317,6 +338,92 @@
     setNotice(els.notificationsSummary, text, isError);
   }
 
+
+  function buildServerConflictSnapshot(authState = getAuthState()) {
+    const profile = authState.profile || {};
+    return {
+      full_name: profile.full_name || '',
+      username: profile.username || '',
+      recovery_email: profile.recovery_email || '',
+      phone: profile.phone || '',
+      address_line1: profile.address_line1 || '',
+      address_line2: profile.address_line2 || '',
+      city: profile.city || '',
+      province: profile.province || '',
+      postal_code: profile.postal_code || '',
+      pending_username: profile.pending_username || '',
+      pending_email: profile.pending_email || ''
+    };
+  }
+
+  function renderConflictTable() {
+    if (!els.conflictBody) return;
+    const summary = window.YWIOutbox?.getActionSummary?.('account') || { items: [] };
+    const serverSnapshot = buildServerConflictSnapshot();
+    const rows = Array.isArray(summary.items) ? summary.items.filter((item) => item.status === 'conflict' || Number(item.merge_count || 0) > 0) : [];
+    els.conflictBody.innerHTML = rows.map((item) => `
+      <tr>
+        <td>${escHtml(item.updated_at || item.queued_at || '')}</td>
+        <td>${escHtml(item.label || item.action_type || '')}</td>
+        <td>${escHtml(item.status || 'pending')}</td>
+        <td><pre class="code-block" style="max-width:260px;white-space:pre-wrap;">${escHtml(JSON.stringify(item.payload || {}, null, 2))}</pre></td>
+        <td><pre class="code-block" style="max-width:260px;white-space:pre-wrap;">${escHtml(JSON.stringify(serverSnapshot, null, 2))}</pre></td>
+        <td>
+          <div class="table-actions" style="display:flex;flex-wrap:wrap;gap:6px;">
+            <button class="secondary" data-account-conflict-action="retry" data-id="${escHtml(item.id)}">Retry</button>
+            <button class="secondary" data-account-conflict-action="keep_local" data-id="${escHtml(item.id)}">Keep Local</button>
+            <button class="secondary" data-account-conflict-action="discard" data-id="${escHtml(item.id)}">Discard</button>
+          </div>
+          ${item.error ? `<div class="muted" style="margin-top:6px;">${escHtml(item.error)}</div>` : ''}
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="6" class="muted">No queued account conflicts are waiting for review.</td></tr>';
+    setNotice(
+      els.conflictSummary,
+      rows.length ? `${rows.length} queued account item(s) need review.` : 'No queued account conflicts are waiting for review.',
+      rows.length > 0
+    );
+  }
+
+  async function handleConflictTableClick(event) {
+    const btn = event.target.closest('[data-account-conflict-action]');
+    if (!btn) return;
+    const action = btn.getAttribute('data-account-conflict-action');
+    const id = btn.getAttribute('data-id');
+    if (!id) return;
+    try {
+      if (action === 'discard') {
+        window.YWIOutbox?.removeActionItem?.(id);
+        renderConflictTable();
+        return;
+      }
+      if (action === 'keep_local') {
+        window.YWIOutbox?.resolveActionConflict?.(id, { status: 'pending', error: '' });
+        renderConflictTable();
+        return;
+      }
+      if (action === 'retry') {
+        const item = window.YWIOutbox?.getActionItem?.(id);
+        if (!item) throw new Error('Queued item was not found.');
+        const handlerMap = {
+          update_recovery_profile: (payload) => api.accountRecoveryAction({ action: 'update_recovery_profile', ...payload }),
+          request_identity_change: (payload) => api.accountRecoveryAction({ action: 'request_identity_change', ...payload })
+        };
+        const handler = handlerMap[item.action_type];
+        if (!handler) throw new Error('No retry handler is available for this queued item.');
+        await handler(item.payload || {});
+        window.YWIOutbox?.removeActionItem?.(id);
+        await auth.refresh();
+        await loadIdentityChangeRequests();
+        await loadNotifications();
+        renderConflictTable();
+      }
+    } catch (err) {
+      setNotice(els.conflictSummary, err?.message || 'Unable to update the queued conflict item.', true);
+    }
+  }
+
+
   function getAuthState() {
     return window.YWI_AUTH?.getState?.() || auth.getState?.() || {};
   }
@@ -357,6 +464,7 @@
         </tr>
       `).join('') || '<tr><td colspan="6" class="muted">No account activity yet.</td></tr>';
       setNotificationsSummary(rows.length ? `Loaded ${rows.length} activity item(s).${outboxSummary.total ? ` Pending local sync: ${outboxSummary.total}.` : ''}` : 'No account activity yet.');
+      renderConflictTable();
     } catch (err) {
       els.notificationsBody.innerHTML = '<tr><td colspan="6" class="muted">Unable to load activity inbox.</td></tr>';
       setNotificationsSummary(err?.message || 'Unable to load activity inbox.', true);
@@ -412,6 +520,7 @@
         </tr>
       `).join('') || '<tr><td colspan="6" class="muted">No identity change requests yet.</td></tr>';
       setTableSummary(rows.length ? `Loaded ${rows.length} identity change request(s).` : 'No identity change requests yet.');
+      renderConflictTable();
     } catch (err) {
       els.identityRequestsBody.innerHTML = '<tr><td colspan="6" class="muted">Unable to load request history.</td></tr>';
       setTableSummary(err?.message || 'Unable to load identity change request history.', true);
@@ -764,6 +873,7 @@
         runtime: window.YWI_BOOT?.getState?.() || {},
         auth: window.YWI_AUTH?.getState?.() || {},
         diagnostics: window.YWIAppDiagnostics?.getItems?.() || [],
+        module_timings: window.YWIModuleTimings?.getItems?.() || [],
         smoke_check: window.__YWI_LAST_SMOKE_CHECK || null,
         session_health: sessionHealth
       };
@@ -780,6 +890,7 @@
       setPreformatted(els.sessionHealthOutput, JSON.stringify({
         exported_at: supportSnapshot.exported_at,
         diagnostics_count: supportSnapshot.diagnostics.length,
+        module_timing_count: supportSnapshot.module_timings.length,
         has_smoke_check: !!supportSnapshot.smoke_check,
         session_health_ok: !!supportSnapshot.session_health?.ok
       }, null, 2));
@@ -861,6 +972,8 @@
     }
     if (els.onboardingCompleteBtn) els.onboardingCompleteBtn.addEventListener('click', completeOnboarding);
     if (els.reloadIdentityRequestsBtn) els.reloadIdentityRequestsBtn.addEventListener('click', loadIdentityChangeRequests);
+    if (els.reloadConflictsBtn) els.reloadConflictsBtn.addEventListener('click', renderConflictTable);
+    if (els.conflictBody) els.conflictBody.addEventListener('click', handleConflictTableClick);
     if (els.reloadNotificationsBtn) els.reloadNotificationsBtn.addEventListener('click', loadNotifications);
     if (els.retrySyncBtn) els.retrySyncBtn.addEventListener('click', retryPendingSync);
   }
