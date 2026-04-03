@@ -69,6 +69,16 @@ async function resolveProfileIdByNameOrEmail(supabase: any, value?: string | nul
   return data?.id || null;
 }
 
+function validateAdminSetPassword(password?: string | null) {
+  const clean = String(password || '');
+  if (!clean) throw new Error('A new password is required.');
+  if (clean.length < 10) throw new Error('Password must be at least 10 characters long.');
+  if (!/[A-Z]/.test(clean) || !/[a-z]/.test(clean) || !/[0-9]/.test(clean)) {
+    throw new Error('Password must include upper, lower, and number characters.');
+  }
+  return clean;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   const supabase = createClient((Deno.env.get('SB_URL') || Deno.env.get('SUPABASE_URL'))!, (Deno.env.get('SB_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'))!);
@@ -301,6 +311,113 @@ serve(async (req) => {
         });
       }
       return Response.json({ ok:true, record: updated }, { headers:corsHeaders });
+    }
+
+
+    if (entity === 'credential' && action === 'set_password') {
+      const targetProfileId = String(body.profile_id || '').trim();
+      if (!targetProfileId) return Response.json({ ok:false, error:'profile_id is required' }, { status:400, headers:corsHeaders });
+      const newPassword = validateAdminSetPassword(body.new_password);
+      const now = new Date().toISOString();
+      const { data: targetProfile, error: targetProfileErr } = await supabase.from('profiles').select('id,email,full_name,role,is_active,password_login_ready').eq('id', targetProfileId).maybeSingle();
+      if (targetProfileErr || !targetProfile) return Response.json({ ok:false, error:'Target profile not found' }, { status:404, headers:corsHeaders });
+      const { error: authUpdateErr } = await supabase.auth.admin.updateUserById(targetProfileId, {
+        password: newPassword,
+        user_metadata: {
+          password_reset_required: !!body.force_password_change,
+          password_set_by_admin_profile_id: actorId,
+          password_set_by_admin_at: now,
+        }
+      });
+      if (authUpdateErr) throw authUpdateErr;
+      const { data: updatedProfile, error: profileUpdateErr } = await supabase
+        .from('profiles')
+        .update({ password_login_ready: true, password_changed_at: now, updated_at: now })
+        .eq('id', targetProfileId)
+        .select('*')
+        .single();
+      if (profileUpdateErr) throw profileUpdateErr;
+
+      await supabase.from('admin_password_resets').insert({
+        target_profile_id: targetProfileId,
+        reset_by_profile_id: actorId,
+        reason: body.reason ?? null,
+        force_password_change: !!body.force_password_change,
+        created_at: now,
+      });
+
+      await supabase.from('admin_notifications').insert({
+        notification_type: 'admin_password_reset',
+        recipient_role: targetProfile.role || 'worker',
+        target_table: 'profiles',
+        target_id: String(targetProfileId),
+        target_profile_id: targetProfileId,
+        title: `Password changed by admin for ${targetProfile.full_name || targetProfile.email || targetProfileId}`,
+        body: JSON.stringify({
+          target_profile_id: targetProfileId,
+          target_email: targetProfile.email || null,
+          target_name: targetProfile.full_name || null,
+          force_password_change: !!body.force_password_change,
+          reason: body.reason ?? null,
+        }),
+        payload: {
+          target_profile_id: targetProfileId,
+          target_email: targetProfile.email || null,
+          target_name: targetProfile.full_name || null,
+          force_password_change: !!body.force_password_change,
+          reason: body.reason ?? null,
+        },
+        status: 'queued',
+        email_subject: 'YWI HSE password changed by admin',
+        created_by_profile_id: actorId,
+      });
+
+      return Response.json({ ok:true, record: updatedProfile }, { headers:corsHeaders });
+    }
+
+    if (entity === 'sales_order' && action === 'create') {
+      const now = new Date().toISOString();
+      const subtotal = Number(body.subtotal_amount || 0);
+      const tax = Number(body.tax_amount || 0);
+      const total = Number(body.total_amount || subtotal + tax || 0);
+      const orderCode = String(body.order_code || '').trim() || `ORD-${Date.now()}`;
+      const orderPatch = {
+        order_code: orderCode,
+        customer_name: body.customer_name ?? null,
+        customer_email: body.customer_email ?? null,
+        order_status: body.order_status ?? 'draft',
+        currency_code: body.currency_code ?? 'CAD',
+        subtotal_amount: subtotal,
+        tax_amount: tax,
+        total_amount: total,
+        notes: body.notes ?? null,
+        created_by_profile_id: actorId,
+        updated_at: now,
+      };
+      const { data: orderRow, error: orderErr } = await supabase.from('sales_orders').insert(orderPatch).select('*').single();
+      if (orderErr) throw orderErr;
+      const accountingPayload = {
+        source_type: 'sales_order',
+        source_id: orderRow.id,
+        entry_type: 'order_created',
+        entry_status: 'open',
+        customer_name: orderRow.customer_name,
+        customer_email: orderRow.customer_email,
+        currency_code: orderRow.currency_code,
+        subtotal_amount: orderRow.subtotal_amount,
+        tax_amount: orderRow.tax_amount,
+        total_amount: orderRow.total_amount,
+        payload: {
+          order_code: orderRow.order_code,
+          notes: orderRow.notes || null,
+          order_status: orderRow.order_status,
+          accounting_stage: 'order_stub_created'
+        },
+        created_by_profile_id: actorId,
+      };
+      const { data: accountingRow, error: accountingErr } = await supabase.from('accounting_entries').insert(accountingPayload).select('*').single();
+      if (accountingErr) throw accountingErr;
+      return Response.json({ ok:true, record: orderRow, accounting_record: accountingRow }, { headers:corsHeaders });
     }
 
     if (entity === 'profile' && action === 'update') {

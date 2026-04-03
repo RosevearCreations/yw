@@ -517,8 +517,79 @@ create index if not exists idx_account_recovery_requests_profile
 -- No structural schema changes were introduced in this pass.
 -- This snapshot remains aligned with migration 055 and the current runtime/auth compatibility updates.
 
-## 2026-03-29 conflict-aware replay, diagnostics detail, and evidence bulk-actions pass
-- Conflict-aware action outbox replay/merge.
-- Diagnostics banner now shows validation detail arrays.
-- Smoke check now verifies diagnostics banner is empty after clean boot.
-- Equipment evidence gallery now supports bulk select/delete and clearer replace progress messaging.
+-- 2026-03-29 conflict-aware replay, diagnostics detail, and evidence bulk-actions pass
+-- Conflict-aware action outbox replay/merge.
+-- Diagnostics banner now shows validation detail arrays.
+-- Smoke check now verifies diagnostics banner is empty after clean boot.
+-- Equipment evidence gallery now supports bulk select/delete and clearer replace progress messaging.
+
+
+-- 2026-04-03 admin password reset and sales/accounting stub pass
+create table if not exists public.admin_password_resets (
+  id bigserial primary key,
+  target_profile_id uuid not null references public.profiles(id) on delete cascade,
+  reset_by_profile_id uuid references public.profiles(id) on delete set null,
+  reason text,
+  force_password_change boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_admin_password_resets_target_created
+  on public.admin_password_resets(target_profile_id, created_at desc);
+
+create table if not exists public.sales_orders (
+  id bigserial primary key,
+  order_code text not null unique,
+  customer_name text,
+  customer_email text,
+  order_status text not null default 'draft',
+  currency_code text not null default 'CAD',
+  subtotal_amount numeric(12,2) not null default 0,
+  tax_amount numeric(12,2) not null default 0,
+  total_amount numeric(12,2) not null default 0,
+  notes text,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.accounting_entries (
+  id bigserial primary key,
+  source_type text not null,
+  source_id bigint,
+  entry_type text not null,
+  entry_status text not null default 'open',
+  customer_name text,
+  customer_email text,
+  currency_code text not null default 'CAD',
+  subtotal_amount numeric(12,2) not null default 0,
+  tax_amount numeric(12,2) not null default 0,
+  total_amount numeric(12,2) not null default 0,
+  payload jsonb not null default '{}'::jsonb,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create or replace view public.v_sales_order_accounting_summary as
+select
+  so.id,
+  so.order_code,
+  so.customer_name,
+  so.customer_email,
+  so.order_status,
+  so.currency_code,
+  so.subtotal_amount,
+  so.tax_amount,
+  so.total_amount,
+  so.created_at,
+  so.updated_at,
+  ae.id as accounting_entry_id,
+  ae.entry_type,
+  ae.entry_status,
+  ae.payload as accounting_payload,
+  ae.created_at as accounting_created_at
+from public.sales_orders so
+left join public.accounting_entries ae
+  on ae.source_type = 'sales_order'
+ and ae.source_id = so.id;

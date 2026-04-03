@@ -85,6 +85,19 @@ serve(async (req) => {
       return [row.notification_type, row.title, row.message, row.status, row.decision_status, row.created_by_name].some((v) => String(v || '').toLowerCase().includes(search));
     });
   }
+  if ((scope === 'all' || scope === 'accounting' || scope === 'orders') && roleRank(actorProfile.role) >= roleRank('supervisor')) {
+    const limit = Math.max(1, Math.min(500, Number(body.limit || 200)));
+    const { data: salesOrders } = await supabase.from('sales_orders').select('*').order('created_at', { ascending:false }).limit(limit);
+    const { data: accountingEntries } = await supabase.from('accounting_entries').select('*').order('created_at', { ascending:false }).limit(limit);
+    response.sales_orders = (salesOrders || []).filter((row: any) => {
+      if (!search) return true;
+      return [row.order_code, row.customer_name, row.customer_email, row.order_status, row.notes].some((v) => String(v || '').toLowerCase().includes(search));
+    });
+    response.accounting_entries = (accountingEntries || []).filter((row: any) => {
+      if (!search) return true;
+      return [row.source_type, row.entry_type, row.entry_status, row.customer_name, row.customer_email].some((v) => String(v || '').toLowerCase().includes(search));
+    });
+  }
   if (scope === 'self') response.profile = filteredPeople[0] || null;
   return Response.json(response, { headers: corsHeaders });
 });

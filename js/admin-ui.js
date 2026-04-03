@@ -31,7 +31,10 @@
       locked: true,
       manageLocked: true,
       notifications: [],
-      counts: { users: 0, sites: 0, assignments: 0 },
+      counts: { users: 0, sites: 0, assignments: 0, orders: 0 },
+      users: [],
+      salesOrders: [],
+      accountingEntries: [],
       smokeChecks: []
     };
 
@@ -55,7 +58,10 @@
           email_body: e.emailBody?.value || '',
           queue_search: e.search?.value || '',
           queue_status: e.filterStatus?.value || '',
-          smoke_summary: e.smokeSummary?.textContent || ''
+          smoke_summary: e.smokeSummary?.textContent || '',
+          target_profile_id: e.passwordProfileId?.value || '',
+          order_customer_name: e.orderCustomerName?.value || '',
+          order_customer_email: e.orderCustomerEmail?.value || ''
         }));
       } catch {}
     }
@@ -69,6 +75,9 @@
       if (e.emailBody && !e.emailBody.value) e.emailBody.value = draft.email_body || '';
       if (e.search && !e.search.value) e.search.value = draft.queue_search || '';
       if (e.filterStatus && !e.filterStatus.value) e.filterStatus.value = draft.queue_status || '';
+      if (e.passwordProfileId && !e.passwordProfileId.value) e.passwordProfileId.value = draft.target_profile_id || '';
+      if (e.orderCustomerName && !e.orderCustomerName.value) e.orderCustomerName.value = draft.order_customer_name || '';
+      if (e.orderCustomerEmail && !e.orderCustomerEmail.value) e.orderCustomerEmail.value = draft.order_customer_email || '';
     }
 
     function ensureLayout() {
@@ -94,6 +103,94 @@
           <div class="admin-stat-card"><span>Sites</span><strong id="ad_sites_count">0</strong></div>
           <div class="admin-stat-card"><span>Assignments</span><strong id="ad_assignments_count">0</strong></div>
           <div class="admin-stat-card"><span>Queue</span><strong id="ad_notifications_count">0</strong></div>
+          <div class="admin-stat-card"><span>Orders</span><strong id="ad_orders_count">0</strong></div>
+        </div>
+
+
+
+        <div class="admin-panel-block" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
+              <h3 style="margin:0;">Admin Password Control</h3>
+              <p class="section-subtitle">Allow an Admin to set a new password for any profile, including another Admin, with audit logging.</p>
+            </div>
+          </div>
+          <div class="grid">
+            <label>Target Profile
+              <select id="ad_password_profile_id"></select>
+            </label>
+            <label>New Password
+              <input id="ad_password_new" type="password" placeholder="New password" />
+            </label>
+            <label>Confirm Password
+              <input id="ad_password_confirm" type="password" placeholder="Confirm password" />
+            </label>
+          </div>
+          <div class="grid" style="margin-top:12px;">
+            <label>Reason
+              <input id="ad_password_reason" type="text" placeholder="Reason for reset" />
+            </label>
+            <label style="display:flex;align-items:end;gap:8px;">
+              <input id="ad_password_force_change" type="checkbox" />
+              <span>Flag as temporary / force change at next sign-in</span>
+            </label>
+          </div>
+          <div class="form-footer" style="margin-top:12px;">
+            <button id="ad_password_set" class="secondary" type="button">Set Password</button>
+          </div>
+        </div>
+
+        <div class="admin-panel-block" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
+              <h3 style="margin:0;">Orders and Accounting Stub</h3>
+              <p class="section-subtitle">Create a basic order record and automatically create its first accounting row so later inventory, cost, revenue, and tax workflows have a clean starting point.</p>
+            </div>
+          </div>
+          <div class="grid">
+            <label>Customer Name
+              <input id="ad_order_customer_name" type="text" placeholder="Customer name" />
+            </label>
+            <label>Customer Email
+              <input id="ad_order_customer_email" type="email" placeholder="customer@example.com" />
+            </label>
+            <label>Order Status
+              <select id="ad_order_status">
+                <option value="draft">Draft</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+              </select>
+            </label>
+          </div>
+          <div class="grid" style="margin-top:12px;">
+            <label>Subtotal
+              <input id="ad_order_subtotal" type="number" step="0.01" min="0" value="0" />
+            </label>
+            <label>Tax
+              <input id="ad_order_tax" type="number" step="0.01" min="0" value="0" />
+            </label>
+            <label>Total
+              <input id="ad_order_total" type="number" step="0.01" min="0" value="0" />
+            </label>
+          </div>
+          <label style="display:block;margin-top:12px;">Notes
+            <textarea id="ad_order_notes" rows="3" placeholder="Basic accounting/order notes"></textarea>
+          </label>
+          <div class="form-footer" style="margin-top:12px;">
+            <button id="ad_order_create" class="secondary" type="button">Create Order + Accounting Record</button>
+          </div>
+          <div class="table-scroll" style="margin-top:14px;">
+            <table id="ad_orders_table">
+              <thead><tr><th>Order</th><th>Customer</th><th>Status</th><th>Total</th><th>Created</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:14px;">
+            <table id="ad_accounting_table">
+              <thead><tr><th>Entry</th><th>Source</th><th>Status</th><th>Total</th><th>Created</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
 
         <div class="admin-panel-block" style="margin-top:16px;">
@@ -217,6 +314,23 @@
         sitesCount: document.getElementById('ad_sites_count'),
         assignmentsCount: document.getElementById('ad_assignments_count'),
         notificationsCount: document.getElementById('ad_notifications_count'),
+        ordersCount: document.getElementById('ad_orders_count'),
+        passwordProfileId: document.getElementById('ad_password_profile_id'),
+        passwordNew: document.getElementById('ad_password_new'),
+        passwordConfirm: document.getElementById('ad_password_confirm'),
+        passwordReason: document.getElementById('ad_password_reason'),
+        passwordForceChange: document.getElementById('ad_password_force_change'),
+        passwordSetBtn: document.getElementById('ad_password_set'),
+        orderCustomerName: document.getElementById('ad_order_customer_name'),
+        orderCustomerEmail: document.getElementById('ad_order_customer_email'),
+        orderStatus: document.getElementById('ad_order_status'),
+        orderSubtotal: document.getElementById('ad_order_subtotal'),
+        orderTax: document.getElementById('ad_order_tax'),
+        orderTotal: document.getElementById('ad_order_total'),
+        orderNotes: document.getElementById('ad_order_notes'),
+        orderCreateBtn: document.getElementById('ad_order_create'),
+        ordersBody: document.querySelector('#ad_orders_table tbody'),
+        accountingBody: document.querySelector('#ad_accounting_table tbody'),
         search: document.getElementById('ad_notification_search'),
         filterStatus: document.getElementById('ad_notification_filter_status'),
         notificationsBody: document.querySelector('#ad_notifications_table tbody'),
@@ -313,6 +427,59 @@
         `;
         e.notificationsBody.appendChild(tr);
       });
+    }
+
+    function renderProfileOptions() {
+      const e = els();
+      if (!e.passwordProfileId) return;
+      const current = e.passwordProfileId.value || '';
+      e.passwordProfileId.innerHTML = '<option value="">Select profile</option>' + state.users.map((row) => `<option value="${escHtml(row.id)}">${escHtml(row.full_name || row.email || row.id)} (${escHtml(row.role || 'worker')})</option>`).join('');
+      if (current) e.passwordProfileId.value = current;
+    }
+
+    function renderOrders() {
+      const e = els();
+      if (e.ordersBody) {
+        e.ordersBody.innerHTML = state.salesOrders.map((row) => `<tr><td><strong>${escHtml(row.order_code || row.id)}</strong></td><td>${escHtml(row.customer_name || row.customer_email || '')}</td><td>${escHtml(row.order_status || '')}</td><td>${escHtml(row.currency_code || 'CAD')} ${escHtml(row.total_amount || 0)}</td><td>${escHtml(row.created_at || '')}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No orders created yet.</td></tr>';
+      }
+      if (e.accountingBody) {
+        e.accountingBody.innerHTML = state.accountingEntries.map((row) => `<tr><td><strong>${escHtml(row.entry_type || row.id)}</strong></td><td>${escHtml(row.source_type || '')} #${escHtml(row.source_id || '')}</td><td>${escHtml(row.entry_status || '')}</td><td>${escHtml(row.currency_code || 'CAD')} ${escHtml(row.total_amount || 0)}</td><td>${escHtml(row.created_at || '')}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No accounting records created yet.</td></tr>';
+      }
+    }
+
+    async function setAdminPassword() {
+      const e = els();
+      const profileId = e.passwordProfileId?.value?.trim?.() || '';
+      const password = e.passwordNew?.value || '';
+      const confirm = e.passwordConfirm?.value || '';
+      if (!profileId) return setSummary('Choose a target profile for the password change.', true);
+      if (!password) return setSummary('Enter a new password.', true);
+      if (password !== confirm) return setSummary('Password confirmation does not match.', true);
+      try {
+        const resp = await manageAdminEntity({ entity: 'credential', action: 'set_password', profile_id: profileId, new_password: password, reason: e.passwordReason?.value || '', force_password_change: !!e.passwordForceChange?.checked });
+        if (!resp?.ok) throw new Error(resp?.error || 'Password reset failed.');
+        if (e.passwordNew) e.passwordNew.value = '';
+        if (e.passwordConfirm) e.passwordConfirm.value = '';
+        setSummary('Admin password change completed and audited.');
+        await loadDirectory();
+      } catch (err) {
+        setSummary(String(err?.message || 'Password reset failed.'), true);
+      }
+    }
+
+    async function createSalesOrder() {
+      const e = els();
+      try {
+        const subtotal = Number(e.orderSubtotal?.value || 0);
+        const tax = Number(e.orderTax?.value || 0);
+        const total = Number(e.orderTotal?.value || subtotal + tax);
+        const resp = await manageAdminEntity({ entity: 'sales_order', action: 'create', customer_name: e.orderCustomerName?.value || '', customer_email: e.orderCustomerEmail?.value || '', order_status: e.orderStatus?.value || 'draft', subtotal_amount: subtotal, tax_amount: tax, total_amount: total, notes: e.orderNotes?.value || '' });
+        if (!resp?.ok) throw new Error(resp?.error || 'Order create failed.');
+        setSummary(`Order ${resp?.record?.order_code || resp?.record?.id || ''} created with accounting entry ${resp?.accounting_record?.id || ''}.`);
+        await loadDirectory();
+      } catch (err) {
+        setSummary(String(err?.message || 'Order create failed.'), true);
+      }
     }
 
     function renderSmokeChecks(result = {}) {
@@ -603,18 +770,25 @@
       try {
         const resp = await loadAdminDirectory({ scope: 'all', limit: 200 });
         state.notifications = Array.isArray(resp?.notifications) ? resp.notifications : [];
+        state.users = Array.isArray(resp?.users) ? resp.users : [];
+        state.salesOrders = Array.isArray(resp?.sales_orders) ? resp.sales_orders : [];
+        state.accountingEntries = Array.isArray(resp?.accounting_entries) ? resp.accounting_entries : [];
         state.counts = {
-          users: Array.isArray(resp?.users) ? resp.users.length : 0,
+          users: state.users.length,
           sites: Array.isArray(resp?.sites) ? resp.sites.length : 0,
-          assignments: Array.isArray(resp?.assignments) ? resp.assignments.length : 0
+          assignments: Array.isArray(resp?.assignments) ? resp.assignments.length : 0,
+          orders: state.salesOrders.length
         };
 
         const e = els();
         if (e.usersCount) e.usersCount.textContent = String(state.counts.users);
         if (e.sitesCount) e.sitesCount.textContent = String(state.counts.sites);
         if (e.assignmentsCount) e.assignmentsCount.textContent = String(state.counts.assignments);
+        if (e.ordersCount) e.ordersCount.textContent = String(state.counts.orders);
 
+        renderProfileOptions();
         renderNotifications();
+        renderOrders();
 
         const outboxSummary = window.YWIOutbox?.getActionSummary?.('admin') || { total: 0, conflicts: 0 };
         setSummary(
@@ -635,7 +809,9 @@
       if (e.sitesCount) e.sitesCount.textContent = '0';
       if (e.assignmentsCount) e.assignmentsCount.textContent = '0';
       if (e.notificationsCount) e.notificationsCount.textContent = '0';
+      if (e.ordersCount) e.ordersCount.textContent = '0';
       hydratePreview('', {});
+      renderOrders();
       renderSmokeChecks({ checks: [] });
     }
 
@@ -747,6 +923,14 @@
       if (e.retryBtn && e.retryBtn.dataset.bound !== '1') {
         e.retryBtn.dataset.bound = '1';
         e.retryBtn.addEventListener('click', () => onPreviewButton('retry_send'));
+      }
+      if (e.passwordSetBtn && e.passwordSetBtn.dataset.bound !== '1') {
+        e.passwordSetBtn.dataset.bound = '1';
+        e.passwordSetBtn.addEventListener('click', () => setAdminPassword());
+      }
+      if (e.orderCreateBtn && e.orderCreateBtn.dataset.bound !== '1') {
+        e.orderCreateBtn.dataset.bound = '1';
+        e.orderCreateBtn.addEventListener('click', () => createSalesOrder());
       }
       if (e.smokeBtn && e.smokeBtn.dataset.bound !== '1') {
         e.smokeBtn.dataset.bound = '1';

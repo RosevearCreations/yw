@@ -1,3 +1,12 @@
+## 2026-04-03 admin password control and order/accounting scaffold pass
+- Added admin-managed password reset capability for any profile, including other admins, with audit logging in `admin_password_resets` and notification history.
+- Added a basic sales-order and accounting scaffold so creating an order now also creates an initial accounting row for later cost, inventory, revenue, and tax workflows.
+- Extended the Admin screen with password control, order creation, order list, and accounting list panels.
+- Extended the admin directory/function layer so orders and accounting records are visible in the live app.
+- Added migration `sql/056_admin_password_resets_and_sales_accounting_stub.sql` and refreshed `sql/000_full_schema_reference.sql`.
+- Continued SEO/cache/CSS cleanup with updated shell versioning, homepage metadata tuning, and minor admin panel style tightening.
+- Remaining live work before stress testing: deploy migration 056, deploy updated Edge Functions, then validate admin password reset and order/accounting creation in the real environment.
+
 ## 2026-03-31 session health and onboarding completion pass
 
 ## 2026-04-01 conflict review, CI smoke-check, and diagnostics timing pass
