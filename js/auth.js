@@ -38,6 +38,32 @@
     return `${getSupabaseUrl()}/functions/v1/account-maintenance`;
   }
 
+  function getAccountCompatibilityUrl() {
+    return `${window.location.origin}/api/auth/account-maintenance`;
+  }
+
+  async function postAccountMaintenance(body, { token = '', allowFallback = true } = {}) {
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(getSupabaseAnonKey() ? { apikey: getSupabaseAnonKey() } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    };
+
+    const response = await fetch(getAccountFunctionUrl(), {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body)
+    });
+
+    if (response.status !== 404 || !allowFallback) return response;
+
+    return fetch(getAccountCompatibilityUrl(), {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body)
+    });
+  }
+
   const state = {
     initialized: false,
     bootReady: false,
@@ -168,14 +194,7 @@
     const cleanLogin = safeText(login);
     if (!cleanLogin || cleanLogin.includes('@')) return cleanLogin;
     try {
-      const res = await fetch(getAccountFunctionUrl(), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(getSupabaseAnonKey() ? { apikey: getSupabaseAnonKey() } : {})
-        },
-        body: JSON.stringify({ action: 'resolve_login_identifier', login: cleanLogin })
-      });
+      const res = await postAccountMaintenance({ action: 'resolve_login_identifier', login: cleanLogin });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(payload?.error || 'Unable to resolve login identifier.');
       return safeText(payload?.email || cleanLogin);
@@ -267,15 +286,7 @@
     if (!token) throw new Error('Sign in again before finishing account setup.');
 
     const response = await withTimeout(
-      fetch(getAccountFunctionUrl(), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(getSupabaseAnonKey() ? { apikey: getSupabaseAnonKey() } : {}),
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ action: 'complete_account_setup', ...payload })
-      }),
+      postAccountMaintenance({ action: 'complete_account_setup', ...payload }, { token }),
       10000,
       'Account setup request timed out.'
     );

@@ -13,12 +13,12 @@
   <meta name="theme-color" content="#0f172a" />
   <meta name="color-scheme" content="dark light" />
 
-  <link rel="manifest" href="/manifest.json?v=2026-04-04a" />
-  <link rel="icon" href="/icons/icon-192.png?v=2026-04-04a" sizes="192x192" />
-  <link rel="stylesheet" href="/style.css?v=2026-04-04a" />
+  <link rel="manifest" href="/manifest.json?v=2026-04-03a" />
+  <link rel="icon" href="/icons/icon-192.png?v=2026-04-03a" sizes="192x192" />
+  <link rel="stylesheet" href="/style.css?v=2026-04-03a" />
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/js/app-config.js?v=2026-04-04a"></script>
+  <script src="/js/app-config.js?v=2026-04-03a"></script>
 
   <style>
     #authLoading {
@@ -104,7 +104,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-04-04a');
+          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-04-03a');
           if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
           }
@@ -306,7 +306,7 @@
     <div class="section-heading">
       <div>
         <div class="auth-info">Signed in as <b id="whoami"></b></div>
-        <p class="section-subtitle">Use the standard login/logout flow, then open the work area you need from the main menu or quick links.</p>
+        <p class="section-subtitle">Your role controls which screens and records you can access.</p>
       </div>
       <div class="admin-heading-actions">
         <button id="logoutBtn" class="secondary" type="button">Log out</button>
@@ -332,26 +332,26 @@
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
 
   <!-- Correct module order -->
-  <script src="/js/router.js?v=2026-04-04a"></script>
-  <script src="/js/bootstrap.js?v=2026-04-04a"></script>
-  <script src="/js/auth.js?v=2026-04-04a"></script>
-  <script src="/js/security.js?v=2026-04-04a"></script>
-  <script src="/js/api.js?v=2026-04-04a"></script>
-  <script src="/js/outbox.js?v=2026-04-04a"></script>
-  <script src="/js/admin-actions.js?v=2026-04-04a"></script>
-  <script src="/js/ui-auth.js?v=2026-04-04a"></script>
-  <script src="/js/account-ui.js?v=2026-04-04a"></script>
-  <script src="/js/profile-ui.js?v=2026-04-04a"></script>
-  <script src="/js/reference-data.js?v=2026-04-04a"></script>
-  <script src="/js/admin-ui.js?v=2026-04-04a"></script>
-  <script src="/js/logbook-ui.js?v=2026-04-04a"></script>
-  <script src="/js/jobs-ui.js?v=2026-04-04a"></script>
-  <script src="/js/forms-toolbox.js?v=2026-04-04a"></script>
-  <script src="/js/forms-ppe.js?v=2026-04-04a"></script>
-  <script src="/js/forms-firstaid.js?v=2026-04-04a"></script>
-  <script src="/js/forms-inspection.js?v=2026-04-04a"></script>
-  <script src="/js/forms-drill.js?v=2026-04-04a"></script>
-  <script src="/app.js?v=2026-04-04a" defer></script>
+  <script src="/js/router.js?v=2026-04-03a"></script>
+  <script src="/js/bootstrap.js?v=2026-04-03a"></script>
+  <script src="/js/auth.js?v=2026-04-03a"></script>
+  <script src="/js/security.js?v=2026-04-03a"></script>
+  <script src="/js/api.js?v=2026-04-03a"></script>
+  <script src="/js/outbox.js?v=2026-04-03a"></script>
+  <script src="/js/admin-actions.js?v=2026-04-03a"></script>
+  <script src="/js/ui-auth.js?v=2026-04-03a"></script>
+  <script src="/js/account-ui.js?v=2026-04-03a"></script>
+  <script src="/js/profile-ui.js?v=2026-04-03a"></script>
+  <script src="/js/reference-data.js?v=2026-04-03a"></script>
+  <script src="/js/admin-ui.js?v=2026-04-03a"></script>
+  <script src="/js/logbook-ui.js?v=2026-04-03a"></script>
+  <script src="/js/jobs-ui.js?v=2026-04-03a"></script>
+  <script src="/js/forms-toolbox.js?v=2026-04-03a"></script>
+  <script src="/js/forms-ppe.js?v=2026-04-03a"></script>
+  <script src="/js/forms-firstaid.js?v=2026-04-03a"></script>
+  <script src="/js/forms-inspection.js?v=2026-04-03a"></script>
+  <script src="/js/forms-drill.js?v=2026-04-03a"></script>
+  <script src="/app.js?v=2026-04-03a" defer></script>
 
   <script>
     document.addEventListener('ywi:auth-changed', (e) => {

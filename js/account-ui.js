@@ -109,12 +109,13 @@
       </div>
 
       <form id="account_password_form" autocomplete="on">
+        <input type="text" id="account_password_username" autocomplete="username email" class="sr-only" tabindex="-1" aria-hidden="true" />
         <div class="grid" style="margin-top:14px;">
           <label>New Password
-            <input id="account_password" type="password" placeholder="New password" autocomplete="new-password" />
+            <input id="account_password" type="password" autocomplete="new-password" placeholder="New password" />
           </label>
           <label>Confirm Password
-            <input id="account_password_confirm" type="password" placeholder="Confirm password" autocomplete="new-password" />
+            <input id="account_password_confirm" type="password" autocomplete="new-password" placeholder="Confirm password" />
           </label>
           <label>Verification Code
             <input id="account_phone_code" type="text" placeholder="SMS code" />
@@ -125,7 +126,7 @@
 
         <div class="form-footer" style="margin-top:14px;">
           <button id="account_recovery_save" class="secondary" type="button">Save Contact Details</button>
-          <button id="account_password_save" class="secondary" type="submit">Save Password</button>
+          <button id="account_password_save" class="secondary" type="button">Save Password</button>
           <button id="account_setup_complete" class="primary" type="button">Complete Account Setup</button>
         </div>
       </form>
@@ -907,25 +908,15 @@
   async function completeOnboarding() {
     const restore = setBusy(els.onboardingCompleteBtn, 'Saving...');
     try {
-      const current = auth.getState?.() || {};
-      const usernameReady = !!String(current.profile?.username || els.username?.value || '').trim();
-      const passwordReady = current.profile?.password_login_ready === true;
-      if (!usernameReady || !passwordReady) {
-        throw new Error('Before completing onboarding, save a username and password first.');
-      }
       const resp = await api.accountRecoveryAction({ action: 'complete_onboarding' });
       if (!resp?.ok) throw new Error(resp?.error || 'Unable to complete onboarding.');
-      setNotice(els.onboardingNotice, resp?.message || 'Onboarding complete. You can continue using the app normally.', false);
-      setNotice(els.summary, 'Onboarding complete. The standard app screens should now be available.', false);
+      setNotice(els.onboardingNotice, 'Onboarding complete. You can continue using the app normally.', false);
       await auth.refresh();
-      render();
-      window.dispatchEvent(new CustomEvent('ywi:app-error', { detail: { scope: 'onboarding', message: 'Onboarding completed successfully.' } }));
       if (window.YWIRouter?.showSection) {
-        window.YWIRouter.showSection('toolbox', { skipFocus: true });
+        window.YWIRouter.showSection('settings', { skipFocus: true });
       }
     } catch (err) {
       setNotice(els.onboardingNotice, err?.message || 'Unable to complete onboarding.', true);
-      setNotice(els.summary, err?.message || 'Unable to complete onboarding.', true);
     } finally {
       restore();
     }
@@ -970,8 +961,8 @@
     if (els.saveRecoveryBtn) els.saveRecoveryBtn.addEventListener('click', saveProfile);
     if (els.passwordForm && els.passwordForm.dataset.bound !== '1') {
       els.passwordForm.dataset.bound = '1';
-      els.passwordForm.addEventListener('submit', (e) => {
-        e.preventDefault();
+      els.passwordForm.addEventListener('submit', (event) => {
+        event.preventDefault();
         savePassword();
       });
     }

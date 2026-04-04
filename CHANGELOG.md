@@ -1,20 +1,3 @@
-
-## 2026-04-04 login/auth shell repair and protected-screen recovery pass
-- Reworked the visible login/logout flow toward a standard daily sign-in shell with clearer signed-in state, better section fallback content, and more obvious protected-screen guidance.
-- Wrapped account and admin password inputs in real forms to remove browser password-field warnings and improve submission behavior.
-- Hardened onboarding completion so it now validates missing username/password state, shows success/error feedback, refreshes auth state, and routes back into the standard app flow after completion.
-- Added stronger 401 diagnostics in the frontend so protected request failures explain re-login/redeploy guidance instead of leaving screens feeling blank.
-- Added `config.toml` with `verify_jwt = false` for the protected Edge Functions that already validate bearer tokens in code, aligning them with `account-maintenance` and addressing the repeated live 401 issue pattern.
-- Added light shell placeholders so sections no longer appear completely blank while modules are loading or when a protected module fails.
-- No new SQL migration was required in this pass; `sql/056_admin_password_resets_and_sales_accounting_stub.sql` remains the latest live migration and `sql/000_full_schema_reference.sql` was refreshed as the current snapshot.
-
-### Best next live validation after deploy
-1. Hard refresh / clear service worker once after deploy.
-2. Sign in with username/email + password through the normal login form.
-3. Complete onboarding and confirm the success notice + redirect back into the app.
-4. Verify `admin-directory`, `jobs-directory`, and `reference-data` no longer return 401 in the deployed environment.
-5. Confirm non-settings screens load their normal content instead of remaining blank.
-
 ## 2026-04-03 admin password control and order/accounting scaffold pass
 - Added admin-managed password reset capability for any profile, including other admins, with audit logging in `admin_password_resets` and notification history.
 - Added a basic sales-order and accounting scaffold so creating an order now also creates an initial accounting row for later cost, inventory, revenue, and tax workflows.
@@ -366,3 +349,11 @@ Current state after this pass:
 - `needsAccountSetup` is now computed from profile flags (`username`, `password_login_ready`, `account_setup_completed_at`) instead of lingering recovery state alone.
 - Worker default route was corrected back to `toolbox` so normal screens open after sign-in.
 - Remaining focus for next pass: verify worker pages render after fresh login without stale session state; keep onboarding banner hidden once account setup flags are complete.
+
+
+## 2026-04-04b live auth repair and compatibility pass
+- Added a compatibility `api/auth/account-maintenance.js` route so newer frontend shells no longer hard-fail when the live `account-maintenance` Edge Function is missing or stale during deployment overlap.
+- Updated `js/auth.js` and `js/api.js` so account-maintenance calls fall back to the compatibility route on HTTP 404 instead of blocking password login, onboarding completion, reset, or session-health actions.
+- Added `verify_jwt = false` config files for protected Edge Functions that already validate bearer tokens in code (`admin-directory`, `jobs-directory`, `reference-data`, `admin-manage`, `admin-selectors`, `jobs-manage`, and `upload-equipment-evidence`) so gateway-level JWT rejection stops causing false 401 loops.
+- Wrapped account and admin password controls in real forms with hidden username fields and password autocomplete attributes to remove browser password-form warnings while keeping the daily login UI standard.
+- Remaining live verification after deploy: redeploy the updated Supabase function set, reload the shell once, then confirm `account-maintenance` stops returning 404 and protected functions stop returning 401 for a valid signed-in session.

@@ -116,15 +116,16 @@
             </div>
           </div>
           <form id="ad_password_form" autocomplete="on">
+            <input type="text" id="ad_password_username" autocomplete="username email" class="sr-only" tabindex="-1" aria-hidden="true" />
             <div class="grid">
               <label>Target Profile
                 <select id="ad_password_profile_id"></select>
               </label>
               <label>New Password
-                <input id="ad_password_new" type="password" placeholder="New password" autocomplete="new-password" />
+                <input id="ad_password_new" type="password" autocomplete="new-password" placeholder="New password" />
               </label>
               <label>Confirm Password
-                <input id="ad_password_confirm" type="password" placeholder="Confirm password" autocomplete="new-password" />
+                <input id="ad_password_confirm" type="password" autocomplete="new-password" placeholder="Confirm password" />
               </label>
             </div>
             <div class="grid" style="margin-top:12px;">
@@ -137,7 +138,7 @@
               </label>
             </div>
             <div class="form-footer" style="margin-top:12px;">
-              <button id="ad_password_set" class="secondary" type="submit">Set Password</button>
+              <button id="ad_password_set" class="secondary" type="button">Set Password</button>
             </div>
           </form>
         </div>
