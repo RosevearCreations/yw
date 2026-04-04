@@ -71,11 +71,61 @@
     });
   }
 
+
+  function ensureLayout() {
+    const section = document.getElementById('drill');
+    if (!section || section.dataset.layoutReady === '1') return;
+    section.dataset.layoutReady = '1';
+    section.innerHTML = `
+      <div class="section-heading">
+        <div>
+          <h2>Emergency Drill</h2>
+          <p class="section-subtitle">Track drill type, participants, issues found, follow-up, and supervisor sign-off.</p>
+        </div>
+      </div>
+      <form id="drForm">
+        <div class="grid">
+          <label>Site<input id="dr_site" type="text" list="site-options" placeholder="Site name" required></label>
+          <label>Date<input id="dr_date" type="date" required></label>
+          <label>Supervisor<input id="dr_supervisor" type="text" list="employee-options" placeholder="Supervisor" required></label>
+        </div>
+        <div class="grid" style="margin-top:12px;">
+          <label>Drill Type<input id="dr_type" type="text" placeholder="Fire, evacuation, medical, spill" required></label>
+          <label>Start Time<input id="dr_start" type="time" required></label>
+          <label>End Time<input id="dr_end" type="time" required></label>
+        </div>
+        <label style="display:block;margin-top:12px;">Scenario Notes<textarea id="dr_scenario" rows="3" placeholder="Scenario details"></textarea></label>
+        <div class="section-heading" style="margin-top:18px;"><h3 style="margin:0;">Participants</h3></div>
+        <div class="table-scroll"><table id="drRoster"><thead><tr><th>Name</th><th>Role</th><th>Company</th><th>Actions</th></tr></thead><tbody></tbody></table></div>
+        <div class="form-footer" style="margin-top:10px;"><button id="drAddPart" type="button" class="secondary">Add Participant</button></div>
+        <label style="display:block;margin-top:12px;">Evaluation<textarea id="dr_eval" rows="3" placeholder="How did the drill go?"></textarea></label>
+        <label style="display:block;margin-top:12px;">Follow-Up<textarea id="dr_followup" rows="3" placeholder="Corrective actions / next steps"></textarea></label>
+        <div class="grid" style="margin-top:12px;">
+          <label>Next Drill Date<input id="dr_next_date" type="date"></label>
+          <label style="display:flex;align-items:end;gap:8px;"><input id="dr_issues" type="checkbox"><span>Issues found during drill</span></label>
+        </div>
+        <label style="display:block;margin-top:12px;">Supervisor Signature<canvas id="dr_supervisor_canvas" width="600" height="180" style="width:100%;max-width:100%;border:1px solid rgba(148,163,184,.25);border-radius:10px;background:#fff;"></canvas></label>
+        <div class="form-footer" style="margin-top:10px;"><button id="drClearSig" type="button" class="secondary">Clear Signature</button></div>
+        <div class="section-heading" style="margin-top:18px;"><h3 style="margin:0;">Images</h3></div>
+        <div class="grid">
+          <label>Files<input id="dr_image_files" type="file" accept="image/*" multiple></label>
+          <label>Image Type<select id="dr_image_type"><option value="general">General</option><option value="hazard">Hazard</option><option value="site">Site</option><option value="equipment">Equipment</option></select></label>
+          <label>Caption<input id="dr_image_caption" type="text" placeholder="Optional caption"></label>
+        </div>
+        <div class="form-footer" style="margin-top:10px;"><button id="dr_image_add" type="button" class="secondary">Add Images</button></div>
+        <div class="table-scroll"><table id="dr_images_table"><thead><tr><th>File</th><th>Type</th><th>Size</th><th>Caption</th><th>Actions</th></tr></thead><tbody></tbody></table></div>
+        <div class="form-footer" style="margin-top:18px;"><button type="submit">Submit Drill</button></div>
+      </form>
+    `;
+  }
+
   function createDrillForm(config = {}) {
     const sendToFunction = config.sendToFunction;
     const uploadImagesForSubmission = config.uploadImagesForSubmission;
     const getOutbox = config.getOutbox;
     const setOutbox = config.setOutbox;
+
+    ensureLayout();
 
     const els = {
       form: $('#drForm'),

@@ -71,11 +71,79 @@
     });
   }
 
+
+  function ensureLayout() {
+    const section = document.getElementById('inspect');
+    if (!section || section.dataset.layoutReady === '1') return;
+    section.dataset.layoutReady = '1';
+    section.innerHTML = `
+      <div class="section-heading">
+        <div>
+          <h2>Site Inspection</h2>
+          <p class="section-subtitle">Record workforce on site, hazards, corrective actions, and approver sign-off.</p>
+        </div>
+      </div>
+      <form id="inspForm">
+        <div class="grid">
+          <label>Site
+            <input id="insp_site" type="text" list="site-options" placeholder="Site name" required>
+          </label>
+          <label>Date
+            <input id="insp_date" type="date" required>
+          </label>
+          <label>Inspector
+            <input id="insp_inspector" type="text" list="employee-options" placeholder="Inspector" required>
+          </label>
+        </div>
+        <div class="section-heading" style="margin-top:18px;"><h3 style="margin:0;">Workers on Site</h3></div>
+        <div class="table-scroll">
+          <table id="inspRoster"><thead><tr><th>Name</th><th>Role</th><th>Company</th><th>Actions</th></tr></thead><tbody></tbody></table>
+        </div>
+        <div class="form-footer" style="margin-top:10px;"><button id="inspAddWorker" type="button" class="secondary">Add Worker</button></div>
+        <div class="section-heading" style="margin-top:18px;"><h3 style="margin:0;">Hazards</h3></div>
+        <div class="table-scroll">
+          <table id="inspHazards"><thead><tr><th>Hazard</th><th>Severity</th><th>Assigned To</th><th>Action</th><th>Actions</th></tr></thead><tbody></tbody></table>
+        </div>
+        <div class="form-footer" style="margin-top:10px;"><button id="inspAddHazard" type="button" class="secondary">Add Hazard</button></div>
+        <div class="grid" style="margin-top:12px;">
+          <label>Approver
+            <select id="insp_approver">
+              <option value="">Select approver</option>
+              <option value="Supervisor">Supervisor</option>
+              <option value="Admin">Admin</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+          <label>Other Approver
+            <input id="insp_approver_other" type="text" placeholder="Enter approver name">
+          </label>
+        </div>
+        <label style="display:block;margin-top:12px;">Approver Signature
+          <canvas id="insp_approver_canvas" width="600" height="180" style="width:100%;max-width:100%;border:1px solid rgba(148,163,184,.25);border-radius:10px;background:#fff;"></canvas>
+        </label>
+        <div class="form-footer" style="margin-top:10px;"><button id="inspClearSig" type="button" class="secondary">Clear Signature</button></div>
+        <div class="section-heading" style="margin-top:18px;"><h3 style="margin:0;">Images</h3></div>
+        <div class="grid">
+          <label>Files<input id="insp_image_files" type="file" accept="image/*" multiple></label>
+          <label>Image Type
+            <select id="insp_image_type"><option value="general">General</option><option value="hazard">Hazard</option><option value="site">Site</option><option value="equipment">Equipment</option></select>
+          </label>
+          <label>Caption<input id="insp_image_caption" type="text" placeholder="Optional caption"></label>
+        </div>
+        <div class="form-footer" style="margin-top:10px;"><button id="insp_image_add" type="button" class="secondary">Add Images</button></div>
+        <div class="table-scroll"><table id="insp_images_table"><thead><tr><th>File</th><th>Type</th><th>Size</th><th>Caption</th><th>Actions</th></tr></thead><tbody></tbody></table></div>
+        <div class="form-footer" style="margin-top:18px;"><button type="submit">Submit Inspection</button></div>
+      </form>
+    `;
+  }
+
   function createInspectionForm(config = {}) {
     const sendToFunction = config.sendToFunction;
     const uploadImagesForSubmission = config.uploadImagesForSubmission;
     const getOutbox = config.getOutbox;
     const setOutbox = config.setOutbox;
+
+    ensureLayout();
 
     const els = {
       form: $('#inspForm'),

@@ -51,10 +51,50 @@
     `;
   }
 
+
+  function ensureLayout() {
+    const section = document.getElementById('ppe');
+    if (!section || section.dataset.layoutReady === '1') return;
+    section.dataset.layoutReady = '1';
+    section.innerHTML = `
+      <div class="section-heading">
+        <div>
+          <h2>PPE Check</h2>
+          <p class="section-subtitle">Daily PPE compliance roster for workers, visitors, and supervisors.</p>
+        </div>
+      </div>
+      <form id="ppeForm">
+        <div class="grid">
+          <label>Site
+            <input id="ppe_site" type="text" list="site-options" placeholder="Site name" required>
+          </label>
+          <label>Date
+            <input id="ppe_date" type="date" required>
+          </label>
+          <label>Checked By
+            <input id="ppe_checker" type="text" list="employee-options" placeholder="Inspector / checker" required>
+          </label>
+        </div>
+        <div class="table-scroll" style="margin-top:14px;">
+          <table id="ppeTable">
+            <thead><tr><th>Name</th><th>Role</th><th>Shoes</th><th>Vest</th><th>Plugs</th><th>Goggles</th><th>Muffs</th><th>Gloves</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="form-footer" style="margin-top:10px;">
+          <button id="ppeAddRowBtn" type="button" class="secondary">Add Row</button>
+          <button type="submit">Submit PPE Check</button>
+        </div>
+      </form>
+    `;
+  }
+
   function createPPEForm(config = {}) {
     const sendToFunction = config.sendToFunction;
     const getOutbox = config.getOutbox;
     const setOutbox = config.setOutbox;
+
+    ensureLayout();
 
     const els = {
       form: $('#ppeForm'),

@@ -53,10 +53,51 @@
     return Math.round((expiry - today) / 86400000);
   }
 
+
+  function ensureLayout() {
+    const section = document.getElementById('firstaid');
+    if (!section || section.dataset.layoutReady === '1') return;
+    section.dataset.layoutReady = '1';
+    section.innerHTML = `
+      <div class="section-heading">
+        <div>
+          <h2>First Aid Kit</h2>
+          <p class="section-subtitle">Track required first-aid supplies, stock levels, and upcoming expiry dates.</p>
+        </div>
+      </div>
+      <datalist id="fa-catalog"></datalist>
+      <form id="faForm">
+        <div class="grid">
+          <label>Site
+            <input id="fa_site" type="text" list="site-options" placeholder="Site name" required>
+          </label>
+          <label>Date
+            <input id="fa_date" type="date" required>
+          </label>
+          <label>Checked By
+            <input id="fa_checker" type="text" list="employee-options" placeholder="Inspector / checker" required>
+          </label>
+        </div>
+        <div class="table-scroll" style="margin-top:14px;">
+          <table id="faTable">
+            <thead><tr><th>Item</th><th>Qty</th><th>Minimum</th><th>Expiry</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="form-footer" style="margin-top:10px;">
+          <button id="faAddRowBtn" type="button" class="secondary">Add Item</button>
+          <button type="submit">Submit First Aid Check</button>
+        </div>
+      </form>
+    `;
+  }
+
   function createFirstAidForm(config = {}) {
     const sendToFunction = config.sendToFunction;
     const getOutbox = config.getOutbox;
     const setOutbox = config.setOutbox;
+
+    ensureLayout();
 
     const els = {
       form: $('#faForm'),

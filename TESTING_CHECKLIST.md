@@ -1,3 +1,10 @@
+## 2026-04-04c interface restoration and admin-workflow preparation pass
+- Restored missing live screen layouts for Toolbox Talk, PPE Check, First Aid Kit, Site Inspection, and Emergency Drill so hash routes no longer land on empty cards.
+- Added shared datalist placeholders back into the shell for site, employee, and first-aid catalog lookups used by the form modules.
+- Bumped shell/cache asset versions again to flush stale blank-screen markup and keep the smoother interface consistent after deploy.
+- No new SQL migration was required in this pass; schema remains current through `056_admin_password_resets_and_sales_accounting_stub.sql`.
+- Current roadmap emphasis after this pass: stabilize the restored worker screens, then continue expanding the admin/supervisor/employee backend workflow for approvals, job creation, and personnel assignment before stress testing.
+
 
 
 ## 2026-04-04b live auth repair and compatibility pass

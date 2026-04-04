@@ -1,3 +1,5 @@
+-- 2026-04-04c interface restoration and admin-workflow preparation pass
+-- No new migration added in this pass. Live schema remains current through 056_admin_password_resets_and_sales_accounting_stub.sql.
 -- Refresh note: 2026-04-04b live auth repair and compatibility pass. No new migration was added; schema remains current through 056_admin_password_resets_and_sales_accounting_stub.sql.
 -- 2026-04-01 conflict review, CI smoke-check, and diagnostics timing pass
 -- No schema changes in this pass. This file is refreshed as the current reference snapshot after the conflict review, startup timing, and CI smoke-check workflow update.

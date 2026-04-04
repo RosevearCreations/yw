@@ -71,11 +71,84 @@
     });
   }
 
+
+  function ensureLayout() {
+    const section = document.getElementById('toolbox');
+    if (!section || section.dataset.layoutReady === '1') return;
+    section.dataset.layoutReady = '1';
+    section.innerHTML = `
+      <div class="section-heading">
+        <div>
+          <h2>Toolbox Talk</h2>
+          <p class="section-subtitle">Daily toolbox discussion, attendees, and optional evidence images.</p>
+        </div>
+      </div>
+      <div id="tb_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
+      <form id="toolboxForm">
+        <div class="grid">
+          <label>Site
+            <input id="tb_site" type="text" list="site-options" placeholder="Site name" required>
+          </label>
+          <label>Date
+            <input id="tb_date" type="date" required>
+          </label>
+          <label>Submitted By
+            <input id="tb_leader" type="text" list="employee-options" placeholder="Leader / supervisor" required>
+          </label>
+        </div>
+        <label style="display:block;margin-top:12px;">Topic / Notes
+          <textarea id="tb_topic" rows="4" placeholder="Topic, hazards, reminders, work plan"></textarea>
+        </label>
+        <div class="section-heading" style="margin-top:18px;"><h3 style="margin:0;">Attendees</h3></div>
+        <div class="table-scroll">
+          <table id="tbAttendees">
+            <thead><tr><th>Name</th><th>Role</th><th>Company</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="form-footer" style="margin-top:10px;">
+          <button id="tbAddRowBtn" type="button" class="secondary">Add Attendee</button>
+        </div>
+        <div class="section-heading" style="margin-top:18px;"><h3 style="margin:0;">Images</h3></div>
+        <div class="grid">
+          <label>Files
+            <input id="tb_image_files" type="file" accept="image/*" multiple>
+          </label>
+          <label>Image Type
+            <select id="tb_image_type">
+              <option value="general">General</option>
+              <option value="hazard">Hazard</option>
+              <option value="site">Site</option>
+              <option value="equipment">Equipment</option>
+            </select>
+          </label>
+          <label>Caption
+            <input id="tb_image_caption" type="text" placeholder="Optional caption">
+          </label>
+        </div>
+        <div class="form-footer" style="margin-top:10px;">
+          <button id="tb_image_add" type="button" class="secondary">Add Images</button>
+        </div>
+        <div class="table-scroll">
+          <table id="tb_images_table">
+            <thead><tr><th>File</th><th>Type</th><th>Size</th><th>Caption</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="form-footer" style="margin-top:18px;">
+          <button type="submit">Submit Toolbox Talk</button>
+        </div>
+      </form>
+    `;
+  }
+
   function createToolboxForm(config = {}) {
     const sendToFunction = config.sendToFunction;
     const uploadImagesForSubmission = config.uploadImagesForSubmission;
     const getOutbox = config.getOutbox;
     const setOutbox = config.setOutbox;
+
+    ensureLayout();
 
     const els = {
       form: $('#toolboxForm'),
