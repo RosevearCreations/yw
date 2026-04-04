@@ -196,6 +196,15 @@
         if (response.status === 400 && err.details?.length) {
           dispatchValidation(err.message, err.details);
         }
+        if (response.status === 401) {
+          window.dispatchEvent(new CustomEvent('ywi:app-error', {
+            detail: {
+              scope: String(pathOrUrl).replace(/^https?:\/\//i, '').slice(-80) || 'auth',
+              message: err.message || 'Authentication failed for a protected request.',
+              details: ['Sign out, hard refresh, and sign in again. If the problem remains, redeploy the updated Edge Functions with verify_jwt disabled where auth is handled in code.']
+            }
+          }));
+        }
         throw err;
       }
 

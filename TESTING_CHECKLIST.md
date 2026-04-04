@@ -1,3 +1,20 @@
+
+## 2026-04-04 login/auth shell repair and protected-screen recovery pass
+- Reworked the visible login/logout flow toward a standard daily sign-in shell with clearer signed-in state, better section fallback content, and more obvious protected-screen guidance.
+- Wrapped account and admin password inputs in real forms to remove browser password-field warnings and improve submission behavior.
+- Hardened onboarding completion so it now validates missing username/password state, shows success/error feedback, refreshes auth state, and routes back into the standard app flow after completion.
+- Added stronger 401 diagnostics in the frontend so protected request failures explain re-login/redeploy guidance instead of leaving screens feeling blank.
+- Added `config.toml` with `verify_jwt = false` for the protected Edge Functions that already validate bearer tokens in code, aligning them with `account-maintenance` and addressing the repeated live 401 issue pattern.
+- Added light shell placeholders so sections no longer appear completely blank while modules are loading or when a protected module fails.
+- No new SQL migration was required in this pass; `sql/056_admin_password_resets_and_sales_accounting_stub.sql` remains the latest live migration and `sql/000_full_schema_reference.sql` was refreshed as the current snapshot.
+
+### Best next live validation after deploy
+1. Hard refresh / clear service worker once after deploy.
+2. Sign in with username/email + password through the normal login form.
+3. Complete onboarding and confirm the success notice + redirect back into the app.
+4. Verify `admin-directory`, `jobs-directory`, and `reference-data` no longer return 401 in the deployed environment.
+5. Confirm non-settings screens load their normal content instead of remaining blank.
+
 ## 2026-04-03 admin password control and order/accounting scaffold pass
 - Added admin-managed password reset capability for any profile, including other admins, with audit logging in `admin_password_resets` and notification history.
 - Added a basic sales-order and accounting scaffold so creating an order now also creates an initial accounting row for later cost, inventory, revenue, and tax workflows.

@@ -115,29 +115,31 @@
               <p class="section-subtitle">Allow an Admin to set a new password for any profile, including another Admin, with audit logging.</p>
             </div>
           </div>
-          <div class="grid">
-            <label>Target Profile
-              <select id="ad_password_profile_id"></select>
-            </label>
-            <label>New Password
-              <input id="ad_password_new" type="password" placeholder="New password" />
-            </label>
-            <label>Confirm Password
-              <input id="ad_password_confirm" type="password" placeholder="Confirm password" />
-            </label>
-          </div>
-          <div class="grid" style="margin-top:12px;">
-            <label>Reason
-              <input id="ad_password_reason" type="text" placeholder="Reason for reset" />
-            </label>
-            <label style="display:flex;align-items:end;gap:8px;">
-              <input id="ad_password_force_change" type="checkbox" />
-              <span>Flag as temporary / force change at next sign-in</span>
-            </label>
-          </div>
-          <div class="form-footer" style="margin-top:12px;">
-            <button id="ad_password_set" class="secondary" type="button">Set Password</button>
-          </div>
+          <form id="ad_password_form" autocomplete="on">
+            <div class="grid">
+              <label>Target Profile
+                <select id="ad_password_profile_id"></select>
+              </label>
+              <label>New Password
+                <input id="ad_password_new" type="password" placeholder="New password" autocomplete="new-password" />
+              </label>
+              <label>Confirm Password
+                <input id="ad_password_confirm" type="password" placeholder="Confirm password" autocomplete="new-password" />
+              </label>
+            </div>
+            <div class="grid" style="margin-top:12px;">
+              <label>Reason
+                <input id="ad_password_reason" type="text" placeholder="Reason for reset" />
+              </label>
+              <label style="display:flex;align-items:end;gap:8px;">
+                <input id="ad_password_force_change" type="checkbox" />
+                <span>Flag as temporary / force change at next sign-in</span>
+              </label>
+            </div>
+            <div class="form-footer" style="margin-top:12px;">
+              <button id="ad_password_set" class="secondary" type="submit">Set Password</button>
+            </div>
+          </form>
         </div>
 
         <div class="admin-panel-block" style="margin-top:16px;">
@@ -315,6 +317,7 @@
         assignmentsCount: document.getElementById('ad_assignments_count'),
         notificationsCount: document.getElementById('ad_notifications_count'),
         ordersCount: document.getElementById('ad_orders_count'),
+        passwordForm: document.getElementById('ad_password_form'),
         passwordProfileId: document.getElementById('ad_password_profile_id'),
         passwordNew: document.getElementById('ad_password_new'),
         passwordConfirm: document.getElementById('ad_password_confirm'),
@@ -923,6 +926,13 @@
       if (e.retryBtn && e.retryBtn.dataset.bound !== '1') {
         e.retryBtn.dataset.bound = '1';
         e.retryBtn.addEventListener('click', () => onPreviewButton('retry_send'));
+      }
+      if (e.passwordForm && e.passwordForm.dataset.bound !== '1') {
+        e.passwordForm.dataset.bound = '1';
+        e.passwordForm.addEventListener('submit', (event) => {
+          event.preventDefault();
+          setAdminPassword();
+        });
       }
       if (e.passwordSetBtn && e.passwordSetBtn.dataset.bound !== '1') {
         e.passwordSetBtn.dataset.bound = '1';

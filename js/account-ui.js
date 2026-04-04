@@ -108,25 +108,27 @@
         </label>
       </div>
 
-      <div class="grid" style="margin-top:14px;">
-        <label>New Password
-          <input id="account_password" type="password" placeholder="New password" />
-        </label>
-        <label>Confirm Password
-          <input id="account_password_confirm" type="password" placeholder="Confirm password" />
-        </label>
-        <label>Verification Code
-          <input id="account_phone_code" type="text" placeholder="SMS code" />
-        </label>
-      </div>
+      <form id="account_password_form" autocomplete="on">
+        <div class="grid" style="margin-top:14px;">
+          <label>New Password
+            <input id="account_password" type="password" placeholder="New password" autocomplete="new-password" />
+          </label>
+          <label>Confirm Password
+            <input id="account_password_confirm" type="password" placeholder="Confirm password" autocomplete="new-password" />
+          </label>
+          <label>Verification Code
+            <input id="account_phone_code" type="text" placeholder="SMS code" />
+          </label>
+        </div>
 
-      <div id="account_password_hint" class="muted" style="margin-top:10px;"></div>
+        <div id="account_password_hint" class="muted" style="margin-top:10px;"></div>
 
-      <div class="form-footer" style="margin-top:14px;">
-        <button id="account_recovery_save" class="secondary" type="button">Save Contact Details</button>
-        <button id="account_password_save" class="secondary" type="button">Save Password</button>
-        <button id="account_setup_complete" class="primary" type="button">Complete Account Setup</button>
-      </div>
+        <div class="form-footer" style="margin-top:14px;">
+          <button id="account_recovery_save" class="secondary" type="button">Save Contact Details</button>
+          <button id="account_password_save" class="secondary" type="submit">Save Password</button>
+          <button id="account_setup_complete" class="primary" type="button">Complete Account Setup</button>
+        </div>
+      </form>
 
       <hr style="margin:18px 0;" />
 
@@ -271,6 +273,7 @@
     confirm: document.getElementById('account_password_confirm'),
     setupCompleteBtn: document.getElementById('account_setup_complete'),
     saveRecoveryBtn: document.getElementById('account_recovery_save'),
+    passwordForm: document.getElementById('account_password_form'),
     saveBtn: document.getElementById('account_password_save'),
     requestIdentityChangeBtn: document.getElementById('account_request_identity_change'),
     sessionHealthBtn: document.getElementById('account_run_session_health'),
@@ -904,15 +907,25 @@
   async function completeOnboarding() {
     const restore = setBusy(els.onboardingCompleteBtn, 'Saving...');
     try {
+      const current = auth.getState?.() || {};
+      const usernameReady = !!String(current.profile?.username || els.username?.value || '').trim();
+      const passwordReady = current.profile?.password_login_ready === true;
+      if (!usernameReady || !passwordReady) {
+        throw new Error('Before completing onboarding, save a username and password first.');
+      }
       const resp = await api.accountRecoveryAction({ action: 'complete_onboarding' });
       if (!resp?.ok) throw new Error(resp?.error || 'Unable to complete onboarding.');
-      setNotice(els.onboardingNotice, 'Onboarding complete. You can continue using the app normally.', false);
+      setNotice(els.onboardingNotice, resp?.message || 'Onboarding complete. You can continue using the app normally.', false);
+      setNotice(els.summary, 'Onboarding complete. The standard app screens should now be available.', false);
       await auth.refresh();
+      render();
+      window.dispatchEvent(new CustomEvent('ywi:app-error', { detail: { scope: 'onboarding', message: 'Onboarding completed successfully.' } }));
       if (window.YWIRouter?.showSection) {
-        window.YWIRouter.showSection('settings', { skipFocus: true });
+        window.YWIRouter.showSection('toolbox', { skipFocus: true });
       }
     } catch (err) {
       setNotice(els.onboardingNotice, err?.message || 'Unable to complete onboarding.', true);
+      setNotice(els.summary, err?.message || 'Unable to complete onboarding.', true);
     } finally {
       restore();
     }
@@ -955,6 +968,13 @@
     });
 
     if (els.saveRecoveryBtn) els.saveRecoveryBtn.addEventListener('click', saveProfile);
+    if (els.passwordForm && els.passwordForm.dataset.bound !== '1') {
+      els.passwordForm.dataset.bound = '1';
+      els.passwordForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        savePassword();
+      });
+    }
     if (els.saveBtn) els.saveBtn.addEventListener('click', savePassword);
     if (els.setupCompleteBtn) els.setupCompleteBtn.addEventListener('click', completeSetup);
     if (els.requestIdentityChangeBtn) els.requestIdentityChangeBtn.addEventListener('click', requestIdentityChange);

@@ -894,3 +894,11 @@ body[data-user-role="admin"] #admin[data-admin-locked="false"] {
     flex-wrap: wrap;
   }
 }
+
+
+/* 2026-04-04 auth shell refresh */
+.auth-card, #authInfo { backdrop-filter: blur(8px); }
+.section-shell-note { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.04); }
+form .form-footer { margin-top: 12px; }
+.notice[data-kind="error"] { border-left: 4px solid #d9534f; }
+.notice[data-kind="info"] { border-left: 4px solid #5bc0de; }

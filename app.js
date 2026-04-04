@@ -284,6 +284,34 @@ function syncAuthStateFromBoot(detail = {}) {
   router()?.init?.();
 }
 
+
+function ensureSectionPlaceholders() {
+  const defaults = {
+    toolbox: 'Toolbox Talk form will load here after sign-in.',
+    ppe: 'PPE check form will load here after sign-in.',
+    firstaid: 'First Aid checklist will load here after sign-in.',
+    inspect: 'Site Inspection form will load here after sign-in.',
+    drill: 'Emergency Drill form will load here after sign-in.',
+    log: 'Logbook entries and review tools will load here after sign-in.',
+    me: 'Your profile workspace will load here after sign-in.',
+    crew: 'Crew tools will load here after sign-in.',
+    jobs: 'Jobs workspace will load here after sign-in.',
+    equipment: 'Equipment workspace will load here after sign-in.',
+    settings: 'Settings and account tools will load here after sign-in.',
+    admin: 'Admin tools will load here after sign-in and only for permitted roles.'
+  };
+  Object.entries(defaults).forEach(([id, message]) => {
+    const section = document.getElementById(id);
+    if (!section) return;
+    if (!section.querySelector('.section-shell-note')) {
+      const note = document.createElement('p');
+      note.className = 'section-shell-note muted';
+      note.textContent = message;
+      section.appendChild(note);
+    }
+  });
+}
+
 function applyDateFallback() {
   ['#tb_date', '#ppe_date', '#fa_date', '#insp_date', '#dr_date', '#lg_from', '#lg_to'].forEach((sel) => {
     const el = $(sel);
@@ -491,6 +519,7 @@ async function initializeAppShell() {
   };
 
   ensureDiagnosticsPanel();
+  ensureSectionPlaceholders();
   applyDateFallback();
 
   outbox()?.bindRetryButtons?.({
@@ -548,6 +577,9 @@ document.addEventListener('ywi:auth-changed', async (e) => {
     if (modules.adminUI?.clearDirectory) modules.adminUI.clearDirectory();
     if (modules.logbookUI?.clearSubmissionDetail) modules.logbookUI.clearSubmissionDetail();
     if (modules.logbookUI?.clearReviewPanel) modules.logbookUI.clearReviewPanel();
+  }
+  if (e.detail?.state?.authError) {
+    pushDiagnostic('auth', e.detail.state.authError, e.detail.state.authErrorDetails || []);
   }
 });
 
