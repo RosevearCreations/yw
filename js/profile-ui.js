@@ -76,6 +76,139 @@
     const state = { selfProfile: null, crewRows: [] };
 
 
+    function refreshEls() {
+      Object.assign(els, {
+        meSection: $('#me'),
+        crewSection: $('#crew'),
+        settingsSection: $('#settings'),
+        meSummary: $('#me_summary'),
+        crewSummary: $('#crew_summary'),
+        sessionSummary: $('#settings_session_summary'),
+        sessionWhoami: $('#settings_whoami'),
+        sessionRole: $('#settings_role'),
+        sessionExpires: $('#settings_expires'),
+        sessionEmailValidation: $('#settings_email_validation'),
+        sessionPhoneValidation: $('#settings_phone_validation'),
+        sessionLogout: $('#settings_logout'),
+        sessionSettingsHint: $('#settings_future_hint'),
+        meName: $('#me_full_name'),
+        meEmail: $('#me_email'),
+        meRole: $('#me_role'),
+        mePhone: $('#me_phone'),
+        meAddress1: $('#me_address1'),
+        meAddress2: $('#me_address2'),
+        meCity: $('#me_city'),
+        meProvince: $('#me_province'),
+        mePostal: $('#me_postal_code'),
+        meVehicle: $('#me_vehicle_make_model'),
+        mePlate: $('#me_vehicle_plate'),
+        mePosition: $('#me_current_position'),
+        meTrade: $('#me_trade_specialty'),
+        meStartDate: $('#me_start_date'),
+        meStrengths: $('#me_strengths'),
+        meEmployeeNumber: $('#me_employee_number'),
+        meDefaultSupervisorName: $('#me_default_supervisor_name'),
+        meOverrideSupervisorName: $('#me_override_supervisor_name'),
+        meDefaultAdminName: $('#me_default_admin_name'),
+        meOverrideAdminName: $('#me_override_admin_name'),
+        mePhoneVerified: $('#me_phone_verified'),
+        mePreviousEmployee: $('#me_previous_employee'),
+        mePrefs: $('#me_feature_preferences'),
+        meEmergencyName: $('#me_emergency_contact_name'),
+        meEmergencyPhone: $('#me_emergency_contact_phone'),
+        meSave: $('#me_save'),
+        meReload: $('#me_reload'),
+        crewSearch: $('#crew_search'),
+        crewRoleFilter: $('#crew_role_filter'),
+        crewLoad: $('#crew_load'),
+        crewTableBody: $('#crew_table tbody')
+      });
+    }
+
+
+    function ensureLayout() {
+      const meSection = document.getElementById('me');
+      if (meSection && meSection.dataset.layoutReady !== '1') {
+        meSection.dataset.layoutReady = '1';
+        meSection.innerHTML = `
+          <div class="section-heading">
+            <div>
+              <h2>My Profile</h2>
+              <p class="section-subtitle">View and update your staff profile, contact information, and assigned reporting lines.</p>
+            </div>
+            <div class="admin-heading-actions">
+              <button id="me_reload" class="secondary" type="button">Reload</button>
+              <button id="me_save" class="primary" type="button">Save Profile</button>
+            </div>
+          </div>
+          <div id="me_summary" class="notice" style="display:none;margin-bottom:14px;"></div>
+          <div class="grid">
+            <label>Full Name<input id="me_full_name" type="text" /></label>
+            <label>Email<input id="me_email" type="email" readonly /></label>
+            <label>Role<input id="me_role" type="text" readonly /></label>
+            <label>Phone<input id="me_phone" type="text" /></label>
+            <label>Position<input id="me_current_position" type="text" /></label>
+            <label>Trade / Specialty<input id="me_trade_specialty" type="text" /></label>
+            <label>Start Date<input id="me_start_date" type="date" /></label>
+            <label>Employee Number<input id="me_employee_number" type="text" /></label>
+            <label>Vehicle<input id="me_vehicle_make_model" type="text" /></label>
+            <label>Plate<input id="me_vehicle_plate" type="text" /></label>
+            <label>Phone Verified<input id="me_phone_verified" type="text" readonly /></label>
+            <label>Previous Employee<input id="me_previous_employee" type="text" readonly /></label>
+            <label>Address 1<input id="me_address1" type="text" /></label>
+            <label>Address 2<input id="me_address2" type="text" /></label>
+            <label>City<input id="me_city" type="text" /></label>
+            <label>Province<input id="me_province" type="text" /></label>
+            <label>Postal Code<input id="me_postal_code" type="text" /></label>
+            <label>Default Supervisor<input id="me_default_supervisor_name" type="text" readonly /></label>
+            <label>Override Supervisor<input id="me_override_supervisor_name" type="text" readonly /></label>
+            <label>Default Admin<input id="me_default_admin_name" type="text" readonly /></label>
+            <label>Override Admin<input id="me_override_admin_name" type="text" readonly /></label>
+            <label>Emergency Contact<input id="me_emergency_contact_name" type="text" /></label>
+            <label>Emergency Phone<input id="me_emergency_contact_phone" type="text" /></label>
+          </div>
+          <label style="display:block;margin-top:12px;">Strengths<textarea id="me_strengths" rows="3"></textarea></label>
+          <label style="display:block;margin-top:12px;">Preferences / Notes<textarea id="me_feature_preferences" rows="3"></textarea></label>
+        `
+      }
+      const crewSection = document.getElementById('crew');
+      if (crewSection && crewSection.dataset.layoutReady !== '1') {
+        crewSection.dataset.layoutReady = '1';
+        crewSection.innerHTML = `
+          <div class="section-heading">
+            <div>
+              <h2>Crew</h2>
+              <p class="section-subtitle">Supervisor and Admin view of staff records and reporting lines.</p>
+            </div>
+            <div class="admin-heading-actions">
+              <button id="crew_load" class="secondary" type="button">Reload Crew</button>
+            </div>
+          </div>
+          <div id="crew_summary" class="notice" style="display:none;margin-bottom:14px;"></div>
+          <div class="grid">
+            <label>Search<input id="crew_search" type="text" placeholder="Name, email, role, position" /></label>
+            <label>Role Filter
+              <select id="crew_role_filter">
+                <option value="">All roles</option>
+                <option value="employee">Employee</option>
+                <option value="supervisor">Supervisor</option>
+                <option value="admin">Admin</option>
+                <option value="worker">Worker</option>
+              </select>
+            </label>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="crew_table">
+              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Position</th><th>Trade</th><th>Phone</th><th>Active</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        `
+      }
+    }
+
+
+
     function loadDraft() {
       try { return JSON.parse(localStorage.getItem(PROFILE_DRAFT_KEY) || '{}'); } catch { return {}; }
     }
@@ -261,7 +394,8 @@
       }
       try {
         setNotice(els.crewSummary, 'Loading crew view...');
-        const resp = await api.fetchProfileScope('crew', {
+        const resp = await api.fetchProfileScope({
+          scope: 'crew',
           search: els.crewSearch?.value?.trim?.() || '',
           role_filter: els.crewRoleFilter?.value || ''
         });
@@ -302,6 +436,8 @@
     }
 
     async function init() {
+      ensureLayout();
+      refreshEls();
       bind();
       applyRoleVisibility();
       await loadSelfProfile();

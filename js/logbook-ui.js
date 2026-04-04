@@ -104,6 +104,122 @@
       selectedDetail: null
     };
 
+
+    function refreshEls() {
+      Object.assign(els, {
+        site: $('#lg_site'),
+        from: $('#lg_from'),
+        to: $('#lg_to'),
+        form: $('#lg_form'),
+        status: $('#lg_status'),
+        loadBtn: $('#lg_load'),
+        exportBtn: $('#lg_export'),
+        tableBody: $('#lg_table tbody'),
+        sdSubmissionId: $('#sd_submission_id'),
+        sdFormType: $('#sd_form_type'),
+        sdStatus: $('#sd_status'),
+        sdSite: $('#sd_site'),
+        sdDate: $('#sd_date'),
+        sdSubmittedBy: $('#sd_submitted_by'),
+        sdReviewedAt: $('#sd_reviewed_at'),
+        sdReviewedBy: $('#sd_reviewed_by'),
+        sdAdminNotes: $('#sd_admin_notes'),
+        sdPayload: $('#sd_payload'),
+        sdReviewsTable: $('#sd_reviews_table tbody'),
+        sdImagesTable: $('#sd_images_table tbody'),
+        sdClearBtn: $('#sd_clear'),
+        sdSummary: $('#sd_summary'),
+        reviewPanel: $('#reviewPanel'),
+        rvSubmissionId: $('#rv_submission_id'),
+        rvStatus: $('#rv_status'),
+        rvAction: $('#rv_action'),
+        rvNote: $('#rv_note'),
+        rvAdminNotes: $('#rv_admin_notes'),
+        rvSubmit: $('#rv_submit'),
+        rvClear: $('#rv_clear'),
+        rvSummary: $('#rv_summary')
+      });
+    }
+
+
+    function ensureLayout() {
+      const section = document.getElementById('log');
+      if (!section || section.dataset.layoutReady === '1') return;
+      section.dataset.layoutReady = '1';
+      section.innerHTML = `
+        <div class="section-heading">
+          <div>
+            <h2>Logbook</h2>
+            <p class="section-subtitle">Review submitted forms, images, and approval history across the safety system.</p>
+          </div>
+          <div class="admin-heading-actions">
+            <button id="lg_load" class="secondary" type="button">Load Entries</button>
+            <button id="lg_export" class="secondary" type="button">Export CSV</button>
+          </div>
+        </div>
+        <div class="grid">
+          <label>Site<input id="lg_site" type="text" list="site-options" placeholder="Site name or code" /></label>
+          <label>From<input id="lg_from" type="date" /></label>
+          <label>To<input id="lg_to" type="date" /></label>
+          <label>Form
+            <select id="lg_form">
+              <option value="">All forms</option>
+              <option value="toolbox">Toolbox</option>
+              <option value="ppe">PPE</option>
+              <option value="firstaid">First Aid</option>
+              <option value="inspection">Inspection</option>
+              <option value="drill">Drill</option>
+            </select>
+          </label>
+          <label>Status
+            <select id="lg_status">
+              <option value="">Any status</option>
+              <option value="submitted">Submitted</option>
+              <option value="reviewed">Reviewed</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </label>
+        </div>
+        <div class="table-scroll" style="margin-top:12px;">
+          <table id="lg_table">
+            <thead><tr><th>ID</th><th>Date</th><th>Form</th><th>Site</th><th>Status</th><th>Summary</th><th>Actions</th></tr></thead>
+            <tbody><tr><td colspan="7" class="muted">Use Load Entries to view the logbook.</td></tr></tbody>
+          </table>
+        </div>
+        <div class="admin-panel-block" style="margin-top:16px;">
+          <div class="section-heading"><div><h3 style="margin:0;">Submission Detail</h3><p class="section-subtitle">Selected logbook item details and uploaded evidence.</p></div><div class="admin-heading-actions"><button id="sd_clear" class="secondary" type="button">Clear</button></div></div>
+          <div id="sd_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
+          <div class="grid">
+            <label>Submission ID<input id="sd_submission_id" type="text" readonly /></label>
+            <label>Form Type<input id="sd_form_type" type="text" readonly /></label>
+            <label>Status<input id="sd_status" type="text" readonly /></label>
+            <label>Site<input id="sd_site" type="text" readonly /></label>
+            <label>Date<input id="sd_date" type="text" readonly /></label>
+            <label>Submitted By<input id="sd_submitted_by" type="text" readonly /></label>
+            <label>Reviewed At<input id="sd_reviewed_at" type="text" readonly /></label>
+            <label>Reviewed By<input id="sd_reviewed_by" type="text" readonly /></label>
+          </div>
+          <label style="display:block;margin-top:12px;">Admin Notes<textarea id="sd_admin_notes" rows="3" readonly></textarea></label>
+          <label style="display:block;margin-top:12px;">Payload<textarea id="sd_payload" rows="10" readonly></textarea></label>
+          <div class="table-scroll" style="margin-top:12px;"><table id="sd_reviews_table"><thead><tr><th>ID</th><th>Action</th><th>Status</th><th>Reviewer</th><th>Date</th><th>Note</th></tr></thead><tbody></tbody></table></div>
+          <div class="table-scroll" style="margin-top:12px;"><table id="sd_images_table"><thead><tr><th>Preview</th><th>Type</th><th>File</th><th>Caption</th><th>Created</th></tr></thead><tbody></tbody></table></div>
+        </div>
+        <div id="reviewPanel" class="admin-panel-block" style="margin-top:16px;display:none;">
+          <div class="section-heading"><div><h3 style="margin:0;">Review Submission</h3><p class="section-subtitle">Supervisor/Admin review controls.</p></div><div class="admin-heading-actions"><button id="rv_clear" class="secondary" type="button">Clear</button><button id="rv_submit" class="primary" type="button">Save Review</button></div></div>
+          <div id="rv_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
+          <div class="grid">
+            <label>Submission ID<input id="rv_submission_id" type="text" readonly /></label>
+            <label>Status<input id="rv_status" type="text" /></label>
+            <label>Action<select id="rv_action"><option value="commented">Commented</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></label>
+          </div>
+          <label style="display:block;margin-top:12px;">Note<textarea id="rv_note" rows="3"></textarea></label>
+          <label style="display:block;margin-top:12px;">Admin Notes<textarea id="rv_admin_notes" rows="3"></textarea></label>
+        </div>
+      `;
+    }
+
+
     function setNotice(el, text) {
       if (!el) return;
       if (text) {
@@ -424,8 +540,11 @@
     }
 
     async function init() {
+      ensureLayout();
+      refreshEls();
       applyRoleVisibility();
       bindEvents();
+      await loadRows();
     }
 
     return {

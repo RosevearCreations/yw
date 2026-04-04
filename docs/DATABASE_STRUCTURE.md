@@ -1,3 +1,9 @@
+## 2026-04-04d profile/logbook repair and staff admin backend pass
+- Restored Profile and Logbook as fully rendered screens instead of empty shells by moving their required layout into the live modules.
+- Fixed crew loading payload handling and made Logbook auto-load rows on open so empty pages now show real data or a clear empty state.
+- Extended the Admin backend toward a real staff directory with Admin / Supervisor / Employee management controls for create, edit, block/unblock, delete, password reset, and staff hierarchy fields.
+- Added migration `sql/057_staff_directory_and_role_admin.sql` and refreshed the schema reference snapshot.
+
 ## 2026-04-03 admin password control and order/accounting scaffold pass
 - Added admin-managed password reset capability for any profile, including other admins, with audit logging in `admin_password_resets` and notification history.
 - Added a basic sales-order and accounting scaffold so creating an order now also creates an initial accounting row for later cost, inventory, revenue, and tax workflows.

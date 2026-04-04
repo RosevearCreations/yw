@@ -89,7 +89,7 @@
         <div class="section-heading">
           <div>
             <h2>Admin</h2>
-            <p class="section-subtitle">Visible approval queue, notification tools, retry controls, and high-level directory counts.</p>
+            <p class="section-subtitle">Administrative backend for staff accounts, approvals, password control, orders, accounting, and workflow oversight.</p>
           </div>
           <div class="admin-heading-actions">
             <button id="ad_reload" class="secondary" type="button">Reload</button>
@@ -107,6 +107,59 @@
         </div>
 
 
+
+
+
+        <div class="admin-panel-block" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
+              <h3 style="margin:0;">Staff Directory and Access</h3>
+              <p class="section-subtitle">Create staff accounts, assign Admin/Supervisor/Employee tiers, block or delete users, manage verification flags, and prepare the personnel backend for work-order assignment.</p>
+            </div>
+          </div>
+          <div class="grid">
+            <label>Selected User
+              <select id="ad_staff_profile_id"></select>
+            </label>
+            <label>Full Name<input id="ad_staff_full_name" type="text" placeholder="Full name" /></label>
+            <label>Email<input id="ad_staff_email" type="email" placeholder="user@example.com" /></label>
+            <label>Phone<input id="ad_staff_phone" type="text" placeholder="Phone" /></label>
+            <label>Role
+              <select id="ad_staff_role">
+                <option value="employee">Employee</option>
+                <option value="supervisor">Supervisor</option>
+                <option value="admin">Admin</option>
+              </select>
+            </label>
+            <label>Staff Tier<input id="ad_staff_tier" type="text" placeholder="Admin / Supervisor / Employee" /></label>
+            <label>Seniority Level<input id="ad_staff_seniority" type="text" placeholder="Junior / Senior / Lead" /></label>
+            <label>Employment Status
+              <select id="ad_staff_status"><option value="active">Active</option><option value="blocked">Blocked</option><option value="inactive">Inactive</option></select>
+            </label>
+            <label>Employee Number<input id="ad_staff_employee_number" type="text" /></label>
+            <label>Position<input id="ad_staff_position" type="text" /></label>
+            <label>Trade<input id="ad_staff_trade" type="text" /></label>
+            <label>Start Date<input id="ad_staff_start_date" type="date" /></label>
+            <label>New Password<input id="ad_staff_new_password" type="password" autocomplete="new-password" placeholder="Required for new user" /></label>
+            <label style="display:flex;align-items:end;gap:8px;"><input id="ad_staff_phone_verified" type="checkbox" /><span>Phone verified</span></label>
+            <label style="display:flex;align-items:end;gap:8px;"><input id="ad_staff_email_verified" type="checkbox" /><span>Email verified</span></label>
+            <label style="display:flex;align-items:end;gap:8px;"><input id="ad_staff_active" type="checkbox" checked /><span>Active</span></label>
+          </div>
+          <label style="display:block;margin-top:12px;">Notes<textarea id="ad_staff_notes" rows="3" placeholder="Staff notes"></textarea></label>
+          <div class="form-footer" style="margin-top:12px;">
+            <button id="ad_staff_create" class="secondary" type="button">Create Staff User</button>
+            <button id="ad_staff_save" class="secondary" type="button">Save Staff Details</button>
+            <button id="ad_staff_reset_email" class="secondary" type="button">Send Password Reset</button>
+            <button id="ad_staff_block" class="secondary" type="button">Block / Unblock</button>
+            <button id="ad_staff_delete" class="secondary" type="button">Delete User</button>
+          </div>
+          <div class="table-scroll" style="margin-top:14px;">
+            <table id="ad_staff_table">
+              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Tier</th><th>Seniority</th><th>Status</th><th>Phone</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
 
         <div class="admin-panel-block" style="margin-top:16px;">
           <div class="section-heading">
@@ -314,6 +367,29 @@
         summary: document.getElementById('ad_summary'),
         reloadBtn: document.getElementById('ad_reload'),
         usersCount: document.getElementById('ad_users_count'),
+        staffProfileId: document.getElementById('ad_staff_profile_id'),
+        staffFullName: document.getElementById('ad_staff_full_name'),
+        staffEmail: document.getElementById('ad_staff_email'),
+        staffPhone: document.getElementById('ad_staff_phone'),
+        staffRole: document.getElementById('ad_staff_role'),
+        staffTier: document.getElementById('ad_staff_tier'),
+        staffSeniority: document.getElementById('ad_staff_seniority'),
+        staffStatus: document.getElementById('ad_staff_status'),
+        staffEmployeeNumber: document.getElementById('ad_staff_employee_number'),
+        staffPosition: document.getElementById('ad_staff_position'),
+        staffTrade: document.getElementById('ad_staff_trade'),
+        staffStartDate: document.getElementById('ad_staff_start_date'),
+        staffNewPassword: document.getElementById('ad_staff_new_password'),
+        staffPhoneVerified: document.getElementById('ad_staff_phone_verified'),
+        staffEmailVerified: document.getElementById('ad_staff_email_verified'),
+        staffActive: document.getElementById('ad_staff_active'),
+        staffNotes: document.getElementById('ad_staff_notes'),
+        staffCreateBtn: document.getElementById('ad_staff_create'),
+        staffSaveBtn: document.getElementById('ad_staff_save'),
+        staffResetBtn: document.getElementById('ad_staff_reset_email'),
+        staffBlockBtn: document.getElementById('ad_staff_block'),
+        staffDeleteBtn: document.getElementById('ad_staff_delete'),
+        staffBody: document.querySelector('#ad_staff_table tbody'),
         sitesCount: document.getElementById('ad_sites_count'),
         assignmentsCount: document.getElementById('ad_assignments_count'),
         notificationsCount: document.getElementById('ad_notifications_count'),
@@ -431,6 +507,101 @@
         `;
         e.notificationsBody.appendChild(tr);
       });
+    }
+
+
+    function fillStaffForm(row) {
+      const e = els();
+      const item = row || {};
+      if (e.staffProfileId) e.staffProfileId.value = item.id || '';
+      if (e.staffFullName) e.staffFullName.value = item.full_name || '';
+      if (e.staffEmail) e.staffEmail.value = item.email || '';
+      if (e.staffPhone) e.staffPhone.value = item.phone || '';
+      if (e.staffRole) e.staffRole.value = item.role || 'employee';
+      if (e.staffTier) e.staffTier.value = item.staff_tier || item.role || '';
+      if (e.staffSeniority) e.staffSeniority.value = item.seniority_level || '';
+      if (e.staffStatus) e.staffStatus.value = item.employment_status || (item.is_active === false ? 'blocked' : 'active');
+      if (e.staffEmployeeNumber) e.staffEmployeeNumber.value = item.employee_number || '';
+      if (e.staffPosition) e.staffPosition.value = item.current_position || '';
+      if (e.staffTrade) e.staffTrade.value = item.trade_specialty || '';
+      if (e.staffStartDate) e.staffStartDate.value = item.start_date || '';
+      if (e.staffPhoneVerified) e.staffPhoneVerified.checked = !!item.phone_verified;
+      if (e.staffEmailVerified) e.staffEmailVerified.checked = !!item.email_verified;
+      if (e.staffActive) e.staffActive.checked = item.is_active !== false;
+      if (e.staffNotes) e.staffNotes.value = item.notes || '';
+    }
+
+    function renderStaffDirectory() {
+      const e = els();
+      if (e.staffProfileId) {
+        const current = e.staffProfileId.value || '';
+        e.staffProfileId.innerHTML = '<option value="">Select staff</option>' + state.users.map((row) => `<option value="${escHtml(row.id)}">${escHtml(row.full_name || row.email || row.id)} (${escHtml(row.role || 'employee')})</option>`).join('');
+        if (current) e.staffProfileId.value = current;
+      }
+      if (e.staffBody) {
+        e.staffBody.innerHTML = state.users.map((row) => `<tr data-staff-id="${escHtml(row.id)}"><td>${escHtml(row.full_name || '')}</td><td>${escHtml(row.email || '')}</td><td>${escHtml(row.role || '')}</td><td>${escHtml(row.staff_tier || '')}</td><td>${escHtml(row.seniority_level || '')}</td><td>${escHtml(row.employment_status || (row.is_active === false ? 'blocked' : 'active'))}</td><td>${escHtml(row.phone || '')}</td></tr>`).join('') || '<tr><td colspan="7" class="muted">No staff records loaded.</td></tr>';
+      }
+    }
+
+    function getSelectedStaff() {
+      const e = els();
+      return state.users.find((row) => String(row.id) === String(e.staffProfileId?.value || '')) || null;
+    }
+
+    async function createStaffUser() {
+      const e = els();
+      if (!(e.staffEmail?.value || '').trim()) return setSummary('Email is required for a new staff user.', true);
+      if (!(e.staffNewPassword?.value || '').trim()) return setSummary('New staff user requires an initial password.', true);
+      const resp = await manageAdminEntity({ entity:'credential', action:'create_user', email:e.staffEmail.value, new_password:e.staffNewPassword.value, full_name:e.staffFullName?.value || '', phone:e.staffPhone?.value || '', role:e.staffRole?.value || 'employee', staff_tier:e.staffTier?.value || '', seniority_level:e.staffSeniority?.value || '', employment_status:e.staffStatus?.value || 'active', employee_number:e.staffEmployeeNumber?.value || '', current_position:e.staffPosition?.value || '', trade_specialty:e.staffTrade?.value || '', start_date:e.staffStartDate?.value || null, phone_verified:!!e.staffPhoneVerified?.checked, email_verified:!!e.staffEmailVerified?.checked, is_active:!!e.staffActive?.checked, notes:e.staffNotes?.value || '' });
+      if (!resp?.ok) throw new Error(resp?.error || 'Failed to create staff user.');
+      if (e.staffNewPassword) e.staffNewPassword.value = '';
+      setSummary('Staff user created successfully.');
+      await loadDirectory();
+      fillStaffForm(resp.record || null);
+    }
+
+    async function saveStaffDetails() {
+      const e = els();
+      const profileId = e.staffProfileId?.value || '';
+      if (!profileId) return setSummary('Select a staff record first.', true);
+      const resp = await manageAdminEntity({ entity:'profile', action:'update', profile_id:profileId, full_name:e.staffFullName?.value || null, role:e.staffRole?.value || 'employee', phone:e.staffPhone?.value || null, phone_verified:!!e.staffPhoneVerified?.checked, email_verified:!!e.staffEmailVerified?.checked, employee_number:e.staffEmployeeNumber?.value || null, current_position:e.staffPosition?.value || null, trade_specialty:e.staffTrade?.value || null, seniority_level:e.staffSeniority?.value || null, employment_status:e.staffStatus?.value || 'active', staff_tier:e.staffTier?.value || null, start_date:e.staffStartDate?.value || null, notes:e.staffNotes?.value || null, is_active:!!e.staffActive?.checked });
+      if (!resp?.ok) throw new Error(resp?.error || 'Failed to save staff details.');
+      setSummary('Staff details updated.');
+      await loadDirectory();
+    }
+
+    async function toggleStaffBlock() {
+      const e = els();
+      const profileId = e.staffProfileId?.value || '';
+      if (!profileId) return setSummary('Select a staff record first.', true);
+      const nextActive = !e.staffActive?.checked;
+      const resp = await manageAdminEntity({ entity:'profile', action:'set_active', profile_id:profileId, is_active:nextActive, employment_status: nextActive ? 'active' : 'blocked' });
+      if (!resp?.ok) throw new Error(resp?.error || 'Failed to update active status.');
+      setSummary(nextActive ? 'Staff record unblocked / activated.' : 'Staff record blocked.');
+      await loadDirectory();
+      fillStaffForm(resp.record || null);
+    }
+
+    async function sendStaffReset() {
+      const e = els();
+      const profileId = e.staffProfileId?.value || '';
+      if (!profileId) return setSummary('Select a staff record first.', true);
+      const resp = await manageAdminEntity({ entity:'credential', action:'send_password_reset', profile_id: profileId });
+      if (!resp?.ok) throw new Error(resp?.error || 'Failed to send reset.');
+      setSummary(`Password reset link generated for ${resp.email || 'selected user'}.`);
+    }
+
+    async function deleteStaffUser() {
+      const e = els();
+      const profileId = e.staffProfileId?.value || '';
+      if (!profileId) return setSummary('Select a staff record first.', true);
+      const ok = window.confirm('Delete this user and auth account? This cannot be undone.');
+      if (!ok) return;
+      const resp = await manageAdminEntity({ entity:'profile', action:'delete', profile_id: profileId });
+      if (!resp?.ok) throw new Error(resp?.error || 'Failed to delete user.');
+      setSummary('User deleted.');
+      await loadDirectory();
+      fillStaffForm(null);
     }
 
     function renderProfileOptions() {
@@ -790,6 +961,7 @@
         if (e.assignmentsCount) e.assignmentsCount.textContent = String(state.counts.assignments);
         if (e.ordersCount) e.ordersCount.textContent = String(state.counts.orders);
 
+        renderStaffDirectory();
         renderProfileOptions();
         renderNotifications();
         renderOrders();
@@ -927,6 +1099,39 @@
       if (e.retryBtn && e.retryBtn.dataset.bound !== '1') {
         e.retryBtn.dataset.bound = '1';
         e.retryBtn.addEventListener('click', () => onPreviewButton('retry_send'));
+      }
+      if (e.staffProfileId && e.staffProfileId.dataset.bound !== '1') {
+        e.staffProfileId.dataset.bound = '1';
+        e.staffProfileId.addEventListener('change', () => fillStaffForm(getSelectedStaff()));
+      }
+      if (e.staffBody && e.staffBody.dataset.bound !== '1') {
+        e.staffBody.dataset.bound = '1';
+        e.staffBody.addEventListener('click', (event) => {
+          const tr = event.target.closest('[data-staff-id]');
+          if (!tr) return;
+          if (e.staffProfileId) e.staffProfileId.value = tr.getAttribute('data-staff-id') || '';
+          fillStaffForm(getSelectedStaff());
+        });
+      }
+      if (e.staffCreateBtn && e.staffCreateBtn.dataset.bound !== '1') {
+        e.staffCreateBtn.dataset.bound = '1';
+        e.staffCreateBtn.addEventListener('click', () => createStaffUser().catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.staffSaveBtn && e.staffSaveBtn.dataset.bound !== '1') {
+        e.staffSaveBtn.dataset.bound = '1';
+        e.staffSaveBtn.addEventListener('click', () => saveStaffDetails().catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.staffResetBtn && e.staffResetBtn.dataset.bound !== '1') {
+        e.staffResetBtn.dataset.bound = '1';
+        e.staffResetBtn.addEventListener('click', () => sendStaffReset().catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.staffBlockBtn && e.staffBlockBtn.dataset.bound !== '1') {
+        e.staffBlockBtn.dataset.bound = '1';
+        e.staffBlockBtn.addEventListener('click', () => toggleStaffBlock().catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.staffDeleteBtn && e.staffDeleteBtn.dataset.bound !== '1') {
+        e.staffDeleteBtn.dataset.bound = '1';
+        e.staffDeleteBtn.addEventListener('click', () => deleteStaffUser().catch((err) => setSummary(String(err?.message || err), true)));
       }
       if (e.passwordForm && e.passwordForm.dataset.bound !== '1') {
         e.passwordForm.dataset.bound = '1';
