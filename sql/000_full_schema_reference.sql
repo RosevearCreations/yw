@@ -1,3 +1,5 @@
+-- 2026-04-04d profile/logbook restoration and staff admin backend pass
+-- Added migration 057_staff_directory_and_role_admin.sql for staff seniority, employment status, and staff tier fields.
 -- 2026-04-04c interface restoration and admin-workflow preparation pass
 -- No new migration added in this pass. Live schema remains current through 056_admin_password_resets_and_sales_accounting_stub.sql.
 -- Refresh note: 2026-04-04b live auth repair and compatibility pass. No new migration was added; schema remains current through 056_admin_password_resets_and_sales_accounting_stub.sql.
@@ -37,6 +39,9 @@ create table if not exists public.profiles (
   vehicle_make_model text,
   vehicle_plate text,
   years_employed integer,
+  seniority_level text,
+  employment_status text not null default 'active',
+  staff_tier text,
   start_date date,
   employee_number text,
   current_position text,

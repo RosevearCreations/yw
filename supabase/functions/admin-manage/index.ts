@@ -69,6 +69,20 @@ async function resolveProfileIdByNameOrEmail(supabase: any, value?: string | nul
   return data?.id || null;
 }
 
+
+async function resolveProfileByIdOrEmail(supabase: any, profileId?: string | null, email?: string | null) {
+  const cleanId = String(profileId || '').trim();
+  if (cleanId) {
+    const { data } = await supabase.from('profiles').select('*').eq('id', cleanId).maybeSingle();
+    if (data) return data;
+  }
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  if (cleanEmail) {
+    const { data } = await supabase.from('profiles').select('*').ilike('email', cleanEmail).maybeSingle();
+    if (data) return data;
+  }
+  return null;
+}
 function validateAdminSetPassword(password?: string | null) {
   const clean = String(password || '');
   if (!clean) throw new Error('A new password is required.');
@@ -107,6 +121,127 @@ serve(async (req) => {
     }
 
     if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, { status: 403, headers: corsHeaders });
+
+
+    if (entity === 'credential' && action === 'create_user') {
+      const email = String(body.email || '').trim().toLowerCase();
+      const password = validateAdminSetPassword(body.new_password || body.password || '');
+      if (!email) return Response.json({ ok:false, error:'Email is required.' }, { status:400, headers:corsHeaders });
+      const role = String(body.role || 'employee').trim() || 'employee';
+      const createResp = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: !!body.email_verified,
+        phone_confirm: !!body.phone_verified,
+        user_metadata: {
+          full_name: body.full_name || null,
+          role,
+          employee_number: body.employee_number || null
+        }
+      });
+      if (createResp.error || !createResp.data?.user) {
+        return Response.json({ ok:false, error:createResp.error?.message || 'User create failed.' }, { status:400, headers:corsHeaders });
+      }
+      const userId = createResp.data.user.id;
+      const profilePatch = {
+        id: userId,
+        email,
+        full_name: body.full_name ?? null,
+        role,
+        is_active: body.is_active ?? true,
+        phone: body.phone ?? null,
+        phone_verified: !!body.phone_verified,
+        email_verified: !!body.email_verified,
+        employee_number: body.employee_number ?? null,
+        current_position: body.current_position ?? null,
+        seniority_level: body.seniority_level ?? null,
+        employment_status: body.employment_status ?? null,
+        staff_tier: body.staff_tier ?? null,
+        trade_specialty: body.trade_specialty ?? null,
+        seniority_level: body.seniority_level ?? null,
+        employment_status: body.employment_status ?? 'active',
+        staff_tier: body.staff_tier ?? role,
+        start_date: body.start_date ?? null,
+        years_employed: body.years_employed ?? null,
+        notes: body.notes ?? null,
+        password_login_ready: true,
+        password_changed_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      const { data: profileRow, error: profileErr } = await supabase.from('profiles').upsert(profilePatch).select('*').single();
+      if (profileErr) throw profileErr;
+      return Response.json({ ok:true, record: profileRow }, { headers:corsHeaders });
+    }
+
+    if (entity === 'credential' && action === 'send_password_reset') {
+      const target = await resolveProfileByIdOrEmail(supabase, body.profile_id, body.email);
+      if (!target?.email) return Response.json({ ok:false, error:'Target profile was not found.' }, { status:404, headers:corsHeaders });
+      const resetResp = await supabase.auth.admin.generateLink({
+        type: 'recovery',
+        email: String(target.email),
+        options: { redirectTo: Deno.env.get('PASSWORD_RESET_REDIRECT_TO') || Deno.env.get('SITE_URL') || undefined }
+      });
+      if (resetResp.error) return Response.json({ ok:false, error:resetResp.error.message }, { status:400, headers:corsHeaders });
+      return Response.json({ ok:true, email: target.email, link_generated: true }, { headers:corsHeaders });
+    }
+
+    if (entity === 'credential' && action === 'set_password') {
+      const target = await resolveProfileByIdOrEmail(supabase, body.profile_id, body.email);
+      if (!target?.id) return Response.json({ ok:false, error:'Target profile was not found.' }, { status:404, headers:corsHeaders });
+      const password = validateAdminSetPassword(body.new_password || '');
+      const updateResp = await supabase.auth.admin.updateUserById(String(target.id), { password });
+      if (updateResp.error) return Response.json({ ok:false, error:updateResp.error.message }, { status:400, headers:corsHeaders });
+      await supabase.from('profiles').update({ password_changed_at: new Date().toISOString(), password_login_ready: true, updated_at: new Date().toISOString() }).eq('id', String(target.id));
+      await supabase.from('admin_password_resets').insert({ target_profile_id: String(target.id), changed_by_profile_id: actorId, reason: body.reason ?? null, force_password_change: !!body.force_password_change, created_at: new Date().toISOString() });
+      return Response.json({ ok:true }, { headers:corsHeaders });
+    }
+
+    if (entity === 'profile' && action === 'create') {
+      const { data, error } = await supabase.from('profiles').insert({
+        id: body.profile_id,
+        email: body.email,
+        full_name: body.full_name ?? null,
+        role: body.role ?? 'employee',
+        is_active: body.is_active ?? true,
+        phone: body.phone ?? null,
+        phone_verified: !!body.phone_verified,
+        email_verified: !!body.email_verified,
+        employee_number: body.employee_number ?? null,
+        current_position: body.current_position ?? null,
+        seniority_level: body.seniority_level ?? null,
+        employment_status: body.employment_status ?? null,
+        staff_tier: body.staff_tier ?? null,
+        trade_specialty: body.trade_specialty ?? null,
+        seniority_level: body.seniority_level ?? null,
+        employment_status: body.employment_status ?? 'active',
+        staff_tier: body.staff_tier ?? body.role ?? 'employee',
+        start_date: body.start_date ?? null,
+        years_employed: body.years_employed ?? null,
+        notes: body.notes ?? null,
+        updated_at: new Date().toISOString(),
+      }).select('*').single();
+      if (error) throw error;
+      return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+    }
+
+    if (entity === 'profile' && action === 'set_active') {
+      const { data, error } = await supabase.from('profiles').update({
+        is_active: !!body.is_active,
+        employment_status: body.is_active === false ? 'blocked' : (body.employment_status ?? 'active'),
+        updated_at: new Date().toISOString(),
+      }).eq('id', body.profile_id).select('*').single();
+      if (error) throw error;
+      return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+    }
+
+    if (entity === 'profile' && action === 'delete') {
+      const target = await resolveProfileByIdOrEmail(supabase, body.profile_id, body.email);
+      if (!target?.id) return Response.json({ ok:false, error:'Target profile was not found.' }, { status:404, headers:corsHeaders });
+      const delResp = await supabase.auth.admin.deleteUser(String(target.id));
+      if (delResp.error) return Response.json({ ok:false, error:delResp.error.message }, { status:400, headers:corsHeaders });
+      return Response.json({ ok:true }, { headers:corsHeaders });
+    }
 
     if (entity === 'notification') {
       const notificationId = body.notification_id;
@@ -440,6 +575,9 @@ serve(async (req) => {
         start_date: body.start_date ?? null,
         employee_number: body.employee_number ?? null,
         current_position: body.current_position ?? null,
+        seniority_level: body.seniority_level ?? null,
+        employment_status: body.employment_status ?? null,
+        staff_tier: body.staff_tier ?? null,
         previous_employee: !!body.previous_employee,
         trade_specialty: body.trade_specialty ?? null,
         strengths: body.strengths ?? null,
