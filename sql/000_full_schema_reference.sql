@@ -175,15 +175,51 @@ create table if not exists public.submission_images (
 );
 
 create table if not exists public.position_catalog (
-  id bigserial primary key,
-  position_name text not null unique,
-  is_active boolean not null default true
+  id bigint generated always as identity primary key,
+  name text not null unique,
+  sort_order integer not null default 100,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
 );
 
 create table if not exists public.trade_catalog (
-  id bigserial primary key,
-  trade_name text not null unique,
-  is_active boolean not null default true
+  id bigint generated always as identity primary key,
+  name text not null unique,
+  sort_order integer not null default 100,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.staff_tier_catalog (
+  id bigint generated always as identity primary key,
+  name text not null unique,
+  sort_order integer not null default 100,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.seniority_level_catalog (
+  id bigint generated always as identity primary key,
+  name text not null unique,
+  sort_order integer not null default 100,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.employment_status_catalog (
+  id bigint generated always as identity primary key,
+  name text not null unique,
+  sort_order integer not null default 100,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.job_type_catalog (
+  id bigint generated always as identity primary key,
+  name text not null unique,
+  sort_order integer not null default 100,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
 );
 
 create table if not exists public.jobs (

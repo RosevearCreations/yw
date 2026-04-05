@@ -18,6 +18,7 @@
 
   function createAdminUI(config = {}) {
     const loadAdminDirectory = config.loadAdminDirectory;
+    const loadAdminSelectors = config.loadAdminSelectors || window.YWIAPI?.loadAdminSelectors;
     const manageAdminEntity = window.YWIAPI?.manageAdminEntity;
     const manageSummary = config.manageSummary || function () {};
     const getCurrentRole = config.getCurrentRole || (() => 'worker');
@@ -33,6 +34,9 @@
       notifications: [],
       counts: { users: 0, sites: 0, assignments: 0, orders: 0 },
       users: [],
+      sites: [],
+      assignments: [],
+      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [] },
       salesOrders: [],
       accountingEntries: [],
       smokeChecks: []
@@ -131,14 +135,14 @@
                 <option value="admin">Admin</option>
               </select>
             </label>
-            <label>Staff Tier<input id="ad_staff_tier" type="text" placeholder="Admin / Supervisor / Employee" /></label>
-            <label>Seniority Level<input id="ad_staff_seniority" type="text" placeholder="Junior / Senior / Lead" /></label>
+            <label>Staff Tier<select id="ad_staff_tier"></select></label>
+            <label>Seniority Level<select id="ad_staff_seniority"></select></label>
             <label>Employment Status
               <select id="ad_staff_status"><option value="active">Active</option><option value="blocked">Blocked</option><option value="inactive">Inactive</option></select>
             </label>
             <label>Employee Number<input id="ad_staff_employee_number" type="text" /></label>
-            <label>Position<input id="ad_staff_position" type="text" /></label>
-            <label>Trade<input id="ad_staff_trade" type="text" /></label>
+            <label>Position<select id="ad_staff_position"></select></label>
+            <label>Trade<select id="ad_staff_trade"></select></label>
             <label>Start Date<input id="ad_staff_start_date" type="date" /></label>
             <label>New Password<input id="ad_staff_new_password" type="password" autocomplete="new-password" placeholder="Required for new user" /></label>
             <label style="display:flex;align-items:end;gap:8px;"><input id="ad_staff_phone_verified" type="checkbox" /><span>Phone verified</span></label>
@@ -156,6 +160,90 @@
           <div class="table-scroll" style="margin-top:14px;">
             <table id="ad_staff_table">
               <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Tier</th><th>Seniority</th><th>Status</th><th>Phone</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="admin-panel-block" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
+              <h3 style="margin:0;">Assignment Workbench</h3>
+              <p class="section-subtitle">Assign staff to sites, set reporting lines, and manage the supervisor/admin structure used by jobs and approvals.</p>
+            </div>
+          </div>
+          <div class="grid">
+            <label>Assignment
+              <select id="ad_assignment_id"></select>
+            </label>
+            <label>Site
+              <select id="ad_assignment_site_id"></select>
+            </label>
+            <label>Profile
+              <select id="ad_assignment_profile_id"></select>
+            </label>
+            <label>Assignment Role
+              <select id="ad_assignment_role">
+                <option value="worker">Worker</option>
+                <option value="employee">Employee</option>
+                <option value="supervisor">Supervisor</option>
+                <option value="admin">Admin</option>
+              </select>
+            </label>
+            <label>Reports to Supervisor
+              <select id="ad_assignment_supervisor"></select>
+            </label>
+            <label>Reports to Admin
+              <select id="ad_assignment_admin"></select>
+            </label>
+            <label style="display:flex;align-items:end;gap:8px;"><input id="ad_assignment_primary" type="checkbox" /><span>Primary assignment</span></label>
+          </div>
+          <div class="form-footer" style="margin-top:12px;">
+            <button id="ad_assignment_create" class="secondary" type="button">Create Assignment</button>
+            <button id="ad_assignment_save" class="secondary" type="button">Save Assignment</button>
+            <button id="ad_assignment_delete" class="secondary" type="button">Delete Assignment</button>
+          </div>
+          <div class="table-scroll" style="margin-top:14px;">
+            <table id="ad_assignments_table">
+              <thead><tr><th>Site</th><th>Staff</th><th>Role</th><th>Primary</th><th>Supervisor</th><th>Admin</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="admin-panel-block" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
+              <h3 style="margin:0;">Dropdown and Catalog Manager</h3>
+              <p class="section-subtitle">Populate the shared dropdown fields used by staff forms and future job/work-order flows.</p>
+            </div>
+          </div>
+          <div class="grid">
+            <label>Catalog
+              <select id="ad_catalog_type">
+                <option value="position">Positions</option>
+                <option value="trade">Trades</option>
+                <option value="staff_tier">Staff tiers</option>
+                <option value="seniority">Seniority levels</option>
+                <option value="employment_status">Employment statuses</option>
+                <option value="job_type">Job types</option>
+              </select>
+            </label>
+            <label>Selected Item
+              <select id="ad_catalog_item_id"></select>
+            </label>
+            <label>Name<input id="ad_catalog_name" type="text" placeholder="Catalog value" /></label>
+            <label>Sort Order<input id="ad_catalog_sort" type="number" min="0" step="1" value="100" /></label>
+            <label style="display:flex;align-items:end;gap:8px;"><input id="ad_catalog_active" type="checkbox" checked /><span>Active</span></label>
+          </div>
+          <div class="form-footer" style="margin-top:12px;">
+            <button id="ad_catalog_create" class="secondary" type="button">Create Item</button>
+            <button id="ad_catalog_save" class="secondary" type="button">Save Item</button>
+            <button id="ad_catalog_delete" class="secondary" type="button">Delete Item</button>
+          </div>
+          <div class="table-scroll" style="margin-top:14px;">
+            <table id="ad_catalog_table">
+              <thead><tr><th>Name</th><th>Sort</th><th>Active</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -390,6 +478,26 @@
         staffBlockBtn: document.getElementById('ad_staff_block'),
         staffDeleteBtn: document.getElementById('ad_staff_delete'),
         staffBody: document.querySelector('#ad_staff_table tbody'),
+        assignmentId: document.getElementById('ad_assignment_id'),
+        assignmentSiteId: document.getElementById('ad_assignment_site_id'),
+        assignmentProfileId: document.getElementById('ad_assignment_profile_id'),
+        assignmentRole: document.getElementById('ad_assignment_role'),
+        assignmentSupervisor: document.getElementById('ad_assignment_supervisor'),
+        assignmentAdmin: document.getElementById('ad_assignment_admin'),
+        assignmentPrimary: document.getElementById('ad_assignment_primary'),
+        assignmentCreateBtn: document.getElementById('ad_assignment_create'),
+        assignmentSaveBtn: document.getElementById('ad_assignment_save'),
+        assignmentDeleteBtn: document.getElementById('ad_assignment_delete'),
+        assignmentsBody: document.querySelector('#ad_assignments_table tbody'),
+        catalogType: document.getElementById('ad_catalog_type'),
+        catalogItemId: document.getElementById('ad_catalog_item_id'),
+        catalogName: document.getElementById('ad_catalog_name'),
+        catalogSort: document.getElementById('ad_catalog_sort'),
+        catalogActive: document.getElementById('ad_catalog_active'),
+        catalogCreateBtn: document.getElementById('ad_catalog_create'),
+        catalogSaveBtn: document.getElementById('ad_catalog_save'),
+        catalogDeleteBtn: document.getElementById('ad_catalog_delete'),
+        catalogBody: document.querySelector('#ad_catalog_table tbody'),
         sitesCount: document.getElementById('ad_sites_count'),
         assignmentsCount: document.getElementById('ad_assignments_count'),
         notificationsCount: document.getElementById('ad_notifications_count'),
@@ -946,12 +1054,14 @@
         const resp = await loadAdminDirectory({ scope: 'all', limit: 200 });
         state.notifications = Array.isArray(resp?.notifications) ? resp.notifications : [];
         state.users = Array.isArray(resp?.users) ? resp.users : [];
+        state.sites = Array.isArray(resp?.sites) ? resp.sites : [];
+        state.assignments = Array.isArray(resp?.assignments) ? resp.assignments : [];
         state.salesOrders = Array.isArray(resp?.sales_orders) ? resp.sales_orders : [];
         state.accountingEntries = Array.isArray(resp?.accounting_entries) ? resp.accounting_entries : [];
         state.counts = {
           users: state.users.length,
           sites: Array.isArray(resp?.sites) ? resp.sites.length : 0,
-          assignments: Array.isArray(resp?.assignments) ? resp.assignments.length : 0,
+          assignments: state.assignments.length,
           orders: state.salesOrders.length
         };
 
@@ -963,8 +1073,11 @@
 
         renderStaffDirectory();
         renderProfileOptions();
+        renderAssignmentWorkbench();
+        renderCatalogManager();
         renderNotifications();
         renderOrders();
+        await refreshSelectors();
 
         const outboxSummary = window.YWIOutbox?.getActionSummary?.('admin') || { total: 0, conflicts: 0 };
         setSummary(
@@ -979,6 +1092,9 @@
 
     function clearDirectory() {
       state.notifications = [];
+      state.sites = [];
+      state.assignments = [];
+      state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [] };
       renderNotifications();
       const e = els();
       if (e.usersCount) e.usersCount.textContent = '0';
@@ -991,8 +1107,217 @@
       renderSmokeChecks({ checks: [] });
     }
 
+    function getCatalogRows(type) {
+      const map = {
+        position: state.selectors.positions || [],
+        trade: state.selectors.trades || [],
+        staff_tier: state.selectors.staffTiers || [],
+        seniority: state.selectors.seniorityLevels || [],
+        employment_status: state.selectors.employmentStatuses || [],
+        job_type: state.selectors.jobTypes || []
+      };
+      return Array.isArray(map[type]) ? map[type] : [];
+    }
+
+    function optionList(rows, valueKey = 'id', labelFn = null, placeholder = 'Select') {
+      const items = Array.isArray(rows) ? rows : [];
+      const toLabel = labelFn || ((row) => row?.name || row?.full_name || row?.email || row?.site_code || row?.id || '');
+      return `<option value="">${escHtml(placeholder)}</option>` + items.map((row) => `<option value="${escHtml(row?.[valueKey] ?? '')}">${escHtml(toLabel(row))}</option>`).join('');
+    }
+
+    function setSelectValue(el, value) {
+      if (!el) return;
+      const normalized = value == null ? '' : String(value);
+      el.value = normalized;
+      if (el.value !== normalized) el.value = '';
+    }
+
+    function renderCatalogManager() {
+      const e = els();
+      const rows = getCatalogRows(e.catalogType?.value || 'position');
+      if (e.catalogItemId) {
+        const current = e.catalogItemId.value || '';
+        e.catalogItemId.innerHTML = optionList(rows, 'id', (row) => row.name || row.position_name || row.trade_name || row.id, 'Select item');
+        setSelectValue(e.catalogItemId, current);
+      }
+      if (e.catalogBody) {
+        e.catalogBody.innerHTML = rows.map((row) => `<tr data-catalog-id="${escHtml(row.id)}"><td>${escHtml(row.name || row.position_name || row.trade_name || '')}</td><td>${escHtml(row.sort_order ?? 100)}</td><td>${row.is_active === false ? 'No' : 'Yes'}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">No catalog items loaded.</td></tr>';
+      }
+    }
+
+    function fillCatalogForm(item) {
+      const e = els();
+      const row = item || {};
+      if (e.catalogItemId) setSelectValue(e.catalogItemId, row.id || '');
+      if (e.catalogName) e.catalogName.value = row.name || row.position_name || row.trade_name || '';
+      if (e.catalogSort) e.catalogSort.value = String(row.sort_order ?? 100);
+      if (e.catalogActive) e.catalogActive.checked = row.is_active !== false;
+    }
+
+    function renderAssignmentWorkbench() {
+      const e = els();
+      const assignments = Array.isArray(state.assignments) ? state.assignments : [];
+      const sites = Array.isArray(state.sites) ? state.sites : [];
+      const profiles = Array.isArray(state.users) ? state.users : [];
+      const supervisors = profiles.filter((row) => ['supervisor','site_leader','hse','job_admin','admin'].includes(String(row.role || '')));
+      const admins = profiles.filter((row) => String(row.role || '') === 'admin');
+      if (e.assignmentId) {
+        const current = e.assignmentId.value || '';
+        e.assignmentId.innerHTML = optionList(assignments, 'id', (row) => `${row.site_code || row['sites']?.site_code || 'Site'} - ${row.full_name || row['profiles']?.full_name || row.profile_id || ''}`, 'Select assignment');
+        setSelectValue(e.assignmentId, current);
+      }
+      if (e.assignmentSiteId) {
+        const current = e.assignmentSiteId.value || '';
+        e.assignmentSiteId.innerHTML = optionList(sites, 'id', (row) => `${row.site_code || ''} ${row.site_name ? '- ' + row.site_name : ''}`, 'Select site');
+        setSelectValue(e.assignmentSiteId, current);
+      }
+      if (e.assignmentProfileId) {
+        const current = e.assignmentProfileId.value || '';
+        e.assignmentProfileId.innerHTML = optionList(profiles, 'id', (row) => `${row.full_name || row.email || row.id} (${row.role || 'employee'})`, 'Select staff');
+        setSelectValue(e.assignmentProfileId, current);
+      }
+      if (e.assignmentSupervisor) {
+        const current = e.assignmentSupervisor.value || '';
+        e.assignmentSupervisor.innerHTML = optionList(supervisors, 'id', (row) => row.full_name || row.email || row.id, 'Select supervisor');
+        setSelectValue(e.assignmentSupervisor, current);
+      }
+      if (e.assignmentAdmin) {
+        const current = e.assignmentAdmin.value || '';
+        e.assignmentAdmin.innerHTML = optionList(admins, 'id', (row) => row.full_name || row.email || row.id, 'Select admin');
+        setSelectValue(e.assignmentAdmin, current);
+      }
+      if (e.assignmentsBody) {
+        e.assignmentsBody.innerHTML = assignments.map((row) => `<tr data-assignment-id="${escHtml(row.id)}"><td>${escHtml(row.site_code || row['sites']?.site_code || '')}</td><td>${escHtml(row.full_name || row['profiles']?.full_name || row.profile_id || '')}</td><td>${escHtml(row.assignment_role || '')}</td><td>${row.is_primary ? 'Yes' : 'No'}</td><td>${escHtml(row.supervisor_name || '')}</td><td>${escHtml(row.admin_name || '')}</td></tr>`).join('') || '<tr><td colspan="6" class="muted">No assignments loaded.</td></tr>';
+      }
+    }
+
+    function fillAssignmentForm(item) {
+      const e = els();
+      const row = item || {};
+      if (e.assignmentId) setSelectValue(e.assignmentId, row.id || '');
+      if (e.assignmentSiteId) setSelectValue(e.assignmentSiteId, row.site_id || '');
+      if (e.assignmentProfileId) setSelectValue(e.assignmentProfileId, row.profile_id || '');
+      if (e.assignmentRole) setSelectValue(e.assignmentRole, row.assignment_role || 'worker');
+      if (e.assignmentSupervisor) setSelectValue(e.assignmentSupervisor, row.reports_to_supervisor_profile_id || '');
+      if (e.assignmentAdmin) setSelectValue(e.assignmentAdmin, row.reports_to_admin_profile_id || '');
+      if (e.assignmentPrimary) e.assignmentPrimary.checked = !!row.is_primary;
+    }
+
+    function getSelectedAssignment() {
+      const e = els();
+      return (state.assignments || []).find((row) => String(row.id) === String(e.assignmentId?.value || '')) || null;
+    }
+
+    async function saveAssignment(isCreate = false) {
+      const e = els();
+      const payload = {
+        entity: 'assignment',
+        action: isCreate ? 'create' : 'update',
+        assignment_id: e.assignmentId?.value || '',
+        site_id: e.assignmentSiteId?.value || '',
+        profile_id: e.assignmentProfileId?.value || '',
+        assignment_role: e.assignmentRole?.value || 'worker',
+        is_primary: !!e.assignmentPrimary?.checked,
+        reports_to_supervisor_name: (state.users || []).find((row) => String(row.id) === String(e.assignmentSupervisor?.value || ''))?.email || '',
+        reports_to_admin_name: (state.users || []).find((row) => String(row.id) === String(e.assignmentAdmin?.value || ''))?.email || ''
+      };
+      if (!payload.site_id || !payload.profile_id) throw new Error('Site and profile are required for assignments.');
+      const resp = await manageAdminEntity(payload);
+      if (!resp?.ok) throw new Error(resp?.error || 'Assignment save failed.');
+      setSummary(isCreate ? 'Assignment created.' : 'Assignment updated.');
+      await loadDirectory();
+      fillAssignmentForm(resp.record || null);
+    }
+
+    async function deleteAssignment() {
+      const e = els();
+      const assignmentId = e.assignmentId?.value || '';
+      if (!assignmentId) throw new Error('Select an assignment first.');
+      const resp = await manageAdminEntity({ entity: 'assignment', action: 'delete', assignment_id: assignmentId });
+      if (!resp?.ok) throw new Error(resp?.error || 'Assignment delete failed.');
+      setSummary('Assignment deleted.');
+      await loadDirectory();
+      fillAssignmentForm(null);
+    }
+
+    async function saveCatalogItem(isCreate = false) {
+      const e = els();
+      const payload = {
+        entity: 'catalog',
+        action: isCreate ? 'create' : 'update',
+        catalog_type: e.catalogType?.value || 'position',
+        item_id: e.catalogItemId?.value || '',
+        name: e.catalogName?.value || '',
+        sort_order: Number(e.catalogSort?.value || 100),
+        is_active: !!e.catalogActive?.checked
+      };
+      if (!payload.name.trim()) throw new Error('Catalog item name is required.');
+      const resp = await manageAdminEntity(payload);
+      if (!resp?.ok) throw new Error(resp?.error || 'Catalog save failed.');
+      setSummary(isCreate ? 'Catalog item created.' : 'Catalog item updated.');
+      await refreshSelectors();
+      fillCatalogForm(resp.record || null);
+    }
+
+    async function deleteCatalogItem() {
+      const e = els();
+      const itemId = e.catalogItemId?.value || '';
+      if (!itemId) throw new Error('Select a catalog item first.');
+      const resp = await manageAdminEntity({ entity: 'catalog', action: 'delete', catalog_type: e.catalogType?.value || 'position', item_id: itemId });
+      if (!resp?.ok) throw new Error(resp?.error || 'Catalog delete failed.');
+      setSummary('Catalog item deleted.');
+      await refreshSelectors();
+      fillCatalogForm(null);
+    }
+
     async function refreshSelectors() {
-      return true;
+      if (!loadAdminSelectors) return true;
+      try {
+        const payload = await loadAdminSelectors({ scope: 'all' });
+        state.selectors = {
+          profiles: Array.isArray(payload?.profiles) ? payload.profiles : state.users,
+          sites: Array.isArray(payload?.sites) ? payload.sites : state.sites,
+          assignments: Array.isArray(payload?.assignments) ? payload.assignments : state.assignments,
+          positions: Array.isArray(payload?.positions) ? payload.positions : [],
+          trades: Array.isArray(payload?.trades) ? payload.trades : [],
+          staffTiers: Array.isArray(payload?.staff_tiers) ? payload.staff_tiers : [],
+          seniorityLevels: Array.isArray(payload?.seniority_levels) ? payload.seniority_levels : [],
+          employmentStatuses: Array.isArray(payload?.employment_statuses) ? payload.employment_statuses : [],
+          jobTypes: Array.isArray(payload?.job_types) ? payload.job_types : []
+        };
+        const e = els();
+        if (e.staffPosition) {
+          const current = e.staffPosition.value || '';
+          e.staffPosition.innerHTML = optionList(state.selectors.positions, 'name', (row) => row.name || row.position_name || '', 'Select position');
+          setSelectValue(e.staffPosition, current);
+        }
+        if (e.staffTrade) {
+          const current = e.staffTrade.value || '';
+          e.staffTrade.innerHTML = optionList(state.selectors.trades, 'name', (row) => row.name || row.trade_name || '', 'Select trade');
+          setSelectValue(e.staffTrade, current);
+        }
+        if (e.staffTier) {
+          const current = e.staffTier.value || '';
+          e.staffTier.innerHTML = optionList(state.selectors.staffTiers, 'name', (row) => row.name || '', 'Select staff tier');
+          setSelectValue(e.staffTier, current);
+        }
+        if (e.staffSeniority) {
+          const current = e.staffSeniority.value || '';
+          e.staffSeniority.innerHTML = optionList(state.selectors.seniorityLevels, 'name', (row) => row.name || '', 'Select seniority');
+          setSelectValue(e.staffSeniority, current);
+        }
+        if (e.staffStatus) {
+          const current = e.staffStatus.value || '';
+          e.staffStatus.innerHTML = optionList(state.selectors.employmentStatuses, 'name', (row) => row.name || '', 'Select status');
+          setSelectValue(e.staffStatus, current || 'active');
+        }
+        renderAssignmentWorkbench();
+        renderCatalogManager();
+        return true;
+      } catch (err) {
+        setSummary(String(err?.message || 'Failed to load admin selectors.'), true);
+        return false;
+      }
     }
 
 
@@ -1132,6 +1457,64 @@
       if (e.staffDeleteBtn && e.staffDeleteBtn.dataset.bound !== '1') {
         e.staffDeleteBtn.dataset.bound = '1';
         e.staffDeleteBtn.addEventListener('click', () => deleteStaffUser().catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.assignmentId && e.assignmentId.dataset.bound !== '1') {
+        e.assignmentId.dataset.bound = '1';
+        e.assignmentId.addEventListener('change', () => fillAssignmentForm(getSelectedAssignment()));
+      }
+      if (e.assignmentsBody && e.assignmentsBody.dataset.bound !== '1') {
+        e.assignmentsBody.dataset.bound = '1';
+        e.assignmentsBody.addEventListener('click', (event) => {
+          const tr = event.target.closest('[data-assignment-id]');
+          if (!tr) return;
+          if (e.assignmentId) e.assignmentId.value = tr.getAttribute('data-assignment-id') || '';
+          fillAssignmentForm(getSelectedAssignment());
+        });
+      }
+      if (e.assignmentCreateBtn && e.assignmentCreateBtn.dataset.bound !== '1') {
+        e.assignmentCreateBtn.dataset.bound = '1';
+        e.assignmentCreateBtn.addEventListener('click', () => saveAssignment(true).catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.assignmentSaveBtn && e.assignmentSaveBtn.dataset.bound !== '1') {
+        e.assignmentSaveBtn.dataset.bound = '1';
+        e.assignmentSaveBtn.addEventListener('click', () => saveAssignment(false).catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.assignmentDeleteBtn && e.assignmentDeleteBtn.dataset.bound !== '1') {
+        e.assignmentDeleteBtn.dataset.bound = '1';
+        e.assignmentDeleteBtn.addEventListener('click', () => deleteAssignment().catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.catalogType && e.catalogType.dataset.bound !== '1') {
+        e.catalogType.dataset.bound = '1';
+        e.catalogType.addEventListener('change', () => { fillCatalogForm(null); renderCatalogManager(); });
+      }
+      if (e.catalogItemId && e.catalogItemId.dataset.bound !== '1') {
+        e.catalogItemId.dataset.bound = '1';
+        e.catalogItemId.addEventListener('change', () => {
+          const row = getCatalogRows(e.catalogType?.value || 'position').find((item) => String(item.id) === String(e.catalogItemId?.value || ''));
+          fillCatalogForm(row || null);
+        });
+      }
+      if (e.catalogBody && e.catalogBody.dataset.bound !== '1') {
+        e.catalogBody.dataset.bound = '1';
+        e.catalogBody.addEventListener('click', (event) => {
+          const tr = event.target.closest('[data-catalog-id]');
+          if (!tr) return;
+          if (e.catalogItemId) e.catalogItemId.value = tr.getAttribute('data-catalog-id') || '';
+          const row = getCatalogRows(e.catalogType?.value || 'position').find((item) => String(item.id) === String(e.catalogItemId?.value || ''));
+          fillCatalogForm(row || null);
+        });
+      }
+      if (e.catalogCreateBtn && e.catalogCreateBtn.dataset.bound !== '1') {
+        e.catalogCreateBtn.dataset.bound = '1';
+        e.catalogCreateBtn.addEventListener('click', () => saveCatalogItem(true).catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.catalogSaveBtn && e.catalogSaveBtn.dataset.bound !== '1') {
+        e.catalogSaveBtn.dataset.bound = '1';
+        e.catalogSaveBtn.addEventListener('click', () => saveCatalogItem(false).catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.catalogDeleteBtn && e.catalogDeleteBtn.dataset.bound !== '1') {
+        e.catalogDeleteBtn.dataset.bound = '1';
+        e.catalogDeleteBtn.addEventListener('click', () => deleteCatalogItem().catch((err) => setSummary(String(err?.message || err), true)));
       }
       if (e.passwordForm && e.passwordForm.dataset.bound !== '1') {
         e.passwordForm.dataset.bound = '1';
