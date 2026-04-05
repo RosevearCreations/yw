@@ -1,3 +1,4 @@
+-- Current reference includes migrations through 059_role_aliases_admin_bootstrap_and_onboarding_fix.sql
 -- 2026-04-04d profile/logbook restoration and staff admin backend pass
 -- Added migration 057_staff_directory_and_role_admin.sql for staff seniority, employment status, and staff tier fields.
 -- 2026-04-04c interface restoration and admin-workflow preparation pass
@@ -24,7 +25,7 @@ create table if not exists public.profiles (
   password_login_ready boolean not null default false,
   account_setup_completed_at timestamptz,
   onboarding_completed_at timestamptz,
-  role text not null default 'worker',
+  role text not null default 'employee',
   is_active boolean not null default true,
   phone text,
   phone_verified boolean not null default false,
@@ -113,7 +114,7 @@ create table if not exists public.site_assignments (
   id bigserial primary key,
   site_id uuid not null references public.sites(id) on delete cascade,
   profile_id uuid not null references public.profiles(id) on delete cascade,
-  assignment_role text not null default 'worker',
+  assignment_role text not null default 'employee',
   is_primary boolean not null default false,
   reports_to_supervisor_profile_id uuid references public.profiles(id) on delete set null,
   reports_to_admin_profile_id uuid references public.profiles(id) on delete set null,

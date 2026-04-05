@@ -39,7 +39,7 @@ async function updateDeliveryState(supabase: any, notificationId: any, kind: 'em
 }
 
 function roleRank(role: string) {
-  return { worker:10, staff:15, onsite_admin:18, site_leader:20, supervisor:30, hse:40, job_admin:45, admin:50 }[role] ?? 0;
+  return { worker:10, employee:10, staff:15, onsite_admin:18, site_leader:20, supervisor:30, hse:40, job_admin:45, admin:50 }[role] ?? 0;
 }
 function normalizePoolKey(value?: string | null) {
   return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');

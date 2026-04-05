@@ -540,11 +540,12 @@ serve(async (req) => {
     const passwordReady = actorProfile.password_login_ready === true;
     const patch: Record<string, unknown> = {
       onboarding_completed_at: now,
+      account_setup_completed_at: actorProfile.account_setup_completed_at || now,
       updated_at: now,
     };
 
-    if (usernameReady && passwordReady && !actorProfile.account_setup_completed_at) {
-      patch.account_setup_completed_at = now;
+    if (usernameReady && passwordReady) {
+      patch.password_login_ready = true;
     }
 
     const { data, error } = await supabase

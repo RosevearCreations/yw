@@ -18,5 +18,5 @@ serve(async (req) => {
   const { data: userData, error: userError } = await supabase.auth.getUser(token);
   if (userError || !userData.user) return Response.json({ ok: false, error: 'Unauthorized' }, { status: 401, headers: corsHeaders });
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', userData.user.id).maybeSingle();
-  return Response.json({ ok: true, user: userData.user, profile: profile || null, role: profile?.role || 'worker', isAuthenticated: true }, { headers: corsHeaders });
+  return Response.json({ ok: true, user: userData.user, profile: profile || null, role: profile?.role || 'employee', isAuthenticated: true }, { headers: corsHeaders });
 });

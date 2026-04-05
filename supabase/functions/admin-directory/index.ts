@@ -13,7 +13,7 @@ const corsHeaders = {
 };
 
 function roleRank(role: string) {
-  return { worker:10, staff:15, onsite_admin:18, site_leader:20, supervisor:30, hse:40, job_admin:45, admin:50 }[role] ?? 0;
+  return { worker:10, employee:10, staff:15, onsite_admin:18, site_leader:20, supervisor:30, hse:40, job_admin:45, admin:50 }[role] ?? 0;
 }
 
 serve(async (req) => {

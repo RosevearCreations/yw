@@ -141,7 +141,7 @@ serve(async (req) => {
       const email = String(body.email || '').trim().toLowerCase();
       const password = validateAdminSetPassword(body.new_password || body.password || '');
       if (!email) return Response.json({ ok:false, error:'Email is required.' }, { status:400, headers:corsHeaders });
-      const role = String(body.role || 'employee').trim() || 'employee';
+      const role = String(body.role || 'employee').trim().toLowerCase() || 'employee';
       const createResp = await supabase.auth.admin.createUser({
         email,
         password,
@@ -150,7 +150,8 @@ serve(async (req) => {
         user_metadata: {
           full_name: body.full_name || null,
           role,
-          employee_number: body.employee_number || null
+          employee_number: body.employee_number || null,
+          staff_tier: body.staff_tier || role
         }
       });
       if (createResp.error || !createResp.data?.user) {
@@ -497,7 +498,7 @@ serve(async (req) => {
 
       await supabase.from('admin_notifications').insert({
         notification_type: 'admin_password_reset',
-        recipient_role: targetProfile.role || 'worker',
+        recipient_role: targetProfile.role || 'employee',
         target_table: 'profiles',
         target_id: String(targetProfileId),
         target_profile_id: targetProfileId,
@@ -570,12 +571,14 @@ serve(async (req) => {
     }
 
     if (entity === 'profile' && action === 'update') {
+      const normalizedRole = String(body.role ?? '').trim().toLowerCase() || undefined;
       const patch = {
         full_name: body.full_name ?? null,
-        role: body.role ?? undefined,
+        role: normalizedRole,
         is_active: body.is_active ?? true,
         phone: body.phone ?? null,
         phone_verified: !!body.phone_verified,
+        email_verified: body.email_verified === undefined ? undefined : !!body.email_verified,
         address_line1: body.address_line1 ?? null,
         address_line2: body.address_line2 ?? null,
         city: body.city ?? null,
@@ -606,6 +609,14 @@ serve(async (req) => {
       };
       const { data, error } = await supabase.from('profiles').update(patch).eq('id', body.profile_id).select('*').single();
       if (error) throw error;
+      const metadataPatch: Record<string, unknown> = {};
+      if (body.full_name !== undefined) metadataPatch.full_name = body.full_name ?? null;
+      if (normalizedRole !== undefined) metadataPatch.role = normalizedRole;
+      if (body.employee_number !== undefined) metadataPatch.employee_number = body.employee_number ?? null;
+      if (body.staff_tier !== undefined) metadataPatch.staff_tier = body.staff_tier ?? null;
+      if (Object.keys(metadataPatch).length) {
+        await supabase.auth.admin.updateUserById(String(body.profile_id), { user_metadata: metadataPatch });
+      }
       return Response.json({ ok: true, record: data }, { headers: corsHeaders });
     }
 

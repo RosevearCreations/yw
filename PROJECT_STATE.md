@@ -1,5 +1,13 @@
 ## 2026-04-04d profile/logbook repair and staff admin backend pass
 
+## 2026-04-05b save-reliability, onboarding completion, and admin bootstrap pass
+- Fixed onboarding completion handling so the Settings onboarding block can fully clear after a successful complete action instead of looping on the button state.
+- Added employee/worker role compatibility across frontend security, auth state, and protected functions so staff roles no longer collapse back to worker semantics in the live app.
+- Added a generic `scripts/create-admin-account.mjs` bootstrap script for creating or re-seeding a real administrator account with verified login-ready profile data.
+- Added migration `sql/059_role_aliases_admin_bootstrap_and_onboarding_fix.sql` to normalize legacy worker profile roles toward employee-facing staff records, keep assignment roles compatible, and backfill missing onboarding completion timestamps.
+- Tightened admin profile saving so profile updates also refresh Auth user metadata for role/full-name/employee-number alignment.
+
+
 ## 2026-04-05 admin dropdown/catalog manager and assignment workbench pass
 - Extended the Admin backend with a database-backed dropdown/catalog manager for positions, trades, staff tiers, seniority levels, employment statuses, and job types.
 - Extended the Admin backend with an assignment workbench so Admin users can create, edit, and delete site/personnel assignments and reporting lines from the live app.
