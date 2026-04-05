@@ -11,8 +11,23 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function normalizeRole(role?: string | null) {
+  const clean = String(role || '').trim().toLowerCase();
+  if (clean === 'worker' || clean === 'staff') return 'employee';
+  return clean || 'employee';
+}
+
 function roleRank(role: string) {
-  return { worker:10, employee:10, staff:15, onsite_admin:18, site_leader:20, supervisor:30, hse:40, job_admin:45, admin:50 }[role] ?? 0;
+  return { employee:10, worker:10, staff:10, onsite_admin:18, site_leader:20, supervisor:30, hse:40, job_admin:45, admin:50 }[normalizeRole(role)] ?? 0;
+}
+
+function effectiveRole(profile: any, user: any) {
+  const direct = normalizeRole(profile?.role);
+  const tier = normalizeRole(profile?.staff_tier || user?.user_metadata?.staff_tier);
+  const meta = normalizeRole(user?.user_metadata?.role);
+  if (direct === 'admin' || tier === 'admin' || meta === 'admin') return 'admin';
+  if (direct === 'supervisor' || tier === 'supervisor' || meta === 'supervisor') return 'supervisor';
+  return direct || tier || meta || 'employee';
 }
 
 serve(async (req) => {
@@ -22,7 +37,8 @@ serve(async (req) => {
   const { data: userData, error: userError } = await supabase.auth.getUser(token);
   if (userError || !userData.user) return Response.json({ ok:false, error:'Unauthorized' }, { status:401, headers:corsHeaders });
   const { data: actorProfile } = await supabase.from('profiles').select('*').eq('id', userData.user.id).single();
-  if (!actorProfile?.is_active || roleRank(actorProfile.role) < roleRank('supervisor')) return Response.json({ ok:false, error:'Supervisor+ required' }, { status:403, headers:corsHeaders });
+  const actorRole = effectiveRole(actorProfile, userData.user);
+  if (!actorProfile?.is_active || roleRank(actorRole) < roleRank('supervisor')) return Response.json({ ok:false, error:'Supervisor+ required' }, { status:403, headers:corsHeaders });
 
   const { data: jobs } = await supabase.from('v_jobs_directory').select('*').order('start_date', { ascending: false });
   const { data: equipment } = await supabase.from('v_equipment_directory').select('*').order('equipment_code');

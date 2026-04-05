@@ -1,3 +1,10 @@
+## 2026-04-05c session isolation, CORS, and auth hardening pass
+- Hardened role normalization so legacy worker/staff values no longer demote active admin/supervisor sessions in the live shell.
+- Prevented Profile and Reference Data from refetching protected data after logout/session removal, reducing cross-user bleed and repeated 401 loops.
+- Added a dedicated `review-list` Edge Function with explicit preflight/CORS handling for the Logbook screen.
+- Tightened protected-function role evaluation so `staff_tier` and Auth metadata can preserve admin/supervisor access when legacy profile role text is stale.
+- Remaining live validation should focus on confirming session identity stays stable across screen changes, logout always works, and `review-list` preflight succeeds after deploy.
+
 ## 2026-04-04d profile/logbook repair and staff admin backend pass
 
 ## 2026-04-05b save-reliability, onboarding completion, and admin bootstrap pass

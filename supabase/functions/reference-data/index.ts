@@ -11,8 +11,23 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function normalizeRole(role?: string | null) {
+  const clean = String(role || '').trim().toLowerCase();
+  if (clean === 'worker' || clean === 'staff') return 'employee';
+  return clean || 'employee';
+}
+
 function roleRank(role: string) {
-  return { worker:10, employee:10, staff:15, onsite_admin:18, site_leader:20, supervisor:30, hse:40, job_admin:45, admin:50 }[role] ?? 0;
+  return { employee:10, worker:10, staff:10, onsite_admin:18, site_leader:20, supervisor:30, hse:40, job_admin:45, admin:50 }[normalizeRole(role)] ?? 0;
+}
+
+function effectiveRole(profile: any, user: any) {
+  const direct = normalizeRole(profile?.role);
+  const tier = normalizeRole(profile?.staff_tier || user?.user_metadata?.staff_tier);
+  const meta = normalizeRole(user?.user_metadata?.role);
+  if (direct === 'admin' || tier === 'admin' || meta === 'admin') return 'admin';
+  if (direct === 'supervisor' || tier === 'supervisor' || meta === 'supervisor') return 'supervisor';
+  return direct || tier || meta || 'employee';
 }
 
 serve(async (req) => {
@@ -24,11 +39,12 @@ serve(async (req) => {
   if (userError || !userData.user) return Response.json({ ok:false, error:'Unauthorized' }, { status:401, headers:corsHeaders });
 
   const { data: actorProfile } = await supabase.from('profiles').select('*').eq('id', userData.user.id).single();
+  const actorRole = effectiveRole(actorProfile, userData.user);
   if (!actorProfile?.is_active) return Response.json({ ok:false, error:'Inactive profile' }, { status:403, headers:corsHeaders });
 
   const { data: myAssignments } = await supabase.from('site_assignments').select('site_id').eq('profile_id', actorProfile.id);
   const mySiteIds = (myAssignments || []).map((x:any) => x.site_id);
-  const broad = roleRank(actorProfile.role) >= roleRank('supervisor');
+  const broad = roleRank(actorRole) >= roleRank('supervisor');
 
   let sitesQuery = supabase.from('sites').select('id,site_code,site_name,project_code,project_status,region').eq('is_active', true).order('site_code');
   if (!broad && mySiteIds.length) sitesQuery = sitesQuery.in('id', mySiteIds);

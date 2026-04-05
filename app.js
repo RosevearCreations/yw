@@ -256,11 +256,11 @@ function syncAuthStateFromBoot(detail = {}) {
   const state = detail.state || auth()?.getState?.() || null;
   const profile = state?.profile || null;
   const user = state?.user || null;
-  const role = state?.role || profile?.role || 'worker';
+  const role = state?.role || profile?.role || user?.user_metadata?.role || 'employee';
   const access = getAccessProfile(role);
 
-  appState.currentUser = profile || user || null;
-  appState.currentRole = role;
+  appState.currentUser = state?.isAuthenticated ? (profile || user || null) : null;
+  appState.currentRole = state?.isAuthenticated ? role : 'employee';
   appState.currentProfileActive = profile?.is_active !== false && !!state?.isAuthenticated;
   appState.isAuthenticated = !!state?.isAuthenticated;
   appState.needsAccountSetup = !!state?.needsAccountSetup;
@@ -279,6 +279,9 @@ function syncAuthStateFromBoot(detail = {}) {
   if (appState.isAuthenticated) {
     clearDiagnosticsMatching('auth');
     clearDiagnosticsMatching('bootstrap');
+  } else {
+    clearDiagnosticsMatching('profile-ui');
+    clearDiagnosticsMatching('reference-data');
   }
 
   router()?.init?.();
@@ -354,7 +357,8 @@ function initReferenceDataModule() {
   if (!canInitProtectedModules() || modules.referenceDataUI || !window.YWIReferenceData?.create || !api()) return;
   modules.referenceDataUI = window.YWIReferenceData.create({
     api: api(),
-    getCurrentRole: () => appState.currentRole
+    getCurrentRole: () => appState.currentRole,
+    getAuthState: () => auth()?.getState?.() || {}
   });
   timedRun('reference-data.init', () => Promise.resolve(modules.referenceDataUI.init())).catch((err) => {
     console.error('Reference data init failed', err);

@@ -12,8 +12,23 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function normalizeRole(role?: string | null) {
+  const clean = String(role || '').trim().toLowerCase();
+  if (clean === 'worker' || clean === 'staff') return 'employee';
+  return clean || 'employee';
+}
+
 function roleRank(role: string) {
-  return { worker:10, employee:10, staff:15, onsite_admin:18, site_leader:20, supervisor:30, hse:40, job_admin:45, admin:50 }[role] ?? 0;
+  return { employee:10, worker:10, staff:10, onsite_admin:18, site_leader:20, supervisor:30, hse:40, job_admin:45, admin:50 }[normalizeRole(role)] ?? 0;
+}
+
+function effectiveRole(profile: any, user: any) {
+  const direct = normalizeRole(profile?.role);
+  const tier = normalizeRole(profile?.staff_tier || user?.user_metadata?.staff_tier);
+  const meta = normalizeRole(user?.user_metadata?.role);
+  if (direct === 'admin' || tier === 'admin' || meta === 'admin') return 'admin';
+  if (direct === 'supervisor' || tier === 'supervisor' || meta === 'supervisor') return 'supervisor';
+  return direct || tier || meta || 'employee';
 }
 
 serve(async (req) => {
@@ -26,6 +41,7 @@ serve(async (req) => {
 
   const actorId = userData.user.id;
   const { data: actorProfile } = await supabase.from('profiles').select('*').eq('id', actorId).single();
+  const actorRole = effectiveRole(actorProfile, userData.user);
   if (!actorProfile?.is_active) return Response.json({ ok:false, error:'Inactive profile' }, { status:403, headers:corsHeaders });
 
   const body = await req.json().catch(() => ({}));
@@ -42,7 +58,7 @@ serve(async (req) => {
   for (const row of people) {
     if (row.id === actorId) continue;
     if (row.default_supervisor_profile_id === actorId || row.override_supervisor_profile_id === actorId) directReportIds.add(String(row.id));
-    if ((actorProfile.role === 'admin' || actorProfile.role === 'job_admin' || actorProfile.role === 'hse') && (row.default_admin_profile_id === actorId || row.override_admin_profile_id === actorId)) {
+    if ((['admin','job_admin','hse'].includes(actorRole)) && (row.default_admin_profile_id === actorId || row.override_admin_profile_id === actorId)) {
       directReportIds.add(String(row.id));
     }
   }
@@ -55,11 +71,11 @@ serve(async (req) => {
   const filteredPeople = people.filter((row: any) => {
     if (scope === 'self') return row.id === actorId;
     if (scope === 'crew') {
-      if (actorProfile.role === 'admin') return true;
-      if (roleRank(actorProfile.role) >= roleRank('supervisor')) return row.id === actorId || directReportIds.has(String(row.id));
+      if (actorRole === 'admin') return true;
+      if (roleRank(actorRole) >= roleRank('supervisor')) return row.id === actorId || directReportIds.has(String(row.id));
       return row.id === actorId;
     }
-    if (scope === 'all' || scope === 'users') return roleRank(actorProfile.role) >= roleRank('supervisor');
+    if (scope === 'all' || scope === 'users') return roleRank(actorRole) >= roleRank('supervisor');
     return true;
   }).filter((row: any) => {
     if (roleFilter && row.role !== roleFilter) return false;
@@ -69,23 +85,23 @@ serve(async (req) => {
   });
 
   const response: Record<string, unknown> = { ok:true, profiles: filteredPeople, users: filteredPeople };
-  if ((scope === 'all' || scope === 'sites') && roleRank(actorProfile.role) >= roleRank('supervisor')) {
+  if ((scope === 'all' || scope === 'sites') && roleRank(actorRole) >= roleRank('supervisor')) {
     const { data: sites } = await supabase.from('sites').select('*').order('site_code');
     response.sites = sites || [];
   }
-  if ((scope === 'all' || scope === 'assignments') && roleRank(actorProfile.role) >= roleRank('supervisor')) {
+  if ((scope === 'all' || scope === 'assignments') && roleRank(actorRole) >= roleRank('supervisor')) {
     response.assignments = assignments;
   }
-  if ((scope === 'all' || scope === 'notifications') && roleRank(actorProfile.role) >= roleRank('supervisor')) {
+  if ((scope === 'all' || scope === 'notifications') && roleRank(actorRole) >= roleRank('supervisor')) {
     let q = supabase.from('v_admin_notifications').select('*').order('created_at', { ascending:false }).limit(Math.max(1, Math.min(500, Number(body.limit || 200))));
-    if (actorProfile.role !== 'admin') q = q.or(`recipient_role.eq.admin,target_profile_id.eq.${actorId}`);
+    if (actorRole !== 'admin') q = q.or(`recipient_role.eq.admin,target_profile_id.eq.${actorId}`);
     const { data: notifications } = await q;
     response.notifications = (notifications || []).filter((row: any) => {
       if (!search) return true;
       return [row.notification_type, row.title, row.message, row.status, row.decision_status, row.created_by_name].some((v) => String(v || '').toLowerCase().includes(search));
     });
   }
-  if ((scope === 'all' || scope === 'accounting' || scope === 'orders') && roleRank(actorProfile.role) >= roleRank('supervisor')) {
+  if ((scope === 'all' || scope === 'accounting' || scope === 'orders') && roleRank(actorRole) >= roleRank('supervisor')) {
     const limit = Math.max(1, Math.min(500, Number(body.limit || 200)));
     const { data: salesOrders } = await supabase.from('sales_orders').select('*').order('created_at', { ascending:false }).limit(limit);
     const { data: accountingEntries } = await supabase.from('accounting_entries').select('*').order('created_at', { ascending:false }).limit(limit);
