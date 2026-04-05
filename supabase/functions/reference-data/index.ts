@@ -47,8 +47,14 @@ serve(async (req) => {
   const admins = list.filter((p:any) => p.role === 'admin');
   const employees = list;
 
-  const { data: positions } = await supabase.from('position_catalog').select('name,sort_order').eq('is_active', true).order('sort_order');
-  const { data: trades } = await supabase.from('trade_catalog').select('name,sort_order').eq('is_active', true).order('sort_order');
+  const { data: positionsRaw } = await supabase.from('position_catalog').select('*').eq('is_active', true).order('sort_order');
+  const { data: tradesRaw } = await supabase.from('trade_catalog').select('*').eq('is_active', true).order('sort_order');
+  const { data: staffTiers } = await supabase.from('staff_tier_catalog').select('*').eq('is_active', true).order('sort_order');
+  const { data: seniorityLevels } = await supabase.from('seniority_level_catalog').select('*').eq('is_active', true).order('sort_order');
+  const { data: employmentStatuses } = await supabase.from('employment_status_catalog').select('*').eq('is_active', true).order('sort_order');
+  const { data: jobTypes } = await supabase.from('job_type_catalog').select('*').eq('is_active', true).order('sort_order');
+  const positions = (positionsRaw || []).map((row:any) => ({ ...row, name: row.name ?? row.position_name ?? '' }));
+  const trades = (tradesRaw || []).map((row:any) => ({ ...row, name: row.name ?? row.trade_name ?? '' }));
 
-  return Response.json({ ok:true, sites: sites || [], supervisors, admins, employees, positions: positions || [], trades: trades || [] }, { headers:corsHeaders });
+  return Response.json({ ok:true, sites: sites || [], supervisors, admins, employees, positions: positions || [], trades: trades || [], staff_tiers: staffTiers || [], seniority_levels: seniorityLevels || [], employment_statuses: employmentStatuses || [], job_types: jobTypes || [] }, { headers:corsHeaders });
 });

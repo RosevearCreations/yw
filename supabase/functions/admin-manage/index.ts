@@ -83,6 +83,20 @@ async function resolveProfileByIdOrEmail(supabase: any, profileId?: string | nul
   }
   return null;
 }
+
+function getCatalogConfig(catalogType: string) {
+  const key = String(catalogType || '').trim().toLowerCase();
+  const map: Record<string, { table: string; nameColumn: string }> = {
+    position: { table: 'position_catalog', nameColumn: 'name' },
+    trade: { table: 'trade_catalog', nameColumn: 'name' },
+    staff_tier: { table: 'staff_tier_catalog', nameColumn: 'name' },
+    seniority: { table: 'seniority_level_catalog', nameColumn: 'name' },
+    employment_status: { table: 'employment_status_catalog', nameColumn: 'name' },
+    job_type: { table: 'job_type_catalog', nameColumn: 'name' },
+  };
+  return map[key] || null;
+}
+
 function validateAdminSetPassword(password?: string | null) {
   const clean = String(password || '');
   if (!clean) throw new Error('A new password is required.');
@@ -659,10 +673,29 @@ serve(async (req) => {
       return Response.json({ ok: true, record: data }, { headers: corsHeaders });
     }
 
-    if (entity === 'assignment' && action === 'delete') {
-      const { error } = await supabase.from('site_assignments').delete().eq('id', body.assignment_id);
-      if (error) throw error;
-      return Response.json({ ok: true }, { headers: corsHeaders });
+    if (entity === 'catalog') {
+      const cfg = getCatalogConfig(body.catalog_type);
+      if (!cfg) return Response.json({ ok:false, error:'Unsupported catalog type.' }, { status:400, headers:corsHeaders });
+      const record: Record<string, unknown> = {
+        [cfg.nameColumn]: body.name,
+        sort_order: Number(body.sort_order ?? 100),
+        is_active: body.is_active !== false,
+      };
+      if (action === 'create') {
+        const { data, error } = await supabase.from(cfg.table).insert(record).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from(cfg.table).update(record).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from(cfg.table).delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
     }
 
     return Response.json({ ok: false, error: 'Unsupported entity/action' }, { status: 400, headers: corsHeaders });

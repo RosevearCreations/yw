@@ -1,4 +1,12 @@
 ## 2026-04-04d profile/logbook repair and staff admin backend pass
+
+## 2026-04-05 admin dropdown/catalog manager and assignment workbench pass
+- Extended the Admin backend with a database-backed dropdown/catalog manager for positions, trades, staff tiers, seniority levels, employment statuses, and job types.
+- Extended the Admin backend with an assignment workbench so Admin users can create, edit, and delete site/personnel assignments and reporting lines from the live app.
+- Updated staff editing so key personnel fields now use populated dropdowns instead of fragile free-typed text where shared reference data already exists.
+- Added migration `sql/058_admin_dropdown_catalogs_and_assignment_workbench.sql` and corrected the schema snapshot/catalog definitions in `sql/000_full_schema_reference.sql`.
+- Narrowed the remaining risks toward live deployment validation, workflow depth, and stress-testing rather than basic screen rendering.
+
 - Restored Profile and Logbook as fully rendered screens instead of empty shells by moving their required layout into the live modules.
 - Fixed crew loading payload handling and made Logbook auto-load rows on open so empty pages now show real data or a clear empty state.
 - Extended the Admin backend toward a real staff directory with Admin / Supervisor / Employee management controls for create, edit, block/unblock, delete, password reset, and staff hierarchy fields.
