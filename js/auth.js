@@ -71,8 +71,8 @@
     session: null,
     user: null,
     profile: null,
-    role: 'worker',
-    roleLabel: 'Worker',
+    role: 'employee',
+    roleLabel: 'Employee',
     isAuthenticated: false,
     authError: '',
     authFlow: 'idle',
@@ -95,7 +95,8 @@
   function getRoleLabel(role) {
     if (security?.getRoleLabel) return security.getRoleLabel(role);
     const map = {
-      worker: 'Worker',
+      worker: 'Employee',
+      employee: 'Employee',
       staff: 'Employee',
       onsite_admin: 'Onsite Admin',
       job_admin: 'Job Admin',
@@ -137,14 +138,15 @@
     if (state.user?.id) state.profile = await fetchProfile(state.user.id);
     else state.profile = null;
 
-    state.role = state.profile?.role || 'worker';
+    state.role = state.profile?.role || 'employee';
     state.roleLabel = getRoleLabel(state.role);
     const username = safeText(state.profile?.username);
     const passwordReady = state.profile?.password_login_ready === true;
-    const setupComplete = !!state.profile?.account_setup_completed_at;
+    const onboardingComplete = !!(state.profile?.onboarding_completed_at || state.profile?.account_setup_completed_at);
     state.needsAccountSetup = !!(
       state.isAuthenticated &&
-      (!username || !passwordReady || !setupComplete)
+      !onboardingComplete &&
+      (!username || !passwordReady || !state.profile?.account_setup_completed_at)
     );
     state.pendingAuthResolution = !state.bootReady && !state.isAuthenticated;
   }
@@ -153,7 +155,7 @@
     state.session = bootState.session || null;
     state.user = bootState.user || bootState.session?.user || null;
     state.profile = bootState.profile || null;
-    state.role = bootState.role || state.profile?.role || 'worker';
+    state.role = bootState.role || state.profile?.role || 'employee';
     state.roleLabel = bootState.roleLabel || getRoleLabel(state.role);
     state.isAuthenticated = !!bootState.isAuthenticated;
     state.authError = bootState.authError || '';
@@ -308,7 +310,7 @@
         onboarding_completed_at: body?.record?.onboarding_completed_at || new Date().toISOString(),
         account_setup_completed_at: body?.record?.account_setup_completed_at || new Date().toISOString()
       };
-      state.role = state.profile?.role || state.role || 'worker';
+      state.role = state.profile?.role || state.role || 'employee';
       state.roleLabel = getRoleLabel(state.role);
       state.isAuthenticated = true;
     });
@@ -371,7 +373,7 @@
       applyBootState(bootState);
       if (!state.profile && state.user?.id) {
         state.profile = await fetchProfile(state.user.id);
-        state.role = state.profile?.role || state.role || 'worker';
+        state.role = state.profile?.role || state.role || 'employee';
         state.roleLabel = getRoleLabel(state.role);
       }
       dispatch('ywi:auth-changed', { state: getState() });

@@ -9,6 +9,7 @@
 (function () {
   const ROLE_RANK = {
     worker: 10,
+    employee: 10,
     staff: 15,
     onsite_admin: 18,
     site_leader: 20,
@@ -85,7 +86,8 @@
 
   function getRoleLabel(role) {
     const labels = {
-      worker: 'Worker',
+      worker: 'Employee',
+      employee: 'Employee',
       staff: 'Employee',
       onsite_admin: 'Onsite Admin',
       site_leader: 'Site Leader',
@@ -118,7 +120,7 @@
 
   function getDefaultSectionForRole(role) {
     const normalized = normalizeRole(role);
-    if (normalized === 'worker' || normalized === 'staff' || normalized === 'onsite_admin') return 'toolbox';
+    if (normalized === 'worker' || normalized === 'employee' || normalized === 'staff' || normalized === 'onsite_admin') return 'toolbox';
     if (normalized === 'supervisor' || normalized === 'hse' || normalized === 'job_admin') return 'crew';
     if (normalized === 'admin') return 'admin';
     return 'toolbox';

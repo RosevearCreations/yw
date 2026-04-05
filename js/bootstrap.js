@@ -66,8 +66,8 @@
     session: null,
     user: null,
     profile: null,
-    role: 'worker',
-    roleLabel: 'Worker',
+    role: 'employee',
+    roleLabel: 'Employee',
     isAuthenticated: false,
     lastRouteHash: '#toolbox',
     configError: '',
@@ -103,7 +103,8 @@
 
   function getRoleLabel(role) {
     const map = {
-      worker: 'Worker',
+      worker: 'Employee',
+      employee: 'Employee',
       staff: 'Staff',
       onsite_admin: 'Onsite Admin',
       job_admin: 'Job Admin',
@@ -298,14 +299,15 @@
       state.profile = null;
     }
 
-    state.role = state.profile?.role || 'worker';
+    state.role = state.profile?.role || 'employee';
     state.roleLabel = getRoleLabel(state.role);
     const username = String(state.profile?.username || '').trim();
     const passwordReady = state.profile?.password_login_ready === true;
-    const setupComplete = !!state.profile?.account_setup_completed_at;
+    const onboardingComplete = !!(state.profile?.onboarding_completed_at || state.profile?.account_setup_completed_at);
     state.needsAccountSetup = !!(
       state.isAuthenticated &&
-      (!username || !passwordReady || !setupComplete)
+      !onboardingComplete &&
+      (!username || !passwordReady || !state.profile?.account_setup_completed_at)
     );
   }
 

@@ -24,7 +24,7 @@ const accounts = [
     email: 'veardev@gmail.com',
     password: 'YwiWorker!2026#Start',
     full_name: 'Vear Dev Employee',
-    role: 'staff',
+    role: 'employee',
     username: 'veardev.employee',
     employee_number: 'EMP-001'
   }
@@ -73,7 +73,7 @@ async function ensureProfile(userId, account) {
     await adminClient.from('site_assignments').upsert({
       site_id: DEFAULT_SITE_ID,
       profile_id: userId,
-      assignment_role: account.role === 'admin' ? 'admin' : 'worker',
+      assignment_role: account.role === 'admin' ? 'admin' : 'employee',
       is_primary: true,
       updated_at: new Date().toISOString()
     }, { onConflict: 'site_id,profile_id' });

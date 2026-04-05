@@ -617,14 +617,15 @@
   function render(state) {
     const current = state || getAuthState();
     const isAuthenticated = !!current.isAuthenticated;
-    const role = current.role || current.profile?.role || 'worker';
+    const role = current.role || current.profile?.role || 'employee';
     const access = security?.getAccessProfile ? security.getAccessProfile(role) : { roleLabel: role };
     const emailVerified = !!(current.user?.email_confirmed_at || current.user?.confirmed_at || current.profile?.email_verified);
     const phoneVerified = !!(current.profile?.phone_verified || current.profile?.phone_verified_at);
     const usernameReady = !!String(current.profile?.username || '').trim();
     const passwordReady = current.profile?.password_login_ready === true;
     const setupComplete = !!current.profile?.account_setup_completed_at;
-    const needsOnboarding = !!(isAuthenticated && (!usernameReady || !passwordReady || !setupComplete));
+    const onboardingComplete = !!(current.profile?.onboarding_completed_at || setupComplete);
+    const needsOnboarding = !!(isAuthenticated && !onboardingComplete && (!usernameReady || !passwordReady || !setupComplete));
 
     if (els.panel) els.panel.hidden = !isAuthenticated;
     if (els.signedOutNotice) els.signedOutNotice.style.display = isAuthenticated ? 'none' : 'block';
