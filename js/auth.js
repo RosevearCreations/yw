@@ -92,6 +92,17 @@
     return `${window.location.origin}/#settings`;
   }
 
+  function normalizeRole(role, profile = null, user = null) {
+    const clean = String(role || '').trim().toLowerCase();
+    const tier = String(profile?.staff_tier || user?.user_metadata?.staff_tier || '').trim().toLowerCase();
+    if (clean === 'worker' || clean === 'staff') return 'employee';
+    if (clean) return clean;
+    if (tier === 'admin') return 'admin';
+    if (tier === 'supervisor') return 'supervisor';
+    if (tier === 'employee' || tier === 'worker' || tier === 'staff') return 'employee';
+    return 'employee';
+  }
+
   function getRoleLabel(role) {
     if (security?.getRoleLabel) return security.getRoleLabel(role);
     const map = {
@@ -138,7 +149,7 @@
     if (state.user?.id) state.profile = await fetchProfile(state.user.id);
     else state.profile = null;
 
-    state.role = state.profile?.role || 'employee';
+    state.role = normalizeRole(state.profile?.role, state.profile, state.user);
     state.roleLabel = getRoleLabel(state.role);
     const username = safeText(state.profile?.username);
     const passwordReady = state.profile?.password_login_ready === true;
@@ -155,7 +166,7 @@
     state.session = bootState.session || null;
     state.user = bootState.user || bootState.session?.user || null;
     state.profile = bootState.profile || null;
-    state.role = bootState.role || state.profile?.role || 'employee';
+    state.role = normalizeRole(bootState.role || state.profile?.role, state.profile, state.user);
     state.roleLabel = bootState.roleLabel || getRoleLabel(state.role);
     state.isAuthenticated = !!bootState.isAuthenticated;
     state.authError = bootState.authError || '';
@@ -373,7 +384,7 @@
       applyBootState(bootState);
       if (!state.profile && state.user?.id) {
         state.profile = await fetchProfile(state.user.id);
-        state.role = state.profile?.role || state.role || 'employee';
+        state.role = normalizeRole(state.profile?.role || state.role, state.profile, state.user);
         state.roleLabel = getRoleLabel(state.role);
       }
       dispatch('ywi:auth-changed', { state: getState() });

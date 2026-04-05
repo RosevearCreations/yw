@@ -39,10 +39,13 @@
   function createReferenceDataUI(config = {}) {
     const api = config.api;
     const getCurrentRole = config.getCurrentRole || (() => 'worker');
+    const getAuthState = config.getAuthState || (() => window.YWI_AUTH?.getState?.() || {});
     const state = { last: null };
 
     async function load() {
       if (!api?.fetchReferenceData) return;
+      const authState = getAuthState();
+      if (!authState?.isAuthenticated) return;
       try {
         const resp = await api.fetchReferenceData({ include_people: true, include_sites: true, include_catalogs: true });
         state.last = resp || {};

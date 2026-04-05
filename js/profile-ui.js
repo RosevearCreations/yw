@@ -342,9 +342,15 @@
 
     async function loadSelfProfile() {
       try {
+        const authState = getAuthState();
+        if (!authState?.isAuthenticated) {
+          renderSelf(null);
+          return;
+        }
         setNotice(els.meSummary, 'Loading your profile...');
+        const localProfile = authState?.profile || null;
         const resp = await api.fetchProfileScope('self');
-        const profile = resp?.profile || resp?.profiles?.[0] || null;
+        const profile = resp?.profile || resp?.profiles?.[0] || localProfile || null;
         renderSelf(profile);
         restoreDraft();
         setNotice(els.meSummary, profile ? '' : 'No profile record was returned.');
@@ -430,6 +436,14 @@
       els.sessionLogout?.addEventListener('click', clearCurrentSession);
       document.addEventListener('ywi:auth-changed', () => {
         applyRoleVisibility();
+        const authState = getAuthState();
+        if (!authState?.isAuthenticated) {
+          renderSelf(null);
+          renderCrew([]);
+          setNotice(els.meSummary, '');
+          setNotice(els.crewSummary, '');
+          return;
+        }
         loadSelfProfile();
         if (getAccessProfile(getCurrentRole()).canViewCrew) loadCrew();
       });

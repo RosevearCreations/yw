@@ -101,7 +101,18 @@
     return String(value ?? '').trim();
   }
 
-  function getRoleLabel(role) {
+  function normalizeRole(role, profile = null, user = null) {
+  const clean = String(role || '').trim().toLowerCase();
+  const tier = String(profile?.staff_tier || user?.user_metadata?.staff_tier || '').trim().toLowerCase();
+  if (clean === 'worker' || clean === 'staff') return 'employee';
+  if (clean) return clean;
+  if (tier === 'admin') return 'admin';
+  if (tier === 'supervisor') return 'supervisor';
+  if (tier === 'employee' || tier === 'worker' || tier === 'staff') return 'employee';
+  return 'employee';
+}
+
+function getRoleLabel(role) {
     const map = {
       worker: 'Employee',
       employee: 'Employee',
@@ -299,7 +310,7 @@
       state.profile = null;
     }
 
-    state.role = state.profile?.role || 'employee';
+    state.role = normalizeRole(state.profile?.role, state.profile, state.user);
     state.roleLabel = getRoleLabel(state.role);
     const username = String(state.profile?.username || '').trim();
     const passwordReady = state.profile?.password_login_ready === true;

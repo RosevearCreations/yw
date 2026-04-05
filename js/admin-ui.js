@@ -144,7 +144,7 @@
             <label>Position<select id="ad_staff_position"></select></label>
             <label>Trade<select id="ad_staff_trade"></select></label>
             <label>Start Date<input id="ad_staff_start_date" type="date" /></label>
-            <label>New Password<input id="ad_staff_new_password" type="password" autocomplete="new-password" placeholder="Required for new user" /></label>
+            <form id="ad_staff_new_password_form" autocomplete="on"><input type="text" name="username" autocomplete="username" style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden;" tabindex="-1" aria-hidden="true"><label>New Password<input id="ad_staff_new_password" type="password" name="new-password" autocomplete="new-password" placeholder="Required for new user" /></label></form>
             <label style="display:flex;align-items:end;gap:8px;"><input id="ad_staff_phone_verified" type="checkbox" /><span>Phone verified</span></label>
             <label style="display:flex;align-items:end;gap:8px;"><input id="ad_staff_email_verified" type="checkbox" /><span>Email verified</span></label>
             <label style="display:flex;align-items:end;gap:8px;"><input id="ad_staff_active" type="checkbox" checked /><span>Active</span></label>
