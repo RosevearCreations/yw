@@ -1,3 +1,10 @@
+## 2026-04-05d session integrity, logout reliability, and review-list stabilization pass
+- stale session/profile fetches are now guarded so older async responses do not overwrite a newer authenticated identity in the shell
+- logout now clears the visible local auth state immediately, then completes remote sign-out, improving repeated logout reliability
+- effective role resolution now prefers the strongest signal across profile role, staff tier, and Auth metadata to reduce admin/supervisor demotion when legacy text is stale
+- new migration `sql/060_session_role_normalization_guardrails.sql` adds profile-role normalization and onboarding/account-setup timestamp alignment
+- review-list remains the main live verification item after deploy because the fixed CORS/preflight behavior must be confirmed on the real function runtime
+
 ## 2026-04-05c session isolation, CORS, and auth hardening pass
 - Hardened role normalization so legacy worker/staff values no longer demote active admin/supervisor sessions in the live shell.
 - Prevented Profile and Reference Data from refetching protected data after logout/session removal, reducing cross-user bleed and repeated 401 loops.

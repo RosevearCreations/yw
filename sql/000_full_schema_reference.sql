@@ -1,3 +1,6 @@
+-- Current reference includes migrations through 060_session_role_normalization_guardrails.sql
+-- 2026-04-05d session integrity, logout reliability, and role/CORS stabilization pass
+-- Added migration 060_session_role_normalization_guardrails.sql for profile-role normalization and onboarding/account-setup timestamp alignment.
 -- Current reference includes migrations through 059_role_aliases_admin_bootstrap_and_onboarding_fix.sql
 -- 2026-04-04d profile/logbook restoration and staff admin backend pass
 -- Added migration 057_staff_directory_and_role_admin.sql for staff seniority, employment status, and staff tier fields.

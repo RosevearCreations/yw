@@ -1,3 +1,10 @@
+## 2026-04-05d — Session integrity, logout reliability, and role/CORS stabilization
+- guarded auth/bootstrap session application so stale async profile/session reads cannot overwrite a newer user identity
+- improved logout reliability by clearing local auth state immediately and preventing post-logout profile/reference reload loops
+- normalized role handling further so legacy `worker`/`staff` values do not demote active admin/supervisor sessions in the shell
+- added migration `060_session_role_normalization_guardrails.sql` for profile-role normalization and onboarding/account-setup timestamp alignment
+- bumped shell asset/service-worker versions again to flush stale session/auth UI after deploy
+
 ## 2026-04-05c session isolation, CORS, and auth hardening pass
 - Hardened role normalization so legacy worker/staff values no longer demote active admin/supervisor sessions in the live shell.
 - Prevented Profile and Reference Data from refetching protected data after logout/session removal, reducing cross-user bleed and repeated 401 loops.

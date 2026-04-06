@@ -1,3 +1,9 @@
+## 2026-04-05d session integrity and CORS stabilization pass
+- Mitigated a major session-mixing risk by preventing stale profile/session fetches from overwriting a newer authenticated identity after navigation.
+- Mitigated logout reliability risk by clearing local auth state immediately before the remote sign-out completes, reducing the chance of mixed role/name fragments staying visible in the shell.
+- Reduced legacy role drift by normalizing `worker`/`staff` semantics toward `employee` in both frontend evaluation and the new profile guardrail migration.
+- Remaining live validation still needs to confirm that the deployed `review-list` function picks up the fixed CORS/preflight handling and that protected function role checks now stay stable across screen changes.
+
 ## 2026-04-05c session isolation, CORS, and auth hardening pass
 - Hardened role normalization so legacy worker/staff values no longer demote active admin/supervisor sessions in the live shell.
 - Prevented Profile and Reference Data from refetching protected data after logout/session removal, reducing cross-user bleed and repeated 401 loops.
