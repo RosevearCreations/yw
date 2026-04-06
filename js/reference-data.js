@@ -45,7 +45,7 @@
     async function load() {
       if (!api?.fetchReferenceData) return;
       const authState = getAuthState();
-      if (!authState?.isAuthenticated) return;
+      if (!authState?.isAuthenticated || authState?.isLoggingOut) return;
       try {
         const resp = await api.fetchReferenceData({ include_people: true, include_sites: true, include_catalogs: true });
         state.last = resp || {};
@@ -76,7 +76,11 @@
     }
 
     function bind() {
-      document.addEventListener('ywi:auth-changed', () => { load(); });
+      document.addEventListener('ywi:auth-changed', (event) => {
+        const nextState = event?.detail?.state || getAuthState();
+        if (!nextState?.isAuthenticated || nextState?.isLoggingOut) return;
+        load();
+      });
       document.addEventListener('ywi:boot-ready', () => { load(); });
     }
 

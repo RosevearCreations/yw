@@ -75,7 +75,8 @@
     hasSupabaseKey: false,
     pendingAuthResolution: false,
     isOffline: typeof navigator !== 'undefined' ? !navigator.onLine : false,
-    needsAccountSetup: false
+    needsAccountSetup: false,
+    identityKey: ''
   };
 
   function dispatch(name, detail = {}) {
@@ -101,6 +102,12 @@
     return String(value ?? '').trim();
   }
 
+  function roleRank(role) {
+    const clean = String(role || '').trim().toLowerCase();
+    const map = { employee: 10, worker: 10, staff: 10, onsite_admin: 18, site_leader: 20, supervisor: 30, hse: 40, job_admin: 45, admin: 50 };
+    return map[clean] || 0;
+  }
+
   function normalizeRole(role, profile = null, user = null) {
   const clean = String(role || '').trim().toLowerCase();
   const tier = String(profile?.staff_tier || user?.user_metadata?.staff_tier || '').trim().toLowerCase();
@@ -116,7 +123,7 @@ function getRoleLabel(role) {
     const map = {
       worker: 'Employee',
       employee: 'Employee',
-      staff: 'Staff',
+      staff: 'Employee',
       onsite_admin: 'Onsite Admin',
       job_admin: 'Job Admin',
       site_leader: 'Site Leader',
@@ -124,7 +131,30 @@ function getRoleLabel(role) {
       hse: 'HSE',
       admin: 'Admin'
     };
-    return map[role] || role || 'Worker';
+    return map[role] || role || 'Employee';
+  }
+
+  function getEffectiveRole(profile = null, user = null) {
+    const candidates = [
+      normalizeRole(profile?.role, profile, user),
+      normalizeRole(profile?.staff_tier, profile, user),
+      normalizeRole(user?.user_metadata?.role, profile, user),
+      normalizeRole(user?.user_metadata?.staff_tier, profile, user),
+      normalizeRole(user?.app_metadata?.role, profile, user),
+      normalizeRole(user?.app_metadata?.staff_tier, profile, user)
+    ].filter(Boolean);
+    return candidates.sort((a, b) => roleRank(b) - roleRank(a))[0] || 'employee';
+  }
+
+  function clearResolvedState() {
+    state.session = null;
+    state.user = null;
+    state.profile = null;
+    state.role = 'employee';
+    state.roleLabel = 'Employee';
+    state.isAuthenticated = false;
+    state.needsAccountSetup = false;
+    state.identityKey = '';
   }
 
   function getState() {
@@ -297,22 +327,31 @@ function getRoleLabel(role) {
     }
   }
 
+  let applySessionVersion = 0;
+
   async function applySession(session, authError = '', authFlow = state.authFlow, sb = window.YWI_SB) {
+    const currentVersion = ++applySessionVersion;
     state.session = session || null;
     state.user = session?.user || null;
     state.authError = authError || '';
     state.authFlow = authFlow || 'idle';
     state.isAuthenticated = !!session?.access_token;
+    state.identityKey = state.user?.id || '';
 
-    if (state.user?.id) {
-      state.profile = await fetchProfile(state.user.id, sb);
-    } else {
-      state.profile = null;
+    if (!state.user?.id) {
+      clearResolvedState();
+      state.authError = authError || '';
+      state.authFlow = authFlow || 'idle';
+      return;
     }
 
-    state.role = normalizeRole(state.profile?.role, state.profile, state.user);
+    const fetchedProfile = await fetchProfile(state.user.id, sb);
+    if (currentVersion != applySessionVersion) return;
+
+    state.profile = fetchedProfile || null;
+    state.role = getEffectiveRole(state.profile, state.user);
     state.roleLabel = getRoleLabel(state.role);
-    const username = String(state.profile?.username || '').trim();
+    const username = String(state.profile?.username || state.user?.user_metadata?.username || state.user?.app_metadata?.username || '').trim();
     const passwordReady = state.profile?.password_login_ready === true;
     const onboardingComplete = !!(state.profile?.onboarding_completed_at || state.profile?.account_setup_completed_at);
     state.needsAccountSetup = !!(

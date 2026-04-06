@@ -343,7 +343,7 @@
     async function loadSelfProfile() {
       try {
         const authState = getAuthState();
-        if (!authState?.isAuthenticated) {
+        if (!authState?.isAuthenticated || authState?.isLoggingOut) {
           renderSelf(null);
           return;
         }
@@ -394,7 +394,8 @@
 
     async function loadCrew() {
       const access = getAccessProfile(getCurrentRole());
-      if (!access.canViewCrew) {
+      const authState = getAuthState();
+      if (!access.canViewCrew || !authState?.isAuthenticated || authState?.isLoggingOut) {
         renderCrew([]);
         return;
       }

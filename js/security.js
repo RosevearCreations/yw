@@ -35,7 +35,9 @@
   };
 
   function normalizeRole(role) {
-    return String(role || 'worker').trim().toLowerCase() || 'worker';
+    const clean = String(role || 'employee').trim().toLowerCase() || 'employee';
+    if (clean === 'worker' || clean === 'staff') return 'employee';
+    return clean;
   }
 
   function roleRank(role) {
@@ -96,7 +98,7 @@
       job_admin: 'Job Admin',
       admin: 'Admin'
     };
-    return labels[normalizeRole(role)] || 'Worker';
+    return labels[normalizeRole(role)] || 'Employee';
   }
 
   function getAccessProfile(role) {
@@ -120,7 +122,7 @@
 
   function getDefaultSectionForRole(role) {
     const normalized = normalizeRole(role);
-    if (normalized === 'worker' || normalized === 'employee' || normalized === 'staff' || normalized === 'onsite_admin') return 'toolbox';
+    if (normalized === 'employee' || normalized === 'onsite_admin') return 'toolbox';
     if (normalized === 'supervisor' || normalized === 'hse' || normalized === 'job_admin') return 'crew';
     if (normalized === 'admin') return 'admin';
     return 'toolbox';

@@ -77,7 +77,9 @@
     authError: '',
     authFlow: 'idle',
     configError: boot?.state?.configError || '',
-    needsAccountSetup: false
+    needsAccountSetup: false,
+    isLoggingOut: false,
+    identityKey: ''
   };
 
   function dispatch(name, detail = {}) {
@@ -86,6 +88,35 @@
 
   function safeText(value) {
     return String(value ?? '').trim();
+  }
+
+  function roleRank(role) {
+    const clean = String(role || '').trim().toLowerCase();
+    const map = { employee: 10, worker: 10, staff: 10, onsite_admin: 18, site_leader: 20, supervisor: 30, hse: 40, job_admin: 45, admin: 50 };
+    return map[clean] || 0;
+  }
+
+  function getEffectiveRole(profile = null, user = null) {
+    const candidates = [
+      normalizeRole(profile?.role, profile, user),
+      normalizeRole(profile?.staff_tier, profile, user),
+      normalizeRole(user?.user_metadata?.role, profile, user),
+      normalizeRole(user?.user_metadata?.staff_tier, profile, user),
+      normalizeRole(user?.app_metadata?.role, profile, user),
+      normalizeRole(user?.app_metadata?.staff_tier, profile, user)
+    ].filter(Boolean);
+    return candidates.sort((a, b) => roleRank(b) - roleRank(a))[0] || 'employee';
+  }
+
+  function clearResolvedState() {
+    state.session = null;
+    state.user = null;
+    state.profile = null;
+    state.role = 'employee';
+    state.roleLabel = 'Employee';
+    state.isAuthenticated = false;
+    state.needsAccountSetup = false;
+    state.identityKey = '';
   }
 
   function getRedirectUrl() {
@@ -141,17 +172,28 @@
     }
   }
 
+  let applySessionVersion = 0;
+
   async function applySession(session) {
+    const currentVersion = ++applySessionVersion;
+    state.isLoggingOut = false;
     state.session = session || null;
     state.user = session?.user || null;
     state.isAuthenticated = !!session?.access_token;
+    state.identityKey = state.user?.id || '';
 
-    if (state.user?.id) state.profile = await fetchProfile(state.user.id);
-    else state.profile = null;
+    if (!state.user?.id) {
+      clearResolvedState();
+      return;
+    }
 
-    state.role = normalizeRole(state.profile?.role, state.profile, state.user);
+    const fetchedProfile = await fetchProfile(state.user.id);
+    if (currentVersion != applySessionVersion) return;
+
+    state.profile = fetchedProfile || null;
+    state.role = getEffectiveRole(state.profile, state.user);
     state.roleLabel = getRoleLabel(state.role);
-    const username = safeText(state.profile?.username);
+    const username = safeText(state.profile?.username || state.user?.user_metadata?.username || state.user?.app_metadata?.username);
     const passwordReady = state.profile?.password_login_ready === true;
     const onboardingComplete = !!(state.profile?.onboarding_completed_at || state.profile?.account_setup_completed_at);
     state.needsAccountSetup = !!(
@@ -163,11 +205,22 @@
   }
 
   function applyBootState(bootState = {}) {
+    const bootUser = bootState.user || bootState.session?.user || null;
+    const bootUserId = bootUser?.id || '';
+    const currentUserId = state.user?.id || '';
+
+    if (state.isAuthenticated && currentUserId && bootUserId && currentUserId !== bootUserId) {
+      return;
+    }
+    if (state.isAuthenticated && currentUserId && !bootUserId) {
+      return;
+    }
+
     state.session = bootState.session || null;
-    state.user = bootState.user || bootState.session?.user || null;
+    state.user = bootUser;
     state.profile = bootState.profile || null;
-    state.role = normalizeRole(bootState.role || state.profile?.role, state.profile, state.user);
-    state.roleLabel = bootState.roleLabel || getRoleLabel(state.role);
+    state.role = getEffectiveRole(state.profile, state.user) || normalizeRole(bootState.role || state.profile?.role, state.profile, state.user);
+    state.roleLabel = getRoleLabel(state.role);
     state.isAuthenticated = !!bootState.isAuthenticated;
     state.authError = bootState.authError || '';
     state.authFlow = bootState.authFlow || state.authFlow || 'idle';
@@ -175,6 +228,7 @@
     state.needsAccountSetup = !!bootState.needsAccountSetup;
     state.bootReady = true;
     state.pendingAuthResolution = false;
+    state.identityKey = state.user?.id || '';
   }
 
   function requireClient() {
@@ -321,7 +375,7 @@
         onboarding_completed_at: body?.record?.onboarding_completed_at || new Date().toISOString(),
         account_setup_completed_at: body?.record?.account_setup_completed_at || new Date().toISOString()
       };
-      state.role = state.profile?.role || state.role || 'employee';
+      state.role = getEffectiveRole(state.profile, state.user) || state.role || 'employee';
       state.roleLabel = getRoleLabel(state.role);
       state.isAuthenticated = true;
     });
@@ -333,11 +387,21 @@
   async function logout(scope = 'local') {
     const signOutScope = scope === 'global' ? 'global' : 'local';
     const client = requireClient();
-    const { error } = await client.auth.signOut({ scope: signOutScope });
-    if (error) throw error;
-    await applySession(null);
+    state.isLoggingOut = true;
+    clearResolvedState();
     state.pendingAuthResolution = false;
     dispatch('ywi:auth-changed', { state: getState() });
+
+    try {
+      const { error } = await client.auth.signOut({ scope: signOutScope });
+      if (error) throw error;
+    } finally {
+      await applySession(null);
+      state.isLoggingOut = false;
+      state.pendingAuthResolution = false;
+      dispatch('ywi:auth-changed', { state: getState() });
+    }
+
     return true;
   }
 
@@ -394,8 +458,14 @@
   function bindSupabaseAuthEvents() {
     sb = window.YWI_SB || window._sb || sb || null;
     if (!sb?.auth?.onAuthStateChange) return;
-    sb.auth.onAuthStateChange(async (_event, session) => {
+    sb.auth.onAuthStateChange(async (event, session) => {
+      if (state.isLoggingOut && !session) {
+        state.pendingAuthResolution = false;
+        dispatch('ywi:auth-changed', { state: getState() });
+        return;
+      }
       await applySession(session || null);
+      state.authError = '';
       if (boot?.state?.initialized || state.bootReady) {
         state.pendingAuthResolution = false;
         dispatch('ywi:auth-changed', { state: getState() });
