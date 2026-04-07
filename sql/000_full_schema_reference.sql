@@ -1,3 +1,5 @@
+-- Last synchronized: April 7, 2026. Reviewed during the landscaping/construction/subcontract operations documentation, roadmap, and schema-direction synchronization pass.
+
 -- Current reference includes migrations through 060_session_role_normalization_guardrails.sql
 -- 2026-04-05d session integrity, logout reliability, and role/CORS stabilization pass
 -- Added migration 060_session_role_normalization_guardrails.sql for profile-role normalization and onboarding/account-setup timestamp alignment.
