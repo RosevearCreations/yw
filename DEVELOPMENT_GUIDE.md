@@ -1,199 +1,138 @@
-## 2026-04-05d session integrity, logout reliability, and review-list stabilization pass
-- Added stale-session guards so older profile/session fetches cannot overwrite a newer authenticated user state after screen changes.
-- Hardened logout so local auth state clears immediately and repeated logout attempts remain reliable instead of leaving mixed identity fragments in the shell.
-- Added `sql/060_session_role_normalization_guardrails.sql` to normalize legacy worker/staff role values to employee and keep onboarding/account-setup timestamps aligned.
-- Added stronger effective-role evaluation across auth/bootstrap so Admin/Supervisor access can survive stale profile-role text when `staff_tier` or Auth metadata already indicate elevated access.
-- Continued docs/schema synchronization and shell cache-busting for the current build.
+# Development Guide
 
-## 2026-04-05c session isolation, CORS, and auth hardening pass
-- Hardened role normalization so legacy worker/staff values no longer demote active admin/supervisor sessions in the live shell.
-- Prevented Profile and Reference Data from refetching protected data after logout/session removal, reducing cross-user bleed and repeated 401 loops.
-- Added a dedicated `review-list` Edge Function with explicit preflight/CORS handling for the Logbook screen.
-- Tightened protected-function role evaluation so `staff_tier` and Auth metadata can preserve admin/supervisor access when legacy profile role text is stale.
-- Remaining live validation should focus on confirming session identity stays stable across screen changes, logout always works, and `review-list` preflight succeeds after deploy.
+Last synchronized: April 7, 2026
 
-## 2026-04-04d profile/logbook repair and staff admin backend pass
+## Purpose of this guide
 
-## 2026-04-05b save-reliability, onboarding completion, and admin bootstrap pass
-- Fixed onboarding completion handling so the Settings onboarding block can fully clear after a successful complete action instead of looping on the button state.
-- Added employee/worker role compatibility across frontend security, auth state, and protected functions so staff roles no longer collapse back to worker semantics in the live app.
-- Added a generic `scripts/create-admin-account.mjs` bootstrap script for creating or re-seeding a real administrator account with verified login-ready profile data.
-- Added migration `sql/059_role_aliases_admin_bootstrap_and_onboarding_fix.sql` to normalize legacy worker profile roles toward employee-facing staff records, keep assignment roles compatible, and backfill missing onboarding completion timestamps.
-- Tightened admin profile saving so profile updates also refresh Auth user metadata for role/full-name/employee-number alignment.
+This guide now reflects the practical direction for the project as a landscaping-led field operations and HSE platform.
 
+Use this guide as the working build instruction set for future passes.
 
-## 2026-04-05 admin dropdown/catalog manager and assignment workbench pass
-- Extended the Admin backend with a database-backed dropdown/catalog manager for positions, trades, staff tiers, seniority levels, employment statuses, and job types.
-- Extended the Admin backend with an assignment workbench so Admin users can create, edit, and delete site/personnel assignments and reporting lines from the live app.
-- Updated staff editing so key personnel fields now use populated dropdowns instead of fragile free-typed text where shared reference data already exists.
-- Added migration `sql/058_admin_dropdown_catalogs_and_assignment_workbench.sql` and corrected the schema snapshot/catalog definitions in `sql/000_full_schema_reference.sql`.
-- Narrowed the remaining risks toward live deployment validation, workflow depth, and stress-testing rather than basic screen rendering.
+## Guiding principles
 
-- Restored Profile and Logbook as fully rendered screens instead of empty shells by moving their required layout into the live modules.
-- Fixed crew loading payload handling and made Logbook auto-load rows on open so empty pages now show real data or a clear empty state.
-- Extended the Admin backend toward a real staff directory with Admin / Supervisor / Employee management controls for create, edit, block/unblock, delete, password reset, and staff hierarchy fields.
-- Added migration `sql/057_staff_directory_and_role_admin.sql` and refreshed the schema reference snapshot.
+1. **Session integrity before feature growth**
+   - never allow one user's identity, role, or profile to overwrite another's view
+   - all protected screens must trust the same resolved actor
 
-## 2026-04-04c interface restoration and admin-workflow preparation pass
-- Restored missing live screen layouts for Toolbox Talk, PPE Check, First Aid Kit, Site Inspection, and Emergency Drill so hash routes no longer land on empty cards.
-- Added shared datalist placeholders back into the shell for site, employee, and first-aid catalog lookups used by the form modules.
-- Bumped shell/cache asset versions again to flush stale blank-screen markup and keep the smoother interface consistent after deploy.
-- No new SQL migration was required in this pass; schema remains current through `056_admin_password_resets_and_sales_accounting_stub.sql`.
-- Current roadmap emphasis after this pass: stabilize the restored worker screens, then continue expanding the admin/supervisor/employee backend workflow for approvals, job creation, and personnel assignment before stress testing.
+2. **Database-first shared data**
+   - staff, dropdowns, equipment, jobs, work order statuses, and materials should live in the database
+   - JSON fallback should be transitional, not permanent, where shared operational data is involved
 
+3. **Mobile-first field usability**
+   - forms should work on phones first
+   - reduce repeated typing
+   - large controls, strong empty states, visible save feedback
 
+4. **Desktop-strong admin depth**
+   - admin users need denser views for staffing, approvals, costing, equipment, and planning
 
-## 2026-04-04b live auth repair and compatibility pass
-- Added a compatibility `api/auth/account-maintenance.js` route so newer frontend shells no longer hard-fail when the live `account-maintenance` Edge Function is missing or stale during deployment overlap.
-- Updated `js/auth.js` and `js/api.js` so account-maintenance calls fall back to the compatibility route on HTTP 404 instead of blocking password login, onboarding completion, reset, or session-health actions.
-- Added `verify_jwt = false` config files for protected Edge Functions that already validate bearer tokens in code (`admin-directory`, `jobs-directory`, `reference-data`, `admin-manage`, `admin-selectors`, `jobs-manage`, and `upload-equipment-evidence`) so gateway-level JWT rejection stops causing false 401 loops.
-- Wrapped account and admin password controls in real forms with hidden username fields and password autocomplete attributes to remove browser password-form warnings while keeping the daily login UI standard.
-- Remaining live verification after deploy: redeploy the updated Supabase function set, reload the shell once, then confirm `account-maintenance` stops returning 404 and protected functions stop returning 401 for a valid signed-in session.
+5. **Standalone HSE support must remain**
+   - safety workflows must still work for unscheduled or ad hoc projects where no full job record exists yet
 
-## 2026-04-03 admin password control and order/accounting scaffold pass
-- Added admin-managed password reset capability for any profile, including other admins, with audit logging in `admin_password_resets` and notification history.
-- Added a basic sales-order and accounting scaffold so creating an order now also creates an initial accounting row for later cost, inventory, revenue, and tax workflows.
-- Extended the Admin screen with password control, order creation, order list, and accounting list panels.
-- Extended the admin directory/function layer so orders and accounting records are visible in the live app.
-- Added migration `sql/056_admin_password_resets_and_sales_accounting_stub.sql` and refreshed `sql/000_full_schema_reference.sql`.
-- Continued SEO/cache/CSS cleanup with updated shell versioning, homepage metadata tuning, and minor admin panel style tightening.
-- Remaining live work before stress testing: deploy migration 056, deploy updated Edge Functions, then validate admin password reset and order/accounting creation in the real environment.
+## Product tracks
 
-## 2026-03-31 session health and onboarding completion pass
+### Track 1 — Session and security completion
+Complete these before calling the admin shell production-ready:
+- deterministic login/logout
+- no stale async identity overwrites
+- consistent role resolution across frontend and Edge Functions
+- tighter validation for profile and staff updates
+- explicit stop of protected fetches during logout/session removal
 
-## 2026-04-01 conflict review, CI smoke-check, and diagnostics timing pass
-- Added visible conflict review panels in Settings and Admin so queued local actions can be compared, retried, kept local, or discarded instead of staying as opaque conflict rows.
-- Added module/startup timing capture and exposed it through in-app diagnostics, support snapshot export, and smoke-check reporting for deeper boot troubleshooting.
-- Added a repository smoke-check script plus GitHub Actions workflow so baseline release verification now runs automatically in CI/CD instead of being manual-only.
-- No new SQL migration was required. `sql/000_full_schema_reference.sql` remains the current schema snapshot and `055_storage_onboarding_identity_change_and_bootstrap.sql` remains the latest live migration.
+### Track 2 — Admin backbone completion
+Admin should become the source of truth for:
+- staff directory
+- role and employment status
+- supervisor relationships
+- dropdowns and shared catalogs
+- equipment listings
+- jobs and work orders
+- route/service references
+- materials and costing categories
 
-### Remaining sign-off item
-- Live deployed auth/runtime verification still needs to be confirmed against your actual environment because that cannot be completed from the zip alone. The codebase is now prepared with better conflict review, smoke automation, and timing diagnostics for that final live verification.
+### Track 3 — Landscaping operations model
+Deepen the model for recurring and seasonal work:
+- estimate
+- approved work order
+- scheduled visit / route stop
+- crew assignment
+- material allocation
+- completion notes and client signoff
+- recurring service templates
 
-- Fixed the separate onboarding-complete path so it can also finalize `account_setup_completed_at` when username and password readiness are already satisfied.
-- Added signed-in session health probing to the frontend API/smoke checks and added a Support & Session Health panel in Settings with exportable troubleshooting snapshots.
-- No new SQL migration was required in this pass; `sql/000_full_schema_reference.sql` remains the refreshed reference snapshot and `055_storage_onboarding_identity_change_and_bootstrap.sql` remains the latest live migration.
+### Track 4 — Project / construction jobs
+Support one-off and construction-style work:
+- project estimate and scope
+- phases / milestones
+- work order packets
+- site-specific safety requirements
+- equipment reservations
+- material and subcontract cost tracking
 
-## 2026-03-31 build repair pass
-- Fixed the service-worker duplicate cache entry that was causing `Cache.addAll(): duplicate requests` during install.
-- Restored Admin smoke-check wiring by exporting `runSmokeCheck` through `window.YWIAPI` and rebinding the Admin screen to that helper.
-- Hardened protected-module startup so Reference Data init no longer throws when a module init returns no Promise.
-- Increased bootstrap session-restore timeout and refreshed account setup flow so password save is followed by a session refresh before setup completion is submitted.
-- Fixed recovery email handling so password reset prefers `recovery_email` when available and returns to `#settings` in the current shell.
-- Added a `session_health` account-maintenance action for signed-in diagnostics.
-- No new SQL migration was required. `sql/000_full_schema_reference.sql` remains the schema snapshot and `055_storage_onboarding_identity_change_and_bootstrap.sql` remains the latest live migration.
+### Track 5 — Subcontract dispatch model
+Support sending staff/equipment to another company:
+- subcontract client
+- dispatch date/time
+- operator + equipment pairing
+- time entry and billing basis
+- client-specific safety or paperwork
 
-Enter next development steps here
+### Track 6 — HSE standalone + linked mode
+The HSE app must support both:
+- standalone field use
+- linked use attached to jobs, sites, work orders, or crews
 
-## 2026-03-26 security/account/equipment reliability pass
-- Switched the app toward a true account-setup flow after magic-link validation or password recovery.
-- Added profile flags for password-ready/account-setup-complete state.
-- Settings now supports richer contact/address saving, password reset email, and account-setup completion.
-- Jobs and Equipment screens now autosave local drafts to reduce remote-connection data loss.
-- Service worker cache version was bumped again to reduce stale app shell issues after auth changes.
+## Recommended data priorities
 
-### Best next steps
-1. Move equipment photo/signature evidence into Supabase Storage objects with audit rows instead of row JSON/base64 payloads.
-2. Add explicit first-run onboarding screens for new users instead of routing them straight into Settings.
-3. Expand autosave/outbox coverage from Jobs/Equipment into profile and admin forms.
-4. Add server-side validation messages for duplicate usernames and invalid address/postal formats.
-5. Add account email/username change confirmation workflows.
+Move these from fragmented JSON/fallback use toward shared DB-first structures where not already done:
+- equipment master list
+- staff lists
+- job types
+- work order statuses
+- materials catalog
+- unit types
+- route/service areas
+- recurring visit templates
+- incident / inspection / safety categories
 
-## 2026-03-26 storage-backed evidence, onboarding, and credential recovery pass
-- Fixed the signed-out account lookup/recovery path so it can call `account-maintenance` with anon/public auth headers instead of failing with `HTTP 401 Missing authorization header`.
-- Added `scripts/bootstrap-auth-users.mjs` to create/update the requested starter admin and employee accounts through the Supabase Admin API.
-- Added `sql/055_storage_onboarding_identity_change_and_bootstrap.sql` for onboarding fields, identity-change requests, and storage-backed equipment evidence audit rows.
-- Added `supabase/functions/upload-equipment-evidence` so equipment checkout/return photos and signature captures are stored as Supabase Storage objects with audit rows in `equipment_evidence_assets`.
-- Updated `jobs-manage`, `jobs-directory`, `api.js`, and `jobs-ui.js` so checkout/return now return a signout id and upload evidence/signatures into Storage after the signout record exists.
-- Added explicit first-run onboarding UI, account draft autosave, and email/username change request workflow in Settings.
-- Added server-side validation messages for duplicate usernames, duplicate emails, incomplete address line 1, invalid province text, and invalid Canadian postal-code format.
-- Continued reducing duplicate failure points by making storage-backed evidence metadata database-first instead of storing large JSON/base64 payloads directly in signout rows.
+## Admin UI expectations
 
-### Temporary scripted bootstrap passwords
-- `veardev@live.ca` -> `YwiAdmin!2026#Start`
-- `veardev@gmail.com` -> `YwiWorker!2026#Start`
-- Change both immediately after first sign-in.
+Admin should eventually include:
+- staff management
+- dropdown manager
+- equipment manager
+- jobs/work orders board
+- approvals queue
+- costing/materials manager
+- client/site manager
+- route planner
+- audit and validation tools
 
-### Best next steps
-1. Add admin review screens for `account_identity_change_requests` and equipment evidence galleries with approve/reject comments.
-2. Move the starter account bootstrap script into a protected internal runbook or CI-only admin task so passwords are never committed long term.
-3. Add retry queue / outbox support for failed equipment evidence uploads while offline.
-4. Extend autosave coverage into more admin CRUD forms if broader directory management becomes the next focus.
+## Mobile feature recommendations
 
+Future mobile-friendly additions should include:
+- camera-first uploads for field evidence
+- quick action cards for start/pause/complete job
+- route-stop check-in/out
+- weather delay / site blocked quick actions
+- barcode or QR equipment lookup later
+- offline draft queue for forms and notes
+- location stamp option for field forms when appropriate
 
+## Validation and security rules
 
-## 2026-03-26 login/bootstrap stability pass
+- every protected endpoint must fail clearly with the right auth/role response
+- do not let compatibility fallbacks become the primary access path
+- always prefer one canonical role-aware route over duplicates
+- require visible success/error feedback on save paths
+- do not let partial settings/profile data remain on screen after logout
 
-This pass focused on the app-shell and auth startup problems that were leaving users stuck on **Checking sign-in status...** or showing half-loaded worker screens. The frontend now defers protected module loading until an authenticated session exists, restores missing Jobs draft constants, aligns local asset cache-busting to one release tag, adds packaged icons/favicons to stop manifest 404s, and adds a bootstrap timeout so the login form can recover if email-link session restoration hangs. No new schema migration was added in this pass; `sql/000_full_schema_reference.sql` remains the current reference snapshot.
+## Definition of a successful next stage
 
-### Next steps after this pass
-
-1. Add a signed-in boot diagnostics panel that shows the exact module and endpoint that failed during startup.
-2. Move more offline-safe draft saving into profile/admin screens and add visible draft recovery banners.
-3. Add server-side session health checks to the first-run onboarding flow so stale magic-link callbacks can be diagnosed without opening DevTools.
-4. Continue the equipment workflow by moving more evidence uploads and return damage review into dedicated admin review screens.
-
-
-## 2026-03-26 confirmation history and autosave reliability pass
-- Kept Supabase Storage + `equipment_evidence_assets` as the primary evidence path for equipment photos/signatures; no new inline JSON/base64 evidence storage was introduced in this pass.
-- Added self-service identity-change history loading in Settings so users can see pending, approved, and rejected username/email requests without waiting on admin replies.
-- Added user-facing confirmation notifications when admins approve or reject identity-change requests.
-- Expanded autosave/recovery coverage into the self-profile screen and the admin queue workspace (filters plus email preview fields).
-- Refreshed the app documentation to reflect that no new SQL migration was required beyond `055_storage_onboarding_identity_change_and_bootstrap.sql` for this pass.
-
-### Best next steps
-1. Add a dedicated user inbox/activity panel that surfaces admin notifications and approval results without requiring the Settings screen.
-2. Move profile-form autosave drafts into a shared outbox/replay queue for true offline-first syncing.
-3. Add admin-side approval controls that can trigger real Auth email-change workflows after request approval.
-4. Add thumbnail galleries and delete/replace actions for Storage-backed equipment evidence assets.
-
-## 2026-03-28 login stability and compatibility pass
-- Added a Vercel-host compatibility endpoint at `api/auth/bootstrap-admin.js` so older cached shells no longer hit an HTML 404 and crash on JSON parsing when they call `/api/auth/bootstrap-admin`.
-- Hardened `js/api.js` error handling so HTML error pages are reported as readable compatibility/deployment issues instead of raw JSON parse failures.
-- Strengthened `js/bootstrap.js` timeout fallback so timed-out email-link restores explicitly clear stale recovered session state before showing the regular sign-in screen.
-- Updated `server-worker.js` to use a stronger network-first strategy for the app shell (`index.html`, `app.js`, `style.css`, `/js/*`, icons, manifest, favicon) to reduce mixed old/new cached shell behavior.
-- Refreshed documentation and schema snapshot notes; no new SQL migration was required for this pass.
-
-
-## 2026-03-28 inbox, smoke-check, and evidence gallery pass
-- Added a visible user activity inbox in Settings so approval results and account-change notifications are available outside the identity-request table.
-- Added shared offline action outbox support for account/profile and admin notification actions, including retry controls and conflict-style pending counts.
-- Added an admin deploy smoke-check panel that verifies runtime config and bootstrap endpoint reachability before release.
-- Added equipment evidence gallery viewing plus delete/replace actions for Storage-backed equipment evidence assets.
-- Refreshed documentation and schema snapshot notes; no new SQL migration was required for this pass.
-
-## 2026-03-29 diagnostics and identity-sync pass
-- Added a visible diagnostics banner so startup/auth/module failures are surfaced in the app instead of only in DevTools.
-- Added protected-screen retry controls from the diagnostics banner after auth/bootstrap failures.
-- Wired admin approval of `account_identity_change_requests` to also sync the Auth user record (email and username metadata) before the profile change is finalized.
-- Removed a duplicated Deploy Smoke Check block from the Admin screen and refreshed the docs/schema snapshot notes.
-- No new SQL migration was required for this pass; schema remains current through `055_storage_onboarding_identity_change_and_bootstrap.sql`.
-### Best next steps after the 2026-03-29 diagnostics and identity-sync pass
-1. Extend the shared outbox into a true conflict-aware replay queue with per-action diff details.
-2. Add bulk evidence management actions (multi-delete / replace / relabel) for equipment evidence assets.
-3. Surface diagnostics banner entries inside a dedicated support/export screen for easier remote troubleshooting.
-4. Add release automation that smoke-checks runtime config, auth bootstrap, and an authenticated worker boot before publish.
-
-
-
-## 2026-03-29 conflict-aware replay, diagnostics detail, and evidence bulk-actions pass
-- Conflict-aware action outbox replay/merge.
-- Diagnostics banner now shows validation detail arrays.
-- Smoke check now verifies diagnostics banner is empty after clean boot.
-- Equipment evidence gallery now supports bulk select/delete and clearer replace progress messaging.
-
-## 2026-03-31 Runtime/Auth alignment pass
-
-Current state after this pass:
-- Frontend runtime config now prefers custom `SB_URL` and `SB_ANON_KEY` first, while keeping `SUPABASE_*` as compatibility fallbacks.
-- Edge Functions now prefer custom `SB_URL` and `SB_SERVICE_ROLE_KEY` first, while keeping `SUPABASE_*` as compatibility fallbacks.
-- `account-maintenance` now uses the incoming bearer token with the service-role client and has `verify_jwt = false` configured so function auth is handled in-code instead of by the edge gateway.
-- Remaining live verification after deploy should focus on `account-maintenance` save/update paths, then `admin-directory`, `reference-data`, and `jobs-directory` if any 401s remain.
-- The next chat should start from verifying the live deployed `SB_*` runtime path, then checking the first failing function response body if any auth error remains.
-
-
-## 2026-03-31 Auth and onboarding status
-- Runtime auth now prefers SB_URL / SB_ANON_KEY / SB_SERVICE_ROLE_KEY across frontend, Vercel compatibility route, and Edge Functions.
-- `needsAccountSetup` is now computed from profile flags (`username`, `password_login_ready`, `account_setup_completed_at`) instead of lingering recovery state alone.
-- Worker default route was corrected back to `toolbox` so normal screens open after sign-in.
-- Remaining focus for next pass: verify worker pages render after fresh login without stale session state; keep onboarding banner hidden once account setup flags are complete.
+The next interface stage should only begin when the following are true:
+- no account cross-contamination remains
+- admin role holds across navigation
+- logout works repeatedly
+- standalone HSE use still works
+- admin can reliably manage staff, dropdowns, equipment, and jobs
+- docs and schema notes are synchronized

@@ -1,85 +1,18 @@
-## 2026-04-04d profile/logbook repair and staff admin backend pass
-
-## 2026-04-05b save-reliability, onboarding completion, and admin bootstrap pass
-- Fixed onboarding completion handling so the Settings onboarding block can fully clear after a successful complete action instead of looping on the button state.
-- Added employee/worker role compatibility across frontend security, auth state, and protected functions so staff roles no longer collapse back to worker semantics in the live app.
-- Added a generic `scripts/create-admin-account.mjs` bootstrap script for creating or re-seeding a real administrator account with verified login-ready profile data.
-- Added migration `sql/059_role_aliases_admin_bootstrap_and_onboarding_fix.sql` to normalize legacy worker profile roles toward employee-facing staff records, keep assignment roles compatible, and backfill missing onboarding completion timestamps.
-- Tightened admin profile saving so profile updates also refresh Auth user metadata for role/full-name/employee-number alignment.
-
-
-## 2026-04-05 admin dropdown/catalog manager and assignment workbench pass
-- Extended the Admin backend with a database-backed dropdown/catalog manager for positions, trades, staff tiers, seniority levels, employment statuses, and job types.
-- Extended the Admin backend with an assignment workbench so Admin users can create, edit, and delete site/personnel assignments and reporting lines from the live app.
-- Updated staff editing so key personnel fields now use populated dropdowns instead of fragile free-typed text where shared reference data already exists.
-- Added migration `sql/058_admin_dropdown_catalogs_and_assignment_workbench.sql` and corrected the schema snapshot/catalog definitions in `sql/000_full_schema_reference.sql`.
-- Narrowed the remaining risks toward live deployment validation, workflow depth, and stress-testing rather than basic screen rendering.
-
-- Restored Profile and Logbook as fully rendered screens instead of empty shells by moving their required layout into the live modules.
-- Fixed crew loading payload handling and made Logbook auto-load rows on open so empty pages now show real data or a clear empty state.
-- Extended the Admin backend toward a real staff directory with Admin / Supervisor / Employee management controls for create, edit, block/unblock, delete, password reset, and staff hierarchy fields.
-- Added migration `sql/057_staff_directory_and_role_admin.sql` and refreshed the schema reference snapshot.
-
-## 2026-04-03 admin password control and order/accounting scaffold pass
-
-## 2026-04-04c interface restoration and admin-workflow preparation pass
-- Restored missing live screen layouts for Toolbox Talk, PPE Check, First Aid Kit, Site Inspection, and Emergency Drill so hash routes no longer land on empty cards.
-- Added shared datalist placeholders back into the shell for site, employee, and first-aid catalog lookups used by the form modules.
-- Bumped shell/cache asset versions again to flush stale blank-screen markup and keep the smoother interface consistent after deploy.
-- No new SQL migration was required in this pass; schema remains current through `056_admin_password_resets_and_sales_accounting_stub.sql`.
-- Current roadmap emphasis after this pass: stabilize the restored worker screens, then continue expanding the admin/supervisor/employee backend workflow for approvals, job creation, and personnel assignment before stress testing.
-
-- Added admin-managed password reset capability for any profile, including other admins, with audit logging in `admin_password_resets` and notification history.
-- Added a basic sales-order and accounting scaffold so creating an order now also creates an initial accounting row for later cost, inventory, revenue, and tax workflows.
-- Extended the Admin screen with password control, order creation, order list, and accounting list panels.
-- Extended the admin directory/function layer so orders and accounting records are visible in the live app.
-- Added migration `sql/056_admin_password_resets_and_sales_accounting_stub.sql` and refreshed `sql/000_full_schema_reference.sql`.
-- Continued SEO/cache/CSS cleanup with updated shell versioning, homepage metadata tuning, and minor admin panel style tightening.
-- Remaining live work before stress testing: deploy migration 056, deploy updated Edge Functions, then validate admin password reset and order/accounting creation in the real environment.
-
-## 2026-03-31 session health and onboarding completion pass
-
-## 2026-04-01 conflict review, CI smoke-check, and diagnostics timing pass
-- Added visible conflict review panels in Settings and Admin so queued local actions can be compared, retried, kept local, or discarded instead of staying as opaque conflict rows.
-- Added module/startup timing capture and exposed it through in-app diagnostics, support snapshot export, and smoke-check reporting for deeper boot troubleshooting.
-- Added a repository smoke-check script plus GitHub Actions workflow so baseline release verification now runs automatically in CI/CD instead of being manual-only.
-- No new SQL migration was required. `sql/000_full_schema_reference.sql` remains the current schema snapshot and `055_storage_onboarding_identity_change_and_bootstrap.sql` remains the latest live migration.
-
-### Remaining sign-off item
-- Live deployed auth/runtime verification still needs to be confirmed against your actual environment because that cannot be completed from the zip alone. The codebase is now prepared with better conflict review, smoke automation, and timing diagnostics for that final live verification.
-
-- Fixed the separate onboarding-complete path so it can also finalize `account_setup_completed_at` when username and password readiness are already satisfied.
-- Added signed-in session health probing to the frontend API/smoke checks and added a Support & Session Health panel in Settings with exportable troubleshooting snapshots.
-- No new SQL migration was required in this pass; `sql/000_full_schema_reference.sql` remains the refreshed reference snapshot and `055_storage_onboarding_identity_change_and_bootstrap.sql` remains the latest live migration.
-
 # Auth Bootstrap Runbook
 
-Use this runbook for safe account bootstrap, password reset, and recovery-email maintenance.
+Last synchronized: April 7, 2026
 
-## Goals
-- keep Auth users and profiles aligned
-- prefer recovery email over stale profile email for reset flows
-- avoid committing reusable bootstrap passwords
+## Purpose
+Use this runbook when a fresh Admin account or role reset is needed.
 
-## Minimum checks
-1. Confirm the user exists in Supabase Auth.
-2. Confirm `profiles.id` matches the Auth user id.
-3. Confirm `profiles.email` and `profiles.recovery_email` are current.
-4. Run the onboarding session health check from the live shell after sign-in.
+## Preferred remote-first approach
+1. create the user in Supabase Auth dashboard
+2. run the SQL promotion/update query in SQL Editor
+3. verify `profiles.role`, `staff_tier`, and onboarding/account-setup timestamps
 
-## Reset workflow
-1. Update stale email fields first if needed.
-2. Send password reset to `recovery_email` when available.
-3. Clear cached service worker/site storage before retesting old recovery links.
-
-## Operational note
-Move any bootstrap-user scripts into CI-only or secured internal operations over time.
-
-## 2026-03-31 Runtime/Auth alignment pass
-
-Current state after this pass:
-- Frontend runtime config now prefers custom `SB_URL` and `SB_ANON_KEY` first, while keeping `SUPABASE_*` as compatibility fallbacks.
-- Edge Functions now prefer custom `SB_URL` and `SB_SERVICE_ROLE_KEY` first, while keeping `SUPABASE_*` as compatibility fallbacks.
-- `account-maintenance` now uses the incoming bearer token with the service-role client and has `verify_jwt = false` configured so function auth is handled in-code instead of by the edge gateway.
-- Remaining live verification after deploy should focus on `account-maintenance` save/update paths, then `admin-directory`, `reference-data`, and `jobs-directory` if any 401s remain.
-- The next chat should start from verifying the live deployed `SB_*` runtime path, then checking the first failing function response body if any auth error remains.
+## Validation after bootstrap
+- sign in
+- confirm header identity
+- confirm Settings data matches the same account
+- confirm Admin selectors/jobs/staff screens load
+- confirm logout works
