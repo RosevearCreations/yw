@@ -13,12 +13,12 @@
   <meta name="theme-color" content="#0f172a" />
   <meta name="color-scheme" content="dark light" />
 
-  <link rel="manifest" href="/manifest.json?v=2026-04-05d" />
-  <link rel="icon" href="/icons/icon-192.png?v=2026-04-05d" sizes="192x192" />
-  <link rel="stylesheet" href="/style.css?v=2026-04-05d" />
+  <link rel="manifest" href="/manifest.json?v=2026-04-05e" />
+  <link rel="icon" href="/icons/icon-192.png?v=2026-04-05e" sizes="192x192" />
+  <link rel="stylesheet" href="/style.css?v=2026-04-05e" />
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/js/app-config.js?v=2026-04-05d"></script>
+  <script src="/js/app-config.js?v=2026-04-05e"></script>
 
   <style>
     #authLoading {
@@ -104,7 +104,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-04-05d');
+          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-04-05e');
           if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
           }
@@ -336,26 +336,26 @@
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
 
   <!-- Correct module order -->
-  <script src="/js/router.js?v=2026-04-05d"></script>
-  <script src="/js/bootstrap.js?v=2026-04-05d"></script>
-  <script src="/js/auth.js?v=2026-04-05d"></script>
-  <script src="/js/security.js?v=2026-04-05d"></script>
-  <script src="/js/api.js?v=2026-04-05d"></script>
-  <script src="/js/outbox.js?v=2026-04-05d"></script>
-  <script src="/js/admin-actions.js?v=2026-04-05d"></script>
-  <script src="/js/ui-auth.js?v=2026-04-05d"></script>
-  <script src="/js/account-ui.js?v=2026-04-05d"></script>
-  <script src="/js/profile-ui.js?v=2026-04-05d"></script>
-  <script src="/js/reference-data.js?v=2026-04-05d"></script>
-  <script src="/js/admin-ui.js?v=2026-04-05d"></script>
-  <script src="/js/logbook-ui.js?v=2026-04-05d"></script>
-  <script src="/js/jobs-ui.js?v=2026-04-05d"></script>
-  <script src="/js/forms-toolbox.js?v=2026-04-05d"></script>
-  <script src="/js/forms-ppe.js?v=2026-04-05d"></script>
-  <script src="/js/forms-firstaid.js?v=2026-04-05d"></script>
-  <script src="/js/forms-inspection.js?v=2026-04-05d"></script>
-  <script src="/js/forms-drill.js?v=2026-04-05d"></script>
-  <script src="/app.js?v=2026-04-05d" defer></script>
+  <script src="/js/router.js?v=2026-04-05e"></script>
+  <script src="/js/bootstrap.js?v=2026-04-05e"></script>
+  <script src="/js/auth.js?v=2026-04-05e"></script>
+  <script src="/js/security.js?v=2026-04-05e"></script>
+  <script src="/js/api.js?v=2026-04-05e"></script>
+  <script src="/js/outbox.js?v=2026-04-05e"></script>
+  <script src="/js/admin-actions.js?v=2026-04-05e"></script>
+  <script src="/js/ui-auth.js?v=2026-04-05e"></script>
+  <script src="/js/account-ui.js?v=2026-04-05e"></script>
+  <script src="/js/profile-ui.js?v=2026-04-05e"></script>
+  <script src="/js/reference-data.js?v=2026-04-05e"></script>
+  <script src="/js/admin-ui.js?v=2026-04-05e"></script>
+  <script src="/js/logbook-ui.js?v=2026-04-05e"></script>
+  <script src="/js/jobs-ui.js?v=2026-04-05e"></script>
+  <script src="/js/forms-toolbox.js?v=2026-04-05e"></script>
+  <script src="/js/forms-ppe.js?v=2026-04-05e"></script>
+  <script src="/js/forms-firstaid.js?v=2026-04-05e"></script>
+  <script src="/js/forms-inspection.js?v=2026-04-05e"></script>
+  <script src="/js/forms-drill.js?v=2026-04-05e"></script>
+  <script src="/app.js?v=2026-04-05e" defer></script>
 
   <script>
     document.addEventListener('ywi:auth-changed', (e) => {
