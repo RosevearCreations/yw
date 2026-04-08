@@ -4,20 +4,25 @@ Last synchronized: April 7, 2026
 
 ## Current schema direction
 
-The database is now expected to support two connected but separable domains:
+The database is now expected to support three connected but separable domains:
 
 1. **Operations platform**
    - staff
    - clients/sites
-   - jobs
+   - estimates
    - work orders
-   - equipment
    - routes
    - materials
+   - equipment
    - costing
    - approvals
 
-2. **Standalone and linked HSE platform**
+2. **Subcontract and dispatch platform**
+   - subcontract clients
+   - operator/equipment dispatches
+   - dispatch billing and cost capture
+
+3. **Standalone and linked HSE platform**
    - forms
    - inspections
    - drills
@@ -25,6 +30,13 @@ The database is now expected to support two connected but separable domains:
    - PPE checks
    - first-aid checks
    - logbook/review records
+
+4. **Digital accounting backbone**
+   - chart of accounts
+   - receivables
+   - payables
+   - general-ledger journals
+   - standard cost mapping
 
 ## Current core tables already implied by the build
 
@@ -35,63 +47,36 @@ The database is now expected to support two connected but separable domains:
 - account recovery / onboarding / identity change related tables
 
 ### Operations
-- jobs
+- `jobs`
 - job equipment requirements
 - equipment assets, signout, maintenance, evidence
 - orders/accounting stub tables
 - dropdown/catalog reference tables
 
-### HSE
-- submissions and review-related tables
-- notifications/signoff helpers
-- logbook/review function inputs
-
-## Recommended next schema expansion
-
-### A) Landscaping operations tables
-Recommended additions or deepening:
+### New foundation added in migration 061
+- `units_of_measure`
+- `cost_codes`
 - `clients`
 - `client_sites`
-- `service_plans`
-- `route_runs`
+- `service_areas`
+- `routes`
 - `route_stops`
-- `recurring_service_templates`
-- `visit_material_usage`
-- `visit_notes`
-
-### B) Estimates and work orders
+- `materials_catalog`
+- `equipment_master`
 - `estimates`
 - `estimate_lines`
 - `work_orders`
 - `work_order_lines`
-- `work_order_status_history`
-- `approvals`
-
-### C) Materials and costing
-- `materials_catalog`
-- `material_units`
-- `job_material_allocations`
-- `job_material_actuals`
-- `labour_entries`
-- `equipment_cost_rates`
-- `subcontract_cost_entries`
-
-### D) Subcontract dispatch
 - `subcontract_clients`
-- `subcontract_work_orders`
-- `operator_dispatches`
-- `dispatch_time_entries`
-- `dispatch_billing_rules`
-
-### E) HSE linkage helpers
-Recommended link strategy:
-- allow HSE records to be standalone
-- optionally attach them to:
-  - job
-  - work_order
-  - site
-  - client
-  - route_stop
+- `subcontract_dispatches`
+- `chart_of_accounts`
+- `gl_journal_batches`
+- `gl_journal_entries`
+- `ar_invoices`
+- `ar_payments`
+- `ap_vendors`
+- `ap_bills`
+- `ap_payments`
 
 ## Data migration direction
 
@@ -105,6 +90,7 @@ Best candidates:
 - service categories
 - recurring service templates
 - safety categories and templates
+- cost codes and account mappings
 
 ## Important rule
 
