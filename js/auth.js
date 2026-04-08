@@ -176,6 +176,8 @@
 
   async function applySession(session) {
     const currentVersion = ++applySessionVersion;
+    const previousProfile = state.profile || null;
+    const previousUserId = state.user?.id || '';
     state.isLoggingOut = false;
     state.session = session || null;
     state.user = session?.user || null;
@@ -190,7 +192,8 @@
     const fetchedProfile = await fetchProfile(state.user.id);
     if (currentVersion != applySessionVersion) return;
 
-    state.profile = fetchedProfile || null;
+    const sameUser = previousUserId && previousUserId === state.user.id;
+    state.profile = fetchedProfile || (sameUser ? previousProfile : null);
     state.role = getEffectiveRole(state.profile, state.user);
     state.roleLabel = getRoleLabel(state.role);
     const username = safeText(state.profile?.username || state.user?.user_metadata?.username || state.user?.app_metadata?.username);
@@ -216,10 +219,12 @@
       return;
     }
 
-    state.session = bootState.session || null;
-    state.user = bootUser;
-    state.profile = bootState.profile || null;
-    state.role = getEffectiveRole(state.profile, state.user) || normalizeRole(bootState.role || state.profile?.role, state.profile, state.user);
+    const sameUser = currentUserId && bootUserId && currentUserId === bootUserId;
+    const incomingProfile = bootState.profile || (sameUser ? state.profile : null) || null;
+    state.session = bootState.session || state.session || null;
+    state.user = bootUser || state.user || null;
+    state.profile = incomingProfile;
+    state.role = getEffectiveRole(state.profile, state.user) || normalizeRole(bootState.role || state.profile?.role || state.role, state.profile, state.user);
     state.roleLabel = getRoleLabel(state.role);
     state.isAuthenticated = !!bootState.isAuthenticated;
     state.authError = bootState.authError || '';
@@ -448,7 +453,7 @@
       applyBootState(bootState);
       if (!state.profile && state.user?.id) {
         state.profile = await fetchProfile(state.user.id);
-        state.role = normalizeRole(state.profile?.role || state.role, state.profile, state.user);
+        state.role = getEffectiveRole(state.profile, state.user) || normalizeRole(state.profile?.role || state.role, state.profile, state.user);
         state.roleLabel = getRoleLabel(state.role);
       }
       dispatch('ywi:auth-changed', { state: getState() });

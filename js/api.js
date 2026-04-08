@@ -47,6 +47,10 @@
     return `${window.location.origin}/api/auth/${String(path).replace(/^\/+/, '')}`;
   }
 
+  function getHostProxyUrl(path = '') {
+    return `${window.location.origin}/api/${String(path).replace(/^\/+/, '')}`;
+  }
+
   function escHtml(value) {
     return String(value ?? '')
       .replaceAll('&', '&amp;')
@@ -347,11 +351,22 @@
   }
 
   async function fetchLogData(payload = {}) {
-    return jsonFetch('review-list', {
-      method: 'POST',
-      body: payload,
-      requireAuth: true
-    });
+    try {
+      return await jsonFetch('review-list', {
+        method: 'POST',
+        body: payload,
+        requireAuth: true
+      });
+    } catch (error) {
+      const message = String(error?.message || '');
+      const shouldFallback = error?.status === 404 || error?.status === 0 || /Failed to fetch|CORS|ERR_FAILED/i.test(message);
+      if (!shouldFallback) throw error;
+      return jsonFetch(getHostProxyUrl('logbook/review-list'), {
+        method: 'POST',
+        body: payload,
+        requireAuth: true
+      });
+    }
   }
 
   async function fetchSubmissionDetail(payload = {}) {

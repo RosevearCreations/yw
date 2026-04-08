@@ -1,3 +1,4 @@
+-- Last synchronized: April 5, 2026. Reviewed during the session-integrity, logout determinism, role normalization, and review-list proxy fallback pass.
 -- Last synchronized: April 7, 2026. Reviewed during the landscaping/construction/subcontract operations documentation, roadmap, and schema-direction synchronization pass.
 
 -- Current reference includes migrations through 060_session_role_normalization_guardrails.sql

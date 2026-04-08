@@ -40,14 +40,16 @@
     const api = config.api;
     const getCurrentRole = config.getCurrentRole || (() => 'worker');
     const getAuthState = config.getAuthState || (() => window.YWI_AUTH?.getState?.() || {});
-    const state = { last: null };
+    const state = { last: null, loadVersion: 0 };
 
     async function load() {
       if (!api?.fetchReferenceData) return;
       const authState = getAuthState();
       if (!authState?.isAuthenticated || authState?.isLoggingOut) return;
+      const loadVersion = ++state.loadVersion;
       try {
         const resp = await api.fetchReferenceData({ include_people: true, include_sites: true, include_catalogs: true });
+        if (loadVersion !== state.loadVersion) return;
         state.last = resp || {};
 
         const sites = (resp.sites || []).map((s) => s.site_name ? `${s.site_code || s.site_name} — ${s.site_name}` : (s.site_code || s.site_name)).filter(Boolean);
@@ -71,6 +73,8 @@
         setListOnSelectors(['#me_current_position','#am_profile_current_position'], 'position-options');
         setListOnSelectors(['#me_trade_specialty','#am_profile_trade_specialty'], 'trade-options');
       } catch (err) {
+        const currentState = getAuthState();
+        if (currentState?.isLoggingOut || !currentState?.isAuthenticated) return;
         console.error('Reference data load failed', err);
       }
     }

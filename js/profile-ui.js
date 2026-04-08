@@ -341,6 +341,7 @@
     }
 
     async function loadSelfProfile() {
+      const loadVersion = ++state.selfLoadVersion;
       try {
         const authState = getAuthState();
         if (!authState?.isAuthenticated || authState?.isLoggingOut) {
@@ -348,13 +349,17 @@
           return;
         }
         setNotice(els.meSummary, 'Loading your profile...');
-        const localProfile = authState?.profile || null;
+        const localProfile = authState?.profile || state.profile || null;
         const resp = await api.fetchProfileScope('self');
+        if (loadVersion !== state.selfLoadVersion) return;
         const profile = resp?.profile || resp?.profiles?.[0] || localProfile || null;
         renderSelf(profile);
         restoreDraft();
         setNotice(els.meSummary, profile ? '' : 'No profile record was returned.');
       } catch (err) {
+        if (loadVersion !== state.selfLoadVersion) return;
+        const authState = getAuthState();
+        if (authState?.isLoggingOut || !authState?.isAuthenticated) return;
         console.error(err);
         setNotice(els.meSummary, 'Failed to load your profile.');
       }
@@ -393,6 +398,7 @@
     }
 
     async function loadCrew() {
+      const loadVersion = ++state.crewLoadVersion;
       const access = getAccessProfile(getCurrentRole());
       const authState = getAuthState();
       if (!access.canViewCrew || !authState?.isAuthenticated || authState?.isLoggingOut) {
@@ -406,9 +412,13 @@
           search: els.crewSearch?.value?.trim?.() || '',
           role_filter: els.crewRoleFilter?.value || ''
         });
+        if (loadVersion !== state.crewLoadVersion) return;
         renderCrew(resp?.profiles || []);
         setNotice(els.crewSummary, `Loaded ${resp?.profiles?.length || 0} people.`);
       } catch (err) {
+        if (loadVersion !== state.crewLoadVersion) return;
+        const currentState = getAuthState();
+        if (currentState?.isLoggingOut || !currentState?.isAuthenticated) return;
         console.error(err);
         setNotice(els.crewSummary, 'Failed to load crew records.');
       }
