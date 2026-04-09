@@ -1,4 +1,4 @@
-> Last synchronized: April 8, 2026. Reviewed during the Admin backbone manager, HSE/OSHA hub, and operations/accounting UI pass.
+> Last synchronized: April 9, 2026. Reviewed during the deeper workflow polish pass for estimate/work-order lines, route stops, AR/AP payment posting, material receiving, linked HSE packets, and admin-manager alignment.
 
 ## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass
 - Refreshed the Markdown set to move the product direction from schema-only groundwork into the next implementation phase: admin UI managers for estimates/work orders, materials/units, routes/service areas, subcontract dispatch, and AR/AP + chart of accounts.
@@ -9,6 +9,13 @@
 - Added schema foundation migration `061_estimates_work_orders_routes_materials_and_gl_foundation.sql` and updated the development guidance so future passes build the admin/data backbone instead of circling older shell issues.
 
 # Development Guide
+
+## April 9, 2026 implementation guide update
+- Treat `062_deeper_workflow_polish_admin_foundation.sql` as the next schema step after the adaptive 061 foundation.
+- When building the next Admin screens, prioritize create/edit/delete flows for route stops, estimate lines, work-order lines, AR/AP payments, material receiving, and linked HSE packets.
+- Keep DB-first selectors as the source of truth for units, cost codes, service areas, routes, materials, equipment, clients, sites, and staff.
+- Preserve standalone HSE entry points for unscheduled work even while linked HSE packets are added for formal work orders and dispatches.
+
 
 Last synchronized: April 8, 2026
 

@@ -1,4 +1,4 @@
-> Last synchronized: April 8, 2026. Reviewed during the Admin backbone manager, HSE/OSHA hub, and operations/accounting UI pass.
+> Last synchronized: April 9, 2026. Reviewed during the deeper workflow polish pass for estimate/work-order lines, route stops, AR/AP payment posting, material receiving, linked HSE packets, and admin-manager alignment.
 
 ## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass
 - Refreshed the Markdown set to move the product direction from schema-only groundwork into the next implementation phase: admin UI managers for estimates/work orders, materials/units, routes/service areas, subcontract dispatch, and AR/AP + chart of accounts.
@@ -10,6 +10,18 @@
 - Reframed the roadmap so the next implementation phase is no longer “prove the shell exists” but “complete the digital admin/operations/accounting backbone”.
 
 # Development Roadmap
+
+## April 9, 2026 deeper workflow polish pass
+- Move the Admin UI from backbone master-data maintenance into operational use of the new tables.
+- Primary screens to finish next: estimate/work-order lines manager, route-stop manager, AR/AP payment posting, material receiving, and linked HSE packet manager.
+- Keep the HSE app usable as a standalone safety workflow for unscheduled jobs, but add link points to work orders, routes, dispatches, sites, and equipment whenever a formal job exists.
+- Continue mobile-first field UX: large tap targets, short forms, offline-safe drafts, camera-first attachments, and simplified supervisor signoff on phones.
+
+### Why this direction makes sense
+- OSHA landscaping hazard guidance supports first-class HSE linkage because common landscaping and project-work risks include machinery/tools, slips/falls, lifting, vehicles, chemicals, and heat/weather exposure.
+- Landscaping and construction-style jobs need job costing, route planning, progress invoicing, purchase/material receiving, and cost tracking, which is why the Admin UI should now actively use estimates, work orders, AR/AP, and GL tables rather than leaving them as passive schema.
+- IRS recordkeeping and depreciation rules reinforce the need for digital, structured records for materials, equipment, receivables, payables, and standard business costs.
+
 
 Last synchronized: April 8, 2026
 
@@ -124,3 +136,19 @@ On every build:
 - OSHA landscaping guidance highlights recurring machinery, lifting, heat/weather, slips, vehicle, and tool hazards, so HSE must stay linked to sites, jobs, routes, equipment, and dispatches.
 - Project-based landscaping and construction work needs job costing, progress invoicing, purchasing, inventory/material control, and work-order discipline, so the operations backbone should continue toward estimates, work orders, AR/AP, and the general ledger.
 - IRS treatment of business expenses, inventory/materials, and depreciable equipment supports keeping materials, equipment, and accounting data fully digital and structured.
+
+### OSHA / HSE outstanding interfaces to keep visible
+- linked HSE packet manager for work orders and subcontract dispatches
+- heat / weather exposure workflow for landscaping and project crews
+- chemical handling / SDS / pesticide-use linkage where applicable
+- traffic / public-interaction controls for parks, roadsides, and municipal work
+- equipment-specific JSA / inspection linkage
+- field signoff and closeout flow that can work both standalone and attached to a formal job
+
+### Mobile-friendly direction to keep pushing
+- large tap targets for supervisors and crew leads in the field
+- condensed line-entry forms with sticky save actions
+- camera-first attachments and scan-to-link for receipts / equipment / HSE packets
+- offline-safe draft saving for route stops, line items, and site safety checks
+- simplified worker-facing packet progress views that avoid desktop-only layouts
+

@@ -1,4 +1,4 @@
-> Last synchronized: April 8, 2026. Reviewed during the Admin backbone manager, HSE/OSHA hub, and operations/accounting UI pass.
+> Last synchronized: April 9, 2026. Reviewed during the deeper workflow polish pass for estimate/work-order lines, route stops, AR/AP payment posting, material receiving, linked HSE packets, and admin-manager alignment.
 
 > Last synchronized: April 8, 2026. Reviewed during the estimates/work-orders/routes/materials/subcontract/general-ledger foundation and documentation synchronization pass.
 

@@ -1,4 +1,4 @@
-> Last synchronized: April 8, 2026. Reviewed during the Admin backbone manager, HSE/OSHA hub, and operations/accounting UI pass.
+> Last synchronized: April 9, 2026. Reviewed during the deeper workflow polish pass for estimate/work-order lines, route stops, AR/AP payment posting, material receiving, linked HSE packets, and admin-manager alignment.
 
 ## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass
 - Refreshed the Markdown set to move the product direction from schema-only groundwork into the next implementation phase: admin UI managers for estimates/work orders, materials/units, routes/service areas, subcontract dispatch, and AR/AP + chart of accounts.
@@ -11,6 +11,18 @@
 - Updated the Markdown set to treat the current auth/session stabilization as substantially complete and move the main forward direction into admin backbone depth, landscaping/project/subcontract workflows, and fully digital receivables/payables/accounting.
 
 # YW Operations + HSE Platform
+
+## April 9, 2026 deeper workflow polish direction
+- The next strongest implementation pass is now deeper workflow polish on top of the new Admin backbone manager.
+- Priority UI managers: estimate/work-order lines, route stops, AR/AP payment posting, material receiving, and linked HSE packets for work orders and dispatches.
+- The HSE side must remain standalone-capable for unscheduled work while also linking cleanly into routes, work orders, dispatches, sites, equipment, and client records whenever a formal job exists.
+- The most efficient data direction continues to be DB-first for shared dropdowns, equipment, materials, job costing, AR/AP, and GL scaffolding, with JSON retained only where a bundled fallback is still operationally useful.
+
+### Why this direction makes sense
+- OSHA landscaping guidance emphasizes recurring hazards around machinery/tools, lifting, slips/trips/falls, vehicles, chemicals, and heat stress, which supports keeping the HSE side first-class and linkable to jobs, sites, routes, equipment, and dispatches.
+- Project-based landscaping/construction operations depend on job costing, progress invoicing, purchase/material receiving, and inventory tracking, which aligns with estimates, work orders, AR/AP, and a general ledger backbone.
+- IRS small-business and depreciation guidance supports keeping materials, equipment, expenses, receivables, payables, and asset records digital and structured so operational and tax records do not drift apart.
+
 
 Last synchronized: April 8, 2026
 
@@ -140,3 +152,19 @@ The app is now stable enough that the main build priority shifts from shell repa
 - The Admin backbone is expected to be the source of truth for dropdowns, equipment listings, employee listings, job/work-order records, materials, routes, dispatches, and accounting masters.
 - The next implementation step after this pass is to use the new operations/accounting tables directly from the Admin UI end to end.
 - The HSE side remains usable on unscheduled work even when no formal estimate/work-order exists.
+
+### OSHA / HSE outstanding interfaces to keep visible
+- linked HSE packet manager for work orders and subcontract dispatches
+- heat / weather exposure workflow for landscaping and project crews
+- chemical handling / SDS / pesticide-use linkage where applicable
+- traffic / public-interaction controls for parks, roadsides, and municipal work
+- equipment-specific JSA / inspection linkage
+- field signoff and closeout flow that can work both standalone and attached to a formal job
+
+### Mobile-friendly direction to keep pushing
+- large tap targets for supervisors and crew leads in the field
+- condensed line-entry forms with sticky save actions
+- camera-first attachments and scan-to-link for receipts / equipment / HSE packets
+- offline-safe draft saving for route stops, line items, and site safety checks
+- simplified worker-facing packet progress views that avoid desktop-only layouts
+

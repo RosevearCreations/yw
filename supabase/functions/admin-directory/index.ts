@@ -128,13 +128,21 @@ serve(async (req) => {
     response.materials_catalog = await safeList(supabase, 'materials_catalog', '*', 'item_name', limit);
     response.equipment_master = await safeList(supabase, 'equipment_master', '*', 'item_name', limit);
     response.estimates = await safeList(supabase, 'estimates', '*', 'estimate_number', limit);
+    response.estimate_lines = await safeList(supabase, 'estimate_lines', '*', 'line_order', limit);
     response.work_orders = await safeList(supabase, 'work_orders', '*', 'work_order_number', limit);
+    response.work_order_lines = await safeList(supabase, 'work_order_lines', '*', 'line_order', limit);
+    response.route_stops = await safeList(supabase, 'route_stops', '*', 'stop_order', limit);
     response.subcontract_clients = await safeList(supabase, 'subcontract_clients', '*', 'company_name', limit);
     response.subcontract_dispatches = await safeList(supabase, 'subcontract_dispatches', '*', 'dispatch_number', limit);
+    response.linked_hse_packets = await safeList(supabase, 'linked_hse_packets', '*', 'packet_number', limit);
     response.chart_of_accounts = await safeList(supabase, 'chart_of_accounts', '*', 'account_number', limit);
     response.ap_vendors = await safeList(supabase, 'ap_vendors', '*', 'legal_name', limit);
     response.ar_invoices = await safeList(supabase, 'ar_invoices', '*', 'invoice_number', limit);
+    response.ar_payments = await safeList(supabase, 'ar_payments', '*', 'payment_number', limit);
     response.ap_bills = await safeList(supabase, 'ap_bills', '*', 'bill_number', limit);
+    response.ap_payments = await safeList(supabase, 'ap_payments', '*', 'payment_number', limit);
+    response.material_receipts = await safeList(supabase, 'material_receipts', '*', 'receipt_number', limit);
+    response.material_receipt_lines = await safeList(supabase, 'material_receipt_lines', '*', 'line_order', limit);
   }
   if (scope === 'self') response.profile = filteredPeople[0] || null;
   return Response.json(response, { headers: corsHeaders });

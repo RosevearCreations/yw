@@ -1,4 +1,4 @@
-> Last synchronized: April 8, 2026. Reviewed during the Admin backbone manager, HSE/OSHA hub, and operations/accounting UI pass.
+> Last synchronized: April 9, 2026. Reviewed during the deeper workflow polish pass for estimate/work-order lines, route stops, AR/AP payment posting, material receiving, linked HSE packets, and admin-manager alignment.
 
 ## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass
 - Refreshed the Markdown set to move the product direction from schema-only groundwork into the next implementation phase: admin UI managers for estimates/work orders, materials/units, routes/service areas, subcontract dispatch, and AR/AP + chart of accounts.
@@ -10,6 +10,17 @@
 - With the current build reported as stable, the biggest remaining risks shift from shell repair toward implementation depth, validation quality, and operational/accounting convergence.
 
 # Known Gaps and Risks
+
+## April 9, 2026 risk update
+- The main gap is no longer the existence of operations/accounting tables; it is getting the Admin UI to use them deeply and consistently.
+- Highest-priority open workflow risks now are: estimate/work-order lines, route stops, AR/AP payment posting, material receiving, and linked HSE packet completion.
+- The HSE side must avoid becoming secondary to the operations backbone; it still needs a strong standalone entry path for unscheduled jobs and public/municipal work.
+- Mobile field UX remains a live risk area until the deeper workflow screens are tested under real phone/tablet use.
+
+### Why this direction makes sense
+- OSHA landscaping hazard guidance supports first-class HSE linkage to work, equipment, routes, and dispatches.
+- IRS recordkeeping and depreciation requirements support digital, structured materials/equipment/accounting records.
+
 
 Last synchronized: April 8, 2026
 
@@ -129,3 +140,19 @@ Reference links:
 - HSE/OSHA outstanding interfaces should still be tracked explicitly: linked equipment/JSA workflow, linked dispatch HSE packet, linked heat/weather workflow, chemical handling workflow, public-traffic interaction workflow, and safety closeout tied to work-order completion.
 - The new Admin backbone now needs deeper validation and record-linking so client, site, estimate, work-order, route, dispatch, and accounting records cannot drift apart.
 - The remaining architectural risk is no longer lack of tables; it is completing the end-to-end UI, validation rules, and mobile-safe workflows on top of those tables.
+
+### OSHA / HSE outstanding interfaces to keep visible
+- linked HSE packet manager for work orders and subcontract dispatches
+- heat / weather exposure workflow for landscaping and project crews
+- chemical handling / SDS / pesticide-use linkage where applicable
+- traffic / public-interaction controls for parks, roadsides, and municipal work
+- equipment-specific JSA / inspection linkage
+- field signoff and closeout flow that can work both standalone and attached to a formal job
+
+### Mobile-friendly direction to keep pushing
+- large tap targets for supervisors and crew leads in the field
+- condensed line-entry forms with sticky save actions
+- camera-first attachments and scan-to-link for receipts / equipment / HSE packets
+- offline-safe draft saving for route stops, line items, and site safety checks
+- simplified worker-facing packet progress views that avoid desktop-only layouts
+

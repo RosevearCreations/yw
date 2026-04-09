@@ -1,4 +1,4 @@
-> Last synchronized: April 8, 2026. Reviewed during the Admin backbone manager, HSE/OSHA hub, and operations/accounting UI pass.
+> Last synchronized: April 9, 2026. Reviewed during the deeper workflow polish pass for estimate/work-order lines, route stops, AR/AP payment posting, material receiving, linked HSE packets, and admin-manager alignment.
 
 ## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass
 - Refreshed the Markdown set to move the product direction from schema-only groundwork into the next implementation phase: admin UI managers for estimates/work orders, materials/units, routes/service areas, subcontract dispatch, and AR/AP + chart of accounts.
@@ -6,6 +6,20 @@
 - Updated the docs to emphasize mobile-first field use, desktop-strong admin depth, DB-first shared data, and local SEO / one-H1 discipline on every public build pass.
 
 # Database Structure
+
+## April 9, 2026 schema direction update
+- Added direction for the deeper workflow layer on top of the 061 backbone.
+- New workflow-level entities for the next pass are material receipts, material receipt lines, and linked HSE packets.
+- Existing 061 tables `route_stops`, `estimate_lines`, `work_order_lines`, `ar_payments`, and `ap_payments` should now be treated as active Admin-manager targets rather than future placeholders.
+
+### Admin managers implied by the schema
+- `estimates` + `estimate_lines` -> estimate manager
+- `work_orders` + `work_order_lines` -> work-order manager
+- `routes` + `route_stops` + `service_areas` -> route/service-area manager
+- `materials_catalog` + `material_receipts` + `material_receipt_lines` + `units_of_measure` -> materials/receiving manager
+- `subcontract_dispatches` + `linked_hse_packets` -> dispatch + HSE packet manager
+- `ar_invoices` + `ar_payments` and `ap_bills` + `ap_payments` -> receivables/payables posting manager
+
 
 Last synchronized: April 8, 2026
 

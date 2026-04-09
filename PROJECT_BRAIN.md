@@ -1,4 +1,4 @@
-> Last synchronized: April 8, 2026. Reviewed during the Admin backbone manager, HSE/OSHA hub, and operations/accounting UI pass.
+> Last synchronized: April 9, 2026. Reviewed during the deeper workflow polish pass for estimate/work-order lines, route stops, AR/AP payment posting, material receiving, linked HSE packets, and admin-manager alignment.
 
 ## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass
 - Refreshed the Markdown set to move the product direction from schema-only groundwork into the next implementation phase: admin UI managers for estimates/work orders, materials/units, routes/service areas, subcontract dispatch, and AR/AP + chart of accounts.
@@ -6,6 +6,12 @@
 - Updated the docs to emphasize mobile-first field use, desktop-strong admin depth, DB-first shared data, and local SEO / one-H1 discipline on every public build pass.
 
 # Project Brain
+
+## April 9, 2026 project-brain refresh
+- The company direction is landscaping-led but must support project/construction work, municipal/public jobs, and subcontract dispatches.
+- Admin is the source of truth for shared dropdowns, staff, equipment, routes, clients, sites, materials, estimates, work orders, dispatches, AR/AP, and chart-of-accounts structures.
+- HSE is not a side module; it is a parallel first-class workflow that must work standalone and linked.
+
 
 Last synchronized: April 8, 2026
 
@@ -78,3 +84,19 @@ These screens should be mobile-friendly for quick field edits and desktop-strong
 
 ## April 8, 2026 project brain update
 Treat the product as a landscaping / project-work / subcontract dispatch platform with a first-class HSE app inside it. The HSE side must always be able to run on its own for unscheduled work, but Admin should still be able to connect safety records back to routes, sites, work orders, dispatches, equipment, and accounting later.
+
+### OSHA / HSE outstanding interfaces to keep visible
+- linked HSE packet manager for work orders and subcontract dispatches
+- heat / weather exposure workflow for landscaping and project crews
+- chemical handling / SDS / pesticide-use linkage where applicable
+- traffic / public-interaction controls for parks, roadsides, and municipal work
+- equipment-specific JSA / inspection linkage
+- field signoff and closeout flow that can work both standalone and attached to a formal job
+
+### Mobile-friendly direction to keep pushing
+- large tap targets for supervisors and crew leads in the field
+- condensed line-entry forms with sticky save actions
+- camera-first attachments and scan-to-link for receipts / equipment / HSE packets
+- offline-safe draft saving for route stops, line items, and site safety checks
+- simplified worker-facing packet progress views that avoid desktop-only layouts
+

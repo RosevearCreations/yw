@@ -1,4 +1,4 @@
-> Last synchronized: April 8, 2026. Reviewed during the Admin backbone manager, HSE/OSHA hub, and operations/accounting UI pass.
+> Last synchronized: April 9, 2026. Reviewed during the deeper workflow polish pass for estimate/work-order lines, route stops, AR/AP payment posting, material receiving, linked HSE packets, and admin-manager alignment.
 
 ## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass
 - Refreshed the Markdown set to move the product direction from schema-only groundwork into the next implementation phase: admin UI managers for estimates/work orders, materials/units, routes/service areas, subcontract dispatch, and AR/AP + chart of accounts.
@@ -11,6 +11,12 @@
 - Rewrote the roadmap, gaps/risk docs, project-state docs, and database docs so the next build phase is clearly focused on the digital admin/operations/accounting backbone.
 
 # Changelog
+
+## 2026-04-09 deeper workflow polish preparation pass
+- Added migration `062_deeper_workflow_polish_admin_foundation.sql` for material receipts, material receipt lines, and linked HSE packets.
+- Extended the Admin backend and selectors toward route stops, estimate/work-order lines, AR/AP payments, material receiving, and linked HSE packets.
+- Updated the documentation set to describe why OSHA- and IRS-aligned operations/accounting + HSE linkage is the right next direction.
+
 
 Last synchronized: April 8, 2026
 
