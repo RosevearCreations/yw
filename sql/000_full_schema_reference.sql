@@ -1,5 +1,5 @@
--- Last synchronized: April 8, 2026. Reviewed during the landscaping/construction/mobile/admin-ui pathway documentation pass.
--- Current reference includes migrations through 061_estimates_work_orders_routes_materials_and_gl_foundation.sql and documents the next implementation direction for admin managers on estimates/work orders, materials/units, routes/service areas, subcontract dispatch, and AR/AP + chart-of-accounts.
+-- Last synchronized: April 8, 2026. Reviewed during the Admin backbone manager, HSE/OSHA hub, and operations/accounting UI pass.
+-- Current reference includes migrations through 061_estimates_work_orders_routes_materials_and_gl_foundation.sql (adaptive legacy-ID version) and documents the next implementation direction for Admin managers on estimates/work orders, materials/units, routes/service areas, subcontract dispatch, and AR/AP + chart-of-accounts.
 
 create extension if not exists pgcrypto;
 
@@ -628,6 +628,7 @@ left join public.accounting_entries ae
   on ae.source_type = 'sales_order'
  and ae.source_id = so.id;
 -- 061_estimates_work_orders_routes_materials_and_gl_foundation.sql
+-- Note: the runnable migration file is adaptive and should be used on live databases so legacy jobs/sites foreign keys match the actual existing ID types.
 -- Landscaping / project-work / subcontract dispatch / accounting foundation
 
 create table if not exists public.units_of_measure (

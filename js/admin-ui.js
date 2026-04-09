@@ -36,9 +36,25 @@
       users: [],
       sites: [],
       assignments: [],
-      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [] },
+      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], workOrders: [], subcontractClients: [], subcontractDispatches: [], glAccounts: [], vendors: [], arInvoices: [], apBills: [] },
       salesOrders: [],
       accountingEntries: [],
+      serviceAreas: [],
+      routes: [],
+      clients: [],
+      clientSites: [],
+      unitsOfMeasure: [],
+      costCodes: [],
+      materialsCatalog: [],
+      equipmentMaster: [],
+      estimates: [],
+      workOrders: [],
+      subcontractClients: [],
+      subcontractDispatches: [],
+      chartOfAccounts: [],
+      apVendors: [],
+      arInvoices: [],
+      apBills: [],
       smokeChecks: []
     };
 
@@ -340,6 +356,81 @@
         <div class="admin-panel-block" style="margin-top:16px;">
           <div class="section-heading">
             <div>
+              <h3 style="margin:0;">HSE / OSHA Operations Hub</h3>
+              <p class="section-subtitle">Primary safety interface for standalone jobs and linked operations work. Use these controls to move between core HSE workflows while the landscaping/construction backbone grows around them.</p>
+            </div>
+          </div>
+          <div class="admin-hub-grid">
+            <button class="admin-hub-card" type="button" data-admin-route="toolbox"><strong>Toolbox Talk</strong><span>Daily briefings, hazards, attendance, and work-start signoff.</span><em>Live</em></button>
+            <button class="admin-hub-card" type="button" data-admin-route="ppe"><strong>PPE Check</strong><span>Verify required PPE before task start, dispatch, or visitor entry.</span><em>Live</em></button>
+            <button class="admin-hub-card" type="button" data-admin-route="firstaid"><strong>First Aid Kit</strong><span>Track kit status and readiness for crews, parks, splash pads, and public works.</span><em>Live</em></button>
+            <button class="admin-hub-card" type="button" data-admin-route="inspection"><strong>Site Inspection</strong><span>Capture hazards for landscaping, construction, subcontract, and unscheduled work.</span><em>Live</em></button>
+            <button class="admin-hub-card" type="button" data-admin-route="drill"><strong>Emergency Drill</strong><span>Document preparedness checks and emergency-response exercises.</span><em>Live</em></button>
+            <button class="admin-hub-card" type="button" data-admin-route="logbook"><strong>Logbook / Review</strong><span>Review safety records, approvals, images, and linked field history.</span><em>Stabilized</em></button>
+            <div class="admin-hub-card static"><strong>Outstanding OSHA Interfaces</strong><span>Equipment/JSA linkage, dispatch-specific HSE packet, heat/weather workflow, chemical handling, traffic/public interaction, and linked safety closeout for work orders.</span><em>Next</em></div>
+            <div class="admin-hub-card static"><strong>Primary Interface Direction</strong><span>Keep HSE standalone-capable, but let Admin connect it to sites, work orders, routes, equipment, dispatches, and subcontract work whenever a formal project exists.</span><em>Roadmap</em></div>
+          </div>
+        </div>
+
+        <div class="admin-panel-block" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
+              <h3 style="margin:0;">Operations and Accounting Backbone Manager</h3>
+              <p class="section-subtitle">Use the new operations/accounting tables end to end: estimates, work orders, materials, units, routes, service areas, subcontract dispatch, AR/AP, and the chart of accounts.</p>
+            </div>
+          </div>
+          <div class="grid">
+            <label>Manager
+              <select id="ad_backbone_entity">
+                <optgroup label="Reference Data">
+                  <option value="unit_of_measure">Units of Measure</option>
+                  <option value="cost_code">Cost Codes</option>
+                  <option value="service_area">Service Areas</option>
+                  <option value="route">Routes</option>
+                </optgroup>
+                <optgroup label="Operations Master Data">
+                  <option value="client">Clients</option>
+                  <option value="client_site">Client Sites</option>
+                  <option value="material">Materials Catalog</option>
+                  <option value="equipment_master">Equipment Master</option>
+                </optgroup>
+                <optgroup label="Estimates and Work Orders">
+                  <option value="estimate">Estimates</option>
+                  <option value="work_order">Work Orders</option>
+                </optgroup>
+                <optgroup label="Subcontract Dispatch">
+                  <option value="subcontract_client">Subcontract Clients</option>
+                  <option value="subcontract_dispatch">Subcontract Dispatches</option>
+                </optgroup>
+                <optgroup label="Accounting Backbone">
+                  <option value="gl_account">Chart of Accounts</option>
+                  <option value="ap_vendor">Vendors</option>
+                  <option value="ar_invoice">AR Invoices</option>
+                  <option value="ap_bill">AP Bills</option>
+                </optgroup>
+              </select>
+            </label>
+            <label>Selected Record
+              <select id="ad_backbone_item_id"></select>
+            </label>
+          </div>
+          <div id="ad_backbone_fields" class="grid" style="margin-top:12px;"></div>
+          <div class="form-footer" style="margin-top:12px;">
+            <button id="ad_backbone_create" class="secondary" type="button">Create Record</button>
+            <button id="ad_backbone_save" class="secondary" type="button">Save Record</button>
+            <button id="ad_backbone_delete" class="secondary" type="button">Delete Record</button>
+          </div>
+          <div class="table-scroll" style="margin-top:14px;">
+            <table id="ad_backbone_table">
+              <thead><tr id="ad_backbone_table_head"></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="admin-panel-block" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
               <h3 style="margin:0;">Deploy Smoke Check</h3>
               <p class="section-subtitle">Check shell files, runtime config reachability, diagnostics state, startup timing, and bootstrap endpoints.</p>
             </div>
@@ -498,6 +589,14 @@
         catalogSaveBtn: document.getElementById('ad_catalog_save'),
         catalogDeleteBtn: document.getElementById('ad_catalog_delete'),
         catalogBody: document.querySelector('#ad_catalog_table tbody'),
+        backboneEntity: document.getElementById('ad_backbone_entity'),
+        backboneItemId: document.getElementById('ad_backbone_item_id'),
+        backboneFields: document.getElementById('ad_backbone_fields'),
+        backboneCreateBtn: document.getElementById('ad_backbone_create'),
+        backboneSaveBtn: document.getElementById('ad_backbone_save'),
+        backboneDeleteBtn: document.getElementById('ad_backbone_delete'),
+        backboneHead: document.getElementById('ad_backbone_table_head'),
+        backboneBody: document.querySelector('#ad_backbone_table tbody'),
         sitesCount: document.getElementById('ad_sites_count'),
         assignmentsCount: document.getElementById('ad_assignments_count'),
         notificationsCount: document.getElementById('ad_notifications_count'),
@@ -1058,6 +1157,22 @@
         state.assignments = Array.isArray(resp?.assignments) ? resp.assignments : [];
         state.salesOrders = Array.isArray(resp?.sales_orders) ? resp.sales_orders : [];
         state.accountingEntries = Array.isArray(resp?.accounting_entries) ? resp.accounting_entries : [];
+        state.serviceAreas = Array.isArray(resp?.service_areas) ? resp.service_areas : [];
+        state.routes = Array.isArray(resp?.routes) ? resp.routes : [];
+        state.clients = Array.isArray(resp?.clients) ? resp.clients : [];
+        state.clientSites = Array.isArray(resp?.client_sites) ? resp.client_sites : [];
+        state.unitsOfMeasure = Array.isArray(resp?.units_of_measure) ? resp.units_of_measure : [];
+        state.costCodes = Array.isArray(resp?.cost_codes) ? resp.cost_codes : [];
+        state.materialsCatalog = Array.isArray(resp?.materials_catalog) ? resp.materials_catalog : [];
+        state.equipmentMaster = Array.isArray(resp?.equipment_master) ? resp.equipment_master : [];
+        state.estimates = Array.isArray(resp?.estimates) ? resp.estimates : [];
+        state.workOrders = Array.isArray(resp?.work_orders) ? resp.work_orders : [];
+        state.subcontractClients = Array.isArray(resp?.subcontract_clients) ? resp.subcontract_clients : [];
+        state.subcontractDispatches = Array.isArray(resp?.subcontract_dispatches) ? resp.subcontract_dispatches : [];
+        state.chartOfAccounts = Array.isArray(resp?.chart_of_accounts) ? resp.chart_of_accounts : [];
+        state.apVendors = Array.isArray(resp?.ap_vendors) ? resp.ap_vendors : [];
+        state.arInvoices = Array.isArray(resp?.ar_invoices) ? resp.ar_invoices : [];
+        state.apBills = Array.isArray(resp?.ap_bills) ? resp.ap_bills : [];
         state.counts = {
           users: state.users.length,
           sites: Array.isArray(resp?.sites) ? resp.sites.length : 0,
@@ -1075,6 +1190,8 @@
         renderProfileOptions();
         renderAssignmentWorkbench();
         renderCatalogManager();
+        renderBackboneTable();
+        fillBackboneForm(getSelectedBackboneRecord());
         renderNotifications();
         renderOrders();
         await refreshSelectors();
@@ -1094,7 +1211,23 @@
       state.notifications = [];
       state.sites = [];
       state.assignments = [];
-      state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [] };
+      state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], workOrders: [], subcontractClients: [], subcontractDispatches: [], glAccounts: [], vendors: [], arInvoices: [], apBills: [] };
+      state.serviceAreas = [];
+      state.routes = [];
+      state.clients = [];
+      state.clientSites = [];
+      state.unitsOfMeasure = [];
+      state.costCodes = [];
+      state.materialsCatalog = [];
+      state.equipmentMaster = [];
+      state.estimates = [];
+      state.workOrders = [];
+      state.subcontractClients = [];
+      state.subcontractDispatches = [];
+      state.chartOfAccounts = [];
+      state.apVendors = [];
+      state.arInvoices = [];
+      state.apBills = [];
       renderNotifications();
       const e = els();
       if (e.usersCount) e.usersCount.textContent = '0';
@@ -1104,6 +1237,8 @@
       if (e.ordersCount) e.ordersCount.textContent = '0';
       hydratePreview('', {});
       renderOrders();
+      renderBackboneTable();
+      fillBackboneForm(null);
       renderSmokeChecks({ checks: [] });
     }
 
@@ -1130,6 +1265,261 @@
       const normalized = value == null ? '' : String(value);
       el.value = normalized;
       if (el.value !== normalized) el.value = '';
+    }
+
+
+
+    const BACKBONE_CONFIG = {
+      unit_of_measure: { label: 'Units of Measure', rowsKey: 'unitsOfMeasure', valueKey: 'id', labelField: 'name', fields: [
+        { name: 'code', label: 'Code', type: 'text', required: true },
+        { name: 'name', label: 'Name', type: 'text', required: true },
+        { name: 'category', label: 'Category', type: 'text' },
+        { name: 'sort_order', label: 'Sort Order', type: 'number' },
+        { name: 'is_active', label: 'Active', type: 'checkbox' }
+      ], columns: [['code','Code'], ['name','Name'], ['category','Category'], ['is_active','Active']] },
+      cost_code: { label: 'Cost Codes', rowsKey:'costCodes', valueKey:'id', labelField:'name', fields: [
+        { name:'code', label:'Code', type:'text', required:true }, { name:'name', label:'Name', type:'text', required:true },
+        { name:'category', label:'Category', type:'text' }, { name:'description', label:'Description', type:'textarea' }, { name:'is_active', label:'Active', type:'checkbox' }
+      ], columns:[['code','Code'],['name','Name'],['category','Category'],['is_active','Active']] },
+      service_area: { label:'Service Areas', rowsKey:'serviceAreas', valueKey:'id', labelField:'name', fields:[
+        { name:'area_code', label:'Area Code', type:'text' }, { name:'name', label:'Name', type:'text', required:true },
+        { name:'region', label:'Region', type:'text' }, { name:'notes', label:'Notes', type:'textarea' }, { name:'is_active', label:'Active', type:'checkbox' }
+      ], columns:[['area_code','Code'],['name','Name'],['region','Region'],['is_active','Active']] },
+      route: { label:'Routes', rowsKey:'routes', valueKey:'id', labelField:'name', fields:[
+        { name:'route_code', label:'Route Code', type:'text' }, { name:'name', label:'Name', type:'text', required:true },
+        { name:'service_area_id', label:'Service Area', type:'select', source:'serviceAreas' },
+        { name:'route_type', label:'Route Type', type:'select', options:[['recurring','Recurring'],['project','Project'],['seasonal','Seasonal'],['dispatch','Dispatch']] },
+        { name:'day_of_week', label:'Day of Week (0-6)', type:'number' }, { name:'notes', label:'Notes', type:'textarea' }, { name:'is_active', label:'Active', type:'checkbox' }
+      ], columns:[['route_code','Code'],['name','Name'],['route_type','Type'],['day_of_week','Day']] },
+      client: { label:'Clients', rowsKey:'clients', valueKey:'id', labelField:'legal_name', fields:[
+        { name:'client_code', label:'Client Code', type:'text' }, { name:'legal_name', label:'Legal Name', type:'text', required:true },
+        { name:'display_name', label:'Display Name', type:'text' }, { name:'client_type', label:'Client Type', type:'select', options:[['customer','Customer'],['general_contractor','General Contractor'],['municipal','Municipal'],['subcontract_partner','Subcontract Partner']] },
+        { name:'billing_email', label:'Billing Email', type:'email' }, { name:'phone', label:'Phone', type:'text' },
+        { name:'address_line1', label:'Address Line 1', type:'text' }, { name:'city', label:'City', type:'text' }, { name:'province', label:'Province', type:'text' },
+        { name:'postal_code', label:'Postal Code', type:'text' }, { name:'payment_terms_days', label:'Payment Terms (days)', type:'number' },
+        { name:'notes', label:'Notes', type:'textarea' }, { name:'is_active', label:'Active', type:'checkbox' }
+      ], columns:[['client_code','Code'],['legal_name','Client'],['client_type','Type'],['is_active','Active']] },
+      client_site: { label:'Client Sites', rowsKey:'clientSites', valueKey:'id', labelField:'site_name', fields:[
+        { name:'client_id', label:'Client', type:'select', source:'clients', required:true }, { name:'legacy_site_id', label:'Linked Legacy Site', type:'select', source:'sites' },
+        { name:'site_code', label:'Site Code', type:'text' }, { name:'site_name', label:'Site Name', type:'text', required:true },
+        { name:'service_address', label:'Service Address', type:'text' }, { name:'city', label:'City', type:'text' }, { name:'province', label:'Province', type:'text' },
+        { name:'postal_code', label:'Postal Code', type:'text' }, { name:'access_notes', label:'Access Notes', type:'textarea' }, { name:'hazard_notes', label:'Hazard Notes', type:'textarea' }, { name:'is_active', label:'Active', type:'checkbox' }
+      ], columns:[['site_code','Code'],['site_name','Site'],['city','City'],['is_active','Active']] },
+      material: { label:'Materials Catalog', rowsKey:'materialsCatalog', valueKey:'id', labelField:'item_name', fields:[
+        { name:'sku', label:'SKU', type:'text' }, { name:'item_name', label:'Item Name', type:'text', required:true }, { name:'material_category', label:'Category', type:'text' },
+        { name:'unit_id', label:'Unit', type:'select', source:'units' }, { name:'default_unit_cost', label:'Unit Cost', type:'number' }, { name:'default_bill_rate', label:'Bill Rate', type:'number' },
+        { name:'reorder_point', label:'Reorder Point', type:'number' }, { name:'reorder_quantity', label:'Reorder Quantity', type:'number' }, { name:'taxable', label:'Taxable', type:'checkbox' },
+        { name:'inventory_tracked', label:'Inventory Tracked', type:'checkbox' }, { name:'notes', label:'Notes', type:'textarea' }, { name:'is_active', label:'Active', type:'checkbox' }
+      ], columns:[['sku','SKU'],['item_name','Item'],['material_category','Category'],['default_unit_cost','Cost']] },
+      equipment_master: { label:'Equipment Master', rowsKey:'equipmentMaster', valueKey:'id', labelField:'item_name', fields:[
+        { name:'equipment_code', label:'Equipment Code', type:'text' }, { name:'item_name', label:'Item Name', type:'text', required:true }, { name:'equipment_category', label:'Category', type:'text' },
+        { name:'manufacturer', label:'Manufacturer', type:'text' }, { name:'model', label:'Model', type:'text' }, { name:'ownership_type', label:'Ownership', type:'select', options:[['owned','Owned'],['rented','Rented'],['leased','Leased'],['subcontract','Subcontract']] },
+        { name:'bill_rate_hourly', label:'Bill Rate Hourly', type:'number' }, { name:'cost_rate_hourly', label:'Cost Rate Hourly', type:'number' }, { name:'default_operator_required', label:'Operator Required', type:'checkbox' },
+        { name:'notes', label:'Notes', type:'textarea' }, { name:'is_active', label:'Active', type:'checkbox' }
+      ], columns:[['equipment_code','Code'],['item_name','Equipment'],['equipment_category','Category'],['ownership_type','Ownership']] },
+      estimate: { label:'Estimates', rowsKey:'estimates', valueKey:'id', labelField:'estimate_number', fields:[
+        { name:'estimate_number', label:'Estimate Number', type:'text', required:true }, { name:'client_id', label:'Client', type:'select', source:'clients' }, { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' },
+        { name:'estimate_type', label:'Estimate Type', type:'select', source:'jobTypes', optionValueKey:'name' }, { name:'status', label:'Status', type:'select', options:[['draft','Draft'],['sent','Sent'],['approved','Approved'],['declined','Declined']] },
+        { name:'valid_until', label:'Valid Until', type:'date' }, { name:'subtotal', label:'Subtotal', type:'number' }, { name:'tax_total', label:'Tax Total', type:'number' }, { name:'total_amount', label:'Total Amount', type:'number' },
+        { name:'scope_notes', label:'Scope Notes', type:'textarea' }, { name:'terms_notes', label:'Terms Notes', type:'textarea' }
+      ], columns:[['estimate_number','Estimate'],['estimate_type','Type'],['status','Status'],['total_amount','Total']] },
+      work_order: { label:'Work Orders', rowsKey:'workOrders', valueKey:'id', labelField:'work_order_number', fields:[
+        { name:'work_order_number', label:'Work Order Number', type:'text', required:true }, { name:'estimate_id', label:'Estimate', type:'select', source:'estimates' },
+        { name:'client_id', label:'Client', type:'select', source:'clients' }, { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' }, { name:'legacy_job_id', label:'Linked Legacy Job ID', type:'number' },
+        { name:'work_type', label:'Work Type', type:'select', source:'jobTypes', optionValueKey:'name' }, { name:'status', label:'Status', type:'select', options:[['draft','Draft'],['scheduled','Scheduled'],['in_progress','In Progress'],['completed','Completed'],['closed','Closed']] },
+        { name:'scheduled_start', label:'Scheduled Start', type:'datetime-local' }, { name:'scheduled_end', label:'Scheduled End', type:'datetime-local' },
+        { name:'service_area_id', label:'Service Area', type:'select', source:'serviceAreas' }, { name:'route_id', label:'Route', type:'select', source:'routes' }, { name:'supervisor_profile_id', label:'Supervisor', type:'select', source:'supervisorProfiles' },
+        { name:'subtotal', label:'Subtotal', type:'number' }, { name:'tax_total', label:'Tax Total', type:'number' }, { name:'total_amount', label:'Total Amount', type:'number' },
+        { name:'crew_notes', label:'Crew Notes', type:'textarea' }, { name:'customer_notes', label:'Customer Notes', type:'textarea' }, { name:'safety_notes', label:'Safety Notes', type:'textarea' }
+      ], columns:[['work_order_number','Work Order'],['work_type','Type'],['status','Status'],['total_amount','Total']] },
+      subcontract_client: { label:'Subcontract Clients', rowsKey:'subcontractClients', valueKey:'id', labelField:'company_name', fields:[
+        { name:'client_id', label:'Linked Client', type:'select', source:'clients' }, { name:'subcontract_code', label:'Code', type:'text' }, { name:'company_name', label:'Company Name', type:'text', required:true },
+        { name:'contact_name', label:'Contact Name', type:'text' }, { name:'contact_email', label:'Contact Email', type:'email' }, { name:'contact_phone', label:'Contact Phone', type:'text' },
+        { name:'billing_basis', label:'Billing Basis', type:'select', options:[['hourly','Hourly'],['daily','Daily'],['unit','Unit'],['fixed','Fixed']] }, { name:'rate_notes', label:'Rate Notes', type:'textarea' }, { name:'is_active', label:'Active', type:'checkbox' }
+      ], columns:[['subcontract_code','Code'],['company_name','Company'],['billing_basis','Billing'],['is_active','Active']] },
+      subcontract_dispatch: { label:'Subcontract Dispatches', rowsKey:'subcontractDispatches', valueKey:'id', labelField:'dispatch_number', fields:[
+        { name:'dispatch_number', label:'Dispatch Number', type:'text', required:true }, { name:'subcontract_client_id', label:'Subcontract Client', type:'select', source:'subcontractClients', required:true },
+        { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' }, { name:'work_order_id', label:'Work Order', type:'select', source:'workOrders' }, { name:'operator_profile_id', label:'Operator', type:'select', source:'profiles' },
+        { name:'equipment_master_id', label:'Equipment', type:'select', source:'equipmentMaster' }, { name:'dispatch_status', label:'Status', type:'select', options:[['draft','Draft'],['scheduled','Scheduled'],['in_progress','In Progress'],['completed','Completed'],['invoiced','Invoiced']] },
+        { name:'dispatch_start', label:'Dispatch Start', type:'datetime-local' }, { name:'dispatch_end', label:'Dispatch End', type:'datetime-local' }, { name:'billing_basis', label:'Billing Basis', type:'select', options:[['hourly','Hourly'],['daily','Daily'],['unit','Unit'],['fixed','Fixed']] },
+        { name:'bill_rate', label:'Bill Rate', type:'number' }, { name:'cost_rate', label:'Cost Rate', type:'number' }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['dispatch_number','Dispatch'],['dispatch_status','Status'],['billing_basis','Billing'],['bill_rate','Bill Rate']] },
+      gl_account: { label:'Chart of Accounts', rowsKey:'chartOfAccounts', valueKey:'id', labelField:'account_name', fields:[
+        { name:'account_number', label:'Account Number', type:'text', required:true }, { name:'account_name', label:'Account Name', type:'text', required:true }, { name:'account_type', label:'Account Type', type:'select', options:[['asset','Asset'],['liability','Liability'],['equity','Equity'],['revenue','Revenue'],['expense','Expense']] },
+        { name:'parent_account_id', label:'Parent Account', type:'select', source:'glAccounts' }, { name:'system_code', label:'System Code', type:'text' }, { name:'is_active', label:'Active', type:'checkbox' }
+      ], columns:[['account_number','No.'],['account_name','Account'],['account_type','Type'],['system_code','Code']] },
+      ap_vendor: { label:'Vendors', rowsKey:'apVendors', valueKey:'id', labelField:'legal_name', fields:[
+        { name:'vendor_code', label:'Vendor Code', type:'text' }, { name:'legal_name', label:'Legal Name', type:'text', required:true }, { name:'display_name', label:'Display Name', type:'text' },
+        { name:'contact_name', label:'Contact Name', type:'text' }, { name:'contact_email', label:'Contact Email', type:'email' }, { name:'contact_phone', label:'Contact Phone', type:'text' }, { name:'payment_terms_days', label:'Terms (days)', type:'number' },
+        { name:'tax_registration_number', label:'Tax Registration', type:'text' }, { name:'notes', label:'Notes', type:'textarea' }, { name:'is_active', label:'Active', type:'checkbox' }
+      ], columns:[['vendor_code','Code'],['legal_name','Vendor'],['contact_name','Contact'],['is_active','Active']] },
+      ar_invoice: { label:'AR Invoices', rowsKey:'arInvoices', valueKey:'id', labelField:'invoice_number', fields:[
+        { name:'invoice_number', label:'Invoice Number', type:'text', required:true }, { name:'client_id', label:'Client', type:'select', source:'clients', required:true }, { name:'work_order_id', label:'Work Order', type:'select', source:'workOrders' },
+        { name:'dispatch_id', label:'Dispatch', type:'select', source:'subcontractDispatches' }, { name:'invoice_status', label:'Status', type:'select', options:[['draft','Draft'],['issued','Issued'],['partial','Partial'],['paid','Paid'],['void','Void']] },
+        { name:'invoice_date', label:'Invoice Date', type:'date' }, { name:'due_date', label:'Due Date', type:'date' }, { name:'subtotal', label:'Subtotal', type:'number' }, { name:'tax_total', label:'Tax Total', type:'number' }, { name:'total_amount', label:'Total Amount', type:'number' }, { name:'balance_due', label:'Balance Due', type:'number' }
+      ], columns:[['invoice_number','Invoice'],['invoice_status','Status'],['invoice_date','Date'],['balance_due','Balance']] },
+      ap_bill: { label:'AP Bills', rowsKey:'apBills', valueKey:'id', labelField:'bill_number', fields:[
+        { name:'bill_number', label:'Bill Number', type:'text', required:true }, { name:'vendor_id', label:'Vendor', type:'select', source:'vendors', required:true }, { name:'bill_status', label:'Status', type:'select', options:[['draft','Draft'],['received','Received'],['scheduled','Scheduled'],['paid','Paid'],['void','Void']] },
+        { name:'bill_date', label:'Bill Date', type:'date' }, { name:'due_date', label:'Due Date', type:'date' }, { name:'subtotal', label:'Subtotal', type:'number' }, { name:'tax_total', label:'Tax Total', type:'number' }, { name:'total_amount', label:'Total Amount', type:'number' }, { name:'balance_due', label:'Balance Due', type:'number' }
+      ], columns:[['bill_number','Bill'],['bill_status','Status'],['bill_date','Date'],['balance_due','Balance']] }
+    };
+
+    function getBackboneRows(entity) {
+      const map = { unit_of_measure: state.unitsOfMeasure || [], cost_code: state.costCodes || [], service_area: state.serviceAreas || [], route: state.routes || [], client: state.clients || [], client_site: state.clientSites || [], material: state.materialsCatalog || [], equipment_master: state.equipmentMaster || [], estimate: state.estimates || [], work_order: state.workOrders || [], subcontract_client: state.subcontractClients || [], subcontract_dispatch: state.subcontractDispatches || [], gl_account: state.chartOfAccounts || [], ap_vendor: state.apVendors || [], ar_invoice: state.arInvoices || [], ap_bill: state.apBills || [] };
+      return Array.isArray(map[entity]) ? map[entity] : [];
+    }
+
+    function getBackboneOptionRows(source) {
+      const profiles = Array.isArray(state.selectors.profiles) ? state.selectors.profiles : state.users || [];
+      const map = {
+        profiles,
+        supervisorProfiles: profiles.filter((row) => ['supervisor','admin','hse','job_admin','site_leader'].includes(String(row.role || row.staff_tier || '').toLowerCase())),
+        sites: state.selectors.sites || state.sites || [],
+        units: state.selectors.units || state.unitsOfMeasure || [],
+        serviceAreas: state.selectors.serviceAreas || state.serviceAreas || [],
+        routes: state.selectors.routes || state.routes || [],
+        clients: state.selectors.clients || state.clients || [],
+        clientSites: state.selectors.clientSites || state.clientSites || [],
+        materials: state.selectors.materials || state.materialsCatalog || [],
+        equipmentMaster: state.selectors.equipmentMaster || state.equipmentMaster || [],
+        estimates: state.selectors.estimates || state.estimates || [],
+        workOrders: state.selectors.workOrders || state.workOrders || [],
+        subcontractClients: state.selectors.subcontractClients || state.subcontractClients || [],
+        subcontractDispatches: state.selectors.subcontractDispatches || state.subcontractDispatches || [],
+        glAccounts: state.selectors.glAccounts || state.chartOfAccounts || [],
+        vendors: state.selectors.vendors || state.apVendors || [],
+        jobTypes: state.selectors.jobTypes || []
+      };
+      return Array.isArray(map[source]) ? map[source] : [];
+    }
+
+    function getBackboneOptionLabel(source, row) {
+      if (!row) return '';
+      if (source === 'profiles' || source === 'supervisorProfiles') return `${row.full_name || row.email || row.id}${row.role ? ` (${row.role})` : ''}`;
+      if (source === 'sites') return `${row.site_code || ''}${row.site_name ? ` - ${row.site_name}` : ''}`;
+      if (source === 'units') return `${row.code || ''}${row.name ? ` - ${row.name}` : ''}`;
+      if (source === 'serviceAreas') return `${row.area_code || ''}${row.name ? ` - ${row.name}` : ''}`;
+      if (source === 'routes') return `${row.route_code || ''}${row.name ? ` - ${row.name}` : ''}`;
+      if (source === 'clients') return row.display_name || row.legal_name || row.client_code || row.id;
+      if (source === 'clientSites') return row.site_name || row.site_code || row.id;
+      if (source === 'materials') return row.item_name || row.sku || row.id;
+      if (source === 'equipmentMaster') return row.item_name || row.equipment_code || row.id;
+      if (source === 'estimates') return row.estimate_number || row.id;
+      if (source === 'workOrders') return row.work_order_number || row.id;
+      if (source === 'subcontractClients') return row.company_name || row.subcontract_code || row.id;
+      if (source === 'subcontractDispatches') return row.dispatch_number || row.id;
+      if (source === 'glAccounts') return `${row.account_number || ''} - ${row.account_name || row.id}`;
+      if (source === 'vendors') return row.display_name || row.legal_name || row.vendor_code || row.id;
+      if (source === 'jobTypes') return row.name || row.id;
+      return row.name || row.id || '';
+    }
+
+    function formatBackboneValue(field, row) {
+      const value = row?.[field.name];
+      if (field.type === 'checkbox') return !!value;
+      if (field.type === 'date' && value) return String(value).slice(0, 10);
+      if (field.type === 'datetime-local' && value) return String(value).replace(' ', 'T').slice(0, 16);
+      return value == null ? '' : String(value);
+    }
+
+    function renderBackboneFields(entity, row = null) {
+      const e = els();
+      const cfg = BACKBONE_CONFIG[entity];
+      if (!e.backboneFields || !cfg) return;
+      e.backboneFields.innerHTML = cfg.fields.map((field) => {
+        const inputId = `ad_bb_${field.name}`;
+        const value = formatBackboneValue(field, row);
+        if (field.type === 'textarea') return `<label>${escHtml(field.label)}<textarea id="${escHtml(inputId)}" rows="3">${escHtml(value)}</textarea></label>`;
+        if (field.type === 'checkbox') return `<label style="display:flex;align-items:end;gap:8px;"><input id="${escHtml(inputId)}" type="checkbox" ${value ? 'checked' : ''} /><span>${escHtml(field.label)}</span></label>`;
+        if (field.type === 'select') {
+          const options = Array.isArray(field.options)
+            ? `<option value="">Select ${escHtml(field.label)}</option>` + field.options.map((opt) => `<option value="${escHtml(opt[0])}">${escHtml(opt[1])}</option>`).join('')
+            : optionList(getBackboneOptionRows(field.source), field.optionValueKey || 'id', (item) => getBackboneOptionLabel(field.source, item), `Select ${field.label}`);
+          return `<label>${escHtml(field.label)}<select id="${escHtml(inputId)}">${options}</select></label>`;
+        }
+        return `<label>${escHtml(field.label)}<input id="${escHtml(inputId)}" type="${escHtml(field.type || 'text')}" value="${escHtml(value)}" /></label>`;
+      }).join('');
+      cfg.fields.forEach((field) => {
+        if (field.type === 'select') {
+          const input = document.getElementById(`ad_bb_${field.name}`);
+          if (input) setSelectValue(input, row?.[field.name] || '');
+        }
+      });
+    }
+
+    function fillBackboneForm(row = null) {
+      const e = els();
+      const entity = e.backboneEntity?.value || 'unit_of_measure';
+      if (e.backboneItemId) setSelectValue(e.backboneItemId, row?.id || '');
+      renderBackboneFields(entity, row || null);
+    }
+
+    function renderBackboneTable() {
+      const e = els();
+      const entity = e.backboneEntity?.value || 'unit_of_measure';
+      const cfg = BACKBONE_CONFIG[entity];
+      const rows = getBackboneRows(entity);
+      if (!cfg || !e.backboneBody || !e.backboneHead || !e.backboneItemId) return;
+      e.backboneHead.innerHTML = cfg.columns.map(([, label]) => `<th>${escHtml(label)}</th>`).join('');
+      e.backboneItemId.innerHTML = optionList(rows, cfg.valueKey || 'id', (row) => row[cfg.labelField] || row.id, `Select ${cfg.label}`);
+      e.backboneBody.innerHTML = rows.map((row) => `<tr data-backbone-id="${escHtml(row.id)}">${cfg.columns.map(([key]) => `<td>${escHtml(row[key] == null ? '' : String(row[key]))}</td>`).join('')}</tr>`).join('') || `<tr><td colspan="${cfg.columns.length}" class="muted">No ${escHtml(cfg.label.toLowerCase())} loaded.</td></tr>`;
+    }
+
+    function getSelectedBackboneRecord() {
+      const e = els();
+      const entity = e.backboneEntity?.value || 'unit_of_measure';
+      const rows = getBackboneRows(entity);
+      return rows.find((row) => String(row.id) === String(e.backboneItemId?.value || '')) || null;
+    }
+
+    function collectBackbonePayload() {
+      const e = els();
+      const entity = e.backboneEntity?.value || 'unit_of_measure';
+      const cfg = BACKBONE_CONFIG[entity];
+      const payload = { entity, action: 'update', item_id: e.backboneItemId?.value || '' };
+      cfg.fields.forEach((field) => {
+        const input = document.getElementById(`ad_bb_${field.name}`);
+        if (!input) return;
+        payload[field.name] = field.type === 'checkbox' ? !!input.checked : input.value;
+      });
+      return payload;
+    }
+
+    async function saveBackboneItem(isCreate = false) {
+      const e = els();
+      const entity = e.backboneEntity?.value || 'unit_of_measure';
+      const cfg = BACKBONE_CONFIG[entity];
+      const payload = collectBackbonePayload();
+      payload.action = isCreate ? 'create' : 'update';
+      payload.item_id = e.backboneItemId?.value || '';
+      for (const field of cfg.fields) {
+        if (!field.required) continue;
+        const input = document.getElementById(`ad_bb_${field.name}`);
+        const val = field.type === 'checkbox' ? !!input?.checked : String(input?.value || '').trim();
+        if (!val) throw new Error(`${field.label} is required.`);
+      }
+      const resp = await manageAdminEntity(payload);
+      if (!resp?.ok) throw new Error(resp?.error || `${cfg.label} save failed.`);
+      setSummary(isCreate ? `${cfg.label} record created.` : `${cfg.label} record updated.`);
+      await loadDirectory();
+      await refreshSelectors();
+      fillBackboneForm(resp.record || null);
+      renderBackboneTable();
+    }
+
+    async function deleteBackboneItem() {
+      const e = els();
+      const entity = e.backboneEntity?.value || 'unit_of_measure';
+      const cfg = BACKBONE_CONFIG[entity];
+      const itemId = e.backboneItemId?.value || '';
+      if (!itemId) throw new Error(`Select a ${cfg.label.toLowerCase()} record first.`);
+      const resp = await manageAdminEntity({ entity, action: 'delete', item_id: itemId });
+      if (!resp?.ok) throw new Error(resp?.error || `${cfg.label} delete failed.`);
+      setSummary(`${cfg.label} record deleted.`);
+      await loadDirectory();
+      await refreshSelectors();
+      fillBackboneForm(null);
+      renderBackboneTable();
     }
 
     function renderCatalogManager() {
@@ -1283,7 +1673,23 @@
           staffTiers: Array.isArray(payload?.staff_tiers) ? payload.staff_tiers : [],
           seniorityLevels: Array.isArray(payload?.seniority_levels) ? payload.seniority_levels : [],
           employmentStatuses: Array.isArray(payload?.employment_statuses) ? payload.employment_statuses : [],
-          jobTypes: Array.isArray(payload?.job_types) ? payload.job_types : []
+          jobTypes: Array.isArray(payload?.job_types) ? payload.job_types : [],
+          units: Array.isArray(payload?.units_of_measure) ? payload.units_of_measure : state.unitsOfMeasure,
+          costCodes: Array.isArray(payload?.cost_codes) ? payload.cost_codes : state.costCodes,
+          serviceAreas: Array.isArray(payload?.service_areas) ? payload.service_areas : state.serviceAreas,
+          routes: Array.isArray(payload?.routes) ? payload.routes : state.routes,
+          clients: Array.isArray(payload?.clients) ? payload.clients : state.clients,
+          clientSites: Array.isArray(payload?.client_sites) ? payload.client_sites : state.clientSites,
+          materials: Array.isArray(payload?.materials_catalog) ? payload.materials_catalog : state.materialsCatalog,
+          equipmentMaster: Array.isArray(payload?.equipment_master) ? payload.equipment_master : state.equipmentMaster,
+          estimates: Array.isArray(payload?.estimates) ? payload.estimates : state.estimates,
+          workOrders: Array.isArray(payload?.work_orders) ? payload.work_orders : state.workOrders,
+          subcontractClients: Array.isArray(payload?.subcontract_clients) ? payload.subcontract_clients : state.subcontractClients,
+          subcontractDispatches: Array.isArray(payload?.subcontract_dispatches) ? payload.subcontract_dispatches : state.subcontractDispatches,
+          glAccounts: Array.isArray(payload?.chart_of_accounts) ? payload.chart_of_accounts : state.chartOfAccounts,
+          vendors: Array.isArray(payload?.ap_vendors) ? payload.ap_vendors : state.apVendors,
+          arInvoices: Array.isArray(payload?.ar_invoices) ? payload.ar_invoices : state.arInvoices,
+          apBills: Array.isArray(payload?.ap_bills) ? payload.ap_bills : state.apBills
         };
         const e = els();
         if (e.staffPosition) {
@@ -1313,6 +1719,8 @@
         }
         renderAssignmentWorkbench();
         renderCatalogManager();
+        renderBackboneTable();
+        fillBackboneForm(getSelectedBackboneRecord());
         return true;
       } catch (err) {
         setSummary(String(err?.message || 'Failed to load admin selectors.'), true);
@@ -1516,6 +1924,41 @@
         e.catalogDeleteBtn.dataset.bound = '1';
         e.catalogDeleteBtn.addEventListener('click', () => deleteCatalogItem().catch((err) => setSummary(String(err?.message || err), true)));
       }
+
+      if (e.backboneEntity && e.backboneEntity.dataset.bound !== '1') {
+        e.backboneEntity.dataset.bound = '1';
+        e.backboneEntity.addEventListener('change', () => { renderBackboneTable(); fillBackboneForm(null); });
+      }
+      if (e.backboneItemId && e.backboneItemId.dataset.bound !== '1') {
+        e.backboneItemId.dataset.bound = '1';
+        e.backboneItemId.addEventListener('change', () => fillBackboneForm(getSelectedBackboneRecord()));
+      }
+      if (e.backboneBody && e.backboneBody.dataset.bound !== '1') {
+        e.backboneBody.dataset.bound = '1';
+        e.backboneBody.addEventListener('click', (event) => {
+          const tr = event.target.closest('[data-backbone-id]');
+          if (!tr) return;
+          if (e.backboneItemId) e.backboneItemId.value = tr.getAttribute('data-backbone-id') || '';
+          fillBackboneForm(getSelectedBackboneRecord());
+        });
+      }
+      if (e.backboneCreateBtn && e.backboneCreateBtn.dataset.bound !== '1') {
+        e.backboneCreateBtn.dataset.bound = '1';
+        e.backboneCreateBtn.addEventListener('click', () => saveBackboneItem(true).catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.backboneSaveBtn && e.backboneSaveBtn.dataset.bound !== '1') {
+        e.backboneSaveBtn.dataset.bound = '1';
+        e.backboneSaveBtn.addEventListener('click', () => saveBackboneItem(false).catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.backboneDeleteBtn && e.backboneDeleteBtn.dataset.bound !== '1') {
+        e.backboneDeleteBtn.dataset.bound = '1';
+        e.backboneDeleteBtn.addEventListener('click', () => deleteBackboneItem().catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      document.querySelectorAll('[data-admin-route]').forEach((btn) => {
+        if (btn.dataset.boundRoute === '1') return;
+        btn.dataset.boundRoute = '1';
+        btn.addEventListener('click', () => window.YWIRouter?.showSection?.(btn.getAttribute('data-admin-route') || 'toolbox'));
+      });
       if (e.passwordForm && e.passwordForm.dataset.bound !== '1') {
         e.passwordForm.dataset.bound = '1';
         e.passwordForm.addEventListener('submit', (event) => {

@@ -97,6 +97,36 @@ function getCatalogConfig(catalogType: string) {
   return map[key] || null;
 }
 
+
+function asNumber(value: unknown, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function asNullableNumber(value: unknown) {
+  if (value === null || value === undefined || String(value).trim() === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function asNullableText(value: unknown) {
+  const clean = String(value ?? '').trim();
+  return clean ? clean : null;
+}
+
+function asNullableBool(value: unknown) {
+  return value === undefined ? null : !!value;
+}
+
+function asNullableDate(value: unknown) {
+  const clean = String(value ?? '').trim();
+  return clean ? clean : null;
+}
+
+function asNullableDateTime(value: unknown) {
+  const clean = String(value ?? '').trim();
+  return clean ? clean : null;
+}
 function validateAdminSetPassword(password?: string | null) {
   const clean = String(password || '');
   if (!clean) throw new Error('A new password is required.');
@@ -704,6 +734,523 @@ serve(async (req) => {
       }
       if (action === 'delete') {
         const { error } = await supabase.from(cfg.table).delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+
+
+    if (entity === 'unit_of_measure') {
+      const patch = {
+        code: String(body.code || '').trim().toUpperCase(),
+        name: body.name ?? null,
+        category: body.category ?? null,
+        sort_order: asNumber(body.sort_order, 0),
+        is_active: body.is_active !== false,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.code || !patch.name) return Response.json({ ok:false, error:'code and name are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('units_of_measure').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('units_of_measure').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('units_of_measure').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'cost_code') {
+      const patch = {
+        code: String(body.code || '').trim().toUpperCase(),
+        name: body.name ?? null,
+        category: body.category ?? null,
+        description: body.description ?? null,
+        is_active: body.is_active !== false,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.code || !patch.name) return Response.json({ ok:false, error:'code and name are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('cost_codes').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('cost_codes').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('cost_codes').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'service_area') {
+      const patch = {
+        area_code: asNullableText(body.area_code),
+        name: body.name ?? null,
+        region: body.region ?? null,
+        notes: body.notes ?? null,
+        is_active: body.is_active !== false,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.name) return Response.json({ ok:false, error:'name is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('service_areas').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('service_areas').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('service_areas').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'route') {
+      const patch = {
+        route_code: asNullableText(body.route_code),
+        name: body.name ?? null,
+        service_area_id: asNullableText(body.service_area_id),
+        route_type: body.route_type ?? 'recurring',
+        day_of_week: asNullableNumber(body.day_of_week),
+        notes: body.notes ?? null,
+        is_active: body.is_active !== false,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.name) return Response.json({ ok:false, error:'name is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('routes').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('routes').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('routes').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'client') {
+      const patch = {
+        client_code: asNullableText(body.client_code),
+        legal_name: body.legal_name ?? null,
+        display_name: body.display_name ?? null,
+        client_type: body.client_type ?? 'customer',
+        billing_email: body.billing_email ?? null,
+        phone: body.phone ?? null,
+        address_line1: body.address_line1 ?? null,
+        address_line2: body.address_line2 ?? null,
+        city: body.city ?? null,
+        province: body.province ?? null,
+        postal_code: body.postal_code ?? null,
+        payment_terms_days: asNumber(body.payment_terms_days, 30),
+        tax_registration_number: body.tax_registration_number ?? null,
+        notes: body.notes ?? null,
+        is_active: body.is_active !== false,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.legal_name) return Response.json({ ok:false, error:'legal_name is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('clients').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('clients').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('clients').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'client_site') {
+      const patch = {
+        client_id: asNullableText(body.client_id),
+        legacy_site_id: asNullableText(body.legacy_site_id),
+        site_code: asNullableText(body.site_code),
+        site_name: body.site_name ?? null,
+        service_address: body.service_address ?? null,
+        city: body.city ?? null,
+        province: body.province ?? null,
+        postal_code: body.postal_code ?? null,
+        access_notes: body.access_notes ?? null,
+        hazard_notes: body.hazard_notes ?? null,
+        is_active: body.is_active !== false,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.client_id || !patch.site_name) return Response.json({ ok:false, error:'client_id and site_name are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('client_sites').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('client_sites').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('client_sites').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'material') {
+      const patch = {
+        sku: asNullableText(body.sku),
+        item_name: body.item_name ?? null,
+        material_category: body.material_category ?? null,
+        unit_id: asNullableText(body.unit_id),
+        default_unit_cost: asNumber(body.default_unit_cost, 0),
+        default_bill_rate: asNumber(body.default_bill_rate, 0),
+        taxable: body.taxable !== false,
+        inventory_tracked: body.inventory_tracked !== false,
+        reorder_point: asNullableNumber(body.reorder_point),
+        reorder_quantity: asNullableNumber(body.reorder_quantity),
+        notes: body.notes ?? null,
+        is_active: body.is_active !== false,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.item_name) return Response.json({ ok:false, error:'item_name is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('materials_catalog').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('materials_catalog').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('materials_catalog').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'equipment_master') {
+      const patch = {
+        equipment_code: asNullableText(body.equipment_code),
+        item_name: body.item_name ?? null,
+        equipment_category: body.equipment_category ?? null,
+        manufacturer: body.manufacturer ?? null,
+        model: body.model ?? null,
+        ownership_type: body.ownership_type ?? 'owned',
+        bill_rate_hourly: asNumber(body.bill_rate_hourly, 0),
+        cost_rate_hourly: asNumber(body.cost_rate_hourly, 0),
+        default_operator_required: !!body.default_operator_required,
+        notes: body.notes ?? null,
+        is_active: body.is_active !== false,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.item_name) return Response.json({ ok:false, error:'item_name is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('equipment_master').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('equipment_master').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('equipment_master').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'estimate') {
+      const patch = {
+        estimate_number: body.estimate_number ?? null,
+        client_id: asNullableText(body.client_id),
+        client_site_id: asNullableText(body.client_site_id),
+        estimate_type: body.estimate_type ?? 'landscaping',
+        status: body.status ?? 'draft',
+        valid_until: asNullableDate(body.valid_until),
+        subtotal: asNumber(body.subtotal, 0),
+        tax_total: asNumber(body.tax_total, 0),
+        total_amount: asNumber(body.total_amount, 0),
+        scope_notes: body.scope_notes ?? null,
+        terms_notes: body.terms_notes ?? null,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.estimate_number) return Response.json({ ok:false, error:'estimate_number is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('estimates').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('estimates').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('estimates').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'work_order') {
+      const patch = {
+        work_order_number: body.work_order_number ?? null,
+        estimate_id: asNullableText(body.estimate_id),
+        client_id: asNullableText(body.client_id),
+        client_site_id: asNullableText(body.client_site_id),
+        legacy_job_id: asNullableNumber(body.legacy_job_id),
+        work_type: body.work_type ?? 'service',
+        status: body.status ?? 'draft',
+        scheduled_start: asNullableDateTime(body.scheduled_start),
+        scheduled_end: asNullableDateTime(body.scheduled_end),
+        service_area_id: asNullableText(body.service_area_id),
+        route_id: asNullableText(body.route_id),
+        supervisor_profile_id: asNullableText(body.supervisor_profile_id),
+        crew_notes: body.crew_notes ?? null,
+        customer_notes: body.customer_notes ?? null,
+        safety_notes: body.safety_notes ?? null,
+        subtotal: asNumber(body.subtotal, 0),
+        tax_total: asNumber(body.tax_total, 0),
+        total_amount: asNumber(body.total_amount, 0),
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.work_order_number) return Response.json({ ok:false, error:'work_order_number is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('work_orders').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('work_orders').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('work_orders').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'subcontract_client') {
+      const patch = {
+        client_id: asNullableText(body.client_id),
+        subcontract_code: asNullableText(body.subcontract_code),
+        company_name: body.company_name ?? null,
+        contact_name: body.contact_name ?? null,
+        contact_email: body.contact_email ?? null,
+        contact_phone: body.contact_phone ?? null,
+        billing_basis: body.billing_basis ?? 'hourly',
+        rate_notes: body.rate_notes ?? null,
+        is_active: body.is_active !== false,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.company_name) return Response.json({ ok:false, error:'company_name is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('subcontract_clients').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('subcontract_clients').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('subcontract_clients').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'subcontract_dispatch') {
+      const patch = {
+        dispatch_number: body.dispatch_number ?? null,
+        subcontract_client_id: asNullableText(body.subcontract_client_id),
+        client_site_id: asNullableText(body.client_site_id),
+        work_order_id: asNullableText(body.work_order_id),
+        operator_profile_id: asNullableText(body.operator_profile_id),
+        equipment_master_id: asNullableText(body.equipment_master_id),
+        dispatch_status: body.dispatch_status ?? 'draft',
+        dispatch_start: asNullableDateTime(body.dispatch_start),
+        dispatch_end: asNullableDateTime(body.dispatch_end),
+        billing_basis: body.billing_basis ?? 'hourly',
+        bill_rate: asNumber(body.bill_rate, 0),
+        cost_rate: asNumber(body.cost_rate, 0),
+        notes: body.notes ?? null,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.dispatch_number || !patch.subcontract_client_id) return Response.json({ ok:false, error:'dispatch_number and subcontract_client_id are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('subcontract_dispatches').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('subcontract_dispatches').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('subcontract_dispatches').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'gl_account') {
+      const patch = {
+        account_number: body.account_number ?? null,
+        account_name: body.account_name ?? null,
+        account_type: body.account_type ?? null,
+        parent_account_id: asNullableText(body.parent_account_id),
+        system_code: body.system_code ?? null,
+        is_active: body.is_active !== false,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.account_number || !patch.account_name || !patch.account_type) return Response.json({ ok:false, error:'account_number, account_name, and account_type are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('chart_of_accounts').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('chart_of_accounts').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('chart_of_accounts').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'ap_vendor') {
+      const patch = {
+        vendor_code: asNullableText(body.vendor_code),
+        legal_name: body.legal_name ?? null,
+        display_name: body.display_name ?? null,
+        contact_name: body.contact_name ?? null,
+        contact_email: body.contact_email ?? null,
+        contact_phone: body.contact_phone ?? null,
+        payment_terms_days: asNumber(body.payment_terms_days, 30),
+        tax_registration_number: body.tax_registration_number ?? null,
+        notes: body.notes ?? null,
+        is_active: body.is_active !== false,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.legal_name) return Response.json({ ok:false, error:'legal_name is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('ap_vendors').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('ap_vendors').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('ap_vendors').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'ar_invoice') {
+      const patch = {
+        invoice_number: body.invoice_number ?? null,
+        client_id: asNullableText(body.client_id),
+        work_order_id: asNullableText(body.work_order_id),
+        dispatch_id: asNullableText(body.dispatch_id),
+        invoice_status: body.invoice_status ?? 'draft',
+        invoice_date: asNullableDate(body.invoice_date) || new Date().toISOString().slice(0, 10),
+        due_date: asNullableDate(body.due_date),
+        subtotal: asNumber(body.subtotal, 0),
+        tax_total: asNumber(body.tax_total, 0),
+        total_amount: asNumber(body.total_amount, 0),
+        balance_due: asNumber(body.balance_due, 0),
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.invoice_number || !patch.client_id) return Response.json({ ok:false, error:'invoice_number and client_id are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('ar_invoices').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('ar_invoices').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('ar_invoices').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'ap_bill') {
+      const patch = {
+        bill_number: body.bill_number ?? null,
+        vendor_id: asNullableText(body.vendor_id),
+        bill_status: body.bill_status ?? 'draft',
+        bill_date: asNullableDate(body.bill_date) || new Date().toISOString().slice(0, 10),
+        due_date: asNullableDate(body.due_date),
+        subtotal: asNumber(body.subtotal, 0),
+        tax_total: asNumber(body.tax_total, 0),
+        total_amount: asNumber(body.total_amount, 0),
+        balance_due: asNumber(body.balance_due, 0),
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.bill_number || !patch.vendor_id) return Response.json({ ok:false, error:'bill_number and vendor_id are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('ap_bills').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('ap_bills').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('ap_bills').delete().eq('id', body.item_id);
         if (error) throw error;
         return Response.json({ ok:true }, { headers:corsHeaders });
       }

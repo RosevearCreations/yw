@@ -5,10 +5,6 @@
 
 create extension if not exists pgcrypto;
 
--- =========================================================
--- Core reference tables
--- =========================================================
-
 create table if not exists public.units_of_measure (
   id uuid primary key default gen_random_uuid(),
   code text not null unique,
@@ -111,30 +107,18 @@ create table if not exists public.equipment_master (
   updated_at timestamptz not null default now()
 );
 
--- =========================================================
--- Client sites
--- Adapts legacy_site_id to actual public.sites.id type
--- =========================================================
-
 do $$
 declare
   v_sites_id_type text;
   v_client_sites_exists boolean;
 begin
-  select c.data_type
-  into v_sites_id_type
+  select c.data_type into v_sites_id_type
   from information_schema.columns c
-  where c.table_schema = 'public'
-    and c.table_name = 'sites'
-    and c.column_name = 'id';
+  where c.table_schema = 'public' and c.table_name = 'sites' and c.column_name = 'id';
 
   select exists (
-    select 1
-    from information_schema.tables
-    where table_schema = 'public'
-      and table_name = 'client_sites'
-  )
-  into v_client_sites_exists;
+    select 1 from information_schema.tables where table_schema = 'public' and table_name = 'client_sites'
+  ) into v_client_sites_exists;
 
   if not v_client_sites_exists then
     if v_sites_id_type is null then
@@ -204,7 +188,6 @@ begin
   else
     if v_sites_id_type is not null then
       execute 'alter table public.client_sites drop constraint if exists client_sites_legacy_site_id_fkey';
-
       if v_sites_id_type = 'uuid' then
         begin
           execute 'alter table public.client_sites alter column legacy_site_id type uuid using legacy_site_id::uuid';
@@ -228,10 +211,6 @@ end $$;
 
 create index if not exists idx_client_sites_client_id on public.client_sites(client_id);
 
--- =========================================================
--- Route stops
--- =========================================================
-
 create table if not exists public.route_stops (
   id uuid primary key default gen_random_uuid(),
   route_id uuid not null references public.routes(id) on delete cascade,
@@ -245,10 +224,6 @@ create table if not exists public.route_stops (
   updated_at timestamptz not null default now(),
   unique(route_id, stop_order)
 );
-
--- =========================================================
--- Estimates
--- =========================================================
 
 create table if not exists public.estimates (
   id uuid primary key default gen_random_uuid(),
@@ -287,30 +262,18 @@ create table if not exists public.estimate_lines (
   updated_at timestamptz not null default now()
 );
 
--- =========================================================
--- Work orders
--- Adapts legacy_job_id to actual public.jobs.id type
--- =========================================================
-
 do $$
 declare
   v_jobs_id_type text;
   v_work_orders_exists boolean;
 begin
-  select c.data_type
-  into v_jobs_id_type
+  select c.data_type into v_jobs_id_type
   from information_schema.columns c
-  where c.table_schema = 'public'
-    and c.table_name = 'jobs'
-    and c.column_name = 'id';
+  where c.table_schema = 'public' and c.table_name = 'jobs' and c.column_name = 'id';
 
   select exists (
-    select 1
-    from information_schema.tables
-    where table_schema = 'public'
-      and table_name = 'work_orders'
-  )
-  into v_work_orders_exists;
+    select 1 from information_schema.tables where table_schema = 'public' and table_name = 'work_orders'
+  ) into v_work_orders_exists;
 
   if not v_work_orders_exists then
     if v_jobs_id_type is null then
@@ -398,7 +361,6 @@ begin
   else
     if v_jobs_id_type is not null then
       execute 'alter table public.work_orders drop constraint if exists work_orders_legacy_job_id_fkey';
-
       if v_jobs_id_type = 'uuid' then
         begin
           execute 'alter table public.work_orders alter column legacy_job_id type uuid using legacy_job_id::uuid';
@@ -438,10 +400,6 @@ create table if not exists public.work_order_lines (
   updated_at timestamptz not null default now()
 );
 
--- =========================================================
--- Subcontract dispatch
--- =========================================================
-
 create table if not exists public.subcontract_clients (
   id uuid primary key default gen_random_uuid(),
   client_id uuid references public.clients(id) on delete set null,
@@ -476,10 +434,6 @@ create table if not exists public.subcontract_dispatches (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-
--- =========================================================
--- General ledger / AR / AP
--- =========================================================
 
 create table if not exists public.chart_of_accounts (
   id uuid primary key default gen_random_uuid(),
@@ -601,10 +555,6 @@ create table if not exists public.ap_payments (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
-
--- =========================================================
--- Seed data
--- =========================================================
 
 insert into public.units_of_measure (code, name, category, sort_order)
 values

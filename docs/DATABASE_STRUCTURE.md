@@ -1,3 +1,5 @@
+> Last synchronized: April 8, 2026. Reviewed during the Admin backbone manager, HSE/OSHA hub, and operations/accounting UI pass.
+
 ## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass
 - Refreshed the Markdown set to move the product direction from schema-only groundwork into the next implementation phase: admin UI managers for estimates/work orders, materials/units, routes/service areas, subcontract dispatch, and AR/AP + chart of accounts.
 - Added a clearer rationale for keeping HSE as a first-class standalone module that can later link to jobs, sites, and dispatches for landscaping, project, and subcontract work.
@@ -150,3 +152,15 @@ The HSE side must stay usable as a standalone safety app for unscheduled work. W
 - equipment
 
 This keeps the safety workflows first-class without forcing every ad hoc safety event into a full operations record at creation time.
+
+## April 8, 2026 database direction
+The new operations/accounting tables should now be treated as the long-term backbone for landscaping, project work, construction-style jobs, subcontract dispatch, and digital accounting.
+
+Priority UI mappings:
+- `units_of_measure`, `cost_codes` -> Admin reference data manager
+- `service_areas`, `routes`, `route_stops` -> route/service-area manager
+- `clients`, `client_sites` -> client/site manager
+- `materials_catalog`, `equipment_master` -> material/equipment manager
+- `estimates`, `estimate_lines`, `work_orders`, `work_order_lines` -> estimate/work-order manager
+- `subcontract_clients`, `subcontract_dispatches` -> subcontract dispatch manager
+- `chart_of_accounts`, `ar_invoices`, `ap_vendors`, `ap_bills` -> accounting backbone manager
