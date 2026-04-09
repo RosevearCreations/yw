@@ -1,3 +1,5 @@
+> Last synchronized: April 7, 2026. Reviewed during the estimates/work-orders/routes/materials/subcontract/general-ledger foundation and documentation synchronization pass.
+
 # System Architecture
 
 Last synchronized: April 7, 2026

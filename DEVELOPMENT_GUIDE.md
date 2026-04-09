@@ -1,9 +1,5 @@
-## 2026-04-05d session-integrity and logbook proxy pass
-- Hardened session/profile application so stale async profile or boot responses can no longer overwrite a newer authenticated user after screen changes.
-- Made logout deterministic by clearing local auth identity first, then completing remote sign-out without letting protected screen reloads rehydrate stale user fragments.
-- Added stronger effective-role resolution using profile role, staff tier, and auth metadata so Admin/Supervisor identities are less likely to collapse back to employee semantics when legacy rows still exist.
-- Added a same-origin `/api/logbook/review-list` proxy fallback and updated the frontend logbook loader to fall back there when the direct Supabase Edge Function path hits CORS/preflight failure.
-- Reduced post-logout protected-fetch noise by ignoring profile/reference-data reload failures when logout or session removal is already in progress.
+## 2026-04-07 estimates/work-orders/routes/materials/subcontract/GL foundation pass
+- Added schema foundation migration `061_estimates_work_orders_routes_materials_and_gl_foundation.sql` and updated the development guidance so future passes build the admin/data backbone instead of circling older shell issues.
 
 # Development Guide
 
@@ -11,19 +7,17 @@ Last synchronized: April 7, 2026
 
 ## Purpose of this guide
 
-This guide now reflects the practical direction for the project as a landscaping-led field operations and HSE platform.
-
-Use this guide as the working build instruction set for future passes.
+This guide reflects the practical direction for the project as a landscaping-led field operations, subcontract dispatch, project/construction, and HSE platform with a fully digital admin backbone.
 
 ## Guiding principles
 
-1. **Session integrity before feature growth**
+1. **Session integrity remains non-negotiable**
    - never allow one user's identity, role, or profile to overwrite another's view
    - all protected screens must trust the same resolved actor
 
 2. **Database-first shared data**
-   - staff, dropdowns, equipment, jobs, work order statuses, and materials should live in the database
-   - JSON fallback should be transitional, not permanent, where shared operational data is involved
+   - staff, dropdowns, equipment, jobs, work order statuses, materials, routes, costing categories, receivables, payables, and accounting structures should live in the database
+   - JSON fallback should be transitional only
 
 3. **Mobile-first field usability**
    - forms should work on phones first
@@ -31,33 +25,26 @@ Use this guide as the working build instruction set for future passes.
    - large controls, strong empty states, visible save feedback
 
 4. **Desktop-strong admin depth**
-   - admin users need denser views for staffing, approvals, costing, equipment, and planning
+   - admin users need denser views for staffing, approvals, costing, equipment, planning, and accounting
 
 5. **Standalone HSE support must remain**
-   - safety workflows must still work for unscheduled or ad hoc projects where no full job record exists yet
+   - safety workflows must still work for unscheduled or ad hoc projects where no full job/work-order record exists yet
 
 ## Product tracks
 
-### Track 1 — Session and security completion
-Complete these before calling the admin shell production-ready:
-- deterministic login/logout
-- no stale async identity overwrites
-- consistent role resolution across frontend and Edge Functions
-- tighter validation for profile and staff updates
-- explicit stop of protected fetches during logout/session removal
-
-### Track 2 — Admin backbone completion
+### Track 1 — Admin backbone completion
 Admin should become the source of truth for:
 - staff directory
 - role and employment status
 - supervisor relationships
 - dropdowns and shared catalogs
-- equipment listings
+- equipment listings and equipment master data
 - jobs and work orders
 - route/service references
 - materials and costing categories
+- chart of accounts and accounting setup
 
-### Track 3 — Landscaping operations model
+### Track 2 — Landscaping operations model
 Deepen the model for recurring and seasonal work:
 - estimate
 - approved work order
@@ -67,7 +54,7 @@ Deepen the model for recurring and seasonal work:
 - completion notes and client signoff
 - recurring service templates
 
-### Track 4 — Project / construction jobs
+### Track 3 — Project / construction jobs
 Support one-off and construction-style work:
 - project estimate and scope
 - phases / milestones
@@ -76,70 +63,30 @@ Support one-off and construction-style work:
 - equipment reservations
 - material and subcontract cost tracking
 
-### Track 5 — Subcontract dispatch model
+### Track 4 — Subcontract dispatch model
 Support sending staff/equipment to another company:
-- subcontract client
-- dispatch date/time
-- operator + equipment pairing
-- time entry and billing basis
-- client-specific safety or paperwork
+- subcontract clients
+- dispatch work orders
+- operator/equipment pairing
+- billing basis and rates
+- time, billing, and cost capture
+- linked HSE/jobsite paperwork
 
-### Track 6 — HSE standalone + linked mode
-The HSE app must support both:
-- standalone field use
-- linked use attached to jobs, sites, work orders, or crews
+### Track 5 — Fully digital accounting direction
+The accounting side should eventually cover:
+- receivables
+- payables
+- chart of accounts
+- journal entries and batch posting
+- taxes
+- standard costs
+- project/job costing
+- later financial statements and reconciliations
 
-## Recommended data priorities
-
-Move these from fragmented JSON/fallback use toward shared DB-first structures where not already done:
-- equipment master list
-- staff lists
-- job types
-- work order statuses
-- materials catalog
-- unit types
-- route/service areas
-- recurring visit templates
-- incident / inspection / safety categories
-
-## Admin UI expectations
-
-Admin should eventually include:
-- staff management
-- dropdown manager
-- equipment manager
-- jobs/work orders board
-- approvals queue
-- costing/materials manager
-- client/site manager
-- route planner
-- audit and validation tools
-
-## Mobile feature recommendations
-
-Future mobile-friendly additions should include:
-- camera-first uploads for field evidence
-- quick action cards for start/pause/complete job
-- route-stop check-in/out
-- weather delay / site blocked quick actions
-- barcode or QR equipment lookup later
-- offline draft queue for forms and notes
-- location stamp option for field forms when appropriate
-
-## Validation and security rules
-
-- every protected endpoint must fail clearly with the right auth/role response
-- do not let compatibility fallbacks become the primary access path
-- always prefer one canonical role-aware route over duplicates
-- require visible success/error feedback on save paths
-- do not let partial settings/profile data remain on screen after logout
-
-## Definition of a successful next stage
-
-The next interface stage should only begin when the following are true:
-- no account cross-contamination remains
-- admin role holds across navigation
-- logout works repeatedly
-- standalone HSE use still works
-- admin can reliably manage staff, dropdowns, equipment, and jobs
-- docs and schema notes are synchronized
+## Build rules
+- update Markdown files on every pass
+- update schema snapshot on every schema change
+- keep public SEO moving forward every pass
+- keep admin/token/private pages noindex
+- keep one H1 per exposed page
+- keep CSS/mobile QA active every pass

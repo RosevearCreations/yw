@@ -1,9 +1,6 @@
-## 2026-04-05d session-integrity and logbook proxy pass
-- Hardened session/profile application so stale async profile or boot responses can no longer overwrite a newer authenticated user after screen changes.
-- Made logout deterministic by clearing local auth identity first, then completing remote sign-out without letting protected screen reloads rehydrate stale user fragments.
-- Added stronger effective-role resolution using profile role, staff tier, and auth metadata so Admin/Supervisor identities are less likely to collapse back to employee semantics when legacy rows still exist.
-- Added a same-origin `/api/logbook/review-list` proxy fallback and updated the frontend logbook loader to fall back there when the direct Supabase Edge Function path hits CORS/preflight failure.
-- Reduced post-logout protected-fetch noise by ignoring profile/reference-data reload failures when logout or session removal is already in progress.
+## 2026-04-07 estimates/work-orders/routes/materials/subcontract/GL foundation pass
+- Added schema foundation migration `061_estimates_work_orders_routes_materials_and_gl_foundation.sql` for the next implementation phase.
+- Current state is now best described as stable session/auth shell + HSE forms + staff/admin backbone foundations + operations/accounting schema foundation.
 
 # Project State
 
@@ -12,7 +9,7 @@ Last synchronized: April 7, 2026
 ## Current state
 
 The build now contains a usable blend of:
-- staff auth/session flows
+- stable staff auth/session flows
 - HSE field forms
 - profile and logbook screens
 - staff admin foundations
@@ -20,8 +17,7 @@ The build now contains a usable blend of:
 - assignment workbench foundations
 - jobs/equipment workflows
 - accounting/order scaffolding
-
-The project is no longer at the “blank shell” stage. The main remaining work is **stabilization and convergence**.
+- schema foundation for estimates, work orders, materials, routes, subcontract dispatch, and digital accounting
 
 ## What is working directionally
 
@@ -45,53 +41,15 @@ The project is no longer at the “blank shell” stage. The main remaining work
 - assignment workbench exists
 - orders/accounting stub exists
 
-## What still needs to become reliable
+### New schema foundation
+- estimates and work orders
+- materials catalog and units
+- routes and service areas
+- subcontract clients and dispatches
+- chart of accounts, AR, AP, and GL journals
 
-### 1) Session integrity
-The highest-risk issue remains session/state contamination.
-
-The app must hold a single trusted actor across:
-- header identity
-- settings/profile
-- admin screens
-- jobs/equipment screens
-- logout flow
-
-A stale async response must never overwrite the active signed-in user.
-
-### 2) Role integrity
-The app is still carrying legacy values like `worker`/`staff` in places where the product direction is now:
-- admin
-- supervisor
-- employee
-
-The system must consistently calculate an effective role without letting stale profile text demote an active admin session.
-
-### 3) Endpoint convergence
-The platform still contains a mix of:
-- old compatibility paths
-- new role-aware paths
-- standalone HSE paths
-
-The preferred direction is:
-- session-first
-- role-aware
-- standalone HSE compatible
-- fewer duplicate endpoints
-
-## Current product direction after this sync
-
-The project should now be treated as a **landscaping and field-operations platform** with support for:
-- recurring landscaping services
-- construction/project jobs
-- subcontract equipment/operator work
-- standalone HSE workflows
-
-## Near-term completion target
-
-The near-term target is a stable build where:
-- auth/session identity is trustworthy
-- logout works every time
-- admin can manage staff, dropdowns, equipment, and jobs from one backbone
-- HSE can run standalone or attached to an operations job
-- documentation and schema notes stop drifting
+## What still needs implementation depth
+- admin UI for estimates/work orders/materials/routes/subcontract dispatch/accounting
+- repeat-save validation and stronger field feedback
+- tighter linking between standalone HSE and operations records
+- continued DB-first replacement of shared JSON operational data
