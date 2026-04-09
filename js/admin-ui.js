@@ -36,11 +36,12 @@
       users: [],
       sites: [],
       assignments: [],
-      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], workOrders: [], subcontractClients: [], subcontractDispatches: [], glAccounts: [], vendors: [], arInvoices: [], apBills: [] },
+      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], routeStops: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], glAccounts: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [] },
       salesOrders: [],
       accountingEntries: [],
       serviceAreas: [],
       routes: [],
+      routeStops: [],
       clients: [],
       clientSites: [],
       unitsOfMeasure: [],
@@ -48,13 +49,20 @@
       materialsCatalog: [],
       equipmentMaster: [],
       estimates: [],
+      estimateLines: [],
       workOrders: [],
+      workOrderLines: [],
       subcontractClients: [],
       subcontractDispatches: [],
+      linkedHsePackets: [],
       chartOfAccounts: [],
       apVendors: [],
       arInvoices: [],
+      arPayments: [],
       apBills: [],
+      apPayments: [],
+      materialReceipts: [],
+      materialReceiptLines: [],
       smokeChecks: []
     };
 
@@ -367,7 +375,7 @@
             <button class="admin-hub-card" type="button" data-admin-route="inspection"><strong>Site Inspection</strong><span>Capture hazards for landscaping, construction, subcontract, and unscheduled work.</span><em>Live</em></button>
             <button class="admin-hub-card" type="button" data-admin-route="drill"><strong>Emergency Drill</strong><span>Document preparedness checks and emergency-response exercises.</span><em>Live</em></button>
             <button class="admin-hub-card" type="button" data-admin-route="logbook"><strong>Logbook / Review</strong><span>Review safety records, approvals, images, and linked field history.</span><em>Stabilized</em></button>
-            <div class="admin-hub-card static"><strong>Outstanding OSHA Interfaces</strong><span>Equipment/JSA linkage, dispatch-specific HSE packet, heat/weather workflow, chemical handling, traffic/public interaction, and linked safety closeout for work orders.</span><em>Next</em></div>
+            <div class="admin-hub-card static"><strong>Outstanding OSHA Interfaces</strong><span>Linked HSE packets, dispatch-specific safety packets, heat/weather workflow, chemical handling, traffic/public interaction, field signoff closeout, and standalone unscheduled-project packets.</span><em>Next</em></div>
             <div class="admin-hub-card static"><strong>Primary Interface Direction</strong><span>Keep HSE standalone-capable, but let Admin connect it to sites, work orders, routes, equipment, dispatches, and subcontract work whenever a formal project exists.</span><em>Roadmap</em></div>
           </div>
         </div>
@@ -376,7 +384,7 @@
           <div class="section-heading">
             <div>
               <h3 style="margin:0;">Operations and Accounting Backbone Manager</h3>
-              <p class="section-subtitle">Use the new operations/accounting tables end to end: estimates, work orders, materials, units, routes, service areas, subcontract dispatch, AR/AP, and the chart of accounts.</p>
+              <p class="section-subtitle">Use the new operations/accounting tables end to end: lines, stops, AR/AP posting, material receiving, linked HSE packets, plus the existing estimates, work orders, materials, units, routes, service areas, dispatch, and chart of accounts.</p>
             </div>
           </div>
           <div class="grid">
@@ -387,6 +395,7 @@
                   <option value="cost_code">Cost Codes</option>
                   <option value="service_area">Service Areas</option>
                   <option value="route">Routes</option>
+                  <option value="route_stop">Route Stops</option>
                 </optgroup>
                 <optgroup label="Operations Master Data">
                   <option value="client">Clients</option>
@@ -396,17 +405,24 @@
                 </optgroup>
                 <optgroup label="Estimates and Work Orders">
                   <option value="estimate">Estimates</option>
+                  <option value="estimate_line">Estimate Lines</option>
                   <option value="work_order">Work Orders</option>
+                  <option value="work_order_line">Work Order Lines</option>
                 </optgroup>
                 <optgroup label="Subcontract Dispatch">
                   <option value="subcontract_client">Subcontract Clients</option>
                   <option value="subcontract_dispatch">Subcontract Dispatches</option>
+                  <option value="linked_hse_packet">Linked HSE Packets</option>
                 </optgroup>
                 <optgroup label="Accounting Backbone">
                   <option value="gl_account">Chart of Accounts</option>
                   <option value="ap_vendor">Vendors</option>
                   <option value="ar_invoice">AR Invoices</option>
+                  <option value="ar_payment">AR Payments</option>
                   <option value="ap_bill">AP Bills</option>
+                  <option value="ap_payment">AP Payments</option>
+                  <option value="material_receipt">Material Receipts</option>
+                  <option value="material_receipt_line">Material Receipt Lines</option>
                 </optgroup>
               </select>
             </label>
@@ -1159,6 +1175,7 @@
         state.accountingEntries = Array.isArray(resp?.accounting_entries) ? resp.accounting_entries : [];
         state.serviceAreas = Array.isArray(resp?.service_areas) ? resp.service_areas : [];
         state.routes = Array.isArray(resp?.routes) ? resp.routes : [];
+        state.routeStops = Array.isArray(resp?.route_stops) ? resp.route_stops : [];
         state.clients = Array.isArray(resp?.clients) ? resp.clients : [];
         state.clientSites = Array.isArray(resp?.client_sites) ? resp.client_sites : [];
         state.unitsOfMeasure = Array.isArray(resp?.units_of_measure) ? resp.units_of_measure : [];
@@ -1166,13 +1183,20 @@
         state.materialsCatalog = Array.isArray(resp?.materials_catalog) ? resp.materials_catalog : [];
         state.equipmentMaster = Array.isArray(resp?.equipment_master) ? resp.equipment_master : [];
         state.estimates = Array.isArray(resp?.estimates) ? resp.estimates : [];
+        state.estimateLines = Array.isArray(resp?.estimate_lines) ? resp.estimate_lines : [];
         state.workOrders = Array.isArray(resp?.work_orders) ? resp.work_orders : [];
+        state.workOrderLines = Array.isArray(resp?.work_order_lines) ? resp.work_order_lines : [];
         state.subcontractClients = Array.isArray(resp?.subcontract_clients) ? resp.subcontract_clients : [];
         state.subcontractDispatches = Array.isArray(resp?.subcontract_dispatches) ? resp.subcontract_dispatches : [];
+        state.linkedHsePackets = Array.isArray(resp?.linked_hse_packets) ? resp.linked_hse_packets : [];
         state.chartOfAccounts = Array.isArray(resp?.chart_of_accounts) ? resp.chart_of_accounts : [];
         state.apVendors = Array.isArray(resp?.ap_vendors) ? resp.ap_vendors : [];
         state.arInvoices = Array.isArray(resp?.ar_invoices) ? resp.ar_invoices : [];
+        state.arPayments = Array.isArray(resp?.ar_payments) ? resp.ar_payments : [];
         state.apBills = Array.isArray(resp?.ap_bills) ? resp.ap_bills : [];
+        state.apPayments = Array.isArray(resp?.ap_payments) ? resp.ap_payments : [];
+        state.materialReceipts = Array.isArray(resp?.material_receipts) ? resp.material_receipts : [];
+        state.materialReceiptLines = Array.isArray(resp?.material_receipt_lines) ? resp.material_receipt_lines : [];
         state.counts = {
           users: state.users.length,
           sites: Array.isArray(resp?.sites) ? resp.sites.length : 0,
@@ -1291,6 +1315,11 @@
         { name:'route_type', label:'Route Type', type:'select', options:[['recurring','Recurring'],['project','Project'],['seasonal','Seasonal'],['dispatch','Dispatch']] },
         { name:'day_of_week', label:'Day of Week (0-6)', type:'number' }, { name:'notes', label:'Notes', type:'textarea' }, { name:'is_active', label:'Active', type:'checkbox' }
       ], columns:[['route_code','Code'],['name','Name'],['route_type','Type'],['day_of_week','Day']] },
+      route_stop: { label:'Route Stops', rowsKey:'routeStops', valueKey:'id', labelField:'id', fields:[
+        { name:'route_id', label:'Route', type:'select', source:'routes', required:true }, { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' },
+        { name:'stop_order', label:'Stop Order', type:'number' }, { name:'planned_arrival_time', label:'Planned Arrival', type:'time' }, { name:'planned_duration_minutes', label:'Duration Minutes', type:'number' },
+        { name:'instructions', label:'Instructions', type:'textarea' }, { name:'is_active', label:'Active', type:'checkbox' }
+      ], columns:[['route_id','Route'],['stop_order','Stop'],['planned_arrival_time','Arrival'],['planned_duration_minutes','Minutes']] },
       client: { label:'Clients', rowsKey:'clients', valueKey:'id', labelField:'legal_name', fields:[
         { name:'client_code', label:'Client Code', type:'text' }, { name:'legal_name', label:'Legal Name', type:'text', required:true },
         { name:'display_name', label:'Display Name', type:'text' }, { name:'client_type', label:'Client Type', type:'select', options:[['customer','Customer'],['general_contractor','General Contractor'],['municipal','Municipal'],['subcontract_partner','Subcontract Partner']] },
@@ -1323,6 +1352,13 @@
         { name:'valid_until', label:'Valid Until', type:'date' }, { name:'subtotal', label:'Subtotal', type:'number' }, { name:'tax_total', label:'Tax Total', type:'number' }, { name:'total_amount', label:'Total Amount', type:'number' },
         { name:'scope_notes', label:'Scope Notes', type:'textarea' }, { name:'terms_notes', label:'Terms Notes', type:'textarea' }
       ], columns:[['estimate_number','Estimate'],['estimate_type','Type'],['status','Status'],['total_amount','Total']] },
+      estimate_line: { label:'Estimate Lines', rowsKey:'estimateLines', valueKey:'id', labelField:'description', fields:[
+        { name:'estimate_id', label:'Estimate', type:'select', source:'estimates', required:true }, { name:'line_order', label:'Line Order', type:'number' },
+        { name:'line_type', label:'Line Type', type:'select', options:[['service','Service'],['material','Material'],['equipment','Equipment'],['allowance','Allowance']] }, { name:'description', label:'Description', type:'text', required:true },
+        { name:'cost_code_id', label:'Cost Code', type:'select', source:'costCodes' }, { name:'unit_id', label:'Unit', type:'select', source:'units' }, { name:'quantity', label:'Quantity', type:'number' },
+        { name:'unit_cost', label:'Unit Cost', type:'number' }, { name:'unit_price', label:'Unit Price', type:'number' }, { name:'line_total', label:'Line Total', type:'number' },
+        { name:'material_id', label:'Material', type:'select', source:'materials' }, { name:'equipment_master_id', label:'Equipment', type:'select', source:'equipmentMaster' }
+      ], columns:[['estimate_id','Estimate'],['line_order','Order'],['description','Description'],['line_total','Total']] },
       work_order: { label:'Work Orders', rowsKey:'workOrders', valueKey:'id', labelField:'work_order_number', fields:[
         { name:'work_order_number', label:'Work Order Number', type:'text', required:true }, { name:'estimate_id', label:'Estimate', type:'select', source:'estimates' },
         { name:'client_id', label:'Client', type:'select', source:'clients' }, { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' }, { name:'legacy_job_id', label:'Linked Legacy Job ID', type:'number' },
@@ -1332,6 +1368,13 @@
         { name:'subtotal', label:'Subtotal', type:'number' }, { name:'tax_total', label:'Tax Total', type:'number' }, { name:'total_amount', label:'Total Amount', type:'number' },
         { name:'crew_notes', label:'Crew Notes', type:'textarea' }, { name:'customer_notes', label:'Customer Notes', type:'textarea' }, { name:'safety_notes', label:'Safety Notes', type:'textarea' }
       ], columns:[['work_order_number','Work Order'],['work_type','Type'],['status','Status'],['total_amount','Total']] },
+      work_order_line: { label:'Work Order Lines', rowsKey:'workOrderLines', valueKey:'id', labelField:'description', fields:[
+        { name:'work_order_id', label:'Work Order', type:'select', source:'workOrders', required:true }, { name:'line_order', label:'Line Order', type:'number' },
+        { name:'line_type', label:'Line Type', type:'select', options:[['service','Service'],['material','Material'],['equipment','Equipment'],['allowance','Allowance']] }, { name:'description', label:'Description', type:'text', required:true },
+        { name:'cost_code_id', label:'Cost Code', type:'select', source:'costCodes' }, { name:'unit_id', label:'Unit', type:'select', source:'units' }, { name:'quantity', label:'Quantity', type:'number' },
+        { name:'unit_cost', label:'Unit Cost', type:'number' }, { name:'unit_price', label:'Unit Price', type:'number' }, { name:'line_total', label:'Line Total', type:'number' },
+        { name:'material_id', label:'Material', type:'select', source:'materials' }, { name:'equipment_master_id', label:'Equipment', type:'select', source:'equipmentMaster' }
+      ], columns:[['work_order_id','Work Order'],['line_order','Order'],['description','Description'],['line_total','Total']] },
       subcontract_client: { label:'Subcontract Clients', rowsKey:'subcontractClients', valueKey:'id', labelField:'company_name', fields:[
         { name:'client_id', label:'Linked Client', type:'select', source:'clients' }, { name:'subcontract_code', label:'Code', type:'text' }, { name:'company_name', label:'Company Name', type:'text', required:true },
         { name:'contact_name', label:'Contact Name', type:'text' }, { name:'contact_email', label:'Contact Email', type:'email' }, { name:'contact_phone', label:'Contact Phone', type:'text' },
@@ -1344,6 +1387,14 @@
         { name:'dispatch_start', label:'Dispatch Start', type:'datetime-local' }, { name:'dispatch_end', label:'Dispatch End', type:'datetime-local' }, { name:'billing_basis', label:'Billing Basis', type:'select', options:[['hourly','Hourly'],['daily','Daily'],['unit','Unit'],['fixed','Fixed']] },
         { name:'bill_rate', label:'Bill Rate', type:'number' }, { name:'cost_rate', label:'Cost Rate', type:'number' }, { name:'notes', label:'Notes', type:'textarea' }
       ], columns:[['dispatch_number','Dispatch'],['dispatch_status','Status'],['billing_basis','Billing'],['bill_rate','Bill Rate']] },
+      linked_hse_packet: { label:'Linked HSE Packets', rowsKey:'linkedHsePackets', valueKey:'id', labelField:'packet_number', fields:[
+        { name:'packet_number', label:'Packet Number', type:'text', required:true }, { name:'packet_type', label:'Packet Type', type:'select', options:[['work_order','Work Order'],['dispatch','Dispatch'],['standalone_hse','Standalone HSE']] },
+        { name:'packet_status', label:'Packet Status', type:'select', options:[['draft','Draft'],['issued','Issued'],['in_progress','In Progress'],['ready_for_closeout','Ready for Closeout'],['closed','Closed']] },
+        { name:'work_order_id', label:'Work Order', type:'select', source:'workOrders' }, { name:'dispatch_id', label:'Dispatch', type:'select', source:'subcontractDispatches' },
+        { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' }, { name:'route_id', label:'Route', type:'select', source:'routes' }, { name:'supervisor_profile_id', label:'Supervisor', type:'select', source:'supervisorProfiles' },
+        { name:'completion_percent', label:'Completion %', type:'number' }, { name:'briefing_required', label:'Briefing Required', type:'checkbox' }, { name:'inspection_required', label:'Inspection Required', type:'checkbox' },
+        { name:'emergency_review_required', label:'Emergency Review Required', type:'checkbox' }, { name:'packet_notes', label:'Packet Notes', type:'textarea' }
+      ], columns:[['packet_number','Packet'],['packet_type','Type'],['packet_status','Status'],['completion_percent','Complete %']] },
       gl_account: { label:'Chart of Accounts', rowsKey:'chartOfAccounts', valueKey:'id', labelField:'account_name', fields:[
         { name:'account_number', label:'Account Number', type:'text', required:true }, { name:'account_name', label:'Account Name', type:'text', required:true }, { name:'account_type', label:'Account Type', type:'select', options:[['asset','Asset'],['liability','Liability'],['equity','Equity'],['revenue','Revenue'],['expense','Expense']] },
         { name:'parent_account_id', label:'Parent Account', type:'select', source:'glAccounts' }, { name:'system_code', label:'System Code', type:'text' }, { name:'is_active', label:'Active', type:'checkbox' }
@@ -1358,14 +1409,35 @@
         { name:'dispatch_id', label:'Dispatch', type:'select', source:'subcontractDispatches' }, { name:'invoice_status', label:'Status', type:'select', options:[['draft','Draft'],['issued','Issued'],['partial','Partial'],['paid','Paid'],['void','Void']] },
         { name:'invoice_date', label:'Invoice Date', type:'date' }, { name:'due_date', label:'Due Date', type:'date' }, { name:'subtotal', label:'Subtotal', type:'number' }, { name:'tax_total', label:'Tax Total', type:'number' }, { name:'total_amount', label:'Total Amount', type:'number' }, { name:'balance_due', label:'Balance Due', type:'number' }
       ], columns:[['invoice_number','Invoice'],['invoice_status','Status'],['invoice_date','Date'],['balance_due','Balance']] },
+      ar_payment: { label:'AR Payments', rowsKey:'arPayments', valueKey:'id', labelField:'payment_number', fields:[
+        { name:'payment_number', label:'Payment Number', type:'text', required:true }, { name:'client_id', label:'Client', type:'select', source:'clients', required:true },
+        { name:'invoice_id', label:'Invoice', type:'select', source:'arInvoices' }, { name:'payment_date', label:'Payment Date', type:'date' }, { name:'payment_method', label:'Payment Method', type:'text' },
+        { name:'reference_number', label:'Reference Number', type:'text' }, { name:'amount', label:'Amount', type:'number' }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['payment_number','Payment'],['client_id','Client'],['payment_date','Date'],['amount','Amount']] },
       ap_bill: { label:'AP Bills', rowsKey:'apBills', valueKey:'id', labelField:'bill_number', fields:[
         { name:'bill_number', label:'Bill Number', type:'text', required:true }, { name:'vendor_id', label:'Vendor', type:'select', source:'vendors', required:true }, { name:'bill_status', label:'Status', type:'select', options:[['draft','Draft'],['received','Received'],['scheduled','Scheduled'],['paid','Paid'],['void','Void']] },
         { name:'bill_date', label:'Bill Date', type:'date' }, { name:'due_date', label:'Due Date', type:'date' }, { name:'subtotal', label:'Subtotal', type:'number' }, { name:'tax_total', label:'Tax Total', type:'number' }, { name:'total_amount', label:'Total Amount', type:'number' }, { name:'balance_due', label:'Balance Due', type:'number' }
-      ], columns:[['bill_number','Bill'],['bill_status','Status'],['bill_date','Date'],['balance_due','Balance']] }
+      ], columns:[['bill_number','Bill'],['bill_status','Status'],['bill_date','Date'],['balance_due','Balance']] },
+      ap_payment: { label:'AP Payments', rowsKey:'apPayments', valueKey:'id', labelField:'payment_number', fields:[
+        { name:'payment_number', label:'Payment Number', type:'text', required:true }, { name:'vendor_id', label:'Vendor', type:'select', source:'vendors', required:true },
+        { name:'bill_id', label:'Bill', type:'select', source:'apBills' }, { name:'payment_date', label:'Payment Date', type:'date' }, { name:'payment_method', label:'Payment Method', type:'text' },
+        { name:'reference_number', label:'Reference Number', type:'text' }, { name:'amount', label:'Amount', type:'number' }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['payment_number','Payment'],['vendor_id','Vendor'],['payment_date','Date'],['amount','Amount']] },
+      material_receipt: { label:'Material Receipts', rowsKey:'materialReceipts', valueKey:'id', labelField:'receipt_number', fields:[
+        { name:'receipt_number', label:'Receipt Number', type:'text', required:true }, { name:'vendor_id', label:'Vendor', type:'select', source:'vendors' }, { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' },
+        { name:'work_order_id', label:'Work Order', type:'select', source:'workOrders' }, { name:'receipt_status', label:'Receipt Status', type:'select', options:[['draft','Draft'],['received','Received'],['checked_in','Checked In'],['closed','Closed']] },
+        { name:'receipt_date', label:'Receipt Date', type:'date' }, { name:'received_by_profile_id', label:'Received By', type:'select', source:'profiles' }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['receipt_number','Receipt'],['receipt_status','Status'],['receipt_date','Date'],['vendor_id','Vendor']] },
+      material_receipt_line: { label:'Material Receipt Lines', rowsKey:'materialReceiptLines', valueKey:'id', labelField:'description', fields:[
+        { name:'receipt_id', label:'Receipt', type:'select', source:'materialReceipts', required:true }, { name:'line_order', label:'Line Order', type:'number' },
+        { name:'material_id', label:'Material', type:'select', source:'materials' }, { name:'description', label:'Description', type:'text', required:true }, { name:'unit_id', label:'Unit', type:'select', source:'units' },
+        { name:'quantity', label:'Quantity', type:'number' }, { name:'unit_cost', label:'Unit Cost', type:'number' }, { name:'line_total', label:'Line Total', type:'number' },
+        { name:'cost_code_id', label:'Cost Code', type:'select', source:'costCodes' }, { name:'work_order_line_id', label:'Work Order Line', type:'select', source:'workOrderLines' }
+      ], columns:[['receipt_id','Receipt'],['line_order','Order'],['description','Description'],['line_total','Total']] }
     };
 
     function getBackboneRows(entity) {
-      const map = { unit_of_measure: state.unitsOfMeasure || [], cost_code: state.costCodes || [], service_area: state.serviceAreas || [], route: state.routes || [], client: state.clients || [], client_site: state.clientSites || [], material: state.materialsCatalog || [], equipment_master: state.equipmentMaster || [], estimate: state.estimates || [], work_order: state.workOrders || [], subcontract_client: state.subcontractClients || [], subcontract_dispatch: state.subcontractDispatches || [], gl_account: state.chartOfAccounts || [], ap_vendor: state.apVendors || [], ar_invoice: state.arInvoices || [], ap_bill: state.apBills || [] };
+      const map = { unit_of_measure: state.unitsOfMeasure || [], cost_code: state.costCodes || [], service_area: state.serviceAreas || [], route: state.routes || [], route_stop: state.routeStops || [], client: state.clients || [], client_site: state.clientSites || [], material: state.materialsCatalog || [], equipment_master: state.equipmentMaster || [], estimate: state.estimates || [], estimate_line: state.estimateLines || [], work_order: state.workOrders || [], work_order_line: state.workOrderLines || [], subcontract_client: state.subcontractClients || [], subcontract_dispatch: state.subcontractDispatches || [], linked_hse_packet: state.linkedHsePackets || [], gl_account: state.chartOfAccounts || [], ap_vendor: state.apVendors || [], ar_invoice: state.arInvoices || [], ar_payment: state.arPayments || [], ap_bill: state.apBills || [], ap_payment: state.apPayments || [], material_receipt: state.materialReceipts || [], material_receipt_line: state.materialReceiptLines || [] };
       return Array.isArray(map[entity]) ? map[entity] : [];
     }
 
@@ -1378,16 +1450,27 @@
         units: state.selectors.units || state.unitsOfMeasure || [],
         serviceAreas: state.selectors.serviceAreas || state.serviceAreas || [],
         routes: state.selectors.routes || state.routes || [],
+        routeStops: state.selectors.routeStops || state.routeStops || [],
         clients: state.selectors.clients || state.clients || [],
         clientSites: state.selectors.clientSites || state.clientSites || [],
         materials: state.selectors.materials || state.materialsCatalog || [],
         equipmentMaster: state.selectors.equipmentMaster || state.equipmentMaster || [],
         estimates: state.selectors.estimates || state.estimates || [],
+        estimateLines: state.selectors.estimateLines || state.estimateLines || [],
         workOrders: state.selectors.workOrders || state.workOrders || [],
+        workOrderLines: state.selectors.workOrderLines || state.workOrderLines || [],
         subcontractClients: state.selectors.subcontractClients || state.subcontractClients || [],
         subcontractDispatches: state.selectors.subcontractDispatches || state.subcontractDispatches || [],
+        linkedHsePackets: state.selectors.linkedHsePackets || state.linkedHsePackets || [],
         glAccounts: state.selectors.glAccounts || state.chartOfAccounts || [],
         vendors: state.selectors.vendors || state.apVendors || [],
+        arInvoices: state.selectors.arInvoices || state.arInvoices || [],
+        arPayments: state.selectors.arPayments || state.arPayments || [],
+        apBills: state.selectors.apBills || state.apBills || [],
+        apPayments: state.selectors.apPayments || state.apPayments || [],
+        materialReceipts: state.selectors.materialReceipts || state.materialReceipts || [],
+        materialReceiptLines: state.selectors.materialReceiptLines || state.materialReceiptLines || [],
+        costCodes: state.selectors.costCodes || state.costCodes || [],
         jobTypes: state.selectors.jobTypes || []
       };
       return Array.isArray(map[source]) ? map[source] : [];
@@ -1400,16 +1483,27 @@
       if (source === 'units') return `${row.code || ''}${row.name ? ` - ${row.name}` : ''}`;
       if (source === 'serviceAreas') return `${row.area_code || ''}${row.name ? ` - ${row.name}` : ''}`;
       if (source === 'routes') return `${row.route_code || ''}${row.name ? ` - ${row.name}` : ''}`;
+      if (source === 'routeStops') return `${row.stop_order ?? ''}${row.instructions ? ` - ${row.instructions}` : ''}`;
       if (source === 'clients') return row.display_name || row.legal_name || row.client_code || row.id;
       if (source === 'clientSites') return row.site_name || row.site_code || row.id;
       if (source === 'materials') return row.item_name || row.sku || row.id;
       if (source === 'equipmentMaster') return row.item_name || row.equipment_code || row.id;
       if (source === 'estimates') return row.estimate_number || row.id;
+      if (source === 'estimateLines') return `${row.line_order ?? ''} - ${row.description || row.id}`;
       if (source === 'workOrders') return row.work_order_number || row.id;
+      if (source === 'workOrderLines') return `${row.line_order ?? ''} - ${row.description || row.id}`;
       if (source === 'subcontractClients') return row.company_name || row.subcontract_code || row.id;
       if (source === 'subcontractDispatches') return row.dispatch_number || row.id;
+      if (source === 'linkedHsePackets') return row.packet_number || row.id;
       if (source === 'glAccounts') return `${row.account_number || ''} - ${row.account_name || row.id}`;
       if (source === 'vendors') return row.display_name || row.legal_name || row.vendor_code || row.id;
+      if (source === 'arInvoices') return row.invoice_number || row.id;
+      if (source === 'arPayments') return row.payment_number || row.id;
+      if (source === 'apBills') return row.bill_number || row.id;
+      if (source === 'apPayments') return row.payment_number || row.id;
+      if (source === 'materialReceipts') return row.receipt_number || row.id;
+      if (source === 'materialReceiptLines') return `${row.line_order ?? ''} - ${row.description || row.id}`;
+      if (source === 'costCodes') return `${row.code || ''}${row.name ? ` - ${row.name}` : ''}`;
       if (source === 'jobTypes') return row.name || row.id;
       return row.name || row.id || '';
     }
@@ -1678,18 +1772,26 @@
           costCodes: Array.isArray(payload?.cost_codes) ? payload.cost_codes : state.costCodes,
           serviceAreas: Array.isArray(payload?.service_areas) ? payload.service_areas : state.serviceAreas,
           routes: Array.isArray(payload?.routes) ? payload.routes : state.routes,
+          routeStops: Array.isArray(payload?.route_stops) ? payload.route_stops : state.routeStops,
           clients: Array.isArray(payload?.clients) ? payload.clients : state.clients,
           clientSites: Array.isArray(payload?.client_sites) ? payload.client_sites : state.clientSites,
           materials: Array.isArray(payload?.materials_catalog) ? payload.materials_catalog : state.materialsCatalog,
           equipmentMaster: Array.isArray(payload?.equipment_master) ? payload.equipment_master : state.equipmentMaster,
           estimates: Array.isArray(payload?.estimates) ? payload.estimates : state.estimates,
+          estimateLines: Array.isArray(payload?.estimate_lines) ? payload.estimate_lines : state.estimateLines,
           workOrders: Array.isArray(payload?.work_orders) ? payload.work_orders : state.workOrders,
+          workOrderLines: Array.isArray(payload?.work_order_lines) ? payload.work_order_lines : state.workOrderLines,
           subcontractClients: Array.isArray(payload?.subcontract_clients) ? payload.subcontract_clients : state.subcontractClients,
           subcontractDispatches: Array.isArray(payload?.subcontract_dispatches) ? payload.subcontract_dispatches : state.subcontractDispatches,
+          linkedHsePackets: Array.isArray(payload?.linked_hse_packets) ? payload.linked_hse_packets : state.linkedHsePackets,
           glAccounts: Array.isArray(payload?.chart_of_accounts) ? payload.chart_of_accounts : state.chartOfAccounts,
           vendors: Array.isArray(payload?.ap_vendors) ? payload.ap_vendors : state.apVendors,
           arInvoices: Array.isArray(payload?.ar_invoices) ? payload.ar_invoices : state.arInvoices,
-          apBills: Array.isArray(payload?.ap_bills) ? payload.ap_bills : state.apBills
+          arPayments: Array.isArray(payload?.ar_payments) ? payload.ar_payments : state.arPayments,
+          apBills: Array.isArray(payload?.ap_bills) ? payload.ap_bills : state.apBills,
+          apPayments: Array.isArray(payload?.ap_payments) ? payload.ap_payments : state.apPayments,
+          materialReceipts: Array.isArray(payload?.material_receipts) ? payload.material_receipts : state.materialReceipts,
+          materialReceiptLines: Array.isArray(payload?.material_receipt_lines) ? payload.material_receipt_lines : state.materialReceiptLines
         };
         const e = els();
         if (e.staffPosition) {
