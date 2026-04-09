@@ -431,6 +431,7 @@
             </label>
           </div>
           <div id="ad_backbone_fields" class="grid" style="margin-top:12px;"></div>
+          <div id="ad_backbone_summary" class="admin-backbone-summary" style="display:none;margin-top:12px;"></div>
           <div class="form-footer" style="margin-top:12px;">
             <button id="ad_backbone_create" class="secondary" type="button">Create Record</button>
             <button id="ad_backbone_save" class="secondary" type="button">Save Record</button>
@@ -608,6 +609,7 @@
         backboneEntity: document.getElementById('ad_backbone_entity'),
         backboneItemId: document.getElementById('ad_backbone_item_id'),
         backboneFields: document.getElementById('ad_backbone_fields'),
+        backboneSummary: document.getElementById('ad_backbone_summary'),
         backboneCreateBtn: document.getElementById('ad_backbone_create'),
         backboneSaveBtn: document.getElementById('ad_backbone_save'),
         backboneDeleteBtn: document.getElementById('ad_backbone_delete'),
@@ -1291,7 +1293,235 @@
       if (el.value !== normalized) el.value = '';
     }
 
+    function toNumber(value, fallback = 0) {
+      const num = Number(value);
+      return Number.isFinite(num) ? num : fallback;
+    }
 
+    function roundMoney(value) {
+      return Math.round((toNumber(value, 0) + Number.EPSILON) * 100) / 100;
+    }
+
+    function backboneInput(name) {
+      return document.getElementById(`ad_bb_${name}`);
+    }
+
+    function setBackboneInputValue(name, value) {
+      const input = backboneInput(name);
+      if (!input) return;
+      if (input.type === 'checkbox') {
+        input.checked = !!value;
+        return;
+      }
+      const normalized = value == null ? '' : String(value);
+      input.value = normalized;
+      if (input.tagName === 'SELECT' && input.value !== normalized) input.value = '';
+    }
+
+    function getBackboneSourceRow(source, id) {
+      if (!source || !id) return null;
+      return getBackboneOptionRows(source).find((row) => String(row.id) === String(id) || String(row.name || '') === String(id) || String(row.code || '') === String(id)) || null;
+    }
+
+    function computeHseProgressFromForm() {
+      const briefingRequired = !!backboneInput('briefing_required')?.checked;
+      const inspectionRequired = !!backboneInput('inspection_required')?.checked;
+      const emergencyRequired = !!backboneInput('emergency_review_required')?.checked;
+      const briefingCompleted = !briefingRequired || !!backboneInput('briefing_completed')?.checked;
+      const inspectionCompleted = !inspectionRequired || !!backboneInput('inspection_completed')?.checked;
+      const emergencyCompleted = !emergencyRequired || !!backboneInput('emergency_review_completed')?.checked;
+      const signoffCompleted = !!backboneInput('field_signoff_completed')?.checked;
+      const closeoutCompleted = !!backboneInput('closeout_completed')?.checked;
+      const requiredPreCloseout = (briefingRequired ? 1 : 0) + (inspectionRequired ? 1 : 0) + (emergencyRequired ? 1 : 0) + 1;
+      const completedPreCloseout = (briefingRequired && briefingCompleted ? 1 : 0) + (inspectionRequired && inspectionCompleted ? 1 : 0) + (emergencyRequired && emergencyCompleted ? 1 : 0) + (signoffCompleted ? 1 : 0);
+      const requiredTotal = requiredPreCloseout + 1;
+      const completedTotal = completedPreCloseout + (closeoutCompleted ? 1 : 0);
+      let status = 'draft';
+      let percent = 0;
+      if (closeoutCompleted) {
+        status = 'closed';
+        percent = 100;
+      } else if (completedPreCloseout >= requiredPreCloseout && requiredPreCloseout > 0) {
+        status = 'ready_for_closeout';
+        percent = 90;
+      } else if (completedPreCloseout > 0 || backboneInput('started_at')?.value) {
+        status = 'in_progress';
+        percent = requiredPreCloseout ? Math.round(((completedPreCloseout / requiredPreCloseout) * 90) * 100) / 100 : 0;
+      } else if (backboneInput('issued_at')?.value) {
+        status = 'issued';
+        percent = 10;
+      }
+      return { requiredTotal, completedTotal, status, percent };
+    }
+
+    function applyBackboneDerivedValues(entity) {
+      if (entity === 'estimate' || entity === 'work_order') {
+        const subtotal = toNumber(backboneInput('subtotal')?.value, 0);
+        const tax = toNumber(backboneInput('tax_total')?.value, 0);
+        const total = roundMoney(subtotal + tax);
+        setBackboneInputValue('total_amount', total);
+        const cost = toNumber(backboneInput('total_cost')?.value, 0);
+        const margin = roundMoney(subtotal - cost);
+        setBackboneInputValue('margin_amount', margin);
+        setBackboneInputValue('margin_percent', subtotal ? roundMoney((margin / subtotal) * 100) : 0);
+      }
+
+      if (entity === 'ar_invoice' || entity === 'ap_bill') {
+        const subtotal = toNumber(backboneInput('subtotal')?.value, 0);
+        const tax = toNumber(backboneInput('tax_total')?.value, 0);
+        const total = roundMoney(subtotal + tax);
+        setBackboneInputValue('total_amount', total);
+        const amountPaid = toNumber(backboneInput('amount_paid')?.value, 0);
+        setBackboneInputValue('balance_due', roundMoney(total - amountPaid));
+      }
+
+      if (entity === 'estimate_line' || entity === 'work_order_line') {
+        const materialId = backboneInput('material_id')?.value || '';
+        const equipmentId = backboneInput('equipment_master_id')?.value || '';
+        if (materialId) {
+          const material = getBackboneSourceRow('materials', materialId);
+          if (material) {
+            if (!backboneInput('unit_id')?.value) setBackboneInputValue('unit_id', material.unit_id || '');
+            if (!toNumber(backboneInput('unit_cost')?.value)) setBackboneInputValue('unit_cost', material.default_unit_cost || 0);
+            if (!toNumber(backboneInput('unit_price')?.value)) setBackboneInputValue('unit_price', material.default_bill_rate || 0);
+          }
+        }
+        if (equipmentId) {
+          const equipment = getBackboneSourceRow('equipmentMaster', equipmentId);
+          if (equipment) {
+            if (!toNumber(backboneInput('unit_cost')?.value)) setBackboneInputValue('unit_cost', equipment.cost_rate_hourly || 0);
+            if (!toNumber(backboneInput('unit_price')?.value)) setBackboneInputValue('unit_price', equipment.bill_rate_hourly || 0);
+          }
+        }
+        const quantity = toNumber(backboneInput('quantity')?.value, 0);
+        const unitPrice = toNumber(backboneInput('unit_price')?.value, 0);
+        setBackboneInputValue('line_total', roundMoney(quantity * unitPrice));
+      }
+
+      if (entity === 'material_receipt_line') {
+        const materialId = backboneInput('material_id')?.value || '';
+        if (materialId) {
+          const material = getBackboneSourceRow('materials', materialId);
+          if (material) {
+            if (!backboneInput('unit_id')?.value) setBackboneInputValue('unit_id', material.unit_id || '');
+            if (!toNumber(backboneInput('unit_cost')?.value)) setBackboneInputValue('unit_cost', material.default_unit_cost || 0);
+          }
+        }
+        const quantity = toNumber(backboneInput('quantity')?.value, 0);
+        const unitCost = toNumber(backboneInput('unit_cost')?.value, 0);
+        setBackboneInputValue('line_total', roundMoney(quantity * unitCost));
+      }
+
+      if (entity === 'ar_payment') {
+        const invoiceId = backboneInput('invoice_id')?.value || '';
+        const invoice = getBackboneSourceRow('arInvoices', invoiceId);
+        if (invoice) {
+          if (!backboneInput('client_id')?.value) setBackboneInputValue('client_id', invoice.client_id || '');
+          if (!toNumber(backboneInput('amount')?.value)) setBackboneInputValue('amount', invoice.balance_due || invoice.total_amount || 0);
+        }
+      }
+
+      if (entity === 'ap_payment') {
+        const billId = backboneInput('bill_id')?.value || '';
+        const bill = getBackboneSourceRow('apBills', billId);
+        if (bill) {
+          if (!backboneInput('vendor_id')?.value) setBackboneInputValue('vendor_id', bill.vendor_id || '');
+          if (!toNumber(backboneInput('amount')?.value)) setBackboneInputValue('amount', bill.balance_due || bill.total_amount || 0);
+        }
+      }
+
+      if (entity === 'linked_hse_packet') {
+        const workOrderId = backboneInput('work_order_id')?.value || '';
+        const dispatchId = backboneInput('dispatch_id')?.value || '';
+        if (workOrderId) {
+          const workOrder = getBackboneSourceRow('workOrders', workOrderId);
+          if (workOrder) {
+            if (!backboneInput('client_site_id')?.value) setBackboneInputValue('client_site_id', workOrder.client_site_id || '');
+            if (!backboneInput('route_id')?.value) setBackboneInputValue('route_id', workOrder.route_id || '');
+            if (!backboneInput('supervisor_profile_id')?.value) setBackboneInputValue('supervisor_profile_id', workOrder.supervisor_profile_id || '');
+          }
+        }
+        if (dispatchId) {
+          const dispatch = getBackboneSourceRow('subcontractDispatches', dispatchId);
+          if (dispatch) {
+            if (!backboneInput('client_site_id')?.value) setBackboneInputValue('client_site_id', dispatch.client_site_id || '');
+            if (!backboneInput('work_order_id')?.value) setBackboneInputValue('work_order_id', dispatch.work_order_id || '');
+          }
+        }
+        const progress = computeHseProgressFromForm();
+        setBackboneInputValue('required_item_count', progress.requiredTotal);
+        setBackboneInputValue('completed_item_count', progress.completedTotal);
+        setBackboneInputValue('completion_percent', progress.percent);
+        setBackboneInputValue('packet_status', progress.status);
+      }
+    }
+
+    function renderBackboneSummary(entity) {
+      const e = els();
+      if (!e.backboneSummary) return;
+      const cards = [];
+      const money = (value) => roundMoney(value).toFixed(2);
+      if (entity === 'estimate' || entity === 'work_order') {
+        const subtotal = toNumber(backboneInput('subtotal')?.value, 0);
+        const tax = toNumber(backboneInput('tax_total')?.value, 0);
+        const total = toNumber(backboneInput('total_amount')?.value || (subtotal + tax), 0);
+        const cost = toNumber(backboneInput('total_cost')?.value, 0);
+        const margin = toNumber(backboneInput('margin_amount')?.value || (subtotal - cost), 0);
+        cards.push(['Lines', backboneInput('line_count')?.value || '0']);
+        cards.push(['Subtotal', `$${money(subtotal)}`]);
+        cards.push(['Total', `$${money(total)}`]);
+        cards.push(['Cost', `$${money(cost)}`]);
+        cards.push(['Margin', `$${money(margin)}`]);
+        if (entity === 'work_order') cards.push(['Received Cost', `$${money(backboneInput('received_cost_total')?.value)}`]);
+      } else if (entity === 'ar_invoice' || entity === 'ap_bill') {
+        cards.push(['Total', `$${money(backboneInput('total_amount')?.value)}`]);
+        cards.push(['Paid', `$${money(backboneInput('amount_paid')?.value)}`]);
+        cards.push(['Balance', `$${money(backboneInput('balance_due')?.value)}`]);
+      } else if (entity === 'material_receipt') {
+        cards.push(['Lines', backboneInput('line_count')?.value || '0']);
+        cards.push(['Receipt Total', `$${money(backboneInput('total_amount')?.value)}`]);
+        cards.push(['Status', backboneInput('receipt_status')?.value || 'draft']);
+      } else if (entity === 'linked_hse_packet') {
+        cards.push(['Status', backboneInput('packet_status')?.value || 'draft']);
+        cards.push(['Progress', `${roundMoney(backboneInput('completion_percent')?.value)}%`]);
+        cards.push(['Checklist', `${backboneInput('completed_item_count')?.value || 0} / ${backboneInput('required_item_count')?.value || 0}`]);
+        cards.push(['Closeout', backboneInput('closeout_completed')?.checked ? 'Completed' : 'Open']);
+      } else if (entity === 'estimate_line' || entity === 'work_order_line' || entity === 'material_receipt_line') {
+        cards.push(['Quantity', backboneInput('quantity')?.value || '0']);
+        cards.push(['Unit Cost', `$${money(backboneInput('unit_cost')?.value)}`]);
+        if (entity !== 'material_receipt_line') cards.push(['Unit Price', `$${money(backboneInput('unit_price')?.value)}`]);
+        cards.push(['Line Total', `$${money(backboneInput('line_total')?.value)}`]);
+        if (entity === 'work_order_line') cards.push(['Received Qty', backboneInput('received_quantity')?.value || '0']);
+      } else if (entity === 'ar_payment' || entity === 'ap_payment') {
+        cards.push(['Payment Date', backboneInput('payment_date')?.value || '']);
+        cards.push(['Amount', `$${money(backboneInput('amount')?.value)}`]);
+      }
+
+      if (!cards.length) {
+        e.backboneSummary.style.display = 'none';
+        e.backboneSummary.innerHTML = '';
+        return;
+      }
+      e.backboneSummary.style.display = '';
+      e.backboneSummary.innerHTML = cards.map(([label, value]) => `<div class="admin-backbone-card"><span>${escHtml(label)}</span><strong>${escHtml(value)}</strong></div>`).join('');
+    }
+
+    function attachBackboneEnhancers(entity) {
+      const container = els().backboneFields;
+      if (!container) return;
+      container.querySelectorAll('input, select, textarea').forEach((input) => {
+        if (input.dataset.backboneBound === '1') return;
+        input.dataset.backboneBound = '1';
+        const handler = () => {
+          applyBackboneDerivedValues(entity);
+          renderBackboneSummary(entity);
+        };
+        input.addEventListener('input', handler);
+        input.addEventListener('change', handler);
+      });
+      applyBackboneDerivedValues(entity);
+      renderBackboneSummary(entity);
+    }
 
     const BACKBONE_CONFIG = {
       unit_of_measure: { label: 'Units of Measure', rowsKey: 'unitsOfMeasure', valueKey: 'id', labelField: 'name', fields: [
@@ -1349,14 +1579,15 @@
       estimate: { label:'Estimates', rowsKey:'estimates', valueKey:'id', labelField:'estimate_number', fields:[
         { name:'estimate_number', label:'Estimate Number', type:'text', required:true }, { name:'client_id', label:'Client', type:'select', source:'clients' }, { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' },
         { name:'estimate_type', label:'Estimate Type', type:'select', source:'jobTypes', optionValueKey:'name' }, { name:'status', label:'Status', type:'select', options:[['draft','Draft'],['sent','Sent'],['approved','Approved'],['declined','Declined']] },
-        { name:'valid_until', label:'Valid Until', type:'date' }, { name:'subtotal', label:'Subtotal', type:'number' }, { name:'tax_total', label:'Tax Total', type:'number' }, { name:'total_amount', label:'Total Amount', type:'number' },
+        { name:'valid_until', label:'Valid Until', type:'date' }, { name:'line_count', label:'Line Count', type:'number', readOnly:true }, { name:'subtotal', label:'Subtotal', type:'number', readOnly:true }, { name:'tax_total', label:'Tax Total', type:'number' }, { name:'total_amount', label:'Total Amount', type:'number', readOnly:true },
+        { name:'total_cost', label:'Total Cost', type:'number', readOnly:true }, { name:'margin_amount', label:'Margin Amount', type:'number', readOnly:true }, { name:'margin_percent', label:'Margin %', type:'number', readOnly:true },
         { name:'scope_notes', label:'Scope Notes', type:'textarea' }, { name:'terms_notes', label:'Terms Notes', type:'textarea' }
-      ], columns:[['estimate_number','Estimate'],['estimate_type','Type'],['status','Status'],['total_amount','Total']] },
+      ], columns:[['estimate_number','Estimate'],['status','Status'],['line_count','Lines'],['total_amount','Total'],['margin_amount','Margin']] },
       estimate_line: { label:'Estimate Lines', rowsKey:'estimateLines', valueKey:'id', labelField:'description', fields:[
         { name:'estimate_id', label:'Estimate', type:'select', source:'estimates', required:true }, { name:'line_order', label:'Line Order', type:'number' },
         { name:'line_type', label:'Line Type', type:'select', options:[['service','Service'],['material','Material'],['equipment','Equipment'],['allowance','Allowance']] }, { name:'description', label:'Description', type:'text', required:true },
         { name:'cost_code_id', label:'Cost Code', type:'select', source:'costCodes' }, { name:'unit_id', label:'Unit', type:'select', source:'units' }, { name:'quantity', label:'Quantity', type:'number' },
-        { name:'unit_cost', label:'Unit Cost', type:'number' }, { name:'unit_price', label:'Unit Price', type:'number' }, { name:'line_total', label:'Line Total', type:'number' },
+        { name:'unit_cost', label:'Unit Cost', type:'number' }, { name:'unit_price', label:'Unit Price', type:'number' }, { name:'line_total', label:'Line Total', type:'number', readOnly:true },
         { name:'material_id', label:'Material', type:'select', source:'materials' }, { name:'equipment_master_id', label:'Equipment', type:'select', source:'equipmentMaster' }
       ], columns:[['estimate_id','Estimate'],['line_order','Order'],['description','Description'],['line_total','Total']] },
       work_order: { label:'Work Orders', rowsKey:'workOrders', valueKey:'id', labelField:'work_order_number', fields:[
@@ -1365,16 +1596,18 @@
         { name:'work_type', label:'Work Type', type:'select', source:'jobTypes', optionValueKey:'name' }, { name:'status', label:'Status', type:'select', options:[['draft','Draft'],['scheduled','Scheduled'],['in_progress','In Progress'],['completed','Completed'],['closed','Closed']] },
         { name:'scheduled_start', label:'Scheduled Start', type:'datetime-local' }, { name:'scheduled_end', label:'Scheduled End', type:'datetime-local' },
         { name:'service_area_id', label:'Service Area', type:'select', source:'serviceAreas' }, { name:'route_id', label:'Route', type:'select', source:'routes' }, { name:'supervisor_profile_id', label:'Supervisor', type:'select', source:'supervisorProfiles' },
-        { name:'subtotal', label:'Subtotal', type:'number' }, { name:'tax_total', label:'Tax Total', type:'number' }, { name:'total_amount', label:'Total Amount', type:'number' },
+        { name:'line_count', label:'Line Count', type:'number', readOnly:true }, { name:'subtotal', label:'Subtotal', type:'number', readOnly:true }, { name:'tax_total', label:'Tax Total', type:'number' }, { name:'total_amount', label:'Total Amount', type:'number', readOnly:true },
+        { name:'total_cost', label:'Total Cost', type:'number', readOnly:true }, { name:'margin_amount', label:'Margin Amount', type:'number', readOnly:true }, { name:'margin_percent', label:'Margin %', type:'number', readOnly:true }, { name:'received_cost_total', label:'Received Cost Total', type:'number', readOnly:true },
         { name:'crew_notes', label:'Crew Notes', type:'textarea' }, { name:'customer_notes', label:'Customer Notes', type:'textarea' }, { name:'safety_notes', label:'Safety Notes', type:'textarea' }
-      ], columns:[['work_order_number','Work Order'],['work_type','Type'],['status','Status'],['total_amount','Total']] },
+      ], columns:[['work_order_number','Work Order'],['status','Status'],['line_count','Lines'],['total_amount','Total'],['received_cost_total','Received']] },
       work_order_line: { label:'Work Order Lines', rowsKey:'workOrderLines', valueKey:'id', labelField:'description', fields:[
         { name:'work_order_id', label:'Work Order', type:'select', source:'workOrders', required:true }, { name:'line_order', label:'Line Order', type:'number' },
         { name:'line_type', label:'Line Type', type:'select', options:[['service','Service'],['material','Material'],['equipment','Equipment'],['allowance','Allowance']] }, { name:'description', label:'Description', type:'text', required:true },
         { name:'cost_code_id', label:'Cost Code', type:'select', source:'costCodes' }, { name:'unit_id', label:'Unit', type:'select', source:'units' }, { name:'quantity', label:'Quantity', type:'number' },
-        { name:'unit_cost', label:'Unit Cost', type:'number' }, { name:'unit_price', label:'Unit Price', type:'number' }, { name:'line_total', label:'Line Total', type:'number' },
-        { name:'material_id', label:'Material', type:'select', source:'materials' }, { name:'equipment_master_id', label:'Equipment', type:'select', source:'equipmentMaster' }
-      ], columns:[['work_order_id','Work Order'],['line_order','Order'],['description','Description'],['line_total','Total']] },
+        { name:'unit_cost', label:'Unit Cost', type:'number' }, { name:'unit_price', label:'Unit Price', type:'number' }, { name:'line_total', label:'Line Total', type:'number', readOnly:true },
+        { name:'material_id', label:'Material', type:'select', source:'materials' }, { name:'equipment_master_id', label:'Equipment', type:'select', source:'equipmentMaster' },
+        { name:'received_quantity', label:'Received Quantity', type:'number', readOnly:true }, { name:'received_cost_total', label:'Received Cost Total', type:'number', readOnly:true }
+      ], columns:[['work_order_id','Work Order'],['line_order','Order'],['description','Description'],['line_total','Total'],['received_cost_total','Received Cost']] },
       subcontract_client: { label:'Subcontract Clients', rowsKey:'subcontractClients', valueKey:'id', labelField:'company_name', fields:[
         { name:'client_id', label:'Linked Client', type:'select', source:'clients' }, { name:'subcontract_code', label:'Code', type:'text' }, { name:'company_name', label:'Company Name', type:'text', required:true },
         { name:'contact_name', label:'Contact Name', type:'text' }, { name:'contact_email', label:'Contact Email', type:'email' }, { name:'contact_phone', label:'Contact Phone', type:'text' },
@@ -1392,9 +1625,14 @@
         { name:'packet_status', label:'Packet Status', type:'select', options:[['draft','Draft'],['issued','Issued'],['in_progress','In Progress'],['ready_for_closeout','Ready for Closeout'],['closed','Closed']] },
         { name:'work_order_id', label:'Work Order', type:'select', source:'workOrders' }, { name:'dispatch_id', label:'Dispatch', type:'select', source:'subcontractDispatches' },
         { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' }, { name:'route_id', label:'Route', type:'select', source:'routes' }, { name:'supervisor_profile_id', label:'Supervisor', type:'select', source:'supervisorProfiles' },
-        { name:'completion_percent', label:'Completion %', type:'number' }, { name:'briefing_required', label:'Briefing Required', type:'checkbox' }, { name:'inspection_required', label:'Inspection Required', type:'checkbox' },
-        { name:'emergency_review_required', label:'Emergency Review Required', type:'checkbox' }, { name:'packet_notes', label:'Packet Notes', type:'textarea' }
-      ], columns:[['packet_number','Packet'],['packet_type','Type'],['packet_status','Status'],['completion_percent','Complete %']] },
+        { name:'briefing_required', label:'Briefing Required', type:'checkbox' }, { name:'briefing_completed', label:'Briefing Completed', type:'checkbox' },
+        { name:'inspection_required', label:'Inspection Required', type:'checkbox' }, { name:'inspection_completed', label:'Inspection Completed', type:'checkbox' },
+        { name:'emergency_review_required', label:'Emergency Review Required', type:'checkbox' }, { name:'emergency_review_completed', label:'Emergency Review Completed', type:'checkbox' },
+        { name:'field_signoff_completed', label:'Field Signoff Completed', type:'checkbox' }, { name:'closeout_completed', label:'Closeout Completed', type:'checkbox' },
+        { name:'required_item_count', label:'Required Items', type:'number', readOnly:true }, { name:'completed_item_count', label:'Completed Items', type:'number', readOnly:true }, { name:'completion_percent', label:'Completion %', type:'number', readOnly:true },
+        { name:'issued_at', label:'Issued At', type:'datetime-local' }, { name:'started_at', label:'Started At', type:'datetime-local' }, { name:'ready_for_closeout_at', label:'Ready For Closeout At', type:'datetime-local', readOnly:true }, { name:'closed_at', label:'Closed At', type:'datetime-local', readOnly:true },
+        { name:'packet_notes', label:'Packet Notes', type:'textarea' }, { name:'closeout_notes', label:'Closeout Notes', type:'textarea' }
+      ], columns:[['packet_number','Packet'],['packet_type','Type'],['packet_status','Status'],['completed_item_count','Done'],['required_item_count','Required'],['completion_percent','Complete %']] },
       gl_account: { label:'Chart of Accounts', rowsKey:'chartOfAccounts', valueKey:'id', labelField:'account_name', fields:[
         { name:'account_number', label:'Account Number', type:'text', required:true }, { name:'account_name', label:'Account Name', type:'text', required:true }, { name:'account_type', label:'Account Type', type:'select', options:[['asset','Asset'],['liability','Liability'],['equity','Equity'],['revenue','Revenue'],['expense','Expense']] },
         { name:'parent_account_id', label:'Parent Account', type:'select', source:'glAccounts' }, { name:'system_code', label:'System Code', type:'text' }, { name:'is_active', label:'Active', type:'checkbox' }
@@ -1407,17 +1645,17 @@
       ar_invoice: { label:'AR Invoices', rowsKey:'arInvoices', valueKey:'id', labelField:'invoice_number', fields:[
         { name:'invoice_number', label:'Invoice Number', type:'text', required:true }, { name:'client_id', label:'Client', type:'select', source:'clients', required:true }, { name:'work_order_id', label:'Work Order', type:'select', source:'workOrders' },
         { name:'dispatch_id', label:'Dispatch', type:'select', source:'subcontractDispatches' }, { name:'invoice_status', label:'Status', type:'select', options:[['draft','Draft'],['issued','Issued'],['partial','Partial'],['paid','Paid'],['void','Void']] },
-        { name:'invoice_date', label:'Invoice Date', type:'date' }, { name:'due_date', label:'Due Date', type:'date' }, { name:'subtotal', label:'Subtotal', type:'number' }, { name:'tax_total', label:'Tax Total', type:'number' }, { name:'total_amount', label:'Total Amount', type:'number' }, { name:'balance_due', label:'Balance Due', type:'number' }
-      ], columns:[['invoice_number','Invoice'],['invoice_status','Status'],['invoice_date','Date'],['balance_due','Balance']] },
+        { name:'invoice_date', label:'Invoice Date', type:'date' }, { name:'due_date', label:'Due Date', type:'date' }, { name:'subtotal', label:'Subtotal', type:'number' }, { name:'tax_total', label:'Tax Total', type:'number' }, { name:'total_amount', label:'Total Amount', type:'number', readOnly:true }, { name:'amount_paid', label:'Amount Paid', type:'number', readOnly:true }, { name:'balance_due', label:'Balance Due', type:'number', readOnly:true }
+      ], columns:[['invoice_number','Invoice'],['invoice_status','Status'],['total_amount','Total'],['amount_paid','Paid'],['balance_due','Balance']] },
       ar_payment: { label:'AR Payments', rowsKey:'arPayments', valueKey:'id', labelField:'payment_number', fields:[
         { name:'payment_number', label:'Payment Number', type:'text', required:true }, { name:'client_id', label:'Client', type:'select', source:'clients', required:true },
         { name:'invoice_id', label:'Invoice', type:'select', source:'arInvoices' }, { name:'payment_date', label:'Payment Date', type:'date' }, { name:'payment_method', label:'Payment Method', type:'text' },
         { name:'reference_number', label:'Reference Number', type:'text' }, { name:'amount', label:'Amount', type:'number' }, { name:'notes', label:'Notes', type:'textarea' }
       ], columns:[['payment_number','Payment'],['client_id','Client'],['payment_date','Date'],['amount','Amount']] },
       ap_bill: { label:'AP Bills', rowsKey:'apBills', valueKey:'id', labelField:'bill_number', fields:[
-        { name:'bill_number', label:'Bill Number', type:'text', required:true }, { name:'vendor_id', label:'Vendor', type:'select', source:'vendors', required:true }, { name:'bill_status', label:'Status', type:'select', options:[['draft','Draft'],['received','Received'],['scheduled','Scheduled'],['paid','Paid'],['void','Void']] },
-        { name:'bill_date', label:'Bill Date', type:'date' }, { name:'due_date', label:'Due Date', type:'date' }, { name:'subtotal', label:'Subtotal', type:'number' }, { name:'tax_total', label:'Tax Total', type:'number' }, { name:'total_amount', label:'Total Amount', type:'number' }, { name:'balance_due', label:'Balance Due', type:'number' }
-      ], columns:[['bill_number','Bill'],['bill_status','Status'],['bill_date','Date'],['balance_due','Balance']] },
+        { name:'bill_number', label:'Bill Number', type:'text', required:true }, { name:'vendor_id', label:'Vendor', type:'select', source:'vendors', required:true }, { name:'bill_status', label:'Status', type:'select', options:[['draft','Draft'],['received','Received'],['scheduled','Scheduled'],['partial','Partial'],['paid','Paid'],['void','Void']] },
+        { name:'bill_date', label:'Bill Date', type:'date' }, { name:'due_date', label:'Due Date', type:'date' }, { name:'subtotal', label:'Subtotal', type:'number' }, { name:'tax_total', label:'Tax Total', type:'number' }, { name:'total_amount', label:'Total Amount', type:'number', readOnly:true }, { name:'amount_paid', label:'Amount Paid', type:'number', readOnly:true }, { name:'balance_due', label:'Balance Due', type:'number', readOnly:true }
+      ], columns:[['bill_number','Bill'],['bill_status','Status'],['total_amount','Total'],['amount_paid','Paid'],['balance_due','Balance']] },
       ap_payment: { label:'AP Payments', rowsKey:'apPayments', valueKey:'id', labelField:'payment_number', fields:[
         { name:'payment_number', label:'Payment Number', type:'text', required:true }, { name:'vendor_id', label:'Vendor', type:'select', source:'vendors', required:true },
         { name:'bill_id', label:'Bill', type:'select', source:'apBills' }, { name:'payment_date', label:'Payment Date', type:'date' }, { name:'payment_method', label:'Payment Method', type:'text' },
@@ -1426,12 +1664,12 @@
       material_receipt: { label:'Material Receipts', rowsKey:'materialReceipts', valueKey:'id', labelField:'receipt_number', fields:[
         { name:'receipt_number', label:'Receipt Number', type:'text', required:true }, { name:'vendor_id', label:'Vendor', type:'select', source:'vendors' }, { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' },
         { name:'work_order_id', label:'Work Order', type:'select', source:'workOrders' }, { name:'receipt_status', label:'Receipt Status', type:'select', options:[['draft','Draft'],['received','Received'],['checked_in','Checked In'],['closed','Closed']] },
-        { name:'receipt_date', label:'Receipt Date', type:'date' }, { name:'received_by_profile_id', label:'Received By', type:'select', source:'profiles' }, { name:'notes', label:'Notes', type:'textarea' }
-      ], columns:[['receipt_number','Receipt'],['receipt_status','Status'],['receipt_date','Date'],['vendor_id','Vendor']] },
+        { name:'receipt_date', label:'Receipt Date', type:'date' }, { name:'received_by_profile_id', label:'Received By', type:'select', source:'profiles' }, { name:'line_count', label:'Line Count', type:'number', readOnly:true }, { name:'total_amount', label:'Total Amount', type:'number', readOnly:true }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['receipt_number','Receipt'],['receipt_status','Status'],['line_count','Lines'],['total_amount','Total']] },
       material_receipt_line: { label:'Material Receipt Lines', rowsKey:'materialReceiptLines', valueKey:'id', labelField:'description', fields:[
         { name:'receipt_id', label:'Receipt', type:'select', source:'materialReceipts', required:true }, { name:'line_order', label:'Line Order', type:'number' },
         { name:'material_id', label:'Material', type:'select', source:'materials' }, { name:'description', label:'Description', type:'text', required:true }, { name:'unit_id', label:'Unit', type:'select', source:'units' },
-        { name:'quantity', label:'Quantity', type:'number' }, { name:'unit_cost', label:'Unit Cost', type:'number' }, { name:'line_total', label:'Line Total', type:'number' },
+        { name:'quantity', label:'Quantity', type:'number' }, { name:'unit_cost', label:'Unit Cost', type:'number' }, { name:'line_total', label:'Line Total', type:'number', readOnly:true },
         { name:'cost_code_id', label:'Cost Code', type:'select', source:'costCodes' }, { name:'work_order_line_id', label:'Work Order Line', type:'select', source:'workOrderLines' }
       ], columns:[['receipt_id','Receipt'],['line_order','Order'],['description','Description'],['line_total','Total']] }
     };
@@ -1523,15 +1761,17 @@
       e.backboneFields.innerHTML = cfg.fields.map((field) => {
         const inputId = `ad_bb_${field.name}`;
         const value = formatBackboneValue(field, row);
-        if (field.type === 'textarea') return `<label>${escHtml(field.label)}<textarea id="${escHtml(inputId)}" rows="3">${escHtml(value)}</textarea></label>`;
-        if (field.type === 'checkbox') return `<label style="display:flex;align-items:end;gap:8px;"><input id="${escHtml(inputId)}" type="checkbox" ${value ? 'checked' : ''} /><span>${escHtml(field.label)}</span></label>`;
+        const roInput = field.readOnly ? ' readonly' : '';
+        const roDisabled = field.readOnly ? ' disabled' : '';
+        if (field.type === 'textarea') return `<label>${escHtml(field.label)}<textarea id="${escHtml(inputId)}" rows="3"${roInput}>${escHtml(value)}</textarea></label>`;
+        if (field.type === 'checkbox') return `<label style="display:flex;align-items:end;gap:8px;"><input id="${escHtml(inputId)}" type="checkbox" ${value ? 'checked' : ''}${roDisabled} /><span>${escHtml(field.label)}</span></label>`;
         if (field.type === 'select') {
           const options = Array.isArray(field.options)
             ? `<option value="">Select ${escHtml(field.label)}</option>` + field.options.map((opt) => `<option value="${escHtml(opt[0])}">${escHtml(opt[1])}</option>`).join('')
             : optionList(getBackboneOptionRows(field.source), field.optionValueKey || 'id', (item) => getBackboneOptionLabel(field.source, item), `Select ${field.label}`);
-          return `<label>${escHtml(field.label)}<select id="${escHtml(inputId)}">${options}</select></label>`;
+          return `<label>${escHtml(field.label)}<select id="${escHtml(inputId)}"${roDisabled}>${options}</select></label>`;
         }
-        return `<label>${escHtml(field.label)}<input id="${escHtml(inputId)}" type="${escHtml(field.type || 'text')}" value="${escHtml(value)}" /></label>`;
+        return `<label>${escHtml(field.label)}<input id="${escHtml(inputId)}" type="${escHtml(field.type || 'text')}" value="${escHtml(value)}"${roInput} /></label>`;
       }).join('');
       cfg.fields.forEach((field) => {
         if (field.type === 'select') {
@@ -1539,6 +1779,7 @@
           if (input) setSelectValue(input, row?.[field.name] || '');
         }
       });
+      attachBackboneEnhancers(entity);
     }
 
     function fillBackboneForm(row = null) {
@@ -1546,6 +1787,7 @@
       const entity = e.backboneEntity?.value || 'unit_of_measure';
       if (e.backboneItemId) setSelectValue(e.backboneItemId, row?.id || '');
       renderBackboneFields(entity, row || null);
+      renderBackboneSummary(entity);
     }
 
     function renderBackboneTable() {

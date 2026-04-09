@@ -1,5 +1,5 @@
--- Last synchronized: April 8, 2026. Reviewed during the deeper workflow polish pass for route stops, estimate/work-order lines, AR/AP payments, material receiving, and linked HSE packets.
--- Current reference includes migrations through 062_deeper_workflow_polish_admin_foundation.sql and documents the next implementation direction for Admin managers on estimates/work-order lines, route stops, AR/AP payment posting, material receiving, and linked HSE packets.
+-- Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
+-- Current reference includes migrations through 063_workflow_rollups_posting_and_hse_closeout.sql and documents the stronger derived-data direction for totals rollups, payment application, receiving-linked costing, and HSE packet progress/closeout.
 
 create extension if not exists pgcrypto;
 

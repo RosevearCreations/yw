@@ -64,7 +64,7 @@ addCheck('account-has-conflict-review', accountUi.includes('Conflict Review'), '
 addCheck('account-has-support-export', accountUi.includes('Export Support Snapshot'), 'account-ui.js should render the support snapshot export button.');
 
 const schema = read('sql/000_full_schema_reference.sql');
-addCheck('schema-header-current', /2026-04-01 conflict review/i.test(schema), 'Schema snapshot header should reflect the latest pass.');
+addCheck('schema-header-current', /Last synchronized: April 9, 2026\./i.test(schema), 'Schema snapshot header should reflect the latest pass.');
 
 console.log(JSON.stringify({ ok: !failed, checks: results }, null, 2));
 if (failed) process.exit(1);
