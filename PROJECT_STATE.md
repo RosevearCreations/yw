@@ -1,4 +1,24 @@
-> Last synchronized: April 9, 2026. Reviewed during the deeper workflow polish pass for estimate/work-order lines, route stops, AR/AP payment posting, material receiving, linked HSE packets, and admin-manager alignment.
+> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
+
+## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
+
+### Newly strengthened in this pass
+- estimate subtotal / total / cost / margin rollups from estimate lines
+- work-order subtotal / total / cost / received-cost rollups from work-order lines and receipt lines
+- invoice and bill payment application with amount-paid and balance-due tracking
+- linked HSE packet progress, checklist completion, and closeout state
+
+### What is still honestly open after this pass
+- full journal batch posting into GL entries
+- stronger inventory on-hand movement beyond receipt/cost visibility
+- formal route-stop completion workflow and route-day execution state
+- deeper field/mobile photo capture around receipts, closeout, and site/HSE packet proof
+
+- Added DB-first workflow logic so estimate, work-order, and material-receipt header totals can roll up from their line records instead of depending on manual entry.
+- Added receivables/payables payment-application logic so invoices and bills can track paid amounts, remaining balance, and partial/paid status from posted payments.
+- Added receiving-to-costing linkage so material receipt lines can feed received quantity / received cost visibility back into work-order execution.
+- Extended linked HSE packets toward real progress and closeout handling with checklist-style completion fields, derived progress, and clearer Admin-side visibility.
+
 
 ## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass
 - Refreshed the Markdown set to move the product direction from schema-only groundwork into the next implementation phase: admin UI managers for estimates/work orders, materials/units, routes/service areas, subcontract dispatch, and AR/AP + chart of accounts.
@@ -95,4 +115,3 @@ These screens should be mobile-friendly for quick field edits and desktop-strong
 - camera-first attachments and scan-to-link for receipts / equipment / HSE packets
 - offline-safe draft saving for route stops, line items, and site safety checks
 - simplified worker-facing packet progress views that avoid desktop-only layouts
-

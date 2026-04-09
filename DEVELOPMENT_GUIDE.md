@@ -1,4 +1,20 @@
-> Last synchronized: April 9, 2026. Reviewed during the deeper workflow polish pass for estimate/work-order lines, route stops, AR/AP payment posting, material receiving, linked HSE packets, and admin-manager alignment.
+> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
+
+## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
+
+## Developer note for this pass
+When adding future workflow managers, prefer this implementation order:
+1. add or adjust tables/columns
+2. add DB-side rollup / derivation logic
+3. expose through selectors/manage functions
+4. add Admin UI helpers / previews
+5. update docs + schema snapshot in the same pass
+
+- Added DB-first workflow logic so estimate, work-order, and material-receipt header totals can roll up from their line records instead of depending on manual entry.
+- Added receivables/payables payment-application logic so invoices and bills can track paid amounts, remaining balance, and partial/paid status from posted payments.
+- Added receiving-to-costing linkage so material receipt lines can feed received quantity / received cost visibility back into work-order execution.
+- Extended linked HSE packets toward real progress and closeout handling with checklist-style completion fields, derived progress, and clearer Admin-side visibility.
+
 
 ## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass
 - Refreshed the Markdown set to move the product direction from schema-only groundwork into the next implementation phase: admin UI managers for estimates/work orders, materials/units, routes/service areas, subcontract dispatch, and AR/AP + chart of accounts.
@@ -11,7 +27,7 @@
 # Development Guide
 
 ## April 9, 2026 implementation guide update
-- Treat `062_deeper_workflow_polish_admin_foundation.sql` as the next schema step after the adaptive 061 foundation.
+- Treat `063_workflow_rollups_posting_and_hse_closeout.sql` as the current schema step after the 061/062 foundation passes.
 - When building the next Admin screens, prioritize create/edit/delete flows for route stops, estimate lines, work-order lines, AR/AP payments, material receiving, and linked HSE packets.
 - Keep DB-first selectors as the source of truth for units, cost codes, service areas, routes, materials, equipment, clients, sites, and staff.
 - Preserve standalone HSE entry points for unscheduled work even while linked HSE packets are added for formal work orders and dispatches.
