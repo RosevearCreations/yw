@@ -1,5 +1,5 @@
--- Last synchronized: April 7, 2026. Reviewed during the estimates/work-orders/routes/materials/subcontract/general-ledger foundation and documentation synchronization pass.
--- Current reference includes migrations through 061_estimates_work_orders_routes_materials_and_gl_foundation.sql
+-- Last synchronized: April 8, 2026. Reviewed during the landscaping/construction/mobile/admin-ui pathway documentation pass.
+-- Current reference includes migrations through 061_estimates_work_orders_routes_materials_and_gl_foundation.sql and documents the next implementation direction for admin managers on estimates/work orders, materials/units, routes/service areas, subcontract dispatch, and AR/AP + chart-of-accounts.
 
 create extension if not exists pgcrypto;
 
