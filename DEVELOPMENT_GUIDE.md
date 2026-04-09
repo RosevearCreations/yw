@@ -1,3 +1,5 @@
+> Last synchronized: April 8, 2026. Reviewed during the Admin backbone manager, HSE/OSHA hub, and operations/accounting UI pass.
+
 ## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass
 - Refreshed the Markdown set to move the product direction from schema-only groundwork into the next implementation phase: admin UI managers for estimates/work orders, materials/units, routes/service areas, subcontract dispatch, and AR/AP + chart of accounts.
 - Added a clearer rationale for keeping HSE as a first-class standalone module that can later link to jobs, sites, and dispatches for landscaping, project, and subcontract work.
@@ -128,3 +130,24 @@ Each manager should support:
 - populated dropdowns from shared DB-backed catalogs
 - mobile-friendly forms for quick edits in the field
 - desktop-dense tables for office/admin users
+
+## Admin backbone completion target
+The primary office interface should let Admin users maintain:
+- units of measure
+- cost codes
+- service areas and routes
+- clients and client sites
+- materials and equipment masters
+- estimates and work orders
+- subcontract clients and dispatches
+- chart of accounts, vendors, AR invoices, and AP bills
+
+The primary field interface should remain the HSE workflow group:
+- Toolbox Talk
+- PPE Check
+- First Aid Kit
+- Site Inspection
+- Emergency Drill
+- Logbook / review
+
+These must remain usable on phones and on unscheduled work that does not start from a formal estimate/work-order.

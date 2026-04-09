@@ -1,3 +1,5 @@
+> Last synchronized: April 8, 2026. Reviewed during the Admin backbone manager, HSE/OSHA hub, and operations/accounting UI pass.
+
 ## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass
 - Refreshed the Markdown set to move the product direction from schema-only groundwork into the next implementation phase: admin UI managers for estimates/work orders, materials/units, routes/service areas, subcontract dispatch, and AR/AP + chart of accounts.
 - Added a clearer rationale for keeping HSE as a first-class standalone module that can later link to jobs, sites, and dispatches for landscaping, project, and subcontract work.
@@ -67,3 +69,8 @@ The build now contains a usable blend of:
 - AR/AP + chart-of-accounts admin screens
 
 These screens should be mobile-friendly for quick field edits and desktop-strong for office/admin work.
+
+## April 8, 2026 current state
+- Admin can now begin using the new operations/accounting backbone directly from the Admin screen.
+- HSE/OSHA workflows remain the primary standalone field interface and should continue to be listed explicitly as live, partial, or next-stage interfaces in future passes.
+- The next completion layer is deeper validation, linked estimate/work-order lines, route stops, payment posting, and more ergonomic mobile editing.

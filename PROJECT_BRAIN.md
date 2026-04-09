@@ -1,3 +1,5 @@
+> Last synchronized: April 8, 2026. Reviewed during the Admin backbone manager, HSE/OSHA hub, and operations/accounting UI pass.
+
 ## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass
 - Refreshed the Markdown set to move the product direction from schema-only groundwork into the next implementation phase: admin UI managers for estimates/work orders, materials/units, routes/service areas, subcontract dispatch, and AR/AP + chart of accounts.
 - Added a clearer rationale for keeping HSE as a first-class standalone module that can later link to jobs, sites, and dispatches for landscaping, project, and subcontract work.
@@ -73,3 +75,6 @@ This project is a **field operations platform with an integrated HSE safety appl
 - AR/AP + chart-of-accounts admin screens
 
 These screens should be mobile-friendly for quick field edits and desktop-strong for office/admin work.
+
+## April 8, 2026 project brain update
+Treat the product as a landscaping / project-work / subcontract dispatch platform with a first-class HSE app inside it. The HSE side must always be able to run on its own for unscheduled work, but Admin should still be able to connect safety records back to routes, sites, work orders, dispatches, equipment, and accounting later.

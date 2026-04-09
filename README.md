@@ -1,3 +1,5 @@
+> Last synchronized: April 8, 2026. Reviewed during the Admin backbone manager, HSE/OSHA hub, and operations/accounting UI pass.
+
 ## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass
 - Refreshed the Markdown set to move the product direction from schema-only groundwork into the next implementation phase: admin UI managers for estimates/work orders, materials/units, routes/service areas, subcontract dispatch, and AR/AP + chart of accounts.
 - Added a clearer rationale for keeping HSE as a first-class standalone module that can later link to jobs, sites, and dispatches for landscaping, project, and subcontract work.
@@ -132,3 +134,9 @@ The admin backbone is intended to become the single source of truth for:
 ## Current priority
 
 The app is now stable enough that the main build priority shifts from shell repair toward **deepening the operations and accounting backbone** while keeping the HSE side standalone-capable.
+
+## April 8, 2026 direction update
+- The platform direction is now a landscaping / construction / subcontract operations system with a standalone-capable HSE safety core.
+- The Admin backbone is expected to be the source of truth for dropdowns, equipment listings, employee listings, job/work-order records, materials, routes, dispatches, and accounting masters.
+- The next implementation step after this pass is to use the new operations/accounting tables directly from the Admin UI end to end.
+- The HSE side remains usable on unscheduled work even when no formal estimate/work-order exists.

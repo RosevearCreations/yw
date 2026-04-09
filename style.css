@@ -907,3 +907,13 @@ body[data-user-role="admin"] #admin[data-admin-locked="false"] {
   white-space: nowrap;
   border: 0;
 }
+
+
+.admin-hub-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:12px;}
+.admin-hub-card{display:flex;flex-direction:column;gap:8px;padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(255,255,255,.03);text-align:left;color:inherit;cursor:pointer;}
+.admin-hub-card.static{cursor:default;}
+.admin-hub-card strong{font-size:1rem;}
+.admin-hub-card span{font-size:.92rem;line-height:1.4;opacity:.9;}
+.admin-hub-card em{font-style:normal;font-size:.78rem;opacity:.8;letter-spacing:.04em;text-transform:uppercase;}
+#ad_backbone_fields .grid,#ad_backbone_fields{align-items:start;}
+#ad_backbone_fields label{display:block;}
