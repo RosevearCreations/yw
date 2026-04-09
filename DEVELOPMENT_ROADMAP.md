@@ -1,14 +1,29 @@
+## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass
+- Refreshed the Markdown set to move the product direction from schema-only groundwork into the next implementation phase: admin UI managers for estimates/work orders, materials/units, routes/service areas, subcontract dispatch, and AR/AP + chart of accounts.
+- Added a clearer rationale for keeping HSE as a first-class standalone module that can later link to jobs, sites, and dispatches for landscaping, project, and subcontract work.
+- Updated the docs to emphasize mobile-first field use, desktop-strong admin depth, DB-first shared data, and local SEO / one-H1 discipline on every public build pass.
+
 ## 2026-04-07 estimates/work-orders/routes/materials/subcontract/GL foundation pass
 - Added schema foundation migration `061_estimates_work_orders_routes_materials_and_gl_foundation.sql` so the repo now has first-class tables for estimates, work orders, routes, materials, subcontract dispatch, receivables, payables, and general-ledger journals.
 - Reframed the roadmap so the next implementation phase is no longer “prove the shell exists” but “complete the digital admin/operations/accounting backbone”.
 
 # Development Roadmap
 
-Last synchronized: April 7, 2026
+Last synchronized: April 8, 2026
 
 ## Immediate priorities
 
-### 1) Admin backbone completion
+### 1) Admin UI on new operations/accounting tables
+Turn the new foundation tables into working admin tools.
+- estimate / work-order manager
+- materials + units manager
+- route / service-area manager
+- subcontract dispatch manager
+- AR/AP + chart-of-accounts admin screens
+- equipment master manager under the same admin backbone
+
+
+### 2) Admin backbone completion
 Make Admin the true operational source of truth.
 - staff directory and hierarchy
 - dropdown/reference manager
@@ -18,7 +33,7 @@ Make Admin the true operational source of truth.
 - service areas and route references
 - estimate approval and conversion workflow
 
-### 2) Estimates and work orders
+### 3) Estimates and work orders
 Move from schema foundation into working admin UI and workflows.
 - estimate create/edit/list/approve
 - estimate lines for labour/material/equipment/subcontract items
@@ -27,7 +42,7 @@ Move from schema foundation into working admin UI and workflows.
 - work-order status history and approvals
 - printable and mobile-friendly work packets
 
-### 3) Materials and costing
+### 4) Materials and costing
 Complete the digital cost backbone.
 - materials catalog CRUD
 - unit-of-measure management
@@ -36,7 +51,7 @@ Complete the digital cost backbone.
 - standard cost and bill-rate maintenance
 - profitability reporting later
 
-### 4) Routes and service areas
+### 5) Routes and service areas
 Deepen the landscaping service model.
 - service-area manager
 - route manager
@@ -45,7 +60,7 @@ Deepen the landscaping service model.
 - supervisor/crew assignment by route
 - mobile visit completion flow
 
-### 5) Subcontract dispatch workflow
+### 6) Subcontract dispatch workflow
 Support operator + equipment assignments to another firm.
 - subcontract client records
 - dispatch create/edit/list
@@ -54,7 +69,7 @@ Support operator + equipment assignments to another firm.
 - dispatch billing and invoice generation
 - optional HSE packet linking
 
-### 6) Digital accounting foundation
+### 7) Digital accounting foundation
 Move toward a fully digital receivables/payables/general-ledger system.
 - chart of accounts manager
 - invoice and bill CRUD
@@ -64,7 +79,7 @@ Move toward a fully digital receivables/payables/general-ledger system.
 - standard cost account mapping
 - later bank reconciliation and financial statements
 
-### 7) Standalone HSE continuity
+### 8) Standalone HSE continuity
 Keep HSE operational without requiring a full operations job.
 - standalone forms remain first-class
 - optional later linking to jobs/sites/clients/work orders/routes
@@ -72,7 +87,7 @@ Keep HSE operational without requiring a full operations job.
 
 ## Secondary priorities
 
-### 8) Mobile-first field optimization
+### 9) Mobile-first field optimization
 - quicker mobile navigation
 - progressive disclosure on forms
 - camera/upload friendly steps

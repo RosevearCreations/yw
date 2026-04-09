@@ -1,3 +1,8 @@
+## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass
+- Refreshed the Markdown set to move the product direction from schema-only groundwork into the next implementation phase: admin UI managers for estimates/work orders, materials/units, routes/service areas, subcontract dispatch, and AR/AP + chart of accounts.
+- Added a clearer rationale for keeping HSE as a first-class standalone module that can later link to jobs, sites, and dispatches for landscaping, project, and subcontract work.
+- Updated the docs to emphasize mobile-first field use, desktop-strong admin depth, DB-first shared data, and local SEO / one-H1 discipline on every public build pass.
+
 ## 2026-04-07 estimates/work-orders/routes/materials/subcontract/GL foundation pass
 - Added schema foundation migration `061_estimates_work_orders_routes_materials_and_gl_foundation.sql` for clients, client sites, service areas, routes, route stops, materials catalog, units of measure, equipment master data, estimates, work orders, subcontract dispatch, chart of accounts, AR, AP, and general-ledger journals.
 - Refreshed the schema reference snapshot so the repo now documents a digital operations + accounting direction instead of leaving that work only in roadmap notes.
@@ -5,7 +10,7 @@
 
 # YW Operations + HSE Platform
 
-Last synchronized: April 7, 2026
+Last synchronized: April 8, 2026
 
 ## What this project is
 
@@ -43,6 +48,35 @@ The product direction is now:
 - role-aware for Admin, Supervisor, and Employee users
 - database-first for shared dropdowns, staff lists, equipment, jobs, work orders, materials, routes, and accounting structures
 - validation-first so saves are repeatable and one user's identity never cross-contaminates another user's view
+
+## Why this direction makes sense
+
+This direction fits the real work mix the company performs:
+- recurring landscaping and grounds maintenance
+- project / construction-style jobs such as splash pads and children's parks
+- subcontract operator-and-equipment dispatch to other firms
+- standalone HSE workflows for unscheduled or ad hoc work
+
+It also fits the external guidance that most strongly affects the business model:
+- **OSHA landscaping guidance** emphasizes machinery, heat and cold stress, lifting/awkward postures, pesticides/chemicals, and both maintenance and construction activity, which supports keeping HSE linkable to jobs, sites, routes, and dispatches.
+- **IRS small-business and depreciation guidance** supports keeping materials, equipment, expenses, and accounting records structured and digital so ordinary business expenses, inventory/material treatment, and depreciable equipment are easier to track.
+- For project-based landscaping/construction work, the practical next layer is estimates, work orders, materials, AR/AP, and general-ledger structure so costing, billing, and profitability can be managed in one system.
+
+Reference links for future planning:
+- OSHA landscaping hazards: https://www.osha.gov/landscaping/hazards
+- OSHA landscaping overview/standards: https://www.osha.gov/landscaping
+- IRS Publication 334, Tax Guide for Small Business: https://www.irs.gov/publications/p334
+- IRS Publication 946, How To Depreciate Property: https://www.irs.gov/publications/p946
+- IRS Tangible Property Regulations FAQ: https://www.irs.gov/businesses/small-businesses-self-employed/tangible-property-final-regulations
+
+## Next strongest build pass
+
+The next strongest build pass after the current schema-and-docs phase is to make the Admin UI actually use the new tables:
+- estimate / work-order manager
+- materials + units manager
+- route / service-area manager
+- subcontract dispatch manager
+- AR/AP + chart-of-accounts admin screens
 
 ## Admin backbone goals
 

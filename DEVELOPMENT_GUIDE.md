@@ -1,9 +1,14 @@
+## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass
+- Refreshed the Markdown set to move the product direction from schema-only groundwork into the next implementation phase: admin UI managers for estimates/work orders, materials/units, routes/service areas, subcontract dispatch, and AR/AP + chart of accounts.
+- Added a clearer rationale for keeping HSE as a first-class standalone module that can later link to jobs, sites, and dispatches for landscaping, project, and subcontract work.
+- Updated the docs to emphasize mobile-first field use, desktop-strong admin depth, DB-first shared data, and local SEO / one-H1 discipline on every public build pass.
+
 ## 2026-04-07 estimates/work-orders/routes/materials/subcontract/GL foundation pass
 - Added schema foundation migration `061_estimates_work_orders_routes_materials_and_gl_foundation.sql` and updated the development guidance so future passes build the admin/data backbone instead of circling older shell issues.
 
 # Development Guide
 
-Last synchronized: April 7, 2026
+Last synchronized: April 8, 2026
 
 ## Purpose of this guide
 
@@ -90,3 +95,36 @@ The accounting side should eventually cover:
 - keep admin/token/private pages noindex
 - keep one H1 per exposed page
 - keep CSS/mobile QA active every pass
+
+## Why this direction makes sense
+
+The company is not only a recurring landscaping business. It also takes project/construction jobs and subcontract dispatch work. That means the system has to support three realities at once:
+- recurring service operations
+- project/work-order delivery
+- standalone or linked HSE workflows
+
+External planning references that support this direction:
+- OSHA landscaping hazards and standards: machinery, heat/cold, lifting, pesticides/chemicals, maintenance work, and construction activity
+- IRS small-business and depreciation guidance: ordinary expenses, tangible property handling, and equipment depreciation all support a digital, structured materials/equipment/accounting model
+
+Planning references:
+- https://www.osha.gov/landscaping/hazards
+- https://www.osha.gov/landscaping
+- https://www.irs.gov/publications/p334
+- https://www.irs.gov/publications/p946
+- https://www.irs.gov/businesses/small-businesses-self-employed/tangible-property-final-regulations
+
+### Track 6 — Admin UI on new operations/accounting tables
+The next implementation layer should expose the new schema through real admin screens:
+- estimate/work-order manager
+- materials + units manager
+- route/service-area manager
+- subcontract dispatch manager
+- AR/AP + chart-of-accounts admin screens
+
+Each manager should support:
+- list/filter/search
+- create/edit/archive
+- populated dropdowns from shared DB-backed catalogs
+- mobile-friendly forms for quick edits in the field
+- desktop-dense tables for office/admin users

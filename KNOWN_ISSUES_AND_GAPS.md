@@ -1,10 +1,15 @@
+## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass
+- Refreshed the Markdown set to move the product direction from schema-only groundwork into the next implementation phase: admin UI managers for estimates/work orders, materials/units, routes/service areas, subcontract dispatch, and AR/AP + chart of accounts.
+- Added a clearer rationale for keeping HSE as a first-class standalone module that can later link to jobs, sites, and dispatches for landscaping, project, and subcontract work.
+- Updated the docs to emphasize mobile-first field use, desktop-strong admin depth, DB-first shared data, and local SEO / one-H1 discipline on every public build pass.
+
 ## 2026-04-07 estimates/work-orders/routes/materials/subcontract/GL foundation pass
 - Added schema foundation migration `061_estimates_work_orders_routes_materials_and_gl_foundation.sql` so the repo now has concrete tables for the operations/accounting direction that had previously been only in roadmap notes.
 - With the current build reported as stable, the biggest remaining risks shift from shell repair toward implementation depth, validation quality, and operational/accounting convergence.
 
 # Known Issues and Gaps
 
-Last synchronized: April 7, 2026
+Last synchronized: April 8, 2026
 
 ## 1) Admin backbone incompletion
 ### Risk
@@ -98,3 +103,22 @@ The UI continues to drift visually across screens and devices.
 3. landscaping/project/subcontract workflow depth
 4. digital accounting implementation
 5. standalone HSE continuity
+
+## Why this direction still matters
+
+The business model mixes recurring landscaping, project/construction work, subcontract dispatch, and standalone HSE activity. Because of that, the highest-value remaining work is no longer just shell stability. It is converging the admin backbone, shared DB-backed catalogs, mobile field use, and digital accounting support into one coherent operations platform.
+
+Reference links:
+- OSHA landscaping hazards: https://www.osha.gov/landscaping/hazards
+- OSHA landscaping overview/standards: https://www.osha.gov/landscaping
+- IRS Publication 334: https://www.irs.gov/publications/p334
+- IRS Publication 946: https://www.irs.gov/publications/p946
+- IRS Tangible Property Regulations FAQ: https://www.irs.gov/businesses/small-businesses-self-employed/tangible-property-final-regulations
+
+## Highest-value next implementation pass
+- estimate / work-order manager
+- materials + units manager
+- route / service-area manager
+- subcontract dispatch manager
+- AR/AP + chart-of-accounts admin screens
+- tighter HSE linking from standalone records into jobs/sites/work orders/dispatches when appropriate
