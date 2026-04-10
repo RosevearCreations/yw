@@ -1807,14 +1807,14 @@ select
   coalesce(lr.actual_material_cost_total, 0) as actual_material_cost_total,
   wo.tax_total,
   public.ywi_normalize_money(coalesce(lr.rolled_subtotal, 0) + coalesce(wo.tax_total, 0)) as rolled_total,
+  coalesce(hr.open_hse_packets, 0) as open_hse_packets,
+  coalesce(hr.ready_hse_packets, 0) as ready_hse_packets,
+  coalesce(hr.closed_hse_packets, 0) as closed_hse_packets,
   coalesce(rr.receipt_count, 0) as receipt_count,
   coalesce(rr.received_material_quantity_total, 0) as received_material_quantity_total,
   coalesce(rr.received_material_cost_total, 0) as received_material_cost_total,
   coalesce(rr.allocated_receipt_cost_total, 0) as allocated_receipt_cost_total,
   coalesce(rr.unallocated_receipt_cost_total, 0) as unallocated_receipt_cost_total,
-  coalesce(hr.open_hse_packets, 0) as open_hse_packets,
-  coalesce(hr.ready_hse_packets, 0) as ready_hse_packets,
-  coalesce(hr.closed_hse_packets, 0) as closed_hse_packets,
   case
     when wo.status = 'closed' then 'closed'
     when wo.status = 'completed' and coalesce(hr.open_hse_packets, 0) = 0 then 'ready_for_billing'
@@ -1835,13 +1835,13 @@ select
   ai.client_id,
   ai.total_amount,
   public.ywi_normalize_money(coalesce(ai.total_amount, 0) - coalesce(ai.balance_due, 0)) as posted_amount,
+  ai.balance_due,
+  ai.invoice_status as status,
   public.ywi_normalize_money(coalesce(ai.balance_due, 0)) as open_amount,
   case
     when coalesce(ai.total_amount, 0) <= 0 then 0
     else round(((coalesce(ai.total_amount, 0) - coalesce(ai.balance_due, 0)) / nullif(ai.total_amount, 0)) * 100, 2)
-  end as posted_percent,
-  ai.balance_due,
-  ai.invoice_status as status
+  end as posted_percent
 from public.ar_invoices ai
 union all
 select
@@ -1851,13 +1851,13 @@ select
   ab.vendor_id as client_id,
   ab.total_amount,
   public.ywi_normalize_money(coalesce(ab.total_amount, 0) - coalesce(ab.balance_due, 0)) as posted_amount,
+  ab.balance_due,
+  ab.bill_status as status,
   public.ywi_normalize_money(coalesce(ab.balance_due, 0)) as open_amount,
   case
     when coalesce(ab.total_amount, 0) <= 0 then 0
     else round(((coalesce(ab.total_amount, 0) - coalesce(ab.balance_due, 0)) / nullif(ab.total_amount, 0)) * 100, 2)
-  end as posted_percent,
-  ab.balance_due,
-  ab.bill_status as status
+  end as posted_percent
 from public.ap_bills ab;
 
 create index if not exists idx_material_receipt_lines_material_id on public.material_receipt_lines(material_id);
