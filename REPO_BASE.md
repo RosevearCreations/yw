@@ -1,8 +1,10 @@
-> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, posting logic, receiving-to-costing, and HSE closeout pass.
+> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
 
-## 2026-04-09 workflow rollups / posting / costing / HSE closeout pass
-- Core repo change this pass: workflow math and progress rules are being pulled out of ad hoc UI behavior and into repeatable database / function logic.
-- Keep schema snapshots, migration order, Admin UI controls, and smoke checks aligned every pass.
+## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
+- Added DB-first workflow logic so estimate, work-order, and material-receipt header totals can roll up from their line records instead of depending on manual entry.
+- Added receivables/payables payment-application logic so invoices and bills can track paid amounts, remaining balance, and partial/paid status from posted payments.
+- Added receiving-to-costing linkage so material receipt lines can feed received quantity / received cost visibility back into work-order execution.
+- Extended linked HSE packets toward real progress and closeout handling with checklist-style completion fields, derived progress, and clearer Admin-side visibility.
 
 
 ## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass

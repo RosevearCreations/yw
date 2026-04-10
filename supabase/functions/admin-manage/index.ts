@@ -127,80 +127,6 @@ function asNullableDateTime(value: unknown) {
   const clean = String(value ?? '').trim();
   return clean ? clean : null;
 }
-
-function roundMoney(value: unknown) {
-  return Math.round(asNumber(value, 0) * 100) / 100;
-}
-
-function computeLineTotal(quantity: unknown, unitAmount: unknown) {
-  return roundMoney(asNumber(quantity, 0) * asNumber(unitAmount, 0));
-}
-
-function normalizeHsePacket(body: Record<string, unknown>) {
-  const briefingRequired = body.briefing_required !== false;
-  const inspectionRequired = body.inspection_required !== false;
-  const emergencyReviewRequired = !!body.emergency_review_required;
-  const briefingCompleted = !!body.briefing_completed;
-  const inspectionCompleted = !!body.inspection_completed;
-  const emergencyReviewCompleted = !!body.emergency_review_completed;
-  const requiredCount = [briefingRequired, inspectionRequired, emergencyReviewRequired].filter(Boolean).length;
-  const completedCount = [
-    briefingRequired && briefingCompleted,
-    inspectionRequired && inspectionCompleted,
-    emergencyReviewRequired && emergencyReviewCompleted
-  ].filter(Boolean).length;
-
-  let completionPercent = requiredCount ? roundMoney((completedCount / requiredCount) * 100) : 100;
-  let packetStatus = String(body.packet_status || '').trim().toLowerCase() || 'draft';
-  let readyForCloseoutAt = asNullableDateTime(body.ready_for_closeout_at);
-  let closedAt = asNullableDateTime(body.closed_at);
-
-  if (packetStatus === 'closed') {
-    completionPercent = 100;
-    readyForCloseoutAt = readyForCloseoutAt || new Date().toISOString();
-    closedAt = closedAt || new Date().toISOString();
-  } else if (completionPercent >= 100) {
-    packetStatus = 'ready_for_closeout';
-    readyForCloseoutAt = readyForCloseoutAt || new Date().toISOString();
-    closedAt = null;
-  } else if (completedCount > 0) {
-    packetStatus = 'in_progress';
-    readyForCloseoutAt = null;
-    closedAt = null;
-  } else {
-    packetStatus = 'draft';
-    readyForCloseoutAt = null;
-    closedAt = null;
-  }
-
-  return {
-    briefingRequired,
-    inspectionRequired,
-    emergencyReviewRequired,
-    briefingCompleted,
-    inspectionCompleted,
-    emergencyReviewCompleted,
-    completionPercent,
-    packetStatus,
-    readyForCloseoutAt,
-    closedAt,
-  };
-}
-
-async function fetchSingleRow(supabase: any, table: string, columns: string, id?: string | null) {
-  const clean = String(id || '').trim();
-  if (!clean) return null;
-  const { data } = await supabase.from(table).select(columns).eq('id', clean).maybeSingle();
-  return data || null;
-}
-
-async function getNextOrderedValue(supabase: any, table: string, parentColumn: string, parentId?: string | null, orderColumn = 'line_order') {
-  const cleanParentId = String(parentId || '').trim();
-  if (!cleanParentId) return 10;
-  const { data } = await supabase.from(table).select(orderColumn).eq(parentColumn, cleanParentId).order(orderColumn, { ascending: false }).limit(1).maybeSingle();
-  return Number(data?.[orderColumn] || 0) + 10;
-}
-
 function validateAdminSetPassword(password?: string | null) {
   const clean = String(password || '');
   if (!clean) throw new Error('A new password is required.');
@@ -1265,9 +1191,6 @@ serve(async (req) => {
     }
 
     if (entity === 'ar_invoice') {
-      const subtotal = roundMoney(body.subtotal);
-      const taxTotal = roundMoney(body.tax_total);
-      const totalAmount = roundMoney(body.total_amount || subtotal + taxTotal);
       const patch = {
         invoice_number: body.invoice_number ?? null,
         client_id: asNullableText(body.client_id),
@@ -1276,10 +1199,10 @@ serve(async (req) => {
         invoice_status: body.invoice_status ?? 'draft',
         invoice_date: asNullableDate(body.invoice_date) || new Date().toISOString().slice(0, 10),
         due_date: asNullableDate(body.due_date),
-        subtotal,
-        tax_total: taxTotal,
-        total_amount: totalAmount,
-        balance_due: roundMoney(body.balance_due || totalAmount),
+        subtotal: asNumber(body.subtotal, 0),
+        tax_total: asNumber(body.tax_total, 0),
+        total_amount: asNumber(body.total_amount, 0),
+        balance_due: asNumber(body.balance_due, 0),
         created_by_profile_id: actorId,
         updated_at: new Date().toISOString(),
       };
@@ -1302,19 +1225,16 @@ serve(async (req) => {
     }
 
     if (entity === 'ap_bill') {
-      const subtotal = roundMoney(body.subtotal);
-      const taxTotal = roundMoney(body.tax_total);
-      const totalAmount = roundMoney(body.total_amount || subtotal + taxTotal);
       const patch = {
         bill_number: body.bill_number ?? null,
         vendor_id: asNullableText(body.vendor_id),
         bill_status: body.bill_status ?? 'draft',
         bill_date: asNullableDate(body.bill_date) || new Date().toISOString().slice(0, 10),
         due_date: asNullableDate(body.due_date),
-        subtotal,
-        tax_total: taxTotal,
-        total_amount: totalAmount,
-        balance_due: roundMoney(body.balance_due || totalAmount),
+        subtotal: asNumber(body.subtotal, 0),
+        tax_total: asNumber(body.tax_total, 0),
+        total_amount: asNumber(body.total_amount, 0),
+        balance_due: asNumber(body.balance_due, 0),
         created_by_profile_id: actorId,
         updated_at: new Date().toISOString(),
       };
@@ -1339,14 +1259,10 @@ serve(async (req) => {
 
 
     if (entity === 'route_stop') {
-      const routeId = asNullableText(body.route_id);
-      const stopOrder = asNumber(body.stop_order, 0) > 0
-        ? asNumber(body.stop_order, 0)
-        : await getNextOrderedValue(supabase, 'route_stops', 'route_id', routeId, 'stop_order');
       const patch = {
-        route_id: routeId,
+        route_id: asNullableText(body.route_id),
         client_site_id: asNullableText(body.client_site_id),
-        stop_order: stopOrder,
+        stop_order: asNumber(body.stop_order, 0),
         planned_arrival_time: asNullableText(body.planned_arrival_time),
         planned_duration_minutes: asNullableNumber(body.planned_duration_minutes),
         instructions: body.instructions ?? null,
@@ -1372,22 +1288,17 @@ serve(async (req) => {
     }
 
     if (entity === 'estimate_line') {
-      const estimateId = asNullableText(body.estimate_id);
-      const materialRow = await fetchSingleRow(supabase, 'materials_catalog', 'item_name', asNullableText(body.material_id));
-      const equipmentRow = await fetchSingleRow(supabase, 'equipment_master', 'item_name', asNullableText(body.equipment_master_id));
       const patch = {
-        estimate_id: estimateId,
-        line_order: asNumber(body.line_order, 0) > 0
-          ? asNumber(body.line_order, 0)
-          : await getNextOrderedValue(supabase, 'estimate_lines', 'estimate_id', estimateId),
+        estimate_id: asNullableText(body.estimate_id),
+        line_order: asNumber(body.line_order, 0),
         line_type: body.line_type ?? 'service',
-        description: body.description ?? materialRow?.item_name ?? equipmentRow?.item_name ?? null,
+        description: body.description ?? null,
         cost_code_id: asNullableText(body.cost_code_id),
         unit_id: asNullableText(body.unit_id),
         quantity: asNumber(body.quantity, 1),
-        unit_cost: roundMoney(body.unit_cost),
-        unit_price: roundMoney(body.unit_price),
-        line_total: computeLineTotal(body.quantity ?? 1, body.unit_price),
+        unit_cost: asNumber(body.unit_cost, 0),
+        unit_price: asNumber(body.unit_price, 0),
+        line_total: asNumber(body.line_total, 0),
         material_id: asNullableText(body.material_id),
         equipment_master_id: asNullableText(body.equipment_master_id),
         updated_at: new Date().toISOString(),
@@ -1411,26 +1322,19 @@ serve(async (req) => {
     }
 
     if (entity === 'work_order_line') {
-      const workOrderId = asNullableText(body.work_order_id);
-      const materialRow = await fetchSingleRow(supabase, 'materials_catalog', 'item_name', asNullableText(body.material_id));
-      const equipmentRow = await fetchSingleRow(supabase, 'equipment_master', 'item_name', asNullableText(body.equipment_master_id));
       const patch = {
-        work_order_id: workOrderId,
-        line_order: asNumber(body.line_order, 0) > 0
-          ? asNumber(body.line_order, 0)
-          : await getNextOrderedValue(supabase, 'work_order_lines', 'work_order_id', workOrderId),
+        work_order_id: asNullableText(body.work_order_id),
+        line_order: asNumber(body.line_order, 0),
         line_type: body.line_type ?? 'service',
-        description: body.description ?? materialRow?.item_name ?? equipmentRow?.item_name ?? null,
+        description: body.description ?? null,
         cost_code_id: asNullableText(body.cost_code_id),
         unit_id: asNullableText(body.unit_id),
         quantity: asNumber(body.quantity, 1),
-        unit_cost: roundMoney(body.unit_cost),
-        unit_price: roundMoney(body.unit_price),
-        line_total: computeLineTotal(body.quantity ?? 1, body.unit_price),
+        unit_cost: asNumber(body.unit_cost, 0),
+        unit_price: asNumber(body.unit_price, 0),
+        line_total: asNumber(body.line_total, 0),
         material_id: asNullableText(body.material_id),
         equipment_master_id: asNullableText(body.equipment_master_id),
-        actual_quantity_received: roundMoney(body.actual_quantity_received),
-        actual_material_cost: roundMoney(body.actual_material_cost),
         updated_at: new Date().toISOString(),
       };
       if (!patch.work_order_id || !patch.description) return Response.json({ ok:false, error:'work_order_id and description are required' }, { status:400, headers:corsHeaders });
@@ -1452,16 +1356,14 @@ serve(async (req) => {
     }
 
     if (entity === 'ar_payment') {
-      const invoiceId = asNullableText(body.invoice_id);
-      const invoiceRow = await fetchSingleRow(supabase, 'ar_invoices', 'client_id, balance_due, total_amount', invoiceId);
       const patch = {
         payment_number: body.payment_number ?? null,
-        client_id: asNullableText(body.client_id) || invoiceRow?.client_id || null,
-        invoice_id: invoiceId,
+        client_id: asNullableText(body.client_id),
+        invoice_id: asNullableText(body.invoice_id),
         payment_date: asNullableDate(body.payment_date) || new Date().toISOString().slice(0, 10),
         payment_method: body.payment_method ?? null,
         reference_number: body.reference_number ?? null,
-        amount: roundMoney(asNumber(body.amount, 0) > 0 ? body.amount : invoiceRow?.balance_due ?? 0),
+        amount: asNumber(body.amount, 0),
         notes: body.notes ?? null,
         created_by_profile_id: actorId,
         updated_at: new Date().toISOString(),
@@ -1485,16 +1387,14 @@ serve(async (req) => {
     }
 
     if (entity === 'ap_payment') {
-      const billId = asNullableText(body.bill_id);
-      const billRow = await fetchSingleRow(supabase, 'ap_bills', 'vendor_id, balance_due, total_amount', billId);
       const patch = {
         payment_number: body.payment_number ?? null,
-        vendor_id: asNullableText(body.vendor_id) || billRow?.vendor_id || null,
-        bill_id: billId,
+        vendor_id: asNullableText(body.vendor_id),
+        bill_id: asNullableText(body.bill_id),
         payment_date: asNullableDate(body.payment_date) || new Date().toISOString().slice(0, 10),
         payment_method: body.payment_method ?? null,
         reference_number: body.reference_number ?? null,
-        amount: roundMoney(asNumber(body.amount, 0) > 0 ? body.amount : billRow?.balance_due ?? 0),
+        amount: asNumber(body.amount, 0),
         notes: body.notes ?? null,
         created_by_profile_id: actorId,
         updated_at: new Date().toISOString(),
@@ -1549,20 +1449,15 @@ serve(async (req) => {
     }
 
     if (entity === 'material_receipt_line') {
-      const receiptId = asNullableText(body.receipt_id);
-      const materialId = asNullableText(body.material_id);
-      const materialRow = await fetchSingleRow(supabase, 'materials_catalog', 'item_name, unit_id, default_unit_cost', materialId);
       const patch = {
-        receipt_id: receiptId,
-        line_order: asNumber(body.line_order, 0) > 0
-          ? asNumber(body.line_order, 0)
-          : await getNextOrderedValue(supabase, 'material_receipt_lines', 'receipt_id', receiptId),
-        material_id: materialId,
-        description: body.description ?? materialRow?.item_name ?? null,
-        unit_id: asNullableText(body.unit_id) || materialRow?.unit_id || null,
+        receipt_id: asNullableText(body.receipt_id),
+        line_order: asNumber(body.line_order, 0),
+        material_id: asNullableText(body.material_id),
+        description: body.description ?? null,
+        unit_id: asNullableText(body.unit_id),
         quantity: asNumber(body.quantity, 0),
-        unit_cost: roundMoney(asNumber(body.unit_cost, 0) > 0 ? body.unit_cost : materialRow?.default_unit_cost ?? 0),
-        line_total: computeLineTotal(body.quantity ?? 0, asNumber(body.unit_cost, 0) > 0 ? body.unit_cost : materialRow?.default_unit_cost ?? 0),
+        unit_cost: asNumber(body.unit_cost, 0),
+        line_total: asNumber(body.line_total, 0),
         cost_code_id: asNullableText(body.cost_code_id),
         work_order_line_id: asNullableText(body.work_order_line_id),
         updated_at: new Date().toISOString(),
@@ -1586,28 +1481,33 @@ serve(async (req) => {
     }
 
     if (entity === 'linked_hse_packet') {
-      const hse = normalizeHsePacket(body || {});
       const patch = {
         packet_number: body.packet_number ?? null,
         packet_type: body.packet_type ?? 'work_order',
-        packet_status: hse.packetStatus,
+        packet_status: body.packet_status ?? 'draft',
         work_order_id: asNullableText(body.work_order_id),
         dispatch_id: asNullableText(body.dispatch_id),
         client_site_id: asNullableText(body.client_site_id),
         route_id: asNullableText(body.route_id),
         supervisor_profile_id: asNullableText(body.supervisor_profile_id),
-        briefing_required: hse.briefingRequired,
-        inspection_required: hse.inspectionRequired,
-        emergency_review_required: hse.emergencyReviewRequired,
-        briefing_completed: hse.briefingCompleted,
-        inspection_completed: hse.inspectionCompleted,
-        emergency_review_completed: hse.emergencyReviewCompleted,
-        completion_percent: hse.completionPercent,
-        ready_for_closeout_at: hse.readyForCloseoutAt,
-        closed_at: hse.closedAt,
-        closed_by_profile_id: asNullableText(body.closed_by_profile_id),
+        briefing_required: body.briefing_required !== false,
+        briefing_completed: !!body.briefing_completed,
+        inspection_required: body.inspection_required !== false,
+        inspection_completed: !!body.inspection_completed,
+        emergency_review_required: !!body.emergency_review_required,
+        emergency_review_completed: !!body.emergency_review_completed,
+        field_signoff_completed: !!body.field_signoff_completed,
+        closeout_completed: !!body.closeout_completed,
+        completion_percent: asNumber(body.completion_percent, 0),
+        required_item_count: asNumber(body.required_item_count, 0),
+        completed_item_count: asNumber(body.completed_item_count, 0),
+        issued_at: asNullableText(body.issued_at),
+        started_at: asNullableText(body.started_at),
+        ready_for_closeout_at: asNullableText(body.ready_for_closeout_at),
+        closed_at: asNullableText(body.closed_at),
         packet_notes: body.packet_notes ?? null,
         closeout_notes: body.closeout_notes ?? null,
+        closeout_by_profile_id: asNullableText(body.closeout_by_profile_id),
         created_by_profile_id: actorId,
         updated_at: new Date().toISOString(),
       };

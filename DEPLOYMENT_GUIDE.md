@@ -1,8 +1,19 @@
-> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, posting logic, receiving-to-costing, and HSE closeout pass.
+> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
 
-## 2026-04-09 workflow rollups / posting / costing / HSE closeout pass
-- Deploy the new SQL migration `063_workflow_rollups_posting_and_hse_closeout.sql` after 062.
-- After deploy, validate estimate/work-order line rollups, AR/AP balance recalculation, receipt-line cost linkage to work-order lines, and linked HSE ready-for-closeout / closed transitions.
+## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
+
+## Deployment note for this pass
+After deploying this pass, validate migration 063 before trusting Admin totals:
+- create/update estimate lines and confirm estimate header rollups change
+- create/update work-order lines and confirm work-order rollups change
+- add receipt lines against a work order and confirm received-cost visibility changes
+- post AR/AP payments and confirm amount-paid / balance-due update
+- toggle HSE packet completion fields and confirm status/progress transitions
+
+- Added DB-first workflow logic so estimate, work-order, and material-receipt header totals can roll up from their line records instead of depending on manual entry.
+- Added receivables/payables payment-application logic so invoices and bills can track paid amounts, remaining balance, and partial/paid status from posted payments.
+- Added receiving-to-costing linkage so material receipt lines can feed received quantity / received cost visibility back into work-order execution.
+- Extended linked HSE packets toward real progress and closeout handling with checklist-style completion fields, derived progress, and clearer Admin-side visibility.
 
 
 ## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass
