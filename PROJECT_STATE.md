@@ -120,3 +120,5 @@ These screens should be mobile-friendly for quick field edits and desktop-strong
 - camera-first attachments and scan-to-link for receipts / equipment / HSE packets
 - offline-safe draft saving for route stops, line items, and site safety checks
 - simplified worker-facing packet progress views that avoid desktop-only layouts
+
+- 2026-04-10 hotfix: corrected migration 064 view column order so PostgreSQL can apply it on top of migration 063 without `CREATE OR REPLACE VIEW` rename errors.

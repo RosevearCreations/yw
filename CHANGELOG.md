@@ -53,3 +53,6 @@ Last synchronized: April 10, 2026
 - Added an HSE / OSHA Operations Hub surface to keep safety workflows visible and usable while the landscaping/construction backbone grows.
 - Updated the SQL 061 migration to an adaptive version that can match legacy `jobs.id` and `sites.id` types when they differ from UUID assumptions.
 - Refreshed the roadmap, gaps, database, and architecture docs to reflect the new backbone-first direction and the need to keep HSE standalone-capable.
+## 2026-04-10 migration 064 hotfix
+
+- 2026-04-10 hotfix: corrected migration 064 view column order so PostgreSQL can apply it on top of migration 063 without `CREATE OR REPLACE VIEW` rename errors.
