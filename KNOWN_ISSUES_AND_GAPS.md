@@ -1,22 +1,8 @@
-> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
+> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, posting logic, receiving-to-costing, and HSE closeout pass.
 
-## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
-
-## What moved forward in this pass
-- manual header totals are no longer the only model for estimates, work orders, and receipts
-- AR/AP records now have a stronger balance-driven direction
-- HSE packets are moving from a simple link record toward a real progress/closeout packet
-
-## Highest-value remaining gaps now
-- GL posting remains incomplete even though AR/AP balance rollups are stronger
-- inventory movement is still partial because receipt-to-on-hand / issue / usage is not yet complete
-- route-stop execution and crew-day flow are still lighter than the costing/accounting side
-- HSE packets still need attachments, proof capture, and richer closeout evidence
-
-- Added DB-first workflow logic so estimate, work-order, and material-receipt header totals can roll up from their line records instead of depending on manual entry.
-- Added receivables/payables payment-application logic so invoices and bills can track paid amounts, remaining balance, and partial/paid status from posted payments.
-- Added receiving-to-costing linkage so material receipt lines can feed received quantity / received cost visibility back into work-order execution.
-- Extended linked HSE packets toward real progress and closeout handling with checklist-style completion fields, derived progress, and clearer Admin-side visibility.
+## 2026-04-09 workflow rollups / posting / costing / HSE closeout pass
+- The largest open gap is no longer raw table availability; it is operational depth after the new rollup/posting foundations.
+- Still open: richer journal posting, fuller receiving allocation rules, packet document/file linkage, and more polished phone/tablet layouts for the backbone manager.
 
 
 ## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass

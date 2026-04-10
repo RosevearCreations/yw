@@ -1,22 +1,8 @@
-> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
+> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, posting logic, receiving-to-costing, and HSE closeout pass.
 
-## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
-
-## New schema behavior added in this pass
-- `estimates` now support derived line counts, rolled-up cost totals, and margin visibility.
-- `work_orders` now support derived line counts, rolled-up cost totals, and received-cost visibility from linked material receipts.
-- `work_order_lines` now support received quantity / received cost feedback from material receipt lines.
-- `material_receipts` now support derived line counts and total receipt value.
-- `ar_invoices` and `ap_bills` now support `amount_paid` plus payment-applied balance logic.
-- `linked_hse_packets` now support required/completed checklist counts plus closeout-oriented state fields.
-
-### DB-first logic now preferred
-The new 063 pass intentionally moves business logic downward into SQL triggers/functions so the browser becomes a helper surface instead of the only source of totals or statuses.
-
-- Added DB-first workflow logic so estimate, work-order, and material-receipt header totals can roll up from their line records instead of depending on manual entry.
-- Added receivables/payables payment-application logic so invoices and bills can track paid amounts, remaining balance, and partial/paid status from posted payments.
-- Added receiving-to-costing linkage so material receipt lines can feed received quantity / received cost visibility back into work-order execution.
-- Extended linked HSE packets toward real progress and closeout handling with checklist-style completion fields, derived progress, and clearer Admin-side visibility.
+## 2026-04-09 workflow rollups / posting / costing / HSE closeout pass
+- Added schema support for `work_order_lines.actual_quantity_received`, `work_order_lines.actual_material_cost`, `work_orders.actual_material_cost_total`, and linked HSE packet completion/closeout fields.
+- Added rollup and progress views so routes, estimates, work orders, receipts, account balances, and HSE packets now have clearer database-level summary surfaces.
 
 
 ## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass

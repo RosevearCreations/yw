@@ -1,17 +1,9 @@
-> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
+> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, posting logic, receiving-to-costing, and HSE closeout pass.
 
-## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
-
-## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
-- Added migration `sql/063_workflow_rollups_posting_and_hse_closeout.sql` for DB-derived totals rollups, invoice/bill payment application, work-order receiving linkage, and HSE packet progress/closeout fields.
-- Extended `js/admin-ui.js` so the backbone manager now previews rollups, auto-calculates line totals, suggests payment amounts from balances, and surfaces HSE closeout progress.
-- Extended `supabase/functions/admin-manage/index.ts` so linked HSE packet completion and closeout fields can be saved through the Admin manager.
-- Refreshed all Markdown docs and the schema snapshot so the repo now points to derived workflow logic instead of manual header maintenance.
-
-- Added DB-first workflow logic so estimate, work-order, and material-receipt header totals can roll up from their line records instead of depending on manual entry.
-- Added receivables/payables payment-application logic so invoices and bills can track paid amounts, remaining balance, and partial/paid status from posted payments.
-- Added receiving-to-costing linkage so material receipt lines can feed received quantity / received cost visibility back into work-order execution.
-- Extended linked HSE packets toward real progress and closeout handling with checklist-style completion fields, derived progress, and clearer Admin-side visibility.
+## 2026-04-09 workflow rollups / posting / costing / HSE closeout pass
+- Added migration `063_workflow_rollups_posting_and_hse_closeout.sql` for database-enforced line totals, estimate/work-order rollups, AR/AP balance updates, receiving-to-costing linkage, and linked HSE packet closeout fields.
+- Extended the Admin backbone manager so it previews derived totals, suggests payment posting amounts from balances, shows route/receipt rollups, and surfaces HSE completion/closeout progress in the UI.
+- Refreshed the schema snapshot, smoke-check reference, metadata/cache strings, and Markdown set to align the repo around the new workflow-enforcement direction.
 
 
 ## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass
