@@ -1,4 +1,4 @@
-> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, posting logic, receiving-to-costing, and HSE closeout pass.
+> Last synchronized: April 10, 2026. Reviewed during the receipt rollups, work-order operational status, posted/open amount visibility, and admin workflow sync pass.
 
 ## 2026-04-09 workflow rollups / posting / costing / HSE closeout pass
 - Mirror the root database doc: the latest schema direction now includes rollup triggers, balance recalculation, receiving-to-costing linkage, and HSE completion/closeout state.
@@ -11,6 +11,10 @@
 - Updated the docs to emphasize mobile-first field use, desktop-strong admin depth, DB-first shared data, and local SEO / one-H1 discipline on every public build pass.
 
 # Database Structure
+
+## April 10, 2026 schema direction update
+- Added the 064 workflow rollup pass and corrected the full schema snapshot.
+- Receipt, work-order, HSE, and AR/AP rollups are now intended to be shown directly in Admin through selector merges instead of living only in SQL.
 
 ## April 9, 2026 schema direction update
 - Added direction for the deeper workflow layer on top of the 061 backbone.
@@ -26,7 +30,7 @@
 - `ar_invoices` + `ar_payments` and `ap_bills` + `ap_payments` -> receivables/payables posting manager
 
 
-Last synchronized: April 8, 2026
+Last synchronized: April 10, 2026
 
 ## Current schema direction
 

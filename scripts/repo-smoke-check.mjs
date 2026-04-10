@@ -31,7 +31,8 @@ const requiredFiles = [
   'js/bootstrap.js',
   'js/api.js',
   'sql/000_full_schema_reference.sql',
-  'KNOWN_ISSUES_AND_GAPS.md'
+  'KNOWN_ISSUES_AND_GAPS.md',
+  'sql/064_receipt_rollups_work_order_operational_status_and_posted_amounts.sql'
 ];
 for (const relPath of requiredFiles) {
   addCheck(`file:${relPath}`, fileExists(relPath), fileExists(relPath) ? 'Present.' : 'Missing.');
@@ -64,7 +65,7 @@ addCheck('account-has-conflict-review', accountUi.includes('Conflict Review'), '
 addCheck('account-has-support-export', accountUi.includes('Export Support Snapshot'), 'account-ui.js should render the support snapshot export button.');
 
 const schema = read('sql/000_full_schema_reference.sql');
-addCheck('schema-header-current', /063_workflow_rollups_posting_and_hse_closeout/i.test(schema), 'Schema snapshot header should reflect the latest pass.');
+addCheck('schema-header-current', /064_receipt_rollups_work_order_operational_status_and_posted_amounts/i.test(schema), 'Schema snapshot header should reflect the latest 064 pass.');
 
 console.log(JSON.stringify({ ok: !failed, checks: results }, null, 2));
 if (failed) process.exit(1);

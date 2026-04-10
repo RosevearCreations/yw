@@ -174,7 +174,7 @@
             <label style="display:flex;align-items:end;gap:8px;"><input id="ad_staff_active" type="checkbox" checked /><span>Active</span></label>
           </div>
           <label style="display:block;margin-top:12px;">Notes<textarea id="ad_staff_notes" rows="3" placeholder="Staff notes"></textarea></label>
-          <div class="form-footer" style="margin-top:12px;">
+          <div class="form-footer admin-backbone-footer" style="margin-top:12px;">
             <button id="ad_staff_create" class="secondary" type="button">Create Staff User</button>
             <button id="ad_staff_save" class="secondary" type="button">Save Staff Details</button>
             <button id="ad_staff_reset_email" class="secondary" type="button">Send Password Reset</button>
@@ -222,7 +222,7 @@
             </label>
             <label style="display:flex;align-items:end;gap:8px;"><input id="ad_assignment_primary" type="checkbox" /><span>Primary assignment</span></label>
           </div>
-          <div class="form-footer" style="margin-top:12px;">
+          <div class="form-footer admin-backbone-footer" style="margin-top:12px;">
             <button id="ad_assignment_create" class="secondary" type="button">Create Assignment</button>
             <button id="ad_assignment_save" class="secondary" type="button">Save Assignment</button>
             <button id="ad_assignment_delete" class="secondary" type="button">Delete Assignment</button>
@@ -260,7 +260,7 @@
             <label>Sort Order<input id="ad_catalog_sort" type="number" min="0" step="1" value="100" /></label>
             <label style="display:flex;align-items:end;gap:8px;"><input id="ad_catalog_active" type="checkbox" checked /><span>Active</span></label>
           </div>
-          <div class="form-footer" style="margin-top:12px;">
+          <div class="form-footer admin-backbone-footer" style="margin-top:12px;">
             <button id="ad_catalog_create" class="secondary" type="button">Create Item</button>
             <button id="ad_catalog_save" class="secondary" type="button">Save Item</button>
             <button id="ad_catalog_delete" class="secondary" type="button">Delete Item</button>
@@ -302,7 +302,7 @@
                 <span>Flag as temporary / force change at next sign-in</span>
               </label>
             </div>
-            <div class="form-footer" style="margin-top:12px;">
+            <div class="form-footer admin-backbone-footer" style="margin-top:12px;">
               <button id="ad_password_set" class="secondary" type="button">Set Password</button>
             </div>
           </form>
@@ -344,7 +344,7 @@
           <label style="display:block;margin-top:12px;">Notes
             <textarea id="ad_order_notes" rows="3" placeholder="Basic accounting/order notes"></textarea>
           </label>
-          <div class="form-footer" style="margin-top:12px;">
+          <div class="form-footer admin-backbone-footer" style="margin-top:12px;">
             <button id="ad_order_create" class="secondary" type="button">Create Order + Accounting Record</button>
           </div>
           <div class="table-scroll" style="margin-top:14px;">
@@ -432,7 +432,7 @@
           </div>
           <div id="ad_backbone_fields" class="grid" style="margin-top:12px;"></div>
           <div id="ad_backbone_insights" class="admin-insights-grid" style="margin-top:12px;"></div>
-          <div class="form-footer" style="margin-top:12px;">
+          <div class="form-footer admin-backbone-footer" style="margin-top:12px;">
             <button id="ad_backbone_create" class="secondary" type="button">Create Record</button>
             <button id="ad_backbone_save" class="secondary" type="button">Save Record</button>
             <button id="ad_backbone_delete" class="secondary" type="button">Delete Record</button>
@@ -548,7 +548,7 @@
           <label style="display:block;margin-top:12px;">Body
             <textarea id="ad_email_body" rows="8" placeholder="Preview body will load here."></textarea>
           </label>
-          <div class="form-footer" style="margin-top:12px;">
+          <div class="form-footer admin-backbone-footer" style="margin-top:12px;">
             <button id="ad_preview_email" class="secondary" type="button">Preview Email</button>
             <button id="ad_test_send_email" class="primary" type="button">Test Send</button>
             <button id="ad_retry_email" class="secondary" type="button">Retry Failed Send</button>
@@ -1367,7 +1367,7 @@
         { name:'work_type', label:'Work Type', type:'select', source:'jobTypes', optionValueKey:'name' }, { name:'status', label:'Status', type:'select', options:[['draft','Draft'],['scheduled','Scheduled'],['in_progress','In Progress'],['completed','Completed'],['closed','Closed']] },
         { name:'scheduled_start', label:'Scheduled Start', type:'datetime-local' }, { name:'scheduled_end', label:'Scheduled End', type:'datetime-local' },
         { name:'service_area_id', label:'Service Area', type:'select', source:'serviceAreas' }, { name:'route_id', label:'Route', type:'select', source:'routes' }, { name:'supervisor_profile_id', label:'Supervisor', type:'select', source:'supervisorProfiles' },
-        { name:'subtotal', label:'Subtotal', type:'number' }, { name:'tax_total', label:'Tax Total', type:'number' }, { name:'total_amount', label:'Total Amount', type:'number' }, { name:'actual_material_cost_total', label:'Actual Material Cost', type:'number', readonly:true },
+        { name:'subtotal', label:'Subtotal', type:'number' }, { name:'tax_total', label:'Tax Total', type:'number' }, { name:'total_amount', label:'Total Amount', type:'number' }, { name:'actual_material_cost_total', label:'Actual Material Cost', type:'number', readonly:true }, { name:'receipt_count', label:'Receipt Count', type:'number', readonly:true }, { name:'received_material_cost_total', label:'Received Material Cost', type:'number', readonly:true }, { name:'unallocated_receipt_cost_total', label:'Unallocated Receipt Cost', type:'number', readonly:true }, { name:'open_hse_packets', label:'Open HSE Packets', type:'number', readonly:true }, { name:'ready_hse_packets', label:'Ready HSE Packets', type:'number', readonly:true }, { name:'closed_hse_packets', label:'Closed HSE Packets', type:'number', readonly:true }, { name:'operational_status', label:'Operational Status', type:'text', readonly:true },
         { name:'crew_notes', label:'Crew Notes', type:'textarea' }, { name:'customer_notes', label:'Customer Notes', type:'textarea' }, { name:'safety_notes', label:'Safety Notes', type:'textarea' }
       ], columns:[['work_order_number','Work Order'],['work_type','Type'],['status','Status'],['total_amount','Total']] },
       work_order_line: { label:'Work Order Lines', rowsKey:'workOrderLines', valueKey:'id', labelField:'description', fields:[
@@ -1411,7 +1411,7 @@
       ar_invoice: { label:'AR Invoices', rowsKey:'arInvoices', valueKey:'id', labelField:'invoice_number', fields:[
         { name:'invoice_number', label:'Invoice Number', type:'text', required:true }, { name:'client_id', label:'Client', type:'select', source:'clients', required:true }, { name:'work_order_id', label:'Work Order', type:'select', source:'workOrders' },
         { name:'dispatch_id', label:'Dispatch', type:'select', source:'subcontractDispatches' }, { name:'invoice_status', label:'Status', type:'select', options:[['draft','Draft'],['issued','Issued'],['partial','Partial'],['paid','Paid'],['void','Void']] },
-        { name:'invoice_date', label:'Invoice Date', type:'date' }, { name:'due_date', label:'Due Date', type:'date' }, { name:'subtotal', label:'Subtotal', type:'number' }, { name:'tax_total', label:'Tax Total', type:'number' }, { name:'total_amount', label:'Total Amount', type:'number' }, { name:'balance_due', label:'Balance Due', type:'number', readonly:true }
+        { name:'invoice_date', label:'Invoice Date', type:'date' }, { name:'due_date', label:'Due Date', type:'date' }, { name:'subtotal', label:'Subtotal', type:'number' }, { name:'tax_total', label:'Tax Total', type:'number' }, { name:'total_amount', label:'Total Amount', type:'number' }, { name:'posted_amount', label:'Posted Amount', type:'number', readonly:true }, { name:'open_amount', label:'Open Amount', type:'number', readonly:true }, { name:'posted_percent', label:'Posted %', type:'number', readonly:true }, { name:'balance_due', label:'Balance Due', type:'number', readonly:true }
       ], columns:[['invoice_number','Invoice'],['invoice_status','Status'],['invoice_date','Date'],['balance_due','Balance']] },
       ar_payment: { label:'AR Payments', rowsKey:'arPayments', valueKey:'id', labelField:'payment_number', fields:[
         { name:'payment_number', label:'Payment Number', type:'text', required:true }, { name:'client_id', label:'Client', type:'select', source:'clients', required:true },
@@ -1420,7 +1420,7 @@
       ], columns:[['payment_number','Payment'],['client_id','Client'],['payment_date','Date'],['amount','Amount']] },
       ap_bill: { label:'AP Bills', rowsKey:'apBills', valueKey:'id', labelField:'bill_number', fields:[
         { name:'bill_number', label:'Bill Number', type:'text', required:true }, { name:'vendor_id', label:'Vendor', type:'select', source:'vendors', required:true }, { name:'bill_status', label:'Status', type:'select', options:[['draft','Draft'],['received','Received'],['scheduled','Scheduled'],['partial','Partial'],['paid','Paid'],['void','Void']] },
-        { name:'bill_date', label:'Bill Date', type:'date' }, { name:'due_date', label:'Due Date', type:'date' }, { name:'subtotal', label:'Subtotal', type:'number' }, { name:'tax_total', label:'Tax Total', type:'number' }, { name:'total_amount', label:'Total Amount', type:'number' }, { name:'balance_due', label:'Balance Due', type:'number', readonly:true }
+        { name:'bill_date', label:'Bill Date', type:'date' }, { name:'due_date', label:'Due Date', type:'date' }, { name:'subtotal', label:'Subtotal', type:'number' }, { name:'tax_total', label:'Tax Total', type:'number' }, { name:'total_amount', label:'Total Amount', type:'number' }, { name:'posted_amount', label:'Posted Amount', type:'number', readonly:true }, { name:'open_amount', label:'Open Amount', type:'number', readonly:true }, { name:'posted_percent', label:'Posted %', type:'number', readonly:true }, { name:'balance_due', label:'Balance Due', type:'number', readonly:true }
       ], columns:[['bill_number','Bill'],['bill_status','Status'],['bill_date','Date'],['balance_due','Balance']] },
       ap_payment: { label:'AP Payments', rowsKey:'apPayments', valueKey:'id', labelField:'payment_number', fields:[
         { name:'payment_number', label:'Payment Number', type:'text', required:true }, { name:'vendor_id', label:'Vendor', type:'select', source:'vendors', required:true },
@@ -1430,7 +1430,7 @@
       material_receipt: { label:'Material Receipts', rowsKey:'materialReceipts', valueKey:'id', labelField:'receipt_number', fields:[
         { name:'receipt_number', label:'Receipt Number', type:'text', required:true }, { name:'vendor_id', label:'Vendor', type:'select', source:'vendors' }, { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' },
         { name:'work_order_id', label:'Work Order', type:'select', source:'workOrders' }, { name:'receipt_status', label:'Receipt Status', type:'select', options:[['draft','Draft'],['received','Received'],['checked_in','Checked In'],['closed','Closed']] },
-        { name:'receipt_date', label:'Receipt Date', type:'date' }, { name:'received_by_profile_id', label:'Received By', type:'select', source:'profiles' }, { name:'notes', label:'Notes', type:'textarea' }
+        { name:'receipt_date', label:'Receipt Date', type:'date' }, { name:'received_by_profile_id', label:'Received By', type:'select', source:'profiles' }, { name:'line_count', label:'Line Count', type:'number', readonly:true }, { name:'quantity_total', label:'Quantity Total', type:'number', readonly:true }, { name:'receipt_total', label:'Receipt Total', type:'number', readonly:true }, { name:'allocated_receipt_total', label:'Allocated Receipt Total', type:'number', readonly:true }, { name:'unallocated_receipt_total', label:'Unallocated Receipt Total', type:'number', readonly:true }, { name:'notes', label:'Notes', type:'textarea' }
       ], columns:[['receipt_number','Receipt'],['receipt_status','Status'],['receipt_date','Date'],['vendor_id','Vendor']] },
       material_receipt_line: { label:'Material Receipt Lines', rowsKey:'materialReceiptLines', valueKey:'id', labelField:'description', fields:[
         { name:'receipt_id', label:'Receipt', type:'select', source:'materialReceipts', required:true }, { name:'line_order', label:'Line Order', type:'number' },
@@ -1618,10 +1618,12 @@
         const rolledSubtotal = lines.reduce((sum, item) => sum + Number(item.line_total || 0), 0);
         const actualMaterialCost = lines.reduce((sum, item) => sum + Number(item.actual_material_cost || 0), 0);
         const packets = (state.linkedHsePackets || []).filter((item) => String(item.work_order_id || '') === String(workOrderId));
-        cards.push({ title: 'Work Order Lines', value: String(lines.length), help: 'Loaded lines for the selected work order.' });
-        cards.push({ title: 'Rolled Total', value: `$${formatMoney(rolledSubtotal + Number(workOrder?.tax_total || 0))}`, help: 'Current subtotal plus tax.' });
-        cards.push({ title: 'Actual Material Cost', value: `$${formatMoney(actualMaterialCost)}`, help: 'Received material cost linked to work-order lines.' });
-        cards.push({ title: 'Open HSE Packets', value: String(packets.filter((item) => !['ready_for_closeout', 'closed'].includes(String(item.packet_status || ''))).length), help: 'Linked packets still in draft or in progress.' });
+        cards.push({ title: 'Work Order Lines', value: String(workOrder?.line_count || lines.length), help: 'Loaded lines for the selected work order.' });
+        cards.push({ title: 'Rolled Total', value: `$${formatMoney(Number(workOrder?.rolled_total || (rolledSubtotal + Number(workOrder?.tax_total || 0))))}`, help: 'Current subtotal plus tax.' });
+        cards.push({ title: 'Receipt Count', value: String(workOrder?.receipt_count || 0), help: 'Receipts linked directly to this work order.' });
+        cards.push({ title: 'Actual Material Cost', value: `$${formatMoney(Number(workOrder?.received_material_cost_total || actualMaterialCost))}`, help: 'Received material cost linked to work-order lines and receipts.' });
+        cards.push({ title: 'Unallocated Receipt Cost', value: `$${formatMoney(Number(workOrder?.unallocated_receipt_cost_total || 0))}`, help: 'Receipt cost not yet tied to a work-order line.' });
+        cards.push({ title: 'Open HSE Packets', value: String(workOrder?.open_hse_packets || packets.filter((item) => !['ready_for_closeout', 'closed'].includes(String(item.packet_status || ''))).length), help: 'Linked packets still in draft or in progress.' });
       }
 
       if (entity === 'work_order_line') {
@@ -1634,8 +1636,9 @@
         const total = Number(val('total_amount') || selected?.total_amount || 0);
         const balance = Number(val('balance_due') || selected?.balance_due || total);
         cards.push({ title: 'Invoice Total', value: `$${formatMoney(total)}`, help: 'Current invoice total.' });
-        cards.push({ title: 'Open Balance', value: `$${formatMoney(balance)}`, help: 'Remaining receivable after posted payments.' });
-        cards.push({ title: 'Posted Amount', value: `$${formatMoney(Math.max(total - balance, 0))}`, help: 'Total posted payments against this invoice.' });
+        cards.push({ title: 'Open Balance', value: `$${formatMoney(Number(selected?.open_amount || balance))}`, help: 'Remaining receivable after posted payments.' });
+        cards.push({ title: 'Posted Amount', value: `$${formatMoney(Number(selected?.posted_amount || Math.max(total - balance, 0)))}`, help: 'Total posted payments against this invoice.' });
+        cards.push({ title: 'Posted %', value: `${formatMoney(Number(selected?.posted_percent || 0))}%`, help: 'Percent of the invoice total already posted.' });
       }
 
       if (entity === 'ar_payment') {
@@ -1648,8 +1651,9 @@
         const total = Number(val('total_amount') || selected?.total_amount || 0);
         const balance = Number(val('balance_due') || selected?.balance_due || total);
         cards.push({ title: 'Bill Total', value: `$${formatMoney(total)}`, help: 'Current bill total.' });
-        cards.push({ title: 'Open Balance', value: `$${formatMoney(balance)}`, help: 'Remaining payable after posted payments.' });
-        cards.push({ title: 'Posted Amount', value: `$${formatMoney(Math.max(total - balance, 0))}`, help: 'Total posted payments against this bill.' });
+        cards.push({ title: 'Open Balance', value: `$${formatMoney(Number(selected?.open_amount || balance))}`, help: 'Remaining payable after posted payments.' });
+        cards.push({ title: 'Posted Amount', value: `$${formatMoney(Number(selected?.posted_amount || Math.max(total - balance, 0)))}`, help: 'Total posted payments against this bill.' });
+        cards.push({ title: 'Posted %', value: `${formatMoney(Number(selected?.posted_percent || 0))}%`, help: 'Percent of the bill total already posted.' });
       }
 
       if (entity === 'ap_payment') {
@@ -1662,8 +1666,12 @@
         const receiptId = entity === 'material_receipt' ? (selected?.id || e.backboneItemId?.value || '') : (val('receipt_id') || selected?.receipt_id || '');
         const lines = (state.materialReceiptLines || []).filter((item) => String(item.receipt_id || '') === String(receiptId));
         const receiptTotal = lines.reduce((sum, item) => sum + Number(item.line_total || 0), 0);
-        cards.push({ title: 'Receipt Lines', value: String(lines.length), help: 'Loaded receipt lines for this receipt.' });
-        cards.push({ title: 'Receipt Total', value: `$${formatMoney(receiptTotal)}`, help: 'Rollup of linked receipt lines.' });
+        const allocatedTotal = lines.reduce((sum, item) => sum + (item.work_order_line_id ? Number(item.line_total || 0) : 0), 0);
+        const unallocatedTotal = Math.max(receiptTotal - allocatedTotal, 0);
+        cards.push({ title: 'Receipt Lines', value: String(selected?.line_count || lines.length), help: 'Loaded receipt lines for this receipt.' });
+        cards.push({ title: 'Receipt Total', value: `$${formatMoney(Number(selected?.receipt_total || receiptTotal))}`, help: 'Rollup of linked receipt lines.' });
+        cards.push({ title: 'Allocated Cost', value: `$${formatMoney(Number(selected?.allocated_receipt_total || allocatedTotal))}`, help: 'Receipt cost already linked to work-order lines.' });
+        cards.push({ title: 'Unallocated Cost', value: `$${formatMoney(Number(selected?.unallocated_receipt_total || unallocatedTotal))}`, help: 'Receipt cost still waiting for work-order allocation.' });
       }
 
       if (entity === 'material_receipt_line') {
@@ -1708,12 +1716,55 @@
 
       if (entity === 'estimate_line' || entity === 'work_order_line') {
         ['quantity', 'unit_price'].forEach((name) => bind(name, recalcLineFromPrice));
-        ['estimate_id', 'work_order_id', 'material_id', 'equipment_master_id'].forEach((name) => bind(name, () => renderBackboneInsights(), 'change'));
+        bind('material_id', () => {
+          const material = (state.materialsCatalog || []).find((item) => String(item.id) === String(document.getElementById('ad_bb_material_id')?.value || ''));
+          if (material) {
+            if (!document.getElementById('ad_bb_description')?.value) setBackboneInputValue('description', material.item_name || '');
+            if (!document.getElementById('ad_bb_unit_id')?.value && material.unit_id) setBackboneInputValue('unit_id', material.unit_id);
+            if (Number(document.getElementById('ad_bb_unit_cost')?.value || 0) <= 0 && Number(material.default_unit_cost || 0) > 0) setBackboneInputValue('unit_cost', formatMoney(material.default_unit_cost || 0));
+            if (Number(document.getElementById('ad_bb_unit_price')?.value || 0) <= 0 && Number(material.default_bill_rate || 0) > 0) setBackboneInputValue('unit_price', formatMoney(material.default_bill_rate || 0));
+          }
+          recalcLineFromPrice();
+          renderBackboneInsights();
+        }, 'change');
+        bind('equipment_master_id', () => {
+          const equipment = (state.equipmentMaster || []).find((item) => String(item.id) === String(document.getElementById('ad_bb_equipment_master_id')?.value || ''));
+          if (equipment) {
+            if (!document.getElementById('ad_bb_description')?.value) setBackboneInputValue('description', equipment.item_name || '');
+            if (Number(document.getElementById('ad_bb_unit_cost')?.value || 0) <= 0 && Number(equipment.cost_rate_hourly || 0) > 0) setBackboneInputValue('unit_cost', formatMoney(equipment.cost_rate_hourly || 0));
+            if (Number(document.getElementById('ad_bb_unit_price')?.value || 0) <= 0 && Number(equipment.bill_rate_hourly || 0) > 0) setBackboneInputValue('unit_price', formatMoney(equipment.bill_rate_hourly || 0));
+          }
+          recalcLineFromPrice();
+          renderBackboneInsights();
+        }, 'change');
+        ['estimate_id', 'work_order_id'].forEach((name) => bind(name, () => renderBackboneInsights(), 'change'));
         recalcLineFromPrice();
       }
       if (entity === 'material_receipt_line') {
         ['quantity', 'unit_cost'].forEach((name) => bind(name, recalcLineFromCost));
-        ['receipt_id', 'work_order_line_id', 'material_id'].forEach((name) => bind(name, () => renderBackboneInsights(), 'change'));
+        bind('work_order_line_id', () => {
+          const workOrderLine = (state.workOrderLines || []).find((item) => String(item.id) === String(document.getElementById('ad_bb_work_order_line_id')?.value || ''));
+          if (workOrderLine) {
+            if (!document.getElementById('ad_bb_description')?.value) setBackboneInputValue('description', workOrderLine.description || '');
+            if (!document.getElementById('ad_bb_unit_id')?.value && workOrderLine.unit_id) setBackboneInputValue('unit_id', workOrderLine.unit_id);
+            if (!document.getElementById('ad_bb_material_id')?.value && workOrderLine.material_id) setBackboneInputValue('material_id', workOrderLine.material_id);
+            if (!document.getElementById('ad_bb_cost_code_id')?.value && workOrderLine.cost_code_id) setBackboneInputValue('cost_code_id', workOrderLine.cost_code_id);
+            if (Number(document.getElementById('ad_bb_unit_cost')?.value || 0) <= 0 && Number(workOrderLine.unit_cost || 0) > 0) setBackboneInputValue('unit_cost', formatMoney(workOrderLine.unit_cost || 0));
+          }
+          recalcLineFromCost();
+          renderBackboneInsights();
+        }, 'change');
+        bind('material_id', () => {
+          const material = (state.materialsCatalog || []).find((item) => String(item.id) === String(document.getElementById('ad_bb_material_id')?.value || ''));
+          if (material) {
+            if (!document.getElementById('ad_bb_description')?.value) setBackboneInputValue('description', material.item_name || '');
+            if (!document.getElementById('ad_bb_unit_id')?.value && material.unit_id) setBackboneInputValue('unit_id', material.unit_id);
+            if (Number(document.getElementById('ad_bb_unit_cost')?.value || 0) <= 0 && Number(material.default_unit_cost || 0) > 0) setBackboneInputValue('unit_cost', formatMoney(material.default_unit_cost || 0));
+          }
+          recalcLineFromCost();
+          renderBackboneInsights();
+        }, 'change');
+        bind('receipt_id', () => renderBackboneInsights(), 'change');
         recalcLineFromCost();
       }
       if (entity === 'route_stop') {
