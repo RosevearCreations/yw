@@ -1,4 +1,11 @@
-> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
+## Continue from here
+- Use `DEVELOPMENT_ROADMAP.md` and `KNOWN_ISSUES_AND_GAPS.md` as the decision anchor.
+- The repo now includes migration 064 for receipt/work-order/account rollups and the schema snapshot has been corrected to match.
+- Next strongest pass is true journal posting controls, material issue/usage flow, route execution state, and HSE proof closeout.
+
+## Continue from here
+
+> Last synchronized: April 10, 2026. Reviewed during the receipt rollups, work-order operational status, posted/open amount visibility, and admin workflow sync pass.
 
 ## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
 - Added DB-first workflow logic so estimate, work-order, and material-receipt header totals can roll up from their line records instead of depending on manual entry.

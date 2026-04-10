@@ -1,4 +1,4 @@
-> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
+> Last synchronized: April 10, 2026. Reviewed during the receipt rollups, work-order operational status, posted/open amount visibility, and admin workflow sync pass.
 
 ## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
 - Added DB-first workflow logic so estimate, work-order, and material-receipt header totals can roll up from their line records instead of depending on manual entry.
@@ -14,13 +14,17 @@
 
 # Project Brain
 
+## April 10, 2026 project-brain refresh
+- Current strongest direction: keep moving from schema presence into DB-driven operational visibility and safer admin defaults.
+- The next build should focus on true posting controls, material issue/usage, route execution, and richer HSE proof/closeout.
+
 ## April 9, 2026 project-brain refresh
 - The company direction is landscaping-led but must support project/construction work, municipal/public jobs, and subcontract dispatches.
 - Admin is the source of truth for shared dropdowns, staff, equipment, routes, clients, sites, materials, estimates, work orders, dispatches, AR/AP, and chart-of-accounts structures.
 - HSE is not a side module; it is a parallel first-class workflow that must work standalone and linked.
 
 
-Last synchronized: April 8, 2026
+Last synchronized: April 10, 2026
 
 ## Product summary
 

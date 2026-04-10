@@ -1,4 +1,4 @@
-> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
+> Last synchronized: April 10, 2026. Reviewed during the receipt rollups, work-order operational status, posted/open amount visibility, and admin workflow sync pass.
 
 ## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
 
@@ -25,6 +25,11 @@
 
 # YW Operations + HSE Platform
 
+## April 10, 2026 receipt and operational rollup direction
+- The next pass now moves beyond balance-only visibility and adds stronger operational visibility for receipts, work orders, and posted/open amounts.
+- Admin should show database-derived rollups wherever possible so supervisors and office staff are not relying on manual mental math.
+- Receipt allocation remains a staged process: received cost can exist before every line is assigned to a work-order line, so unallocated cost must remain visible.
+
 ## April 9, 2026 deeper workflow polish direction
 - The next strongest implementation pass is now deeper workflow polish on top of the new Admin backbone manager.
 - Priority UI managers: estimate/work-order lines, route stops, AR/AP payment posting, material receiving, and linked HSE packets for work orders and dispatches.
@@ -37,7 +42,7 @@
 - IRS small-business and depreciation guidance supports keeping materials, equipment, expenses, receivables, payables, and asset records digital and structured so operational and tax records do not drift apart.
 
 
-Last synchronized: April 8, 2026
+Last synchronized: April 10, 2026
 
 ## What this project is
 

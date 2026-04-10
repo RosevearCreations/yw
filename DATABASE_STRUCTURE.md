@@ -1,4 +1,4 @@
-> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
+> Last synchronized: April 10, 2026. Reviewed during the receipt rollups, work-order operational status, posted/open amount visibility, and admin workflow sync pass.
 
 ## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
 
@@ -26,6 +26,13 @@ The new 063 pass intentionally moves business logic downward into SQL triggers/f
 
 # Database Structure
 
+## April 10, 2026 schema direction update
+- Added migration `064_receipt_rollups_work_order_operational_status_and_posted_amounts.sql`.
+- `v_material_receipt_rollups` now exposes allocated vs unallocated receipt cost and linked work-order-line counts.
+- `v_work_order_rollups` now exposes receipt count, received material cost, unallocated receipt cost, and rough operational status.
+- `v_account_balance_rollups` now exposes posted amount, open amount, and posted percent for AR invoices and AP bills.
+- `sql/000_full_schema_reference.sql` now truly includes the later workflow migrations.
+
 ## April 9, 2026 schema direction update
 - Added direction for the deeper workflow layer on top of the 061 backbone.
 - New workflow-level entities for the next pass are material receipts, material receipt lines, and linked HSE packets.
@@ -40,7 +47,7 @@ The new 063 pass intentionally moves business logic downward into SQL triggers/f
 - `ar_invoices` + `ar_payments` and `ap_bills` + `ap_payments` -> receivables/payables posting manager
 
 
-Last synchronized: April 8, 2026
+Last synchronized: April 10, 2026
 
 ## Current schema direction
 

@@ -1,4 +1,4 @@
-> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
+> Last synchronized: April 10, 2026. Reviewed during the receipt rollups, work-order operational status, posted/open amount visibility, and admin workflow sync pass.
 
 ## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
 
@@ -25,7 +25,12 @@ After deploying this pass, validate migration 063 before trusting Admin totals:
 
 # Deployment Guide
 
-Last synchronized: April 8, 2026
+## April 10, 2026 deployment note
+- Apply `sql/064_receipt_rollups_work_order_operational_status_and_posted_amounts.sql` after 063.
+- Deploy the updated `admin-selectors` and `admin-manage` edge functions together with the frontend so the new rollup fields and smart defaults stay aligned.
+- Run the repo smoke check after deploy and verify the new migration file exists in the deployed repo snapshot.
+
+Last synchronized: April 10, 2026
 
 ## Deployment principles
 

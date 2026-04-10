@@ -1,4 +1,4 @@
-> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
+> Last synchronized: April 10, 2026. Reviewed during the receipt rollups, work-order operational status, posted/open amount visibility, and admin workflow sync pass.
 
 ## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
 
@@ -31,13 +31,18 @@
 
 # Project State
 
+## April 10, 2026 current state
+- The Admin backbone now has stronger visibility into receipt rollups, work-order operational state, and AR/AP posted/open progress.
+- The schema reference is now back in sync with the actual migration set through 064.
+- The next strong path remains DB-first workflow completion, not another broad shell rewrite.
+
 ## April 9, 2026 current state
 - Admin now has the backbone needed to manage the new operations/accounting master data.
 - The next code/build pass should push from master data into deeper workflow use: lines, stops, payment posting, receiving, and linked HSE packets.
 - HSE remains a standalone-capable interface for unscheduled work while also serving as a linked packet model for formal work orders and dispatches.
 
 
-Last synchronized: April 8, 2026
+Last synchronized: April 10, 2026
 
 ## Current state
 

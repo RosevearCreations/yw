@@ -1,4 +1,4 @@
-> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
+> Last synchronized: April 10, 2026. Reviewed during the receipt rollups, work-order operational status, posted/open amount visibility, and admin workflow sync pass.
 
 ## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
 - Added DB-first workflow logic so estimate, work-order, and material-receipt header totals can roll up from their line records instead of depending on manual entry.
@@ -16,7 +16,11 @@
 
 # Repo Base
 
-Last synchronized: April 8, 2026
+## April 10, 2026 repo status note
+- Include migration 064 in any future repo/package verification.
+- Treat `sql/000_full_schema_reference.sql` as corrected through 064 for new chats and handoffs.
+
+Last synchronized: April 10, 2026
 
 ## Active source of truth
 Use this repository build as the current source of truth for the operations + HSE platform.

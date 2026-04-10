@@ -42,6 +42,20 @@ async function safeList(supabase: any, table: string, columns = '*', orderColumn
   }
 }
 
+function mergeRowsById(baseRows: any[], extraRows: any[]) {
+  const map = new Map<string, any>();
+  for (const row of Array.isArray(baseRows) ? baseRows : []) {
+    if (!row?.id) continue;
+    map.set(String(row.id), { ...row });
+  }
+  for (const row of Array.isArray(extraRows) ? extraRows : []) {
+    if (!row?.id) continue;
+    const key = String(row.id);
+    map.set(key, { ...(map.get(key) || {}), ...row });
+  }
+  return Array.from(map.values());
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   const supabase = createClient((Deno.env.get('SB_URL') || Deno.env.get('SUPABASE_URL'))!, (Deno.env.get('SB_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'))!);
@@ -56,6 +70,16 @@ serve(async (req) => {
   const profiles = await safeList(supabase, 'v_people_directory', 'id,email,full_name,role,is_active,default_supervisor_name,default_admin_name,staff_tier,current_position,trade_specialty', 'full_name');
   const sites = await safeList(supabase, 'sites', 'id,site_code,site_name,is_active,region,client_name,project_code,project_status', 'site_code');
   const assignments = await safeList(supabase, 'site_assignments', 'id,site_id,profile_id,assignment_role,is_primary,reports_to_supervisor_profile_id,reports_to_admin_profile_id', 'id');
+
+  const workOrders = await safeList(supabase, 'work_orders', '*', 'work_order_number');
+  const workOrderRollups = await safeList(supabase, 'v_work_order_rollups', '*', 'work_order_number');
+  const linkedHsePackets = await safeList(supabase, 'linked_hse_packets', '*', 'packet_number');
+  const hseProgress = await safeList(supabase, 'v_hse_packet_progress', '*', 'packet_number');
+  const arInvoices = await safeList(supabase, 'ar_invoices', '*', 'invoice_number');
+  const apBills = await safeList(supabase, 'ap_bills', '*', 'bill_number');
+  const materialReceipts = await safeList(supabase, 'material_receipts', '*', 'receipt_number');
+  const materialReceiptRollups = await safeList(supabase, 'v_material_receipt_rollups', '*', 'receipt_number');
+  const accountRollups = await safeList(supabase, 'v_account_balance_rollups', '*', 'record_number');
 
   return Response.json({
     ok:true,
@@ -78,19 +102,19 @@ serve(async (req) => {
     equipment_master: await safeList(supabase, 'equipment_master', '*', 'item_name'),
     estimates: await safeList(supabase, 'estimates', '*', 'estimate_number'),
     estimate_lines: await safeList(supabase, 'estimate_lines', '*', 'line_order'),
-    work_orders: await safeList(supabase, 'work_orders', '*', 'work_order_number'),
+    work_orders: mergeRowsById(workOrders, workOrderRollups),
     work_order_lines: await safeList(supabase, 'work_order_lines', '*', 'line_order'),
     route_stops: await safeList(supabase, 'route_stops', '*', 'stop_order'),
     subcontract_clients: await safeList(supabase, 'subcontract_clients', '*', 'company_name'),
     subcontract_dispatches: await safeList(supabase, 'subcontract_dispatches', '*', 'dispatch_number'),
-    linked_hse_packets: await safeList(supabase, 'linked_hse_packets', '*', 'packet_number'),
+    linked_hse_packets: mergeRowsById(linkedHsePackets, hseProgress),
     chart_of_accounts: await safeList(supabase, 'chart_of_accounts', '*', 'account_number'),
     ap_vendors: await safeList(supabase, 'ap_vendors', '*', 'legal_name'),
-    ar_invoices: await safeList(supabase, 'ar_invoices', '*', 'invoice_number'),
+    ar_invoices: mergeRowsById(arInvoices, (accountRollups || []).filter((row: any) => row?.record_type === 'ar_invoice')),
     ar_payments: await safeList(supabase, 'ar_payments', '*', 'payment_number'),
-    ap_bills: await safeList(supabase, 'ap_bills', '*', 'bill_number'),
+    ap_bills: mergeRowsById(apBills, (accountRollups || []).filter((row: any) => row?.record_type === 'ap_bill')),
     ap_payments: await safeList(supabase, 'ap_payments', '*', 'payment_number'),
-    material_receipts: await safeList(supabase, 'material_receipts', '*', 'receipt_number'),
+    material_receipts: mergeRowsById(materialReceipts, materialReceiptRollups),
     material_receipt_lines: await safeList(supabase, 'material_receipt_lines', '*', 'line_order'),
   }, { headers: corsHeaders });
 });

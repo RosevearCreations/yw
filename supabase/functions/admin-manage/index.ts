@@ -127,6 +127,34 @@ function asNullableDateTime(value: unknown) {
   const clean = String(value ?? '').trim();
   return clean ? clean : null;
 }
+
+async function getCostCodeIdByCode(supabase: any, code: string) {
+  const clean = String(code || '').trim().toUpperCase();
+  if (!clean) return null;
+  const { data } = await supabase.from('cost_codes').select('id').eq('code', clean).maybeSingle();
+  return data?.id || null;
+}
+
+async function getMaterialDefaults(supabase: any, materialId?: string | null) {
+  const id = String(materialId || '').trim();
+  if (!id) return null;
+  const { data } = await supabase.from('materials_catalog').select('id,item_name,unit_id,default_unit_cost,default_bill_rate').eq('id', id).maybeSingle();
+  return data || null;
+}
+
+async function getEquipmentDefaults(supabase: any, equipmentId?: string | null) {
+  const id = String(equipmentId || '').trim();
+  if (!id) return null;
+  const { data } = await supabase.from('equipment_master').select('id,item_name,cost_rate_hourly,bill_rate_hourly').eq('id', id).maybeSingle();
+  return data || null;
+}
+
+async function getWorkOrderLineDefaults(supabase: any, workOrderLineId?: string | null) {
+  const id = String(workOrderLineId || '').trim();
+  if (!id) return null;
+  const { data } = await supabase.from('work_order_lines').select('id,work_order_id,description,unit_id,unit_cost,unit_price,cost_code_id,material_id').eq('id', id).maybeSingle();
+  return data || null;
+}
 function validateAdminSetPassword(password?: string | null) {
   const clean = String(password || '');
   if (!clean) throw new Error('A new password is required.');
@@ -1288,6 +1316,7 @@ serve(async (req) => {
     }
 
     if (entity === 'estimate_line') {
+      const quantity = asNumber(body.quantity, 1);
       const patch = {
         estimate_id: asNullableText(body.estimate_id),
         line_order: asNumber(body.line_order, 0),
@@ -1295,14 +1324,34 @@ serve(async (req) => {
         description: body.description ?? null,
         cost_code_id: asNullableText(body.cost_code_id),
         unit_id: asNullableText(body.unit_id),
-        quantity: asNumber(body.quantity, 1),
+        quantity,
         unit_cost: asNumber(body.unit_cost, 0),
         unit_price: asNumber(body.unit_price, 0),
-        line_total: asNumber(body.line_total, 0),
+        line_total: asNumber(body.line_total, quantity * asNumber(body.unit_price, 0)),
         material_id: asNullableText(body.material_id),
         equipment_master_id: asNullableText(body.equipment_master_id),
         updated_at: new Date().toISOString(),
       };
+      if (patch.material_id) {
+        const material = await getMaterialDefaults(supabase, patch.material_id);
+        if (material) {
+          if (!patch.description) patch.description = material.item_name;
+          if (!patch.unit_id) patch.unit_id = material.unit_id || null;
+          if (!asNullableNumber(body.unit_cost)) patch.unit_cost = asNumber(material.default_unit_cost, patch.unit_cost);
+          if (!asNullableNumber(body.unit_price)) patch.unit_price = asNumber(material.default_bill_rate, patch.unit_price);
+          if (!patch.cost_code_id) patch.cost_code_id = await getCostCodeIdByCode(supabase, 'MAT');
+        }
+      }
+      if (patch.equipment_master_id) {
+        const equipment = await getEquipmentDefaults(supabase, patch.equipment_master_id);
+        if (equipment) {
+          if (!patch.description) patch.description = equipment.item_name;
+          if (!asNullableNumber(body.unit_cost)) patch.unit_cost = asNumber(equipment.cost_rate_hourly, patch.unit_cost);
+          if (!asNullableNumber(body.unit_price)) patch.unit_price = asNumber(equipment.bill_rate_hourly, patch.unit_price);
+          if (!patch.cost_code_id) patch.cost_code_id = await getCostCodeIdByCode(supabase, 'EQP');
+        }
+      }
+      patch.line_total = asNumber(body.line_total, patch.quantity * patch.unit_price);
       if (!patch.estimate_id || !patch.description) return Response.json({ ok:false, error:'estimate_id and description are required' }, { status:400, headers:corsHeaders });
       if (action === 'create') {
         const { data, error } = await supabase.from('estimate_lines').insert(patch).select('*').single();
@@ -1322,6 +1371,7 @@ serve(async (req) => {
     }
 
     if (entity === 'work_order_line') {
+      const quantity = asNumber(body.quantity, 1);
       const patch = {
         work_order_id: asNullableText(body.work_order_id),
         line_order: asNumber(body.line_order, 0),
@@ -1329,14 +1379,34 @@ serve(async (req) => {
         description: body.description ?? null,
         cost_code_id: asNullableText(body.cost_code_id),
         unit_id: asNullableText(body.unit_id),
-        quantity: asNumber(body.quantity, 1),
+        quantity,
         unit_cost: asNumber(body.unit_cost, 0),
         unit_price: asNumber(body.unit_price, 0),
-        line_total: asNumber(body.line_total, 0),
+        line_total: asNumber(body.line_total, quantity * asNumber(body.unit_price, 0)),
         material_id: asNullableText(body.material_id),
         equipment_master_id: asNullableText(body.equipment_master_id),
         updated_at: new Date().toISOString(),
       };
+      if (patch.material_id) {
+        const material = await getMaterialDefaults(supabase, patch.material_id);
+        if (material) {
+          if (!patch.description) patch.description = material.item_name;
+          if (!patch.unit_id) patch.unit_id = material.unit_id || null;
+          if (!asNullableNumber(body.unit_cost)) patch.unit_cost = asNumber(material.default_unit_cost, patch.unit_cost);
+          if (!asNullableNumber(body.unit_price)) patch.unit_price = asNumber(material.default_bill_rate, patch.unit_price);
+          if (!patch.cost_code_id) patch.cost_code_id = await getCostCodeIdByCode(supabase, 'MAT');
+        }
+      }
+      if (patch.equipment_master_id) {
+        const equipment = await getEquipmentDefaults(supabase, patch.equipment_master_id);
+        if (equipment) {
+          if (!patch.description) patch.description = equipment.item_name;
+          if (!asNullableNumber(body.unit_cost)) patch.unit_cost = asNumber(equipment.cost_rate_hourly, patch.unit_cost);
+          if (!asNullableNumber(body.unit_price)) patch.unit_price = asNumber(equipment.bill_rate_hourly, patch.unit_price);
+          if (!patch.cost_code_id) patch.cost_code_id = await getCostCodeIdByCode(supabase, 'EQP');
+        }
+      }
+      patch.line_total = asNumber(body.line_total, patch.quantity * patch.unit_price);
       if (!patch.work_order_id || !patch.description) return Response.json({ ok:false, error:'work_order_id and description are required' }, { status:400, headers:corsHeaders });
       if (action === 'create') {
         const { data, error } = await supabase.from('work_order_lines').insert(patch).select('*').single();
@@ -1368,6 +1438,13 @@ serve(async (req) => {
         created_by_profile_id: actorId,
         updated_at: new Date().toISOString(),
       };
+      if (patch.invoice_id) {
+        const { data: invoice } = await supabase.from('ar_invoices').select('id,client_id,balance_due').eq('id', patch.invoice_id).maybeSingle();
+        if (invoice) {
+          if (!patch.client_id) patch.client_id = invoice.client_id || null;
+          if (!(Number(body.amount) > 0)) patch.amount = asNumber(invoice.balance_due, 0);
+        }
+      }
       if (!patch.payment_number || !patch.client_id) return Response.json({ ok:false, error:'payment_number and client_id are required' }, { status:400, headers:corsHeaders });
       if (action === 'create') {
         const { data, error } = await supabase.from('ar_payments').insert(patch).select('*').single();
@@ -1399,6 +1476,13 @@ serve(async (req) => {
         created_by_profile_id: actorId,
         updated_at: new Date().toISOString(),
       };
+      if (patch.bill_id) {
+        const { data: bill } = await supabase.from('ap_bills').select('id,vendor_id,balance_due').eq('id', patch.bill_id).maybeSingle();
+        if (bill) {
+          if (!patch.vendor_id) patch.vendor_id = bill.vendor_id || null;
+          if (!(Number(body.amount) > 0)) patch.amount = asNumber(bill.balance_due, 0);
+        }
+      }
       if (!patch.payment_number || !patch.vendor_id) return Response.json({ ok:false, error:'payment_number and vendor_id are required' }, { status:400, headers:corsHeaders });
       if (action === 'create') {
         const { data, error } = await supabase.from('ap_payments').insert(patch).select('*').single();
@@ -1430,6 +1514,10 @@ serve(async (req) => {
         created_by_profile_id: actorId,
         updated_at: new Date().toISOString(),
       };
+      if (patch.work_order_id && !patch.client_site_id) {
+        const { data: workOrder } = await supabase.from('work_orders').select('id,client_site_id').eq('id', patch.work_order_id).maybeSingle();
+        if (workOrder?.client_site_id) patch.client_site_id = workOrder.client_site_id;
+      }
       if (!patch.receipt_number) return Response.json({ ok:false, error:'receipt_number is required' }, { status:400, headers:corsHeaders });
       if (action === 'create') {
         const { data, error } = await supabase.from('material_receipts').insert(patch).select('*').single();
@@ -1449,19 +1537,40 @@ serve(async (req) => {
     }
 
     if (entity === 'material_receipt_line') {
+      const quantity = asNumber(body.quantity, 0);
       const patch = {
         receipt_id: asNullableText(body.receipt_id),
         line_order: asNumber(body.line_order, 0),
         material_id: asNullableText(body.material_id),
         description: body.description ?? null,
         unit_id: asNullableText(body.unit_id),
-        quantity: asNumber(body.quantity, 0),
+        quantity,
         unit_cost: asNumber(body.unit_cost, 0),
-        line_total: asNumber(body.line_total, 0),
+        line_total: asNumber(body.line_total, quantity * asNumber(body.unit_cost, 0)),
         cost_code_id: asNullableText(body.cost_code_id),
         work_order_line_id: asNullableText(body.work_order_line_id),
         updated_at: new Date().toISOString(),
       };
+      if (patch.work_order_line_id) {
+        const workOrderLine = await getWorkOrderLineDefaults(supabase, patch.work_order_line_id);
+        if (workOrderLine) {
+          if (!patch.description) patch.description = workOrderLine.description;
+          if (!patch.unit_id) patch.unit_id = workOrderLine.unit_id || null;
+          if (!patch.material_id) patch.material_id = workOrderLine.material_id || null;
+          if (!patch.cost_code_id) patch.cost_code_id = workOrderLine.cost_code_id || null;
+          if (!asNullableNumber(body.unit_cost)) patch.unit_cost = asNumber(workOrderLine.unit_cost, patch.unit_cost);
+        }
+      }
+      if (patch.material_id) {
+        const material = await getMaterialDefaults(supabase, patch.material_id);
+        if (material) {
+          if (!patch.description) patch.description = material.item_name;
+          if (!patch.unit_id) patch.unit_id = material.unit_id || null;
+          if (!asNullableNumber(body.unit_cost)) patch.unit_cost = asNumber(material.default_unit_cost, patch.unit_cost);
+          if (!patch.cost_code_id) patch.cost_code_id = await getCostCodeIdByCode(supabase, 'MAT');
+        }
+      }
+      patch.line_total = asNumber(body.line_total, patch.quantity * patch.unit_cost);
       if (!patch.receipt_id || !patch.description) return Response.json({ ok:false, error:'receipt_id and description are required' }, { status:400, headers:corsHeaders });
       if (action === 'create') {
         const { data, error } = await supabase.from('material_receipt_lines').insert(patch).select('*').single();
@@ -1511,6 +1620,21 @@ serve(async (req) => {
         created_by_profile_id: actorId,
         updated_at: new Date().toISOString(),
       };
+      if (patch.work_order_id && (!patch.client_site_id || !patch.route_id)) {
+        const { data: workOrder } = await supabase.from('work_orders').select('id,client_site_id,route_id,supervisor_profile_id').eq('id', patch.work_order_id).maybeSingle();
+        if (workOrder) {
+          if (!patch.client_site_id) patch.client_site_id = workOrder.client_site_id || null;
+          if (!patch.route_id) patch.route_id = workOrder.route_id || null;
+          if (!patch.supervisor_profile_id) patch.supervisor_profile_id = workOrder.supervisor_profile_id || null;
+        }
+      }
+      if (patch.dispatch_id && (!patch.client_site_id || !patch.work_order_id)) {
+        const { data: dispatch } = await supabase.from('subcontract_dispatches').select('id,client_site_id,work_order_id').eq('id', patch.dispatch_id).maybeSingle();
+        if (dispatch) {
+          if (!patch.client_site_id) patch.client_site_id = dispatch.client_site_id || null;
+          if (!patch.work_order_id) patch.work_order_id = dispatch.work_order_id || null;
+        }
+      }
       if (!patch.packet_number) return Response.json({ ok:false, error:'packet_number is required' }, { status:400, headers:corsHeaders });
       if (action === 'create') {
         const { data, error } = await supabase.from('linked_hse_packets').insert(patch).select('*').single();

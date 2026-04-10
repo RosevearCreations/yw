@@ -1,4 +1,10 @@
-> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
+## Immediate priorities for the next pass
+- true journal posting and audit controls
+- material issue / usage records after receiving
+- route-stop execution state and proof capture
+- richer HSE closeout evidence, reopen, and attachments
+
+> Last synchronized: April 10, 2026. Reviewed during the receipt rollups, work-order operational status, posted/open amount visibility, and admin workflow sync pass.
 
 ## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
 - Added DB-first workflow logic so estimate, work-order, and material-receipt header totals can roll up from their line records instead of depending on manual entry.
@@ -16,7 +22,7 @@
 
 # AI Context
 
-Last synchronized: April 8, 2026
+Last synchronized: April 10, 2026
 
 ## What this project is now
 Treat the product as a landscaping-led field operations platform with integrated HSE capabilities.

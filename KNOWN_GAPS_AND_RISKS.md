@@ -1,4 +1,4 @@
-> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
+> Last synchronized: April 10, 2026. Reviewed during the receipt rollups, work-order operational status, posted/open amount visibility, and admin workflow sync pass.
 
 ## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
 
@@ -28,6 +28,11 @@ The main risk is no longer just whether Admin can see the new records. The risk 
 
 # Known Gaps and Risks
 
+## April 10, 2026 risk update
+- The biggest risk is no longer missing tables; it is incomplete end-to-end movement from receive -> allocate -> issue/use -> close/bill/post.
+- Posted/open amount visibility reduces manual accounting mistakes, but journal controls and stronger audit history are still needed.
+- Receipt allocation still needs discipline because unallocated cost can now be seen more easily but not yet automatically resolved.
+
 ## April 9, 2026 risk update
 - The main gap is no longer the existence of operations/accounting tables; it is getting the Admin UI to use them deeply and consistently.
 - Highest-priority open workflow risks now are: estimate/work-order lines, route stops, AR/AP payment posting, material receiving, and linked HSE packet completion.
@@ -39,7 +44,7 @@ The main risk is no longer just whether Admin can see the new records. The risk 
 - IRS recordkeeping and depreciation requirements support digital, structured materials/equipment/accounting records.
 
 
-Last synchronized: April 8, 2026
+Last synchronized: April 10, 2026
 
 ## 1) Admin backbone incompletion
 ### Risk

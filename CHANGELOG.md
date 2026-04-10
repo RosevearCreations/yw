@@ -1,4 +1,12 @@
-> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
+## 2026-04-10 receipt rollups, operational status, and posted/open amount pass
+- Added migration `064_receipt_rollups_work_order_operational_status_and_posted_amounts.sql`.
+- Corrected the schema snapshot so `sql/000_full_schema_reference.sql` truly includes the later workflow passes instead of only claiming it in the header.
+- Extended Admin selectors so rollup data from receipt, work-order, HSE, and posting views can be shown directly in the backbone manager.
+- Extended Admin manage defaults so line items, receipt lines, AR/AP payments, and linked HSE packets inherit better defaults from the records they are tied to.
+- Added clearer mobile/sticky action styling for the backbone manager footer.
+
+
+> Last synchronized: April 10, 2026. Reviewed during the receipt rollups, work-order operational status, posted/open amount visibility, and admin workflow sync pass.
 
 ## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
 
@@ -32,7 +40,7 @@
 - Updated the documentation set to describe why OSHA- and IRS-aligned operations/accounting + HSE linkage is the right next direction.
 
 
-Last synchronized: April 8, 2026
+Last synchronized: April 10, 2026
 
 
 ## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass

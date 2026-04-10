@@ -1,4 +1,4 @@
-> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
+> Last synchronized: April 10, 2026. Reviewed during the receipt rollups, work-order operational status, posted/open amount visibility, and admin workflow sync pass.
 
 ## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
 
@@ -25,12 +25,16 @@ That split reduces duplicated logic between the browser and the database and low
 
 # System Architecture
 
+## April 10, 2026 architecture note
+- The admin-selectors edge function now merges DB rollup views back into the backbone manager payload so operational rollups stay DB-first but UI-visible.
+- The admin-manage edge function now fills more defaults from linked records to reduce mobile/manual entry friction.
+
 ## April 9, 2026 architecture note
 - Continue converging toward DB-first operational data for shared selectors, materials, equipment, estimates, work orders, dispatches, and accounting.
 - Treat the HSE packet linkage as a join point between the standalone safety workflows and the formal operations/accounting backbone.
 
 
-Last synchronized: April 8, 2026
+Last synchronized: April 10, 2026
 
 ## High-level architecture
 

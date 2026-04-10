@@ -1,6 +1,25 @@
-> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
+> Last synchronized: April 10, 2026. Reviewed during the receipt rollups, work-order operational status, posted/open amount visibility, and admin workflow sync pass.
 
 ## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
+
+## Immediate next build priorities after 064
+1. **True journal posting controls**
+   - move from posted/open amount visibility into explicit journal-batch creation, posting, and audit review
+   - expose posted/unposted accounting state and exceptions clearly in Admin
+2. **Material issue / usage flow**
+   - add issue-to-job or usage records so receiving can move into actual consumption, waste, and variance
+   - surface actual-vs-estimated material usage and unresolved unallocated receipt cost by work order
+3. **HSE proof and reopen workflow**
+   - attach photo/file/signature proof to linked HSE packets
+   - support closeout evidence review, reopen, and exception notes
+4. **Route execution lifecycle**
+   - add stop-complete, skipped, delayed, and note/photo state for route-stop execution
+
+## What moved forward in 064
+- material-receipt rollups now separate total received cost from allocated and unallocated cost
+- work-order rollups now expose receipt count, received cost, unallocated receipt cost, and a rough operational status
+- AR/AP rollups now expose posted amount, open amount, and posted percentage so Admin can see partial progress more clearly
+- Admin selectors and forms now pull in these rollups and use smarter defaults from linked records
 
 ## Immediate next build priorities after 063
 1. **GL posting and audit visibility**
@@ -44,7 +63,7 @@
 - IRS recordkeeping and depreciation rules reinforce the need for digital, structured records for materials, equipment, receivables, payables, and standard business costs.
 
 
-Last synchronized: April 8, 2026
+Last synchronized: April 10, 2026
 
 ## Immediate priorities
 

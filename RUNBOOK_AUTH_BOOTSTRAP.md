@@ -1,4 +1,9 @@
-> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
+# Runbook: Auth Bootstrap
+
+## April 10, 2026 note
+- No auth bootstrap flow change in this pass. The relevant deployment dependency is that admin selectors/manage and schema migration 064 must stay in sync.
+
+> Last synchronized: April 10, 2026. Reviewed during the receipt rollups, work-order operational status, posted/open amount visibility, and admin workflow sync pass.
 
 ## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
 - Added DB-first workflow logic so estimate, work-order, and material-receipt header totals can roll up from their line records instead of depending on manual entry.
@@ -16,7 +21,7 @@
 
 # Auth Bootstrap Runbook
 
-Last synchronized: April 8, 2026
+Last synchronized: April 10, 2026
 
 ## Purpose
 Use this runbook when a fresh Admin account or role reset is needed.

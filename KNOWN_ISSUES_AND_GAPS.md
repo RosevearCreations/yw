@@ -1,4 +1,4 @@
-> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
+> Last synchronized: April 10, 2026. Reviewed during the receipt rollups, work-order operational status, posted/open amount visibility, and admin workflow sync pass.
 
 ## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
 
@@ -30,6 +30,12 @@
 
 # Known Issues and Gaps
 
+## April 10, 2026 issue/gap refresh
+- The schema snapshot gap is now corrected: the full reference file includes the newer workflow migrations instead of only referencing them in comments.
+- Receipt allocation visibility is stronger, but true inventory issue/usage tracking is still incomplete.
+- Posted/open amount visibility is stronger, but explicit journal posting and audit controls are still incomplete.
+- Work-order operational state is now easier to see, but route execution and proof-heavy HSE closeout still need deeper workflow screens.
+
 ## April 9, 2026 issue/gap refresh
 - Open implementation gaps now concentrate on deeper workflow use of the new tables, not on whether the tables exist.
 - Priority open screens: estimate/work-order lines, route stops, AR/AP payments, material receiving, and linked HSE packet management.
@@ -37,7 +43,7 @@
 - Continue reducing duplicate JSON/shared-reference sources wherever DB-first selectors already exist.
 
 
-Last synchronized: April 8, 2026
+Last synchronized: April 10, 2026
 
 ## 1) Admin backbone incompletion
 ### Risk

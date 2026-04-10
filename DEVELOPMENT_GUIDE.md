@@ -1,4 +1,4 @@
-> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
+> Last synchronized: April 10, 2026. Reviewed during the receipt rollups, work-order operational status, posted/open amount visibility, and admin workflow sync pass.
 
 ## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
 
@@ -26,6 +26,11 @@ When adding future workflow managers, prefer this implementation order:
 
 # Development Guide
 
+## April 10, 2026 implementation guide update
+- Run migration 064 after 063.
+- After deploy, verify material receipt totals, allocated/unallocated cost, work-order rollups, and AR/AP posted/open values from the Admin backbone manager.
+- Treat the new rollup fields as read-only visibility driven by DB views, not hand-edited values.
+
 ## April 9, 2026 implementation guide update
 - Treat `063_workflow_rollups_posting_and_hse_closeout.sql` as the current schema step after the 061/062 foundation passes.
 - When building the next Admin screens, prioritize create/edit/delete flows for route stops, estimate lines, work-order lines, AR/AP payments, material receiving, and linked HSE packets.
@@ -33,7 +38,7 @@ When adding future workflow managers, prefer this implementation order:
 - Preserve standalone HSE entry points for unscheduled work even while linked HSE packets are added for formal work orders and dispatches.
 
 
-Last synchronized: April 8, 2026
+Last synchronized: April 10, 2026
 
 ## Purpose of this guide
 

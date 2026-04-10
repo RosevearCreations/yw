@@ -1,4 +1,4 @@
-> Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
+> Last synchronized: April 10, 2026. Reviewed during the receipt rollups, work-order operational status, posted/open amount visibility, and admin workflow sync pass.
 
 ## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
 
@@ -25,12 +25,18 @@
 
 # Testing Checklist
 
+## April 10, 2026 testing expansion
+- Create a receipt with mixed allocated and unallocated lines and confirm Admin shows the split correctly.
+- Confirm work orders show receipt count, received material cost, and unallocated receipt cost after receipt edits.
+- Confirm AR/AP records show posted amount, open amount, and posted percent after payment edits.
+- Confirm smart defaults populate from selected materials, equipment, work-order lines, invoices, bills, and linked work orders/dispatches.
+
 ## April 9, 2026 testing expansion
 - Add admin tests for route stops, estimate/work-order lines, AR/AP payment posting, material receiving, and linked HSE packet CRUD.
 - Add phone-sized viewport checks for all new admin-manager forms.
 
 
-Last synchronized: April 8, 2026
+Last synchronized: April 10, 2026
 
 ## Session integrity tests
 - sign in as Admin
