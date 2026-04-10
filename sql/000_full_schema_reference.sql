@@ -1,5 +1,5 @@
--- Last synchronized: April 9, 2026. Reviewed during the workflow rollups, payment posting, receiving-to-costing, and HSE packet closeout pass.
--- Current reference includes migrations through 063_workflow_rollups_posting_and_hse_closeout.sql and documents the stronger derived-data direction for totals rollups, payment application, receiving-linked costing, and HSE packet progress/closeout.
+-- Last synchronized: April 9, 2026. Reviewed during the workflow rollups, posting logic, receiving-to-costing, and HSE closeout pass.
+-- Current reference includes migrations through 063_workflow_rollups_posting_and_hse_closeout.sql and documents database-enforced totals, posting rollups, receiving-cost linkage, and packet closeout.
 
 create extension if not exists pgcrypto;
 
