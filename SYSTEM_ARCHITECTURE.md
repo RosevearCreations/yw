@@ -1,4 +1,12 @@
-> Last synchronized: April 10, 2026 (source journal / route execution / HSE proof pass)
+> Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+
+## 2026-04-11 journal sync exceptions and upload fallback pass
+- Added migration `sql/068_journal_sync_exceptions_and_upload_failure_fallback.sql`.
+- Added DB-backed `gl_journal_sync_exceptions` so stale, unbalanced, and missing-entry source batches are visible as first-class review items instead of hidden batch-state guesses.
+- Added DB-backed `field_upload_failures` so failed job-comment and equipment-evidence uploads leave an auditable fallback trail for retry/resolution instead of failing silently.
+- Extended Admin selectors/directory/manage/UI so sync exceptions and upload failures can be reviewed, resolved, or dismissed from the same backbone shell.
+- Tightened job activity upload handling so comments can still save even when attachments fail, with clearer operator feedback and follow-up visibility.
+
 
 ## 2026-04-10 journal posting controls and material issue / usage pass
 - Added migration `sql/066_journal_posting_controls_and_material_issue_usage.sql`.
@@ -41,7 +49,7 @@ That split reduces duplicated logic between the browser and the database and low
 - Treat the HSE packet linkage as a join point between the standalone safety workflows and the formal operations/accounting backbone.
 
 
-Last synchronized: April 10, 2026 (source journal / route execution / HSE proof pass)
+Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
 
 ## High-level architecture
 

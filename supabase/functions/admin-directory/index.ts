@@ -152,6 +152,7 @@ serve(async (req) => {
     response.route_stop_executions = await safeList(supabase, 'v_route_stop_execution_rollups', '*', 'execution_date', limit);
     response.route_stop_execution_attachments = await safeList(supabase, 'route_stop_execution_attachments', '*', 'created_at', limit);
     response.gl_journal_batches = await safeList(supabase, 'v_gl_journal_batch_rollups', '*', 'batch_number', limit);
+    response.gl_journal_sync_exceptions = await safeList(supabase, 'v_gl_journal_sync_exceptions', '*', 'last_seen_at', limit);
     response.gl_journal_entries = await safeList(supabase, 'gl_journal_entries', '*', 'line_number', limit);
     response.subcontract_clients = await safeList(supabase, 'subcontract_clients', '*', 'company_name', limit);
     response.subcontract_dispatches = await safeList(supabase, 'subcontract_dispatches', '*', 'dispatch_number', limit);
@@ -182,6 +183,7 @@ serve(async (req) => {
       await safeList(supabase, 'v_material_issue_rollups', '*', 'issue_number', limit)
     );
     response.material_issue_lines = await safeList(supabase, 'material_issue_lines', '*', 'line_order', limit);
+    response.field_upload_failures = await safeList(supabase, 'v_field_upload_failure_rollups', '*', 'created_at', limit);
   }
   if (scope === 'self') response.profile = filteredPeople[0] || null;
   return Response.json(response, { headers: corsHeaders });

@@ -12,6 +12,16 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+
+async function logUploadFailure(supabase: any, payload: Record<string, unknown>) {
+  try {
+    const { data } = await supabase.from('field_upload_failures').insert(payload).select('id').single();
+    return data?.id || null;
+  } catch {
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   const supabase = createClient((Deno.env.get('SB_URL') || Deno.env.get('SUPABASE_URL'))!, (Deno.env.get('SB_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'))!);
@@ -41,7 +51,26 @@ serve(async (req) => {
   const path = `job-comments/${comment.job_id}/${commentId}/${crypto.randomUUID()}-${attachmentKind}.${ext}`;
 
   const { error: uploadError } = await supabase.storage.from(bucket).upload(path, file.stream(), { contentType: file.type, upsert: false });
-  if (uploadError) return Response.json({ ok:false, error:uploadError.message }, { status:500, headers:corsHeaders });
+  if (uploadError) {
+    const failureId = await logUploadFailure(supabase, {
+      failure_scope: 'job_comment_attachment',
+      linked_record_type: 'job_comment',
+      linked_record_id: commentId,
+      job_id: comment.job_id,
+      comment_id: commentId,
+      file_name: file.name,
+      content_type: file.type || null,
+      file_size_bytes: file.size || null,
+      storage_bucket: bucket,
+      storage_path: path,
+      failure_stage: 'upload',
+      failure_reason: uploadError.message,
+      retry_status: 'pending',
+      client_context: { attachment_kind: attachmentKind || 'photo', caption },
+      created_by_profile_id: actorProfile.id,
+    });
+    return Response.json({ ok:false, error:uploadError.message, failure_id: failureId }, { status:500, headers:corsHeaders });
+  }
 
   const { data: signedUrlData } = await supabase.storage.from(bucket).createSignedUrl(path, 60 * 60 * 24 * 7);
 
@@ -56,7 +85,27 @@ serve(async (req) => {
     attachment_kind: attachmentKind || 'photo',
     uploaded_by_profile_id: actorProfile.id,
   }).select('*').single();
-  if (insertError) return Response.json({ ok:false, error:insertError.message }, { status:500, headers:corsHeaders });
+  if (insertError) {
+    await supabase.storage.from(bucket).remove([path]).catch(() => null);
+    const failureId = await logUploadFailure(supabase, {
+      failure_scope: 'job_comment_attachment',
+      linked_record_type: 'job_comment',
+      linked_record_id: commentId,
+      job_id: comment.job_id,
+      comment_id: commentId,
+      file_name: file.name,
+      content_type: file.type || null,
+      file_size_bytes: file.size || null,
+      storage_bucket: bucket,
+      storage_path: path,
+      failure_stage: 'metadata_insert',
+      failure_reason: insertError.message,
+      retry_status: 'pending',
+      client_context: { attachment_kind: attachmentKind || 'photo', caption },
+      created_by_profile_id: actorProfile.id,
+    });
+    return Response.json({ ok:false, error:insertError.message, failure_id: failureId }, { status:500, headers:corsHeaders });
+  }
 
   return Response.json({ ok:true, record }, { headers:corsHeaders });
 });

@@ -1097,14 +1097,19 @@
         });
         if (!resp?.ok || !resp?.record?.id) throw new Error(resp?.error || 'Failed to save job comment');
         const files = Array.from(e.jobCommentFiles?.files || []);
+        let attachmentWarning = '';
         if (files.length && api?.uploadJobCommentAttachmentBatch) {
-          await api.uploadJobCommentAttachmentBatch(files.map((file) => ({ commentId: resp.record.id, attachmentKind: file.type.startsWith('image/') ? 'photo' : 'file', file })));
+          try {
+            await api.uploadJobCommentAttachmentBatch(files.map((file) => ({ commentId: resp.record.id, attachmentKind: file.type.startsWith('image/') ? 'photo' : 'file', file })));
+          } catch (uploadErr) {
+            attachmentWarning = String(uploadErr?.message || 'Attachment upload failed.');
+          }
         }
         if (e.jobCommentText) e.jobCommentText.value = '';
         if (e.jobCommentFiles) e.jobCommentFiles.value = '';
         if (e.jobCommentSpecialInstruction) e.jobCommentSpecialInstruction.checked = false;
         if (e.jobCommentVisibleToClient) e.jobCommentVisibleToClient.checked = false;
-        setNotice(e.jobActivitySummary, 'Job update saved.');
+        setNotice(e.jobActivitySummary, attachmentWarning ? `Job update saved, but attachment upload needs review. ${attachmentWarning}` : 'Job update saved.', !!attachmentWarning);
         await loadData();
       } catch (err) {
         setNotice(e.jobActivitySummary, err?.message || 'Failed to save job update.', true);

@@ -1699,17 +1699,40 @@ serve(async (req) => {
         return Response.json({ ok:true, record:data }, { headers:corsHeaders });
       }
       if (action === 'post') {
-        const { data: batch } = await supabase.from('gl_journal_batches').select('id,batch_number,batch_status,line_count,debit_total,credit_total,is_balanced').eq('id', body.item_id).maybeSingle();
+        const { data: batch } = await supabase.from('gl_journal_batches').select('id,batch_number,batch_status,line_count,debit_total,credit_total,is_balanced,source_generated,source_sync_state').eq('id', body.item_id).maybeSingle();
         if (!batch?.id) return Response.json({ ok:false, error:'Journal batch not found.' }, { status:404, headers:corsHeaders });
         if (String(batch.batch_status || '') === 'posted') return Response.json({ ok:true, record:batch }, { headers:corsHeaders });
         if (!(Number(batch.line_count) > 0)) return Response.json({ ok:false, error:'Journal batch must have at least one entry before posting.' }, { status:400, headers:corsHeaders });
         if (!batch.is_balanced) return Response.json({ ok:false, error:`Journal batch is not balanced. Debit ${batch.debit_total || 0} must equal credit ${batch.credit_total || 0}.` }, { status:400, headers:corsHeaders });
+        if (batch.source_generated && String(batch.source_sync_state || '') === 'stale') return Response.json({ ok:false, error:'This source-generated batch is marked stale. Review and resolve the source sync exception before posting.' }, { status:400, headers:corsHeaders });
         const { data, error } = await supabase.from('gl_journal_batches').update({ batch_status:'posted', posted_at:new Date().toISOString(), posted_by_profile_id: actorId, posting_notes: body.posting_notes ?? null, source_sync_state: batch.source_generated ? 'posted' : 'manual', source_synced_at: new Date().toISOString(), updated_at:new Date().toISOString() }).eq('id', body.item_id).select('*').single();
         if (error) throw error;
         return Response.json({ ok:true, record:data }, { headers:corsHeaders });
       }
       if (action === 'delete') {
         const { error } = await supabase.from('gl_journal_batches').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'gl_journal_sync_exception') {
+      const patch = {
+        exception_status: body.exception_status ?? 'open',
+        severity: body.severity ?? 'warning',
+        title: body.title ?? null,
+        details: body.details ?? null,
+        resolution_notes: body.resolution_notes ?? null,
+        resolved_by_profile_id: ['resolved','dismissed'].includes(String(body.exception_status || '')) ? actorId : null,
+        updated_at: new Date().toISOString(),
+      };
+      if (action === 'update') {
+        const { data, error } = await supabase.from('gl_journal_sync_exceptions').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('gl_journal_sync_exceptions').delete().eq('id', body.item_id);
         if (error) throw error;
         return Response.json({ ok:true }, { headers:corsHeaders });
       }
@@ -1891,6 +1914,25 @@ serve(async (req) => {
       }
       if (action === 'delete') {
         const { error } = await supabase.from('hse_packet_proofs').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'field_upload_failure') {
+      const patch = {
+        retry_status: body.retry_status ?? 'pending',
+        resolution_notes: body.resolution_notes ?? null,
+        resolved_by_profile_id: ['resolved','abandoned'].includes(String(body.retry_status || '')) ? actorId : null,
+        updated_at: new Date().toISOString(),
+      };
+      if (action === 'update') {
+        const { data, error } = await supabase.from('field_upload_failures').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('field_upload_failures').delete().eq('id', body.item_id);
         if (error) throw error;
         return Response.json({ ok:true }, { headers:corsHeaders });
       }

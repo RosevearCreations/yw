@@ -80,6 +80,8 @@ serve(async (req) => {
   const hsePacketProofs = await safeList(supabase, 'hse_packet_proofs', '*', 'created_at');
   const glJournalBatches = await safeList(supabase, 'gl_journal_batches', '*', 'batch_number');
   const glJournalBatchRollups = await safeList(supabase, 'v_gl_journal_batch_rollups', '*', 'batch_number');
+  const glJournalSyncExceptions = await safeList(supabase, 'v_gl_journal_sync_exceptions', '*', 'last_seen_at');
+  const fieldUploadFailures = await safeList(supabase, 'v_field_upload_failure_rollups', '*', 'created_at');
   const materialIssues = await safeList(supabase, 'material_issues', '*', 'issue_number');
   const materialIssueRollups = await safeList(supabase, 'v_material_issue_rollups', '*', 'issue_number');
   const arInvoices = await safeList(supabase, 'ar_invoices', '*', 'invoice_number');
@@ -120,6 +122,7 @@ serve(async (req) => {
     hse_packet_proofs: hsePacketProofs,
     chart_of_accounts: await safeList(supabase, 'chart_of_accounts', '*', 'account_number'),
     gl_journal_batches: mergeRowsById(glJournalBatches, glJournalBatchRollups),
+    gl_journal_sync_exceptions: glJournalSyncExceptions,
     gl_journal_entries: await safeList(supabase, 'gl_journal_entries', '*', 'line_number'),
     ap_vendors: await safeList(supabase, 'ap_vendors', '*', 'legal_name'),
     ar_invoices: mergeRowsById(arInvoices, (accountRollups || []).filter((row: any) => row?.record_type === 'ar_invoice')),
@@ -130,5 +133,6 @@ serve(async (req) => {
     material_receipt_lines: await safeList(supabase, 'material_receipt_lines', '*', 'line_order'),
     material_issues: mergeRowsById(materialIssues, materialIssueRollups),
     material_issue_lines: await safeList(supabase, 'material_issue_lines', '*', 'line_order'),
+    field_upload_failures: fieldUploadFailures,
   }, { headers: corsHeaders });
 });

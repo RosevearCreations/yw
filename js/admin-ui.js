@@ -36,7 +36,7 @@
       users: [],
       sites: [],
       assignments: [],
-      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [] },
+      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalSyncExceptions: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], fieldUploadFailures: [] },
       salesOrders: [],
       accountingEntries: [],
       serviceAreas: [],
@@ -60,6 +60,7 @@
       hsePacketProofs: [],
       chartOfAccounts: [],
       glJournalBatches: [],
+      glJournalSyncExceptions: [],
       glJournalEntries: [],
       apVendors: [],
       arInvoices: [],
@@ -70,6 +71,7 @@
       materialReceiptLines: [],
       materialIssues: [],
       materialIssueLines: [],
+      fieldUploadFailures: [],
       smokeChecks: []
     };
 
@@ -1212,6 +1214,7 @@
         state.hsePacketProofs = Array.isArray(resp?.hse_packet_proofs) ? resp.hse_packet_proofs : [];
         state.chartOfAccounts = Array.isArray(resp?.chart_of_accounts) ? resp.chart_of_accounts : [];
         state.glJournalBatches = Array.isArray(resp?.gl_journal_batches) ? resp.gl_journal_batches : [];
+        state.glJournalSyncExceptions = Array.isArray(resp?.gl_journal_sync_exceptions) ? resp.gl_journal_sync_exceptions : [];
         state.glJournalEntries = Array.isArray(resp?.gl_journal_entries) ? resp.gl_journal_entries : [];
         state.apVendors = Array.isArray(resp?.ap_vendors) ? resp.ap_vendors : [];
         state.arInvoices = Array.isArray(resp?.ar_invoices) ? resp.ar_invoices : [];
@@ -1222,6 +1225,7 @@
         state.materialReceiptLines = Array.isArray(resp?.material_receipt_lines) ? resp.material_receipt_lines : [];
         state.materialIssues = Array.isArray(resp?.material_issues) ? resp.material_issues : [];
         state.materialIssueLines = Array.isArray(resp?.material_issue_lines) ? resp.material_issue_lines : [];
+        state.fieldUploadFailures = Array.isArray(resp?.field_upload_failures) ? resp.field_upload_failures : [];
         state.counts = {
           users: state.users.length,
           sites: Array.isArray(resp?.sites) ? resp.sites.length : 0,
@@ -1449,8 +1453,13 @@
         { name:'batch_number', label:'Batch Number', type:'text', required:true }, { name:'source_module', label:'Source Module', type:'text' }, { name:'batch_status', label:'Batch Status', type:'select', options:[['draft','Draft'],['review','Review'],['posted','Posted'],['void','Void']] },
         { name:'batch_date', label:'Batch Date', type:'date' }, { name:'memo', label:'Memo', type:'textarea' }, { name:'source_record_type', label:'Source Record Type', type:'text' }, { name:'source_record_id', label:'Source Record ID', type:'text' },
         { name:'line_count', label:'Line Count', type:'number', readonly:true }, { name:'debit_total', label:'Debit Total', type:'number', readonly:true }, { name:'credit_total', label:'Credit Total', type:'number', readonly:true }, { name:'is_balanced', label:'Balanced', type:'checkbox', readonly:true },
-        { name:'source_generated', label:'Source Generated', type:'checkbox', readonly:true }, { name:'source_sync_state', label:'Source Sync State', type:'text', readonly:true }, { name:'source_synced_at', label:'Source Synced At', type:'datetime-local', readonly:true }, { name:'posting_notes', label:'Posting Notes', type:'textarea' }
-      ], columns:[['batch_number','Batch'],['batch_status','Status'],['source_sync_state','Sync'],['debit_total','Debit']] },
+        { name:'source_generated', label:'Source Generated', type:'checkbox', readonly:true }, { name:'source_sync_state', label:'Source Sync State', type:'text', readonly:true }, { name:'source_synced_at', label:'Source Synced At', type:'datetime-local', readonly:true }, { name:'exception_count', label:'Exception Count', type:'number', readonly:true }, { name:'open_exception_count', label:'Open Exceptions', type:'number', readonly:true }, { name:'blocking_exception_count', label:'Blocking Exceptions', type:'number', readonly:true }, { name:'last_exception_at', label:'Last Exception At', type:'datetime-local', readonly:true }, { name:'posting_notes', label:'Posting Notes', type:'textarea' }
+      ], columns:[['batch_number','Batch'],['batch_status','Status'],['source_sync_state','Sync'],['open_exception_count','Open Exceptions'],['debit_total','Debit']] },
+      gl_journal_sync_exception: { label:'Journal Sync Exceptions', rowsKey:'glJournalSyncExceptions', valueKey:'id', labelField:'title', fields:[
+        { name:'batch_id', label:'Batch ID', type:'text', readonly:true }, { name:'batch_number', label:'Batch', type:'text', readonly:true }, { name:'exception_type', label:'Exception Type', type:'text', readonly:true }, { name:'severity', label:'Severity', type:'select', options:[['info','Info'],['warning','Warning'],['error','Error']] },
+        { name:'exception_status', label:'Status', type:'select', options:[['open','Open'],['resolved','Resolved'],['dismissed','Dismissed']] }, { name:'title', label:'Title', type:'text' }, { name:'details', label:'Details', type:'textarea' },
+        { name:'last_seen_at', label:'Last Seen At', type:'datetime-local', readonly:true }, { name:'resolved_at', label:'Resolved At', type:'datetime-local', readonly:true }, { name:'resolution_notes', label:'Resolution Notes', type:'textarea' }
+      ], columns:[['batch_number','Batch'],['exception_type','Exception'],['severity','Severity'],['exception_status','Status']] },
       gl_journal_entry: { label:'Journal Entries', rowsKey:'glJournalEntries', valueKey:'id', labelField:'memo', fields:[
         { name:'batch_id', label:'Batch', type:'select', source:'glJournalBatches', required:true }, { name:'line_number', label:'Line Number', type:'number' }, { name:'entry_date', label:'Entry Date', type:'date' },
         { name:'account_id', label:'Account', type:'select', source:'glAccounts', required:true }, { name:'debit_amount', label:'Debit Amount', type:'number' }, { name:'credit_amount', label:'Credit Amount', type:'number' },
@@ -1944,6 +1953,10 @@
         cards.push({ title: 'Estimated Cost', value: formatMoney(selected?.estimated_material_total), help: 'Estimated material cost from linked work-order lines.' });
         cards.push({ title: 'Variance', value: formatMoney(selected?.variance_amount), help: 'Actual issued cost minus estimated material cost.' });
       }
+      if (entity === 'field_upload_failure') {
+        cards.push({ title: 'Retry Status', value: String(selected?.retry_status || 'pending'), help: 'Tracks whether the upload issue still needs manual retry or has been resolved.' });
+        cards.push({ title: 'Failure Stage', value: String(selected?.failure_stage || 'upload'), help: 'Shows which upload stage failed so field/office staff know where to investigate.' });
+      }
       if (entity === 'linked_hse_packet') {
         ['briefing_required', 'briefing_completed', 'inspection_required', 'inspection_completed', 'emergency_review_required', 'emergency_review_completed', 'packet_status', 'reopen_in_progress'].forEach((name) => bind(name, () => {
           const preview = getHsePreviewFromInputs();
@@ -2254,6 +2267,7 @@
           hsePacketProofs: Array.isArray(payload?.hse_packet_proofs) ? payload.hse_packet_proofs : state.hsePacketProofs,
           glAccounts: Array.isArray(payload?.chart_of_accounts) ? payload.chart_of_accounts : state.chartOfAccounts,
           glJournalBatches: Array.isArray(payload?.gl_journal_batches) ? payload.gl_journal_batches : state.glJournalBatches,
+          glJournalSyncExceptions: Array.isArray(payload?.gl_journal_sync_exceptions) ? payload.gl_journal_sync_exceptions : state.glJournalSyncExceptions,
           glJournalEntries: Array.isArray(payload?.gl_journal_entries) ? payload.gl_journal_entries : state.glJournalEntries,
           vendors: Array.isArray(payload?.ap_vendors) ? payload.ap_vendors : state.apVendors,
           arInvoices: Array.isArray(payload?.ar_invoices) ? payload.ar_invoices : state.arInvoices,
@@ -2263,7 +2277,8 @@
           materialReceipts: Array.isArray(payload?.material_receipts) ? payload.material_receipts : state.materialReceipts,
           materialReceiptLines: Array.isArray(payload?.material_receipt_lines) ? payload.material_receipt_lines : state.materialReceiptLines,
           materialIssues: Array.isArray(payload?.material_issues) ? payload.material_issues : state.materialIssues,
-          materialIssueLines: Array.isArray(payload?.material_issue_lines) ? payload.material_issue_lines : state.materialIssueLines
+          materialIssueLines: Array.isArray(payload?.material_issue_lines) ? payload.material_issue_lines : state.materialIssueLines,
+          fieldUploadFailures: Array.isArray(payload?.field_upload_failures) ? payload.field_upload_failures : state.fieldUploadFailures
         };
         const e = els();
         if (e.staffPosition) {

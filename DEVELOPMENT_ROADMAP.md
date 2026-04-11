@@ -1,4 +1,12 @@
-> Last synchronized: April 10, 2026 (source journal / route execution / HSE proof pass)
+> Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+
+## 2026-04-11 journal sync exceptions and upload fallback pass
+- Added migration `sql/068_journal_sync_exceptions_and_upload_failure_fallback.sql`.
+- Added DB-backed `gl_journal_sync_exceptions` so stale, unbalanced, and missing-entry source batches are visible as first-class review items instead of hidden batch-state guesses.
+- Added DB-backed `field_upload_failures` so failed job-comment and equipment-evidence uploads leave an auditable fallback trail for retry/resolution instead of failing silently.
+- Extended Admin selectors/directory/manage/UI so sync exceptions and upload failures can be reviewed, resolved, or dismissed from the same backbone shell.
+- Tightened job activity upload handling so comments can still save even when attachments fail, with clearer operator feedback and follow-up visibility.
+
 
 ## 2026-04-10 journal posting controls and material issue / usage pass
 - Added migration `sql/066_journal_posting_controls_and_material_issue_usage.sql`.
@@ -8,6 +16,19 @@
 - Continued the DB-first direction for shared operational data while keeping the next highest-value gaps visible: route execution lifecycle, HSE proof/reopen, and stronger source-to-journal automation.
 
 ## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
+
+## Immediate next build priorities after 068
+1. **Source journal review tooling**
+   - add guided refresh/rebuild/review flows for stale or exception-heavy source batches
+   - make posted-source drift and manual overrides easier to audit
+2. **Upload retry / fallback reliability**
+   - extend the same failure visibility to route execution attachments and HSE proof uploads
+   - add clearer retry ownership and field-office handoff notes
+3. **Validation and repeat-save reliability**
+   - continue hardening create/update/delete flows so Admin screens stay repeat-save safe
+   - deepen user-facing partial-success messaging on dense screens
+4. **Route and HSE mobile polish**
+   - keep tightening mobile-first stop execution, proof capture, and exception review
 
 ## Immediate next build priorities after 066
 1. **Source-to-journal automation**
@@ -70,7 +91,7 @@
 - IRS recordkeeping and depreciation rules reinforce the need for digital, structured records for materials, equipment, receivables, payables, and standard business costs.
 
 
-Last synchronized: April 10, 2026 (source journal / route execution / HSE proof pass)
+Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
 
 ## Immediate priorities
 

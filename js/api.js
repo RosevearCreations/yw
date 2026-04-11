@@ -225,6 +225,17 @@
     }
   }
 
+
+
+  function enrichUploadError(err) {
+    const payload = err?.payload || {};
+    const failureId = payload?.failure_id || err?.failure_id || null;
+    if (failureId && !String(err.message || '').includes('Failure log')) {
+      err.message = `${err.message} Failure log: ${failureId}`;
+    }
+    return err;
+  }
+
   async function uploadEquipmentEvidence(formData, requireAuth = true) {
     const token = requireAuth ? await getAccessToken() : '';
     const anonKey = getSupabaseAnonKey();
@@ -251,7 +262,7 @@
     }
 
     if (!response.ok) {
-      throw buildError(response.status, rawText, payload);
+      throw enrichUploadError(buildError(response.status, rawText, payload));
     }
     return payload;
   }
@@ -307,7 +318,7 @@
     }
 
     if (!response.ok) {
-      throw buildError(response.status, rawText, payload);
+      throw enrichUploadError(buildError(response.status, rawText, payload));
     }
     return payload;
   }

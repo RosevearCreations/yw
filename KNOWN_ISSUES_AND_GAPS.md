@@ -1,4 +1,12 @@
-> Last synchronized: April 10, 2026 (source journal / route execution / HSE proof pass)
+> Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+
+## 2026-04-11 journal sync exceptions and upload fallback pass
+- Added migration `sql/068_journal_sync_exceptions_and_upload_failure_fallback.sql`.
+- Added DB-backed `gl_journal_sync_exceptions` so stale, unbalanced, and missing-entry source batches are visible as first-class review items instead of hidden batch-state guesses.
+- Added DB-backed `field_upload_failures` so failed job-comment and equipment-evidence uploads leave an auditable fallback trail for retry/resolution instead of failing silently.
+- Extended Admin selectors/directory/manage/UI so sync exceptions and upload failures can be reviewed, resolved, or dismissed from the same backbone shell.
+- Tightened job activity upload handling so comments can still save even when attachments fail, with clearer operator feedback and follow-up visibility.
+
 
 ## 2026-04-10 journal posting controls and material issue / usage pass
 - Added migration `sql/066_journal_posting_controls_and_material_issue_usage.sql`.
@@ -50,7 +58,7 @@
 - Continue reducing duplicate JSON/shared-reference sources wherever DB-first selectors already exist.
 
 
-Last synchronized: April 10, 2026 (source journal / route execution / HSE proof pass)
+Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
 
 ## 1) Admin backbone incompletion
 ### Risk
@@ -211,3 +219,9 @@ Reference links:
 - Source-generated journal drafting now exists, so the next accounting risk shifts from batch creation into audit visibility when posted batches later diverge from changed source records.
 - Route-stop execution and HSE proof records now exist in the DB/admin layer, so the next risk is mobile capture polish and live storage/upload testing rather than missing structures.
 - CSS/mobile drift remains active because the Admin backbone now carries denser execution/proof/accounting controls in one shell.
+
+
+## April 11, 2026 update after 068
+- Added explicit review visibility for stale/unbalanced/missing-entry source journal batches, reducing the risk that posted-source drift is missed in Admin.
+- Added upload-failure logging for job comment attachments and equipment evidence so field staff and office admins have a visible fallback path when storage or metadata writes fail.
+- Remaining next step: extend the same fallback/retry visibility to route execution attachments and HSE proof uploads, then add more guided review actions for stale source batches.

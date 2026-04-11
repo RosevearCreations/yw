@@ -1,4 +1,12 @@
-> Last synchronized: April 10, 2026 (source journal / route execution / HSE proof pass)
+> Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+
+## 2026-04-11 journal sync exceptions and upload fallback pass
+- Added migration `sql/068_journal_sync_exceptions_and_upload_failure_fallback.sql`.
+- Added DB-backed `gl_journal_sync_exceptions` so stale, unbalanced, and missing-entry source batches are visible as first-class review items instead of hidden batch-state guesses.
+- Added DB-backed `field_upload_failures` so failed job-comment and equipment-evidence uploads leave an auditable fallback trail for retry/resolution instead of failing silently.
+- Extended Admin selectors/directory/manage/UI so sync exceptions and upload failures can be reviewed, resolved, or dismissed from the same backbone shell.
+- Tightened job activity upload handling so comments can still save even when attachments fail, with clearer operator feedback and follow-up visibility.
+
 
 ## 2026-04-10 journal posting controls and material issue / usage pass
 - Added migration `sql/066_journal_posting_controls_and_material_issue_usage.sql`.
@@ -35,6 +43,11 @@ The main risk is no longer just whether Admin can see the new records. The risk 
 
 # Known Gaps and Risks
 
+## April 11, 2026 risk update after 068
+- Source-generated journal batches now have first-class exception visibility, but the next risk is operator workflow: office staff still need a guided rebuild/review path for stale batches.
+- Upload failures now leave a DB-backed trail, which reduces silent loss, but route execution and HSE proof uploads still need the same end-to-end fallback behavior.
+- Partial-success handling improved for job comments, yet broader repeat-save and retry clarity is still a top Admin/mobile risk.
+
 ## April 10, 2026 risk update after 067
 - The biggest risk is now mobile/live execution quality rather than missing structures: route-stop execution, HSE proof, and source-generated journals are in the schema/admin layer, but they still need real-device validation and clearer upload/error fallback.
 - Source-generated batches reduce manual accounting setup, but posted-source drift now becomes the next audit visibility risk.
@@ -51,7 +64,7 @@ The main risk is no longer just whether Admin can see the new records. The risk 
 - IRS recordkeeping and depreciation requirements support digital, structured materials/equipment/accounting records.
 
 
-Last synchronized: April 10, 2026 (source journal / route execution / HSE proof pass)
+Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
 
 ## 1) Admin backbone incompletion
 ### Risk
