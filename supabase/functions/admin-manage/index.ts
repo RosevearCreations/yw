@@ -1653,6 +1653,178 @@ serve(async (req) => {
       }
     }
 
+
+    if (entity === 'gl_journal_batch') {
+      const patch = {
+        batch_number: body.batch_number ?? null,
+        source_module: body.source_module ?? 'manual',
+        batch_status: body.batch_status ?? 'draft',
+        batch_date: asNullableDate(body.batch_date) || new Date().toISOString().slice(0, 10),
+        memo: body.memo ?? null,
+        source_record_type: asNullableText(body.source_record_type),
+        source_record_id: asNullableText(body.source_record_id),
+        posting_notes: body.posting_notes ?? null,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.batch_number) return Response.json({ ok:false, error:'batch_number is required' }, { status:400, headers:corsHeaders });
+      if ((action === 'create' || action === 'update') && patch.batch_status === 'posted') {
+        return Response.json({ ok:false, error:'Use the journal batch post action after the batch is balanced.' }, { status:400, headers:corsHeaders });
+      }
+      if (action === 'create') {
+        const { data, error } = await supabase.from('gl_journal_batches').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('gl_journal_batches').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'post') {
+        const { data: batch } = await supabase.from('gl_journal_batches').select('id,batch_number,batch_status,line_count,debit_total,credit_total,is_balanced').eq('id', body.item_id).maybeSingle();
+        if (!batch?.id) return Response.json({ ok:false, error:'Journal batch not found.' }, { status:404, headers:corsHeaders });
+        if (String(batch.batch_status || '') === 'posted') return Response.json({ ok:true, record:batch }, { headers:corsHeaders });
+        if (!(Number(batch.line_count) > 0)) return Response.json({ ok:false, error:'Journal batch must have at least one entry before posting.' }, { status:400, headers:corsHeaders });
+        if (!batch.is_balanced) return Response.json({ ok:false, error:`Journal batch is not balanced. Debit ${batch.debit_total || 0} must equal credit ${batch.credit_total || 0}.` }, { status:400, headers:corsHeaders });
+        const { data, error } = await supabase.from('gl_journal_batches').update({ batch_status:'posted', posted_at:new Date().toISOString(), posted_by_profile_id: actorId, posting_notes: body.posting_notes ?? null, updated_at:new Date().toISOString() }).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('gl_journal_batches').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'gl_journal_entry') {
+      const debit = asNumber(body.debit_amount, 0);
+      const credit = asNumber(body.credit_amount, 0);
+      const patch = {
+        batch_id: asNullableText(body.batch_id),
+        line_number: asNullableNumber(body.line_number),
+        entry_date: asNullableDate(body.entry_date) || new Date().toISOString().slice(0, 10),
+        account_id: asNullableText(body.account_id),
+        debit_amount: debit,
+        credit_amount: credit,
+        client_id: asNullableText(body.client_id),
+        work_order_id: asNullableText(body.work_order_id),
+        dispatch_id: asNullableText(body.dispatch_id),
+        source_record_type: asNullableText(body.source_record_type),
+        source_record_id: asNullableText(body.source_record_id),
+        memo: body.memo ?? null,
+        created_by_profile_id: actorId,
+      };
+      if (!patch.batch_id || !patch.account_id) return Response.json({ ok:false, error:'batch_id and account_id are required' }, { status:400, headers:corsHeaders });
+      if (!((debit > 0 && credit === 0) || (credit > 0 && debit === 0))) {
+        return Response.json({ ok:false, error:'Exactly one of debit_amount or credit_amount must be greater than zero.' }, { status:400, headers:corsHeaders });
+      }
+      if (action === 'create') {
+        const { data, error } = await supabase.from('gl_journal_entries').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('gl_journal_entries').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('gl_journal_entries').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'material_issue') {
+      const patch = {
+        issue_number: body.issue_number ?? null,
+        work_order_id: asNullableText(body.work_order_id),
+        client_site_id: asNullableText(body.client_site_id),
+        issue_status: body.issue_status ?? 'draft',
+        issue_date: asNullableDate(body.issue_date) || new Date().toISOString().slice(0, 10),
+        issued_by_profile_id: asNullableText(body.issued_by_profile_id),
+        notes: body.notes ?? null,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (patch.work_order_id && !patch.client_site_id) {
+        const { data: workOrder } = await supabase.from('work_orders').select('id,client_site_id').eq('id', patch.work_order_id).maybeSingle();
+        if (workOrder?.client_site_id) patch.client_site_id = workOrder.client_site_id;
+      }
+      if (!patch.issue_number) return Response.json({ ok:false, error:'issue_number is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('material_issues').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('material_issues').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('material_issues').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'material_issue_line') {
+      const quantity = asNumber(body.quantity, 0);
+      const patch = {
+        issue_id: asNullableText(body.issue_id),
+        line_order: asNumber(body.line_order, 0),
+        material_id: asNullableText(body.material_id),
+        work_order_line_id: asNullableText(body.work_order_line_id),
+        description: body.description ?? null,
+        unit_id: asNullableText(body.unit_id),
+        quantity,
+        unit_cost: asNumber(body.unit_cost, 0),
+        line_total: asNumber(body.line_total, quantity * asNumber(body.unit_cost, 0)),
+        cost_code_id: asNullableText(body.cost_code_id),
+        notes: body.notes ?? null,
+        updated_at: new Date().toISOString(),
+      };
+      if (patch.work_order_line_id) {
+        const workOrderLine = await getWorkOrderLineDefaults(supabase, patch.work_order_line_id);
+        if (workOrderLine) {
+          if (!patch.description) patch.description = workOrderLine.description;
+          if (!patch.unit_id) patch.unit_id = workOrderLine.unit_id || null;
+          if (!patch.material_id) patch.material_id = workOrderLine.material_id || null;
+          if (!patch.cost_code_id) patch.cost_code_id = workOrderLine.cost_code_id || null;
+          if (!asNullableNumber(body.unit_cost)) patch.unit_cost = asNumber(workOrderLine.unit_cost, patch.unit_cost);
+        }
+      }
+      if (patch.material_id) {
+        const material = await getMaterialDefaults(supabase, patch.material_id);
+        if (material) {
+          if (!patch.description) patch.description = material.item_name;
+          if (!patch.unit_id) patch.unit_id = material.unit_id || null;
+          if (!asNullableNumber(body.unit_cost)) patch.unit_cost = asNumber(material.default_unit_cost, patch.unit_cost);
+          if (!patch.cost_code_id) patch.cost_code_id = await getCostCodeIdByCode(supabase, 'MAT');
+        }
+      }
+      patch.line_total = asNumber(body.line_total, patch.quantity * patch.unit_cost);
+      if (!patch.issue_id || !patch.description) return Response.json({ ok:false, error:'issue_id and description are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('material_issue_lines').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('material_issue_lines').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('material_issue_lines').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
     return Response.json({ ok: false, error: 'Unsupported entity/action' }, { status: 400, headers: corsHeaders });
   } catch (error) {
     return Response.json({ ok: false, error: String(error) }, { status: 500, headers: corsHeaders });

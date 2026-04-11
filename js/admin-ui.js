@@ -36,7 +36,7 @@
       users: [],
       sites: [],
       assignments: [],
-      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], routeStops: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], glAccounts: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [] },
+      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], routeStops: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [] },
       salesOrders: [],
       accountingEntries: [],
       serviceAreas: [],
@@ -56,6 +56,8 @@
       subcontractDispatches: [],
       linkedHsePackets: [],
       chartOfAccounts: [],
+      glJournalBatches: [],
+      glJournalEntries: [],
       apVendors: [],
       arInvoices: [],
       arPayments: [],
@@ -63,6 +65,8 @@
       apPayments: [],
       materialReceipts: [],
       materialReceiptLines: [],
+      materialIssues: [],
+      materialIssueLines: [],
       smokeChecks: []
     };
 
@@ -416,6 +420,8 @@
                 </optgroup>
                 <optgroup label="Accounting Backbone">
                   <option value="gl_account">Chart of Accounts</option>
+                  <option value="gl_journal_batch">Journal Batches</option>
+                  <option value="gl_journal_entry">Journal Entries</option>
                   <option value="ap_vendor">Vendors</option>
                   <option value="ar_invoice">AR Invoices</option>
                   <option value="ar_payment">AR Payments</option>
@@ -423,6 +429,8 @@
                   <option value="ap_payment">AP Payments</option>
                   <option value="material_receipt">Material Receipts</option>
                   <option value="material_receipt_line">Material Receipt Lines</option>
+                  <option value="material_issue">Material Issues</option>
+                  <option value="material_issue_line">Material Issue Lines</option>
                 </optgroup>
               </select>
             </label>
@@ -436,6 +444,7 @@
             <button id="ad_backbone_create" class="secondary" type="button">Create Record</button>
             <button id="ad_backbone_save" class="secondary" type="button">Save Record</button>
             <button id="ad_backbone_delete" class="secondary" type="button">Delete Record</button>
+            <button id="ad_backbone_post" class="secondary" type="button" style="display:none;">Post Journal Batch</button>
           </div>
           <div class="table-scroll" style="margin-top:14px;">
             <table id="ad_backbone_table">
@@ -613,6 +622,7 @@
         backboneCreateBtn: document.getElementById('ad_backbone_create'),
         backboneSaveBtn: document.getElementById('ad_backbone_save'),
         backboneDeleteBtn: document.getElementById('ad_backbone_delete'),
+        backbonePostBtn: document.getElementById('ad_backbone_post'),
         backboneHead: document.getElementById('ad_backbone_table_head'),
         backboneBody: document.querySelector('#ad_backbone_table tbody'),
         sitesCount: document.getElementById('ad_sites_count'),
@@ -1192,6 +1202,8 @@
         state.subcontractDispatches = Array.isArray(resp?.subcontract_dispatches) ? resp.subcontract_dispatches : [];
         state.linkedHsePackets = Array.isArray(resp?.linked_hse_packets) ? resp.linked_hse_packets : [];
         state.chartOfAccounts = Array.isArray(resp?.chart_of_accounts) ? resp.chart_of_accounts : [];
+        state.glJournalBatches = Array.isArray(resp?.gl_journal_batches) ? resp.gl_journal_batches : [];
+        state.glJournalEntries = Array.isArray(resp?.gl_journal_entries) ? resp.gl_journal_entries : [];
         state.apVendors = Array.isArray(resp?.ap_vendors) ? resp.ap_vendors : [];
         state.arInvoices = Array.isArray(resp?.ar_invoices) ? resp.ar_invoices : [];
         state.arPayments = Array.isArray(resp?.ar_payments) ? resp.ar_payments : [];
@@ -1199,6 +1211,8 @@
         state.apPayments = Array.isArray(resp?.ap_payments) ? resp.ap_payments : [];
         state.materialReceipts = Array.isArray(resp?.material_receipts) ? resp.material_receipts : [];
         state.materialReceiptLines = Array.isArray(resp?.material_receipt_lines) ? resp.material_receipt_lines : [];
+        state.materialIssues = Array.isArray(resp?.material_issues) ? resp.material_issues : [];
+        state.materialIssueLines = Array.isArray(resp?.material_issue_lines) ? resp.material_issue_lines : [];
         state.counts = {
           users: state.users.length,
           sites: Array.isArray(resp?.sites) ? resp.sites.length : 0,
@@ -1237,7 +1251,7 @@
       state.notifications = [];
       state.sites = [];
       state.assignments = [];
-      state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], workOrders: [], subcontractClients: [], subcontractDispatches: [], glAccounts: [], vendors: [], arInvoices: [], apBills: [] };
+      state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], workOrders: [], subcontractClients: [], subcontractDispatches: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], apBills: [], materialIssues: [], materialIssueLines: [] };
       state.serviceAreas = [];
       state.routes = [];
       state.clients = [];
@@ -1437,11 +1451,21 @@
         { name:'material_id', label:'Material', type:'select', source:'materials' }, { name:'description', label:'Description', type:'text', required:true }, { name:'unit_id', label:'Unit', type:'select', source:'units' },
         { name:'quantity', label:'Quantity', type:'number' }, { name:'unit_cost', label:'Unit Cost', type:'number' }, { name:'line_total', label:'Line Total', type:'number', readonly:true },
         { name:'cost_code_id', label:'Cost Code', type:'select', source:'costCodes' }, { name:'work_order_line_id', label:'Work Order Line', type:'select', source:'workOrderLines' }
-      ], columns:[['receipt_id','Receipt'],['line_order','Order'],['description','Description'],['line_total','Total']] }
+      ], columns:[['receipt_id','Receipt'],['line_order','Order'],['description','Description'],['line_total','Total']] },
+      material_issue: { label:'Material Issues', rowsKey:'materialIssues', valueKey:'id', labelField:'issue_number', fields:[
+        { name:'issue_number', label:'Issue Number', type:'text', required:true }, { name:'work_order_id', label:'Work Order', type:'select', source:'workOrders' }, { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' },
+        { name:'issue_status', label:'Issue Status', type:'select', options:[['draft','Draft'],['issued','Issued'],['partial','Partial'],['closed','Closed'],['void','Void']] }, { name:'issue_date', label:'Issue Date', type:'date' }, { name:'issued_by_profile_id', label:'Issued By', type:'select', source:'profiles' },
+        { name:'line_count', label:'Line Count', type:'number', readonly:true }, { name:'quantity_total', label:'Quantity Total', type:'number', readonly:true }, { name:'issue_total', label:'Issue Total', type:'number', readonly:true }, { name:'estimated_material_total', label:'Estimated Material Total', type:'number', readonly:true }, { name:'variance_amount', label:'Variance Amount', type:'number', readonly:true }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['issue_number','Issue'],['issue_status','Status'],['issue_date','Date'],['variance_amount','Variance']] },
+      material_issue_line: { label:'Material Issue Lines', rowsKey:'materialIssueLines', valueKey:'id', labelField:'description', fields:[
+        { name:'issue_id', label:'Issue', type:'select', source:'materialIssues', required:true }, { name:'line_order', label:'Line Order', type:'number' },
+        { name:'material_id', label:'Material', type:'select', source:'materials' }, { name:'work_order_line_id', label:'Work Order Line', type:'select', source:'workOrderLines' }, { name:'description', label:'Description', type:'text', required:true }, { name:'unit_id', label:'Unit', type:'select', source:'units' },
+        { name:'quantity', label:'Quantity', type:'number' }, { name:'unit_cost', label:'Unit Cost', type:'number' }, { name:'line_total', label:'Line Total', type:'number', readonly:true }, { name:'cost_code_id', label:'Cost Code', type:'select', source:'costCodes' }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['issue_id','Issue'],['line_order','Order'],['description','Description'],['line_total','Total']] }
     };
 
     function getBackboneRows(entity) {
-      const map = { unit_of_measure: state.unitsOfMeasure || [], cost_code: state.costCodes || [], service_area: state.serviceAreas || [], route: state.routes || [], route_stop: state.routeStops || [], client: state.clients || [], client_site: state.clientSites || [], material: state.materialsCatalog || [], equipment_master: state.equipmentMaster || [], estimate: state.estimates || [], estimate_line: state.estimateLines || [], work_order: state.workOrders || [], work_order_line: state.workOrderLines || [], subcontract_client: state.subcontractClients || [], subcontract_dispatch: state.subcontractDispatches || [], linked_hse_packet: state.linkedHsePackets || [], gl_account: state.chartOfAccounts || [], ap_vendor: state.apVendors || [], ar_invoice: state.arInvoices || [], ar_payment: state.arPayments || [], ap_bill: state.apBills || [], ap_payment: state.apPayments || [], material_receipt: state.materialReceipts || [], material_receipt_line: state.materialReceiptLines || [] };
+      const map = { unit_of_measure: state.unitsOfMeasure || [], cost_code: state.costCodes || [], service_area: state.serviceAreas || [], route: state.routes || [], route_stop: state.routeStops || [], client: state.clients || [], client_site: state.clientSites || [], material: state.materialsCatalog || [], equipment_master: state.equipmentMaster || [], estimate: state.estimates || [], estimate_line: state.estimateLines || [], work_order: state.workOrders || [], work_order_line: state.workOrderLines || [], subcontract_client: state.subcontractClients || [], subcontract_dispatch: state.subcontractDispatches || [], linked_hse_packet: state.linkedHsePackets || [], gl_account: state.chartOfAccounts || [], gl_journal_batch: state.glJournalBatches || [], gl_journal_entry: state.glJournalEntries || [], ap_vendor: state.apVendors || [], ar_invoice: state.arInvoices || [], ar_payment: state.arPayments || [], ap_bill: state.apBills || [], ap_payment: state.apPayments || [], material_receipt: state.materialReceipts || [], material_receipt_line: state.materialReceiptLines || [], material_issue: state.materialIssues || [], material_issue_line: state.materialIssueLines || [] };
       return Array.isArray(map[entity]) ? map[entity] : [];
     }
 
@@ -1467,6 +1491,8 @@
         subcontractDispatches: state.selectors.subcontractDispatches || state.subcontractDispatches || [],
         linkedHsePackets: state.selectors.linkedHsePackets || state.linkedHsePackets || [],
         glAccounts: state.selectors.glAccounts || state.chartOfAccounts || [],
+        glJournalBatches: state.selectors.glJournalBatches || state.glJournalBatches || [],
+        glJournalEntries: state.selectors.glJournalEntries || state.glJournalEntries || [],
         vendors: state.selectors.vendors || state.apVendors || [],
         arInvoices: state.selectors.arInvoices || state.arInvoices || [],
         arPayments: state.selectors.arPayments || state.arPayments || [],
@@ -1474,6 +1500,8 @@
         apPayments: state.selectors.apPayments || state.apPayments || [],
         materialReceipts: state.selectors.materialReceipts || state.materialReceipts || [],
         materialReceiptLines: state.selectors.materialReceiptLines || state.materialReceiptLines || [],
+        materialIssues: state.selectors.materialIssues || state.materialIssues || [],
+        materialIssueLines: state.selectors.materialIssueLines || state.materialIssueLines || [],
         costCodes: state.selectors.costCodes || state.costCodes || [],
         jobTypes: state.selectors.jobTypes || []
       };
@@ -1500,6 +1528,8 @@
       if (source === 'subcontractDispatches') return row.dispatch_number || row.id;
       if (source === 'linkedHsePackets') return row.packet_number || row.id;
       if (source === 'glAccounts') return `${row.account_number || ''} - ${row.account_name || row.id}`;
+      if (source === 'glJournalBatches') return row.batch_number || row.id;
+      if (source === 'glJournalEntries') return `${row.line_number ?? ''}${row.memo ? ` - ${row.memo}` : ''}`;
       if (source === 'vendors') return row.display_name || row.legal_name || row.vendor_code || row.id;
       if (source === 'arInvoices') return row.invoice_number || row.id;
       if (source === 'arPayments') return row.payment_number || row.id;
@@ -1507,6 +1537,8 @@
       if (source === 'apPayments') return row.payment_number || row.id;
       if (source === 'materialReceipts') return row.receipt_number || row.id;
       if (source === 'materialReceiptLines') return `${row.line_order ?? ''} - ${row.description || row.id}`;
+      if (source === 'materialIssues') return row.issue_number || row.id;
+      if (source === 'materialIssueLines') return `${row.line_order ?? ''} - ${row.description || row.id}`;
       if (source === 'costCodes') return `${row.code || ''}${row.name ? ` - ${row.name}` : ''}`;
       if (source === 'jobTypes') return row.name || row.id;
       return row.name || row.id || '';
@@ -1662,6 +1694,17 @@
         cards.push({ title: 'Bill Balance', value: `$${formatMoney(bill?.balance_due || 0)}`, help: 'Open balance on the selected AP bill.' });
       }
 
+      if (entity === 'gl_journal_batch' || entity === 'gl_journal_entry') {
+        const batchId = entity === 'gl_journal_batch' ? (selected?.id || e.backboneItemId?.value || '') : (val('batch_id') || selected?.batch_id || '');
+        const entries = (state.glJournalEntries || []).filter((item) => String(item.batch_id || '') === String(batchId));
+        const debit = entries.reduce((sum, item) => sum + formatMoney(item.debit_amount), 0);
+        const credit = entries.reduce((sum, item) => sum + formatMoney(item.credit_amount), 0);
+        const balanced = Math.abs(debit - credit) < 0.005 && entries.length > 0;
+        cards.push({ title: 'Entries', value: String(entries.length), help: 'Lines currently in this journal batch.' });
+        cards.push({ title: 'Debit Total', value: formatMoney(selected?.debit_total ?? debit), help: 'Summed debit amount for the batch.' });
+        cards.push({ title: 'Credit Total', value: formatMoney(selected?.credit_total ?? credit), help: 'Summed credit amount for the batch.' });
+        cards.push({ title: 'Balanced', value: selected?.is_balanced ? 'Yes' : (balanced ? 'Yes' : 'No'), help: 'Posting is blocked until debit and credit totals match.' });
+      }
       if (entity === 'material_receipt' || entity === 'material_receipt_line') {
         const receiptId = entity === 'material_receipt' ? (selected?.id || e.backboneItemId?.value || '') : (val('receipt_id') || selected?.receipt_id || '');
         const lines = (state.materialReceiptLines || []).filter((item) => String(item.receipt_id || '') === String(receiptId));
@@ -1680,6 +1723,15 @@
         cards.push({ title: 'Linked Work-Order Line', value: workOrderLine ? `${workOrderLine.line_order || ''} - ${workOrderLine.description || 'Linked'}` : 'Not linked', help: 'Receiving-to-costing ties receipt cost back to a work-order line.' });
       }
 
+      if (entity === 'material_issue' || entity === 'material_issue_line') {
+        const issueId = entity === 'material_issue' ? (selected?.id || e.backboneItemId?.value || '') : (val('issue_id') || selected?.issue_id || '');
+        const lines = (state.materialIssueLines || []).filter((item) => String(item.issue_id || '') === String(issueId));
+        const issueTotal = lines.reduce((sum, item) => sum + formatMoney(item.line_total), 0);
+        cards.push({ title: 'Issue Lines', value: String(lines.length), help: 'Material issue/usage lines for this issue header.' });
+        cards.push({ title: 'Issued Total', value: formatMoney(selected?.issue_total ?? issueTotal), help: 'Total issued material cost from issue lines.' });
+        cards.push({ title: 'Estimated Cost', value: formatMoney(selected?.estimated_material_total), help: 'Estimated material cost from linked work-order lines.' });
+        cards.push({ title: 'Variance', value: formatMoney(selected?.variance_amount), help: 'Actual issued cost minus estimated material cost.' });
+      }
       if (entity === 'linked_hse_packet') {
         const preview = getHsePreviewFromInputs();
         cards.push({ title: 'Required Steps', value: String(preview.requiredCount), help: 'Briefing, inspection, and emergency review steps marked as required.' });
@@ -1800,6 +1852,15 @@
           renderBackboneInsights();
         }, 'change');
       }
+      if (entity === 'material_issue' || entity === 'material_issue_line') {
+        const issueId = entity === 'material_issue' ? (selected?.id || e.backboneItemId?.value || '') : (val('issue_id') || selected?.issue_id || '');
+        const lines = (state.materialIssueLines || []).filter((item) => String(item.issue_id || '') === String(issueId));
+        const issueTotal = lines.reduce((sum, item) => sum + formatMoney(item.line_total), 0);
+        cards.push({ title: 'Issue Lines', value: String(lines.length), help: 'Material issue/usage lines for this issue header.' });
+        cards.push({ title: 'Issued Total', value: formatMoney(selected?.issue_total ?? issueTotal), help: 'Total issued material cost from issue lines.' });
+        cards.push({ title: 'Estimated Cost', value: formatMoney(selected?.estimated_material_total), help: 'Estimated material cost from linked work-order lines.' });
+        cards.push({ title: 'Variance', value: formatMoney(selected?.variance_amount), help: 'Actual issued cost minus estimated material cost.' });
+      }
       if (entity === 'linked_hse_packet') {
         ['briefing_required', 'briefing_completed', 'inspection_required', 'inspection_completed', 'emergency_review_required', 'emergency_review_completed', 'packet_status'].forEach((name) => bind(name, () => {
           const preview = getHsePreviewFromInputs();
@@ -1841,6 +1902,7 @@
         }
       });
       bindBackboneFieldLogic(entity);
+      if (e.backbonePostBtn) e.backbonePostBtn.style.display = entity === 'gl_journal_batch' ? '' : 'none';
       renderBackboneInsights(row || null);
     }
 
@@ -1899,6 +1961,21 @@
       const resp = await manageAdminEntity(payload);
       if (!resp?.ok) throw new Error(resp?.error || `${cfg.label} save failed.`);
       setSummary(isCreate ? `${cfg.label} record created.` : `${cfg.label} record updated.`);
+      await loadDirectory();
+      await refreshSelectors();
+      fillBackboneForm(resp.record || null);
+      renderBackboneTable();
+    }
+
+    async function postBackboneJournalBatch() {
+      const e = els();
+      const entity = e.backboneEntity?.value || 'unit_of_measure';
+      if (entity !== 'gl_journal_batch') throw new Error('Select a journal batch first.');
+      const itemId = e.backboneItemId?.value || '';
+      if (!itemId) throw new Error('Select a journal batch first.');
+      const resp = await manageAdminEntity({ entity, action: 'post', item_id: itemId, posting_notes: document.getElementById('ad_bb_posting_notes')?.value || '' });
+      if (!resp?.ok) throw new Error(resp?.error || 'Journal batch post failed.');
+      setSummary('Journal batch posted.');
       await loadDirectory();
       await refreshSelectors();
       fillBackboneForm(resp.record || null);
@@ -2089,13 +2166,17 @@
           subcontractDispatches: Array.isArray(payload?.subcontract_dispatches) ? payload.subcontract_dispatches : state.subcontractDispatches,
           linkedHsePackets: Array.isArray(payload?.linked_hse_packets) ? payload.linked_hse_packets : state.linkedHsePackets,
           glAccounts: Array.isArray(payload?.chart_of_accounts) ? payload.chart_of_accounts : state.chartOfAccounts,
+          glJournalBatches: Array.isArray(payload?.gl_journal_batches) ? payload.gl_journal_batches : state.glJournalBatches,
+          glJournalEntries: Array.isArray(payload?.gl_journal_entries) ? payload.gl_journal_entries : state.glJournalEntries,
           vendors: Array.isArray(payload?.ap_vendors) ? payload.ap_vendors : state.apVendors,
           arInvoices: Array.isArray(payload?.ar_invoices) ? payload.ar_invoices : state.arInvoices,
           arPayments: Array.isArray(payload?.ar_payments) ? payload.ar_payments : state.arPayments,
           apBills: Array.isArray(payload?.ap_bills) ? payload.ap_bills : state.apBills,
           apPayments: Array.isArray(payload?.ap_payments) ? payload.ap_payments : state.apPayments,
           materialReceipts: Array.isArray(payload?.material_receipts) ? payload.material_receipts : state.materialReceipts,
-          materialReceiptLines: Array.isArray(payload?.material_receipt_lines) ? payload.material_receipt_lines : state.materialReceiptLines
+          materialReceiptLines: Array.isArray(payload?.material_receipt_lines) ? payload.material_receipt_lines : state.materialReceiptLines,
+          materialIssues: Array.isArray(payload?.material_issues) ? payload.material_issues : state.materialIssues,
+          materialIssueLines: Array.isArray(payload?.material_issue_lines) ? payload.material_issue_lines : state.materialIssueLines
         };
         const e = els();
         if (e.staffPosition) {
@@ -2359,6 +2440,10 @@
       if (e.backboneDeleteBtn && e.backboneDeleteBtn.dataset.bound !== '1') {
         e.backboneDeleteBtn.dataset.bound = '1';
         e.backboneDeleteBtn.addEventListener('click', () => deleteBackboneItem().catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.backbonePostBtn && e.backbonePostBtn.dataset.bound !== '1') {
+        e.backbonePostBtn.dataset.bound = '1';
+        e.backbonePostBtn.addEventListener('click', () => postBackboneJournalBatch().catch((err) => setSummary(String(err?.message || err), true)));
       }
       document.querySelectorAll('[data-admin-route]').forEach((btn) => {
         if (btn.dataset.boundRoute === '1') return;

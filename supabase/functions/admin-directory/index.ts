@@ -132,6 +132,8 @@ serve(async (req) => {
     response.work_orders = await safeList(supabase, 'work_orders', '*', 'work_order_number', limit);
     response.work_order_lines = await safeList(supabase, 'work_order_lines', '*', 'line_order', limit);
     response.route_stops = await safeList(supabase, 'route_stops', '*', 'stop_order', limit);
+    response.gl_journal_batches = await safeList(supabase, 'v_gl_journal_batch_rollups', '*', 'batch_number', limit);
+    response.gl_journal_entries = await safeList(supabase, 'gl_journal_entries', '*', 'line_number', limit);
     response.subcontract_clients = await safeList(supabase, 'subcontract_clients', '*', 'company_name', limit);
     response.subcontract_dispatches = await safeList(supabase, 'subcontract_dispatches', '*', 'dispatch_number', limit);
     response.linked_hse_packets = await safeList(supabase, 'linked_hse_packets', '*', 'packet_number', limit);
@@ -143,6 +145,8 @@ serve(async (req) => {
     response.ap_payments = await safeList(supabase, 'ap_payments', '*', 'payment_number', limit);
     response.material_receipts = await safeList(supabase, 'material_receipts', '*', 'receipt_number', limit);
     response.material_receipt_lines = await safeList(supabase, 'material_receipt_lines', '*', 'line_order', limit);
+    response.material_issues = await safeList(supabase, 'v_material_issue_rollups', '*', 'issue_number', limit);
+    response.material_issue_lines = await safeList(supabase, 'material_issue_lines', '*', 'line_order', limit);
   }
   if (scope === 'self') response.profile = filteredPeople[0] || null;
   return Response.json(response, { headers: corsHeaders });
