@@ -1,4 +1,4 @@
-> Last synchronized: April 11, 2026 (HSE OSHA interface, packet events, and field signoff pass)
+> Last synchronized: April 11, 2026 (HSE upload retry, safety screens, and analytics/traffic monitoring pass)
 
 ## 2026-04-11 deployment addition
 - Run `sql/069_hse_osha_interfaces_weather_chemical_traffic_signoff.sql` after the current live pass before testing the new packet-event workflow.

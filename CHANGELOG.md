@@ -1,4 +1,13 @@
-> Last synchronized: April 11, 2026 (HSE OSHA interface, packet events, and field signoff pass)
+> Last synchronized: April 11, 2026 (HSE upload retry, safety screens, and analytics/traffic monitoring pass)
+
+## 2026-04-11
+- Added migration `sql/070_hse_upload_retry_and_analytics_monitoring.sql`.
+- Added Supabase Edge Functions:
+  - `analytics-traffic`
+  - `upload-route-execution-attachment`
+  - `upload-hse-packet-proof`
+- Extended Admin to manage traffic events, backend monitor incidents, and richer upload-failure retry records.
+- Added route/HSE upload replacement flow in the Admin backbone manager.
 
 ## 2026-04-11 HSE OSHA interface, packet events, and field signoff pass
 - Added `sql/069_hse_osha_interfaces_weather_chemical_traffic_signoff.sql`.

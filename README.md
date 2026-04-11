@@ -1,4 +1,4 @@
-> Last synchronized: April 11, 2026 (HSE OSHA interface, packet events, and field signoff pass)
+> Last synchronized: April 11, 2026 (HSE upload retry, safety screens, and analytics/traffic monitoring pass)
 
 ## Current focus
 - The strongest current direction is still DB-first operations + HSE, but the latest pass specifically deepens the OSHA-facing HSE interfaces: standalone packets, unscheduled-project packets, packet events, weather/heat/chemical/traffic workflow tracking, and field signoff.
@@ -220,3 +220,7 @@ The app is now stable enough that the main build priority shifts from shell repa
 - Added route-stop execution lifecycle records plus attachment rows so daily field work can track completed, skipped, delayed, and exception states with note/photo support.
 - Added HSE proof rows plus reopen-aware linked packet fields so closeout evidence, reopen counts, and follow-up exceptions are visible in the Admin backbone.
 - Continued the DB-first move for shared operational/accounting data and refreshed the docs so roadmap, risks, testing, and deployment all point to the same next state.
+
+
+## Latest implementation pass
+The latest pass adds the remaining HSE proof/upload reliability layer plus a DB-backed analytics and backend monitoring system. Admin can now review traffic events, API/runtime incidents, upload failures, HSE packets/events/proofs, and the broader operations/accounting backbone from one interface.

@@ -1989,6 +1989,11 @@ serve(async (req) => {
       const patch = {
         retry_status: body.retry_status ?? 'pending',
         resolution_notes: body.resolution_notes ?? null,
+        retry_owner_profile_id: asNullableText(body.retry_owner_profile_id),
+        retry_owner_notes: body.retry_owner_notes ?? null,
+        upload_attempts: asNumber(body.upload_attempts, 0),
+        last_retry_at: asNullableDateTime(body.last_retry_at),
+        next_retry_after: asNullableDateTime(body.next_retry_after),
         resolved_by_profile_id: ['resolved','abandoned'].includes(String(body.retry_status || '')) ? actorId : null,
         updated_at: new Date().toISOString(),
       };
@@ -1999,6 +2004,35 @@ serve(async (req) => {
       }
       if (action === 'delete') {
         const { error } = await supabase.from('field_upload_failures').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+
+    if (entity === 'backend_monitor_event') {
+      const patch = {
+        lifecycle_status: body.lifecycle_status ?? 'open',
+        severity: body.severity ?? 'warning',
+        resolution_notes: body.resolution_notes ?? null,
+        resolved_by_profile_id: ['resolved','dismissed'].includes(String(body.lifecycle_status || '')) ? actorId : null,
+        updated_at: new Date().toISOString(),
+      };
+      if (action === 'update') {
+        const { data, error } = await supabase.from('backend_monitor_events').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('backend_monitor_events').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'app_traffic_event') {
+      if (action === 'delete') {
+        const { error } = await supabase.from('app_traffic_events').delete().eq('id', body.item_id);
         if (error) throw error;
         return Response.json({ ok:true }, { headers:corsHeaders });
       }

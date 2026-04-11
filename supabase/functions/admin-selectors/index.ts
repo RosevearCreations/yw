@@ -30,10 +30,10 @@ function effectiveRole(profile: any, user: any) {
   return direct || tier || meta || 'employee';
 }
 
-async function safeList(supabase: any, table: string, columns = '*', orderColumn?: string) {
+async function safeList(supabase: any, table: string, columns = '*', orderColumn?: string, limit = 1000, ascending = true) {
   try {
-    let q = supabase.from(table).select(columns);
-    if (orderColumn) q = q.order(orderColumn);
+    let q = supabase.from(table).select(columns).limit(limit);
+    if (orderColumn) q = q.order(orderColumn, { ascending });
     const { data, error } = await q;
     if (error) return [];
     return data || [];
@@ -82,7 +82,9 @@ serve(async (req) => {
   const glJournalBatches = await safeList(supabase, 'gl_journal_batches', '*', 'batch_number');
   const glJournalBatchRollups = await safeList(supabase, 'v_gl_journal_batch_rollups', '*', 'batch_number');
   const glJournalSyncExceptions = await safeList(supabase, 'v_gl_journal_sync_exceptions', '*', 'last_seen_at');
-  const fieldUploadFailures = await safeList(supabase, 'v_field_upload_failure_rollups', '*', 'created_at');
+  const fieldUploadFailures = await safeList(supabase, 'v_field_upload_failure_rollups', '*', 'created_at', 500, false);
+  const appTrafficEvents = await safeList(supabase, 'v_app_traffic_recent', '*', 'created_at', 500, false);
+  const backendMonitorEvents = await safeList(supabase, 'v_backend_monitor_recent', '*', 'created_at', 500, false);
   const materialIssues = await safeList(supabase, 'material_issues', '*', 'issue_number');
   const materialIssueRollups = await safeList(supabase, 'v_material_issue_rollups', '*', 'issue_number');
   const arInvoices = await safeList(supabase, 'ar_invoices', '*', 'invoice_number');
@@ -137,5 +139,7 @@ serve(async (req) => {
     material_issues: mergeRowsById(materialIssues, materialIssueRollups),
     material_issue_lines: await safeList(supabase, 'material_issue_lines', '*', 'line_order'),
     field_upload_failures: fieldUploadFailures,
+    app_traffic_events: appTrafficEvents,
+    backend_monitor_events: backendMonitorEvents,
   }, { headers: corsHeaders });
 });

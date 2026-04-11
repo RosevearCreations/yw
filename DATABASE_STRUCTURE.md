@@ -1,4 +1,4 @@
-> Last synchronized: April 11, 2026 (HSE OSHA interface, packet events, and field signoff pass)
+> Last synchronized: April 11, 2026 (HSE upload retry, safety screens, and analytics/traffic monitoring pass)
 
 ## 2026-04-11 schema additions
 - `linked_hse_packets` now supports packet scope, optional job/equipment linkage, unscheduled project fields, weather/heat/chemical/traffic workflow flags, and field signoff tracking.
@@ -244,3 +244,9 @@ Priority UI mappings:
 - Added route-stop execution lifecycle records plus attachment rows so daily field work can track completed, skipped, delayed, and exception states with note/photo support.
 - Added HSE proof rows plus reopen-aware linked packet fields so closeout evidence, reopen counts, and follow-up exceptions are visible in the Admin backbone.
 - Continued the DB-first move for shared operational/accounting data and refreshed the docs so roadmap, risks, testing, and deployment all point to the same next state.
+
+
+## 070 HSE upload retry and analytics / traffic monitoring
+- `field_upload_failures` now carries execution/packet/proof linkage plus retry ownership/attempt fields.
+- `app_traffic_events` records page views, route views, API errors, upload successes/failures, and session-health style telemetry.
+- `backend_monitor_events` records frontend/backend incidents for admin review and resolution.

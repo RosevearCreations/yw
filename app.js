@@ -202,6 +202,7 @@ function bindDiagnosticsEvents() {
 
 function auth() { return window.YWI_AUTH || null; }
 function router() { return window.YWIRouter || null; }
+function trafficApi() { return window.YWIAPI || null; }
 function api() { return window.YWIAPI || null; }
 function security() { return window.YWISecurity || null; }
 function outbox() { return window.YWIOutbox || null; }
@@ -585,4 +586,48 @@ window.addEventListener('hashchange', () => {
 window.addEventListener('load', () => { router()?.init?.(); });
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') setTimeout(seedAllTables, 0);
+});
+
+
+document.addEventListener('ywi:route-shown', (e) => {
+  const detail = e.detail || {};
+  trafficApi()?.trackTrafficEvent?.({
+    event_name: 'route_view',
+    route_name: detail.allowed || detail.requested || '',
+    page_path: `${location.pathname}${location.hash || ''}`,
+    page_title: document.title || '',
+    details: { requested: detail.requested || null, role: detail.role || null }
+  }, !!window.YWI_AUTH?.getState?.()?.isAuthenticated).catch(() => {});
+});
+
+window.addEventListener('error', (e) => {
+  trafficApi()?.trackMonitorEvent?.({
+    event_name: 'client_error',
+    monitor_scope: 'frontend',
+    severity: 'error',
+    route_name: (location.hash || '#toolbox').slice(1),
+    title: 'Unhandled client error',
+    message: e?.message || 'Unknown client error',
+    details: { source: e?.filename || null, line: e?.lineno || null, column: e?.colno || null }
+  }, !!window.YWI_AUTH?.getState?.()?.isAuthenticated).catch(() => {});
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+  trafficApi()?.trackMonitorEvent?.({
+    event_name: 'client_error',
+    monitor_scope: 'frontend',
+    severity: 'error',
+    route_name: (location.hash || '#toolbox').slice(1),
+    title: 'Unhandled promise rejection',
+    message: String(e?.reason?.message || e?.reason || 'Unknown rejection')
+  }, !!window.YWI_AUTH?.getState?.()?.isAuthenticated).catch(() => {});
+});
+
+window.addEventListener('load', () => {
+  trafficApi()?.trackTrafficEvent?.({
+    event_name: 'page_view',
+    route_name: ((location.hash || '#toolbox').slice(1) || 'toolbox'),
+    page_path: `${location.pathname}${location.hash || ''}`,
+    page_title: document.title || ''
+  }, !!window.YWI_AUTH?.getState?.()?.isAuthenticated).catch(() => {});
 });

@@ -1,4 +1,4 @@
-> Last synchronized: April 11, 2026 (HSE OSHA interface, packet events, and field signoff pass)
+> Last synchronized: April 11, 2026 (HSE upload retry, safety screens, and analytics/traffic monitoring pass)
 
 ## 2026-04-11 HSE OSHA interface, packet events, and field signoff pass
 - Added migration `sql/069_hse_osha_interfaces_weather_chemical_traffic_signoff.sql`.
@@ -236,3 +236,9 @@ Reference links:
 - Added explicit review visibility for stale/unbalanced/missing-entry source journal batches, reducing the risk that posted-source drift is missed in Admin.
 - Added upload-failure logging for job comment attachments and equipment evidence so field staff and office admins have a visible fallback path when storage or metadata writes fail.
 - Remaining next step: extend the same fallback/retry visibility to route execution attachments and HSE proof uploads, then add more guided review actions for stale source batches.
+
+
+## April 11, 2026 update after 070
+- The remaining HSE interface gap is no longer missing packet/event/proof structures. The main gap is now dashboard polish, alert thresholds, and mobile supervisor speed for repeat field closeout.
+- Upload-failure handling is now broader because job comments, equipment evidence, route execution attachments, and HSE proofs all have a DB-backed failure trail and retry ownership path.
+- The new analytics/monitoring layer reduces the risk that traffic drops, API failures, upload failures, or client-side runtime issues go unseen, but it still needs dashboard-style summaries and alerting thresholds.

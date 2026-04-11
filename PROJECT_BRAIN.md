@@ -1,4 +1,4 @@
-> Last synchronized: April 11, 2026 (HSE OSHA interface, packet events, and field signoff pass)
+> Last synchronized: April 11, 2026 (HSE upload retry, safety screens, and analytics/traffic monitoring pass)
 
 ## 2026-04-11 project-brain refresh
 - The HSE side is now moving from packet headers plus proofs into a fuller packet-event workflow.

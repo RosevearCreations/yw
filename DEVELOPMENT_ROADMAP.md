@@ -1,4 +1,24 @@
-> Last synchronized: April 11, 2026 (HSE OSHA interface, packet events, and field signoff pass)
+> Last synchronized: April 11, 2026 (HSE upload retry, safety screens, and analytics/traffic monitoring pass)
+
+## 2026-04-11 HSE upload retry, analytics traffic, and monitor pass
+- Added migration `sql/070_hse_upload_retry_and_analytics_monitoring.sql`.
+- Added route execution attachment uploads and HSE packet proof uploads with the same failure-trail behavior already used for job comments and equipment evidence.
+- Added DB-backed `app_traffic_events` and `backend_monitor_events` so Admin can review page traffic, route views, API errors, upload failures, and runtime incidents from the backbone shell.
+- Added Admin-facing upload retry/replacement flow for route execution attachments, HSE proofs, and previously logged upload failures.
+- Continued the standalone-capable HSE direction while tightening the last major OSHA-oriented field proof and closeout screens.
+
+## Immediate next build priorities after 070
+1. **Monitor dashboards and alert thresholds**
+   - surface daily/weekly monitor summaries instead of only raw incident rows
+   - add escalation thresholds for repeated upload failures and repeated API/runtime incidents
+2. **Dispatch/mobile field closeout polish**
+   - tighten dispatch-specific supervisor signoff and route-stop closeout gestures on phones/tablets
+   - make proof capture faster for repeat crews
+3. **Analytics attribution depth**
+   - add richer referral/source tagging and popular-route summaries for admin review
+   - connect analytics to marketing/local-search experiments later
+4. **Validation and repeat-save hardening**
+   - continue tightening dense Admin screens so partial-save and repeat-save paths stay safe
 
 ## 2026-04-11 HSE OSHA interface, packet events, and field signoff pass
 - Added migration `sql/069_hse_osha_interfaces_weather_chemical_traffic_signoff.sql`.

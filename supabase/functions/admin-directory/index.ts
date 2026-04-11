@@ -32,10 +32,10 @@ function effectiveRole(profile: any, user: any) {
   return direct || tier || meta || 'employee';
 }
 
-async function safeList(supabase: any, table: string, columns = '*', orderColumn?: string, limit = 200) {
+async function safeList(supabase: any, table: string, columns = '*', orderColumn?: string, limit = 200, ascending = true) {
   try {
     let q = supabase.from(table).select(columns).limit(limit);
-    if (orderColumn) q = q.order(orderColumn, { ascending:true });
+    if (orderColumn) q = q.order(orderColumn, { ascending });
     const { data, error } = await q;
     if (error) return [];
     return data || [];
@@ -185,7 +185,9 @@ serve(async (req) => {
       await safeList(supabase, 'v_material_issue_rollups', '*', 'issue_number', limit)
     );
     response.material_issue_lines = await safeList(supabase, 'material_issue_lines', '*', 'line_order', limit);
-    response.field_upload_failures = await safeList(supabase, 'v_field_upload_failure_rollups', '*', 'created_at', limit);
+    response.field_upload_failures = await safeList(supabase, 'v_field_upload_failure_rollups', '*', 'created_at', limit, false);
+    response.app_traffic_events = await safeList(supabase, 'v_app_traffic_recent', '*', 'created_at', limit, false);
+    response.backend_monitor_events = await safeList(supabase, 'v_backend_monitor_recent', '*', 'created_at', limit, false);
   }
   if (scope === 'self') response.profile = filteredPeople[0] || null;
   return Response.json(response, { headers: corsHeaders });

@@ -1,2 +1,5 @@
 [functions.account-maintenance]
 verify_jwt = false
+
+[functions.analytics-traffic]
+verify_jwt = false
