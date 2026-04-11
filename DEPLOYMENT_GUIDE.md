@@ -1,4 +1,11 @@
-> Last synchronized: April 10, 2026. Reviewed during the receipt rollups, work-order operational status, posted/open amount visibility, and admin workflow sync pass.
+> Last synchronized: April 10, 2026. Reviewed during the journal posting controls, material issue / usage, Admin backbone, and schema synchronization pass.
+
+## 2026-04-10 journal posting controls and material issue / usage pass
+- Added migration `sql/066_journal_posting_controls_and_material_issue_usage.sql`.
+- Added DB-side journal-batch rollups so line count, debit total, credit total, and balanced state are derived instead of tracked manually.
+- Added DB-backed `material_issues` and `material_issue_lines` so receiving can progress into job usage, issued-cost totals, and variance visibility.
+- Extended the Admin backbone so journal batches, journal entries, material issues, and material issue lines can be created and managed from the same operational shell.
+- Continued the DB-first direction for shared operational data while keeping the next highest-value gaps visible: route execution lifecycle, HSE proof/reopen, and stronger source-to-journal automation.
 
 ## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
 
@@ -71,3 +78,9 @@ Deployments should now be treated as operations-critical because session integri
 - Job comments now have a DB-backed activity trail with optional photo attachments and special-instruction flags so crews and supervisors can review site notes, uploaded images, and field changes in one place.
 - This pass continues the DB-first direction for shared operational data and reduces duplication risk compared with keeping crew/job packet details only in local JSON or loosely coupled browser state.
 - After deploy, verify the upload-job-comment-attachment function is published and the `submission-images` bucket allows the expected signed upload/read flow.
+
+
+## Deployment note for the 066 pass
+- Run `sql/066_journal_posting_controls_and_material_issue_usage.sql` after 065.
+- After deploy, create a draft journal batch, add offsetting entries, confirm the batch becomes balanced, then post it from Admin.
+- Create a material issue tied to a work order, add issue lines, and confirm the issue header totals and variance update.

@@ -1,14 +1,21 @@
-> Last synchronized: April 10, 2026. Reviewed during the receipt rollups, work-order operational status, posted/open amount visibility, and admin workflow sync pass.
+> Last synchronized: April 10, 2026. Reviewed during the journal posting controls, material issue / usage, Admin backbone, and schema synchronization pass.
+
+## 2026-04-10 journal posting controls and material issue / usage pass
+- Added migration `sql/066_journal_posting_controls_and_material_issue_usage.sql`.
+- Added DB-side journal-batch rollups so line count, debit total, credit total, and balanced state are derived instead of tracked manually.
+- Added DB-backed `material_issues` and `material_issue_lines` so receiving can progress into job usage, issued-cost totals, and variance visibility.
+- Extended the Admin backbone so journal batches, journal entries, material issues, and material issue lines can be created and managed from the same operational shell.
+- Continued the DB-first direction for shared operational data while keeping the next highest-value gaps visible: route execution lifecycle, HSE proof/reopen, and stronger source-to-journal automation.
 
 ## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
 
-## Immediate next build priorities after 064
-1. **True journal posting controls**
-   - move from posted/open amount visibility into explicit journal-batch creation, posting, and audit review
-   - expose posted/unposted accounting state and exceptions clearly in Admin
-2. **Material issue / usage flow**
-   - add issue-to-job or usage records so receiving can move into actual consumption, waste, and variance
-   - surface actual-vs-estimated material usage and unresolved unallocated receipt cost by work order
+## Immediate next build priorities after 066
+1. **Source-to-journal automation**
+   - move from manual journal batches into source-generated draft batches from AR/AP, receipts, and operations events
+   - keep explicit post/review controls and clearer audit exceptions in Admin
+2. **Route execution lifecycle**
+   - add stop-complete, skipped, delayed, and route-stop note/photo state for daily field work
+   - surface route execution progress and exceptions more clearly on mobile
 3. **HSE proof and reopen workflow**
    - attach photo/file/signature proof to linked HSE packets
    - support closeout evidence review, reopen, and exception notes

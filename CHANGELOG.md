@@ -1,3 +1,9 @@
+## 2026-04-10 journal posting controls and material issue / usage pass
+- Added migration `sql/066_journal_posting_controls_and_material_issue_usage.sql`.
+- Added Admin backbone support for Journal Batches, Journal Entries, Material Issues, and Material Issue Lines.
+- Added SQL rollups for balanced journal posting state and issue-to-estimate variance visibility.
+- Updated `sql/000_full_schema_reference.sql`, `supabase/functions/admin-directory/index.ts`, `supabase/functions/admin-selectors/index.ts`, `supabase/functions/admin-manage/index.ts`, `js/admin-ui.js`, `index.html`, `server-worker.js`, and the Markdown set.
+
 ## 2026-04-10 receipt rollups, operational status, and posted/open amount pass
 - Added migration `064_receipt_rollups_work_order_operational_status_and_posted_amounts.sql`.
 - Corrected the schema snapshot so `sql/000_full_schema_reference.sql` truly includes the later workflow passes instead of only claiming it in the header.
@@ -6,7 +12,14 @@
 - Added clearer mobile/sticky action styling for the backbone manager footer.
 
 
-> Last synchronized: April 10, 2026. Reviewed during the receipt rollups, work-order operational status, posted/open amount visibility, and admin workflow sync pass.
+> Last synchronized: April 10, 2026. Reviewed during the journal posting controls, material issue / usage, Admin backbone, and schema synchronization pass.
+
+## 2026-04-10 journal posting controls and material issue / usage pass
+- Added migration `sql/066_journal_posting_controls_and_material_issue_usage.sql`.
+- Added DB-side journal-batch rollups so line count, debit total, credit total, and balanced state are derived instead of tracked manually.
+- Added DB-backed `material_issues` and `material_issue_lines` so receiving can progress into job usage, issued-cost totals, and variance visibility.
+- Extended the Admin backbone so journal batches, journal entries, material issues, and material issue lines can be created and managed from the same operational shell.
+- Continued the DB-first direction for shared operational data while keeping the next highest-value gaps visible: route execution lifecycle, HSE proof/reopen, and stronger source-to-journal automation.
 
 ## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
 

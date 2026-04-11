@@ -1,4 +1,11 @@
-> Last synchronized: April 10, 2026. Reviewed during the receipt rollups, work-order operational status, posted/open amount visibility, and admin workflow sync pass.
+> Last synchronized: April 10, 2026. Reviewed during the journal posting controls, material issue / usage, Admin backbone, and schema synchronization pass.
+
+## 2026-04-10 journal posting controls and material issue / usage pass
+- Added migration `sql/066_journal_posting_controls_and_material_issue_usage.sql`.
+- Added DB-side journal-batch rollups so line count, debit total, credit total, and balanced state are derived instead of tracked manually.
+- Added DB-backed `material_issues` and `material_issue_lines` so receiving can progress into job usage, issued-cost totals, and variance visibility.
+- Extended the Admin backbone so journal batches, journal entries, material issues, and material issue lines can be created and managed from the same operational shell.
+- Continued the DB-first direction for shared operational data while keeping the next highest-value gaps visible: route execution lifecycle, HSE proof/reopen, and stronger source-to-journal automation.
 
 ## 2026-04-09 workflow rollups, posting, receiving-costing, and HSE closeout pass
 
@@ -211,3 +218,9 @@ Priority UI mappings:
 - Job comments now have a DB-backed activity trail with optional photo attachments and special-instruction flags so crews and supervisors can review site notes, uploaded images, and field changes in one place.
 - This pass continues the DB-first direction for shared operational data and reduces duplication risk compared with keeping crew/job packet details only in local JSON or loosely coupled browser state.
 - Added tables/views in this pass: `crews`, `crew_members`, `job_comments`, `job_comment_attachments`, `v_crew_directory`, `v_job_comment_activity`, and the expanded `v_jobs_directory`.
+
+
+## 066 schema direction update
+- `gl_journal_batches` now carry derived line-count, debit, credit, balanced, and posted-by metadata.
+- `gl_journal_entries` now support line numbering and optional source-record linkage.
+- `material_issues` and `material_issue_lines` now carry actual usage/issue movement after receiving so work can be tracked beyond purchase.
