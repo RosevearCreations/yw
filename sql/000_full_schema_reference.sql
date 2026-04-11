@@ -1,5 +1,5 @@
--- Last synchronized: April 10, 2026. Reviewed during the crew assignment, recurring jobs, job activity/photo tracking, and field workflow sync pass.
--- Current reference includes migrations through 065_job_crews_recurring_schedules_and_activity_tracking.sql and documents DB-backed crew assignment, supervisor ownership, recurring scheduling, job comments/photo tracking, and linked field instructions.
+-- Last synchronized: April 11, 2026. Reviewed during the journal sync exceptions and upload fallback pass.
+-- Current reference includes migrations through 068_journal_sync_exceptions_and_upload_failure_fallback.sql and documents DB-backed sync exception tracking, upload failure visibility, and stronger Admin-side review/fallback controls.
 
 create extension if not exists pgcrypto;
 
