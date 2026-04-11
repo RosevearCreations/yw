@@ -18,9 +18,14 @@ alter table if exists public.field_upload_failures
   add column if not exists last_retry_at timestamptz,
   add column if not exists next_retry_after timestamptz;
 
-create index if not exists idx_field_upload_failures_execution_id on public.field_upload_failures(execution_id, created_at desc);
-create index if not exists idx_field_upload_failures_packet_id on public.field_upload_failures(packet_id, created_at desc);
-create index if not exists idx_field_upload_failures_retry_owner on public.field_upload_failures(retry_owner_profile_id, retry_status, created_at desc);
+create index if not exists idx_field_upload_failures_execution_id
+  on public.field_upload_failures(execution_id, created_at desc);
+
+create index if not exists idx_field_upload_failures_packet_id
+  on public.field_upload_failures(packet_id, created_at desc);
+
+create index if not exists idx_field_upload_failures_retry_owner
+  on public.field_upload_failures(retry_owner_profile_id, retry_status, created_at desc);
 
 create table if not exists public.app_traffic_events (
   id uuid primary key default gen_random_uuid(),
@@ -43,13 +48,34 @@ create table if not exists public.app_traffic_events (
   event_value numeric(12,2),
   details jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
-  check (event_name in ('page_view','route_view','route_denied','admin_load','api_call','api_error','client_error','upload_success','upload_failure','smoke_check','session_health'))
+  check (
+    event_name in (
+      'page_view',
+      'route_view',
+      'route_denied',
+      'admin_load',
+      'api_call',
+      'api_error',
+      'client_error',
+      'upload_success',
+      'upload_failure',
+      'smoke_check',
+      'session_health'
+    )
+  )
 );
 
-create index if not exists idx_app_traffic_events_created_at on public.app_traffic_events(created_at desc);
-create index if not exists idx_app_traffic_events_route on public.app_traffic_events(route_name, event_name, created_at desc);
-create index if not exists idx_app_traffic_events_endpoint on public.app_traffic_events(endpoint_path, event_name, created_at desc);
-create index if not exists idx_app_traffic_events_profile_id on public.app_traffic_events(profile_id, created_at desc);
+create index if not exists idx_app_traffic_events_created_at
+  on public.app_traffic_events(created_at desc);
+
+create index if not exists idx_app_traffic_events_route
+  on public.app_traffic_events(route_name, event_name, created_at desc);
+
+create index if not exists idx_app_traffic_events_endpoint
+  on public.app_traffic_events(endpoint_path, event_name, created_at desc);
+
+create index if not exists idx_app_traffic_events_profile_id
+  on public.app_traffic_events(profile_id, created_at desc);
 
 create table if not exists public.backend_monitor_events (
   id uuid primary key default gen_random_uuid(),
@@ -79,8 +105,11 @@ create table if not exists public.backend_monitor_events (
   check (lifecycle_status in ('open','investigating','resolved','dismissed'))
 );
 
-create index if not exists idx_backend_monitor_events_status on public.backend_monitor_events(lifecycle_status, severity, created_at desc);
-create index if not exists idx_backend_monitor_events_scope on public.backend_monitor_events(monitor_scope, event_name, created_at desc);
+create index if not exists idx_backend_monitor_events_status
+  on public.backend_monitor_events(lifecycle_status, severity, created_at desc);
+
+create index if not exists idx_backend_monitor_events_scope
+  on public.backend_monitor_events(monitor_scope, event_name, created_at desc);
 
 create or replace function public.ywi_before_backend_monitor_event()
 returns trigger
@@ -89,15 +118,20 @@ as $$
 begin
   new.updated_at := now();
   new.last_seen_at := coalesce(new.last_seen_at, now());
-  if coalesce(new.lifecycle_status, 'open') in ('resolved', 'dismissed') and new.resolved_at is null then
+
+  if coalesce(new.lifecycle_status, 'open') in ('resolved', 'dismissed')
+     and new.resolved_at is null then
     new.resolved_at := now();
   end if;
+
   if coalesce(new.lifecycle_status, 'open') in ('open', 'investigating') then
     new.resolved_at := null;
   end if;
+
   if coalesce(new.occurrence_count, 0) <= 0 then
     new.occurrence_count := 1;
   end if;
+
   return new;
 end;
 $$;
@@ -124,6 +158,8 @@ create trigger trg_ywi_before_app_traffic_event
 before insert on public.app_traffic_events
 for each row execute function public.ywi_before_app_traffic_event();
 
+-- Keep all existing columns in the exact same order as 068,
+-- then append the new 070 columns at the end.
 create or replace view public.v_field_upload_failure_rollups as
 select
   fuf.id,
@@ -133,10 +169,6 @@ select
   fuf.job_id,
   fuf.comment_id,
   fuf.signout_id,
-  fuf.execution_id,
-  fuf.packet_id,
-  fuf.proof_id,
-  fuf.route_attachment_id,
   fuf.file_name,
   fuf.content_type,
   fuf.file_size_bytes,
@@ -145,11 +177,6 @@ select
   fuf.failure_stage,
   fuf.failure_reason,
   fuf.retry_status,
-  fuf.upload_attempts,
-  fuf.retry_owner_profile_id,
-  fuf.retry_owner_notes,
-  fuf.last_retry_at,
-  fuf.next_retry_after,
   fuf.client_context,
   fuf.created_by_profile_id,
   fuf.created_at,
@@ -161,16 +188,33 @@ select
   j.job_code,
   jc.job_id as comment_job_id,
   es.job_id as signout_job_id,
+
+  -- 070 appended columns
+  fuf.execution_id,
+  fuf.packet_id,
+  fuf.proof_id,
+  fuf.route_attachment_id,
+  fuf.upload_attempts,
+  fuf.retry_owner_profile_id,
+  fuf.retry_owner_notes,
+  fuf.last_retry_at,
+  fuf.next_retry_after,
   rse.execution_status,
   lhp.packet_number,
   hpp.file_name as proof_file_name
 from public.field_upload_failures fuf
-left join public.jobs j on j.id = fuf.job_id
-left join public.job_comments jc on jc.id = fuf.comment_id
-left join public.equipment_signouts es on es.id = fuf.signout_id
-left join public.route_stop_executions rse on rse.id = fuf.execution_id
-left join public.linked_hse_packets lhp on lhp.id = fuf.packet_id
-left join public.hse_packet_proofs hpp on hpp.id = fuf.proof_id;
+left join public.jobs j
+  on j.id = fuf.job_id
+left join public.job_comments jc
+  on jc.id = fuf.comment_id
+left join public.equipment_signouts es
+  on es.id = fuf.signout_id
+left join public.route_stop_executions rse
+  on rse.id = fuf.execution_id
+left join public.linked_hse_packets lhp
+  on lhp.id = fuf.packet_id
+left join public.hse_packet_proofs hpp
+  on hpp.id = fuf.proof_id;
 
 create or replace view public.v_app_traffic_recent as
 select
