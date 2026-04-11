@@ -1,4 +1,9 @@
-> Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+> Last synchronized: April 11, 2026 (HSE OSHA interface, packet events, and field signoff pass)
+
+## 2026-04-11 risk update after 069
+- The HSE packet model is now wider and more realistic, but the new risk is execution quality on phones/tablets: weather/heat/chemical/traffic/signoff flows need live field validation.
+- Admin now has a last-good cached fallback for directory/backbone loads, which reduces total failure risk, but stale cached reads still need clear operator awareness.
+- Upload reliability is still uneven because route execution and HSE proof uploads need the same failure-trail depth as job-comment and equipment uploads.
 
 ## 2026-04-11 journal sync exceptions and upload fallback pass
 - Added migration `sql/068_journal_sync_exceptions_and_upload_failure_fallback.sql`.

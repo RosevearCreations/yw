@@ -1,4 +1,9 @@
-> Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+> Last synchronized: April 11, 2026 (HSE OSHA interface, packet events, and field signoff pass)
+
+## 2026-04-11 project-brain refresh
+- The HSE side is now moving from packet headers plus proofs into a fuller packet-event workflow.
+- Standalone safety work remains first-class, but packets can now link more naturally to jobs, sites, work orders, routes, equipment, and dispatches.
+- The next highest-value work is mobile/live validation, upload retry depth, and tighter operational/accounting review tooling.
 
 ## 2026-04-11 journal sync exceptions and upload fallback pass
 - Added migration `sql/068_journal_sync_exceptions_and_upload_failure_fallback.sql`.

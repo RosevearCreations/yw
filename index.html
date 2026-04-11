@@ -8,17 +8,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>YWI Field Operations & HSE App | Jobs, Routes, HSE, Admin</title>
-  <meta name="description" content="YWI field operations and HSE app for jobs, routes, safety forms, onboarding, crews, materials, job costing, and accounting-ready workflow records." />
+  <title>YWI Southern Ontario Field Operations & HSE App | Jobs, Routes, Safety, Admin</title>
+  <meta name="description" content="YWI Southern Ontario field operations and HSE app for jobs, routes, safety packets, crews, materials, job costing, dispatches, and admin workflow records." />
   <meta name="theme-color" content="#0f172a" />
   <meta name="color-scheme" content="dark light" />
 
-  <link rel="manifest" href="/manifest.json?v=2026-04-11a" />
-  <link rel="icon" href="/icons/icon-192.png?v=2026-04-11a" sizes="192x192" />
-  <link rel="stylesheet" href="/style.css?v=2026-04-11a" />
+  <link rel="manifest" href="/manifest.json?v=2026-04-11b" />
+  <link rel="icon" href="/icons/icon-192.png?v=2026-04-11b" sizes="192x192" />
+  <link rel="stylesheet" href="/style.css?v=2026-04-11b" />
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/js/app-config.js?v=2026-04-11a"></script>
+  <script src="/js/app-config.js?v=2026-04-11b"></script>
 
   <style>
     #authLoading {
@@ -104,7 +104,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-04-11a');
+          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-04-11b');
           if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
           }
@@ -336,26 +336,26 @@
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
 
   <!-- Correct module order -->
-  <script src="/js/router.js?v=2026-04-11a"></script>
-  <script src="/js/bootstrap.js?v=2026-04-11a"></script>
-  <script src="/js/auth.js?v=2026-04-11a"></script>
-  <script src="/js/security.js?v=2026-04-11a"></script>
-  <script src="/js/api.js?v=2026-04-11a"></script>
-  <script src="/js/outbox.js?v=2026-04-11a"></script>
-  <script src="/js/admin-actions.js?v=2026-04-11a"></script>
-  <script src="/js/ui-auth.js?v=2026-04-11a"></script>
-  <script src="/js/account-ui.js?v=2026-04-11a"></script>
-  <script src="/js/profile-ui.js?v=2026-04-11a"></script>
-  <script src="/js/reference-data.js?v=2026-04-11a"></script>
-  <script src="/js/admin-ui.js?v=2026-04-11a"></script>
-  <script src="/js/logbook-ui.js?v=2026-04-11a"></script>
-  <script src="/js/jobs-ui.js?v=2026-04-11a"></script>
-  <script src="/js/forms-toolbox.js?v=2026-04-11a"></script>
-  <script src="/js/forms-ppe.js?v=2026-04-11a"></script>
-  <script src="/js/forms-firstaid.js?v=2026-04-11a"></script>
-  <script src="/js/forms-inspection.js?v=2026-04-11a"></script>
-  <script src="/js/forms-drill.js?v=2026-04-11a"></script>
-  <script src="/app.js?v=2026-04-11a" defer></script>
+  <script src="/js/router.js?v=2026-04-11b"></script>
+  <script src="/js/bootstrap.js?v=2026-04-11b"></script>
+  <script src="/js/auth.js?v=2026-04-11b"></script>
+  <script src="/js/security.js?v=2026-04-11b"></script>
+  <script src="/js/api.js?v=2026-04-11b"></script>
+  <script src="/js/outbox.js?v=2026-04-11b"></script>
+  <script src="/js/admin-actions.js?v=2026-04-11b"></script>
+  <script src="/js/ui-auth.js?v=2026-04-11b"></script>
+  <script src="/js/account-ui.js?v=2026-04-11b"></script>
+  <script src="/js/profile-ui.js?v=2026-04-11b"></script>
+  <script src="/js/reference-data.js?v=2026-04-11b"></script>
+  <script src="/js/admin-ui.js?v=2026-04-11b"></script>
+  <script src="/js/logbook-ui.js?v=2026-04-11b"></script>
+  <script src="/js/jobs-ui.js?v=2026-04-11b"></script>
+  <script src="/js/forms-toolbox.js?v=2026-04-11b"></script>
+  <script src="/js/forms-ppe.js?v=2026-04-11b"></script>
+  <script src="/js/forms-firstaid.js?v=2026-04-11b"></script>
+  <script src="/js/forms-inspection.js?v=2026-04-11b"></script>
+  <script src="/js/forms-drill.js?v=2026-04-11b"></script>
+  <script src="/app.js?v=2026-04-11b" defer></script>
 
   <script>
     document.addEventListener('ywi:auth-changed', (e) => {

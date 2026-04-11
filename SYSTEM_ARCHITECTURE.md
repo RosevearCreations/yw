@@ -1,4 +1,9 @@
-> Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+> Last synchronized: April 11, 2026 (HSE OSHA interface, packet events, and field signoff pass)
+
+## 2026-04-11 architecture note
+- HSE now uses a packet + packet-event model instead of relying only on packet headers and proof rows.
+- The Admin shell now carries a live-fetch plus last-good-cache fallback path for backbone reads.
+- The architecture direction remains: standalone-capable HSE records that can optionally link into jobs, sites, routes, equipment, work orders, and dispatches.
 
 ## 2026-04-11 journal sync exceptions and upload fallback pass
 - Added migration `sql/068_journal_sync_exceptions_and_upload_failure_fallback.sql`.

@@ -1,4 +1,10 @@
-> Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+> Last synchronized: April 11, 2026 (HSE OSHA interface, packet events, and field signoff pass)
+
+## Add these tests for the 069 pass
+- Create a standalone HSE packet and an unscheduled-project packet; confirm packet scope and status behave correctly.
+- Add weather, heat, chemical, traffic, signoff, closeout, and reopen events; confirm packet progress rolls up correctly.
+- Confirm field-signoff timestamps and signer fields populate when signoff is completed.
+- Force a failed live admin load and confirm the cached admin fallback view appears with a clear warning.
 
 ## 2026-04-11 journal sync exceptions and upload fallback pass
 - Added migration `sql/068_journal_sync_exceptions_and_upload_failure_fallback.sql`.

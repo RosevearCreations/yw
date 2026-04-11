@@ -1,4 +1,8 @@
-> Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+> Last synchronized: April 11, 2026 (HSE OSHA interface, packet events, and field signoff pass)
+
+## Current focus
+- The strongest current direction is still DB-first operations + HSE, but the latest pass specifically deepens the OSHA-facing HSE interfaces: standalone packets, unscheduled-project packets, packet events, weather/heat/chemical/traffic workflow tracking, and field signoff.
+- Admin now has a stronger fallback path because the last good directory/backbone load is cached locally and can be shown when the live admin fetch fails.
 
 ## 2026-04-11 journal sync exceptions and upload fallback pass
 - Added migration `sql/068_journal_sync_exceptions_and_upload_failure_fallback.sql`.

@@ -1,4 +1,7 @@
-> Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+> Last synchronized: April 11, 2026 (HSE OSHA interface, packet events, and field signoff pass)
+
+## 2026-04-11 deployment addition
+- Run `sql/069_hse_osha_interfaces_weather_chemical_traffic_signoff.sql` after the current live pass before testing the new packet-event workflow.
 
 ## 2026-04-11 journal sync exceptions and upload fallback pass
 - Added migration `sql/068_journal_sync_exceptions_and_upload_failure_fallback.sql`.

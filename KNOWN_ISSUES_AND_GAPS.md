@@ -1,4 +1,15 @@
-> Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+> Last synchronized: April 11, 2026 (HSE OSHA interface, packet events, and field signoff pass)
+
+## 2026-04-11 HSE OSHA interface, packet events, and field signoff pass
+- Added migration `sql/069_hse_osha_interfaces_weather_chemical_traffic_signoff.sql`.
+- Added packet-scope, unscheduled-project, weather/heat/chemical/traffic, and field-signoff fields to linked HSE packets.
+- Added DB-backed `hse_packet_events` so the OSHA-facing workflows now have a first-class event trail instead of relying only on packet notes and proof rows.
+- Extended Admin with event-level packet management and a cached fallback for last-good admin data when live loading fails.
+
+## Highest-value remaining gaps now
+- HSE proof uploads still need the same retry/failure flow depth that comment/equipment uploads now have.
+- Route-stop execution, dispatch completion, and HSE closeout still need tighter mobile-first linking.
+- Source-generated journal review/rebuild is still the strongest accounting/admin gap after this HSE pass.
 
 ## 2026-04-11 journal sync exceptions and upload fallback pass
 - Added migration `sql/068_journal_sync_exceptions_and_upload_failure_fallback.sql`.

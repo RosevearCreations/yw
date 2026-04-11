@@ -1,4 +1,9 @@
-> Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+> Last synchronized: April 11, 2026 (HSE OSHA interface, packet events, and field signoff pass)
+
+## 2026-04-11 schema additions
+- `linked_hse_packets` now supports packet scope, optional job/equipment linkage, unscheduled project fields, weather/heat/chemical/traffic workflow flags, and field signoff tracking.
+- New `hse_packet_events` provides DB-backed workflow/event history for weather checks, heat checks, chemical handling, traffic/public interaction, signoff, closeout, reopen, and note/hazard events.
+- `v_hse_packet_progress` now rolls packet events into the HSE progress model instead of relying only on proof rows and top-level booleans.
 
 ## 2026-04-11 journal sync exceptions and upload fallback pass
 - Added migration `sql/068_journal_sync_exceptions_and_upload_failure_fallback.sql`.

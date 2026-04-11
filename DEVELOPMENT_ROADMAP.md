@@ -1,4 +1,24 @@
-> Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+> Last synchronized: April 11, 2026 (HSE OSHA interface, packet events, and field signoff pass)
+
+## 2026-04-11 HSE OSHA interface, packet events, and field signoff pass
+- Added migration `sql/069_hse_osha_interfaces_weather_chemical_traffic_signoff.sql`.
+- Extended `linked_hse_packets` so packets can stay standalone-capable while also linking to jobs, sites, work orders, routes, equipment, and dispatches.
+- Added DB-backed `hse_packet_events` for weather checks, heat checks, chemical handling, traffic/public interaction, field signoff, closeout, reopen, and general hazard notes.
+- Extended Admin selectors/directory/manage/UI so HSE packets now expose packet scope, unscheduled-project fields, monitoring/signoff states, and event-level workflow tracking.
+- Added cached Admin-directory fallback so the last good operations/HSE view can still load when the live admin fetch fails.
+
+## Immediate next build priorities after 069
+1. **HSE upload reliability completion**
+   - add the same retry/failure trail to route execution and HSE proof uploads end to end
+   - add direct retry actions from packet/event/proof records
+2. **Dispatch and route field execution polish**
+   - connect packet events more tightly to route-stop execution and dispatch completion
+   - simplify mobile-first supervisor signoff and exception acknowledgment
+3. **Source journal review tooling**
+   - keep pushing guided refresh/rebuild/review for stale source batches
+   - surface manual override reasoning more clearly for audit review
+4. **Validation and repeat-save hardening**
+   - continue tightening dense Admin screens so partial-save and repeat-save paths stay safe
 
 ## 2026-04-11 journal sync exceptions and upload fallback pass
 - Added migration `sql/068_journal_sync_exceptions_and_upload_failure_fallback.sql`.

@@ -1013,3 +1013,10 @@ body[data-user-role="admin"] #admin[data-admin-locked="false"] {
 .admin-backbone-footer { flex-wrap: wrap; }
 #ad_backbone_table td { word-break: break-word; }
 #ad_backbone_fields textarea { min-height: 88px; }
+
+/* April 11, 2026: HSE OSHA interface pass */
+.admin-insight-card{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(255,255,255,.04);}
+.admin-insight-card span{font-size:.78rem;opacity:.82;text-transform:uppercase;letter-spacing:.04em;}
+.admin-insight-card strong{font-size:1rem;line-height:1.3;}
+.admin-insight-card small{font-size:.82rem;opacity:.82;line-height:1.35;}
+#ad_backbone_fields textarea[id*='weather_notes'],#ad_backbone_fields textarea[id*='heat_plan_notes'],#ad_backbone_fields textarea[id*='chemical_notes'],#ad_backbone_fields textarea[id*='traffic_notes'],#ad_backbone_fields textarea[id*='public_interaction_notes']{min-height:96px;}
