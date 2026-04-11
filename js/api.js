@@ -9,6 +9,7 @@
 
 (function () {
   const DEFAULT_FUNCTION_TIMEOUT_MS = 30000;
+  const ANALYTICS_ENDPOINT = 'analytics-traffic';
 
   function getRuntimeConfig() {
     return window.YWI_RUNTIME_CONFIG || window.__YWI_RUNTIME_CONFIG || {};
@@ -121,6 +122,68 @@
     return headers;
   }
 
+
+function getClientSessionKey() {
+  try {
+    const key = 'ywi_analytics_session_key_v1';
+    const existing = sessionStorage.getItem(key);
+    if (existing) return existing;
+    const created = (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+    sessionStorage.setItem(key, created);
+    return created;
+  } catch {
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+}
+
+function getClientVisitorKey() {
+  try {
+    const key = 'ywi_analytics_visitor_key_v1';
+    const existing = localStorage.getItem(key);
+    if (existing) return existing;
+    const created = (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+    localStorage.setItem(key, created);
+    return created;
+  } catch {
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+}
+
+async function sendAnalyticsPayload(payload = {}, requireAuth = false) {
+  const anonKey = getSupabaseAnonKey();
+  const token = requireAuth ? await getAccessToken() : '';
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(anonKey ? { apikey: anonKey } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+  try {
+    await fetch(`${getFunctionsBaseUrl()}/${ANALYTICS_ENDPOINT}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        session_key: getClientSessionKey(),
+        visitor_key: getClientVisitorKey(),
+        page_path: location.pathname + location.hash,
+        referrer: document.referrer || '',
+        page_title: document.title || '',
+        ...payload,
+      }),
+      keepalive: true
+    });
+  } catch {
+    // swallow analytics failures
+  }
+}
+
+async function trackTrafficEvent(payload = {}, requireAuth = false) {
+  return sendAnalyticsPayload(payload, requireAuth);
+}
+
+async function trackMonitorEvent(payload = {}, requireAuth = false) {
+  return sendAnalyticsPayload(payload, requireAuth);
+}
+
   async function maybeRefreshOnUnauthorized(response, options) {
     if (response.status !== 401) return response;
 
@@ -193,16 +256,42 @@
       if (!response.ok) {
         const isHtml = /^\s*</.test(rawText || '');
         if (isHtml) {
-          throw buildError(
+          const err = buildError(
             response.status,
             'Received HTML instead of JSON. This usually means a stale route, bad deploy, or compatibility endpoint issue.',
             { message: rawText.slice(0, 180) }
           );
+          if (!String(url).includes(ANALYTICS_ENDPOINT)) {
+            trackMonitorEvent({
+              event_name: 'api_error',
+              monitor_scope: 'backend',
+              severity: response.status >= 500 ? 'error' : 'warning',
+              endpoint_path: pathOrUrl,
+              http_status: response.status,
+              title: 'Received HTML instead of JSON',
+              message: err.message,
+              details: { response_preview: rawText.slice(0, 180) }
+            }, requireAuth).catch(() => {});
+          }
+          throw err;
         }
 
         const err = buildError(response.status, rawText, parsed);
         if (response.status === 400 && err.details?.length) {
           dispatchValidation(err.message, err.details);
+        }
+        if (!String(url).includes(ANALYTICS_ENDPOINT)) {
+          trackMonitorEvent({
+            event_name: 'api_error',
+            monitor_scope: 'backend',
+            severity: response.status >= 500 ? 'error' : 'warning',
+            endpoint_path: pathOrUrl,
+            http_status: response.status,
+            error_code: parsed?.code || null,
+            title: `API ${response.status}`,
+            message: err.message,
+            details: Array.isArray(err.details) && err.details.length ? { validation: err.details } : (parsed || {})
+          }, requireAuth).catch(() => {});
         }
         throw err;
       }
@@ -211,13 +300,45 @@
       return parsed;
     } catch (err) {
       if (err?.name === 'AbortError') {
+        if (!String(url).includes(ANALYTICS_ENDPOINT)) {
+          trackMonitorEvent({
+            event_name: 'api_error',
+            monitor_scope: 'backend',
+            severity: 'warning',
+            endpoint_path: pathOrUrl,
+            title: 'Request timed out',
+            message: 'Request timed out.'
+          }, requireAuth).catch(() => {});
+        }
         throw new Error('Request timed out.');
       }
       if (String(err?.message || '').includes('Missing authorization header')) {
-        throw buildError(401, '{"code":401,"message":"Missing authorization header"}', {
+        const authErr = buildError(401, '{"code":401,"message":"Missing authorization header"}', {
           code: 401,
           message: 'Missing authorization header'
         });
+        if (!String(url).includes(ANALYTICS_ENDPOINT)) {
+          trackMonitorEvent({
+            event_name: 'api_error',
+            monitor_scope: 'auth',
+            severity: 'warning',
+            endpoint_path: pathOrUrl,
+            http_status: 401,
+            title: 'Missing authorization header',
+            message: authErr.message
+          }, false).catch(() => {});
+        }
+        throw authErr;
+      }
+      if (!String(url).includes(ANALYTICS_ENDPOINT)) {
+        trackMonitorEvent({
+          event_name: 'api_error',
+          monitor_scope: 'backend',
+          severity: 'warning',
+          endpoint_path: pathOrUrl,
+          title: 'Network or runtime failure',
+          message: String(err?.message || err || 'Unknown request failure')
+        }, requireAuth).catch(() => {});
       }
       throw err;
     } finally {
@@ -336,6 +457,103 @@
     }
     return results;
   }
+
+  async function uploadRouteExecutionAttachment(formData, requireAuth = true) {
+    const token = requireAuth ? await getAccessToken() : '';
+    const anonKey = getSupabaseAnonKey();
+
+    if (requireAuth && !token) {
+      throw new Error('Missing authorization header');
+    }
+
+    const response = await fetch(`${getFunctionsBaseUrl()}/upload-route-execution-attachment`, {
+      method: 'POST',
+      headers: {
+        ...(anonKey ? { apikey: anonKey } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: formData
+    });
+
+    const rawText = await response.text();
+    let payload = null;
+    try {
+      payload = rawText ? JSON.parse(rawText) : null;
+    } catch {
+      payload = null;
+    }
+
+    if (!response.ok) {
+      trackTrafficEvent({
+        event_name: 'upload_failure',
+        monitor_scope: 'storage',
+        severity: response.status >= 500 ? 'error' : 'warning',
+        endpoint_path: 'upload-route-execution-attachment',
+        http_status: response.status,
+        linked_failure_id: payload?.failure_id || null,
+        title: 'Route execution upload failed',
+        message: payload?.error || rawText || `HTTP ${response.status}`
+      }, requireAuth).catch(() => {});
+      throw enrichUploadError(buildError(response.status, rawText, payload));
+    }
+
+    trackTrafficEvent({
+      event_name: 'upload_success',
+      route_name: 'admin',
+      endpoint_path: 'upload-route-execution-attachment',
+      details: { record_id: payload?.record?.id || null }
+    }, requireAuth).catch(() => {});
+    return payload;
+  }
+
+  async function uploadHsePacketProof(formData, requireAuth = true) {
+    const token = requireAuth ? await getAccessToken() : '';
+    const anonKey = getSupabaseAnonKey();
+
+    if (requireAuth && !token) {
+      throw new Error('Missing authorization header');
+    }
+
+    const response = await fetch(`${getFunctionsBaseUrl()}/upload-hse-packet-proof`, {
+      method: 'POST',
+      headers: {
+        ...(anonKey ? { apikey: anonKey } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: formData
+    });
+
+    const rawText = await response.text();
+    let payload = null;
+    try {
+      payload = rawText ? JSON.parse(rawText) : null;
+    } catch {
+      payload = null;
+    }
+
+    if (!response.ok) {
+      trackTrafficEvent({
+        event_name: 'upload_failure',
+        monitor_scope: 'storage',
+        severity: response.status >= 500 ? 'error' : 'warning',
+        endpoint_path: 'upload-hse-packet-proof',
+        http_status: response.status,
+        linked_failure_id: payload?.failure_id || null,
+        title: 'HSE proof upload failed',
+        message: payload?.error || rawText || `HTTP ${response.status}`
+      }, requireAuth).catch(() => {});
+      throw enrichUploadError(buildError(response.status, rawText, payload));
+    }
+
+    trackTrafficEvent({
+      event_name: 'upload_success',
+      route_name: 'admin',
+      endpoint_path: 'upload-hse-packet-proof',
+      details: { record_id: payload?.record?.id || null }
+    }, requireAuth).catch(() => {});
+    return payload;
+  }
+
 
   async function sendToFunction(fnName, payload, requireAuth = true) {
     return jsonFetch(fnName, {
@@ -635,6 +853,10 @@
     uploadEquipmentEvidenceBatch,
     uploadJobCommentAttachment,
     uploadJobCommentAttachmentBatch,
+    uploadRouteExecutionAttachment,
+    uploadHsePacketProof,
+    trackTrafficEvent,
+    trackMonitorEvent,
     manageJobsEntity,
     fetchReferenceData,
     fetchProfileScope,

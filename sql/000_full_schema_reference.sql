@@ -1,5 +1,5 @@
--- Last synchronized: April 11, 2026. Reviewed during the HSE OSHA interface, weather/heat/chemical/traffic, and field signoff pass.
--- Current reference includes migrations through 069_hse_osha_interfaces_weather_chemical_traffic_signoff.sql and documents stronger standalone-capable HSE packet interfaces, packet events, weather/heat/chemical/traffic workflows, and field signoff/closeout tracking.
+-- Last synchronized: April 11, 2026. Reviewed during the HSE upload retry and analytics/traffic monitoring pass.
+-- Current reference includes migrations through 070_hse_upload_retry_and_analytics_monitoring.sql and documents stronger HSE upload retry linkage plus DB-backed analytics/traffic monitoring.
 
 create extension if not exists pgcrypto;
 

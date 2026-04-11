@@ -38,10 +38,14 @@ const requiredFiles = [
   'sql/067_source_journal_route_execution_and_hse_proof.sql',
   'sql/068_journal_sync_exceptions_and_upload_failure_fallback.sql',
   'sql/069_hse_osha_interfaces_weather_chemical_traffic_signoff.sql',
+  'sql/070_hse_upload_retry_and_analytics_monitoring.sql',
   'supabase/functions/jobs-directory/index.ts',
   'supabase/functions/jobs-manage/index.ts',
   'supabase/functions/upload-job-comment-attachment/index.ts',
-  'supabase/functions/upload-equipment-evidence/index.ts'
+  'supabase/functions/upload-equipment-evidence/index.ts',
+  'supabase/functions/upload-route-execution-attachment/index.ts',
+  'supabase/functions/upload-hse-packet-proof/index.ts',
+  'supabase/functions/analytics-traffic/index.ts'
 ];
 for (const relPath of requiredFiles) {
   addCheck(`file:${relPath}`, fileExists(relPath), fileExists(relPath) ? 'Present.' : 'Missing.');
@@ -74,7 +78,7 @@ addCheck('account-has-conflict-review', accountUi.includes('Conflict Review'), '
 addCheck('account-has-support-export', accountUi.includes('Export Support Snapshot'), 'account-ui.js should render the support snapshot export button.');
 
 const schema = read('sql/000_full_schema_reference.sql');
-addCheck('schema-header-current', /069_hse_osha_interfaces_weather_chemical_traffic_signoff/i.test(schema), 'Schema snapshot header should reflect the latest 069 pass.');
+addCheck('schema-header-current', /070_hse_upload_retry_and_analytics_monitoring/i.test(schema), 'Schema snapshot header should reflect the latest 070 pass.');
 
 console.log(JSON.stringify({ ok: !failed, checks: results }, null, 2));
 if (failed) process.exit(1);

@@ -94,6 +94,7 @@
     updateHash(allowedSection);
     if (!options.skipFocus) focusSection(allowedSection);
     window.scrollTo({ top: 0, behavior: 'instant' });
+    document.dispatchEvent(new CustomEvent('ywi:route-shown', { detail: { requested: sectionId, allowed: allowedSection, role: getRole() } }));
     if (allowedSection !== sectionId) {
       document.dispatchEvent(new CustomEvent('ywi:route-denied', { detail: { requested: sectionId, redirected: allowedSection, role: getRole() } }));
     }

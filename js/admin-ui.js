@@ -36,7 +36,7 @@
       users: [],
       sites: [],
       assignments: [],
-      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalSyncExceptions: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], fieldUploadFailures: [] },
+      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalSyncExceptions: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], fieldUploadFailures: [], appTrafficEvents: [], backendMonitorEvents: [] },
       salesOrders: [],
       accountingEntries: [],
       serviceAreas: [],
@@ -74,6 +74,8 @@
       materialIssues: [],
       materialIssueLines: [],
       fieldUploadFailures: [],
+      appTrafficEvents: [],
+      backendMonitorEvents: [],
       smokeChecks: []
     };
 
@@ -395,8 +397,8 @@
             <button class="admin-hub-card" type="button" data-admin-route="inspection"><strong>Site Inspection</strong><span>Capture hazards for landscaping, construction, subcontract, and unscheduled work.</span><em>Live</em></button>
             <button class="admin-hub-card" type="button" data-admin-route="drill"><strong>Emergency Drill</strong><span>Document preparedness checks and emergency-response exercises.</span><em>Live</em></button>
             <button class="admin-hub-card" type="button" data-admin-route="logbook"><strong>Logbook / Review</strong><span>Review safety records, approvals, images, and linked field history.</span><em>Stabilized</em></button>
-            <div class="admin-hub-card static"><strong>Outstanding OSHA Interfaces</strong><span>Linked HSE packets, dispatch-specific safety packets, heat/weather workflow, chemical handling, traffic/public interaction, field signoff closeout, and standalone unscheduled-project packets.</span><em>Next</em></div>
-            <div class="admin-hub-card static"><strong>Primary Interface Direction</strong><span>Keep HSE standalone-capable, but let Admin connect it to sites, work orders, routes, equipment, dispatches, and subcontract work whenever a formal project exists.</span><em>Roadmap</em></div>
+            <button class="admin-hub-card" type="button" data-admin-focus-entity="linked_hse_packet"><strong>Linked HSE Packets</strong><span>Standalone-capable packets with direct linkage to jobs, work orders, routes, equipment, dispatches, sites, and subcontract work.</span><em>Live</em></button>
+            <button class="admin-hub-card" type="button" data-admin-focus-entity="backend_monitor_event"><strong>Analytics / Traffic Monitor</strong><span>Review page traffic, API failures, upload issues, and runtime incidents from the same Admin shell.</span><em>New</em></button>
           </div>
         </div>
 
@@ -437,11 +439,13 @@
                   <option value="linked_hse_packet">Linked HSE Packets</option>
                   <option value="hse_packet_event">HSE Packet Events</option>
                   <option value="hse_packet_proof">HSE Packet Proofs</option>
+                  <option value="field_upload_failure">Upload Failure Trail</option>
                 </optgroup>
                 <optgroup label="Accounting Backbone">
                   <option value="gl_account">Chart of Accounts</option>
                   <option value="gl_journal_batch">Journal Batches</option>
                   <option value="gl_journal_entry">Journal Entries</option>
+                  <option value="gl_journal_sync_exception">Journal Sync Exceptions</option>
                   <option value="ap_vendor">Vendors</option>
                   <option value="ar_invoice">AR Invoices</option>
                   <option value="ar_payment">AR Payments</option>
@@ -451,6 +455,10 @@
                   <option value="material_receipt_line">Material Receipt Lines</option>
                   <option value="material_issue">Material Issues</option>
                   <option value="material_issue_line">Material Issue Lines</option>
+                </optgroup>
+                <optgroup label="Analytics and Monitoring">
+                  <option value="app_traffic_event">Traffic Events</option>
+                  <option value="backend_monitor_event">Backend Monitor Events</option>
                 </optgroup>
               </select>
             </label>
@@ -1240,6 +1248,8 @@
         state.materialIssues = Array.isArray(resp?.material_issues) ? resp.material_issues : [];
         state.materialIssueLines = Array.isArray(resp?.material_issue_lines) ? resp.material_issue_lines : [];
         state.fieldUploadFailures = Array.isArray(resp?.field_upload_failures) ? resp.field_upload_failures : [];
+        state.appTrafficEvents = Array.isArray(resp?.app_traffic_events) ? resp.app_traffic_events : [];
+        state.backendMonitorEvents = Array.isArray(resp?.backend_monitor_events) ? resp.backend_monitor_events : [];
         state.counts = {
           users: state.users.length,
           sites: Array.isArray(resp?.sites) ? resp.sites.length : 0,
@@ -1315,6 +1325,8 @@
           state.materialIssues = Array.isArray(resp?.material_issues) ? resp.material_issues : [];
           state.materialIssueLines = Array.isArray(resp?.material_issue_lines) ? resp.material_issue_lines : [];
           state.fieldUploadFailures = Array.isArray(resp?.field_upload_failures) ? resp.field_upload_failures : [];
+          state.appTrafficEvents = Array.isArray(resp?.app_traffic_events) ? resp.app_traffic_events : [];
+          state.backendMonitorEvents = Array.isArray(resp?.backend_monitor_events) ? resp.backend_monitor_events : [];
           renderStaffDirectory();
           renderProfileOptions();
           renderAssignmentWorkbench();
@@ -1598,11 +1610,28 @@
         { name:'issue_id', label:'Issue', type:'select', source:'materialIssues', required:true }, { name:'line_order', label:'Line Order', type:'number' },
         { name:'material_id', label:'Material', type:'select', source:'materials' }, { name:'work_order_line_id', label:'Work Order Line', type:'select', source:'workOrderLines' }, { name:'description', label:'Description', type:'text', required:true }, { name:'unit_id', label:'Unit', type:'select', source:'units' },
         { name:'quantity', label:'Quantity', type:'number' }, { name:'unit_cost', label:'Unit Cost', type:'number' }, { name:'line_total', label:'Line Total', type:'number', readonly:true }, { name:'cost_code_id', label:'Cost Code', type:'select', source:'costCodes' }, { name:'notes', label:'Notes', type:'textarea' }
-      ], columns:[['issue_id','Issue'],['line_order','Order'],['description','Description'],['line_total','Total']] }
+      ], columns:[['issue_id','Issue'],['line_order','Order'],['description','Description'],['line_total','Total']] },
+      field_upload_failure: { label:'Upload Failure Trail', rowsKey:'fieldUploadFailures', valueKey:'id', labelField:'file_name', fields:[
+        { name:'failure_scope', label:'Failure Scope', type:'text', readonly:true }, { name:'linked_record_type', label:'Linked Record Type', type:'text', readonly:true }, { name:'linked_record_id', label:'Linked Record ID', type:'text', readonly:true },
+        { name:'job_code', label:'Job', type:'text', readonly:true }, { name:'packet_number', label:'Packet', type:'text', readonly:true }, { name:'file_name', label:'File Name', type:'text', readonly:true }, { name:'failure_stage', label:'Failure Stage', type:'text', readonly:true },
+        { name:'failure_reason', label:'Failure Reason', type:'textarea', readonly:true }, { name:'retry_status', label:'Retry Status', type:'select', options:[['pending','Pending'],['retrying','Retrying'],['resolved','Resolved'],['abandoned','Abandoned']] }, { name:'upload_attempts', label:'Attempts', type:'number' },
+        { name:'retry_owner_profile_id', label:'Retry Owner', type:'select', source:'profiles' }, { name:'retry_owner_notes', label:'Retry Owner Notes', type:'textarea' }, { name:'last_retry_at', label:'Last Retry At', type:'datetime-local' }, { name:'next_retry_after', label:'Next Retry After', type:'datetime-local' }, { name:'resolution_notes', label:'Resolution Notes', type:'textarea' }
+      ], columns:[['failure_scope','Scope'],['file_name','File'],['retry_status','Retry'],['created_at','Created']] },
+      app_traffic_event: { label:'Traffic Events', rowsKey:'appTrafficEvents', valueKey:'id', labelField:'event_name', fields:[
+        { name:'event_name', label:'Event', type:'text', readonly:true }, { name:'route_name', label:'Route', type:'text', readonly:true }, { name:'page_path', label:'Page Path', type:'text', readonly:true }, { name:'endpoint_path', label:'Endpoint', type:'text', readonly:true },
+        { name:'http_status', label:'HTTP Status', type:'number', readonly:true }, { name:'duration_ms', label:'Duration (ms)', type:'number', readonly:true }, { name:'role_label', label:'Role', type:'text', readonly:true }, { name:'is_authenticated', label:'Authenticated', type:'checkbox', readonly:true },
+        { name:'referrer', label:'Referrer', type:'text', readonly:true }, { name:'created_at', label:'Created At', type:'datetime-local', readonly:true }
+      ], columns:[['event_name','Event'],['route_name','Route'],['endpoint_path','Endpoint'],['created_at','Created']] },
+      backend_monitor_event: { label:'Backend Monitor Events', rowsKey:'backendMonitorEvents', valueKey:'id', labelField:'title', fields:[
+        { name:'monitor_scope', label:'Scope', type:'text', readonly:true }, { name:'event_name', label:'Event', type:'text', readonly:true }, { name:'severity', label:'Severity', type:'select', options:[['info','Info'],['warning','Warning'],['error','Error'],['critical','Critical']] },
+        { name:'lifecycle_status', label:'Lifecycle Status', type:'select', options:[['open','Open'],['investigating','Investigating'],['resolved','Resolved'],['dismissed','Dismissed']] }, { name:'route_name', label:'Route', type:'text', readonly:true }, { name:'endpoint_path', label:'Endpoint', type:'text', readonly:true },
+        { name:'function_name', label:'Function', type:'text', readonly:true }, { name:'http_status', label:'HTTP Status', type:'number', readonly:true }, { name:'title', label:'Title', type:'text', readonly:true }, { name:'message', label:'Message', type:'textarea', readonly:true },
+        { name:'occurrence_count', label:'Occurrences', type:'number', readonly:true }, { name:'resolution_notes', label:'Resolution Notes', type:'textarea' }, { name:'resolved_at', label:'Resolved At', type:'datetime-local', readonly:true }
+      ], columns:[['monitor_scope','Scope'],['severity','Severity'],['lifecycle_status','Status'],['title','Title']] }
     };
 
     function getBackboneRows(entity) {
-      const map = { unit_of_measure: state.unitsOfMeasure || [], cost_code: state.costCodes || [], service_area: state.serviceAreas || [], route: state.routes || [], route_stop: state.routeStops || [], route_stop_execution: state.routeStopExecutions || [], route_stop_execution_attachment: state.routeStopExecutionAttachments || [], client: state.clients || [], client_site: state.clientSites || [], material: state.materialsCatalog || [], equipment_master: state.equipmentMaster || [], estimate: state.estimates || [], estimate_line: state.estimateLines || [], work_order: state.workOrders || [], work_order_line: state.workOrderLines || [], subcontract_client: state.subcontractClients || [], subcontract_dispatch: state.subcontractDispatches || [], linked_hse_packet: state.linkedHsePackets || [], hse_packet_event: state.hsePacketEvents || [], hse_packet_proof: state.hsePacketProofs || [], gl_account: state.chartOfAccounts || [], gl_journal_batch: state.glJournalBatches || [], gl_journal_entry: state.glJournalEntries || [], ap_vendor: state.apVendors || [], ar_invoice: state.arInvoices || [], ar_payment: state.arPayments || [], ap_bill: state.apBills || [], ap_payment: state.apPayments || [], material_receipt: state.materialReceipts || [], material_receipt_line: state.materialReceiptLines || [], material_issue: state.materialIssues || [], material_issue_line: state.materialIssueLines || [] };
+      const map = { unit_of_measure: state.unitsOfMeasure || [], cost_code: state.costCodes || [], service_area: state.serviceAreas || [], route: state.routes || [], route_stop: state.routeStops || [], route_stop_execution: state.routeStopExecutions || [], route_stop_execution_attachment: state.routeStopExecutionAttachments || [], client: state.clients || [], client_site: state.clientSites || [], material: state.materialsCatalog || [], equipment_master: state.equipmentMaster || [], estimate: state.estimates || [], estimate_line: state.estimateLines || [], work_order: state.workOrders || [], work_order_line: state.workOrderLines || [], subcontract_client: state.subcontractClients || [], subcontract_dispatch: state.subcontractDispatches || [], linked_hse_packet: state.linkedHsePackets || [], hse_packet_event: state.hsePacketEvents || [], hse_packet_proof: state.hsePacketProofs || [], field_upload_failure: state.fieldUploadFailures || [], app_traffic_event: state.appTrafficEvents || [], backend_monitor_event: state.backendMonitorEvents || [], gl_account: state.chartOfAccounts || [], gl_journal_batch: state.glJournalBatches || [], gl_journal_sync_exception: state.glJournalSyncExceptions || [], gl_journal_entry: state.glJournalEntries || [], ap_vendor: state.apVendors || [], ar_invoice: state.arInvoices || [], ar_payment: state.arPayments || [], ap_bill: state.apBills || [], ap_payment: state.apPayments || [], material_receipt: state.materialReceipts || [], material_receipt_line: state.materialReceiptLines || [], material_issue: state.materialIssues || [], material_issue_line: state.materialIssueLines || [] };
       return Array.isArray(map[entity]) ? map[entity] : [];
     }
 
@@ -2093,6 +2122,131 @@
       renderBackboneInsights();
     }
 
+    function renderBackboneUploadControls(entity, row = null) {
+      const labelMap = {
+        route_stop_execution_attachment: 'Upload attachment',
+        hse_packet_proof: 'Upload proof',
+        field_upload_failure: 'Retry with replacement file'
+      };
+      if (!['route_stop_execution_attachment', 'hse_packet_proof', 'field_upload_failure'].includes(entity)) return '';
+      return `
+        <div class="admin-upload-block">
+          <label>${escHtml(labelMap[entity] || 'Upload file')}
+            <input id="ad_bb_upload_file" type="file" />
+          </label>
+          <button id="ad_bb_upload_btn" class="secondary" type="button">${escHtml(labelMap[entity] || 'Upload file')}</button>
+          <p class="muted" style="margin:0;">Use this for route execution photos/files, HSE packet proof images/signatures, or a replacement retry after a logged upload failure.</p>
+        </div>
+      `;
+    }
+
+    async function uploadBackboneFile(entity, selected = null) {
+      const fileInput = document.getElementById('ad_bb_upload_file');
+      const file = fileInput?.files?.[0];
+      if (!file) throw new Error('Select a file first.');
+
+      const packetId = document.getElementById('ad_bb_packet_id')?.value || selected?.packet_id || selected?.linked_record_id || '';
+      const executionId = document.getElementById('ad_bb_execution_id')?.value || selected?.execution_id || selected?.linked_record_id || '';
+
+      if (entity === 'route_stop_execution_attachment') {
+        const formData = new FormData();
+        formData.set('execution_id', executionId);
+        formData.set('attachment_kind', document.getElementById('ad_bb_attachment_kind')?.value || selected?.attachment_kind || 'photo');
+        formData.set('caption', document.getElementById('ad_bb_caption')?.value || '');
+        formData.set('file', file);
+        return window.YWIAPI?.uploadRouteExecutionAttachment?.(formData, true);
+      }
+
+      if (entity === 'hse_packet_proof') {
+        const formData = new FormData();
+        formData.set('packet_id', packetId);
+        formData.set('proof_kind', document.getElementById('ad_bb_proof_kind')?.value || selected?.proof_kind || 'photo');
+        formData.set('proof_stage', document.getElementById('ad_bb_proof_stage')?.value || selected?.proof_stage || 'field');
+        formData.set('caption', document.getElementById('ad_bb_caption')?.value || '');
+        formData.set('proof_notes', document.getElementById('ad_bb_proof_notes')?.value || '');
+        formData.set('file', file);
+        return window.YWIAPI?.uploadHsePacketProof?.(formData, true);
+      }
+
+      if (entity === 'field_upload_failure') {
+        const scope = String(selected?.failure_scope || '');
+        if (scope === 'job_comment_attachment') {
+          const formData = new FormData();
+          formData.set('job_comment_id', String(selected?.comment_id || selected?.linked_record_id || ''));
+          formData.set('attachment_kind', String(selected?.client_context?.attachment_kind || 'photo'));
+          if (selected?.client_context?.caption) formData.set('caption', String(selected.client_context.caption));
+          formData.set('file', file);
+          return window.YWIAPI?.uploadJobCommentAttachment?.(formData, true);
+        }
+        if (scope === 'equipment_evidence') {
+          const formData = new FormData();
+          formData.set('signout_id', String(selected?.signout_id || selected?.linked_record_id || ''));
+          formData.set('stage', String(selected?.client_context?.stage || 'checkout'));
+          formData.set('evidence_kind', String(selected?.client_context?.evidence_kind || 'photo'));
+          if (selected?.client_context?.signer_role) formData.set('signer_role', String(selected.client_context.signer_role));
+          if (selected?.client_context?.caption) formData.set('caption', String(selected.client_context.caption));
+          formData.set('file', file);
+          return window.YWIAPI?.uploadEquipmentEvidence?.(formData, true);
+        }
+        if (scope === 'route_execution_attachment') {
+          const formData = new FormData();
+          formData.set('execution_id', String(selected?.execution_id || selected?.linked_record_id || ''));
+          formData.set('attachment_kind', String(selected?.client_context?.attachment_kind || 'photo'));
+          if (selected?.client_context?.caption) formData.set('caption', String(selected.client_context.caption));
+          formData.set('file', file);
+          return window.YWIAPI?.uploadRouteExecutionAttachment?.(formData, true);
+        }
+        if (scope === 'hse_proof') {
+          const formData = new FormData();
+          formData.set('packet_id', String(selected?.packet_id || selected?.linked_record_id || ''));
+          formData.set('proof_kind', String(selected?.client_context?.proof_kind || 'photo'));
+          formData.set('proof_stage', String(selected?.client_context?.proof_stage || 'field'));
+          if (selected?.client_context?.caption) formData.set('caption', String(selected.client_context.caption));
+          if (selected?.client_context?.proof_notes) formData.set('proof_notes', String(selected.client_context.proof_notes));
+          formData.set('file', file);
+          return window.YWIAPI?.uploadHsePacketProof?.(formData, true);
+        }
+        throw new Error('This failure record does not have a supported retry upload target.');
+      }
+
+      throw new Error('Unsupported upload target.');
+    }
+
+    function bindBackboneUploadLogic(entity, row = null) {
+      const btn = document.getElementById('ad_bb_upload_btn');
+      if (!btn || btn.dataset.bound === '1') return;
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', async () => {
+        try {
+          btn.disabled = true;
+          const selected = row || getSelectedBackboneRecord();
+          const result = await uploadBackboneFile(entity, selected);
+          await refreshSelectors();
+          await loadDirectory();
+          if (entity === 'field_upload_failure' && selected?.id) {
+            await manageAdminEntity({
+              entity: 'field_upload_failure',
+              action: 'update',
+              item_id: selected.id,
+              retry_status: 'resolved',
+              upload_attempts: Number(selected.upload_attempts || 0) + 1,
+              last_retry_at: new Date().toISOString(),
+              resolution_notes: `Replacement upload completed on ${new Date().toLocaleString()}.`
+            });
+          }
+          const record = result?.record || null;
+          if (record?.id && ['route_stop_execution_attachment', 'hse_packet_proof'].includes(entity)) {
+            fillBackboneForm(record);
+          }
+          setSummary('Upload completed and Admin data refreshed.');
+        } catch (err) {
+          setSummary(String(err?.message || err), true);
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    }
+
     function renderBackboneFields(entity, row = null) {
       const e = els();
       const cfg = BACKBONE_CONFIG[entity];
@@ -2111,7 +2265,7 @@
           return `<label>${escHtml(field.label)}<select id="${escHtml(inputId)}"${field.readonly ? ' disabled' : ''}${disabledHint}>${options}</select></label>`;
         }
         return `<label>${escHtml(field.label)}<input id="${escHtml(inputId)}" type="${escHtml(field.type || 'text')}" value="${escHtml(value)}"${readOnlyAttr}${disabledHint} /></label>`;
-      }).join('');
+      }).join('') + renderBackboneUploadControls(entity, row || null);
       cfg.fields.forEach((field) => {
         if (field.type === 'select') {
           const input = document.getElementById(`ad_bb_${field.name}`);
@@ -2119,6 +2273,7 @@
         }
       });
       bindBackboneFieldLogic(entity);
+      bindBackboneUploadLogic(entity, row || null);
       if (e.backbonePostBtn) e.backbonePostBtn.style.display = entity === 'gl_journal_batch' ? '' : 'none';
       renderBackboneInsights(row || null);
     }
@@ -2400,7 +2555,9 @@
           materialReceiptLines: Array.isArray(payload?.material_receipt_lines) ? payload.material_receipt_lines : state.materialReceiptLines,
           materialIssues: Array.isArray(payload?.material_issues) ? payload.material_issues : state.materialIssues,
           materialIssueLines: Array.isArray(payload?.material_issue_lines) ? payload.material_issue_lines : state.materialIssueLines,
-          fieldUploadFailures: Array.isArray(payload?.field_upload_failures) ? payload.field_upload_failures : state.fieldUploadFailures
+          fieldUploadFailures: Array.isArray(payload?.field_upload_failures) ? payload.field_upload_failures : state.fieldUploadFailures,
+          appTrafficEvents: Array.isArray(payload?.app_traffic_events) ? payload.app_traffic_events : state.appTrafficEvents,
+          backendMonitorEvents: Array.isArray(payload?.backend_monitor_events) ? payload.backend_monitor_events : state.backendMonitorEvents
         };
         const e = els();
         if (e.staffPosition) {
