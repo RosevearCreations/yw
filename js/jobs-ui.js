@@ -34,6 +34,12 @@
       notifications: [],
       inspections: [],
       maintenance: [],
+      crews: [],
+      crewMembers: [],
+      profiles: [],
+      jobComments: [],
+      jobCommentAttachments: [],
+      selectedJobId: null,
       editingJobId: null,
       editingEquipmentCode: '',
       signaturePads: { worker: null, supervisor: null, admin: null },
@@ -107,7 +113,7 @@
               <table id="job_list_table">
                 <thead>
                   <tr>
-                    <th>Code</th><th>Name</th><th>Site</th><th>Status</th><th>Approval</th><th>Dates</th><th>Action</th>
+                    <th>Code</th><th>Name</th><th>Crew</th><th>Supervisor</th><th>Schedule</th><th>Status</th><th>Activity</th><th>Action</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -265,6 +271,67 @@
           </div>
         `;
       }
+
+    }
+
+    function ensureExtendedJobsPanel() {
+      const jobs = document.getElementById('jobs');
+      if (!jobs) return;
+      if (!document.getElementById('job_ops_extension')) {
+        const summaryBlock = document.createElement('div');
+        summaryBlock.id = 'job_ops_extension';
+        summaryBlock.className = 'admin-panel-block';
+        summaryBlock.style.marginTop = '16px';
+        summaryBlock.innerHTML = `
+          <h3 style="margin-top:0;">Crew, Schedule, and Job Packet</h3>
+          <div class="grid">
+            <label>Assigned Crew<select id="job_crew_id"></select></label>
+            <label>New Crew Name<input id="job_crew_name" type="text" placeholder="Crew name for this job" list="employee-options" /></label>
+            <label>Crew Code<input id="job_crew_code" type="text" placeholder="CREW-01" /></label>
+            <label>Assigned Supervisor<input id="job_assigned_supervisor_name" type="text" placeholder="Required supervisor" list="employee-options" /></label>
+            <label>Schedule Mode<select id="job_schedule_mode"><option value="standalone">Standalone Project</option><option value="recurring">Recurring Service</option><option value="project_phase">Project Phase</option></select></label>
+            <label>Recurrence Summary<input id="job_recurrence_summary" type="text" placeholder="Every Tuesday and Friday" /></label>
+            <label>Recurrence Rule<input id="job_recurrence_rule" type="text" placeholder="FREQ=WEEKLY;BYDAY=TU,FR" /></label>
+            <label>Recurrence Interval<input id="job_recurrence_interval" type="number" min="1" step="1" placeholder="1" /></label>
+            <label>Anchor Date<input id="job_recurrence_anchor_date" type="date" /></label>
+          </div>
+          <label style="display:block;margin-top:12px;">Crew Members
+            <textarea id="job_crew_member_names" rows="2" placeholder="Comma-separated crew member names or emails"></textarea>
+          </label>
+          <label style="display:block;margin-top:12px;">Special Instructions
+            <textarea id="job_special_instructions" rows="3" placeholder="Gate codes, hazard notes, photo reminders, site-specific instructions"></textarea>
+          </label>
+          <div id="job_ops_summary" class="notice" style="display:none;margin-top:12px;"></div>
+        `;
+        const summaryTarget = document.getElementById('job_summary');
+        summaryTarget?.parentNode?.insertBefore(summaryBlock, summaryTarget.nextSibling);
+      }
+      if (!document.getElementById('job_activity_block')) {
+        const activity = document.createElement('div');
+        activity.id = 'job_activity_block';
+        activity.className = 'admin-panel-block';
+        activity.style.marginTop = '16px';
+        activity.innerHTML = `
+          <h3 style="margin-top:0;">Job Activity, Photos, and Instructions</h3>
+          <div class="grid">
+            <label>Comment Type<select id="job_comment_type"><option value="update">Update</option><option value="photo">Photo Update</option><option value="issue">Issue</option><option value="instruction">Instruction</option><option value="closeout">Closeout</option></select></label>
+            <label style="display:flex;align-items:center;gap:8px;margin-top:26px;"><input id="job_comment_special_instruction" type="checkbox" /> Update job special instructions</label>
+            <label style="display:flex;align-items:center;gap:8px;margin-top:26px;"><input id="job_comment_visible_to_client" type="checkbox" /> Client-visible note</label>
+            <label>Photos / Files<input id="job_comment_files" type="file" accept="image/*,.pdf,.doc,.docx" multiple /></label>
+          </div>
+          <label style="display:block;margin-top:12px;">Comment
+            <textarea id="job_comment_text" rows="3" placeholder="Crew update, site condition, issue, or instruction"></textarea>
+          </label>
+          <div class="form-footer" style="margin-top:12px;">
+            <button id="job_comment_save" class="secondary" type="button">Post Update</button>
+          </div>
+          <div id="job_activity_summary" class="notice" style="display:none;margin-top:12px;"></div>
+          <div id="job_activity_list" class="job-activity-list" style="margin-top:12px;"><span class="muted">Save or load a job to track comments, photos, and special instructions.</span></div>
+        `;
+        const savedJobsBlock = document.querySelector('#jobs .admin-panel-block:last-of-type');
+        if (savedJobsBlock?.parentNode) savedJobsBlock.parentNode.insertBefore(activity, savedJobsBlock);
+        else jobs.appendChild(activity);
+      }
     }
 
     function els() {
@@ -284,6 +351,26 @@
         jobAdminName: $('#job_admin_name'),
         jobClientName: $('#job_client_name'),
         jobNotes: $('#job_notes'),
+        jobCrewId: $('#job_crew_id'),
+        jobCrewName: $('#job_crew_name'),
+        jobCrewCode: $('#job_crew_code'),
+        jobAssignedSupervisorName: $('#job_assigned_supervisor_name'),
+        jobScheduleMode: $('#job_schedule_mode'),
+        jobRecurrenceSummary: $('#job_recurrence_summary'),
+        jobRecurrenceRule: $('#job_recurrence_rule'),
+        jobRecurrenceInterval: $('#job_recurrence_interval'),
+        jobRecurrenceAnchorDate: $('#job_recurrence_anchor_date'),
+        jobCrewMemberNames: $('#job_crew_member_names'),
+        jobSpecialInstructions: $('#job_special_instructions'),
+        jobOpsSummary: $('#job_ops_summary'),
+        jobCommentType: $('#job_comment_type'),
+        jobCommentSpecialInstruction: $('#job_comment_special_instruction'),
+        jobCommentVisibleToClient: $('#job_comment_visible_to_client'),
+        jobCommentFiles: $('#job_comment_files'),
+        jobCommentText: $('#job_comment_text'),
+        jobCommentSave: $('#job_comment_save'),
+        jobActivitySummary: $('#job_activity_summary'),
+        jobActivityList: $('#job_activity_list'),
         jobAddEquipment: $('#job_add_equipment'),
         jobRequestApproval: $('#job_request_approval'),
         jobEquipmentBody: $('#job_equipment_table tbody'),
@@ -519,6 +606,7 @@
       const editableIds = [
         'job_code','job_name','job_site_name','job_type','job_status','job_priority','job_start_date','job_end_date',
         'job_supervisor_name','job_signing_supervisor_name','job_admin_name','job_client_name','job_notes',
+        'job_crew_id','job_crew_name','job_crew_code','job_assigned_supervisor_name','job_schedule_mode','job_recurrence_summary','job_recurrence_rule','job_recurrence_interval','job_recurrence_anchor_date','job_crew_member_names','job_special_instructions','job_comment_type','job_comment_special_instruction','job_comment_visible_to_client','job_comment_files','job_comment_text',
         'eq_code','eq_name','eq_category','eq_pool_key','eq_home_site','eq_status','eq_current_job_code','eq_assigned_supervisor',
         'eq_serial','eq_asset_tag','eq_manufacturer','eq_model','eq_year','eq_purchase_date','eq_purchase_price','eq_condition',
         'eq_image_url','eq_service_interval_days','eq_last_service_date','eq_next_service_due_date','eq_last_inspection_at',
@@ -529,7 +617,7 @@
         const el = document.getElementById(id);
         if (el) el.disabled = !allowed;
       });
-      ['job_add_equipment','job_request_approval','job_save','job_clear','eq_save','eq_checkout','eq_return','eq_add_inspection','eq_add_maintenance','eq_lockout','eq_clear_lockout','eq_clear'].forEach((id)=>{
+      ['job_add_equipment','job_request_approval','job_save','job_clear','job_comment_save','eq_save','eq_checkout','eq_return','eq_add_inspection','eq_add_maintenance','eq_lockout','eq_clear_lockout','eq_clear'].forEach((id)=>{
         const el = document.getElementById(id);
         if (el) el.disabled = !allowed;
       });
@@ -543,6 +631,52 @@
         .map((row) => ({ value: row.site_code || row.site_name, label: row.site_code ? `${row.site_code} — ${row.site_name || ''}` : row.site_name }));
       selectEl.innerHTML = '<option value="">Select site</option>' + uniqueSites.map((row) => `<option value="${escHtml(row.value)}">${escHtml(row.label)}</option>`).join('');
       if (current) selectEl.value = current;
+    }
+
+    function fillCrewSelect(selectEl) {
+      if (!selectEl) return;
+      const current = selectEl.value;
+      const rows = Array.isArray(state.crews) ? state.crews : [];
+      selectEl.innerHTML = '<option value="">No saved crew</option>' + rows.map((row) => `<option value="${escHtml(row.id)}">${escHtml(row.crew_name || row.crew_code || row.id)}</option>`).join('');
+      if (current) selectEl.value = current;
+    }
+
+    function fillEmployeeDataList() {
+      const dataList = document.getElementById('employee-options');
+      if (!dataList) return;
+      dataList.innerHTML = (Array.isArray(state.profiles) ? state.profiles : []).map((row) => `<option value="${escHtml(row.full_name || row.email || '')}">${escHtml(row.email || '')}</option>`).join('');
+    }
+
+    function getSelectedJobComments() {
+      return (Array.isArray(state.jobComments) ? state.jobComments : []).filter((row) => Number(row.job_id || 0) === Number(state.selectedJobId || state.editingJobId || 0));
+    }
+
+    function renderJobActivity() {
+      const e = els();
+      if (!e.jobActivityList) return;
+      const activeJobId = Number(state.selectedJobId || state.editingJobId || 0);
+      if (!activeJobId) {
+        e.jobActivityList.innerHTML = '<span class="muted">Save or load a job to track comments, photos, and special instructions.</span>';
+        setNotice(e.jobActivitySummary, '');
+        return;
+      }
+      const comments = getSelectedJobComments();
+      const activeJob = (state.jobs || []).find((row) => Number(row.id) === activeJobId) || null;
+      setNotice(e.jobActivitySummary, activeJob ? `Tracking ${comments.length} update(s) for ${activeJob.job_code || activeJob.job_name || 'job'}.` : '');
+      e.jobActivityList.innerHTML = comments.length ? comments.map((row) => `
+        <article class="job-activity-card">
+          <div class="job-activity-header">
+            <strong>${escHtml(row.comment_type || 'update')}</strong>
+            <span class="muted">${escHtml(row.created_by_name || '')} ${row.created_at ? `• ${escHtml(String(row.created_at).replace('T', ' ').slice(0, 16))}` : ''}</span>
+          </div>
+          <div>${escHtml(row.comment_text || '')}</div>
+          ${row.is_special_instruction ? '<div class="job-activity-chip">Special instruction</div>' : ''}
+          ${Array.isArray(row.attachments) && row.attachments.length ? `<div class="job-activity-attachments">${row.attachments.map((asset) => `<a href="${escHtml(asset.public_url || asset.preview_url || '#')}" target="_blank" rel="noopener" class="job-activity-attachment">${asset.attachment_kind === 'photo' ? `<img src="${escHtml(asset.public_url || asset.preview_url || '')}" alt="${escHtml(asset.file_name || 'Attachment')}" />` : ''}<span>${escHtml(asset.file_name || asset.attachment_kind || 'Attachment')}</span></a>`).join('')}</div>` : ''}
+          <div class="form-footer" style="margin-top:8px;">
+            <button type="button" class="secondary" data-job-comment-delete="${escHtml(row.id)}">Delete</button>
+          </div>
+        </article>
+      `).join('') : '<span class="muted">No comments or photos have been added for this job yet.</span>';
     }
 
     function addEquipmentRequirementRow(row = {}) {
@@ -604,6 +738,17 @@
         admin_name: e.jobAdminName?.value || '',
         client_name: e.jobClientName?.value || '',
         notes: e.jobNotes?.value || '',
+        crew_id: e.jobCrewId?.value || '',
+        crew_name: e.jobCrewName?.value || '',
+        crew_code: e.jobCrewCode?.value || '',
+        assigned_supervisor_name: e.jobAssignedSupervisorName?.value || '',
+        schedule_mode: e.jobScheduleMode?.value || 'standalone',
+        recurrence_summary: e.jobRecurrenceSummary?.value || '',
+        recurrence_rule: e.jobRecurrenceRule?.value || '',
+        recurrence_interval: e.jobRecurrenceInterval?.value || '',
+        recurrence_anchor_date: e.jobRecurrenceAnchorDate?.value || '',
+        crew_member_names: e.jobCrewMemberNames?.value || '',
+        special_instructions: e.jobSpecialInstructions?.value || '',
         request_approval: !!e.jobRequestApproval?.checked,
         requirements: collectRequirements()
       });
@@ -667,6 +812,17 @@
         e.jobAdminName.value = jobDraft.admin_name || '';
         e.jobClientName.value = jobDraft.client_name || '';
         e.jobNotes.value = jobDraft.notes || '';
+        e.jobCrewId.value = jobDraft.crew_id || '';
+        e.jobCrewName.value = jobDraft.crew_name || '';
+        e.jobCrewCode.value = jobDraft.crew_code || '';
+        e.jobAssignedSupervisorName.value = jobDraft.assigned_supervisor_name || '';
+        e.jobScheduleMode.value = jobDraft.schedule_mode || 'standalone';
+        e.jobRecurrenceSummary.value = jobDraft.recurrence_summary || '';
+        e.jobRecurrenceRule.value = jobDraft.recurrence_rule || '';
+        e.jobRecurrenceInterval.value = jobDraft.recurrence_interval || '';
+        e.jobRecurrenceAnchorDate.value = jobDraft.recurrence_anchor_date || '';
+        e.jobCrewMemberNames.value = jobDraft.crew_member_names || '';
+        e.jobSpecialInstructions.value = jobDraft.special_instructions || '';
         e.jobRequestApproval.checked = !!jobDraft.request_approval;
         if (e.jobEquipmentBody) e.jobEquipmentBody.innerHTML = '';
         (Array.isArray(jobDraft.requirements) && jobDraft.requirements.length ? jobDraft.requirements : [{ needed_qty: 1, reserved_qty: 0 }]).forEach(addEquipmentRequirementRow);
@@ -721,15 +877,21 @@
     function clearJobForm() {
       const e = els();
       state.editingJobId = null;
-      [e.jobCode, e.jobName, e.jobType, e.jobStatus, e.jobPriority, e.jobStartDate, e.jobEndDate, e.jobSupervisorName, e.jobSigningSupervisorName, e.jobAdminName, e.jobClientName].forEach((el) => { if (el) el.value = ''; });
+      state.selectedJobId = null;
+      [e.jobCode, e.jobName, e.jobType, e.jobStatus, e.jobPriority, e.jobStartDate, e.jobEndDate, e.jobSupervisorName, e.jobSigningSupervisorName, e.jobAdminName, e.jobClientName, e.jobCrewId, e.jobCrewName, e.jobCrewCode, e.jobAssignedSupervisorName, e.jobScheduleMode, e.jobRecurrenceSummary, e.jobRecurrenceRule, e.jobRecurrenceInterval, e.jobRecurrenceAnchorDate, e.jobCrewMemberNames].forEach((el) => { if (el) el.value = ''; });
       if (e.jobStatus) e.jobStatus.value = 'planned';
       if (e.jobPriority) e.jobPriority.value = 'normal';
+      if (e.jobScheduleMode) e.jobScheduleMode.value = 'standalone';
       if (e.jobSiteName) e.jobSiteName.value = '';
       if (e.jobNotes) e.jobNotes.value = '';
+      if (e.jobSpecialInstructions) e.jobSpecialInstructions.value = '';
+      if (e.jobCommentText) e.jobCommentText.value = '';
+      if (e.jobCommentFiles) e.jobCommentFiles.value = '';
       if (e.jobRequestApproval) e.jobRequestApproval.checked = false;
       if (e.jobEquipmentBody) e.jobEquipmentBody.innerHTML = '';
       addEquipmentRequirementRow({ needed_qty: 1, reserved_qty: 0 });
       clearDrafts('job');
+      renderJobActivity();
       setNotice(e.jobSummary, 'Ready for a new job entry.');
     }
 
@@ -758,6 +920,7 @@
       const e = els();
       if (!jobRow) return;
       state.editingJobId = jobRow.id;
+      state.selectedJobId = jobRow.id;
       e.jobCode.value = jobRow.job_code || '';
       e.jobName.value = jobRow.job_name || '';
       e.jobSiteName.value = jobRow.site_code || jobRow.site_name || '';
@@ -771,10 +934,23 @@
       e.jobAdminName.value = jobRow.admin_name || '';
       e.jobClientName.value = jobRow.client_name || '';
       e.jobNotes.value = jobRow.notes || '';
+      e.jobCrewId.value = jobRow.crew_id || '';
+      e.jobCrewName.value = jobRow.crew_name || '';
+      e.jobCrewCode.value = jobRow.crew_code || '';
+      e.jobAssignedSupervisorName.value = jobRow.assigned_supervisor_name || jobRow.supervisor_name || '';
+      e.jobScheduleMode.value = jobRow.schedule_mode || 'standalone';
+      e.jobRecurrenceSummary.value = jobRow.recurrence_summary || '';
+      e.jobRecurrenceRule.value = jobRow.recurrence_rule || '';
+      e.jobRecurrenceInterval.value = jobRow.recurrence_interval || '';
+      e.jobRecurrenceAnchorDate.value = jobRow.recurrence_anchor_date || '';
+      const selectedCrew = (state.crews || []).find((item) => String(item.id) === String(jobRow.crew_id || '')) || null;
+      e.jobCrewMemberNames.value = Array.isArray(selectedCrew?.members_json) ? selectedCrew.members_json.map((item) => item.full_name || item.email || '').filter(Boolean).join(', ') : ''; 
+      e.jobSpecialInstructions.value = jobRow.special_instructions || '';
       e.jobRequestApproval.checked = ['requested','pending'].includes(String(jobRow.approval_status || '').toLowerCase());
       e.jobEquipmentBody.innerHTML = '';
       const reqs = state.requirements.filter((row) => Number(row.job_id) === Number(jobRow.id));
       (reqs.length ? reqs : [{ needed_qty: 1, reserved_qty: 0 }]).forEach(addEquipmentRequirementRow);
+      renderJobActivity();
       setNotice(e.jobSummary, `Loaded job ${jobRow.job_code} into the form for editing.`);
       window.YWIRouter?.showSection?.('jobs', { skipFocus: true });
     }
@@ -813,7 +989,7 @@
       e.jobListBody.innerHTML = '';
       state.jobs.forEach((row) => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${escHtml(row.job_code)}</td><td>${escHtml(row.job_name)}</td><td>${escHtml(row.site_name || row.site_code || '')}</td><td>${escHtml(row.status || '')}</td><td>${escHtml(row.approval_status || '')}</td><td>${escHtml(row.start_date || '')}${row.end_date ? ` → ${escHtml(row.end_date)}` : ''}</td><td><button type="button" class="secondary" data-job-load="${escHtml(row.id)}">Load</button></td>`;
+        tr.innerHTML = `<td>${escHtml(row.job_code)}</td><td>${escHtml(row.job_name)}</td><td>${escHtml(row.crew_name || '')}</td><td>${escHtml(row.assigned_supervisor_name || row.supervisor_name || '')}</td><td>${escHtml(row.schedule_mode || 'standalone')}${row.recurrence_summary ? ` • ${escHtml(row.recurrence_summary)}` : ''}</td><td>${escHtml(row.status || '')}</td><td>${escHtml(row.comment_count || 0)} comment(s) / ${escHtml(row.photo_count || 0)} photo(s)</td><td><button type="button" class="secondary" data-job-load="${escHtml(row.id)}">Load</button></td>`;
         e.jobListBody.appendChild(tr);
       });
     }
@@ -901,6 +1077,52 @@
 
 
 
+    async function saveJobComment() {
+      const e = els();
+      const activeJobId = Number(state.selectedJobId || state.editingJobId || 0);
+      if (!activeJobId) {
+        setNotice(e.jobActivitySummary, 'Save or load a job before posting activity updates.', true);
+        return;
+      }
+      try {
+        const resp = await api.manageJobsEntity({
+          entity: 'job_comment',
+          action: 'create',
+          job_id: activeJobId,
+          comment_type: e.jobCommentType?.value || 'update',
+          comment_text: e.jobCommentText?.value?.trim?.() || '',
+          is_special_instruction: !!e.jobCommentSpecialInstruction?.checked,
+          visible_to_client: !!e.jobCommentVisibleToClient?.checked,
+          set_job_instruction: !!e.jobCommentSpecialInstruction?.checked
+        });
+        if (!resp?.ok || !resp?.record?.id) throw new Error(resp?.error || 'Failed to save job comment');
+        const files = Array.from(e.jobCommentFiles?.files || []);
+        if (files.length && api?.uploadJobCommentAttachmentBatch) {
+          await api.uploadJobCommentAttachmentBatch(files.map((file) => ({ commentId: resp.record.id, attachmentKind: file.type.startsWith('image/') ? 'photo' : 'file', file })));
+        }
+        if (e.jobCommentText) e.jobCommentText.value = '';
+        if (e.jobCommentFiles) e.jobCommentFiles.value = '';
+        if (e.jobCommentSpecialInstruction) e.jobCommentSpecialInstruction.checked = false;
+        if (e.jobCommentVisibleToClient) e.jobCommentVisibleToClient.checked = false;
+        setNotice(e.jobActivitySummary, 'Job update saved.');
+        await loadData();
+      } catch (err) {
+        setNotice(e.jobActivitySummary, err?.message || 'Failed to save job update.', true);
+      }
+    }
+
+    async function deleteJobComment(commentId) {
+      const e = els();
+      if (!commentId) return;
+      try {
+        await api.manageJobsEntity({ entity: 'job_comment', action: 'delete', item_id: commentId });
+        setNotice(e.jobActivitySummary, 'Job update deleted.');
+        await loadData();
+      } catch (err) {
+        setNotice(e.jobActivitySummary, err?.message || 'Failed to delete job update.', true);
+      }
+    }
+
     async function deleteEvidenceAsset(assetId) {
       if (!assetId) return;
       setNotice(els().eqGallerySummary, 'Deleting evidence asset…');
@@ -944,6 +1166,11 @@
         state.jobs = Array.isArray(resp?.jobs) ? resp.jobs : [];
         state.equipment = Array.isArray(resp?.equipment) ? resp.equipment : [];
         state.requirements = Array.isArray(resp?.requirements) ? resp.requirements : [];
+        state.crews = Array.isArray(resp?.crews) ? resp.crews : [];
+        state.crewMembers = Array.isArray(resp?.crew_members) ? resp.crew_members : [];
+        state.profiles = Array.isArray(resp?.profiles) ? resp.profiles : [];
+        state.jobComments = Array.isArray(resp?.job_comments) ? resp.job_comments : [];
+        state.jobCommentAttachments = Array.isArray(resp?.job_comment_attachments) ? resp.job_comment_attachments : [];
         state.signouts = Array.isArray(resp?.signouts) ? resp.signouts : [];
         state.pools = Array.isArray(resp?.pools) ? resp.pools : [];
         state.notifications = Array.isArray(resp?.notifications) ? resp.notifications : [];
@@ -951,9 +1178,12 @@
         state.maintenance = Array.isArray(resp?.maintenance) ? resp.maintenance : [];
         fillSiteSelect(e.jobSiteName);
         fillSiteSelect(e.eqHomeSite);
+        fillCrewSelect(e.jobCrewId);
+        fillEmployeeDataList();
         renderJobs();
         renderEquipment();
         renderRequirementReviewPanel();
+        renderJobActivity();
         setNotice(e.jobSummary, `Loaded ${state.jobs.length} jobs and ${state.requirements.length} requirements.`);
         setNotice(e.eqSummary, `Loaded ${state.equipment.length} equipment items across ${state.pools.length} pools.`);
       } catch (err) {
@@ -977,17 +1207,29 @@
           start_date: e.jobStartDate?.value || null,
           end_date: e.jobEndDate?.value || null,
           supervisor_name: e.jobSupervisorName?.value?.trim?.() || '',
+          assigned_supervisor_name: e.jobAssignedSupervisorName?.value?.trim?.() || e.jobSupervisorName?.value?.trim?.() || '',
           signing_supervisor_name: e.jobSigningSupervisorName?.value?.trim?.() || '',
           admin_name: e.jobAdminName?.value?.trim?.() || '',
           client_name: e.jobClientName?.value?.trim?.() || '',
           notes: e.jobNotes?.value?.trim?.() || '',
+          crew_id: e.jobCrewId?.value || '',
+          crew_name: e.jobCrewName?.value?.trim?.() || '',
+          crew_code: e.jobCrewCode?.value?.trim?.() || '',
+          schedule_mode: e.jobScheduleMode?.value || 'standalone',
+          recurrence_summary: e.jobRecurrenceSummary?.value?.trim?.() || '',
+          recurrence_rule: e.jobRecurrenceRule?.value?.trim?.() || '',
+          recurrence_interval: e.jobRecurrenceInterval?.value ? Number(e.jobRecurrenceInterval.value) : null,
+          recurrence_anchor_date: e.jobRecurrenceAnchorDate?.value || null,
+          crew_member_names: e.jobCrewMemberNames?.value?.trim?.() || '',
+          special_instructions: e.jobSpecialInstructions?.value?.trim?.() || '',
           request_approval: !!e.jobRequestApproval?.checked,
           requirements: collectRequirements()
         };
         const resp = await api.manageJobsEntity(payload);
         if (!resp?.ok) throw new Error(resp?.error || 'Job save failed');
         clearDrafts('job');
-        setNotice(e.jobSummary, `Job ${payload.job_code} saved. Reservation checks were applied across matching equipment pools.`);
+        state.selectedJobId = Number(resp?.record?.id || state.selectedJobId || 0);
+        setNotice(e.jobSummary, `Job ${payload.job_code} saved. Crew, supervisor, schedule, and reservation checks were applied.`);
         await loadData();
       } catch (err) {
         setNotice(e.jobSummary, err?.message || 'Failed to save job.', true);
@@ -1213,9 +1455,37 @@
           loadEquipmentIntoForm(row);
         });
       }
+      if (e.jobSupervisorName && e.jobSupervisorName.dataset.bound !== '1') {
+        e.jobSupervisorName.dataset.bound = '1';
+        e.jobSupervisorName.addEventListener('change', () => {
+          if (e.jobAssignedSupervisorName && !e.jobAssignedSupervisorName.value) e.jobAssignedSupervisorName.value = e.jobSupervisorName.value || '';
+        });
+      }
+      if (e.jobCrewId && e.jobCrewId.dataset.bound !== '1') {
+        e.jobCrewId.dataset.bound = '1';
+        e.jobCrewId.addEventListener('change', () => {
+          const crew = (state.crews || []).find((row) => String(row.id) === String(e.jobCrewId.value || ''));
+          if (!crew) return;
+          if (e.jobCrewName && !e.jobCrewName.value) e.jobCrewName.value = crew.crew_name || '';
+          if (e.jobAssignedSupervisorName && !e.jobAssignedSupervisorName.value) e.jobAssignedSupervisorName.value = crew.supervisor_name || '';
+          if (e.jobCrewMemberNames && Array.isArray(crew.members_json) && !e.jobCrewMemberNames.value) e.jobCrewMemberNames.value = crew.members_json.map((item) => item.full_name || item.email || '').filter(Boolean).join(', ');
+        });
+      }
       if (e.jobSave && e.jobSave.dataset.bound !== '1') {
         e.jobSave.dataset.bound = '1';
         e.jobSave.addEventListener('click', saveJob);
+      }
+      if (e.jobCommentSave && e.jobCommentSave.dataset.bound !== '1') {
+        e.jobCommentSave.dataset.bound = '1';
+        e.jobCommentSave.addEventListener('click', saveJobComment);
+      }
+      if (e.jobActivityList && e.jobActivityList.dataset.bound !== '1') {
+        e.jobActivityList.dataset.bound = '1';
+        e.jobActivityList.addEventListener('click', (event) => {
+          const btn = event.target.closest('[data-job-comment-delete]');
+          if (!btn) return;
+          deleteJobComment(btn.getAttribute('data-job-comment-delete'));
+        });
       }
       if (e.jobLoad && e.jobLoad.dataset.bound !== '1') {
         e.jobLoad.dataset.bound = '1';
@@ -1270,6 +1540,7 @@
 
     async function init() {
       ensureLayout();
+      ensureExtendedJobsPanel();
       bind();
       applyRoleVisibility();
       await loadData();

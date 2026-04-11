@@ -1,5 +1,5 @@
--- Last synchronized: April 10, 2026. Reviewed during the receipt rollups, work-order operational status, posted/open amount visibility, and admin workflow sync pass.
--- Current reference includes migrations through 064_receipt_rollups_work_order_operational_status_and_posted_amounts.sql and documents DB-enforced totals, posting rollups, receiving-cost linkage, packet closeout, and operational rollup visibility.
+-- Last synchronized: April 10, 2026. Reviewed during the crew assignment, recurring jobs, job activity/photo tracking, and field workflow sync pass.
+-- Current reference includes migrations through 065_job_crews_recurring_schedules_and_activity_tracking.sql and documents DB-backed crew assignment, supervisor ownership, recurring scheduling, job comments/photo tracking, and linked field instructions.
 
 create extension if not exists pgcrypto;
 

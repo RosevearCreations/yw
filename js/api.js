@@ -256,6 +256,76 @@
     return payload;
   }
 
+
+  async function manageJobsEntity(payload = {}) {
+    return jsonFetch('jobs-manage', {
+      method: 'POST',
+      body: payload,
+      requireAuth: true
+    });
+  }
+
+  async function uploadEquipmentEvidenceBatch(items = []) {
+    const results = [];
+    for (const item of Array.isArray(items) ? items : []) {
+      if (!item?.signoutId || !item?.file) continue;
+      const formData = new FormData();
+      formData.set('signout_id', String(item.signoutId));
+      formData.set('stage', String(item.stage || 'checkout'));
+      formData.set('evidence_kind', String(item.evidenceKind || 'photo'));
+      if (item.signerRole) formData.set('signer_role', String(item.signerRole));
+      if (item.caption) formData.set('caption', String(item.caption));
+      formData.set('file', item.file);
+      results.push(await uploadEquipmentEvidence(formData, true));
+    }
+    return results;
+  }
+
+  async function uploadJobCommentAttachment(formData, requireAuth = true) {
+    const token = requireAuth ? await getAccessToken() : '';
+    const anonKey = getSupabaseAnonKey();
+
+    if (requireAuth && !token) {
+      throw new Error('Missing authorization header');
+    }
+
+    const response = await fetch(`${getFunctionsBaseUrl()}/upload-job-comment-attachment`, {
+      method: 'POST',
+      headers: {
+        ...(anonKey ? { apikey: anonKey } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: formData
+    });
+
+    const rawText = await response.text();
+    let payload = null;
+    try {
+      payload = rawText ? JSON.parse(rawText) : null;
+    } catch {
+      payload = null;
+    }
+
+    if (!response.ok) {
+      throw buildError(response.status, rawText, payload);
+    }
+    return payload;
+  }
+
+  async function uploadJobCommentAttachmentBatch(items = []) {
+    const results = [];
+    for (const item of Array.isArray(items) ? items : []) {
+      if (!item?.commentId || !item?.file) continue;
+      const formData = new FormData();
+      formData.set('job_comment_id', String(item.commentId));
+      formData.set('attachment_kind', String(item.attachmentKind || 'photo'));
+      if (item.caption) formData.set('caption', String(item.caption));
+      formData.set('file', item.file);
+      results.push(await uploadJobCommentAttachment(formData, true));
+    }
+    return results;
+  }
+
   async function sendToFunction(fnName, payload, requireAuth = true) {
     return jsonFetch(fnName, {
       method: 'POST',
@@ -551,6 +621,10 @@
     jsonFetch,
     sendToFunction,
     uploadEquipmentEvidence,
+    uploadEquipmentEvidenceBatch,
+    uploadJobCommentAttachment,
+    uploadJobCommentAttachmentBatch,
+    manageJobsEntity,
     fetchReferenceData,
     fetchProfileScope,
     saveMyProfile,

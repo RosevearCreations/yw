@@ -30,9 +30,13 @@ const requiredFiles = [
   'js/app-config.js',
   'js/bootstrap.js',
   'js/api.js',
+  'js/jobs-ui.js',
   'sql/000_full_schema_reference.sql',
   'KNOWN_ISSUES_AND_GAPS.md',
-  'sql/064_receipt_rollups_work_order_operational_status_and_posted_amounts.sql'
+  'sql/065_job_crews_recurring_schedules_and_activity_tracking.sql',
+  'supabase/functions/jobs-directory/index.ts',
+  'supabase/functions/jobs-manage/index.ts',
+  'supabase/functions/upload-job-comment-attachment/index.ts'
 ];
 for (const relPath of requiredFiles) {
   addCheck(`file:${relPath}`, fileExists(relPath), fileExists(relPath) ? 'Present.' : 'Missing.');
@@ -65,7 +69,7 @@ addCheck('account-has-conflict-review', accountUi.includes('Conflict Review'), '
 addCheck('account-has-support-export', accountUi.includes('Export Support Snapshot'), 'account-ui.js should render the support snapshot export button.');
 
 const schema = read('sql/000_full_schema_reference.sql');
-addCheck('schema-header-current', /064_receipt_rollups_work_order_operational_status_and_posted_amounts/i.test(schema), 'Schema snapshot header should reflect the latest 064 pass.');
+addCheck('schema-header-current', /065_job_crews_recurring_schedules_and_activity_tracking/i.test(schema), 'Schema snapshot header should reflect the latest 065 pass.');
 
 console.log(JSON.stringify({ ok: !failed, checks: results }, null, 2));
 if (failed) process.exit(1);
