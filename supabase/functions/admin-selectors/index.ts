@@ -75,6 +75,9 @@ serve(async (req) => {
   const workOrderRollups = await safeList(supabase, 'v_work_order_rollups', '*', 'work_order_number');
   const linkedHsePackets = await safeList(supabase, 'linked_hse_packets', '*', 'packet_number');
   const hseProgress = await safeList(supabase, 'v_hse_packet_progress', '*', 'packet_number');
+  const routeStopExecutions = await safeList(supabase, 'v_route_stop_execution_rollups', '*', 'execution_date');
+  const routeStopExecutionAttachments = await safeList(supabase, 'route_stop_execution_attachments', '*', 'created_at');
+  const hsePacketProofs = await safeList(supabase, 'hse_packet_proofs', '*', 'created_at');
   const glJournalBatches = await safeList(supabase, 'gl_journal_batches', '*', 'batch_number');
   const glJournalBatchRollups = await safeList(supabase, 'v_gl_journal_batch_rollups', '*', 'batch_number');
   const materialIssues = await safeList(supabase, 'material_issues', '*', 'issue_number');
@@ -109,9 +112,12 @@ serve(async (req) => {
     work_orders: mergeRowsById(workOrders, workOrderRollups),
     work_order_lines: await safeList(supabase, 'work_order_lines', '*', 'line_order'),
     route_stops: await safeList(supabase, 'route_stops', '*', 'stop_order'),
+    route_stop_executions: routeStopExecutions,
+    route_stop_execution_attachments: routeStopExecutionAttachments,
     subcontract_clients: await safeList(supabase, 'subcontract_clients', '*', 'company_name'),
     subcontract_dispatches: await safeList(supabase, 'subcontract_dispatches', '*', 'dispatch_number'),
     linked_hse_packets: mergeRowsById(linkedHsePackets, hseProgress),
+    hse_packet_proofs: hsePacketProofs,
     chart_of_accounts: await safeList(supabase, 'chart_of_accounts', '*', 'account_number'),
     gl_journal_batches: mergeRowsById(glJournalBatches, glJournalBatchRollups),
     gl_journal_entries: await safeList(supabase, 'gl_journal_entries', '*', 'line_number'),

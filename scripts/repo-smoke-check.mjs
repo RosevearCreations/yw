@@ -35,6 +35,7 @@ const requiredFiles = [
   'KNOWN_ISSUES_AND_GAPS.md',
   'sql/065_job_crews_recurring_schedules_and_activity_tracking.sql',
   'sql/066_journal_posting_controls_and_material_issue_usage.sql',
+  'sql/067_source_journal_route_execution_and_hse_proof.sql',
   'supabase/functions/jobs-directory/index.ts',
   'supabase/functions/jobs-manage/index.ts',
   'supabase/functions/upload-job-comment-attachment/index.ts'
@@ -70,7 +71,7 @@ addCheck('account-has-conflict-review', accountUi.includes('Conflict Review'), '
 addCheck('account-has-support-export', accountUi.includes('Export Support Snapshot'), 'account-ui.js should render the support snapshot export button.');
 
 const schema = read('sql/000_full_schema_reference.sql');
-addCheck('schema-header-current', /066_journal_posting_controls_and_material_issue_usage/i.test(schema), 'Schema snapshot header should reflect the latest 066 pass.');
+addCheck('schema-header-current', /067_source_journal_route_execution_and_hse_proof/i.test(schema), 'Schema snapshot header should reflect the latest 067 pass.');
 
 console.log(JSON.stringify({ ok: !failed, checks: results }, null, 2));
 if (failed) process.exit(1);

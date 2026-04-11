@@ -155,6 +155,20 @@ async function getWorkOrderLineDefaults(supabase: any, workOrderLineId?: string 
   const { data } = await supabase.from('work_order_lines').select('id,work_order_id,description,unit_id,unit_cost,unit_price,cost_code_id,material_id').eq('id', id).maybeSingle();
   return data || null;
 }
+
+async function getRouteStopDefaults(supabase: any, routeStopId?: string | null) {
+  const id = String(routeStopId || '').trim();
+  if (!id) return null;
+  const { data } = await supabase.from('route_stops').select('id,route_id,client_site_id,stop_order,instructions').eq('id', id).maybeSingle();
+  return data || null;
+}
+
+async function getLinkedHsePacketDefaults(supabase: any, packetId?: string | null) {
+  const id = String(packetId || '').trim();
+  if (!id) return null;
+  const { data } = await supabase.from('linked_hse_packets').select('id,work_order_id,dispatch_id,client_site_id,route_id,supervisor_profile_id,packet_number').eq('id', id).maybeSingle();
+  return data || null;
+}
 function validateAdminSetPassword(password?: string | null) {
   const clean = String(password || '');
   if (!clean) throw new Error('A new password is required.');
@@ -1616,7 +1630,10 @@ serve(async (req) => {
         closed_at: asNullableText(body.closed_at),
         packet_notes: body.packet_notes ?? null,
         closeout_notes: body.closeout_notes ?? null,
-        closeout_by_profile_id: asNullableText(body.closeout_by_profile_id),
+        reopen_in_progress: !!body.reopen_in_progress,
+        reopen_reason: body.reopen_reason ?? null,
+        last_reopened_by_profile_id: body.reopen_in_progress ? actorId : asNullableText(body.last_reopened_by_profile_id),
+        closed_by_profile_id: asNullableText(body.closed_by_profile_id),
         created_by_profile_id: actorId,
         updated_at: new Date().toISOString(),
       };
@@ -1687,7 +1704,7 @@ serve(async (req) => {
         if (String(batch.batch_status || '') === 'posted') return Response.json({ ok:true, record:batch }, { headers:corsHeaders });
         if (!(Number(batch.line_count) > 0)) return Response.json({ ok:false, error:'Journal batch must have at least one entry before posting.' }, { status:400, headers:corsHeaders });
         if (!batch.is_balanced) return Response.json({ ok:false, error:`Journal batch is not balanced. Debit ${batch.debit_total || 0} must equal credit ${batch.credit_total || 0}.` }, { status:400, headers:corsHeaders });
-        const { data, error } = await supabase.from('gl_journal_batches').update({ batch_status:'posted', posted_at:new Date().toISOString(), posted_by_profile_id: actorId, posting_notes: body.posting_notes ?? null, updated_at:new Date().toISOString() }).eq('id', body.item_id).select('*').single();
+        const { data, error } = await supabase.from('gl_journal_batches').update({ batch_status:'posted', posted_at:new Date().toISOString(), posted_by_profile_id: actorId, posting_notes: body.posting_notes ?? null, source_sync_state: batch.source_generated ? 'posted' : 'manual', source_synced_at: new Date().toISOString(), updated_at:new Date().toISOString() }).eq('id', body.item_id).select('*').single();
         if (error) throw error;
         return Response.json({ ok:true, record:data }, { headers:corsHeaders });
       }
@@ -1766,6 +1783,114 @@ serve(async (req) => {
       }
       if (action === 'delete') {
         const { error } = await supabase.from('material_issues').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'route_stop_execution') {
+      const patch = {
+        route_stop_id: asNullableText(body.route_stop_id),
+        route_id: asNullableText(body.route_id),
+        client_site_id: asNullableText(body.client_site_id),
+        execution_date: asNullableDate(body.execution_date) || new Date().toISOString().slice(0, 10),
+        execution_sequence: asNumber(body.execution_sequence, 1),
+        execution_status: body.execution_status ?? 'planned',
+        started_at: asNullableDateTime(body.started_at),
+        arrived_at: asNullableDateTime(body.arrived_at),
+        completed_at: asNullableDateTime(body.completed_at),
+        completed_by_profile_id: asNullableText(body.completed_by_profile_id),
+        supervisor_profile_id: asNullableText(body.supervisor_profile_id),
+        delay_minutes: asNumber(body.delay_minutes, 0),
+        special_instructions_acknowledged: !!body.special_instructions_acknowledged,
+        notes: body.notes ?? null,
+        exception_notes: body.exception_notes ?? null,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (patch.route_stop_id) {
+        const stop = await getRouteStopDefaults(supabase, patch.route_stop_id);
+        if (stop) {
+          if (!patch.route_id) patch.route_id = stop.route_id || null;
+          if (!patch.client_site_id) patch.client_site_id = stop.client_site_id || null;
+        }
+      }
+      if (!patch.route_stop_id) return Response.json({ ok:false, error:'route_stop_id is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('route_stop_executions').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('route_stop_executions').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('route_stop_executions').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'route_stop_execution_attachment') {
+      const patch = {
+        execution_id: asNullableText(body.execution_id),
+        attachment_kind: body.attachment_kind ?? 'photo',
+        storage_bucket: body.storage_bucket ?? null,
+        storage_path: body.storage_path ?? null,
+        file_name: body.file_name ?? null,
+        mime_type: body.mime_type ?? null,
+        public_url: body.public_url ?? null,
+        caption: body.caption ?? null,
+        created_by_profile_id: actorId,
+      };
+      if (!patch.execution_id) return Response.json({ ok:false, error:'execution_id is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('route_stop_execution_attachments').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('route_stop_execution_attachments').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('route_stop_execution_attachments').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'hse_packet_proof') {
+      const patch = {
+        packet_id: asNullableText(body.packet_id),
+        proof_kind: body.proof_kind ?? 'photo',
+        proof_stage: body.proof_stage ?? 'field',
+        storage_bucket: body.storage_bucket ?? null,
+        storage_path: body.storage_path ?? null,
+        file_name: body.file_name ?? null,
+        mime_type: body.mime_type ?? null,
+        public_url: body.public_url ?? null,
+        caption: body.caption ?? null,
+        proof_notes: body.proof_notes ?? null,
+        uploaded_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.packet_id) return Response.json({ ok:false, error:'packet_id is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('hse_packet_proofs').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('hse_packet_proofs').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('hse_packet_proofs').delete().eq('id', body.item_id);
         if (error) throw error;
         return Response.json({ ok:true }, { headers:corsHeaders });
       }

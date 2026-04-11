@@ -36,12 +36,14 @@
       users: [],
       sites: [],
       assignments: [],
-      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], routeStops: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [] },
+      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [] },
       salesOrders: [],
       accountingEntries: [],
       serviceAreas: [],
       routes: [],
       routeStops: [],
+      routeStopExecutions: [],
+      routeStopExecutionAttachments: [],
       clients: [],
       clientSites: [],
       unitsOfMeasure: [],
@@ -55,6 +57,7 @@
       subcontractClients: [],
       subcontractDispatches: [],
       linkedHsePackets: [],
+      hsePacketProofs: [],
       chartOfAccounts: [],
       glJournalBatches: [],
       glJournalEntries: [],
@@ -400,6 +403,8 @@
                   <option value="service_area">Service Areas</option>
                   <option value="route">Routes</option>
                   <option value="route_stop">Route Stops</option>
+                  <option value="route_stop_execution">Route Stop Executions</option>
+                  <option value="route_stop_execution_attachment">Route Stop Execution Attachments</option>
                 </optgroup>
                 <optgroup label="Operations Master Data">
                   <option value="client">Clients</option>
@@ -417,6 +422,7 @@
                   <option value="subcontract_client">Subcontract Clients</option>
                   <option value="subcontract_dispatch">Subcontract Dispatches</option>
                   <option value="linked_hse_packet">Linked HSE Packets</option>
+                  <option value="hse_packet_proof">HSE Packet Proofs</option>
                 </optgroup>
                 <optgroup label="Accounting Backbone">
                   <option value="gl_account">Chart of Accounts</option>
@@ -1188,6 +1194,8 @@
         state.serviceAreas = Array.isArray(resp?.service_areas) ? resp.service_areas : [];
         state.routes = Array.isArray(resp?.routes) ? resp.routes : [];
         state.routeStops = Array.isArray(resp?.route_stops) ? resp.route_stops : [];
+        state.routeStopExecutions = Array.isArray(resp?.route_stop_executions) ? resp.route_stop_executions : [];
+        state.routeStopExecutionAttachments = Array.isArray(resp?.route_stop_execution_attachments) ? resp.route_stop_execution_attachments : [];
         state.clients = Array.isArray(resp?.clients) ? resp.clients : [];
         state.clientSites = Array.isArray(resp?.client_sites) ? resp.client_sites : [];
         state.unitsOfMeasure = Array.isArray(resp?.units_of_measure) ? resp.units_of_measure : [];
@@ -1201,6 +1209,7 @@
         state.subcontractClients = Array.isArray(resp?.subcontract_clients) ? resp.subcontract_clients : [];
         state.subcontractDispatches = Array.isArray(resp?.subcontract_dispatches) ? resp.subcontract_dispatches : [];
         state.linkedHsePackets = Array.isArray(resp?.linked_hse_packets) ? resp.linked_hse_packets : [];
+        state.hsePacketProofs = Array.isArray(resp?.hse_packet_proofs) ? resp.hse_packet_proofs : [];
         state.chartOfAccounts = Array.isArray(resp?.chart_of_accounts) ? resp.chart_of_accounts : [];
         state.glJournalBatches = Array.isArray(resp?.gl_journal_batches) ? resp.gl_journal_batches : [];
         state.glJournalEntries = Array.isArray(resp?.gl_journal_entries) ? resp.gl_journal_entries : [];
@@ -1251,7 +1260,7 @@
       state.notifications = [];
       state.sites = [];
       state.assignments = [];
-      state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], workOrders: [], subcontractClients: [], subcontractDispatches: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], apBills: [], materialIssues: [], materialIssueLines: [] };
+      state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [] };
       state.serviceAreas = [];
       state.routes = [];
       state.clients = [];
@@ -1336,6 +1345,18 @@
         { name:'stop_order', label:'Stop Order', type:'number' }, { name:'planned_arrival_time', label:'Planned Arrival', type:'time' }, { name:'planned_duration_minutes', label:'Duration Minutes', type:'number' },
         { name:'instructions', label:'Instructions', type:'textarea' }, { name:'is_active', label:'Active', type:'checkbox' }
       ], columns:[['route_id','Route'],['stop_order','Stop'],['planned_arrival_time','Arrival'],['planned_duration_minutes','Minutes']] },
+      route_stop_execution: { label:'Route Stop Executions', rowsKey:'routeStopExecutions', valueKey:'id', labelField:'id', fields:[
+        { name:'route_stop_id', label:'Route Stop', type:'select', source:'routeStops', required:true }, { name:'route_id', label:'Route', type:'select', source:'routes' }, { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' },
+        { name:'execution_date', label:'Execution Date', type:'date', required:true }, { name:'execution_sequence', label:'Sequence', type:'number' }, { name:'execution_status', label:'Status', type:'select', options:[['planned','Planned'],['in_progress','In Progress'],['completed','Completed'],['skipped','Skipped'],['delayed','Delayed'],['cancelled','Cancelled']] },
+        { name:'started_at', label:'Started At', type:'datetime-local' }, { name:'arrived_at', label:'Arrived At', type:'datetime-local' }, { name:'completed_at', label:'Completed At', type:'datetime-local' }, { name:'completed_by_profile_id', label:'Completed By', type:'select', source:'profiles' },
+        { name:'supervisor_profile_id', label:'Supervisor', type:'select', source:'supervisorProfiles' }, { name:'delay_minutes', label:'Delay Minutes', type:'number' }, { name:'special_instructions_acknowledged', label:'Instructions Acknowledged', type:'checkbox' },
+        { name:'attachment_count', label:'Attachment Count', type:'number', readonly:true }, { name:'photo_count', label:'Photo Count', type:'number', readonly:true }, { name:'notes', label:'Notes', type:'textarea' }, { name:'exception_notes', label:'Exception Notes', type:'textarea' }
+      ], columns:[['execution_date','Date'],['execution_status','Status'],['route_stop_id','Route Stop'],['attachment_count','Files']] },
+      route_stop_execution_attachment: { label:'Route Stop Execution Attachments', rowsKey:'routeStopExecutionAttachments', valueKey:'id', labelField:'file_name', fields:[
+        { name:'execution_id', label:'Execution', type:'select', source:'routeStopExecutions', required:true }, { name:'attachment_kind', label:'Kind', type:'select', options:[['photo','Photo'],['file','File'],['signature','Signature'],['document','Document']] },
+        { name:'file_name', label:'File Name', type:'text' }, { name:'mime_type', label:'Mime Type', type:'text' }, { name:'storage_bucket', label:'Storage Bucket', type:'text' }, { name:'storage_path', label:'Storage Path', type:'text' },
+        { name:'public_url', label:'Public URL', type:'text' }, { name:'caption', label:'Caption', type:'textarea' }
+      ], columns:[['execution_id','Execution'],['attachment_kind','Kind'],['file_name','File'],['public_url','URL']] },
       client: { label:'Clients', rowsKey:'clients', valueKey:'id', labelField:'legal_name', fields:[
         { name:'client_code', label:'Client Code', type:'text' }, { name:'legal_name', label:'Legal Name', type:'text', required:true },
         { name:'display_name', label:'Display Name', type:'text' }, { name:'client_type', label:'Client Type', type:'select', options:[['customer','Customer'],['general_contractor','General Contractor'],['municipal','Municipal'],['subcontract_partner','Subcontract Partner']] },
@@ -1409,14 +1430,32 @@
         { name:'packet_status', label:'Packet Status', type:'select', options:[['draft','Draft'],['issued','Issued'],['in_progress','In Progress'],['ready_for_closeout','Ready for Closeout'],['closed','Closed']] },
         { name:'work_order_id', label:'Work Order', type:'select', source:'workOrders' }, { name:'dispatch_id', label:'Dispatch', type:'select', source:'subcontractDispatches' },
         { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' }, { name:'route_id', label:'Route', type:'select', source:'routes' }, { name:'supervisor_profile_id', label:'Supervisor', type:'select', source:'supervisorProfiles' },
-        { name:'completion_percent', label:'Completion %', type:'number', readonly:true }, { name:'briefing_required', label:'Briefing Required', type:'checkbox' }, { name:'briefing_completed', label:'Briefing Completed', type:'checkbox' }, { name:'inspection_required', label:'Inspection Required', type:'checkbox' },
-        { name:'inspection_completed', label:'Inspection Completed', type:'checkbox' }, { name:'emergency_review_required', label:'Emergency Review Required', type:'checkbox' }, { name:'emergency_review_completed', label:'Emergency Review Completed', type:'checkbox' },
+        { name:'completion_percent', label:'Completion %', type:'number', readonly:true }, { name:'proof_count', label:'Proof Count', type:'number', readonly:true }, { name:'photo_count', label:'Photo Count', type:'number', readonly:true }, { name:'signature_count', label:'Signature Count', type:'number', readonly:true },
+        { name:'document_count', label:'Document Count', type:'number', readonly:true }, { name:'briefing_required', label:'Briefing Required', type:'checkbox' }, { name:'briefing_completed', label:'Briefing Completed', type:'checkbox' }, { name:'inspection_required', label:'Inspection Required', type:'checkbox' },
+        { name:'inspection_completed', label:'Inspection Completed', type:'checkbox' }, { name:'emergency_review_required', label:'Emergency Review Required', type:'checkbox' }, { name:'emergency_review_completed', label:'Emergency Review Completed', type:'checkbox' }, { name:'reopen_in_progress', label:'Reopen In Progress', type:'checkbox' },
+        { name:'reopen_count', label:'Reopen Count', type:'number', readonly:true }, { name:'last_reopened_at', label:'Last Reopened At', type:'datetime-local', readonly:true }, { name:'last_reopened_by_profile_id', label:'Last Reopened By', type:'select', source:'profiles', readonly:true }, { name:'reopen_reason', label:'Reopen Reason', type:'textarea' },
         { name:'ready_for_closeout_at', label:'Ready for Closeout At', type:'datetime-local', readonly:true }, { name:'closed_at', label:'Closed At', type:'datetime-local', readonly:true }, { name:'closed_by_profile_id', label:'Closed By', type:'select', source:'profiles' }, { name:'packet_notes', label:'Packet Notes', type:'textarea' }, { name:'closeout_notes', label:'Closeout Notes', type:'textarea' }
-      ], columns:[['packet_number','Packet'],['packet_type','Type'],['packet_status','Status'],['completion_percent','Complete %']] },
+      ], columns:[['packet_number','Packet'],['packet_type','Type'],['packet_status','Status'],['proof_count','Proofs']] },
+      hse_packet_proof: { label:'HSE Packet Proofs', rowsKey:'hsePacketProofs', valueKey:'id', labelField:'file_name', fields:[
+        { name:'packet_id', label:'HSE Packet', type:'select', source:'linkedHsePackets', required:true }, { name:'proof_kind', label:'Proof Kind', type:'select', options:[['photo','Photo'],['file','File'],['signature','Signature'],['document','Document']] },
+        { name:'proof_stage', label:'Proof Stage', type:'select', options:[['field','Field'],['closeout','Closeout'],['reopen','Reopen'],['exception','Exception']] }, { name:'file_name', label:'File Name', type:'text' }, { name:'mime_type', label:'Mime Type', type:'text' },
+        { name:'storage_bucket', label:'Storage Bucket', type:'text' }, { name:'storage_path', label:'Storage Path', type:'text' }, { name:'public_url', label:'Public URL', type:'text' }, { name:'caption', label:'Caption', type:'text' }, { name:'proof_notes', label:'Proof Notes', type:'textarea' }
+      ], columns:[['packet_id','Packet'],['proof_kind','Kind'],['proof_stage','Stage'],['file_name','File']] },
       gl_account: { label:'Chart of Accounts', rowsKey:'chartOfAccounts', valueKey:'id', labelField:'account_name', fields:[
         { name:'account_number', label:'Account Number', type:'text', required:true }, { name:'account_name', label:'Account Name', type:'text', required:true }, { name:'account_type', label:'Account Type', type:'select', options:[['asset','Asset'],['liability','Liability'],['equity','Equity'],['revenue','Revenue'],['expense','Expense']] },
         { name:'parent_account_id', label:'Parent Account', type:'select', source:'glAccounts' }, { name:'system_code', label:'System Code', type:'text' }, { name:'is_active', label:'Active', type:'checkbox' }
       ], columns:[['account_number','No.'],['account_name','Account'],['account_type','Type'],['system_code','Code']] },
+      gl_journal_batch: { label:'Journal Batches', rowsKey:'glJournalBatches', valueKey:'id', labelField:'batch_number', fields:[
+        { name:'batch_number', label:'Batch Number', type:'text', required:true }, { name:'source_module', label:'Source Module', type:'text' }, { name:'batch_status', label:'Batch Status', type:'select', options:[['draft','Draft'],['review','Review'],['posted','Posted'],['void','Void']] },
+        { name:'batch_date', label:'Batch Date', type:'date' }, { name:'memo', label:'Memo', type:'textarea' }, { name:'source_record_type', label:'Source Record Type', type:'text' }, { name:'source_record_id', label:'Source Record ID', type:'text' },
+        { name:'line_count', label:'Line Count', type:'number', readonly:true }, { name:'debit_total', label:'Debit Total', type:'number', readonly:true }, { name:'credit_total', label:'Credit Total', type:'number', readonly:true }, { name:'is_balanced', label:'Balanced', type:'checkbox', readonly:true },
+        { name:'source_generated', label:'Source Generated', type:'checkbox', readonly:true }, { name:'source_sync_state', label:'Source Sync State', type:'text', readonly:true }, { name:'source_synced_at', label:'Source Synced At', type:'datetime-local', readonly:true }, { name:'posting_notes', label:'Posting Notes', type:'textarea' }
+      ], columns:[['batch_number','Batch'],['batch_status','Status'],['source_sync_state','Sync'],['debit_total','Debit']] },
+      gl_journal_entry: { label:'Journal Entries', rowsKey:'glJournalEntries', valueKey:'id', labelField:'memo', fields:[
+        { name:'batch_id', label:'Batch', type:'select', source:'glJournalBatches', required:true }, { name:'line_number', label:'Line Number', type:'number' }, { name:'entry_date', label:'Entry Date', type:'date' },
+        { name:'account_id', label:'Account', type:'select', source:'glAccounts', required:true }, { name:'debit_amount', label:'Debit Amount', type:'number' }, { name:'credit_amount', label:'Credit Amount', type:'number' },
+        { name:'client_id', label:'Client', type:'select', source:'clients' }, { name:'work_order_id', label:'Work Order', type:'select', source:'workOrders' }, { name:'dispatch_id', label:'Dispatch', type:'select', source:'subcontractDispatches' }, { name:'memo', label:'Memo', type:'textarea' }
+      ], columns:[['batch_id','Batch'],['line_number','Line'],['account_id','Account'],['debit_amount','Debit']] },
       ap_vendor: { label:'Vendors', rowsKey:'apVendors', valueKey:'id', labelField:'legal_name', fields:[
         { name:'vendor_code', label:'Vendor Code', type:'text' }, { name:'legal_name', label:'Legal Name', type:'text', required:true }, { name:'display_name', label:'Display Name', type:'text' },
         { name:'contact_name', label:'Contact Name', type:'text' }, { name:'contact_email', label:'Contact Email', type:'email' }, { name:'contact_phone', label:'Contact Phone', type:'text' }, { name:'payment_terms_days', label:'Terms (days)', type:'number' },
@@ -1465,7 +1504,7 @@
     };
 
     function getBackboneRows(entity) {
-      const map = { unit_of_measure: state.unitsOfMeasure || [], cost_code: state.costCodes || [], service_area: state.serviceAreas || [], route: state.routes || [], route_stop: state.routeStops || [], client: state.clients || [], client_site: state.clientSites || [], material: state.materialsCatalog || [], equipment_master: state.equipmentMaster || [], estimate: state.estimates || [], estimate_line: state.estimateLines || [], work_order: state.workOrders || [], work_order_line: state.workOrderLines || [], subcontract_client: state.subcontractClients || [], subcontract_dispatch: state.subcontractDispatches || [], linked_hse_packet: state.linkedHsePackets || [], gl_account: state.chartOfAccounts || [], gl_journal_batch: state.glJournalBatches || [], gl_journal_entry: state.glJournalEntries || [], ap_vendor: state.apVendors || [], ar_invoice: state.arInvoices || [], ar_payment: state.arPayments || [], ap_bill: state.apBills || [], ap_payment: state.apPayments || [], material_receipt: state.materialReceipts || [], material_receipt_line: state.materialReceiptLines || [], material_issue: state.materialIssues || [], material_issue_line: state.materialIssueLines || [] };
+      const map = { unit_of_measure: state.unitsOfMeasure || [], cost_code: state.costCodes || [], service_area: state.serviceAreas || [], route: state.routes || [], route_stop: state.routeStops || [], route_stop_execution: state.routeStopExecutions || [], route_stop_execution_attachment: state.routeStopExecutionAttachments || [], client: state.clients || [], client_site: state.clientSites || [], material: state.materialsCatalog || [], equipment_master: state.equipmentMaster || [], estimate: state.estimates || [], estimate_line: state.estimateLines || [], work_order: state.workOrders || [], work_order_line: state.workOrderLines || [], subcontract_client: state.subcontractClients || [], subcontract_dispatch: state.subcontractDispatches || [], linked_hse_packet: state.linkedHsePackets || [], hse_packet_proof: state.hsePacketProofs || [], gl_account: state.chartOfAccounts || [], gl_journal_batch: state.glJournalBatches || [], gl_journal_entry: state.glJournalEntries || [], ap_vendor: state.apVendors || [], ar_invoice: state.arInvoices || [], ar_payment: state.arPayments || [], ap_bill: state.apBills || [], ap_payment: state.apPayments || [], material_receipt: state.materialReceipts || [], material_receipt_line: state.materialReceiptLines || [], material_issue: state.materialIssues || [], material_issue_line: state.materialIssueLines || [] };
       return Array.isArray(map[entity]) ? map[entity] : [];
     }
 
@@ -1479,6 +1518,8 @@
         serviceAreas: state.selectors.serviceAreas || state.serviceAreas || [],
         routes: state.selectors.routes || state.routes || [],
         routeStops: state.selectors.routeStops || state.routeStops || [],
+        routeStopExecutions: state.selectors.routeStopExecutions || state.routeStopExecutions || [],
+        routeStopExecutionAttachments: state.selectors.routeStopExecutionAttachments || state.routeStopExecutionAttachments || [],
         clients: state.selectors.clients || state.clients || [],
         clientSites: state.selectors.clientSites || state.clientSites || [],
         materials: state.selectors.materials || state.materialsCatalog || [],
@@ -1490,6 +1531,7 @@
         subcontractClients: state.selectors.subcontractClients || state.subcontractClients || [],
         subcontractDispatches: state.selectors.subcontractDispatches || state.subcontractDispatches || [],
         linkedHsePackets: state.selectors.linkedHsePackets || state.linkedHsePackets || [],
+        hsePacketProofs: state.selectors.hsePacketProofs || state.hsePacketProofs || [],
         glAccounts: state.selectors.glAccounts || state.chartOfAccounts || [],
         glJournalBatches: state.selectors.glJournalBatches || state.glJournalBatches || [],
         glJournalEntries: state.selectors.glJournalEntries || state.glJournalEntries || [],
@@ -1516,6 +1558,8 @@
       if (source === 'serviceAreas') return `${row.area_code || ''}${row.name ? ` - ${row.name}` : ''}`;
       if (source === 'routes') return `${row.route_code || ''}${row.name ? ` - ${row.name}` : ''}`;
       if (source === 'routeStops') return `${row.stop_order ?? ''}${row.instructions ? ` - ${row.instructions}` : ''}`;
+      if (source === 'routeStopExecutions') return `${row.execution_date || ''}${row.execution_status ? ` - ${row.execution_status}` : ''}`;
+      if (source === 'routeStopExecutionAttachments') return row.file_name || row.caption || row.id;
       if (source === 'clients') return row.display_name || row.legal_name || row.client_code || row.id;
       if (source === 'clientSites') return row.site_name || row.site_code || row.id;
       if (source === 'materials') return row.item_name || row.sku || row.id;
@@ -1527,6 +1571,7 @@
       if (source === 'subcontractClients') return row.company_name || row.subcontract_code || row.id;
       if (source === 'subcontractDispatches') return row.dispatch_number || row.id;
       if (source === 'linkedHsePackets') return row.packet_number || row.id;
+      if (source === 'hsePacketProofs') return row.file_name || row.caption || row.id;
       if (source === 'glAccounts') return `${row.account_number || ''} - ${row.account_name || row.id}`;
       if (source === 'glJournalBatches') return row.batch_number || row.id;
       if (source === 'glJournalEntries') return `${row.line_number ?? ''}${row.memo ? ` - ${row.memo}` : ''}`;
@@ -1604,8 +1649,11 @@
       const requiredCount = required.filter(Boolean).length;
       const completedCount = completed.filter(Boolean).length;
       const percent = requiredCount ? Math.round((completedCount / requiredCount) * 10000) / 100 : 100;
+      const reopenInProgress = !!document.getElementById('ad_bb_reopen_in_progress')?.checked;
       let status = String(document.getElementById('ad_bb_packet_status')?.value || 'draft');
-      if (status !== 'closed') {
+      if (reopenInProgress) {
+        status = 'in_progress';
+      } else if (status !== 'closed') {
         status = percent >= 100 ? 'ready_for_closeout' : completedCount > 0 ? 'in_progress' : 'draft';
       }
       return { requiredCount, completedCount, percent, status };
@@ -1627,6 +1675,15 @@
         cards.push({ title: 'Route Stops', value: String(stops.length), help: 'Loaded stops for the selected route.' });
         cards.push({ title: 'Planned Minutes', value: String(plannedMinutes), help: 'Sum of planned duration across loaded stops.' });
         cards.push({ title: 'Next Stop Order', value: String(stops.reduce((max, item) => Math.max(max, Number(item.stop_order || 0)), 0) + 10), help: 'Suggested next stop order for a new stop.' });
+      }
+
+      if (entity === 'route_stop_execution' || entity === 'route_stop_execution_attachment') {
+        const executionId = entity === 'route_stop_execution' ? (selected?.id || e.backboneItemId?.value || '') : (val('execution_id') || selected?.execution_id || '');
+        const execution = (state.routeStopExecutions || []).find((item) => String(item.id) === String(executionId)) || null;
+        const attachments = (state.routeStopExecutionAttachments || []).filter((item) => String(item.execution_id || '') === String(executionId));
+        cards.push({ title: 'Execution Status', value: String(execution?.execution_status || val('execution_status') || 'planned').replaceAll('_', ' '), help: 'Current lifecycle state for the selected route stop visit.' });
+        cards.push({ title: 'Attachments', value: String(execution?.attachment_count || attachments.length), help: 'Notes, photos, signatures, and other attachments linked to this execution.' });
+        cards.push({ title: 'Delay Minutes', value: String(execution?.delay_minutes || val('delay_minutes') || 0), help: 'Use delayed for late arrivals and exceptions.' });
       }
 
       if (entity === 'estimate' || entity === 'estimate_line') {
@@ -1673,6 +1730,16 @@
         cards.push({ title: 'Posted %', value: `${formatMoney(Number(selected?.posted_percent || 0))}%`, help: 'Percent of the invoice total already posted.' });
       }
 
+      if (entity === 'route_stop_execution') {
+        bind('route_stop_id', () => {
+          const stop = (state.routeStops || []).find((item) => String(item.id) === String(document.getElementById('ad_bb_route_stop_id')?.value || ''));
+          if (stop) {
+            if (!document.getElementById('ad_bb_route_id')?.value && stop.route_id) setBackboneInputValue('route_id', stop.route_id);
+            if (!document.getElementById('ad_bb_client_site_id')?.value && stop.client_site_id) setBackboneInputValue('client_site_id', stop.client_site_id);
+          }
+          renderBackboneInsights();
+        }, 'change');
+      }
       if (entity === 'ar_payment') {
         const invoice = (state.arInvoices || []).find((item) => String(item.id) === String(val('invoice_id') || selected?.invoice_id || '')) || null;
         cards.push({ title: 'Suggested Post', value: `$${formatMoney(invoice?.balance_due || 0)}`, help: 'Defaults to the loaded invoice balance when amount is blank.' });
@@ -1704,6 +1771,7 @@
         cards.push({ title: 'Debit Total', value: formatMoney(selected?.debit_total ?? debit), help: 'Summed debit amount for the batch.' });
         cards.push({ title: 'Credit Total', value: formatMoney(selected?.credit_total ?? credit), help: 'Summed credit amount for the batch.' });
         cards.push({ title: 'Balanced', value: selected?.is_balanced ? 'Yes' : (balanced ? 'Yes' : 'No'), help: 'Posting is blocked until debit and credit totals match.' });
+        cards.push({ title: 'Source Sync', value: String(selected?.source_sync_state || 'manual').replaceAll('_', ' '), help: 'Source-generated batches become stale if the source record changes after posting.' });
       }
       if (entity === 'material_receipt' || entity === 'material_receipt_line') {
         const receiptId = entity === 'material_receipt' ? (selected?.id || e.backboneItemId?.value || '') : (val('receipt_id') || selected?.receipt_id || '');
@@ -1732,11 +1800,16 @@
         cards.push({ title: 'Estimated Cost', value: formatMoney(selected?.estimated_material_total), help: 'Estimated material cost from linked work-order lines.' });
         cards.push({ title: 'Variance', value: formatMoney(selected?.variance_amount), help: 'Actual issued cost minus estimated material cost.' });
       }
-      if (entity === 'linked_hse_packet') {
+      if (entity === 'linked_hse_packet' || entity === 'hse_packet_proof') {
+        const packetId = entity === 'linked_hse_packet' ? (selected?.id || e.backboneItemId?.value || '') : (val('packet_id') || selected?.packet_id || '');
+        const packet = (state.linkedHsePackets || []).find((item) => String(item.id) === String(packetId)) || null;
         const preview = getHsePreviewFromInputs();
+        const proofs = (state.hsePacketProofs || []).filter((item) => String(item.packet_id || '') === String(packetId));
         cards.push({ title: 'Required Steps', value: String(preview.requiredCount), help: 'Briefing, inspection, and emergency review steps marked as required.' });
         cards.push({ title: 'Completed Steps', value: String(preview.completedCount), help: 'Required steps completed so far.' });
         cards.push({ title: 'Completion', value: `${formatMoney(preview.percent)}%`, help: 'Auto-derived progress for closeout readiness.' });
+        cards.push({ title: 'Proof Items', value: String(packet?.proof_count || proofs.length), help: 'Photo, file, and signature evidence linked to this packet.' });
+        cards.push({ title: 'Reopens', value: String(packet?.reopen_count || 0), help: 'How many times this packet has been reopened after closeout review.' });
         cards.push({ title: 'Suggested Status', value: preview.status.replaceAll('_', ' '), help: 'Draft, in progress, or ready for closeout based on completion.' });
       }
 
@@ -1832,6 +1905,16 @@
           renderBackboneInsights();
         }, 'change');
       }
+      if (entity === 'route_stop_execution') {
+        bind('route_stop_id', () => {
+          const stop = (state.routeStops || []).find((item) => String(item.id) === String(document.getElementById('ad_bb_route_stop_id')?.value || ''));
+          if (stop) {
+            if (!document.getElementById('ad_bb_route_id')?.value && stop.route_id) setBackboneInputValue('route_id', stop.route_id);
+            if (!document.getElementById('ad_bb_client_site_id')?.value && stop.client_site_id) setBackboneInputValue('client_site_id', stop.client_site_id);
+          }
+          renderBackboneInsights();
+        }, 'change');
+      }
       if (entity === 'ar_payment') {
         bind('invoice_id', () => {
           const invoice = (state.arInvoices || []).find((item) => String(item.id) === String(document.getElementById('ad_bb_invoice_id')?.value || ''));
@@ -1862,9 +1945,10 @@
         cards.push({ title: 'Variance', value: formatMoney(selected?.variance_amount), help: 'Actual issued cost minus estimated material cost.' });
       }
       if (entity === 'linked_hse_packet') {
-        ['briefing_required', 'briefing_completed', 'inspection_required', 'inspection_completed', 'emergency_review_required', 'emergency_review_completed', 'packet_status'].forEach((name) => bind(name, () => {
+        ['briefing_required', 'briefing_completed', 'inspection_required', 'inspection_completed', 'emergency_review_required', 'emergency_review_completed', 'packet_status', 'reopen_in_progress'].forEach((name) => bind(name, () => {
           const preview = getHsePreviewFromInputs();
-          if (document.getElementById('ad_bb_packet_status')?.value !== 'closed') setBackboneInputValue('packet_status', preview.status);
+          if (!document.getElementById('ad_bb_reopen_in_progress')?.checked && document.getElementById('ad_bb_packet_status')?.value !== 'closed') setBackboneInputValue('packet_status', preview.status);
+          if (document.getElementById('ad_bb_reopen_in_progress')?.checked && !document.getElementById('ad_bb_reopen_reason')?.value) setBackboneInputValue('reopen_reason', 'Evidence or exception follow-up required');
           setBackboneInputValue('completion_percent', preview.percent.toFixed(2));
           if (preview.status === 'ready_for_closeout' && !document.getElementById('ad_bb_ready_for_closeout_at')?.value) {
             setBackboneInputValue('ready_for_closeout_at', new Date().toISOString().slice(0, 16));
@@ -2154,6 +2238,8 @@
           serviceAreas: Array.isArray(payload?.service_areas) ? payload.service_areas : state.serviceAreas,
           routes: Array.isArray(payload?.routes) ? payload.routes : state.routes,
           routeStops: Array.isArray(payload?.route_stops) ? payload.route_stops : state.routeStops,
+          routeStopExecutions: Array.isArray(payload?.route_stop_executions) ? payload.route_stop_executions : state.routeStopExecutions,
+          routeStopExecutionAttachments: Array.isArray(payload?.route_stop_execution_attachments) ? payload.route_stop_execution_attachments : state.routeStopExecutionAttachments,
           clients: Array.isArray(payload?.clients) ? payload.clients : state.clients,
           clientSites: Array.isArray(payload?.client_sites) ? payload.client_sites : state.clientSites,
           materials: Array.isArray(payload?.materials_catalog) ? payload.materials_catalog : state.materialsCatalog,
@@ -2165,6 +2251,7 @@
           subcontractClients: Array.isArray(payload?.subcontract_clients) ? payload.subcontract_clients : state.subcontractClients,
           subcontractDispatches: Array.isArray(payload?.subcontract_dispatches) ? payload.subcontract_dispatches : state.subcontractDispatches,
           linkedHsePackets: Array.isArray(payload?.linked_hse_packets) ? payload.linked_hse_packets : state.linkedHsePackets,
+          hsePacketProofs: Array.isArray(payload?.hse_packet_proofs) ? payload.hse_packet_proofs : state.hsePacketProofs,
           glAccounts: Array.isArray(payload?.chart_of_accounts) ? payload.chart_of_accounts : state.chartOfAccounts,
           glJournalBatches: Array.isArray(payload?.gl_journal_batches) ? payload.gl_journal_batches : state.glJournalBatches,
           glJournalEntries: Array.isArray(payload?.gl_journal_entries) ? payload.gl_journal_entries : state.glJournalEntries,

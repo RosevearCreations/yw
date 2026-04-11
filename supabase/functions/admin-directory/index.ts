@@ -44,6 +44,20 @@ async function safeList(supabase: any, table: string, columns = '*', orderColumn
   }
 }
 
+function mergeRowsById(baseRows: any[], extraRows: any[]) {
+  const map = new Map<string, any>();
+  for (const row of Array.isArray(baseRows) ? baseRows : []) {
+    if (!row?.id) continue;
+    map.set(String(row.id), { ...row });
+  }
+  for (const row of Array.isArray(extraRows) ? extraRows : []) {
+    if (!row?.id) continue;
+    const key = String(row.id);
+    map.set(key, { ...(map.get(key) || {}), ...row });
+  }
+  return Array.from(map.values());
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -129,23 +143,44 @@ serve(async (req) => {
     response.equipment_master = await safeList(supabase, 'equipment_master', '*', 'item_name', limit);
     response.estimates = await safeList(supabase, 'estimates', '*', 'estimate_number', limit);
     response.estimate_lines = await safeList(supabase, 'estimate_lines', '*', 'line_order', limit);
-    response.work_orders = await safeList(supabase, 'work_orders', '*', 'work_order_number', limit);
+    response.work_orders = mergeRowsById(
+      await safeList(supabase, 'work_orders', '*', 'work_order_number', limit),
+      await safeList(supabase, 'v_work_order_rollups', '*', 'work_order_number', limit)
+    );
     response.work_order_lines = await safeList(supabase, 'work_order_lines', '*', 'line_order', limit);
     response.route_stops = await safeList(supabase, 'route_stops', '*', 'stop_order', limit);
+    response.route_stop_executions = await safeList(supabase, 'v_route_stop_execution_rollups', '*', 'execution_date', limit);
+    response.route_stop_execution_attachments = await safeList(supabase, 'route_stop_execution_attachments', '*', 'created_at', limit);
     response.gl_journal_batches = await safeList(supabase, 'v_gl_journal_batch_rollups', '*', 'batch_number', limit);
     response.gl_journal_entries = await safeList(supabase, 'gl_journal_entries', '*', 'line_number', limit);
     response.subcontract_clients = await safeList(supabase, 'subcontract_clients', '*', 'company_name', limit);
     response.subcontract_dispatches = await safeList(supabase, 'subcontract_dispatches', '*', 'dispatch_number', limit);
-    response.linked_hse_packets = await safeList(supabase, 'linked_hse_packets', '*', 'packet_number', limit);
+    response.linked_hse_packets = mergeRowsById(
+      await safeList(supabase, 'linked_hse_packets', '*', 'packet_number', limit),
+      await safeList(supabase, 'v_hse_packet_progress', '*', 'packet_number', limit)
+    );
+    response.hse_packet_proofs = await safeList(supabase, 'hse_packet_proofs', '*', 'created_at', limit);
     response.chart_of_accounts = await safeList(supabase, 'chart_of_accounts', '*', 'account_number', limit);
     response.ap_vendors = await safeList(supabase, 'ap_vendors', '*', 'legal_name', limit);
-    response.ar_invoices = await safeList(supabase, 'ar_invoices', '*', 'invoice_number', limit);
+    response.ar_invoices = mergeRowsById(
+      await safeList(supabase, 'ar_invoices', '*', 'invoice_number', limit),
+      (await safeList(supabase, 'v_account_balance_rollups', '*', 'record_number', limit)).filter((row: any) => row?.record_type === 'ar_invoice')
+    );
     response.ar_payments = await safeList(supabase, 'ar_payments', '*', 'payment_number', limit);
-    response.ap_bills = await safeList(supabase, 'ap_bills', '*', 'bill_number', limit);
+    response.ap_bills = mergeRowsById(
+      await safeList(supabase, 'ap_bills', '*', 'bill_number', limit),
+      (await safeList(supabase, 'v_account_balance_rollups', '*', 'record_number', limit)).filter((row: any) => row?.record_type === 'ap_bill')
+    );
     response.ap_payments = await safeList(supabase, 'ap_payments', '*', 'payment_number', limit);
-    response.material_receipts = await safeList(supabase, 'material_receipts', '*', 'receipt_number', limit);
+    response.material_receipts = mergeRowsById(
+      await safeList(supabase, 'material_receipts', '*', 'receipt_number', limit),
+      await safeList(supabase, 'v_material_receipt_rollups', '*', 'receipt_number', limit)
+    );
     response.material_receipt_lines = await safeList(supabase, 'material_receipt_lines', '*', 'line_order', limit);
-    response.material_issues = await safeList(supabase, 'v_material_issue_rollups', '*', 'issue_number', limit);
+    response.material_issues = mergeRowsById(
+      await safeList(supabase, 'material_issues', '*', 'issue_number', limit),
+      await safeList(supabase, 'v_material_issue_rollups', '*', 'issue_number', limit)
+    );
     response.material_issue_lines = await safeList(supabase, 'material_issue_lines', '*', 'line_order', limit);
   }
   if (scope === 'self') response.profile = filteredPeople[0] || null;
