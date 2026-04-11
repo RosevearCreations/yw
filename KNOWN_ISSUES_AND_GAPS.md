@@ -1,4 +1,4 @@
-> Last synchronized: April 10, 2026. Reviewed during the journal posting controls, material issue / usage, Admin backbone, and schema synchronization pass.
+> Last synchronized: April 10, 2026 (source journal / route execution / HSE proof pass)
 
 ## 2026-04-10 journal posting controls and material issue / usage pass
 - Added migration `sql/066_journal_posting_controls_and_material_issue_usage.sql`.
@@ -50,7 +50,7 @@
 - Continue reducing duplicate JSON/shared-reference sources wherever DB-first selectors already exist.
 
 
-Last synchronized: April 10, 2026
+Last synchronized: April 10, 2026 (source journal / route execution / HSE proof pass)
 
 ## 1) Admin backbone incompletion
 ### Risk
@@ -198,3 +198,16 @@ Reference links:
 - The repo now has explicit journal-batch controls and material issue / usage records, so the next operational blind spots are route-stop execution, HSE proof/reopen, and automatic source-to-journal drafting.
 - Validation risk remains important because posting should be blocked on imbalance and issue/usage flows still need live field testing with real work-order data.
 - CSS/mobile drift remains active because the Admin backbone is carrying more dense controls in a single screen.
+
+## 2026-04-10 source-generated journals, route execution, and HSE proof pass
+- Added migration `sql/067_source_journal_route_execution_and_hse_proof.sql`.
+- Added source-generated draft journal batches for AR invoices, AP bills, material receipts, and material issues so review/posting can start from the originating record instead of manual batch creation.
+- Added route-stop execution lifecycle records plus attachment rows so daily field work can track completed, skipped, delayed, and exception states with note/photo support.
+- Added HSE proof rows plus reopen-aware linked packet fields so closeout evidence, reopen counts, and follow-up exceptions are visible in the Admin backbone.
+- Continued the DB-first move for shared operational/accounting data and refreshed the docs so roadmap, risks, testing, and deployment all point to the same next state.
+
+
+## April 10, 2026 update after 067
+- Source-generated journal drafting now exists, so the next accounting risk shifts from batch creation into audit visibility when posted batches later diverge from changed source records.
+- Route-stop execution and HSE proof records now exist in the DB/admin layer, so the next risk is mobile capture polish and live storage/upload testing rather than missing structures.
+- CSS/mobile drift remains active because the Admin backbone now carries denser execution/proof/accounting controls in one shell.

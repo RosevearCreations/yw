@@ -1,4 +1,4 @@
-> Last synchronized: April 10, 2026. Reviewed during the journal posting controls, material issue / usage, Admin backbone, and schema synchronization pass.
+> Last synchronized: April 10, 2026 (source journal / route execution / HSE proof pass)
 
 ## 2026-04-10 journal posting controls and material issue / usage pass
 - Added migration `sql/066_journal_posting_controls_and_material_issue_usage.sql`.
@@ -35,10 +35,10 @@ The main risk is no longer just whether Admin can see the new records. The risk 
 
 # Known Gaps and Risks
 
-## April 10, 2026 risk update
-- The biggest risk is no longer missing tables; it is incomplete end-to-end movement from receive -> allocate -> issue/use -> close/bill/post.
-- Posted/open amount visibility reduces manual accounting mistakes, but journal controls and stronger audit history are still needed.
-- Receipt allocation still needs discipline because unallocated cost can now be seen more easily but not yet automatically resolved.
+## April 10, 2026 risk update after 067
+- The biggest risk is now mobile/live execution quality rather than missing structures: route-stop execution, HSE proof, and source-generated journals are in the schema/admin layer, but they still need real-device validation and clearer upload/error fallback.
+- Source-generated batches reduce manual accounting setup, but posted-source drift now becomes the next audit visibility risk.
+- Receiving -> clearing -> AP and issue/use -> expense flows are more complete, but reconciliation and review UX still need tightening.
 
 ## April 9, 2026 risk update
 - The main gap is no longer the existence of operations/accounting tables; it is getting the Admin UI to use them deeply and consistently.
@@ -51,7 +51,7 @@ The main risk is no longer just whether Admin can see the new records. The risk 
 - IRS recordkeeping and depreciation requirements support digital, structured materials/equipment/accounting records.
 
 
-Last synchronized: April 10, 2026
+Last synchronized: April 10, 2026 (source journal / route execution / HSE proof pass)
 
 ## 1) Admin backbone incompletion
 ### Risk
@@ -197,3 +197,10 @@ Reference links:
 - The repo now has explicit journal-batch controls and material issue / usage records, so the next operational blind spots are route-stop execution, HSE proof/reopen, and automatic source-to-journal drafting.
 - Validation risk remains important because posting should be blocked on imbalance and issue/usage flows still need live field testing with real work-order data.
 - CSS/mobile drift remains active because the Admin backbone is carrying more dense controls in a single screen.
+
+## 2026-04-10 source-generated journals, route execution, and HSE proof pass
+- Added migration `sql/067_source_journal_route_execution_and_hse_proof.sql`.
+- Added source-generated draft journal batches for AR invoices, AP bills, material receipts, and material issues so review/posting can start from the originating record instead of manual batch creation.
+- Added route-stop execution lifecycle records plus attachment rows so daily field work can track completed, skipped, delayed, and exception states with note/photo support.
+- Added HSE proof rows plus reopen-aware linked packet fields so closeout evidence, reopen counts, and follow-up exceptions are visible in the Admin backbone.
+- Continued the DB-first move for shared operational/accounting data and refreshed the docs so roadmap, risks, testing, and deployment all point to the same next state.

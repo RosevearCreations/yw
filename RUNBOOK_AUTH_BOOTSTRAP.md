@@ -3,7 +3,7 @@
 ## April 10, 2026 note
 - No auth bootstrap flow change in this pass. The relevant deployment dependency is that admin selectors/manage and schema migration 064 must stay in sync.
 
-> Last synchronized: April 10, 2026. Reviewed during the journal posting controls, material issue / usage, Admin backbone, and schema synchronization pass.
+> Last synchronized: April 10, 2026 (source journal / route execution / HSE proof pass)
 
 ## 2026-04-10 journal posting controls and material issue / usage pass
 - Added migration `sql/066_journal_posting_controls_and_material_issue_usage.sql`.
@@ -28,7 +28,7 @@
 
 # Auth Bootstrap Runbook
 
-Last synchronized: April 10, 2026
+Last synchronized: April 10, 2026 (source journal / route execution / HSE proof pass)
 
 ## Purpose
 Use this runbook when a fresh Admin account or role reset is needed.
@@ -54,3 +54,10 @@ Auth stabilization remains important, but the next product-facing admin work is 
 - Job comments now have a DB-backed activity trail with optional photo attachments and special-instruction flags so crews and supervisors can review site notes, uploaded images, and field changes in one place.
 - This pass continues the DB-first direction for shared operational data and reduces duplication risk compared with keeping crew/job packet details only in local JSON or loosely coupled browser state.
 - Post-login runbook now also needs a quick jobs check: create/load a job, confirm crew/supervisor fields populate, and ensure job activity items render.
+
+## 2026-04-10 source-generated journals, route execution, and HSE proof pass
+- Added migration `sql/067_source_journal_route_execution_and_hse_proof.sql`.
+- Added source-generated draft journal batches for AR invoices, AP bills, material receipts, and material issues so review/posting can start from the originating record instead of manual batch creation.
+- Added route-stop execution lifecycle records plus attachment rows so daily field work can track completed, skipped, delayed, and exception states with note/photo support.
+- Added HSE proof rows plus reopen-aware linked packet fields so closeout evidence, reopen counts, and follow-up exceptions are visible in the Admin backbone.
+- Continued the DB-first move for shared operational/accounting data and refreshed the docs so roadmap, risks, testing, and deployment all point to the same next state.

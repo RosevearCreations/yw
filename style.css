@@ -1008,3 +1008,8 @@ body[data-user-role="admin"] #admin[data-admin-locked="false"] {
     grid-template-columns: 1fr;
   }
 }
+
+
+.admin-backbone-footer { flex-wrap: wrap; }
+#ad_backbone_table td { word-break: break-word; }
+#ad_backbone_fields textarea { min-height: 88px; }

@@ -5,7 +5,7 @@
 
 ## Continue from here
 
-> Last synchronized: April 10, 2026. Reviewed during the journal posting controls, material issue / usage, Admin backbone, and schema synchronization pass.
+> Last synchronized: April 10, 2026 (source journal / route execution / HSE proof pass)
 
 ## 2026-04-10 journal posting controls and material issue / usage pass
 - Added migration `sql/066_journal_posting_controls_and_material_issue_usage.sql`.
@@ -299,3 +299,10 @@ Current state after this pass:
 - Job comments now have a DB-backed activity trail with optional photo attachments and special-instruction flags so crews and supervisors can review site notes, uploaded images, and field changes in one place.
 - This pass continues the DB-first direction for shared operational data and reduces duplication risk compared with keeping crew/job packet details only in local JSON or loosely coupled browser state.
 - Start the next build by verifying migration 065, jobs-directory payloads, and live comment/photo upload behavior before moving further into dispatch/calendar tooling.
+
+## 2026-04-10 source-generated journals, route execution, and HSE proof pass
+- Added migration `sql/067_source_journal_route_execution_and_hse_proof.sql`.
+- Added source-generated draft journal batches for AR invoices, AP bills, material receipts, and material issues so review/posting can start from the originating record instead of manual batch creation.
+- Added route-stop execution lifecycle records plus attachment rows so daily field work can track completed, skipped, delayed, and exception states with note/photo support.
+- Added HSE proof rows plus reopen-aware linked packet fields so closeout evidence, reopen counts, and follow-up exceptions are visible in the Admin backbone.
+- Continued the DB-first move for shared operational/accounting data and refreshed the docs so roadmap, risks, testing, and deployment all point to the same next state.

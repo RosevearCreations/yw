@@ -1,4 +1,4 @@
-> Last synchronized: April 10, 2026. Reviewed during the journal posting controls, material issue / usage, Admin backbone, and schema synchronization pass.
+> Last synchronized: April 10, 2026 (source journal / route execution / HSE proof pass)
 
 ## 2026-04-10 journal posting controls and material issue / usage pass
 - Added migration `sql/066_journal_posting_controls_and_material_issue_usage.sql`.
@@ -37,7 +37,7 @@ After deploying this pass, validate migration 063 before trusting Admin totals:
 - Deploy the updated `admin-selectors` and `admin-manage` edge functions together with the frontend so the new rollup fields and smart defaults stay aligned.
 - Run the repo smoke check after deploy and verify the new migration file exists in the deployed repo snapshot.
 
-Last synchronized: April 10, 2026
+Last synchronized: April 10, 2026 (source journal / route execution / HSE proof pass)
 
 ## Deployment principles
 
@@ -84,3 +84,10 @@ Deployments should now be treated as operations-critical because session integri
 - Run `sql/066_journal_posting_controls_and_material_issue_usage.sql` after 065.
 - After deploy, create a draft journal batch, add offsetting entries, confirm the batch becomes balanced, then post it from Admin.
 - Create a material issue tied to a work order, add issue lines, and confirm the issue header totals and variance update.
+
+## 2026-04-10 source-generated journals, route execution, and HSE proof pass
+- Added migration `sql/067_source_journal_route_execution_and_hse_proof.sql`.
+- Added source-generated draft journal batches for AR invoices, AP bills, material receipts, and material issues so review/posting can start from the originating record instead of manual batch creation.
+- Added route-stop execution lifecycle records plus attachment rows so daily field work can track completed, skipped, delayed, and exception states with note/photo support.
+- Added HSE proof rows plus reopen-aware linked packet fields so closeout evidence, reopen counts, and follow-up exceptions are visible in the Admin backbone.
+- Continued the DB-first move for shared operational/accounting data and refreshed the docs so roadmap, risks, testing, and deployment all point to the same next state.
