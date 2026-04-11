@@ -166,7 +166,7 @@ async function getRouteStopDefaults(supabase: any, routeStopId?: string | null) 
 async function getLinkedHsePacketDefaults(supabase: any, packetId?: string | null) {
   const id = String(packetId || '').trim();
   if (!id) return null;
-  const { data } = await supabase.from('linked_hse_packets').select('id,work_order_id,dispatch_id,client_site_id,route_id,supervisor_profile_id,packet_number').eq('id', id).maybeSingle();
+  const { data } = await supabase.from('linked_hse_packets').select('id,job_id,work_order_id,dispatch_id,client_site_id,route_id,equipment_master_id,supervisor_profile_id,packet_number').eq('id', id).maybeSingle();
   return data || null;
 }
 function validateAdminSetPassword(password?: string | null) {
@@ -1607,18 +1607,32 @@ serve(async (req) => {
       const patch = {
         packet_number: body.packet_number ?? null,
         packet_type: body.packet_type ?? 'work_order',
+        packet_scope: body.packet_scope ?? 'standalone',
         packet_status: body.packet_status ?? 'draft',
+        job_id: asNullableNumber(body.job_id),
         work_order_id: asNullableText(body.work_order_id),
         dispatch_id: asNullableText(body.dispatch_id),
         client_site_id: asNullableText(body.client_site_id),
         route_id: asNullableText(body.route_id),
+        equipment_master_id: asNullableText(body.equipment_master_id),
         supervisor_profile_id: asNullableText(body.supervisor_profile_id),
+        unscheduled_project: !!body.unscheduled_project || String(body.packet_type || '') === 'unscheduled_project',
+        standalone_project_name: body.standalone_project_name ?? null,
         briefing_required: body.briefing_required !== false,
         briefing_completed: !!body.briefing_completed,
         inspection_required: body.inspection_required !== false,
         inspection_completed: !!body.inspection_completed,
         emergency_review_required: !!body.emergency_review_required,
         emergency_review_completed: !!body.emergency_review_completed,
+        weather_monitoring_required: !!body.weather_monitoring_required,
+        weather_monitoring_completed: !!body.weather_monitoring_completed,
+        heat_monitoring_required: !!body.heat_monitoring_required,
+        heat_monitoring_completed: !!body.heat_monitoring_completed,
+        chemical_handling_required: !!body.chemical_handling_required,
+        chemical_handling_completed: !!body.chemical_handling_completed,
+        traffic_control_required: !!body.traffic_control_required,
+        traffic_control_completed: !!body.traffic_control_completed,
+        field_signoff_required: body.field_signoff_required !== false,
         field_signoff_completed: !!body.field_signoff_completed,
         closeout_completed: !!body.closeout_completed,
         completion_percent: asNumber(body.completion_percent, 0),
@@ -1628,6 +1642,13 @@ serve(async (req) => {
         started_at: asNullableText(body.started_at),
         ready_for_closeout_at: asNullableText(body.ready_for_closeout_at),
         closed_at: asNullableText(body.closed_at),
+        field_signed_off_at: asNullableDateTime(body.field_signed_off_at),
+        field_signed_off_by_profile_id: asNullableText(body.field_signed_off_by_profile_id),
+        weather_notes: body.weather_notes ?? null,
+        heat_plan_notes: body.heat_plan_notes ?? null,
+        chemical_notes: body.chemical_notes ?? null,
+        traffic_notes: body.traffic_notes ?? null,
+        public_interaction_notes: body.public_interaction_notes ?? null,
         packet_notes: body.packet_notes ?? null,
         closeout_notes: body.closeout_notes ?? null,
         reopen_in_progress: !!body.reopen_in_progress,
@@ -1637,22 +1658,27 @@ serve(async (req) => {
         created_by_profile_id: actorId,
         updated_at: new Date().toISOString(),
       };
-      if (patch.work_order_id && (!patch.client_site_id || !patch.route_id)) {
-        const { data: workOrder } = await supabase.from('work_orders').select('id,client_site_id,route_id,supervisor_profile_id').eq('id', patch.work_order_id).maybeSingle();
+      if (patch.work_order_id && (!patch.client_site_id || !patch.route_id || !patch.supervisor_profile_id)) {
+        const { data: workOrder } = await supabase.from('work_orders').select('id,client_site_id,route_id,supervisor_profile_id,legacy_job_id').eq('id', patch.work_order_id).maybeSingle();
         if (workOrder) {
           if (!patch.client_site_id) patch.client_site_id = workOrder.client_site_id || null;
           if (!patch.route_id) patch.route_id = workOrder.route_id || null;
           if (!patch.supervisor_profile_id) patch.supervisor_profile_id = workOrder.supervisor_profile_id || null;
+          if (!patch.job_id && workOrder.legacy_job_id) patch.job_id = Number(workOrder.legacy_job_id) || null;
         }
       }
       if (patch.dispatch_id && (!patch.client_site_id || !patch.work_order_id)) {
-        const { data: dispatch } = await supabase.from('subcontract_dispatches').select('id,client_site_id,work_order_id').eq('id', patch.dispatch_id).maybeSingle();
+        const { data: dispatch } = await supabase.from('subcontract_dispatches').select('id,client_site_id,work_order_id,equipment_master_id').eq('id', patch.dispatch_id).maybeSingle();
         if (dispatch) {
           if (!patch.client_site_id) patch.client_site_id = dispatch.client_site_id || null;
           if (!patch.work_order_id) patch.work_order_id = dispatch.work_order_id || null;
+          if (!patch.equipment_master_id) patch.equipment_master_id = dispatch.equipment_master_id || null;
         }
       }
       if (!patch.packet_number) return Response.json({ ok:false, error:'packet_number is required' }, { status:400, headers:corsHeaders });
+      if (patch.packet_type === 'unscheduled_project' && !patch.standalone_project_name) {
+        patch.standalone_project_name = patch.packet_number;
+      }
       if (action === 'create') {
         const { data, error } = await supabase.from('linked_hse_packets').insert(patch).select('*').single();
         if (error) throw error;
@@ -1914,6 +1940,46 @@ serve(async (req) => {
       }
       if (action === 'delete') {
         const { error } = await supabase.from('hse_packet_proofs').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'hse_packet_event') {
+      const patch = {
+        packet_id: asNullableText(body.packet_id),
+        event_type: body.event_type ?? 'note',
+        event_status: body.event_status ?? 'ok',
+        event_at: asNullableDateTime(body.event_at) || new Date().toISOString(),
+        weather_condition: body.weather_condition ?? null,
+        temperature_c: asNullableNumber(body.temperature_c),
+        humidex_c: asNullableNumber(body.humidex_c),
+        wind_kph: asNullableNumber(body.wind_kph),
+        precipitation_notes: body.precipitation_notes ?? null,
+        heat_risk_level: body.heat_risk_level ?? null,
+        chemical_name: body.chemical_name ?? null,
+        sds_reviewed: asNullableBool(body.sds_reviewed),
+        ppe_verified: asNullableBool(body.ppe_verified),
+        traffic_control_level: body.traffic_control_level ?? null,
+        public_interaction_notes: body.public_interaction_notes ?? null,
+        notes: body.notes ?? null,
+        proof_url: body.proof_url ?? null,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.packet_id) return Response.json({ ok:false, error:'packet_id is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('hse_packet_events').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('hse_packet_events').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('hse_packet_events').delete().eq('id', body.item_id);
         if (error) throw error;
         return Response.json({ ok:true }, { headers:corsHeaders });
       }

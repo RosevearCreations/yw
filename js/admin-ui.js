@@ -36,11 +36,12 @@
       users: [],
       sites: [],
       assignments: [],
-      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalSyncExceptions: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], fieldUploadFailures: [] },
+      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalSyncExceptions: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], fieldUploadFailures: [] },
       salesOrders: [],
       accountingEntries: [],
       serviceAreas: [],
       routes: [],
+      jobs: [],
       routeStops: [],
       routeStopExecutions: [],
       routeStopExecutionAttachments: [],
@@ -57,6 +58,7 @@
       subcontractClients: [],
       subcontractDispatches: [],
       linkedHsePackets: [],
+      hsePacketEvents: [],
       hsePacketProofs: [],
       chartOfAccounts: [],
       glJournalBatches: [],
@@ -76,6 +78,7 @@
     };
 
     const DRAFT_KEY = 'ywi_admin_workspace_draft_v2';
+    const ADMIN_CACHE_KEY = 'ywi_admin_directory_cache_v1';
 
     function loadDraft() {
       try {
@@ -115,6 +118,14 @@
       if (e.passwordProfileId && !e.passwordProfileId.value) e.passwordProfileId.value = draft.target_profile_id || '';
       if (e.orderCustomerName && !e.orderCustomerName.value) e.orderCustomerName.value = draft.order_customer_name || '';
       if (e.orderCustomerEmail && !e.orderCustomerEmail.value) e.orderCustomerEmail.value = draft.order_customer_email || '';
+    }
+
+    function saveAdminCache(payload) {
+      try { localStorage.setItem(ADMIN_CACHE_KEY, JSON.stringify({ savedAt: new Date().toISOString(), payload })); } catch {}
+    }
+
+    function loadAdminCache() {
+      try { return JSON.parse(localStorage.getItem(ADMIN_CACHE_KEY) || 'null'); } catch { return null; }
     }
 
     function ensureLayout() {
@@ -424,6 +435,7 @@
                   <option value="subcontract_client">Subcontract Clients</option>
                   <option value="subcontract_dispatch">Subcontract Dispatches</option>
                   <option value="linked_hse_packet">Linked HSE Packets</option>
+                  <option value="hse_packet_event">HSE Packet Events</option>
                   <option value="hse_packet_proof">HSE Packet Proofs</option>
                 </optgroup>
                 <optgroup label="Accounting Backbone">
@@ -1195,6 +1207,7 @@
         state.accountingEntries = Array.isArray(resp?.accounting_entries) ? resp.accounting_entries : [];
         state.serviceAreas = Array.isArray(resp?.service_areas) ? resp.service_areas : [];
         state.routes = Array.isArray(resp?.routes) ? resp.routes : [];
+        state.jobs = Array.isArray(resp?.jobs) ? resp.jobs : [];
         state.routeStops = Array.isArray(resp?.route_stops) ? resp.route_stops : [];
         state.routeStopExecutions = Array.isArray(resp?.route_stop_executions) ? resp.route_stop_executions : [];
         state.routeStopExecutionAttachments = Array.isArray(resp?.route_stop_execution_attachments) ? resp.route_stop_execution_attachments : [];
@@ -1211,6 +1224,7 @@
         state.subcontractClients = Array.isArray(resp?.subcontract_clients) ? resp.subcontract_clients : [];
         state.subcontractDispatches = Array.isArray(resp?.subcontract_dispatches) ? resp.subcontract_dispatches : [];
         state.linkedHsePackets = Array.isArray(resp?.linked_hse_packets) ? resp.linked_hse_packets : [];
+        state.hsePacketEvents = Array.isArray(resp?.hse_packet_events) ? resp.hse_packet_events : [];
         state.hsePacketProofs = Array.isArray(resp?.hse_packet_proofs) ? resp.hse_packet_proofs : [];
         state.chartOfAccounts = Array.isArray(resp?.chart_of_accounts) ? resp.chart_of_accounts : [];
         state.glJournalBatches = Array.isArray(resp?.gl_journal_batches) ? resp.gl_journal_batches : [];
@@ -1249,6 +1263,7 @@
         renderOrders();
         await refreshSelectors();
 
+        saveAdminCache(resp);
         const outboxSummary = window.YWIOutbox?.getActionSummary?.('admin') || { total: 0, conflicts: 0 };
         setSummary(
           state.manageLocked
@@ -1256,6 +1271,62 @@
             : `Admin view loaded.${outboxSummary.total ? ` Pending admin sync: ${outboxSummary.total} item(s), ${outboxSummary.conflicts || 0} conflict(s).` : ''}`
         );
       } catch (err) {
+        const cached = loadAdminCache();
+        if (cached?.payload) {
+          const resp = cached.payload;
+          state.notifications = Array.isArray(resp?.notifications) ? resp.notifications : [];
+          state.users = Array.isArray(resp?.users) ? resp.users : [];
+          state.sites = Array.isArray(resp?.sites) ? resp.sites : [];
+          state.assignments = Array.isArray(resp?.assignments) ? resp.assignments : [];
+          state.salesOrders = Array.isArray(resp?.sales_orders) ? resp.sales_orders : [];
+          state.accountingEntries = Array.isArray(resp?.accounting_entries) ? resp.accounting_entries : [];
+          state.serviceAreas = Array.isArray(resp?.service_areas) ? resp.service_areas : [];
+          state.routes = Array.isArray(resp?.routes) ? resp.routes : [];
+          state.jobs = Array.isArray(resp?.jobs) ? resp.jobs : [];
+          state.routeStops = Array.isArray(resp?.route_stops) ? resp.route_stops : [];
+          state.routeStopExecutions = Array.isArray(resp?.route_stop_executions) ? resp.route_stop_executions : [];
+          state.routeStopExecutionAttachments = Array.isArray(resp?.route_stop_execution_attachments) ? resp.route_stop_execution_attachments : [];
+          state.clients = Array.isArray(resp?.clients) ? resp.clients : [];
+          state.clientSites = Array.isArray(resp?.client_sites) ? resp.client_sites : [];
+          state.unitsOfMeasure = Array.isArray(resp?.units_of_measure) ? resp.units_of_measure : [];
+          state.costCodes = Array.isArray(resp?.cost_codes) ? resp.cost_codes : [];
+          state.materialsCatalog = Array.isArray(resp?.materials_catalog) ? resp.materials_catalog : [];
+          state.equipmentMaster = Array.isArray(resp?.equipment_master) ? resp.equipment_master : [];
+          state.estimates = Array.isArray(resp?.estimates) ? resp.estimates : [];
+          state.estimateLines = Array.isArray(resp?.estimate_lines) ? resp.estimate_lines : [];
+          state.workOrders = Array.isArray(resp?.work_orders) ? resp.work_orders : [];
+          state.workOrderLines = Array.isArray(resp?.work_order_lines) ? resp.work_order_lines : [];
+          state.subcontractClients = Array.isArray(resp?.subcontract_clients) ? resp.subcontract_clients : [];
+          state.subcontractDispatches = Array.isArray(resp?.subcontract_dispatches) ? resp.subcontract_dispatches : [];
+          state.linkedHsePackets = Array.isArray(resp?.linked_hse_packets) ? resp.linked_hse_packets : [];
+          state.hsePacketEvents = Array.isArray(resp?.hse_packet_events) ? resp.hse_packet_events : [];
+          state.hsePacketProofs = Array.isArray(resp?.hse_packet_proofs) ? resp.hse_packet_proofs : [];
+          state.chartOfAccounts = Array.isArray(resp?.chart_of_accounts) ? resp.chart_of_accounts : [];
+          state.glJournalBatches = Array.isArray(resp?.gl_journal_batches) ? resp.gl_journal_batches : [];
+          state.glJournalSyncExceptions = Array.isArray(resp?.gl_journal_sync_exceptions) ? resp.gl_journal_sync_exceptions : [];
+          state.glJournalEntries = Array.isArray(resp?.gl_journal_entries) ? resp.gl_journal_entries : [];
+          state.apVendors = Array.isArray(resp?.ap_vendors) ? resp.ap_vendors : [];
+          state.arInvoices = Array.isArray(resp?.ar_invoices) ? resp.ar_invoices : [];
+          state.arPayments = Array.isArray(resp?.ar_payments) ? resp.ar_payments : [];
+          state.apBills = Array.isArray(resp?.ap_bills) ? resp.ap_bills : [];
+          state.apPayments = Array.isArray(resp?.ap_payments) ? resp.ap_payments : [];
+          state.materialReceipts = Array.isArray(resp?.material_receipts) ? resp.material_receipts : [];
+          state.materialReceiptLines = Array.isArray(resp?.material_receipt_lines) ? resp.material_receipt_lines : [];
+          state.materialIssues = Array.isArray(resp?.material_issues) ? resp.material_issues : [];
+          state.materialIssueLines = Array.isArray(resp?.material_issue_lines) ? resp.material_issue_lines : [];
+          state.fieldUploadFailures = Array.isArray(resp?.field_upload_failures) ? resp.field_upload_failures : [];
+          renderStaffDirectory();
+          renderProfileOptions();
+          renderAssignmentWorkbench();
+          renderCatalogManager();
+          renderBackboneTable();
+          fillBackboneForm(getSelectedBackboneRecord());
+          renderNotifications();
+          renderOrders();
+          await refreshSelectors();
+          setSummary(`Live admin load failed. Showing cached admin data from ${cached.savedAt || 'an earlier session'}.`, true);
+          return;
+        }
         setSummary(err?.message || 'Failed to load admin data.', true);
       }
     }
@@ -1264,7 +1335,7 @@
       state.notifications = [];
       state.sites = [];
       state.assignments = [];
-      state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [] };
+      state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [] };
       state.serviceAreas = [];
       state.routes = [];
       state.clients = [];
@@ -1430,16 +1501,34 @@
         { name:'bill_rate', label:'Bill Rate', type:'number' }, { name:'cost_rate', label:'Cost Rate', type:'number' }, { name:'notes', label:'Notes', type:'textarea' }
       ], columns:[['dispatch_number','Dispatch'],['dispatch_status','Status'],['billing_basis','Billing'],['bill_rate','Bill Rate']] },
       linked_hse_packet: { label:'Linked HSE Packets', rowsKey:'linkedHsePackets', valueKey:'id', labelField:'packet_number', fields:[
-        { name:'packet_number', label:'Packet Number', type:'text', required:true }, { name:'packet_type', label:'Packet Type', type:'select', options:[['work_order','Work Order'],['dispatch','Dispatch'],['standalone_hse','Standalone HSE']] },
+        { name:'packet_number', label:'Packet Number', type:'text', required:true }, { name:'packet_type', label:'Packet Type', type:'select', options:[['work_order','Work Order'],['dispatch','Dispatch'],['standalone_hse','Standalone HSE'],['unscheduled_project','Unscheduled Project']] },
+        { name:'packet_scope', label:'Packet Scope', type:'select', options:[['standalone','Standalone'],['site','Site'],['work_order','Work Order'],['route','Route'],['dispatch','Dispatch'],['equipment','Equipment'],['job','Job'],['subcontract_work','Subcontract Work']] },
         { name:'packet_status', label:'Packet Status', type:'select', options:[['draft','Draft'],['issued','Issued'],['in_progress','In Progress'],['ready_for_closeout','Ready for Closeout'],['closed','Closed']] },
-        { name:'work_order_id', label:'Work Order', type:'select', source:'workOrders' }, { name:'dispatch_id', label:'Dispatch', type:'select', source:'subcontractDispatches' },
-        { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' }, { name:'route_id', label:'Route', type:'select', source:'routes' }, { name:'supervisor_profile_id', label:'Supervisor', type:'select', source:'supervisorProfiles' },
-        { name:'completion_percent', label:'Completion %', type:'number', readonly:true }, { name:'proof_count', label:'Proof Count', type:'number', readonly:true }, { name:'photo_count', label:'Photo Count', type:'number', readonly:true }, { name:'signature_count', label:'Signature Count', type:'number', readonly:true },
-        { name:'document_count', label:'Document Count', type:'number', readonly:true }, { name:'briefing_required', label:'Briefing Required', type:'checkbox' }, { name:'briefing_completed', label:'Briefing Completed', type:'checkbox' }, { name:'inspection_required', label:'Inspection Required', type:'checkbox' },
-        { name:'inspection_completed', label:'Inspection Completed', type:'checkbox' }, { name:'emergency_review_required', label:'Emergency Review Required', type:'checkbox' }, { name:'emergency_review_completed', label:'Emergency Review Completed', type:'checkbox' }, { name:'reopen_in_progress', label:'Reopen In Progress', type:'checkbox' },
-        { name:'reopen_count', label:'Reopen Count', type:'number', readonly:true }, { name:'last_reopened_at', label:'Last Reopened At', type:'datetime-local', readonly:true }, { name:'last_reopened_by_profile_id', label:'Last Reopened By', type:'select', source:'profiles', readonly:true }, { name:'reopen_reason', label:'Reopen Reason', type:'textarea' },
-        { name:'ready_for_closeout_at', label:'Ready for Closeout At', type:'datetime-local', readonly:true }, { name:'closed_at', label:'Closed At', type:'datetime-local', readonly:true }, { name:'closed_by_profile_id', label:'Closed By', type:'select', source:'profiles' }, { name:'packet_notes', label:'Packet Notes', type:'textarea' }, { name:'closeout_notes', label:'Closeout Notes', type:'textarea' }
-      ], columns:[['packet_number','Packet'],['packet_type','Type'],['packet_status','Status'],['proof_count','Proofs']] },
+        { name:'job_id', label:'Job', type:'select', source:'jobs' }, { name:'work_order_id', label:'Work Order', type:'select', source:'workOrders' }, { name:'dispatch_id', label:'Dispatch', type:'select', source:'subcontractDispatches' },
+        { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' }, { name:'route_id', label:'Route', type:'select', source:'routes' }, { name:'equipment_master_id', label:'Equipment', type:'select', source:'equipmentMaster' }, { name:'supervisor_profile_id', label:'Supervisor', type:'select', source:'supervisorProfiles' },
+        { name:'unscheduled_project', label:'Unscheduled Project', type:'checkbox' }, { name:'standalone_project_name', label:'Standalone Project Name', type:'text' },
+        { name:'completion_percent', label:'Completion %', type:'number', readonly:true }, { name:'proof_count', label:'Proof Count', type:'number', readonly:true }, { name:'event_count', label:'Event Count', type:'number', readonly:true }, { name:'exception_event_count', label:'Exception Event Count', type:'number', readonly:true },
+        { name:'photo_count', label:'Photo Count', type:'number', readonly:true }, { name:'signature_count', label:'Signature Count', type:'number', readonly:true }, { name:'document_count', label:'Document Count', type:'number', readonly:true },
+        { name:'briefing_required', label:'Briefing Required', type:'checkbox' }, { name:'briefing_completed', label:'Briefing Completed', type:'checkbox' }, { name:'inspection_required', label:'Inspection Required', type:'checkbox' }, { name:'inspection_completed', label:'Inspection Completed', type:'checkbox' },
+        { name:'emergency_review_required', label:'Emergency Review Required', type:'checkbox' }, { name:'emergency_review_completed', label:'Emergency Review Completed', type:'checkbox' },
+        { name:'weather_monitoring_required', label:'Weather Monitoring Required', type:'checkbox' }, { name:'weather_monitoring_completed', label:'Weather Monitoring Completed', type:'checkbox' }, { name:'last_weather_check_at', label:'Last Weather Check', type:'datetime-local', readonly:true },
+        { name:'heat_monitoring_required', label:'Heat Monitoring Required', type:'checkbox' }, { name:'heat_monitoring_completed', label:'Heat Monitoring Completed', type:'checkbox' }, { name:'last_heat_check_at', label:'Last Heat Check', type:'datetime-local', readonly:true },
+        { name:'chemical_handling_required', label:'Chemical Handling Required', type:'checkbox' }, { name:'chemical_handling_completed', label:'Chemical Handling Completed', type:'checkbox' }, { name:'last_chemical_check_at', label:'Last Chemical Check', type:'datetime-local', readonly:true },
+        { name:'traffic_control_required', label:'Traffic/Public Control Required', type:'checkbox' }, { name:'traffic_control_completed', label:'Traffic/Public Control Completed', type:'checkbox' }, { name:'last_traffic_check_at', label:'Last Traffic Check', type:'datetime-local', readonly:true },
+        { name:'field_signoff_required', label:'Field Signoff Required', type:'checkbox' }, { name:'field_signoff_completed', label:'Field Signoff Completed', type:'checkbox' }, { name:'closeout_completed', label:'Closeout Completed', type:'checkbox' }, { name:'field_signed_off_at', label:'Field Signed Off At', type:'datetime-local', readonly:true }, { name:'field_signed_off_by_profile_id', label:'Field Signed Off By', type:'select', source:'profiles', readonly:true },
+        { name:'reopen_in_progress', label:'Reopen In Progress', type:'checkbox' }, { name:'reopen_count', label:'Reopen Count', type:'number', readonly:true }, { name:'last_reopened_at', label:'Last Reopened At', type:'datetime-local', readonly:true }, { name:'last_reopened_by_profile_id', label:'Last Reopened By', type:'select', source:'profiles', readonly:true }, { name:'reopen_reason', label:'Reopen Reason', type:'textarea' },
+        { name:'ready_for_closeout_at', label:'Ready for Closeout At', type:'datetime-local', readonly:true }, { name:'closed_at', label:'Closed At', type:'datetime-local', readonly:true }, { name:'closed_by_profile_id', label:'Closed By', type:'select', source:'profiles' },
+        { name:'weather_notes', label:'Weather Notes', type:'textarea' }, { name:'heat_plan_notes', label:'Heat Plan Notes', type:'textarea' }, { name:'chemical_notes', label:'Chemical Notes', type:'textarea' }, { name:'traffic_notes', label:'Traffic Notes', type:'textarea' }, { name:'public_interaction_notes', label:'Public Interaction Notes', type:'textarea' }, { name:'packet_notes', label:'Packet Notes', type:'textarea' }, { name:'closeout_notes', label:'Closeout Notes', type:'textarea' }
+      ], columns:[['packet_number','Packet'],['packet_scope','Scope'],['packet_status','Status'],['event_count','Events'],['proof_count','Proofs']] },
+      hse_packet_event: { label:'HSE Packet Events', rowsKey:'hsePacketEvents', valueKey:'id', labelField:'event_type', fields:[
+        { name:'packet_id', label:'HSE Packet', type:'select', source:'linkedHsePackets', required:true }, { name:'event_type', label:'Event Type', type:'select', options:[['note','Note'],['weather_check','Weather Check'],['heat_check','Heat Check'],['chemical_check','Chemical Check'],['traffic_check','Traffic Check'],['field_signoff','Field Signoff'],['closeout','Closeout'],['reopen','Reopen'],['dispatch_review','Dispatch Review'],['hazard_review','Hazard Review']] },
+        { name:'event_status', label:'Event Status', type:'select', options:[['ok','OK'],['warning','Warning'],['exception','Exception'],['closed','Closed'],['signed','Signed']] }, { name:'event_at', label:'Event At', type:'datetime-local' },
+        { name:'weather_condition', label:'Weather Condition', type:'text' }, { name:'temperature_c', label:'Temperature C', type:'number' }, { name:'humidex_c', label:'Humidex C', type:'number' }, { name:'wind_kph', label:'Wind KPH', type:'number' }, { name:'precipitation_notes', label:'Precipitation Notes', type:'textarea' },
+        { name:'heat_risk_level', label:'Heat Risk Level', type:'select', options:[['low','Low'],['moderate','Moderate'],['high','High'],['extreme','Extreme']] },
+        { name:'chemical_name', label:'Chemical Name', type:'text' }, { name:'sds_reviewed', label:'SDS Reviewed', type:'checkbox' }, { name:'ppe_verified', label:'PPE Verified', type:'checkbox' },
+        { name:'traffic_control_level', label:'Traffic Control Level', type:'select', options:[['none','None'],['cones_only','Cones Only'],['lane_control','Lane Control'],['public_interface','Public Interface'],['spotter_required','Spotter Required']] },
+        { name:'public_interaction_notes', label:'Public Interaction Notes', type:'textarea' }, { name:'notes', label:'Notes', type:'textarea' }, { name:'proof_url', label:'Proof URL', type:'text' }
+      ], columns:[['packet_id','Packet'],['event_type','Type'],['event_status','Status'],['event_at','When']] },
       hse_packet_proof: { label:'HSE Packet Proofs', rowsKey:'hsePacketProofs', valueKey:'id', labelField:'file_name', fields:[
         { name:'packet_id', label:'HSE Packet', type:'select', source:'linkedHsePackets', required:true }, { name:'proof_kind', label:'Proof Kind', type:'select', options:[['photo','Photo'],['file','File'],['signature','Signature'],['document','Document']] },
         { name:'proof_stage', label:'Proof Stage', type:'select', options:[['field','Field'],['closeout','Closeout'],['reopen','Reopen'],['exception','Exception']] }, { name:'file_name', label:'File Name', type:'text' }, { name:'mime_type', label:'Mime Type', type:'text' },
@@ -1513,7 +1602,7 @@
     };
 
     function getBackboneRows(entity) {
-      const map = { unit_of_measure: state.unitsOfMeasure || [], cost_code: state.costCodes || [], service_area: state.serviceAreas || [], route: state.routes || [], route_stop: state.routeStops || [], route_stop_execution: state.routeStopExecutions || [], route_stop_execution_attachment: state.routeStopExecutionAttachments || [], client: state.clients || [], client_site: state.clientSites || [], material: state.materialsCatalog || [], equipment_master: state.equipmentMaster || [], estimate: state.estimates || [], estimate_line: state.estimateLines || [], work_order: state.workOrders || [], work_order_line: state.workOrderLines || [], subcontract_client: state.subcontractClients || [], subcontract_dispatch: state.subcontractDispatches || [], linked_hse_packet: state.linkedHsePackets || [], hse_packet_proof: state.hsePacketProofs || [], gl_account: state.chartOfAccounts || [], gl_journal_batch: state.glJournalBatches || [], gl_journal_entry: state.glJournalEntries || [], ap_vendor: state.apVendors || [], ar_invoice: state.arInvoices || [], ar_payment: state.arPayments || [], ap_bill: state.apBills || [], ap_payment: state.apPayments || [], material_receipt: state.materialReceipts || [], material_receipt_line: state.materialReceiptLines || [], material_issue: state.materialIssues || [], material_issue_line: state.materialIssueLines || [] };
+      const map = { unit_of_measure: state.unitsOfMeasure || [], cost_code: state.costCodes || [], service_area: state.serviceAreas || [], route: state.routes || [], route_stop: state.routeStops || [], route_stop_execution: state.routeStopExecutions || [], route_stop_execution_attachment: state.routeStopExecutionAttachments || [], client: state.clients || [], client_site: state.clientSites || [], material: state.materialsCatalog || [], equipment_master: state.equipmentMaster || [], estimate: state.estimates || [], estimate_line: state.estimateLines || [], work_order: state.workOrders || [], work_order_line: state.workOrderLines || [], subcontract_client: state.subcontractClients || [], subcontract_dispatch: state.subcontractDispatches || [], linked_hse_packet: state.linkedHsePackets || [], hse_packet_event: state.hsePacketEvents || [], hse_packet_proof: state.hsePacketProofs || [], gl_account: state.chartOfAccounts || [], gl_journal_batch: state.glJournalBatches || [], gl_journal_entry: state.glJournalEntries || [], ap_vendor: state.apVendors || [], ar_invoice: state.arInvoices || [], ar_payment: state.arPayments || [], ap_bill: state.apBills || [], ap_payment: state.apPayments || [], material_receipt: state.materialReceipts || [], material_receipt_line: state.materialReceiptLines || [], material_issue: state.materialIssues || [], material_issue_line: state.materialIssueLines || [] };
       return Array.isArray(map[entity]) ? map[entity] : [];
     }
 
@@ -1526,6 +1615,7 @@
         units: state.selectors.units || state.unitsOfMeasure || [],
         serviceAreas: state.selectors.serviceAreas || state.serviceAreas || [],
         routes: state.selectors.routes || state.routes || [],
+        jobs: state.selectors.jobs || state.jobs || [],
         routeStops: state.selectors.routeStops || state.routeStops || [],
         routeStopExecutions: state.selectors.routeStopExecutions || state.routeStopExecutions || [],
         routeStopExecutionAttachments: state.selectors.routeStopExecutionAttachments || state.routeStopExecutionAttachments || [],
@@ -1540,6 +1630,7 @@
         subcontractClients: state.selectors.subcontractClients || state.subcontractClients || [],
         subcontractDispatches: state.selectors.subcontractDispatches || state.subcontractDispatches || [],
         linkedHsePackets: state.selectors.linkedHsePackets || state.linkedHsePackets || [],
+        hsePacketEvents: state.selectors.hsePacketEvents || state.hsePacketEvents || [],
         hsePacketProofs: state.selectors.hsePacketProofs || state.hsePacketProofs || [],
         glAccounts: state.selectors.glAccounts || state.chartOfAccounts || [],
         glJournalBatches: state.selectors.glJournalBatches || state.glJournalBatches || [],
@@ -1568,6 +1659,7 @@
       if (source === 'routes') return `${row.route_code || ''}${row.name ? ` - ${row.name}` : ''}`;
       if (source === 'routeStops') return `${row.stop_order ?? ''}${row.instructions ? ` - ${row.instructions}` : ''}`;
       if (source === 'routeStopExecutions') return `${row.execution_date || ''}${row.execution_status ? ` - ${row.execution_status}` : ''}`;
+      if (source === 'jobs') return `${row.job_code || ''}${row.job_name ? ` - ${row.job_name}` : ''}`;
       if (source === 'routeStopExecutionAttachments') return row.file_name || row.caption || row.id;
       if (source === 'clients') return row.display_name || row.legal_name || row.client_code || row.id;
       if (source === 'clientSites') return row.site_name || row.site_code || row.id;
@@ -1580,6 +1672,7 @@
       if (source === 'subcontractClients') return row.company_name || row.subcontract_code || row.id;
       if (source === 'subcontractDispatches') return row.dispatch_number || row.id;
       if (source === 'linkedHsePackets') return row.packet_number || row.id;
+      if (source === 'hsePacketEvents') return `${row.event_type || 'event'}${row.event_at ? ` @ ${String(row.event_at).replace('T', ' ').slice(0, 16)}` : ''}`;
       if (source === 'hsePacketProofs') return row.file_name || row.caption || row.id;
       if (source === 'glAccounts') return `${row.account_number || ''} - ${row.account_name || row.id}`;
       if (source === 'glJournalBatches') return row.batch_number || row.id;
@@ -1645,24 +1738,27 @@
     }
 
     function getHsePreviewFromInputs() {
-      const required = [
-        !!document.getElementById('ad_bb_briefing_required')?.checked,
-        !!document.getElementById('ad_bb_inspection_required')?.checked,
-        !!document.getElementById('ad_bb_emergency_review_required')?.checked
+      const flagPairs = [
+        ['briefing_required', 'briefing_completed'],
+        ['inspection_required', 'inspection_completed'],
+        ['emergency_review_required', 'emergency_review_completed'],
+        ['weather_monitoring_required', 'weather_monitoring_completed'],
+        ['heat_monitoring_required', 'heat_monitoring_completed'],
+        ['chemical_handling_required', 'chemical_handling_completed'],
+        ['traffic_control_required', 'traffic_control_completed'],
+        ['field_signoff_required', 'field_signoff_completed']
       ];
-      const completed = [
-        required[0] && !!document.getElementById('ad_bb_briefing_completed')?.checked,
-        required[1] && !!document.getElementById('ad_bb_inspection_completed')?.checked,
-        required[2] && !!document.getElementById('ad_bb_emergency_review_completed')?.checked
-      ];
-      const requiredCount = required.filter(Boolean).length;
-      const completedCount = completed.filter(Boolean).length;
-      const percent = requiredCount ? Math.round((completedCount / requiredCount) * 10000) / 100 : 100;
+      const requiredCount = flagPairs.reduce((sum, [required]) => sum + (document.getElementById(`ad_bb_${required}`)?.checked ? 1 : 0), 0);
+      const completedCount = flagPairs.reduce((sum, [required, completed]) => sum + ((document.getElementById(`ad_bb_${required}`)?.checked && document.getElementById(`ad_bb_${completed}`)?.checked) ? 1 : 0), 0);
+      const closeoutCompleted = !!document.getElementById('ad_bb_closeout_completed')?.checked;
       const reopenInProgress = !!document.getElementById('ad_bb_reopen_in_progress')?.checked;
+      const percent = closeoutCompleted ? 100 : (requiredCount ? Math.round((completedCount / requiredCount) * 10000) / 100 : 100);
       let status = String(document.getElementById('ad_bb_packet_status')?.value || 'draft');
       if (reopenInProgress) {
         status = 'in_progress';
-      } else if (status !== 'closed') {
+      } else if (closeoutCompleted || status === 'closed') {
+        status = 'closed';
+      } else {
         status = percent >= 100 ? 'ready_for_closeout' : completedCount > 0 ? 'in_progress' : 'draft';
       }
       return { requiredCount, completedCount, percent, status };
@@ -1809,17 +1905,23 @@
         cards.push({ title: 'Estimated Cost', value: formatMoney(selected?.estimated_material_total), help: 'Estimated material cost from linked work-order lines.' });
         cards.push({ title: 'Variance', value: formatMoney(selected?.variance_amount), help: 'Actual issued cost minus estimated material cost.' });
       }
-      if (entity === 'linked_hse_packet' || entity === 'hse_packet_proof') {
-        const packetId = entity === 'linked_hse_packet' ? (selected?.id || e.backboneItemId?.value || '') : (val('packet_id') || selected?.packet_id || '');
+      if (entity === 'linked_hse_packet' || entity === 'hse_packet_proof' || entity === 'hse_packet_event') {
+        const packetId = entity === 'linked_hse_packet'
+          ? (selected?.id || e.backboneItemId?.value || '')
+          : (val('packet_id') || selected?.packet_id || '');
         const packet = (state.linkedHsePackets || []).find((item) => String(item.id) === String(packetId)) || null;
         const preview = getHsePreviewFromInputs();
         const proofs = (state.hsePacketProofs || []).filter((item) => String(item.packet_id || '') === String(packetId));
-        cards.push({ title: 'Required Steps', value: String(preview.requiredCount), help: 'Briefing, inspection, and emergency review steps marked as required.' });
-        cards.push({ title: 'Completed Steps', value: String(preview.completedCount), help: 'Required steps completed so far.' });
-        cards.push({ title: 'Completion', value: `${formatMoney(preview.percent)}%`, help: 'Auto-derived progress for closeout readiness.' });
-        cards.push({ title: 'Proof Items', value: String(packet?.proof_count || proofs.length), help: 'Photo, file, and signature evidence linked to this packet.' });
+        const events = (state.hsePacketEvents || []).filter((item) => String(item.packet_id || '') === String(packetId));
+        cards.push({ title: 'Required Steps', value: String(preview.requiredCount), help: 'Briefing, inspection, emergency review, weather, heat, chemical, traffic, and field signoff steps marked as required.' });
+        cards.push({ title: 'Completed Steps', value: String(preview.completedCount), help: 'Required HSE steps completed so far.' });
+        cards.push({ title: 'Completion', value: `${formatMoney(preview.percent)}%`, help: 'Auto-derived packet progress for closeout readiness.' });
+        cards.push({ title: 'Events / Proof', value: `${events.length} / ${packet?.proof_count || proofs.length}`, help: 'HSE workflow events and proof items currently linked to this packet.' });
+        cards.push({ title: 'Weather / Heat', value: `${Number(packet?.weather_event_count || 0)} / ${Number(packet?.heat_event_count || 0)}`, help: 'Weather and heat workflow event counts for this packet.' });
+        cards.push({ title: 'Chemical / Traffic', value: `${Number(packet?.chemical_event_count || 0)} / ${Number(packet?.traffic_event_count || 0)}`, help: 'Chemical-handling and traffic/public interaction event counts.' });
+        cards.push({ title: 'Signoff / Closeout', value: `${Number(packet?.signoff_event_count || 0)} / ${Number(packet?.closeout_event_count || 0)}`, help: 'Field signoff and closeout events completed against the packet.' });
         cards.push({ title: 'Reopens', value: String(packet?.reopen_count || 0), help: 'How many times this packet has been reopened after closeout review.' });
-        cards.push({ title: 'Suggested Status', value: preview.status.replaceAll('_', ' '), help: 'Draft, in progress, or ready for closeout based on completion.' });
+        cards.push({ title: 'Suggested Status', value: preview.status.replaceAll('_', ' '), help: 'Draft, in progress, ready for closeout, or closed based on completion.' });
       }
 
       e.backboneInsights.innerHTML = cards.map((card) => `
@@ -1953,21 +2055,39 @@
         cards.push({ title: 'Estimated Cost', value: formatMoney(selected?.estimated_material_total), help: 'Estimated material cost from linked work-order lines.' });
         cards.push({ title: 'Variance', value: formatMoney(selected?.variance_amount), help: 'Actual issued cost minus estimated material cost.' });
       }
+      if (entity === 'linked_hse_packet' || entity === 'hse_packet_event') {
+        const packetId = entity === 'linked_hse_packet' ? (selected?.id || e.backboneItemId?.value || '') : (val('packet_id') || selected?.packet_id || '');
+        const events = (state.hsePacketEvents || []).filter((item) => String(item.packet_id || '') === String(packetId));
+        cards.push({ title: 'HSE Events', value: String(events.length), help: 'Weather, heat, chemical, traffic, signoff, and closeout events linked to this packet.' });
+        cards.push({ title: 'Weather / Heat', value: `${Number(selected?.weather_event_count || 0)} / ${Number(selected?.heat_event_count || 0)}`, help: 'Latest weather and heat workflow check counts for this packet.' });
+        cards.push({ title: 'Chemical / Traffic', value: `${Number(selected?.chemical_event_count || 0)} / ${Number(selected?.traffic_event_count || 0)}`, help: 'Chemical-handling and traffic/public interaction event counts.' });
+        cards.push({ title: 'Signoff / Closeout', value: `${Number(selected?.signoff_event_count || 0)} / ${Number(selected?.closeout_event_count || 0)}`, help: 'Field signoff and closeout events completed against the packet.' });
+      }
+
       if (entity === 'field_upload_failure') {
         cards.push({ title: 'Retry Status', value: String(selected?.retry_status || 'pending'), help: 'Tracks whether the upload issue still needs manual retry or has been resolved.' });
         cards.push({ title: 'Failure Stage', value: String(selected?.failure_stage || 'upload'), help: 'Shows which upload stage failed so field/office staff know where to investigate.' });
       }
       if (entity === 'linked_hse_packet') {
-        ['briefing_required', 'briefing_completed', 'inspection_required', 'inspection_completed', 'emergency_review_required', 'emergency_review_completed', 'packet_status', 'reopen_in_progress'].forEach((name) => bind(name, () => {
+        ['briefing_required', 'briefing_completed', 'inspection_required', 'inspection_completed', 'emergency_review_required', 'emergency_review_completed', 'weather_monitoring_required', 'weather_monitoring_completed', 'heat_monitoring_required', 'heat_monitoring_completed', 'chemical_handling_required', 'chemical_handling_completed', 'traffic_control_required', 'traffic_control_completed', 'field_signoff_required', 'field_signoff_completed', 'packet_status', 'reopen_in_progress', 'packet_type', 'packet_scope'].forEach((name) => bind(name, () => {
           const preview = getHsePreviewFromInputs();
           if (!document.getElementById('ad_bb_reopen_in_progress')?.checked && document.getElementById('ad_bb_packet_status')?.value !== 'closed') setBackboneInputValue('packet_status', preview.status);
+          if (document.getElementById('ad_bb_packet_type')?.value === 'unscheduled_project') setBackboneInputValue('unscheduled_project', true);
           if (document.getElementById('ad_bb_reopen_in_progress')?.checked && !document.getElementById('ad_bb_reopen_reason')?.value) setBackboneInputValue('reopen_reason', 'Evidence or exception follow-up required');
           setBackboneInputValue('completion_percent', preview.percent.toFixed(2));
+          if (document.getElementById('ad_bb_field_signoff_completed')?.checked && !document.getElementById('ad_bb_field_signed_off_at')?.value) setBackboneInputValue('field_signed_off_at', new Date().toISOString().slice(0, 16));
           if (preview.status === 'ready_for_closeout' && !document.getElementById('ad_bb_ready_for_closeout_at')?.value) {
             setBackboneInputValue('ready_for_closeout_at', new Date().toISOString().slice(0, 16));
           }
           renderBackboneInsights();
-        }, name === 'packet_status' ? 'change' : 'input'));
+        }, name === 'packet_status' || name === 'packet_type' || name === 'packet_scope' ? 'change' : 'input'));
+      }
+      if (entity === 'hse_packet_event') {
+        ['event_type', 'event_status', 'packet_id'].forEach((name) => bind(name, () => {
+          const type = document.getElementById('ad_bb_event_type')?.value || 'note';
+          if ((type === 'field_signoff' || type === 'closeout') && !document.getElementById('ad_bb_event_status')?.value) setBackboneInputValue('event_status', type === 'field_signoff' ? 'signed' : 'closed');
+          renderBackboneInsights();
+        }, 'change'));
       }
 
       renderBackboneInsights();
@@ -2250,6 +2370,7 @@
           costCodes: Array.isArray(payload?.cost_codes) ? payload.cost_codes : state.costCodes,
           serviceAreas: Array.isArray(payload?.service_areas) ? payload.service_areas : state.serviceAreas,
           routes: Array.isArray(payload?.routes) ? payload.routes : state.routes,
+          jobs: Array.isArray(payload?.jobs) ? payload.jobs : state.jobs,
           routeStops: Array.isArray(payload?.route_stops) ? payload.route_stops : state.routeStops,
           routeStopExecutions: Array.isArray(payload?.route_stop_executions) ? payload.route_stop_executions : state.routeStopExecutions,
           routeStopExecutionAttachments: Array.isArray(payload?.route_stop_execution_attachments) ? payload.route_stop_execution_attachments : state.routeStopExecutionAttachments,
@@ -2264,6 +2385,7 @@
           subcontractClients: Array.isArray(payload?.subcontract_clients) ? payload.subcontract_clients : state.subcontractClients,
           subcontractDispatches: Array.isArray(payload?.subcontract_dispatches) ? payload.subcontract_dispatches : state.subcontractDispatches,
           linkedHsePackets: Array.isArray(payload?.linked_hse_packets) ? payload.linked_hse_packets : state.linkedHsePackets,
+          hsePacketEvents: Array.isArray(payload?.hse_packet_events) ? payload.hse_packet_events : state.hsePacketEvents,
           hsePacketProofs: Array.isArray(payload?.hse_packet_proofs) ? payload.hse_packet_proofs : state.hsePacketProofs,
           glAccounts: Array.isArray(payload?.chart_of_accounts) ? payload.chart_of_accounts : state.chartOfAccounts,
           glJournalBatches: Array.isArray(payload?.gl_journal_batches) ? payload.gl_journal_batches : state.glJournalBatches,

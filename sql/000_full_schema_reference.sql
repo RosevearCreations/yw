@@ -1,5 +1,5 @@
--- Last synchronized: April 11, 2026. Reviewed during the journal sync exceptions and upload fallback pass.
--- Current reference includes migrations through 068_journal_sync_exceptions_and_upload_failure_fallback.sql and documents DB-backed sync exception tracking, upload failure visibility, and stronger Admin-side review/fallback controls.
+-- Last synchronized: April 11, 2026. Reviewed during the HSE OSHA interface, weather/heat/chemical/traffic, and field signoff pass.
+-- Current reference includes migrations through 069_hse_osha_interfaces_weather_chemical_traffic_signoff.sql and documents stronger standalone-capable HSE packet interfaces, packet events, weather/heat/chemical/traffic workflows, and field signoff/closeout tracking.
 
 create extension if not exists pgcrypto;
 

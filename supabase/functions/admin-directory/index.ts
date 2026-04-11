@@ -135,6 +135,7 @@ serve(async (req) => {
   if ((scope === 'all' || scope === 'operations' || scope === 'accounting_backbone') && roleRank(actorRole) >= roleRank('supervisor')) {
     response.service_areas = await safeList(supabase, 'service_areas', '*', 'name', limit);
     response.routes = await safeList(supabase, 'routes', '*', 'name', limit);
+    response.jobs = await safeList(supabase, 'jobs', 'id,job_code,job_name,job_type,job_status,client_id,client_site_id', 'job_code', limit);
     response.clients = await safeList(supabase, 'clients', '*', 'legal_name', limit);
     response.client_sites = await safeList(supabase, 'client_sites', '*', 'site_name', limit);
     response.units_of_measure = await safeList(supabase, 'units_of_measure', '*', 'sort_order', limit);
@@ -160,6 +161,7 @@ serve(async (req) => {
       await safeList(supabase, 'linked_hse_packets', '*', 'packet_number', limit),
       await safeList(supabase, 'v_hse_packet_progress', '*', 'packet_number', limit)
     );
+    response.hse_packet_events = await safeList(supabase, 'hse_packet_events', '*', 'event_at', limit);
     response.hse_packet_proofs = await safeList(supabase, 'hse_packet_proofs', '*', 'created_at', limit);
     response.chart_of_accounts = await safeList(supabase, 'chart_of_accounts', '*', 'account_number', limit);
     response.ap_vendors = await safeList(supabase, 'ap_vendors', '*', 'legal_name', limit);

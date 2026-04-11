@@ -75,6 +75,7 @@ serve(async (req) => {
   const workOrderRollups = await safeList(supabase, 'v_work_order_rollups', '*', 'work_order_number');
   const linkedHsePackets = await safeList(supabase, 'linked_hse_packets', '*', 'packet_number');
   const hseProgress = await safeList(supabase, 'v_hse_packet_progress', '*', 'packet_number');
+  const hsePacketEvents = await safeList(supabase, 'hse_packet_events', '*', 'event_at');
   const routeStopExecutions = await safeList(supabase, 'v_route_stop_execution_rollups', '*', 'execution_date');
   const routeStopExecutionAttachments = await safeList(supabase, 'route_stop_execution_attachments', '*', 'created_at');
   const hsePacketProofs = await safeList(supabase, 'hse_packet_proofs', '*', 'created_at');
@@ -105,6 +106,7 @@ serve(async (req) => {
     cost_codes: await safeList(supabase, 'cost_codes', '*', 'code'),
     service_areas: await safeList(supabase, 'service_areas', '*', 'name'),
     routes: await safeList(supabase, 'routes', '*', 'name'),
+    jobs: await safeList(supabase, 'jobs', 'id,job_code,job_name,job_type,job_status,client_id,client_site_id', 'job_code'),
     clients: await safeList(supabase, 'clients', '*', 'legal_name'),
     client_sites: await safeList(supabase, 'client_sites', '*', 'site_name'),
     materials_catalog: await safeList(supabase, 'materials_catalog', '*', 'item_name'),
@@ -119,6 +121,7 @@ serve(async (req) => {
     subcontract_clients: await safeList(supabase, 'subcontract_clients', '*', 'company_name'),
     subcontract_dispatches: await safeList(supabase, 'subcontract_dispatches', '*', 'dispatch_number'),
     linked_hse_packets: mergeRowsById(linkedHsePackets, hseProgress),
+    hse_packet_events: hsePacketEvents,
     hse_packet_proofs: hsePacketProofs,
     chart_of_accounts: await safeList(supabase, 'chart_of_accounts', '*', 'account_number'),
     gl_journal_batches: mergeRowsById(glJournalBatches, glJournalBatchRollups),
