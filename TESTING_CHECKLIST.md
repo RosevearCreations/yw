@@ -84,3 +84,10 @@ Last synchronized: April 10, 2026
 - AR/AP record creation and chart-of-accounts mapping
 - standalone HSE record creation and later linking into work orders/dispatches
 - mobile field-use validation on phone-sized screens
+
+## 2026-04-10 crew assignment, recurring jobs, and field activity pass
+- Job creation now has a clearer ownership path: a crew can be assigned at the same time as an explicit supervisor so responsibility is visible from the start.
+- Jobs now support standalone or recurring scheduling fields, with recurrence summary/rule storage in the database instead of leaving schedule logic only in draft UI state.
+- Job comments now have a DB-backed activity trail with optional photo attachments and special-instruction flags so crews and supervisors can review site notes, uploaded images, and field changes in one place.
+- This pass continues the DB-first direction for shared operational data and reduces duplication risk compared with keeping crew/job packet details only in local JSON or loosely coupled browser state.
+- New testing priority: verify crew assignment + supervisor ownership on create/edit, comment/photo upload/delete flows, and recurring schedule persistence across reloads.

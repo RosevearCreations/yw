@@ -97,3 +97,10 @@ The architecture now has two equal centers:
 2. Operations/accounting backbone records for estimates, work orders, routes, materials, equipment, subcontract dispatch, and digital accounting.
 
 The system should continue linking these two centers without forcing every safety workflow to start from a formal office record.
+
+## 2026-04-10 crew assignment, recurring jobs, and field activity pass
+- Job creation now has a clearer ownership path: a crew can be assigned at the same time as an explicit supervisor so responsibility is visible from the start.
+- Jobs now support standalone or recurring scheduling fields, with recurrence summary/rule storage in the database instead of leaving schedule logic only in draft UI state.
+- Job comments now have a DB-backed activity trail with optional photo attachments and special-instruction flags so crews and supervisors can review site notes, uploaded images, and field changes in one place.
+- This pass continues the DB-first direction for shared operational data and reduces duplication risk compared with keeping crew/job packet details only in local JSON or loosely coupled browser state.
+- Architecture effect: jobs are now a stronger coordination hub joining crews, supervisors, schedules, comments, and field media instead of treating those items as separate ad hoc notes.

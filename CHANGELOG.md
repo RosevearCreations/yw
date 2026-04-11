@@ -56,3 +56,10 @@ Last synchronized: April 10, 2026
 ## 2026-04-10 migration 064 hotfix
 
 - 2026-04-10 hotfix: corrected migration 064 view column order so PostgreSQL can apply it on top of migration 063 without `CREATE OR REPLACE VIEW` rename errors.
+
+## 2026-04-10 crew assignment, recurring jobs, and field activity pass
+- Job creation now has a clearer ownership path: a crew can be assigned at the same time as an explicit supervisor so responsibility is visible from the start.
+- Jobs now support standalone or recurring scheduling fields, with recurrence summary/rule storage in the database instead of leaving schedule logic only in draft UI state.
+- Job comments now have a DB-backed activity trail with optional photo attachments and special-instruction flags so crews and supervisors can review site notes, uploaded images, and field changes in one place.
+- This pass continues the DB-first direction for shared operational data and reduces duplication risk compared with keeping crew/job packet details only in local JSON or loosely coupled browser state.
+- 2026-04-10 pass: added migration 065 for crews, supervisor-linked job ownership, recurring scheduling, and job activity/photo tracking.

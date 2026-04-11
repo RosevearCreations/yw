@@ -1,7 +1,7 @@
 // Detailed Edge Function: jobs-directory
 // Purpose:
-// - Return jobs, requirements, equipment, active signouts, notifications, and pool availability
-// - Include storage-backed equipment evidence metadata and signed preview URLs
+// - Return jobs, crews, comments, equipment, signouts, notifications, and pool availability
+// - Include signed URLs for equipment evidence and job comment photo attachments
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -41,6 +41,11 @@ serve(async (req) => {
   if (!actorProfile?.is_active || roleRank(actorRole) < roleRank('supervisor')) return Response.json({ ok:false, error:'Supervisor+ required' }, { status:403, headers:corsHeaders });
 
   const { data: jobs } = await supabase.from('v_jobs_directory').select('*').order('start_date', { ascending: false });
+  const { data: crews } = await supabase.from('v_crew_directory').select('*').order('crew_name');
+  const { data: crewMembers } = await supabase.from('crew_members').select('*').order('created_at');
+  const { data: profiles } = await supabase.from('profiles').select('id,full_name,email,role,is_active').eq('is_active', true).order('full_name');
+  const { data: jobComments } = await supabase.from('v_job_comment_activity').select('*').order('created_at', { ascending:false }).limit(1000);
+  const { data: jobCommentAttachmentsRaw } = await supabase.from('job_comment_attachments').select('*').order('created_at', { ascending:false }).limit(2000);
   const { data: equipment } = await supabase.from('v_equipment_directory').select('*').order('equipment_code');
   const { data: requirements } = await supabase.from('job_equipment_requirements').select('*').order('job_id');
   const { data: signouts } = await supabase.from('equipment_signouts').select('*, equipment_items(equipment_code,equipment_name), jobs(job_code,job_name)').order('checked_out_at', { ascending:false });
@@ -56,8 +61,18 @@ serve(async (req) => {
       const { data } = await supabase.storage.from(row.storage_bucket).createSignedUrl(row.storage_path, 60 * 60 * 24 * 7);
       preview_url = data?.signedUrl || null;
     }
-    return { ...row, preview_url };
+    return { ...row, preview_url, public_url: preview_url || row.preview_url || null };
   }));
+
+  const jobCommentAttachments = await Promise.all((jobCommentAttachmentsRaw || []).map(async (row: any) => {
+    let preview_url = row.preview_url || null;
+    if (!preview_url && row.storage_bucket && row.storage_path) {
+      const { data } = await supabase.storage.from(row.storage_bucket).createSignedUrl(row.storage_path, 60 * 60 * 24 * 7);
+      preview_url = data?.signedUrl || null;
+    }
+    return { ...row, preview_url, public_url: preview_url || row.preview_url || null };
+  }));
+
   const evidenceBySignout = new Map<number, any[]>();
   for (const row of evidenceAssets) {
     const key = Number(row.signout_id || 0);
@@ -65,6 +80,15 @@ serve(async (req) => {
     const list = evidenceBySignout.get(key) || [];
     list.push(row);
     evidenceBySignout.set(key, list);
+  }
+
+  const attachmentsByComment = new Map<string, any[]>();
+  for (const row of jobCommentAttachments) {
+    const key = String(row.comment_id || '');
+    if (!key) continue;
+    const list = attachmentsByComment.get(key) || [];
+    list.push(row);
+    attachmentsByComment.set(key, list);
   }
 
   const signoutRows = (signouts || []).map((row: any) => {
@@ -88,5 +112,27 @@ serve(async (req) => {
       evidence_assets: assets,
     };
   });
-  return Response.json({ ok:true, jobs: jobs || [], equipment: equipment || [], requirements: requirements || [], signouts: signoutRows, pools: pools || [], notifications: notifications || [], inspections: inspections || [], maintenance: maintenance || [], evidence_assets: evidenceAssets }, { headers: corsHeaders });
+
+  const commentRows = (jobComments || []).map((row: any) => ({
+    ...row,
+    attachments: attachmentsByComment.get(String(row.id || '')) || []
+  }));
+
+  return Response.json({
+    ok:true,
+    jobs: jobs || [],
+    crews: crews || [],
+    crew_members: crewMembers || [],
+    profiles: profiles || [],
+    job_comments: commentRows,
+    job_comment_attachments: jobCommentAttachments,
+    equipment: equipment || [],
+    requirements: requirements || [],
+    signouts: signoutRows,
+    pools: pools || [],
+    notifications: notifications || [],
+    inspections: inspections || [],
+    maintenance: maintenance || [],
+    evidence_assets: evidenceAssets
+  }, { headers: corsHeaders });
 });

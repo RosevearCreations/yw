@@ -79,6 +79,71 @@ async function resolveEquipmentIdByCode(supabase: any, code?: string | null) {
   const { data } = await supabase.from('equipment_items').select('id').eq('equipment_code', clean).limit(1).maybeSingle();
   return data?.id || null;
 }
+
+async function resolveCrewIdByNameOrCode(supabase: any, value?: string | null) {
+  const clean = String(value || '').trim();
+  if (!clean) return null;
+  let { data } = await supabase.from('crews').select('id').ilike('crew_code', clean).limit(1).maybeSingle();
+  if (data?.id) return data.id;
+  ({ data } = await supabase.from('crews').select('id').ilike('crew_name', clean).limit(1).maybeSingle());
+  return data?.id || null;
+}
+function parsePeopleList(value?: string | string[] | null) {
+  if (Array.isArray(value)) return value.map((item) => String(item || '').trim()).filter(Boolean);
+  return String(value || '').split(/[\n,;]+/).map((item) => item.trim()).filter(Boolean);
+}
+async function ensureCrewRecord(supabase: any, payload: any) {
+  const crewId = String(payload?.crew_id || '').trim();
+  const crewName = String(payload?.crew_name || '').trim();
+  const crewCode = String(payload?.crew_code || '').trim();
+  const supervisorId = payload?.supervisor_profile_id || null;
+  const notes = payload?.notes ?? null;
+  if (crewId) {
+    await supabase.from('crews').update({ supervisor_profile_id: supervisorId, notes, updated_at: new Date().toISOString() }).eq('id', crewId);
+    return crewId;
+  }
+  if (!crewName && !crewCode) return null;
+  let existingId = null;
+  if (crewCode) existingId = await resolveCrewIdByNameOrCode(supabase, crewCode);
+  if (!existingId && crewName) existingId = await resolveCrewIdByNameOrCode(supabase, crewName);
+  if (existingId) {
+    await supabase.from('crews').update({
+      crew_code: crewCode || null,
+      crew_name: crewName || crewCode || 'Crew',
+      supervisor_profile_id: supervisorId,
+      notes,
+      updated_at: new Date().toISOString()
+    }).eq('id', existingId);
+    return existingId;
+  }
+  const { data, error } = await supabase.from('crews').insert({
+    crew_code: crewCode || null,
+    crew_name: crewName || crewCode || `Crew ${crypto.randomUUID().slice(0, 8)}`,
+    supervisor_profile_id: supervisorId,
+    notes,
+    created_by_profile_id: payload?.actor_id || null
+  }).select('id').single();
+  if (error) throw error;
+  return data?.id || null;
+}
+async function syncCrewMembers(supabase: any, crewId: string | null, members: string[] = [], actorId?: string | null, supervisorId?: string | null) {
+  if (!crewId) return;
+  const desiredIds: string[] = [];
+  if (supervisorId) desiredIds.push(String(supervisorId));
+  for (const value of members) {
+    const id = await resolveProfileIdByNameOrEmail(supabase, value);
+    if (id) desiredIds.push(String(id));
+  }
+  const uniqueIds = Array.from(new Set(desiredIds.filter(Boolean)));
+  if (!uniqueIds.length) return;
+  await supabase.from('crew_members').delete().eq('crew_id', crewId).not('profile_id', 'in', `(${uniqueIds.map((id) => `"${id}"`).join(',')})`);
+  for (const id of uniqueIds) {
+    const { data: existing } = await supabase.from('crew_members').select('id').eq('crew_id', crewId).eq('profile_id', id).maybeSingle();
+    const patch = { crew_id: crewId, profile_id: id, member_role: id === supervisorId ? 'supervisor' : 'member', is_primary: id === supervisorId, added_by_profile_id: actorId || null, updated_at: new Date().toISOString() };
+    if (existing?.id) await supabase.from('crew_members').update(patch).eq('id', existing.id);
+    else await supabase.from('crew_members').insert(patch);
+  }
+}
 async function sendEmailIfConfigured(notification: any) {
   const apiKey = Deno.env.get('RESEND_API_KEY');
   const from = Deno.env.get('RESEND_FROM_EMAIL') || Deno.env.get('EMAIL_FROM');
@@ -142,7 +207,22 @@ serve(async (req) => {
   try {
     if (body.entity === 'job' && body.action === 'upsert') {
       const siteId = await resolveSiteIdByCodeOrName(supabase, body.site_name);
-      const supervisorId = await resolveProfileIdByNameOrEmail(supabase, body.supervisor_name);
+      const supervisorId = await resolveProfileIdByNameOrEmail(supabase, body.assigned_supervisor_name || body.supervisor_name);
+      if (!supervisorId) return Response.json({ ok:false, error:'A supervisor is required when creating or updating a job.' }, { status:400, headers:corsHeaders });
+      const crewMemberNames = parsePeopleList(body.crew_member_names || body.crew_member_ids || []);
+      const crewId = await ensureCrewRecord(supabase, {
+        crew_id: body.crew_id,
+        crew_name: body.crew_name || (crewMemberNames.length ? `${body.job_code || body.job_name || 'Job'} Crew` : ''),
+        crew_code: body.crew_code,
+        supervisor_profile_id: supervisorId,
+        notes: body.crew_notes ?? body.notes ?? null,
+        actor_id: actorProfile.id,
+      });
+      if (crewId && crewMemberNames.length) {
+        await syncCrewMembers(supabase, crewId, crewMemberNames, actorProfile.id, supervisorId);
+      }
+      const now = new Date().toISOString();
+      const scheduleMode = String(body.schedule_mode || 'standalone');
       const payload = {
         job_code: body.job_code,
         job_name: body.job_name,
@@ -154,13 +234,22 @@ serve(async (req) => {
         start_date: body.start_date || null,
         end_date: body.end_date || null,
         site_supervisor_profile_id: supervisorId,
-        signing_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.signing_supervisor_name),
+        assigned_supervisor_profile_id: supervisorId,
+        signing_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.signing_supervisor_name || body.supervisor_name),
         admin_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.admin_name),
+        crew_id: crewId,
+        schedule_mode: scheduleMode,
+        recurrence_rule: scheduleMode === 'standalone' ? null : (body.recurrence_rule ?? null),
+        recurrence_summary: scheduleMode === 'standalone' ? null : (body.recurrence_summary ?? null),
+        recurrence_interval: body.recurrence_interval ? Number(body.recurrence_interval) : null,
+        recurrence_anchor_date: body.recurrence_anchor_date || body.start_date || null,
+        special_instructions: body.special_instructions ?? null,
         approval_status: body.request_approval ? 'requested' : (body.approval_status ?? 'not_requested'),
-        approval_requested_at: body.request_approval ? new Date().toISOString() : null,
+        approval_requested_at: body.request_approval ? now : null,
         notes: body.notes ?? null,
         created_by_profile_id: actorProfile.id,
-        updated_at: new Date().toISOString(),
+        last_activity_at: now,
+        updated_at: now,
       };
       const { data, error } = await supabase.from('jobs').upsert(payload, { onConflict: 'job_code' }).select('*').single();
       if (error) throw error;
@@ -211,7 +300,7 @@ serve(async (req) => {
           });
 
           if (reservedQty) {
-            await supabase.from('equipment_items').update({ status: 'reserved', current_job_id: data.id, assigned_supervisor_profile_id: supervisorId, equipment_pool_key: poolKey || null, updated_at: new Date().toISOString() }).in('id', reserved.map((x: any) => x.id));
+            await supabase.from('equipment_items').update({ status: 'reserved', current_job_id: data.id, assigned_supervisor_profile_id: supervisorId, equipment_pool_key: poolKey || null, updated_at: now }).in('id', reserved.map((x: any) => x.id));
           }
 
           if (reservedQty < neededQty) {
@@ -243,7 +332,64 @@ serve(async (req) => {
           payload: { job_code: data.job_code, job_name: data.job_name }
         });
       }
-      return Response.json({ ok:true, record: data }, { headers: corsHeaders });
+      return Response.json({ ok:true, record: data, crew_id: crewId }, { headers: corsHeaders });
+    }
+
+    if (body.entity === 'job_comment') {
+      const now = new Date().toISOString();
+      const patch = {
+        job_id: Number(body.job_id || 0),
+        work_order_id: body.work_order_id || null,
+        comment_type: body.comment_type || (body.is_special_instruction ? 'instruction' : 'update'),
+        comment_text: String(body.comment_text || '').trim(),
+        is_special_instruction: !!body.is_special_instruction,
+        visible_to_client: !!body.visible_to_client,
+        created_by_profile_id: actorProfile.id,
+        updated_at: now,
+      };
+      if (!patch.job_id || !patch.comment_text) return Response.json({ ok:false, error:'job_id and comment_text are required' }, { status:400, headers:corsHeaders });
+      if (body.action === 'create') {
+        const { data, error } = await supabase.from('job_comments').insert({ ...patch, created_at: now }).select('*').single();
+        if (error) throw error;
+        const jobPatch: any = { last_activity_at: now, updated_at: now };
+        if (patch.is_special_instruction || body.set_job_instruction) jobPatch.special_instructions = patch.comment_text;
+        await supabase.from('jobs').update(jobPatch).eq('id', patch.job_id);
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (body.action === 'update') {
+        const { data, error } = await supabase.from('job_comments').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        const jobPatch: any = { last_activity_at: now, updated_at: now };
+        if (patch.is_special_instruction || body.set_job_instruction) jobPatch.special_instructions = patch.comment_text;
+        await supabase.from('jobs').update(jobPatch).eq('id', patch.job_id);
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (body.action === 'delete') {
+        const { data: existing } = await supabase.from('job_comments').select('id,job_id').eq('id', body.item_id).maybeSingle();
+        if (existing?.id) {
+          await supabase.from('job_comments').delete().eq('id', body.item_id);
+          await supabase.from('jobs').update({ last_activity_at: now, updated_at: now }).eq('id', existing.job_id);
+        }
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (body.entity === 'job_comment_attachment' && body.action === 'delete') {
+      const { data: asset } = await supabase.from('job_comment_attachments').select('*').eq('id', body.asset_id || body.item_id).maybeSingle();
+      if (asset?.storage_bucket && asset?.storage_path) {
+        await supabase.storage.from(asset.storage_bucket).remove([asset.storage_path]);
+      }
+      if (asset?.id) await supabase.from('job_comment_attachments').delete().eq('id', asset.id);
+      return Response.json({ ok:true }, { headers:corsHeaders });
+    }
+
+    if (body.entity === 'equipment_evidence_asset' && body.action === 'delete') {
+      const { data: asset } = await supabase.from('equipment_evidence_assets').select('*').eq('id', body.asset_id || body.item_id).maybeSingle();
+      if (asset?.storage_bucket && asset?.storage_path) {
+        await supabase.storage.from(asset.storage_bucket).remove([asset.storage_path]);
+      }
+      if (asset?.id) await supabase.from('equipment_evidence_assets').delete().eq('id', asset.id);
+      return Response.json({ ok:true }, { headers:corsHeaders });
     }
 
     if (body.entity === 'equipment' && body.action === 'upsert') {
@@ -260,7 +406,6 @@ serve(async (req) => {
         assigned_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.assigned_supervisor_name),
         equipment_pool_key: poolKey || null,
         serial_number: body.serial_number ?? null,
-        equipment_pool_key: poolKey || null,
         asset_tag: body.asset_tag ?? null,
         manufacturer: body.manufacturer ?? null,
         model_number: body.model_number ?? null,

@@ -110,3 +110,10 @@ Treat the product as a landscaping / project-work / subcontract dispatch platfor
 - camera-first attachments and scan-to-link for receipts / equipment / HSE packets
 - offline-safe draft saving for route stops, line items, and site safety checks
 - simplified worker-facing packet progress views that avoid desktop-only layouts
+
+## 2026-04-10 crew assignment, recurring jobs, and field activity pass
+- Job creation now has a clearer ownership path: a crew can be assigned at the same time as an explicit supervisor so responsibility is visible from the start.
+- Jobs now support standalone or recurring scheduling fields, with recurrence summary/rule storage in the database instead of leaving schedule logic only in draft UI state.
+- Job comments now have a DB-backed activity trail with optional photo attachments and special-instruction flags so crews and supervisors can review site notes, uploaded images, and field changes in one place.
+- This pass continues the DB-first direction for shared operational data and reduces duplication risk compared with keeping crew/job packet details only in local JSON or loosely coupled browser state.
+- Remember for future chats: the next job-system polish should build on crew ownership, recurrence storage, and attachment-aware site comments instead of reintroducing JSON-only scheduling notes.

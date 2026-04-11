@@ -35,3 +35,10 @@ The repo is now centered on:
 
 ## Current repo direction
 The repo should now be treated as a landscaping / project-work / subcontract / HSE operations platform. Future passes should prefer DB-first shared data and admin managers over new JSON maps whenever the same values are used in more than one workflow.
+
+## 2026-04-10 crew assignment, recurring jobs, and field activity pass
+- Job creation now has a clearer ownership path: a crew can be assigned at the same time as an explicit supervisor so responsibility is visible from the start.
+- Jobs now support standalone or recurring scheduling fields, with recurrence summary/rule storage in the database instead of leaving schedule logic only in draft UI state.
+- Job comments now have a DB-backed activity trail with optional photo attachments and special-instruction flags so crews and supervisors can review site notes, uploaded images, and field changes in one place.
+- This pass continues the DB-first direction for shared operational data and reduces duplication risk compared with keeping crew/job packet details only in local JSON or loosely coupled browser state.
+- Repo direction remains DB-first for shared crew/schedule/job packet data and should avoid drifting back to standalone JSON maps for active operations.

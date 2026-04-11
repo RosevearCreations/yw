@@ -40,3 +40,10 @@ Use this runbook when a fresh Admin account or role reset is needed.
 
 ## Current auth/runbook note
 Auth stabilization remains important, but the next product-facing admin work is estimate/work-order, materials/units, routes/service areas, subcontract dispatch, and AR/AP + chart-of-accounts screens.
+
+## 2026-04-10 crew assignment, recurring jobs, and field activity pass
+- Job creation now has a clearer ownership path: a crew can be assigned at the same time as an explicit supervisor so responsibility is visible from the start.
+- Jobs now support standalone or recurring scheduling fields, with recurrence summary/rule storage in the database instead of leaving schedule logic only in draft UI state.
+- Job comments now have a DB-backed activity trail with optional photo attachments and special-instruction flags so crews and supervisors can review site notes, uploaded images, and field changes in one place.
+- This pass continues the DB-first direction for shared operational data and reduces duplication risk compared with keeping crew/job packet details only in local JSON or loosely coupled browser state.
+- Post-login runbook now also needs a quick jobs check: create/load a job, confirm crew/supervisor fields populate, and ensure job activity items render.

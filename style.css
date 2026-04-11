@@ -935,3 +935,76 @@ body[data-user-role="admin"] #admin[data-admin-locked="false"] {
   .admin-backbone-footer{position:sticky;bottom:0;z-index:5;padding:10px;border-radius:14px;background:rgba(10,15,25,.94);backdrop-filter:blur(8px);}
   .admin-backbone-footer .secondary{flex:1 1 140px;}
 }
+
+
+/* April 10, 2026: jobs crew/schedule/activity pass */
+.job-activity-list {
+  display: grid;
+  gap: 12px;
+}
+
+.job-activity-card {
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(255,255,255,0.04);
+}
+
+.job-activity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.job-activity-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  line-height: 1.2;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.06);
+  margin: 8px 0;
+}
+
+.job-activity-attachments {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.job-activity-attachment {
+  display: grid;
+  gap: 8px;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(255,255,255,0.03);
+}
+
+.job-activity-attachment img {
+  width: 100%;
+  max-height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+}
+
+@media (max-width: 800px) {
+  .job-activity-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .job-activity-attachments {
+    grid-template-columns: 1fr;
+  }
+}

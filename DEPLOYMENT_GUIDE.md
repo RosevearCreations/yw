@@ -64,3 +64,10 @@ Deployments should now be treated as operations-critical because session integri
 - verify the newest shell version after each deploy
 - deploy schema changes before the admin screens that depend on them
 - treat admin managers for estimates, materials, routes, dispatch, and AR/AP as the next major rollout wave
+
+## 2026-04-10 crew assignment, recurring jobs, and field activity pass
+- Job creation now has a clearer ownership path: a crew can be assigned at the same time as an explicit supervisor so responsibility is visible from the start.
+- Jobs now support standalone or recurring scheduling fields, with recurrence summary/rule storage in the database instead of leaving schedule logic only in draft UI state.
+- Job comments now have a DB-backed activity trail with optional photo attachments and special-instruction flags so crews and supervisors can review site notes, uploaded images, and field changes in one place.
+- This pass continues the DB-first direction for shared operational data and reduces duplication risk compared with keeping crew/job packet details only in local JSON or loosely coupled browser state.
+- After deploy, verify the upload-job-comment-attachment function is published and the `submission-images` bucket allows the expected signed upload/read flow.
