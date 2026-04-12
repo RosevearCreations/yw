@@ -188,9 +188,11 @@ serve(async (req) => {
     response.field_upload_failures = await safeList(supabase, 'v_field_upload_failure_rollups', '*', 'created_at', limit, false);
     response.app_traffic_events = await safeList(supabase, 'v_app_traffic_recent', '*', 'created_at', limit, false);
     response.backend_monitor_events = await safeList(supabase, 'v_backend_monitor_recent', '*', 'created_at', limit, false);
-    response.app_traffic_daily_summary = await safeList(supabase, 'v_app_traffic_daily_summary', '*', 'activity_date', 60, false);
+    response.app_traffic_daily_summary = await safeList(supabase, 'v_app_traffic_daily_summary', '*', 'event_date', 60, false);
     response.monitor_threshold_alerts = await safeList(supabase, 'v_monitor_threshold_alerts', '*', 'alert_key', limit);
-    response.hse_packet_action_items = await safeList(supabase, 'v_hse_packet_action_items', '*', 'updated_at', limit, false);
+    response.hse_packet_action_items = await safeList(supabase, 'v_hse_packet_action_items', '*', 'action_priority', limit, true);
+    response.hse_dashboard_summary = await safeList(supabase, 'v_hse_dashboard_summary');
+    response.accounting_review_summary = await safeList(supabase, 'v_accounting_review_summary');
   }
   if (scope === 'self') response.profile = filteredPeople[0] || null;
   return Response.json(response, { headers: corsHeaders });

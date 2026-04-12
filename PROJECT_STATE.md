@@ -168,3 +168,11 @@ These screens should be mobile-friendly for quick field edits and desktop-strong
 - HSE packet, event, proof, reopen, and closeout structures are now live in the DB/admin layer.
 - Route execution attachments and HSE proofs now have upload functions plus failure-trail fallback.
 - Admin can now review traffic analytics and backend monitor incidents directly from the operations/accounting shell.
+
+## 2026-04-11 HSE operations hub and admin section-button pass
+- Added a separate **HSE Operations** screen outside the long Admin page so safety workflows, OSHA-oriented reminders, and linked-packet shortcuts can be reached more quickly on desktop and mobile.
+- Split the Admin experience into section buttons so people/access, jobs/operations, safety/monitoring, accounting, and messaging/diagnostics can be opened without one long scroll.
+- Added migration `sql/072_hse_hub_and_accounting_review_summaries.sql` plus summary views for HSE follow-up and accounting review pressure.
+- Corrected Admin selector/view alignment for traffic daily summary and HSE action-item ordering so the newer safety and monitoring shortcuts stay usable.
+- Continued the DB-first direction while keeping HSE standalone-capable and easier to connect to jobs, work orders, routes, equipment, dispatches, sites, and subcontract work.
+

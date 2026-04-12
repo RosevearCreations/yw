@@ -85,9 +85,11 @@ serve(async (req) => {
   const fieldUploadFailures = await safeList(supabase, 'v_field_upload_failure_rollups', '*', 'created_at', 500, false);
   const appTrafficEvents = await safeList(supabase, 'v_app_traffic_recent', '*', 'created_at', 500, false);
   const backendMonitorEvents = await safeList(supabase, 'v_backend_monitor_recent', '*', 'created_at', 500, false);
-  const appTrafficDailySummary = await safeList(supabase, 'v_app_traffic_daily_summary', '*', 'activity_date', 60, false);
+  const appTrafficDailySummary = await safeList(supabase, 'v_app_traffic_daily_summary', '*', 'event_date', 60, false);
   const monitorThresholdAlerts = await safeList(supabase, 'v_monitor_threshold_alerts', '*', 'alert_key');
-  const hsePacketActionItems = await safeList(supabase, 'v_hse_packet_action_items', '*', 'updated_at', 500, false);
+  const hsePacketActionItems = await safeList(supabase, 'v_hse_packet_action_items', '*', 'action_priority', 500, true);
+  const hseDashboardSummary = await safeList(supabase, 'v_hse_dashboard_summary');
+  const accountingSummary = await safeList(supabase, 'v_accounting_review_summary');
   const materialIssues = await safeList(supabase, 'material_issues', '*', 'issue_number');
   const materialIssueRollups = await safeList(supabase, 'v_material_issue_rollups', '*', 'issue_number');
   const arInvoices = await safeList(supabase, 'ar_invoices', '*', 'invoice_number');
@@ -147,5 +149,7 @@ serve(async (req) => {
     app_traffic_daily_summary: appTrafficDailySummary,
     monitor_threshold_alerts: monitorThresholdAlerts,
     hse_packet_action_items: hsePacketActionItems,
+    hse_dashboard_summary: hseDashboardSummary,
+    accounting_review_summary: accountingSummary,
   }, { headers: corsHeaders });
 });

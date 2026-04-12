@@ -1037,3 +1037,25 @@ body[data-user-role="admin"] #admin[data-admin-locked="false"] {
 .admin-upload-block input[type="file"]{
   width:100%;
 }
+
+
+/* 2026-04-11e HSE operations hub + admin section buttons */
+.admin-section-nav{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 8px;}
+.admin-section-btn{min-width:150px;}
+.admin-section-btn.active{border-color:rgba(109,168,255,.7);background:rgba(109,168,255,.12);box-shadow:0 0 0 1px rgba(109,168,255,.18) inset;}
+.hseops-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
+.hseops-grid--compact{grid-template-columns:repeat(auto-fit,minmax(230px,1fr));}
+.hseops-card{display:flex;flex-direction:column;gap:8px;padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:rgba(255,255,255,.035);text-align:left;color:inherit;cursor:pointer;}
+.hseops-card strong{font-size:1rem;}
+.hseops-card span{font-size:.92rem;line-height:1.42;opacity:.92;}
+.hseops-card em{font-style:normal;font-size:.78rem;opacity:.82;letter-spacing:.04em;text-transform:uppercase;}
+.hseops-card:hover,.hseops-card:focus-visible{border-color:rgba(109,168,255,.45);background:rgba(109,168,255,.08);outline:none;}
+.hseops-card--accent{border-color:rgba(109,168,255,.28);background:rgba(109,168,255,.08);}
+.hseops-guidance-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;}
+.hseops-guidance-card{padding:14px;border:1px solid rgba(255,255,255,.1);border-radius:16px;background:rgba(255,255,255,.03);}
+.hseops-guidance-card h3{margin:0 0 8px;font-size:1rem;}
+.hseops-guidance-card p{margin:0;font-size:.92rem;line-height:1.45;opacity:.9;}
+@media (max-width: 720px){
+  .admin-section-nav{position:sticky;top:68px;z-index:4;padding:10px 0 6px;background:linear-gradient(180deg,rgba(10,15,25,.98),rgba(10,15,25,.82));backdrop-filter:blur(8px);}
+  .admin-section-btn{flex:1 1 160px;}
+}

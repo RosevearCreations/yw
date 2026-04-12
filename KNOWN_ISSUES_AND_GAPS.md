@@ -248,3 +248,11 @@ Reference links:
 - The remaining HSE interface gap is no longer missing packet/event/proof structures. The main gap is now dashboard polish, alert thresholds, and mobile supervisor speed for repeat field closeout.
 - Upload-failure handling is now broader because job comments, equipment evidence, route execution attachments, and HSE proofs all have a DB-backed failure trail and retry ownership path.
 - The new analytics/monitoring layer reduces the risk that traffic drops, API failures, upload failures, or client-side runtime issues go unseen, but it still needs dashboard-style summaries and alerting thresholds.
+
+## 2026-04-11 HSE operations hub and admin section-button pass
+- Added a separate **HSE Operations** screen outside the long Admin page so safety workflows, OSHA-oriented reminders, and linked-packet shortcuts can be reached more quickly on desktop and mobile.
+- Split the Admin experience into section buttons so people/access, jobs/operations, safety/monitoring, accounting, and messaging/diagnostics can be opened without one long scroll.
+- Added migration `sql/072_hse_hub_and_accounting_review_summaries.sql` plus summary views for HSE follow-up and accounting review pressure.
+- Corrected Admin selector/view alignment for traffic daily summary and HSE action-item ordering so the newer safety and monitoring shortcuts stay usable.
+- Continued the DB-first direction while keeping HSE standalone-capable and easier to connect to jobs, work orders, routes, equipment, dispatches, sites, and subcontract work.
+
