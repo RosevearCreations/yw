@@ -36,7 +36,7 @@
       users: [],
       sites: [],
       assignments: [],
-      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalSyncExceptions: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], fieldUploadFailures: [], appTrafficEvents: [], backendMonitorEvents: [] },
+      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalSyncExceptions: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], fieldUploadFailures: [], appTrafficEvents: [], backendMonitorEvents: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [] },
       salesOrders: [],
       accountingEntries: [],
       serviceAreas: [],
@@ -76,6 +76,9 @@
       fieldUploadFailures: [],
       appTrafficEvents: [],
       backendMonitorEvents: [],
+      trafficDailySummary: [],
+      monitorThresholdAlerts: [],
+      hsePacketActionItems: [],
       smokeChecks: []
     };
 
@@ -398,7 +401,7 @@
             <button class="admin-hub-card" type="button" data-admin-route="drill"><strong>Emergency Drill</strong><span>Document preparedness checks and emergency-response exercises.</span><em>Live</em></button>
             <button class="admin-hub-card" type="button" data-admin-route="logbook"><strong>Logbook / Review</strong><span>Review safety records, approvals, images, and linked field history.</span><em>Stabilized</em></button>
             <button class="admin-hub-card" type="button" data-admin-focus-entity="linked_hse_packet"><strong>Linked HSE Packets</strong><span>Standalone-capable packets with direct linkage to jobs, work orders, routes, equipment, dispatches, sites, and subcontract work.</span><em>Live</em></button>
-            <button class="admin-hub-card" type="button" data-admin-focus-entity="backend_monitor_event"><strong>Analytics / Traffic Monitor</strong><span>Review page traffic, API failures, upload issues, and runtime incidents from the same Admin shell.</span><em>New</em></button>
+            <button class="admin-hub-card" type="button" data-admin-focus-entity="app_traffic_event" data-admin-focus-secondary="backend_monitor_event"><strong>Analytics / Traffic Monitor</strong><span>Review page traffic, API failures, upload issues, runtime incidents, and alert thresholds from the same Admin shell.</span><em>Live</em></button>
           </div>
         </div>
 
@@ -1250,6 +1253,9 @@
         state.fieldUploadFailures = Array.isArray(resp?.field_upload_failures) ? resp.field_upload_failures : [];
         state.appTrafficEvents = Array.isArray(resp?.app_traffic_events) ? resp.app_traffic_events : [];
         state.backendMonitorEvents = Array.isArray(resp?.backend_monitor_events) ? resp.backend_monitor_events : [];
+        state.trafficDailySummary = Array.isArray(resp?.app_traffic_daily_summary) ? resp.app_traffic_daily_summary : [];
+        state.monitorThresholdAlerts = Array.isArray(resp?.monitor_threshold_alerts) ? resp.monitor_threshold_alerts : [];
+        state.hsePacketActionItems = Array.isArray(resp?.hse_packet_action_items) ? resp.hse_packet_action_items : [];
         state.counts = {
           users: state.users.length,
           sites: Array.isArray(resp?.sites) ? resp.sites.length : 0,
@@ -1327,6 +1333,9 @@
           state.fieldUploadFailures = Array.isArray(resp?.field_upload_failures) ? resp.field_upload_failures : [];
           state.appTrafficEvents = Array.isArray(resp?.app_traffic_events) ? resp.app_traffic_events : [];
           state.backendMonitorEvents = Array.isArray(resp?.backend_monitor_events) ? resp.backend_monitor_events : [];
+          state.trafficDailySummary = Array.isArray(resp?.app_traffic_daily_summary) ? resp.app_traffic_daily_summary : [];
+          state.monitorThresholdAlerts = Array.isArray(resp?.monitor_threshold_alerts) ? resp.monitor_threshold_alerts : [];
+          state.hsePacketActionItems = Array.isArray(resp?.hse_packet_action_items) ? resp.hse_packet_action_items : [];
           renderStaffDirectory();
           renderProfileOptions();
           renderAssignmentWorkbench();
@@ -1347,7 +1356,7 @@
       state.notifications = [];
       state.sites = [];
       state.assignments = [];
-      state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [] };
+      state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [] };
       state.serviceAreas = [];
       state.routes = [];
       state.clients = [];
@@ -1793,6 +1802,58 @@
       return { requiredCount, completedCount, percent, status };
     }
 
+
+    function setActiveAdminHubFocus(entity = '') {
+      document.querySelectorAll('[data-admin-focus-entity]').forEach((btn) => {
+        const primary = String(btn.getAttribute('data-admin-focus-entity') || '').trim();
+        const secondary = String(btn.getAttribute('data-admin-focus-secondary') || '').trim();
+        const active = entity && (entity === primary || entity === secondary);
+        btn.classList.toggle('active', !!active);
+        if (active) btn.setAttribute('aria-current', 'true');
+        else btn.removeAttribute('aria-current');
+      });
+    }
+
+    function focusAdminBackboneEntity(entity, options = {}) {
+      const e = els();
+      if (!e.backboneEntity) return;
+      const targetEntity = String(entity || '').trim() || 'unit_of_measure';
+      const preferredId = String(options.preferredId || '').trim();
+      e.backboneEntity.value = targetEntity;
+      renderBackboneTable();
+      if (e.backboneItemId) {
+        const rows = getBackboneRows(targetEntity);
+        const fallbackId = rows[0]?.id ? String(rows[0].id) : '';
+        e.backboneItemId.value = preferredId || fallbackId || '';
+      }
+      fillBackboneForm(getSelectedBackboneRecord());
+      renderBackboneInsights();
+      setActiveAdminHubFocus(targetEntity);
+      document.getElementById('ad_backbone_fields')?.scrollIntoView({ behavior:'smooth', block:'start' });
+      if (options.summary) setSummary(options.summary, false);
+    }
+
+    function focusAdminHubEntity(entity) {
+      const clean = String(entity || '').trim();
+      if (!clean) return;
+      if (clean === 'linked_hse_packet') {
+        const actionItem = (state.hsePacketActionItems || []).find((item) => ['critical', 'warning', 'info'].includes(String(item?.action_priority || ''))) || null;
+        const preferredId = actionItem?.packet_id || actionItem?.id || state.linkedHsePackets?.[0]?.id || '';
+        const summary = actionItem ? `Focused Linked HSE Packets. Top follow-up: ${actionItem.packet_number || actionItem.packet_id || 'packet'} — ${actionItem.action_reason || 'review required'}` : 'Focused Linked HSE Packets.';
+        focusAdminBackboneEntity('linked_hse_packet', { preferredId, summary });
+        return;
+      }
+      if (clean === 'app_traffic_event' || clean === 'backend_monitor_event') {
+        const topAlert = (state.monitorThresholdAlerts || []).find((item) => String(item?.alert_status || '').toLowerCase() !== 'normal') || null;
+        const targetEntity = (topAlert && String(topAlert.alert_key || '').includes('monitor')) || (state.backendMonitorEvents || []).length ? 'backend_monitor_event' : 'app_traffic_event';
+        const preferredId = targetEntity === 'backend_monitor_event' ? (state.backendMonitorEvents?.[0]?.id || '') : (state.appTrafficEvents?.[0]?.id || '');
+        const summary = topAlert ? `Focused Analytics / Traffic Monitor. Current threshold: ${topAlert.alert_name || topAlert.alert_key} (${topAlert.alert_status}).` : 'Focused Analytics / Traffic Monitor.';
+        focusAdminBackboneEntity(targetEntity, { preferredId, summary });
+        return;
+      }
+      focusAdminBackboneEntity(clean, { summary:`Focused ${clean.replaceAll('_', ' ')}.` });
+    }
+
     function renderBackboneInsights(row = null) {
       const e = els();
       if (!e.backboneInsights) return;
@@ -1949,8 +2010,12 @@
         cards.push({ title: 'Weather / Heat', value: `${Number(packet?.weather_event_count || 0)} / ${Number(packet?.heat_event_count || 0)}`, help: 'Weather and heat workflow event counts for this packet.' });
         cards.push({ title: 'Chemical / Traffic', value: `${Number(packet?.chemical_event_count || 0)} / ${Number(packet?.traffic_event_count || 0)}`, help: 'Chemical-handling and traffic/public interaction event counts.' });
         cards.push({ title: 'Signoff / Closeout', value: `${Number(packet?.signoff_event_count || 0)} / ${Number(packet?.closeout_event_count || 0)}`, help: 'Field signoff and closeout events completed against the packet.' });
+        const actionItem = (state.hsePacketActionItems || []).find((item) => String(item?.packet_id || item?.id || '') === String(packetId));
+        const openActionItems = (state.hsePacketActionItems || []).filter((item) => ['critical','warning'].includes(String(item?.action_priority || '').toLowerCase()));
         cards.push({ title: 'Reopens', value: String(packet?.reopen_count || 0), help: 'How many times this packet has been reopened after closeout review.' });
         cards.push({ title: 'Suggested Status', value: preview.status.replaceAll('_', ' '), help: 'Draft, in progress, ready for closeout, or closed based on completion.' });
+        cards.push({ title: 'Action Priority', value: String(actionItem?.action_priority || 'normal'), help: actionItem?.action_reason || 'No immediate blocker is flagged for this packet.' });
+        cards.push({ title: 'Open HSE Follow-up', value: String(openActionItems.length), help: 'Linked or standalone packets still carrying critical or warning action items.' });
       }
 
       e.backboneInsights.innerHTML = cards.map((card) => `
@@ -2093,6 +2158,36 @@
         cards.push({ title: 'Signoff / Closeout', value: `${Number(selected?.signoff_event_count || 0)} / ${Number(selected?.closeout_event_count || 0)}`, help: 'Field signoff and closeout events completed against the packet.' });
       }
 
+      if (entity === 'app_traffic_event' || entity === 'backend_monitor_event') {
+        const now = Date.now();
+        const dayMs = 24 * 60 * 60 * 1000;
+        const recentTraffic = (state.appTrafficEvents || []).filter((item) => {
+          const stamp = Date.parse(item?.created_at || item?.last_event_at || '');
+          return Number.isFinite(stamp) && (now - stamp) <= dayMs;
+        });
+        const recentMonitor = (state.backendMonitorEvents || []).filter((item) => {
+          const stamp = Date.parse(item?.created_at || item?.last_seen_at || '');
+          return Number.isFinite(stamp) && (now - stamp) <= dayMs;
+        });
+        const openMonitor = (state.backendMonitorEvents || []).filter((item) => ['open','investigating'].includes(String(item?.lifecycle_status || '').toLowerCase()));
+        const pendingUploads = (state.fieldUploadFailures || []).filter((item) => ['pending','retrying'].includes(String(item?.retry_status || '').toLowerCase()));
+        const latestDay = (state.trafficDailySummary || [])[0] || null;
+        const topAlert = (state.monitorThresholdAlerts || []).find((item) => String(item?.alert_status || '').toLowerCase() !== 'normal') || (state.monitorThresholdAlerts || [])[0] || null;
+        cards.push({ title: '24h Traffic Events', value: String(recentTraffic.length), help: 'Page, route, API, and upload telemetry captured in the last 24 hours.' });
+        cards.push({ title: '24h Monitor Incidents', value: String(recentMonitor.length), help: 'Frontend/backend/storage/auth incidents captured in the last 24 hours.' });
+        cards.push({ title: 'Open Monitor Incidents', value: String(openMonitor.length), help: 'Incidents still marked open or investigating.' });
+        cards.push({ title: 'Pending Upload Retries', value: String(pendingUploads.length), help: 'Upload failures still waiting for retry or replacement.' });
+        cards.push({ title: 'Latest Daily Traffic', value: latestDay ? `${latestDay.activity_date || ''} · ${latestDay.event_count || 0} events` : 'No daily summary yet', help: 'Daily rollup view for traffic and error monitoring.' });
+        cards.push({ title: 'Threshold Alert', value: topAlert ? `${topAlert.alert_status || 'normal'} · ${topAlert.current_value || 0}` : 'normal · 0', help: topAlert?.alert_name || 'No active threshold alert right now.' });
+      }
+
+      if (entity === 'gl_journal_sync_exception') {
+        const openExceptions = (state.glJournalSyncExceptions || []).filter((item) => String(item?.exception_status || '').toLowerCase() === 'open');
+        const warningOrHigher = openExceptions.filter((item) => ['warning','error'].includes(String(item?.severity || '').toLowerCase()));
+        cards.push({ title: 'Open Exceptions', value: String(openExceptions.length), help: 'Source-generated accounting batches still waiting for sync review.' });
+        cards.push({ title: 'Warning / Error', value: String(warningOrHigher.length), help: 'Higher-severity journal sync exceptions should be reviewed before posting.' });
+      }
+
       if (entity === 'field_upload_failure') {
         cards.push({ title: 'Retry Status', value: String(selected?.retry_status || 'pending'), help: 'Tracks whether the upload issue still needs manual retry or has been resolved.' });
         cards.push({ title: 'Failure Stage', value: String(selected?.failure_stage || 'upload'), help: 'Shows which upload stage failed so field/office staff know where to investigate.' });
@@ -2166,6 +2261,36 @@
         formData.set('proof_notes', document.getElementById('ad_bb_proof_notes')?.value || '');
         formData.set('file', file);
         return window.YWIAPI?.uploadHsePacketProof?.(formData, true);
+      }
+
+      if (entity === 'app_traffic_event' || entity === 'backend_monitor_event') {
+        const now = Date.now();
+        const dayMs = 24 * 60 * 60 * 1000;
+        const recentTraffic = (state.appTrafficEvents || []).filter((item) => {
+          const stamp = Date.parse(item?.created_at || item?.last_event_at || '');
+          return Number.isFinite(stamp) && (now - stamp) <= dayMs;
+        });
+        const recentMonitor = (state.backendMonitorEvents || []).filter((item) => {
+          const stamp = Date.parse(item?.created_at || item?.last_seen_at || '');
+          return Number.isFinite(stamp) && (now - stamp) <= dayMs;
+        });
+        const openMonitor = (state.backendMonitorEvents || []).filter((item) => ['open','investigating'].includes(String(item?.lifecycle_status || '').toLowerCase()));
+        const pendingUploads = (state.fieldUploadFailures || []).filter((item) => ['pending','retrying'].includes(String(item?.retry_status || '').toLowerCase()));
+        const latestDay = (state.trafficDailySummary || [])[0] || null;
+        const topAlert = (state.monitorThresholdAlerts || []).find((item) => String(item?.alert_status || '').toLowerCase() !== 'normal') || (state.monitorThresholdAlerts || [])[0] || null;
+        cards.push({ title: '24h Traffic Events', value: String(recentTraffic.length), help: 'Page, route, API, and upload telemetry captured in the last 24 hours.' });
+        cards.push({ title: '24h Monitor Incidents', value: String(recentMonitor.length), help: 'Frontend/backend/storage/auth incidents captured in the last 24 hours.' });
+        cards.push({ title: 'Open Monitor Incidents', value: String(openMonitor.length), help: 'Incidents still marked open or investigating.' });
+        cards.push({ title: 'Pending Upload Retries', value: String(pendingUploads.length), help: 'Upload failures still waiting for retry or replacement.' });
+        cards.push({ title: 'Latest Daily Traffic', value: latestDay ? `${latestDay.activity_date || ''} · ${latestDay.event_count || 0} events` : 'No daily summary yet', help: 'Daily rollup view for traffic and error monitoring.' });
+        cards.push({ title: 'Threshold Alert', value: topAlert ? `${topAlert.alert_status || 'normal'} · ${topAlert.current_value || 0}` : 'normal · 0', help: topAlert?.alert_name || 'No active threshold alert right now.' });
+      }
+
+      if (entity === 'gl_journal_sync_exception') {
+        const openExceptions = (state.glJournalSyncExceptions || []).filter((item) => String(item?.exception_status || '').toLowerCase() === 'open');
+        const warningOrHigher = openExceptions.filter((item) => ['warning','error'].includes(String(item?.severity || '').toLowerCase()));
+        cards.push({ title: 'Open Exceptions', value: String(openExceptions.length), help: 'Source-generated accounting batches still waiting for sync review.' });
+        cards.push({ title: 'Warning / Error', value: String(warningOrHigher.length), help: 'Higher-severity journal sync exceptions should be reviewed before posting.' });
       }
 
       if (entity === 'field_upload_failure') {
@@ -2288,6 +2413,7 @@
     function renderBackboneTable() {
       const e = els();
       const entity = e.backboneEntity?.value || 'unit_of_measure';
+      setActiveAdminHubFocus(entity);
       const cfg = BACKBONE_CONFIG[entity];
       const rows = getBackboneRows(entity);
       if (!cfg || !e.backboneBody || !e.backboneHead || !e.backboneItemId) return;
@@ -2557,7 +2683,10 @@
           materialIssueLines: Array.isArray(payload?.material_issue_lines) ? payload.material_issue_lines : state.materialIssueLines,
           fieldUploadFailures: Array.isArray(payload?.field_upload_failures) ? payload.field_upload_failures : state.fieldUploadFailures,
           appTrafficEvents: Array.isArray(payload?.app_traffic_events) ? payload.app_traffic_events : state.appTrafficEvents,
-          backendMonitorEvents: Array.isArray(payload?.backend_monitor_events) ? payload.backend_monitor_events : state.backendMonitorEvents
+          backendMonitorEvents: Array.isArray(payload?.backend_monitor_events) ? payload.backend_monitor_events : state.backendMonitorEvents,
+          trafficDailySummary: Array.isArray(payload?.app_traffic_daily_summary) ? payload.app_traffic_daily_summary : state.trafficDailySummary,
+          monitorThresholdAlerts: Array.isArray(payload?.monitor_threshold_alerts) ? payload.monitor_threshold_alerts : state.monitorThresholdAlerts,
+          hsePacketActionItems: Array.isArray(payload?.hse_packet_action_items) ? payload.hse_packet_action_items : state.hsePacketActionItems
         };
         const e = els();
         if (e.staffPosition) {
@@ -2830,6 +2959,11 @@
         if (btn.dataset.boundRoute === '1') return;
         btn.dataset.boundRoute = '1';
         btn.addEventListener('click', () => window.YWIRouter?.showSection?.(btn.getAttribute('data-admin-route') || 'toolbox'));
+      });
+      document.querySelectorAll('[data-admin-focus-entity]').forEach((btn) => {
+        if (btn.dataset.boundFocus === '1') return;
+        btn.dataset.boundFocus = '1';
+        btn.addEventListener('click', () => focusAdminHubEntity(btn.getAttribute('data-admin-focus-entity') || ''));
       });
       if (e.passwordForm && e.passwordForm.dataset.bound !== '1') {
         e.passwordForm.dataset.bound = '1';

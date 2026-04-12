@@ -1,4 +1,4 @@
-> Last synchronized: April 11, 2026 (HSE upload retry, safety screens, and analytics/traffic monitoring pass)
+> Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## 2026-04-11 schema additions
 - `linked_hse_packets` now supports packet scope, optional job/equipment linkage, unscheduled project fields, weather/heat/chemical/traffic workflow flags, and field signoff tracking.
@@ -50,7 +50,7 @@
 - `ar_invoices` + `ar_payments` and `ap_bills` + `ap_payments` -> receivables/payables posting manager
 
 
-Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## Current schema direction
 
