@@ -8,17 +8,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>YWI Southern Ontario Field Operations & HSE App | Jobs, Routes, Safety, Admin</title>
-  <meta name="description" content="YWI Southern Ontario field operations and HSE app for jobs, routes, linked safety packets, crews, materials, job costing, dispatches, and admin workflow records." />
+  <title>YWI Southern Ontario HSE & Field Operations App | Jobs, Routes, Equipment, Safety</title>
+  <meta name="description" content="YWI Southern Ontario HSE and field operations app for jobs, crews, routes, equipment, linked safety packets, dispatches, inspections, and admin workflow records." />
   <meta name="theme-color" content="#0f172a" />
   <meta name="color-scheme" content="dark light" />
 
-  <link rel="manifest" href="/manifest.json?v=2026-04-11e" />
-  <link rel="icon" href="/icons/icon-192.png?v=2026-04-11e" sizes="192x192" />
-  <link rel="stylesheet" href="/style.css?v=2026-04-11e" />
+  <link rel="manifest" href="/manifest.json?v=2026-04-12a" />
+  <link rel="icon" href="/icons/icon-192.png?v=2026-04-12a" sizes="192x192" />
+  <link rel="stylesheet" href="/style.css?v=2026-04-12a" />
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/js/app-config.js?v=2026-04-11e"></script>
+  <script src="/js/app-config.js?v=2026-04-12a"></script>
 
   <style>
     #authLoading {
@@ -104,7 +104,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-04-11e');
+          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-04-12a');
           if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
           }
@@ -118,7 +118,7 @@
 <body>
   <header class="app-header">
     <div class="header-top">
-      <h1>YWI HSE</h1>
+      <h1>YWI Southern Ontario HSE</h1>
 
       <div class="header-session-actions">
         <button id="headerLoginBtn" class="secondary" type="button">Login</button>
@@ -344,13 +344,13 @@
   <script src="/js/security.js?v=2026-04-11e"></script>
   <script src="/js/api.js?v=2026-04-11e"></script>
   <script src="/js/outbox.js?v=2026-04-11e"></script>
-  <script src="/js/admin-actions.js?v=2026-04-11e"></script>
+  <script src="/js/admin-actions.js?v=2026-04-12a"></script>
   <script src="/js/ui-auth.js?v=2026-04-11e"></script>
   <script src="/js/account-ui.js?v=2026-04-11e"></script>
   <script src="/js/profile-ui.js?v=2026-04-11e"></script>
   <script src="/js/reference-data.js?v=2026-04-11e"></script>
-  <script src="/js/admin-ui.js?v=2026-04-11e"></script>
-  <script src="/js/hse-ops-ui.js?v=2026-04-11e"></script>
+  <script src="/js/admin-ui.js?v=2026-04-12a"></script>
+  <script src="/js/hse-ops-ui.js?v=2026-04-12a"></script>
   <script src="/js/logbook-ui.js?v=2026-04-11e"></script>
   <script src="/js/jobs-ui.js?v=2026-04-11e"></script>
   <script src="/js/forms-toolbox.js?v=2026-04-11e"></script>

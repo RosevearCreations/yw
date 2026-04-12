@@ -1049,6 +1049,7 @@ body[data-user-role="admin"] #admin[data-admin-locked="false"] {
 .hseops-card strong{font-size:1rem;}
 .hseops-card span{font-size:.92rem;line-height:1.42;opacity:.92;}
 .hseops-card em{font-style:normal;font-size:.78rem;opacity:.82;letter-spacing:.04em;text-transform:uppercase;}
+.hseops-card small{font-size:.8rem;line-height:1.4;opacity:.78;}
 .hseops-card:hover,.hseops-card:focus-visible{border-color:rgba(109,168,255,.45);background:rgba(109,168,255,.08);outline:none;}
 .hseops-card--accent{border-color:rgba(109,168,255,.28);background:rgba(109,168,255,.08);}
 .hseops-guidance-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;}

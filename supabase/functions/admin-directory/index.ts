@@ -193,6 +193,8 @@ serve(async (req) => {
     response.hse_packet_action_items = await safeList(supabase, 'v_hse_packet_action_items', '*', 'action_priority', limit, true);
     response.hse_dashboard_summary = await safeList(supabase, 'v_hse_dashboard_summary');
     response.accounting_review_summary = await safeList(supabase, 'v_accounting_review_summary');
+    response.hse_link_context_summary = await safeList(supabase, 'v_hse_link_context_summary', '*', 'sort_order', limit);
+    response.monitor_review_summary = await safeList(supabase, 'v_monitor_review_summary', '*', 'sort_order', limit);
   }
   if (scope === 'self') response.profile = filteredPeople[0] || null;
   return Response.json(response, { headers: corsHeaders });

@@ -1,3 +1,11 @@
+## 2026-04-12 progress update
+- **Moved forward:** HSE Ops is no longer limited to one broad linked-packet button and one broad monitor button. It now has direct review lanes and Admin drill-through targeting.
+- **Still open:** shortcut lanes do not yet land on filtered subsets or support resolve/snooze/assignment actions for noisy monitor items.
+- **Still open:** Jobs, Equipment, and Dispatch shells can open their sections quickly, but they do not yet create/open linked packets in-context from their own forms.
+- **Still open:** accounting review still needs the same lane-style shortcut treatment now used by HSE and monitoring.
+
+> Last synchronized: April 12, 2026 (linked HSE review lanes and monitor shortcut pass)
+
 ## April 11, 2026 risk update after 071
 - The immediate navigation gap for Linked HSE Packets and Analytics / Traffic Monitor is closed. The remaining risk is how fast supervisors and admins can move from summary cards into the exact blocked packet, exception, or incident on mobile.
 - The biggest HSE risk is now execution speed and proof/signoff discipline, not missing schema.

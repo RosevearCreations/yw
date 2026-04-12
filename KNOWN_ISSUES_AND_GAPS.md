@@ -1,3 +1,11 @@
+## 2026-04-12 progress update
+- **Moved forward:** HSE Ops is no longer limited to one broad linked-packet button and one broad monitor button. It now has direct review lanes and Admin drill-through targeting.
+- **Still open:** shortcut lanes do not yet land on filtered subsets or support resolve/snooze/assignment actions for noisy monitor items.
+- **Still open:** Jobs, Equipment, and Dispatch shells can open their sections quickly, but they do not yet create/open linked packets in-context from their own forms.
+- **Still open:** accounting review still needs the same lane-style shortcut treatment now used by HSE and monitoring.
+
+> Last synchronized: April 12, 2026 (linked HSE review lanes and monitor shortcut pass)
+
 ## 2026-04-11 update after 071
 - The inactive Admin hub buttons for Linked HSE Packets and Analytics / Traffic Monitor are now fixed, so the next gap is not navigation but deeper drill-through and mobile speed.
 - HSE packet follow-up is now easier to review because action-item summaries call out reopen, missing signoff, missing monitoring steps, and packets ready for closeout.

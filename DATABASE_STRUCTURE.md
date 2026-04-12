@@ -1,3 +1,11 @@
+## 2026-04-12 schema synchronization note
+- Added migration `sql/073_hse_link_context_and_monitor_shortcuts.sql`.
+- New view `public.v_hse_link_context_summary` summarizes linked packet review lanes for jobs/work orders, sites, routes/dispatches/subcontract work, equipment, and standalone/unscheduled packets.
+- New view `public.v_monitor_review_summary` summarizes upload issues, traffic/reliability alerts, and runtime/API incidents for the standalone HSE Operations shell.
+- `sql/000_full_schema_reference.sql` has been synchronized forward through 073 for new chats and rebuilds.
+
+> Last synchronized: April 12, 2026 (schema 073 appended to the reference snapshot)
+
 > Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## 2026-04-11 schema additions

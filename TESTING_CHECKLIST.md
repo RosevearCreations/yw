@@ -1,3 +1,12 @@
+## 2026-04-12 added regression targets
+- Verify HSE Ops renders direct linked-packet review cards for jobs/work orders, sites, routes/dispatches, equipment, and standalone/unscheduled packets.
+- Verify each linked-packet shortcut opens Admin on the correct `linked_hse_packet` record when a top packet exists.
+- Verify upload issues, traffic/reliability, and runtime/API shortcut cards open the correct Admin backbone entity.
+- Verify HSE Ops still renders from cache when live selector loading fails.
+- Recheck the single-H1 rule and public metadata after the updated app shell title/description pass.
+
+> Last synchronized: April 12, 2026 (HSE shortcut and monitor drill-through checks added)
+
 ## Add to next live verification
 - Verify the **Linked HSE Packets** Admin hub card focuses the backbone manager on linked packets and selects a live packet.
 - Verify the **Analytics / Traffic Monitor** Admin hub card focuses the backbone manager on monitoring data and shows current threshold insight cards.

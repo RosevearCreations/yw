@@ -1,3 +1,25 @@
+## 2026-04-12 linked HSE review lanes and monitor shortcut pass
+- Added migration `sql/073_hse_link_context_and_monitor_shortcuts.sql`.
+- Added DB-backed `v_hse_link_context_summary` so the standalone HSE hub can open linked packet review by jobs/work orders, sites, routes/dispatches/subcontract work, equipment, and standalone/unscheduled packets.
+- Added DB-backed `v_monitor_review_summary` so HSE Ops can expose upload issues, traffic/reliability pressure, and runtime/API incidents as focused review lanes instead of only broad monitor buttons.
+- Extended HSE Ops so shortcut cards can pass an exact Admin focus target, selected record, and summary while keeping the cached fallback path intact.
+- Tightened the HSE shell around the requested direction: standalone-capable packets remain valid, but formal job, route, dispatch, site, equipment, and monitor context now opens more directly.
+
+## Immediate next build priorities after 073
+1. **Linked packet create flows from adjacent shells**
+   - let Jobs, Equipment, and Dispatch screens create or open the correct linked HSE packet without forcing Admin first
+   - carry crew, supervisor, and site defaults into the packet when a formal record already exists
+2. **Monitor action handling**
+   - add resolve / snooze / assign actions for noisy monitor lanes and repeated upload failures
+   - allow the shortcut cards to land on pre-filtered incident subsets instead of only the top row
+3. **HSE mobile closeout speed**
+   - enlarge supervisor closeout controls and make repeat-crew proof capture faster on phones
+   - tighten dispatch and route-stop signoff flow for small screens
+4. **Accounting review lane parity**
+   - bring the same shortcut-lane treatment to stale source batches, sync exceptions, and posting review
+
+> Last synchronized: April 12, 2026 (linked HSE review lanes, monitor shortcuts, admin drill-through, and schema 073)
+
 ## 2026-04-11 admin focus buttons, HSE action items, and monitor threshold pass
 - Fixed the inactive Admin hub buttons for **Linked HSE Packets** and **Analytics / Traffic Monitor** by wiring them directly into the backbone selector and record focus flow.
 - Added migration `sql/071_admin_focus_hse_action_items_and_monitor_summaries.sql`.

@@ -90,6 +90,8 @@ serve(async (req) => {
   const hsePacketActionItems = await safeList(supabase, 'v_hse_packet_action_items', '*', 'action_priority', 500, true);
   const hseDashboardSummary = await safeList(supabase, 'v_hse_dashboard_summary');
   const accountingSummary = await safeList(supabase, 'v_accounting_review_summary');
+  const hseLinkContextSummary = await safeList(supabase, 'v_hse_link_context_summary', '*', 'sort_order');
+  const monitorReviewSummary = await safeList(supabase, 'v_monitor_review_summary', '*', 'sort_order');
   const materialIssues = await safeList(supabase, 'material_issues', '*', 'issue_number');
   const materialIssueRollups = await safeList(supabase, 'v_material_issue_rollups', '*', 'issue_number');
   const arInvoices = await safeList(supabase, 'ar_invoices', '*', 'invoice_number');
@@ -151,5 +153,7 @@ serve(async (req) => {
     hse_packet_action_items: hsePacketActionItems,
     hse_dashboard_summary: hseDashboardSummary,
     accounting_review_summary: accountingSummary,
+    hse_link_context_summary: hseLinkContextSummary,
+    monitor_review_summary: monitorReviewSummary,
   }, { headers: corsHeaders });
 });

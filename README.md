@@ -1,3 +1,11 @@
+## 2026-04-12 linked HSE review lanes and monitor shortcut pass
+- Added migration `sql/073_hse_link_context_and_monitor_shortcuts.sql`.
+- HSE Ops now groups linked packets into direct review lanes for jobs/work orders, sites, routes/dispatches/subcontract work, equipment, and standalone/unscheduled packets.
+- Monitoring review now exposes upload issues, traffic/reliability pressure, and runtime/API incidents as drill-through shortcuts that can jump directly into the Admin backbone.
+- Admin focus events now accept exact record targeting so the standalone HSE hub can open the right packet or monitor lane without losing the existing fallback behavior.
+
+> Last synchronized: April 12, 2026 (linked HSE review lanes, monitor shortcuts, admin drill-through, and schema 073)
+
 ## Latest pass
 - Fixed the inactive Admin hub buttons for **Linked HSE Packets** and **Analytics / Traffic Monitor**.
 - Added HSE action-item summaries, traffic daily summaries, and monitoring threshold alerts so Admin can review safety and reliability pressure without starting from raw rows.
