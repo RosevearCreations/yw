@@ -1,6 +1,7 @@
 -- 073_hse_link_context_and_monitor_shortcuts.sql
--- Adds summary views for the standalone HSE hub so supervisors can review
--- linked packet context lanes and monitoring lanes without starting from raw tables.
+-- Corrected again for PostgreSQL compatibility:
+-- - client_site_id and route_id come from public.linked_hse_packets
+-- - uuid values inside filtered aggregates are cast through text, then back to uuid where needed
 
 create or replace view public.v_hse_link_context_summary as
 with packet_base as (
@@ -10,8 +11,8 @@ with packet_base as (
     hp.packet_status,
     hp.job_id,
     hp.work_order_id,
-    hp.client_site_id,
-    hp.route_id,
+    lhp.client_site_id,
+    lhp.route_id,
     hp.dispatch_id,
     hp.equipment_master_id,
     hp.unscheduled_project,
@@ -22,45 +23,108 @@ with packet_base as (
     ai.action_summary,
     coalesce(ai.needs_attention, false) as needs_attention
   from public.v_hse_packet_progress hp
+  left join public.linked_hse_packets lhp
+    on lhp.id = hp.id
   left join public.v_hse_packet_action_items ai
     on ai.packet_id = hp.id
 ), lane_rows as (
-  select 'job_work_order'::text as lane_key, 'Jobs and work orders'::text as lane_title, 1 as sort_order, id, packet_number, packet_status, action_priority, action_title, action_summary, needs_attention
+  select
+    'job_work_order'::text as lane_key,
+    'Jobs and work orders'::text as lane_title,
+    1 as sort_order,
+    id,
+    packet_number,
+    packet_status,
+    action_priority,
+    action_title,
+    action_summary,
+    needs_attention
   from packet_base
   where job_id is not null or work_order_id is not null
 
   union all
 
-  select 'site_context'::text as lane_key, 'Sites and client locations'::text as lane_title, 2 as sort_order, id, packet_number, packet_status, action_priority, action_title, action_summary, needs_attention
+  select
+    'site_context'::text as lane_key,
+    'Sites and client locations'::text as lane_title,
+    2 as sort_order,
+    id,
+    packet_number,
+    packet_status,
+    action_priority,
+    action_title,
+    action_summary,
+    needs_attention
   from packet_base
   where client_site_id is not null
 
   union all
 
-  select 'route_dispatch'::text as lane_key, 'Routes, dispatches, and subcontract work'::text as lane_title, 3 as sort_order, id, packet_number, packet_status, action_priority, action_title, action_summary, needs_attention
+  select
+    'route_dispatch'::text as lane_key,
+    'Routes, dispatches, and subcontract work'::text as lane_title,
+    3 as sort_order,
+    id,
+    packet_number,
+    packet_status,
+    action_priority,
+    action_title,
+    action_summary,
+    needs_attention
   from packet_base
   where route_id is not null or dispatch_id is not null
 
   union all
 
-  select 'equipment'::text as lane_key, 'Equipment-linked packets'::text as lane_title, 4 as sort_order, id, packet_number, packet_status, action_priority, action_title, action_summary, needs_attention
+  select
+    'equipment'::text as lane_key,
+    'Equipment-linked packets'::text as lane_title,
+    4 as sort_order,
+    id,
+    packet_number,
+    packet_status,
+    action_priority,
+    action_title,
+    action_summary,
+    needs_attention
   from packet_base
   where equipment_master_id is not null
 
   union all
 
-  select 'standalone'::text as lane_key, 'Standalone and unscheduled packets'::text as lane_title, 5 as sort_order, id, packet_number, packet_status, action_priority, action_title, action_summary, needs_attention
+  select
+    'standalone'::text as lane_key,
+    'Standalone and unscheduled packets'::text as lane_title,
+    5 as sort_order,
+    id,
+    packet_number,
+    packet_status,
+    action_priority,
+    action_title,
+    action_summary,
+    needs_attention
   from packet_base
   where coalesce(unscheduled_project, false)
      or coalesce(packet_scope, '') = 'standalone'
      or coalesce(packet_type, '') = 'unscheduled_project'
-     or (job_id is null and work_order_id is null and client_site_id is null and route_id is null and dispatch_id is null and equipment_master_id is null)
+     or (
+       job_id is null
+       and work_order_id is null
+       and client_site_id is null
+       and route_id is null
+       and dispatch_id is null
+       and equipment_master_id is null
+     )
 ), ranked as (
   select
     lr.*,
     row_number() over (
       partition by lr.lane_key
-      order by case when lr.needs_attention then 0 else 1 end, lr.action_priority asc, lr.packet_number asc
+      order by
+        case when lr.needs_attention then 0 else 1 end,
+        lr.action_priority asc,
+        lr.packet_number asc,
+        lr.id asc
     ) as rn
   from lane_rows lr
 )
@@ -72,7 +136,7 @@ select
   count(*)::int as packet_count,
   count(*) filter (where needs_attention)::int as attention_count,
   count(*) filter (where packet_status = 'ready_for_closeout')::int as ready_for_closeout_count,
-  max(id) filter (where rn = 1) as top_packet_id,
+  (max(id::text) filter (where rn = 1))::uuid as top_packet_id,
   max(packet_number) filter (where rn = 1) as top_packet_number,
   max(action_title) filter (where rn = 1) as top_action_title,
   max(action_summary) filter (where rn = 1) as top_action_summary
@@ -95,7 +159,10 @@ with upload_ranked as (
     vur.created_at as observed_at,
     row_number() over (
       partition by 'upload_failures'
-      order by case when vur.resolved_at is null then 0 else 1 end, vur.created_at desc
+      order by
+        case when vur.resolved_at is null then 0 else 1 end,
+        vur.created_at desc,
+        vur.id desc
     ) as rn
   from public.v_field_upload_failure_rollups vur
 ), upload_summary as (
@@ -127,10 +194,14 @@ with upload_ranked as (
     vmt.observed_at,
     row_number() over (
       partition by 'traffic_reliability'
-      order by case when coalesce(vmt.alert_level, '') = 'error' then 0 else 1 end, vmt.observed_at desc
+      order by
+        case when coalesce(vmt.alert_level, '') = 'error' then 0 else 1 end,
+        vmt.observed_at desc,
+        vmt.alert_key asc
     ) as rn
   from public.v_monitor_threshold_alerts vmt
-  where vmt.alert_scope = 'analytics' or vmt.alert_key like 'traffic-%'
+  where vmt.alert_scope = 'analytics'
+     or vmt.alert_key like 'traffic-%'
 ), traffic_summary as (
   select
     lane_key,
@@ -160,9 +231,11 @@ with upload_ranked as (
     coalesce(vbr.last_seen_at, vbr.created_at) as observed_at,
     row_number() over (
       partition by 'runtime_incidents'
-      order by case when coalesce(vbr.severity, '') in ('critical', 'error') then 0 else 1 end,
-               case when coalesce(vbr.lifecycle_status, '') in ('open', 'investigating') then 0 else 1 end,
-               coalesce(vbr.last_seen_at, vbr.created_at) desc
+      order by
+        case when coalesce(vbr.severity, '') in ('critical', 'error') then 0 else 1 end,
+        case when coalesce(vbr.lifecycle_status, '') in ('open', 'investigating') then 0 else 1 end,
+        coalesce(vbr.last_seen_at, vbr.created_at) desc,
+        vbr.id desc
     ) as rn
   from public.v_backend_monitor_recent vbr
   where coalesce(vbr.lifecycle_status, '') in ('open', 'investigating')
