@@ -1,4 +1,9 @@
-> Last synchronized: April 11, 2026 (HSE upload retry, safety screens, and analytics/traffic monitoring pass)
+## Latest pass
+- Fixed the inactive Admin hub buttons for **Linked HSE Packets** and **Analytics / Traffic Monitor**.
+- Added HSE action-item summaries, traffic daily summaries, and monitoring threshold alerts so Admin can review safety and reliability pressure without starting from raw rows.
+- Continued the DB-first HSE/accounting direction by surfacing journal-sync pressure alongside HSE follow-up and monitor incidents.
+
+> Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## Current focus
 - The strongest current direction is still DB-first operations + HSE, but the latest pass specifically deepens the OSHA-facing HSE interfaces: standalone packets, unscheduled-project packets, packet events, weather/heat/chemical/traffic workflow tracking, and field signoff.
@@ -61,7 +66,7 @@
 - IRS small-business and depreciation guidance supports keeping materials, equipment, expenses, receivables, payables, and asset records digital and structured so operational and tax records do not drift apart.
 
 
-Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## What this project is
 

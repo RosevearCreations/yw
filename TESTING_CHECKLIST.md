@@ -1,4 +1,10 @@
-> Last synchronized: April 11, 2026 (HSE upload retry, safety screens, and analytics/traffic monitoring pass)
+## Add to next live verification
+- Verify the **Linked HSE Packets** Admin hub card focuses the backbone manager on linked packets and selects a live packet.
+- Verify the **Analytics / Traffic Monitor** Admin hub card focuses the backbone manager on monitoring data and shows current threshold insight cards.
+- Run migration `071_admin_focus_hse_action_items_and_monitor_summaries.sql`.
+- Confirm `v_hse_packet_action_items`, `v_app_traffic_daily_summary`, and `v_monitor_threshold_alerts` return rows without renaming existing view columns.
+
+> Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## Add these tests for the 069 pass
 - Create a standalone HSE packet and an unscheduled-project packet; confirm packet scope and status behave correctly.
@@ -57,7 +63,7 @@
 - Add phone-sized viewport checks for all new admin-manager forms.
 
 
-Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## Session integrity tests
 - sign in as Admin

@@ -1,4 +1,10 @@
-> Last synchronized: April 11, 2026 (HSE upload retry, safety screens, and analytics/traffic monitoring pass)
+## 2026-04-11 update after 071
+- The inactive Admin hub buttons for Linked HSE Packets and Analytics / Traffic Monitor are now fixed, so the next gap is not navigation but deeper drill-through and mobile speed.
+- HSE packet follow-up is now easier to review because action-item summaries call out reopen, missing signoff, missing monitoring steps, and packets ready for closeout.
+- Analytics/monitoring is now stronger because Admin can see daily traffic summaries and threshold alerts, but the next step is direct dashboard filters and escalation handling.
+- Accounting visibility improved indirectly because open journal sync exceptions now contribute to alert-threshold review rather than hiding among raw record lists.
+
+> Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## 2026-04-11 HSE OSHA interface, packet events, and field signoff pass
 - Added migration `sql/069_hse_osha_interfaces_weather_chemical_traffic_signoff.sql`.
@@ -69,7 +75,7 @@
 - Continue reducing duplicate JSON/shared-reference sources wherever DB-first selectors already exist.
 
 
-Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## 1) Admin backbone incompletion
 ### Risk

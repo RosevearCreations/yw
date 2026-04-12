@@ -1,4 +1,10 @@
-> Last synchronized: April 11, 2026 (HSE upload retry, safety screens, and analytics/traffic monitoring pass)
+## April 11, 2026 risk update after 071
+- The immediate navigation gap for Linked HSE Packets and Analytics / Traffic Monitor is closed. The remaining risk is how fast supervisors and admins can move from summary cards into the exact blocked packet, exception, or incident on mobile.
+- The biggest HSE risk is now execution speed and proof/signoff discipline, not missing schema.
+- The biggest analytics risk is now alert fatigue and threshold tuning, not lack of telemetry.
+- The biggest accounting review risk is now audit drill-through for stale source-generated journal batches and manual override clarity.
+
+> Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## 2026-04-11 risk update after 069
 - The HSE packet model is now wider and more realistic, but the new risk is execution quality on phones/tablets: weather/heat/chemical/traffic/signoff flows need live field validation.
@@ -69,7 +75,7 @@ The main risk is no longer just whether Admin can see the new records. The risk 
 - IRS recordkeeping and depreciation requirements support digital, structured materials/equipment/accounting records.
 
 
-Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## 1) Admin backbone incompletion
 ### Risk

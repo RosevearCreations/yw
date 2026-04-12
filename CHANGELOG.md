@@ -1,4 +1,11 @@
-> Last synchronized: April 11, 2026 (HSE upload retry, safety screens, and analytics/traffic monitoring pass)
+## 2026-04-11 - Admin focus buttons, HSE action items, and monitor thresholds
+- Fixed inactive Admin hub buttons for Linked HSE Packets and Analytics / Traffic Monitor.
+- Added migration `sql/071_admin_focus_hse_action_items_and_monitor_summaries.sql`.
+- Added `v_hse_packet_action_items`, `v_app_traffic_daily_summary`, and `v_monitor_threshold_alerts`.
+- Extended admin directory/selectors/UI state so summary/threshold rows load into the Admin shell.
+- Added active styling for Admin hub focus cards and better HSE/analytics insight cards.
+
+> Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## 2026-04-11
 - Added migration `sql/070_hse_upload_retry_and_analytics_monitoring.sql`.
@@ -36,7 +43,7 @@
 - Added clearer mobile/sticky action styling for the backbone manager footer.
 
 
-> Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+> Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## 2026-04-10 journal posting controls and material issue / usage pass
 - Added migration `sql/066_journal_posting_controls_and_material_issue_usage.sql`.
@@ -77,7 +84,7 @@
 - Updated the documentation set to describe why OSHA- and IRS-aligned operations/accounting + HSE linkage is the right next direction.
 
 
-Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 
 ## 2026-04-08 landscaping/construction/mobile/admin-ui pathway documentation pass

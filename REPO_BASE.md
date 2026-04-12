@@ -1,8 +1,8 @@
-> Last synchronized: April 11, 2026 (HSE upload retry, safety screens, and analytics/traffic monitoring pass)
+> Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 > April 11, 2026 sync: reviewed during the HSE OSHA interface, packet events, and field signoff pass.
 
-> Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+> Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## 2026-04-11 journal sync exceptions and upload fallback pass
 - Added migration `sql/068_journal_sync_exceptions_and_upload_failure_fallback.sql`.
@@ -39,7 +39,7 @@
 - Include migration 064 in any future repo/package verification.
 - Treat `sql/000_full_schema_reference.sql` as corrected through 064 for new chats and handoffs.
 
-Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## Active source of truth
 Use this repository build as the current source of truth for the operations + HSE platform.

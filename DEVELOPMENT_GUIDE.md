@@ -1,8 +1,8 @@
-> Last synchronized: April 11, 2026 (HSE upload retry, safety screens, and analytics/traffic monitoring pass)
+> Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 > April 11, 2026 sync: reviewed during the HSE OSHA interface, packet events, and field signoff pass.
 
-> Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+> Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## 2026-04-11 journal sync exceptions and upload fallback pass
 - Added migration `sql/068_journal_sync_exceptions_and_upload_failure_fallback.sql`.
@@ -57,7 +57,7 @@ When adding future workflow managers, prefer this implementation order:
 - Preserve standalone HSE entry points for unscheduled work even while linked HSE packets are added for formal work orders and dispatches.
 
 
-Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## Purpose of this guide
 

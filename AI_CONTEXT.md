@@ -1,4 +1,9 @@
-> Last synchronized: April 11, 2026 (HSE upload retry, safety screens, and analytics/traffic monitoring pass)
+## Latest handoff note
+- The inactive Admin hub buttons for Linked HSE Packets and Analytics / Traffic Monitor were fixed in the 071 pass.
+- Admin now loads HSE packet action items, traffic daily summaries, and monitor threshold alerts.
+- Next likely work is drill-through from alert/action summaries into filtered incident/packet views plus more mobile supervisor closeout speed.
+
+> Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 > April 11, 2026 sync: reviewed during the HSE OSHA interface, packet events, and field signoff pass.
 
@@ -15,7 +20,7 @@
 - route-stop execution state and proof capture
 - richer HSE closeout evidence, reopen, and attachments
 
-> Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+> Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## 2026-04-10 journal posting controls and material issue / usage pass
 - Added migration `sql/066_journal_posting_controls_and_material_issue_usage.sql`.
@@ -40,7 +45,7 @@
 
 # AI Context
 
-Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## What this project is now
 Treat the product as a landscaping-led field operations platform with integrated HSE capabilities.

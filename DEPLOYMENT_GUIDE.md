@@ -1,4 +1,8 @@
-> Last synchronized: April 11, 2026 (HSE upload retry, safety screens, and analytics/traffic monitoring pass)
+## 2026-04-11 deployment note
+- Run `sql/071_admin_focus_hse_action_items_and_monitor_summaries.sql` after the corrected 070 migration.
+- Hard refresh Admin after deploy so the new hub-card click handling, active styling, and summary-driven insights are loaded.
+
+> Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## 2026-04-11 deployment addition
 - Run `sql/069_hse_osha_interfaces_weather_chemical_traffic_signoff.sql` after the current live pass before testing the new packet-event workflow.
@@ -48,7 +52,7 @@ After deploying this pass, validate migration 063 before trusting Admin totals:
 - Deploy the updated `admin-selectors` and `admin-manage` edge functions together with the frontend so the new rollup fields and smart defaults stay aligned.
 - Run the repo smoke check after deploy and verify the new migration file exists in the deployed repo snapshot.
 
-Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## Deployment principles
 

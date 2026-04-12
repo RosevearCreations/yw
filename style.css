@@ -915,6 +915,8 @@ body[data-user-role="admin"] #admin[data-admin-locked="false"] {
 .admin-hub-card strong{font-size:1rem;}
 .admin-hub-card span{font-size:.92rem;line-height:1.4;opacity:.9;}
 .admin-hub-card em{font-style:normal;font-size:.78rem;opacity:.8;letter-spacing:.04em;text-transform:uppercase;}
+.admin-hub-card:hover,.admin-hub-card:focus-visible{border-color:rgba(109,168,255,.45);background:rgba(109,168,255,.08);outline:none;}
+.admin-hub-card.active{border-color:rgba(109,168,255,.7);background:rgba(109,168,255,.12);box-shadow:0 0 0 1px rgba(109,168,255,.18) inset;}
 #ad_backbone_fields .grid,#ad_backbone_fields{align-items:start;}
 #ad_backbone_fields label{display:block;}
 

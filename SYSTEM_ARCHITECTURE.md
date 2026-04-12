@@ -1,4 +1,4 @@
-> Last synchronized: April 11, 2026 (HSE upload retry, safety screens, and analytics/traffic monitoring pass)
+> Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## 2026-04-11 architecture note
 - HSE now uses a packet + packet-event model instead of relying only on packet headers and proof rows.
@@ -54,7 +54,7 @@ That split reduces duplicated logic between the browser and the database and low
 - Treat the HSE packet linkage as a join point between the standalone safety workflows and the formal operations/accounting backbone.
 
 
-Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## High-level architecture
 

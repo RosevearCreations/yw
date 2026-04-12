@@ -1,4 +1,24 @@
-> Last synchronized: April 11, 2026 (HSE upload retry, safety screens, and analytics/traffic monitoring pass)
+## 2026-04-11 admin focus buttons, HSE action items, and monitor threshold pass
+- Fixed the inactive Admin hub buttons for **Linked HSE Packets** and **Analytics / Traffic Monitor** by wiring them directly into the backbone selector and record focus flow.
+- Added migration `sql/071_admin_focus_hse_action_items_and_monitor_summaries.sql`.
+- Added DB-backed `v_hse_packet_action_items`, `v_app_traffic_daily_summary`, and `v_monitor_threshold_alerts` so Admin can review HSE closeout blockers, daily traffic totals, and threshold-style monitoring alerts without reading only raw rows.
+- Extended Admin directory/selectors/UI so HSE packets and monitoring entities now surface actionable follow-up instead of just lists.
+- Continued the HSE/accounting direction by making open safety follow-up and open journal-drift pressure more visible inside the same Admin shell.
+
+## Immediate next build priorities after 071
+1. **Monitor dashboard actions**
+   - add one-click jump from threshold alerts into the exact incident/filter set that caused the warning
+   - add dismiss/snooze rules for known noisy alerts
+2. **HSE mobile closeout speed**
+   - add larger supervisor closeout actions and faster proof capture for repeat crews
+   - tighten dispatch-specific signoff on small screens
+3. **Accounting review tooling**
+   - add clearer exception-to-batch drill-through for source-generated journals
+   - expose stale-source aging and last-reviewed timestamps more prominently
+4. **Repeat-save and fallback hardening**
+   - keep tightening partial-save messaging and cached fallback behavior on dense Admin screens
+
+> Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## 2026-04-11 HSE upload retry, analytics traffic, and monitor pass
 - Added migration `sql/070_hse_upload_retry_and_analytics_monitoring.sql`.
@@ -131,7 +151,7 @@
 - IRS recordkeeping and depreciation rules reinforce the need for digital, structured records for materials, equipment, receivables, payables, and standard business costs.
 
 
-Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## Immediate priorities
 

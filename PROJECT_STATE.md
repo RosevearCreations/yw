@@ -1,4 +1,10 @@
-> Last synchronized: April 11, 2026 (HSE upload retry, safety screens, and analytics/traffic monitoring pass)
+## 2026-04-11 current state update
+- Admin hub navigation is now live for Linked HSE Packets and Analytics / Traffic Monitor.
+- HSE review now has packet-level action-item summaries for closeout blockers, reopen follow-up, missing monitoring steps, and missing field signoff.
+- Analytics/traffic review now includes daily summary and threshold-alert views on top of raw incidents.
+- The project is moving from raw record availability toward review/triage speed for HSE, analytics, and accounting exceptions.
+
+> Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## 2026-04-11 build state update
 - Current pass adds DB-backed HSE packet events, standalone/unscheduled-project packet support, weather/heat/chemical/traffic workflow flags, and field signoff tracking.
@@ -62,7 +68,7 @@
 - HSE remains a standalone-capable interface for unscheduled work while also serving as a linked packet model for formal work orders and dispatches.
 
 
-Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## Current state
 

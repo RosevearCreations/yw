@@ -1,4 +1,4 @@
-> Last synchronized: April 11, 2026 (HSE upload retry, safety screens, and analytics/traffic monitoring pass)
+> Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 > April 11, 2026 sync: reviewed during the HSE OSHA interface, packet events, and field signoff pass.
 
@@ -14,7 +14,7 @@
 ## April 10, 2026 note
 - No auth bootstrap flow change in this pass. The relevant deployment dependency is that admin selectors/manage and schema migration 064 must stay in sync.
 
-> Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+> Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## 2026-04-10 journal posting controls and material issue / usage pass
 - Added migration `sql/066_journal_posting_controls_and_material_issue_usage.sql`.
@@ -39,7 +39,7 @@
 
 # Auth Bootstrap Runbook
 
-Last synchronized: April 11, 2026 (journal sync exceptions / upload fallback pass)
+Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summaries, and monitor threshold pass)
 
 ## Purpose
 Use this runbook when a fresh Admin account or role reset is needed.
