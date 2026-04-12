@@ -40,6 +40,8 @@ const requiredFiles = [
   'sql/069_hse_osha_interfaces_weather_chemical_traffic_signoff.sql',
   'sql/070_hse_upload_retry_and_analytics_monitoring.sql',
   'sql/071_admin_focus_hse_action_items_and_monitor_summaries.sql',
+  'sql/072_hse_hub_and_accounting_review_summaries.sql',
+  'js/hse-ops-ui.js',
   'supabase/functions/jobs-directory/index.ts',
   'supabase/functions/jobs-manage/index.ts',
   'supabase/functions/upload-job-comment-attachment/index.ts',
@@ -79,7 +81,7 @@ addCheck('account-has-conflict-review', accountUi.includes('Conflict Review'), '
 addCheck('account-has-support-export', accountUi.includes('Export Support Snapshot'), 'account-ui.js should render the support snapshot export button.');
 
 const schema = read('sql/000_full_schema_reference.sql');
-addCheck('schema-header-current', /071_admin_focus_hse_action_items_and_monitor_summaries/i.test(schema), 'Schema snapshot header should reflect the latest 071 pass.');
+addCheck('schema-header-current', /072_hse_hub_and_accounting_review_summaries/i.test(schema), 'Schema snapshot header should reflect the latest 071 pass.');
 
 console.log(JSON.stringify({ ok: !failed, checks: results }, null, 2));
 if (failed) process.exit(1);

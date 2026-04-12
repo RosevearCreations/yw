@@ -36,7 +36,7 @@
       users: [],
       sites: [],
       assignments: [],
-      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalSyncExceptions: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], fieldUploadFailures: [], appTrafficEvents: [], backendMonitorEvents: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [] },
+      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalSyncExceptions: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], fieldUploadFailures: [], appTrafficEvents: [], backendMonitorEvents: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [] },
       salesOrders: [],
       accountingEntries: [],
       serviceAreas: [],
@@ -79,11 +79,37 @@
       trafficDailySummary: [],
       monitorThresholdAlerts: [],
       hsePacketActionItems: [],
-      smokeChecks: []
+      hseDashboardSummary: [],
+      accountingReviewSummary: [],
+      smokeChecks: [],
+      adminSection: 'people'
     };
 
     const DRAFT_KEY = 'ywi_admin_workspace_draft_v2';
     const ADMIN_CACHE_KEY = 'ywi_admin_directory_cache_v1';
+
+    const ADMIN_SECTION_GROUPS = [
+      ['people', 'People and Access'],
+      ['operations', 'Jobs and Operations'],
+      ['safety', 'Safety and Monitoring'],
+      ['accounting', 'Accounting'],
+      ['messaging', 'Messaging and Diagnostics'],
+      ['all', 'Show All']
+    ];
+
+    const ADMIN_PANEL_GROUPS = {
+      'Staff Directory and Access': ['people'],
+      'Assignment Workbench': ['people'],
+      'Dropdown and Catalog Manager': ['people','operations'],
+      'Admin Password Control': ['people'],
+      'Orders and Accounting Stub': ['accounting'],
+      'HSE / OSHA Operations Hub': ['safety'],
+      'Operations and Accounting Backbone Manager': ['operations','safety','accounting'],
+      'Deploy Smoke Check': ['messaging'],
+      'Conflict Review': ['messaging'],
+      'Approval Queue': ['messaging'],
+      'Email Preview / Test Send': ['messaging']
+    };
 
     function loadDraft() {
       try {
@@ -162,6 +188,8 @@
 
 
 
+
+        <div class="admin-section-nav" id="ad_section_nav" role="tablist" aria-label="Admin sections"></div>
 
         <div class="admin-panel-block" style="margin-top:16px;">
           <div class="section-heading">
@@ -1256,6 +1284,8 @@
         state.trafficDailySummary = Array.isArray(resp?.app_traffic_daily_summary) ? resp.app_traffic_daily_summary : [];
         state.monitorThresholdAlerts = Array.isArray(resp?.monitor_threshold_alerts) ? resp.monitor_threshold_alerts : [];
         state.hsePacketActionItems = Array.isArray(resp?.hse_packet_action_items) ? resp.hse_packet_action_items : [];
+        state.hseDashboardSummary = Array.isArray(resp?.hse_dashboard_summary) ? resp.hse_dashboard_summary : [];
+        state.accountingReviewSummary = Array.isArray(resp?.accounting_review_summary) ? resp.accounting_review_summary : [];
         state.counts = {
           users: state.users.length,
           sites: Array.isArray(resp?.sites) ? resp.sites.length : 0,
@@ -1336,6 +1366,8 @@
           state.trafficDailySummary = Array.isArray(resp?.app_traffic_daily_summary) ? resp.app_traffic_daily_summary : [];
           state.monitorThresholdAlerts = Array.isArray(resp?.monitor_threshold_alerts) ? resp.monitor_threshold_alerts : [];
           state.hsePacketActionItems = Array.isArray(resp?.hse_packet_action_items) ? resp.hse_packet_action_items : [];
+          state.hseDashboardSummary = Array.isArray(resp?.hse_dashboard_summary) ? resp.hse_dashboard_summary : [];
+          state.accountingReviewSummary = Array.isArray(resp?.accounting_review_summary) ? resp.accounting_review_summary : [];
           renderStaffDirectory();
           renderProfileOptions();
           renderAssignmentWorkbench();
@@ -1356,7 +1388,7 @@
       state.notifications = [];
       state.sites = [];
       state.assignments = [];
-      state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [] };
+      state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [] };
       state.serviceAreas = [];
       state.routes = [];
       state.clients = [];
@@ -1803,6 +1835,59 @@
     }
 
 
+    function getAdminSectionForEntity(entity = '') {
+      const clean = String(entity || '').trim();
+      if (!clean) return 'people';
+      if (['linked_hse_packet','hse_packet_event','hse_packet_proof','field_upload_failure','app_traffic_event','backend_monitor_event'].includes(clean)) return 'safety';
+      if (['gl_account','gl_journal_batch','gl_journal_entry','gl_journal_sync_exception','ap_vendor','ar_invoice','ar_payment','ap_bill','ap_payment','material_receipt','material_receipt_line','material_issue','material_issue_line'].includes(clean)) return 'accounting';
+      if (['route','route_stop','route_stop_execution','route_stop_execution_attachment','client','client_site','material','equipment_master','estimate','estimate_line','work_order','work_order_line','subcontract_client','subcontract_dispatch'].includes(clean)) return 'operations';
+      return 'people';
+    }
+
+    function applyAdminSectionFilter(sectionName = 'people') {
+      const clean = String(sectionName || 'people').trim() || 'people';
+      state.adminSection = clean;
+      document.querySelectorAll('#admin [data-admin-section-groups]').forEach((panel) => {
+        const groups = String(panel.getAttribute('data-admin-section-groups') || '').split(',').map((v) => v.trim()).filter(Boolean);
+        const visible = clean === 'all' || groups.includes(clean);
+        panel.style.display = visible ? '' : 'none';
+      });
+      document.querySelectorAll('#ad_section_nav [data-admin-section]').forEach((btn) => {
+        const active = String(btn.getAttribute('data-admin-section') || '') === clean;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+    }
+
+    function setupAdminSectionNav() {
+      const nav = document.getElementById('ad_section_nav');
+      if (!nav || nav.dataset.ready === '1') return;
+      nav.dataset.ready = '1';
+      nav.innerHTML = ADMIN_SECTION_GROUPS.map(([key, label]) => `<button class="secondary admin-section-btn" type="button" data-admin-section="${escHtml(key)}" aria-selected="false">${escHtml(label)}</button>`).join('');
+      document.querySelectorAll('#admin .admin-panel-block').forEach((panel) => {
+        const heading = panel.querySelector('h3')?.textContent?.trim() || '';
+        const groups = ADMIN_PANEL_GROUPS[heading] || ['operations'];
+        panel.setAttribute('data-admin-section-groups', groups.join(','));
+      });
+      nav.querySelectorAll('[data-admin-section]').forEach((btn) => {
+        btn.addEventListener('click', () => applyAdminSectionFilter(btn.getAttribute('data-admin-section') || 'people'));
+      });
+      applyAdminSectionFilter(state.adminSection || 'people');
+    }
+
+    function resolveTopHseActionItem() {
+      const rows = Array.isArray(state.hsePacketActionItems) ? [...state.hsePacketActionItems] : [];
+      rows.sort((a, b) => Number(a?.action_priority || 999) - Number(b?.action_priority || 999));
+      return rows.find((item) => item?.needs_attention) || rows[0] || null;
+    }
+
+    function resolveTopMonitorAlert() {
+      const rank = { error: 1, warning: 2, info: 3 };
+      const rows = Array.isArray(state.monitorThresholdAlerts) ? [...state.monitorThresholdAlerts] : [];
+      rows.sort((a, b) => (rank[String(a?.alert_level || '').toLowerCase()] || 9) - (rank[String(b?.alert_level || '').toLowerCase()] || 9));
+      return rows[0] || null;
+    }
+
     function setActiveAdminHubFocus(entity = '') {
       document.querySelectorAll('[data-admin-focus-entity]').forEach((btn) => {
         const primary = String(btn.getAttribute('data-admin-focus-entity') || '').trim();
@@ -1829,6 +1914,7 @@
       fillBackboneForm(getSelectedBackboneRecord());
       renderBackboneInsights();
       setActiveAdminHubFocus(targetEntity);
+      applyAdminSectionFilter(getAdminSectionForEntity(targetEntity));
       document.getElementById('ad_backbone_fields')?.scrollIntoView({ behavior:'smooth', block:'start' });
       if (options.summary) setSummary(options.summary, false);
     }
@@ -1837,17 +1923,17 @@
       const clean = String(entity || '').trim();
       if (!clean) return;
       if (clean === 'linked_hse_packet') {
-        const actionItem = (state.hsePacketActionItems || []).find((item) => ['critical', 'warning', 'info'].includes(String(item?.action_priority || ''))) || null;
+        const actionItem = resolveTopHseActionItem();
         const preferredId = actionItem?.packet_id || actionItem?.id || state.linkedHsePackets?.[0]?.id || '';
-        const summary = actionItem ? `Focused Linked HSE Packets. Top follow-up: ${actionItem.packet_number || actionItem.packet_id || 'packet'} — ${actionItem.action_reason || 'review required'}` : 'Focused Linked HSE Packets.';
+        const summary = actionItem ? `Focused Linked HSE Packets. Top follow-up: ${actionItem.packet_number || actionItem.packet_id || 'packet'} — ${actionItem.action_title || actionItem.action_summary || 'review required'}` : 'Focused Linked HSE Packets.';
         focusAdminBackboneEntity('linked_hse_packet', { preferredId, summary });
         return;
       }
       if (clean === 'app_traffic_event' || clean === 'backend_monitor_event') {
-        const topAlert = (state.monitorThresholdAlerts || []).find((item) => String(item?.alert_status || '').toLowerCase() !== 'normal') || null;
+        const topAlert = resolveTopMonitorAlert();
         const targetEntity = (topAlert && String(topAlert.alert_key || '').includes('monitor')) || (state.backendMonitorEvents || []).length ? 'backend_monitor_event' : 'app_traffic_event';
         const preferredId = targetEntity === 'backend_monitor_event' ? (state.backendMonitorEvents?.[0]?.id || '') : (state.appTrafficEvents?.[0]?.id || '');
-        const summary = topAlert ? `Focused Analytics / Traffic Monitor. Current threshold: ${topAlert.alert_name || topAlert.alert_key} (${topAlert.alert_status}).` : 'Focused Analytics / Traffic Monitor.';
+        const summary = topAlert ? `Focused Analytics / Traffic Monitor. Current threshold: ${topAlert.alert_title || topAlert.alert_key} (${topAlert.alert_level || 'warning'}).` : 'Focused Analytics / Traffic Monitor.';
         focusAdminBackboneEntity(targetEntity, { preferredId, summary });
         return;
       }
@@ -2011,10 +2097,10 @@
         cards.push({ title: 'Chemical / Traffic', value: `${Number(packet?.chemical_event_count || 0)} / ${Number(packet?.traffic_event_count || 0)}`, help: 'Chemical-handling and traffic/public interaction event counts.' });
         cards.push({ title: 'Signoff / Closeout', value: `${Number(packet?.signoff_event_count || 0)} / ${Number(packet?.closeout_event_count || 0)}`, help: 'Field signoff and closeout events completed against the packet.' });
         const actionItem = (state.hsePacketActionItems || []).find((item) => String(item?.packet_id || item?.id || '') === String(packetId));
-        const openActionItems = (state.hsePacketActionItems || []).filter((item) => ['critical','warning'].includes(String(item?.action_priority || '').toLowerCase()));
+        const openActionItems = (state.hsePacketActionItems || []).filter((item) => item?.needs_attention);
         cards.push({ title: 'Reopens', value: String(packet?.reopen_count || 0), help: 'How many times this packet has been reopened after closeout review.' });
         cards.push({ title: 'Suggested Status', value: preview.status.replaceAll('_', ' '), help: 'Draft, in progress, ready for closeout, or closed based on completion.' });
-        cards.push({ title: 'Action Priority', value: String(actionItem?.action_priority || 'normal'), help: actionItem?.action_reason || 'No immediate blocker is flagged for this packet.' });
+        cards.push({ title: 'Action Priority', value: String(actionItem?.action_priority || 'normal'), help: actionItem?.action_title || actionItem?.action_summary || 'No immediate blocker is flagged for this packet.' });
         cards.push({ title: 'Open HSE Follow-up', value: String(openActionItems.length), help: 'Linked or standalone packets still carrying critical or warning action items.' });
       }
 
@@ -2172,13 +2258,13 @@
         const openMonitor = (state.backendMonitorEvents || []).filter((item) => ['open','investigating'].includes(String(item?.lifecycle_status || '').toLowerCase()));
         const pendingUploads = (state.fieldUploadFailures || []).filter((item) => ['pending','retrying'].includes(String(item?.retry_status || '').toLowerCase()));
         const latestDay = (state.trafficDailySummary || [])[0] || null;
-        const topAlert = (state.monitorThresholdAlerts || []).find((item) => String(item?.alert_status || '').toLowerCase() !== 'normal') || (state.monitorThresholdAlerts || [])[0] || null;
+        const topAlert = resolveTopMonitorAlert();
         cards.push({ title: '24h Traffic Events', value: String(recentTraffic.length), help: 'Page, route, API, and upload telemetry captured in the last 24 hours.' });
         cards.push({ title: '24h Monitor Incidents', value: String(recentMonitor.length), help: 'Frontend/backend/storage/auth incidents captured in the last 24 hours.' });
         cards.push({ title: 'Open Monitor Incidents', value: String(openMonitor.length), help: 'Incidents still marked open or investigating.' });
         cards.push({ title: 'Pending Upload Retries', value: String(pendingUploads.length), help: 'Upload failures still waiting for retry or replacement.' });
-        cards.push({ title: 'Latest Daily Traffic', value: latestDay ? `${latestDay.activity_date || ''} · ${latestDay.event_count || 0} events` : 'No daily summary yet', help: 'Daily rollup view for traffic and error monitoring.' });
-        cards.push({ title: 'Threshold Alert', value: topAlert ? `${topAlert.alert_status || 'normal'} · ${topAlert.current_value || 0}` : 'normal · 0', help: topAlert?.alert_name || 'No active threshold alert right now.' });
+        cards.push({ title: 'Latest Daily Traffic', value: latestDay ? `${latestDay.event_date || ''} · ${latestDay.total_events || 0} events` : 'No daily summary yet', help: 'Daily rollup view for traffic and error monitoring.' });
+        cards.push({ title: 'Threshold Alert', value: topAlert ? `${topAlert.alert_level || 'warning'} · ${topAlert.metric_value || 0}` : 'normal · 0', help: topAlert?.alert_title || 'No active threshold alert right now.' });
       }
 
       if (entity === 'gl_journal_sync_exception') {
@@ -2277,13 +2363,13 @@
         const openMonitor = (state.backendMonitorEvents || []).filter((item) => ['open','investigating'].includes(String(item?.lifecycle_status || '').toLowerCase()));
         const pendingUploads = (state.fieldUploadFailures || []).filter((item) => ['pending','retrying'].includes(String(item?.retry_status || '').toLowerCase()));
         const latestDay = (state.trafficDailySummary || [])[0] || null;
-        const topAlert = (state.monitorThresholdAlerts || []).find((item) => String(item?.alert_status || '').toLowerCase() !== 'normal') || (state.monitorThresholdAlerts || [])[0] || null;
+        const topAlert = resolveTopMonitorAlert();
         cards.push({ title: '24h Traffic Events', value: String(recentTraffic.length), help: 'Page, route, API, and upload telemetry captured in the last 24 hours.' });
         cards.push({ title: '24h Monitor Incidents', value: String(recentMonitor.length), help: 'Frontend/backend/storage/auth incidents captured in the last 24 hours.' });
         cards.push({ title: 'Open Monitor Incidents', value: String(openMonitor.length), help: 'Incidents still marked open or investigating.' });
         cards.push({ title: 'Pending Upload Retries', value: String(pendingUploads.length), help: 'Upload failures still waiting for retry or replacement.' });
-        cards.push({ title: 'Latest Daily Traffic', value: latestDay ? `${latestDay.activity_date || ''} · ${latestDay.event_count || 0} events` : 'No daily summary yet', help: 'Daily rollup view for traffic and error monitoring.' });
-        cards.push({ title: 'Threshold Alert', value: topAlert ? `${topAlert.alert_status || 'normal'} · ${topAlert.current_value || 0}` : 'normal · 0', help: topAlert?.alert_name || 'No active threshold alert right now.' });
+        cards.push({ title: 'Latest Daily Traffic', value: latestDay ? `${latestDay.event_date || ''} · ${latestDay.total_events || 0} events` : 'No daily summary yet', help: 'Daily rollup view for traffic and error monitoring.' });
+        cards.push({ title: 'Threshold Alert', value: topAlert ? `${topAlert.alert_level || 'warning'} · ${topAlert.metric_value || 0}` : 'normal · 0', help: topAlert?.alert_title || 'No active threshold alert right now.' });
       }
 
       if (entity === 'gl_journal_sync_exception') {
@@ -2686,7 +2772,9 @@
           backendMonitorEvents: Array.isArray(payload?.backend_monitor_events) ? payload.backend_monitor_events : state.backendMonitorEvents,
           trafficDailySummary: Array.isArray(payload?.app_traffic_daily_summary) ? payload.app_traffic_daily_summary : state.trafficDailySummary,
           monitorThresholdAlerts: Array.isArray(payload?.monitor_threshold_alerts) ? payload.monitor_threshold_alerts : state.monitorThresholdAlerts,
-          hsePacketActionItems: Array.isArray(payload?.hse_packet_action_items) ? payload.hse_packet_action_items : state.hsePacketActionItems
+          hsePacketActionItems: Array.isArray(payload?.hse_packet_action_items) ? payload.hse_packet_action_items : state.hsePacketActionItems,
+          hseDashboardSummary: Array.isArray(payload?.hse_dashboard_summary) ? payload.hse_dashboard_summary : state.hseDashboardSummary,
+          accountingReviewSummary: Array.isArray(payload?.accounting_review_summary) ? payload.accounting_review_summary : state.accountingReviewSummary
         };
         const e = els();
         if (e.staffPosition) {
@@ -2965,6 +3053,13 @@
         btn.dataset.boundFocus = '1';
         btn.addEventListener('click', () => focusAdminHubEntity(btn.getAttribute('data-admin-focus-entity') || ''));
       });
+      if (!document.body.dataset.adminFocusRequestBound) {
+        document.body.dataset.adminFocusRequestBound = '1';
+        document.addEventListener('ywi:admin-focus-request', (event) => {
+          const entity = event?.detail?.entity || '';
+          if (entity) focusAdminHubEntity(entity);
+        });
+      }
       if (e.passwordForm && e.passwordForm.dataset.bound !== '1') {
         e.passwordForm.dataset.bound = '1';
         e.passwordForm.addEventListener('submit', (event) => {
@@ -3000,6 +3095,7 @@
 
     async function init() {
       ensureLayout();
+      setupAdminSectionNav();
       restoreDraft();
       bind();
       applyRoleAccess();
@@ -3015,7 +3111,9 @@
       refreshSelectors,
       applyRoleAccess,
       runSmokeCheck,
-      retryPendingAdminSync
+      retryPendingAdminSync,
+      focusEntity: focusAdminHubEntity,
+      applyAdminSectionFilter
     };
   }
 
