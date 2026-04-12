@@ -1,7 +1,7 @@
 /* File: js/hse-ops-ui.js
    Brief description: Separate HSE Operations hub outside Admin.
-   Renders OSHA-oriented workflow cards, mobile-safe quick actions, cached fallback summaries,
-   and admin shortcuts for linked HSE packets and analytics monitoring.
+   Renders OSHA-oriented workflow cards, mobile-safe quick actions, linked packet review lanes,
+   monitoring drill-through shortcuts, and cached fallback summaries.
 */
 
 'use strict';
@@ -57,6 +57,133 @@
     } catch {}
   }
 
+  function rankAlertLevel(level) {
+    return { error: 1, critical: 1, warning: 2, info: 3 }[String(level || '').toLowerCase()] || 9;
+  }
+
+  function rankSeverity(level) {
+    return { critical: 1, error: 2, warning: 3, info: 4 }[String(level || '').toLowerCase()] || 9;
+  }
+
+  function sortPacketRows(rows = []) {
+    return [...rows].sort((a, b) => {
+      const aAttention = a?.needs_attention ? 0 : 1;
+      const bAttention = b?.needs_attention ? 0 : 1;
+      if (aAttention !== bAttention) return aAttention - bAttention;
+      const aPriority = Number(a?.action_priority || 999);
+      const bPriority = Number(b?.action_priority || 999);
+      if (aPriority !== bPriority) return aPriority - bPriority;
+      return String(a?.packet_number || '').localeCompare(String(b?.packet_number || ''));
+    });
+  }
+
+  function deriveLinkedContextSummary(payload = {}) {
+    const existing = Array.isArray(payload?.hse_link_context_summary) ? payload.hse_link_context_summary.filter(Boolean) : [];
+    if (existing.length) return existing;
+
+    const packets = Array.isArray(payload?.linked_hse_packets) ? payload.linked_hse_packets : [];
+    const actionMap = new Map((Array.isArray(payload?.hse_packet_action_items) ? payload.hse_packet_action_items : []).map((item) => [String(item?.packet_id || item?.id || ''), item]));
+    const rows = packets.map((packet) => ({ ...packet, ...(actionMap.get(String(packet?.id || '')) || {}) }));
+    const lanes = [
+      { lane_key: 'job_work_order', lane_title: 'Jobs and work orders', match: (row) => !!row?.job_id || !!row?.work_order_id },
+      { lane_key: 'site_context', lane_title: 'Sites and client locations', match: (row) => !!row?.client_site_id },
+      { lane_key: 'route_dispatch', lane_title: 'Routes, dispatches, and subcontract work', match: (row) => !!row?.route_id || !!row?.dispatch_id },
+      { lane_key: 'equipment', lane_title: 'Equipment-linked packets', match: (row) => !!row?.equipment_master_id },
+      { lane_key: 'standalone', lane_title: 'Standalone and unscheduled packets', match: (row) => !!row?.unscheduled_project || String(row?.packet_scope || '').toLowerCase() === 'standalone' || String(row?.packet_type || '').toLowerCase() === 'unscheduled_project' || (!row?.job_id && !row?.work_order_id && !row?.client_site_id && !row?.route_id && !row?.dispatch_id && !row?.equipment_master_id) }
+    ];
+
+    return lanes.map((lane, index) => {
+      const laneRows = sortPacketRows(rows.filter((row) => lane.match(row)));
+      const top = laneRows[0] || null;
+      return {
+        lane_key: lane.lane_key,
+        lane_title: lane.lane_title,
+        sort_order: index + 1,
+        related_entity: 'linked_hse_packet',
+        packet_count: laneRows.length,
+        attention_count: laneRows.filter((row) => !!row?.needs_attention).length,
+        ready_for_closeout_count: laneRows.filter((row) => String(row?.packet_status || '').toLowerCase() === 'ready_for_closeout').length,
+        top_packet_id: top?.id || top?.packet_id || '',
+        top_packet_number: top?.packet_number || '',
+        top_action_title: top?.action_title || (top ? 'Packet review' : ''),
+        top_action_summary: top?.action_summary || '',
+        observed_at: top?.last_event_at || top?.updated_at || top?.created_at || ''
+      };
+    }).filter((row) => row.packet_count > 0);
+  }
+
+  function deriveMonitorReviewSummary(payload = {}) {
+    const existing = Array.isArray(payload?.monitor_review_summary) ? payload.monitor_review_summary.filter(Boolean) : [];
+    if (existing.length) return existing;
+
+    const uploads = Array.isArray(payload?.field_upload_failures) ? [...payload.field_upload_failures] : [];
+    uploads.sort((a, b) => {
+      const aOpen = a?.resolved_at ? 1 : 0;
+      const bOpen = b?.resolved_at ? 1 : 0;
+      if (aOpen !== bOpen) return aOpen - bOpen;
+      return String(b?.created_at || '').localeCompare(String(a?.created_at || ''));
+    });
+    const topUpload = uploads[0] || null;
+
+    const alerts = Array.isArray(payload?.monitor_threshold_alerts) ? payload.monitor_threshold_alerts.filter((row) => String(row?.alert_scope || '').toLowerCase() === 'analytics' || String(row?.alert_key || '').startsWith('traffic-')) : [];
+    alerts.sort((a, b) => {
+      const diff = rankAlertLevel(a?.alert_level) - rankAlertLevel(b?.alert_level);
+      if (diff) return diff;
+      return String(b?.observed_at || '').localeCompare(String(a?.observed_at || ''));
+    });
+    const topAlert = alerts[0] || null;
+
+    const backend = Array.isArray(payload?.backend_monitor_events) ? payload.backend_monitor_events.filter((row) => ['open', 'investigating'].includes(String(row?.lifecycle_status || '').toLowerCase()) || ['critical', 'error'].includes(String(row?.severity || '').toLowerCase())) : [];
+    backend.sort((a, b) => {
+      const severity = rankSeverity(a?.severity) - rankSeverity(b?.severity);
+      if (severity) return severity;
+      return String(b?.last_seen_at || b?.created_at || '').localeCompare(String(a?.last_seen_at || a?.created_at || ''));
+    });
+    const topBackend = backend[0] || null;
+
+    return [
+      {
+        lane_key: 'upload_failures',
+        lane_title: 'Upload issues',
+        sort_order: 1,
+        related_entity: 'field_upload_failure',
+        record_count: uploads.length,
+        open_count: uploads.filter((row) => !row?.resolved_at).length,
+        error_count: uploads.filter((row) => ['failed', 'dead_letter'].includes(String(row?.retry_status || '').toLowerCase())).length,
+        top_record_id: topUpload?.id || '',
+        top_label: topUpload?.file_name || topUpload?.packet_number || topUpload?.job_code || topUpload?.linked_record_type || '',
+        top_summary: topUpload ? [topUpload.failure_scope, topUpload.failure_stage, topUpload.failure_reason].filter(Boolean).join(' | ') : '',
+        observed_at: topUpload?.created_at || ''
+      },
+      {
+        lane_key: 'traffic_reliability',
+        lane_title: 'Traffic and reliability',
+        sort_order: 2,
+        related_entity: 'app_traffic_event',
+        record_count: alerts.length,
+        open_count: alerts.length,
+        error_count: alerts.filter((row) => String(row?.alert_level || '').toLowerCase() === 'error').length,
+        top_record_id: '',
+        top_label: topAlert?.alert_title || '',
+        top_summary: topAlert?.alert_summary || '',
+        observed_at: topAlert?.observed_at || ''
+      },
+      {
+        lane_key: 'runtime_incidents',
+        lane_title: 'Runtime and API incidents',
+        sort_order: 3,
+        related_entity: 'backend_monitor_event',
+        record_count: backend.length,
+        open_count: backend.filter((row) => ['open', 'investigating'].includes(String(row?.lifecycle_status || '').toLowerCase())).length,
+        error_count: backend.filter((row) => ['critical', 'error'].includes(String(row?.severity || '').toLowerCase())).length,
+        top_record_id: topBackend?.id || '',
+        top_label: topBackend?.title || topBackend?.event_name || '',
+        top_summary: topBackend ? [topBackend.monitor_scope, topBackend.severity, topBackend.message].filter(Boolean).join(' | ') : '',
+        observed_at: topBackend?.last_seen_at || topBackend?.created_at || ''
+      }
+    ].filter((row) => row.record_count > 0);
+  }
+
   function normalizeSummary(payload = {}) {
     const hseSummary = Array.isArray(payload?.hse_dashboard_summary) ? payload.hse_dashboard_summary[0] : null;
     const accountingSummary = Array.isArray(payload?.accounting_review_summary) ? payload.accounting_review_summary[0] : null;
@@ -96,6 +223,8 @@
       alerts,
       actionItems,
       latestTraffic,
+      linkedShortcuts: deriveLinkedContextSummary(payload),
+      monitorShortcuts: deriveMonitorReviewSummary(payload),
       savedAt: new Date().toISOString()
     };
   }
@@ -112,17 +241,60 @@
       </div>`;
   }
 
-  function adminActionsMarkup(role) {
+  function linkedShortcutCardsMarkup(summary) {
+    const rows = Array.isArray(summary?.linkedShortcuts) ? [...summary.linkedShortcuts] : [];
+    rows.sort((a, b) => Number(a?.sort_order || 99) - Number(b?.sort_order || 99));
+    if (!rows.length) {
+      return '<div class="notice" style="margin-top:14px;">No linked-packet context rows are available yet. Standalone packets can still be opened from Admin until linked record traffic starts to grow.</div>';
+    }
+    return `<div class="hseops-grid hseops-grid--compact">${rows.map((row) => {
+      const subtitle = row?.top_packet_number
+        ? `${row.top_packet_number} — ${row.top_action_title || 'review required'}`
+        : 'No focused packet yet';
+      const helper = [
+        `Packets: ${row.packet_count || 0}`,
+        `Needs attention: ${row.attention_count || 0}`,
+        Number(row.ready_for_closeout_count || 0) > 0 ? `Ready for closeout: ${row.ready_for_closeout_count}` : ''
+      ].filter(Boolean).join(' • ');
+      const summaryText = row?.top_packet_number
+        ? `Focused ${row.lane_title}. Top packet ${row.top_packet_number} — ${row.top_action_title || row.top_action_summary || 'review required'}.`
+        : `Focused ${row.lane_title}.`;
+      return `<button class="hseops-card hseops-card--accent" type="button" data-admin-focus="linked_hse_packet" data-preferred-id="${escHtml(row.top_packet_id || '')}" data-summary="${escHtml(summaryText)}"><strong>${escHtml(row.lane_title || 'Linked packets')}</strong><span>${escHtml(subtitle)}</span><small>${escHtml(helper)}</small><em>Review</em></button>`;
+    }).join('')}</div>`;
+  }
+
+  function monitorShortcutCardsMarkup(summary) {
+    const rows = Array.isArray(summary?.monitorShortcuts) ? [...summary.monitorShortcuts] : [];
+    rows.sort((a, b) => Number(a?.sort_order || 99) - Number(b?.sort_order || 99));
+    if (!rows.length) {
+      return '<div class="notice" style="margin-top:14px;">No upload failures or monitor incidents are loaded yet. Analytics and runtime review will appear here automatically as events arrive.</div>';
+    }
+    return `<div class="hseops-grid hseops-grid--compact">${rows.map((row) => {
+      const subtitle = row?.top_label
+        ? `${row.top_label}${row.top_summary ? ` — ${row.top_summary}` : ''}`
+        : 'Review the latest lane activity';
+      const helper = [
+        `Records: ${row.record_count || 0}`,
+        Number(row.open_count || 0) > 0 ? `Open: ${row.open_count}` : '',
+        Number(row.error_count || 0) > 0 ? `Errors: ${row.error_count}` : ''
+      ].filter(Boolean).join(' • ');
+      const summaryText = row?.top_label
+        ? `Focused ${row.lane_title}. Top item ${row.top_label}${row.top_summary ? ` — ${row.top_summary}` : ''}.`
+        : `Focused ${row.lane_title}.`;
+      return `<button class="hseops-card hseops-card--accent" type="button" data-admin-focus="${escHtml(row.related_entity || 'app_traffic_event')}" data-target-entity="${escHtml(row.related_entity || 'app_traffic_event')}" data-preferred-id="${escHtml(row.top_record_id || '')}" data-summary="${escHtml(summaryText)}"><strong>${escHtml(row.lane_title || 'Monitoring')}</strong><span>${escHtml(subtitle)}</span><small>${escHtml(helper)}</small><em>Review</em></button>`;
+    }).join('')}</div>`;
+  }
+
+  function routeShortcutMarkup(role) {
     const canAdminFocus = window.YWISecurity?.hasMinRole?.(role, 'supervisor');
     if (!canAdminFocus) {
-      return `<div class="notice" style="margin-top:14px;">Supervisor, HSE, job admin, or admin roles can open linked HSE packet follow-up and monitoring review from this hub.</div>`;
+      return `<div class="notice" style="margin-top:14px;">Supervisor, HSE, job admin, or admin roles can open linked packet follow-up and monitor review from this hub.</div>`;
     }
     return `
       <div class="hseops-grid hseops-grid--compact">
-        <button class="hseops-card hseops-card--accent" type="button" data-admin-focus="linked_hse_packet"><strong>Linked HSE Packets</strong><span>Open standalone-capable packets tied to jobs, sites, work orders, routes, equipment, dispatches, and subcontract work.</span><em>Review</em></button>
-        <button class="hseops-card hseops-card--accent" type="button" data-admin-focus="app_traffic_event"><strong>Analytics / Traffic Monitor</strong><span>Review traffic telemetry, upload issues, and runtime incidents from the same workflow shell.</span><em>Review</em></button>
         <button class="hseops-card" type="button" data-route="jobs"><strong>Jobs and Crews</strong><span>Open jobs, recurring work, crew assignments, and supervisor ownership.</span><em>Open</em></button>
         <button class="hseops-card" type="button" data-route="equipment"><strong>Equipment</strong><span>Open field equipment, inspections, damage, evidence, and signout context.</span><em>Open</em></button>
+        <button class="hseops-card" type="button" data-route="admin"><strong>Full Admin Shell</strong><span>Open the full backbone shell when the shortcut cards are not enough.</span><em>Open</em></button>
       </div>`;
   }
 
@@ -176,8 +348,16 @@
         ${quickActionsMarkup()}
       </div>
       <div class="admin-panel-block" style="margin-top:16px;">
-        <div class="section-heading"><div><h3 style="margin:0;">Linked packet and monitoring shortcuts</h3><p class="section-subtitle">Keep HSE standalone-capable, but open linked packets and monitor review when a formal job, route, dispatch, or equipment record exists.</p></div></div>
-        ${adminActionsMarkup(role)}
+        <div class="section-heading"><div><h3 style="margin:0;">Linked HSE packet shortcuts</h3><p class="section-subtitle">Keep HSE standalone-capable, but open linked packets when a formal job, route, dispatch, site, or equipment record exists.</p></div></div>
+        ${linkedShortcutCardsMarkup(summary)}
+      </div>
+      <div class="admin-panel-block" style="margin-top:16px;">
+        <div class="section-heading"><div><h3 style="margin:0;">Analytics and monitor review</h3><p class="section-subtitle">Review upload issues, traffic telemetry, and runtime incidents from the same workflow shell without hunting through long tables.</p></div></div>
+        ${monitorShortcutCardsMarkup(summary)}
+      </div>
+      <div class="admin-panel-block" style="margin-top:16px;">
+        <div class="section-heading"><div><h3 style="margin:0;">Jobs, crews, and equipment</h3><p class="section-subtitle">Jump into the adjacent workflow shells when you need deeper route, crew, or equipment context.</p></div></div>
+        ${routeShortcutMarkup(role)}
       </div>
       <div class="admin-panel-block" style="margin-top:16px;">
         <div class="section-heading"><div><h3 style="margin:0;">OSHA-oriented field reminders</h3><p class="section-subtitle">Use the packet workflow to keep machinery, lifting, slips, chemicals, traffic, and heat controls visible for the crew.</p></div></div>
@@ -190,9 +370,12 @@
     section.querySelectorAll('[data-admin-focus]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const entity = btn.getAttribute('data-admin-focus') || 'linked_hse_packet';
+        const preferredId = btn.getAttribute('data-preferred-id') || '';
+        const summaryText = btn.getAttribute('data-summary') || '';
+        const targetEntity = btn.getAttribute('data-target-entity') || '';
         window.YWIRouter?.showSection?.('admin', { skipFocus: true });
         window.setTimeout(() => {
-          document.dispatchEvent(new CustomEvent('ywi:admin-focus-request', { detail: { entity } }));
+          document.dispatchEvent(new CustomEvent('ywi:admin-focus-request', { detail: { entity, preferredId, summary: summaryText, targetEntity } }));
         }, 80);
       });
     });

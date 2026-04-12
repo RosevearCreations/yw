@@ -1919,25 +1919,32 @@
       if (options.summary) setSummary(options.summary, false);
     }
 
-    function focusAdminHubEntity(entity) {
+    function focusAdminHubEntity(entity, options = {}) {
       const clean = String(entity || '').trim();
       if (!clean) return;
+      const preferredIdOverride = String(options?.preferredId || '').trim();
+      const summaryOverride = String(options?.summary || '').trim();
+      const targetEntityOverride = String(options?.targetEntity || '').trim();
       if (clean === 'linked_hse_packet') {
         const actionItem = resolveTopHseActionItem();
-        const preferredId = actionItem?.packet_id || actionItem?.id || state.linkedHsePackets?.[0]?.id || '';
-        const summary = actionItem ? `Focused Linked HSE Packets. Top follow-up: ${actionItem.packet_number || actionItem.packet_id || 'packet'} — ${actionItem.action_title || actionItem.action_summary || 'review required'}` : 'Focused Linked HSE Packets.';
+        const preferredId = preferredIdOverride || actionItem?.packet_id || actionItem?.id || state.linkedHsePackets?.[0]?.id || '';
+        const summary = summaryOverride || (actionItem ? `Focused Linked HSE Packets. Top follow-up: ${actionItem.packet_number || actionItem.packet_id || 'packet'} — ${actionItem.action_title || actionItem.action_summary || 'review required'}` : 'Focused Linked HSE Packets.');
         focusAdminBackboneEntity('linked_hse_packet', { preferredId, summary });
         return;
       }
-      if (clean === 'app_traffic_event' || clean === 'backend_monitor_event') {
+      if (clean === 'app_traffic_event' || clean === 'backend_monitor_event' || clean === 'field_upload_failure') {
         const topAlert = resolveTopMonitorAlert();
-        const targetEntity = (topAlert && String(topAlert.alert_key || '').includes('monitor')) || (state.backendMonitorEvents || []).length ? 'backend_monitor_event' : 'app_traffic_event';
-        const preferredId = targetEntity === 'backend_monitor_event' ? (state.backendMonitorEvents?.[0]?.id || '') : (state.appTrafficEvents?.[0]?.id || '');
-        const summary = topAlert ? `Focused Analytics / Traffic Monitor. Current threshold: ${topAlert.alert_title || topAlert.alert_key} (${topAlert.alert_level || 'warning'}).` : 'Focused Analytics / Traffic Monitor.';
+        const targetEntity = targetEntityOverride || (clean === 'field_upload_failure'
+          ? 'field_upload_failure'
+          : (((topAlert && String(topAlert.alert_key || '').includes('monitor')) || (state.backendMonitorEvents || []).length) ? 'backend_monitor_event' : 'app_traffic_event'));
+        const preferredId = preferredIdOverride || (targetEntity === 'backend_monitor_event'
+          ? (state.backendMonitorEvents?.[0]?.id || '')
+          : (targetEntity === 'field_upload_failure' ? (state.fieldUploadFailures?.[0]?.id || '') : (state.appTrafficEvents?.[0]?.id || '')));
+        const summary = summaryOverride || (topAlert ? `Focused Analytics / Traffic Monitor. Current threshold: ${topAlert.alert_title || topAlert.alert_key} (${topAlert.alert_level || 'warning'}).` : 'Focused Analytics / Traffic Monitor.');
         focusAdminBackboneEntity(targetEntity, { preferredId, summary });
         return;
       }
-      focusAdminBackboneEntity(clean, { summary:`Focused ${clean.replaceAll('_', ' ')}.` });
+      focusAdminBackboneEntity(targetEntityOverride || clean, { preferredId: preferredIdOverride, summary: summaryOverride || `Focused ${clean.replaceAll('_', ' ')}.` });
     }
 
     function renderBackboneInsights(row = null) {
@@ -3057,7 +3064,13 @@
         document.body.dataset.adminFocusRequestBound = '1';
         document.addEventListener('ywi:admin-focus-request', (event) => {
           const entity = event?.detail?.entity || '';
-          if (entity) focusAdminHubEntity(entity);
+          if (entity) {
+            focusAdminHubEntity(entity, {
+              preferredId: event?.detail?.preferredId || '',
+              summary: event?.detail?.summary || '',
+              targetEntity: event?.detail?.targetEntity || ''
+            });
+          }
         });
       }
       if (e.passwordForm && e.passwordForm.dataset.bound !== '1') {
