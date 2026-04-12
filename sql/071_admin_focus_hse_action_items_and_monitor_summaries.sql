@@ -1,205 +1,258 @@
 -- 071_admin_focus_hse_action_items_and_monitor_summaries.sql
--- Adds:
--- 1) HSE packet action-item view for closeout, reopen, and required-step follow-up
--- 2) traffic daily summary view for admin analytics review
--- 3) threshold-alert summary view so Admin can see spikes without reading raw rows
+-- Adds Admin focus/review views for:
+-- 1) HSE packet action items
+-- 2) Daily traffic analytics summaries
+-- 3) Monitor threshold alerts
+--
+-- This version is aligned to the actual 069/070 schema.
+-- Note: linked_hse_packets has:
+--   - unscheduled_project (boolean)
+--   - standalone_project_name (text)
+-- It does NOT have unscheduled_project_name.
 
 create or replace view public.v_hse_packet_action_items as
-with packet_base as (
+with base as (
   select
-    lhp.id as packet_id,
-    lhp.packet_number,
-    lhp.packet_scope,
-    lhp.packet_status,
-    lhp.packet_type,
-    lhp.job_id,
-    lhp.work_order_id,
-    lhp.dispatch_id,
-    lhp.route_id,
-    lhp.client_site_id,
-    lhp.equipment_master_id,
-    lhp.supervisor_profile_id,
-    lhp.unscheduled_project,
-    lhp.unscheduled_project_name,
-    coalesce(vhpp.required_step_count, 0) as required_step_count,
-    coalesce(vhpp.completed_step_count, 0) as completed_step_count,
-    coalesce(vhpp.completion_percent, lhp.completion_percent, 0) as completion_percent,
-    coalesce(vhpp.proof_count, 0) as proof_count,
-    coalesce(vhpp.reopen_count, lhp.reopen_count, 0) as reopen_count,
-    coalesce(lhp.briefing_required and not lhp.briefing_completed, false) as missing_briefing,
-    coalesce(lhp.inspection_required and not lhp.inspection_completed, false) as missing_inspection,
-    coalesce(lhp.emergency_review_required and not lhp.emergency_review_completed, false) as missing_emergency_review,
-    coalesce(lhp.weather_monitoring_required and not lhp.weather_monitoring_completed, false) as missing_weather,
-    coalesce(lhp.heat_monitoring_required and not lhp.heat_monitoring_completed, false) as missing_heat,
-    coalesce(lhp.chemical_handling_required and not lhp.chemical_handling_completed, false) as missing_chemical,
-    coalesce(lhp.traffic_control_required and not lhp.traffic_control_completed, false) as missing_traffic,
-    coalesce(lhp.field_signoff_required and not lhp.field_signoff_completed, false) as missing_signoff,
-    coalesce(lhp.closeout_completed, false) as closeout_completed,
-    coalesce(lhp.reopen_in_progress, false) as reopen_in_progress,
-    lhp.ready_for_closeout_at,
-    lhp.closed_at,
-    lhp.last_reopened_at,
-    lhp.updated_at,
-    lhp.created_at
-  from public.linked_hse_packets lhp
-  left join public.v_hse_packet_progress vhpp on vhpp.id = lhp.id
+    hp.id as packet_id,
+    hp.packet_number,
+    hp.packet_type,
+    hp.packet_scope,
+    hp.packet_status,
+    hp.job_id,
+    hp.work_order_id,
+    hp.dispatch_id,
+    hp.equipment_master_id,
+    hp.unscheduled_project,
+    hp.standalone_project_name,
+    hp.completion_percent,
+    hp.required_step_count,
+    hp.completed_step_count,
+    greatest(coalesce(hp.required_step_count, 0) - coalesce(hp.completed_step_count, 0), 0) as open_step_count,
+    hp.exception_event_count,
+    hp.proof_count,
+    hp.photo_count,
+    hp.document_count,
+    hp.ready_for_closeout_at,
+    hp.closed_at,
+    hp.reopen_in_progress,
+    hp.reopen_count,
+    hp.last_reopened_at,
+    hp.last_event_at,
+    hp.last_proof_at,
+    hp.field_signoff_required,
+    hp.field_signoff_completed,
+    hp.weather_monitoring_required,
+    hp.weather_monitoring_completed,
+    hp.heat_monitoring_required,
+    hp.heat_monitoring_completed,
+    hp.chemical_handling_required,
+    hp.chemical_handling_completed,
+    hp.traffic_control_required,
+    hp.traffic_control_completed,
+    coalesce(nullif(trim(hp.standalone_project_name), ''), hp.packet_number) as project_label
+  from public.v_hse_packet_progress hp
 )
 select
-  pb.packet_id as id,
-  pb.packet_id,
-  pb.packet_number,
-  pb.packet_scope,
-  pb.packet_status,
-  pb.packet_type,
-  pb.job_id,
-  pb.work_order_id,
-  pb.dispatch_id,
-  pb.route_id,
-  pb.client_site_id,
-  pb.equipment_master_id,
-  pb.supervisor_profile_id,
-  pb.unscheduled_project,
-  pb.unscheduled_project_name,
-  pb.required_step_count,
-  pb.completed_step_count,
-  pb.completion_percent,
-  pb.proof_count,
-  pb.reopen_count,
-  pb.ready_for_closeout_at,
-  pb.closed_at,
-  pb.last_reopened_at,
-  pb.updated_at,
-  pb.created_at,
+  b.packet_id,
+  b.packet_number,
+  b.packet_type,
+  b.packet_scope,
+  b.packet_status,
+  b.job_id,
+  b.work_order_id,
+  b.dispatch_id,
+  b.equipment_master_id,
+  b.unscheduled_project,
+  b.standalone_project_name,
+  b.project_label,
+  b.completion_percent,
+  b.required_step_count,
+  b.completed_step_count,
+  b.open_step_count,
+  b.exception_event_count,
+  b.proof_count,
+  b.photo_count,
+  b.document_count,
+  b.ready_for_closeout_at,
+  b.closed_at,
+  b.reopen_in_progress,
+  b.reopen_count,
+  b.last_reopened_at,
+  b.last_event_at,
+  b.last_proof_at,
+
   case
-    when pb.reopen_in_progress then 'critical'
-    when pb.packet_status in ('ready_for_closeout', 'closed') and pb.missing_signoff then 'critical'
-    when pb.packet_status = 'ready_for_closeout' and not pb.closeout_completed then 'warning'
-    when pb.missing_weather or pb.missing_heat or pb.missing_chemical or pb.missing_traffic then 'warning'
-    when pb.missing_briefing or pb.missing_inspection or pb.missing_emergency_review then 'warning'
-    when pb.proof_count = 0 and pb.packet_status in ('in_progress', 'ready_for_closeout') then 'info'
-    else 'normal'
+    when coalesce(b.closed_at, null) is not null and coalesce(b.reopen_in_progress, false) then 5
+    when coalesce(b.exception_event_count, 0) > 0 then 10
+    when coalesce(b.field_signoff_required, false) and not coalesce(b.field_signoff_completed, false) and coalesce(b.open_step_count, 0) = 0 then 20
+    when coalesce(b.ready_for_closeout_at, null) is not null and b.closed_at is null then 30
+    when coalesce(b.open_step_count, 0) > 0 then 40
+    else 90
   end as action_priority,
+
   case
-    when pb.reopen_in_progress then 'Packet was reopened and still needs follow-up before closeout can stand.'
-    when pb.packet_status in ('ready_for_closeout', 'closed') and pb.missing_signoff then 'Field signoff is still missing for a packet already at closeout stage.'
-    when pb.packet_status = 'ready_for_closeout' and not pb.closeout_completed then 'Packet is ready for closeout review but has not been formally closed.'
-    when pb.missing_weather then 'Required weather monitoring check is still incomplete.'
-    when pb.missing_heat then 'Required heat-stress workflow check is still incomplete.'
-    when pb.missing_chemical then 'Required chemical-handling workflow check is still incomplete.'
-    when pb.missing_traffic then 'Required traffic/public interaction control check is still incomplete.'
-    when pb.missing_briefing then 'Required briefing step is still incomplete.'
-    when pb.missing_inspection then 'Required inspection step is still incomplete.'
-    when pb.missing_emergency_review then 'Required emergency review step is still incomplete.'
-    when pb.proof_count = 0 and pb.packet_status in ('in_progress', 'ready_for_closeout') then 'No proof items are linked yet for an active packet.'
-    else 'Packet currently has no high-priority action item.'
-  end as action_reason
-from packet_base pb;
+    when coalesce(b.closed_at, null) is not null and coalesce(b.reopen_in_progress, false) then 'reopen_followup'
+    when coalesce(b.exception_event_count, 0) > 0 then 'exception_review'
+    when coalesce(b.field_signoff_required, false) and not coalesce(b.field_signoff_completed, false) and coalesce(b.open_step_count, 0) = 0 then 'field_signoff'
+    when coalesce(b.ready_for_closeout_at, null) is not null and b.closed_at is null then 'closeout'
+    when coalesce(b.open_step_count, 0) > 0 then 'workflow_completion'
+    else 'review'
+  end as action_code,
+
+  case
+    when coalesce(b.closed_at, null) is not null and coalesce(b.reopen_in_progress, false) then 'Reopened packet needs follow-up'
+    when coalesce(b.exception_event_count, 0) > 0 then 'Packet has exception events'
+    when coalesce(b.field_signoff_required, false) and not coalesce(b.field_signoff_completed, false) and coalesce(b.open_step_count, 0) = 0 then 'Packet ready for field signoff'
+    when coalesce(b.ready_for_closeout_at, null) is not null and b.closed_at is null then 'Packet ready for closeout'
+    when coalesce(b.open_step_count, 0) > 0 then 'Packet still has open workflow steps'
+    else 'Packet review'
+  end as action_title,
+
+  concat_ws(
+    ' | ',
+    case when b.unscheduled_project then 'Unscheduled project' end,
+    case when coalesce(b.open_step_count, 0) > 0 then ('Open steps: ' || b.open_step_count::text) end,
+    case when coalesce(b.exception_event_count, 0) > 0 then ('Exceptions: ' || b.exception_event_count::text) end,
+    case when coalesce(b.proof_count, 0) > 0 then ('Proofs: ' || b.proof_count::text) end,
+    case when coalesce(b.ready_for_closeout_at, null) is not null and b.closed_at is null then 'Awaiting closeout' end,
+    case when coalesce(b.reopen_in_progress, false) then 'Reopen in progress' end
+  ) as action_summary,
+
+  (
+    coalesce(b.exception_event_count, 0) > 0
+    or (coalesce(b.field_signoff_required, false) and not coalesce(b.field_signoff_completed, false))
+    or coalesce(b.open_step_count, 0) > 0
+    or (coalesce(b.ready_for_closeout_at, null) is not null and b.closed_at is null)
+    or coalesce(b.reopen_in_progress, false)
+  ) as needs_attention
+from base b;
 
 create or replace view public.v_app_traffic_daily_summary as
-select
-  date_trunc('day', ate.created_at)::date as activity_date,
-  count(*) as event_count,
-  count(distinct coalesce(nullif(ate.session_key, ''), nullif(ate.visitor_key, ''), ate.id::text)) as unique_sessions,
-  count(*) filter (where ate.event_name = 'page_view') as page_views,
-  count(*) filter (where ate.event_name = 'route_view') as route_views,
-  count(*) filter (where ate.event_name = 'api_call') as api_calls,
-  count(*) filter (where ate.event_name = 'api_error') as api_errors,
-  count(*) filter (where ate.event_name = 'client_error') as client_errors,
-  count(*) filter (where ate.event_name = 'upload_failure') as upload_failures,
-  round(avg(nullif(ate.duration_ms, 0))::numeric, 2) as avg_duration_ms,
-  max(ate.created_at) as last_event_at
-from public.app_traffic_events ate
-group by 1
-order by 1 desc;
-
-create or replace view public.v_monitor_threshold_alerts as
-with upload_24h as (
+with daily as (
   select
-    count(*) filter (where retry_status in ('pending', 'retrying')) as pending_upload_failures,
-    count(*) as total_upload_failures_24h
-  from public.field_upload_failures
-  where created_at >= now() - interval '24 hours'
-),
-monitor_24h as (
-  select
-    count(*) filter (where severity in ('error', 'critical')) as error_or_critical_24h,
-    count(*) filter (where lifecycle_status in ('open', 'investigating') and severity = 'critical') as critical_open_count,
-    count(*) filter (where lifecycle_status in ('open', 'investigating')) as open_monitor_count
-  from public.backend_monitor_events
-  where created_at >= now() - interval '24 hours'
-),
-journal_open as (
-  select count(*) as open_journal_exceptions
-  from public.gl_journal_sync_exceptions
-  where exception_status = 'open'
-),
-hse_action as (
-  select
-    count(*) filter (where action_priority = 'critical') as critical_hse_packets,
-    count(*) filter (where action_priority = 'warning') as warning_hse_packets
-  from public.v_hse_packet_action_items
+    ate.created_at::date as event_date,
+    count(*)::int as total_events,
+    count(*) filter (where ate.event_name = 'page_view')::int as page_view_count,
+    count(*) filter (where ate.event_name = 'route_view')::int as route_view_count,
+    count(*) filter (where ate.event_name = 'admin_load')::int as admin_load_count,
+    count(*) filter (where ate.event_name = 'api_call')::int as api_call_count,
+    count(*) filter (where ate.event_name = 'api_error')::int as api_error_count,
+    count(*) filter (where ate.event_name = 'client_error')::int as client_error_count,
+    count(*) filter (where ate.event_name = 'upload_failure')::int as upload_failure_count,
+    count(*) filter (where ate.event_name = 'upload_success')::int as upload_success_count,
+    count(distinct nullif(ate.session_key, ''))::int as session_count,
+    count(distinct nullif(ate.visitor_key, ''))::int as visitor_count,
+    count(distinct ate.profile_id)::int as authenticated_profile_count,
+    avg(ate.duration_ms)::numeric(12,2) as avg_duration_ms,
+    max(ate.duration_ms) as max_duration_ms
+  from public.app_traffic_events ate
+  group by ate.created_at::date
 )
 select
-  'upload_failures_24h'::text as alert_key,
-  'Upload failures in the last 24 hours'::text as alert_name,
-  u.total_upload_failures_24h::integer as current_value,
-  5::integer as warning_threshold,
-  10::integer as critical_threshold,
-  case when u.total_upload_failures_24h >= 10 then 'critical'
-       when u.total_upload_failures_24h >= 5 then 'warning'
-       else 'normal' end as alert_status,
-  '24h'::text as alert_window,
-  'Tracks recent field upload issues across comments, route execution attachments, HSE proofs, and evidence uploads.'::text as alert_notes
-from upload_24h u
+  d.event_date,
+  d.total_events,
+  d.page_view_count,
+  d.route_view_count,
+  d.admin_load_count,
+  d.api_call_count,
+  d.api_error_count,
+  d.client_error_count,
+  d.upload_failure_count,
+  d.upload_success_count,
+  d.session_count,
+  d.visitor_count,
+  d.authenticated_profile_count,
+  d.avg_duration_ms,
+  d.max_duration_ms,
+  round((coalesce(d.api_error_count, 0)::numeric / nullif(d.api_call_count, 0)::numeric) * 100, 2) as api_error_rate_percent,
+  round(((coalesce(d.api_error_count, 0) + coalesce(d.client_error_count, 0) + coalesce(d.upload_failure_count, 0))::numeric / nullif(d.total_events, 0)::numeric) * 100, 2) as trouble_event_rate_percent
+from daily d;
+
+create or replace view public.v_monitor_threshold_alerts as
+with open_monitor_rollups as (
+  select
+    bme.monitor_scope as alert_scope,
+    count(*)::int as open_incident_count,
+    count(*) filter (where bme.severity in ('critical', 'error'))::int as open_error_incident_count,
+    max(bme.last_seen_at) as observed_at
+  from public.backend_monitor_events bme
+  where bme.lifecycle_status in ('open', 'investigating')
+  group by bme.monitor_scope
+),
+traffic_alerts as (
+  select
+    ('traffic-' || vads.event_date::text) as alert_key,
+    'analytics'::text as alert_scope,
+    case
+      when coalesce(vads.api_error_rate_percent, 0) >= 10
+        or coalesce(vads.trouble_event_rate_percent, 0) >= 15
+        then 'error'
+      else 'warning'
+    end as alert_level,
+    'Traffic / reliability threshold alert'::text as alert_title,
+    concat_ws(
+      ' | ',
+      'Date: ' || vads.event_date::text,
+      'API error rate: ' || coalesce(vads.api_error_rate_percent, 0)::text || '%',
+      'Trouble event rate: ' || coalesce(vads.trouble_event_rate_percent, 0)::text || '%',
+      'Upload failures: ' || coalesce(vads.upload_failure_count, 0)::text
+    ) as alert_summary,
+    vads.event_date::timestamp as observed_at,
+    vads.event_date,
+    greatest(coalesce(vads.api_error_rate_percent, 0), coalesce(vads.trouble_event_rate_percent, 0))::numeric(12,2) as metric_value,
+    case
+      when coalesce(vads.api_error_rate_percent, 0) >= 10 then 10::numeric(12,2)
+      when coalesce(vads.trouble_event_rate_percent, 0) >= 15 then 15::numeric(12,2)
+      when coalesce(vads.upload_failure_count, 0) >= 3 then 3::numeric(12,2)
+      else 5::numeric(12,2)
+    end as threshold_value,
+    vads.total_events as related_count,
+    jsonb_build_object(
+      'api_error_rate_percent', vads.api_error_rate_percent,
+      'trouble_event_rate_percent', vads.trouble_event_rate_percent,
+      'upload_failure_count', vads.upload_failure_count,
+      'api_call_count', vads.api_call_count,
+      'api_error_count', vads.api_error_count,
+      'client_error_count', vads.client_error_count
+    ) as details
+  from public.v_app_traffic_daily_summary vads
+  where
+    coalesce(vads.api_error_rate_percent, 0) >= 5
+    or coalesce(vads.trouble_event_rate_percent, 0) >= 8
+    or coalesce(vads.upload_failure_count, 0) >= 3
+),
+monitor_alerts as (
+  select
+    ('monitor-' || omr.alert_scope) as alert_key,
+    omr.alert_scope,
+    case
+      when coalesce(omr.open_error_incident_count, 0) > 0 then 'error'
+      else 'warning'
+    end as alert_level,
+    'Open monitor incidents'::text as alert_title,
+    concat_ws(
+      ' | ',
+      'Scope: ' || omr.alert_scope,
+      'Open incidents: ' || omr.open_incident_count::text,
+      'Open error/critical incidents: ' || omr.open_error_incident_count::text
+    ) as alert_summary,
+    omr.observed_at::timestamp as observed_at,
+    omr.observed_at::date as event_date,
+    omr.open_incident_count::numeric(12,2) as metric_value,
+    case
+      when coalesce(omr.open_error_incident_count, 0) > 0 then 1::numeric(12,2)
+      else 5::numeric(12,2)
+    end as threshold_value,
+    omr.open_incident_count as related_count,
+    jsonb_build_object(
+      'open_incident_count', omr.open_incident_count,
+      'open_error_incident_count', omr.open_error_incident_count
+    ) as details
+  from open_monitor_rollups omr
+  where
+    coalesce(omr.open_error_incident_count, 0) > 0
+    or coalesce(omr.open_incident_count, 0) >= 5
+)
+select * from traffic_alerts
 union all
-select
-  'monitor_errors_24h',
-  'Error/critical monitor incidents in the last 24 hours',
-  m.error_or_critical_24h::integer,
-  3,
-  6,
-  case when m.error_or_critical_24h >= 6 then 'critical'
-       when m.error_or_critical_24h >= 3 then 'warning'
-       else 'normal' end,
-  '24h',
-  'Shows repeated frontend/backend/storage/auth incidents so Admin can escalate before field work is affected.'
-from monitor_24h m
-union all
-select
-  'critical_monitors_open',
-  'Open critical monitor incidents',
-  m.critical_open_count::integer,
-  1,
-  3,
-  case when m.critical_open_count >= 3 then 'critical'
-       when m.critical_open_count >= 1 then 'warning'
-       else 'normal' end,
-  'open',
-  'Any critical incident left open should be reviewed quickly.'
-from monitor_24h m
-union all
-select
-  'journal_sync_exceptions_open',
-  'Open journal sync exceptions',
-  j.open_journal_exceptions::integer,
-  3,
-  8,
-  case when j.open_journal_exceptions >= 8 then 'critical'
-       when j.open_journal_exceptions >= 3 then 'warning'
-       else 'normal' end,
-  'open',
-  'Flags stale or drifted source-generated accounting batches that still need review.'
-from journal_open j
-union all
-select
-  'hse_action_items_open',
-  'Open HSE action items',
-  (h.critical_hse_packets + h.warning_hse_packets)::integer,
-  3,
-  8,
-  case when (h.critical_hse_packets + h.warning_hse_packets) >= 8 or h.critical_hse_packets >= 3 then 'critical'
-       when (h.critical_hse_packets + h.warning_hse_packets) >= 3 or h.critical_hse_packets >= 1 then 'warning'
-       else 'normal' end,
-  'open',
-  'Highlights linked or standalone packets still missing safety steps, signoff, or closeout follow-up.'
-from hse_action h;
+select * from monitor_alerts;
