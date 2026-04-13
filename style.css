@@ -1056,6 +1056,8 @@ body[data-user-role="admin"] #admin[data-admin-locked="false"] {
 .hseops-guidance-card{padding:14px;border:1px solid rgba(255,255,255,.1);border-radius:16px;background:rgba(255,255,255,.03);}
 .hseops-guidance-card h3{margin:0 0 8px;font-size:1rem;}
 .hseops-guidance-card p{margin:0;font-size:.92rem;line-height:1.45;opacity:.9;}
+.form-footer{display:flex;gap:10px;flex-wrap:wrap;}
+#ad_backbone_fields textarea[id*='machinery_notes'],#ad_backbone_fields textarea[id*='lifting_notes'],#ad_backbone_fields textarea[id*='hydration_plan_notes'],#ad_backbone_fields textarea[id*='sds_notes'],#ad_backbone_fields textarea[id*='site_communication_notes'],#ad_backbone_fields textarea[id*='task_tool_risk_notes'],#ad_backbone_fields textarea[id*='worker_specific_risk_notes']{min-height:96px;}
 @media (max-width: 720px){
   .admin-section-nav{position:sticky;top:68px;z-index:4;padding:10px 0 6px;background:linear-gradient(180deg,rgba(10,15,25,.98),rgba(10,15,25,.82));backdrop-filter:blur(8px);}
   .admin-section-btn{flex:1 1 160px;}

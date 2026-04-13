@@ -1,20 +1,19 @@
 ## 2026-04-12 handoff status
-- Latest code pass added `sql/073_hse_link_context_and_monitor_shortcuts.sql`.
-- HSE Ops now renders linked packet review lanes for jobs/work orders, sites, routes/dispatches/subcontract work, equipment, and standalone/unscheduled packets.
-- HSE Ops now renders monitor review lanes for upload issues, traffic/reliability pressure, and runtime/API incidents.
-- Admin focus drill-through now accepts a target entity, preferred record id, and summary text so the HSE hub can land on the right Admin context instead of only the first generic record.
-- `sql/000_full_schema_reference.sql` was synchronized forward through 073.
-- Core Markdown docs were refreshed to reflect the new HSE shortcut lane and monitor-review direction.
-- `scripts/repo-smoke-check.mjs` was updated through 073 and passes locally.
+- Latest code pass added `sql/074_hse_control_cues_and_inspection_focus.sql`.
+- HSE packets and HSE events now carry structured machinery/tool, lifting/posture, weather/heat, and chemical/public-interaction cue fields.
+- HSE Ops summary cards now surface machinery/lifting pressure plus chemical/public/cones follow-up more clearly.
+- Site Inspection now offers category-focused hazard rows and preset add buttons for the four requested OSHA-oriented themes.
+- `sql/000_full_schema_reference.sql` was synchronized forward through 074 and `scripts/repo-smoke-check.mjs` was updated through 074.
+
+> Last synchronized: April 12, 2026 (HSE control cues, inspection focus, and schema 074)
 
 ## Main files changed
 - `index.html`
 - `style.css`
 - `js/hse-ops-ui.js`
 - `js/admin-ui.js`
-- `supabase/functions/admin-selectors/index.ts`
-- `supabase/functions/admin-directory/index.ts`
-- `sql/073_hse_link_context_and_monitor_shortcuts.sql`
+- `js/forms-inspection.js`
+- `sql/074_hse_control_cues_and_inspection_focus.sql`
 - `sql/000_full_schema_reference.sql`
 - `scripts/repo-smoke-check.mjs`
 - `README.md`

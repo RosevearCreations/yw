@@ -1,8 +1,14 @@
-## 2026-04-12 progress update
-- **Moved forward:** HSE Ops is no longer limited to one broad linked-packet button and one broad monitor button. It now has direct review lanes and Admin drill-through targeting.
-- **Still open:** shortcut lanes do not yet land on filtered subsets or support resolve/snooze/assignment actions for noisy monitor items.
-- **Still open:** Jobs, Equipment, and Dispatch shells can open their sections quickly, but they do not yet create/open linked packets in-context from their own forms.
-- **Still open:** accounting review still needs the same lane-style shortcut treatment now used by HSE and monitoring.
+## 2026-04-12 HSE control cues and inspection focus pass
+- Added migration `sql/074_hse_control_cues_and_inspection_focus.sql`.
+- HSE packets and packet events now expose structured machinery/tool, lifting/posture, weather/heat, and chemical/public-interaction fields so follow-up can be filtered instead of buried in free text.
+- HSE Ops summary cards now keep machinery/lifting and chemical/public/cones pressure visible alongside the existing monitor shortcuts.
+- Site Inspection now has category-focused hazard presets so inspections can capture the four requested field-risk themes more consistently on phone or desktop.
+
+- **Moved forward:** HSE packets no longer rely only on broad notes for machinery, lifting, weather/heat, and chemical/public review.
+- **Still open:** worker-facing packet-event capture still needs a more direct phone-first packet UI outside Admin.
+- **Still open:** Jobs, Equipment, and Dispatch still do not open/create linked packets in-context from their own screens.
+
+> Last synchronized: April 12, 2026 (HSE control cues, inspection focus, and schema 074)
 
 > Last synchronized: April 12, 2026 (linked HSE review lanes and monitor shortcut pass)
 

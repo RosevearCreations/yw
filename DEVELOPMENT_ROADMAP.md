@@ -1,11 +1,22 @@
-## 2026-04-12 linked HSE review lanes and monitor shortcut pass
-- Added migration `sql/073_hse_link_context_and_monitor_shortcuts.sql`.
-- Added DB-backed `v_hse_link_context_summary` so the standalone HSE hub can open linked packet review by jobs/work orders, sites, routes/dispatches/subcontract work, equipment, and standalone/unscheduled packets.
-- Added DB-backed `v_monitor_review_summary` so HSE Ops can expose upload issues, traffic/reliability pressure, and runtime/API incidents as focused review lanes instead of only broad monitor buttons.
-- Extended HSE Ops so shortcut cards can pass an exact Admin focus target, selected record, and summary while keeping the cached fallback path intact.
-- Tightened the HSE shell around the requested direction: standalone-capable packets remain valid, but formal job, route, dispatch, site, equipment, and monitor context now opens more directly.
+## 2026-04-12 HSE control cues and inspection focus pass
+- Added migration `sql/074_hse_control_cues_and_inspection_focus.sql`.
+- HSE packets and packet events now expose structured machinery/tool, lifting/posture, weather/heat, and chemical/public-interaction fields so follow-up can be filtered instead of buried in free text.
+- HSE Ops summary cards now keep machinery/lifting and chemical/public/cones pressure visible alongside the existing monitor shortcuts.
+- Site Inspection now has category-focused hazard presets so inspections can capture the four requested field-risk themes more consistently on phone or desktop.
 
-## Immediate next build priorities after 073
+> Last synchronized: April 12, 2026 (HSE control cues, inspection focus, and schema 074)
+
+## Immediate next build priorities after 074
+1. **Packet create/open from Jobs, Equipment, and Dispatch**
+   - let adjacent workflow shells create or open the right linked packet in-context
+   - carry crew, supervisor, equipment, and site defaults automatically
+2. **Worker-facing packet capture speed**
+   - mirror the new Admin cue fields in worker-friendly phone forms where the packet exists
+   - keep offline/outbox behavior for packet-event evidence and closeout notes
+3. **Monitor actions**
+   - add resolve / snooze / assign actions for noisy monitor lanes and repeated upload failures
+
+## Carried-forward follow-on items
 1. **Linked packet create flows from adjacent shells**
    - let Jobs, Equipment, and Dispatch screens create or open the correct linked HSE packet without forcing Admin first
    - carry crew, supervisor, and site defaults into the packet when a formal record already exists

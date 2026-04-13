@@ -1,9 +1,11 @@
 ## 2026-04-12 added regression targets
-- Verify HSE Ops renders direct linked-packet review cards for jobs/work orders, sites, routes/dispatches, equipment, and standalone/unscheduled packets.
-- Verify each linked-packet shortcut opens Admin on the correct `linked_hse_packet` record when a top packet exists.
-- Verify upload issues, traffic/reliability, and runtime/API shortcut cards open the correct Admin backbone entity.
-- Verify HSE Ops still renders from cache when live selector loading fails.
-- Recheck the single-H1 rule and public metadata after the updated app shell title/description pass.
+- Verify HSE packet forms show the new machinery/tool, lifting/posture, weather/heat, and chemical/public cue fields in Admin.
+- Verify HSE event forms save hazard category, cones/barriers, SDS, lockout, lifting, and hydration-related details without breaking older rows.
+- Verify Site Inspection hazard rows now carry category-focused presets and preserve offline/outbox behavior.
+- Verify HSE Ops summary cards surface machinery/lifting and chemical/public open counts alongside the existing monitor shortcuts.
+- Recheck the single-H1 rule and public metadata after the Southern Ontario wording refresh.
+
+> Last synchronized: April 12, 2026 (HSE control-cue and inspection-focus checks added)
 
 > Last synchronized: April 12, 2026 (HSE shortcut and monitor drill-through checks added)
 
