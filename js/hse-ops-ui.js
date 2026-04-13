@@ -210,7 +210,10 @@
         weather_open_packets: packets.filter((item) => !!item?.weather_monitoring_required && !item?.weather_monitoring_completed).length,
         heat_open_packets: packets.filter((item) => !!item?.heat_monitoring_required && !item?.heat_monitoring_completed).length,
         chemical_open_packets: packets.filter((item) => !!item?.chemical_handling_required && !item?.chemical_handling_completed).length,
-        traffic_open_packets: packets.filter((item) => !!item?.traffic_control_required && !item?.traffic_control_completed).length
+        traffic_open_packets: packets.filter((item) => !!item?.traffic_control_required && !item?.traffic_control_completed).length,
+        machinery_open_packets: packets.filter((item) => !!item?.machinery_review_required && !item?.machinery_review_completed).length,
+        lifting_open_packets: packets.filter((item) => !!item?.lifting_review_required && !item?.lifting_review_completed).length,
+        cones_open_packets: packets.filter((item) => !!item?.cones_barriers_required && !item?.cones_barriers_completed).length
       },
       accounting: accountingSummary || {
         open_sync_exception_count: openExceptions.length,
@@ -301,10 +304,10 @@
   function guidanceMarkup() {
     return `
       <div class="hseops-guidance-grid">
-        <article class="hseops-guidance-card"><h3>Machinery and tools</h3><p>Keep packet and inspection notes focused on moving blades, pinch points, thrown objects, guards, lockout, and task-specific tool risks.</p></article>
-        <article class="hseops-guidance-card"><h3>Lifting and awkward posture</h3><p>Capture manual handling, repetitive work, reach height, uneven terrain, and crew-size needs before field start and closeout.</p></article>
-        <article class="hseops-guidance-card"><h3>Weather and heat</h3><p>Review workload, temperature, humidity, sun, air movement, clothing, hydration, and worker-specific risk before and during field work.</p></article>
-        <article class="hseops-guidance-card"><h3>Chemicals and public interaction</h3><p>Track chemical handling, PPE, SDS awareness, public traffic, cones/barriers, roadside exposure, and site communication notes.</p></article>
+        <article class="hseops-guidance-card"><h3>Machinery and tools</h3><p>Keep packet and inspection notes focused on moving blades, pinch points, thrown objects, guards, lockout, and task-specific tool risks. The Admin packet/event forms now expose dedicated machinery flags and notes for this review.</p></article>
+        <article class="hseops-guidance-card"><h3>Lifting and awkward posture</h3><p>Capture manual handling, repetitive work, reach height, uneven terrain, and crew-size needs before field start and closeout. Lifting review now has its own packet/event cues instead of being buried only in general notes.</p></article>
+        <article class="hseops-guidance-card"><h3>Weather and heat</h3><p>Review workload, temperature, humidity, sun, air movement, clothing, hydration, and worker-specific risk before and during field work. Packet/event notes now include hydration, clothing, and worker-specific prompts.</p></article>
+        <article class="hseops-guidance-card"><h3>Chemicals and public interaction</h3><p>Track chemical handling, PPE, SDS awareness, public traffic, cones/barriers, roadside exposure, and site communication notes. Packet/event forms now expose cones/barriers and communication cues directly.</p></article>
       </div>`;
   }
 
@@ -317,8 +320,9 @@
       <div class="admin-backbone-summary">
         <div class="admin-backbone-card"><span>Open HSE follow-up</span><strong>${escHtml(hse.action_needed_packets || 0)}</strong><small>Packets still needing signoff, closeout, or exception review.</small></div>
         <div class="admin-backbone-card"><span>Ready for closeout</span><strong>${escHtml(hse.ready_for_closeout_packets || 0)}</strong><small>Field packets ready for supervisor closeout.</small></div>
+        <div class="admin-backbone-card"><span>Machinery / lifting open</span><strong>${escHtml((Number(hse.machinery_open_packets || 0) + Number(hse.lifting_open_packets || 0)))}</strong><small>Packets missing machinery/tool or lifting/posture review.</small></div>
         <div class="admin-backbone-card"><span>Weather / heat open</span><strong>${escHtml((Number(hse.weather_open_packets || 0) + Number(hse.heat_open_packets || 0)))}</strong><small>Packets missing weather or heat workflow completion.</small></div>
-        <div class="admin-backbone-card"><span>Chemical / traffic open</span><strong>${escHtml((Number(hse.chemical_open_packets || 0) + Number(hse.traffic_open_packets || 0)))}</strong><small>Chemical-handling and public-interaction steps still open.</small></div>
+        <div class="admin-backbone-card"><span>Chemical / public open</span><strong>${escHtml((Number(hse.chemical_open_packets || 0) + Number(hse.traffic_open_packets || 0) + Number(hse.cones_open_packets || 0)))}</strong><small>Chemical, cones/barriers, and public-interaction steps still open.</small></div>
         <div class="admin-backbone-card"><span>Accounting review</span><strong>${escHtml((Number(acct.open_sync_exception_count || 0) + Number(acct.stale_source_batch_count || 0)))}</strong><small>Open sync exceptions and stale source batches still waiting for review.</small></div>
         <div class="admin-backbone-card"><span>Traffic alerts</span><strong>${escHtml(alertCount)}</strong><small>${latestTraffic ? `${escHtml(latestTraffic.event_date || '')} · ${escHtml(latestTraffic.total_events || 0)} events` : 'Monitoring summary unavailable.'}</small></div>
       </div>`;

@@ -1,5 +1,5 @@
--- Last synchronized: April 11, 2026. Reviewed during the admin focus, HSE action-item, and monitor summary pass.
--- Current reference includes migrations through 071_admin_focus_hse_action_items_and_monitor_summaries.sql and documents admin focus fixes, HSE action-item views, and monitor summary thresholds.
+-- Last synchronized: April 12, 2026. Reviewed during the HSE control-cue, inspection-focus, and schema 074 pass.
+-- Current reference includes migrations through 074_hse_control_cues_and_inspection_focus.sql and documents structured HSE control cues, inspection hazard categories, and HSE dashboard/action-item updates.
 
 create extension if not exists pgcrypto;
 

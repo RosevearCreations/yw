@@ -80,7 +80,7 @@
       <div class="section-heading">
         <div>
           <h2>Site Inspection</h2>
-          <p class="section-subtitle">Record workforce on site, hazards, corrective actions, and approver sign-off.</p>
+          <p class="section-subtitle">Record workforce on site, hazards, corrective actions, and approver sign-off. Keep the inspection focused on machinery/tools, lifting/posture, weather/heat, and chemicals/public interaction.</p>
         </div>
       </div>
       <form id="inspForm">
@@ -101,10 +101,17 @@
         </div>
         <div class="form-footer" style="margin-top:10px;"><button id="inspAddWorker" type="button" class="secondary">Add Worker</button></div>
         <div class="section-heading" style="margin-top:18px;"><h3 style="margin:0;">Hazards</h3></div>
-        <div class="table-scroll">
-          <table id="inspHazards"><thead><tr><th>Hazard</th><th>Severity</th><th>Assigned To</th><th>Action</th><th>Actions</th></tr></thead><tbody></tbody></table>
+        <div class="notice" style="margin-bottom:12px;">Use category-focused rows so field reviews capture machinery/blades, lifting/posture, weather/heat, and chemicals/public interaction clearly.</div>
+        <div class="form-footer" style="margin-top:10px;gap:8px;flex-wrap:wrap;">
+          <button id="inspAddHazard" type="button" class="secondary">Add Hazard</button>
+          <button id="inspAddMachineryHazard" type="button" class="secondary">+ Machinery / Tools</button>
+          <button id="inspAddLiftingHazard" type="button" class="secondary">+ Lifting / Posture</button>
+          <button id="inspAddWeatherHazard" type="button" class="secondary">+ Weather / Heat</button>
+          <button id="inspAddChemicalHazard" type="button" class="secondary">+ Chemicals / Public</button>
         </div>
-        <div class="form-footer" style="margin-top:10px;"><button id="inspAddHazard" type="button" class="secondary">Add Hazard</button></div>
+        <div class="table-scroll">
+          <table id="inspHazards"><thead><tr><th>Category</th><th>Hazard</th><th>Location</th><th>Risk</th><th>Action</th><th>Assigned To</th><th>Completed</th><th>Completed By</th><th>Completed Date</th><th>Actions</th></tr></thead><tbody></tbody></table>
+        </div>
         <div class="grid" style="margin-top:12px;">
           <label>Approver
             <select id="insp_approver">
@@ -156,6 +163,10 @@
 
       hazardsBody: ensureTBody('inspHazards'),
       addHazardBtn: $('#inspAddHazard'),
+      addMachineryHazardBtn: $('#inspAddMachineryHazard'),
+      addLiftingHazardBtn: $('#inspAddLiftingHazard'),
+      addWeatherHazardBtn: $('#inspAddWeatherHazard'),
+      addChemicalHazardBtn: $('#inspAddChemicalHazard'),
 
       approver: $('#insp_approver'),
       approverOther: $('#insp_approver_other'),
@@ -194,11 +205,29 @@
       els.rosterBody.appendChild(tr);
     }
 
+    const HAZARD_PRESETS = {
+      machinery_tools: { category: 'machinery_tools', hazard: 'Moving blades / pinch points / thrown-object exposure', action: 'Verify guards, lockout, and task-specific tool controls.' },
+      lifting_posture: { category: 'lifting_posture', hazard: 'Manual handling / awkward posture / uneven terrain', action: 'Check crew size, lift aids, reach height, and rotation needs.' },
+      weather_heat: { category: 'weather_heat', hazard: 'Heat, sun, humidity, or weather exposure', action: 'Review hydration, clothing, rest, and worker-specific heat risk.' },
+      chemicals_public: { category: 'chemicals_public', hazard: 'Chemical handling / public traffic / cones-barriers', action: 'Confirm PPE, SDS awareness, cones/barriers, and site communication.' }
+    };
+
     function addHazardRow(values = {}) {
       if (!els.hazardsBody) return;
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
+        <td>
+          <select class="insp-category">
+            <option value="general" ${(!values.category || values.category === 'general') ? 'selected' : ''}>General</option>
+            <option value="machinery_tools" ${values.category === 'machinery_tools' ? 'selected' : ''}>Machinery / Tools</option>
+            <option value="lifting_posture" ${values.category === 'lifting_posture' ? 'selected' : ''}>Lifting / Posture</option>
+            <option value="weather_heat" ${values.category === 'weather_heat' ? 'selected' : ''}>Weather / Heat</option>
+            <option value="chemicals_public" ${values.category === 'chemicals_public' ? 'selected' : ''}>Chemicals / Public</option>
+            <option value="slip_trip_fall" ${values.category === 'slip_trip_fall' ? 'selected' : ''}>Slip / Trip / Fall</option>
+            <option value="traffic" ${values.category === 'traffic' ? 'selected' : ''}>Traffic</option>
+          </select>
+        </td>
         <td><input type="text" class="insp-hazard" placeholder="Hazard" value="${escHtml(values.hazard || '')}" required></td>
         <td><input type="text" class="insp-location" placeholder="Location" value="${escHtml(values.location || '')}"></td>
         <td>
@@ -295,6 +324,7 @@
 
       const hazards = els.hazardsBody
         ? Array.from(els.hazardsBody.querySelectorAll('tr')).map((tr) => {
+            const category = tr.querySelector('.insp-category')?.value || 'general';
             const hazard = tr.querySelector('.insp-hazard')?.value?.trim?.() || '';
             const location = tr.querySelector('.insp-location')?.value?.trim?.() || '';
             const risk = tr.querySelector('.insp-risk')?.value || 'low';
@@ -305,6 +335,7 @@
             const completed_date = tr.querySelector('.insp-completed-date')?.value || '';
 
             return {
+              category,
               hazard,
               location,
               risk,
@@ -386,6 +417,10 @@
     function bindEvents() {
       els.addWorkerBtn?.addEventListener('click', () => addWorkerRow());
       els.addHazardBtn?.addEventListener('click', () => addHazardRow());
+      els.addMachineryHazardBtn?.addEventListener('click', () => addHazardRow(HAZARD_PRESETS.machinery_tools));
+      els.addLiftingHazardBtn?.addEventListener('click', () => addHazardRow(HAZARD_PRESETS.lifting_posture));
+      els.addWeatherHazardBtn?.addEventListener('click', () => addHazardRow(HAZARD_PRESETS.weather_heat));
+      els.addChemicalHazardBtn?.addEventListener('click', () => addHazardRow(HAZARD_PRESETS.chemicals_public));
 
       els.rosterBody?.addEventListener('click', (e) => {
         const btn = (e.target instanceof Element) ? e.target.closest('button') : null;
