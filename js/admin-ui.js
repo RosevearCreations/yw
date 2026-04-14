@@ -1968,9 +1968,6 @@
         ['heat_monitoring_required', 'heat_monitoring_completed'],
         ['chemical_handling_required', 'chemical_handling_completed'],
         ['traffic_control_required', 'traffic_control_completed'],
-        ['machinery_review_required', 'machinery_review_completed'],
-        ['lifting_review_required', 'lifting_review_completed'],
-        ['cones_barriers_required', 'cones_barriers_completed'],
         ['field_signoff_required', 'field_signoff_completed']
       ];
       const requiredCount = flagPairs.reduce((sum, [required]) => sum + (document.getElementById(`ad_bb_${required}`)?.checked ? 1 : 0), 0);
@@ -2403,9 +2400,7 @@
         cards.push({ title: 'HSE Events', value: String(events.length), help: 'Weather, heat, chemical, traffic, signoff, and closeout events linked to this packet.' });
         cards.push({ title: 'Weather / Heat', value: `${Number(selected?.weather_event_count || 0)} / ${Number(selected?.heat_event_count || 0)}`, help: 'Latest weather and heat workflow check counts for this packet.' });
         cards.push({ title: 'Chemical / Traffic', value: `${Number(selected?.chemical_event_count || 0)} / ${Number(selected?.traffic_event_count || 0)}`, help: 'Chemical-handling and traffic/public interaction event counts.' });
-        cards.push({ title: 'Machinery / Lifting', value: `${Number(selected?.machinery_event_count || 0)} / ${Number(selected?.lifting_event_count || 0)}`, help: 'Machinery/tool and lifting/posture review events linked to this packet.' });
         cards.push({ title: 'Signoff / Closeout', value: `${Number(selected?.signoff_event_count || 0)} / ${Number(selected?.closeout_event_count || 0)}`, help: 'Field signoff and closeout events completed against the packet.' });
-        cards.push({ title: 'Controls Open', value: `${selected?.machinery_review_required && !selected?.machinery_review_completed ? 1 : 0}/${selected?.lifting_review_required && !selected?.lifting_review_completed ? 1 : 0}/${selected?.cones_barriers_required && !selected?.cones_barriers_completed ? 1 : 0}`, help: 'Open machinery, lifting, and cones/barriers review states for this packet.' });
       }
 
       if (entity === 'app_traffic_event' || entity === 'backend_monitor_event') {
@@ -2443,7 +2438,7 @@
         cards.push({ title: 'Failure Stage', value: String(selected?.failure_stage || 'upload'), help: 'Shows which upload stage failed so field/office staff know where to investigate.' });
       }
       if (entity === 'linked_hse_packet') {
-        ['briefing_required', 'briefing_completed', 'inspection_required', 'inspection_completed', 'emergency_review_required', 'emergency_review_completed', 'weather_monitoring_required', 'weather_monitoring_completed', 'heat_monitoring_required', 'heat_monitoring_completed', 'chemical_handling_required', 'chemical_handling_completed', 'traffic_control_required', 'traffic_control_completed', 'machinery_review_required', 'machinery_review_completed', 'lifting_review_required', 'lifting_review_completed', 'cones_barriers_required', 'cones_barriers_completed', 'field_signoff_required', 'field_signoff_completed', 'packet_status', 'reopen_in_progress', 'packet_type', 'packet_scope'].forEach((name) => bind(name, () => {
+        ['briefing_required', 'briefing_completed', 'inspection_required', 'inspection_completed', 'emergency_review_required', 'emergency_review_completed', 'weather_monitoring_required', 'weather_monitoring_completed', 'heat_monitoring_required', 'heat_monitoring_completed', 'chemical_handling_required', 'chemical_handling_completed', 'traffic_control_required', 'traffic_control_completed', 'field_signoff_required', 'field_signoff_completed', 'packet_status', 'reopen_in_progress', 'packet_type', 'packet_scope'].forEach((name) => bind(name, () => {
           const preview = getHsePreviewFromInputs();
           if (!document.getElementById('ad_bb_reopen_in_progress')?.checked && document.getElementById('ad_bb_packet_status')?.value !== 'closed') setBackboneInputValue('packet_status', preview.status);
           if (document.getElementById('ad_bb_packet_type')?.value === 'unscheduled_project') setBackboneInputValue('unscheduled_project', true);
@@ -2457,16 +2452,9 @@
         }, name === 'packet_status' || name === 'packet_type' || name === 'packet_scope' ? 'change' : 'input'));
       }
       if (entity === 'hse_packet_event') {
-        ['event_type', 'event_status', 'packet_id', 'hazard_category'].forEach((name) => bind(name, () => {
+        ['event_type', 'event_status', 'packet_id'].forEach((name) => bind(name, () => {
           const type = document.getElementById('ad_bb_event_type')?.value || 'note';
-          const category = document.getElementById('ad_bb_hazard_category')?.value || 'general';
           if ((type === 'field_signoff' || type === 'closeout') && !document.getElementById('ad_bb_event_status')?.value) setBackboneInputValue('event_status', type === 'field_signoff' ? 'signed' : 'closed');
-          if (type === 'note') {
-            if (category === 'machinery_tools' && !document.getElementById('ad_bb_task_tool_risk_notes')?.value) setBackboneInputValue('task_tool_risk_notes', 'Review guards, lockout, and task-specific tool risks.');
-            if (category === 'lifting_posture' && !document.getElementById('ad_bb_posture_notes')?.value) setBackboneInputValue('posture_notes', 'Capture reach height, uneven terrain, repetitive motion, and crew-size needs.');
-            if (category === 'weather_heat' && !document.getElementById('ad_bb_air_movement_notes')?.value) setBackboneInputValue('air_movement_notes', 'Review sun, air movement, clothing, hydration, and worker-specific heat risk.');
-            if (category === 'chemicals_public' && !document.getElementById('ad_bb_site_communication_notes')?.value) setBackboneInputValue('site_communication_notes', 'Confirm SDS awareness, cones/barriers, roadside exposure, and public/site communication notes.');
-          }
           renderBackboneInsights();
         }, 'change'));
       }

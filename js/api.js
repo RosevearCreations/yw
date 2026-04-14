@@ -609,11 +609,28 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
   }
 
   async function manageAdminEntity(payload = {}) {
-    return jsonFetch('admin-manage', {
-      method: 'POST',
-      body: payload,
-      requireAuth: true
-    });
+    try {
+      return await jsonFetch('admin-manage', {
+        method: 'POST',
+        body: payload,
+        requireAuth: true,
+        timeoutMs: 15000
+      });
+    } catch (error) {
+      const message = String(error?.message || '');
+      const shouldFallback = error?.status === 404
+        || error?.status === 0
+        || error?.status === 502
+        || error?.status === 503
+        || /Failed to fetch|CORS|ERR_FAILED|Request timed out|Received HTML instead of JSON|Network or runtime failure/i.test(message);
+      if (!shouldFallback) throw error;
+      return jsonFetch(getHostCompatibilityUrl('admin-manage'), {
+        method: 'POST',
+        body: payload,
+        requireAuth: true,
+        timeoutMs: 20000
+      });
+    }
   }
 
   async function accountRecoveryAction(payload = {}, requireAuth = true) {

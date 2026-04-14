@@ -1,5 +1,5 @@
--- Last synchronized: April 13, 2026. Reviewed during the HSE structured-cue persistence pass; no new schema migration was required.
--- Current reference remains aligned through 074_hse_control_cues_and_inspection_focus.sql while the latest code pass focused on saving the new HSE machinery/lifting/weather/chemical cue fields end to end.
+-- Last synchronized: April 14, 2026. Reviewed during the admin-manage fallback pass; no new schema migration was required.
+-- Current reference remains aligned through 074_hse_control_cues_and_inspection_focus.sql while the latest code pass focused on staff creation reliability and same-origin fallback handling.
 
 create extension if not exists pgcrypto;
 
