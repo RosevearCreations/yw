@@ -221,7 +221,7 @@
             <label>Position<select id="ad_staff_position"></select></label>
             <label>Trade<select id="ad_staff_trade"></select></label>
             <label>Start Date<input id="ad_staff_start_date" type="date" /></label>
-            <form id="ad_staff_new_password_form" autocomplete="on"><input type="text" name="username" autocomplete="username" style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden;" tabindex="-1" aria-hidden="true"><label>New Password<input id="ad_staff_new_password" type="password" name="new-password" autocomplete="new-password" placeholder="Required for new user" /></label></form>
+            <form id="ad_staff_new_password_form" autocomplete="on"><input type="text" name="username" autocomplete="username" style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden;" tabindex="-1" aria-hidden="true"><label>New Password<input id="ad_staff_new_password" type="password" name="new-password" autocomplete="new-password" placeholder="Required for new user" /></label><div class="muted" style="margin-top:6px;font-size:.9rem;">For new staff users, use at least 10 characters with upper, lower, and a number.</div></form>
             <label style="display:flex;align-items:end;gap:8px;"><input id="ad_staff_phone_verified" type="checkbox" /><span>Phone verified</span></label>
             <label style="display:flex;align-items:end;gap:8px;"><input id="ad_staff_email_verified" type="checkbox" /><span>Email verified</span></label>
             <label style="display:flex;align-items:end;gap:8px;"><input id="ad_staff_active" type="checkbox" checked /><span>Active</span></label>
@@ -234,6 +234,7 @@
             <button id="ad_staff_block" class="secondary" type="button">Block / Unblock</button>
             <button id="ad_staff_delete" class="secondary" type="button">Delete User</button>
           </div>
+          <div id="ad_staff_status_notice" class="notice" style="display:none;margin-top:10px;"></div>
           <div class="table-scroll" style="margin-top:14px;">
             <table id="ad_staff_table">
               <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Tier</th><th>Seniority</th><th>Status</th><th>Phone</th></tr></thead>
@@ -653,6 +654,7 @@
         staffResetBtn: document.getElementById('ad_staff_reset_email'),
         staffBlockBtn: document.getElementById('ad_staff_block'),
         staffDeleteBtn: document.getElementById('ad_staff_delete'),
+        staffStatusNotice: document.getElementById('ad_staff_status_notice'),
         staffBody: document.querySelector('#ad_staff_table tbody'),
         assignmentId: document.getElementById('ad_assignment_id'),
         assignmentSiteId: document.getElementById('ad_assignment_site_id'),
@@ -740,6 +742,44 @@
       manageSummary(text);
     }
 
+    function setStaffNotice(text = '', isError = false) {
+      const e = els();
+      if (!e.staffStatusNotice) return;
+      if (!text) {
+        e.staffStatusNotice.style.display = 'none';
+        e.staffStatusNotice.textContent = '';
+        e.staffStatusNotice.dataset.kind = '';
+        return;
+      }
+      e.staffStatusNotice.style.display = 'block';
+      e.staffStatusNotice.textContent = text;
+      e.staffStatusNotice.dataset.kind = isError ? 'error' : 'info';
+    }
+
+    function setStaffBusy(isBusy, label = 'Saving staff details…') {
+      const e = els();
+      [e.staffCreateBtn, e.staffSaveBtn, e.staffResetBtn, e.staffBlockBtn, e.staffDeleteBtn].forEach((btn) => {
+        if (!btn) return;
+        btn.disabled = !!isBusy;
+        btn.dataset.busy = isBusy ? 'true' : 'false';
+      });
+      if (isBusy) setStaffNotice(label, false);
+    }
+
+    function isValidEmailAddress(value = '') {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+    }
+
+    function validateStaffPassword(value = '') {
+      const clean = String(value || '');
+      if (!clean.trim()) return 'New staff user requires an initial password.';
+      if (clean.length < 10) return 'Password must be at least 10 characters long.';
+      if (!/[A-Z]/.test(clean) || !/[a-z]/.test(clean) || !/[0-9]/.test(clean)) {
+        return 'Password must include upper, lower, and number characters.';
+      }
+      return '';
+    }
+
     function applyRoleAccess() {
       const access = getAccessProfile(getCurrentRole());
       state.locked = !access.canViewAdminDirectory;
@@ -807,6 +847,7 @@
     function fillStaffForm(row) {
       const e = els();
       const item = row || {};
+      if (!row) setStaffNotice('', false);
       if (e.staffProfileId) e.staffProfileId.value = item.id || '';
       if (e.staffFullName) e.staffFullName.value = item.full_name || '';
       if (e.staffEmail) e.staffEmail.value = item.email || '';
@@ -844,58 +885,160 @@
 
     async function createStaffUser() {
       const e = els();
-      if (!(e.staffEmail?.value || '').trim()) return setSummary('Email is required for a new staff user.', true);
-      if (!(e.staffNewPassword?.value || '').trim()) return setSummary('New staff user requires an initial password.', true);
-      const resp = await manageAdminEntity({ entity:'credential', action:'create_user', email:e.staffEmail.value, new_password:e.staffNewPassword.value, full_name:e.staffFullName?.value || '', phone:e.staffPhone?.value || '', role:e.staffRole?.value || 'employee', staff_tier:e.staffTier?.value || '', seniority_level:e.staffSeniority?.value || '', employment_status:e.staffStatus?.value || 'active', employee_number:e.staffEmployeeNumber?.value || '', current_position:e.staffPosition?.value || '', trade_specialty:e.staffTrade?.value || '', start_date:e.staffStartDate?.value || null, phone_verified:!!e.staffPhoneVerified?.checked, email_verified:!!e.staffEmailVerified?.checked, is_active:!!e.staffActive?.checked, notes:e.staffNotes?.value || '' });
-      if (!resp?.ok) throw new Error(resp?.error || 'Failed to create staff user.');
-      if (e.staffNewPassword) e.staffNewPassword.value = '';
-      setSummary('Staff user created successfully.');
-      await loadDirectory();
-      fillStaffForm(resp.record || null);
+      const email = String(e.staffEmail?.value || '').trim().toLowerCase();
+      const password = String(e.staffNewPassword?.value || '');
+      if (!email) {
+        setStaffNotice('Email is required for a new staff user.', true);
+        return setSummary('Email is required for a new staff user.', true);
+      }
+      if (!isValidEmailAddress(email)) {
+        setStaffNotice('Enter a valid email address before creating the staff user.', true);
+        return setSummary('Enter a valid email address before creating the staff user.', true);
+      }
+      const passwordIssue = validateStaffPassword(password);
+      if (passwordIssue) {
+        setStaffNotice(passwordIssue, true);
+        return setSummary(passwordIssue, true);
+      }
+      if (typeof manageAdminEntity !== 'function') {
+        setStaffNotice('Admin save service is not available right now. Reload the page and try again.', true);
+        throw new Error('Admin save service is not available right now.');
+      }
+      setStaffBusy(true, 'Creating staff user…');
+      try {
+        const resp = await manageAdminEntity({ entity:'credential', action:'create_user', email, new_password:password, full_name:e.staffFullName?.value || '', phone:e.staffPhone?.value || '', role:e.staffRole?.value || 'employee', staff_tier:e.staffTier?.value || '', seniority_level:e.staffSeniority?.value || '', employment_status:e.staffStatus?.value || 'active', employee_number:e.staffEmployeeNumber?.value || '', current_position:e.staffPosition?.value || '', trade_specialty:e.staffTrade?.value || '', start_date:e.staffStartDate?.value || null, phone_verified:!!e.staffPhoneVerified?.checked, email_verified:!!e.staffEmailVerified?.checked, is_active:!!e.staffActive?.checked, notes:e.staffNotes?.value || '' });
+        if (!resp?.ok) throw new Error(resp?.error || 'Failed to create staff user.');
+        if (e.staffNewPassword) e.staffNewPassword.value = '';
+        await loadDirectory();
+        const createdRecord = state.users.find((row) => String(row.id) === String(resp?.record?.id || '')) || resp.record || null;
+        fillStaffForm(createdRecord);
+        setStaffNotice(`Staff user created for ${createdRecord?.email || email}.`, false);
+        setSummary(`Staff user created for ${createdRecord?.email || email}.`, false);
+      } catch (error) {
+        const message = String(error?.message || error || 'Failed to create staff user.');
+        setStaffNotice(message, true);
+        setSummary(message, true);
+        throw error;
+      } finally {
+        setStaffBusy(false);
+      }
     }
 
     async function saveStaffDetails() {
       const e = els();
       const profileId = e.staffProfileId?.value || '';
-      if (!profileId) return setSummary('Select a staff record first.', true);
-      const resp = await manageAdminEntity({ entity:'profile', action:'update', profile_id:profileId, full_name:e.staffFullName?.value || null, role:e.staffRole?.value || 'employee', phone:e.staffPhone?.value || null, phone_verified:!!e.staffPhoneVerified?.checked, email_verified:!!e.staffEmailVerified?.checked, employee_number:e.staffEmployeeNumber?.value || null, current_position:e.staffPosition?.value || null, trade_specialty:e.staffTrade?.value || null, seniority_level:e.staffSeniority?.value || null, employment_status:e.staffStatus?.value || 'active', staff_tier:e.staffTier?.value || null, start_date:e.staffStartDate?.value || null, notes:e.staffNotes?.value || null, is_active:!!e.staffActive?.checked });
-      if (!resp?.ok) throw new Error(resp?.error || 'Failed to save staff details.');
-      setSummary('Staff details updated.');
-      await loadDirectory();
+      const email = String(e.staffEmail?.value || '').trim().toLowerCase();
+      if (!profileId) {
+        setStaffNotice('Select a staff record first before saving.', true);
+        return setSummary('Select a staff record first before saving.', true);
+      }
+      if (!email) {
+        setStaffNotice('Email is required before saving staff details.', true);
+        return setSummary('Email is required before saving staff details.', true);
+      }
+      if (!isValidEmailAddress(email)) {
+        setStaffNotice('Enter a valid email address before saving staff details.', true);
+        return setSummary('Enter a valid email address before saving staff details.', true);
+      }
+      if (typeof manageAdminEntity !== 'function') {
+        setStaffNotice('Admin save service is not available right now. Reload the page and try again.', true);
+        throw new Error('Admin save service is not available right now.');
+      }
+      setStaffBusy(true, 'Saving staff details…');
+      try {
+        const resp = await manageAdminEntity({ entity:'profile', action:'update', profile_id:profileId, email, full_name:e.staffFullName?.value || null, role:e.staffRole?.value || 'employee', phone:e.staffPhone?.value || null, phone_verified:!!e.staffPhoneVerified?.checked, email_verified:!!e.staffEmailVerified?.checked, employee_number:e.staffEmployeeNumber?.value || null, current_position:e.staffPosition?.value || null, trade_specialty:e.staffTrade?.value || null, seniority_level:e.staffSeniority?.value || null, employment_status:e.staffStatus?.value || 'active', staff_tier:e.staffTier?.value || null, start_date:e.staffStartDate?.value || null, notes:e.staffNotes?.value || null, is_active:!!e.staffActive?.checked });
+        if (!resp?.ok) throw new Error(resp?.error || 'Failed to save staff details.');
+        await loadDirectory();
+        const savedRecord = state.users.find((row) => String(row.id) === String(profileId)) || resp.record || null;
+        fillStaffForm(savedRecord);
+        setStaffNotice(`Staff details saved for ${savedRecord?.email || email}.`, false);
+        setSummary(`Staff details saved for ${savedRecord?.email || email}.`, false);
+      } catch (error) {
+        const message = String(error?.message || error || 'Failed to save staff details.');
+        setStaffNotice(message, true);
+        setSummary(message, true);
+        throw error;
+      } finally {
+        setStaffBusy(false);
+      }
     }
 
     async function toggleStaffBlock() {
       const e = els();
       const profileId = e.staffProfileId?.value || '';
-      if (!profileId) return setSummary('Select a staff record first.', true);
+      if (!profileId) {
+        setStaffNotice('Select a staff record first before changing active status.', true);
+        return setSummary('Select a staff record first before changing active status.', true);
+      }
       const nextActive = !e.staffActive?.checked;
-      const resp = await manageAdminEntity({ entity:'profile', action:'set_active', profile_id:profileId, is_active:nextActive, employment_status: nextActive ? 'active' : 'blocked' });
-      if (!resp?.ok) throw new Error(resp?.error || 'Failed to update active status.');
-      setSummary(nextActive ? 'Staff record unblocked / activated.' : 'Staff record blocked.');
-      await loadDirectory();
-      fillStaffForm(resp.record || null);
+      setStaffBusy(true, nextActive ? 'Activating staff record…' : 'Blocking staff record…');
+      try {
+        const resp = await manageAdminEntity({ entity:'profile', action:'set_active', profile_id:profileId, is_active:nextActive, employment_status: nextActive ? 'active' : 'blocked' });
+        if (!resp?.ok) throw new Error(resp?.error || 'Failed to update active status.');
+        await loadDirectory();
+        fillStaffForm(resp.record || null);
+        const message = nextActive ? 'Staff record unblocked / activated.' : 'Staff record blocked.';
+        setStaffNotice(message, false);
+        setSummary(message, false);
+      } catch (error) {
+        const message = String(error?.message || error || 'Failed to update active status.');
+        setStaffNotice(message, true);
+        setSummary(message, true);
+        throw error;
+      } finally {
+        setStaffBusy(false);
+      }
     }
 
     async function sendStaffReset() {
       const e = els();
       const profileId = e.staffProfileId?.value || '';
-      if (!profileId) return setSummary('Select a staff record first.', true);
-      const resp = await manageAdminEntity({ entity:'credential', action:'send_password_reset', profile_id: profileId });
-      if (!resp?.ok) throw new Error(resp?.error || 'Failed to send reset.');
-      setSummary(`Password reset link generated for ${resp.email || 'selected user'}.`);
+      if (!profileId) {
+        setStaffNotice('Select a staff record first before sending a reset.', true);
+        return setSummary('Select a staff record first before sending a reset.', true);
+      }
+      setStaffBusy(true, 'Generating password reset link…');
+      try {
+        const resp = await manageAdminEntity({ entity:'credential', action:'send_password_reset', profile_id: profileId });
+        if (!resp?.ok) throw new Error(resp?.error || 'Failed to send reset.');
+        const message = `Password reset link generated for ${resp.email || 'selected user'}.`;
+        setStaffNotice(message, false);
+        setSummary(message, false);
+      } catch (error) {
+        const message = String(error?.message || error || 'Failed to send reset.');
+        setStaffNotice(message, true);
+        setSummary(message, true);
+        throw error;
+      } finally {
+        setStaffBusy(false);
+      }
     }
 
     async function deleteStaffUser() {
       const e = els();
       const profileId = e.staffProfileId?.value || '';
-      if (!profileId) return setSummary('Select a staff record first.', true);
+      if (!profileId) {
+        setStaffNotice('Select a staff record first before deleting.', true);
+        return setSummary('Select a staff record first before deleting.', true);
+      }
       const ok = window.confirm('Delete this user and auth account? This cannot be undone.');
       if (!ok) return;
-      const resp = await manageAdminEntity({ entity:'profile', action:'delete', profile_id: profileId });
-      if (!resp?.ok) throw new Error(resp?.error || 'Failed to delete user.');
-      setSummary('User deleted.');
-      await loadDirectory();
-      fillStaffForm(null);
+      setStaffBusy(true, 'Deleting staff user…');
+      try {
+        const resp = await manageAdminEntity({ entity:'profile', action:'delete', profile_id: profileId });
+        if (!resp?.ok) throw new Error(resp?.error || 'Failed to delete user.');
+        await loadDirectory();
+        fillStaffForm(null);
+        setStaffNotice('User deleted.', false);
+        setSummary('User deleted.', false);
+      } catch (error) {
+        const message = String(error?.message || error || 'Failed to delete user.');
+        setStaffNotice(message, true);
+        setSummary(message, true);
+        throw error;
+      } finally {
+        setStaffBusy(false);
+      }
     }
 
     function renderProfileOptions() {

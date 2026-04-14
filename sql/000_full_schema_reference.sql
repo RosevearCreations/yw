@@ -1,5 +1,5 @@
--- Last synchronized: April 12, 2026. Reviewed during the HSE control-cue, inspection-focus, and schema 074 pass.
--- Current reference includes migrations through 074_hse_control_cues_and_inspection_focus.sql and documents structured HSE control cues, inspection hazard categories, and HSE dashboard/action-item updates.
+-- Last synchronized: April 13, 2026. Reviewed during the staff admin save-verification pass; no new schema migration was required.
+-- Current reference remains aligned through 074_hse_control_cues_and_inspection_focus.sql while the latest code pass focused on visible staff save confirmations and admin email-save handling.
 
 create extension if not exists pgcrypto;
 
@@ -3560,4 +3560,3 @@ select * from traffic_summary
 union all
 select * from runtime_summary
 order by sort_order, lane_key;
-
