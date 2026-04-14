@@ -1,3 +1,11 @@
+## 2026-04-13 HSE structured-cue persistence pass
+- Updated `supabase/functions/admin-manage/index.ts` so linked HSE packet saves now persist the structured machinery/tool, lifting/posture, hydration/clothing, cones/barriers, roadside, SDS, and site-communication fields added in 074.
+- Updated the HSE packet preview logic so machinery review, lifting review, and cones/barriers review contribute to required/completed progress instead of being ignored in the percent/status preview.
+- Added stronger HSE packet/event insight cards and category-aware helper prompts so the Admin shell keeps the new safety cues visible and easier to review.
+- No new SQL migration was added in this pass; schema files were reviewed and remain on the 074 baseline.
+
+> Last synchronized: April 13, 2026 (HSE structured-cue persistence, preview alignment, and schema review with no new migration)
+
 ## 2026-04-13 staff admin save verification pass
 - Added visible inline create/save/reset/block/delete confirmations in the Staff Directory screen so staff actions no longer fail silently from the operator’s point of view.
 - Added stronger front-end email and password validation plus busy-state feedback for staff actions.
