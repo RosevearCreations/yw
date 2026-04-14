@@ -1,5 +1,5 @@
--- Last synchronized: April 13, 2026. Reviewed during the staff admin save-verification pass; no new schema migration was required.
--- Current reference remains aligned through 074_hse_control_cues_and_inspection_focus.sql while the latest code pass focused on visible staff save confirmations and admin email-save handling.
+-- Last synchronized: April 13, 2026. Reviewed during the HSE structured-cue persistence pass; no new schema migration was required.
+-- Current reference remains aligned through 074_hse_control_cues_and_inspection_focus.sql while the latest code pass focused on saving the new HSE machinery/lifting/weather/chemical cue fields end to end.
 
 create extension if not exists pgcrypto;
 

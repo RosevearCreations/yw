@@ -304,10 +304,10 @@
   function guidanceMarkup() {
     return `
       <div class="hseops-guidance-grid">
-        <article class="hseops-guidance-card"><h3>Machinery and tools</h3><p>Keep packet and inspection notes focused on moving blades, pinch points, thrown objects, guards, lockout, and task-specific tool risks. The Admin packet/event forms now expose dedicated machinery flags and notes for this review.</p></article>
+        <article class="hseops-guidance-card"><h3>Machinery and tools</h3><p>Keep packet and inspection notes focused on moving blades, pinch points, thrown objects, guards, lockout, and task-specific tool risks. The Admin packet/event forms now expose and save dedicated machinery flags and notes for this review.</p></article>
         <article class="hseops-guidance-card"><h3>Lifting and awkward posture</h3><p>Capture manual handling, repetitive work, reach height, uneven terrain, and crew-size needs before field start and closeout. Lifting review now has its own packet/event cues instead of being buried only in general notes.</p></article>
-        <article class="hseops-guidance-card"><h3>Weather and heat</h3><p>Review workload, temperature, humidity, sun, air movement, clothing, hydration, and worker-specific risk before and during field work. Packet/event notes now include hydration, clothing, and worker-specific prompts.</p></article>
-        <article class="hseops-guidance-card"><h3>Chemicals and public interaction</h3><p>Track chemical handling, PPE, SDS awareness, public traffic, cones/barriers, roadside exposure, and site communication notes. Packet/event forms now expose cones/barriers and communication cues directly.</p></article>
+        <article class="hseops-guidance-card"><h3>Weather and heat</h3><p>Review workload, temperature, humidity, sun, air movement, clothing, hydration, and worker-specific risk before and during field work. Packet/event notes now include hydration, clothing, and worker-specific prompts that now persist through the admin save flow.</p></article>
+        <article class="hseops-guidance-card"><h3>Chemicals and public interaction</h3><p>Track chemical handling, PPE, SDS awareness, public traffic, cones/barriers, roadside exposure, and site communication notes. Packet/event forms now expose and save cones/barriers and communication cues directly.</p></article>
       </div>`;
   }
 
