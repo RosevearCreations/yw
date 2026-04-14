@@ -1,3 +1,11 @@
+## 2026-04-13 staff admin save verification pass
+- Added visible inline create/save/reset/block/delete confirmations in the Staff Directory screen so staff actions no longer fail silently from the operator’s point of view.
+- Added stronger front-end email and password validation plus busy-state feedback for staff actions.
+- Updated `supabase/functions/admin-manage/index.ts` so staff-detail saves now persist email changes instead of leaving the visible Email field unsaved.
+- No new SQL migration was added in this pass; schema files were reviewed and remain on the 074 baseline.
+
+> Last synchronized: April 13, 2026 (staff admin save verification, visible confirmations, and schema review with no new migration)
+
 ## 2026-04-12 schema synchronization note
 - Added migration `sql/074_hse_control_cues_and_inspection_focus.sql`.
 - `linked_hse_packets` and `hse_packet_events` now expose structured machinery/tool, lifting/posture, weather/heat, and chemical/public-interaction cue fields instead of relying only on broad notes.

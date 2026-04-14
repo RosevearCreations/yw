@@ -644,8 +644,10 @@ serve(async (req) => {
 
     if (entity === 'profile' && action === 'update') {
       const normalizedRole = String(body.role ?? '').trim().toLowerCase() || undefined;
+      const normalizedEmail = String(body.email ?? '').trim().toLowerCase() || null;
       const patch = {
         full_name: body.full_name ?? null,
+        email: normalizedEmail,
         role: normalizedRole,
         is_active: body.is_active ?? true,
         phone: body.phone ?? null,
@@ -686,8 +688,11 @@ serve(async (req) => {
       if (normalizedRole !== undefined) metadataPatch.role = normalizedRole;
       if (body.employee_number !== undefined) metadataPatch.employee_number = body.employee_number ?? null;
       if (body.staff_tier !== undefined) metadataPatch.staff_tier = body.staff_tier ?? null;
-      if (Object.keys(metadataPatch).length) {
-        await supabase.auth.admin.updateUserById(String(body.profile_id), { user_metadata: metadataPatch });
+      if (Object.keys(metadataPatch).length || normalizedEmail !== null) {
+        const authPatch: Record<string, unknown> = { user_metadata: metadataPatch };
+        if (normalizedEmail !== null) authPatch.email = normalizedEmail;
+        const authResp = await supabase.auth.admin.updateUserById(String(body.profile_id), authPatch);
+        if (authResp.error) return Response.json({ ok:false, error:authResp.error.message }, { status:400, headers:corsHeaders });
       }
       return Response.json({ ok: true, record: data }, { headers: corsHeaders });
     }
