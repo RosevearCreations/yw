@@ -302,16 +302,36 @@
             <label>Anchor Date<input id="job_recurrence_anchor_date" type="date" /></label>
             <label>Custom Days / Cycle<input id="job_recurrence_custom_days" type="text" placeholder="Mon,Wed,Fri or every 10 days" /></label>
             <label>Estimated Visit Minutes<input id="job_estimated_visit_minutes" type="number" min="0" step="15" placeholder="120" /></label>
+            <label>Approx Duration Hours<input id="job_estimated_duration_hours" type="number" min="0" step="0.25" placeholder="2.5" /></label>
+            <label>Approx Duration Days<input id="job_estimated_duration_days" type="number" min="0" step="1" placeholder="3" /></label>
+            <label>Cost to Us<input id="job_estimated_cost_total" type="number" min="0" step="0.01" placeholder="0.00" /></label>
+            <label>Charge to Client<input id="job_quoted_charge_total" type="number" min="0" step="0.01" placeholder="0.00" /></label>
+            <label>Pricing Method<select id="job_pricing_method"><option value="manual">Manual</option><option value="markup_percent">Markup %</option><option value="discount_from_charge">Discount from Charge</option><option value="tiered_discount">Tiered Discount</option></select></label>
+            <label>Markup %<input id="job_markup_percent" type="number" step="0.01" placeholder="25" /></label>
+            <label>Discount Mode<select id="job_discount_mode"><option value="none">None</option><option value="percent">Percent</option><option value="fixed">Fixed Amount</option><option value="tiered">Tiered</option></select></label>
+            <label>Discount Value<input id="job_discount_value" type="number" step="0.01" placeholder="10 or 125" /></label>
+            <label>Delay Cost<input id="job_delay_cost_total" type="number" min="0" step="0.01" placeholder="0.00" /></label>
+            <label>Repair Cost<input id="job_equipment_repair_cost_total" type="number" min="0" step="0.01" placeholder="0.00" /></label>
+            <label>Actual Cost<input id="job_actual_cost_total" type="number" min="0" step="0.01" placeholder="0.00" /></label>
+            <label>Actual Charge<input id="job_actual_charge_total" type="number" min="0" step="0.01" placeholder="0.00" /></label>
             <label>Reservation Window Start<input id="job_reservation_window_start" type="date" /></label>
             <label>Reservation Window End<input id="job_reservation_window_end" type="date" /></label>
             <label>Equipment Planning<select id="job_equipment_planning_status"><option value="draft">Draft</option><option value="planned">Planned</option><option value="reserved">Reserved</option><option value="partial">Partial</option><option value="ready">Ready</option></select></label>
             <label style="display:flex;align-items:center;gap:8px;margin-top:26px;"><input id="job_equipment_readiness_required" type="checkbox" checked /> Equipment readiness required</label>
+            <label style="display:flex;align-items:center;gap:8px;margin-top:26px;"><input id="job_open_end_date" type="checkbox" /> Open end date</label>
+            <label style="display:flex;align-items:center;gap:8px;margin-top:26px;"><input id="job_delayed_schedule" type="checkbox" /> Delayed schedule</label>
           </div>
           <label style="display:block;margin-top:12px;">Crew Members
             <textarea id="job_crew_member_names" rows="2" placeholder="Comma-separated crew member names or emails"></textarea>
           </label>
           <label style="display:block;margin-top:12px;">Custom Schedule Notes
             <textarea id="job_custom_schedule_notes" rows="2" placeholder="Custom rotation, snow trigger, monthly exceptions, or seasonal notes"></textarea>
+          </label>
+          <label style="display:block;margin-top:12px;">Tiered Discount Notes
+            <textarea id="job_tiered_discount_notes" rows="2" placeholder="Volume tiers, repeat-service discounts, or custom pricing notes"></textarea>
+          </label>
+          <label style="display:block;margin-top:12px;">Delay Notes
+            <textarea id="job_delay_reason" rows="2" placeholder="Weather delay, crew shortage, equipment issue, client delay, material shortage"></textarea>
           </label>
           <label style="display:block;margin-top:12px;">Reservation / Equipment Notes
             <textarea id="job_reservation_notes" rows="2" placeholder="Shovels, riding mower, backhoe, snow plow, specialty attachments, staging notes"></textarea>
@@ -386,12 +406,28 @@
         jobRecurrenceAnchorDate: $('#job_recurrence_anchor_date'),
         jobRecurrenceCustomDays: $('#job_recurrence_custom_days'),
         jobEstimatedVisitMinutes: $('#job_estimated_visit_minutes'),
+        jobEstimatedDurationHours: $('#job_estimated_duration_hours'),
+        jobEstimatedDurationDays: $('#job_estimated_duration_days'),
+        jobEstimatedCostTotal: $('#job_estimated_cost_total'),
+        jobQuotedChargeTotal: $('#job_quoted_charge_total'),
+        jobPricingMethod: $('#job_pricing_method'),
+        jobMarkupPercent: $('#job_markup_percent'),
+        jobDiscountMode: $('#job_discount_mode'),
+        jobDiscountValue: $('#job_discount_value'),
+        jobDelayCostTotal: $('#job_delay_cost_total'),
+        jobEquipmentRepairCostTotal: $('#job_equipment_repair_cost_total'),
+        jobActualCostTotal: $('#job_actual_cost_total'),
+        jobActualChargeTotal: $('#job_actual_charge_total'),
         jobReservationWindowStart: $('#job_reservation_window_start'),
         jobReservationWindowEnd: $('#job_reservation_window_end'),
         jobEquipmentPlanningStatus: $('#job_equipment_planning_status'),
         jobEquipmentReadinessRequired: $('#job_equipment_readiness_required'),
+        jobOpenEndDate: $('#job_open_end_date'),
+        jobDelayedSchedule: $('#job_delayed_schedule'),
         jobCrewMemberNames: $('#job_crew_member_names'),
         jobCustomScheduleNotes: $('#job_custom_schedule_notes'),
+        jobTieredDiscountNotes: $('#job_tiered_discount_notes'),
+        jobDelayReason: $('#job_delay_reason'),
         jobReservationNotes: $('#job_reservation_notes'),
         jobSpecialInstructions: $('#job_special_instructions'),
         jobOpsSummary: $('#job_ops_summary'),
@@ -638,7 +674,7 @@
       const editableIds = [
         'job_code','job_name','job_site_name','job_type','job_status','job_priority','job_start_date','job_end_date',
         'job_supervisor_name','job_signing_supervisor_name','job_admin_name','job_client_name','job_notes',
-        'job_crew_id','job_crew_name','job_crew_code','job_crew_kind','job_assigned_supervisor_name','job_crew_lead_name','job_job_family','job_project_scope','job_service_pattern','job_schedule_mode','job_recurrence_basis','job_recurrence_summary','job_recurrence_rule','job_recurrence_interval','job_recurrence_anchor_date','job_recurrence_custom_days','job_estimated_visit_minutes','job_reservation_window_start','job_reservation_window_end','job_equipment_planning_status','job_equipment_readiness_required','job_crew_member_names','job_custom_schedule_notes','job_reservation_notes','job_special_instructions','job_comment_type','job_comment_special_instruction','job_comment_visible_to_client','job_comment_files','job_comment_text',
+        'job_crew_id','job_crew_name','job_crew_code','job_crew_kind','job_assigned_supervisor_name','job_crew_lead_name','job_job_family','job_project_scope','job_service_pattern','job_schedule_mode','job_recurrence_basis','job_recurrence_summary','job_recurrence_rule','job_recurrence_interval','job_recurrence_anchor_date','job_recurrence_custom_days','job_estimated_visit_minutes','job_estimated_duration_hours','job_estimated_duration_days','job_estimated_cost_total','job_quoted_charge_total','job_pricing_method','job_markup_percent','job_discount_mode','job_discount_value','job_delay_cost_total','job_equipment_repair_cost_total','job_actual_cost_total','job_actual_charge_total','job_reservation_window_start','job_reservation_window_end','job_equipment_planning_status','job_equipment_readiness_required','job_open_end_date','job_delayed_schedule','job_crew_member_names','job_custom_schedule_notes','job_tiered_discount_notes','job_delay_reason','job_reservation_notes','job_special_instructions','job_comment_type','job_comment_special_instruction','job_comment_visible_to_client','job_comment_files','job_comment_text',
         'eq_code','eq_name','eq_category','eq_pool_key','eq_home_site','eq_status','eq_current_job_code','eq_assigned_supervisor',
         'eq_serial','eq_asset_tag','eq_manufacturer','eq_model','eq_year','eq_purchase_date','eq_purchase_price','eq_condition',
         'eq_image_url','eq_service_interval_days','eq_last_service_date','eq_next_service_due_date','eq_last_inspection_at',
@@ -1019,10 +1055,26 @@
       e.jobRecurrenceAnchorDate.value = jobRow.recurrence_anchor_date || '';
       e.jobRecurrenceCustomDays.value = jobRow.recurrence_custom_days || '';
       e.jobEstimatedVisitMinutes.value = jobRow.estimated_visit_minutes || '';
+      e.jobEstimatedDurationHours.value = jobRow.estimated_duration_hours || '';
+      e.jobEstimatedDurationDays.value = jobRow.estimated_duration_days || '';
+      e.jobEstimatedCostTotal.value = jobRow.estimated_cost_total ?? '';
+      e.jobQuotedChargeTotal.value = jobRow.quoted_charge_total ?? '';
+      e.jobPricingMethod.value = jobRow.pricing_method || 'manual';
+      e.jobMarkupPercent.value = jobRow.markup_percent ?? '';
+      e.jobDiscountMode.value = jobRow.discount_mode || 'none';
+      e.jobDiscountValue.value = jobRow.discount_value ?? '';
+      e.jobTieredDiscountNotes.value = jobRow.tiered_discount_notes || '';
+      e.jobDelayReason.value = jobRow.delay_reason || '';
+      e.jobDelayCostTotal.value = jobRow.delay_cost_total ?? '';
+      e.jobEquipmentRepairCostTotal.value = jobRow.equipment_repair_cost_total ?? '';
+      e.jobActualCostTotal.value = jobRow.actual_cost_total ?? '';
+      e.jobActualChargeTotal.value = jobRow.actual_charge_total ?? '';
       e.jobReservationWindowStart.value = jobRow.reservation_window_start || '';
       e.jobReservationWindowEnd.value = jobRow.reservation_window_end || '';
       e.jobEquipmentPlanningStatus.value = jobRow.equipment_planning_status || 'draft';
       e.jobEquipmentReadinessRequired.checked = jobRow.equipment_readiness_required !== false;
+      e.jobOpenEndDate.checked = !!jobRow.open_end_date;
+      e.jobDelayedSchedule.checked = !!jobRow.delayed_schedule;
       const selectedCrew = (state.crews || []).find((item) => String(item.id) === String(jobRow.crew_id || '')) || null;
       e.jobCrewMemberNames.value = Array.isArray(selectedCrew?.members_json) ? selectedCrew.members_json.map((item) => item.full_name || item.email || '').filter(Boolean).join(', ') : ''; 
       e.jobCustomScheduleNotes.value = jobRow.custom_schedule_notes || '';
@@ -1071,7 +1123,9 @@
       e.jobListBody.innerHTML = '';
       state.jobs.forEach((row) => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${escHtml(row.job_code)}</td><td>${escHtml(row.job_name)}</td><td>${escHtml(row.crew_name || '')}</td><td>${escHtml(row.assigned_supervisor_name || row.supervisor_name || '')}</td><td>${escHtml(row.schedule_mode || 'standalone')}${row.recurrence_summary ? ` • ${escHtml(row.recurrence_summary)}` : ''}${row.service_pattern ? ` • ${escHtml(row.service_pattern)}` : ''}</td><td>${escHtml(row.status || '')}${row.equipment_planning_status ? ` • ${escHtml(row.equipment_planning_status)}` : ''}</td><td>${escHtml(row.comment_count || 0)} comment(s) / ${escHtml(row.photo_count || 0)} photo(s)</td><td><button type="button" class="secondary" data-job-load="${escHtml(row.id)}">Load</button></td>`;
+        const quoted = Number(row.quoted_charge_total || 0);
+        const estProfit = Number(row.estimated_profit_total || (quoted - Number(row.estimated_cost_total || 0)));
+        tr.innerHTML = `<td>${escHtml(row.job_code)}</td><td>${escHtml(row.job_name)}</td><td>${escHtml(row.crew_name || '')}</td><td>${escHtml(row.assigned_supervisor_name || row.supervisor_name || '')}</td><td>${escHtml(row.schedule_mode || 'standalone')}${row.recurrence_summary ? ` • ${escHtml(row.recurrence_summary)}` : ''}${row.service_pattern ? ` • ${escHtml(row.service_pattern)}` : ''}${row.open_end_date ? ' • Open end' : ''}</td><td>${escHtml(row.status || '')}${row.equipment_planning_status ? ` • ${escHtml(row.equipment_planning_status)}` : ''}${row.delayed_schedule ? ' • Delayed' : ''}</td><td>$${Number.isFinite(quoted) ? quoted.toFixed(2) : '0.00'} / Profit $${Number.isFinite(estProfit) ? estProfit.toFixed(2) : '0.00'}</td><td><button type="button" class="secondary" data-job-load="${escHtml(row.id)}">Load</button></td>`;
         e.jobListBody.appendChild(tr);
       });
     }
@@ -1315,6 +1369,22 @@
           recurrence_anchor_date: e.jobRecurrenceAnchorDate?.value || null,
           recurrence_custom_days: e.jobRecurrenceCustomDays?.value?.trim?.() || '',
           estimated_visit_minutes: e.jobEstimatedVisitMinutes?.value ? Number(e.jobEstimatedVisitMinutes.value) : null,
+          estimated_duration_hours: e.jobEstimatedDurationHours?.value ? Number(e.jobEstimatedDurationHours.value) : null,
+          estimated_duration_days: e.jobEstimatedDurationDays?.value ? Number(e.jobEstimatedDurationDays.value) : null,
+          estimated_cost_total: e.jobEstimatedCostTotal?.value ? Number(e.jobEstimatedCostTotal.value) : 0,
+          quoted_charge_total: e.jobQuotedChargeTotal?.value ? Number(e.jobQuotedChargeTotal.value) : 0,
+          pricing_method: e.jobPricingMethod?.value || 'manual',
+          markup_percent: e.jobMarkupPercent?.value ? Number(e.jobMarkupPercent.value) : null,
+          discount_mode: e.jobDiscountMode?.value || 'none',
+          discount_value: e.jobDiscountValue?.value ? Number(e.jobDiscountValue.value) : 0,
+          tiered_discount_notes: e.jobTieredDiscountNotes?.value?.trim?.() || '',
+          open_end_date: !!e.jobOpenEndDate?.checked,
+          delayed_schedule: !!e.jobDelayedSchedule?.checked,
+          delay_reason: e.jobDelayReason?.value?.trim?.() || '',
+          delay_cost_total: e.jobDelayCostTotal?.value ? Number(e.jobDelayCostTotal.value) : 0,
+          equipment_repair_cost_total: e.jobEquipmentRepairCostTotal?.value ? Number(e.jobEquipmentRepairCostTotal.value) : 0,
+          actual_cost_total: e.jobActualCostTotal?.value ? Number(e.jobActualCostTotal.value) : 0,
+          actual_charge_total: e.jobActualChargeTotal?.value ? Number(e.jobActualChargeTotal.value) : 0,
           reservation_window_start: e.jobReservationWindowStart?.value || null,
           reservation_window_end: e.jobReservationWindowEnd?.value || null,
           equipment_planning_status: e.jobEquipmentPlanningStatus?.value || 'draft',
@@ -1330,7 +1400,8 @@
         if (!resp?.ok) throw new Error(resp?.error || 'Job save failed');
         clearDrafts('job');
         state.selectedJobId = Number(resp?.record?.id || state.selectedJobId || 0);
-        setNotice(e.jobSummary, `Job ${payload.job_code} saved. Crew, supervisor, schedule, and reservation checks were applied.`);
+        const estProfit = Number(resp?.record?.estimated_profit_total || 0);
+        setNotice(e.jobSummary, `Job ${payload.job_code} saved. Pricing, crew, schedule, and reservation checks were applied. Estimated profit: $${Number.isFinite(estProfit) ? estProfit.toFixed(2) : '0.00'}.`);
         await loadData();
       } catch (err) {
         setNotice(e.jobSummary, err?.message || 'Failed to save job.', true);

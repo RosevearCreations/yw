@@ -44,6 +44,7 @@ const requiredFiles = [
   'sql/073_hse_link_context_and_monitor_shortcuts.sql',
   'sql/074_hse_control_cues_and_inspection_focus.sql',
   'sql/075_landscaping_job_workflow_and_crew_planning.sql',
+  'sql/076_job_pricing_profitability_and_schedule_logic.sql',
   'js/hse-ops-ui.js',
   'supabase/functions/jobs-directory/index.ts',
   'supabase/functions/jobs-manage/index.ts',
@@ -84,7 +85,7 @@ addCheck('account-has-conflict-review', accountUi.includes('Conflict Review'), '
 addCheck('account-has-support-export', accountUi.includes('Export Support Snapshot'), 'account-ui.js should render the support snapshot export button.');
 
 const schema = read('sql/000_full_schema_reference.sql');
-addCheck('schema-header-current', /075_landscaping_job_workflow_and_crew_planning/i.test(schema), 'Schema snapshot header should reflect the latest 075 pass.');
+addCheck('schema-header-current', /076_job_pricing_profitability_and_schedule_logic/i.test(schema), 'Schema snapshot header should reflect the latest 076 pass.');
 
 console.log(JSON.stringify({ ok: !failed, checks: results }, null, 2));
 if (failed) process.exit(1);
