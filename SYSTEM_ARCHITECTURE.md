@@ -4,7 +4,7 @@
 - Updated `supabase/functions/admin-manage/index.ts` so staff-detail saves now persist email changes instead of leaving the visible Email field unsaved.
 - No new SQL migration was added in this pass; schema files were reviewed and remain on the 074 baseline.
 
-> Last synchronized: April 13, 2026 (staff admin save verification, visible confirmations, and schema review with no new migration)
+> Last synchronized: April 14, 2026 (landscaping job workflow, crew planning, and schema 075)
 
 ## 2026-04-12 HSE control cues and inspection focus pass
 - Added migration `sql/074_hse_control_cues_and_inspection_focus.sql`.
@@ -157,3 +157,7 @@ The system should continue linking these two centers without forcing every safet
 - Corrected Admin selector/view alignment for traffic daily summary and HSE action-item ordering so the newer safety and monitoring shortcuts stay usable.
 - Continued the DB-first direction while keeping HSE standalone-capable and easier to connect to jobs, work orders, routes, equipment, dispatches, sites, and subcontract work.
 
+## 2026-04-14 landscaping operations modeling pass
+- The operations architecture now more clearly separates three real scheduling patterns: one-time field jobs, repeating service jobs, and larger custom project work.
+- Crew planning now sits between jobs and equipment more explicitly: a saved crew can carry its own kind, lead, supervisor, service-area context, and default equipment notes before it is attached to a job.
+- Equipment planning now uses reservation windows as a first-class scheduling signal, which is a better fit for weekly mowing, snow, foliage, and other repeating field services than relying only on a single start/end date pair.

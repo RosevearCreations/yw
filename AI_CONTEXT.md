@@ -4,7 +4,7 @@
 - Updated `supabase/functions/admin-manage/index.ts` so staff-detail saves now persist email changes instead of leaving the visible Email field unsaved.
 - No new SQL migration was added in this pass; schema files were reviewed and remain on the 074 baseline.
 
-> Last synchronized: April 13, 2026 (staff admin save verification, visible confirmations, and schema review with no new migration)
+> Last synchronized: April 14, 2026 (landscaping job workflow, crew planning, and schema 075)
 
 ## 2026-04-12 HSE control cues and inspection focus pass
 - Added migration `sql/074_hse_control_cues_and_inspection_focus.sql`.
@@ -105,3 +105,8 @@ When continuing this project, assume the next strongest implementation pass is t
 - Continued the DB-first direction while keeping HSE standalone-capable and easier to connect to jobs, work orders, routes, equipment, dispatches, sites, and subcontract work.
 
 - Reliability note: admin staff create/save uses `js/api.js -> manageAdminEntity()` and now includes a same-origin `/api/auth/admin-manage` fallback for stalled direct function calls.
+
+## 2026-04-14 operational model note
+- The work model should now assume three main job patterns: one-time landscaping/project jobs, recurring route/service jobs, and larger custom project/construction/home-modification jobs.
+- Crew setup should support a supervisor and optional crew lead, plus reusable member/equipment planning context.
+- Equipment planning should prefer reservation windows for repeat work instead of depending only on single start/end dates.

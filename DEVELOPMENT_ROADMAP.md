@@ -4,7 +4,7 @@
 - Updated `supabase/functions/admin-manage/index.ts` so staff-detail saves now persist email changes instead of leaving the visible Email field unsaved.
 - No new SQL migration was added in this pass; schema files were reviewed and remain on the 074 baseline.
 
-> Last synchronized: April 13, 2026 (staff admin save verification, visible confirmations, and schema review with no new migration)
+> Last synchronized: April 14, 2026 (landscaping job workflow, crew planning, and schema 075)
 
 ## 2026-04-12 HSE control cues and inspection focus pass
 - Added migration `sql/074_hse_control_cues_and_inspection_focus.sql`.
@@ -343,3 +343,11 @@ On every build:
 - Continued the DB-first direction while keeping HSE standalone-capable and easier to connect to jobs, work orders, routes, equipment, dispatches, sites, and subcontract work.
 
 - Staff/admin reliability: completed a compatibility fallback for `admin-manage` so staff creation and profile saves can fall back to a same-origin route when direct Edge Function calls stall, time out, or return HTML. Next pass should add a visible timed-out / retry message beside the Create Staff User button if both direct and compatibility paths fail.
+
+## 2026-04-14 landscaping job families, recurring service cadence, and crew planning pass
+- Added migration `sql/075_landscaping_job_workflow_and_crew_planning.sql`.
+- Jobs now model the real service mix more clearly: one-time landscaping, recurring property service, snow / winter work, park work, home-modification work, and larger custom construction/project jobs.
+- Crew planning now includes crew kind, optional crew lead, service-area alignment, and default equipment notes so the same crew can be reused across weekly and custom jobs.
+- Job planning now includes service pattern, recurrence basis/custom-day notes, estimated visit minutes, reservation windows, reservation notes, and equipment-planning status so equipment can be reserved for either one-time jobs or repeating work windows.
+- Equipment overlap checks now use reservation windows first, then fall back to start/end dates, which makes repeating lawn, snow, foliage, and route-style work safer to plan without overbooking shared equipment.
+- Next strongest follow-up: recurring job instance generation, crew board / day sheet, and reservation calendar visibility across jobs, routes, and dispatches.

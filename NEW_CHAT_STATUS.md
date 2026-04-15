@@ -4,7 +4,7 @@
 - Updated `supabase/functions/admin-manage/index.ts` so staff-detail saves now persist email changes instead of leaving the visible Email field unsaved.
 - No new SQL migration was added in this pass; schema files were reviewed and remain on the 074 baseline.
 
-> Last synchronized: April 13, 2026 (staff admin save verification, visible confirmations, and schema review with no new migration)
+> Last synchronized: April 14, 2026 (landscaping job workflow, crew planning, and schema 075)
 
 ## 2026-04-12 handoff status
 - Latest code pass added `sql/074_hse_control_cues_and_inspection_focus.sql`.
@@ -49,3 +49,16 @@
 4. Tighten HSE closeout and signoff speed on phones.
 
 - Latest pass: fixed the stuck Create Staff User flow by adding `api/auth/admin-manage.js` and a fallback path in `js/api.js`. No schema changes were introduced in this pass; schema was reviewed and remains aligned through migration 074.
+
+# New Chat Status
+
+## Current pass
+- Added a landscaping-oriented operations step that distinguishes standard one-time landscaping jobs, recurring service jobs, snow/seasonal jobs, park work, and larger custom project work.
+- Added crew-planning fields for crew kind, optional crew lead, service-area context, and default equipment notes.
+- Added job-planning fields for service pattern, recurrence basis/custom-day notes, visit duration, reservation windows, and equipment-planning status.
+- Updated `supabase/functions/jobs-manage/index.ts`, `js/jobs-ui.js`, `sql/075_landscaping_job_workflow_and_crew_planning.sql`, `sql/000_full_schema_reference.sql`, and the main Markdown docs.
+
+## Next best step
+1. Generate recurring job instances/day sheets from the stored cadence fields.
+2. Add a crew board showing lead, supervisor, members, equipment readiness, and linked HSE status.
+3. Add a reservation calendar across jobs, routes, and dispatches for shared equipment.

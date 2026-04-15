@@ -97,9 +97,13 @@ async function ensureCrewRecord(supabase: any, payload: any) {
   const crewName = String(payload?.crew_name || '').trim();
   const crewCode = String(payload?.crew_code || '').trim();
   const supervisorId = payload?.supervisor_profile_id || null;
+  const leadId = payload?.lead_profile_id || null;
+  const serviceAreaId = payload?.service_area_id || null;
+  const crewKind = String(payload?.crew_kind || 'general').trim() || 'general';
+  const defaultEquipmentNotes = payload?.default_equipment_notes ?? null;
   const notes = payload?.notes ?? null;
   if (crewId) {
-    await supabase.from('crews').update({ supervisor_profile_id: supervisorId, notes, updated_at: new Date().toISOString() }).eq('id', crewId);
+    await supabase.from('crews').update({ supervisor_profile_id: supervisorId, lead_profile_id: leadId, service_area_id: serviceAreaId, crew_kind: crewKind, default_equipment_notes: defaultEquipmentNotes, notes, updated_at: new Date().toISOString() }).eq('id', crewId);
     return crewId;
   }
   if (!crewName && !crewCode) return null;
@@ -111,6 +115,10 @@ async function ensureCrewRecord(supabase: any, payload: any) {
       crew_code: crewCode || null,
       crew_name: crewName || crewCode || 'Crew',
       supervisor_profile_id: supervisorId,
+      lead_profile_id: leadId,
+      service_area_id: serviceAreaId,
+      crew_kind: crewKind,
+      default_equipment_notes: defaultEquipmentNotes,
       notes,
       updated_at: new Date().toISOString()
     }).eq('id', existingId);
@@ -120,16 +128,21 @@ async function ensureCrewRecord(supabase: any, payload: any) {
     crew_code: crewCode || null,
     crew_name: crewName || crewCode || `Crew ${crypto.randomUUID().slice(0, 8)}`,
     supervisor_profile_id: supervisorId,
+    lead_profile_id: leadId,
+    service_area_id: serviceAreaId,
+    crew_kind: crewKind,
+    default_equipment_notes: defaultEquipmentNotes,
     notes,
     created_by_profile_id: payload?.actor_id || null
   }).select('id').single();
   if (error) throw error;
   return data?.id || null;
 }
-async function syncCrewMembers(supabase: any, crewId: string | null, members: string[] = [], actorId?: string | null, supervisorId?: string | null) {
+async function syncCrewMembers(supabase: any, crewId: string | null, members: string[] = [], actorId?: string | null, supervisorId?: string | null, leadId?: string | null) {
   if (!crewId) return;
   const desiredIds: string[] = [];
   if (supervisorId) desiredIds.push(String(supervisorId));
+  if (leadId) desiredIds.push(String(leadId));
   for (const value of members) {
     const id = await resolveProfileIdByNameOrEmail(supabase, value);
     if (id) desiredIds.push(String(id));
@@ -139,7 +152,7 @@ async function syncCrewMembers(supabase: any, crewId: string | null, members: st
   await supabase.from('crew_members').delete().eq('crew_id', crewId).not('profile_id', 'in', `(${uniqueIds.map((id) => `"${id}"`).join(',')})`);
   for (const id of uniqueIds) {
     const { data: existing } = await supabase.from('crew_members').select('id').eq('crew_id', crewId).eq('profile_id', id).maybeSingle();
-    const patch = { crew_id: crewId, profile_id: id, member_role: id === supervisorId ? 'supervisor' : 'member', is_primary: id === supervisorId, added_by_profile_id: actorId || null, updated_at: new Date().toISOString() };
+    const patch = { crew_id: crewId, profile_id: id, member_role: id === supervisorId ? 'supervisor' : (id === leadId ? 'lead' : 'member'), is_primary: id === supervisorId || id === leadId, added_by_profile_id: actorId || null, updated_at: new Date().toISOString() };
     if (existing?.id) await supabase.from('crew_members').update(patch).eq('id', existing.id);
     else await supabase.from('crew_members').insert(patch);
   }
@@ -208,6 +221,7 @@ serve(async (req) => {
     if (body.entity === 'job' && body.action === 'upsert') {
       const siteId = await resolveSiteIdByCodeOrName(supabase, body.site_name);
       const supervisorId = await resolveProfileIdByNameOrEmail(supabase, body.assigned_supervisor_name || body.supervisor_name);
+      const crewLeadId = await resolveProfileIdByNameOrEmail(supabase, body.crew_lead_name || body.crew_lead_profile_id || body.crew_lead_email);
       if (!supervisorId) return Response.json({ ok:false, error:'A supervisor is required when creating or updating a job.' }, { status:400, headers:corsHeaders });
       const crewMemberNames = parsePeopleList(body.crew_member_names || body.crew_member_ids || []);
       const crewId = await ensureCrewRecord(supabase, {
@@ -215,19 +229,29 @@ serve(async (req) => {
         crew_name: body.crew_name || (crewMemberNames.length ? `${body.job_code || body.job_name || 'Job'} Crew` : ''),
         crew_code: body.crew_code,
         supervisor_profile_id: supervisorId,
+        lead_profile_id: crewLeadId,
+        service_area_id: body.service_area_id || null,
+        crew_kind: body.crew_kind || (String(body.service_pattern || '').trim() === 'weekly' ? 'maintenance' : 'general'),
+        default_equipment_notes: body.default_equipment_notes ?? body.reservation_notes ?? null,
         notes: body.crew_notes ?? body.notes ?? null,
         actor_id: actorProfile.id,
       });
       if (crewId && crewMemberNames.length) {
-        await syncCrewMembers(supabase, crewId, crewMemberNames, actorProfile.id, supervisorId);
+        await syncCrewMembers(supabase, crewId, crewMemberNames, actorProfile.id, supervisorId, crewLeadId);
       }
       const now = new Date().toISOString();
       const scheduleMode = String(body.schedule_mode || 'standalone');
+      const servicePattern = String(body.service_pattern || (scheduleMode === 'recurring' ? 'weekly' : 'one_time'));
+      const reservationWindowStart = body.reservation_window_start || body.start_date || null;
+      const reservationWindowEnd = body.reservation_window_end || body.end_date || body.start_date || null;
       const payload = {
         job_code: body.job_code,
         job_name: body.job_name,
         site_id: siteId,
         job_type: body.job_type ?? null,
+        job_family: body.job_family ?? (scheduleMode === 'recurring' ? 'landscaping_recurring' : 'landscaping_standard'),
+        project_scope: body.project_scope ?? 'property_service',
+        service_pattern: servicePattern,
         status: body.status ?? 'planned',
         priority: body.priority ?? 'normal',
         client_name: body.client_name ?? null,
@@ -238,12 +262,22 @@ serve(async (req) => {
         signing_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.signing_supervisor_name || body.supervisor_name),
         admin_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.admin_name),
         crew_id: crewId,
+        crew_lead_profile_id: crewLeadId,
         schedule_mode: scheduleMode,
         recurrence_rule: scheduleMode === 'standalone' ? null : (body.recurrence_rule ?? null),
         recurrence_summary: scheduleMode === 'standalone' ? null : (body.recurrence_summary ?? null),
         recurrence_interval: body.recurrence_interval ? Number(body.recurrence_interval) : null,
         recurrence_anchor_date: body.recurrence_anchor_date || body.start_date || null,
+        recurrence_basis: body.recurrence_basis ?? 'calendar_rule',
+        recurrence_custom_days: body.recurrence_custom_days ?? null,
+        custom_schedule_notes: body.custom_schedule_notes ?? null,
         special_instructions: body.special_instructions ?? null,
+        reservation_window_start: reservationWindowStart,
+        reservation_window_end: reservationWindowEnd,
+        reservation_notes: body.reservation_notes ?? null,
+        equipment_planning_status: body.equipment_planning_status ?? 'planned',
+        estimated_visit_minutes: body.estimated_visit_minutes ? Number(body.estimated_visit_minutes) : null,
+        equipment_readiness_required: body.equipment_readiness_required === false ? false : true,
         approval_status: body.request_approval ? 'requested' : (body.approval_status ?? 'not_requested'),
         approval_requested_at: body.request_approval ? now : null,
         notes: body.notes ?? null,
@@ -254,7 +288,7 @@ serve(async (req) => {
       const { data, error } = await supabase.from('jobs').upsert(payload, { onConflict: 'job_code' }).select('*').single();
       if (error) throw error;
 
-      const { data: allJobs } = await supabase.from('jobs').select('id,job_code,start_date,end_date').neq('id', data.id);
+      const { data: allJobs } = await supabase.from('jobs').select('id,job_code,start_date,end_date,reservation_window_start,reservation_window_end').neq('id', data.id);
       const { data: allEquipment } = await supabase.from('equipment_items').select('*').order('equipment_code');
       const otherJobs = allJobs || [];
       const equipmentRows = allEquipment || [];
@@ -276,7 +310,7 @@ serve(async (req) => {
             candidates = equipmentRows.filter((item: any) => normalizePoolKey(item.equipment_pool_key || item.category || item.equipment_name || item.equipment_code) === poolKey);
           }
 
-          const overlappingJobIds = new Set(otherJobs.filter((job: any) => overlaps(data.start_date, data.end_date, job.start_date, job.end_date)).map((job: any) => job.id));
+          const overlappingJobIds = new Set(otherJobs.filter((job: any) => overlaps(data.reservation_window_start || data.start_date, data.reservation_window_end || data.end_date, job.reservation_window_start || job.start_date, job.reservation_window_end || job.end_date)).map((job: any) => job.id));
           const blocked = candidates.filter((item: any) => {
             if (item.current_job_id && overlappingJobIds.has(item.current_job_id)) return true;
             return item.status === 'checked_out';
@@ -317,6 +351,18 @@ serve(async (req) => {
             });
           }
         }
+      }
+
+      if (Array.isArray(body.requirements)) {
+        const { data: requirementRows } = await supabase.from('job_equipment_requirements').select('needed_qty,reserved_qty').eq('job_id', data.id);
+        const rows = requirementRows || [];
+        const totalNeeded = rows.reduce((sum: number, row: any) => sum + Number(row.needed_qty || 0), 0);
+        const totalReserved = rows.reduce((sum: number, row: any) => sum + Number(row.reserved_qty || 0), 0);
+        const nextPlanningStatus = totalNeeded <= 0
+          ? (payload.equipment_planning_status || 'planned')
+          : (totalReserved >= totalNeeded ? 'reserved' : (totalReserved > 0 ? 'partial' : 'planned'));
+        await supabase.from('jobs').update({ equipment_planning_status: nextPlanningStatus, updated_at: new Date().toISOString() }).eq('id', data.id);
+        data.equipment_planning_status = nextPlanningStatus;
       }
 
       if (body.request_approval) {

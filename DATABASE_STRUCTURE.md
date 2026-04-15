@@ -4,7 +4,7 @@
 - Updated `supabase/functions/admin-manage/index.ts` so staff-detail saves now persist email changes instead of leaving the visible Email field unsaved.
 - No new SQL migration was added in this pass; schema files were reviewed and remain on the 074 baseline.
 
-> Last synchronized: April 13, 2026 (staff admin save verification, visible confirmations, and schema review with no new migration)
+> Last synchronized: April 14, 2026 (landscaping job workflow, crew planning, and schema 075)
 
 ## 2026-04-12 schema synchronization note
 - Added migration `sql/074_hse_control_cues_and_inspection_focus.sql`.
@@ -276,3 +276,9 @@ Priority UI mappings:
 - Corrected Admin selector/view alignment for traffic daily summary and HSE action-item ordering so the newer safety and monitoring shortcuts stay usable.
 - Continued the DB-first direction while keeping HSE standalone-capable and easier to connect to jobs, work orders, routes, equipment, dispatches, sites, and subcontract work.
 
+## 2026-04-14 landscaping job families and crew planning pass
+- Added migration `sql/075_landscaping_job_workflow_and_crew_planning.sql`.
+- `crews` now also carries `crew_kind`, `lead_profile_id`, `service_area_id`, and `default_equipment_notes`.
+- `jobs` now also carries `job_family`, `project_scope`, `service_pattern`, `recurrence_basis`, `recurrence_custom_days`, `custom_schedule_notes`, `crew_lead_profile_id`, `equipment_planning_status`, `reservation_window_start`, `reservation_window_end`, `reservation_notes`, `estimated_visit_minutes`, and `equipment_readiness_required`.
+- `v_crew_directory` now returns lead name, crew kind, service-area name, and default equipment notes.
+- `v_jobs_directory` now returns the added job-family / service-pattern / reservation-window / crew-lead / equipment-planning fields so the UI can treat one-time landscaping, recurring work, and custom projects differently.

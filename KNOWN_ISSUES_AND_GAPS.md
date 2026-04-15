@@ -4,7 +4,7 @@
 - Updated `supabase/functions/admin-manage/index.ts` so staff-detail saves now persist email changes instead of leaving the visible Email field unsaved.
 - No new SQL migration was added in this pass; schema files were reviewed and remain on the 074 baseline.
 
-> Last synchronized: April 13, 2026 (staff admin save verification, visible confirmations, and schema review with no new migration)
+> Last synchronized: April 14, 2026 (landscaping job workflow, crew planning, and schema 075)
 
 ## 2026-04-12 HSE control cues and inspection focus pass
 - Added migration `sql/074_hse_control_cues_and_inspection_focus.sql`.
@@ -279,3 +279,11 @@ Reference links:
 - Continued the DB-first direction while keeping HSE standalone-capable and easier to connect to jobs, work orders, routes, equipment, dispatches, sites, and subcontract work.
 
 - Admin staff creation previously stalled on “Creating staff user…” with no visible app error when the direct `admin-manage` function path did not resolve. The frontend now falls back to `/api/auth/admin-manage`; verify the compatibility route is deployed in the same release as the UI update.
+
+## 2026-04-14 status update
+- **Improved this pass:** the data model now better matches the actual work mix: one-time landscaping, recurring maintenance/snow work, and large custom projects.
+- **Improved this pass:** crews can now carry a crew kind, optional crew lead, service-area context, and default equipment notes instead of relying only on free-text notes.
+- **Improved this pass:** jobs now have service-pattern and reservation-window fields so equipment planning is less dependent on loose start/end dates.
+- **Still open:** recurring jobs still need true instance generation / calendar expansion instead of only storing the recurrence rule and summary.
+- **Still open:** crews still need a dedicated board/day-sheet style view that shows lead, supervisor, members, equipment readiness, and HSE packet state together.
+- **Still open:** equipment reservations still need a visual calendar / lane view for repeat weekly and seasonal work.
