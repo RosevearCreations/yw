@@ -1,5 +1,5 @@
--- Last synchronized: April 14, 2026. Reviewed during the landscaping job workflow and crew planning pass.
--- Current reference remains aligned through 075_landscaping_job_workflow_and_crew_planning.sql.
+-- Last synchronized: April 14, 2026. Reviewed during the profile route recovery, landscaping workflow, and Ontario accounting guidance pass.
+-- Current reference remains aligned through 075_landscaping_job_workflow_and_crew_planning.sql. No new SQL migration was added in this pass.
 
 create extension if not exists pgcrypto;
 

@@ -73,7 +73,7 @@
     };
 
     const PROFILE_DRAFT_KEY = 'ywi_profile_self_draft_v1';
-    const state = { selfProfile: null, crewRows: [] };
+    const state = { selfProfile: null, crewRows: [], selfLoadVersion: 0, crewLoadVersion: 0, bound: false, routeBound: false, initialized: false };
 
 
     function refreshEls() {
@@ -341,7 +341,7 @@
     }
 
     async function loadSelfProfile() {
-      const loadVersion = ++state.selfLoadVersion;
+      const loadVersion = (state.selfLoadVersion += 1);
       try {
         const authState = getAuthState();
         if (!authState?.isAuthenticated || authState?.isLoggingOut) {
@@ -349,7 +349,8 @@
           return;
         }
         setNotice(els.meSummary, 'Loading your profile...');
-        const localProfile = authState?.profile || state.profile || null;
+        const localProfile = authState?.profile || state.selfProfile || null;
+        if (localProfile) renderSelf(localProfile);
         const resp = await api.fetchProfileScope('self');
         if (loadVersion !== state.selfLoadVersion) return;
         const profile = resp?.profile || resp?.profiles?.[0] || localProfile || null;
@@ -360,8 +361,10 @@
         if (loadVersion !== state.selfLoadVersion) return;
         const authState = getAuthState();
         if (authState?.isLoggingOut || !authState?.isAuthenticated) return;
+        const fallbackProfile = authState?.profile || state.selfProfile || null;
+        if (fallbackProfile) renderSelf(fallbackProfile);
         console.error(err);
-        setNotice(els.meSummary, 'Failed to load your profile.');
+        setNotice(els.meSummary, fallbackProfile ? 'Loaded the last available profile details on this device. Live refresh failed.' : 'Failed to load your profile.');
       }
     }
 
@@ -398,7 +401,7 @@
     }
 
     async function loadCrew() {
-      const loadVersion = ++state.crewLoadVersion;
+      const loadVersion = (state.crewLoadVersion += 1);
       const access = getAccessProfile(getCurrentRole());
       const authState = getAuthState();
       if (!access.canViewCrew || !authState?.isAuthenticated || authState?.isLoggingOut) {
@@ -441,23 +444,50 @@
     }
 
     function bind() {
-      els.meReload?.addEventListener('click', loadSelfProfile);
-      els.meSave?.addEventListener('click', saveSelfProfile);
-      els.crewLoad?.addEventListener('click', loadCrew);
-      els.sessionLogout?.addEventListener('click', clearCurrentSession);
-      document.addEventListener('ywi:auth-changed', () => {
-        applyRoleVisibility();
-        const authState = getAuthState();
-        if (!authState?.isAuthenticated) {
-          renderSelf(null);
-          renderCrew([]);
-          setNotice(els.meSummary, '');
-          setNotice(els.crewSummary, '');
-          return;
-        }
-        loadSelfProfile();
-        if (getAccessProfile(getCurrentRole()).canViewCrew) loadCrew();
-      });
+      if (!state.bound) {
+        document.addEventListener('ywi:auth-changed', () => {
+          ensureLayout();
+          refreshEls();
+          applyRoleVisibility();
+          const authState = getAuthState();
+          if (!authState?.isAuthenticated) {
+            renderSelf(null);
+            renderCrew([]);
+            setNotice(els.meSummary, '');
+            setNotice(els.crewSummary, '');
+            return;
+          }
+          loadSelfProfile();
+          if (getAccessProfile(getCurrentRole()).canViewCrew) loadCrew();
+        });
+        document.addEventListener('ywi:route-shown', (event) => {
+          const allowed = event?.detail?.allowed || event?.detail?.requested || '';
+          if (!['me', 'crew', 'settings'].includes(String(allowed))) return;
+          ensureLayout();
+          refreshEls();
+          applyRoleVisibility();
+          if (allowed === 'me' && getAuthState()?.isAuthenticated) loadSelfProfile();
+          if (allowed === 'crew' && getAuthState()?.isAuthenticated && getAccessProfile(getCurrentRole()).canViewCrew) loadCrew();
+        });
+        state.bound = true;
+      }
+
+      if (els.meReload && els.meReload.dataset.bound !== '1') {
+        els.meReload.dataset.bound = '1';
+        els.meReload.addEventListener('click', loadSelfProfile);
+      }
+      if (els.meSave && els.meSave.dataset.bound !== '1') {
+        els.meSave.dataset.bound = '1';
+        els.meSave.addEventListener('click', saveSelfProfile);
+      }
+      if (els.crewLoad && els.crewLoad.dataset.bound !== '1') {
+        els.crewLoad.dataset.bound = '1';
+        els.crewLoad.addEventListener('click', loadCrew);
+      }
+      if (els.sessionLogout && els.sessionLogout.dataset.bound !== '1') {
+        els.sessionLogout.dataset.bound = '1';
+        els.sessionLogout.addEventListener('click', clearCurrentSession);
+      }
     }
 
     async function init() {
@@ -467,6 +497,7 @@
       applyRoleVisibility();
       await loadSelfProfile();
       if (getAccessProfile(getCurrentRole()).canViewCrew) await loadCrew();
+      state.initialized = true;
     }
 
     return { init, loadSelfProfile, loadCrew, applyRoleVisibility };

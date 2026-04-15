@@ -251,3 +251,8 @@ Priority UI mappings:
 - Corrected Admin selector/view alignment for traffic daily summary and HSE action-item ordering so the newer safety and monitoring shortcuts stay usable.
 - Continued the DB-first direction while keeping HSE standalone-capable and easier to connect to jobs, work orders, routes, equipment, dispatches, sites, and subcontract work.
 
+
+## April 14, 2026 note
+- No new schema migration in this pass.
+- Operational schema remains aligned through 075.
+- Ontario/CAD accounting rules are documented as guardrails for the next accounting migration set.

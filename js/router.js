@@ -92,8 +92,10 @@
     updateSections(allowedSection);
     updateNav(allowedSection);
     updateHash(allowedSection);
-    if (!options.skipFocus) focusSection(allowedSection);
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    if (!options.skipFocus) {
+      try { focusSection(allowedSection); } catch {}
+    }
+    try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch { try { window.scrollTo(0, 0); } catch {} }
     document.dispatchEvent(new CustomEvent('ywi:route-shown', { detail: { requested: sectionId, allowed: allowedSection, role: getRole() } }));
     if (allowedSection !== sectionId) {
       document.dispatchEvent(new CustomEvent('ywi:route-denied', { detail: { requested: sectionId, redirected: allowedSection, role: getRole() } }));

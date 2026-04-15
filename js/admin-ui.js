@@ -388,13 +388,14 @@
             <label>Subtotal
               <input id="ad_order_subtotal" type="number" step="0.01" min="0" value="0" />
             </label>
-            <label>Tax
+            <label>Ontario HST / GST-HST
               <input id="ad_order_tax" type="number" step="0.01" min="0" value="0" />
             </label>
             <label>Total
               <input id="ad_order_total" type="number" step="0.01" min="0" value="0" />
             </label>
           </div>
+          <div class="notice" style="margin-top:12px;">Ontario default helper: use 13% HST on taxable Ontario supplies, but review zero-rated, exempt, and place-of-supply exceptions before posting final invoices.</div>
           <label style="display:block;margin-top:12px;">Notes
             <textarea id="ad_order_notes" rows="3" placeholder="Basic accounting/order notes"></textarea>
           </label>
@@ -1079,15 +1080,25 @@
       }
     }
 
+    function syncOntarioOrderTotals(forceTax = false) {
+      const e = els();
+      const subtotal = Number(e.orderSubtotal?.value || 0);
+      const currentTax = Number(e.orderTax?.value || 0);
+      const tax = forceTax || currentTax <= 0 ? Number((subtotal * 0.13).toFixed(2)) : currentTax;
+      if (e.orderTax && (forceTax || currentTax <= 0)) e.orderTax.value = String(tax.toFixed(2));
+      if (e.orderTotal) e.orderTotal.value = String((subtotal + tax).toFixed(2));
+    }
+
     async function createSalesOrder() {
       const e = els();
       try {
+        syncOntarioOrderTotals(false);
         const subtotal = Number(e.orderSubtotal?.value || 0);
         const tax = Number(e.orderTax?.value || 0);
         const total = Number(e.orderTotal?.value || subtotal + tax);
         const resp = await manageAdminEntity({ entity: 'sales_order', action: 'create', customer_name: e.orderCustomerName?.value || '', customer_email: e.orderCustomerEmail?.value || '', order_status: e.orderStatus?.value || 'draft', subtotal_amount: subtotal, tax_amount: tax, total_amount: total, notes: e.orderNotes?.value || '' });
         if (!resp?.ok) throw new Error(resp?.error || 'Order create failed.');
-        setSummary(`Order ${resp?.record?.order_code || resp?.record?.id || ''} created with accounting entry ${resp?.accounting_record?.id || ''}.`);
+        setSummary(`Order ${resp?.record?.order_code || resp?.record?.id || ''} created with accounting entry ${resp?.accounting_record?.id || ''}. Ontario HST helper currently defaults to 13% for taxable Ontario work.`);
         await loadDirectory();
       } catch (err) {
         setSummary(String(err?.message || 'Order create failed.'), true);
