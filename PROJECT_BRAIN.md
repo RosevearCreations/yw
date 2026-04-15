@@ -181,3 +181,8 @@ Treat the product as a landscaping / project-work / subcontract dispatch platfor
 - `#me` route was hardened in the frontend with fallback rendering and correct async load counters.
 - Jobs direction is now explicitly landscaping-first: one-time installs, recurring service, and large custom project work all converge on crews, equipment, and later accounting.
 - Ontario/CAD accounting guidance now has a dedicated Markdown note; next steps should move those defaults into DB-backed tax settings.
+
+
+### Latest brain update
+Jobs are no longer only operational. They now carry pricing, discount, margin, open-end schedule, delay, and repair-loss hooks. Treat estimates/contracts and Ontario accounting automation as the next layer on top of this job backbone.
+

@@ -304,3 +304,15 @@ The accounting foundation exists, but Ontario/CRA-facing tax behavior is still o
 - exempt / zero-rated handling
 - invoice/bill print and posting rules that preserve subtotal, tax, and total separately
 - month-end and year-end close review checklists tied to Canadian / Ontario operations
+
+## 2026-04-15 – remaining gaps after pricing pass
+Improved this pass:
+- job records now carry commercial pricing inputs and profit/loss hooks instead of only schedule fields
+- open-end jobs and delayed jobs now have explicit state instead of being buried in notes
+
+Still open:
+- no full Ontario tax-code engine yet for job-to-invoice and bill posting
+- no estimate-to-contract-to-job conversion flow yet
+- no automated profitability dashboard that blends jobs, receipts, equipment repair, and delay losses into one review screen
+- recurring service pricing tiers still rely on notes/discount settings rather than reusable client/service pricing catalogs
+

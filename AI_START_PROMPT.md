@@ -343,3 +343,7 @@ Current state after this pass:
 - Corrected Admin selector/view alignment for traffic daily summary and HSE action-item ordering so the newer safety and monitoring shortcuts stay usable.
 - Continued the DB-first direction while keeping HSE standalone-capable and easier to connect to jobs, work orders, routes, equipment, dispatches, sites, and subcontract work.
 
+
+## Recent handoff emphasis
+Continue from a landscaping-first application perspective. Jobs already support schedule and crew planning; current priority is to deepen pricing, estimates, contracts, and Ontario accounting behavior without losing fallback stability.
+

@@ -261,3 +261,8 @@ The latest pass adds the remaining HSE proof/upload reliability layer plus a DB-
 The application is now being shaped as a Southern Ontario landscaping and field-operations platform that links clients, sites, one-time jobs, recurring service work, crews, equipment planning, HSE packets, and accounting records.
 
 Ontario/CAD accounting guardrails are now documented in `docs/ONTARIO_ACCOUNTING_AND_TAX_GUARDRAILS.md`. The current build includes helper-level Ontario HST handling in the Admin order/accounting stub, but the full DB-backed tax settings and tax-code engine are still a follow-on step.
+
+
+### Current emphasis
+The current build emphasizes landscaping job operations plus early commercial logic: crew planning, equipment reservation, job pricing, discount handling, duration planning, delayed work tracking, and profit/loss hooks.
+

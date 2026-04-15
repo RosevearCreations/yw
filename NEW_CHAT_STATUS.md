@@ -68,3 +68,8 @@
 - Added a practical Ontario HST helper in the Admin order/accounting stub and documented Ontario/CAD accounting guardrails for the next accounting-heavy passes.
 - No new SQL migration in this pass; schema remains aligned through 075.
 - Next strongest step: move Ontario tax handling from helper notes into DB-backed business tax settings and tax codes, while continuing to connect jobs, crews, equipment reservations, and finance.
+
+
+## Latest pass handoff
+The latest pass added migration `076_job_pricing_profitability_and_schedule_logic.sql` and updated the jobs UI plus `supabase/functions/jobs-manage/index.ts` so job pricing and schedule logic save together. Next chat should focus on estimate/contract conversion, reusable pricing catalogs, and Ontario tax/accounting rules wired into posting.
+

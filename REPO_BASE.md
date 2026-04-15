@@ -94,3 +94,7 @@ The repo should now be treated as a landscaping / project-work / subcontract / H
 - Corrected Admin selector/view alignment for traffic daily summary and HSE action-item ordering so the newer safety and monitoring shortcuts stay usable.
 - Continued the DB-first direction while keeping HSE standalone-capable and easier to connect to jobs, work orders, routes, equipment, dispatches, sites, and subcontract work.
 
+
+## Latest repository note
+Schema version now extends through migration 076 for job pricing/profitability and schedule logic. When touching jobs, update all three layers together: `js/jobs-ui.js`, `supabase/functions/jobs-manage/index.ts`, and the SQL snapshot/migration files.
+

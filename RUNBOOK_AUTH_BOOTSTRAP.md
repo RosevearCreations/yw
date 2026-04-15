@@ -98,3 +98,7 @@ Auth stabilization remains important, but the next product-facing admin work is 
 - Corrected Admin selector/view alignment for traffic daily summary and HSE action-item ordering so the newer safety and monitoring shortcuts stay usable.
 - Continued the DB-first direction while keeping HSE standalone-capable and easier to connect to jobs, work orders, routes, equipment, dispatches, sites, and subcontract work.
 
+
+## Cross-project note
+Auth bootstrap is stable enough for the current pass; active build focus has shifted to landscaping job/commercial logic, especially job pricing, recurring service handling, and accounting tie-ins.
+

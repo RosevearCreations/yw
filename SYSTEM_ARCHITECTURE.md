@@ -161,3 +161,8 @@ The system should continue linking these two centers without forcing every safet
 - The operations architecture now more clearly separates three real scheduling patterns: one-time field jobs, repeating service jobs, and larger custom project work.
 - Crew planning now sits between jobs and equipment more explicitly: a saved crew can carry its own kind, lead, supervisor, service-area context, and default equipment notes before it is attached to a job.
 - Equipment planning now uses reservation windows as a first-class scheduling signal, which is a better fit for weekly mowing, snow, foliage, and other repeating field services than relying only on a single start/end date pair.
+
+
+## Current architecture direction
+The landscaping stack is now explicitly blending operations and commercial logic. Jobs sit between client/service intake and downstream accounting, and are being prepared to bridge into estimates, contracts, recurring service pricing, and Ontario-compliant posting flows.
+

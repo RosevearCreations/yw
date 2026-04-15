@@ -44,11 +44,11 @@ function roleRank(role: string) {
 function normalizePoolKey(value?: string | null) {
   return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ');
 }
-function overlaps(aStart?: string | null, aEnd?: string | null, bStart?: string | null, bEnd?: string | null) {
+function overlaps(aStart?: string | null, aEnd?: string | null, bStart?: string | null, bEnd?: string | null, aOpenEnd = false, bOpenEnd = false) {
   const a1 = aStart || '1900-01-01';
-  const a2 = aEnd || aStart || '2999-12-31';
+  const a2 = aOpenEnd ? '2999-12-31' : (aEnd || aStart || '2999-12-31');
   const b1 = bStart || '1900-01-01';
-  const b2 = bEnd || bStart || '2999-12-31';
+  const b2 = bOpenEnd ? '2999-12-31' : (bEnd || bStart || '2999-12-31');
   return a1 <= b2 && b1 <= a2;
 }
 async function resolveProfileIdByNameOrEmail(supabase: any, value?: string | null) {
@@ -157,6 +157,53 @@ async function syncCrewMembers(supabase: any, crewId: string | null, members: st
     else await supabase.from('crew_members').insert(patch);
   }
 }
+
+function normalizeMoney(value: unknown, fallback = 0) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return Number(fallback.toFixed ? fallback.toFixed(2) : fallback);
+  return Number(n.toFixed(2));
+}
+function computeJobPricing(body: any) {
+  const cost = normalizeMoney(body?.estimated_cost_total || 0, 0);
+  const pricingMethod = String(body?.pricing_method || 'manual').trim() || 'manual';
+  const markupPercent = Number(body?.markup_percent || 0);
+  const discountMode = String(body?.discount_mode || 'none').trim() || 'none';
+  const discountValue = normalizeMoney(body?.discount_value || 0, 0);
+  let quoted = normalizeMoney(body?.quoted_charge_total || 0, 0);
+  if (pricingMethod === 'markup_percent' && Number.isFinite(markupPercent)) {
+    quoted = normalizeMoney(cost * (1 + (markupPercent / 100)), quoted);
+  }
+  if (discountMode === 'percent' && discountValue > 0) {
+    quoted = normalizeMoney(quoted * Math.max(0, 1 - (discountValue / 100)), quoted);
+  } else if (discountMode === 'fixed' && discountValue > 0) {
+    quoted = normalizeMoney(Math.max(0, quoted - discountValue), quoted);
+  }
+  const estimatedProfit = normalizeMoney(quoted - cost, 0);
+  const estimatedMarginPercent = quoted > 0 ? Number(((estimatedProfit / quoted) * 100).toFixed(2)) : 0;
+  const actualCost = normalizeMoney(body?.actual_cost_total || 0, 0);
+  const actualCharge = normalizeMoney(body?.actual_charge_total || 0, 0);
+  const delayCost = normalizeMoney(body?.delay_cost_total || 0, 0);
+  const repairCost = normalizeMoney(body?.equipment_repair_cost_total || 0, 0);
+  const actualProfit = normalizeMoney(actualCharge - actualCost - delayCost - repairCost, 0);
+  const actualMarginPercent = actualCharge > 0 ? Number(((actualProfit / actualCharge) * 100).toFixed(2)) : 0;
+  return {
+    estimated_cost_total: cost,
+    quoted_charge_total: quoted,
+    pricing_method: pricingMethod,
+    markup_percent: Number.isFinite(markupPercent) ? Number(markupPercent.toFixed(2)) : null,
+    discount_mode: discountMode,
+    discount_value: discountValue,
+    estimated_profit_total: estimatedProfit,
+    estimated_margin_percent: estimatedMarginPercent,
+    actual_cost_total: actualCost,
+    actual_charge_total: actualCharge,
+    delay_cost_total: delayCost,
+    equipment_repair_cost_total: repairCost,
+    actual_profit_total: actualProfit,
+    actual_margin_percent: actualMarginPercent,
+  };
+}
+
 async function sendEmailIfConfigured(notification: any) {
   const apiKey = Deno.env.get('RESEND_API_KEY');
   const from = Deno.env.get('RESEND_FROM_EMAIL') || Deno.env.get('EMAIL_FROM');
@@ -244,6 +291,7 @@ serve(async (req) => {
       const servicePattern = String(body.service_pattern || (scheduleMode === 'recurring' ? 'weekly' : 'one_time'));
       const reservationWindowStart = body.reservation_window_start || body.start_date || null;
       const reservationWindowEnd = body.reservation_window_end || body.end_date || body.start_date || null;
+      const pricing = computeJobPricing(body);
       const payload = {
         job_code: body.job_code,
         job_name: body.job_name,
@@ -271,13 +319,33 @@ serve(async (req) => {
         recurrence_basis: body.recurrence_basis ?? 'calendar_rule',
         recurrence_custom_days: body.recurrence_custom_days ?? null,
         custom_schedule_notes: body.custom_schedule_notes ?? null,
+        tiered_discount_notes: body.tiered_discount_notes ?? null,
+        delay_reason: body.delay_reason ?? null,
         special_instructions: body.special_instructions ?? null,
-        reservation_window_start: reservationWindowStart,
-        reservation_window_end: reservationWindowEnd,
+        reservation_window_start: body.open_end_date ? reservationWindowStart : reservationWindowStart,
+        reservation_window_end: body.open_end_date ? null : reservationWindowEnd,
         reservation_notes: body.reservation_notes ?? null,
         equipment_planning_status: body.equipment_planning_status ?? 'planned',
         estimated_visit_minutes: body.estimated_visit_minutes ? Number(body.estimated_visit_minutes) : null,
+        estimated_duration_hours: body.estimated_duration_hours ? Number(body.estimated_duration_hours) : null,
+        estimated_duration_days: body.estimated_duration_days ? Number(body.estimated_duration_days) : null,
+        open_end_date: body.open_end_date === true,
+        delayed_schedule: body.delayed_schedule === true,
         equipment_readiness_required: body.equipment_readiness_required === false ? false : true,
+        estimated_cost_total: pricing.estimated_cost_total,
+        quoted_charge_total: pricing.quoted_charge_total,
+        pricing_method: pricing.pricing_method,
+        markup_percent: pricing.markup_percent,
+        discount_mode: pricing.discount_mode,
+        discount_value: pricing.discount_value,
+        estimated_profit_total: pricing.estimated_profit_total,
+        estimated_margin_percent: pricing.estimated_margin_percent,
+        delay_cost_total: pricing.delay_cost_total,
+        equipment_repair_cost_total: pricing.equipment_repair_cost_total,
+        actual_cost_total: pricing.actual_cost_total,
+        actual_charge_total: pricing.actual_charge_total,
+        actual_profit_total: pricing.actual_profit_total,
+        actual_margin_percent: pricing.actual_margin_percent,
         approval_status: body.request_approval ? 'requested' : (body.approval_status ?? 'not_requested'),
         approval_requested_at: body.request_approval ? now : null,
         notes: body.notes ?? null,
@@ -288,7 +356,7 @@ serve(async (req) => {
       const { data, error } = await supabase.from('jobs').upsert(payload, { onConflict: 'job_code' }).select('*').single();
       if (error) throw error;
 
-      const { data: allJobs } = await supabase.from('jobs').select('id,job_code,start_date,end_date,reservation_window_start,reservation_window_end').neq('id', data.id);
+      const { data: allJobs } = await supabase.from('jobs').select('id,job_code,start_date,end_date,reservation_window_start,reservation_window_end,open_end_date').neq('id', data.id);
       const { data: allEquipment } = await supabase.from('equipment_items').select('*').order('equipment_code');
       const otherJobs = allJobs || [];
       const equipmentRows = allEquipment || [];
@@ -310,7 +378,7 @@ serve(async (req) => {
             candidates = equipmentRows.filter((item: any) => normalizePoolKey(item.equipment_pool_key || item.category || item.equipment_name || item.equipment_code) === poolKey);
           }
 
-          const overlappingJobIds = new Set(otherJobs.filter((job: any) => overlaps(data.reservation_window_start || data.start_date, data.reservation_window_end || data.end_date, job.reservation_window_start || job.start_date, job.reservation_window_end || job.end_date)).map((job: any) => job.id));
+          const overlappingJobIds = new Set(otherJobs.filter((job: any) => overlaps(data.reservation_window_start || data.start_date, data.reservation_window_end || data.end_date, job.reservation_window_start || job.start_date, job.reservation_window_end || job.end_date, !!data.open_end_date, !!job.open_end_date)).map((job: any) => job.id));
           const blocked = candidates.filter((item: any) => {
             if (item.current_job_id && overlappingJobIds.has(item.current_job_id)) return true;
             return item.status === 'checked_out';

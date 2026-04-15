@@ -115,3 +115,8 @@ When continuing this project, assume the next strongest implementation pass is t
 - Treat the product direction as a landscaping operations application first, with recurring service, custom project work, subcontract dispatch, HSE, and accounting converging in one shell.
 - The `#me` route has just been hardened in the frontend; profile/load regressions should still be watched closely.
 - Ontario/CAD accounting rules now have a Markdown guardrail note, but full tax settings still need DB-backed implementation.
+
+
+## 2026-04-15 context addendum
+The app is moving from a generic jobs/equipment tool into a landscaping-focused business system. Jobs now need to behave like commercial records with cost, charge, discount, timing, delay, and repair-loss data, while still supporting one-time work, repeating work, and open-end projects.
+

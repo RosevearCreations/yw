@@ -287,3 +287,8 @@ Priority UI mappings:
 - No new SQL migration was added in this pass.
 - The schema reference remains aligned through migration `075_landscaping_job_workflow_and_crew_planning.sql`.
 - Ontario/CAD accounting guardrails are currently documented in Markdown while the next DB-backed tax-settings layer is planned.
+
+
+## Latest structure note
+`public.jobs` now carries commercial planning fields alongside schedule fields, including cost, charge, markup, discount, estimated/actual profit, open-end flags, delay cost, and equipment repair cost totals.
+

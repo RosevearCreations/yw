@@ -368,3 +368,16 @@ On every build:
    - keep pricing able to run standalone, but make estimates, work orders, invoices, bills, and payments trace cleanly to client, site, job, and dispatch records
 4. **Profile/settings reliability**
    - keep tightening the My Profile and Settings screens so route startup, save messaging, and cached fallback behavior are dependable on slower connections
+
+## 2026-04-15 pass – landscaping pricing and profitability backbone
+Completed this pass:
+- jobs now support cost-to-us, quoted charge, markup %, discount mode/value, tiered discount notes, estimated profit, margin %, and actual profit tracking
+- jobs now support approximate duration hours/days, open-end jobs, delay flags, delay cost, and equipment repair cost hooks
+- jobs-manage now calculates pricing server-side so margin math is not UI-only
+
+Next recommended build steps:
+1. feed job pricing into estimates and work orders so accepted quotes can become operational jobs without re-entry
+2. add Ontario HST tax-code tables and posting rules so taxable jobs, invoices, and bills stop relying on helper-level defaults
+3. tie delayed jobs and equipment repair cost into accounting review queues and profitability dashboards
+4. add contract templates and estimate-to-job conversion once this costing layer is stable
+

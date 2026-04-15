@@ -132,3 +132,8 @@ Deployments should now be treated as operations-critical because session integri
 - Corrected Admin selector/view alignment for traffic daily summary and HSE action-item ordering so the newer safety and monitoring shortcuts stay usable.
 - Continued the DB-first direction while keeping HSE standalone-capable and easier to connect to jobs, work orders, routes, equipment, dispatches, sites, and subcontract work.
 
+
+## This pass requires
+- run `sql/076_job_pricing_profitability_and_schedule_logic.sql` before deploying the updated jobs UI and jobs-manage function
+- after deploy, hard refresh the Jobs page to load the new pricing and duration fields
+

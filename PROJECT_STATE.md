@@ -200,3 +200,8 @@ These screens should be mobile-friendly for quick field edits and desktop-strong
 - The `#me` route recovery pass is now part of the active build, with stronger fallback rendering and safer async profile loading.
 - The app direction is now explicitly centered on a landscaping operations platform that joins clients, recurring and one-time jobs, crews, equipment reservations, HSE packets, and accounting review.
 - Ontario/CAD accounting guardrails are now documented, but the tax engine is still helper-level rather than a full DB-backed tax-code system.
+
+
+## Current implementation note
+The landscaping workflow now supports three linked layers: operations scheduling, equipment/crew planning, and early commercial pricing. Jobs can carry cost, charge, discount, duration, open-end schedule, delay, and repair-cost fields, but estimates/contracts and the fuller Ontario accounting engine are still the next major backend steps.
+

@@ -148,3 +148,10 @@ Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summarie
 - Added an Ontario accounting helper note in the Admin accounting stub and auto-filled a 13% HST helper amount from subtotal when the tax field is blank.
 - Added `docs/ONTARIO_ACCOUNTING_AND_TAX_GUARDRAILS.md` and refreshed the roadmap/gaps/docs around the landscaping/client/job/employee/financial convergence direction.
 - No new SQL migration was added in this pass; schema reference files were reviewed and remain aligned through migration 075.
+
+## 2026-04-15 – Job pricing, discount logic, and profitability pass
+- Added job-level cost-to-us, charge-to-client, pricing method, markup, discount, duration, open-end scheduling, delay, repair-cost, and actual profit fields.
+- Added SQL migration `076_job_pricing_profitability_and_schedule_logic.sql`.
+- Updated jobs UI and jobs-manage so pricing and schedule logic save together with crew/equipment planning.
+- Refreshed the roadmap, gaps, project state, and schema snapshot to reflect the landscaping-first commercial workflow.
+

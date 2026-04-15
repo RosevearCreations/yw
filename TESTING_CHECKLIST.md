@@ -159,3 +159,10 @@ Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summarie
 - Corrected Admin selector/view alignment for traffic daily summary and HSE action-item ordering so the newer safety and monitoring shortcuts stay usable.
 - Continued the DB-first direction while keeping HSE standalone-capable and easier to connect to jobs, work orders, routes, equipment, dispatches, sites, and subcontract work.
 
+
+## Add to manual regression
+- create a one-time job with manual price and verify estimated profit/margin persist
+- create a recurring job with markup % and confirm the server recalculates quoted charge
+- create an open-end job and confirm reservation end stays blank
+- mark a job delayed and verify delay cost and notes persist
+
