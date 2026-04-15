@@ -195,3 +195,8 @@ These screens should be mobile-friendly for quick field edits and desktop-strong
 - Continued the DB-first direction while keeping HSE standalone-capable and easier to connect to jobs, work orders, routes, equipment, dispatches, sites, and subcontract work.
 
 - Admin state: staff create/save flow now has an `admin-manage` compatibility fallback route to reduce silent hangs from direct function stalls.
+
+## April 14, 2026 update
+- The `#me` route recovery pass is now part of the active build, with stronger fallback rendering and safer async profile loading.
+- The app direction is now explicitly centered on a landscaping operations platform that joins clients, recurring and one-time jobs, crews, equipment reservations, HSE packets, and accounting review.
+- Ontario/CAD accounting guardrails are now documented, but the tax engine is still helper-level rather than a full DB-backed tax-code system.

@@ -287,3 +287,20 @@ Reference links:
 - **Still open:** recurring jobs still need true instance generation / calendar expansion instead of only storing the recurrence rule and summary.
 - **Still open:** crews still need a dedicated board/day-sheet style view that shows lead, supervisor, members, equipment readiness, and HSE packet state together.
 - **Still open:** equipment reservations still need a visual calendar / lane view for repeat weekly and seasonal work.
+
+## April 14, 2026 issue/gap refresh
+- The blank `#me` route weakness is now addressed in the frontend, but profile and settings screens still need continued reliability testing on slower startups and stale sessions.
+- Landscaping direction is now clearer: one-time installs, recurring maintenance/snow work, and large custom projects all need to converge on the same client/job/crew/equipment/accounting backbone.
+- Ontario/CAD tax handling is now documented, but the live application still relies on helper-level HST defaults rather than a DB-backed tax-code engine.
+
+## Accounting legislation / compliance gap
+### Risk
+The accounting foundation exists, but Ontario/CRA-facing tax behavior is still only partially represented in the live workflow.
+
+### Needed
+- Ontario business tax settings in the DB
+- HST / GST-HST defaults and overrides by record type
+- place-of-supply aware tax handling
+- exempt / zero-rated handling
+- invoice/bill print and posting rules that preserve subtotal, tax, and total separately
+- month-end and year-end close review checklists tied to Canadian / Ontario operations

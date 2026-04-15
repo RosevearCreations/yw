@@ -351,3 +351,20 @@ On every build:
 - Job planning now includes service pattern, recurrence basis/custom-day notes, estimated visit minutes, reservation windows, reservation notes, and equipment-planning status so equipment can be reserved for either one-time jobs or repeating work windows.
 - Equipment overlap checks now use reservation windows first, then fall back to start/end dates, which makes repeating lawn, snow, foliage, and route-style work safer to plan without overbooking shared equipment.
 - Next strongest follow-up: recurring job instance generation, crew board / day sheet, and reservation calendar visibility across jobs, routes, and dispatches.
+
+## 2026-04-14 profile route recovery and Ontario accounting guidance pass
+- Fixed the `#me` route startup weakness by initializing profile/crew async load counters correctly, re-running profile layout when the route becomes visible, and leaving a visible fallback shell in the HTML so the screen never looks empty while modules load.
+- Added an Ontario-facing accounting helper to the Admin accounting stub so subtotal, HST/GST-HST, and total are easier to work with while the fuller tax engine is still pending.
+- Added `docs/ONTARIO_ACCOUNTING_AND_TAX_GUARDRAILS.md` so the landscaping/client/job/employee/accounting direction now has a written Ontario/CAD baseline instead of only ad-hoc notes.
+
+## Immediate next build priorities after 075
+1. **Crew-to-job reservation enforcement**
+   - carry crew assignment deeper into equipment pool reservations and route/service execution
+   - show reservation conflicts and missing equipment readiness before job start
+2. **Ontario tax settings in the DB**
+   - add business tax settings, tax classes, and invoice/bill defaults instead of keeping the Ontario HST helper only in UI text
+   - preserve place-of-supply overrides, zero-rated, and exempt cases
+3. **Client/job/finance convergence**
+   - keep pricing able to run standalone, but make estimates, work orders, invoices, bills, and payments trace cleanly to client, site, job, and dispatch records
+4. **Profile/settings reliability**
+   - keep tightening the My Profile and Settings screens so route startup, save messaging, and cached fallback behavior are dependable on slower connections

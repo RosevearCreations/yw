@@ -256,3 +256,8 @@ The latest pass adds the remaining HSE proof/upload reliability layer plus a DB-
 - Continued the DB-first direction while keeping HSE standalone-capable and easier to connect to jobs, work orders, routes, equipment, dispatches, sites, and subcontract work.
 
 - Admin reliability note: the staff create/save workflow now supports a same-origin `api/auth/admin-manage.js` compatibility proxy when the direct Supabase Edge Function path is unavailable or stalled.
+
+## Current implementation direction
+The application is now being shaped as a Southern Ontario landscaping and field-operations platform that links clients, sites, one-time jobs, recurring service work, crews, equipment planning, HSE packets, and accounting records.
+
+Ontario/CAD accounting guardrails are now documented in `docs/ONTARIO_ACCOUNTING_AND_TAX_GUARDRAILS.md`. The current build includes helper-level Ontario HST handling in the Admin order/accounting stub, but the full DB-backed tax settings and tax-code engine are still a follow-on step.

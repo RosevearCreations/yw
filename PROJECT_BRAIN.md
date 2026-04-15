@@ -176,3 +176,8 @@ Treat the product as a landscaping / project-work / subcontract dispatch platfor
 - Continued the DB-first direction while keeping HSE standalone-capable and easier to connect to jobs, work orders, routes, equipment, dispatches, sites, and subcontract work.
 
 - Recent fix: `Create Staff User` now retries through `/api/auth/admin-manage` when the direct Supabase `admin-manage` function path stalls or returns HTML.
+
+## Latest build memory
+- `#me` route was hardened in the frontend with fallback rendering and correct async load counters.
+- Jobs direction is now explicitly landscaping-first: one-time installs, recurring service, and large custom project work all converge on crews, equipment, and later accounting.
+- Ontario/CAD accounting guidance now has a dedicated Markdown note; next steps should move those defaults into DB-backed tax settings.

@@ -141,3 +141,10 @@ Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summarie
 - Continued the DB-first direction while keeping HSE standalone-capable and easier to connect to jobs, work orders, routes, equipment, dispatches, sites, and subcontract work.
 
 - April 14, 2026: Added admin-manage compatibility fallback so Create Staff User no longer hangs when the direct Edge Function path stalls or returns non-JSON.
+
+## 2026-04-14 profile route recovery, landscaping workflow tie-in, and Ontario accounting guidance pass
+- Hardened the `#me` profile route by fixing uninitialized profile/crew async load counters, re-binding profile layout on route show, and adding a visible fallback shell in `index.html` so the route no longer appears blank while profile modules initialize.
+- Made router scroll behavior safer by replacing the non-standard `instant` scroll option with a guarded `auto` fallback.
+- Added an Ontario accounting helper note in the Admin accounting stub and auto-filled a 13% HST helper amount from subtotal when the tax field is blank.
+- Added `docs/ONTARIO_ACCOUNTING_AND_TAX_GUARDRAILS.md` and refreshed the roadmap/gaps/docs around the landscaping/client/job/employee/financial convergence direction.
+- No new SQL migration was added in this pass; schema reference files were reviewed and remain aligned through migration 075.

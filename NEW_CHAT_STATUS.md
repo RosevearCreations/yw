@@ -62,3 +62,9 @@
 1. Generate recurring job instances/day sheets from the stored cadence fields.
 2. Add a crew board showing lead, supervisor, members, equipment readiness, and linked HSE status.
 3. Add a reservation calendar across jobs, routes, and dispatches for shared equipment.
+
+## Latest pass: profile route recovery and Ontario accounting guidance
+- Fixed the main `#me` profile-screen fragility by initializing profile/crew async counters, re-running profile layout on route show, and adding a visible fallback shell so the profile route does not appear blank during module startup.
+- Added a practical Ontario HST helper in the Admin order/accounting stub and documented Ontario/CAD accounting guardrails for the next accounting-heavy passes.
+- No new SQL migration in this pass; schema remains aligned through 075.
+- Next strongest step: move Ontario tax handling from helper notes into DB-backed business tax settings and tax codes, while continuing to connect jobs, crews, equipment reservations, and finance.

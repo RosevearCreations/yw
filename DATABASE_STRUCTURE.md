@@ -282,3 +282,8 @@ Priority UI mappings:
 - `jobs` now also carries `job_family`, `project_scope`, `service_pattern`, `recurrence_basis`, `recurrence_custom_days`, `custom_schedule_notes`, `crew_lead_profile_id`, `equipment_planning_status`, `reservation_window_start`, `reservation_window_end`, `reservation_notes`, `estimated_visit_minutes`, and `equipment_readiness_required`.
 - `v_crew_directory` now returns lead name, crew kind, service-area name, and default equipment notes.
 - `v_jobs_directory` now returns the added job-family / service-pattern / reservation-window / crew-lead / equipment-planning fields so the UI can treat one-time landscaping, recurring work, and custom projects differently.
+
+## April 14, 2026 note
+- No new SQL migration was added in this pass.
+- The schema reference remains aligned through migration `075_landscaping_job_workflow_and_crew_planning.sql`.
+- Ontario/CAD accounting guardrails are currently documented in Markdown while the next DB-backed tax-settings layer is planned.

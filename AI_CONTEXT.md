@@ -110,3 +110,8 @@ When continuing this project, assume the next strongest implementation pass is t
 - The work model should now assume three main job patterns: one-time landscaping/project jobs, recurring route/service jobs, and larger custom project/construction/home-modification jobs.
 - Crew setup should support a supervisor and optional crew lead, plus reusable member/equipment planning context.
 - Equipment planning should prefer reservation windows for repeat work instead of depending only on single start/end dates.
+
+## April 14, 2026 context refresh
+- Treat the product direction as a landscaping operations application first, with recurring service, custom project work, subcontract dispatch, HSE, and accounting converging in one shell.
+- The `#me` route has just been hardened in the frontend; profile/load regressions should still be watched closely.
+- Ontario/CAD accounting rules now have a Markdown guardrail note, but full tax settings still need DB-backed implementation.
