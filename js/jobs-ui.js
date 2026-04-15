@@ -288,15 +288,33 @@
             <label>Assigned Crew<select id="job_crew_id"></select></label>
             <label>New Crew Name<input id="job_crew_name" type="text" placeholder="Crew name for this job" list="employee-options" /></label>
             <label>Crew Code<input id="job_crew_code" type="text" placeholder="CREW-01" /></label>
+            <label>Crew Kind<select id="job_crew_kind"><option value="general">General</option><option value="installation">Installation</option><option value="maintenance">Maintenance</option><option value="snow">Snow</option><option value="parks">Parks</option><option value="construction">Construction</option><option value="custom">Custom</option></select></label>
             <label>Assigned Supervisor<input id="job_assigned_supervisor_name" type="text" placeholder="Required supervisor" list="employee-options" /></label>
+            <label>Crew Lead<input id="job_crew_lead_name" type="text" placeholder="Crew lead" list="employee-options" /></label>
+            <label>Job Family<select id="job_job_family"><option value="landscaping_standard">Standard Landscaping</option><option value="landscaping_recurring">Recurring Landscaping</option><option value="custom_project">Custom Project</option><option value="park_project">Park Project</option><option value="park_maintenance">Park Maintenance</option><option value="snow">Snow / Winter</option><option value="home_modification">Home Modification</option><option value="construction">Construction</option></select></label>
+            <label>Project Scope<select id="job_project_scope"><option value="property_service">Property Service</option><option value="park">Park / Water Park</option><option value="home_modification">Home Modification</option><option value="construction">Construction</option><option value="maintenance">Maintenance</option><option value="snow">Snow</option></select></label>
+            <label>Service Pattern<select id="job_service_pattern"><option value="one_time">One Time</option><option value="weekly">Weekly</option><option value="biweekly">Biweekly</option><option value="monthly">Monthly</option><option value="seasonal">Seasonal</option><option value="custom">Custom</option></select></label>
             <label>Schedule Mode<select id="job_schedule_mode"><option value="standalone">Standalone Project</option><option value="recurring">Recurring Service</option><option value="project_phase">Project Phase</option></select></label>
+            <label>Recurrence Basis<select id="job_recurrence_basis"><option value="calendar_rule">Calendar Rule</option><option value="custom_cycle">Custom Cycle</option><option value="event_driven">Event Driven</option></select></label>
             <label>Recurrence Summary<input id="job_recurrence_summary" type="text" placeholder="Every Tuesday and Friday" /></label>
             <label>Recurrence Rule<input id="job_recurrence_rule" type="text" placeholder="FREQ=WEEKLY;BYDAY=TU,FR" /></label>
             <label>Recurrence Interval<input id="job_recurrence_interval" type="number" min="1" step="1" placeholder="1" /></label>
             <label>Anchor Date<input id="job_recurrence_anchor_date" type="date" /></label>
+            <label>Custom Days / Cycle<input id="job_recurrence_custom_days" type="text" placeholder="Mon,Wed,Fri or every 10 days" /></label>
+            <label>Estimated Visit Minutes<input id="job_estimated_visit_minutes" type="number" min="0" step="15" placeholder="120" /></label>
+            <label>Reservation Window Start<input id="job_reservation_window_start" type="date" /></label>
+            <label>Reservation Window End<input id="job_reservation_window_end" type="date" /></label>
+            <label>Equipment Planning<select id="job_equipment_planning_status"><option value="draft">Draft</option><option value="planned">Planned</option><option value="reserved">Reserved</option><option value="partial">Partial</option><option value="ready">Ready</option></select></label>
+            <label style="display:flex;align-items:center;gap:8px;margin-top:26px;"><input id="job_equipment_readiness_required" type="checkbox" checked /> Equipment readiness required</label>
           </div>
           <label style="display:block;margin-top:12px;">Crew Members
             <textarea id="job_crew_member_names" rows="2" placeholder="Comma-separated crew member names or emails"></textarea>
+          </label>
+          <label style="display:block;margin-top:12px;">Custom Schedule Notes
+            <textarea id="job_custom_schedule_notes" rows="2" placeholder="Custom rotation, snow trigger, monthly exceptions, or seasonal notes"></textarea>
+          </label>
+          <label style="display:block;margin-top:12px;">Reservation / Equipment Notes
+            <textarea id="job_reservation_notes" rows="2" placeholder="Shovels, riding mower, backhoe, snow plow, specialty attachments, staging notes"></textarea>
           </label>
           <label style="display:block;margin-top:12px;">Special Instructions
             <textarea id="job_special_instructions" rows="3" placeholder="Gate codes, hazard notes, photo reminders, site-specific instructions"></textarea>
@@ -355,12 +373,26 @@
         jobCrewName: $('#job_crew_name'),
         jobCrewCode: $('#job_crew_code'),
         jobAssignedSupervisorName: $('#job_assigned_supervisor_name'),
+        jobCrewKind: $('#job_crew_kind'),
+        jobCrewLeadName: $('#job_crew_lead_name'),
+        jobJobFamily: $('#job_job_family'),
+        jobProjectScope: $('#job_project_scope'),
+        jobServicePattern: $('#job_service_pattern'),
         jobScheduleMode: $('#job_schedule_mode'),
+        jobRecurrenceBasis: $('#job_recurrence_basis'),
         jobRecurrenceSummary: $('#job_recurrence_summary'),
         jobRecurrenceRule: $('#job_recurrence_rule'),
         jobRecurrenceInterval: $('#job_recurrence_interval'),
         jobRecurrenceAnchorDate: $('#job_recurrence_anchor_date'),
+        jobRecurrenceCustomDays: $('#job_recurrence_custom_days'),
+        jobEstimatedVisitMinutes: $('#job_estimated_visit_minutes'),
+        jobReservationWindowStart: $('#job_reservation_window_start'),
+        jobReservationWindowEnd: $('#job_reservation_window_end'),
+        jobEquipmentPlanningStatus: $('#job_equipment_planning_status'),
+        jobEquipmentReadinessRequired: $('#job_equipment_readiness_required'),
         jobCrewMemberNames: $('#job_crew_member_names'),
+        jobCustomScheduleNotes: $('#job_custom_schedule_notes'),
+        jobReservationNotes: $('#job_reservation_notes'),
         jobSpecialInstructions: $('#job_special_instructions'),
         jobOpsSummary: $('#job_ops_summary'),
         jobCommentType: $('#job_comment_type'),
@@ -606,7 +638,7 @@
       const editableIds = [
         'job_code','job_name','job_site_name','job_type','job_status','job_priority','job_start_date','job_end_date',
         'job_supervisor_name','job_signing_supervisor_name','job_admin_name','job_client_name','job_notes',
-        'job_crew_id','job_crew_name','job_crew_code','job_assigned_supervisor_name','job_schedule_mode','job_recurrence_summary','job_recurrence_rule','job_recurrence_interval','job_recurrence_anchor_date','job_crew_member_names','job_special_instructions','job_comment_type','job_comment_special_instruction','job_comment_visible_to_client','job_comment_files','job_comment_text',
+        'job_crew_id','job_crew_name','job_crew_code','job_crew_kind','job_assigned_supervisor_name','job_crew_lead_name','job_job_family','job_project_scope','job_service_pattern','job_schedule_mode','job_recurrence_basis','job_recurrence_summary','job_recurrence_rule','job_recurrence_interval','job_recurrence_anchor_date','job_recurrence_custom_days','job_estimated_visit_minutes','job_reservation_window_start','job_reservation_window_end','job_equipment_planning_status','job_equipment_readiness_required','job_crew_member_names','job_custom_schedule_notes','job_reservation_notes','job_special_instructions','job_comment_type','job_comment_special_instruction','job_comment_visible_to_client','job_comment_files','job_comment_text',
         'eq_code','eq_name','eq_category','eq_pool_key','eq_home_site','eq_status','eq_current_job_code','eq_assigned_supervisor',
         'eq_serial','eq_asset_tag','eq_manufacturer','eq_model','eq_year','eq_purchase_date','eq_purchase_price','eq_condition',
         'eq_image_url','eq_service_interval_days','eq_last_service_date','eq_next_service_due_date','eq_last_inspection_at',
@@ -741,13 +773,27 @@
         crew_id: e.jobCrewId?.value || '',
         crew_name: e.jobCrewName?.value || '',
         crew_code: e.jobCrewCode?.value || '',
+        crew_kind: e.jobCrewKind?.value || 'general',
         assigned_supervisor_name: e.jobAssignedSupervisorName?.value || '',
+        crew_lead_name: e.jobCrewLeadName?.value || '',
+        job_family: e.jobJobFamily?.value || 'landscaping_standard',
+        project_scope: e.jobProjectScope?.value || 'property_service',
+        service_pattern: e.jobServicePattern?.value || 'one_time',
         schedule_mode: e.jobScheduleMode?.value || 'standalone',
+        recurrence_basis: e.jobRecurrenceBasis?.value || 'calendar_rule',
         recurrence_summary: e.jobRecurrenceSummary?.value || '',
         recurrence_rule: e.jobRecurrenceRule?.value || '',
         recurrence_interval: e.jobRecurrenceInterval?.value || '',
         recurrence_anchor_date: e.jobRecurrenceAnchorDate?.value || '',
+        recurrence_custom_days: e.jobRecurrenceCustomDays?.value || '',
+        estimated_visit_minutes: e.jobEstimatedVisitMinutes?.value || '',
+        reservation_window_start: e.jobReservationWindowStart?.value || '',
+        reservation_window_end: e.jobReservationWindowEnd?.value || '',
+        equipment_planning_status: e.jobEquipmentPlanningStatus?.value || 'draft',
+        equipment_readiness_required: !!e.jobEquipmentReadinessRequired?.checked,
         crew_member_names: e.jobCrewMemberNames?.value || '',
+        custom_schedule_notes: e.jobCustomScheduleNotes?.value || '',
+        reservation_notes: e.jobReservationNotes?.value || '',
         special_instructions: e.jobSpecialInstructions?.value || '',
         request_approval: !!e.jobRequestApproval?.checked,
         requirements: collectRequirements()
@@ -815,13 +861,27 @@
         e.jobCrewId.value = jobDraft.crew_id || '';
         e.jobCrewName.value = jobDraft.crew_name || '';
         e.jobCrewCode.value = jobDraft.crew_code || '';
+        e.jobCrewKind.value = jobDraft.crew_kind || 'general';
         e.jobAssignedSupervisorName.value = jobDraft.assigned_supervisor_name || '';
+        e.jobCrewLeadName.value = jobDraft.crew_lead_name || '';
+        e.jobJobFamily.value = jobDraft.job_family || 'landscaping_standard';
+        e.jobProjectScope.value = jobDraft.project_scope || 'property_service';
+        e.jobServicePattern.value = jobDraft.service_pattern || 'one_time';
         e.jobScheduleMode.value = jobDraft.schedule_mode || 'standalone';
+        e.jobRecurrenceBasis.value = jobDraft.recurrence_basis || 'calendar_rule';
         e.jobRecurrenceSummary.value = jobDraft.recurrence_summary || '';
         e.jobRecurrenceRule.value = jobDraft.recurrence_rule || '';
         e.jobRecurrenceInterval.value = jobDraft.recurrence_interval || '';
         e.jobRecurrenceAnchorDate.value = jobDraft.recurrence_anchor_date || '';
+        e.jobRecurrenceCustomDays.value = jobDraft.recurrence_custom_days || '';
+        e.jobEstimatedVisitMinutes.value = jobDraft.estimated_visit_minutes || '';
+        e.jobReservationWindowStart.value = jobDraft.reservation_window_start || '';
+        e.jobReservationWindowEnd.value = jobDraft.reservation_window_end || '';
+        e.jobEquipmentPlanningStatus.value = jobDraft.equipment_planning_status || 'draft';
+        e.jobEquipmentReadinessRequired.checked = jobDraft.equipment_readiness_required !== false;
         e.jobCrewMemberNames.value = jobDraft.crew_member_names || '';
+        e.jobCustomScheduleNotes.value = jobDraft.custom_schedule_notes || '';
+        e.jobReservationNotes.value = jobDraft.reservation_notes || '';
         e.jobSpecialInstructions.value = jobDraft.special_instructions || '';
         e.jobRequestApproval.checked = !!jobDraft.request_approval;
         if (e.jobEquipmentBody) e.jobEquipmentBody.innerHTML = '';
@@ -878,12 +938,20 @@
       const e = els();
       state.editingJobId = null;
       state.selectedJobId = null;
-      [e.jobCode, e.jobName, e.jobType, e.jobStatus, e.jobPriority, e.jobStartDate, e.jobEndDate, e.jobSupervisorName, e.jobSigningSupervisorName, e.jobAdminName, e.jobClientName, e.jobCrewId, e.jobCrewName, e.jobCrewCode, e.jobAssignedSupervisorName, e.jobScheduleMode, e.jobRecurrenceSummary, e.jobRecurrenceRule, e.jobRecurrenceInterval, e.jobRecurrenceAnchorDate, e.jobCrewMemberNames].forEach((el) => { if (el) el.value = ''; });
+      [e.jobCode, e.jobName, e.jobType, e.jobStatus, e.jobPriority, e.jobStartDate, e.jobEndDate, e.jobSupervisorName, e.jobSigningSupervisorName, e.jobAdminName, e.jobClientName, e.jobCrewId, e.jobCrewName, e.jobCrewCode, e.jobCrewKind, e.jobAssignedSupervisorName, e.jobCrewLeadName, e.jobJobFamily, e.jobProjectScope, e.jobServicePattern, e.jobScheduleMode, e.jobRecurrenceBasis, e.jobRecurrenceSummary, e.jobRecurrenceRule, e.jobRecurrenceInterval, e.jobRecurrenceAnchorDate, e.jobRecurrenceCustomDays, e.jobEstimatedVisitMinutes, e.jobReservationWindowStart, e.jobReservationWindowEnd, e.jobEquipmentPlanningStatus, e.jobCrewMemberNames, e.jobCustomScheduleNotes].forEach((el) => { if (el) el.value = ''; });
       if (e.jobStatus) e.jobStatus.value = 'planned';
       if (e.jobPriority) e.jobPriority.value = 'normal';
       if (e.jobScheduleMode) e.jobScheduleMode.value = 'standalone';
+      if (e.jobRecurrenceBasis) e.jobRecurrenceBasis.value = 'calendar_rule';
+      if (e.jobJobFamily) e.jobJobFamily.value = 'landscaping_standard';
+      if (e.jobProjectScope) e.jobProjectScope.value = 'property_service';
+      if (e.jobServicePattern) e.jobServicePattern.value = 'one_time';
+      if (e.jobEquipmentPlanningStatus) e.jobEquipmentPlanningStatus.value = 'draft';
+      if (e.jobEquipmentReadinessRequired) e.jobEquipmentReadinessRequired.checked = true;
       if (e.jobSiteName) e.jobSiteName.value = '';
       if (e.jobNotes) e.jobNotes.value = '';
+      if (e.jobCustomScheduleNotes) e.jobCustomScheduleNotes.value = '';
+      if (e.jobReservationNotes) e.jobReservationNotes.value = '';
       if (e.jobSpecialInstructions) e.jobSpecialInstructions.value = '';
       if (e.jobCommentText) e.jobCommentText.value = '';
       if (e.jobCommentFiles) e.jobCommentFiles.value = '';
@@ -937,14 +1005,28 @@
       e.jobCrewId.value = jobRow.crew_id || '';
       e.jobCrewName.value = jobRow.crew_name || '';
       e.jobCrewCode.value = jobRow.crew_code || '';
+      e.jobCrewKind.value = jobRow.crew_kind || 'general';
       e.jobAssignedSupervisorName.value = jobRow.assigned_supervisor_name || jobRow.supervisor_name || '';
+      e.jobCrewLeadName.value = jobRow.crew_lead_name || '';
+      e.jobJobFamily.value = jobRow.job_family || 'landscaping_standard';
+      e.jobProjectScope.value = jobRow.project_scope || 'property_service';
+      e.jobServicePattern.value = jobRow.service_pattern || 'one_time';
       e.jobScheduleMode.value = jobRow.schedule_mode || 'standalone';
+      e.jobRecurrenceBasis.value = jobRow.recurrence_basis || 'calendar_rule';
       e.jobRecurrenceSummary.value = jobRow.recurrence_summary || '';
       e.jobRecurrenceRule.value = jobRow.recurrence_rule || '';
       e.jobRecurrenceInterval.value = jobRow.recurrence_interval || '';
       e.jobRecurrenceAnchorDate.value = jobRow.recurrence_anchor_date || '';
+      e.jobRecurrenceCustomDays.value = jobRow.recurrence_custom_days || '';
+      e.jobEstimatedVisitMinutes.value = jobRow.estimated_visit_minutes || '';
+      e.jobReservationWindowStart.value = jobRow.reservation_window_start || '';
+      e.jobReservationWindowEnd.value = jobRow.reservation_window_end || '';
+      e.jobEquipmentPlanningStatus.value = jobRow.equipment_planning_status || 'draft';
+      e.jobEquipmentReadinessRequired.checked = jobRow.equipment_readiness_required !== false;
       const selectedCrew = (state.crews || []).find((item) => String(item.id) === String(jobRow.crew_id || '')) || null;
       e.jobCrewMemberNames.value = Array.isArray(selectedCrew?.members_json) ? selectedCrew.members_json.map((item) => item.full_name || item.email || '').filter(Boolean).join(', ') : ''; 
+      e.jobCustomScheduleNotes.value = jobRow.custom_schedule_notes || '';
+      e.jobReservationNotes.value = jobRow.reservation_notes || selectedCrew?.default_equipment_notes || '';
       e.jobSpecialInstructions.value = jobRow.special_instructions || '';
       e.jobRequestApproval.checked = ['requested','pending'].includes(String(jobRow.approval_status || '').toLowerCase());
       e.jobEquipmentBody.innerHTML = '';
@@ -989,7 +1071,7 @@
       e.jobListBody.innerHTML = '';
       state.jobs.forEach((row) => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${escHtml(row.job_code)}</td><td>${escHtml(row.job_name)}</td><td>${escHtml(row.crew_name || '')}</td><td>${escHtml(row.assigned_supervisor_name || row.supervisor_name || '')}</td><td>${escHtml(row.schedule_mode || 'standalone')}${row.recurrence_summary ? ` • ${escHtml(row.recurrence_summary)}` : ''}</td><td>${escHtml(row.status || '')}</td><td>${escHtml(row.comment_count || 0)} comment(s) / ${escHtml(row.photo_count || 0)} photo(s)</td><td><button type="button" class="secondary" data-job-load="${escHtml(row.id)}">Load</button></td>`;
+        tr.innerHTML = `<td>${escHtml(row.job_code)}</td><td>${escHtml(row.job_name)}</td><td>${escHtml(row.crew_name || '')}</td><td>${escHtml(row.assigned_supervisor_name || row.supervisor_name || '')}</td><td>${escHtml(row.schedule_mode || 'standalone')}${row.recurrence_summary ? ` • ${escHtml(row.recurrence_summary)}` : ''}${row.service_pattern ? ` • ${escHtml(row.service_pattern)}` : ''}</td><td>${escHtml(row.status || '')}${row.equipment_planning_status ? ` • ${escHtml(row.equipment_planning_status)}` : ''}</td><td>${escHtml(row.comment_count || 0)} comment(s) / ${escHtml(row.photo_count || 0)} photo(s)</td><td><button type="button" class="secondary" data-job-load="${escHtml(row.id)}">Load</button></td>`;
         e.jobListBody.appendChild(tr);
       });
     }
@@ -1220,12 +1302,26 @@
           crew_id: e.jobCrewId?.value || '',
           crew_name: e.jobCrewName?.value?.trim?.() || '',
           crew_code: e.jobCrewCode?.value?.trim?.() || '',
+          crew_kind: e.jobCrewKind?.value || 'general',
+          crew_lead_name: e.jobCrewLeadName?.value?.trim?.() || '',
+          job_family: e.jobJobFamily?.value || 'landscaping_standard',
+          project_scope: e.jobProjectScope?.value || 'property_service',
+          service_pattern: e.jobServicePattern?.value || 'one_time',
           schedule_mode: e.jobScheduleMode?.value || 'standalone',
+          recurrence_basis: e.jobRecurrenceBasis?.value || 'calendar_rule',
           recurrence_summary: e.jobRecurrenceSummary?.value?.trim?.() || '',
           recurrence_rule: e.jobRecurrenceRule?.value?.trim?.() || '',
           recurrence_interval: e.jobRecurrenceInterval?.value ? Number(e.jobRecurrenceInterval.value) : null,
           recurrence_anchor_date: e.jobRecurrenceAnchorDate?.value || null,
+          recurrence_custom_days: e.jobRecurrenceCustomDays?.value?.trim?.() || '',
+          estimated_visit_minutes: e.jobEstimatedVisitMinutes?.value ? Number(e.jobEstimatedVisitMinutes.value) : null,
+          reservation_window_start: e.jobReservationWindowStart?.value || null,
+          reservation_window_end: e.jobReservationWindowEnd?.value || null,
+          equipment_planning_status: e.jobEquipmentPlanningStatus?.value || 'draft',
+          equipment_readiness_required: !!e.jobEquipmentReadinessRequired?.checked,
           crew_member_names: e.jobCrewMemberNames?.value?.trim?.() || '',
+          custom_schedule_notes: e.jobCustomScheduleNotes?.value?.trim?.() || '',
+          reservation_notes: e.jobReservationNotes?.value?.trim?.() || '',
           special_instructions: e.jobSpecialInstructions?.value?.trim?.() || '',
           request_approval: !!e.jobRequestApproval?.checked,
           requirements: collectRequirements()
@@ -1472,7 +1568,10 @@
           const crew = (state.crews || []).find((row) => String(row.id) === String(e.jobCrewId.value || ''));
           if (!crew) return;
           if (e.jobCrewName && !e.jobCrewName.value) e.jobCrewName.value = crew.crew_name || '';
+          if (e.jobCrewKind && !e.jobCrewKind.value) e.jobCrewKind.value = crew.crew_kind || 'general';
           if (e.jobAssignedSupervisorName && !e.jobAssignedSupervisorName.value) e.jobAssignedSupervisorName.value = crew.supervisor_name || '';
+          if (e.jobCrewLeadName && !e.jobCrewLeadName.value) e.jobCrewLeadName.value = crew.lead_name || '';
+          if (e.jobReservationNotes && !e.jobReservationNotes.value) e.jobReservationNotes.value = crew.default_equipment_notes || '';
           if (e.jobCrewMemberNames && Array.isArray(crew.members_json) && !e.jobCrewMemberNames.value) e.jobCrewMemberNames.value = crew.members_json.map((item) => item.full_name || item.email || '').filter(Boolean).join(', ');
         });
       }
