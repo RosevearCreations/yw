@@ -37,6 +37,9 @@
       crews: [],
       crewMembers: [],
       profiles: [],
+      servicePricingTemplates: [],
+      taxCodes: [],
+      businessTaxSettings: [],
       jobComments: [],
       jobCommentAttachments: [],
       selectedJobId: null,
@@ -304,6 +307,8 @@
             <label>Estimated Visit Minutes<input id="job_estimated_visit_minutes" type="number" min="0" step="15" placeholder="120" /></label>
             <label>Approx Duration Hours<input id="job_estimated_duration_hours" type="number" min="0" step="0.25" placeholder="2.5" /></label>
             <label>Approx Duration Days<input id="job_estimated_duration_days" type="number" min="0" step="1" placeholder="3" /></label>
+            <label>Service Template<select id="job_service_pricing_template_id"></select></label>
+            <label>Sales Tax Code<select id="job_sales_tax_code_id"></select></label>
             <label>Cost to Us<input id="job_estimated_cost_total" type="number" min="0" step="0.01" placeholder="0.00" /></label>
             <label>Charge to Client<input id="job_quoted_charge_total" type="number" min="0" step="0.01" placeholder="0.00" /></label>
             <label>Pricing Method<select id="job_pricing_method"><option value="manual">Manual</option><option value="markup_percent">Markup %</option><option value="discount_from_charge">Discount from Charge</option><option value="tiered_discount">Tiered Discount</option></select></label>
@@ -314,6 +319,9 @@
             <label>Repair Cost<input id="job_equipment_repair_cost_total" type="number" min="0" step="0.01" placeholder="0.00" /></label>
             <label>Actual Cost<input id="job_actual_cost_total" type="number" min="0" step="0.01" placeholder="0.00" /></label>
             <label>Actual Charge<input id="job_actual_charge_total" type="number" min="0" step="0.01" placeholder="0.00" /></label>
+            <label>Tax Rate %<input id="job_estimated_tax_rate_percent" type="number" min="0" step="0.001" placeholder="13" /></label>
+            <label>Estimated Tax<input id="job_estimated_tax_total" type="number" min="0" step="0.01" placeholder="0.00" readonly /></label>
+            <label>Total with Tax<input id="job_estimated_total_with_tax" type="number" min="0" step="0.01" placeholder="0.00" readonly /></label>
             <label>Reservation Window Start<input id="job_reservation_window_start" type="date" /></label>
             <label>Reservation Window End<input id="job_reservation_window_end" type="date" /></label>
             <label>Equipment Planning<select id="job_equipment_planning_status"><option value="draft">Draft</option><option value="planned">Planned</option><option value="reserved">Reserved</option><option value="partial">Partial</option><option value="ready">Ready</option></select></label>
@@ -408,6 +416,8 @@
         jobEstimatedVisitMinutes: $('#job_estimated_visit_minutes'),
         jobEstimatedDurationHours: $('#job_estimated_duration_hours'),
         jobEstimatedDurationDays: $('#job_estimated_duration_days'),
+        jobServicePricingTemplateId: $('#job_service_pricing_template_id'),
+        jobSalesTaxCodeId: $('#job_sales_tax_code_id'),
         jobEstimatedCostTotal: $('#job_estimated_cost_total'),
         jobQuotedChargeTotal: $('#job_quoted_charge_total'),
         jobPricingMethod: $('#job_pricing_method'),
@@ -418,6 +428,9 @@
         jobEquipmentRepairCostTotal: $('#job_equipment_repair_cost_total'),
         jobActualCostTotal: $('#job_actual_cost_total'),
         jobActualChargeTotal: $('#job_actual_charge_total'),
+        jobEstimatedTaxRatePercent: $('#job_estimated_tax_rate_percent'),
+        jobEstimatedTaxTotal: $('#job_estimated_tax_total'),
+        jobEstimatedTotalWithTax: $('#job_estimated_total_with_tax'),
         jobReservationWindowStart: $('#job_reservation_window_start'),
         jobReservationWindowEnd: $('#job_reservation_window_end'),
         jobEquipmentPlanningStatus: $('#job_equipment_planning_status'),
@@ -823,6 +836,9 @@
         recurrence_anchor_date: e.jobRecurrenceAnchorDate?.value || '',
         recurrence_custom_days: e.jobRecurrenceCustomDays?.value || '',
         estimated_visit_minutes: e.jobEstimatedVisitMinutes?.value || '',
+        service_pricing_template_id: e.jobServicePricingTemplateId?.value || '',
+        sales_tax_code_id: e.jobSalesTaxCodeId?.value || '',
+        estimated_tax_rate_percent: e.jobEstimatedTaxRatePercent?.value || '',
         reservation_window_start: e.jobReservationWindowStart?.value || '',
         reservation_window_end: e.jobReservationWindowEnd?.value || '',
         equipment_planning_status: e.jobEquipmentPlanningStatus?.value || 'draft',
@@ -911,6 +927,9 @@
         e.jobRecurrenceAnchorDate.value = jobDraft.recurrence_anchor_date || '';
         e.jobRecurrenceCustomDays.value = jobDraft.recurrence_custom_days || '';
         e.jobEstimatedVisitMinutes.value = jobDraft.estimated_visit_minutes || '';
+        if (e.jobServicePricingTemplateId) e.jobServicePricingTemplateId.value = jobDraft.service_pricing_template_id || '';
+        if (e.jobSalesTaxCodeId) e.jobSalesTaxCodeId.value = jobDraft.sales_tax_code_id || '';
+        if (e.jobEstimatedTaxRatePercent) e.jobEstimatedTaxRatePercent.value = jobDraft.estimated_tax_rate_percent || '';
         e.jobReservationWindowStart.value = jobDraft.reservation_window_start || '';
         e.jobReservationWindowEnd.value = jobDraft.reservation_window_end || '';
         e.jobEquipmentPlanningStatus.value = jobDraft.equipment_planning_status || 'draft';
@@ -1055,9 +1074,14 @@
       e.jobRecurrenceAnchorDate.value = jobRow.recurrence_anchor_date || '';
       e.jobRecurrenceCustomDays.value = jobRow.recurrence_custom_days || '';
       e.jobEstimatedVisitMinutes.value = jobRow.estimated_visit_minutes || '';
+      if (e.jobServicePricingTemplateId) e.jobServicePricingTemplateId.value = jobRow.service_pricing_template_id || '';
+      if (e.jobSalesTaxCodeId) e.jobSalesTaxCodeId.value = jobRow.sales_tax_code_id || '';
       e.jobEstimatedDurationHours.value = jobRow.estimated_duration_hours || '';
       e.jobEstimatedDurationDays.value = jobRow.estimated_duration_days || '';
       e.jobEstimatedCostTotal.value = jobRow.estimated_cost_total ?? '';
+      if (e.jobEstimatedTaxRatePercent) e.jobEstimatedTaxRatePercent.value = jobRow.estimated_tax_rate_percent ?? '';
+      if (e.jobEstimatedTaxTotal) e.jobEstimatedTaxTotal.value = jobRow.estimated_tax_total ?? '';
+      if (e.jobEstimatedTotalWithTax) e.jobEstimatedTotalWithTax.value = jobRow.estimated_total_with_tax ?? '';
       e.jobQuotedChargeTotal.value = jobRow.quoted_charge_total ?? '';
       e.jobPricingMethod.value = jobRow.pricing_method || 'manual';
       e.jobMarkupPercent.value = jobRow.markup_percent ?? '';
@@ -1317,9 +1341,14 @@
         state.notifications = Array.isArray(resp?.notifications) ? resp.notifications : [];
         state.inspections = Array.isArray(resp?.inspections) ? resp.inspections : [];
         state.maintenance = Array.isArray(resp?.maintenance) ? resp.maintenance : [];
+        state.servicePricingTemplates = Array.isArray(resp?.service_pricing_templates) ? resp.service_pricing_templates : [];
+        state.taxCodes = Array.isArray(resp?.tax_codes) ? resp.tax_codes : [];
+        state.businessTaxSettings = Array.isArray(resp?.business_tax_settings) ? resp.business_tax_settings : [];
         fillSiteSelect(e.jobSiteName);
         fillSiteSelect(e.eqHomeSite);
         fillCrewSelect(e.jobCrewId);
+        fillServiceTemplateSelect(e.jobServicePricingTemplateId);
+        fillTaxCodeSelect(e.jobSalesTaxCodeId);
         fillEmployeeDataList();
         renderJobs();
         renderEquipment();

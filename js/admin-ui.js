@@ -49,6 +49,9 @@
       clientSites: [],
       unitsOfMeasure: [],
       costCodes: [],
+      taxCodes: [],
+      servicePricingTemplates: [],
+      businessTaxSettings: [],
       materialsCatalog: [],
       equipmentMaster: [],
       estimates: [],
@@ -448,6 +451,9 @@
                 <optgroup label="Reference Data">
                   <option value="unit_of_measure">Units of Measure</option>
                   <option value="cost_code">Cost Codes</option>
+                  <option value="tax_code">Tax Codes</option>
+                  <option value="business_tax_setting">Business Tax Settings</option>
+                  <option value="service_pricing_template">Service Pricing Templates</option>
                   <option value="service_area">Service Areas</option>
                   <option value="route">Routes</option>
                   <option value="route_stop">Route Stops</option>
@@ -1408,6 +1414,9 @@
         state.clientSites = Array.isArray(resp?.client_sites) ? resp.client_sites : [];
         state.unitsOfMeasure = Array.isArray(resp?.units_of_measure) ? resp.units_of_measure : [];
         state.costCodes = Array.isArray(resp?.cost_codes) ? resp.cost_codes : [];
+        state.taxCodes = Array.isArray(resp?.tax_codes) ? resp.tax_codes : [];
+        state.servicePricingTemplates = Array.isArray(resp?.service_pricing_templates) ? resp.service_pricing_templates : [];
+        state.businessTaxSettings = Array.isArray(resp?.business_tax_settings) ? resp.business_tax_settings : [];
         state.materialsCatalog = Array.isArray(resp?.materials_catalog) ? resp.materials_catalog : [];
         state.equipmentMaster = Array.isArray(resp?.equipment_master) ? resp.equipment_master : [];
         state.estimates = Array.isArray(resp?.estimates) ? resp.estimates : [];
@@ -1490,6 +1499,9 @@
           state.clientSites = Array.isArray(resp?.client_sites) ? resp.client_sites : [];
           state.unitsOfMeasure = Array.isArray(resp?.units_of_measure) ? resp.units_of_measure : [];
           state.costCodes = Array.isArray(resp?.cost_codes) ? resp.cost_codes : [];
+          state.taxCodes = Array.isArray(resp?.tax_codes) ? resp.tax_codes : [];
+          state.servicePricingTemplates = Array.isArray(resp?.service_pricing_templates) ? resp.service_pricing_templates : [];
+          state.businessTaxSettings = Array.isArray(resp?.business_tax_settings) ? resp.business_tax_settings : [];
           state.materialsCatalog = Array.isArray(resp?.materials_catalog) ? resp.materials_catalog : [];
           state.equipmentMaster = Array.isArray(resp?.equipment_master) ? resp.equipment_master : [];
           state.estimates = Array.isArray(resp?.estimates) ? resp.estimates : [];
@@ -1612,6 +1624,28 @@
         { name:'code', label:'Code', type:'text', required:true }, { name:'name', label:'Name', type:'text', required:true },
         { name:'category', label:'Category', type:'text' }, { name:'description', label:'Description', type:'textarea' }, { name:'is_active', label:'Active', type:'checkbox' }
       ], columns:[['code','Code'],['name','Name'],['category','Category'],['is_active','Active']] },
+      tax_code: { label:'Tax Codes', rowsKey:'taxCodes', valueKey:'id', labelField:'name', fields:[
+        { name:'code', label:'Code', type:'text', required:true }, { name:'name', label:'Name', type:'text', required:true },
+        { name:'tax_type', label:'Tax Type', type:'select', options:[['hst','HST'],['gst','GST'],['pst','PST'],['qst','QST'],['zero_rated','Zero Rated'],['exempt','Exempt'],['other','Other']] },
+        { name:'province_code', label:'Province', type:'text' }, { name:'country_code', label:'Country', type:'text' },
+        { name:'rate_percent', label:'Rate %', type:'number' }, { name:'applies_to', label:'Applies To', type:'select', options:[['sale','Sale'],['purchase','Purchase'],['both','Both']] },
+        { name:'is_default', label:'Default', type:'checkbox' }, { name:'is_active', label:'Active', type:'checkbox' }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['code','Code'],['name','Name'],['tax_type','Type'],['rate_percent','Rate %'],['applies_to','Applies To']] },
+      business_tax_setting: { label:'Business Tax Settings', rowsKey:'businessTaxSettings', valueKey:'id', labelField:'profile_name', fields:[
+        { name:'profile_name', label:'Profile Name', type:'text', required:true }, { name:'province_code', label:'Province', type:'text' }, { name:'country_code', label:'Country', type:'text' },
+        { name:'currency_code', label:'Currency', type:'text' }, { name:'default_sales_tax_code_id', label:'Default Sales Tax', type:'select', source:'taxCodes' }, { name:'default_purchase_tax_code_id', label:'Default Purchase Tax', type:'select', source:'taxCodes' },
+        { name:'hst_registration_number', label:'HST Number', type:'text' }, { name:'fiscal_year_end_mmdd', label:'Fiscal Year End', type:'text' }, { name:'small_supplier_flag', label:'Small Supplier', type:'checkbox' }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['profile_name','Profile'],['province_code','Province'],['currency_code','Currency'],['small_supplier_flag','Small Supplier']] },
+      service_pricing_template: { label:'Service Pricing Templates', rowsKey:'servicePricingTemplates', valueKey:'id', labelField:'template_name', fields:[
+        { name:'template_code', label:'Template Code', type:'text', required:true }, { name:'template_name', label:'Template Name', type:'text', required:true },
+        { name:'job_family', label:'Job Family', type:'text' }, { name:'project_scope', label:'Project Scope', type:'text' }, { name:'service_pattern', label:'Service Pattern', type:'text' },
+        { name:'default_schedule_mode', label:'Schedule Mode', type:'select', options:[['standalone','Standalone'],['one_time','One Time'],['recurring','Recurring'],['open_end','Open End']] },
+        { name:'default_estimated_visit_minutes', label:'Visit Minutes', type:'number' }, { name:'default_estimated_duration_hours', label:'Duration Hours', type:'number' }, { name:'default_estimated_duration_days', label:'Duration Days', type:'number' },
+        { name:'default_estimated_cost_total', label:'Estimated Cost', type:'number' }, { name:'default_quoted_charge_total', label:'Quoted Charge', type:'number' },
+        { name:'default_pricing_method', label:'Pricing Method', type:'select', options:[['manual','Manual'],['markup','Markup'],['margin','Margin'],['fixed','Fixed']] }, { name:'default_markup_percent', label:'Markup %', type:'number' },
+        { name:'default_discount_mode', label:'Discount Mode', type:'select', options:[['none','None'],['percent','Percent'],['fixed','Fixed'],['tiered','Tiered']] }, { name:'default_discount_value', label:'Discount Value', type:'number' },
+        { name:'sales_tax_code_id', label:'Sales Tax Code', type:'select', source:'taxCodes' }, { name:'notes', label:'Notes', type:'textarea' }, { name:'is_active', label:'Active', type:'checkbox' }
+      ], columns:[['template_code','Code'],['template_name','Template'],['job_family','Family'],['default_quoted_charge_total','Charge'],['sales_tax_code_id','Tax']] },
       service_area: { label:'Service Areas', rowsKey:'serviceAreas', valueKey:'id', labelField:'name', fields:[
         { name:'area_code', label:'Area Code', type:'text' }, { name:'name', label:'Name', type:'text', required:true },
         { name:'region', label:'Region', type:'text' }, { name:'notes', label:'Notes', type:'textarea' }, { name:'is_active', label:'Active', type:'checkbox' }
@@ -1835,7 +1869,7 @@
     };
 
     function getBackboneRows(entity) {
-      const map = { unit_of_measure: state.unitsOfMeasure || [], cost_code: state.costCodes || [], service_area: state.serviceAreas || [], route: state.routes || [], route_stop: state.routeStops || [], route_stop_execution: state.routeStopExecutions || [], route_stop_execution_attachment: state.routeStopExecutionAttachments || [], client: state.clients || [], client_site: state.clientSites || [], material: state.materialsCatalog || [], equipment_master: state.equipmentMaster || [], estimate: state.estimates || [], estimate_line: state.estimateLines || [], work_order: state.workOrders || [], work_order_line: state.workOrderLines || [], subcontract_client: state.subcontractClients || [], subcontract_dispatch: state.subcontractDispatches || [], linked_hse_packet: state.linkedHsePackets || [], hse_packet_event: state.hsePacketEvents || [], hse_packet_proof: state.hsePacketProofs || [], field_upload_failure: state.fieldUploadFailures || [], app_traffic_event: state.appTrafficEvents || [], backend_monitor_event: state.backendMonitorEvents || [], gl_account: state.chartOfAccounts || [], gl_journal_batch: state.glJournalBatches || [], gl_journal_sync_exception: state.glJournalSyncExceptions || [], gl_journal_entry: state.glJournalEntries || [], ap_vendor: state.apVendors || [], ar_invoice: state.arInvoices || [], ar_payment: state.arPayments || [], ap_bill: state.apBills || [], ap_payment: state.apPayments || [], material_receipt: state.materialReceipts || [], material_receipt_line: state.materialReceiptLines || [], material_issue: state.materialIssues || [], material_issue_line: state.materialIssueLines || [] };
+      const map = { unit_of_measure: state.unitsOfMeasure || [], cost_code: state.costCodes || [], tax_code: state.taxCodes || [], business_tax_setting: state.businessTaxSettings || [], service_pricing_template: state.servicePricingTemplates || [], service_area: state.serviceAreas || [], route: state.routes || [], route_stop: state.routeStops || [], route_stop_execution: state.routeStopExecutions || [], route_stop_execution_attachment: state.routeStopExecutionAttachments || [], client: state.clients || [], client_site: state.clientSites || [], material: state.materialsCatalog || [], equipment_master: state.equipmentMaster || [], estimate: state.estimates || [], estimate_line: state.estimateLines || [], work_order: state.workOrders || [], work_order_line: state.workOrderLines || [], subcontract_client: state.subcontractClients || [], subcontract_dispatch: state.subcontractDispatches || [], linked_hse_packet: state.linkedHsePackets || [], hse_packet_event: state.hsePacketEvents || [], hse_packet_proof: state.hsePacketProofs || [], field_upload_failure: state.fieldUploadFailures || [], app_traffic_event: state.appTrafficEvents || [], backend_monitor_event: state.backendMonitorEvents || [], gl_account: state.chartOfAccounts || [], gl_journal_batch: state.glJournalBatches || [], gl_journal_sync_exception: state.glJournalSyncExceptions || [], gl_journal_entry: state.glJournalEntries || [], ap_vendor: state.apVendors || [], ar_invoice: state.arInvoices || [], ar_payment: state.arPayments || [], ap_bill: state.apBills || [], ap_payment: state.apPayments || [], material_receipt: state.materialReceipts || [], material_receipt_line: state.materialReceiptLines || [], material_issue: state.materialIssues || [], material_issue_line: state.materialIssueLines || [] };
       return Array.isArray(map[entity]) ? map[entity] : [];
     }
 
@@ -1878,6 +1912,8 @@
         materialIssues: state.selectors.materialIssues || state.materialIssues || [],
         materialIssueLines: state.selectors.materialIssueLines || state.materialIssueLines || [],
         costCodes: state.selectors.costCodes || state.costCodes || [],
+        taxCodes: state.selectors.taxCodes || state.taxCodes || [],
+        servicePricingTemplates: state.selectors.servicePricingTemplates || state.servicePricingTemplates || [],
         jobTypes: state.selectors.jobTypes || []
       };
       return Array.isArray(map[source]) ? map[source] : [];
@@ -2905,6 +2941,9 @@
           jobTypes: Array.isArray(payload?.job_types) ? payload.job_types : [],
           units: Array.isArray(payload?.units_of_measure) ? payload.units_of_measure : state.unitsOfMeasure,
           costCodes: Array.isArray(payload?.cost_codes) ? payload.cost_codes : state.costCodes,
+          taxCodes: Array.isArray(payload?.tax_codes) ? payload.tax_codes : state.taxCodes,
+          servicePricingTemplates: Array.isArray(payload?.service_pricing_templates) ? payload.service_pricing_templates : state.servicePricingTemplates,
+          businessTaxSettings: Array.isArray(payload?.business_tax_settings) ? payload.business_tax_settings : state.businessTaxSettings,
           serviceAreas: Array.isArray(payload?.service_areas) ? payload.service_areas : state.serviceAreas,
           routes: Array.isArray(payload?.routes) ? payload.routes : state.routes,
           jobs: Array.isArray(payload?.jobs) ? payload.jobs : state.jobs,
