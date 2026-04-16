@@ -316,3 +316,7 @@ Still open:
 - no automated profitability dashboard that blends jobs, receipts, equipment repair, and delay losses into one review screen
 - recurring service pricing tiers still rely on notes/discount settings rather than reusable client/service pricing catalogs
 
+### Pricing/Tax/Admin gap status
+- **Improved this pass:** Ontario tax codes, business tax settings, and reusable service pricing templates are now DB-backed and editable in the Admin backbone UI.
+- **Still open:** estimate/contract flows are not yet fully consuming these pricing templates end to end, and accounting posting still needs deeper Ontario-specific tax treatment and filing/report outputs.
+

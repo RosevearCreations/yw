@@ -381,3 +381,7 @@ Next recommended build steps:
 3. tie delayed jobs and equipment repair cost into accounting review queues and profitability dashboards
 4. add contract templates and estimate-to-job conversion once this costing layer is stable
 
+### Current next step after 077
+- Use the new tax-code, business-tax-setting, and service-pricing-template admin backbone screens to stabilize Ontario HST defaults and reusable landscaping/service pricing before estimate-to-contract conversion.
+- Next strongest follow-on: estimate templates, contract generation, and tax posting rules that consume the new DB-backed pricing/tax records instead of manual notes.
+

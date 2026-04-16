@@ -205,3 +205,8 @@ These screens should be mobile-friendly for quick field edits and desktop-strong
 ## Current implementation note
 The landscaping workflow now supports three linked layers: operations scheduling, equipment/crew planning, and early commercial pricing. Jobs can carry cost, charge, discount, duration, open-end schedule, delay, and repair-cost fields, but estimates/contracts and the fuller Ontario accounting engine are still the next major backend steps.
 
+## Pass status - 2026-04-15 admin pricing/tax backbone
+- Migration 077 remains the latest schema step.
+- Admin backbone UI now manages `tax_codes`, `business_tax_settings`, and `service_pricing_templates`.
+- `admin-manage` was cleaned so only the valid in-handler tax/pricing blocks remain; the duplicated tail after the file closure was removed.
+

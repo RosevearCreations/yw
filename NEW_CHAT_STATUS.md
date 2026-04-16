@@ -73,3 +73,7 @@
 ## Latest pass handoff
 The latest pass added migration `076_job_pricing_profitability_and_schedule_logic.sql` and updated the jobs UI plus `supabase/functions/jobs-manage/index.ts` so job pricing and schedule logic save together. Next chat should focus on estimate/contract conversion, reusable pricing catalogs, and Ontario tax/accounting rules wired into posting.
 
+## Fresh-chat handoff update
+- The pricing/tax pass is now fully surfaced in Admin: Tax Codes, Business Tax Settings, and Service Pricing Templates are editable from the backbone manager.
+- Jobs already consume template/tax data; the next logical build is estimate/contract generation plus deeper Ontario accounting posting/reporting.
+

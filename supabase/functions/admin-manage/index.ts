@@ -93,6 +93,8 @@ function getCatalogConfig(catalogType: string) {
     seniority: { table: 'seniority_level_catalog', nameColumn: 'name' },
     employment_status: { table: 'employment_status_catalog', nameColumn: 'name' },
     job_type: { table: 'job_type_catalog', nameColumn: 'name' },
+    tax_code: { table: 'tax_codes', nameColumn: 'name' },
+    service_pricing_template: { table: 'service_pricing_templates', nameColumn: 'template_name' },
   };
   return map[key] || null;
 }
@@ -836,6 +838,111 @@ serve(async (req) => {
       }
     }
 
+
+
+    if (entity === 'tax_code') {
+      const patch = {
+        code: String(body.code || '').trim().toUpperCase(),
+        name: body.name ?? null,
+        tax_type: body.tax_type ?? 'hst',
+        province_code: body.province_code ?? 'ON',
+        country_code: body.country_code ?? 'CA',
+        rate_percent: asNumber(body.rate_percent, 0),
+        applies_to: body.applies_to ?? 'sale',
+        is_default: body.is_default === true,
+        is_active: body.is_active !== false,
+        notes: body.notes ?? null,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.code || !patch.name) return Response.json({ ok:false, error:'code and name are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('tax_codes').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('tax_codes').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('tax_codes').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'service_pricing_template') {
+      const patch = {
+        template_code: String(body.template_code || '').trim().toUpperCase(),
+        template_name: body.template_name ?? null,
+        job_family: body.job_family ?? null,
+        project_scope: body.project_scope ?? null,
+        service_pattern: body.service_pattern ?? null,
+        default_schedule_mode: body.default_schedule_mode ?? 'standalone',
+        default_estimated_visit_minutes: asNullableNumber(body.default_estimated_visit_minutes),
+        default_estimated_duration_hours: asNullableNumber(body.default_estimated_duration_hours),
+        default_estimated_duration_days: asNullableNumber(body.default_estimated_duration_days),
+        default_estimated_cost_total: asNumber(body.default_estimated_cost_total, 0),
+        default_quoted_charge_total: asNumber(body.default_quoted_charge_total, 0),
+        default_pricing_method: body.default_pricing_method ?? 'manual',
+        default_markup_percent: asNullableNumber(body.default_markup_percent),
+        default_discount_mode: body.default_discount_mode ?? 'none',
+        default_discount_value: asNumber(body.default_discount_value, 0),
+        sales_tax_code_id: asNullableText(body.sales_tax_code_id),
+        notes: body.notes ?? null,
+        is_active: body.is_active !== false,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.template_code || !patch.template_name) return Response.json({ ok:false, error:'template_code and template_name are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('service_pricing_templates').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('service_pricing_templates').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('service_pricing_templates').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'business_tax_setting') {
+      const patch = {
+        profile_name: body.profile_name ?? null,
+        province_code: body.province_code ?? 'ON',
+        country_code: body.country_code ?? 'CA',
+        currency_code: body.currency_code ?? 'CAD',
+        default_sales_tax_code_id: asNullableText(body.default_sales_tax_code_id),
+        default_purchase_tax_code_id: asNullableText(body.default_purchase_tax_code_id),
+        hst_registration_number: body.hst_registration_number ?? null,
+        fiscal_year_end_mmdd: body.fiscal_year_end_mmdd ?? null,
+        small_supplier_flag: body.small_supplier_flag === true,
+        notes: body.notes ?? null,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.profile_name) return Response.json({ ok:false, error:'profile_name is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('business_tax_settings').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('business_tax_settings').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('business_tax_settings').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
     if (entity === 'service_area') {
       const patch = {
         area_code: asNullableText(body.area_code),

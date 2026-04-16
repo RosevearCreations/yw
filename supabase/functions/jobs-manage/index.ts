@@ -158,18 +158,45 @@ async function syncCrewMembers(supabase: any, crewId: string | null, members: st
   }
 }
 
+function hasValue(value: unknown) {
+  return !(value === null || value === undefined || (typeof value === 'string' && value.trim() === ''));
+}
+
 function normalizeMoney(value: unknown, fallback = 0) {
   const n = Number(value);
   if (!Number.isFinite(n)) return Number(fallback.toFixed ? fallback.toFixed(2) : fallback);
   return Number(n.toFixed(2));
 }
-function computeJobPricing(body: any) {
-  const cost = normalizeMoney(body?.estimated_cost_total || 0, 0);
-  const pricingMethod = String(body?.pricing_method || 'manual').trim() || 'manual';
-  const markupPercent = Number(body?.markup_percent || 0);
-  const discountMode = String(body?.discount_mode || 'none').trim() || 'none';
-  const discountValue = normalizeMoney(body?.discount_value || 0, 0);
-  let quoted = normalizeMoney(body?.quoted_charge_total || 0, 0);
+async function loadServicePricingTemplate(supabase: any, templateId?: string | null) {
+  const id = String(templateId || '').trim();
+  if (!id) return null;
+  const { data } = await supabase.from('service_pricing_templates').select('*').eq('id', id).maybeSingle();
+  return data || null;
+}
+
+async function loadSalesTaxCode(supabase: any, taxCodeId?: string | null) {
+  const id = String(taxCodeId || '').trim();
+  if (id) {
+    const { data } = await supabase.from('tax_codes').select('*').eq('id', id).maybeSingle();
+    if (data) return data;
+  }
+  const { data: settings } = await supabase.from('business_tax_settings').select('default_sales_tax_code_id').order('updated_at', { ascending: false }).limit(1).maybeSingle();
+  if (settings?.default_sales_tax_code_id) {
+    const { data } = await supabase.from('tax_codes').select('*').eq('id', settings.default_sales_tax_code_id).maybeSingle();
+    if (data) return data;
+  }
+  const { data } = await supabase.from('tax_codes').select('*').eq('is_default', true).in('applies_to', ['sale', 'both']).order('rate_percent', { ascending: false }).limit(1).maybeSingle();
+  return data || null;
+}
+
+async function computeJobPricing(supabase: any, body: any, template: any = null) {
+  const cost = normalizeMoney(hasValue(body?.estimated_cost_total) ? body?.estimated_cost_total : (template?.default_estimated_cost_total || 0), 0);
+  const pricingMethod = String(hasValue(body?.pricing_method) ? body?.pricing_method : (template?.default_pricing_method || 'manual')).trim() || 'manual';
+  const markupPercentRaw = hasValue(body?.markup_percent) ? body?.markup_percent : template?.default_markup_percent;
+  const markupPercent = Number(markupPercentRaw || 0);
+  const discountMode = String(hasValue(body?.discount_mode) ? body?.discount_mode : (template?.default_discount_mode || 'none')).trim() || 'none';
+  const discountValue = normalizeMoney(hasValue(body?.discount_value) ? body?.discount_value : (template?.default_discount_value || 0), 0);
+  let quoted = normalizeMoney(hasValue(body?.quoted_charge_total) ? body?.quoted_charge_total : (template?.default_quoted_charge_total || 0), 0);
   if (pricingMethod === 'markup_percent' && Number.isFinite(markupPercent)) {
     quoted = normalizeMoney(cost * (1 + (markupPercent / 100)), quoted);
   }
@@ -186,6 +213,12 @@ function computeJobPricing(body: any) {
   const repairCost = normalizeMoney(body?.equipment_repair_cost_total || 0, 0);
   const actualProfit = normalizeMoney(actualCharge - actualCost - delayCost - repairCost, 0);
   const actualMarginPercent = actualCharge > 0 ? Number(((actualProfit / actualCharge) * 100).toFixed(2)) : 0;
+  const salesTaxCode = await loadSalesTaxCode(supabase, body?.sales_tax_code_id || template?.sales_tax_code_id || null);
+  const taxRatePercent = Number.isFinite(Number(body?.estimated_tax_rate_percent)) && hasValue(body?.estimated_tax_rate_percent)
+    ? Number(Number(body?.estimated_tax_rate_percent).toFixed(3))
+    : Number(Number(salesTaxCode?.rate_percent || 0).toFixed(3));
+  const estimatedTaxTotal = normalizeMoney(quoted * (taxRatePercent / 100), 0);
+  const estimatedTotalWithTax = normalizeMoney(quoted + estimatedTaxTotal, 0);
   return {
     estimated_cost_total: cost,
     quoted_charge_total: quoted,
@@ -201,6 +234,12 @@ function computeJobPricing(body: any) {
     equipment_repair_cost_total: repairCost,
     actual_profit_total: actualProfit,
     actual_margin_percent: actualMarginPercent,
+    sales_tax_code_id: salesTaxCode?.id || null,
+    estimated_tax_rate_percent: taxRatePercent,
+    estimated_tax_total: estimatedTaxTotal,
+    estimated_total_with_tax: estimatedTotalWithTax,
+    pricing_basis_label: template?.template_name || body?.pricing_basis_label || null,
+    service_pricing_template_id: template?.id || (body?.service_pricing_template_id || null),
   };
 }
 
@@ -287,18 +326,19 @@ serve(async (req) => {
         await syncCrewMembers(supabase, crewId, crewMemberNames, actorProfile.id, supervisorId, crewLeadId);
       }
       const now = new Date().toISOString();
-      const scheduleMode = String(body.schedule_mode || 'standalone');
-      const servicePattern = String(body.service_pattern || (scheduleMode === 'recurring' ? 'weekly' : 'one_time'));
+      const template = await loadServicePricingTemplate(supabase, body.service_pricing_template_id || null);
+      const scheduleMode = String(body.schedule_mode || template?.default_schedule_mode || 'standalone');
+      const servicePattern = String(body.service_pattern || template?.service_pattern || (scheduleMode === 'recurring' ? 'weekly' : 'one_time'));
       const reservationWindowStart = body.reservation_window_start || body.start_date || null;
       const reservationWindowEnd = body.reservation_window_end || body.end_date || body.start_date || null;
-      const pricing = computeJobPricing(body);
+      const pricing = await computeJobPricing(supabase, body, template);
       const payload = {
         job_code: body.job_code,
         job_name: body.job_name,
         site_id: siteId,
         job_type: body.job_type ?? null,
-        job_family: body.job_family ?? (scheduleMode === 'recurring' ? 'landscaping_recurring' : 'landscaping_standard'),
-        project_scope: body.project_scope ?? 'property_service',
+        job_family: body.job_family ?? template?.job_family ?? (scheduleMode === 'recurring' ? 'landscaping_recurring' : 'landscaping_standard'),
+        project_scope: body.project_scope ?? template?.project_scope ?? 'property_service',
         service_pattern: servicePattern,
         status: body.status ?? 'planned',
         priority: body.priority ?? 'normal',
@@ -326,12 +366,14 @@ serve(async (req) => {
         reservation_window_end: body.open_end_date ? null : reservationWindowEnd,
         reservation_notes: body.reservation_notes ?? null,
         equipment_planning_status: body.equipment_planning_status ?? 'planned',
-        estimated_visit_minutes: body.estimated_visit_minutes ? Number(body.estimated_visit_minutes) : null,
-        estimated_duration_hours: body.estimated_duration_hours ? Number(body.estimated_duration_hours) : null,
-        estimated_duration_days: body.estimated_duration_days ? Number(body.estimated_duration_days) : null,
+        estimated_visit_minutes: hasValue(body.estimated_visit_minutes) ? Number(body.estimated_visit_minutes) : (template?.default_estimated_visit_minutes || null),
+        estimated_duration_hours: hasValue(body.estimated_duration_hours) ? Number(body.estimated_duration_hours) : (template?.default_estimated_duration_hours || null),
+        estimated_duration_days: hasValue(body.estimated_duration_days) ? Number(body.estimated_duration_days) : (template?.default_estimated_duration_days || null),
         open_end_date: body.open_end_date === true,
         delayed_schedule: body.delayed_schedule === true,
         equipment_readiness_required: body.equipment_readiness_required === false ? false : true,
+        service_pricing_template_id: pricing.service_pricing_template_id,
+        sales_tax_code_id: pricing.sales_tax_code_id,
         estimated_cost_total: pricing.estimated_cost_total,
         quoted_charge_total: pricing.quoted_charge_total,
         pricing_method: pricing.pricing_method,
@@ -340,6 +382,10 @@ serve(async (req) => {
         discount_value: pricing.discount_value,
         estimated_profit_total: pricing.estimated_profit_total,
         estimated_margin_percent: pricing.estimated_margin_percent,
+        estimated_tax_rate_percent: pricing.estimated_tax_rate_percent,
+        estimated_tax_total: pricing.estimated_tax_total,
+        estimated_total_with_tax: pricing.estimated_total_with_tax,
+        pricing_basis_label: pricing.pricing_basis_label,
         delay_cost_total: pricing.delay_cost_total,
         equipment_repair_cost_total: pricing.equipment_repair_cost_total,
         actual_cost_total: pricing.actual_cost_total,

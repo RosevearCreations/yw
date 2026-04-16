@@ -120,3 +120,8 @@ When continuing this project, assume the next strongest implementation pass is t
 ## 2026-04-15 context addendum
 The app is moving from a generic jobs/equipment tool into a landscaping-focused business system. Jobs now need to behave like commercial records with cost, charge, discount, timing, delay, and repair-loss data, while still supporting one-time work, repeating work, and open-end projects.
 
+## Current implementation note
+- Migration `077_service_pricing_templates_and_ontario_tax_codes.sql` is surfaced in both backend and Admin UI.
+- Admin backbone now supports `tax_code`, `business_tax_setting`, and `service_pricing_template`.
+- `jobs-manage` computes estimated tax/total using DB-backed tax/template defaults.
+

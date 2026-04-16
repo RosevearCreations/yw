@@ -266,3 +266,6 @@ Ontario/CAD accounting guardrails are now documented in `docs/ONTARIO_ACCOUNTING
 ### Current emphasis
 The current build emphasizes landscaping job operations plus early commercial logic: crew planning, equipment reservation, job pricing, discount handling, duration planning, delayed work tracking, and profit/loss hooks.
 
+## Latest operations/accounting build note
+The app now includes DB-backed Ontario-oriented tax code records, business tax settings, and reusable service pricing templates, with Admin backbone screens to manage them.
+

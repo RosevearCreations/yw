@@ -155,3 +155,8 @@ Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summarie
 - Updated jobs UI and jobs-manage so pricing and schedule logic save together with crew/equipment planning.
 - Refreshed the roadmap, gaps, project state, and schema snapshot to reflect the landscaping-first commercial workflow.
 
+## 2026-04-15 - Admin pricing/tax backbone finish
+- Added Admin backbone support for Tax Codes, Business Tax Settings, and Service Pricing Templates.
+- Fixed a broken duplicate tail appended after the real end of `supabase/functions/admin-manage/index.ts`.
+- Wired Admin UI loading for DB-backed Ontario tax codes/settings and reusable service pricing templates so these records can be managed from the app instead of living only in schema/backend code.
+

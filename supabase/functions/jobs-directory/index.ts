@@ -51,6 +51,9 @@ serve(async (req) => {
   const { data: signouts } = await supabase.from('equipment_signouts').select('*, equipment_items(equipment_code,equipment_name), jobs(job_code,job_name)').order('checked_out_at', { ascending:false });
   const { data: pools } = await supabase.from('v_equipment_pool_availability').select('*').order('equipment_pool_key');
   const { data: notifications } = await supabase.from('v_admin_notifications').select('*').in('notification_type', ['equipment_reservation_conflict','job_approval_requested','equipment_checkout','equipment_return','equipment_inspection','equipment_maintenance','equipment_lockout','equipment_lockout_cleared','account_identity_change_requested']).order('created_at', { ascending:false }).limit(150);
+  const { data: servicePricingTemplates } = await supabase.from('service_pricing_templates').select('*').eq('is_active', true).order('template_name');
+  const { data: taxCodes } = await supabase.from('tax_codes').select('*').eq('is_active', true).order('code');
+  const { data: businessTaxSettings } = await supabase.from('business_tax_settings').select('*').order('profile_name');
   const { data: inspections } = await supabase.from('v_equipment_inspection_history').select('*').order('inspected_at', { ascending:false }).limit(200);
   const { data: maintenance } = await supabase.from('v_equipment_maintenance_history').select('*').order('performed_at', { ascending:false }).limit(200);
   const { data: evidenceAssetsRaw } = await supabase.from('equipment_evidence_assets').select('*').order('created_at', { ascending:false }).limit(1000);
@@ -133,6 +136,9 @@ serve(async (req) => {
     notifications: notifications || [],
     inspections: inspections || [],
     maintenance: maintenance || [],
+    service_pricing_templates: servicePricingTemplates || [],
+    tax_codes: taxCodes || [],
+    business_tax_settings: businessTaxSettings || [],
     evidence_assets: evidenceAssets
   }, { headers: corsHeaders });
 });
