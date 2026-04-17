@@ -256,3 +256,11 @@ Priority UI mappings:
 - No new schema migration in this pass.
 - Operational schema remains aligned through 075.
 - Ontario/CAD accounting rules are documented as guardrails for the next accounting migration set.
+
+
+## Latest structure note
+Schema now extends beyond parent jobs into session-level execution:
+- `job_sessions`
+- `job_session_crew_hours`
+- `job_reassignment_events`
+These records support recurring service visit tracking, supervisor signoff, crew-hour capture, and operational reassignment history.

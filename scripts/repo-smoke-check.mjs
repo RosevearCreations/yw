@@ -46,6 +46,7 @@ const requiredFiles = [
   'sql/075_landscaping_job_workflow_and_crew_planning.sql',
   'sql/076_job_pricing_profitability_and_schedule_logic.sql',
   'sql/077_service_pricing_templates_and_ontario_tax_codes.sql',
+  'sql/078_job_sessions_reassignments_and_admin_sorting.sql',
   'js/hse-ops-ui.js',
   'supabase/functions/jobs-directory/index.ts',
   'supabase/functions/jobs-manage/index.ts',
@@ -86,7 +87,7 @@ addCheck('account-has-conflict-review', accountUi.includes('Conflict Review'), '
 addCheck('account-has-support-export', accountUi.includes('Export Support Snapshot'), 'account-ui.js should render the support snapshot export button.');
 
 const schema = read('sql/000_full_schema_reference.sql');
-addCheck('schema-header-current', /077_service_pricing_templates_and_ontario_tax_codes/i.test(schema), 'Schema snapshot header should reflect the latest 076 pass.');
+addCheck('schema-header-current', /078_job_sessions_reassignments_and_admin_sorting/i.test(schema), 'Schema snapshot header should reflect the latest 078 pass.');
 
 console.log(JSON.stringify({ ok: !failed, checks: results }, null, 2));
 if (failed) process.exit(1);

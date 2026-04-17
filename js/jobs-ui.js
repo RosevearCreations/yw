@@ -42,7 +42,11 @@
       businessTaxSettings: [],
       jobComments: [],
       jobCommentAttachments: [],
+      jobSessions: [],
+      jobCrewHours: [],
+      jobReassignments: [],
       selectedJobId: null,
+      jobSort: { key: 'start_date', dir: 'desc' },
       editingJobId: null,
       editingEquipmentCode: '',
       signaturePads: { worker: null, supervisor: null, admin: null },
@@ -82,6 +86,10 @@
             <label>Signing Supervisor<input id="job_signing_supervisor_name" type="text" /></label>
             <label>Admin<input id="job_admin_name" type="text" /></label>
             <label>Client<input id="job_client_name" type="text" /></label>
+            <label>Client Ref<input id="job_client_reference" type="text" placeholder="CLIENT-001" /></label>
+            <label>Service Contract<input id="job_service_contract_reference" type="text" placeholder="SC-1001" /></label>
+            <label>Transaction #<input id="job_billing_transaction_number" type="text" placeholder="TXN-1001" /></label>
+            <label>Invoice #<input id="job_invoice_number" type="text" placeholder="INV-1001" /></label>
           </div>
           <label style="display:block;margin-top:12px;">Notes
             <textarea id="job_notes" rows="3" placeholder="Job notes"></textarea>
@@ -116,7 +124,17 @@
               <table id="job_list_table">
                 <thead>
                   <tr>
-                    <th>Code</th><th>Name</th><th>Crew</th><th>Supervisor</th><th>Schedule</th><th>Status</th><th>Activity</th><th>Action</th>
+                    <th><button type="button" class="table-sort" data-job-sort="job_code">Code</button></th>
+                    <th><button type="button" class="table-sort" data-job-sort="job_name">Name</button></th>
+                    <th><button type="button" class="table-sort" data-job-sort="client_name">Client</button></th>
+                    <th><button type="button" class="table-sort" data-job-sort="billing_transaction_number">Transaction</button></th>
+                    <th><button type="button" class="table-sort" data-job-sort="invoice_number">Invoice</button></th>
+                    <th><button type="button" class="table-sort" data-job-sort="start_date">Date</button></th>
+                    <th><button type="button" class="table-sort" data-job-sort="estimated_duration_hours">Duration</button></th>
+                    <th><button type="button" class="table-sort" data-job-sort="service_pattern">Repeats</button></th>
+                    <th><button type="button" class="table-sort" data-job-sort="status">Status</button></th>
+                    <th><button type="button" class="table-sort" data-job-sort="quoted_charge_total">Financial</button></th>
+                    <th>Action</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -378,6 +396,42 @@
         if (savedJobsBlock?.parentNode) savedJobsBlock.parentNode.insertBefore(activity, savedJobsBlock);
         else jobs.appendChild(activity);
       }
+      if (!document.getElementById('job_tracking_block')) {
+        const tracking = document.createElement('div');
+        tracking.id = 'job_tracking_block';
+        tracking.className = 'admin-panel-block';
+        tracking.style.marginTop = '16px';
+        tracking.innerHTML = `
+          <h3 style="margin-top:0;">Session Tracking, Crew Hours, and Reassignments</h3>
+          <div class="form-footer">
+            <button id="job_track_session" class="secondary" type="button">Record Session</button>
+            <button id="job_track_hours" class="secondary" type="button">Log Crew Hours</button>
+            <button id="job_track_reassign" class="secondary" type="button">Reassign Crew / Equipment</button>
+          </div>
+          <div id="job_tracking_summary" class="notice" style="display:none;margin-top:12px;"></div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="job_session_table">
+              <thead><tr><th>Date</th><th>Start</th><th>End</th><th>Duration</th><th>Status</th><th>Supervisor Signoff</th><th>Action</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="job_crew_hours_table">
+              <thead><tr><th>Worker</th><th>Session</th><th>Start</th><th>End</th><th>Regular</th><th>OT</th><th>Total</th><th>Action</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="job_reassign_table">
+              <thead><tr><th>Started</th><th>From</th><th>To</th><th>Member / Equipment</th><th>Reason</th><th>Emergency</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        `;
+        const savedJobsBlock = document.querySelector('#jobs .admin-panel-block:last-of-type');
+        if (savedJobsBlock?.parentNode) savedJobsBlock.parentNode.insertBefore(tracking, savedJobsBlock);
+        else jobs.appendChild(tracking);
+      }
     }
 
     function els() {
@@ -396,6 +450,10 @@
         jobSigningSupervisorName: $('#job_signing_supervisor_name'),
         jobAdminName: $('#job_admin_name'),
         jobClientName: $('#job_client_name'),
+        jobClientReference: $('#job_client_reference'),
+        jobServiceContractReference: $('#job_service_contract_reference'),
+        jobBillingTransactionNumber: $('#job_billing_transaction_number'),
+        jobInvoiceNumber: $('#job_invoice_number'),
         jobNotes: $('#job_notes'),
         jobCrewId: $('#job_crew_id'),
         jobCrewName: $('#job_crew_name'),
@@ -452,6 +510,13 @@
         jobCommentSave: $('#job_comment_save'),
         jobActivitySummary: $('#job_activity_summary'),
         jobActivityList: $('#job_activity_list'),
+        jobTrackSession: $('#job_track_session'),
+        jobTrackHours: $('#job_track_hours'),
+        jobTrackReassign: $('#job_track_reassign'),
+        jobTrackingSummary: $('#job_tracking_summary'),
+        jobSessionBody: $('#job_session_table tbody'),
+        jobCrewHoursBody: $('#job_crew_hours_table tbody'),
+        jobReassignBody: $('#job_reassign_table tbody'),
         jobAddEquipment: $('#job_add_equipment'),
         jobRequestApproval: $('#job_request_approval'),
         jobEquipmentBody: $('#job_equipment_table tbody'),
@@ -698,7 +763,7 @@
         const el = document.getElementById(id);
         if (el) el.disabled = !allowed;
       });
-      ['job_add_equipment','job_request_approval','job_save','job_clear','job_comment_save','eq_save','eq_checkout','eq_return','eq_add_inspection','eq_add_maintenance','eq_lockout','eq_clear_lockout','eq_clear'].forEach((id)=>{
+      ['job_add_equipment','job_request_approval','job_save','job_clear','job_comment_save','job_track_session','job_track_hours','job_track_reassign','eq_save','eq_checkout','eq_return','eq_add_inspection','eq_add_maintenance','eq_lockout','eq_clear_lockout','eq_clear'].forEach((id)=>{
         const el = document.getElementById(id);
         if (el) el.disabled = !allowed;
       });
@@ -993,7 +1058,7 @@
       const e = els();
       state.editingJobId = null;
       state.selectedJobId = null;
-      [e.jobCode, e.jobName, e.jobType, e.jobStatus, e.jobPriority, e.jobStartDate, e.jobEndDate, e.jobSupervisorName, e.jobSigningSupervisorName, e.jobAdminName, e.jobClientName, e.jobCrewId, e.jobCrewName, e.jobCrewCode, e.jobCrewKind, e.jobAssignedSupervisorName, e.jobCrewLeadName, e.jobJobFamily, e.jobProjectScope, e.jobServicePattern, e.jobScheduleMode, e.jobRecurrenceBasis, e.jobRecurrenceSummary, e.jobRecurrenceRule, e.jobRecurrenceInterval, e.jobRecurrenceAnchorDate, e.jobRecurrenceCustomDays, e.jobEstimatedVisitMinutes, e.jobReservationWindowStart, e.jobReservationWindowEnd, e.jobEquipmentPlanningStatus, e.jobCrewMemberNames, e.jobCustomScheduleNotes].forEach((el) => { if (el) el.value = ''; });
+      [e.jobCode, e.jobName, e.jobType, e.jobStatus, e.jobPriority, e.jobStartDate, e.jobEndDate, e.jobSupervisorName, e.jobSigningSupervisorName, e.jobAdminName, e.jobClientName, e.jobClientReference, e.jobServiceContractReference, e.jobBillingTransactionNumber, e.jobInvoiceNumber, e.jobCrewId, e.jobCrewName, e.jobCrewCode, e.jobCrewKind, e.jobAssignedSupervisorName, e.jobCrewLeadName, e.jobJobFamily, e.jobProjectScope, e.jobServicePattern, e.jobScheduleMode, e.jobRecurrenceBasis, e.jobRecurrenceSummary, e.jobRecurrenceRule, e.jobRecurrenceInterval, e.jobRecurrenceAnchorDate, e.jobRecurrenceCustomDays, e.jobEstimatedVisitMinutes, e.jobReservationWindowStart, e.jobReservationWindowEnd, e.jobEquipmentPlanningStatus, e.jobCrewMemberNames, e.jobCustomScheduleNotes].forEach((el) => { if (el) el.value = ''; });
       if (e.jobStatus) e.jobStatus.value = 'planned';
       if (e.jobPriority) e.jobPriority.value = 'normal';
       if (e.jobScheduleMode) e.jobScheduleMode.value = 'standalone';
@@ -1056,6 +1121,10 @@
       e.jobSigningSupervisorName.value = jobRow.signing_supervisor_name || '';
       e.jobAdminName.value = jobRow.admin_name || '';
       e.jobClientName.value = jobRow.client_name || '';
+      if (e.jobClientReference) e.jobClientReference.value = jobRow.client_reference || '';
+      if (e.jobServiceContractReference) e.jobServiceContractReference.value = jobRow.service_contract_reference || '';
+      if (e.jobBillingTransactionNumber) e.jobBillingTransactionNumber.value = jobRow.billing_transaction_number || '';
+      if (e.jobInvoiceNumber) e.jobInvoiceNumber.value = jobRow.invoice_number || '';
       e.jobNotes.value = jobRow.notes || '';
       e.jobCrewId.value = jobRow.crew_id || '';
       e.jobCrewName.value = jobRow.crew_name || '';
@@ -1141,20 +1210,66 @@
       window.YWIRouter?.showSection?.('equipment', { skipFocus: true });
     }
 
+    function sortJobs(rows) {
+      const sort = state.jobSort || { key: 'start_date', dir: 'desc' };
+      const dir = sort.dir === 'asc' ? 1 : -1;
+      const key = sort.key || 'start_date';
+      const getValue = (row) => {
+        switch (key) {
+          case 'estimated_duration_hours': return Number(row.estimated_duration_hours || row.total_logged_hours || 0);
+          case 'quoted_charge_total': return Number(row.quoted_charge_total || 0);
+          case 'start_date': return String(row.start_date || row.last_session_started_at || '');
+          case 'service_pattern': return `${row.service_pattern || ''} ${row.recurrence_summary || ''}`.trim();
+          default: return row[key] ?? '';
+        }
+      };
+      return [...(rows || [])].sort((a, b) => {
+        const av = getValue(a);
+        const bv = getValue(b);
+        if (typeof av === 'number' || typeof bv === 'number') return (Number(av || 0) - Number(bv || 0)) * dir;
+        return String(av || '').localeCompare(String(bv || ''), undefined, { numeric: true, sensitivity: 'base' }) * dir;
+      });
+    }
+
+    function renderJobTracking() {
+      const e = els();
+      if (!e.jobSessionBody || !e.jobCrewHoursBody || !e.jobReassignBody) return;
+      const activeJobId = Number(state.selectedJobId || state.editingJobId || 0);
+      const sessions = (state.jobSessions || []).filter((row) => Number(row.job_id || 0) === activeJobId);
+      const hours = (state.jobCrewHours || []).filter((row) => Number(row.job_id || 0) === activeJobId);
+      const reassignments = (state.jobReassignments || []).filter((row) => Number(row.source_job_id || 0) === activeJobId || Number(row.target_job_id || 0) === activeJobId);
+      if (!activeJobId) {
+        e.jobSessionBody.innerHTML = '<tr><td colspan="7" class="muted">Load a job to track sessions.</td></tr>';
+        e.jobCrewHoursBody.innerHTML = '<tr><td colspan="8" class="muted">Load a job to log crew hours.</td></tr>';
+        e.jobReassignBody.innerHTML = '<tr><td colspan="6" class="muted">Load a job to view reassignments.</td></tr>';
+        setNotice(e.jobTrackingSummary, 'Load a job row to record sessions, hours, and reassignments.');
+        return;
+      }
+      const totalHours = hours.reduce((sum, row) => sum + Number(row.hours_worked || 0), 0);
+      const signedCount = sessions.filter((row) => row.site_supervisor_signed_off_at).length;
+      setNotice(e.jobTrackingSummary, `${sessions.length} session(s), ${totalHours.toFixed(2)} logged hour(s), ${reassignments.length} reassignment(s), ${signedCount} supervisor signoff(s).`);
+      e.jobSessionBody.innerHTML = sessions.length ? sessions.map((row) => `<tr><td>${escHtml(row.session_date || '')}</td><td>${escHtml(row.started_at_local || row.started_at || '')}</td><td>${escHtml(row.ended_at_local || row.ended_at || '')}</td><td>${escHtml(row.duration_label || row.duration_minutes || '')}</td><td>${escHtml(row.session_status || '')}</td><td>${escHtml(row.site_supervisor_signoff_name || row.site_supervisor_name || '')}${row.site_supervisor_signed_off_at ? ' • Signed' : ''}</td><td><button type="button" class="secondary" data-session-delete="${escHtml(row.id)}">Delete</button></td></tr>`).join('') : '<tr><td colspan="7" class="muted">No sessions logged yet for this job.</td></tr>';
+      e.jobCrewHoursBody.innerHTML = hours.length ? hours.map((row) => `<tr><td>${escHtml(row.worker_name || row.profile_name || '')}</td><td>${escHtml(row.session_date || row.job_session_id || '')}</td><td>${escHtml(row.started_at_local || row.started_at || '')}</td><td>${escHtml(row.ended_at_local || row.ended_at || '')}</td><td>${escHtml(row.regular_hours || '')}</td><td>${escHtml(row.overtime_hours || '')}</td><td>${escHtml(row.hours_worked || '')}</td><td><button type="button" class="secondary" data-hours-delete="${escHtml(row.id)}">Delete</button></td></tr>`).join('') : '<tr><td colspan="8" class="muted">No crew hours logged yet for this job.</td></tr>';
+      e.jobReassignBody.innerHTML = reassignments.length ? reassignments.map((row) => `<tr><td>${escHtml(row.started_at_local || row.started_at || '')}</td><td>${escHtml(row.source_job_code || '')}</td><td>${escHtml(row.target_job_code || '')}</td><td>${escHtml(row.profile_name || row.equipment_code || row.equipment_name || '')}</td><td>${escHtml(row.reason || '')}</td><td>${row.emergency_override ? 'Yes' : 'No'}</td></tr>`).join('') : '<tr><td colspan="6" class="muted">No reassignment events logged yet for this job.</td></tr>';
+    }
+
     function renderJobs() {
       const e = els();
       if (!e.jobListBody) return;
       e.jobListBody.innerHTML = '';
-      state.jobs.forEach((row) => {
+      sortJobs(state.jobs).forEach((row) => {
         const tr = document.createElement('tr');
+        tr.dataset.jobRow = String(row.id || '');
+        tr.tabIndex = 0;
         const quoted = Number(row.quoted_charge_total || 0);
         const estProfit = Number(row.estimated_profit_total || (quoted - Number(row.estimated_cost_total || 0)));
-        tr.innerHTML = `<td>${escHtml(row.job_code)}</td><td>${escHtml(row.job_name)}</td><td>${escHtml(row.crew_name || '')}</td><td>${escHtml(row.assigned_supervisor_name || row.supervisor_name || '')}</td><td>${escHtml(row.schedule_mode || 'standalone')}${row.recurrence_summary ? ` • ${escHtml(row.recurrence_summary)}` : ''}${row.service_pattern ? ` • ${escHtml(row.service_pattern)}` : ''}${row.open_end_date ? ' • Open end' : ''}</td><td>${escHtml(row.status || '')}${row.equipment_planning_status ? ` • ${escHtml(row.equipment_planning_status)}` : ''}${row.delayed_schedule ? ' • Delayed' : ''}</td><td>$${Number.isFinite(quoted) ? quoted.toFixed(2) : '0.00'} / Profit $${Number.isFinite(estProfit) ? estProfit.toFixed(2) : '0.00'}</td><td><button type="button" class="secondary" data-job-load="${escHtml(row.id)}">Load</button></td>`;
+        const duration = Number(row.total_logged_hours || row.estimated_duration_hours || 0);
+        const repeat = [row.service_pattern, row.recurrence_summary || row.recurrence_basis].filter(Boolean).join(' • ');
+        tr.innerHTML = `<td>${escHtml(row.job_code)}</td><td>${escHtml(row.job_name)}</td><td>${escHtml(row.client_reference || row.client_name || '')}</td><td>${escHtml(row.billing_transaction_number || '')}</td><td>${escHtml(row.invoice_number || '')}</td><td>${escHtml(row.start_date || '')}${row.open_end_date ? ' • Open' : ''}</td><td>${Number.isFinite(duration) && duration ? duration.toFixed(2) : ''}</td><td>${escHtml(repeat)}</td><td>${escHtml(row.status || '')}${row.delayed_schedule ? ' • Delayed' : ''}</td><td>$${Number.isFinite(quoted) ? quoted.toFixed(2) : '0.00'} / Profit $${Number.isFinite(estProfit) ? estProfit.toFixed(2) : '0.00'}</td><td><div class="table-actions"><button type="button" class="secondary" data-job-load="${escHtml(row.id)}">Load</button><button type="button" class="secondary" data-job-session="${escHtml(row.id)}">Session</button><button type="button" class="secondary" data-job-hours="${escHtml(row.id)}">Hours</button><button type="button" class="secondary" data-job-reassign="${escHtml(row.id)}">Reassign</button></div></td>`;
         e.jobListBody.appendChild(tr);
       });
+      renderJobTracking();
     }
-
-
 
     function renderGallery(signoutId = null) {
       const e = els();
@@ -1336,6 +1451,9 @@
         state.profiles = Array.isArray(resp?.profiles) ? resp.profiles : [];
         state.jobComments = Array.isArray(resp?.job_comments) ? resp.job_comments : [];
         state.jobCommentAttachments = Array.isArray(resp?.job_comment_attachments) ? resp.job_comment_attachments : [];
+        state.jobSessions = Array.isArray(resp?.job_sessions) ? resp.job_sessions : [];
+        state.jobCrewHours = Array.isArray(resp?.job_crew_hours) ? resp.job_crew_hours : [];
+        state.jobReassignments = Array.isArray(resp?.job_reassignments) ? resp.job_reassignments : [];
         state.signouts = Array.isArray(resp?.signouts) ? resp.signouts : [];
         state.pools = Array.isArray(resp?.pools) ? resp.pools : [];
         state.notifications = Array.isArray(resp?.notifications) ? resp.notifications : [];
@@ -1354,11 +1472,80 @@
         renderEquipment();
         renderRequirementReviewPanel();
         renderJobActivity();
+        renderJobTracking();
         setNotice(e.jobSummary, `Loaded ${state.jobs.length} jobs and ${state.requirements.length} requirements.`);
         setNotice(e.eqSummary, `Loaded ${state.equipment.length} equipment items across ${state.pools.length} pools.`);
       } catch (err) {
         setNotice(e.jobSummary, err?.message || 'Failed to load jobs.', true);
         setNotice(e.eqSummary, err?.message || 'Failed to load equipment.', true);
+      }
+    }
+
+    async function recordJobSession(jobRow = null) {
+      const e = els();
+      try {
+        const activeJob = jobRow || (state.jobs || []).find((row) => Number(row.id) === Number(state.selectedJobId || state.editingJobId || 0));
+        if (!activeJob?.id) throw new Error('Load a job before recording a session.');
+        const session_date = window.prompt('Session date (YYYY-MM-DD):', activeJob.start_date || new Date().toISOString().slice(0, 10)) || '';
+        const started_at = window.prompt('Session start (YYYY-MM-DD HH:MM):', `${session_date} 08:00`) || '';
+        const ended_at = window.prompt('Session end (YYYY-MM-DD HH:MM):', `${session_date} 12:00`) || '';
+        const session_status = window.prompt('Session status (planned, in_progress, completed, delayed, paused, cancelled):', 'completed') || 'completed';
+        const delay_minutes = window.prompt('Delay minutes:', activeJob.delayed_schedule ? '15' : '0') || '0';
+        const site_supervisor_signoff_name = window.prompt('Site supervisor signoff name:', activeJob.signing_supervisor_name || activeJob.assigned_supervisor_name || activeJob.supervisor_name || '') || '';
+        const site_supervisor_signoff_notes = window.prompt('Supervisor signoff notes:', '') || '';
+        const notes = window.prompt('Session notes:', activeJob.special_instructions || '') || '';
+        const resp = await api.manageJobsEntity({ entity: 'job_session', action: 'create', job_id: activeJob.id, session_date, started_at, ended_at, session_status, delay_minutes: Number(delay_minutes || 0), site_supervisor_signoff_name, site_supervisor_signoff_notes, notes, service_frequency_label: activeJob.service_pattern || '' });
+        if (!resp?.ok) throw new Error(resp?.error || 'Session tracking failed');
+        setNotice(e.jobTrackingSummary, `Session recorded for ${activeJob.job_code}.`);
+        await loadData();
+      } catch (err) {
+        setNotice(e.jobTrackingSummary, err?.message || 'Session tracking failed.', true);
+      }
+    }
+
+    async function logCrewHours(jobRow = null) {
+      const e = els();
+      try {
+        const activeJob = jobRow || (state.jobs || []).find((row) => Number(row.id) === Number(state.selectedJobId || state.editingJobId || 0));
+        if (!activeJob?.id) throw new Error('Load a job before logging crew hours.');
+        const selectedCrew = (state.crews || []).find((item) => String(item.id) === String(activeJob.crew_id || '')) || null;
+        const suggestedWorker = Array.isArray(selectedCrew?.members_json) && selectedCrew.members_json.length ? (selectedCrew.members_json[0].full_name || selectedCrew.members_json[0].email || '') : '';
+        const worker_name = window.prompt('Crew member name or email:', suggestedWorker) || '';
+        if (!worker_name.trim()) throw new Error('Crew member name is required.');
+        const latestSession = (state.jobSessions || []).filter((row) => Number(row.job_id || 0) === Number(activeJob.id)).sort((a,b) => String(b.started_at || '').localeCompare(String(a.started_at || '')))[0] || null;
+        const started_at = window.prompt('Hours start (YYYY-MM-DD HH:MM):', latestSession?.started_at_local || latestSession?.started_at || `${new Date().toISOString().slice(0,10)} 08:00`) || '';
+        const ended_at = window.prompt('Hours end (YYYY-MM-DD HH:MM):', latestSession?.ended_at_local || latestSession?.ended_at || `${new Date().toISOString().slice(0,10)} 12:00`) || '';
+        const regular_hours = window.prompt('Regular hours:', '4') || '0';
+        const overtime_hours = window.prompt('Overtime hours:', '0') || '0';
+        const notes = window.prompt('Crew hour notes:', '') || '';
+        const resp = await api.manageJobsEntity({ entity: 'job_crew_time', action: 'create', job_id: activeJob.id, crew_id: activeJob.crew_id || null, worker_name, profile_name: worker_name, job_session_id: latestSession?.id || null, started_at, ended_at, regular_hours: Number(regular_hours || 0), overtime_hours: Number(overtime_hours || 0), notes });
+        if (!resp?.ok) throw new Error(resp?.error || 'Crew hour logging failed');
+        setNotice(e.jobTrackingSummary, `Crew hours logged for ${worker_name}.`);
+        await loadData();
+      } catch (err) {
+        setNotice(e.jobTrackingSummary, err?.message || 'Crew hour logging failed.', true);
+      }
+    }
+
+    async function reassignJobResources(jobRow = null) {
+      const e = els();
+      try {
+        const activeJob = jobRow || (state.jobs || []).find((row) => Number(row.id) === Number(state.selectedJobId || state.editingJobId || 0));
+        if (!activeJob?.id) throw new Error('Load a job before creating a reassignment.');
+        const target_job_code = window.prompt('Target job code:', '') || '';
+        if (!target_job_code.trim()) throw new Error('A target job code is required.');
+        const equipment_code = window.prompt('Equipment code to reassign (leave blank if reassigning a crew member):', '') || '';
+        const profile_name = equipment_code ? '' : (window.prompt('Crew member name or email to reassign:', '') || '');
+        if (!equipment_code.trim() && !profile_name.trim()) throw new Error('Provide either an equipment code or a crew member name.');
+        const reason = window.prompt('Reason for reassignment:', 'Emergency split / service contract support') || '';
+        const service_contract_reference = window.prompt('Service contract / override reference:', activeJob.service_contract_reference || '') || '';
+        const emergency_override = window.confirm('Mark this reassignment as an emergency override?');
+        const resp = await api.manageJobsEntity({ entity: 'job_reassignment', action: 'create', source_job_id: activeJob.id, source_job_code: activeJob.job_code, target_job_code, equipment_code: equipment_code.trim() || null, profile_name: profile_name.trim() || null, reason, emergency_override, service_contract_reference });
+        if (!resp?.ok) throw new Error(resp?.error || 'Reassignment failed');
+        setNotice(e.jobTrackingSummary, `Reassignment recorded from ${activeJob.job_code} to ${target_job_code}.`);
+        await loadData();
+      } catch (err) {
+        setNotice(e.jobTrackingSummary, err?.message || 'Reassignment failed.', true);
       }
     }
 
@@ -1381,6 +1568,10 @@
           signing_supervisor_name: e.jobSigningSupervisorName?.value?.trim?.() || '',
           admin_name: e.jobAdminName?.value?.trim?.() || '',
           client_name: e.jobClientName?.value?.trim?.() || '',
+          client_reference: e.jobClientReference?.value?.trim?.() || '',
+          service_contract_reference: e.jobServiceContractReference?.value?.trim?.() || '',
+          billing_transaction_number: e.jobBillingTransactionNumber?.value?.trim?.() || '',
+          invoice_number: e.jobInvoiceNumber?.value?.trim?.() || '',
           notes: e.jobNotes?.value?.trim?.() || '',
           crew_id: e.jobCrewId?.value || '',
           crew_name: e.jobCrewName?.value?.trim?.() || '',
@@ -1641,10 +1832,63 @@
       if (e.jobListBody && e.jobListBody.dataset.bound !== '1') {
         e.jobListBody.dataset.bound = '1';
         e.jobListBody.addEventListener('click', (event) => {
-          const btn = event.target.closest('[data-job-load]');
-          if (!btn) return;
-          const row = state.jobs.find((job) => String(job.id) === String(btn.getAttribute('data-job-load')));
+          const rowEl = event.target.closest('[data-job-row]');
+          const loadBtn = event.target.closest('[data-job-load]');
+          const sessionBtn = event.target.closest('[data-job-session]');
+          const hoursBtn = event.target.closest('[data-job-hours]');
+          const reassignBtn = event.target.closest('[data-job-reassign]');
+          const id = loadBtn?.getAttribute('data-job-load') || sessionBtn?.getAttribute('data-job-session') || hoursBtn?.getAttribute('data-job-hours') || reassignBtn?.getAttribute('data-job-reassign') || rowEl?.getAttribute('data-job-row');
+          if (!id) return;
+          const row = state.jobs.find((job) => String(job.id) === String(id));
+          if (!row) return;
+          if (sessionBtn) return void recordJobSession(row);
+          if (hoursBtn) return void logCrewHours(row);
+          if (reassignBtn) return void reassignJobResources(row);
           loadJobIntoForm(row);
+        });
+      }
+      const sortHead = document.querySelector('#job_list_table thead');
+      if (sortHead && sortHead.dataset.bound !== '1') {
+        sortHead.dataset.bound = '1';
+        sortHead.addEventListener('click', (event) => {
+          const btn = event.target.closest('[data-job-sort]');
+          if (!btn) return;
+          const key = btn.getAttribute('data-job-sort') || 'start_date';
+          if (state.jobSort?.key === key) state.jobSort.dir = state.jobSort.dir === 'asc' ? 'desc' : 'asc';
+          else state.jobSort = { key, dir: key === 'start_date' ? 'desc' : 'asc' };
+          renderJobs();
+        });
+      }
+      if (e.jobTrackSession && e.jobTrackSession.dataset.bound !== '1') {
+        e.jobTrackSession.dataset.bound = '1';
+        e.jobTrackSession.addEventListener('click', () => recordJobSession());
+      }
+      if (e.jobTrackHours && e.jobTrackHours.dataset.bound !== '1') {
+        e.jobTrackHours.dataset.bound = '1';
+        e.jobTrackHours.addEventListener('click', () => logCrewHours());
+      }
+      if (e.jobTrackReassign && e.jobTrackReassign.dataset.bound !== '1') {
+        e.jobTrackReassign.dataset.bound = '1';
+        e.jobTrackReassign.addEventListener('click', () => reassignJobResources());
+      }
+      if (e.jobSessionBody && e.jobSessionBody.dataset.bound !== '1') {
+        e.jobSessionBody.dataset.bound = '1';
+        e.jobSessionBody.addEventListener('click', async (event) => {
+          const btn = event.target.closest('[data-session-delete]');
+          if (!btn) return;
+          const resp = await api.manageJobsEntity({ entity: 'job_session', action: 'delete', item_id: btn.getAttribute('data-session-delete') });
+          if (!resp?.ok) return setNotice(e.jobTrackingSummary, resp?.error || 'Session delete failed.', true);
+          await loadData();
+        });
+      }
+      if (e.jobCrewHoursBody && e.jobCrewHoursBody.dataset.bound !== '1') {
+        e.jobCrewHoursBody.dataset.bound = '1';
+        e.jobCrewHoursBody.addEventListener('click', async (event) => {
+          const btn = event.target.closest('[data-hours-delete]');
+          if (!btn) return;
+          const resp = await api.manageJobsEntity({ entity: 'job_crew_time', action: 'delete', item_id: btn.getAttribute('data-hours-delete') });
+          if (!resp?.ok) return setNotice(e.jobTrackingSummary, resp?.error || 'Crew hour delete failed.', true);
+          await loadData();
         });
       }
       if (e.eqListBody && e.eqListBody.dataset.bound !== '1') {
