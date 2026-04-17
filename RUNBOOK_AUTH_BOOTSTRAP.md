@@ -101,4 +101,5 @@ Auth stabilization remains important, but the next product-facing admin work is 
 
 ## Cross-project note
 Auth bootstrap is stable enough for the current pass; active build focus has shifted to landscaping job/commercial logic, especially job pricing, recurring service handling, and accounting tie-ins.
+> Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
 

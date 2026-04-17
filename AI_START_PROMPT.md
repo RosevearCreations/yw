@@ -346,4 +346,5 @@ Current state after this pass:
 
 ## Recent handoff emphasis
 Continue from a landscaping-first application perspective. Jobs already support schedule and crew planning; current priority is to deepen pricing, estimates, contracts, and Ontario accounting behavior without losing fallback stability.
+> Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
 

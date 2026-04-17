@@ -165,4 +165,5 @@ The system should continue linking these two centers without forcing every safet
 
 ## Current architecture direction
 The landscaping stack is now explicitly blending operations and commercial logic. Jobs sit between client/service intake and downstream accounting, and are being prepared to bridge into estimates, contracts, recurring service pricing, and Ontario-compliant posting flows.
+> Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
 

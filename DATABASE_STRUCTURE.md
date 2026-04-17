@@ -300,3 +300,14 @@ Schema now extends beyond parent jobs into session-level execution:
 - `job_session_crew_hours`
 - `job_reassignment_events`
 These are intended to feed invoicing, profitability, delayed-job review, and service-contract exception handling.
+
+## 2026-04-16 schema note
+New accounting-facing additions include:
+- `job_financial_events`
+- profile labor-rate fields for costing/billing assumptions
+- `v_job_labor_rollups`
+- `v_job_financial_event_rollups`
+- `v_job_financial_rollups`
+- expanded `v_jobs_directory` and `v_accounting_review_summary`
+> Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
+

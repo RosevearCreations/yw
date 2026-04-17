@@ -69,6 +69,8 @@ serve(async (req) => {
   const jobSessions = await safeSelect(supabase, 'v_job_session_directory', '*', (query) => query.order('started_at', { ascending:false }).limit(2000));
   const jobCrewHours = await safeSelect(supabase, 'v_job_crew_hours_directory', '*', (query) => query.order('created_at', { ascending:false }).limit(3000));
   const jobReassignments = await safeSelect(supabase, 'v_job_reassignment_directory', '*', (query) => query.order('started_at', { ascending:false }).limit(1000));
+  const jobFinancialEvents = await safeSelect(supabase, 'v_job_financial_event_directory', '*', (query) => query.order('event_date', { ascending:false }).limit(2000));
+  const jobFinancialRollups = await safeSelect(supabase, 'v_job_financial_rollups', '*', (query) => query.order('job_id', { ascending:true }).limit(2000));
   const { data: inspections } = await supabase.from('v_equipment_inspection_history').select('*').order('inspected_at', { ascending:false }).limit(200);
   const { data: maintenance } = await supabase.from('v_equipment_maintenance_history').select('*').order('performed_at', { ascending:false }).limit(200);
   const { data: evidenceAssetsRaw } = await supabase.from('equipment_evidence_assets').select('*').order('created_at', { ascending:false }).limit(1000);
@@ -147,6 +149,8 @@ serve(async (req) => {
     job_sessions: jobSessions || [],
     job_crew_hours: jobCrewHours || [],
     job_reassignments: jobReassignments || [],
+    job_financial_events: jobFinancialEvents || [],
+    job_financial_rollups: jobFinancialRollups || [],
     equipment: equipment || [],
     requirements: requirements || [],
     signouts: signoutRows,

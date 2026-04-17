@@ -250,6 +250,11 @@ serve(async (req) => {
         start_date: body.start_date ?? null,
         years_employed: body.years_employed ?? null,
         notes: body.notes ?? null,
+        hourly_cost_rate: asNullableNumber(body.hourly_cost_rate),
+        overtime_cost_rate: asNullableNumber(body.overtime_cost_rate),
+        hourly_bill_rate: asNullableNumber(body.hourly_bill_rate),
+        overtime_bill_rate: asNullableNumber(body.overtime_bill_rate),
+        payroll_burden_percent: asNullableNumber(body.payroll_burden_percent),
         password_login_ready: true,
         password_changed_at: new Date().toISOString(),
         created_at: new Date().toISOString(),
@@ -302,6 +307,11 @@ serve(async (req) => {
         start_date: body.start_date ?? null,
         years_employed: body.years_employed ?? null,
         notes: body.notes ?? null,
+        hourly_cost_rate: asNullableNumber(body.hourly_cost_rate),
+        overtime_cost_rate: asNullableNumber(body.overtime_cost_rate),
+        hourly_bill_rate: asNullableNumber(body.hourly_bill_rate),
+        overtime_bill_rate: asNullableNumber(body.overtime_bill_rate),
+        payroll_burden_percent: asNullableNumber(body.payroll_burden_percent),
         updated_at: new Date().toISOString(),
       }).select('*').single();
       if (error) throw error;
@@ -671,6 +681,11 @@ serve(async (req) => {
         certifications: body.certifications ?? null,
         feature_preferences: body.feature_preferences ?? null,
         notes: body.notes ?? null,
+        hourly_cost_rate: asNullableNumber(body.hourly_cost_rate),
+        overtime_cost_rate: asNullableNumber(body.overtime_cost_rate),
+        hourly_bill_rate: asNullableNumber(body.hourly_bill_rate),
+        overtime_bill_rate: asNullableNumber(body.overtime_bill_rate),
+        payroll_burden_percent: asNullableNumber(body.payroll_burden_percent),
         default_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.default_supervisor_name),
         override_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.override_supervisor_name),
         default_admin_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.default_admin_name),
@@ -907,6 +922,48 @@ serve(async (req) => {
       }
       if (action === 'delete') {
         const { error } = await supabase.from('service_pricing_templates').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+
+    if (entity === 'job_financial_event') {
+      const quantity = asNullableNumber(body.quantity);
+      const unitCost = asNullableNumber(body.unit_cost);
+      const unitPrice = asNullableNumber(body.unit_price);
+      const patch = {
+        job_id: asNullableNumber(body.job_id),
+        job_session_id: asNullableText(body.job_session_id),
+        event_date: asNullableDate(body.event_date) || new Date().toISOString().slice(0, 10),
+        event_type: body.event_type ?? 'other',
+        cost_amount: asNumber(body.cost_amount, (quantity !== null && unitCost !== null) ? quantity * unitCost : 0),
+        revenue_amount: asNumber(body.revenue_amount, (quantity !== null && unitPrice !== null) ? quantity * unitPrice : 0),
+        quantity,
+        unit_cost: unitCost,
+        unit_price: unitPrice,
+        is_billable: body.is_billable === true,
+        vendor_id: asNullableText(body.vendor_id),
+        tax_code_id: asNullableText(body.tax_code_id),
+        gl_account_id: asNullableText(body.gl_account_id),
+        reference_number: body.reference_number ?? null,
+        notes: body.notes ?? null,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.job_id) return Response.json({ ok:false, error:'job_id is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('job_financial_events').insert({ ...patch, created_at: new Date().toISOString() }).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('job_financial_events').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('job_financial_events').delete().eq('id', body.item_id);
         if (error) throw error;
         return Response.json({ ok:true }, { headers:corsHeaders });
       }

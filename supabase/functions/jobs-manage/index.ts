@@ -627,6 +627,54 @@ serve(async (req) => {
       }
     }
 
+
+    if (body.entity === 'job_financial_event') {
+      const now = new Date().toISOString();
+      const quantity = body.quantity != null && String(body.quantity).trim() !== '' ? Number(body.quantity) : null;
+      const unitCost = body.unit_cost != null && String(body.unit_cost).trim() !== '' ? Number(body.unit_cost) : null;
+      const unitPrice = body.unit_price != null && String(body.unit_price).trim() !== '' ? Number(body.unit_price) : null;
+      const payload = {
+        job_id: Number(body.job_id || 0),
+        job_session_id: body.job_session_id || null,
+        event_date: body.event_date || new Date().toISOString().slice(0, 10),
+        event_type: body.event_type || 'other',
+        cost_amount: Number(body.cost_amount || ((quantity != null && unitCost != null) ? quantity * unitCost : 0)),
+        revenue_amount: Number(body.revenue_amount || ((quantity != null && unitPrice != null) ? quantity * unitPrice : 0)),
+        quantity,
+        unit_cost: unitCost,
+        unit_price: unitPrice,
+        is_billable: body.is_billable === true,
+        vendor_id: body.vendor_id || null,
+        tax_code_id: body.tax_code_id || null,
+        gl_account_id: body.gl_account_id || null,
+        reference_number: body.reference_number ?? null,
+        notes: body.notes ?? null,
+        created_by_profile_id: actorProfile.id,
+        updated_at: now,
+      };
+      if (!payload.job_id) return Response.json({ ok:false, error:'job_id is required' }, { status:400, headers:corsHeaders });
+      if (body.action === 'create') {
+        const { data, error } = await supabase.from('job_financial_events').insert({ ...payload, created_at: now }).select('*').single();
+        if (error) throw error;
+        await supabase.from('jobs').update({ last_activity_at: now, updated_at: now }).eq('id', payload.job_id);
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (body.action === 'update') {
+        const { data, error } = await supabase.from('job_financial_events').update(payload).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        await supabase.from('jobs').update({ last_activity_at: now, updated_at: now }).eq('id', payload.job_id);
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (body.action === 'delete') {
+        const { data: existing } = await supabase.from('job_financial_events').select('id,job_id').eq('id', body.item_id).maybeSingle();
+        if (existing?.id) {
+          await supabase.from('job_financial_events').delete().eq('id', existing.id);
+          await supabase.from('jobs').update({ last_activity_at: now, updated_at: now }).eq('id', existing.job_id);
+        }
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
     if (body.entity === 'job_comment') {
       const now = new Date().toISOString();
       const patch = {

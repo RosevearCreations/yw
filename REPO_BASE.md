@@ -97,4 +97,5 @@ The repo should now be treated as a landscaping / project-work / subcontract / H
 
 ## Latest repository note
 Schema version now extends through migration 076 for job pricing/profitability and schedule logic. When touching jobs, update all three layers together: `js/jobs-ui.js`, `supabase/functions/jobs-manage/index.ts`, and the SQL snapshot/migration files.
+> Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
 

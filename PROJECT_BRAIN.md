@@ -194,3 +194,10 @@ Treat jobs as the operational parent record, but treat recurring visits, actual 
 - `job_sessions` = each real field visit or execution window
 - `job_session_crew_hours` = labor detail for invoicing/accounting
 - `job_reassignment_events` = crew/equipment split history
+
+## Current quick-start emphasis
+- Think in terms of **service-business accounting flow**:
+  estimate/template -> job/work order -> session/crew hours -> financial events -> invoice/accounting review.
+- For this repo, the most important near-term objective is tightening the Ontario landscaping accounting and invoicing backbone without losing recurring-service speed.
+> Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
+

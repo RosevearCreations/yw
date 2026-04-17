@@ -326,3 +326,12 @@ Still open:
 - Parent jobs now cover pricing, equipment planning, sessions, hours, and reassignment logging, but contract generation and estimate conversion are still open.
 - Crew reassignment is now logged as an operational event and equipment reassignments update the target job, but permanent crew-structure editing still lives separately from active split handling.
 - Ontario accounting logic still needs deeper posting controls for payroll-style labor costing, repair capitalization vs expense handling, and delayed-job cost recovery.
+
+## 2026-04-16 accounting and landscaping workflow gaps still open
+- Job financial rollups now exist, but **estimate-to-contract-to-invoice** conversion is still not complete.
+- Crew hours can now be valued using labor-rate fields, but **payroll export / payroll-source integration** is still pending.
+- Job profitability now includes labor plus financial events, but **material receipt / issue costs are not yet fully auto-fed into job profitability**.
+- Repeating service work now tracks sessions, but **service-agreement billing cycles, snowfall triggers, and recurring invoice generation** still need completion.
+- Ontario tax guardrails are stronger, but **full posting rules for AR/AP tax breakdowns, CRA-style reporting support, and closing-period controls** remain open.
+> Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
+

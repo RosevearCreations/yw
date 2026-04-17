@@ -84,3 +84,12 @@ The latest pass added migration `076_job_pricing_profitability_and_schedule_logi
 - Jobs now support sortable admin review by client, transaction, invoice, date, duration, recurrence, status, and financial value.
 - Added DB-backed job session tracking, crew-hour tracking, and reassignment logging.
 - Clicking a saved job row now loads it back into the editor, and quick row actions can record sessions, hours, and reassignments.
+
+## Fresh-chat handoff after schema 079
+- Latest build adds labor-rate-aware accounting rollups for jobs.
+- New DB items: `job_financial_events`, `v_job_labor_rollups`, `v_job_financial_event_rollups`, `v_job_financial_rollups`.
+- Jobs directory now exposes actual rollup cost/charge/profit, unsigned-session pressure, and financial-event counts.
+- Staff records now include hourly/overtime cost and bill rates plus payroll burden percentage.
+- Next strongest continuation: estimate/contract generation, recurring agreement billing, payroll export, and Ontario tax posting rules.
+> Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
+

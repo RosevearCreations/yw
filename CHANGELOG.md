@@ -168,3 +168,12 @@ Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summarie
 - Jobs now carry `client_reference`, `service_contract_reference`, `billing_transaction_number`, and `invoice_number` for future accounting and invoicing links.
 - Jobs screen now has a sortable saved-jobs table with row-click load/edit behavior plus quick actions for session tracking, crew-hour logging, and emergency reassignment.
 - `jobs-directory` now returns job sessions, crew hours, and reassignment data to the UI.
+
+## 2026-04-16 accounting profitability and job-financial rollup pass
+- Added migration `sql/079_job_financial_rollups_and_profit_review.sql`.
+- Added DB-backed `job_financial_events` so field and office teams can record material, repair, delay, fuel, subcontract, disposal, travel, permit, and revenue-adjustment events against a job or session.
+- Added profile labor-rate fields (`hourly_cost_rate`, `overtime_cost_rate`, `hourly_bill_rate`, `overtime_bill_rate`, `payroll_burden_percent`) so crew hours can begin feeding profitability and invoice review instead of living only as time logs.
+- Added `v_job_labor_rollups`, `v_job_financial_event_rollups`, `v_job_financial_rollups`, and refreshed `v_jobs_directory` / `v_accounting_review_summary` so delayed jobs, unsigned sessions, loss-making jobs, and uninvoiced completed work are easier to review.
+- Extended Jobs/Admin flows so staff pay-basis fields and job financial-event records can be managed through the app shell.
+> Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
+

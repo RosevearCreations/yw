@@ -90,6 +90,8 @@ serve(async (req) => {
   const hsePacketActionItems = await safeList(supabase, 'v_hse_packet_action_items', '*', 'action_priority', 500, true);
   const hseDashboardSummary = await safeList(supabase, 'v_hse_dashboard_summary');
   const accountingSummary = await safeList(supabase, 'v_accounting_review_summary');
+  const jobFinancialEvents = await safeList(supabase, 'v_job_financial_event_directory', '*', 'event_date', 1000, false);
+  const jobFinancialRollups = await safeList(supabase, 'v_job_financial_rollups', '*', 'job_id', 1000, true);
   const hseLinkContextSummary = await safeList(supabase, 'v_hse_link_context_summary', '*', 'sort_order');
   const monitorReviewSummary = await safeList(supabase, 'v_monitor_review_summary', '*', 'sort_order');
   const materialIssues = await safeList(supabase, 'material_issues', '*', 'issue_number');
@@ -122,6 +124,8 @@ serve(async (req) => {
     service_pricing_templates: await safeList(supabase, 'service_pricing_templates', '*', 'template_name'),
     tax_codes: await safeList(supabase, 'tax_codes', '*', 'code'),
     business_tax_settings: await safeList(supabase, 'business_tax_settings', '*', 'profile_name'),
+    job_financial_events: jobFinancialEvents,
+    job_financial_rollups: jobFinancialRollups,
     equipment_master: await safeList(supabase, 'equipment_master', '*', 'item_name'),
     estimates: await safeList(supabase, 'estimates', '*', 'estimate_number'),
     estimate_lines: await safeList(supabase, 'estimate_lines', '*', 'line_order'),

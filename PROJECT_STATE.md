@@ -220,3 +220,11 @@ The app is now moving from generic HSE/job management into a more realistic land
 - crew-hour logging tied to job execution
 - reassignment logging for emergency crew/equipment splits
 - pricing/tax/accounting linkage fields ready for later estimate/invoice contract work
+
+## 2026-04-16 state snapshot
+- Latest schema target: **079_job_financial_rollups_and_profit_review.sql**.
+- The app now treats landscaping/maintenance work as a profitability workflow, not only a scheduling workflow.
+- Jobs can now accumulate labor-aware cost review, financial adjustment events, delayed-job pressure, unsigned session pressure, and uninvoiced-completed-job review.
+- Staff records now have the start of a labor-rate model so time tracking can feed accounting review.
+> Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
+

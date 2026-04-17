@@ -136,4 +136,5 @@ Deployments should now be treated as operations-critical because session integri
 ## This pass requires
 - run `sql/076_job_pricing_profitability_and_schedule_logic.sql` before deploying the updated jobs UI and jobs-manage function
 - after deploy, hard refresh the Jobs page to load the new pricing and duration fields
+> Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
 

@@ -165,4 +165,5 @@ Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summarie
 - create a recurring job with markup % and confirm the server recalculates quoted charge
 - create an open-end job and confirm reservation end stays blank
 - mark a job delayed and verify delay cost and notes persist
+> Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
 

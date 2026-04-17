@@ -273,3 +273,8 @@ The app now includes DB-backed Ontario-oriented tax code records, business tax s
 
 ## Latest operations pass
 This build now supports sortable jobs review plus session/hours/reassignment tracking for landscaping operations. Recurring work like mowing and snow can be priced at the parent job level while still recording each field visit separately.
+
+## Current focus
+This build now includes labor-aware job profitability review and DB-backed job financial adjustment events, so the project is moving from scheduling/operations into a fuller landscaping-service accounting backbone.
+> Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
+

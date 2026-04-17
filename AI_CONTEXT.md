@@ -133,3 +133,10 @@ The landscaping app now needs to think in three layers:
 2. Session-level execution and supervisor signoff
 3. Labor/reassignment/accounting detail
 Do not collapse recurring service visits into only the parent job record.
+
+## 2026-04-16 context addition
+- This landscaping/service-business app now carries the beginnings of true job costing.
+- A job can have sessions, crew-hour logs, reassignments, pricing templates, Ontario tax defaults, and now financial adjustment events plus labor-rate-aware profitability rollups.
+- When continuing from this point, prefer DB-backed rollup improvements over note-based workarounds.
+> Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
+

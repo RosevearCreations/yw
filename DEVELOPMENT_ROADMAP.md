@@ -396,3 +396,23 @@ Next recommended build steps:
   - estimate-to-job conversion with service templates
   - contract/service agreement generator tied to job family and recurrence
   - Ontario tax posting rules and invoice posting from job/session totals
+
+## 2026-04-16 accounting profitability and landscaping service-business pass
+- Added job-financial rollups so the app can move from job scheduling into real profitability review.
+- Added labor-rate fields to staff records so crew hours can be valued for costing and billing review.
+- Added job financial events so delays, repairs, subcontract help, fuel, disposal, permits, and revenue adjustments stop living only in notes.
+
+## Immediate next build priorities after 079
+1. **Estimate / contract / service-package conversion**
+   - convert service pricing templates into estimate lines and contract-ready service bundles
+   - support recurring service agreements, snow triggers, and seasonal packages
+2. **Invoice and payroll bridge**
+   - convert completed/signed sessions into invoice-ready labor and service totals
+   - connect crew-hour cost review to payroll export / labor burden assumptions
+3. **Job-cost detail by source**
+   - split profitability by labor, materials, equipment repair, subcontractors, fuel, and delays
+   - surface margin erosion alerts before invoicing is finalized
+4. **Ontario accounting controls**
+   - deepen tax-code handling, invoice tax posting, vendor-bill tax capture, and year-end accounting guardrails for Ontario/Canada workflows
+> Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
+
