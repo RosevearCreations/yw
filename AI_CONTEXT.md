@@ -125,3 +125,11 @@ The app is moving from a generic jobs/equipment tool into a landscaping-focused 
 - Admin backbone now supports `tax_code`, `business_tax_setting`, and `service_pricing_template`.
 - `jobs-manage` computes estimated tax/total using DB-backed tax/template defaults.
 
+
+
+## Current workflow model
+The landscaping app now needs to think in three layers:
+1. Job planning and pricing
+2. Session-level execution and supervisor signoff
+3. Labor/reassignment/accounting detail
+Do not collapse recurring service visits into only the parent job record.

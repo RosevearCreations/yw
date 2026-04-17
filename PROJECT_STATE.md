@@ -210,3 +210,13 @@ The landscaping workflow now supports three linked layers: operations scheduling
 - Admin backbone UI now manages `tax_codes`, `business_tax_settings`, and `service_pricing_templates`.
 - `admin-manage` was cleaned so only the valid in-handler tax/pricing blocks remain; the duplicated tail after the file closure was removed.
 
+
+
+## Current state - landscaping operations backbone
+The app is now moving from generic HSE/job management into a more realistic landscaping operations backbone:
+- parent jobs for one-time, recurring, and project work
+- crew planning and equipment reservation
+- per-visit session tracking
+- crew-hour logging tied to job execution
+- reassignment logging for emergency crew/equipment splits
+- pricing/tax/accounting linkage fields ready for later estimate/invoice contract work

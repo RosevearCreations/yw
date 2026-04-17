@@ -77,3 +77,10 @@ The latest pass added migration `076_job_pricing_profitability_and_schedule_logi
 - The pricing/tax pass is now fully surfaced in Admin: Tax Codes, Business Tax Settings, and Service Pricing Templates are editable from the backbone manager.
 - Jobs already consume template/tax data; the next logical build is estimate/contract generation plus deeper Ontario accounting posting/reporting.
 
+
+
+## Latest pass: job sessions + crew hours + reassignments
+- Added `sql/078_job_sessions_reassignments_and_admin_sorting.sql`.
+- Jobs now support sortable admin review by client, transaction, invoice, date, duration, recurrence, status, and financial value.
+- Added DB-backed job session tracking, crew-hour tracking, and reassignment logging.
+- Clicking a saved job row now loads it back into the editor, and quick row actions can record sessions, hours, and reassignments.

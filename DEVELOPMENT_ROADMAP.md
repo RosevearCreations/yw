@@ -385,3 +385,14 @@ Next recommended build steps:
 - Use the new tax-code, business-tax-setting, and service-pricing-template admin backbone screens to stabilize Ontario HST defaults and reusable landscaping/service pricing before estimate-to-contract conversion.
 - Next strongest follow-on: estimate templates, contract generation, and tax posting rules that consume the new DB-backed pricing/tax records instead of manual notes.
 
+
+
+## April 15, 2026 follow-on pass
+- Land the new session-level workflow for jobs:
+  - track each mowing/plowing/recurring visit as an individual job session with start, end, duration, and site-supervisor signoff
+  - log crew-member hours against each job session for payroll/invoicing crossover
+  - log job reassignments for emergency crew splits, service-contract support, and equipment redirects
+- Next strongest continuation after this pass:
+  - estimate-to-job conversion with service templates
+  - contract/service agreement generator tied to job family and recurrence
+  - Ontario tax posting rules and invoice posting from job/session totals

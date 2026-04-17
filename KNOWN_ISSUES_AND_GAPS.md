@@ -320,3 +320,9 @@ Still open:
 - **Improved this pass:** Ontario tax codes, business tax settings, and reusable service pricing templates are now DB-backed and editable in the Admin backbone UI.
 - **Still open:** estimate/contract flows are not yet fully consuming these pricing templates end to end, and accounting posting still needs deeper Ontario-specific tax treatment and filing/report outputs.
 
+
+
+## Jobs / Accounting / Landscaping workflow status
+- Parent jobs now cover pricing, equipment planning, sessions, hours, and reassignment logging, but contract generation and estimate conversion are still open.
+- Crew reassignment is now logged as an operational event and equipment reassignments update the target job, but permanent crew-structure editing still lives separately from active split handling.
+- Ontario accounting logic still needs deeper posting controls for payroll-style labor costing, repair capitalization vs expense handling, and delayed-job cost recovery.

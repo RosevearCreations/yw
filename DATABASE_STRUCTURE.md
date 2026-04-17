@@ -292,3 +292,11 @@ Priority UI mappings:
 ## Latest structure note
 `public.jobs` now carries commercial planning fields alongside schedule fields, including cost, charge, markup, discount, estimated/actual profit, open-end flags, delay cost, and equipment repair cost totals.
 
+
+
+## Latest structure note
+Schema now extends beyond parent jobs into session-level execution:
+- `job_sessions`
+- `job_session_crew_hours`
+- `job_reassignment_events`
+These are intended to feed invoicing, profitability, delayed-job review, and service-contract exception handling.

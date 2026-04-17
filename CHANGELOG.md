@@ -160,3 +160,11 @@ Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summarie
 - Fixed a broken duplicate tail appended after the real end of `supabase/functions/admin-manage/index.ts`.
 - Wired Admin UI loading for DB-backed Ontario tax codes/settings and reusable service pricing templates so these records can be managed from the app instead of living only in schema/backend code.
 
+
+
+## 2026-04-15 - Job session tracking, crew hours, and reassignment workflow
+- Added migration `sql/078_job_sessions_reassignments_and_admin_sorting.sql`.
+- Added DB-backed job sessions, crew-hour logs, and job reassignment events so recurring services and one-time jobs can be tracked per visit instead of only at the parent job level.
+- Jobs now carry `client_reference`, `service_contract_reference`, `billing_transaction_number`, and `invoice_number` for future accounting and invoicing links.
+- Jobs screen now has a sortable saved-jobs table with row-click load/edit behavior plus quick actions for session tracking, crew-hour logging, and emergency reassignment.
+- `jobs-directory` now returns job sessions, crew hours, and reassignment data to the UI.

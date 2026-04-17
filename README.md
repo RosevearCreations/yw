@@ -269,3 +269,7 @@ The current build emphasizes landscaping job operations plus early commercial lo
 ## Latest operations/accounting build note
 The app now includes DB-backed Ontario-oriented tax code records, business tax settings, and reusable service pricing templates, with Admin backbone screens to manage them.
 
+
+
+## Latest operations pass
+This build now supports sortable jobs review plus session/hours/reassignment tracking for landscaping operations. Recurring work like mowing and snow can be priced at the parent job level while still recording each field visit separately.

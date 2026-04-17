@@ -186,3 +186,11 @@ Treat the product as a landscaping / project-work / subcontract dispatch platfor
 ### Latest brain update
 Jobs are no longer only operational. They now carry pricing, discount, margin, open-end schedule, delay, and repair-loss hooks. Treat estimates/contracts and Ontario accounting automation as the next layer on top of this job backbone.
 
+
+
+## Current emphasis
+Treat jobs as the operational parent record, but treat recurring visits, actual labor, and emergency resource changes as separate tracked records:
+- `jobs` = commercial/planning shell
+- `job_sessions` = each real field visit or execution window
+- `job_session_crew_hours` = labor detail for invoicing/accounting
+- `job_reassignment_events` = crew/equipment split history

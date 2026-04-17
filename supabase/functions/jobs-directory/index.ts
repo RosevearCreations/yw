@@ -30,6 +30,18 @@ function effectiveRole(profile: any, user: any) {
   return direct || tier || meta || 'employee';
 }
 
+async function safeSelect(supabase: any, tableOrView: string, selectExpr = '*', builder?: (query: any) => any) {
+  try {
+    let query = supabase.from(tableOrView).select(selectExpr);
+    if (builder) query = builder(query) || query;
+    const { data, error } = await query;
+    if (error) return [];
+    return data || [];
+  } catch {
+    return [];
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   const supabase = createClient((Deno.env.get('SB_URL') || Deno.env.get('SUPABASE_URL'))!, (Deno.env.get('SB_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'))!);
@@ -54,6 +66,9 @@ serve(async (req) => {
   const { data: servicePricingTemplates } = await supabase.from('service_pricing_templates').select('*').eq('is_active', true).order('template_name');
   const { data: taxCodes } = await supabase.from('tax_codes').select('*').eq('is_active', true).order('code');
   const { data: businessTaxSettings } = await supabase.from('business_tax_settings').select('*').order('profile_name');
+  const jobSessions = await safeSelect(supabase, 'v_job_session_directory', '*', (query) => query.order('started_at', { ascending:false }).limit(2000));
+  const jobCrewHours = await safeSelect(supabase, 'v_job_crew_hours_directory', '*', (query) => query.order('created_at', { ascending:false }).limit(3000));
+  const jobReassignments = await safeSelect(supabase, 'v_job_reassignment_directory', '*', (query) => query.order('started_at', { ascending:false }).limit(1000));
   const { data: inspections } = await supabase.from('v_equipment_inspection_history').select('*').order('inspected_at', { ascending:false }).limit(200);
   const { data: maintenance } = await supabase.from('v_equipment_maintenance_history').select('*').order('performed_at', { ascending:false }).limit(200);
   const { data: evidenceAssetsRaw } = await supabase.from('equipment_evidence_assets').select('*').order('created_at', { ascending:false }).limit(1000);
@@ -129,6 +144,9 @@ serve(async (req) => {
     profiles: profiles || [],
     job_comments: commentRows,
     job_comment_attachments: jobCommentAttachments,
+    job_sessions: jobSessions || [],
+    job_crew_hours: jobCrewHours || [],
+    job_reassignments: jobReassignments || [],
     equipment: equipment || [],
     requirements: requirements || [],
     signouts: signoutRows,

@@ -343,6 +343,7 @@ serve(async (req) => {
         status: body.status ?? 'planned',
         priority: body.priority ?? 'normal',
         client_name: body.client_name ?? null,
+        client_reference: body.client_reference ?? null,
         start_date: body.start_date || null,
         end_date: body.end_date || null,
         site_supervisor_profile_id: supervisorId,
@@ -386,6 +387,9 @@ serve(async (req) => {
         estimated_tax_total: pricing.estimated_tax_total,
         estimated_total_with_tax: pricing.estimated_total_with_tax,
         pricing_basis_label: pricing.pricing_basis_label,
+        service_contract_reference: body.service_contract_reference ?? null,
+        billing_transaction_number: body.billing_transaction_number ?? null,
+        invoice_number: body.invoice_number ?? null,
         delay_cost_total: pricing.delay_cost_total,
         equipment_repair_cost_total: pricing.equipment_repair_cost_total,
         actual_cost_total: pricing.actual_cost_total,
@@ -493,6 +497,134 @@ serve(async (req) => {
         });
       }
       return Response.json({ ok:true, record: data, crew_id: crewId }, { headers: corsHeaders });
+    }
+
+    if (body.entity === 'job_session') {
+      const now = new Date().toISOString();
+      const payload = {
+        job_id: Number(body.job_id || 0),
+        session_date: body.session_date || new Date().toISOString().slice(0, 10),
+        session_kind: body.session_kind || 'field_service',
+        session_status: body.session_status || 'completed',
+        service_frequency_label: body.service_frequency_label ?? null,
+        scheduled_start_at: body.scheduled_start_at || body.started_at || null,
+        started_at: body.started_at || null,
+        ended_at: body.ended_at || null,
+        duration_minutes: body.duration_minutes != null ? Number(body.duration_minutes) : (body.started_at && body.ended_at ? Math.max(0, Math.round((new Date(body.ended_at).getTime() - new Date(body.started_at).getTime()) / 60000)) : null),
+        delay_minutes: Number(body.delay_minutes || 0),
+        notes: body.notes ?? null,
+        site_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.site_supervisor_signoff_name || body.site_supervisor_name || null),
+        site_supervisor_signoff_name: body.site_supervisor_signoff_name ?? null,
+        site_supervisor_signed_off_at: body.site_supervisor_signoff_name ? now : (body.site_supervisor_signed_off_at || null),
+        site_supervisor_signoff_notes: body.site_supervisor_signoff_notes ?? null,
+        created_by_profile_id: actorProfile.id,
+        updated_at: now,
+      };
+      if (!payload.job_id) return Response.json({ ok:false, error:'job_id is required' }, { status:400, headers:corsHeaders });
+      if (body.action === 'create') {
+        const { data, error } = await supabase.from('job_sessions').insert({ ...payload, created_at: now }).select('*').single();
+        if (error) throw error;
+        await supabase.from('jobs').update({ last_activity_at: now, updated_at: now, delayed_schedule: payload.delay_minutes > 0, signing_supervisor_profile_id: payload.site_supervisor_profile_id || undefined }).eq('id', payload.job_id);
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (body.action === 'update') {
+        const { data, error } = await supabase.from('job_sessions').update(payload).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        await supabase.from('jobs').update({ last_activity_at: now, updated_at: now, delayed_schedule: payload.delay_minutes > 0 }).eq('id', payload.job_id);
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (body.action === 'delete') {
+        const { data: existing } = await supabase.from('job_sessions').select('id,job_id').eq('id', body.item_id).maybeSingle();
+        if (existing?.id) {
+          await supabase.from('job_sessions').delete().eq('id', existing.id);
+          await supabase.from('jobs').update({ last_activity_at: now, updated_at: now }).eq('id', existing.job_id);
+        }
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (body.entity === 'job_crew_time') {
+      const now = new Date().toISOString();
+      const profileId = await resolveProfileIdByNameOrEmail(supabase, body.worker_name || body.profile_name || null);
+      const regularHours = Number(body.regular_hours || 0);
+      const overtimeHours = Number(body.overtime_hours || 0);
+      const payload = {
+        job_session_id: body.job_session_id || null,
+        job_id: Number(body.job_id || 0),
+        crew_id: body.crew_id || null,
+        profile_id: profileId,
+        worker_name: body.worker_name ?? body.profile_name ?? null,
+        started_at: body.started_at || null,
+        ended_at: body.ended_at || null,
+        hours_worked: Number(body.hours_worked || (regularHours + overtimeHours || 0)),
+        regular_hours: regularHours,
+        overtime_hours: overtimeHours,
+        notes: body.notes ?? null,
+        created_by_profile_id: actorProfile.id,
+        updated_at: now,
+      };
+      if (!payload.job_id) return Response.json({ ok:false, error:'job_id is required' }, { status:400, headers:corsHeaders });
+      if (body.action === 'create') {
+        const { data, error } = await supabase.from('job_session_crew_hours').insert({ ...payload, created_at: now }).select('*').single();
+        if (error) throw error;
+        await supabase.from('jobs').update({ last_activity_at: now, updated_at: now }).eq('id', payload.job_id);
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (body.action === 'update') {
+        const { data, error } = await supabase.from('job_session_crew_hours').update(payload).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        await supabase.from('jobs').update({ last_activity_at: now, updated_at: now }).eq('id', payload.job_id);
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (body.action === 'delete') {
+        const { data: existing } = await supabase.from('job_session_crew_hours').select('id,job_id').eq('id', body.item_id).maybeSingle();
+        if (existing?.id) {
+          await supabase.from('job_session_crew_hours').delete().eq('id', existing.id);
+          await supabase.from('jobs').update({ last_activity_at: now, updated_at: now }).eq('id', existing.job_id);
+        }
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (body.entity === 'job_reassignment') {
+      const now = new Date().toISOString();
+      const sourceJobId = Number(body.source_job_id || 0) || await resolveJobIdByCode(supabase, body.source_job_code || null);
+      const targetJobId = await resolveJobIdByCode(supabase, body.target_job_code || null) || Number(body.target_job_id || 0);
+      const equipmentId = await resolveEquipmentIdByCode(supabase, body.equipment_code || null);
+      const profileId = await resolveProfileIdByNameOrEmail(supabase, body.profile_name || null);
+      if (!sourceJobId || !targetJobId) return Response.json({ ok:false, error:'source and target jobs are required' }, { status:400, headers:corsHeaders });
+      if (!equipmentId && !profileId) return Response.json({ ok:false, error:'Provide either an equipment code or a crew member name.' }, { status:400, headers:corsHeaders });
+      const { data: sourceJob } = await supabase.from('jobs').select('id,crew_id,job_code').eq('id', sourceJobId).maybeSingle();
+      const { data: targetJob } = await supabase.from('jobs').select('id,crew_id,job_code').eq('id', targetJobId).maybeSingle();
+      const payload = {
+        source_job_id: sourceJobId,
+        target_job_id: targetJobId,
+        crew_id: targetJob?.crew_id || sourceJob?.crew_id || null,
+        profile_id: profileId,
+        equipment_item_id: equipmentId,
+        reassignment_type: body.equipment_code ? (body.emergency_override ? 'equipment_redirect' : 'service_contract_support') : (body.emergency_override ? 'emergency_override' : 'temporary_split'),
+        reason: body.reason ?? null,
+        emergency_override: body.emergency_override === true,
+        service_contract_reference: body.service_contract_reference ?? null,
+        started_at: body.started_at || now,
+        ended_at: body.ended_at || null,
+        notes: body.notes ?? null,
+        reassigned_by_profile_id: actorProfile.id,
+        updated_at: now,
+      };
+      if (body.action === 'create') {
+        const { data, error } = await supabase.from('job_reassignment_events').insert({ ...payload, created_at: now }).select('*').single();
+        if (error) throw error;
+        if (equipmentId) {
+          await supabase.from('equipment_items').update({ current_job_id: targetJobId, status: 'reserved', updated_at: now }).eq('id', equipmentId);
+        }
+        await supabase.from('jobs').update({ last_activity_at: now, updated_at: now, delayed_schedule: body.emergency_override === true ? true : undefined }).in('id', [sourceJobId, targetJobId]);
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (body.action === 'delete') {
+        await supabase.from('job_reassignment_events').delete().eq('id', body.item_id);
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
     }
 
     if (body.entity === 'job_comment') {
