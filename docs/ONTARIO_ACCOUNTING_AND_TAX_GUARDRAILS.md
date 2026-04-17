@@ -26,3 +26,12 @@ Last synchronized: April 14, 2026
 3. Add invoice/bill tax validation so totals are recalculated consistently and auditable.
 4. Add Ontario-facing customer invoice wording and registration-number display controls.
 5. Add month-end and year-end accounting review checklists for CRA-oriented closeout.
+
+## 2026-04-16 implementation note
+This repo now has the start of a labor-aware profitability model. Ontario tax guardrails should now be applied together with:
+- signed session completion,
+- labor-rate-based cost review,
+- job financial adjustment events,
+- uninvoiced completed-job review before final billing.
+> Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
+

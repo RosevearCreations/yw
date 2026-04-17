@@ -36,7 +36,7 @@
       users: [],
       sites: [],
       assignments: [],
-      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalSyncExceptions: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], fieldUploadFailures: [], appTrafficEvents: [], backendMonitorEvents: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [] },
+      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalSyncExceptions: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], fieldUploadFailures: [], appTrafficEvents: [], backendMonitorEvents: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [], jobFinancialEvents: [], jobFinancialRollups: [] },
       salesOrders: [],
       accountingEntries: [],
       serviceAreas: [],
@@ -52,6 +52,8 @@
       taxCodes: [],
       servicePricingTemplates: [],
       businessTaxSettings: [],
+      jobFinancialEvents: [],
+      jobFinancialRollups: [],
       materialsCatalog: [],
       equipmentMaster: [],
       estimates: [],
@@ -224,6 +226,11 @@
             <label>Position<select id="ad_staff_position"></select></label>
             <label>Trade<select id="ad_staff_trade"></select></label>
             <label>Start Date<input id="ad_staff_start_date" type="date" /></label>
+            <label>Hourly Cost Rate<input id="ad_staff_hourly_cost_rate" type="number" min="0" step="0.01" placeholder="0.00" /></label>
+            <label>Overtime Cost Rate<input id="ad_staff_overtime_cost_rate" type="number" min="0" step="0.01" placeholder="0.00" /></label>
+            <label>Hourly Bill Rate<input id="ad_staff_hourly_bill_rate" type="number" min="0" step="0.01" placeholder="0.00" /></label>
+            <label>Overtime Bill Rate<input id="ad_staff_overtime_bill_rate" type="number" min="0" step="0.01" placeholder="0.00" /></label>
+            <label>Payroll Burden %<input id="ad_staff_payroll_burden_percent" type="number" min="0" step="0.01" placeholder="0.00" /></label>
             <form id="ad_staff_new_password_form" autocomplete="on"><input type="text" name="username" autocomplete="username" style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden;" tabindex="-1" aria-hidden="true"><label>New Password<input id="ad_staff_new_password" type="password" name="new-password" autocomplete="new-password" placeholder="Required for new user" /></label><div class="muted" style="margin-top:6px;font-size:.9rem;">For new staff users, use at least 10 characters with upper, lower, and a number.</div></form>
             <label style="display:flex;align-items:end;gap:8px;"><input id="ad_staff_phone_verified" type="checkbox" /><span>Phone verified</span></label>
             <label style="display:flex;align-items:end;gap:8px;"><input id="ad_staff_email_verified" type="checkbox" /><span>Email verified</span></label>
@@ -240,7 +247,7 @@
           <div id="ad_staff_status_notice" class="notice" style="display:none;margin-top:10px;"></div>
           <div class="table-scroll" style="margin-top:14px;">
             <table id="ad_staff_table">
-              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Tier</th><th>Seniority</th><th>Status</th><th>Phone</th></tr></thead>
+              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Tier</th><th>Seniority</th><th>Status</th><th>Phone</th><th>Cost/hr</th><th>Bill/hr</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -651,6 +658,11 @@
         staffPosition: document.getElementById('ad_staff_position'),
         staffTrade: document.getElementById('ad_staff_trade'),
         staffStartDate: document.getElementById('ad_staff_start_date'),
+        staffHourlyCostRate: document.getElementById('ad_staff_hourly_cost_rate'),
+        staffOvertimeCostRate: document.getElementById('ad_staff_overtime_cost_rate'),
+        staffHourlyBillRate: document.getElementById('ad_staff_hourly_bill_rate'),
+        staffOvertimeBillRate: document.getElementById('ad_staff_overtime_bill_rate'),
+        staffPayrollBurdenPercent: document.getElementById('ad_staff_payroll_burden_percent'),
         staffNewPassword: document.getElementById('ad_staff_new_password'),
         staffPhoneVerified: document.getElementById('ad_staff_phone_verified'),
         staffEmailVerified: document.getElementById('ad_staff_email_verified'),
@@ -867,6 +879,11 @@
       if (e.staffPosition) e.staffPosition.value = item.current_position || '';
       if (e.staffTrade) e.staffTrade.value = item.trade_specialty || '';
       if (e.staffStartDate) e.staffStartDate.value = item.start_date || '';
+      if (e.staffHourlyCostRate) e.staffHourlyCostRate.value = item.hourly_cost_rate ?? '';
+      if (e.staffOvertimeCostRate) e.staffOvertimeCostRate.value = item.overtime_cost_rate ?? '';
+      if (e.staffHourlyBillRate) e.staffHourlyBillRate.value = item.hourly_bill_rate ?? '';
+      if (e.staffOvertimeBillRate) e.staffOvertimeBillRate.value = item.overtime_bill_rate ?? '';
+      if (e.staffPayrollBurdenPercent) e.staffPayrollBurdenPercent.value = item.payroll_burden_percent ?? '';
       if (e.staffPhoneVerified) e.staffPhoneVerified.checked = !!item.phone_verified;
       if (e.staffEmailVerified) e.staffEmailVerified.checked = !!item.email_verified;
       if (e.staffActive) e.staffActive.checked = item.is_active !== false;
@@ -881,7 +898,7 @@
         if (current) e.staffProfileId.value = current;
       }
       if (e.staffBody) {
-        e.staffBody.innerHTML = state.users.map((row) => `<tr data-staff-id="${escHtml(row.id)}"><td>${escHtml(row.full_name || '')}</td><td>${escHtml(row.email || '')}</td><td>${escHtml(row.role || '')}</td><td>${escHtml(row.staff_tier || '')}</td><td>${escHtml(row.seniority_level || '')}</td><td>${escHtml(row.employment_status || (row.is_active === false ? 'blocked' : 'active'))}</td><td>${escHtml(row.phone || '')}</td></tr>`).join('') || '<tr><td colspan="7" class="muted">No staff records loaded.</td></tr>';
+        e.staffBody.innerHTML = state.users.map((row) => `<tr data-staff-id="${escHtml(row.id)}"><td>${escHtml(row.full_name || '')}</td><td>${escHtml(row.email || '')}</td><td>${escHtml(row.role || '')}</td><td>${escHtml(row.staff_tier || '')}</td><td>${escHtml(row.seniority_level || '')}</td><td>${escHtml(row.employment_status || (row.is_active === false ? 'blocked' : 'active'))}</td><td>${escHtml(row.phone || '')}</td><td>${escHtml(row.hourly_cost_rate || '')}</td><td>${escHtml(row.hourly_bill_rate || '')}</td></tr>`).join('') || '<tr><td colspan="9" class="muted">No staff records loaded.</td></tr>';
       }
     }
 
@@ -913,7 +930,7 @@
       }
       setStaffBusy(true, 'Creating staff user…');
       try {
-        const resp = await manageAdminEntity({ entity:'credential', action:'create_user', email, new_password:password, full_name:e.staffFullName?.value || '', phone:e.staffPhone?.value || '', role:e.staffRole?.value || 'employee', staff_tier:e.staffTier?.value || '', seniority_level:e.staffSeniority?.value || '', employment_status:e.staffStatus?.value || 'active', employee_number:e.staffEmployeeNumber?.value || '', current_position:e.staffPosition?.value || '', trade_specialty:e.staffTrade?.value || '', start_date:e.staffStartDate?.value || null, phone_verified:!!e.staffPhoneVerified?.checked, email_verified:!!e.staffEmailVerified?.checked, is_active:!!e.staffActive?.checked, notes:e.staffNotes?.value || '' });
+        const resp = await manageAdminEntity({ entity:'credential', action:'create_user', email, new_password:password, full_name:e.staffFullName?.value || '', phone:e.staffPhone?.value || '', role:e.staffRole?.value || 'employee', staff_tier:e.staffTier?.value || '', seniority_level:e.staffSeniority?.value || '', employment_status:e.staffStatus?.value || 'active', employee_number:e.staffEmployeeNumber?.value || '', current_position:e.staffPosition?.value || '', trade_specialty:e.staffTrade?.value || '', start_date:e.staffStartDate?.value || null, phone_verified:!!e.staffPhoneVerified?.checked, email_verified:!!e.staffEmailVerified?.checked, is_active:!!e.staffActive?.checked, notes:e.staffNotes?.value || '', hourly_cost_rate:e.staffHourlyCostRate?.value || null, overtime_cost_rate:e.staffOvertimeCostRate?.value || null, hourly_bill_rate:e.staffHourlyBillRate?.value || null, overtime_bill_rate:e.staffOvertimeBillRate?.value || null, payroll_burden_percent:e.staffPayrollBurdenPercent?.value || null });
         if (!resp?.ok) throw new Error(resp?.error || 'Failed to create staff user.');
         if (e.staffNewPassword) e.staffNewPassword.value = '';
         await loadDirectory();
@@ -953,7 +970,7 @@
       }
       setStaffBusy(true, 'Saving staff details…');
       try {
-        const resp = await manageAdminEntity({ entity:'profile', action:'update', profile_id:profileId, email, full_name:e.staffFullName?.value || null, role:e.staffRole?.value || 'employee', phone:e.staffPhone?.value || null, phone_verified:!!e.staffPhoneVerified?.checked, email_verified:!!e.staffEmailVerified?.checked, employee_number:e.staffEmployeeNumber?.value || null, current_position:e.staffPosition?.value || null, trade_specialty:e.staffTrade?.value || null, seniority_level:e.staffSeniority?.value || null, employment_status:e.staffStatus?.value || 'active', staff_tier:e.staffTier?.value || null, start_date:e.staffStartDate?.value || null, notes:e.staffNotes?.value || null, is_active:!!e.staffActive?.checked });
+        const resp = await manageAdminEntity({ entity:'profile', action:'update', profile_id:profileId, email, full_name:e.staffFullName?.value || null, role:e.staffRole?.value || 'employee', phone:e.staffPhone?.value || null, phone_verified:!!e.staffPhoneVerified?.checked, email_verified:!!e.staffEmailVerified?.checked, employee_number:e.staffEmployeeNumber?.value || null, current_position:e.staffPosition?.value || null, trade_specialty:e.staffTrade?.value || null, seniority_level:e.staffSeniority?.value || null, employment_status:e.staffStatus?.value || 'active', staff_tier:e.staffTier?.value || null, start_date:e.staffStartDate?.value || null, notes:e.staffNotes?.value || null, is_active:!!e.staffActive?.checked, hourly_cost_rate:e.staffHourlyCostRate?.value || null, overtime_cost_rate:e.staffOvertimeCostRate?.value || null, hourly_bill_rate:e.staffHourlyBillRate?.value || null, overtime_bill_rate:e.staffOvertimeBillRate?.value || null, payroll_burden_percent:e.staffPayrollBurdenPercent?.value || null });
         if (!resp?.ok) throw new Error(resp?.error || 'Failed to save staff details.');
         await loadDirectory();
         const savedRecord = state.users.find((row) => String(row.id) === String(profileId)) || resp.record || null;
@@ -1417,6 +1434,8 @@
         state.taxCodes = Array.isArray(resp?.tax_codes) ? resp.tax_codes : [];
         state.servicePricingTemplates = Array.isArray(resp?.service_pricing_templates) ? resp.service_pricing_templates : [];
         state.businessTaxSettings = Array.isArray(resp?.business_tax_settings) ? resp.business_tax_settings : [];
+        state.jobFinancialEvents = Array.isArray(resp?.job_financial_events) ? resp.job_financial_events : [];
+        state.jobFinancialRollups = Array.isArray(resp?.job_financial_rollups) ? resp.job_financial_rollups : [];
         state.materialsCatalog = Array.isArray(resp?.materials_catalog) ? resp.materials_catalog : [];
         state.equipmentMaster = Array.isArray(resp?.equipment_master) ? resp.equipment_master : [];
         state.estimates = Array.isArray(resp?.estimates) ? resp.estimates : [];
@@ -1502,6 +1521,8 @@
           state.taxCodes = Array.isArray(resp?.tax_codes) ? resp.tax_codes : [];
           state.servicePricingTemplates = Array.isArray(resp?.service_pricing_templates) ? resp.service_pricing_templates : [];
           state.businessTaxSettings = Array.isArray(resp?.business_tax_settings) ? resp.business_tax_settings : [];
+          state.jobFinancialEvents = Array.isArray(resp?.job_financial_events) ? resp.job_financial_events : [];
+          state.jobFinancialRollups = Array.isArray(resp?.job_financial_rollups) ? resp.job_financial_rollups : [];
           state.materialsCatalog = Array.isArray(resp?.materials_catalog) ? resp.materials_catalog : [];
           state.equipmentMaster = Array.isArray(resp?.equipment_master) ? resp.equipment_master : [];
           state.estimates = Array.isArray(resp?.estimates) ? resp.estimates : [];
@@ -1554,7 +1575,7 @@
       state.notifications = [];
       state.sites = [];
       state.assignments = [];
-      state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [] };
+      state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [], jobFinancialEvents: [], jobFinancialRollups: [] };
       state.serviceAreas = [];
       state.routes = [];
       state.clients = [];
@@ -1646,6 +1667,14 @@
         { name:'default_discount_mode', label:'Discount Mode', type:'select', options:[['none','None'],['percent','Percent'],['fixed','Fixed'],['tiered','Tiered']] }, { name:'default_discount_value', label:'Discount Value', type:'number' },
         { name:'sales_tax_code_id', label:'Sales Tax Code', type:'select', source:'taxCodes' }, { name:'notes', label:'Notes', type:'textarea' }, { name:'is_active', label:'Active', type:'checkbox' }
       ], columns:[['template_code','Code'],['template_name','Template'],['job_family','Family'],['default_quoted_charge_total','Charge'],['sales_tax_code_id','Tax']] },
+      job_financial_event: { label:'Job Financial Events', rowsKey:'jobFinancialEvents', valueKey:'id', labelField:'event_type', fields:[
+        { name:'job_id', label:'Job', type:'select', source:'jobs', required:true }, { name:'job_session_id', label:'Job Session ID', type:'text' },
+        { name:'event_date', label:'Event Date', type:'date' }, { name:'event_type', label:'Event Type', type:'select', options:[['material','Material'],['equipment_repair','Equipment Repair'],['delay','Delay'],['fuel','Fuel'],['travel','Travel'],['subcontract','Subcontract'],['disposal','Disposal'],['permit','Permit'],['revenue_adjustment','Revenue Adjustment'],['discount_adjustment','Discount Adjustment'],['other','Other']] },
+        { name:'cost_amount', label:'Cost Amount', type:'number' }, { name:'revenue_amount', label:'Revenue Amount', type:'number' }, { name:'quantity', label:'Quantity', type:'number' },
+        { name:'unit_cost', label:'Unit Cost', type:'number' }, { name:'unit_price', label:'Unit Price', type:'number' }, { name:'is_billable', label:'Billable', type:'checkbox' },
+        { name:'vendor_id', label:'Vendor', type:'select', source:'vendors' }, { name:'tax_code_id', label:'Tax Code', type:'select', source:'taxCodes' }, { name:'gl_account_id', label:'GL Account', type:'select', source:'glAccounts' },
+        { name:'reference_number', label:'Reference', type:'text' }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['job_code','Job'],['event_date','Date'],['event_type','Type'],['cost_amount','Cost'],['revenue_amount','Revenue'],['is_billable','Billable']] },
       service_area: { label:'Service Areas', rowsKey:'serviceAreas', valueKey:'id', labelField:'name', fields:[
         { name:'area_code', label:'Area Code', type:'text' }, { name:'name', label:'Name', type:'text', required:true },
         { name:'region', label:'Region', type:'text' }, { name:'notes', label:'Notes', type:'textarea' }, { name:'is_active', label:'Active', type:'checkbox' }
@@ -1869,7 +1898,7 @@
     };
 
     function getBackboneRows(entity) {
-      const map = { unit_of_measure: state.unitsOfMeasure || [], cost_code: state.costCodes || [], tax_code: state.taxCodes || [], business_tax_setting: state.businessTaxSettings || [], service_pricing_template: state.servicePricingTemplates || [], service_area: state.serviceAreas || [], route: state.routes || [], route_stop: state.routeStops || [], route_stop_execution: state.routeStopExecutions || [], route_stop_execution_attachment: state.routeStopExecutionAttachments || [], client: state.clients || [], client_site: state.clientSites || [], material: state.materialsCatalog || [], equipment_master: state.equipmentMaster || [], estimate: state.estimates || [], estimate_line: state.estimateLines || [], work_order: state.workOrders || [], work_order_line: state.workOrderLines || [], subcontract_client: state.subcontractClients || [], subcontract_dispatch: state.subcontractDispatches || [], linked_hse_packet: state.linkedHsePackets || [], hse_packet_event: state.hsePacketEvents || [], hse_packet_proof: state.hsePacketProofs || [], field_upload_failure: state.fieldUploadFailures || [], app_traffic_event: state.appTrafficEvents || [], backend_monitor_event: state.backendMonitorEvents || [], gl_account: state.chartOfAccounts || [], gl_journal_batch: state.glJournalBatches || [], gl_journal_sync_exception: state.glJournalSyncExceptions || [], gl_journal_entry: state.glJournalEntries || [], ap_vendor: state.apVendors || [], ar_invoice: state.arInvoices || [], ar_payment: state.arPayments || [], ap_bill: state.apBills || [], ap_payment: state.apPayments || [], material_receipt: state.materialReceipts || [], material_receipt_line: state.materialReceiptLines || [], material_issue: state.materialIssues || [], material_issue_line: state.materialIssueLines || [] };
+      const map = { unit_of_measure: state.unitsOfMeasure || [], cost_code: state.costCodes || [], tax_code: state.taxCodes || [], business_tax_setting: state.businessTaxSettings || [], service_pricing_template: state.servicePricingTemplates || [], job_financial_event: state.jobFinancialEvents || [], service_area: state.serviceAreas || [], route: state.routes || [], route_stop: state.routeStops || [], route_stop_execution: state.routeStopExecutions || [], route_stop_execution_attachment: state.routeStopExecutionAttachments || [], client: state.clients || [], client_site: state.clientSites || [], material: state.materialsCatalog || [], equipment_master: state.equipmentMaster || [], estimate: state.estimates || [], estimate_line: state.estimateLines || [], work_order: state.workOrders || [], work_order_line: state.workOrderLines || [], subcontract_client: state.subcontractClients || [], subcontract_dispatch: state.subcontractDispatches || [], linked_hse_packet: state.linkedHsePackets || [], hse_packet_event: state.hsePacketEvents || [], hse_packet_proof: state.hsePacketProofs || [], field_upload_failure: state.fieldUploadFailures || [], app_traffic_event: state.appTrafficEvents || [], backend_monitor_event: state.backendMonitorEvents || [], gl_account: state.chartOfAccounts || [], gl_journal_batch: state.glJournalBatches || [], gl_journal_sync_exception: state.glJournalSyncExceptions || [], gl_journal_entry: state.glJournalEntries || [], ap_vendor: state.apVendors || [], ar_invoice: state.arInvoices || [], ar_payment: state.arPayments || [], ap_bill: state.apBills || [], ap_payment: state.apPayments || [], material_receipt: state.materialReceipts || [], material_receipt_line: state.materialReceiptLines || [], material_issue: state.materialIssues || [], material_issue_line: state.materialIssueLines || [] };
       return Array.isArray(map[entity]) ? map[entity] : [];
     }
 
@@ -2038,7 +2067,7 @@
       const clean = String(entity || '').trim();
       if (!clean) return 'people';
       if (['linked_hse_packet','hse_packet_event','hse_packet_proof','field_upload_failure','app_traffic_event','backend_monitor_event'].includes(clean)) return 'safety';
-      if (['gl_account','gl_journal_batch','gl_journal_entry','gl_journal_sync_exception','ap_vendor','ar_invoice','ar_payment','ap_bill','ap_payment','material_receipt','material_receipt_line','material_issue','material_issue_line'].includes(clean)) return 'accounting';
+      if (['gl_account','gl_journal_batch','gl_journal_entry','gl_journal_sync_exception','ap_vendor','ar_invoice','ar_payment','ap_bill','ap_payment','material_receipt','material_receipt_line','material_issue','material_issue_line','job_financial_event'].includes(clean)) return 'accounting';
       if (['route','route_stop','route_stop_execution','route_stop_execution_attachment','client','client_site','material','equipment_master','estimate','estimate_line','work_order','work_order_line','subcontract_client','subcontract_dispatch'].includes(clean)) return 'operations';
       return 'people';
     }

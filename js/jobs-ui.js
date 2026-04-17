@@ -45,6 +45,8 @@
       jobSessions: [],
       jobCrewHours: [],
       jobReassignments: [],
+      jobFinancialEvents: [],
+      jobFinancialRollups: [],
       selectedJobId: null,
       jobSort: { key: 'start_date', dir: 'desc' },
       editingJobId: null,
@@ -407,6 +409,7 @@
             <button id="job_track_session" class="secondary" type="button">Record Session</button>
             <button id="job_track_hours" class="secondary" type="button">Log Crew Hours</button>
             <button id="job_track_reassign" class="secondary" type="button">Reassign Crew / Equipment</button>
+            <button id="job_track_financial" class="secondary" type="button">Log Cost / Revenue</button>
           </div>
           <div id="job_tracking_summary" class="notice" style="display:none;margin-top:12px;"></div>
           <div class="table-scroll" style="margin-top:12px;">
@@ -424,6 +427,12 @@
           <div class="table-scroll" style="margin-top:12px;">
             <table id="job_reassign_table">
               <thead><tr><th>Started</th><th>From</th><th>To</th><th>Member / Equipment</th><th>Reason</th><th>Emergency</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="job_financial_table">
+              <thead><tr><th>Date</th><th>Type</th><th>Cost</th><th>Revenue</th><th>Billable</th><th>Reference</th><th>Action</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -513,10 +522,12 @@
         jobTrackSession: $('#job_track_session'),
         jobTrackHours: $('#job_track_hours'),
         jobTrackReassign: $('#job_track_reassign'),
+        jobTrackFinancial: $('#job_track_financial'),
         jobTrackingSummary: $('#job_tracking_summary'),
         jobSessionBody: $('#job_session_table tbody'),
         jobCrewHoursBody: $('#job_crew_hours_table tbody'),
         jobReassignBody: $('#job_reassign_table tbody'),
+        jobFinancialBody: $('#job_financial_table tbody'),
         jobAddEquipment: $('#job_add_equipment'),
         jobRequestApproval: $('#job_request_approval'),
         jobEquipmentBody: $('#job_equipment_table tbody'),
@@ -1242,15 +1253,17 @@
         e.jobSessionBody.innerHTML = '<tr><td colspan="7" class="muted">Load a job to track sessions.</td></tr>';
         e.jobCrewHoursBody.innerHTML = '<tr><td colspan="8" class="muted">Load a job to log crew hours.</td></tr>';
         e.jobReassignBody.innerHTML = '<tr><td colspan="6" class="muted">Load a job to view reassignments.</td></tr>';
-        setNotice(e.jobTrackingSummary, 'Load a job row to record sessions, hours, and reassignments.');
+        if (e.jobFinancialBody) e.jobFinancialBody.innerHTML = '<tr><td colspan="7" class="muted">Load a job to view financial events.</td></tr>';
+        setNotice(e.jobTrackingSummary, 'Load a job row to record sessions, hours, reassignments, and financial events.');
         return;
       }
       const totalHours = hours.reduce((sum, row) => sum + Number(row.hours_worked || 0), 0);
       const signedCount = sessions.filter((row) => row.site_supervisor_signed_off_at).length;
-      setNotice(e.jobTrackingSummary, `${sessions.length} session(s), ${totalHours.toFixed(2)} logged hour(s), ${reassignments.length} reassignment(s), ${signedCount} supervisor signoff(s).`);
+      setNotice(e.jobTrackingSummary, `${sessions.length} session(s), ${totalHours.toFixed(2)} logged hour(s), ${reassignments.length} reassignment(s), ${signedCount} supervisor signoff(s), labor cost $${Number(financialRollup.labor_cost_total || financialRollup.actual_labor_cost_total || 0).toFixed(2)}, actual rollup profit $${Number(financialRollup.actual_profit_rollup_total || 0).toFixed(2)}.`);
       e.jobSessionBody.innerHTML = sessions.length ? sessions.map((row) => `<tr><td>${escHtml(row.session_date || '')}</td><td>${escHtml(row.started_at_local || row.started_at || '')}</td><td>${escHtml(row.ended_at_local || row.ended_at || '')}</td><td>${escHtml(row.duration_label || row.duration_minutes || '')}</td><td>${escHtml(row.session_status || '')}</td><td>${escHtml(row.site_supervisor_signoff_name || row.site_supervisor_name || '')}${row.site_supervisor_signed_off_at ? ' • Signed' : ''}</td><td><button type="button" class="secondary" data-session-delete="${escHtml(row.id)}">Delete</button></td></tr>`).join('') : '<tr><td colspan="7" class="muted">No sessions logged yet for this job.</td></tr>';
       e.jobCrewHoursBody.innerHTML = hours.length ? hours.map((row) => `<tr><td>${escHtml(row.worker_name || row.profile_name || '')}</td><td>${escHtml(row.session_date || row.job_session_id || '')}</td><td>${escHtml(row.started_at_local || row.started_at || '')}</td><td>${escHtml(row.ended_at_local || row.ended_at || '')}</td><td>${escHtml(row.regular_hours || '')}</td><td>${escHtml(row.overtime_hours || '')}</td><td>${escHtml(row.hours_worked || '')}</td><td><button type="button" class="secondary" data-hours-delete="${escHtml(row.id)}">Delete</button></td></tr>`).join('') : '<tr><td colspan="8" class="muted">No crew hours logged yet for this job.</td></tr>';
       e.jobReassignBody.innerHTML = reassignments.length ? reassignments.map((row) => `<tr><td>${escHtml(row.started_at_local || row.started_at || '')}</td><td>${escHtml(row.source_job_code || '')}</td><td>${escHtml(row.target_job_code || '')}</td><td>${escHtml(row.profile_name || row.equipment_code || row.equipment_name || '')}</td><td>${escHtml(row.reason || '')}</td><td>${row.emergency_override ? 'Yes' : 'No'}</td></tr>`).join('') : '<tr><td colspan="6" class="muted">No reassignment events logged yet for this job.</td></tr>';
+      if (e.jobFinancialBody) e.jobFinancialBody.innerHTML = financialEvents.length ? financialEvents.map((row) => `<tr><td>${escHtml(row.event_date || '')}</td><td>${escHtml(row.event_type || '')}</td><td>$${Number(row.cost_amount || 0).toFixed(2)}</td><td>$${Number(row.revenue_amount || 0).toFixed(2)}</td><td>${row.is_billable ? 'Yes' : 'No'}</td><td>${escHtml(row.reference_number || '')}</td><td><button type="button" class="secondary" data-financial-delete="${escHtml(row.id)}">Delete</button></td></tr>`).join('') : '<tr><td colspan="7" class="muted">No financial events logged yet for this job.</td></tr>';
     }
 
     function renderJobs() {
@@ -1454,6 +1467,8 @@
         state.jobSessions = Array.isArray(resp?.job_sessions) ? resp.job_sessions : [];
         state.jobCrewHours = Array.isArray(resp?.job_crew_hours) ? resp.job_crew_hours : [];
         state.jobReassignments = Array.isArray(resp?.job_reassignments) ? resp.job_reassignments : [];
+        state.jobFinancialEvents = Array.isArray(resp?.job_financial_events) ? resp.job_financial_events : [];
+        state.jobFinancialRollups = Array.isArray(resp?.job_financial_rollups) ? resp.job_financial_rollups : [];
         state.signouts = Array.isArray(resp?.signouts) ? resp.signouts : [];
         state.pools = Array.isArray(resp?.pools) ? resp.pools : [];
         state.notifications = Array.isArray(resp?.notifications) ? resp.notifications : [];
@@ -1524,6 +1539,27 @@
         await loadData();
       } catch (err) {
         setNotice(e.jobTrackingSummary, err?.message || 'Crew hour logging failed.', true);
+      }
+    }
+
+
+    async function recordJobFinancialEvent(jobRow = null) {
+      const e = els();
+      try {
+        const activeJob = jobRow || (state.jobs || []).find((row) => Number(row.id) === Number(state.selectedJobId || state.editingJobId || 0));
+        if (!activeJob?.id) throw new Error('Load a job before recording a cost or revenue event.');
+        const event_date = window.prompt('Event date (YYYY-MM-DD):', new Date().toISOString().slice(0, 10)) || '';
+        const event_type = window.prompt('Event type (material, equipment_repair, delay, fuel, travel, subcontract, disposal, permit, revenue_adjustment, discount_adjustment, other):', 'material') || 'other';
+        const cost_amount = window.prompt('Cost amount:', '0') || '0';
+        const revenue_amount = window.prompt('Revenue amount:', '0') || '0';
+        const is_billable = window.confirm('Is this event billable to the client?');
+        const reference_number = window.prompt('Reference / receipt / invoice number:', '') || '';
+        const notes = window.prompt('Notes:', '') || '';
+        const resp = await api.manageJobsEntity({ entity: 'job_financial_event', action: 'create', job_id: activeJob.id, event_date, event_type, cost_amount: Number(cost_amount || 0), revenue_amount: Number(revenue_amount || 0), is_billable, reference_number, notes });
+        if (!resp?.ok) throw new Error(resp?.error || 'Financial event save failed.');
+        await loadData();
+      } catch (err) {
+        setNotice(e.jobTrackingSummary, err?.message || 'Failed to record job financial event.', true);
       }
     }
 
@@ -1871,6 +1907,10 @@
         e.jobTrackReassign.dataset.bound = '1';
         e.jobTrackReassign.addEventListener('click', () => reassignJobResources());
       }
+      if (e.jobTrackFinancial && e.jobTrackFinancial.dataset.bound !== '1') {
+        e.jobTrackFinancial.dataset.bound = '1';
+        e.jobTrackFinancial.addEventListener('click', () => recordJobFinancialEvent());
+      }
       if (e.jobSessionBody && e.jobSessionBody.dataset.bound !== '1') {
         e.jobSessionBody.dataset.bound = '1';
         e.jobSessionBody.addEventListener('click', async (event) => {
@@ -1888,6 +1928,16 @@
           if (!btn) return;
           const resp = await api.manageJobsEntity({ entity: 'job_crew_time', action: 'delete', item_id: btn.getAttribute('data-hours-delete') });
           if (!resp?.ok) return setNotice(e.jobTrackingSummary, resp?.error || 'Crew hour delete failed.', true);
+          await loadData();
+        });
+      }
+      if (e.jobFinancialBody && e.jobFinancialBody.dataset.bound !== '1') {
+        e.jobFinancialBody.dataset.bound = '1';
+        e.jobFinancialBody.addEventListener('click', async (event) => {
+          const btn = event.target.closest('[data-financial-delete]');
+          if (!btn) return;
+          const resp = await api.manageJobsEntity({ entity: 'job_financial_event', action: 'delete', item_id: btn.getAttribute('data-financial-delete') });
+          if (!resp?.ok) return setNotice(e.jobTrackingSummary, resp?.error || 'Financial event delete failed.', true);
           await loadData();
         });
       }
