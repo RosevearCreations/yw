@@ -36,7 +36,7 @@
       users: [],
       sites: [],
       assignments: [],
-      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalSyncExceptions: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], fieldUploadFailures: [], appTrafficEvents: [], backendMonitorEvents: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [], jobFinancialEvents: [], jobFinancialRollups: [] },
+      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalSyncExceptions: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], fieldUploadFailures: [], appTrafficEvents: [], backendMonitorEvents: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [], jobFinancialEvents: [], jobFinancialRollups: [], recurringServiceAgreements: [], snowEventTriggers: [], changeOrders: [], customerAssets: [], customerAssetJobLinks: [], warrantyCallbackEvents: [], payrollExportRuns: [], payrollReviewSummary: [], routeProfitabilitySummary: [] },
       salesOrders: [],
       accountingEntries: [],
       serviceAreas: [],
@@ -54,6 +54,15 @@
       businessTaxSettings: [],
       jobFinancialEvents: [],
       jobFinancialRollups: [],
+      recurringServiceAgreements: [],
+      snowEventTriggers: [],
+      changeOrders: [],
+      customerAssets: [],
+      customerAssetJobLinks: [],
+      warrantyCallbackEvents: [],
+      payrollExportRuns: [],
+      payrollReviewSummary: [],
+      routeProfitabilitySummary: [],
       materialsCatalog: [],
       equipmentMaster: [],
       estimates: [],
@@ -231,6 +240,8 @@
             <label>Hourly Bill Rate<input id="ad_staff_hourly_bill_rate" type="number" min="0" step="0.01" placeholder="0.00" /></label>
             <label>Overtime Bill Rate<input id="ad_staff_overtime_bill_rate" type="number" min="0" step="0.01" placeholder="0.00" /></label>
             <label>Payroll Burden %<input id="ad_staff_payroll_burden_percent" type="number" min="0" step="0.01" placeholder="0.00" /></label>
+            <label>Last Logged In<input id="ad_staff_last_login_at" type="text" readonly placeholder="No login recorded" /></label>
+            <label>Login Events<input id="ad_staff_login_event_count" type="number" readonly placeholder="0" /></label>
             <form id="ad_staff_new_password_form" autocomplete="on"><input type="text" name="username" autocomplete="username" style="position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden;" tabindex="-1" aria-hidden="true"><label>New Password<input id="ad_staff_new_password" type="password" name="new-password" autocomplete="new-password" placeholder="Required for new user" /></label><div class="muted" style="margin-top:6px;font-size:.9rem;">For new staff users, use at least 10 characters with upper, lower, and a number.</div></form>
             <label style="display:flex;align-items:end;gap:8px;"><input id="ad_staff_phone_verified" type="checkbox" /><span>Phone verified</span></label>
             <label style="display:flex;align-items:end;gap:8px;"><input id="ad_staff_email_verified" type="checkbox" /><span>Email verified</span></label>
@@ -461,6 +472,8 @@
                   <option value="tax_code">Tax Codes</option>
                   <option value="business_tax_setting">Business Tax Settings</option>
                   <option value="service_pricing_template">Service Pricing Templates</option>
+                  <option value="recurring_service_agreement">Recurring Service Agreements</option>
+                  <option value="snow_event_trigger">Snow Event Triggers</option>
                   <option value="service_area">Service Areas</option>
                   <option value="route">Routes</option>
                   <option value="route_stop">Route Stops</option>
@@ -472,6 +485,9 @@
                   <option value="client_site">Client Sites</option>
                   <option value="material">Materials Catalog</option>
                   <option value="equipment_master">Equipment Master</option>
+                  <option value="customer_asset">Customer Assets</option>
+                  <option value="customer_asset_job_link">Customer Asset Job Links</option>
+                  <option value="warranty_callback_event">Warranty / Callback Events</option>
                 </optgroup>
                 <optgroup label="Estimates and Work Orders">
                   <option value="estimate">Estimates</option>
@@ -501,6 +517,8 @@
                   <option value="material_receipt_line">Material Receipt Lines</option>
                   <option value="material_issue">Material Issues</option>
                   <option value="material_issue_line">Material Issue Lines</option>
+                  <option value="change_order">Change Orders</option>
+                  <option value="payroll_export_run">Payroll Export Runs</option>
                 </optgroup>
                 <optgroup label="Analytics and Monitoring">
                   <option value="app_traffic_event">Traffic Events</option>
@@ -663,6 +681,8 @@
         staffHourlyBillRate: document.getElementById('ad_staff_hourly_bill_rate'),
         staffOvertimeBillRate: document.getElementById('ad_staff_overtime_bill_rate'),
         staffPayrollBurdenPercent: document.getElementById('ad_staff_payroll_burden_percent'),
+        staffLastLoginAt: document.getElementById('ad_staff_last_login_at'),
+        staffLoginEventCount: document.getElementById('ad_staff_login_event_count'),
         staffNewPassword: document.getElementById('ad_staff_new_password'),
         staffPhoneVerified: document.getElementById('ad_staff_phone_verified'),
         staffEmailVerified: document.getElementById('ad_staff_email_verified'),
@@ -884,6 +904,8 @@
       if (e.staffHourlyBillRate) e.staffHourlyBillRate.value = item.hourly_bill_rate ?? '';
       if (e.staffOvertimeBillRate) e.staffOvertimeBillRate.value = item.overtime_bill_rate ?? '';
       if (e.staffPayrollBurdenPercent) e.staffPayrollBurdenPercent.value = item.payroll_burden_percent ?? '';
+      if (e.staffLastLoginAt) e.staffLastLoginAt.value = item.last_login_at ? new Date(item.last_login_at).toLocaleString() : '';
+      if (e.staffLoginEventCount) e.staffLoginEventCount.value = item.login_event_count ?? 0;
       if (e.staffPhoneVerified) e.staffPhoneVerified.checked = !!item.phone_verified;
       if (e.staffEmailVerified) e.staffEmailVerified.checked = !!item.email_verified;
       if (e.staffActive) e.staffActive.checked = item.is_active !== false;
@@ -898,7 +920,7 @@
         if (current) e.staffProfileId.value = current;
       }
       if (e.staffBody) {
-        e.staffBody.innerHTML = state.users.map((row) => `<tr data-staff-id="${escHtml(row.id)}"><td>${escHtml(row.full_name || '')}</td><td>${escHtml(row.email || '')}</td><td>${escHtml(row.role || '')}</td><td>${escHtml(row.staff_tier || '')}</td><td>${escHtml(row.seniority_level || '')}</td><td>${escHtml(row.employment_status || (row.is_active === false ? 'blocked' : 'active'))}</td><td>${escHtml(row.phone || '')}</td><td>${escHtml(row.hourly_cost_rate || '')}</td><td>${escHtml(row.hourly_bill_rate || '')}</td></tr>`).join('') || '<tr><td colspan="9" class="muted">No staff records loaded.</td></tr>';
+        e.staffBody.innerHTML = state.users.map((row) => `<tr data-staff-id="${escHtml(row.id)}"><td>${escHtml(row.full_name || '')}</td><td>${escHtml(row.email || '')}</td><td>${escHtml(row.role || '')}</td><td>${escHtml(row.staff_tier || '')}</td><td>${escHtml(row.seniority_level || '')}</td><td>${escHtml(row.employment_status || (row.is_active === false ? 'blocked' : 'active'))}</td><td>${escHtml(row.phone || '')}</td><td>${escHtml(row.hourly_cost_rate || '')}</td><td>${escHtml(row.hourly_bill_rate || '')}</td><td>${escHtml(row.last_login_at ? new Date(row.last_login_at).toLocaleString() : '')}</td><td>${escHtml(row.login_event_count ?? 0)}</td></tr>`).join('') || '<tr><td colspan="11" class="muted">No staff records loaded.</td></tr>'; 
       }
     }
 
@@ -1434,6 +1456,15 @@
         state.taxCodes = Array.isArray(resp?.tax_codes) ? resp.tax_codes : [];
         state.servicePricingTemplates = Array.isArray(resp?.service_pricing_templates) ? resp.service_pricing_templates : [];
         state.businessTaxSettings = Array.isArray(resp?.business_tax_settings) ? resp.business_tax_settings : [];
+        state.recurringServiceAgreements = Array.isArray(resp?.recurring_service_agreements) ? resp.recurring_service_agreements : [];
+        state.snowEventTriggers = Array.isArray(resp?.snow_event_triggers) ? resp.snow_event_triggers : [];
+        state.changeOrders = Array.isArray(resp?.change_orders) ? resp.change_orders : [];
+        state.customerAssets = Array.isArray(resp?.customer_assets) ? resp.customer_assets : [];
+        state.customerAssetJobLinks = Array.isArray(resp?.customer_asset_job_links) ? resp.customer_asset_job_links : [];
+        state.warrantyCallbackEvents = Array.isArray(resp?.warranty_callback_events) ? resp.warranty_callback_events : [];
+        state.payrollExportRuns = Array.isArray(resp?.payroll_export_runs) ? resp.payroll_export_runs : [];
+        state.payrollReviewSummary = Array.isArray(resp?.payroll_review_summary) ? resp.payroll_review_summary : [];
+        state.routeProfitabilitySummary = Array.isArray(resp?.route_profitability_summary) ? resp.route_profitability_summary : [];
         state.jobFinancialEvents = Array.isArray(resp?.job_financial_events) ? resp.job_financial_events : [];
         state.jobFinancialRollups = Array.isArray(resp?.job_financial_rollups) ? resp.job_financial_rollups : [];
         state.materialsCatalog = Array.isArray(resp?.materials_catalog) ? resp.materials_catalog : [];
@@ -1521,6 +1552,15 @@
           state.taxCodes = Array.isArray(resp?.tax_codes) ? resp.tax_codes : [];
           state.servicePricingTemplates = Array.isArray(resp?.service_pricing_templates) ? resp.service_pricing_templates : [];
           state.businessTaxSettings = Array.isArray(resp?.business_tax_settings) ? resp.business_tax_settings : [];
+          state.recurringServiceAgreements = Array.isArray(resp?.recurring_service_agreements) ? resp.recurring_service_agreements : [];
+          state.snowEventTriggers = Array.isArray(resp?.snow_event_triggers) ? resp.snow_event_triggers : [];
+          state.changeOrders = Array.isArray(resp?.change_orders) ? resp.change_orders : [];
+          state.customerAssets = Array.isArray(resp?.customer_assets) ? resp.customer_assets : [];
+          state.customerAssetJobLinks = Array.isArray(resp?.customer_asset_job_links) ? resp.customer_asset_job_links : [];
+          state.warrantyCallbackEvents = Array.isArray(resp?.warranty_callback_events) ? resp.warranty_callback_events : [];
+          state.payrollExportRuns = Array.isArray(resp?.payroll_export_runs) ? resp.payroll_export_runs : [];
+          state.payrollReviewSummary = Array.isArray(resp?.payroll_review_summary) ? resp.payroll_review_summary : [];
+          state.routeProfitabilitySummary = Array.isArray(resp?.route_profitability_summary) ? resp.route_profitability_summary : [];
           state.jobFinancialEvents = Array.isArray(resp?.job_financial_events) ? resp.job_financial_events : [];
           state.jobFinancialRollups = Array.isArray(resp?.job_financial_rollups) ? resp.job_financial_rollups : [];
           state.materialsCatalog = Array.isArray(resp?.materials_catalog) ? resp.materials_catalog : [];
@@ -1575,7 +1615,7 @@
       state.notifications = [];
       state.sites = [];
       state.assignments = [];
-      state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [], jobFinancialEvents: [], jobFinancialRollups: [] };
+      state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [], jobFinancialEvents: [], jobFinancialRollups: [], recurringServiceAgreements: [], snowEventTriggers: [], changeOrders: [], customerAssets: [], customerAssetJobLinks: [], warrantyCallbackEvents: [], payrollExportRuns: [], payrollReviewSummary: [], routeProfitabilitySummary: [] };
       state.serviceAreas = [];
       state.routes = [];
       state.clients = [];
@@ -1898,7 +1938,7 @@
     };
 
     function getBackboneRows(entity) {
-      const map = { unit_of_measure: state.unitsOfMeasure || [], cost_code: state.costCodes || [], tax_code: state.taxCodes || [], business_tax_setting: state.businessTaxSettings || [], service_pricing_template: state.servicePricingTemplates || [], job_financial_event: state.jobFinancialEvents || [], service_area: state.serviceAreas || [], route: state.routes || [], route_stop: state.routeStops || [], route_stop_execution: state.routeStopExecutions || [], route_stop_execution_attachment: state.routeStopExecutionAttachments || [], client: state.clients || [], client_site: state.clientSites || [], material: state.materialsCatalog || [], equipment_master: state.equipmentMaster || [], estimate: state.estimates || [], estimate_line: state.estimateLines || [], work_order: state.workOrders || [], work_order_line: state.workOrderLines || [], subcontract_client: state.subcontractClients || [], subcontract_dispatch: state.subcontractDispatches || [], linked_hse_packet: state.linkedHsePackets || [], hse_packet_event: state.hsePacketEvents || [], hse_packet_proof: state.hsePacketProofs || [], field_upload_failure: state.fieldUploadFailures || [], app_traffic_event: state.appTrafficEvents || [], backend_monitor_event: state.backendMonitorEvents || [], gl_account: state.chartOfAccounts || [], gl_journal_batch: state.glJournalBatches || [], gl_journal_sync_exception: state.glJournalSyncExceptions || [], gl_journal_entry: state.glJournalEntries || [], ap_vendor: state.apVendors || [], ar_invoice: state.arInvoices || [], ar_payment: state.arPayments || [], ap_bill: state.apBills || [], ap_payment: state.apPayments || [], material_receipt: state.materialReceipts || [], material_receipt_line: state.materialReceiptLines || [], material_issue: state.materialIssues || [], material_issue_line: state.materialIssueLines || [] };
+      const map = { unit_of_measure: state.unitsOfMeasure || [], cost_code: state.costCodes || [], tax_code: state.taxCodes || [], business_tax_setting: state.businessTaxSettings || [], service_pricing_template: state.servicePricingTemplates || [], job_financial_event: state.jobFinancialEvents || [], recurring_service_agreement: state.recurringServiceAgreements || [], snow_event_trigger: state.snowEventTriggers || [], change_order: state.changeOrders || [], customer_asset: state.customerAssets || [], customer_asset_job_link: state.customerAssetJobLinks || [], warranty_callback_event: state.warrantyCallbackEvents || [], payroll_export_run: state.payrollExportRuns || [], service_area: state.serviceAreas || [], route: state.routes || [], route_stop: state.routeStops || [], route_stop_execution: state.routeStopExecutions || [], route_stop_execution_attachment: state.routeStopExecutionAttachments || [], client: state.clients || [], client_site: state.clientSites || [], material: state.materialsCatalog || [], equipment_master: state.equipmentMaster || [], estimate: state.estimates || [], estimate_line: state.estimateLines || [], work_order: state.workOrders || [], work_order_line: state.workOrderLines || [], subcontract_client: state.subcontractClients || [], subcontract_dispatch: state.subcontractDispatches || [], linked_hse_packet: state.linkedHsePackets || [], hse_packet_event: state.hsePacketEvents || [], hse_packet_proof: state.hsePacketProofs || [], field_upload_failure: state.fieldUploadFailures || [], app_traffic_event: state.appTrafficEvents || [], backend_monitor_event: state.backendMonitorEvents || [], gl_account: state.chartOfAccounts || [], gl_journal_batch: state.glJournalBatches || [], gl_journal_sync_exception: state.glJournalSyncExceptions || [], gl_journal_entry: state.glJournalEntries || [], ap_vendor: state.apVendors || [], ar_invoice: state.arInvoices || [], ar_payment: state.arPayments || [], ap_bill: state.apBills || [], ap_payment: state.apPayments || [], material_receipt: state.materialReceipts || [], material_receipt_line: state.materialReceiptLines || [], material_issue: state.materialIssues || [], material_issue_line: state.materialIssueLines || [] };
       return Array.isArray(map[entity]) ? map[entity] : [];
     }
 
@@ -1943,6 +1983,8 @@
         costCodes: state.selectors.costCodes || state.costCodes || [],
         taxCodes: state.selectors.taxCodes || state.taxCodes || [],
         servicePricingTemplates: state.selectors.servicePricingTemplates || state.servicePricingTemplates || [],
+        recurringServiceAgreements: state.recurringServiceAgreements || [],
+        customerAssets: state.customerAssets || [],
         jobTypes: state.selectors.jobTypes || []
       };
       return Array.isArray(map[source]) ? map[source] : [];

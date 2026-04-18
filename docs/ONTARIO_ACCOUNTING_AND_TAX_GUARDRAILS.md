@@ -1,3 +1,4 @@
+<!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 # Ontario accounting and tax guardrails
 
 Last synchronized: April 14, 2026

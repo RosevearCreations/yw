@@ -205,6 +205,7 @@
       (!username || !passwordReady || !state.profile?.account_setup_completed_at)
     );
     state.pendingAuthResolution = !state.bootReady && !state.isAuthenticated;
+    recordLoginEvent(session?.access_token ? 'session_restore' : 'session').catch(() => null);
   }
 
   function applyBootState(bootState = {}) {
@@ -234,6 +235,27 @@
     state.bootReady = true;
     state.pendingAuthResolution = false;
     state.identityKey = state.user?.id || '';
+  }
+
+
+  async function recordLoginEvent(authSource = 'session_restore') {
+    if (!state.isAuthenticated || !state.user?.id || !state.session?.access_token) return;
+    try {
+      const sessionFingerprint = `${state.user.id}:${String(state.session?.access_token || '').slice(-12)}`;
+      const storageKey = `ywi_login_event:${sessionFingerprint}`;
+      if (sessionStorage.getItem(storageKey)) return;
+      const response = await postAccountMaintenance({
+        action: 'record_login_event',
+        event_type: 'login',
+        auth_source: authSource,
+        route_fragment: window.location.hash || window.location.pathname || '',
+        session_fingerprint: sessionFingerprint,
+        occurred_at: new Date().toISOString()
+      }, { token: state.session.access_token });
+      if (response?.ok) sessionStorage.setItem(storageKey, new Date().toISOString());
+    } catch {
+      // ignore login audit failures so auth flow stays responsive
+    }
   }
 
   function requireClient() {

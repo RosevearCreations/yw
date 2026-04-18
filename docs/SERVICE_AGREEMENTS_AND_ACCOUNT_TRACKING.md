@@ -1,0 +1,26 @@
+<!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
+# Service agreements, payroll review, asset history, and account tracking
+
+## What this pass adds
+- Recurring service agreements for repeat work such as mowing, snow, foliage clearing, and other visit-based service.
+- Snow-event trigger logs for agreements that start work only after a threshold or event.
+- Change orders for custom-project scope drift and approved charge/cost deltas.
+- Customer assets plus asset-to-job history so repeat properties can keep equipment/feature service records.
+- Warranty and callback events so post-job return work is visible as cost leakage or warranty-covered follow-up.
+- Payroll export runs and burden-aware payroll review views.
+- Admin-visible account login auditing with `profiles.last_login_at` plus per-profile login event counts.
+
+## Why it fits this business model
+This app is moving toward a landscaping + recurring service + custom project + accounting backbone. Repeat property work, emergency snow work, scope-change jobs, and warranty/callback costs all need to be first-class records so quoting, invoicing, and profitability can be measured instead of guessed from notes.
+
+## Accounting implications
+- Material receipts and material issues now have a clearer path into job-cost rollups.
+- Payroll review is now separable from invoice timing so labor burden can be reviewed before export/close.
+- Route profitability can now be reviewed by route, crew, and service area.
+- Login tracking gives Admin stronger accountability over who last accessed the system.
+
+## Strongest next implementation steps
+1. Convert accepted estimates into recurring agreements or service contracts.
+2. Generate printable contract/application outputs from agreement terms.
+3. Add export-file generation for payroll runs.
+4. Add dashboard cards for callbacks, loss-making agreements, and route profit pressure.
