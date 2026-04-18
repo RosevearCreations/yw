@@ -1,3 +1,4 @@
+<!-- Reviewed during schema 081 contract conversion / payroll export / callback dashboard / snow invoice automation pass on 2026-04-17. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## 2026-04-17 pass update
 Closed or tightened in this pass:
@@ -349,3 +350,9 @@ Still open:
 - Ontario tax guardrails are stronger, but **full posting rules for AR/AP tax breakdowns, CRA-style reporting support, and closing-period controls** remain open.
 > Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
 
+## 2026-04-17 remaining gaps after schema 081
+- Contract/application generation now exists as stored printable output, but acceptance/signature workflow is still lightweight and needs stronger signed-state handling.
+- Payroll export now generates CSV content, but downstream payroll-provider formatting and journal posting handoff still need a finishing pass.
+- Snow-event invoicing candidates and one-click invoice generation now exist, but batch review / posting / seasonal close controls still need tightening.
+- Callback and warranty dashboard summaries now exist, but the Admin home cards still need stronger prominence and action routing.
+- Agreement profitability now exists, but estimate-to-agreement-to-job conversion rules still need more guardrails for custom project and hybrid recurring work.

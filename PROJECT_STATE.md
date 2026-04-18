@@ -1,3 +1,4 @@
+<!-- Reviewed during schema 081 contract conversion / payroll export / callback dashboard / snow invoice automation pass on 2026-04-17. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## Current pass: 2026-04-17 recurring agreements, asset history, payroll review, and account tracking
 - Schema now advances through migration 080.
@@ -234,3 +235,7 @@ The app is now moving from generic HSE/job management into a more realistic land
 - Staff records now have the start of a labor-rate model so time tracking can feed accounting review.
 > Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
 
+## Latest pass: schema 081 contract / payroll / snow automation
+- New migration: `sql/081_contract_conversion_payroll_exports_and_snow_invoice_automation.sql`.
+- Admin now supports estimate-to-agreement conversion, printable contract/application document generation, payroll export file generation, callback/warranty dashboard summaries, and snow-event invoice candidate review.
+- Schema reference has been advanced through 081 and the accounting/service-agreement direction now includes document outputs instead of only planning/tracking records.

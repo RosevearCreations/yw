@@ -130,6 +130,46 @@ function asNullableDateTime(value: unknown) {
   return clean ? clean : null;
 }
 
+function escHtml(value: unknown) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function makeDocNumber(prefix: string, seed = '') {
+  const cleanSeed = String(seed || '').replace(/[^A-Za-z0-9]+/g, '').slice(-12).toUpperCase();
+  const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const tail = cleanSeed || crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+  return `${prefix}-${stamp}-${tail}`;
+}
+
+function csvCell(value: unknown) {
+  const text = String(value ?? '');
+  if (/[,"
+]/.test(text)) return '"' + text.replaceAll('"', '""') + '"';
+  return text;
+}
+
+function renderEstimateApplicationHtml(estimate: any, client: any, site: any) {
+  const title = `Service Application - ${estimate?.estimate_number || 'Estimate'}`;
+  const scope = escHtml(estimate?.scope_notes || 'Scope to be confirmed.');
+  const terms = escHtml(estimate?.terms_notes || 'Standard service terms apply until converted into a signed contract.');
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${escHtml(title)}</title><style>body{font-family:Arial,sans-serif;line-height:1.45;margin:32px;color:#111}h1,h2{margin:0 0 12px}table{border-collapse:collapse;width:100%;margin-top:12px}td,th{border:1px solid #ccc;padding:8px;vertical-align:top}.muted{color:#555}.section{margin-top:20px}</style></head><body><h1>${escHtml(title)}</h1><p class="muted">Prepared ${escHtml(new Date().toLocaleDateString())}</p><div class="section"><h2>Client</h2><table><tr><th>Client</th><td>${escHtml(client?.legal_name || '')}</td><th>Site</th><td>${escHtml(site?.site_name || '')}</td></tr><tr><th>Estimate Type</th><td>${escHtml(estimate?.estimate_type || '')}</td><th>Valid Until</th><td>${escHtml(estimate?.valid_until || '')}</td></tr></table></div><div class="section"><h2>Scope</h2><p>${scope.replace(/
+/g,'<br>')}</p></div><div class="section"><h2>Pricing Snapshot</h2><table><tr><th>Subtotal</th><td>${escHtml(estimate?.subtotal ?? '')}</td><th>Tax</th><td>${escHtml(estimate?.tax_total ?? '')}</td><th>Total</th><td>${escHtml(estimate?.total_amount ?? '')}</td></tr></table></div><div class="section"><h2>Terms</h2><p>${terms.replace(/
+/g,'<br>')}</p></div><div class="section"><h2>Acceptance</h2><p>Client signature: ________________________________ Date: ____________________</p><p>Authorized representative: _______________________ Date: ____________________</p></div></body></html>`;
+}
+
+function renderAgreementContractHtml(agreement: any, client: any, site: any, route: any, crew: any, taxCode: any) {
+  const title = `Service Contract - ${agreement?.agreement_code || 'Agreement'}`;
+  const notes = escHtml(agreement?.service_notes || agreement?.pricing_notes || 'Services to be delivered according to the agreed recurrence and service standards.');
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${escHtml(title)}</title><style>body{font-family:Arial,sans-serif;line-height:1.45;margin:32px;color:#111}h1,h2{margin:0 0 12px}table{border-collapse:collapse;width:100%;margin-top:12px}td,th{border:1px solid #ccc;padding:8px;vertical-align:top}.muted{color:#555}.section{margin-top:20px}</style></head><body><h1>${escHtml(title)}</h1><p class="muted">Prepared ${escHtml(new Date().toLocaleDateString())}</p><div class="section"><h2>Service Parties</h2><table><tr><th>Client</th><td>${escHtml(client?.legal_name || '')}</td><th>Property / Site</th><td>${escHtml(site?.site_name || '')}</td></tr><tr><th>Agreement Status</th><td>${escHtml(agreement?.agreement_status || '')}</td><th>Billing Method</th><td>${escHtml(agreement?.billing_method || '')}</td></tr><tr><th>Route</th><td>${escHtml(route?.name || '')}</td><th>Crew</th><td>${escHtml(crew?.crew_name || '')}</td></tr></table></div><div class="section"><h2>Schedule</h2><table><tr><th>Pattern</th><td>${escHtml(agreement?.service_pattern || '')}</td><th>Recurrence</th><td>${escHtml(agreement?.recurrence_basis || '')} ${escHtml(agreement?.recurrence_rule || '')}</td></tr><tr><th>Start</th><td>${escHtml(agreement?.start_date || '')}</td><th>End</th><td>${escHtml(agreement?.open_end_date ? 'Open Ended' : (agreement?.end_date || ''))}</td></tr></table></div><div class="section"><h2>Per Visit Pricing</h2><table><tr><th>Visit Charge</th><td>${escHtml(agreement?.visit_charge_total ?? '')}</td><th>Visit Cost</th><td>${escHtml(agreement?.visit_cost_total ?? '')}</td><th>Tax Code</th><td>${escHtml(taxCode?.code || '')}</td></tr><tr><th>Markup %</th><td>${escHtml(agreement?.markup_percent ?? '')}</td><th>Discount</th><td colspan="3">${escHtml(agreement?.discount_mode || '')} ${escHtml(agreement?.discount_value ?? '')}</td></tr></table></div><div class="section"><h2>Service Notes</h2><p>${notes.replace(/
+/g,'<br>')}</p></div><div class="section"><h2>Signatures</h2><p>Client signature: ________________________________ Date: ____________________</p><p>Contractor signature: _____________________________ Date: ____________________</p></div></body></html>`;
+}
+
+
 async function getCostCodeIdByCode(supabase: any, code: string) {
   const clean = String(code || '').trim().toUpperCase();
   if (!clean) return null;
@@ -937,6 +977,8 @@ serve(async (req) => {
         route_id: asNullableText(body.route_id),
         crew_id: asNullableText(body.crew_id),
         tax_code_id: asNullableText(body.tax_code_id),
+        estimate_id: asNullableText(body.estimate_id),
+        contract_document_id: asNullableText(body.contract_document_id),
         service_name: body.service_name ?? null,
         agreement_status: body.agreement_status ?? 'draft',
         billing_method: body.billing_method ?? 'per_visit',
@@ -960,6 +1002,7 @@ serve(async (req) => {
         trigger_notes: body.trigger_notes ?? null,
         pricing_notes: body.pricing_notes ?? null,
         service_notes: body.service_notes ?? null,
+        agreement_notes: body.agreement_notes ?? null,
         created_by_profile_id: actorId,
         updated_at: new Date().toISOString(),
       };
@@ -981,7 +1024,154 @@ serve(async (req) => {
       }
     }
 
+    if (entity === 'service_contract_document') {
+      if (action === 'generate_from_source') {
+        const sourceEntity = String(body.source_entity || '').trim();
+        const sourceId = String(body.source_id || body.item_id || '').trim();
+        if (!sourceEntity || !sourceId) return Response.json({ ok:false, error:'source_entity and source_id are required' }, { status:400, headers:corsHeaders });
+        let source: any = null;
+        let client: any = null;
+        let site: any = null;
+        let agreement: any = null;
+        let title = '';
+        let contractReference = '';
+        let documentKind = String(body.document_kind || '').trim() || 'contract';
+        let renderedHtml = '';
+        if (sourceEntity === 'estimate') {
+          const { data } = await supabase.from('estimates').select('*').eq('id', sourceId).maybeSingle();
+          source = data;
+          if (!source) return Response.json({ ok:false, error:'Estimate not found.' }, { status:404, headers:corsHeaders });
+          documentKind = documentKind || 'application';
+          client = source.client_id ? (await supabase.from('clients').select('*').eq('id', source.client_id).maybeSingle()).data : null;
+          site = source.client_site_id ? (await supabase.from('client_sites').select('*').eq('id', source.client_site_id).maybeSingle()).data : null;
+          title = `Service Application - ${source.estimate_number}`;
+          contractReference = source.estimate_number;
+          renderedHtml = renderEstimateApplicationHtml(source, client, site);
+        } else if (sourceEntity === 'recurring_service_agreement') {
+          const { data } = await supabase.from('recurring_service_agreements').select('*').eq('id', sourceId).maybeSingle();
+          agreement = data;
+          source = agreement;
+          if (!agreement) return Response.json({ ok:false, error:'Agreement not found.' }, { status:404, headers:corsHeaders });
+          client = agreement.client_id ? (await supabase.from('clients').select('*').eq('id', agreement.client_id).maybeSingle()).data : null;
+          site = agreement.client_site_id ? (await supabase.from('client_sites').select('*').eq('id', agreement.client_site_id).maybeSingle()).data : null;
+          const route = agreement.route_id ? (await supabase.from('routes').select('*').eq('id', agreement.route_id).maybeSingle()).data : null;
+          const crew = agreement.crew_id ? (await supabase.from('crews').select('*').eq('id', agreement.crew_id).maybeSingle()).data : null;
+          const taxCode = agreement.tax_code_id ? (await supabase.from('tax_codes').select('*').eq('id', agreement.tax_code_id).maybeSingle()).data : null;
+          title = `Service Contract - ${agreement.agreement_code}`;
+          contractReference = agreement.agreement_code;
+          renderedHtml = renderAgreementContractHtml(agreement, client, site, route, crew, taxCode);
+        } else {
+          return Response.json({ ok:false, error:'Unsupported contract source.' }, { status:400, headers:corsHeaders });
+        }
+        const docPatch = {
+          document_number: makeDocNumber(documentKind === 'application' ? 'APP' : 'CTR', contractReference),
+          source_entity: sourceEntity,
+          source_id: sourceId,
+          estimate_id: sourceEntity === 'estimate' ? sourceId : (agreement?.estimate_id || null),
+          agreement_id: sourceEntity === 'recurring_service_agreement' ? sourceId : null,
+          client_id: client?.id || null,
+          client_site_id: site?.id || null,
+          document_kind: documentKind,
+          document_status: 'issued',
+          title,
+          contract_reference: contractReference,
+          effective_date: source?.start_date || source?.requested_at || source?.invoice_date || null,
+          expiry_date: source?.end_date || source?.valid_until || null,
+          rendered_html: renderedHtml,
+          rendered_text: renderedHtml.replace(/<[^>]+>/g, ' '),
+          payload: { source_entity: sourceEntity, source_id: sourceId, title, generated_at: new Date().toISOString() },
+          notes: body.notes ?? null,
+          created_by_profile_id: actorId,
+          updated_at: new Date().toISOString(),
+        };
+        const { data: record, error } = await supabase.from('service_contract_documents').insert(docPatch).select('*').single();
+        if (error) throw error;
+        if (sourceEntity === 'recurring_service_agreement') {
+          await supabase.from('recurring_service_agreements').update({ contract_document_id: record.id, updated_at: new Date().toISOString() }).eq('id', sourceId);
+        }
+        return Response.json({ ok:true, record }, { headers:corsHeaders });
+      }
+      const patch = {
+        document_number: String(body.document_number || '').trim().toUpperCase(),
+        source_entity: body.source_entity ?? 'manual',
+        source_id: String(body.source_id || '').trim(),
+        estimate_id: asNullableText(body.estimate_id),
+        agreement_id: asNullableText(body.agreement_id),
+        job_id: asNullableNumber(body.job_id),
+        client_id: asNullableText(body.client_id),
+        client_site_id: asNullableText(body.client_site_id),
+        document_kind: body.document_kind ?? 'contract',
+        document_status: body.document_status ?? 'draft',
+        title: body.title ?? null,
+        contract_reference: body.contract_reference ?? null,
+        effective_date: asNullableDate(body.effective_date),
+        expiry_date: asNullableDate(body.expiry_date),
+        rendered_html: body.rendered_html ?? null,
+        rendered_text: body.rendered_text ?? null,
+        payload: body.payload ?? {},
+        notes: body.notes ?? null,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.document_number || !patch.source_entity || !patch.source_id || !patch.title) return Response.json({ ok:false, error:'document_number, source_entity, source_id, and title are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('service_contract_documents').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('service_contract_documents').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('service_contract_documents').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
     if (entity === 'snow_event_trigger') {
+      if (action === 'generate_invoice') {
+        const itemId = String(body.item_id || '').trim();
+        if (!itemId) return Response.json({ ok:false, error:'item_id is required' }, { status:400, headers:corsHeaders });
+        const { data: trigger } = await supabase.from('snow_event_triggers').select('*').eq('id', itemId).maybeSingle();
+        if (!trigger) return Response.json({ ok:false, error:'Snow event trigger not found.' }, { status:404, headers:corsHeaders });
+        if (!trigger.trigger_met) return Response.json({ ok:false, error:'This snow event has not met the trigger threshold yet.' }, { status:400, headers:corsHeaders });
+        const { data: existing } = await supabase.from('ar_invoices').select('*').eq('snow_event_trigger_id', itemId).maybeSingle();
+        if (existing) return Response.json({ ok:true, record: existing }, { headers:corsHeaders });
+        const { data: agreement } = await supabase.from('recurring_service_agreements').select('*').eq('id', trigger.agreement_id).maybeSingle();
+        if (!agreement) return Response.json({ ok:false, error:'Linked agreement was not found.' }, { status:404, headers:corsHeaders });
+        const taxCode = agreement.tax_code_id ? (await supabase.from('tax_codes').select('*').eq('id', agreement.tax_code_id).maybeSingle()).data : null;
+        const subtotal = asNumber(agreement.visit_charge_total, 0);
+        const taxTotal = normalizeMoney(subtotal * (Number(taxCode?.rate_percent || 0) / 100), 0);
+        const totalAmount = normalizeMoney(subtotal + taxTotal, 0);
+        const eventDate = String(trigger.event_date || new Date().toISOString().slice(0, 10));
+        const dueDate = new Date(eventDate + 'T00:00:00Z');
+        dueDate.setUTCDate(dueDate.getUTCDate() + 30);
+        const invoicePatch = {
+          invoice_number: String(body.invoice_number || makeDocNumber('INV-SNOW', agreement.agreement_code)).slice(0, 64),
+          client_id: agreement.client_id || null,
+          work_order_id: null,
+          dispatch_id: null,
+          recurring_service_agreement_id: agreement.id,
+          snow_event_trigger_id: trigger.id,
+          service_contract_document_id: agreement.contract_document_id || null,
+          invoice_source: 'agreement_snow',
+          invoice_status: body.invoice_status || 'draft',
+          invoice_date: eventDate,
+          due_date: dueDate.toISOString().slice(0, 10),
+          subtotal,
+          tax_total: taxTotal,
+          total_amount: totalAmount,
+          balance_due: totalAmount,
+          created_by_profile_id: actorId,
+          updated_at: new Date().toISOString(),
+        };
+        const { data, error } = await supabase.from('ar_invoices').insert(invoicePatch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
       const patch = {
         agreement_id: asNullableText(body.agreement_id),
         event_date: asNullableDate(body.event_date) || new Date().toISOString().slice(0, 10),
@@ -1149,13 +1339,52 @@ serve(async (req) => {
     }
 
     if (entity === 'payroll_export_run') {
+      if (action === 'generate_export') {
+        const itemId = String(body.item_id || '').trim();
+        if (!itemId) return Response.json({ ok:false, error:'item_id is required' }, { status:400, headers:corsHeaders });
+        const { data: run } = await supabase.from('payroll_export_runs').select('*').eq('id', itemId).maybeSingle();
+        if (!run) return Response.json({ ok:false, error:'Payroll export run not found.' }, { status:404, headers:corsHeaders });
+        const { data: detailRows } = await supabase.from('v_payroll_review_detail').select('*').gte('session_date', run.period_start).lte('session_date', run.period_end).is('payroll_export_run_id', null).order('session_date', { ascending: true });
+        const rows = Array.isArray(detailRows) ? detailRows : [];
+        const header = ['profile_id','employee_number','full_name','job_id','job_code','job_name','job_session_id','session_date','regular_hours','overtime_hours','hours_worked','hourly_cost_rate','overtime_cost_rate','payroll_burden_percent','payroll_cost_total'];
+        const csv = [header.join(',')].concat(rows.map((row) => header.map((key) => csvCell((row as any)[key])).join(','))).join('
+');
+        const exportedAt = new Date().toISOString();
+        const rowIds = rows.map((row: any) => row.id).filter(Boolean);
+        if (rowIds.length) {
+          await supabase.from('job_session_crew_hours').update({ payroll_export_run_id: itemId, payroll_exported_at: exportedAt, updated_at: exportedAt }).in('id', rowIds);
+        }
+        const hoursTotal = rows.reduce((sum: number, row: any) => sum + Number(row?.hours_worked || 0), 0);
+        const payrollTotal = rows.reduce((sum: number, row: any) => sum + Number(row?.payroll_cost_total || 0), 0);
+        const patch = {
+          status: 'exported',
+          export_format: 'csv',
+          export_file_name: `${run.run_code || 'payroll-export'}.csv`,
+          export_file_content: csv,
+          exported_at: exportedAt,
+          exported_by_profile_id: actorId,
+          exported_entry_count: rows.length,
+          exported_hours_total: Number(hoursTotal.toFixed(2)),
+          exported_payroll_cost_total: Number(payrollTotal.toFixed(2)),
+          updated_at: exportedAt,
+        };
+        const { data: record, error } = await supabase.from('payroll_export_runs').update(patch).eq('id', itemId).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record, export_file_name: patch.export_file_name, export_file_content: csv }, { headers:corsHeaders });
+      }
       const patch = {
         run_code: String(body.run_code || '').trim().toUpperCase(),
         period_start: asNullableDate(body.period_start),
         period_end: asNullableDate(body.period_end),
         status: body.status ?? 'draft',
+        export_format: body.export_format ?? 'csv',
+        export_file_name: body.export_file_name ?? null,
+        export_file_content: body.export_file_content ?? null,
         exported_at: asNullableDateTime(body.exported_at),
         exported_by_profile_id: asNullableText(body.exported_by_profile_id),
+        exported_entry_count: asNumber(body.exported_entry_count, 0),
+        exported_hours_total: asNumber(body.exported_hours_total, 0),
+        exported_payroll_cost_total: asNumber(body.exported_payroll_cost_total, 0),
         notes: body.notes ?? null,
         updated_at: new Date().toISOString(),
       };
@@ -1444,6 +1673,42 @@ serve(async (req) => {
     }
 
     if (entity === 'estimate') {
+      if (action === 'convert_to_agreement') {
+        const itemId = String(body.item_id || '').trim();
+        if (!itemId) return Response.json({ ok:false, error:'item_id is required' }, { status:400, headers:corsHeaders });
+        const { data: estimate } = await supabase.from('estimates').select('*').eq('id', itemId).maybeSingle();
+        if (!estimate) return Response.json({ ok:false, error:'Estimate not found.' }, { status:404, headers:corsHeaders });
+        const { data: existing } = await supabase.from('recurring_service_agreements').select('*').eq('estimate_id', itemId).order('created_at', { ascending:false }).limit(1).maybeSingle();
+        if (existing) return Response.json({ ok:true, record: existing }, { headers:corsHeaders });
+        const agreementCode = String(body.agreement_code || `AGR-${String(estimate.estimate_number || '').replace(/[^A-Za-z0-9]+/g, '').slice(-16) || crypto.randomUUID().slice(0, 8)}`).trim().toUpperCase();
+        const serviceName = body.service_name || estimate.scope_notes || estimate.estimate_number;
+        const agreementPatch = {
+          agreement_code: agreementCode,
+          client_id: estimate.client_id || null,
+          client_site_id: estimate.client_site_id || null,
+          estimate_id: estimate.id,
+          service_name: String(serviceName).slice(0, 180),
+          agreement_status: 'draft',
+          billing_method: body.billing_method || 'per_visit',
+          service_pattern: estimate.estimate_type || null,
+          recurrence_basis: body.recurrence_basis || null,
+          recurrence_rule: body.recurrence_rule || null,
+          recurrence_interval: asNumber(body.recurrence_interval, 1),
+          start_date: asNullableDate(body.start_date),
+          end_date: asNullableDate(body.end_date),
+          open_end_date: !!body.open_end_date,
+          visit_charge_total: asNumber(estimate.subtotal || estimate.total_amount, 0),
+          visit_cost_total: asNumber(body.visit_cost_total, 0),
+          pricing_notes: estimate.terms_notes || null,
+          service_notes: estimate.scope_notes || null,
+          agreement_notes: `Created from estimate ${estimate.estimate_number}`,
+          created_by_profile_id: actorId,
+          updated_at: new Date().toISOString(),
+        };
+        const { data, error } = await supabase.from('recurring_service_agreements').insert(agreementPatch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
       const patch = {
         estimate_number: body.estimate_number ?? null,
         client_id: asNullableText(body.client_id),
@@ -1651,6 +1916,10 @@ serve(async (req) => {
         client_id: asNullableText(body.client_id),
         work_order_id: asNullableText(body.work_order_id),
         dispatch_id: asNullableText(body.dispatch_id),
+        recurring_service_agreement_id: asNullableText(body.recurring_service_agreement_id),
+        snow_event_trigger_id: asNullableText(body.snow_event_trigger_id),
+        service_contract_document_id: asNullableText(body.service_contract_document_id),
+        invoice_source: body.invoice_source ?? 'manual',
         invoice_status: body.invoice_status ?? 'draft',
         invoice_date: asNullableDate(body.invoice_date) || new Date().toISOString().slice(0, 10),
         due_date: asNullableDate(body.due_date),

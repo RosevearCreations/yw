@@ -1,3 +1,4 @@
+<!-- Reviewed during schema 081 contract conversion / payroll export / callback dashboard / snow invoice automation pass on 2026-04-17. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## Fresh-chat handoff: schema 080 pass
 This repo now includes:
@@ -110,3 +111,8 @@ The latest pass added migration `076_job_pricing_profitability_and_schedule_logi
 - Next strongest continuation: estimate/contract generation, recurring agreement billing, payroll export, and Ontario tax posting rules.
 > Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
 
+## Handoff update - 2026-04-17 schema 081
+- Added migration `sql/081_contract_conversion_payroll_exports_and_snow_invoice_automation.sql`.
+- Added estimate conversion candidates, service contract documents, payroll export generation, callback / warranty dashboard summaries, agreement profitability summaries, and snow invoice candidate views.
+- Admin backbone is now wired so office flow can move estimate -> agreement -> printable contract, payroll review -> CSV export, and snow trigger -> draft invoice.
+- `sql/000_full_schema_reference.sql` has been synchronized through 081.

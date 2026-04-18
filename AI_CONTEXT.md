@@ -1,3 +1,4 @@
+<!-- Reviewed during schema 081 contract conversion / payroll export / callback dashboard / snow invoice automation pass on 2026-04-17. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## 2026-04-17 snapshot
 The app now supports recurring service agreements, snow triggers, change orders, customer assets/history, payroll export review, warranty/callback tracking, account login auditing, material-to-job auto-costing, and route profitability summaries. Treat schema 080 as current.

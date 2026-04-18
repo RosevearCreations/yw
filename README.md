@@ -1,3 +1,4 @@
+<!-- Reviewed during schema 081 contract conversion / payroll export / callback dashboard / snow invoice automation pass on 2026-04-17. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## 2026-04-13 staff admin save verification pass
 - Added visible inline create/save/reset/block/delete confirmations in the Staff Directory screen so staff actions no longer fail silently from the operator’s point of view.
@@ -279,3 +280,9 @@ This build now supports sortable jobs review plus session/hours/reassignment tra
 This build now includes labor-aware job profitability review and DB-backed job financial adjustment events, so the project is moving from scheduling/operations into a fuller landscaping-service accounting backbone.
 > Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
 
+## Schema 081 latest operations/accounting step
+- Estimate to agreement conversion
+- Printable contract / application document generation
+- Payroll export CSV generation
+- Callback / warranty dashboard summary
+- Agreement profitability and snow-event invoice candidate review

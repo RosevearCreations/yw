@@ -1,3 +1,4 @@
+<!-- Reviewed during schema 081 contract conversion / payroll export / callback dashboard / snow invoice automation pass on 2026-04-17. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## 2026-04-13 staff admin save verification pass
 - Added visible inline create/save/reset/block/delete confirmations in the Staff Directory screen so staff actions no longer fail silently from the operator’s point of view.
@@ -312,3 +313,10 @@ New accounting-facing additions include:
 - expanded `v_jobs_directory` and `v_accounting_review_summary`
 > Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
 
+## 2026-04-17 schema 081 additions
+- `service_contract_documents` for printable contract / application outputs tied to estimates, agreements, and jobs.
+- `v_estimate_conversion_candidates` to identify estimates ready to become recurring agreements or contract-backed service starts.
+- `v_service_agreement_profitability_summary` for agreement-level profitability and invoice/snow-event review.
+- `v_snow_event_invoice_candidates` for threshold-met snow events that can be turned into invoices.
+- `payroll_export_runs` now store generated export metadata and file content for payroll handoff.
+- `v_callback_warranty_dashboard_summary` gives Admin a quick callback / warranty pressure snapshot.

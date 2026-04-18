@@ -1,4 +1,21 @@
-<!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
+<!-- Reviewed during schema 081 contract conversion / payroll export / callback dashboard / snow invoice automation pass on 2026-04-17. -->
+## 2026-04-17 contract conversion, payroll export, callback dashboard, and snow-invoice automation pass
+- Added migration `sql/081_contract_conversion_payroll_exports_and_snow_invoice_automation.sql`.
+- Added estimate conversion candidates, service contract documents, payroll export generation, agreement profitability summaries, snow-event invoice candidates, and callback / warranty dashboard summaries.
+- Extended Admin so the office workflow can move from estimate -> agreement -> printable contract, then from snow trigger -> invoice, and from weekly labor review -> exportable payroll output.
+
+## Immediate next build priorities after 081
+1. **Contract outputs and acceptance flow**
+   - add signed acceptance markers, printable application/contract variants, and acceptance-to-job kickoff controls
+2. **Snow-event billing automation**
+   - let triggered snow events batch into invoice staging and agreement-level revenue review
+3. **Payroll close and accounting handoff**
+   - turn generated CSV exports into stronger payroll close review with journal-ready summaries
+4. **Callback / warranty operating cards**
+   - surface callback backlog, warranty leakage, and unresolved revisit cost pressure more prominently in the admin shell
+5. **Agreement profitability and property lifecycle**
+   - keep tying recurring agreements, assets, callbacks, and route profitability together for repeat properties
+
 ## 2026-04-17 recurring service agreements, asset history, payroll review, and admin account tracking pass
 - Added migration `sql/080_service_agreements_assets_payroll_and_login_tracking.sql`.
 - Added DB-backed recurring service agreements with per-visit pricing fields, snow-trigger tracking, change orders, customer assets, warranty/callback records, payroll export runs, and login-event auditing.

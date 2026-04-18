@@ -1,4 +1,10 @@
-<!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
+<!-- Reviewed during schema 081 contract conversion / payroll export / callback dashboard / snow invoice automation pass on 2026-04-17. -->
+## 2026-04-17 contract conversion, payroll export generation, callback dashboard, and snow invoice automation pass
+- Added migration `sql/081_contract_conversion_payroll_exports_and_snow_invoice_automation.sql`.
+- Added estimate-to-agreement conversion candidates, service contract / application document storage, payroll export file generation support, agreement profitability summaries, snow-event invoice candidates, and callback / warranty dashboard summaries.
+- Extended Admin backbone flows so estimates can convert to agreements, agreements can generate printable contracts, payroll runs can generate CSV exports, and snow events can generate draft invoices.
+- Repaired and hardened the admin management flow so the new contract, agreement, payroll, and snow-invoice actions are routed through DB-backed records instead of remaining note-only workflow ideas.
+
 ## 2026-04-17 recurring agreements, payroll review, asset history, and account tracking pass
 - Added migration `sql/080_service_agreements_assets_payroll_and_login_tracking.sql`.
 - Added recurring service agreements, snow-event trigger logs, change orders, customer assets, customer-asset service history links, warranty/callback events, payroll export runs, login-event auditing, job material auto-cost rollups, and route profitability summaries.

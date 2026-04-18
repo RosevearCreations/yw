@@ -1,3 +1,4 @@
+<!-- Reviewed during schema 081 contract conversion / payroll export / callback dashboard / snow invoice automation pass on 2026-04-17. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## Current repo anchor (schema 080)
 Think of the product now as a landscaping/service/construction operations system with: jobs, crews, equipment, recurring agreements, payroll-aware costing, customer assets/history, callbacks/warranty, and Ontario-facing accounting review.
