@@ -1,7 +1,11 @@
+<!-- Reviewed during schema 081 contract conversion / payroll export / callback dashboard / snow invoice automation pass on 2026-04-17. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 # Service agreements, payroll review, asset history, and account tracking
 
 ## What this pass adds
+- Estimate-to-agreement conversion candidates plus printable contract / application document records.
+- Payroll export file generation support and agreement-profitability summaries.
+- Snow-event invoice candidates for threshold-met agreement work.
 - Recurring service agreements for repeat work such as mowing, snow, foliage clearing, and other visit-based service.
 - Snow-event trigger logs for agreements that start work only after a threshold or event.
 - Change orders for custom-project scope drift and approved charge/cost deltas.
@@ -20,7 +24,7 @@ This app is moving toward a landscaping + recurring service + custom project + a
 - Login tracking gives Admin stronger accountability over who last accessed the system.
 
 ## Strongest next implementation steps
-1. Convert accepted estimates into recurring agreements or service contracts.
-2. Generate printable contract/application outputs from agreement terms.
-3. Add export-file generation for payroll runs.
-4. Add dashboard cards for callbacks, loss-making agreements, and route profit pressure.
+1. Add signed acceptance and document lifecycle controls on top of the new estimate -> agreement -> printable contract flow.
+2. Turn payroll export generation into provider-specific exports and accounting handoff summaries.
+3. Surface callback / warranty pressure more aggressively on Admin home cards and route unresolved items into crew follow-up.
+4. Tighten agreement profitability and snow-event invoicing into seasonal billing review and posting workflows.

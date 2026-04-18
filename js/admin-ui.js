@@ -36,7 +36,7 @@
       users: [],
       sites: [],
       assignments: [],
-      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalSyncExceptions: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], fieldUploadFailures: [], appTrafficEvents: [], backendMonitorEvents: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [], jobFinancialEvents: [], jobFinancialRollups: [], recurringServiceAgreements: [], snowEventTriggers: [], changeOrders: [], customerAssets: [], customerAssetJobLinks: [], warrantyCallbackEvents: [], payrollExportRuns: [], payrollReviewSummary: [], routeProfitabilitySummary: [] },
+      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalSyncExceptions: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], fieldUploadFailures: [], appTrafficEvents: [], backendMonitorEvents: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [], jobFinancialEvents: [], jobFinancialRollups: [], recurringServiceAgreements: [], snowEventTriggers: [], changeOrders: [], customerAssets: [], customerAssetJobLinks: [], warrantyCallbackEvents: [], payrollExportRuns: [], payrollReviewSummary: [], routeProfitabilitySummary: [], serviceContractDocuments: [], serviceAgreementProfitabilitySummary: [], snowEventInvoiceCandidates: [], callbackWarrantyDashboardSummary: [], payrollReviewDetail: [], estimateConversionCandidates: [] },
       salesOrders: [],
       accountingEntries: [],
       serviceAreas: [],
@@ -63,6 +63,12 @@
       payrollExportRuns: [],
       payrollReviewSummary: [],
       routeProfitabilitySummary: [],
+      serviceContractDocuments: [],
+      serviceAgreementProfitabilitySummary: [],
+      snowEventInvoiceCandidates: [],
+      callbackWarrantyDashboardSummary: [],
+      payrollReviewDetail: [],
+      estimateConversionCandidates: [],
       materialsCatalog: [],
       equipmentMaster: [],
       estimates: [],
@@ -518,6 +524,7 @@
                   <option value="material_issue">Material Issues</option>
                   <option value="material_issue_line">Material Issue Lines</option>
                   <option value="change_order">Change Orders</option>
+                  <option value="service_contract_document">Service Contract Documents</option>
                   <option value="payroll_export_run">Payroll Export Runs</option>
                 </optgroup>
                 <optgroup label="Analytics and Monitoring">
@@ -537,6 +544,8 @@
             <button id="ad_backbone_save" class="secondary" type="button">Save Record</button>
             <button id="ad_backbone_delete" class="secondary" type="button">Delete Record</button>
             <button id="ad_backbone_post" class="secondary" type="button" style="display:none;">Post Journal Batch</button>
+            <button id="ad_backbone_generate" class="secondary" type="button" style="display:none;">Generate Output</button>
+            <button id="ad_backbone_download" class="secondary" type="button" style="display:none;">Download / Print</button>
           </div>
           <div class="table-scroll" style="margin-top:14px;">
             <table id="ad_backbone_table">
@@ -723,6 +732,8 @@
         backboneSaveBtn: document.getElementById('ad_backbone_save'),
         backboneDeleteBtn: document.getElementById('ad_backbone_delete'),
         backbonePostBtn: document.getElementById('ad_backbone_post'),
+        backboneGenerateBtn: document.getElementById('ad_backbone_generate'),
+        backboneDownloadBtn: document.getElementById('ad_backbone_download'),
         backboneHead: document.getElementById('ad_backbone_table_head'),
         backboneBody: document.querySelector('#ad_backbone_table tbody'),
         sitesCount: document.getElementById('ad_sites_count'),
@@ -1465,6 +1476,12 @@
         state.payrollExportRuns = Array.isArray(resp?.payroll_export_runs) ? resp.payroll_export_runs : [];
         state.payrollReviewSummary = Array.isArray(resp?.payroll_review_summary) ? resp.payroll_review_summary : [];
         state.routeProfitabilitySummary = Array.isArray(resp?.route_profitability_summary) ? resp.route_profitability_summary : [];
+        state.serviceContractDocuments = Array.isArray(resp?.service_contract_documents) ? resp.service_contract_documents : [];
+        state.serviceAgreementProfitabilitySummary = Array.isArray(resp?.service_agreement_profitability_summary) ? resp.service_agreement_profitability_summary : [];
+        state.snowEventInvoiceCandidates = Array.isArray(resp?.snow_event_invoice_candidates) ? resp.snow_event_invoice_candidates : [];
+        state.callbackWarrantyDashboardSummary = Array.isArray(resp?.callback_warranty_dashboard_summary) ? resp.callback_warranty_dashboard_summary : [];
+        state.payrollReviewDetail = Array.isArray(resp?.payroll_review_detail) ? resp.payroll_review_detail : [];
+        state.estimateConversionCandidates = Array.isArray(resp?.estimate_conversion_candidates) ? resp.estimate_conversion_candidates : [];
         state.jobFinancialEvents = Array.isArray(resp?.job_financial_events) ? resp.job_financial_events : [];
         state.jobFinancialRollups = Array.isArray(resp?.job_financial_rollups) ? resp.job_financial_rollups : [];
         state.materialsCatalog = Array.isArray(resp?.materials_catalog) ? resp.materials_catalog : [];
@@ -1561,6 +1578,12 @@
           state.payrollExportRuns = Array.isArray(resp?.payroll_export_runs) ? resp.payroll_export_runs : [];
           state.payrollReviewSummary = Array.isArray(resp?.payroll_review_summary) ? resp.payroll_review_summary : [];
           state.routeProfitabilitySummary = Array.isArray(resp?.route_profitability_summary) ? resp.route_profitability_summary : [];
+          state.serviceContractDocuments = Array.isArray(resp?.service_contract_documents) ? resp.service_contract_documents : [];
+          state.serviceAgreementProfitabilitySummary = Array.isArray(resp?.service_agreement_profitability_summary) ? resp.service_agreement_profitability_summary : [];
+          state.snowEventInvoiceCandidates = Array.isArray(resp?.snow_event_invoice_candidates) ? resp.snow_event_invoice_candidates : [];
+          state.callbackWarrantyDashboardSummary = Array.isArray(resp?.callback_warranty_dashboard_summary) ? resp.callback_warranty_dashboard_summary : [];
+          state.payrollReviewDetail = Array.isArray(resp?.payroll_review_detail) ? resp.payroll_review_detail : [];
+          state.estimateConversionCandidates = Array.isArray(resp?.estimate_conversion_candidates) ? resp.estimate_conversion_candidates : [];
           state.jobFinancialEvents = Array.isArray(resp?.job_financial_events) ? resp.job_financial_events : [];
           state.jobFinancialRollups = Array.isArray(resp?.job_financial_rollups) ? resp.job_financial_rollups : [];
           state.materialsCatalog = Array.isArray(resp?.materials_catalog) ? resp.materials_catalog : [];
@@ -1615,7 +1638,7 @@
       state.notifications = [];
       state.sites = [];
       state.assignments = [];
-      state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [], jobFinancialEvents: [], jobFinancialRollups: [], recurringServiceAgreements: [], snowEventTriggers: [], changeOrders: [], customerAssets: [], customerAssetJobLinks: [], warrantyCallbackEvents: [], payrollExportRuns: [], payrollReviewSummary: [], routeProfitabilitySummary: [] };
+      state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [], jobFinancialEvents: [], jobFinancialRollups: [], recurringServiceAgreements: [], snowEventTriggers: [], changeOrders: [], customerAssets: [], customerAssetJobLinks: [], warrantyCallbackEvents: [], payrollExportRuns: [], payrollReviewSummary: [], routeProfitabilitySummary: [], serviceContractDocuments: [], serviceAgreementProfitabilitySummary: [], snowEventInvoiceCandidates: [], callbackWarrantyDashboardSummary: [], payrollReviewDetail: [], estimateConversionCandidates: [] };
       state.serviceAreas = [];
       state.routes = [];
       state.clients = [];
@@ -1707,6 +1730,48 @@
         { name:'default_discount_mode', label:'Discount Mode', type:'select', options:[['none','None'],['percent','Percent'],['fixed','Fixed'],['tiered','Tiered']] }, { name:'default_discount_value', label:'Discount Value', type:'number' },
         { name:'sales_tax_code_id', label:'Sales Tax Code', type:'select', source:'taxCodes' }, { name:'notes', label:'Notes', type:'textarea' }, { name:'is_active', label:'Active', type:'checkbox' }
       ], columns:[['template_code','Code'],['template_name','Template'],['job_family','Family'],['default_quoted_charge_total','Charge'],['sales_tax_code_id','Tax']] },
+      recurring_service_agreement: { label:'Recurring Service Agreements', rowsKey:'recurringServiceAgreements', valueKey:'id', labelField:'agreement_code', fields:[
+        { name:'agreement_code', label:'Agreement Code', type:'text', required:true }, { name:'client_id', label:'Client', type:'select', source:'clients' }, { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' },
+        { name:'service_pricing_template_id', label:'Pricing Template', type:'select', source:'servicePricingTemplates' }, { name:'route_id', label:'Route', type:'select', source:'routes' }, { name:'crew_id', label:'Crew', type:'text' }, { name:'tax_code_id', label:'Tax Code', type:'select', source:'taxCodes' },
+        { name:'estimate_id', label:'Source Estimate', type:'select', source:'estimates' }, { name:'contract_document_id', label:'Contract Document', type:'select', source:'serviceContractDocuments' },
+        { name:'service_name', label:'Service Name', type:'text', required:true }, { name:'agreement_status', label:'Status', type:'select', options:[['draft','Draft'],['active','Active'],['paused','Paused'],['completed','Completed'],['cancelled','Cancelled']] },
+        { name:'billing_method', label:'Billing Method', type:'select', options:[['per_visit','Per Visit'],['flat_period','Flat Period'],['seasonal','Seasonal'],['event_trigger','Event Trigger'],['time_and_material','Time & Material']] },
+        { name:'service_pattern', label:'Service Pattern', type:'text' }, { name:'recurrence_basis', label:'Recurrence Basis', type:'text' }, { name:'recurrence_rule', label:'Recurrence Rule', type:'text' }, { name:'recurrence_interval', label:'Recurrence Interval', type:'number' },
+        { name:'start_date', label:'Start Date', type:'date' }, { name:'end_date', label:'End Date', type:'date' }, { name:'open_end_date', label:'Open End Date', type:'checkbox' },
+        { name:'visit_estimated_minutes', label:'Visit Minutes', type:'number' }, { name:'visit_estimated_duration_hours', label:'Visit Hours', type:'number' }, { name:'visit_cost_total', label:'Visit Cost', type:'number' }, { name:'visit_charge_total', label:'Visit Charge', type:'number' },
+        { name:'markup_percent', label:'Markup %', type:'number' }, { name:'discount_mode', label:'Discount Mode', type:'select', options:[['none','None'],['percent','Percent'],['fixed','Fixed'],['tiered','Tiered']] }, { name:'discount_value', label:'Discount Value', type:'number' }, { name:'tiered_discount_notes', label:'Tiered Discount Notes', type:'textarea' },
+        { name:'event_trigger_type', label:'Event Trigger', type:'select', options:[['','None'],['snow_cm','Snow CM'],['snow_event','Snow Event'],['ice_event','Ice Event'],['manual','Manual']] }, { name:'snow_trigger_threshold_cm', label:'Snow Threshold CM', type:'number' }, { name:'trigger_notes', label:'Trigger Notes', type:'textarea' },
+        { name:'pricing_notes', label:'Pricing Notes', type:'textarea' }, { name:'service_notes', label:'Service Notes', type:'textarea' }, { name:'agreement_notes', label:'Agreement Notes', type:'textarea' }
+      ], columns:[['agreement_code','Agreement'],['service_name','Service'],['agreement_status','Status'],['visit_charge_total','Visit Charge'],['event_trigger_type','Trigger']] },
+      snow_event_trigger: { label:'Snow Event Triggers', rowsKey:'snowEventTriggers', valueKey:'id', labelField:'event_label', fields:[
+        { name:'agreement_id', label:'Agreement', type:'select', source:'recurringServiceAgreements', required:true }, { name:'event_date', label:'Event Date', type:'date' }, { name:'event_label', label:'Event Label', type:'text' },
+        { name:'snowfall_cm', label:'Snowfall CM', type:'number' }, { name:'threshold_cm', label:'Threshold CM', type:'number' }, { name:'trigger_met', label:'Trigger Met', type:'checkbox' }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['agreement_id','Agreement'],['event_date','Date'],['snowfall_cm','Snowfall'],['trigger_met','Triggered']] },
+      change_order: { label:'Change Orders', rowsKey:'changeOrders', valueKey:'id', labelField:'change_order_number', fields:[
+        { name:'job_id', label:'Job', type:'select', source:'jobs', required:true }, { name:'agreement_id', label:'Agreement', type:'select', source:'recurringServiceAgreements' }, { name:'change_order_number', label:'Change Order Number', type:'text', required:true },
+        { name:'status', label:'Status', type:'select', options:[['draft','Draft'],['requested','Requested'],['approved','Approved'],['rejected','Rejected'],['completed','Completed'],['void','Void']] }, { name:'requested_at', label:'Requested At', type:'datetime-local' }, { name:'approved_at', label:'Approved At', type:'datetime-local' }, { name:'approved_by_profile_id', label:'Approved By', type:'select', source:'profiles' },
+        { name:'scope_summary', label:'Scope Summary', type:'textarea', required:true }, { name:'reason', label:'Reason', type:'textarea' }, { name:'estimated_cost_delta', label:'Estimated Cost Delta', type:'number' }, { name:'estimated_charge_delta', label:'Estimated Charge Delta', type:'number' }, { name:'actual_cost_delta', label:'Actual Cost Delta', type:'number' }, { name:'actual_charge_delta', label:'Actual Charge Delta', type:'number' }, { name:'tax_code_id', label:'Tax Code', type:'select', source:'taxCodes' }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['change_order_number','Change Order'],['status','Status'],['requested_at','Requested'],['estimated_charge_delta','Charge Delta']] },
+      service_contract_document: { label:'Service Contract Documents', rowsKey:'serviceContractDocuments', valueKey:'id', labelField:'document_number', fields:[
+        { name:'document_number', label:'Document Number', type:'text', required:true }, { name:'source_entity', label:'Source Entity', type:'select', options:[['estimate','Estimate'],['recurring_service_agreement','Recurring Service Agreement'],['job','Job'],['manual','Manual']] }, { name:'source_id', label:'Source ID', type:'text', required:true },
+        { name:'estimate_id', label:'Estimate', type:'select', source:'estimates' }, { name:'agreement_id', label:'Agreement', type:'select', source:'recurringServiceAgreements' }, { name:'job_id', label:'Job', type:'select', source:'jobs' }, { name:'client_id', label:'Client', type:'select', source:'clients' }, { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' },
+        { name:'document_kind', label:'Document Kind', type:'select', options:[['application','Application'],['contract','Contract'],['change_order','Change Order'],['service_summary','Service Summary'],['payroll_export_cover','Payroll Export Cover']] }, { name:'document_status', label:'Status', type:'select', options:[['draft','Draft'],['issued','Issued'],['signed','Signed'],['archived','Archived'],['void','Void']] }, { name:'title', label:'Title', type:'text', required:true }, { name:'contract_reference', label:'Contract Reference', type:'text' },
+        { name:'effective_date', label:'Effective Date', type:'date' }, { name:'expiry_date', label:'Expiry Date', type:'date' }, { name:'rendered_html', label:'Rendered HTML', type:'textarea' }, { name:'rendered_text', label:'Rendered Text', type:'textarea' }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['document_number','Document'],['document_kind','Kind'],['document_status','Status'],['contract_reference','Reference'],['effective_date','Effective']] },
+      customer_asset: { label:'Customer Assets', rowsKey:'customerAssets', valueKey:'id', labelField:'asset_name', fields:[
+        { name:'asset_code', label:'Asset Code', type:'text', required:true }, { name:'client_id', label:'Client', type:'select', source:'clients' }, { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' },
+        { name:'asset_name', label:'Asset Name', type:'text', required:true }, { name:'asset_type', label:'Asset Type', type:'text' }, { name:'serial_number', label:'Serial Number', type:'text' }, { name:'install_date', label:'Install Date', type:'date' }, { name:'warranty_expiry_date', label:'Warranty Expiry', type:'date' }, { name:'manufacturer', label:'Manufacturer', type:'text' }, { name:'model', label:'Model', type:'text' }, { name:'location_notes', label:'Location Notes', type:'textarea' }, { name:'service_notes', label:'Service Notes', type:'textarea' }, { name:'is_active', label:'Active', type:'checkbox' }
+      ], columns:[['asset_code','Asset'],['asset_name','Name'],['asset_type','Type'],['warranty_expiry_date','Warranty']] },
+      customer_asset_job_link: { label:'Customer Asset Job Links', rowsKey:'customerAssetJobLinks', valueKey:'id', labelField:'asset_code', fields:[
+        { name:'asset_id', label:'Asset', type:'select', source:'customerAssets', required:true }, { name:'job_id', label:'Job', type:'select', source:'jobs', required:true }, { name:'service_date', label:'Service Date', type:'date' }, { name:'event_type', label:'Event Type', type:'select', options:[['service','Service'],['inspection','Inspection'],['repair','Repair'],['warranty','Warranty'],['callback','Callback'],['installation','Installation'],['replacement','Replacement']] }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['asset_code','Asset'],['job_code','Job'],['service_date','Service Date'],['event_type','Event']] },
+      warranty_callback_event: { label:'Warranty / Callback Events', rowsKey:'warrantyCallbackEvents', valueKey:'id', labelField:'callback_number', fields:[
+        { name:'callback_number', label:'Callback Number', type:'text', required:true }, { name:'job_id', label:'Job', type:'select', source:'jobs' }, { name:'asset_id', label:'Asset', type:'select', source:'customerAssets' }, { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' },
+        { name:'callback_type', label:'Callback Type', type:'select', options:[['callback','Callback'],['warranty','Warranty'],['service_revisit','Service Revisit'],['deficiency','Deficiency']] }, { name:'status', label:'Status', type:'select', options:[['open','Open'],['scheduled','Scheduled'],['in_progress','In Progress'],['closed','Closed'],['void','Void']] }, { name:'warranty_covered', label:'Warranty Covered', type:'checkbox' }, { name:'opened_at', label:'Opened At', type:'datetime-local' }, { name:'closed_at', label:'Closed At', type:'datetime-local' }, { name:'estimated_cost_total', label:'Estimated Cost', type:'number' }, { name:'actual_cost_total', label:'Actual Cost', type:'number' }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['callback_number','Callback'],['callback_type','Type'],['status','Status'],['actual_cost_total','Actual Cost']] },
+      payroll_export_run: { label:'Payroll Export Runs', rowsKey:'payrollExportRuns', valueKey:'id', labelField:'run_code', fields:[
+        { name:'run_code', label:'Run Code', type:'text', required:true }, { name:'period_start', label:'Period Start', type:'date', required:true }, { name:'period_end', label:'Period End', type:'date', required:true }, { name:'status', label:'Status', type:'select', options:[['draft','Draft'],['ready','Ready'],['exported','Exported'],['void','Void']] }, { name:'export_format', label:'Export Format', type:'select', options:[['csv','CSV'],['json','JSON']] }, { name:'export_file_name', label:'File Name', type:'text' }, { name:'exported_entry_count', label:'Entry Count', type:'number', readonly:true }, { name:'exported_hours_total', label:'Hours', type:'number', readonly:true }, { name:'exported_payroll_cost_total', label:'Payroll Cost', type:'number', readonly:true }, { name:'exported_at', label:'Exported At', type:'datetime-local' }, { name:'exported_by_profile_id', label:'Exported By', type:'select', source:'profiles' }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['run_code','Run'],['period_start','Start'],['period_end','End'],['status','Status'],['exported_entry_count','Entries']] },
       job_financial_event: { label:'Job Financial Events', rowsKey:'jobFinancialEvents', valueKey:'id', labelField:'event_type', fields:[
         { name:'job_id', label:'Job', type:'select', source:'jobs', required:true }, { name:'job_session_id', label:'Job Session ID', type:'text' },
         { name:'event_date', label:'Event Date', type:'date' }, { name:'event_type', label:'Event Type', type:'select', options:[['material','Material'],['equipment_repair','Equipment Repair'],['delay','Delay'],['fuel','Fuel'],['travel','Travel'],['subcontract','Subcontract'],['disposal','Disposal'],['permit','Permit'],['revenue_adjustment','Revenue Adjustment'],['discount_adjustment','Discount Adjustment'],['other','Other']] },
@@ -1880,9 +1945,9 @@
       ], columns:[['vendor_code','Code'],['legal_name','Vendor'],['contact_name','Contact'],['is_active','Active']] },
       ar_invoice: { label:'AR Invoices', rowsKey:'arInvoices', valueKey:'id', labelField:'invoice_number', fields:[
         { name:'invoice_number', label:'Invoice Number', type:'text', required:true }, { name:'client_id', label:'Client', type:'select', source:'clients', required:true }, { name:'work_order_id', label:'Work Order', type:'select', source:'workOrders' },
-        { name:'dispatch_id', label:'Dispatch', type:'select', source:'subcontractDispatches' }, { name:'invoice_status', label:'Status', type:'select', options:[['draft','Draft'],['issued','Issued'],['partial','Partial'],['paid','Paid'],['void','Void']] },
+        { name:'dispatch_id', label:'Dispatch', type:'select', source:'subcontractDispatches' }, { name:'recurring_service_agreement_id', label:'Agreement', type:'select', source:'recurringServiceAgreements' }, { name:'snow_event_trigger_id', label:'Snow Trigger', type:'select', source:'snowEventTriggers' }, { name:'service_contract_document_id', label:'Contract Doc', type:'select', source:'serviceContractDocuments' }, { name:'invoice_source', label:'Source', type:'select', options:[['manual','Manual'],['job','Job'],['agreement_visit','Agreement Visit'],['agreement_snow','Agreement Snow'],['change_order','Change Order'],['callback','Callback'],['contract','Contract']] }, { name:'invoice_status', label:'Status', type:'select', options:[['draft','Draft'],['issued','Issued'],['partial','Partial'],['paid','Paid'],['void','Void']] },
         { name:'invoice_date', label:'Invoice Date', type:'date' }, { name:'due_date', label:'Due Date', type:'date' }, { name:'subtotal', label:'Subtotal', type:'number' }, { name:'tax_total', label:'Tax Total', type:'number' }, { name:'total_amount', label:'Total Amount', type:'number' }, { name:'posted_amount', label:'Posted Amount', type:'number', readonly:true }, { name:'open_amount', label:'Open Amount', type:'number', readonly:true }, { name:'posted_percent', label:'Posted %', type:'number', readonly:true }, { name:'balance_due', label:'Balance Due', type:'number', readonly:true }
-      ], columns:[['invoice_number','Invoice'],['invoice_status','Status'],['invoice_date','Date'],['balance_due','Balance']] },
+      ], columns:[['invoice_number','Invoice'],['invoice_source','Source'],['invoice_status','Status'],['invoice_date','Date'],['balance_due','Balance']] },
       ar_payment: { label:'AR Payments', rowsKey:'arPayments', valueKey:'id', labelField:'payment_number', fields:[
         { name:'payment_number', label:'Payment Number', type:'text', required:true }, { name:'client_id', label:'Client', type:'select', source:'clients', required:true },
         { name:'invoice_id', label:'Invoice', type:'select', source:'arInvoices' }, { name:'payment_date', label:'Payment Date', type:'date' }, { name:'payment_method', label:'Payment Method', type:'text' },
@@ -1938,7 +2003,7 @@
     };
 
     function getBackboneRows(entity) {
-      const map = { unit_of_measure: state.unitsOfMeasure || [], cost_code: state.costCodes || [], tax_code: state.taxCodes || [], business_tax_setting: state.businessTaxSettings || [], service_pricing_template: state.servicePricingTemplates || [], job_financial_event: state.jobFinancialEvents || [], recurring_service_agreement: state.recurringServiceAgreements || [], snow_event_trigger: state.snowEventTriggers || [], change_order: state.changeOrders || [], customer_asset: state.customerAssets || [], customer_asset_job_link: state.customerAssetJobLinks || [], warranty_callback_event: state.warrantyCallbackEvents || [], payroll_export_run: state.payrollExportRuns || [], service_area: state.serviceAreas || [], route: state.routes || [], route_stop: state.routeStops || [], route_stop_execution: state.routeStopExecutions || [], route_stop_execution_attachment: state.routeStopExecutionAttachments || [], client: state.clients || [], client_site: state.clientSites || [], material: state.materialsCatalog || [], equipment_master: state.equipmentMaster || [], estimate: state.estimates || [], estimate_line: state.estimateLines || [], work_order: state.workOrders || [], work_order_line: state.workOrderLines || [], subcontract_client: state.subcontractClients || [], subcontract_dispatch: state.subcontractDispatches || [], linked_hse_packet: state.linkedHsePackets || [], hse_packet_event: state.hsePacketEvents || [], hse_packet_proof: state.hsePacketProofs || [], field_upload_failure: state.fieldUploadFailures || [], app_traffic_event: state.appTrafficEvents || [], backend_monitor_event: state.backendMonitorEvents || [], gl_account: state.chartOfAccounts || [], gl_journal_batch: state.glJournalBatches || [], gl_journal_sync_exception: state.glJournalSyncExceptions || [], gl_journal_entry: state.glJournalEntries || [], ap_vendor: state.apVendors || [], ar_invoice: state.arInvoices || [], ar_payment: state.arPayments || [], ap_bill: state.apBills || [], ap_payment: state.apPayments || [], material_receipt: state.materialReceipts || [], material_receipt_line: state.materialReceiptLines || [], material_issue: state.materialIssues || [], material_issue_line: state.materialIssueLines || [] };
+      const map = { unit_of_measure: state.unitsOfMeasure || [], cost_code: state.costCodes || [], tax_code: state.taxCodes || [], business_tax_setting: state.businessTaxSettings || [], service_pricing_template: state.servicePricingTemplates || [], job_financial_event: state.jobFinancialEvents || [], recurring_service_agreement: state.recurringServiceAgreements || [], snow_event_trigger: state.snowEventTriggers || [], change_order: state.changeOrders || [], service_contract_document: state.serviceContractDocuments || [], customer_asset: state.customerAssets || [], customer_asset_job_link: state.customerAssetJobLinks || [], warranty_callback_event: state.warrantyCallbackEvents || [], payroll_export_run: state.payrollExportRuns || [], service_area: state.serviceAreas || [], route: state.routes || [], route_stop: state.routeStops || [], route_stop_execution: state.routeStopExecutions || [], route_stop_execution_attachment: state.routeStopExecutionAttachments || [], client: state.clients || [], client_site: state.clientSites || [], material: state.materialsCatalog || [], equipment_master: state.equipmentMaster || [], estimate: state.estimates || [], estimate_line: state.estimateLines || [], work_order: state.workOrders || [], work_order_line: state.workOrderLines || [], subcontract_client: state.subcontractClients || [], subcontract_dispatch: state.subcontractDispatches || [], linked_hse_packet: state.linkedHsePackets || [], hse_packet_event: state.hsePacketEvents || [], hse_packet_proof: state.hsePacketProofs || [], field_upload_failure: state.fieldUploadFailures || [], app_traffic_event: state.appTrafficEvents || [], backend_monitor_event: state.backendMonitorEvents || [], gl_account: state.chartOfAccounts || [], gl_journal_batch: state.glJournalBatches || [], gl_journal_sync_exception: state.glJournalSyncExceptions || [], gl_journal_entry: state.glJournalEntries || [], ap_vendor: state.apVendors || [], ar_invoice: state.arInvoices || [], ar_payment: state.arPayments || [], ap_bill: state.apBills || [], ap_payment: state.apPayments || [], material_receipt: state.materialReceipts || [], material_receipt_line: state.materialReceiptLines || [], material_issue: state.materialIssues || [], material_issue_line: state.materialIssueLines || [] };
       return Array.isArray(map[entity]) ? map[entity] : [];
     }
 
@@ -1984,6 +2049,8 @@
         taxCodes: state.selectors.taxCodes || state.taxCodes || [],
         servicePricingTemplates: state.selectors.servicePricingTemplates || state.servicePricingTemplates || [],
         recurringServiceAgreements: state.recurringServiceAgreements || [],
+        snowEventTriggers: state.snowEventTriggers || [],
+        serviceContractDocuments: state.serviceContractDocuments || [],
         customerAssets: state.customerAssets || [],
         jobTypes: state.selectors.jobTypes || []
       };
@@ -2521,6 +2588,53 @@
         cards.push({ title: 'Signoff / Closeout', value: `${Number(selected?.signoff_event_count || 0)} / ${Number(selected?.closeout_event_count || 0)}`, help: 'Field signoff and closeout events completed against the packet.' });
       }
 
+      if (entity === 'estimate') {
+        const candidate = (state.estimateConversionCandidates || []).find((item) => String(item.id) === String(selected?.id || ''));
+        cards.push({ title: 'Linked Agreements', value: String(candidate?.linked_agreement_count || 0), help: 'Shows whether this estimate has already been converted into a recurring agreement.' });
+        cards.push({ title: 'Printable Docs', value: String(candidate?.linked_document_count || 0), help: 'Application / contract documents already generated from this estimate.' });
+      }
+
+      if (entity === 'recurring_service_agreement') {
+        const summary = (state.serviceAgreementProfitabilitySummary || []).find((item) => String(item.id) === String(selected?.id || ''));
+        cards.push({ title: 'Linked Jobs', value: String(summary?.linked_job_count || 0), help: 'Jobs currently tied back to this agreement code.' });
+        cards.push({ title: 'Agreement Profit', value: formatMoney(summary?.actual_profit_rollup_total), help: 'Rolls up actual job profitability currently linked to this agreement.' });
+        cards.push({ title: 'Snow Events / Invoices', value: `${Number(summary?.triggered_snow_event_count || 0)} / ${Number(summary?.snow_invoice_count || 0)}`, help: 'Triggered snow events versus invoices already produced from those triggers.' });
+        cards.push({ title: 'Open Invoice Balance', value: formatMoney(summary?.open_invoice_balance), help: 'Outstanding AR balance linked to this recurring agreement.' });
+      }
+
+      if (entity === 'snow_event_trigger') {
+        const summary = (state.snowEventInvoiceCandidates || []).find((item) => String(item.id) === String(selected?.id || ''));
+        cards.push({ title: 'Trigger Status', value: summary?.trigger_met ? 'Ready to Invoice' : 'Below Threshold', help: 'Triggered snow events can generate a draft AR invoice directly from Admin.' });
+        cards.push({ title: 'Existing Invoice', value: summary?.existing_invoice_number || 'None', help: 'Prevents duplicate snow-event invoicing when an invoice already exists.' });
+        cards.push({ title: 'Estimated Invoice Total', value: formatMoney(summary?.estimated_total_with_tax), help: 'Uses the agreement visit charge and linked tax code to preview draft billing.' });
+      }
+
+      if (entity === 'warranty_callback_event') {
+        const summary = (state.callbackWarrantyDashboardSummary || [])[0] || null;
+        cards.push({ title: 'Open Callbacks', value: String(summary?.open_callback_count || 0), help: 'Open callback / warranty items across the business.' });
+        cards.push({ title: 'Open Warranty Items', value: String(summary?.open_warranty_callback_count || 0), help: 'Warranty-covered callback items still needing follow-up.' });
+        cards.push({ title: 'Open Callback Cost', value: formatMoney(summary?.open_callback_cost_total), help: 'Current actual cost tied up in unresolved callback and warranty work.' });
+      }
+
+      if (entity === 'payroll_export_run') {
+        const start = selected?.period_start ? Date.parse(`${selected.period_start}T00:00:00`) : NaN;
+        const end = selected?.period_end ? Date.parse(`${selected.period_end}T23:59:59`) : NaN;
+        const detailRows = (state.payrollReviewDetail || []).filter((item) => {
+          const stamp = Date.parse(`${item?.session_date || ''}T12:00:00`);
+          return Number.isFinite(start) && Number.isFinite(end) && Number.isFinite(stamp) && stamp >= start && stamp <= end;
+        });
+        const hours = detailRows.reduce((sum, item) => sum + Number(item?.hours_worked || 0), 0);
+        const payroll = detailRows.reduce((sum, item) => sum + Number(item?.payroll_cost_total || 0), 0);
+        cards.push({ title: 'Detail Rows', value: String(detailRows.length), help: 'Crew-hour detail rows inside this payroll period.' });
+        cards.push({ title: 'Period Hours', value: Number(hours || 0).toFixed(2), help: 'Hours available for export in this payroll period.' });
+        cards.push({ title: 'Payroll Cost', value: formatMoney(payroll), help: 'Burden-aware payroll cost inside the selected export period.' });
+      }
+
+      if (entity === 'service_contract_document') {
+        cards.push({ title: 'Document Kind', value: String(selected?.document_kind || 'contract'), help: 'Application, contract, change-order, or other printable service document.' });
+        cards.push({ title: 'Source', value: `${selected?.source_entity || ''} ${selected?.contract_reference ? `· ${selected.contract_reference}` : ''}`.trim(), help: 'Shows the source estimate / agreement / job that generated this printable document.' });
+      }
+
       if (entity === 'app_traffic_event' || entity === 'backend_monitor_event') {
         const now = Date.now();
         const dayMs = 24 * 60 * 60 * 1000;
@@ -2624,6 +2738,53 @@
         formData.set('proof_notes', document.getElementById('ad_bb_proof_notes')?.value || '');
         formData.set('file', file);
         return window.YWIAPI?.uploadHsePacketProof?.(formData, true);
+      }
+
+      if (entity === 'estimate') {
+        const candidate = (state.estimateConversionCandidates || []).find((item) => String(item.id) === String(selected?.id || ''));
+        cards.push({ title: 'Linked Agreements', value: String(candidate?.linked_agreement_count || 0), help: 'Shows whether this estimate has already been converted into a recurring agreement.' });
+        cards.push({ title: 'Printable Docs', value: String(candidate?.linked_document_count || 0), help: 'Application / contract documents already generated from this estimate.' });
+      }
+
+      if (entity === 'recurring_service_agreement') {
+        const summary = (state.serviceAgreementProfitabilitySummary || []).find((item) => String(item.id) === String(selected?.id || ''));
+        cards.push({ title: 'Linked Jobs', value: String(summary?.linked_job_count || 0), help: 'Jobs currently tied back to this agreement code.' });
+        cards.push({ title: 'Agreement Profit', value: formatMoney(summary?.actual_profit_rollup_total), help: 'Rolls up actual job profitability currently linked to this agreement.' });
+        cards.push({ title: 'Snow Events / Invoices', value: `${Number(summary?.triggered_snow_event_count || 0)} / ${Number(summary?.snow_invoice_count || 0)}`, help: 'Triggered snow events versus invoices already produced from those triggers.' });
+        cards.push({ title: 'Open Invoice Balance', value: formatMoney(summary?.open_invoice_balance), help: 'Outstanding AR balance linked to this recurring agreement.' });
+      }
+
+      if (entity === 'snow_event_trigger') {
+        const summary = (state.snowEventInvoiceCandidates || []).find((item) => String(item.id) === String(selected?.id || ''));
+        cards.push({ title: 'Trigger Status', value: summary?.trigger_met ? 'Ready to Invoice' : 'Below Threshold', help: 'Triggered snow events can generate a draft AR invoice directly from Admin.' });
+        cards.push({ title: 'Existing Invoice', value: summary?.existing_invoice_number || 'None', help: 'Prevents duplicate snow-event invoicing when an invoice already exists.' });
+        cards.push({ title: 'Estimated Invoice Total', value: formatMoney(summary?.estimated_total_with_tax), help: 'Uses the agreement visit charge and linked tax code to preview draft billing.' });
+      }
+
+      if (entity === 'warranty_callback_event') {
+        const summary = (state.callbackWarrantyDashboardSummary || [])[0] || null;
+        cards.push({ title: 'Open Callbacks', value: String(summary?.open_callback_count || 0), help: 'Open callback / warranty items across the business.' });
+        cards.push({ title: 'Open Warranty Items', value: String(summary?.open_warranty_callback_count || 0), help: 'Warranty-covered callback items still needing follow-up.' });
+        cards.push({ title: 'Open Callback Cost', value: formatMoney(summary?.open_callback_cost_total), help: 'Current actual cost tied up in unresolved callback and warranty work.' });
+      }
+
+      if (entity === 'payroll_export_run') {
+        const start = selected?.period_start ? Date.parse(`${selected.period_start}T00:00:00`) : NaN;
+        const end = selected?.period_end ? Date.parse(`${selected.period_end}T23:59:59`) : NaN;
+        const detailRows = (state.payrollReviewDetail || []).filter((item) => {
+          const stamp = Date.parse(`${item?.session_date || ''}T12:00:00`);
+          return Number.isFinite(start) && Number.isFinite(end) && Number.isFinite(stamp) && stamp >= start && stamp <= end;
+        });
+        const hours = detailRows.reduce((sum, item) => sum + Number(item?.hours_worked || 0), 0);
+        const payroll = detailRows.reduce((sum, item) => sum + Number(item?.payroll_cost_total || 0), 0);
+        cards.push({ title: 'Detail Rows', value: String(detailRows.length), help: 'Crew-hour detail rows inside this payroll period.' });
+        cards.push({ title: 'Period Hours', value: Number(hours || 0).toFixed(2), help: 'Hours available for export in this payroll period.' });
+        cards.push({ title: 'Payroll Cost', value: formatMoney(payroll), help: 'Burden-aware payroll cost inside the selected export period.' });
+      }
+
+      if (entity === 'service_contract_document') {
+        cards.push({ title: 'Document Kind', value: String(selected?.document_kind || 'contract'), help: 'Application, contract, change-order, or other printable service document.' });
+        cards.push({ title: 'Source', value: `${selected?.source_entity || ''} ${selected?.contract_reference ? `· ${selected.contract_reference}` : ''}`.trim(), help: 'Shows the source estimate / agreement / job that generated this printable document.' });
       }
 
       if (entity === 'app_traffic_event' || entity === 'backend_monitor_event') {
@@ -2763,6 +2924,16 @@
       bindBackboneFieldLogic(entity);
       bindBackboneUploadLogic(entity, row || null);
       if (e.backbonePostBtn) e.backbonePostBtn.style.display = entity === 'gl_journal_batch' ? '' : 'none';
+      if (e.backboneGenerateBtn) {
+        const labels = { estimate: 'Convert to Agreement', recurring_service_agreement: 'Generate Contract', snow_event_trigger: 'Generate Snow Invoice', payroll_export_run: 'Generate Export', service_contract_document: 'Open Print Preview' };
+        e.backboneGenerateBtn.style.display = labels[entity] ? '' : 'none';
+        e.backboneGenerateBtn.textContent = labels[entity] || 'Generate Output';
+      }
+      if (e.backboneDownloadBtn) {
+        const labels = { payroll_export_run: 'Download Export', service_contract_document: 'Download / Print' };
+        e.backboneDownloadBtn.style.display = labels[entity] ? '' : 'none';
+        e.backboneDownloadBtn.textContent = labels[entity] || 'Download / Print';
+      }
       renderBackboneInsights(row || null);
     }
 
@@ -2771,6 +2942,110 @@
       const entity = e.backboneEntity?.value || 'unit_of_measure';
       if (e.backboneItemId) setSelectValue(e.backboneItemId, row?.id || '');
       renderBackboneFields(entity, row || null);
+    }
+
+
+    function downloadTextFile(fileName, content, mimeType = 'text/plain;charset=utf-8') {
+      const blob = new Blob([String(content || '')], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName || 'export.txt';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 250);
+    }
+
+    function openPrintableHtml(title, html) {
+      const win = window.open('', '_blank', 'noopener,noreferrer,width=980,height=800');
+      if (!win) throw new Error('Pop-up blocked. Please allow pop-ups to print the generated document.');
+      win.document.open();
+      win.document.write(html || `<html><head><title>${escHtml(title || 'Print Preview')}</title></head><body><pre>${escHtml(html || '')}</pre></body></html>`);
+      win.document.close();
+      win.focus();
+    }
+
+    async function runBackboneGenerateAction() {
+      const e = els();
+      const entity = e.backboneEntity?.value || 'unit_of_measure';
+      const itemId = e.backboneItemId?.value || '';
+      const row = getSelectedBackboneRecord();
+      if (!itemId && entity !== 'service_contract_document') throw new Error('Select a record first.');
+      if (entity === 'estimate') {
+        const resp = await manageAdminEntity({ entity: 'estimate', action: 'convert_to_agreement', item_id: itemId });
+        if (!resp?.ok) throw new Error(resp?.error || 'Estimate conversion failed.');
+        await loadDirectory();
+        await refreshSelectors();
+        if (e.backboneEntity) e.backboneEntity.value = 'recurring_service_agreement';
+        fillBackboneForm(resp.record || null);
+        renderBackboneTable();
+        setSummary('Estimate converted into a draft recurring service agreement.');
+        return;
+      }
+      if (entity === 'recurring_service_agreement') {
+        const resp = await manageAdminEntity({ entity: 'service_contract_document', action: 'generate_from_source', source_entity: 'recurring_service_agreement', source_id: itemId, document_kind: 'contract' });
+        if (!resp?.ok) throw new Error(resp?.error || 'Contract generation failed.');
+        await loadDirectory();
+        await refreshSelectors();
+        if (resp.record?.rendered_html) openPrintableHtml(resp.record?.title || 'Service Contract', resp.record.rendered_html);
+        if (e.backboneEntity) e.backboneEntity.value = 'service_contract_document';
+        fillBackboneForm(resp.record || null);
+        renderBackboneTable();
+        setSummary('Printable contract generated and stored in Service Contract Documents.');
+        return;
+      }
+      if (entity === 'snow_event_trigger') {
+        const resp = await manageAdminEntity({ entity: 'snow_event_trigger', action: 'generate_invoice', item_id: itemId });
+        if (!resp?.ok) throw new Error(resp?.error || 'Snow invoice generation failed.');
+        await loadDirectory();
+        await refreshSelectors();
+        if (e.backboneEntity) e.backboneEntity.value = 'ar_invoice';
+        fillBackboneForm(resp.record || null);
+        renderBackboneTable();
+        setSummary('Draft AR invoice created from the selected snow event trigger.');
+        return;
+      }
+      if (entity === 'payroll_export_run') {
+        const resp = await manageAdminEntity({ entity: 'payroll_export_run', action: 'generate_export', item_id: itemId });
+        if (!resp?.ok) throw new Error(resp?.error || 'Payroll export generation failed.');
+        await loadDirectory();
+        await refreshSelectors();
+        fillBackboneForm(resp.record || null);
+        renderBackboneTable();
+        if (resp.export_file_content) downloadTextFile(resp.export_file_name || 'payroll-export.csv', resp.export_file_content, 'text/csv;charset=utf-8');
+        setSummary('Payroll export generated and downloaded.');
+        return;
+      }
+      if (entity === 'service_contract_document') {
+        if (!row?.rendered_html) throw new Error('This contract document does not contain printable HTML yet.');
+        openPrintableHtml(row.title || row.document_number || 'Contract Document', row.rendered_html);
+        setSummary('Printable document opened in a new tab.');
+        return;
+      }
+    }
+
+    async function runBackboneDownloadAction() {
+      const e = els();
+      const entity = e.backboneEntity?.value || 'unit_of_measure';
+      const row = getSelectedBackboneRecord();
+      if (!row) throw new Error('Select a record first.');
+      if (entity === 'payroll_export_run') {
+        if (!row.export_file_content) throw new Error('Generate the payroll export first.');
+        downloadTextFile(row.export_file_name || `${row.run_code || 'payroll-export'}.csv`, row.export_file_content, 'text/csv;charset=utf-8');
+        return;
+      }
+      if (entity === 'service_contract_document') {
+        if (row.rendered_html) {
+          downloadTextFile(`${row.document_number || 'document'}.html`, row.rendered_html, 'text/html;charset=utf-8');
+          openPrintableHtml(row.title || row.document_number || 'Contract Document', row.rendered_html);
+          return;
+        }
+        if (row.rendered_text) {
+          downloadTextFile(`${row.document_number || 'document'}.txt`, row.rendered_text, 'text/plain;charset=utf-8');
+          return;
+        }
+        throw new Error('No printable content is stored on this contract document.');
+      }
     }
 
     function renderBackboneTable() {
@@ -3322,6 +3597,14 @@
       if (e.backbonePostBtn && e.backbonePostBtn.dataset.bound !== '1') {
         e.backbonePostBtn.dataset.bound = '1';
         e.backbonePostBtn.addEventListener('click', () => postBackboneJournalBatch().catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.backboneGenerateBtn && e.backboneGenerateBtn.dataset.bound !== '1') {
+        e.backboneGenerateBtn.dataset.bound = '1';
+        e.backboneGenerateBtn.addEventListener('click', () => runBackboneGenerateAction().catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.backboneDownloadBtn && e.backboneDownloadBtn.dataset.bound !== '1') {
+        e.backboneDownloadBtn.dataset.bound = '1';
+        e.backboneDownloadBtn.addEventListener('click', () => runBackboneDownloadAction().catch((err) => setSummary(String(err?.message || err), true)));
       }
       document.querySelectorAll('[data-admin-route]').forEach((btn) => {
         if (btn.dataset.boundRoute === '1') return;
