@@ -1,3 +1,23 @@
+<!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
+## 2026-04-17 recurring service agreements, asset history, payroll review, and admin account tracking pass
+- Added migration `sql/080_service_agreements_assets_payroll_and_login_tracking.sql`.
+- Added DB-backed recurring service agreements with per-visit pricing fields, snow-trigger tracking, change orders, customer assets, warranty/callback records, payroll export runs, and login-event auditing.
+- Extended accounting rollups with material-to-job auto-costing from receipts/issues, plus route profitability and payroll review summaries.
+- Extended Admin so staff rows now show last-login visibility and login-event counts, while new service/agreement/accounting entities can be managed from the backbone shell.
+
+## Immediate next build priorities after 080
+1. **Estimate / contract conversion**
+   - turn approved estimates and recurring service agreements into printable service contracts and accepted job starts
+   - carry tax codes, per-visit billing, discount rules, and contract references through to jobs and invoices
+2. **Crew dispatch and split handling**
+   - let an active crew split into emergency, subcontract, or callback work without losing the original job timeline
+   - tighten equipment reassign + return expectations at the crew/session level
+3. **Payroll and invoicing closure**
+   - connect payroll export runs to final invoice staging and posted-cost review
+   - surface uninvoiced completed sessions and callback/warranty cost leakage more prominently
+4. **Customer property intelligence**
+   - keep adding repeat-property asset history, site notes, trigger thresholds, and visit outcomes so repeat work becomes faster to price and safer to schedule
+
 ## 2026-04-13 staff admin save verification pass
 - Added visible inline create/save/reset/block/delete confirmations in the Staff Directory screen so staff actions no longer fail silently from the operator’s point of view.
 - Added stronger front-end email and password validation plus busy-state feedback for staff actions.

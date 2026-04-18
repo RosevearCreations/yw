@@ -1,3 +1,17 @@
+<!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
+## 2026-04-17 pass update
+Closed or tightened in this pass:
+- recurring agreements are no longer only a roadmap concept; they now have DB-backed records with per-visit pricing and snow-trigger support
+- account access now has Admin-visible last-login tracking and login-event rollups instead of only raw auth assumptions
+- accounting can now see material-to-job auto-cost rollups from receipts/issues and payroll-review/export pressure more clearly
+- customer asset history and warranty/callback tracking now exist as first-class records instead of only notes-only workarounds
+
+Remaining strongest gaps:
+- contract document generation and estimate-to-agreement conversion are still pending
+- payroll export is tracked/reviewed, but export-file generation and close-the-loop posting is still pending
+- route profitability and customer asset history are DB-backed, but still need dedicated dashboard cards and drill-through UX
+- crew split / emergency reassignment still needs deeper live-operational UI beyond the current data structures
+
 ## 2026-04-13 staff admin save verification pass
 - Added visible inline create/save/reset/block/delete confirmations in the Staff Directory screen so staff actions no longer fail silently from the operator’s point of view.
 - Added stronger front-end email and password validation plus busy-state feedback for staff actions.

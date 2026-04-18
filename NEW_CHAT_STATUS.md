@@ -1,3 +1,20 @@
+<!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
+## Fresh-chat handoff: schema 080 pass
+This repo now includes:
+- recurring service agreements with per-visit pricing and snow-trigger logs
+- change orders for job scope/cost/charge deltas
+- customer assets plus per-asset job/service history links
+- warranty/callback tracking
+- payroll export runs and burden-aware payroll review summaries
+- login-event auditing with `profiles.last_login_at` updates for Admin visibility
+- material-to-job auto-costing from receipts/issues and route profitability summaries
+
+Next highest-value implementation steps:
+1. estimate -> agreement -> contract document conversion
+2. richer crew split / emergency reassignment UX
+3. payroll export file generation and accounting close-the-loop posting
+4. dashboard cards for recurring agreement pressure, callback cost leakage, and route profitability
+
 ## 2026-04-13 staff admin save verification pass
 - Added visible inline create/save/reset/block/delete confirmations in the Staff Directory screen so staff actions no longer fail silently from the operator’s point of view.
 - Added stronger front-end email and password validation plus busy-state feedback for staff actions.

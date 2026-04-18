@@ -1,3 +1,10 @@
+<!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
+## 2026-04-17 recurring agreements, payroll review, asset history, and account tracking pass
+- Added migration `sql/080_service_agreements_assets_payroll_and_login_tracking.sql`.
+- Added recurring service agreements, snow-event trigger logs, change orders, customer assets, customer-asset service history links, warranty/callback events, payroll export runs, login-event auditing, job material auto-cost rollups, and route profitability summaries.
+- Extended Admin directory/manage/UI so the new operations/accounting entities can be loaded and managed from the backbone shell, and staff records now show last login plus login-event count.
+- Extended account maintenance/auth flow to record successful login events and update `profiles.last_login_at` for admin visibility.
+
 ## 2026-04-13 staff admin save verification pass
 - Added visible inline create/save/reset/block/delete confirmations in the Staff Directory screen so staff actions no longer fail silently from the operator’s point of view.
 - Added stronger front-end email and password validation plus busy-state feedback for staff actions.

@@ -928,6 +928,256 @@ serve(async (req) => {
     }
 
 
+    if (entity === 'recurring_service_agreement') {
+      const patch = {
+        agreement_code: String(body.agreement_code || '').trim().toUpperCase(),
+        client_id: asNullableText(body.client_id),
+        client_site_id: asNullableText(body.client_site_id),
+        service_pricing_template_id: asNullableText(body.service_pricing_template_id),
+        route_id: asNullableText(body.route_id),
+        crew_id: asNullableText(body.crew_id),
+        tax_code_id: asNullableText(body.tax_code_id),
+        service_name: body.service_name ?? null,
+        agreement_status: body.agreement_status ?? 'draft',
+        billing_method: body.billing_method ?? 'per_visit',
+        service_pattern: body.service_pattern ?? null,
+        recurrence_basis: body.recurrence_basis ?? null,
+        recurrence_rule: body.recurrence_rule ?? null,
+        recurrence_interval: asNumber(body.recurrence_interval, 1),
+        start_date: asNullableDate(body.start_date),
+        end_date: asNullableDate(body.end_date),
+        open_end_date: !!body.open_end_date,
+        visit_estimated_minutes: asNullableNumber(body.visit_estimated_minutes),
+        visit_estimated_duration_hours: asNullableNumber(body.visit_estimated_duration_hours),
+        visit_cost_total: asNumber(body.visit_cost_total, 0),
+        visit_charge_total: asNumber(body.visit_charge_total, 0),
+        markup_percent: asNullableNumber(body.markup_percent),
+        discount_mode: body.discount_mode ?? 'none',
+        discount_value: asNumber(body.discount_value, 0),
+        tiered_discount_notes: body.tiered_discount_notes ?? null,
+        event_trigger_type: body.event_trigger_type ?? null,
+        snow_trigger_threshold_cm: asNullableNumber(body.snow_trigger_threshold_cm),
+        trigger_notes: body.trigger_notes ?? null,
+        pricing_notes: body.pricing_notes ?? null,
+        service_notes: body.service_notes ?? null,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.agreement_code || !patch.service_name) return Response.json({ ok:false, error:'agreement_code and service_name are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('recurring_service_agreements').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('recurring_service_agreements').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('recurring_service_agreements').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'snow_event_trigger') {
+      const patch = {
+        agreement_id: asNullableText(body.agreement_id),
+        event_date: asNullableDate(body.event_date) || new Date().toISOString().slice(0, 10),
+        event_label: body.event_label ?? null,
+        snowfall_cm: asNullableNumber(body.snowfall_cm),
+        threshold_cm: asNullableNumber(body.threshold_cm),
+        trigger_met: !!body.trigger_met,
+        notes: body.notes ?? null,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.agreement_id) return Response.json({ ok:false, error:'agreement_id is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('snow_event_triggers').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('snow_event_triggers').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('snow_event_triggers').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'change_order') {
+      const patch = {
+        job_id: asNullableNumber(body.job_id),
+        agreement_id: asNullableText(body.agreement_id),
+        change_order_number: String(body.change_order_number || '').trim().toUpperCase(),
+        status: body.status ?? 'draft',
+        requested_at: asNullableDateTime(body.requested_at) || new Date().toISOString(),
+        approved_at: asNullableDateTime(body.approved_at),
+        approved_by_profile_id: asNullableText(body.approved_by_profile_id),
+        scope_summary: body.scope_summary ?? null,
+        reason: body.reason ?? null,
+        estimated_cost_delta: asNumber(body.estimated_cost_delta, 0),
+        estimated_charge_delta: asNumber(body.estimated_charge_delta, 0),
+        actual_cost_delta: asNumber(body.actual_cost_delta, 0),
+        actual_charge_delta: asNumber(body.actual_charge_delta, 0),
+        tax_code_id: asNullableText(body.tax_code_id),
+        notes: body.notes ?? null,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.job_id || !patch.change_order_number || !patch.scope_summary) return Response.json({ ok:false, error:'job_id, change_order_number, and scope_summary are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('change_orders').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('change_orders').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('change_orders').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'customer_asset') {
+      const patch = {
+        asset_code: String(body.asset_code || '').trim().toUpperCase(),
+        client_id: asNullableText(body.client_id),
+        client_site_id: asNullableText(body.client_site_id),
+        asset_name: body.asset_name ?? null,
+        asset_type: body.asset_type ?? 'site_feature',
+        serial_number: body.serial_number ?? null,
+        install_date: asNullableDate(body.install_date),
+        warranty_expiry_date: asNullableDate(body.warranty_expiry_date),
+        manufacturer: body.manufacturer ?? null,
+        model: body.model ?? null,
+        location_notes: body.location_notes ?? null,
+        service_notes: body.service_notes ?? null,
+        is_active: body.is_active !== false,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.asset_code || !patch.asset_name) return Response.json({ ok:false, error:'asset_code and asset_name are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('customer_assets').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('customer_assets').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('customer_assets').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'customer_asset_job_link') {
+      const patch = {
+        asset_id: asNullableText(body.asset_id),
+        job_id: asNullableNumber(body.job_id),
+        service_date: asNullableDate(body.service_date),
+        event_type: body.event_type ?? 'service',
+        notes: body.notes ?? null,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.asset_id || !patch.job_id) return Response.json({ ok:false, error:'asset_id and job_id are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('customer_asset_job_links').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('customer_asset_job_links').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('customer_asset_job_links').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'warranty_callback_event') {
+      const patch = {
+        job_id: asNullableNumber(body.job_id),
+        asset_id: asNullableText(body.asset_id),
+        client_site_id: asNullableText(body.client_site_id),
+        callback_number: String(body.callback_number || '').trim().toUpperCase(),
+        callback_type: body.callback_type ?? 'callback',
+        status: body.status ?? 'open',
+        warranty_covered: !!body.warranty_covered,
+        opened_at: asNullableDateTime(body.opened_at) || new Date().toISOString(),
+        closed_at: asNullableDateTime(body.closed_at),
+        estimated_cost_total: asNumber(body.estimated_cost_total, 0),
+        actual_cost_total: asNumber(body.actual_cost_total, 0),
+        notes: body.notes ?? null,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.callback_number) return Response.json({ ok:false, error:'callback_number is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('warranty_callback_events').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('warranty_callback_events').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('warranty_callback_events').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'payroll_export_run') {
+      const patch = {
+        run_code: String(body.run_code || '').trim().toUpperCase(),
+        period_start: asNullableDate(body.period_start),
+        period_end: asNullableDate(body.period_end),
+        status: body.status ?? 'draft',
+        exported_at: asNullableDateTime(body.exported_at),
+        exported_by_profile_id: asNullableText(body.exported_by_profile_id),
+        notes: body.notes ?? null,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.run_code || !patch.period_start || !patch.period_end) return Response.json({ ok:false, error:'run_code, period_start, and period_end are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('payroll_export_runs').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('payroll_export_runs').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('payroll_export_runs').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+
     if (entity === 'job_financial_event') {
       const quantity = asNullableNumber(body.quantity);
       const unitCost = asNullableNumber(body.unit_cost);

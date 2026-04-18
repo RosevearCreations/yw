@@ -89,6 +89,15 @@ function isLikelyAddress(value: string) {
   return clean.length >= 4;
 }
 
+
+async function logLoginEvent(supabase: any, payload: Record<string, unknown>) {
+  try {
+    await supabase.from("account_login_events").insert(payload);
+  } catch {
+    // ignore login audit failures
+  }
+}
+
 async function logRecoveryRequest(supabase: any, payload: Record<string, unknown>) {
   try {
     await supabase.from("account_recovery_requests").insert(payload);
@@ -416,6 +425,37 @@ serve(async (req) => {
     return Response.json(
       { ok: false, error: "Inactive profile" },
       { status: 403, headers: corsHeaders },
+    );
+  }
+
+  if (action === "record_login_event") {
+    const occurredAt = String(body.occurred_at || new Date().toISOString()).trim() || new Date().toISOString();
+    const routeFragment = String(body.route_fragment || body.route || "").trim() || null;
+    const authSource = String(body.auth_source || "session_restore").trim() || "session_restore";
+    const sessionFingerprint = String(body.session_fingerprint || "").trim() || null;
+    const ipAddress = String(req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "").trim() || null;
+    const userAgent = String(req.headers.get("user-agent") || "").trim() || null;
+
+    await logLoginEvent(supabase, {
+      profile_id: actorId,
+      event_type: String(body.event_type || "login").trim() || "login",
+      auth_source: authSource,
+      success: body.success !== false,
+      route_fragment: routeFragment,
+      session_fingerprint: sessionFingerprint,
+      ip_address: ipAddress,
+      user_agent: userAgent,
+      occurred_at: occurredAt,
+    });
+
+    await supabase
+      .from("profiles")
+      .update({ last_login_at: occurredAt, updated_at: new Date().toISOString() })
+      .eq("id", actorId);
+
+    return Response.json(
+      { ok: true, last_login_at: occurredAt },
+      { headers: corsHeaders },
     );
   }
 

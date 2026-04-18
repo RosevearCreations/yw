@@ -78,8 +78,9 @@ serve(async (req) => {
   const limit = Math.max(1, Math.min(500, Number(body.limit || 200)));
 
   const { data: peopleRaw } = await supabase.from('v_people_directory').select('*');
+  const { data: profileAccessRaw } = await supabase.from('v_profile_access_rollups').select('*');
   const { data: assignmentsRaw } = await supabase.from('v_assignments_directory').select('*');
-  const people = peopleRaw || [];
+  const people = mergeRowsById(peopleRaw || [], profileAccessRaw || []);
   const assignments = assignmentsRaw || [];
 
   const directReportIds = new Set<string>();
@@ -144,6 +145,15 @@ serve(async (req) => {
     response.service_pricing_templates = await safeList(supabase, 'service_pricing_templates', '*', 'template_name', limit);
     response.tax_codes = await safeList(supabase, 'tax_codes', '*', 'code', limit);
     response.business_tax_settings = await safeList(supabase, 'business_tax_settings', '*', 'profile_name', limit);
+    response.recurring_service_agreements = await safeList(supabase, 'recurring_service_agreements', '*', 'agreement_code', limit);
+    response.snow_event_triggers = await safeList(supabase, 'snow_event_triggers', '*', 'event_date', limit, false);
+    response.change_orders = await safeList(supabase, 'change_orders', '*', 'requested_at', limit, false);
+    response.customer_assets = await safeList(supabase, 'customer_assets', '*', 'asset_name', limit);
+    response.customer_asset_job_links = await safeList(supabase, 'v_customer_asset_history', '*', 'service_date', limit, false);
+    response.warranty_callback_events = await safeList(supabase, 'warranty_callback_events', '*', 'opened_at', limit, false);
+    response.payroll_export_runs = await safeList(supabase, 'payroll_export_runs', '*', 'period_start', limit, false);
+    response.payroll_review_summary = await safeList(supabase, 'v_payroll_review_summary', '*', 'week_start', limit, false);
+    response.route_profitability_summary = await safeList(supabase, 'v_route_profitability_summary', '*', 'route_name', limit);
     response.equipment_master = await safeList(supabase, 'equipment_master', '*', 'item_name', limit);
     response.estimates = await safeList(supabase, 'estimates', '*', 'estimate_number', limit);
     response.estimate_lines = await safeList(supabase, 'estimate_lines', '*', 'line_order', limit);
@@ -198,6 +208,7 @@ serve(async (req) => {
     response.accounting_review_summary = await safeList(supabase, 'v_accounting_review_summary');
     response.job_financial_events = await safeList(supabase, 'v_job_financial_event_directory', '*', 'event_date', limit, false);
     response.job_financial_rollups = await safeList(supabase, 'v_job_financial_rollups', '*', 'job_id', limit);
+    response.account_login_events = await safeList(supabase, 'account_login_events', '*', 'occurred_at', limit, false);
     response.hse_link_context_summary = await safeList(supabase, 'v_hse_link_context_summary', '*', 'sort_order', limit);
     response.monitor_review_summary = await safeList(supabase, 'v_monitor_review_summary', '*', 'sort_order', limit);
   }

@@ -1,3 +1,9 @@
+<!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
+## Current pass: 2026-04-17 recurring agreements, asset history, payroll review, and account tracking
+- Schema now advances through migration 080.
+- The landscaping/service-management model now has recurring service agreements, snow-event thresholds, change orders, customer assets, warranty/callback records, payroll export runs, login-event audit tracking, and stronger job/accounting rollups.
+- Admin staff records now expose last-login visibility, and the operations/accounting backbone can manage the new recurring/agreement/asset tables.
+
 ## 2026-04-13 staff admin save verification pass
 - Added visible inline create/save/reset/block/delete confirmations in the Staff Directory screen so staff actions no longer fail silently from the operator’s point of view.
 - Added stronger front-end email and password validation plus busy-state feedback for staff actions.
