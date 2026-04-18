@@ -391,8 +391,17 @@ left join public.jobs j on j.id = l.job_id
 left join public.profiles p on p.id = l.created_by_profile_id;
 
 create or replace view public.v_route_profitability_summary as
+with job_route as (
+  select
+    wo.legacy_job_id::bigint as job_id,
+    min(wo.route_id::text)::uuid as route_id
+  from public.work_orders wo
+  where wo.legacy_job_id is not null
+    and wo.route_id is not null
+  group by wo.legacy_job_id
+)
 select
-  jd.route_id,
+  jr.route_id,
   r.route_code,
   r.name as route_name,
   jd.service_area_id,
@@ -406,13 +415,27 @@ select
   coalesce(sum(coalesce(jd.actual_profit_rollup_total, 0)), 0)::numeric(12,2) as actual_profit_rollup_total,
   case
     when coalesce(sum(coalesce(jd.actual_charge_rollup_total, 0)), 0) > 0
-      then round((coalesce(sum(coalesce(jd.actual_profit_rollup_total, 0)), 0) / coalesce(sum(coalesce(jd.actual_charge_rollup_total, 0)), 0)) * 100.0, 2)::numeric(7,2)
+      then round(
+        (
+          coalesce(sum(coalesce(jd.actual_profit_rollup_total, 0)), 0)
+          / coalesce(sum(coalesce(jd.actual_charge_rollup_total, 0)), 0)
+        ) * 100.0,
+        2
+      )::numeric(7,2)
     else 0::numeric(7,2)
   end as actual_margin_percent,
   max(jd.last_activity_at) as last_activity_at
 from public.v_jobs_directory jd
-left join public.routes r on r.id = jd.route_id
-group by jd.route_id, r.route_code, r.name, jd.service_area_id, jd.service_area_name, jd.crew_id, jd.crew_name;
+left join job_route jr on jr.job_id = jd.id
+left join public.routes r on r.id = jr.route_id
+group by
+  jr.route_id,
+  r.route_code,
+  r.name,
+  jd.service_area_id,
+  jd.service_area_name,
+  jd.crew_id,
+  jd.crew_name;
 
 create or replace view public.v_job_financial_rollups as
 with session_rollup as (
@@ -519,14 +542,15 @@ traffic_rollup as (
 ),
 job_rollup as (
   select
-    count(*) filter (where coalesce(status, '') in ('completed','done','closed') and coalesce(invoice_number, '') = '')::int as completed_uninvoiced_job_count,
-    count(*) filter (where coalesce(delayed_schedule, false) = true)::int as delayed_job_count,
-    count(*) filter (where coalesce(unsigned_job_session_count, 0) > 0)::int as unsigned_job_session_count,
-    count(*) filter (where coalesce(actual_profit_rollup_total, 0) < 0)::int as loss_making_job_count,
-    count(*) filter (where coalesce(financial_event_count, 0) > 0)::int as jobs_with_financial_events_count,
-    coalesce(sum(coalesce(actual_profit_rollup_total, 0)), 0)::numeric(12,2) as actual_rollup_profit_total,
-    count(*) filter (where coalesce(change_order_count, 0) > 0)::int as jobs_with_change_orders_count
-  from public.v_jobs_directory
+    count(*) filter (where coalesce(j.status, '') in ('completed','done','closed') and coalesce(j.invoice_number, '') = '')::int as completed_uninvoiced_job_count,
+    count(*) filter (where coalesce(j.delayed_schedule, false) = true)::int as delayed_job_count,
+    count(*) filter (where coalesce(jf.unsigned_session_count, 0) > 0)::int as unsigned_job_session_count,
+    count(*) filter (where coalesce(jf.actual_profit_rollup_total, 0) < 0)::int as loss_making_job_count,
+    count(*) filter (where coalesce(jf.financial_event_count, 0) > 0)::int as jobs_with_financial_events_count,
+    coalesce(sum(coalesce(jf.actual_profit_rollup_total, 0)), 0)::numeric(12,2) as actual_rollup_profit_total,
+    count(*) filter (where coalesce(jf.change_order_count, 0) > 0)::int as jobs_with_change_orders_count
+  from public.jobs j
+  left join public.v_job_financial_rollups jf on jf.job_id = j.id
 ),
 payroll_rollup as (
   select
