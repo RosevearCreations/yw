@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Quick Product Capture — Devil n Dove</title>
+  <meta name="description" content="Admin-only mobile workflow for capturing one finished product, uploading phone photos, and sending the listing into review."/>
+  <meta name="robots" content="noindex,follow"/>
+  <link rel="icon" type="image/png" href="/assets/mark.png"/>
+  <link rel="stylesheet" href="/css/styles.css"/>
+</head>
+<body>
+  <div class="container admin-shell mobile-capture-shell">
+    <div class="nav">
+      <div class="brand">
+        <img alt="Devil n Dove logo" src="/assets/logo-clear.png"/>
+        <div>
+          <div style="font-weight:800;letter-spacing:.2px;line-height:1.1">Devil n Dove</div>
+          <div class="small">Mobile Product Capture</div>
+        </div>
+      </div>
+      <div class="links">
+        <a href="/">Home</a>
+        <a href="/admin/">Admin</a>
+        <button class="btn" data-nav-logout type="button">Logout</button>
+      </div>
+    </div>
+
+    <div class="hero compact-hero">
+      <div>
+        <h1>Quick finished product capture</h1>
+        <p>Create one draft product from a phone, upload images directly, add SEO basics, tag the tools and supplies used, and move straight to the next item. Partial entries are allowed so you can save a photo, name, or reference now and finish the details later.</p>
+      </div>
+    </div>
+
+    <div id="mobileProductAccessMessage" class="card" style="display:none;margin-bottom:16px"></div>
+    <div class="card mobile-capture-card">
+      <div class="mobile-capture-topline">
+        <div>
+          <div class="small">Next product number (DD series)</div>
+          <div id="mobileNextProductNumber" class="mobile-capture-number">—</div>
+        </div>
+        <button type="button" class="btn" id="mobileRefreshBootstrapButton">Refresh</button>
+      </div>
+      <div id="mobileProductMessage" class="small" style="display:none;margin-bottom:12px"></div>
+
+      <div class="card" style="margin:0 0 14px 0;padding:14px;border:1px solid rgba(0,0,0,.08)">
+        <div style="display:flex;justify-content:space-between;gap:12px;align-items:end;flex-wrap:wrap">
+          <div>
+            <div class="small">Continue an existing draft</div>
+            <div class="small">Pick a saved draft and keep working in this same capture screen.</div>
+          </div>
+          <button type="button" class="btn" id="mobileRefreshDraftsButton">Refresh drafts</button>
+        </div>
+        <div class="mobile-form-grid" style="margin-top:10px">
+          <label>
+            <span>Find draft</span>
+            <input class="input" type="search" id="mobileDraftSearch" placeholder="Search name, DD number, SKU, reference"/>
+          </label>
+          <label>
+            <span>Draft list</span>
+            <select class="input" id="mobileDraftSelect"><option value="">Loading drafts…</option></select>
+          </label>
+        </div>
+        <div class="small" id="mobileDraftSummary" style="margin-top:8px">Choose a draft to load it into the form.</div>
+        <div id="mobileDraftReadiness" class="mobile-draft-readiness" style="margin-top:10px"><div class="small">Select a saved draft to see what is still missing before it is ready for fuller review.</div></div>
+      </div>
+
+      <div class="card mobile-required-note" style="margin:0;padding:14px;border:1px solid rgba(10,122,47,.22)">
+        <strong>Approval-required fields</strong>
+        <div class="small" style="margin-top:6px">Green outlined fields are the ones that must be filled before a draft can be approved for storefront go-live. Save a draft any time, then return later to finish the approval fields.</div>
+      </div>
+
+      <form id="mobileProductForm" class="mobile-product-form">
+        <input type="hidden" name="product_id" id="mobileDraftProductId" value=""/>
+        <div class="mobile-form-grid">
+          <label class="mobile-required-field" data-ready-key="name">
+            <span>Product name <span class="mobile-required-badge">Needed to approve</span></span>
+            <input class="input" type="text" name="name" maxlength="160" placeholder="Example: Hammered copper leaf ring"/>
+          </label>
+          <label class="mobile-required-field" data-ready-key="product_category">
+            <span>Category <span class="mobile-required-badge">Needed to approve</span></span>
+            <select class="input" name="product_category" id="mobileProductCategory"></select>
+          </label>
+          <label>
+            <span>Colour</span>
+            <select class="input" name="color_name" id="mobileColorName"></select>
+          </label>
+          <label class="mobile-required-field" data-ready-key="price">
+            <span>Price (CAD) <span class="mobile-required-badge">Needed to approve</span></span>
+            <input class="input" type="number" name="price" min="0" step="0.01" placeholder="49.95"/>
+          </label>
+          <label>
+            <span>Compare-at price</span>
+            <input class="input" type="number" name="compare_at_price" min="0" step="0.01" placeholder="59.95"/>
+          </label>
+          <label>
+            <span>On hand quantity</span>
+            <input class="input" type="number" name="inventory_quantity" min="1" step="1" value="1"/>
+          </label>
+          <label>
+            <span>Shipping code</span>
+            <select class="input" name="shipping_code" id="mobileShippingCode"></select>
+          </label>
+          <label>
+            <span>Tax code</span>
+            <select class="input" name="tax_class_id" id="mobileTaxClassId"><option value="">No tax class</option></select>
+          </label>
+          <label>
+            <span>Weight (grams)</span>
+            <input class="input" type="number" name="weight_grams" min="0" step="1" placeholder="45"/>
+          </label>
+                    <label>
+            <span>Reference / identifier</span>
+            <input class="input" type="text" name="capture_reference" maxlength="120" placeholder="Photo batch, shelf note, customer note, UPC, temp code"/>
+          </label>
+          <label>
+            <span>SKU override</span>
+            <input class="input" type="text" name="sku" maxlength="60" placeholder="Leave blank to use the DD series automatically"/>
+          </label>
+        </div>
+
+        <label class="mobile-required-field" data-ready-key="short_description">
+          <span>Brief product description <span class="mobile-required-badge">40+ chars to approve</span></span>
+          <textarea class="input" name="short_description" rows="3" maxlength="320" placeholder="Short shopper-friendly summary."></textarea>
+        </label>
+        <label>
+          <span>Long description / story</span>
+          <textarea class="input" name="description" rows="5" placeholder="How it was made, materials, inspiration, finish, size, or care notes."></textarea>
+        </label>
+
+        <div class="mobile-form-grid">
+          <label class="mobile-required-field" data-ready-key="meta_title">
+            <span>SEO title <span class="mobile-required-badge">10+ chars to approve</span></span>
+            <input class="input" type="text" name="meta_title" maxlength="70" placeholder="Auto-generated if left blank"/>
+          </label>
+          <label>
+            <span>SEO keywords</span>
+            <input class="input" type="text" name="keywords" maxlength="255" placeholder="ring, copper ring, handmade jewelry, Ontario"/>
+          </label>
+        </div>
+        <label class="mobile-required-field" data-ready-key="meta_description">
+          <span>SEO meta description <span class="mobile-required-badge">50+ chars to approve</span></span>
+          <textarea class="input" name="meta_description" rows="3" maxlength="160" placeholder="Short search-friendly description. Auto-generated if left blank."></textarea>
+        </label>
+
+        <label class="mobile-required-field" data-ready-key="photos">
+          <span>Photos <span class="mobile-required-badge">First photo needed to approve</span></span>
+          <input class="input" type="file" name="images" id="mobileProductImages" accept="image/*" capture="environment" multiple/>
+          <div class="small">Upload phone photos directly. The first image becomes the featured image.</div>
+        </label>
+        <div id="mobileImagePreview" class="mobile-image-preview-grid"></div>
+
+        <div class="resource-picker-head">
+          <div>
+            <h2 style="margin:0;font-size:1.05rem">Tools &amp; supplies used</h2>
+            <div class="small">Optional, but helpful for inventory and social storytelling.</div>
+          </div>
+          <div class="resource-picker-controls">
+            <input class="input" type="search" id="mobileResourceSearch" placeholder="Search tools or supplies"/>
+            <select class="input" id="mobileResourceKindFilter">
+              <option value="all">All tools &amp; supplies</option>
+              <option value="tool">Tools only</option>
+              <option value="supply">Supplies only</option>
+            </select>
+            <label class="mobile-stock-toggle"><input type="checkbox" id="mobileInStockOnly" checked/> In-stock only</label>
+          </div>
+        </div>
+        <div class="small" id="mobileResourceSummary">Loading current stock lookup…</div>
+        <div id="mobileSelectedResources" class="resource-linked-list"></div>
+        <div id="mobileResourceGrid" class="resource-tile-grid"></div>
+
+        <div class="small" style="margin-top:8px;margin-bottom:4px">Only one clue is enough: a photo, a quick name, or a temporary identifier. Everything can stay in draft mode until you finish the listing later.</div>
+        <div class="mobile-form-actions">
+          <button class="btn primary" type="submit">Save partial draft</button>
+          <button class="btn" type="button" id="mobileResetForNextButton">Clear for next product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script src="/public/js/auth.js"></script>
+  <script src="/public/js/site-auth-ui.js"></script>
+  <script src="/public/js/admin-mobile-product.js"></script>
+</body>
+</html>

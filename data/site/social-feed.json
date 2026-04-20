@@ -1,0 +1,78 @@
+{
+  "updated_at": "2026-04-03",
+  "profiles": {
+    "youtube": {
+      "label": "YouTube",
+      "url": "https://www.youtube.com/@devilndove345",
+      "handle": "@devilndove345"
+    },
+    "instagram": {
+      "label": "Instagram",
+      "url": "https://www.instagram.com/devilndove",
+      "handle": "@devilndove"
+    },
+    "tiktok": {
+      "label": "TikTok",
+      "url": "https://www.tiktok.com/@devilanddove",
+      "handle": "@devilanddove"
+    },
+    "facebook": {
+      "label": "Facebook",
+      "url": "https://www.facebook.com/DevilnDoveOnline",
+      "handle": "DevilnDoveOnline"
+    },
+    "x": {
+      "label": "X",
+      "url": "https://x.com/DevilnDove",
+      "handle": "@DevilnDove"
+    },
+    "patreon": {
+      "label": "Patreon",
+      "url": "https://patreon.com/DevilnDove",
+      "handle": "patreon.com/DevilnDove"
+    }
+  },
+  "youtube_videos": [
+    {
+      "title": "Enchanted Forest - Handmade Artisan Clay Earrings",
+      "url": "https://www.youtube.com/shorts/df8DG7_3oP0",
+      "video_id": "df8DG7_3oP0",
+      "platform": "youtube",
+      "kind": "Short"
+    },
+    {
+      "title": "Golden Vein Heart Pendant",
+      "url": "https://www.youtube.com/shorts/BmtYol42jEs",
+      "video_id": "BmtYol42jEs",
+      "platform": "youtube",
+      "kind": "Short"
+    },
+    {
+      "title": "Handcrafted Pink Clay Cuddler",
+      "url": "https://www.youtube.com/shorts/Tck76ZyhTwU",
+      "video_id": "Tck76ZyhTwU",
+      "platform": "youtube",
+      "kind": "Short"
+    },
+    {
+      "title": "Copper Embrace Earthy Stone Pendant",
+      "url": "https://www.youtube.com/shorts/_7iCjiIWhEE",
+      "video_id": "_7iCjiIWhEE",
+      "platform": "youtube",
+      "kind": "Short"
+    },
+    {
+      "title": "Cosmic Twilight Handcrafted Clay Pendant",
+      "url": "https://www.youtube.com/shorts/oLcBpQmCuwo",
+      "video_id": "oLcBpQmCuwo",
+      "platform": "youtube",
+      "kind": "Short"
+    }
+  ],
+  "feed_notes": {
+    "youtube": "Seeded with five currently discoverable public YouTube Shorts for the channel.",
+    "instagram": "Profile link added. Direct latest-post ingestion still needs a platform-approved API or a manual feed file.",
+    "tiktok": "Profile link added. Direct latest-post ingestion still needs a platform-approved API or a manual feed file.",
+    "x": "Profile link added. Direct latest-post ingestion still needs a platform-approved API or a manual feed file."
+  }
+}

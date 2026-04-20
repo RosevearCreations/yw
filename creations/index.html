@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Devil n Dove Creations | Browse Handmade Projects &amp; Pieces</title>
+<link href="/css/styles.css" rel="stylesheet"/>
+<link href="/assets/mark.png" rel="icon" type="image/png"/>
+<style>
+    .hero-cta{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+    .stats-grid{ display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; margin-top:16px; }
+    .stat-card{ background:#fff; border:1px solid #e7e7e7; border-radius:18px; padding:14px; }
+    .stat-card .small{ display:block; margin-bottom:4px; }
+    .stat-value{ font-size:1.4rem; font-weight:800; line-height:1; }
+
+    .panel{ background:#fff; border:1px solid #e7e7e7; border-radius:18px; padding:16px; margin-top:16px; }
+    .controls-grid{ display:grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap:12px; align-items:end; }
+    .results-bar{ display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; margin-top:14px; }
+    .chip-row{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+    .chip{ display:inline-flex; align-items:center; border:1px solid #ead8f2; background:#fbf6fd; color:#6a2c70; border-radius:999px; padding:6px 10px; font-size:.84rem; }
+    .video-grid{ display:grid; grid-template-columns: 1.2fr .8fr; gap:16px; align-items:center; }
+    .video-wrap{ aspect-ratio: 16/9; border-radius:18px; overflow:hidden; background:#111; }
+    .video-wrap video{ width:100%; height:100%; object-fit:cover; display:block; }
+
+    .catalog-grid{ display:grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap:16px; margin-top:16px; }
+    .creation-card{ background:#fff; border:1px solid #e7e7e7; border-radius:18px; overflow:hidden; display:flex; flex-direction:column; }
+    .creation-card img{ width:100%; aspect-ratio: 4/3; object-fit:cover; background:#f4f4f4; }
+    .creation-body{ padding:14px; display:flex; flex-direction:column; gap:10px; height:100%; }
+    .meta-line{ display:flex; gap:8px; flex-wrap:wrap; }
+    .pill{ display:inline-flex; align-items:center; padding:5px 9px; border-radius:999px; background:#f7f1f9; color:#7b4f86; font-size:.78rem; border:1px solid #ead8f2; }
+    .title-row{ display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+    .title-row h3{ margin:0; font-size:1.08rem; }
+    .summary{ margin:0; color:#555; min-height:2.6em; }
+    .action-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:auto; }
+    .muted-box{ text-align:center; padding:28px 16px; color:#666; }
+    .stats-grid .stat-card, .panel, .creation-card{ background:#ffffff; color:#1f2937; box-shadow:0 10px 26px rgba(8,12,18,.10); }
+    .stats-grid .stat-card .small, .panel .small, .creation-card .small, .summary, .muted-box{ color:#4b5563; }
+    .creation-card h2, .creation-card h3, .title-row h3, .panel h2, .panel strong, .results-bar strong{ color:#111827; }
+    .creation-card a, .panel a{ color:#1d4ed8; }
+    .creation-card .btn, .panel .btn{ color:#111827; background:#eef6ff; border-color:#b7d7ff; }
+    .creation-card .btn.secondary, .panel .btn.secondary{ background:#fff4e8; border-color:#ffd2a8; }
+    .creation-card .pill, .chip{ color:#6b2f7a; }
+    .controls-grid .input, #q, #typeFilter, #subFilter, #materialFilter{ background:#ffffff; color:#111827; border:1px solid #d6dbe3; }
+
+    @media (max-width: 980px){
+      .stats-grid, .controls-grid, .catalog-grid, .video-grid{ grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 720px){
+      .stats-grid, .controls-grid, .catalog-grid, .video-grid{ grid-template-columns: 1fr; }
+    }
+  </style>
+<link href="https://devilndove.com/creations/" rel="canonical"/><meta content="Browse Devil n Dove creations including handmade jewelry, resin, mixed media, workshop builds, and featured finished pieces from Southern Ontario, Canada." name="description"/><meta content="index,follow" name="robots"/><meta content="Devil n Dove" property="og:site_name"/><meta content="website" property="og:type"/><meta content="Devil n Dove Creations | Browse Handmade Projects &amp; Pieces" property="og:title"/><meta content="Browse Devil n Dove creations including handmade jewelry, resin, mixed media, workshop builds, and featured finished pieces from Southern Ontario, Canada." property="og:description"/><meta content="https://devilndove.com/creations/" property="og:url"/><meta content="https://devilndove.com/assets/logo-clear.png" property="og:image"/><meta content="summary_large_image" name="twitter:card"/><meta content="Devil n Dove Creations | Browse Handmade Projects &amp; Pieces" name="twitter:title"/><meta content="Browse Devil n Dove creations including handmade jewelry, resin, mixed media, workshop builds, and featured finished pieces from Southern Ontario, Canada." name="twitter:description"/><meta content="https://devilndove.com/assets/logo-clear.png" name="twitter:image"/><script id="pageStructuredData" type="application/ld+json">{"@context":"https://schema.org","@type":"CollectionPage","name":"Browse Devil n Dove creations","url":"https://devilndove.com/creations/","description":"Browse Devil n Dove creations including handmade jewelry, resin, mixed media, workshop builds, and featured finished pieces from Southern Ontario, Canada.","isPartOf":{"@type":"WebSite","name":"Devil n Dove","url":"https://devilndove.com/"}}</script></head>
+<body>
+<div class="container">
+<div class="nav">
+<div class="brand">
+<img alt="Devil n Dove logo" src="/assets/logo-clear.png"/>
+<div>
+<div style="font-weight:800;letter-spacing:.2px;line-height:1.1">Devil n Dove</div>
+<div class="small">Workshop • Art • Tools • Movies</div>
+</div>
+</div>
+<div style="display:flex;gap:14px;flex-wrap:wrap">
+<a href="/index.html">Home</a>
+<a href="/about/index.html">About</a>
+<a href="/gallery/index.html">Art</a>
+<a href="/creations/index.html">Creations</a>
+<a href="/tools/index.html">Tools</a>
+<a href="/supplies/index.html">Supplies</a>
+<a href="/shop/index.html">Shop</a>
+<a href="/movies/index.html">Movies</a>
+<a href="/contact/index.html">Contact</a>
+</div>
+</div>
+<section class="hero">
+<span class="badge">Finished Work</span>
+<h1>Browse Devil n Dove creations</h1>
+<p>
+        This page is built to scale. Right now it shows the finished pieces already in your JSON, and later it can grow into the main home for hundreds of rings, pendants, sets, experiments, and one-off builds.
+      </p>
+<div class="hero-cta">
+<a class="btn" href="/shop/index.html">Visit the shop page</a>
+<a class="btn secondary" href="/gallery/index.html">See the broader art gallery</a>
+</div>
+</section>
+<section aria-label="Creations summary" class="stats-grid">
+<div class="stat-card"><span class="small">Pieces listed</span><div class="stat-value" id="statTotal">0</div></div>
+<div class="stat-card"><span class="small">Subcategories</span><div class="stat-value" id="statSubs">0</div></div>
+<div class="stat-card"><span class="small">Materials tagged</span><div class="stat-value" id="statMaterials">0</div></div>
+<div class="stat-card"><span class="small">Visible right now</span><div class="stat-value" id="statVisible">0</div></div>
+</section>
+<section class="panel" hidden="" id="videoPanel">
+<div class="video-grid">
+<div class="video-wrap"><video controls="" id="creationVideo" playsinline="" preload="metadata"></video></div>
+<div>
+<span class="badge">Workshop video</span>
+<h2 style="margin:.5rem 0">A closer look at what we make.</h2>
+<p class="small" id="videoCopy" style="font-size:1rem;color:#555">
+            Watch one of the pieces of workshop footage connected to this collection.
+          </p>
+<div class="chip-row" id="videoChips"></div>
+</div>
+</div>
+</section>
+<section class="panel">
+<div class="controls-grid">
+<div>
+<label class="small" for="q">Search</label>
+<input class="input" id="q" placeholder="Search title, notes, tags, material, style..." type="search"/>
+</div>
+<div>
+<label class="small" for="typeFilter">Type</label>
+<select class="input" id="typeFilter"><option value="all">All types</option></select>
+</div>
+<div>
+<label class="small" for="subFilter">Subcategory</label>
+<select class="input" id="subFilter"><option value="all">All subcategories</option></select>
+</div>
+<div>
+<label class="small" for="materialFilter">Material</label>
+<select class="input" id="materialFilter"><option value="all">All materials</option></select>
+</div>
+</div>
+<div class="results-bar">
+<div>
+<strong id="resultsCount">0</strong> pieces showing
+          <div class="small">Use the filters to narrow the collection as this library grows.</div>
+</div>
+<button class="btn secondary" id="resetBtn" type="button">Reset filters</button>
+</div>
+</section>
+<section aria-label="Active filters" class="chip-row" id="activeChips"></section>
+<section aria-live="polite" class="catalog-grid" id="catalog"></section>
+<footer class="footer">
+      © <span id="year"></span> Devil n Dove — handcrafted experiments, builds, and stories from our workshop.
+    </footer>
+</div>
+<script src="/js/main.js"></script>
+<script>
+    const DATA_URL = '/api/creations';
+    const DATA_FALLBACK_URL = '/data/itemsforsale/itemsforsale_items_master.json';
+    const FALLBACK_ASSET_ORIGIN = 'https://assets.devilndove.com';
+    const FALLBACK_ASSET_PREFIX = 'Itemsforsale';
+
+    const state = { all: [], filtered: [] };
+    const els = {
+      q: document.getElementById('q'),
+      typeFilter: document.getElementById('typeFilter'),
+      subFilter: document.getElementById('subFilter'),
+      materialFilter: document.getElementById('materialFilter'),
+      resetBtn: document.getElementById('resetBtn'),
+      activeChips: document.getElementById('activeChips'),
+      catalog: document.getElementById('catalog'),
+      resultsCount: document.getElementById('resultsCount'),
+      statTotal: document.getElementById('statTotal'),
+      statSubs: document.getElementById('statSubs'),
+      statMaterials: document.getElementById('statMaterials'),
+      statVisible: document.getElementById('statVisible'),
+      videoPanel: document.getElementById('videoPanel'),
+      creationVideo: document.getElementById('creationVideo'),
+      videoCopy: document.getElementById('videoCopy'),
+      videoChips: document.getElementById('videoChips')
+    };
+
+    function ensureStatusEl(){
+      let el = document.getElementById('creationsStatus');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'creationsStatus';
+        el.className = 'status-note';
+        el.style.display = 'none';
+        const catalog = document.getElementById('catalog');
+        catalog?.parentElement?.insertBefore(el, catalog);
+      }
+      return el;
+    }
+
+    function setStatus(text, tone='info'){
+      const el = ensureStatusEl();
+      if (!text) { el.textContent = ''; el.style.display = 'none'; el.className = 'status-note'; return; }
+      el.textContent = text;
+      el.className = `status-note ${tone}`;
+      el.style.display = 'block';
+    }
+
+    const nice = (v) => String(v || '').replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const unique = (arr) => [...new Set(arr.filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b)));
+
+    function ensureProtocol(url){
+      const raw = String(url || '').trim();
+      if (!raw) return '';
+      if (/^https?:\/\/.+/i.test(raw)) return raw;
+      if (/^https?:\/[^/].+/i.test(raw)) {
+        return raw.replace(/^https?:\//i, (m) => m.toLowerCase().startsWith('https') ? 'https://' : 'http://');
+      }
+      return raw;
+    }
+
+    function normalizeAssetKey(value, prefix){
+      let raw = String(value || '').trim().replace(/^\/+/, '');
+      if (!raw) return '';
+
+      raw = ensureProtocol(raw);
+      if (/^https?:\/\//i.test(raw) || raw.startsWith('/')) return raw;
+
+      const parts = raw.split('/').filter(Boolean);
+      if (!parts.length) return '';
+
+      if (parts.length === 1) return `${prefix}/${parts[0]}`;
+
+      if ((parts[0] || '').toLowerCase() === 'itemsforsale') {
+        parts[0] = prefix;
+      }
+
+      return parts.join('/');
+    }
+
+    function normalizeAbsoluteAssetUrl(value, assetOrigin, prefix){
+      const repaired = ensureProtocol(value);
+      if (!/^https?:\/\//i.test(repaired)) return repaired;
+
+      try {
+        const parsed = new URL(repaired);
+        const origin = new URL(assetOrigin);
+        if (parsed.origin !== origin.origin) return repaired;
+
+        const parts = parsed.pathname.split('/').filter(Boolean);
+        if (!parts.length) return repaired;
+
+        if ((parts[0] || '').toLowerCase() === 'itemsforsale') {
+          parts[0] = prefix;
+          parsed.pathname = `/${parts.map(encodeURIComponent).join('/')}`;
+          return parsed.toString();
+        }
+
+        return repaired;
+      } catch {
+        return repaired;
+      }
+    }
+
+    function imageCandidates(data, item){
+      const origin = data.asset_origin || FALLBACK_ASSET_ORIGIN;
+      const prefix = data.asset_prefix || FALLBACK_ASSET_PREFIX;
+      const candidates = [];
+
+      const directValues = [
+        item.image,
+        item.image_url,
+        item.r2_object_key,
+        item.image_file
+      ];
+
+      directValues.forEach((value) => {
+        let raw = String(value || '').trim();
+        if (!raw) return;
+
+        raw = ensureProtocol(raw);
+
+        if (/^https?:\/\//i.test(raw)) {
+          candidates.push(normalizeAbsoluteAssetUrl(raw, origin, prefix));
+          return;
+        }
+
+        if (raw.startsWith('/')) {
+          candidates.push(raw);
+          return;
+        }
+
+        const normalizedKey = normalizeAssetKey(raw, prefix);
+        if (!normalizedKey) return;
+
+        if (/^https?:\/\//i.test(normalizedKey) || normalizedKey.startsWith('/')) {
+          candidates.push(normalizeAbsoluteAssetUrl(normalizedKey, origin, prefix));
+          return;
+        }
+
+        candidates.push(`${origin.replace(/\/$/, '')}/${normalizedKey.split('/').map(encodeURIComponent).join('/')}`);
+      });
+
+      const seen = new Set();
+      return candidates.filter((url) => {
+        const key = String(url || '').trim();
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
+    function imageUrl(data, item){
+      return imageCandidates(data, item)[0] || '/assets/mark.png';
+    }
+
+    function toSearchText(item){
+      return [
+        item.title, item.type, item.subcategory, item.notes, item.description,
+        ...(item.materials || []), ...(item.tags || [])
+      ].filter(Boolean).join(' ').toLowerCase();
+    }
+
+    function fillSelect(select, values, labeler = nice){
+      const current = select.value;
+      select.innerHTML = `<option value="all">${select.options[0]?.textContent || 'All'}</option>`;
+      values.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = labeler(v);
+        select.appendChild(opt);
+      });
+      if ([...select.options].some(o => o.value === current)) select.value = current;
+    }
+
+    function renderVideo(data){
+      const video = data.video;
+      if (!video || !video.src) return;
+      els.videoPanel.hidden = false;
+      els.creationVideo.src = video.src;
+      els.videoCopy.textContent = video.description || 'Workshop footage connected to this collection.';
+      els.videoChips.innerHTML = '';
+      [video.caption, data.asset_prefix].filter(Boolean).forEach(label => {
+        const s = document.createElement('span');
+        s.className = 'chip';
+        s.textContent = nice(label);
+        els.videoChips.appendChild(s);
+      });
+    }
+
+    function renderActiveChips(){
+      const chips = [];
+      if (els.q.value.trim()) chips.push(`Search: ${els.q.value.trim()}`);
+      if (els.typeFilter.value !== 'all') chips.push(`Type: ${nice(els.typeFilter.value)}`);
+      if (els.subFilter.value !== 'all') chips.push(`Subcategory: ${nice(els.subFilter.value)}`);
+      if (els.materialFilter.value !== 'all') chips.push(`Material: ${nice(els.materialFilter.value)}`);
+      els.activeChips.innerHTML = chips.length ? chips.map(c => `<span class="chip">${c}</span>`).join('') : '';
+    }
+
+    function wireImageFallbacks(data){
+      const imgs = els.catalog.querySelectorAll('img[data-fallbacks]');
+      imgs.forEach((img) => {
+        let fallbacks = [];
+        try {
+          fallbacks = JSON.parse(img.getAttribute('data-fallbacks') || '[]');
+        } catch {
+          fallbacks = [];
+        }
+
+        let index = Math.max(0, fallbacks.indexOf(img.getAttribute('src')));
+
+        img.onerror = function(){
+          index += 1;
+          while (index < fallbacks.length && String(fallbacks[index] || '').trim() === String(this.src || '').trim()) {
+            index += 1;
+          }
+
+          if (index < fallbacks.length) {
+            this.src = fallbacks[index];
+            return;
+          }
+
+          this.src = '/assets/mark.png';
+        };
+      });
+    }
+
+    function renderCards(data){
+      const items = state.filtered;
+      els.catalog.innerHTML = '';
+      els.resultsCount.textContent = String(items.length);
+      els.statVisible.textContent = String(items.length);
+
+      if (!items.length){
+        els.catalog.innerHTML = `<div class="panel muted-box" style="grid-column:1/-1">No creations matched those filters. Try a broader search or reset the filters.</div>`;
+        return;
+      }
+
+      items.forEach(item => {
+        const card = document.createElement('article');
+        card.className = 'creation-card';
+        const tags = (item.tags || []).slice(0, 4).map(t => `<span class="pill">${nice(t)}</span>`).join('');
+        const materials = (item.materials || []).slice(0, 3).map(m => `<span class="pill">${nice(m)}</span>`).join('');
+        const actionHref = item.shop_url || '/contact/index.html';
+        const actionLabel = item.shop_url ? 'View listing' : 'Ask about this piece';
+        const fallbacks = imageCandidates(data, item);
+        card.innerHTML = `
+          <img
+            src="${imageUrl(data, item)}"
+            alt="${item.alt || item.title || 'Devil n Dove creation'}"
+            loading="lazy"
+            data-fallbacks='${JSON.stringify(fallbacks).replace(/'/g, '&#39;')}'
+          />
+          <div class="creation-body">
+            <div class="meta-line">
+              ${item.type ? `<span class="pill">${nice(item.type)}</span>` : ''}
+              ${item.subcategory ? `<span class="pill">${nice(item.subcategory)}</span>` : ''}
+              ${item.status ? `<span class="pill">${nice(item.status)}</span>` : ''}
+            </div>
+            <div class="title-row">
+              <h3>${item.title || 'Untitled creation'}</h3>
+            </div>
+            <p class="summary">${item.description || item.notes || 'Handmade in our workshop and added to the growing Devil n Dove creations library.'}</p>
+            ${materials ? `<div class="chip-row">${materials}</div>` : ''}
+            ${tags ? `<div class="chip-row">${tags}</div>` : ''}
+            <div class="action-row">
+              <a class="btn" href="${actionHref}">${actionLabel}</a>
+              <a class="btn secondary" href="/gallery/index.html">More art</a>
+            </div>
+          </div>
+        `;
+        els.catalog.appendChild(card);
+      });
+
+      wireImageFallbacks(data);
+    }
+
+    function applyFilters(data){
+      const q = els.q.value.trim().toLowerCase();
+      const type = els.typeFilter.value;
+      const sub = els.subFilter.value;
+      const material = els.materialFilter.value;
+
+      state.filtered = state.all.filter(item => {
+        if (q && !toSearchText(item).includes(q)) return false;
+        if (type !== 'all' && item.type !== type) return false;
+        if (sub !== 'all' && item.subcategory !== sub) return false;
+        if (material !== 'all' && !(item.materials || []).includes(material)) return false;
+        return true;
+      });
+
+      renderActiveChips();
+      renderCards(data);
+    }
+
+    async function init(){
+      try {
+        let res = await fetch(DATA_URL, { cache: 'no-store' });
+        let data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) throw new Error(data?.error || `Creations API responded ${res.status}.`);
+        if (data?.fallback_used || data?.summary?.authority === 'json_fallback') setStatus('Showing fallback creations data while the live catalog read recovers.', 'warning');
+        state.all = (data.items || []).slice().sort((a,b)=>String(a.title || a.name || '').localeCompare(String(b.title || b.name || '')));
+        if (!state.all.length) throw new Error('No creations were returned from the live API.');
+
+        els.statTotal.textContent = String(state.all.length);
+        els.statSubs.textContent = String(unique(state.all.map(i => i.subcategory || i.type)).length);
+        els.statMaterials.textContent = String(unique(state.all.flatMap(i => i.materials || [])).length);
+
+        fillSelect(els.typeFilter, unique(state.all.map(i => i.type)));
+        fillSelect(els.subFilter, unique(state.all.map(i => i.subcategory || i.type)));
+        fillSelect(els.materialFilter, unique(state.all.flatMap(i => i.materials || [])));
+
+        renderVideo(data);
+        applyFilters(data);
+
+        [els.q, els.typeFilter, els.subFilter, els.materialFilter].forEach(el => el.addEventListener('input', () => applyFilters(data)));
+        els.resetBtn.addEventListener('click', () => {
+          els.q.value = '';
+          els.typeFilter.value = 'all';
+          els.subFilter.value = 'all';
+          els.materialFilter.value = 'all';
+          applyFilters(data);
+        });
+      } catch (err) {
+        console.error(err);
+        const fallback = await fetch(DATA_FALLBACK_URL, { cache: 'no-store' }).then((r) => r.ok ? r.json() : []).catch(() => []);
+        const fallbackItems = Array.isArray(fallback) ? fallback : (Array.isArray(fallback?.items) ? fallback.items : []);
+        if (fallbackItems.length) {
+          const data = { asset_origin: FALLBACK_ASSET_ORIGIN, asset_prefix: FALLBACK_ASSET_PREFIX, summary: { authority: 'json_fallback' }, items: fallbackItems };
+          setStatus('Live creations API is unavailable. Showing the local creations fallback list.', 'warning');
+          state.all = fallbackItems.slice().sort((a,b)=>String(a.title || a.name || '').localeCompare(String(b.title || b.name || '')));
+          els.statTotal.textContent = String(state.all.length);
+          els.statSubs.textContent = String(unique(state.all.map(i => i.subcategory || i.type)).length);
+          els.statMaterials.textContent = String(unique(state.all.flatMap(i => i.materials || [])).length);
+          fillSelect(els.typeFilter, unique(state.all.map(i => i.type)));
+          fillSelect(els.subFilter, unique(state.all.map(i => i.subcategory || i.type)));
+          fillSelect(els.materialFilter, unique(state.all.flatMap(i => i.materials || [])));
+          applyFilters(data);
+          [els.q, els.typeFilter, els.subFilter, els.materialFilter].forEach(el => el.addEventListener('input', () => applyFilters(data)));
+          els.resetBtn.addEventListener('click', () => {
+            els.q.value = '';
+            els.typeFilter.value = 'all';
+            els.subFilter.value = 'all';
+            els.materialFilter.value = 'all';
+            applyFilters(data);
+          });
+          return;
+        }
+        setStatus(err?.message || 'We could not load the creations catalog just now.', 'error');
+        els.catalog.innerHTML = '<div class="panel muted-box" style="grid-column:1/-1">We could not load the creations catalog just now.</div>';
+      }
+    }
+
+    init();
+  </script>
+<script src="/public/js/auth.js"></script><script src="/public/js/site-auth-ui.js"></script></body>
+</html>

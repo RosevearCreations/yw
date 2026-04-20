@@ -1,0 +1,2 @@
+expense_date,vendor_name,amount,tax_amount,ledger_code,notes
+2026-04-01,Hydro One,125.50,16.32,6100,Monthly workshop electricity
