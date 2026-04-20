@@ -10,7 +10,7 @@ create table if not exists public.employee_time_entries (
   crew_id uuid references public.crews(id) on delete set null,
   job_id bigint not null references public.jobs(id) on delete cascade,
   job_session_id uuid references public.job_sessions(id) on delete set null,
-  site_id bigint references public.sites(id) on delete set null,
+  site_id uuid references public.sites(id) on delete set null,
   clock_status text not null default 'active',
   signed_in_at timestamptz not null default now(),
   last_status_at timestamptz not null default now(),
@@ -24,13 +24,43 @@ create table if not exists public.employee_time_entries (
   updated_at timestamptz not null default now()
 );
 
-alter table if exists public.employee_time_entries drop constraint if exists employee_time_entries_status_check;
+-- Repair older partial runs where employee_time_entries.site_id may have been created as bigint.
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'employee_time_entries'
+      and column_name = 'site_id'
+      and udt_name = 'int8'
+  ) then
+    alter table public.employee_time_entries
+      drop constraint if exists employee_time_entries_site_id_fkey;
+
+    alter table public.employee_time_entries
+      alter column site_id type uuid using null::uuid;
+
+    alter table public.employee_time_entries
+      add constraint employee_time_entries_site_id_fkey
+      foreign key (site_id) references public.sites(id) on delete set null;
+  end if;
+end
+$$;
+
+alter table if exists public.employee_time_entries
+  drop constraint if exists employee_time_entries_status_check;
+
 alter table if exists public.employee_time_entries
   add constraint employee_time_entries_status_check
   check (clock_status in ('active','paused','signed_out','cancelled'));
 
-create index if not exists idx_employee_time_entries_profile on public.employee_time_entries(profile_id, signed_in_at desc);
-create index if not exists idx_employee_time_entries_job on public.employee_time_entries(job_id, signed_in_at desc);
+create index if not exists idx_employee_time_entries_profile
+  on public.employee_time_entries(profile_id, signed_in_at desc);
+
+create index if not exists idx_employee_time_entries_job
+  on public.employee_time_entries(job_id, signed_in_at desc);
+
 create unique index if not exists idx_employee_time_entries_one_open_per_profile
   on public.employee_time_entries(profile_id)
   where signed_out_at is null and clock_status in ('active','paused');
@@ -48,21 +78,28 @@ create table if not exists public.employee_time_entry_breaks (
   updated_at timestamptz not null default now()
 );
 
-create index if not exists idx_employee_time_entry_breaks_entry on public.employee_time_entry_breaks(time_entry_id, started_at desc);
+create index if not exists idx_employee_time_entry_breaks_entry
+  on public.employee_time_entry_breaks(time_entry_id, started_at desc);
 
 alter table if exists public.job_session_crew_hours
   add column if not exists time_entry_id uuid references public.employee_time_entries(id) on delete set null,
   add column if not exists break_minutes integer not null default 0,
   add column if not exists pay_code text not null default 'regular';
 
-alter table if exists public.job_session_crew_hours drop constraint if exists job_session_crew_hours_pay_code_check;
+alter table if exists public.job_session_crew_hours
+  drop constraint if exists job_session_crew_hours_pay_code_check;
+
 alter table if exists public.job_session_crew_hours
   add constraint job_session_crew_hours_pay_code_check
   check (pay_code in ('regular','overtime','mixed','manual'));
 
-create unique index if not exists idx_job_session_crew_hours_time_entry_id on public.job_session_crew_hours(time_entry_id) where time_entry_id is not null;
+create unique index if not exists idx_job_session_crew_hours_time_entry_id
+  on public.job_session_crew_hours(time_entry_id)
+  where time_entry_id is not null;
 
-alter table if exists public.site_activity_events drop constraint if exists site_activity_events_type_check;
+alter table if exists public.site_activity_events
+  drop constraint if exists site_activity_events_type_check;
+
 alter table if exists public.site_activity_events
   add constraint site_activity_events_type_check
   check (
@@ -137,7 +174,8 @@ left join public.v_employee_time_entry_break_rollups br on br.time_entry_id = te
 create or replace view public.v_employee_time_clock_current as
 select *
 from public.v_employee_time_clock_entries
-where signed_out_at is null and clock_status in ('active','paused');
+where signed_out_at is null
+  and clock_status in ('active','paused');
 
 create or replace view public.v_employee_time_clock_summary as
 select
