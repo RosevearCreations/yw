@@ -78,6 +78,7 @@
       timeBreakMinutes: $('#me_time_break_minutes'),
       timeLocationStatus: $('#me_time_location_status'),
       timePhotoNote: $('#me_time_photo_note'),
+      timePhotoFile: $('#me_time_photo_file'),
       timeCaptureLocation: $('#me_time_capture_location'),
       timeRecentBody: document.querySelector('#me_time_recent_table tbody'),
 
@@ -149,6 +150,7 @@
         timeCaptureLocation: $('#me_time_capture_location'),
       timeLocationStatus: $('#me_time_location_status'),
       timePhotoNote: $('#me_time_photo_note'),
+      timePhotoFile: $('#me_time_photo_file'),
       timeCaptureLocation: $('#me_time_capture_location'),
         timeRecentBody: document.querySelector('#me_time_recent_table tbody'),
         crewSearch: $('#crew_search'),
@@ -226,6 +228,7 @@
           </div>
           <label style="display:block;margin-top:12px;">Clock Notes<textarea id="me_time_notes" rows="2" placeholder="Optional site or shift note"></textarea></label>
           <label style="display:block;margin-top:12px;">Arrival / Departure Photo Note<textarea id="me_time_photo_note" rows="2" placeholder="Optional photo or geofence note for supervisor review"></textarea></label>
+          <label style="display:block;margin-top:12px;">Attendance Photo<input id="me_time_photo_file" type="file" accept="image/*" /></label>
           <div class="table-scroll" style="margin-top:12px;">
             <table id="me_time_recent_table">
               <thead><tr><th>Signed In</th><th>Job</th><th>Status</th><th>Paid</th><th>Break</th><th>Signed Out</th></tr></thead>
@@ -400,7 +403,7 @@
       if (els.timeActiveSince) els.timeActiveSince.value = active?.signed_in_at_local || active?.signed_in_at || '';
       if (els.timePaidMinutes) els.timePaidMinutes.value = String(active?.paid_work_minutes ?? 0);
       if (els.timeBreakMinutes) els.timeBreakMinutes.value = String(active?.unpaid_break_minutes ?? 0);
-      if (els.timeLocationStatus) els.timeLocationStatus.value = active ? (active.clock_in_geo_source || 'recorded') : 'Waiting';
+      if (els.timeLocationStatus) els.timeLocationStatus.value = active ? ([active.clock_in_geofence_status || active.clock_in_geo_source || 'recorded', active.clock_in_geofence_distance_meters != null ? `${active.clock_in_geofence_distance_meters}m` : ''].filter(Boolean).join(' — ')) : 'Waiting';
       if (els.timeRecentBody) {
         const recent = Array.isArray(state.timeClockContext.recent_entries) ? state.timeClockContext.recent_entries : [];
         els.timeRecentBody.innerHTML = recent.map((row) => `
@@ -437,12 +440,52 @@
       }
     }
 
+
+    async function getTimeClockGeoPayload() {
+      if (!els.timeCaptureLocation?.checked || !navigator.geolocation) return {};
+      return new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve({
+            latitude: pos.coords?.latitude ?? null,
+            longitude: pos.coords?.longitude ?? null,
+            accuracy_m: pos.coords?.accuracy ?? null,
+            geo_source: 'browser_geolocation'
+          }),
+          () => resolve({ geo_source: 'manual' }),
+          { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+        );
+      });
+    }
+
+    async function uploadAttendancePhotoForStage(entryId, stage) {
+      const file = els.timePhotoFile?.files?.[0];
+      if (!entryId || !file || !window.YWIAPI?.uploadEmployeeTimePhoto) return null;
+      const formData = new FormData();
+      formData.set('time_entry_id', String(entryId));
+      formData.set('stage', String(stage));
+      formData.set('photo_note', els.timePhotoNote?.value?.trim?.() || '');
+      formData.set('file', file);
+      return window.YWIAPI.uploadEmployeeTimePhoto(formData, true);
+    }
+
     async function runTimeClockAction(action) {
       try {
-        const payload = { notes: els.timeNotes?.value?.trim?.() || null };
+        const geoPayload = await getTimeClockGeoPayload();
+        const payload = { notes: els.timeNotes?.value?.trim?.() || null, photo_note: els.timePhotoNote?.value?.trim?.() || null, ...geoPayload };
         if (action === 'employee_clock_in') payload.job_id = els.timeJob?.value || null;
         const resp = await (api.employeeTimeClockAction ? api.employeeTimeClockAction(action, payload) : api.accountRecoveryAction({ action, ...payload }, true));
         if (!resp?.ok) throw new Error(resp?.error || 'Time clock action failed.');
+        const stage = action === 'employee_clock_in' ? 'clock_in' : (action === 'employee_clock_out' ? 'clock_out' : '');
+        if (stage && resp?.entry?.id) {
+          try {
+            await uploadAttendancePhotoForStage(resp.entry.id, stage);
+            if (els.timePhotoFile) els.timePhotoFile.value = '';
+          } catch (uploadErr) {
+            console.error(uploadErr);
+            setNotice(els.timeSummary, uploadErr?.message || 'Time clock saved, but photo upload failed.');
+          }
+        }
+        await loadTimeClockContext();
         renderTimeClock(resp);
         const messageMap = {
           employee_clock_in: 'Signed in to site time.',
@@ -450,7 +493,11 @@
           employee_end_break: 'Unpaid break ended.',
           employee_clock_out: 'Signed out from site time.'
         };
-        setNotice(els.timeSummary, messageMap[action] || 'Time clock updated.');
+        const locationBits = [];
+        const active = resp?.active_entry || resp?.entry || null;
+        if (active?.clock_in_geofence_status && action === 'employee_clock_in') locationBits.push(`Clock-in geofence: ${String(active.clock_in_geofence_status).replaceAll('_', ' ')}`);
+        if (active?.clock_out_geofence_status && action === 'employee_clock_out') locationBits.push(`Clock-out geofence: ${String(active.clock_out_geofence_status).replaceAll('_', ' ')}`);
+        setNotice(els.timeSummary, [messageMap[action] || 'Time clock updated.', ...locationBits].join(' '));
       } catch (err) {
         console.error(err);
         setNotice(els.timeSummary, err?.message || 'Time clock action failed.');

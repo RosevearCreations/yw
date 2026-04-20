@@ -555,6 +555,55 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
   }
 
 
+  async function uploadEmployeeTimePhoto(formData, requireAuth = true) {
+    const token = requireAuth ? await getAccessToken() : '';
+    const anonKey = getSupabaseAnonKey();
+
+    if (requireAuth && !token) {
+      throw new Error('Missing authorization header');
+    }
+
+    const response = await fetch(`${getFunctionsBaseUrl()}/upload-employee-time-photo`, {
+      method: 'POST',
+      headers: {
+        ...(anonKey ? { apikey: anonKey } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: formData
+    });
+
+    const rawText = await response.text();
+    let payload = null;
+    try {
+      payload = rawText ? JSON.parse(rawText) : null;
+    } catch {
+      payload = null;
+    }
+
+    if (!response.ok) {
+      trackTrafficEvent({
+        event_name: 'upload_failure',
+        monitor_scope: 'storage',
+        severity: response.status >= 500 ? 'error' : 'warning',
+        endpoint_path: 'upload-employee-time-photo',
+        http_status: response.status,
+        linked_failure_id: payload?.failure_id || null,
+        title: 'Employee time photo upload failed',
+        message: payload?.error || rawText || `HTTP ${response.status}`
+      }, requireAuth).catch(() => {});
+      throw enrichUploadError(buildError(response.status, rawText, payload));
+    }
+
+    trackTrafficEvent({
+      event_name: 'upload_success',
+      route_name: 'me',
+      endpoint_path: 'upload-employee-time-photo',
+      details: { record_id: payload?.record?.id || null }
+    }, requireAuth).catch(() => {});
+    return payload;
+  }
+
+
   async function sendToFunction(fnName, payload, requireAuth = true) {
     return jsonFetch(fnName, {
       method: 'POST',
@@ -880,6 +929,7 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
     uploadJobCommentAttachmentBatch,
     uploadRouteExecutionAttachment,
     uploadHsePacketProof,
+    uploadEmployeeTimePhoto,
     trackTrafficEvent,
     trackMonitorEvent,
     manageJobsEntity,

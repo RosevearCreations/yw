@@ -1,5 +1,5 @@
 -- Last synchronized: April 19, 2026. Reviewed during the supervisor attendance review and execution-candidates pass.
--- Current reference remains aligned through 084_supervisor_attendance_review_and_execution_candidates.sql.
+-- Current reference remains aligned through 085_attendance_photo_geofence_scheduler_and_signed_contract_invoice.sql.
 
 create extension if not exists pgcrypto;
 
