@@ -207,6 +207,21 @@ function roundTwo(value: number) {
   return Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
 }
 
+function getGeoPayload(body: any, prefix: 'clock_in' | 'clock_out') {
+  const lat = body?.latitude == null || String(body.latitude).trim() === '' ? null : Number(body.latitude);
+  const lng = body?.longitude == null || String(body.longitude).trim() === '' ? null : Number(body.longitude);
+  const acc = body?.accuracy_m == null || String(body.accuracy_m).trim() === '' ? null : Number(body.accuracy_m);
+  const source = String(body?.geo_source || '').trim() || 'manual';
+  const photoNote = String(body?.photo_note || '').trim() || null;
+  return {
+    [`${prefix}_latitude`]: Number.isFinite(lat) ? lat : null,
+    [`${prefix}_longitude`]: Number.isFinite(lng) ? lng : null,
+    [`${prefix}_accuracy_m`]: Number.isFinite(acc) ? acc : null,
+    [`${prefix}_geo_source`]: source,
+    [`${prefix}_photo_note`]: photoNote,
+  };
+}
+
 async function syncCrewHoursFromTimeEntry(supabase: any, entry: any, actorProfile: any, nowIso: string) {
   if (!entry?.id || !entry?.profile_id || !entry?.job_id) return null;
   const totalHours = roundTwo(Number(entry.paid_work_minutes || 0) / 60);
@@ -670,6 +685,7 @@ serve(async (req) => {
       signed_in_at: nowIso,
       last_status_at: nowIso,
       notes: String(body.notes || '').trim() || null,
+      ...getGeoPayload(body, 'clock_in'),
       created_by_profile_id: actorId,
       created_at: nowIso,
       updated_at: nowIso,
@@ -688,7 +704,7 @@ serve(async (req) => {
       related_job_id: job.id,
       related_profile_id: actorId,
       created_by_profile_id: actorId,
-      metadata: { job_code: job.job_code || null, job_name: job.job_name || null },
+      metadata: { job_code: job.job_code || null, job_name: job.job_name || null, clock_in_geo_source: String(body.geo_source || '') || null, clock_in_photo_note: String(body.photo_note || '').trim() || null },
       occurred_at: nowIso,
     });
     const context = await getClockContext(supabase, actorId, actorProfile);
@@ -710,6 +726,7 @@ serve(async (req) => {
       started_at: nowIso,
       unpaid: true,
       notes: String(body.notes || '').trim() || null,
+      ...getGeoPayload(body, 'clock_in'),
       created_by_profile_id: actorId,
       created_at: nowIso,
       updated_at: nowIso,
@@ -794,6 +811,7 @@ serve(async (req) => {
       unpaid_break_minutes: unpaidBreakMinutes,
       paid_work_minutes: paidWorkMinutes,
       notes: String(body.notes || entry.notes || '').trim() || null,
+      ...getGeoPayload(body, 'clock_out'),
       updated_at: nowIso,
     }).eq('id', entry.id).select('*').single();
     if (error) {
@@ -818,7 +836,7 @@ serve(async (req) => {
       related_job_id: updated.job_id,
       related_profile_id: actorId,
       created_by_profile_id: actorId,
-      metadata: { paid_work_minutes: paidWorkMinutes, unpaid_break_minutes: unpaidBreakMinutes, crew_hours_id: syncedHours?.id || null },
+      metadata: { paid_work_minutes: paidWorkMinutes, unpaid_break_minutes: unpaidBreakMinutes, crew_hours_id: syncedHours?.id || null, clock_out_geo_source: String(body.geo_source || '') || null, clock_out_photo_note: String(body.photo_note || '').trim() || null },
       occurred_at: nowIso,
     });
     const context = await getClockContext(supabase, actorId, actorProfile);

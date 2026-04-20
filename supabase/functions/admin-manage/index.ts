@@ -193,6 +193,58 @@ async function recordSiteActivity(supabase: any, payload: any) {
   }
 }
 
+
+function makeDocumentNumber(prefix: string) {
+  const stamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 12);
+  return `${prefix}-${stamp}`;
+}
+
+function escHtml(value: unknown) {
+  return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+}
+
+function money(value: unknown) {
+  const num = Number(value || 0);
+  return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(Number.isFinite(num) ? num : 0);
+}
+
+function makeContractHtml(opts: { title: string; subtitle?: string | null; sections?: Array<{ heading: string; body: string }>; footer?: string | null; }) {
+  const sections = Array.isArray(opts.sections) ? opts.sections : [];
+  return `<!doctype html>
+<html><head><meta charset="utf-8" /><title>${escHtml(opts.title)}</title>
+<style>body{font-family:Arial,sans-serif;color:#1f2937;padding:32px;line-height:1.5}h1{font-size:28px;margin:0 0 6px}h2{font-size:18px;margin:22px 0 8px}.meta{color:#4b5563;margin-bottom:20px}.box{border:1px solid #d1d5db;border-radius:10px;padding:14px 16px;margin-bottom:14px}.footer{margin-top:24px;color:#6b7280;font-size:12px}</style></head><body>
+<h1>${escHtml(opts.title)}</h1>${opts.subtitle ? `<div class="meta">${escHtml(opts.subtitle)}</div>` : ''}
+${sections.map((section) => `<section class="box"><h2>${escHtml(section.heading)}</h2><div>${section.body}</div></section>`).join('')}
+${opts.footer ? `<div class="footer">${escHtml(opts.footer)}</div>` : ''}
+</body></html>`;
+}
+
+function buildPayrollCsv(rows: any[] = []) {
+  const headers = ['Employee Number','Employee Name','Job Code','Job Name','Session Date','Regular Hours','Overtime Hours','Hours Worked','Payroll Cost Total'];
+  const lines = [headers.join(',')];
+  for (const row of rows) {
+    const values = [
+      row?.employee_number || '',
+      row?.full_name || '',
+      row?.job_code || '',
+      row?.job_name || '',
+      row?.session_date || '',
+      row?.regular_hours || 0,
+      row?.overtime_hours || 0,
+      row?.hours_worked || 0,
+      row?.payroll_cost_total || 0,
+    ].map((value) => `"${String(value ?? '').replaceAll('"', '""')}"`);
+    lines.push(values.join(','));
+  }
+  return lines.join('\n');
+}
+
+async function fetchSingle(supabase: any, table: string, id: any) {
+  if (!id) return null;
+  const { data } = await supabase.from(table).select('*').eq('id', id).maybeSingle();
+  return data || null;
+}
+
 function validateAdminSetPassword(password?: string | null) {
   const clean = String(password || '');
   if (!clean) throw new Error('A new password is required.');
@@ -1081,6 +1133,47 @@ serve(async (req) => {
       }
     }
 
+    if (entity === 'service_contract_document') {
+      const patch = {
+        document_number: String(body.document_number || '').trim().toUpperCase(),
+        source_entity: body.source_entity ?? 'manual',
+        source_id: String(body.source_id || '').trim(),
+        estimate_id: asNullableText(body.estimate_id),
+        agreement_id: asNullableText(body.agreement_id),
+        job_id: asNullableNumber(body.job_id),
+        client_id: asNullableText(body.client_id),
+        client_site_id: asNullableText(body.client_site_id),
+        document_kind: body.document_kind ?? 'contract',
+        document_status: body.document_status ?? 'draft',
+        title: body.title ?? null,
+        contract_reference: body.contract_reference ?? null,
+        effective_date: asNullableDate(body.effective_date),
+        expiry_date: asNullableDate(body.expiry_date),
+        rendered_html: body.rendered_html ?? null,
+        rendered_text: body.rendered_text ?? null,
+        notes: body.notes ?? null,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.document_number || !patch.source_id || !patch.title) return Response.json({ ok:false, error:'document_number, source_id, and title are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('service_contract_documents').insert(patch).select('*').single();
+        if (error) throw error;
+        await recordSiteActivity(supabase, { event_type:'contract_document_created', entity_type:'service_contract_document', entity_id:data.id, severity:'success', title:'Service contract document created', summary:`${data.document_number || data.id} created.`, created_by_profile_id: actorId });
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('service_contract_documents').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('service_contract_documents').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
     if (entity === 'customer_asset') {
       const patch = {
         asset_code: String(body.asset_code || '').trim().toUpperCase(),
@@ -1319,12 +1412,24 @@ serve(async (req) => {
         crew_id: asNullableText(body.crew_id),
         job_id: asNullableNumber(body.job_id),
         job_session_id: asNullableText(body.job_session_id),
-        site_id: asNullableNumber(body.site_id),
+        site_id: asNullableText(body.site_id),
         clock_status: body.clock_status ?? 'active',
         signed_in_at: asNullableDateTime(body.signed_in_at),
         signed_out_at: asNullableDateTime(body.signed_out_at),
         unpaid_break_minutes: asNumber(body.unpaid_break_minutes, 0),
         paid_work_minutes: asNumber(body.paid_work_minutes, 0),
+        clock_in_latitude: asNullableNumber(body.clock_in_latitude),
+        clock_in_longitude: asNullableNumber(body.clock_in_longitude),
+        clock_in_accuracy_m: asNullableNumber(body.clock_in_accuracy_m),
+        clock_in_geo_source: body.clock_in_geo_source ?? 'manual',
+        clock_in_photo_note: body.clock_in_photo_note ?? null,
+        clock_out_latitude: asNullableNumber(body.clock_out_latitude),
+        clock_out_longitude: asNullableNumber(body.clock_out_longitude),
+        clock_out_accuracy_m: asNullableNumber(body.clock_out_accuracy_m),
+        clock_out_geo_source: body.clock_out_geo_source ?? 'manual',
+        clock_out_photo_note: body.clock_out_photo_note ?? null,
+        exception_status: body.exception_status ?? 'clear',
+        exception_notes: body.exception_notes ?? null,
         notes: body.notes ?? null,
         updated_at: new Date().toISOString(),
       };
@@ -1341,6 +1446,40 @@ serve(async (req) => {
       }
       if (action === 'delete') {
         const { error } = await supabase.from('employee_time_entries').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+
+    if (entity === 'employee_time_entry_review') {
+      const patch = {
+        time_entry_id: asNullableText(body.time_entry_id),
+        review_type: body.review_type ?? 'attendance_exception',
+        exception_type: body.exception_type ?? null,
+        review_status: body.review_status ?? 'open',
+        reviewed_by_profile_id: asNullableText(body.reviewed_by_profile_id),
+        reviewed_at: asNullableDateTime(body.reviewed_at),
+        resolution_notes: body.resolution_notes ?? null,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.time_entry_id) return Response.json({ ok:false, error:'time_entry_id is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('employee_time_entry_reviews').insert({ ...patch, created_at: new Date().toISOString() }).select('*').single();
+        if (error) throw error;
+        await supabase.from('employee_time_entries').update({ exception_status: patch.review_status === 'resolved' ? 'resolved' : 'reviewed', exception_notes: patch.resolution_notes || null, exception_reviewed_at: patch.reviewed_at || new Date().toISOString(), exception_reviewed_by_profile_id: patch.reviewed_by_profile_id || actorId, updated_at: new Date().toISOString() }).eq('id', patch.time_entry_id);
+        await recordSiteActivity(supabase, { event_type: patch.review_status === 'resolved' ? 'attendance_exception_resolved' : 'attendance_exception_reviewed', entity_type: 'employee_time_entry_review', entity_id: data.id, severity: patch.review_status === 'resolved' ? 'success' : 'warning', title: 'Attendance exception reviewed', summary: patch.exception_type ? `Review recorded for ${patch.exception_type}.` : 'Attendance review recorded.', related_profile_id: null, created_by_profile_id: actorId });
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('employee_time_entry_reviews').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        await supabase.from('employee_time_entries').update({ exception_status: patch.review_status === 'resolved' ? 'resolved' : 'reviewed', exception_notes: patch.resolution_notes || null, exception_reviewed_at: patch.reviewed_at || new Date().toISOString(), exception_reviewed_by_profile_id: patch.reviewed_by_profile_id || actorId, updated_at: new Date().toISOString() }).eq('id', patch.time_entry_id);
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('employee_time_entry_reviews').delete().eq('id', body.item_id);
         if (error) throw error;
         return Response.json({ ok:true }, { headers:corsHeaders });
       }
@@ -2576,6 +2715,128 @@ serve(async (req) => {
         if (error) throw error;
         return Response.json({ ok:true }, { headers:corsHeaders });
       }
+    }
+
+
+    if (entity === 'estimate' && action === 'convert_to_agreement') {
+      const estimate = await fetchSingle(supabase, 'estimates', body.item_id);
+      if (!estimate?.id) return Response.json({ ok:false, error:'Estimate not found.' }, { status:404, headers:corsHeaders });
+      const agreementCode = `AGR-${String(estimate.estimate_number || estimate.id).replace(/[^A-Z0-9-]/gi, '').toUpperCase()}`;
+      const { data, error } = await supabase.from('recurring_service_agreements').insert({
+        agreement_code: agreementCode,
+        estimate_id: estimate.id,
+        client_id: estimate.client_id || null,
+        client_site_id: estimate.client_site_id || null,
+        service_name: estimate.scope_notes || estimate.estimate_type || `Agreement from ${estimate.estimate_number || estimate.id}`,
+        agreement_status: 'draft',
+        billing_method: 'per_visit',
+        visit_cost_total: Number(estimate.subtotal || 0),
+        visit_charge_total: Number(estimate.total_amount || estimate.subtotal || 0),
+        agreement_notes: estimate.terms_notes || null,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      }).select('*').single();
+      if (error) throw error;
+      await recordSiteActivity(supabase, { event_type:'agreement_created', entity_type:'recurring_service_agreement', entity_id:data.id, severity:'success', title:'Agreement created from estimate', summary:`${estimate.estimate_number || estimate.id} converted into ${data.agreement_code}.`, created_by_profile_id: actorId });
+      return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+    }
+
+    if (entity === 'service_contract_document' && action === 'generate_from_source') {
+      const sourceEntity = String(body.source_entity || '').trim();
+      const sourceId = body.source_id;
+      let source: any = null;
+      if (sourceEntity === 'estimate') source = await fetchSingle(supabase, 'estimates', sourceId);
+      if (sourceEntity === 'recurring_service_agreement') source = await fetchSingle(supabase, 'recurring_service_agreements', sourceId);
+      if (sourceEntity === 'job') source = await fetchSingle(supabase, 'jobs', sourceId);
+      if (!source) return Response.json({ ok:false, error:'Source record not found.' }, { status:404, headers:corsHeaders });
+      const kind = String(body.document_kind || 'contract');
+      const title = kind === 'application' ? 'Service Application' : (kind === 'change_order' ? 'Change Order' : 'Service Contract');
+      const documentNumber = makeDocumentNumber(kind === 'application' ? 'APP' : 'CTR');
+      const sections = [
+        { heading: 'Customer / Site', body: `<p><strong>Client:</strong> ${escHtml(source.client_id || source.client_name || '')}</p><p><strong>Site:</strong> ${escHtml(source.client_site_id || source.site_name || '')}</p>` },
+        { heading: 'Service Scope', body: `<p>${escHtml(source.service_name || source.job_name || source.scope_notes || source.estimate_type || '')}</p>` },
+        { heading: 'Pricing', body: `<p><strong>Estimated Cost:</strong> ${money(source.visit_cost_total || source.subtotal || source.estimated_cost_total || 0)}</p><p><strong>Charge:</strong> ${money(source.visit_charge_total || source.total_amount || source.quoted_charge_total || 0)}</p>` },
+        { heading: 'Terms', body: `<p>${escHtml(source.agreement_notes || source.terms_notes || source.service_notes || 'Service terms subject to signed approval.')}</p>` },
+        { heading: 'Acceptance', body: '<p>Authorized signature: ____________________________ Date: ____________________</p>' }
+      ];
+      const html = makeContractHtml({ title, subtitle: `${documentNumber} · Customer-ready draft`, sections, footer: 'Generated by YW Alpha Admin.' });
+      const renderedText = sections.map((s) => `${s.heading}\n${s.body.replace(/<[^>]+>/g, ' ')}`).join('\n\n');
+      const insertPatch = {
+        document_number: documentNumber,
+        source_entity: sourceEntity || 'manual',
+        source_id: String(sourceId || source.id || ''),
+        estimate_id: sourceEntity === 'estimate' ? source.id : (source.estimate_id || null),
+        agreement_id: sourceEntity === 'recurring_service_agreement' ? source.id : (source.agreement_id || null),
+        job_id: sourceEntity === 'job' ? source.id : (source.job_id || null),
+        client_id: source.client_id || null,
+        client_site_id: source.client_site_id || null,
+        document_kind: kind,
+        document_status: 'draft',
+        title: `${title} ${source.agreement_code || source.estimate_number || source.job_code || ''}`.trim(),
+        contract_reference: source.agreement_code || source.estimate_number || source.job_code || documentNumber,
+        effective_date: source.start_date || source.valid_until || new Date().toISOString().slice(0,10),
+        expiry_date: source.end_date || null,
+        rendered_html: html,
+        rendered_text: renderedText,
+        payload: { source_snapshot: source },
+        notes: body.notes || null,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      const { data, error } = await supabase.from('service_contract_documents').insert(insertPatch).select('*').single();
+      if (error) throw error;
+      if (sourceEntity === 'recurring_service_agreement') await supabase.from('recurring_service_agreements').update({ contract_document_id: data.id, updated_at: new Date().toISOString() }).eq('id', source.id);
+      await recordSiteActivity(supabase, { event_type:'contract_document_created', entity_type:'service_contract_document', entity_id:data.id, severity:'success', title:'Printable document generated', summary:`${data.document_number} was generated from ${sourceEntity}.`, created_by_profile_id: actorId });
+      return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+    }
+
+    if (entity === 'snow_event_trigger' && action === 'generate_invoice') {
+      const trigger = await fetchSingle(supabase, 'snow_event_triggers', body.item_id);
+      if (!trigger?.id) return Response.json({ ok:false, error:'Snow trigger not found.' }, { status:404, headers:corsHeaders });
+      const agreement = await fetchSingle(supabase, 'recurring_service_agreements', trigger.agreement_id);
+      if (!agreement?.id) return Response.json({ ok:false, error:'Linked agreement not found.' }, { status:404, headers:corsHeaders });
+      const existing = await supabase.from('ar_invoices').select('id,invoice_number').eq('snow_event_trigger_id', trigger.id).maybeSingle();
+      if (existing?.data?.id) return Response.json({ ok:true, record: existing.data }, { headers:corsHeaders });
+      const subtotal = Number(agreement.visit_charge_total || 0);
+      const taxCode = agreement.tax_code_id ? await fetchSingle(supabase, 'tax_codes', agreement.tax_code_id) : null;
+      const taxRate = Number(taxCode?.rate_percent || 0);
+      const tax = Math.round((subtotal * taxRate) * 100) / 10000 * 100;
+      const invoiceNo = makeDocumentNumber('INV');
+      const { data, error } = await supabase.from('ar_invoices').insert({
+        invoice_number: invoiceNo,
+        client_id: agreement.client_id || null,
+        recurring_service_agreement_id: agreement.id,
+        snow_event_trigger_id: trigger.id,
+        invoice_source: 'agreement_snow',
+        invoice_status: 'draft',
+        invoice_date: trigger.event_date || new Date().toISOString().slice(0,10),
+        subtotal,
+        tax_total: Number((subtotal * (taxRate / 100)).toFixed(2)),
+        total_amount: Number((subtotal * (1 + taxRate / 100)).toFixed(2)),
+        balance_due: Number((subtotal * (1 + taxRate / 100)).toFixed(2)),
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      }).select('*').single();
+      if (error) throw error;
+      return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+    }
+
+    if (entity === 'payroll_export_run' && action === 'generate_export') {
+      const run = await fetchSingle(supabase, 'payroll_export_runs', body.item_id);
+      if (!run?.id) return Response.json({ ok:false, error:'Payroll export run not found.' }, { status:404, headers:corsHeaders });
+      const { data: rows, error: rowsError } = await supabase.from('v_payroll_review_detail').select('*').gte('session_date', run.period_start).lte('session_date', run.period_end).order('session_date', { ascending: true });
+      if (rowsError) throw rowsError;
+      const csv = buildPayrollCsv(rows || []);
+      const hours = (rows || []).reduce((sum: number, row: any) => sum + Number(row?.hours_worked || 0), 0);
+      const cost = (rows || []).reduce((sum: number, row: any) => sum + Number(row?.payroll_cost_total || 0), 0);
+      const fileName = `${run.run_code || 'payroll-export'}.${String(run.export_format || 'csv').toLowerCase() === 'json' ? 'json' : 'csv'}`;
+      let content = csv;
+      if (String(run.export_format || 'csv').toLowerCase() === 'json') content = JSON.stringify(rows || [], null, 2);
+      const { data, error } = await supabase.from('payroll_export_runs').update({ export_file_name: fileName, export_file_content: content, exported_entry_count: (rows || []).length, exported_hours_total: Number(hours.toFixed(2)), exported_payroll_cost_total: Number(cost.toFixed(2)), exported_at: new Date().toISOString(), exported_by_profile_id: actorId, status: 'exported', updated_at: new Date().toISOString() }).eq('id', run.id).select('*').single();
+      if (error) throw error;
+      await supabase.from('job_session_crew_hours').update({ payroll_export_run_id: run.id, payroll_exported_at: new Date().toISOString(), updated_at: new Date().toISOString() }).gte('created_at', `${run.period_start}T00:00:00`).lte('created_at', `${run.period_end}T23:59:59`).is('payroll_export_run_id', null);
+      await recordSiteActivity(supabase, { event_type:'payroll_export_created', entity_type:'payroll_export_run', entity_id:data.id, severity:'success', title:'Payroll export generated', summary:`${data.run_code} generated ${data.exported_entry_count || 0} row(s).`, created_by_profile_id: actorId });
+      return Response.json({ ok:true, record:data, export_file_name:fileName, export_file_content:content }, { headers:corsHeaders });
     }
 
     return Response.json({ ok: false, error: 'Unsupported entity/action' }, { status: 400, headers: corsHeaders });

@@ -1,4 +1,4 @@
-<!-- Reviewed during schema 083 employee time clock / attendance pass on 2026-04-19. -->
+<!-- Reviewed during schema 084 supervisor attendance / execution-candidate pass on 2026-04-19. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## 2026-04-17 pass update
 Closed or tightened in this pass:
@@ -377,3 +377,10 @@ Still open:
 - Added admin-visible employee time entry records and recent attendance summary data.
 - Added site activity audit coverage for clock in, break start, break end, and clock out.
 - Next direction: supervisor approval for employee clock exceptions, geofence/photo proof on arrival, payroll export file generation, and contract/estimate conversion polish.
+
+
+## 084 follow-up gaps
+- Geofence capture is stored, but radius/rule enforcement against a site boundary is still pending.
+- Photo-note support exists on clock in/out, but actual image upload and storage for attendance evidence is still pending.
+- Payroll export file generation exists, but provider-specific layouts and final posting handoff still need completion.
+- Agreement execution candidates are now staged, but automatic scheduler-driven session/invoice creation is still pending.

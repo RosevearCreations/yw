@@ -1,4 +1,4 @@
-<!-- Reviewed during schema 083 employee time clock / attendance pass on 2026-04-19. -->
+<!-- Reviewed during schema 084 supervisor attendance / execution-candidate pass on 2026-04-19. -->
 ## 2026-04-17 contract conversion, payroll export generation, callback dashboard, and snow invoice automation pass
 - Added migration `sql/083_employee_time_clock_and_break_tracking.sql`.
 - Added estimate-to-agreement conversion candidates, service contract / application document storage, payroll export file generation support, agreement profitability summaries, snow-event invoice candidates, and callback / warranty dashboard summaries.
@@ -204,3 +204,8 @@ Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summarie
 - Added admin-visible employee time entry records and recent attendance summary data.
 - Added site activity audit coverage for clock in, break start, break end, and clock out.
 - Next direction: supervisor approval for employee clock exceptions, geofence/photo proof on arrival, payroll export file generation, and contract/estimate conversion polish.
+
+
+## 2026-04-19 — supervisor attendance review and execution candidates
+- Added schema 084 for attendance exception review, geolocation/photo-note time-clock fields, operations dashboard summary, and recurring agreement execution candidates.
+- Added admin-manage actions for estimate conversion, printable contract generation, snow invoice generation, payroll export generation, and time-entry review.
