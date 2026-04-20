@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <title>Movie Shelf | DVD and Blu-ray Movie Collection at Devil n Dove</title>
+  <meta name="description" content="Browse the Devil n Dove DVD and Blu-ray movie collection with searchable cover art, UPC lookup, film details, cast, director, runtime, and trailer links."/>
+  <meta name="robots" content="index,follow"/>
+  <link rel="canonical" href="https://devilndove.com/movies/"/>
+  <link href="/css/styles.css" rel="stylesheet"/>
+  <link href="/assets/mark.png" rel="icon" type="image/png"/>
+  <meta property="og:site_name" content="Devil n Dove"/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:title" content="Movie Shelf | DVD & Blu-ray collection at Devil n Dove"/>
+  <meta property="og:description" content="Browse the Devil n Dove movie shelf with searchable cover art, film details, and trailer links."/>
+  <meta property="og:url" content="https://devilndove.com/movies/"/>
+  <meta property="og:image" content="https://devilndove.com/assets/logo-clear.png"/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:title" content="Movie Shelf | DVD & Blu-ray collection at Devil n Dove"/>
+  <meta name="twitter:description" content="Browse the Devil n Dove movie shelf with searchable cover art, film details, and trailer links."/>
+  <meta name="twitter:image" content="https://devilndove.com/assets/logo-clear.png"/>
+  <style>
+    .movie-shell { display:grid; gap:16px; }
+    .movie-toolbar-grid { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:end; }
+    .movie-pager-bar { display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap; }
+    .movie-pager-controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .movie-per-page-select { width:auto; min-width:96px; }
+    .movie-range-text { color:var(--muted); }
+
+    #movieGrid.movie-grid-reset {
+      display:grid !important;
+      grid-template-columns:repeat(auto-fit, minmax(360px, 1fr)) !important;
+      gap:18px !important;
+      align-items:start !important;
+      margin-top:0 !important;
+      min-width:0;
+    }
+
+    .movie-card-shell {
+      display:grid;
+      grid-template-rows:auto 1fr;
+      gap:16px;
+      min-width:0;
+      overflow:hidden;
+      padding:18px;
+      border-radius:18px;
+      border:1px solid var(--border);
+      background:linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.02));
+      box-shadow:0 10px 28px rgba(0,0,0,0.12);
+    }
+
+    .movie-media-row {
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+      gap:12px;
+      min-width:0;
+    }
+
+    .movie-cover-box {
+      display:block;
+      width:100%;
+      aspect-ratio:2 / 3;
+      border-radius:14px;
+      overflow:hidden;
+      border:1px solid var(--border);
+      background:#111827;
+      min-width:0;
+    }
+
+    .movie-cover-box img {
+      display:block;
+      width:100%;
+      height:100%;
+      object-fit:cover;
+    }
+
+    .movie-cover-placeholder {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      width:100%;
+      height:100%;
+      padding:14px;
+      color:var(--muted);
+      font-size:.9rem;
+      line-height:1.4;
+    }
+
+    .movie-body {
+      display:grid;
+      gap:12px;
+      min-width:0;
+      overflow:hidden;
+    }
+
+    .movie-title {
+      margin:0;
+      font-size:1.18rem;
+      line-height:1.3;
+      overflow-wrap:anywhere;
+      word-break:normal;
+    }
+
+    .movie-facts {
+      display:grid;
+      gap:6px;
+      min-width:0;
+    }
+
+    .movie-facts .small,
+    .movie-summary,
+    .movie-links a {
+      overflow-wrap:anywhere;
+      word-break:normal;
+      white-space:normal;
+    }
+
+    .movie-summary {
+      margin:0;
+      line-height:1.55;
+      color:var(--text);
+    }
+
+    .movie-summary-pending {
+      color:var(--muted);
+    }
+
+    .movie-links {
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      align-items:center;
+    }
+
+    @media (max-width: 900px) {
+      #movieGrid.movie-grid-reset {
+        grid-template-columns:1fr !important;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .movie-toolbar-grid {
+        grid-template-columns:1fr;
+      }
+      .movie-pager-controls {
+        width:100%;
+      }
+      .movie-pager-controls .btn,
+      .movie-per-page-select {
+        flex:1 1 140px;
+        width:100%;
+        min-width:0;
+      }
+      .movie-media-row {
+        grid-template-columns:1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="nav">
+      <div class="brand">
+        <img alt="Devil n Dove logo" src="/assets/logo-clear.png"/>
+        <div>
+          <div style="font-weight:800;letter-spacing:.2px;line-height:1.1">Devil n Dove</div>
+          <div class="small">Workshop • Art • Tools • Movies</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap">
+        <a href="/index.html">Home</a>
+        <a href="/about/index.html">About</a>
+        <a href="/gallery/index.html">Art</a>
+        <a href="/creations/index.html">Creations</a>
+        <a href="/tools/index.html">Tools</a>
+        <a href="/supplies/index.html">Supplies</a>
+        <a href="/shop/index.html">Shop</a>
+        <a href="/movies/index.html">Movies</a>
+        <a href="/contact/index.html">Contact</a>
+      </div>
+    </div>
+
+    <div class="banner" style="margin-bottom:14px">
+      <img alt="Devil n Dove banner artwork" src="/assets/banner-spicing-it-up.png"/>
+    </div>
+
+    <div class="hero">
+      <span class="badge">Movie shelf</span>
+      <h1>DVD and Blu-ray movie collection</h1>
+      <p>Browse the collection with cover art, searchable metadata, and trailer-ready links while the library keeps being enriched.</p>
+    </div>
+
+    <div class="movie-shell">
+      <div class="card">
+        <div class="movie-toolbar-grid">
+          <div>
+            <label class="small" for="q">Search movies</label>
+            <input class="input" id="q" placeholder="Search by title, UPC, year, actor, director, genre, studio, format..."/>
+          </div>
+          <div style="text-align:right">
+            <div class="small">Showing <span id="shown">0</span> of <span id="total">0</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="moviePager" class="card">
+        <div class="movie-pager-bar">
+          <div class="small">
+            Page <span id="moviePageNow">1</span> of <span id="moviePageTotal">1</span>
+            <span id="movieRange" class="movie-range-text"></span>
+          </div>
+          <div class="movie-pager-controls">
+            <label class="small" for="moviePerPage">Per page</label>
+            <select id="moviePerPage" class="input movie-per-page-select">
+              <option value="50">50</option>
+              <option value="100" selected>100</option>
+              <option value="150">150</option>
+              <option value="200">200</option>
+            </select>
+            <button id="moviePrev" class="btn" type="button">Previous</button>
+            <button id="movieNext" class="btn" type="button">Next</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="movieStatus" class="status-note" style="display:none"></div>
+      <div id="movieGrid" class="movie-grid-reset"></div>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+  <script src="/public/js/auth.js"></script>
+  <script src="/public/js/site-auth-ui.js"></script>
+  <script>
+    const grid = document.getElementById('movieGrid');
+    const totalEl = document.getElementById('total');
+    const shownEl = document.getElementById('shown');
+    const q = document.getElementById('q');
+    const pageNowEl = document.getElementById('moviePageNow');
+    const pageTotalEl = document.getElementById('moviePageTotal');
+    const movieRangeEl = document.getElementById('movieRange');
+    const prevBtn = document.getElementById('moviePrev');
+    const nextBtn = document.getElementById('movieNext');
+    const perPageEl = document.getElementById('moviePerPage');
+    const statusEl = document.getElementById('movieStatus');
+    const SNAPSHOT_KEY = 'dd_movies_snapshot_v2';
+
+    let items = [];
+    let summary = {};
+    let currentPage = 1;
+    let currentLimit = 100;
+
+    const esc = (v) => String(v ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+    const imdbSearchUrl = (title, upc) =>
+      'https://www.google.com/search?q=' + encodeURIComponent(`${title || upc || ''} IMDb`);
+
+    const trailerSearchUrl = (title, year) =>
+      'https://www.youtube.com/results?search_query=' + encodeURIComponent(`${title || ''} ${year || ''} official trailer`);
+
+    function setStatus(message, tone = 'info') {
+      if (!statusEl) return;
+      statusEl.textContent = message || '';
+      statusEl.style.display = message ? 'block' : 'none';
+      statusEl.className = message ? `status-note ${tone}` : 'status-note';
+    }
+
+    function snapshotKey(params) {
+      return params.toString() || 'all';
+    }
+
+    function loadSnapshot(key) {
+      try {
+        const payload = JSON.parse(localStorage.getItem(SNAPSHOT_KEY) || '{}');
+        return payload[key] || null;
+      } catch {
+        return null;
+      }
+    }
+
+    function saveSnapshot(key, data) {
+      try {
+        const payload = JSON.parse(localStorage.getItem(SNAPSHOT_KEY) || '{}');
+        payload[key] = { ...data, cached_at: new Date().toISOString() };
+        localStorage.setItem(SNAPSHOT_KEY, JSON.stringify(payload));
+      } catch {}
+    }
+
+    function updatePager(filteredCount) {
+      const totalItems = Number(summary.total_items || items.length || 0);
+      const page = Number(summary.page || currentPage || 1);
+      const limit = Number(summary.limit || currentLimit || filteredCount || 0);
+      const totalPages = Number(summary.total_pages || 1);
+      const from = Number(summary.from || (totalItems ? ((page - 1) * limit) + 1 : 0));
+      const to = Number(summary.to || (totalItems ? Math.min(from + filteredCount - 1, totalItems) : 0));
+
+      totalEl.textContent = String(totalItems);
+      shownEl.textContent = String(filteredCount);
+      pageNowEl.textContent = String(page);
+      pageTotalEl.textContent = String(totalPages);
+      movieRangeEl.textContent = totalItems ? ` • ${from}-${to}` : '';
+      prevBtn.disabled = page <= 1;
+      nextBtn.disabled = !summary.has_more;
+      perPageEl.value = String(limit);
+    }
+
+    function movieCardHtml(item) {
+      const title = (item.title || '').trim() || 'Title pending metadata';
+      const originalTitle = item.original_title ? `<div class="small"><strong>Original title:</strong> ${esc(item.original_title)}</div>` : '';
+      const front = item.front_image_url || '';
+      const back = item.back_image_url || '';
+      const year = item.release_year ? `<div class="small"><strong>Year:</strong> ${esc(item.release_year)}</div>` : '';
+      const genre = item.genre ? `<div class="small"><strong>Genre:</strong> ${esc(item.genre)}</div>` : '';
+      const director = item.director_names ? `<div class="small"><strong>Director:</strong> ${esc(item.director_names)}</div>` : '';
+      const actors = item.actor_names ? `<div class="small"><strong>Cast:</strong> ${esc(item.actor_names)}</div>` : '';
+      const runtime = item.runtime_minutes ? `<div class="small"><strong>Length:</strong> ${esc(item.runtime_minutes)} min</div>` : '';
+      const studio = item.studio_name ? `<div class="small"><strong>Studio:</strong> ${esc(item.studio_name)}</div>` : '';
+      const format = item.media_format ? `<div class="small"><strong>Format:</strong> ${esc(item.media_format)}</div>` : '';
+      const imdbId = item.imdb_id ? `<div class="small"><strong>IMDb:</strong> ${esc(item.imdb_id)}</div>` : '';
+      const upc = item.upc ? `<div class="small"><strong>UPC:</strong> ${esc(item.upc)}</div>` : '';
+      const metadata = item.metadata_status ? `<div class="small"><strong>Status:</strong> ${esc(item.metadata_status)}</div>` : '';
+      const summaryText = item.summary
+        ? `<p class="small movie-summary">${esc(item.summary)}</p>`
+        : `<p class="small movie-summary movie-summary-pending">Metadata enrichment is still in progress for this cover.</p>`;
+
+      const trailer = item.trailer_url
+        ? `<a href="${esc(item.trailer_url)}" target="_blank" rel="noreferrer">Watch trailer</a>`
+        : `<a href="${trailerSearchUrl(item.title || item.upc, item.release_year)}" target="_blank" rel="noreferrer">Search trailer</a>`;
+
+      return `<article class="movie-card-shell">
+        <div class="movie-media-row">
+          <div class="movie-cover-box">
+            ${front ? `<img src="${esc(front)}" alt="${esc(title)} front cover" loading="lazy">` : `<div class="movie-cover-placeholder">Front cover pending</div>`}
+          </div>
+          <div class="movie-cover-box">
+            ${back ? `<img src="${esc(back)}" alt="${esc(title)} back cover" loading="lazy">` : `<div class="movie-cover-placeholder">Back cover pending</div>`}
+          </div>
+        </div>
+        <div class="movie-body">
+          <h2 class="movie-title">${esc(title)}</h2>
+          <div class="movie-facts">
+            ${upc}
+            ${year}
+            ${originalTitle}
+            ${genre}
+            ${format}
+            ${studio}
+            ${director}
+            ${actors}
+            ${runtime}
+            ${imdbId}
+            ${metadata}
+          </div>
+          ${summaryText}
+          <div class="movie-links">
+            <a href="${imdbSearchUrl(item.title, item.upc)}" target="_blank" rel="noreferrer">Search IMDb</a>
+            ${trailer}
+          </div>
+        </div>
+      </article>`;
+    }
+
+    function render() {
+      grid.innerHTML = items.map(movieCardHtml).join('') || `<div class="card">No movies matched your search.</div>`;
+      updatePager(items.length);
+    }
+
+    async function loadMovies() {
+      const term = (q.value || '').trim();
+      const params = new URLSearchParams();
+      params.set('page', String(currentPage));
+      params.set('limit', String(currentLimit));
+      if (term) params.set('q', term);
+      const key = snapshotKey(params);
+      setStatus('');
+
+      try {
+        const response = await fetch('/api/movies?' + params.toString(), { credentials: 'same-origin' });
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !data?.ok) throw new Error(data?.error || 'Failed to load movie data');
+        items = Array.isArray(data) ? data : (data.items || data.movies || []);
+        summary = data.summary || {};
+        render();
+        saveSnapshot(key, { data });
+        if (data?.warning) setStatus(data.warning, 'warning');
+      } catch (err) {
+        const cached = loadSnapshot(key);
+        if (cached?.data) {
+          const data = cached.data;
+          items = Array.isArray(data) ? data : (data.items || data.movies || []);
+          summary = data.summary || {};
+          render();
+          setStatus(`Live movie catalog is unavailable. Showing the last saved snapshot from ${cached.cached_at || 'an earlier visit'}.`, 'warning');
+        } else {
+          grid.innerHTML = '<div class="card">Could not load movie catalog.</div>';
+          setStatus(err?.message || 'Could not load movie catalog.', 'error');
+        }
+        console.error(err);
+      }
+    }
+
+    prevBtn.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage -= 1;
+        loadMovies();
+      }
+    });
+
+    nextBtn.addEventListener('click', () => {
+      if (summary.has_more) {
+        currentPage += 1;
+        loadMovies();
+      }
+    });
+
+    perPageEl.addEventListener('change', (e) => {
+      currentLimit = Number(e.target.value || 100);
+      currentPage = 1;
+      loadMovies();
+    });
+
+    q.addEventListener('input', () => {
+      currentPage = 1;
+      loadMovies();
+    });
+
+    loadMovies();
+  </script>
+</body>
+</html>

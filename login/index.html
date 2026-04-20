@@ -1,0 +1,103 @@
+<!-- File: /login/index.html -->
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>Login | Devil n Dove</title>
+<link href="/css/styles.css" rel="stylesheet"/>
+<link href="/assets/mark.png" rel="icon" type="image/png"/>
+<link href="https://devilndove.com/login/" rel="canonical"/><meta content="Login page for Devil n Dove members and admin users." name="description"/><meta content="noindex,follow" name="robots"/><meta content="Devil n Dove" property="og:site_name"/><meta content="website" property="og:type"/><meta content="Login | Devil n Dove" property="og:title"/><meta content="Login page for Devil n Dove members and admin users." property="og:description"/><meta content="https://devilndove.com/login/" property="og:url"/><meta content="https://devilndove.com/assets/logo-clear.png" property="og:image"/><meta content="summary_large_image" name="twitter:card"/><meta content="Login | Devil n Dove" name="twitter:title"/><meta content="Login page for Devil n Dove members and admin users." name="twitter:description"/><meta content="https://devilndove.com/assets/logo-clear.png" name="twitter:image"/><script id="pageStructuredData" type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Login","url":"https://devilndove.com/login/","description":"Login page for Devil n Dove members and admin users.","isPartOf":{"@type":"WebSite","name":"Devil n Dove","url":"https://devilndove.com/"}}</script></head>
+<body>
+<div class="container">
+<div class="nav">
+<div class="brand">
+<img alt="Devil n Dove logo" src="/assets/logo-clear.png"/>
+<div>
+<div style="font-weight:800;letter-spacing:.2px;line-height:1.1">Devil n Dove</div>
+<div class="small">Login</div>
+</div>
+</div>
+<div class="links">
+<a href="/">Home</a>
+<a href="/gallery/">Gallery</a>
+<a href="/creations/">Creations</a>
+<a href="/tools/">Tools</a>
+<a href="/supplies/">Supplies</a>
+<a href="/shop/">Shop</a>
+<a href="/cart/">Cart</a>
+<a data-show-when-logged-in="" href="/members/" style="display:none">Members</a>
+<a data-show-when-admin="" href="/admin/" style="display:none">Admin</a>
+<a data-show-when-logged-out="" href="/register/" style="display:none">Register</a>
+<span class="small" data-show-when-logged-in="" style="display:none">
+          Hi, <span data-nav-user-name="">Member</span>
+</span>
+<button class="btn" data-nav-logout="" data-show-when-logged-in="" style="display:none" type="button">
+          Logout
+        </button>
+</div>
+</div>
+<div class="hero">
+<div>
+<h1>Login</h1>
+<p>
+          Sign in to access your member account, orders, downloads, and account tools.
+        </p>
+</div>
+</div>
+<div class="grid cols-2" style="gap:18px">
+<div class="card">
+<h2 style="margin-top:0">Sign In</h2>
+<p class="small" style="margin-top:0">
+          Use your Devil n Dove account email and password.
+        </p>
+<form class="grid" id="loginForm" style="gap:12px">
+<div>
+<label class="small" for="loginEmail">Email</label>
+<input autocomplete="email" id="loginEmail" name="email" required="" type="email"/>
+</div>
+<div>
+<label class="small" for="loginPassword">Password</label>
+<input autocomplete="current-password" id="loginPassword" name="password" required="" type="password"/>
+</div>
+<div class="small" id="loginMessage" style="display:none"></div>
+<div style="display:flex;gap:10px;flex-wrap:wrap">
+<button class="btn" id="loginSubmitButton" type="submit">
+              Login
+            </button>
+<a class="btn" href="/register/">Create Account</a>
+</div>
+<div class="small">Forgot something? <a href="/account-help/index.html?mode=password">Forgot password</a> • <a href="/account-help/index.html?mode=email">Forgot email</a></div></form>
+</div>
+<div class="card">
+<h2 style="margin-top:0">Account Access</h2>
+<div class="small" style="display:grid;gap:10px">
+<div>Members can view their orders, downloads, and account details.</div>
+<div>Admins can access the protected store, orders, payments, and security dashboard.</div>
+<div>Your session is checked before protected pages are shown.</div>
+</div>
+<div class="card" style="margin-top:14px">
+<h3 style="margin-top:0">Need an account?</h3>
+<p class="small" style="margin:0 0 10px 0">
+            Create an account to save access to your orders and future digital downloads.
+          </p>
+<a class="btn" href="/register/">Go to Registration</a>
+</div>
+<div class="card" style="margin-top:14px">
+<h3 style="margin-top:0">Continue Shopping</h3>
+<p class="small" style="margin:0 0 10px 0">
+            You can still browse the store and build a cart before signing in.
+          </p>
+<a class="btn" href="/shop/">Back to Shop</a>
+</div>
+</div>
+</div>
+<div class="footer card" style="margin-top:18px"></div>
+</div>
+<script src="/js/main.js"></script>
+<script src="/public/js/auth.js"></script>
+<script src="/public/js/site-auth-ui.js"></script>
+<script src="/public/js/login.js"></script>
+</body>
+</html>

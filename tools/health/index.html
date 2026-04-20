@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Tools Data Health | Devil n Dove</title>
+<link href="/css/styles.css" rel="stylesheet"/>
+<link href="/assets/mark.png" rel="icon" type="image/png"/>
+<style>
+    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace}
+    .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .btn{cursor:pointer}
+    .table{width:100%;border-collapse:collapse}
+    .table th,.table td{border-bottom:1px solid rgba(255,255,255,.08);padding:10px;vertical-align:top}
+    .table th{font-weight:700;text-align:left}
+    .small2{font-size:.9rem;opacity:.9}
+    .ok{color:#9be59b}
+    .bad{color:#ff9b9b}
+    .warn{color:#ffd68a}
+  </style>
+<link href="https://devilndove.com/tools/health/" rel="canonical"/><meta content="Internal tools data health page for Devil n Dove." name="description"/><meta content="noindex,follow" name="robots"/><meta content="Devil n Dove" property="og:site_name"/><meta content="website" property="og:type"/><meta content="Tools Data Health | Devil n Dove" property="og:title"/><meta content="Internal tools data health page for Devil n Dove." property="og:description"/><meta content="https://devilndove.com/tools/health/" property="og:url"/><meta content="https://devilndove.com/assets/logo-clear.png" property="og:image"/><meta content="summary_large_image" name="twitter:card"/><meta content="Tools Data Health | Devil n Dove" name="twitter:title"/><meta content="Internal tools data health page for Devil n Dove." name="twitter:description"/><meta content="https://devilndove.com/assets/logo-clear.png" name="twitter:image"/><script id="pageStructuredData" type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Toolshed Data Health","url":"https://devilndove.com/tools/health/","description":"Internal tools data health page for Devil n Dove.","isPartOf":{"@type":"WebSite","name":"Devil n Dove","url":"https://devilndove.com/"}}</script></head>
+<body>
+<div class="container">
+<div class="nav"></div>
+<div class="hero">
+<span class="badge">Toolshed Admin</span>
+<div class="hero-grid" style="margin-top:12px">
+<div class="card" style="padding:18px">
+<h1>Toolshed Data Health</h1>
+<p class="small">
+            Quick checks for: broken image links, missing categories/areas, and exact duplicate photos.
+          </p>
+<p class="small">
+            Data source: <span class="mono">/api/tools?limit=2000</span>
+</p>
+</div>
+<div class="hero-media">
+<img alt="Illustrated workshop scene" src="/assets/hero-workshop.webp"/>
+</div>
+</div>
+</div>
+<div class="card" style="margin-top:14px">
+<h3>Status</h3>
+<div class="row small2" style="margin-top:8px">
+<span class="pill">Items loaded: <b id="itemsCount">0</b></span>
+<span class="pill">Missing Primary Area: <b id="missingArea">0</b></span>
+<span class="pill">Missing Category: <b id="missingCat">0</b></span>
+<span class="pill">Broken Images (scan): <b id="brokenImg">0</b></span>
+</div>
+<div class="hr"></div>
+<div class="row">
+<button class="btn" id="scan50">Scan 50 images</button>
+<button class="btn" id="scan200">Scan 200 images</button>
+<button class="btn" id="scanAll">Scan ALL images</button>
+<span class="small" id="scanMsg"></span>
+</div>
+<div class="small" style="margin-top:8px">
+        This scan uses image load checks (works even when R2 CORS is not configured).
+      </div>
+</div>
+<div class="grid" style="margin-top:14px">
+<div class="card">
+<h3>Missing Primary Area</h3>
+<div class="small" id="missingAreaList"></div>
+</div>
+<div class="card">
+<h3>Missing Category</h3>
+<div class="small" id="missingCatList"></div>
+</div>
+</div>
+<div class="card" style="margin-top:14px">
+<h3>Exact Duplicate Photos</h3>
+<div class="small">Loads the first duplicate report it can find:</div>
+<ul class="small">
+<li class="mono">/data/toolshed/exact_duplicate_report.json</li>
+<li class="mono">/data/exact_duplicate_report.json</li>
+<li class="mono">/exact_duplicate_report.json</li>
+</ul>
+<div class="small" id="dupMsg"></div>
+<div style="overflow:auto;margin-top:10px">
+<table class="table" id="dupTable" style="display:none">
+<thead>
+<tr>
+<th>Hash</th>
+<th>Count</th>
+<th>Files</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+</div>
+<div class="footer">
+      Tip: If an image works in the browser but not on the site, it’s almost always a filename case mismatch in JSON.
+    </div>
+</div>
+<script src="/js/main.js"></script>
+<script>
+    const escapeHtml = (window.DD && window.DD.escapeHtml) ? window.DD.escapeHtml : (s)=>String(s??"");
+    const TOOLS_JSON = "/api/tools?limit=2000";
+
+    const ASSETS_BASE = "https://assets.devilndove.com";
+    const TOOLS_PREFIX = "Toolshed"; // must match R2 folder capitalization
+
+    const el = (id) => document.getElementById(id);
+
+    function resolveImageUrl(item){
+      const direct = item.image_url || item.image || item.imageUrl || "";
+      if (!direct) return "";
+      if (/^https?:\/\//i.test(direct)) return direct;
+
+      // If it's just a filename, build an R2 URL.
+      const filename = direct.replace(/^\/+/, "");
+      return `${ASSETS_BASE}/${TOOLS_PREFIX}/${encodeURIComponent(filename)}`;
+    }
+
+    function listToHtml(arr){
+      if (!arr.length) return `<span class="ok">None 🎉</span>`;
+      return `<ol>` + arr.slice(0, 80).map(x => `<li>${escapeHtml(x)}</li>`).join("") + `</ol>` +
+        (arr.length > 80 ? `<div class="warn">(+${arr.length - 80} more)</div>` : "");
+    }
+
+    async function loadTools(){
+      const res = await fetch(TOOLS_JSON, { cache: "no-store" });
+      const data = await res.json();
+      const items = Array.isArray(data.items) ? data.items : (data.items || data || []);
+      return Array.isArray(items) ? items : [];
+    }
+
+    function areaOf(t){
+      return (t.primary_area || t.area || "Workshop Basics").trim();
+    }
+    function catOf(t){
+      return (t.category || "Uncategorized").trim();
+    }
+
+    function isMissing(v){
+      const s = String(v ?? "").trim();
+      return !s || s.toLowerCase() === "uncategorized" || s.toLowerCase() === "unknown";
+    }
+
+    async function scanImages(items, maxCount){
+      const limit = (maxCount === "all") ? items.length : Math.min(items.length, maxCount);
+      el("scanMsg").textContent = `Scanning ${limit} images…`;
+
+      let broken = 0;
+      let done = 0;
+
+      // light concurrency so we don't melt the browser
+      const CONCURRENCY = 8;
+      let idx = 0;
+
+      function checkOne(url){
+        return new Promise((resolve) => {
+          if (!url) { resolve(false); return; }
+          const img = new Image();
+          img.onload = () => resolve(true);
+          img.onerror = () => resolve(false);
+          img.src = url + (url.includes("?") ? "&" : "?") + "v=" + Date.now();
+        });
+      }
+
+      async function worker(){
+        while (idx < limit){
+          const i = idx++;
+          const url = resolveImageUrl(items[i]);
+          const ok = await checkOne(url);
+          done++;
+          if (!ok) broken++;
+          el("brokenImg").textContent = String(broken);
+          el("scanMsg").textContent = `Scanning ${limit}… ${done}/${limit} done`;
+        }
+      }
+
+      await Promise.all(Array.from({length: CONCURRENCY}, worker));
+      el("scanMsg").textContent = `Scan complete: ${broken} broken of ${limit} checked`;
+    }
+
+    async function loadDupReport(){
+      const candidates = [
+        "/data/toolshed/exact_duplicate_report.json",
+        "/data/exact_duplicate_report.json",
+        "/exact_duplicate_report.json"
+      ];
+
+      for (const url of candidates){
+        try{
+          const res = await fetch(url, { cache: "no-store" });
+          if (!res.ok) continue;
+          const data = await res.json();
+          return { url, data };
+        }catch(e){}
+      }
+      return null;
+    }
+
+    function renderDupReport(found){
+      const table = el("dupTable");
+      const tbody = table.querySelector("tbody");
+      tbody.innerHTML = "";
+
+      if (!found){
+        el("dupMsg").innerHTML = `<span class="warn">No duplicate report found yet.</span>`;
+        table.style.display = "none";
+        return;
+      }
+
+      el("dupMsg").innerHTML = `Loaded: <span class="mono">${escapeHtml(found.url)}</span>`;
+      table.style.display = "";
+
+      // Expecting shape: { groups: [{hash, files:[...]}] } OR an array
+      const groups = Array.isArray(found.data) ? found.data : (found.data.groups || found.data.duplicates || []);
+      const normalized = groups.map(g => ({
+        hash: g.hash || g.sha256 || g.id || "",
+        files: g.files || g.paths || g.items || []
+      })).filter(g => g.files && g.files.length > 1);
+
+      if (!normalized.length){
+        tbody.innerHTML = `<tr><td colspan="3"><span class="ok">No exact duplicates 🎉</span></td></tr>`;
+        return;
+      }
+
+      for (const g of normalized){
+        const files = g.files.map(f => `<div class="mono">${escapeHtml(f)}</div>`).join("");
+        tbody.insertAdjacentHTML("beforeend", `
+          <tr>
+            <td class="mono">${escapeHtml(g.hash).slice(0, 16)}…</td>
+            <td><b>${g.files.length}</b></td>
+            <td>${files}</td>
+          </tr>
+        `);
+      }
+    }
+
+    async function init(){
+      const items = await loadTools();
+      el("itemsCount").textContent = String(items.length);
+
+      const missingAreaItems = items
+        .filter(t => isMissing(t.primary_area) && isMissing(t.area))
+        .map(t => t.name || t.title || "(no name)");
+
+      const missingCatItems = items
+        .filter(t => isMissing(t.category))
+        .map(t => t.name || t.title || "(no name)");
+
+      el("missingArea").textContent = String(missingAreaItems.length);
+      el("missingCat").textContent = String(missingCatItems.length);
+      el("missingAreaList").innerHTML = listToHtml(missingAreaItems);
+      el("missingCatList").innerHTML = listToHtml(missingCatItems);
+
+      el("scan50").addEventListener("click", () => scanImages(items, 50));
+      el("scan200").addEventListener("click", () => scanImages(items, 200));
+      el("scanAll").addEventListener("click", () => scanImages(items, "all"));
+
+      const dup = await loadDupReport();
+      renderDupReport(dup);
+    }
+
+    init();
+  </script>
+<script src="/public/js/auth.js"></script><script src="/public/js/site-auth-ui.js"></script></body>
+</html>
