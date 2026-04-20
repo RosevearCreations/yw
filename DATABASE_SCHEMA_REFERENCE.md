@@ -1,14 +1,5 @@
-# Project Brain
+# Database Schema Reference
 
-
-
-## Current pass focus
-
-- Inventory and costing language was clarified:
-  - stock unit = what you buy/store/count
-  - usage unit = what a finished product actually consumes
-- Batch-material planning is now easier to read in the resource-link UI.
-- The next business-facing layer should be recommended prices, stronger trust blocks, reviews/social proof, and better shopper retention tools.
 
 ## Current pass update
 
@@ -17,98 +8,143 @@
 - The phone product-capture page now parses failed responses safely, so HTML 500 pages no longer surface as `Unexpected token '<'` in the admin UI.
 - Rechecked outward-facing HTML pages and the one-H1 rule remains intact across the current public page set.
 
-## Core mental model
+## Core auth
 
-This repo is now a combined:
+### users
+- user_id
+- email
+- password_hash
+- display_name
+- role
+- is_active
+- created_at
+- updated_at
+- last_login_at
 
-- public brand site
-- ecommerce storefront
-- member account system
-- admin operations panel
-- analytics and growth data layer
-- payment and webhook processing layer
-- product media upload and asset layer
-- public SEO and search-awareness layer
+### sessions
+- session_id
+- user_id
+- session_token
+- token
+- created_at
+- expires_at
+- ip_address
+- user_agent
 
-## Important current architecture
+Client auth now uses the existing sessions table with a browser cookie fallback for the token so regular pages can resolve the same active session more reliably.
 
-### Auth
-Uses `users` and `sessions` with bearer token auth.
+### admin_logs
+Admin security and action logging.
 
-### Commerce
-Uses `products`, `product_images`, `product_tags`, `orders`, `order_items`, `order_status_history`, and `payments`.
+## Profiles and tiers
 
-### Profiles and tiers
-Uses `user_profiles`, `access_tiers`, and `user_access_tiers`.
+### user_profiles
+Customer and employee profile fields including phone, preferences, address, employee info, and emergency contact.
 
-### Growth, SEO, monitoring, and search
-Uses:
+### access_tiers
+### user_access_tiers
+Business, customer, supporter, and employee tier assignments.
 
-- `site_visitors`
-- `site_visitor_sessions`
-- `site_page_views`
-- `site_search_events`
-- `cart_activity`
-- `app_settings`
-- `notification_jobs`
-- `notification_dispatch_logs`
-- `product_seo`
-- `product_image_annotations`
-- `site_item_inventory`
-- `site_inventory_movements`
+## Commerce
 
-### Payments, webhook, and media additions
-Uses:
+### tax_classes
+### products
+### product_images
+### product_tags
+### orders
+Includes `payment_status` and `payment_method` in the current schema.
 
-- `webhook_events`
-- `payment_refunds`
-- `payment_disputes`
-- `media_assets`
+### order_items
+### order_status_history
+### payments
+### payment_refunds
+Local refund audit table for admin and provider reconciliation. Indexed by provider sync status and refund status for faster health/follow-up review.
 
-## Key newer additions
+### payment_disputes
+Local dispute audit table for chargeback and admin follow-up. Indexed by dispute status and provider sync status for faster health/follow-up review.
 
-- admin webhook review and requeue endpoint and dashboard tooling
-- admin refund and dispute endpoint and order-detail UI foundation
-- admin media asset browser and delete tooling
-- public search page for products, tools, supplies, creations, and key pages
-- sitewide public SEO refresh with one-H1-per-page enforcement target
-- inventory model now includes reserved, incoming, supplier, and cost fields
-- inventory movement history foundation for stock changes
-- import preview now validates duplicate slugs and media URL format
+## Growth, analytics, SEO, media, and inventory
 
-## Where we are now
+### site_visitors
+Unique visitor identity and country and device summary.
 
-The platform is still in an integration and hardening phase.
+### site_visitor_sessions
+Visitor session timeline, entry path, last path, checkout, and abandonment flags.
 
-Most important next layers after this pass are:
+### site_page_views
+Historical page view and event trail.
 
-- webhook worker retry and replay execution
-- provider-confirmed refund and dispute status sync
-- richer media library management around uploaded R2 assets
-- direct media replace, thumbnail, and featured-image suggestion flow
-- deeper inventory operations and movement history UX
-- funnel dashboards and analytics polish
-- ongoing crawl, metadata, and public search-awareness improvements each pass
+### site_search_events
+Search terms and result counts.
+
+### cart_activity
+Cart add, update, checkout, and abandonment events.
+
+### app_settings
+App-wide saved settings.
+
+### notification_jobs
+### notification_dispatch_logs
+Queued notification and dispatch tracking.
+
+### product_seo
+Meta title, description, keywords, H1, canonical, and Open Graph fields.
+
+### product_image_annotations
+Alt text, title, caption, focal points, and notes.
+
+### media_assets
+Uploaded R2-backed assets with product linkage, object key, sort order, optional variant role, and soft delete support.
+
+### webhook_events
+Provider event log with idempotency, status, replay request metadata, retry attempt fields, and dispatch notes.
+
+### site_item_inventory
+- now includes image_url, preferred_reorder_quantity, is_on_reorder_list, do_not_reorder, do_not_reuse, reuse_status
+
+product_resource_links
+- links a finished product to tools and supplies used in making it
+
+movie_catalog
+- public movie shelf table. Enrichment can be seeded from `/data/movies/movie_catalog_enriched.v2.json`
+Operational inventory table for tools, supplies, and sellable items with on-hand, reserved, incoming, supplier, and cost fields.
+
+### site_inventory_movements
+Movement log for inventory creates, adjustments, reserves, releases, incoming changes, corrections, and deletes.
+Fields include previous and new on-hand, reserved, and incoming quantities plus note and actor.
 
 
-## Latest UX additions
+## auth_recovery_requests
 
-- shared floating account widget across the site
-- shared footer with search/discovery links on every page
-- account-help page and request logging for forgot-password and forgot-email flows
+Stores logged-out forgot-password and forgot-email requests for later admin review without revealing whether a matching account exists.
 
 
-## Latest pass focus
+## catalog_items
 
-- Fixed shared session visibility between admin and the outward-facing site by adding cookie-backed client token fallback.
-- Hardened shared nav/footer behavior so the footer stays visible on standard pages.
-- Refreshed admin dashboard presentation and added a live activity feed driven by recent analytics/order/webhook data.
+Purpose: staged unified catalog storage for tools, supplies, and featured creations that were previously JSON-only. This supports cleaner public search, future analytics, and inventory automation.
 
+Key columns:
+- `item_kind` (`tool`, `supply`, `creation`, `other`)
+- `source_key` (stable unique source identifier per kind)
+- `slug`, `name`, `brand`, `category`, `subcategory`, `item_type`
+- `short_description`, `notes`, `image_url`, `r2_object_key`, `amazon_url`
+- `quantity_on_hand`, `reorder_point`, `storage_location`
+- `source_record_json`, `source_json_path`
 
-## Latest architectural note
+## Product CSV mass upload fields
 
-- High-duplication workshop collections are beginning to move into D1 through `catalog_items`. This is the first stage toward unified search, analytics, inventory automation, and fewer JSON-only failure points.
-- Product import now supports CSV-first mass upload with optional images at import time.
+Required fields:
+- `name`
+- `product_type` (`physical` or `digital`)
+- `price_cents`
+
+Optional fields:
+- `slug` (auto-generated if omitted)
+- `status`, `currency`, `sku`, `short_description`, `description`
+- `compare_at_price_cents`, `taxable`, `tax_class_id`, `requires_shipping`, `weight_grams`
+- `inventory_tracking`, `inventory_quantity`, `digital_file_url`, `featured_image_url`, `sort_order`
+
+Images are optional during import and can be added during later review before activation.
 
 
 ## Current pass additions
@@ -120,6 +156,8 @@ Most important next layers after this pass are:
 
 
 ## Current pass update
+- `movie_catalog` schema references now include the richer admin-overlay movie fields: `original_title`, `imdb_id`, `alternate_identifier`, `metadata_status`, `metadata_source`, estimated value fields, `rarity_notes`, `collection_notes`, and `value_search_url`.
+- `database_schema.sql`, `database_store_schema.sql`, and `database_upgrade_current_pass.sql` were synchronized forward so older environments have a clearer upgrade path for the current movie/editor/admin flows.
 - Movie catalog wiring now blends D1 `movie_catalog`, `/data/movies/movie_catalog_enriched.v2.json`, and the R2-hosted cover images more safely.
 - Movie search now supports title, UPC, year, actor, director, genre, studio, format, and optional trailer-link filtering.
 - `trailer_url` is now part of the movie enrichment path so trailer support can be stored directly when available.
@@ -129,11 +167,16 @@ Most important next layers after this pass are:
 - Continue the one-H1-per-exposed-page rule and continue improving page titles, descriptions, canonical tags, crawl paths, structured data relevance, and visible on-page content alignment on every outward-facing pass.
 
 
-## Current pass update
+## Current pass notes
 
-- Movies now depend on the real R2-backed enrichment file rather than the starter placeholder record. The page/API are aligned around `front_image_url` and `back_image_url`, with trailer-ready search support.
-- Admin now has a dedicated product stock and build-readiness report, bridging finished-product inventory with linked tool/supply inventory pressure.
-- Site inventory operations continue moving away from scattered JSON maintenance by syncing from `catalog_items` into `site_item_inventory`, then surfacing reorder/do-not-reuse status directly in admin views.
+- `movie_catalog` remains the long-term home for enriched movie metadata, while `data/movies/movie_catalog_enriched.v2.json` currently provides the live R2-backed image bridge for front/back covers.
+- `site_item_inventory` continues to be the operational inventory table for tools and supplies, including reorder, do-not-reorder, and do-not-reuse controls.
+- `product_resource_links` remains the relationship table connecting finished products to the tools and supplies used during the build process.
+
+
+## Current pass schema note
+
+No brand-new core tables were required for this pass. The largest work was defensive compatibility around existing `products`, `catalog_items`, `site_item_inventory`, `movie_catalog`, analytics, and webhook tables so partially migrated databases do not break the admin/dashboard JSON endpoints.
 
 
 ## Current pass update
@@ -168,87 +211,113 @@ Most important next layers after this pass are:
 - KNOWN_GAPS_AND_RISKS.md was rewritten to document the remaining payment, inventory, media, analytics, and metadata risks more clearly.
 
 
-### Current pass additions
-- `admin_action_audit` for privileged operator visibility.
-- `auth_recovery_requests` now capture `ip_address` and `user_agent` for safer triage.
+### admin_action_audit
+Server-side audit trail for privileged operator actions such as product create/update/delete, inventory edits, media uploads, and webhook review actions.
+
+### auth_recovery_requests additions
+Now stores `ip_address` and `user_agent` for safer manual review and light abuse throttling.
 
 
-Current pass emphasis: risk reduction through payment safety, inventory authority, media lifecycle controls, funnel analytics, and draft readiness rather than only visual polish.
+### notification_outbox
+Durable local queue for outbound receipts and related customer/admin notifications.
 
+### payment_refunds / payment_disputes sync fields
+`provider_sync_status`, `provider_sync_note`, and `provider_sync_at` record whether the local action was also pushed to the provider or is still local/manual only.
 
+### products readiness fields
+`is_ready_for_storefront` and `ready_check_notes` help govern draft-to-publish workflow.
 
-## Current pass update
-- Added `/api/stripe-return` for customer-return reconciliation on Stripe Checkout.
-- Added `notification_outbox` dispatch processing so queued receipts and recovery notices can actually move toward delivery.
-- Added shared admin step-up confirmation for destructive admin actions.
-- Added `/api/creations` as the centralized public creations read path during the JSON-to-D1 migration.
-- Stripe webhook flow now confirms local dispute records from provider events instead of leaving dispute sync fully manual.
-
-## Current pass update
-- Draft-to-publish governance is now more explicit: review actions are handled through `/api/admin/product-review-actions` and logged in `product_review_actions`.
-- Supplier reorder work now has first-class draft documents through `supplier_purchase_orders` and `supplier_purchase_order_items`.
-- Product operations now include build-cost visibility from linked tools and supplies, which helps pricing, readiness, and margin checks.
-- Analytics now expose referrers, entry paths, and zero-result search terms for clearer discovery diagnostics.
+### site_item_inventory authority fields
+`supplier_contact`, `reservation_notes`, `last_reorder_requested_at`, and `last_counted_at` support more trustworthy inventory operations.
 
 
 
-## Current pass update
-- Public tools and supplies now have centralized public API read paths that prefer D1-backed catalog records before JSON fallback.
-- Gallery/creations reads are more centralized as migration continues away from scattered direct JSON fetches.
-- Purchase-order lifecycle now feeds inventory state more directly by applying ordered quantities to incoming stock and received quantities to on-hand stock.
+## Current pass operational notes
 
-- Inventory authority now includes product-level reservation/release actions that operate across linked tool/supply records, not only one inventory row at a time.
-- Public catalog APIs now expose category/type filter summaries to support richer discovery UX without returning to scattered JSON parsing.
+- No new required tables were added in this pass.
+- Existing `notification_outbox` is now actively used by a real dispatch helper and admin processing endpoint.
+- Existing `payment_disputes` is now updated from Stripe dispute webhook events, not only manual admin entry.
+- Existing schema now supports stronger admin step-up confirmation without another table because password confirmation is checked against the current admin session.
 
+## Current pass schema additions
 
-## Current pass update
-- Payment notification flow is no longer only a passive queue: admin refund/dispute actions and Stripe provider-confirmed webhook events now attempt immediate outbox delivery when mail credentials are configured.
-- Storefront product reads now expose discovery summaries for category, colour, and product type.
-- Public tools and supplies pages now rely on their dedicated centralized APIs instead of the generic catalog endpoint, which continues the migration away from scattered outward-facing data paths.
+### `supplier_purchase_orders`
+Draft reorder header records grouped by supplier so inventory reorder work can be staged, reviewed, and later submitted.
 
-## Current pass update
-- The import pipeline is less shell-only now: admin preview/import can validate and create richer finished-product records, including SEO rows, tags, and extra image rows during product seeding.
-- The direct R2 media upload path is no longer only an asset drop. It can now attach uploaded images directly to a product gallery and featured-image flow, which reduces one more manual step between upload and storefront readiness.
+### `supplier_purchase_order_items`
+Line items for supplier purchase-order drafts, linked back to `site_item_inventory` where possible.
+
+### `product_review_actions`
+Durable audit trail of governed product review actions such as approve, needs changes, publish, and unpublish.
 
 
 
 ## Current pass update
-- Product stock readiness is no longer only a read-only report: admin can now reserve or release linked tool/supply inventory directly from the stock-report UI.
-- Product-detail media responses now include grouped storefront image structures that blend product images, annotations, and media variant-role hints more cleanly.
-- Analytics now include top product page paths and top ordered products so the dashboard can better compare discovery versus sales pressure.
-- The public supplies page and the tools health screen both moved farther toward centralized API-first reads during the JSON-to-D1 transition.
+- `supplier_purchase_orders` now includes ordered/received lifecycle timestamps.
+- `supplier_purchase_order_items` now track `quantity_received`, `incoming_applied_at`, and `received_at` to support inventory receiving automation.
+
+- No new tables were required in this pass. Inventory governance improvements were implemented through action-path logic and existing `site_item_inventory`, `site_inventory_movements`, and `product_resource_links` tables.
 
 
 ## Current pass update
-- Reservation governance now appears in another operational admin surface: the main products list can reserve or release linked tool/supply inventory per product.
-- Toolshed discovery now leans on the centralized tools API path rather than multiple direct JSON fallbacks.
-- Storefront product detail now carries grouped image, annotation, variant-role, and build-summary context in one payload.
+- No new schema objects were required in this pass.
+- Existing `notification_outbox` is now used more actively because refund/dispute admin actions and provider-confirmed Stripe webhook events both attempt immediate delivery processing.
+- Existing storefront/product tables now support richer outward-facing discovery through API-level filter summaries without additional schema changes.
+
+## Current pass schema note
+- No new tables were added in this pass.
+- This pass instead increased use of existing schema paths: `products`, `product_images`, `product_tags`, `product_seo`, `product_image_annotations`, and `media_assets` are now used more fully by bulk import and direct media-upload flows.
 
 
-## Current pass update
-- The phone-first finished-product flow no longer assumes every draft is storefront-ready. Partial intake is now allowed through `capture_reference` plus draft-mode saving.
-- Admin now includes a movie catalog editing workflow so the movie system can accept staff-curated and future visitor-contributed metadata directly into D1 without depending only on source JSON edits.
+
+## Current pass schema note
+- No new mandatory tables were added in this pass.
+- Current-pass code uses existing schema more fully, especially `site_item_inventory`, `site_inventory_movements`, `product_resource_links`, `product_images`, `product_image_annotations`, `media_assets`, `site_page_views`, and `order_items`.
+- Dashboard/reporting now also leans on duplicate-media counts and product build-risk calculations derived from existing tables rather than new schema additions.
 
 
-## Current pass update
-- Movie operations are now split into two distinct layers: JSON-first read authority from `movie_catalog_enriched.v2.json`, and D1 overlay writes for manual/admin movie corrections and visitor-contributed metadata.
-- This means the public movie shelf and admin movie list should always be able to recover from the JSON base truth even while the manual movie editor is still being hardened.
-- The admin movie editor is expected to function more like a “movie card editor” than a minimal metadata form: cover previews, existing summary/details, source/value fields, and collection notes must all be visible for manual enrichment.
-- The mobile finished-product workflow remains intentionally draft-heavy: partial product entries should be captured quickly and safely before later review/publish completion.
-
-## Current pass update
-- Catalog sync now uses `movie_catalog_enriched.v2.json` for movie imports so repo-side sync matches the JSON-first movie source already used elsewhere.
-- Schema references and upgrade SQL were aligned with the current movie overlay/editor fields and the governed review/reorder tables already present in the codebase.
-- Exposed HTML pages were checked again and continue to keep a single H1 per page.
+## Current pass schema note
+- No new tables were required in this pass.
+- This pass extended the use of existing product/resource/media tables by exposing richer reservation and product-detail payloads rather than adding new schema objects.
 
 
-## Current pass addendum
-- Marked the previous admin preview, products fallback, movie save, and accordion issues as completed/fixed in the documentation.
-- Departmentalized Admin into standalone interfaces: Members, Catalog, Orders, Accounting, Analytics, Operations, and Movies, reducing the size and risk of the main dashboard file.
-- Added real starter routes/UI for tier policy, general ledger accounts, expenses, write-offs, product unit costs, and monthly accounting CSV export.
-- Added accounting templates (CSV + XLSX) so GL and month-end bookkeeping can be seeded faster.
-- Continued mobile direction by making the lighter departmental pages easier to use on smaller screens than the former all-in-one Admin page.
-- Continued JSON-to-DB convergence by moving tier policy and accounting records into D1-backed tables instead of temporary page-only assumptions.
+## Current pass additions
+- `products.capture_reference` stores a temporary phone-first intake identifier for partial product drafts.
+- `movie_catalog` now supports `imdb_id`, `alternate_identifier`, `metadata_status`, and `collection_notes` so admin can curate or review movie metadata directly in D1.
+
+
+## Current pass schema note
+
+### movie_catalog
+Current practical role:
+- manual/admin overlay table for movie metadata edits
+- not yet the primary authoritative source for the live movie shelf
+
+Important compatibility note:
+Older databases may have an early `movie_catalog` shape that is missing later columns such as:
+- `imdb_id`
+- `alternate_identifier`
+- `metadata_source`
+- `estimated_value_low_cents`
+- `estimated_value_high_cents`
+- `estimated_value_currency`
+- `rarity_notes`
+- `collection_notes`
+- `value_search_url`
+- `original_title`
+
+Admin movie write routes should therefore ensure column compatibility before insert/update operations.
+
+### products partial-intake note
+Products now need to support a real partial-draft intake path for phone-first capture and CSV-first bulk entry. Publish-time validation can remain stricter, but early draft-save validation must stay light.
+
+
+## Pass 16 additions
+- `membership_tier_policies`: member-facing Bronze/Silver/Gold descriptions, benefits, visibility, and badge styling.
+- `general_ledger_accounts`: starter chart of accounts for operating costs and sales grouping.
+- `accounting_expenses`: operating expenses such as electricity, water, gas, rent, internet, software, and advertising.
+- `accounting_writeoffs`: damaged, obsolete, gifted, lost, or other write-off events.
+- `product_costs`: point-in-time per-unit cost entries used to grow toward fuller cost-of-goods and profit-and-loss reporting.
 
 
 ## Current pass addendum
@@ -259,61 +328,58 @@ Current pass emphasis: risk reduction through payment safety, inventory authorit
 - Continued moving the admin shell toward dashboard-style department buttons instead of long scroll-heavy interfaces.
 
 
-## Current pass direction
-- Keep Admin split into department pages instead of rebuilding a giant all-in-one dashboard.
-- Keep moving the phone dashboard toward daily real-use actions: Today, inventory, expense entry, write-offs, product intake, and exports.
-- Keep accounting focused on growing from capture/export structure into fuller P&L and overhead allocation later.
-
-
-## Current pass addendum
-- Replaced the long phone Admin link list with a grouped tree-style mobile menu so the phone workflow uses collapsible sections instead of one uninterrupted list.
-- Continued mobile-first workflow tuning by surfacing Today, quick expense, quick write-off, product cost, and export actions closer to the top of the phone dashboard.
-- Continued docs/current-build synchronization for the present mobile-navigation and admin-usability pass.
-
-
-## Current pass addendum
-- Customer-facing home/shop flow was made friendlier and clearer on phone and desktop with stronger exploration sections and clearer action cards.
-- Accounting moved forward with monthly overhead allocations and a rough net-after-overhead view in the accounting report so operating costs can start flowing toward fuller P&L reporting.
-- Mobile admin moved forward again with a direct overhead-allocation shortcut from the phone dashboard.
-- Schema and template files were updated for the new overhead allocation layer.
+## accounting_overhead_allocations
+Monthly overhead allocation rows used to move real operating costs like rent, hydro, gas, water, and internet into a rough P&L view and later into fuller cost allocation logic.
 
 
 ## Current pass note
-- Phone capture now supports reopening draft products in the same workflow.
-- Accounting now has an estimated fully loaded item-costing view based on direct costs, linked resources, and overhead allocation.
+- No new table was added in this pass.
+- Estimated item costing uses existing `product_costs`, `product_resource_links`, `site_item_inventory`, and `accounting_overhead_allocations`.
 
 ## Current pass addendum
-- The current accounting truth is still rough, but the repo now correctly treats `accounting_expenses` / `accounting_writeoffs` as real-dollar tables and `product_costs` as a `product_number` + `cost_per_unit` table.
-- Treat the phone dashboard as a fast operational shell for daily accounting visibility, not just a launcher.
-- Treat the mobile product capture screen as the preferred place to reopen and continue unfinished finished-product drafts.
+- `accounting_expenses` remains a real-dollar table (`amount`, `tax_amount`) rather than a cents table. Repo code must convert to cents only at reporting time.
+- `accounting_writeoffs` likewise remains a real-dollar table (`amount`) and should be treated the same way in rough P&L/reporting code.
+- `product_costs` currently keys product costing by `product_number` and stores `cost_per_unit` as a real-dollar amount. Costing/reporting code should not assume `product_id` or `cost_per_unit_cents` in this table.
+- Added supporting indexes for `accounting_expenses`, `accounting_writeoffs`, `product_costs`, and `accounting_overhead_allocations` so the phone dashboard and accounting overview can query the current schema more reliably.
 
 ## 2026-04-10 deploy hotfix
 
 - Fixed a Cloudflare Pages build blocker in the accounting CSV export helpers by replacing the regex-based CSV quoting check with a simpler string-contains check.
 - This hotfix does not change the database shape. Schema files remain current for this pass because no SQL migration was required.
 
+## Current pass schema note
+- Added `catalog_items` lookup indexes for centralized public catalog reads: `idx_catalog_items_public_sort` and `idx_catalog_items_grouping`.
+- `database_upgrade_current_pass.sql` now includes unified-catalog support creation/index statements so older environments can safely move toward the same public catalog lookup path.
+
+
+
+## Current pass update - runtime and fallback hardening
+- Added `runtime_incidents` for lightweight server-side fallback/error visibility when public catalog reads or admin summary reads drift.
+- New columns tracked: `incident_scope`, `incident_code`, `severity`, `endpoint_path`, `request_method`, `message`, `details_json`, `related_user_id`, `ip_address`, `user_agent`, and `created_at`.
+- This table is intentionally simple and operational. It is meant for fast incident review, not a full observability platform.
+- Public tools, supplies, and creations endpoints now expose `fallback_used`, `summary.authority`, and `diagnostics.warnings` so pages can stay usable while clearly signaling fallback mode.
+
 ## Current pass note
-- Public catalog cleanup continued by moving gallery/creations and tools farther onto shared API authority.
-- Mobile admin/accounting usability moved forward again with a stronger phone snapshot for open records and outstanding values.
-
-## Current pass completion update
-- Social hub is now API-backed via `/api/social-feed`.
-- Public shop and movies plus admin phone snapshot now keep last-good client fallback state.
-- Runtime incidents now have a read endpoint for admin review and count-level visibility in dashboard summary.
+- No new table was required in this pass. The new runtime-incident review endpoint (`/api/admin/runtime-incidents`) reuses the existing `runtime_incidents` table that was added in the prior fallback-hardening pass.
+- Current fallback coverage now depends on both server-side `runtime_incidents` logging and client-side last-good snapshot storage on the shop, movie shelf, social hub, and phone dashboard.
 
 ## Current pass note
 
-Operational priority moved to admin resiliency this pass: order list, order detail, and payment detail screens now degrade more gracefully, and the phone dashboard now surfaces order/payment incident pressure for quicker triage.
+`runtime_incidents` now has an additional `(incident_code, endpoint_path, created_at)` index so the admin fallback/error trail stays queryable as order/payment incident coverage expands.
+
+
+### runtime_incidents
+Stores fallback and error events from public/admin paths. Current write-path coverage now includes order-status updates, manual payment records, and refund/dispute follow-up warnings.
 
 ## Latest pass update
 
-- Admin resilience now has two layers for failed writes: a shared D1-backed queue first and browser-local fallback second.
-- The main day-to-day surface for this queue is the order-detail modal plus the phone dashboard health block.
+- Added `admin_pending_actions` as the shared cross-device replay queue for failed admin writes.
+- Key columns include `client_action_id`, `action_scope`, `order_id`, `endpoint_path`, `http_method`, `payload_json`, `queue_status`, `attempt_count`, and replay timing fields.
+- Matching indexes now cover client-action dedupe and queue/order status lookup paths.
 
 ## Current pass update
-- Social hub YouTube cards now prefer derived thumbnail URLs/fallbacks through `/api/social-feed` instead of fragile iframe-only presentation.
-- Shared admin replay queue coverage now reaches the product review workflow in addition to order/payment order-detail actions.
-- Accounting item costing now relies on the shared costing helper for basis-aware overhead pool allocation.
+- Added `idx_admin_pending_actions_scope_status` so shared pending admin actions can be filtered and reviewed by action scope more efficiently.
+- `admin_pending_actions` should now be read as the shared replay queue for both order/payment writes and product review/publish writes.
 
 ## Current pass completion update
 - Added `accounting_overhead_product_allocations` so monthly overhead can now be assigned directly to specific products by ledger code instead of relying only on pool-wide share logic.
@@ -340,15 +406,16 @@ Operational priority moved to admin resiliency this pass: order list, order deta
 
 ## Current pass update — 2026-04-12
 
-- Finished products now assume a DD-series numbering floor of `DD1000`.
-- The phone-first product capture path and the regular create-product path now share the same numbering helper logic.
-- Older databases may not have the app setting row yet, so the runtime fallback to `1000` is intentional and should remain in place until every environment is upgraded.
+- `app_settings` now carries `site.catalog.product_number_start = 1000` as the default DD-series starting point for finished products.
+- Product entry code now reads this setting when available and safely falls back to `1000` for older databases that have not yet been upgraded.
+- Schema and upgrade SQL should keep this setting seeded so mobile and desktop product creation stay aligned.
 
 
-## Latest pass additions
-- Catalog pricing control is now split into two safe paths: per-item edit for precise single-product changes and bulk scope controls for selected IDs, one category, or the full product list.
-- Bulk repricing now supports preview-first review plus compare-at handling, which gives the repo a better base for tariff, shipping, packaging, or other broad selling-price changes.
-- Public exposed-page H1 count was rechecked and remains aligned with the one-H1 rule.
+## Current pass schema status
+- No brand-new required tables were added for the bulk price-adjustment pass.
+- Product price adjustments continue to use the existing `products` table (`price_cents`, `compare_at_price_cents`, `product_category`, `updated_at`).
+- `app_settings` remains the place for repo-wide catalog defaults such as `site.catalog.product_number_start`.
+- This pass was mainly code-path hardening and admin workflow expansion rather than a structural D1 migration.
 
 ## 2026-04-13 pass update
 - Repaired the phone capture next-number display so the admin UI now shows `DD1000`-style labels instead of a bare numeric value when the next product number is loaded.
@@ -357,8 +424,9 @@ Operational priority moved to admin resiliency this pass: order list, order deta
 - Confirmed that public gallery and creations are still fed through the finished-product plus catalog-sync flow; a fully separate creations-only editor remains a next-step item rather than a completed interface.
 
 ## Current pass note
-- Inventory operations now cover both stock movement and bulk unit-cost changes.
-- Use the catalog department page inventory block for tariffs, packaging increases, supplier changes, or shipping-related cost corrections before repricing products.
+- No new tables were required in this pass.
+- Existing `site_item_inventory` and `site_inventory_movements` structures now support bulk unit-cost changes through new API/frontend logic rather than schema expansion.
+- `site_inventory_movements.movement_type` is now also used for `cost_update` entries written by the new bulk inventory cost workflow.
 
 ## Pass 20 note — mobile capture compatibility repair
 - Repaired the phone capture save path so it no longer hard-fails when the live `products` table is missing newer mobile-capture columns such as `capture_reference`.
