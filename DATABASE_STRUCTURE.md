@@ -327,3 +327,6 @@ New accounting-facing additions include:
 - Admin now loads and renders a Recent Site Activity table directly from the backend instead of relying only on login traces or per-screen notices.
 - `admin-manage`, `jobs-manage`, and `account-maintenance` now record key activity events while still failing safely if the audit trail insert itself has a problem.
 - Current schema target is now 082.
+
+## 085 schema direction
+Added migration 085 for attendance photo metadata, payroll export provider fields, signed contract invoice linkage, and service execution scheduler runs/candidate views.

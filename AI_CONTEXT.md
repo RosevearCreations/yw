@@ -160,10 +160,5 @@ Do not collapse recurring service visits into only the parent job record.
 - Added site activity audit coverage for clock in, break start, break end, and clock out.
 - Next direction: supervisor approval for employee clock exceptions, geofence/photo proof on arrival, payroll export file generation, and contract/estimate conversion polish.
 
-
-## 085 Attendance / Geofence / Scheduler / Signed-Contract Invoice Pass
-- Added attendance photo upload/storage for clock-in and clock-out.
-- Added geofence radius evaluation against site coordinates during clock-in/out.
-- Added service execution scheduler runs and signed-contract invoice candidates.
-- Added provider-specific payroll export layouts.
-- Added signed-contract-to-invoice generation support.
+## 085 implementation notes
+This pass adds attendance-photo storage metadata, geofence evaluation against site coordinates/radius, service execution scheduler runs/candidates, provider-specific payroll export generation, and signed-contract invoice support. Treat `jobs.service_contract_reference = recurring_service_agreements.agreement_code` as the current scheduler link rule.
