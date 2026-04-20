@@ -1,2 +1,0 @@
-writeoff_date,writeoff_type,description,amount,currency,gl_account_code,product_id,quantity,notes
-2026-04-01,damage,Damaged pendant,12.50,CAD,6900,123,1,Example starter row
