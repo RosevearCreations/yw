@@ -105,6 +105,16 @@ create index if not exists idx_service_contract_documents_linked_invoice_id on p
 alter table if exists public.recurring_service_agreements
   add column if not exists last_scheduler_run_at timestamptz;
 
+alter table if exists public.recurring_service_agreements
+  add column if not exists auto_create_session_candidates boolean not null default true,
+  add column if not exists auto_stage_invoice_candidates boolean not null default false,
+  add column if not exists default_invoice_source text not null default 'agreement_visit';
+
+alter table if exists public.recurring_service_agreements drop constraint if exists recurring_service_agreements_default_invoice_source_check;
+alter table if exists public.recurring_service_agreements
+  add constraint recurring_service_agreements_default_invoice_source_check
+  check (default_invoice_source in ('agreement_visit','agreement_snow','contract','manual'));
+
 -- ------------------------------------------------------------
 -- Scheduler runs
 -- ------------------------------------------------------------
@@ -285,6 +295,80 @@ from public.v_employee_time_clock_entries;
 -- ------------------------------------------------------------
 -- Scheduler / invoice candidate views
 -- ------------------------------------------------------------
+create or replace view public.v_service_agreement_execution_candidates as
+with active_agreements as (
+  select
+    a.*,
+    greatest(current_date, coalesce(a.start_date, current_date)) as candidate_date
+  from public.recurring_service_agreements a
+  where a.agreement_status = 'active'
+    and coalesce(a.start_date, current_date) <= current_date
+    and (coalesce(a.open_end_date, false) = true or a.end_date is null or a.end_date >= current_date)
+), visit_candidates as (
+  select
+    a.id as agreement_id,
+    a.agreement_code,
+    a.service_name,
+    a.client_id,
+    a.client_site_id,
+    a.route_id,
+    a.crew_id,
+    'service_session'::text as candidate_kind,
+    a.default_invoice_source as invoice_source,
+    a.candidate_date,
+    a.visit_charge_total,
+    a.visit_cost_total,
+    null::uuid as snow_event_trigger_id,
+    'Active agreement is due for service execution review.'::text as candidate_reason
+  from active_agreements a
+  where coalesce(a.auto_create_session_candidates, false) = true
+), invoice_candidates as (
+  select
+    a.id as agreement_id,
+    a.agreement_code,
+    a.service_name,
+    a.client_id,
+    a.client_site_id,
+    a.route_id,
+    a.crew_id,
+    'visit_invoice'::text as candidate_kind,
+    a.default_invoice_source as invoice_source,
+    a.candidate_date,
+    a.visit_charge_total,
+    a.visit_cost_total,
+    null::uuid as snow_event_trigger_id,
+    'Agreement allows invoice candidate staging for the next visit.'::text as candidate_reason
+  from active_agreements a
+  where coalesce(a.auto_stage_invoice_candidates, false) = true
+    and coalesce(a.default_invoice_source, 'agreement_visit') = 'agreement_visit'
+), snow_candidates as (
+  select
+    a.id as agreement_id,
+    a.agreement_code,
+    a.service_name,
+    a.client_id,
+    a.client_site_id,
+    a.route_id,
+    a.crew_id,
+    'snow_invoice'::text as candidate_kind,
+    'agreement_snow'::text as invoice_source,
+    st.event_date as candidate_date,
+    a.visit_charge_total,
+    a.visit_cost_total,
+    st.id as snow_event_trigger_id,
+    'Triggered snow event is ready for invoice candidate staging.'::text as candidate_reason
+  from active_agreements a
+  join public.snow_event_triggers st on st.agreement_id = a.id
+  left join public.ar_invoices ai on ai.snow_event_trigger_id = st.id
+  where coalesce(a.auto_stage_invoice_candidates, false) = true
+    and st.trigger_met = true
+    and ai.id is null
+)
+select * from visit_candidates
+union all
+select * from invoice_candidates
+union all
+select * from snow_candidates;
 create or replace view public.v_service_execution_scheduler_candidates as
 with candidate_jobs as (
   select
