@@ -1,4 +1,4 @@
-<!-- Reviewed during schema 082 site activity audit / admin recent-activity pass on 2026-04-18. -->
+<!-- Reviewed during schema 083 employee time clock / attendance pass on 2026-04-19. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## Current repo anchor (schema 080)
 Think of the product now as a landscaping/service/construction operations system with: jobs, crews, equipment, recurring agreements, payroll-aware costing, customer assets/history, callbacks/warranty, and Ontario-facing accounting review.
@@ -207,9 +207,16 @@ Treat jobs as the operational parent record, but treat recurring visits, actual 
 > Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
 
 
-## 2026-04-18 site activity audit and admin visibility pass
+## 2026-04-19 employee time clock and attendance pass
 
 - Added DB-backed `site_activity_events`, `v_site_activity_recent`, and `v_site_activity_summary` so Admin can review durable activity for staff creation/updates, new jobs, equipment changes, agreements, payroll exports, contracts, and related operational changes.
 - Admin now loads and renders a Recent Site Activity table directly from the backend instead of relying only on login traces or per-screen notices.
 - `admin-manage`, `jobs-manage`, and `account-maintenance` now record key activity events while still failing safely if the audit trail insert itself has a problem.
 - Current schema target is now 082.
+
+
+## 083 Employee site time clock pass
+- Added employee site/job sign-in, unpaid break, resume, and sign-out flow tied to job sessions and payroll-linked crew-hour rows.
+- Added admin-visible employee time entry records and recent attendance summary data.
+- Added site activity audit coverage for clock in, break start, break end, and clock out.
+- Next direction: supervisor approval for employee clock exceptions, geofence/photo proof on arrival, payroll export file generation, and contract/estimate conversion polish.

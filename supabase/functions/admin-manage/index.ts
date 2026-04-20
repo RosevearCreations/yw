@@ -1312,6 +1312,40 @@ serve(async (req) => {
       }
     }
 
+
+    if (entity === 'employee_time_entry') {
+      const patch = {
+        profile_id: asNullableText(body.profile_id),
+        crew_id: asNullableText(body.crew_id),
+        job_id: asNullableNumber(body.job_id),
+        job_session_id: asNullableText(body.job_session_id),
+        site_id: asNullableNumber(body.site_id),
+        clock_status: body.clock_status ?? 'active',
+        signed_in_at: asNullableDateTime(body.signed_in_at),
+        signed_out_at: asNullableDateTime(body.signed_out_at),
+        unpaid_break_minutes: asNumber(body.unpaid_break_minutes, 0),
+        paid_work_minutes: asNumber(body.paid_work_minutes, 0),
+        notes: body.notes ?? null,
+        updated_at: new Date().toISOString(),
+      };
+      if (action === 'create') {
+        const { data, error } = await supabase.from('employee_time_entries').insert({ ...patch, created_by_profile_id: actorId, created_at: new Date().toISOString() }).select('*').single();
+        if (error) throw error;
+        await recordSiteActivity(supabase, { event_type:'employee_clock_in', entity_type:'employee_time_entry', entity_id:data?.id, title:'Employee time entry created', summary:'An employee time record was created from Admin.', related_job_id:data?.job_id || null, related_profile_id:data?.profile_id || null, created_by_profile_id: actorId });
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('employee_time_entries').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('employee_time_entries').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
     if (entity === 'route') {
       const patch = {
         route_code: asNullableText(body.route_code),

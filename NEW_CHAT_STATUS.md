@@ -1,4 +1,4 @@
-<!-- Reviewed during schema 082 site activity audit / admin recent-activity pass on 2026-04-18. -->
+<!-- Reviewed during schema 083 employee time clock / attendance pass on 2026-04-19. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## Fresh-chat handoff: schema 080 pass
 This repo now includes:
@@ -112,12 +112,12 @@ The latest pass added migration `076_job_pricing_profitability_and_schedule_logi
 > Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
 
 ## Handoff update - 2026-04-17 schema 081
-- Added migration `sql/082_site_activity_audit_and_admin_recent_events.sql`.
+- Added migration `sql/083_employee_time_clock_and_break_tracking.sql`.
 - Added estimate conversion candidates, service contract documents, payroll export generation, callback / warranty dashboard summaries, agreement profitability summaries, and snow invoice candidate views.
 - Admin backbone is now wired so office flow can move estimate -> agreement -> printable contract, payroll review -> CSV export, and snow trigger -> draft invoice.
 - `sql/000_full_schema_reference.sql` has been synchronized through 081.
 
-## 2026-04-18 site activity audit and admin visibility pass
+## 2026-04-19 employee time clock and attendance pass
 
 - Added DB-backed `site_activity_events`, `v_site_activity_recent`, and `v_site_activity_summary` so Admin can review durable activity for staff creation/updates, new jobs, equipment changes, agreements, payroll exports, contracts, and related operational changes.
 - Admin now loads and renders a Recent Site Activity table directly from the backend instead of relying only on login traces or per-screen notices.
@@ -130,3 +130,10 @@ The latest pass added migration `076_job_pricing_profitability_and_schedule_logi
 - Added schema 082 for durable site activity auditing and admin recent-activity review.
 - Logged critical events for jobs, staff, equipment, agreements, callbacks, contract docs, payroll exports, and account access.
 - Admin shell now displays recent site activity with a small summary block for the last 24 hours.
+
+
+## 083 Employee site time clock pass
+- Added employee site/job sign-in, unpaid break, resume, and sign-out flow tied to job sessions and payroll-linked crew-hour rows.
+- Added admin-visible employee time entry records and recent attendance summary data.
+- Added site activity audit coverage for clock in, break start, break end, and clock out.
+- Next direction: supervisor approval for employee clock exceptions, geofence/photo proof on arrival, payroll export file generation, and contract/estimate conversion polish.

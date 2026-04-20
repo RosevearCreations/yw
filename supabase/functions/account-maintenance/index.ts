@@ -110,6 +110,137 @@ async function logLoginEvent(supabase: any, payload: Record<string, unknown>) {
   }
 }
 
+
+async function logSiteActivity(supabase: any, payload: Record<string, unknown>) {
+  try {
+    await supabase.from("site_activity_events").insert({
+      event_type: payload.event_type || 'account_login',
+      entity_type: payload.entity_type || 'profile',
+      entity_id: payload.entity_id != null ? String(payload.entity_id) : null,
+      severity: payload.severity || 'info',
+      title: payload.title || 'Activity recorded',
+      summary: payload.summary || null,
+      metadata: payload.metadata || {},
+      related_job_id: payload.related_job_id || null,
+      related_profile_id: payload.related_profile_id || null,
+      created_by_profile_id: payload.created_by_profile_id || null,
+      occurred_at: payload.occurred_at || new Date().toISOString(),
+    });
+  } catch {
+    // ignore activity log failures
+  }
+}
+
+async function getWorkerCrewIds(supabase: any, profileId: string) {
+  const { data } = await supabase.from('crew_members').select('crew_id').eq('profile_id', profileId);
+  return (data || []).map((row: any) => row.crew_id).filter(Boolean);
+}
+
+async function getClockContext(supabase: any, actorId: string, actorProfile: any) {
+  const crewIds = await getWorkerCrewIds(supabase, actorId);
+  let jobsQuery = supabase.from('v_jobs_directory').select('*').in('status', ['pending','approved','scheduled','in_progress','active','completed','done','closed']);
+  if (crewIds.length) {
+    jobsQuery = jobsQuery.in('crew_id', crewIds);
+  } else {
+    jobsQuery = jobsQuery.or(`assigned_supervisor_profile_id.eq.${actorId},site_supervisor_profile_id.eq.${actorId},signing_supervisor_profile_id.eq.${actorId},admin_profile_id.eq.${actorId},created_by_profile_id.eq.${actorId}`);
+  }
+  const { data: jobs } = await jobsQuery.order('start_date', { ascending: false }).limit(50);
+  const { data: activeEntry } = await supabase.from('v_employee_time_clock_current').select('*').eq('profile_id', actorId).limit(1).maybeSingle();
+  const { data: recentEntries } = await supabase.from('v_employee_time_clock_entries').select('*').eq('profile_id', actorId).order('signed_in_at', { ascending: false }).limit(20);
+  return {
+    active_entry: activeEntry || null,
+    recent_entries: recentEntries || [],
+    available_jobs: jobs || [],
+    crew_ids: crewIds,
+    profile: {
+      id: actorProfile.id,
+      full_name: actorProfile.full_name || null,
+      employee_number: actorProfile.employee_number || null,
+      role: actorProfile.role || null,
+    }
+  };
+}
+
+async function ensureClockJobSession(supabase: any, actorId: string, actorProfile: any, jobId: number, nowIso: string) {
+  const today = nowIso.slice(0, 10);
+  const { data: existing } = await supabase
+    .from('job_sessions')
+    .select('*')
+    .eq('job_id', jobId)
+    .eq('session_date', today)
+    .in('session_status', ['planned','in_progress','paused','delayed'])
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (existing?.id) return existing;
+  const { data: job } = await supabase.from('jobs').select('id,site_id,site_supervisor_profile_id,crew_id,job_type,recurrence_summary').eq('id', jobId).maybeSingle();
+  const { data: created, error } = await supabase.from('job_sessions').insert({
+    job_id: jobId,
+    session_date: today,
+    session_kind: 'field_service',
+    session_status: 'in_progress',
+    service_frequency_label: job?.recurrence_summary || job?.job_type || 'site_visit',
+    started_at: nowIso,
+    site_supervisor_profile_id: job?.site_supervisor_profile_id || null,
+    created_by_profile_id: actorId,
+    created_at: nowIso,
+    updated_at: nowIso,
+  }).select('*').single();
+  if (error) throw error;
+  await supabase.from('jobs').update({ last_activity_at: nowIso, updated_at: nowIso }).eq('id', jobId);
+  await logSiteActivity(supabase, {
+    event_type: 'job_session_created',
+    entity_type: 'job_session',
+    entity_id: created?.id || null,
+    title: `Job session started for ${job?.job_type || 'field work'}`,
+    summary: 'A time clock sign-in created a working job session.',
+    related_job_id: jobId,
+    related_profile_id: actorId,
+    created_by_profile_id: actorId,
+    metadata: { source: 'employee_time_clock' },
+    occurred_at: nowIso,
+  });
+  return { ...created, site_id: job?.site_id || null, crew_id: job?.crew_id || null };
+}
+
+function roundTwo(value: number) {
+  return Math.round((Number(value || 0) + Number.EPSILON) * 100) / 100;
+}
+
+async function syncCrewHoursFromTimeEntry(supabase: any, entry: any, actorProfile: any, nowIso: string) {
+  if (!entry?.id || !entry?.profile_id || !entry?.job_id) return null;
+  const totalHours = roundTwo(Number(entry.paid_work_minutes || 0) / 60);
+  const overtimeHours = totalHours > 8 ? roundTwo(totalHours - 8) : 0;
+  const regularHours = roundTwo(totalHours - overtimeHours);
+  const payload = {
+    time_entry_id: entry.id,
+    job_session_id: entry.job_session_id || null,
+    job_id: entry.job_id,
+    crew_id: entry.crew_id || null,
+    profile_id: entry.profile_id,
+    worker_name: actorProfile?.full_name || actorProfile?.email || 'Worker',
+    started_at: entry.signed_in_at || nowIso,
+    ended_at: entry.signed_out_at || nowIso,
+    hours_worked: totalHours,
+    regular_hours: regularHours,
+    overtime_hours: overtimeHours,
+    break_minutes: Number(entry.unpaid_break_minutes || 0),
+    pay_code: overtimeHours > 0 ? 'mixed' : 'regular',
+    notes: entry.notes || null,
+    created_by_profile_id: entry.profile_id,
+    updated_at: nowIso,
+  };
+  const { data: existing } = await supabase.from('job_session_crew_hours').select('id').eq('time_entry_id', entry.id).maybeSingle();
+  if (existing?.id) {
+    const { data, error } = await supabase.from('job_session_crew_hours').update(payload).eq('id', existing.id).select('*').single();
+    if (error) throw error;
+    return data;
+  }
+  const { data, error } = await supabase.from('job_session_crew_hours').insert({ ...payload, created_at: nowIso }).select('*').single();
+  if (error) throw error;
+  return data;
+}
+
 async function logRecoveryRequest(supabase: any, payload: Record<string, unknown>) {
   try {
     await supabase.from("account_recovery_requests").insert(payload);
@@ -500,6 +631,198 @@ serve(async (req) => {
       },
       { headers: corsHeaders },
     );
+  }
+
+
+  if (action === "list_my_time_clock_context") {
+    const context = await getClockContext(supabase, actorId, actorProfile);
+    return Response.json({ ok: true, ...context }, { headers: corsHeaders });
+  }
+
+  if (action === "employee_clock_in") {
+    const nowIso = new Date().toISOString();
+    const jobId = Number(body.job_id || 0);
+    if (!jobId) {
+      return Response.json({ ok: false, error: "job_id is required." }, { status: 400, headers: corsHeaders });
+    }
+    const { data: existingOpen } = await supabase
+      .from('employee_time_entries')
+      .select('*')
+      .eq('profile_id', actorId)
+      .is('signed_out_at', null)
+      .in('clock_status', ['active','paused'])
+      .maybeSingle();
+    if (existingOpen?.id) {
+      return Response.json({ ok: false, error: 'You already have an active site time entry. Sign out before starting another one.' }, { status: 400, headers: corsHeaders });
+    }
+    const { data: job } = await supabase.from('jobs').select('id,job_code,job_name,site_id,crew_id,status').eq('id', jobId).maybeSingle();
+    if (!job?.id) {
+      return Response.json({ ok: false, error: 'Selected job was not found.' }, { status: 404, headers: corsHeaders });
+    }
+    const session = await ensureClockJobSession(supabase, actorId, actorProfile, jobId, nowIso);
+    const { data: entry, error } = await supabase.from('employee_time_entries').insert({
+      profile_id: actorId,
+      crew_id: job.crew_id || null,
+      job_id: job.id,
+      job_session_id: session?.id || null,
+      site_id: job.site_id || null,
+      clock_status: 'active',
+      signed_in_at: nowIso,
+      last_status_at: nowIso,
+      notes: String(body.notes || '').trim() || null,
+      created_by_profile_id: actorId,
+      created_at: nowIso,
+      updated_at: nowIso,
+    }).select('*').single();
+    if (error) {
+      return Response.json({ ok: false, error: String(error.message || error) }, { status: 500, headers: corsHeaders });
+    }
+    await supabase.from('jobs').update({ last_activity_at: nowIso, updated_at: nowIso }).eq('id', job.id);
+    await logSiteActivity(supabase, {
+      event_type: 'employee_clock_in',
+      entity_type: 'employee_time_entry',
+      entity_id: entry.id,
+      severity: 'info',
+      title: `${actorProfile.full_name || 'Worker'} signed in`,
+      summary: `Started work on ${job.job_code || ''} ${job.job_name || ''}`.trim(),
+      related_job_id: job.id,
+      related_profile_id: actorId,
+      created_by_profile_id: actorId,
+      metadata: { job_code: job.job_code || null, job_name: job.job_name || null },
+      occurred_at: nowIso,
+    });
+    const context = await getClockContext(supabase, actorId, actorProfile);
+    return Response.json({ ok: true, entry, ...context }, { headers: corsHeaders });
+  }
+
+  if (action === "employee_start_break") {
+    const nowIso = new Date().toISOString();
+    const { data: entry } = await supabase.from('employee_time_entries').select('*').eq('profile_id', actorId).is('signed_out_at', null).eq('clock_status', 'active').maybeSingle();
+    if (!entry?.id) {
+      return Response.json({ ok: false, error: 'You do not have an active time entry to pause.' }, { status: 400, headers: corsHeaders });
+    }
+    const { data: openBreak } = await supabase.from('employee_time_entry_breaks').select('id').eq('time_entry_id', entry.id).is('ended_at', null).maybeSingle();
+    if (openBreak?.id) {
+      return Response.json({ ok: false, error: 'An unpaid break is already running.' }, { status: 400, headers: corsHeaders });
+    }
+    const { error: breakErr } = await supabase.from('employee_time_entry_breaks').insert({
+      time_entry_id: entry.id,
+      started_at: nowIso,
+      unpaid: true,
+      notes: String(body.notes || '').trim() || null,
+      created_by_profile_id: actorId,
+      created_at: nowIso,
+      updated_at: nowIso,
+    });
+    if (breakErr) {
+      return Response.json({ ok: false, error: String(breakErr.message || breakErr) }, { status: 500, headers: corsHeaders });
+    }
+    await supabase.from('employee_time_entries').update({ clock_status: 'paused', last_status_at: nowIso, updated_at: nowIso }).eq('id', entry.id);
+    await logSiteActivity(supabase, {
+      event_type: 'employee_break_started',
+      entity_type: 'employee_time_entry',
+      entity_id: entry.id,
+      title: `${actorProfile.full_name || 'Worker'} started an unpaid break`,
+      summary: 'Employee paused paid site time.',
+      related_job_id: entry.job_id,
+      related_profile_id: actorId,
+      created_by_profile_id: actorId,
+      occurred_at: nowIso,
+    });
+    const context = await getClockContext(supabase, actorId, actorProfile);
+    return Response.json({ ok: true, ...context }, { headers: corsHeaders });
+  }
+
+  if (action === "employee_end_break") {
+    const nowIso = new Date().toISOString();
+    const { data: entry } = await supabase.from('employee_time_entries').select('*').eq('profile_id', actorId).is('signed_out_at', null).eq('clock_status', 'paused').maybeSingle();
+    if (!entry?.id) {
+      return Response.json({ ok: false, error: 'You do not have a paused time entry.' }, { status: 400, headers: corsHeaders });
+    }
+    const { data: openBreak } = await supabase.from('employee_time_entry_breaks').select('*').eq('time_entry_id', entry.id).is('ended_at', null).order('started_at', { ascending: false }).limit(1).maybeSingle();
+    if (!openBreak?.id) {
+      return Response.json({ ok: false, error: 'No open unpaid break was found.' }, { status: 400, headers: corsHeaders });
+    }
+    const durationMinutes = Math.max(0, Math.floor((new Date(nowIso).getTime() - new Date(openBreak.started_at).getTime()) / 60000));
+    const { error: breakErr } = await supabase.from('employee_time_entry_breaks').update({ ended_at: nowIso, duration_minutes: durationMinutes, updated_at: nowIso }).eq('id', openBreak.id);
+    if (breakErr) {
+      return Response.json({ ok: false, error: String(breakErr.message || breakErr) }, { status: 500, headers: corsHeaders });
+    }
+    await supabase.from('employee_time_entries').update({
+      clock_status: 'active',
+      last_status_at: nowIso,
+      unpaid_break_minutes: Number(entry.unpaid_break_minutes || 0) + durationMinutes,
+      updated_at: nowIso,
+    }).eq('id', entry.id);
+    await logSiteActivity(supabase, {
+      event_type: 'employee_break_ended',
+      entity_type: 'employee_time_entry',
+      entity_id: entry.id,
+      title: `${actorProfile.full_name || 'Worker'} ended an unpaid break`,
+      summary: `Break duration ${durationMinutes} minute(s).`,
+      related_job_id: entry.job_id,
+      related_profile_id: actorId,
+      created_by_profile_id: actorId,
+      occurred_at: nowIso,
+    });
+    const context = await getClockContext(supabase, actorId, actorProfile);
+    return Response.json({ ok: true, ...context }, { headers: corsHeaders });
+  }
+
+  if (action === "employee_clock_out") {
+    const nowIso = new Date().toISOString();
+    const { data: entry } = await supabase.from('employee_time_entries').select('*').eq('profile_id', actorId).is('signed_out_at', null).in('clock_status', ['active','paused']).maybeSingle();
+    if (!entry?.id) {
+      return Response.json({ ok: false, error: 'You do not have an active site time entry to sign out from.' }, { status: 400, headers: corsHeaders });
+    }
+    let unpaidBreakMinutes = Number(entry.unpaid_break_minutes || 0);
+    if (String(entry.clock_status || '') === 'paused') {
+      const { data: openBreak } = await supabase.from('employee_time_entry_breaks').select('*').eq('time_entry_id', entry.id).is('ended_at', null).order('started_at', { ascending: false }).limit(1).maybeSingle();
+      if (openBreak?.id) {
+        const extraMinutes = Math.max(0, Math.floor((new Date(nowIso).getTime() - new Date(openBreak.started_at).getTime()) / 60000));
+        unpaidBreakMinutes += extraMinutes;
+        await supabase.from('employee_time_entry_breaks').update({ ended_at: nowIso, duration_minutes: extraMinutes, updated_at: nowIso }).eq('id', openBreak.id);
+      }
+    }
+    const totalElapsedMinutes = Math.max(0, Math.floor((new Date(nowIso).getTime() - new Date(entry.signed_in_at).getTime()) / 60000));
+    const paidWorkMinutes = Math.max(0, totalElapsedMinutes - unpaidBreakMinutes);
+    const { data: updated, error } = await supabase.from('employee_time_entries').update({
+      clock_status: 'signed_out',
+      signed_out_at: nowIso,
+      last_status_at: nowIso,
+      total_elapsed_minutes: totalElapsedMinutes,
+      unpaid_break_minutes: unpaidBreakMinutes,
+      paid_work_minutes: paidWorkMinutes,
+      notes: String(body.notes || entry.notes || '').trim() || null,
+      updated_at: nowIso,
+    }).eq('id', entry.id).select('*').single();
+    if (error) {
+      return Response.json({ ok: false, error: String(error.message || error) }, { status: 500, headers: corsHeaders });
+    }
+    const syncedHours = await syncCrewHoursFromTimeEntry(supabase, updated, actorProfile, nowIso);
+    if (updated?.job_session_id) {
+      await supabase.from('job_sessions').update({
+        session_status: 'completed',
+        ended_at: nowIso,
+        duration_minutes: totalElapsedMinutes,
+        updated_at: nowIso,
+      }).eq('id', updated.job_session_id).eq('created_by_profile_id', actorId);
+    }
+    await supabase.from('jobs').update({ last_activity_at: nowIso, updated_at: nowIso }).eq('id', updated.job_id);
+    await logSiteActivity(supabase, {
+      event_type: 'employee_clock_out',
+      entity_type: 'employee_time_entry',
+      entity_id: updated.id,
+      title: `${actorProfile.full_name || 'Worker'} signed out`,
+      summary: `Worked ${paidWorkMinutes} paid minute(s) with ${unpaidBreakMinutes} unpaid break minute(s).`,
+      related_job_id: updated.job_id,
+      related_profile_id: actorId,
+      created_by_profile_id: actorId,
+      metadata: { paid_work_minutes: paidWorkMinutes, unpaid_break_minutes: unpaidBreakMinutes, crew_hours_id: syncedHours?.id || null },
+      occurred_at: nowIso,
+    });
+    const context = await getClockContext(supabase, actorId, actorProfile);
+    return Response.json({ ok: true, entry: updated, crew_hours: syncedHours || null, ...context }, { headers: corsHeaders });
   }
 
   if (action === "update_recovery_profile") {

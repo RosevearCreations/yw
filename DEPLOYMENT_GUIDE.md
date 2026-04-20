@@ -1,4 +1,4 @@
-<!-- Reviewed during schema 082 site activity audit / admin recent-activity pass on 2026-04-18. -->
+<!-- Reviewed during schema 083 employee time clock / attendance pass on 2026-04-19. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## 2026-04-13 staff admin save verification pass
 - Added visible inline create/save/reset/block/delete confirmations in the Staff Directory screen so staff actions no longer fail silently from the operator’s point of view.

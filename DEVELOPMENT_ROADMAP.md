@@ -1,6 +1,6 @@
-<!-- Reviewed during schema 082 site activity audit / admin recent-activity pass on 2026-04-18. -->
+<!-- Reviewed during schema 083 employee time clock / attendance pass on 2026-04-19. -->
 ## 2026-04-17 contract conversion, payroll export, callback dashboard, and snow-invoice automation pass
-- Added migration `sql/082_site_activity_audit_and_admin_recent_events.sql`.
+- Added migration `sql/083_employee_time_clock_and_break_tracking.sql`.
 - Added estimate conversion candidates, service contract documents, payroll export generation, agreement profitability summaries, snow-event invoice candidates, and callback / warranty dashboard summaries.
 - Extended Admin so the office workflow can move from estimate -> agreement -> printable contract, then from snow trigger -> invoice, and from weekly labor review -> exportable payroll output.
 
@@ -454,7 +454,7 @@ Next recommended build steps:
 > Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
 
 
-## 2026-04-18 site activity audit and admin visibility pass
+## 2026-04-19 employee time clock and attendance pass
 
 - Added DB-backed `site_activity_events`, `v_site_activity_recent`, and `v_site_activity_summary` so Admin can review durable activity for staff creation/updates, new jobs, equipment changes, agreements, payroll exports, contracts, and related operational changes.
 - Admin now loads and renders a Recent Site Activity table directly from the backend instead of relying only on login traces or per-screen notices.
@@ -467,3 +467,10 @@ Next recommended build steps:
 1. Surface per-entity activity filters in Admin so managers can narrow to Jobs, Staff, Equipment, Contracts, or Accounting events.
 2. Add invoice-posted, payment-posted, and equipment-maintenance-completed events into the same activity stream.
 3. Add downloadable audit exports for date ranges to support admin review and basic compliance/archive needs.
+
+
+## 083 Employee site time clock pass
+- Added employee site/job sign-in, unpaid break, resume, and sign-out flow tied to job sessions and payroll-linked crew-hour rows.
+- Added admin-visible employee time entry records and recent attendance summary data.
+- Added site activity audit coverage for clock in, break start, break end, and clock out.
+- Next direction: supervisor approval for employee clock exceptions, geofence/photo proof on arrival, payroll export file generation, and contract/estimate conversion polish.
