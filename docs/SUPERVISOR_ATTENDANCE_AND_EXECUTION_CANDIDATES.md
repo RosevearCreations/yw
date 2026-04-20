@@ -21,3 +21,7 @@ The app now has a stronger field-to-backoffice flow:
 - Add site-radius geofence rules and mismatch flags.
 - Add scheduled job/session creation from execution candidates.
 - Add provider-specific payroll file layouts.
+
+## 085 enhancements
+- Attendance review now sits beside stored photo and geofence evidence.
+- Execution candidates now have a scheduler-ready companion view and scheduler run tracking.

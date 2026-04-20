@@ -54,8 +54,6 @@ const requiredFiles = [
   'sql/083_employee_time_clock_and_break_tracking.sql',
   'sql/084_supervisor_attendance_review_and_execution_candidates.sql',
   'sql/085_attendance_photo_geofence_scheduler_and_signed_contract_invoice.sql',
-  'supabase/functions/upload-employee-time-photo/index.ts',
-  'supabase/functions/service-execution-scheduler/index.ts',
   'js/hse-ops-ui.js',
   'supabase/functions/jobs-directory/index.ts',
   'supabase/functions/jobs-manage/index.ts',
@@ -63,7 +61,9 @@ const requiredFiles = [
   'supabase/functions/upload-equipment-evidence/index.ts',
   'supabase/functions/upload-route-execution-attachment/index.ts',
   'supabase/functions/upload-hse-packet-proof/index.ts',
-  'supabase/functions/analytics-traffic/index.ts'
+  'supabase/functions/analytics-traffic/index.ts',
+  'supabase/functions/upload-employee-time-photo/index.ts',
+  'supabase/functions/service-execution-scheduler/index.ts'
 ];
 for (const relPath of requiredFiles) {
   addCheck(`file:${relPath}`, fileExists(relPath), fileExists(relPath) ? 'Present.' : 'Missing.');

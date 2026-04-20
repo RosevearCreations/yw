@@ -22,3 +22,8 @@ This pass adds a self-service employee attendance layer tied to jobs, sites, job
 - optional geofence or GPS note capture
 - payroll export file generation
 - supervisor signoff on attendance exceptions
+
+## 085 enhancements
+- Attendance photos can now be uploaded and tied to clock-in / clock-out rows.
+- Geofence checks now compare captured coordinates to configured site coordinates and radius.
+- Outside-geofence results can open attendance exceptions for supervisor review.

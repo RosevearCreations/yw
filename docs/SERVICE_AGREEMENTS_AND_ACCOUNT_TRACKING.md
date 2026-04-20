@@ -35,3 +35,8 @@ This app is moving toward a landscaping + recurring service + custom project + a
 - Admin now loads and renders a Recent Site Activity table directly from the backend instead of relying only on login traces or per-screen notices.
 - `admin-manage`, `jobs-manage`, and `account-maintenance` now record key activity events while still failing safely if the audit trail insert itself has a problem.
 - Current schema target is now 082.
+
+## 085 enhancements
+- Recurring agreements now feed scheduler candidate views and scheduler run logs.
+- Signed service contract documents can now be used as invoice-generation sources.
+- Payroll export runs now support provider-specific export layouts.

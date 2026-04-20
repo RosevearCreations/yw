@@ -147,6 +147,7 @@
         timeBreakMinutes: $('#me_time_break_minutes'),
         timeLocationStatus: $('#me_time_location_status'),
         timePhotoNote: $('#me_time_photo_note'),
+        timePhotoFile: $('#me_time_photo_file'),
         timeCaptureLocation: $('#me_time_capture_location'),
       timeLocationStatus: $('#me_time_location_status'),
       timePhotoNote: $('#me_time_photo_note'),
@@ -403,7 +404,8 @@
       if (els.timeActiveSince) els.timeActiveSince.value = active?.signed_in_at_local || active?.signed_in_at || '';
       if (els.timePaidMinutes) els.timePaidMinutes.value = String(active?.paid_work_minutes ?? 0);
       if (els.timeBreakMinutes) els.timeBreakMinutes.value = String(active?.unpaid_break_minutes ?? 0);
-      if (els.timeLocationStatus) els.timeLocationStatus.value = active ? ([active.clock_in_geofence_status || active.clock_in_geo_source || 'recorded', active.clock_in_geofence_distance_meters != null ? `${active.clock_in_geofence_distance_meters}m` : ''].filter(Boolean).join(' — ')) : 'Waiting';
+      if (els.timeLocationStatus) els.timeLocationStatus.value = active ? ([active.clock_in_geofence_status || active.clock_in_geo_source || 'recorded', active.clock_in_geofence_distance_meters ? `${active.clock_in_geofence_distance_meters}m` : ''].filter(Boolean).join(' — ')) : 'Waiting';
+      if (els.timePhotoFile) els.timePhotoFile.value = '';
       if (els.timeRecentBody) {
         const recent = Array.isArray(state.timeClockContext.recent_entries) ? state.timeClockContext.recent_entries : [];
         els.timeRecentBody.innerHTML = recent.map((row) => `
@@ -440,64 +442,45 @@
       }
     }
 
-
-    async function getTimeClockGeoPayload() {
-      if (!els.timeCaptureLocation?.checked || !navigator.geolocation) return {};
-      return new Promise((resolve) => {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => resolve({
-            latitude: pos.coords?.latitude ?? null,
-            longitude: pos.coords?.longitude ?? null,
-            accuracy_m: pos.coords?.accuracy ?? null,
-            geo_source: 'browser_geolocation'
-          }),
-          () => resolve({ geo_source: 'manual' }),
-          { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
-        );
-      });
-    }
-
-    async function uploadAttendancePhotoForStage(entryId, stage) {
-      const file = els.timePhotoFile?.files?.[0];
-      if (!entryId || !file || !window.YWIAPI?.uploadEmployeeTimePhoto) return null;
-      const formData = new FormData();
-      formData.set('time_entry_id', String(entryId));
-      formData.set('stage', String(stage));
-      formData.set('photo_note', els.timePhotoNote?.value?.trim?.() || '');
-      formData.set('file', file);
-      return window.YWIAPI.uploadEmployeeTimePhoto(formData, true);
-    }
-
     async function runTimeClockAction(action) {
       try {
-        const geoPayload = await getTimeClockGeoPayload();
-        const payload = { notes: els.timeNotes?.value?.trim?.() || null, photo_note: els.timePhotoNote?.value?.trim?.() || null, ...geoPayload };
+        const payload = { notes: els.timeNotes?.value?.trim?.() || null };
         if (action === 'employee_clock_in') payload.job_id = els.timeJob?.value || null;
-        const resp = await (api.employeeTimeClockAction ? api.employeeTimeClockAction(action, payload) : api.accountRecoveryAction({ action, ...payload }, true));
-        if (!resp?.ok) throw new Error(resp?.error || 'Time clock action failed.');
-        const stage = action === 'employee_clock_in' ? 'clock_in' : (action === 'employee_clock_out' ? 'clock_out' : '');
-        if (stage && resp?.entry?.id) {
+        if (els.timePhotoNote?.value) payload.photo_note = els.timePhotoNote.value.trim() || null;
+        if (els.timeCaptureLocation?.checked && navigator.geolocation) {
           try {
-            await uploadAttendancePhotoForStage(resp.entry.id, stage);
-            if (els.timePhotoFile) els.timePhotoFile.value = '';
-          } catch (uploadErr) {
-            console.error(uploadErr);
-            setNotice(els.timeSummary, uploadErr?.message || 'Time clock saved, but photo upload failed.');
+            const position = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, maximumAge: 30000, timeout: 10000 }));
+            payload.latitude = position?.coords?.latitude ?? null;
+            payload.longitude = position?.coords?.longitude ?? null;
+            payload.accuracy_m = position?.coords?.accuracy ?? null;
+            payload.geo_source = 'browser_geolocation';
+          } catch (geoErr) {
+            console.warn('Geolocation unavailable for time clock action.', geoErr);
+            payload.geo_source = 'unknown';
           }
         }
-        await loadTimeClockContext();
-        renderTimeClock(resp);
+        const resp = await (api.employeeTimeClockAction ? api.employeeTimeClockAction(action, payload) : api.accountRecoveryAction({ action, ...payload }, true));
+        if (!resp?.ok) throw new Error(resp?.error || 'Time clock action failed.');
+        const entry = resp.entry || resp.active_entry || null;
+        const photoFile = els.timePhotoFile?.files?.[0] || null;
+        if (photoFile && entry?.id && (action === 'employee_clock_in' || action === 'employee_clock_out') && api.uploadEmployeeTimePhoto) {
+          const formData = new FormData();
+          formData.set('time_entry_id', String(entry.id));
+          formData.set('stage', action === 'employee_clock_in' ? 'clock_in' : 'clock_out');
+          if (els.timePhotoNote?.value?.trim?.()) formData.set('caption', els.timePhotoNote.value.trim());
+          formData.set('file', photoFile);
+          await api.uploadEmployeeTimePhoto(formData, true);
+          await loadTimeClockContext();
+        } else {
+          renderTimeClock(resp);
+        }
         const messageMap = {
           employee_clock_in: 'Signed in to site time.',
           employee_start_break: 'Unpaid break started.',
           employee_end_break: 'Unpaid break ended.',
           employee_clock_out: 'Signed out from site time.'
         };
-        const locationBits = [];
-        const active = resp?.active_entry || resp?.entry || null;
-        if (active?.clock_in_geofence_status && action === 'employee_clock_in') locationBits.push(`Clock-in geofence: ${String(active.clock_in_geofence_status).replaceAll('_', ' ')}`);
-        if (active?.clock_out_geofence_status && action === 'employee_clock_out') locationBits.push(`Clock-out geofence: ${String(active.clock_out_geofence_status).replaceAll('_', ' ')}`);
-        setNotice(els.timeSummary, [messageMap[action] || 'Time clock updated.', ...locationBits].join(' '));
+        setNotice(els.timeSummary, messageMap[action] || 'Time clock updated.');
       } catch (err) {
         console.error(err);
         setNotice(els.timeSummary, err?.message || 'Time clock action failed.');

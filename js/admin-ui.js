@@ -36,7 +36,7 @@
       users: [],
       sites: [],
       assignments: [],
-      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalSyncExceptions: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], fieldUploadFailures: [], appTrafficEvents: [], backendMonitorEvents: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [], jobFinancialEvents: [], jobFinancialRollups: [], recurringServiceAgreements: [], snowEventTriggers: [], changeOrders: [], customerAssets: [], customerAssetJobLinks: [], warrantyCallbackEvents: [], payrollExportRuns: [], payrollReviewSummary: [], routeProfitabilitySummary: [], serviceContractDocuments: [], serviceAgreementProfitabilitySummary: [], snowEventInvoiceCandidates: [], callbackWarrantyDashboardSummary: [], payrollReviewDetail: [], estimateConversionCandidates: [], signedContractInvoiceCandidates: [], serviceExecutionSchedulerRuns: [], serviceExecutionSchedulerSummary: [] },
+      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalSyncExceptions: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], fieldUploadFailures: [], appTrafficEvents: [], backendMonitorEvents: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [], jobFinancialEvents: [], jobFinancialRollups: [], recurringServiceAgreements: [], snowEventTriggers: [], changeOrders: [], customerAssets: [], customerAssetJobLinks: [], warrantyCallbackEvents: [], payrollExportRuns: [], payrollReviewSummary: [], routeProfitabilitySummary: [], serviceContractDocuments: [], serviceAgreementProfitabilitySummary: [], snowEventInvoiceCandidates: [], callbackWarrantyDashboardSummary: [], payrollReviewDetail: [], estimateConversionCandidates: [] },
       salesOrders: [],
       accountingEntries: [],
       siteActivityEvents: [],
@@ -71,9 +71,6 @@
       callbackWarrantyDashboardSummary: [],
       payrollReviewDetail: [],
       estimateConversionCandidates: [],
-      signedContractInvoiceCandidates: [],
-      serviceExecutionSchedulerRuns: [],
-      serviceExecutionSchedulerSummary: [],
       employeeTimeAttendanceExceptions: [],
       employeeTimeEntryReviews: [],
       operationsDashboardSummary: [],
@@ -1522,9 +1519,6 @@
         state.callbackWarrantyDashboardSummary = Array.isArray(resp?.callback_warranty_dashboard_summary) ? resp.callback_warranty_dashboard_summary : [];
         state.payrollReviewDetail = Array.isArray(resp?.payroll_review_detail) ? resp.payroll_review_detail : [];
         state.estimateConversionCandidates = Array.isArray(resp?.estimate_conversion_candidates) ? resp.estimate_conversion_candidates : [];
-        state.signedContractInvoiceCandidates = Array.isArray(resp?.signed_contract_invoice_candidates) ? resp.signed_contract_invoice_candidates : [];
-        state.serviceExecutionSchedulerRuns = Array.isArray(resp?.service_execution_scheduler_runs) ? resp.service_execution_scheduler_runs : [];
-        state.serviceExecutionSchedulerSummary = Array.isArray(resp?.service_execution_scheduler_summary) ? resp.service_execution_scheduler_summary : [];
         state.jobFinancialEvents = Array.isArray(resp?.job_financial_events) ? resp.job_financial_events : [];
         state.jobFinancialRollups = Array.isArray(resp?.job_financial_rollups) ? resp.job_financial_rollups : [];
         state.materialsCatalog = Array.isArray(resp?.materials_catalog) ? resp.materials_catalog : [];
@@ -1637,9 +1631,6 @@
           state.callbackWarrantyDashboardSummary = Array.isArray(resp?.callback_warranty_dashboard_summary) ? resp.callback_warranty_dashboard_summary : [];
           state.payrollReviewDetail = Array.isArray(resp?.payroll_review_detail) ? resp.payroll_review_detail : [];
           state.estimateConversionCandidates = Array.isArray(resp?.estimate_conversion_candidates) ? resp.estimate_conversion_candidates : [];
-          state.signedContractInvoiceCandidates = Array.isArray(resp?.signed_contract_invoice_candidates) ? resp.signed_contract_invoice_candidates : [];
-          state.serviceExecutionSchedulerRuns = Array.isArray(resp?.service_execution_scheduler_runs) ? resp.service_execution_scheduler_runs : [];
-          state.serviceExecutionSchedulerSummary = Array.isArray(resp?.service_execution_scheduler_summary) ? resp.service_execution_scheduler_summary : [];
           state.jobFinancialEvents = Array.isArray(resp?.job_financial_events) ? resp.job_financial_events : [];
           state.jobFinancialRollups = Array.isArray(resp?.job_financial_rollups) ? resp.job_financial_rollups : [];
           state.materialsCatalog = Array.isArray(resp?.materials_catalog) ? resp.materials_catalog : [];
@@ -1819,8 +1810,8 @@
         { name:'document_number', label:'Document Number', type:'text', required:true }, { name:'source_entity', label:'Source Entity', type:'select', options:[['estimate','Estimate'],['recurring_service_agreement','Recurring Service Agreement'],['job','Job'],['manual','Manual']] }, { name:'source_id', label:'Source ID', type:'text', required:true },
         { name:'estimate_id', label:'Estimate', type:'select', source:'estimates' }, { name:'agreement_id', label:'Agreement', type:'select', source:'recurringServiceAgreements' }, { name:'job_id', label:'Job', type:'select', source:'jobs' }, { name:'client_id', label:'Client', type:'select', source:'clients' }, { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' },
         { name:'document_kind', label:'Document Kind', type:'select', options:[['application','Application'],['contract','Contract'],['change_order','Change Order'],['service_summary','Service Summary'],['payroll_export_cover','Payroll Export Cover']] }, { name:'document_status', label:'Status', type:'select', options:[['draft','Draft'],['issued','Issued'],['signed','Signed'],['archived','Archived'],['void','Void']] }, { name:'title', label:'Title', type:'text', required:true }, { name:'contract_reference', label:'Contract Reference', type:'text' },
-        { name:'effective_date', label:'Effective Date', type:'date' }, { name:'expiry_date', label:'Expiry Date', type:'date' }, { name:'signed_at', label:'Signed At', type:'datetime-local' }, { name:'signed_by_name', label:'Signed By Name', type:'text' }, { name:'signed_by_email', label:'Signed By Email', type:'email' }, { name:'signature_notes', label:'Signature Notes', type:'textarea' }, { name:'auto_generate_invoice', label:'Auto Invoice', type:'checkbox' }, { name:'generated_invoice_id', label:'Generated Invoice', type:'select', source:'arInvoices' }, { name:'rendered_html', label:'Rendered HTML', type:'textarea' }, { name:'rendered_text', label:'Rendered Text', type:'textarea' }, { name:'notes', label:'Notes', type:'textarea' }
-      ], columns:[['document_number','Document'],['document_kind','Kind'],['document_status','Status'],['contract_reference','Reference'],['effective_date','Effective']] },
+        { name:'effective_date', label:'Effective Date', type:'date' }, { name:'expiry_date', label:'Expiry Date', type:'date' }, { name:'issued_at', label:'Issued At', type:'datetime-local' }, { name:'signed_at', label:'Signed At', type:'datetime-local' }, { name:'signed_by_name', label:'Signed By Name', type:'text' }, { name:'signed_by_title', label:'Signed By Title', type:'text' }, { name:'signed_by_email', label:'Signed By Email', type:'email' }, { name:'signed_document_url', label:'Signed Document URL', type:'text' }, { name:'linked_invoice_id', label:'Linked Invoice', type:'select', source:'arInvoices' }, { name:'rendered_html', label:'Rendered HTML', type:'textarea' }, { name:'rendered_text', label:'Rendered Text', type:'textarea' }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['document_number','Document'],['document_kind','Kind'],['document_status','Status'],['signed_at','Signed'],['linked_invoice_id','Invoice']] },
       customer_asset: { label:'Customer Assets', rowsKey:'customerAssets', valueKey:'id', labelField:'asset_name', fields:[
         { name:'asset_code', label:'Asset Code', type:'text', required:true }, { name:'client_id', label:'Client', type:'select', source:'clients' }, { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' },
         { name:'asset_name', label:'Asset Name', type:'text', required:true }, { name:'asset_type', label:'Asset Type', type:'text' }, { name:'serial_number', label:'Serial Number', type:'text' }, { name:'install_date', label:'Install Date', type:'date' }, { name:'warranty_expiry_date', label:'Warranty Expiry', type:'date' }, { name:'manufacturer', label:'Manufacturer', type:'text' }, { name:'model', label:'Model', type:'text' }, { name:'location_notes', label:'Location Notes', type:'textarea' }, { name:'service_notes', label:'Service Notes', type:'textarea' }, { name:'is_active', label:'Active', type:'checkbox' }
@@ -1833,13 +1824,13 @@
         { name:'callback_type', label:'Callback Type', type:'select', options:[['callback','Callback'],['warranty','Warranty'],['service_revisit','Service Revisit'],['deficiency','Deficiency']] }, { name:'status', label:'Status', type:'select', options:[['open','Open'],['scheduled','Scheduled'],['in_progress','In Progress'],['closed','Closed'],['void','Void']] }, { name:'warranty_covered', label:'Warranty Covered', type:'checkbox' }, { name:'opened_at', label:'Opened At', type:'datetime-local' }, { name:'closed_at', label:'Closed At', type:'datetime-local' }, { name:'estimated_cost_total', label:'Estimated Cost', type:'number' }, { name:'actual_cost_total', label:'Actual Cost', type:'number' }, { name:'notes', label:'Notes', type:'textarea' }
       ], columns:[['callback_number','Callback'],['callback_type','Type'],['status','Status'],['actual_cost_total','Actual Cost']] },
       payroll_export_run: { label:'Payroll Export Runs', rowsKey:'payrollExportRuns', valueKey:'id', labelField:'run_code', fields:[
-        { name:'run_code', label:'Run Code', type:'text', required:true }, { name:'period_start', label:'Period Start', type:'date', required:true }, { name:'period_end', label:'Period End', type:'date', required:true }, { name:'status', label:'Status', type:'select', options:[['draft','Draft'],['ready','Ready'],['exported','Exported'],['void','Void']] }, { name:'export_format', label:'Export Format', type:'select', options:[['csv','CSV'],['json','JSON']] }, { name:'export_provider', label:'Export Provider', type:'select', options:[['generic_csv','Generic CSV'],['quickbooks_time_csv','QuickBooks Time CSV'],['simplepay_csv','SimplePay CSV'],['adp_csv','ADP CSV'],['json','JSON Provider']] }, { name:'provider_layout_name', label:'Provider Layout', type:'text' }, { name:'export_file_name', label:'File Name', type:'text' }, { name:'exported_entry_count', label:'Entry Count', type:'number', readonly:true }, { name:'exported_hours_total', label:'Hours', type:'number', readonly:true }, { name:'exported_payroll_cost_total', label:'Payroll Cost', type:'number', readonly:true }, { name:'exported_at', label:'Exported At', type:'datetime-local' }, { name:'exported_by_profile_id', label:'Exported By', type:'select', source:'profiles' }, { name:'notes', label:'Notes', type:'textarea' }
-      ], columns:[['run_code','Run'],['period_start','Start'],['period_end','End'],['status','Status'],['exported_entry_count','Entries']] },
+        { name:'run_code', label:'Run Code', type:'text', required:true }, { name:'period_start', label:'Period Start', type:'date', required:true }, { name:'period_end', label:'Period End', type:'date', required:true }, { name:'status', label:'Status', type:'select', options:[['draft','Draft'],['ready','Ready'],['exported','Exported'],['void','Void']] }, { name:'export_provider', label:'Export Provider', type:'select', options:[['generic_csv','Generic CSV'],['quickbooks_time_csv','QuickBooks Time CSV'],['simplepay_csv','SimplePay CSV'],['adp_csv','ADP CSV'],['json','JSON']] }, { name:'export_format', label:'Export Format', type:'select', options:[['csv','CSV'],['json','JSON']] }, { name:'export_file_name', label:'File Name', type:'text' }, { name:'export_mime_type', label:'MIME Type', type:'text' }, { name:'exported_entry_count', label:'Entry Count', type:'number', readonly:true }, { name:'exported_hours_total', label:'Hours', type:'number', readonly:true }, { name:'exported_payroll_cost_total', label:'Payroll Cost', type:'number', readonly:true }, { name:'exported_at', label:'Exported At', type:'datetime-local' }, { name:'exported_by_profile_id', label:'Exported By', type:'select', source:'profiles' }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['run_code','Run'],['period_start','Start'],['period_end','End'],['export_provider','Provider'],['status','Status'],['exported_entry_count','Entries']] },
       employee_time_entry: { label:'Employee Time Entries', rowsKey:'employeeTimeClockEntries', valueKey:'id', labelField:'full_name', fields:[
         { name:'profile_id', label:'Employee', type:'select', source:'profiles', required:true }, { name:'job_id', label:'Job', type:'select', source:'jobs', required:true }, { name:'site_id', label:'Site', type:'select', source:'sites' }, { name:'job_session_id', label:'Job Session ID', type:'text' },
         { name:'clock_status', label:'Clock Status', type:'select', options:[['active','Active'],['paused','Paused'],['signed_out','Signed Out'],['cancelled','Cancelled']] }, { name:'signed_in_at', label:'Signed In At', type:'datetime-local' }, { name:'signed_out_at', label:'Signed Out At', type:'datetime-local' },
-        { name:'paid_work_minutes', label:'Paid Minutes', type:'number' }, { name:'unpaid_break_minutes', label:'Break Minutes', type:'number' }, { name:'clock_in_geo_source', label:'Clock-in Geo Source', type:'text' }, { name:'clock_in_photo_note', label:'Clock-in Photo Note', type:'textarea' }, { name:'clock_in_photo_url', label:'Clock-in Photo URL', type:'text' },
-        { name:'clock_out_geo_source', label:'Clock-out Geo Source', type:'text' }, { name:'clock_out_photo_note', label:'Clock-out Photo Note', type:'textarea' }, { name:'clock_out_photo_url', label:'Clock-out Photo URL', type:'text' }, { name:'exception_status', label:'Exception Status', type:'select', options:[['clear','Clear'],['open','Open'],['reviewed','Reviewed'],['resolved','Resolved'],['waived','Waived']] }, { name:'exception_notes', label:'Exception Notes', type:'textarea' }, { name:'notes', label:'Notes', type:'textarea' }
+        { name:'paid_work_minutes', label:'Paid Minutes', type:'number' }, { name:'unpaid_break_minutes', label:'Break Minutes', type:'number' }, { name:'clock_in_geo_source', label:'Clock-in Geo Source', type:'text' }, { name:'clock_in_photo_note', label:'Clock-in Photo Note', type:'textarea' },
+        { name:'clock_out_geo_source', label:'Clock-out Geo Source', type:'text' }, { name:'clock_out_photo_note', label:'Clock-out Photo Note', type:'textarea' }, { name:'exception_status', label:'Exception Status', type:'select', options:[['clear','Clear'],['open','Open'],['reviewed','Reviewed'],['resolved','Resolved'],['waived','Waived']] }, { name:'exception_notes', label:'Exception Notes', type:'textarea' }, { name:'notes', label:'Notes', type:'textarea' }
       ], columns:[['full_name','Employee'],['job_code','Job'],['clock_status','Status'],['signed_in_at','Signed In'],['signed_out_at','Signed Out'],['exception_status','Exception']] },
       employee_time_entry_review: { label:'Employee Time Reviews', rowsKey:'employeeTimeEntryReviews', valueKey:'id', labelField:'exception_type', fields:[
         { name:'time_entry_id', label:'Time Entry', type:'select', source:'employeeTimeClockEntries', required:true }, { name:'review_type', label:'Review Type', type:'select', options:[['attendance_exception','Attendance Exception'],['clock_edit','Clock Edit'],['geofence_review','Geofence Review'],['payroll_review','Payroll Review']] },
@@ -3023,8 +3014,7 @@
       bindBackboneUploadLogic(entity, row || null);
       if (e.backbonePostBtn) e.backbonePostBtn.style.display = entity === 'gl_journal_batch' ? '' : 'none';
       if (e.backboneGenerateBtn) {
-        const signedDoc = entity === 'recurring_service_agreement' ? (state.serviceContractDocuments || []).find((item) => item?.agreement_id === row?.id && String(item?.document_status || '').toLowerCase() === 'signed') : null;
-        const labels = { estimate: 'Convert to Agreement', recurring_service_agreement: signedDoc ? 'Run Scheduler' : 'Generate Contract', snow_event_trigger: 'Generate Snow Invoice', payroll_export_run: 'Generate Export', service_contract_document: row && String(row?.document_status || '').toLowerCase() === 'signed' ? 'Generate Invoice' : 'Open Print Preview' };
+        const labels = { estimate: 'Convert to Agreement', recurring_service_agreement: 'Generate Contract / Run Scheduler', snow_event_trigger: 'Generate Snow Invoice', payroll_export_run: 'Generate Export', service_contract_document: 'Open Print / Invoice' };
         e.backboneGenerateBtn.style.display = labels[entity] ? '' : 'none';
         e.backboneGenerateBtn.textContent = labels[entity] || 'Generate Output';
       }
@@ -3082,15 +3072,14 @@
         return;
       }
       if (entity === 'recurring_service_agreement') {
-        const signedDoc = (state.serviceContractDocuments || []).find((item) => item?.agreement_id === itemId && String(item?.document_status || '').toLowerCase() === 'signed');
-        if (signedDoc) {
-          const resp = await manageAdminEntity({ entity: 'recurring_service_agreement', action: 'run_execution_scheduler', item_id: itemId });
+        if (row?.contract_document_id && String(row.agreement_status || '').toLowerCase() === 'active') {
+          const resp = await manageAdminEntity({ entity: 'recurring_service_agreement', action: 'run_scheduler', item_id: itemId });
           if (!resp?.ok) throw new Error(resp?.error || 'Scheduler run failed.');
           await loadDirectory();
           await refreshSelectors();
           fillBackboneForm(row || null);
           renderBackboneTable();
-          setSummary(resp.session_record?.id ? 'Scheduler created a service session candidate for the signed agreement.' : 'Scheduler ran, but no linked job was available for session creation.');
+          setSummary(`Scheduler run completed. Created ${resp.created_count || 0} session(s), staged ${resp.invoice_candidate_count || 0} invoice candidate(s), skipped ${resp.skipped_count || 0}.`);
           return;
         }
         const resp = await manageAdminEntity({ entity: 'service_contract_document', action: 'generate_from_source', source_entity: 'recurring_service_agreement', source_id: itemId, document_kind: 'contract' });
@@ -3122,20 +3111,20 @@
         await refreshSelectors();
         fillBackboneForm(resp.record || null);
         renderBackboneTable();
-        if (resp.export_file_content) downloadTextFile(resp.export_file_name || 'payroll-export.csv', resp.export_file_content, 'text/csv;charset=utf-8');
+        if (resp.export_file_content) downloadTextFile(resp.export_file_name || 'payroll-export.csv', resp.export_file_content, resp.export_mime_type || 'text/csv;charset=utf-8');
         setSummary('Payroll export generated and downloaded.');
         return;
       }
       if (entity === 'service_contract_document') {
-        if (String(row?.document_status || '').toLowerCase() === 'signed') {
-          const resp = await manageAdminEntity({ entity: 'service_contract_document', action: 'generate_invoice_from_signed', item_id: row.id });
-          if (!resp?.ok) throw new Error(resp?.error || 'Signed-contract invoice generation failed.');
+        if (String(row?.document_status || '').toLowerCase() === 'signed' || row?.signed_at) {
+          const resp = await manageAdminEntity({ entity: 'service_contract_document', action: 'generate_invoice_from_signed', item_id: itemId });
+          if (!resp?.ok) throw new Error(resp?.error || 'Invoice generation from signed contract failed.');
           await loadDirectory();
           await refreshSelectors();
           if (e.backboneEntity) e.backboneEntity.value = 'ar_invoice';
           fillBackboneForm(resp.record || null);
           renderBackboneTable();
-          setSummary('Issued invoice created from the signed contract document.');
+          setSummary('Draft invoice generated from the signed contract document.');
           return;
         }
         if (!row?.rendered_html) throw new Error('This contract document does not contain printable HTML yet.');
@@ -3152,7 +3141,7 @@
       if (!row) throw new Error('Select a record first.');
       if (entity === 'payroll_export_run') {
         if (!row.export_file_content) throw new Error('Generate the payroll export first.');
-        downloadTextFile(row.export_file_name || `${row.run_code || 'payroll-export'}.csv`, row.export_file_content, 'text/csv;charset=utf-8');
+        downloadTextFile(row.export_file_name || `${row.run_code || 'payroll-export'}.csv`, row.export_file_content, row.export_mime_type || 'text/csv;charset=utf-8');
         return;
       }
       if (entity === 'service_contract_document') {
