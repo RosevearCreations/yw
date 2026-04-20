@@ -1,4 +1,4 @@
-<!-- Reviewed during schema 081 contract conversion / payroll export / callback dashboard / snow invoice automation pass on 2026-04-17. -->
+<!-- Reviewed during schema 082 site activity audit / admin recent-activity pass on 2026-04-18. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## 2026-04-17 pass update
 Closed or tightened in this pass:
@@ -356,3 +356,17 @@ Still open:
 - Snow-event invoicing candidates and one-click invoice generation now exist, but batch review / posting / seasonal close controls still need tightening.
 - Callback and warranty dashboard summaries now exist, but the Admin home cards still need stronger prominence and action routing.
 - Agreement profitability now exists, but estimate-to-agreement-to-job conversion rules still need more guardrails for custom project and hybrid recurring work.
+
+## 2026-04-18 site activity audit and admin visibility pass
+
+- Added DB-backed `site_activity_events`, `v_site_activity_recent`, and `v_site_activity_summary` so Admin can review durable activity for staff creation/updates, new jobs, equipment changes, agreements, payroll exports, contracts, and related operational changes.
+- Admin now loads and renders a Recent Site Activity table directly from the backend instead of relying only on login traces or per-screen notices.
+- `admin-manage`, `jobs-manage`, and `account-maintenance` now record key activity events while still failing safely if the audit trail insert itself has a problem.
+- Current schema target is now 082.
+
+
+### Remaining activity-trace gaps after 082
+
+- Site activity currently focuses on high-value create/update events and login traces; it does not yet capture every approval, posting, or file upload path.
+- Admin can review recent activity, but there is not yet a full advanced filter/export workflow for date windows, actor, severity, or entity type.
+- Field/mobile-side activity still needs tighter linkage so crews can see the same audit trail context without using the Admin shell.

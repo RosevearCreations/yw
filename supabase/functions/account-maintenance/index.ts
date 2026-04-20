@@ -93,6 +93,18 @@ function isLikelyAddress(value: string) {
 async function logLoginEvent(supabase: any, payload: Record<string, unknown>) {
   try {
     await supabase.from("account_login_events").insert(payload);
+    await supabase.from("site_activity_events").insert({
+      event_type: 'account_login',
+      entity_type: 'profile',
+      entity_id: payload.profile_id ? String(payload.profile_id) : null,
+      severity: payload.success === false ? 'warning' : 'info',
+      title: payload.success === false ? 'Account access failed' : 'Account access recorded',
+      summary: payload.success === false ? 'A login-related access failure was recorded.' : 'A login or session restore event was recorded.',
+      metadata: { auth_source: payload.auth_source || null, route_fragment: payload.route_fragment || null, success: !!payload.success },
+      related_profile_id: payload.profile_id || null,
+      created_by_profile_id: payload.profile_id || null,
+      occurred_at: payload.occurred_at || new Date().toISOString(),
+    });
   } catch {
     // ignore login audit failures
   }

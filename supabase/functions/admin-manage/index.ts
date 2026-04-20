@@ -171,6 +171,28 @@ async function getLinkedHsePacketDefaults(supabase: any, packetId?: string | nul
   const { data } = await supabase.from('linked_hse_packets').select('id,job_id,work_order_id,dispatch_id,client_site_id,route_id,equipment_master_id,supervisor_profile_id,packet_number').eq('id', id).maybeSingle();
   return data || null;
 }
+
+async function recordSiteActivity(supabase: any, payload: any) {
+  try {
+    await supabase.from('site_activity_events').insert({
+      event_type: payload.event_type,
+      entity_type: payload.entity_type,
+      entity_id: payload.entity_id != null ? String(payload.entity_id) : null,
+      severity: payload.severity || 'info',
+      title: payload.title || 'Activity recorded',
+      summary: payload.summary || null,
+      metadata: payload.metadata || {},
+      related_job_id: payload.related_job_id || null,
+      related_profile_id: payload.related_profile_id || null,
+      related_equipment_id: payload.related_equipment_id || null,
+      created_by_profile_id: payload.created_by_profile_id || null,
+      occurred_at: payload.occurred_at || new Date().toISOString(),
+    });
+  } catch {
+    // ignore activity audit failures so the main workflow still succeeds
+  }
+}
+
 function validateAdminSetPassword(password?: string | null) {
   const clean = String(password || '');
   if (!clean) throw new Error('A new password is required.');
@@ -262,6 +284,7 @@ serve(async (req) => {
       };
       const { data: profileRow, error: profileErr } = await supabase.from('profiles').upsert(profilePatch).select('*').single();
       if (profileErr) throw profileErr;
+      await recordSiteActivity(supabase, { event_type: 'staff_created', entity_type: 'profile', entity_id: userId, severity: 'success', title: 'Staff user created', summary: `${profileRow?.full_name || email} was added as ${role}.`, metadata: { email, role, staff_tier: profileRow?.staff_tier || role, employee_number: profileRow?.employee_number || null }, related_profile_id: userId, created_by_profile_id: actorId });
       return Response.json({ ok:true, record: profileRow }, { headers:corsHeaders });
     }
 
@@ -315,6 +338,7 @@ serve(async (req) => {
         updated_at: new Date().toISOString(),
       }).select('*').single();
       if (error) throw error;
+      await recordSiteActivity(supabase, { event_type: 'staff_created', entity_type: 'profile', entity_id: data.id, severity: 'success', title: 'Staff profile created', summary: `${data.full_name || data.email || data.id} was added to the staff directory.`, metadata: { role: data.role || null, staff_tier: data.staff_tier || null, employment_status: data.employment_status || null }, related_profile_id: data.id, created_by_profile_id: actorId });
       return Response.json({ ok:true, record:data }, { headers:corsHeaders });
     }
 
@@ -325,6 +349,7 @@ serve(async (req) => {
         updated_at: new Date().toISOString(),
       }).eq('id', body.profile_id).select('*').single();
       if (error) throw error;
+      await recordSiteActivity(supabase, { event_type: 'staff_status_changed', entity_type: 'profile', entity_id: data.id, severity: body.is_active === false ? 'warning' : 'info', title: 'Staff status changed', summary: `${data.full_name || data.email || data.id} is now ${data.is_active ? 'active' : 'blocked'}.`, metadata: { is_active: !!data.is_active, employment_status: data.employment_status || null }, related_profile_id: data.id, created_by_profile_id: actorId });
       return Response.json({ ok:true, record:data }, { headers:corsHeaders });
     }
 
@@ -333,6 +358,7 @@ serve(async (req) => {
       if (!target?.id) return Response.json({ ok:false, error:'Target profile was not found.' }, { status:404, headers:corsHeaders });
       const delResp = await supabase.auth.admin.deleteUser(String(target.id));
       if (delResp.error) return Response.json({ ok:false, error:delResp.error.message }, { status:400, headers:corsHeaders });
+      await recordSiteActivity(supabase, { event_type: 'staff_deleted', entity_type: 'profile', entity_id: target.id, severity: 'warning', title: 'Staff account deleted', summary: `${target.full_name || target.email || target.id} was removed.`, metadata: { email: target.email || null }, related_profile_id: target.id, created_by_profile_id: actorId });
       return Response.json({ ok:true }, { headers:corsHeaders });
     }
 
@@ -645,6 +671,7 @@ serve(async (req) => {
       };
       const { data: accountingRow, error: accountingErr } = await supabase.from('accounting_entries').insert(accountingPayload).select('*').single();
       if (accountingErr) throw accountingErr;
+      await recordSiteActivity(supabase, { event_type: 'order_created', entity_type: 'sales_order', entity_id: orderRow.id, severity: 'success', title: 'Order created', summary: `${orderRow.order_code || orderRow.id} was created for ${orderRow.customer_name || 'customer'}.`, metadata: { order_status: orderRow.order_status || null, total_amount: orderRow.total_amount || 0 }, created_by_profile_id: actorId });
       return Response.json({ ok:true, record: orderRow, accounting_record: accountingRow }, { headers:corsHeaders });
     }
 
@@ -705,6 +732,7 @@ serve(async (req) => {
         const authResp = await supabase.auth.admin.updateUserById(String(body.profile_id), authPatch);
         if (authResp.error) return Response.json({ ok:false, error:authResp.error.message }, { status:400, headers:corsHeaders });
       }
+      await recordSiteActivity(supabase, { event_type: 'staff_updated', entity_type: 'profile', entity_id: data.id, severity: 'info', title: 'Staff profile updated', summary: `${data.full_name || data.email || data.id} was updated.`, metadata: { role: data.role || null, staff_tier: data.staff_tier || null, employment_status: data.employment_status || null }, related_profile_id: data.id, created_by_profile_id: actorId });
       return Response.json({ ok: true, record: data }, { headers: corsHeaders });
     }
 
@@ -967,11 +995,13 @@ serve(async (req) => {
       if (action === 'create') {
         const { data, error } = await supabase.from('recurring_service_agreements').insert(patch).select('*').single();
         if (error) throw error;
+        await recordSiteActivity(supabase, { event_type: 'agreement_created', entity_type: 'recurring_service_agreement', entity_id: data.id, severity: 'success', title: 'Recurring agreement created', summary: `${data.service_name || data.agreement_code || data.id} was created.`, metadata: { agreement_code: data.agreement_code || null, billing_method: data.billing_method || null, agreement_status: data.agreement_status || null }, created_by_profile_id: actorId });
         return Response.json({ ok:true, record:data }, { headers:corsHeaders });
       }
       if (action === 'update') {
         const { data, error } = await supabase.from('recurring_service_agreements').update(patch).eq('id', body.item_id).select('*').single();
         if (error) throw error;
+        await recordSiteActivity(supabase, { event_type: 'agreement_updated', entity_type: 'recurring_service_agreement', entity_id: data.id, severity: 'info', title: 'Recurring agreement updated', summary: `${data.service_name || data.agreement_code || data.id} was updated.`, metadata: { agreement_code: data.agreement_code || null, billing_method: data.billing_method || null, agreement_status: data.agreement_status || null }, created_by_profile_id: actorId });
         return Response.json({ ok:true, record:data }, { headers:corsHeaders });
       }
       if (action === 'delete') {
@@ -997,6 +1027,7 @@ serve(async (req) => {
       if (action === 'create') {
         const { data, error } = await supabase.from('snow_event_triggers').insert(patch).select('*').single();
         if (error) throw error;
+        await recordSiteActivity(supabase, { event_type: 'snow_trigger_created', entity_type: 'snow_event_trigger', entity_id: data.id, severity: data.trigger_met ? 'warning' : 'info', title: 'Snow trigger recorded', summary: `${data.event_label || data.event_date || data.id} was logged for snow review.`, metadata: { agreement_id: data.agreement_id || null, snowfall_cm: data.snowfall_cm || null, trigger_met: !!data.trigger_met }, created_by_profile_id: actorId });
         return Response.json({ ok:true, record:data }, { headers:corsHeaders });
       }
       if (action === 'update') {
@@ -1035,6 +1066,7 @@ serve(async (req) => {
       if (action === 'create') {
         const { data, error } = await supabase.from('change_orders').insert(patch).select('*').single();
         if (error) throw error;
+        await recordSiteActivity(supabase, { event_type: 'change_order_created', entity_type: 'change_order', entity_id: data.id, severity: 'info', title: 'Change order created', summary: `${data.change_order_number || data.id} was created for job ${data.job_id}.`, metadata: { status: data.status || null, estimated_charge_delta: data.estimated_charge_delta || 0 }, related_job_id: data.job_id || null, created_by_profile_id: actorId });
         return Response.json({ ok:true, record:data }, { headers:corsHeaders });
       }
       if (action === 'update') {
@@ -1071,6 +1103,7 @@ serve(async (req) => {
       if (action === 'create') {
         const { data, error } = await supabase.from('customer_assets').insert(patch).select('*').single();
         if (error) throw error;
+        await recordSiteActivity(supabase, { event_type: 'customer_asset_created', entity_type: 'customer_asset', entity_id: data.id, severity: 'success', title: 'Customer asset added', summary: `${data.asset_name || data.asset_code || data.id} was added.`, metadata: { asset_code: data.asset_code || null, asset_type: data.asset_type || null }, created_by_profile_id: actorId });
         return Response.json({ ok:true, record:data }, { headers:corsHeaders });
       }
       if (action === 'update') {
@@ -1134,6 +1167,7 @@ serve(async (req) => {
       if (action === 'create') {
         const { data, error } = await supabase.from('warranty_callback_events').insert(patch).select('*').single();
         if (error) throw error;
+        await recordSiteActivity(supabase, { event_type: 'callback_created', entity_type: 'warranty_callback_event', entity_id: data.id, severity: data.warranty_covered ? 'warning' : 'info', title: 'Callback / warranty event created', summary: `${data.callback_number || data.id} was opened.`, metadata: { callback_type: data.callback_type || null, warranty_covered: !!data.warranty_covered, status: data.status || null }, related_job_id: data.job_id || null, created_by_profile_id: actorId });
         return Response.json({ ok:true, record:data }, { headers:corsHeaders });
       }
       if (action === 'update') {
@@ -1163,6 +1197,7 @@ serve(async (req) => {
       if (action === 'create') {
         const { data, error } = await supabase.from('payroll_export_runs').insert(patch).select('*').single();
         if (error) throw error;
+        await recordSiteActivity(supabase, { event_type: 'payroll_export_created', entity_type: 'payroll_export_run', entity_id: data.id, severity: 'info', title: 'Payroll export run created', summary: `${data.run_code || data.id} covers ${data.period_start || ''} to ${data.period_end || ''}.`, metadata: { status: data.status || null, period_start: data.period_start || null, period_end: data.period_end || null }, created_by_profile_id: actorId });
         return Response.json({ ok:true, record:data }, { headers:corsHeaders });
       }
       if (action === 'update') {
@@ -1429,16 +1464,20 @@ serve(async (req) => {
       if (action === 'create') {
         const { data, error } = await supabase.from('equipment_master').insert(patch).select('*').single();
         if (error) throw error;
+        await recordSiteActivity(supabase, { event_type: 'equipment_created', entity_type: 'equipment_master', entity_id: data.id, severity: 'success', title: 'Equipment added', summary: `${data.item_name || data.equipment_code || data.id} was added to the equipment master.`, metadata: { equipment_code: data.equipment_code || null, equipment_category: data.equipment_category || null, ownership_type: data.ownership_type || null }, related_equipment_id: data.id, created_by_profile_id: actorId });
         return Response.json({ ok:true, record:data }, { headers:corsHeaders });
       }
       if (action === 'update') {
         const { data, error } = await supabase.from('equipment_master').update(patch).eq('id', body.item_id).select('*').single();
         if (error) throw error;
+        await recordSiteActivity(supabase, { event_type: 'equipment_updated', entity_type: 'equipment_master', entity_id: data.id, severity: 'info', title: 'Equipment updated', summary: `${data.item_name || data.equipment_code || data.id} was updated.`, metadata: { equipment_code: data.equipment_code || null, equipment_category: data.equipment_category || null, ownership_type: data.ownership_type || null }, related_equipment_id: data.id, created_by_profile_id: actorId });
         return Response.json({ ok:true, record:data }, { headers:corsHeaders });
       }
       if (action === 'delete') {
+        const { data: existing } = await supabase.from('equipment_master').select('id,item_name,equipment_code').eq('id', body.item_id).maybeSingle();
         const { error } = await supabase.from('equipment_master').delete().eq('id', body.item_id);
         if (error) throw error;
+        await recordSiteActivity(supabase, { event_type: 'equipment_deleted', entity_type: 'equipment_master', entity_id: body.item_id, severity: 'warning', title: 'Equipment deleted', summary: `${existing?.item_name || existing?.equipment_code || body.item_id} was removed from equipment master.`, metadata: { equipment_code: existing?.equipment_code || null }, related_equipment_id: existing?.id || null, created_by_profile_id: actorId });
         return Response.json({ ok:true }, { headers:corsHeaders });
       }
     }

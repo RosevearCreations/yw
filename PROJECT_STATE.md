@@ -1,4 +1,4 @@
-<!-- Reviewed during schema 081 contract conversion / payroll export / callback dashboard / snow invoice automation pass on 2026-04-17. -->
+<!-- Reviewed during schema 082 site activity audit / admin recent-activity pass on 2026-04-18. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## Current pass: 2026-04-17 recurring agreements, asset history, payroll review, and account tracking
 - Schema now advances through migration 080.
@@ -229,7 +229,7 @@ The app is now moving from generic HSE/job management into a more realistic land
 - pricing/tax/accounting linkage fields ready for later estimate/invoice contract work
 
 ## 2026-04-16 state snapshot
-- Latest schema target: **079_job_financial_rollups_and_profit_review.sql**.
+- Latest schema target: **082_site_activity_audit_and_admin_recent_events.sql**.
 - The app now treats landscaping/maintenance work as a profitability workflow, not only a scheduling workflow.
 - Jobs can now accumulate labor-aware cost review, financial adjustment events, delayed-job pressure, unsigned session pressure, and uninvoiced-completed-job review.
 - Staff records now have the start of a labor-rate model so time tracking can feed accounting review.
@@ -239,3 +239,10 @@ The app is now moving from generic HSE/job management into a more realistic land
 - New migration: `sql/081_contract_conversion_payroll_exports_and_snow_invoice_automation.sql`.
 - Admin now supports estimate-to-agreement conversion, printable contract/application document generation, payroll export file generation, callback/warranty dashboard summaries, and snow-event invoice candidate review.
 - Schema reference has been advanced through 081 and the accounting/service-agreement direction now includes document outputs instead of only planning/tracking records.
+
+## 2026-04-18 site activity audit and admin visibility pass
+
+- Added DB-backed `site_activity_events`, `v_site_activity_recent`, and `v_site_activity_summary` so Admin can review durable activity for staff creation/updates, new jobs, equipment changes, agreements, payroll exports, contracts, and related operational changes.
+- Admin now loads and renders a Recent Site Activity table directly from the backend instead of relying only on login traces or per-screen notices.
+- `admin-manage`, `jobs-manage`, and `account-maintenance` now record key activity events while still failing safely if the audit trail insert itself has a problem.
+- Current schema target is now 082.

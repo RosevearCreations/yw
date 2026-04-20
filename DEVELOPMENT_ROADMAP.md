@@ -1,6 +1,6 @@
-<!-- Reviewed during schema 081 contract conversion / payroll export / callback dashboard / snow invoice automation pass on 2026-04-17. -->
+<!-- Reviewed during schema 082 site activity audit / admin recent-activity pass on 2026-04-18. -->
 ## 2026-04-17 contract conversion, payroll export, callback dashboard, and snow-invoice automation pass
-- Added migration `sql/081_contract_conversion_payroll_exports_and_snow_invoice_automation.sql`.
+- Added migration `sql/082_site_activity_audit_and_admin_recent_events.sql`.
 - Added estimate conversion candidates, service contract documents, payroll export generation, agreement profitability summaries, snow-event invoice candidates, and callback / warranty dashboard summaries.
 - Extended Admin so the office workflow can move from estimate -> agreement -> printable contract, then from snow trigger -> invoice, and from weekly labor review -> exportable payroll output.
 
@@ -453,3 +453,17 @@ Next recommended build steps:
    - deepen tax-code handling, invoice tax posting, vendor-bill tax capture, and year-end accounting guardrails for Ontario/Canada workflows
 > Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
 
+
+## 2026-04-18 site activity audit and admin visibility pass
+
+- Added DB-backed `site_activity_events`, `v_site_activity_recent`, and `v_site_activity_summary` so Admin can review durable activity for staff creation/updates, new jobs, equipment changes, agreements, payroll exports, contracts, and related operational changes.
+- Admin now loads and renders a Recent Site Activity table directly from the backend instead of relying only on login traces or per-screen notices.
+- `admin-manage`, `jobs-manage`, and `account-maintenance` now record key activity events while still failing safely if the audit trail insert itself has a problem.
+- Current schema target is now 082.
+
+
+### Next after 082
+
+1. Surface per-entity activity filters in Admin so managers can narrow to Jobs, Staff, Equipment, Contracts, or Accounting events.
+2. Add invoice-posted, payment-posted, and equipment-maintenance-completed events into the same activity stream.
+3. Add downloadable audit exports for date ranges to support admin review and basic compliance/archive needs.

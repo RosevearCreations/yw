@@ -243,6 +243,28 @@ async function computeJobPricing(supabase: any, body: any, template: any = null)
   };
 }
 
+
+async function recordSiteActivity(supabase: any, payload: any) {
+  try {
+    await supabase.from('site_activity_events').insert({
+      event_type: payload.event_type,
+      entity_type: payload.entity_type,
+      entity_id: payload.entity_id != null ? String(payload.entity_id) : null,
+      severity: payload.severity || 'info',
+      title: payload.title || 'Activity recorded',
+      summary: payload.summary || null,
+      metadata: payload.metadata || {},
+      related_job_id: payload.related_job_id || null,
+      related_profile_id: payload.related_profile_id || null,
+      related_equipment_id: payload.related_equipment_id || null,
+      created_by_profile_id: payload.created_by_profile_id || null,
+      occurred_at: payload.occurred_at || new Date().toISOString(),
+    });
+  } catch {
+    // ignore activity audit failures so the main workflow still succeeds
+  }
+}
+
 async function sendEmailIfConfigured(notification: any) {
   const apiKey = Deno.env.get('RESEND_API_KEY');
   const from = Deno.env.get('RESEND_FROM_EMAIL') || Deno.env.get('EMAIL_FROM');
@@ -326,6 +348,7 @@ serve(async (req) => {
         await syncCrewMembers(supabase, crewId, crewMemberNames, actorProfile.id, supervisorId, crewLeadId);
       }
       const now = new Date().toISOString();
+      const existingJob = body.job_code ? await supabase.from('jobs').select('id,job_code,job_name,status,created_at').eq('job_code', body.job_code).maybeSingle() : { data: null };
       const template = await loadServicePricingTemplate(supabase, body.service_pricing_template_id || null);
       const scheduleMode = String(body.schedule_mode || template?.default_schedule_mode || 'standalone');
       const servicePattern = String(body.service_pattern || template?.service_pattern || (scheduleMode === 'recurring' ? 'weekly' : 'one_time'));
@@ -405,6 +428,19 @@ serve(async (req) => {
       };
       const { data, error } = await supabase.from('jobs').upsert(payload, { onConflict: 'job_code' }).select('*').single();
       if (error) throw error;
+
+      await recordSiteActivity(supabase, {
+        event_type: existingJob?.data?.id ? 'job_updated' : 'job_created',
+        entity_type: 'job',
+        entity_id: data.id,
+        severity: 'success',
+        title: existingJob?.data?.id ? 'Job updated' : 'Job created',
+        summary: `${data.job_code || ''} ${data.job_name || ''}`.trim() || 'Job record saved.',
+        metadata: { job_code: data.job_code || null, status: data.status || null, client_name: data.client_name || null, crew_id: data.crew_id || null, service_pattern: data.service_pattern || null },
+        related_job_id: data.id,
+        created_by_profile_id: actorProfile.id,
+        occurred_at: now,
+      });
 
       const { data: allJobs } = await supabase.from('jobs').select('id,job_code,start_date,end_date,reservation_window_start,reservation_window_end,open_end_date').neq('id', data.id);
       const { data: allEquipment } = await supabase.from('equipment_items').select('*').order('equipment_code');
@@ -525,12 +561,14 @@ serve(async (req) => {
         const { data, error } = await supabase.from('job_sessions').insert({ ...payload, created_at: now }).select('*').single();
         if (error) throw error;
         await supabase.from('jobs').update({ last_activity_at: now, updated_at: now, delayed_schedule: payload.delay_minutes > 0, signing_supervisor_profile_id: payload.site_supervisor_profile_id || undefined }).eq('id', payload.job_id);
+        await recordSiteActivity(supabase, { event_type: 'job_session_created', entity_type: 'job_session', entity_id: data.id, severity: 'info', title: 'Job session created', summary: `Session logged for job ${payload.job_id}.`, metadata: { session_status: data.session_status || null, session_date: data.session_date || null, delay_minutes: data.delay_minutes || 0 }, related_job_id: payload.job_id, created_by_profile_id: actorProfile.id, occurred_at: now });
         return Response.json({ ok:true, record:data }, { headers:corsHeaders });
       }
       if (body.action === 'update') {
         const { data, error } = await supabase.from('job_sessions').update(payload).eq('id', body.item_id).select('*').single();
         if (error) throw error;
         await supabase.from('jobs').update({ last_activity_at: now, updated_at: now, delayed_schedule: payload.delay_minutes > 0 }).eq('id', payload.job_id);
+        await recordSiteActivity(supabase, { event_type: 'job_session_updated', entity_type: 'job_session', entity_id: data.id, severity: 'info', title: 'Job session updated', summary: `Session updated for job ${payload.job_id}.`, metadata: { session_status: data.session_status || null, delay_minutes: data.delay_minutes || 0 }, related_job_id: payload.job_id, created_by_profile_id: actorProfile.id, occurred_at: now });
         return Response.json({ ok:true, record:data }, { headers:corsHeaders });
       }
       if (body.action === 'delete') {
@@ -568,12 +606,14 @@ serve(async (req) => {
         const { data, error } = await supabase.from('job_session_crew_hours').insert({ ...payload, created_at: now }).select('*').single();
         if (error) throw error;
         await supabase.from('jobs').update({ last_activity_at: now, updated_at: now }).eq('id', payload.job_id);
+        await recordSiteActivity(supabase, { event_type: 'crew_hours_logged', entity_type: 'job_crew_time', entity_id: data.id, severity: 'info', title: 'Crew hours logged', summary: `${data.worker_name || 'Crew member'} logged ${Number(data.hours_worked || 0).toFixed(2)} hours.`, metadata: { regular_hours: data.regular_hours || 0, overtime_hours: data.overtime_hours || 0 }, related_job_id: payload.job_id, related_profile_id: data.profile_id || null, created_by_profile_id: actorProfile.id, occurred_at: now });
         return Response.json({ ok:true, record:data }, { headers:corsHeaders });
       }
       if (body.action === 'update') {
         const { data, error } = await supabase.from('job_session_crew_hours').update(payload).eq('id', body.item_id).select('*').single();
         if (error) throw error;
         await supabase.from('jobs').update({ last_activity_at: now, updated_at: now }).eq('id', payload.job_id);
+        await recordSiteActivity(supabase, { event_type: 'job_financial_event_created', entity_type: 'job_financial_event', entity_id: data.id, severity: 'info', title: 'Job financial event recorded', summary: `${data.event_type || 'financial'} event added to job ${payload.job_id}.`, metadata: { event_type: data.event_type || null, cost_amount: data.cost_amount || 0, revenue_amount: data.revenue_amount || 0, is_billable: !!data.is_billable }, related_job_id: payload.job_id, created_by_profile_id: actorProfile.id, occurred_at: now });
         return Response.json({ ok:true, record:data }, { headers:corsHeaders });
       }
       if (body.action === 'delete') {
@@ -619,6 +659,7 @@ serve(async (req) => {
           await supabase.from('equipment_items').update({ current_job_id: targetJobId, status: 'reserved', updated_at: now }).eq('id', equipmentId);
         }
         await supabase.from('jobs').update({ last_activity_at: now, updated_at: now, delayed_schedule: body.emergency_override === true ? true : undefined }).in('id', [sourceJobId, targetJobId]);
+        await recordSiteActivity(supabase, { event_type: 'job_reassignment_created', entity_type: 'job_reassignment', entity_id: data.id, severity: body.emergency_override === true ? 'warning' : 'info', title: 'Job reassignment created', summary: `Resources moved from ${sourceJob?.job_code || sourceJobId} to ${targetJob?.job_code || targetJobId}.`, metadata: { reassignment_type: data.reassignment_type || null, emergency_override: !!data.emergency_override, service_contract_reference: data.service_contract_reference || null }, related_job_id: targetJobId, related_profile_id: data.profile_id || null, created_by_profile_id: actorProfile.id, occurred_at: now });
         return Response.json({ ok:true, record:data }, { headers:corsHeaders });
       }
       if (body.action === 'delete') {

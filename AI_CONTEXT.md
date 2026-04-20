@@ -1,7 +1,7 @@
-<!-- Reviewed during schema 081 contract conversion / payroll export / callback dashboard / snow invoice automation pass on 2026-04-17. -->
+<!-- Reviewed during schema 082 site activity audit / admin recent-activity pass on 2026-04-18. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## 2026-04-17 snapshot
-The app now supports recurring service agreements, snow triggers, change orders, customer assets/history, payroll export review, warranty/callback tracking, account login auditing, material-to-job auto-costing, and route profitability summaries. Treat schema 080 as current.
+The app now supports recurring service agreements, snow triggers, change orders, customer assets/history, payroll export review, warranty/callback tracking, account login auditing, material-to-job auto-costing, and route profitability summaries. Treat schema 082 as current.
 
 ## 2026-04-13 staff admin save verification pass
 - Added visible inline create/save/reset/block/delete confirmations in the Staff Directory screen so staff actions no longer fail silently from the operator’s point of view.
@@ -145,3 +145,10 @@ Do not collapse recurring service visits into only the parent job record.
 - When continuing from this point, prefer DB-backed rollup improvements over note-based workarounds.
 > Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
 
+
+## 2026-04-18 site activity audit and admin visibility pass
+
+- Added DB-backed `site_activity_events`, `v_site_activity_recent`, and `v_site_activity_summary` so Admin can review durable activity for staff creation/updates, new jobs, equipment changes, agreements, payroll exports, contracts, and related operational changes.
+- Admin now loads and renders a Recent Site Activity table directly from the backend instead of relying only on login traces or per-screen notices.
+- `admin-manage`, `jobs-manage`, and `account-maintenance` now record key activity events while still failing safely if the audit trail insert itself has a problem.
+- Current schema target is now 082.

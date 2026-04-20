@@ -132,6 +132,8 @@ serve(async (req) => {
   if ((scope === 'all' || scope === 'accounting' || scope === 'orders') && roleRank(actorRole) >= roleRank('supervisor')) {
     response.sales_orders = await safeList(supabase, 'sales_orders', '*', 'created_at', limit);
     response.accounting_entries = await safeList(supabase, 'accounting_entries', '*', 'created_at', limit);
+    response.site_activity_events = await safeList(supabase, 'v_site_activity_recent', '*', 'occurred_at', limit, false);
+    response.site_activity_summary = await safeList(supabase, 'v_site_activity_summary', '*', undefined, 5, false);
   }
   if ((scope === 'all' || scope === 'operations' || scope === 'accounting_backbone') && roleRank(actorRole) >= roleRank('supervisor')) {
     response.service_areas = await safeList(supabase, 'service_areas', '*', 'name', limit);
