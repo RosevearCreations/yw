@@ -1149,6 +1149,13 @@ serve(async (req) => {
         contract_reference: body.contract_reference ?? null,
         effective_date: asNullableDate(body.effective_date),
         expiry_date: asNullableDate(body.expiry_date),
+        signed_at: asNullableDateTime(body.signed_at),
+        signed_by_name: body.signed_by_name ?? null,
+        signed_by_email: body.signed_by_email ?? null,
+        signature_notes: body.signature_notes ?? null,
+        auto_generate_invoice: body.auto_generate_invoice === true,
+        generated_invoice_id: asNullableText(body.generated_invoice_id),
+        invoice_generated_at: asNullableDateTime(body.invoice_generated_at),
         rendered_html: body.rendered_html ?? null,
         rendered_text: body.rendered_text ?? null,
         notes: body.notes ?? null,
@@ -1281,6 +1288,9 @@ serve(async (req) => {
         period_start: asNullableDate(body.period_start),
         period_end: asNullableDate(body.period_end),
         status: body.status ?? 'draft',
+        export_format: body.export_format ?? 'csv',
+        export_provider: body.export_provider ?? 'generic_csv',
+        provider_layout_name: body.provider_layout_name ?? null,
         exported_at: asNullableDateTime(body.exported_at),
         exported_by_profile_id: asNullableText(body.exported_by_profile_id),
         notes: body.notes ?? null,
@@ -1300,6 +1310,38 @@ serve(async (req) => {
       }
       if (action === 'delete') {
         const { error } = await supabase.from('payroll_export_runs').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+
+    if (entity === 'service_execution_scheduler_run') {
+      const patch = {
+        run_code: String(body.run_code || '').trim().toUpperCase(),
+        run_status: body.run_status ?? 'draft',
+        candidate_count: asNumber(body.candidate_count, 0),
+        sessions_created_count: asNumber(body.sessions_created_count, 0),
+        invoices_created_count: asNumber(body.invoices_created_count, 0),
+        notes: body.notes ?? null,
+        last_error: body.last_error ?? null,
+        ran_at: asNullableDateTime(body.ran_at),
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.run_code) return Response.json({ ok:false, error:'run_code is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('service_execution_scheduler_runs').insert({ ...patch, created_at: new Date().toISOString() }).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('service_execution_scheduler_runs').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('service_execution_scheduler_runs').delete().eq('id', body.item_id);
         if (error) throw error;
         return Response.json({ ok:true }, { headers:corsHeaders });
       }
@@ -2821,17 +2863,105 @@ serve(async (req) => {
       return Response.json({ ok:true, record:data }, { headers:corsHeaders });
     }
 
+    if (entity === 'recurring_service_agreement' && action === 'run_execution_scheduler') {
+      const agreement = await fetchSingle(supabase, 'recurring_service_agreements', body.item_id);
+      if (!agreement?.id) return Response.json({ ok:false, error:'Recurring service agreement not found.' }, { status:404, headers:corsHeaders });
+      const signedDoc = agreement.contract_document_id ? await fetchSingle(supabase, 'service_contract_documents', agreement.contract_document_id) : null;
+      const { data: linkedJobs } = await supabase.from('jobs').select('id,job_code,job_name,status').eq('service_contract_reference', agreement.agreement_code).order('updated_at', { ascending: false });
+      const job = Array.isArray(linkedJobs) && linkedJobs.length ? linkedJobs[0] : null;
+      const candidateDate = new Date().toISOString().slice(0,10);
+      const runPatch = {
+        run_code: makeDocumentNumber('SCH'),
+        run_status: 'running',
+        candidate_count: 1,
+        sessions_created_count: 0,
+        invoices_created_count: 0,
+        notes: `Scheduler run for ${agreement.agreement_code || agreement.id}`,
+        created_by_profile_id: actorId,
+        ran_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      const { data: runRow, error: runErr } = await supabase.from('service_execution_scheduler_runs').insert(runPatch).select('*').single();
+      if (runErr) throw runErr;
+      let sessionRecord: any = null;
+      if (job?.id) {
+        const { data: existingSession } = await supabase.from('job_sessions').select('id').eq('job_id', job.id).eq('session_date', candidateDate).maybeSingle();
+        if (!existingSession?.id) {
+          const { data: createdSession, error: createSessionError } = await supabase.from('job_sessions').insert({
+            job_id: job.id,
+            session_date: candidateDate,
+            session_kind: 'agreement_service',
+            session_status: 'planned',
+            service_frequency_label: agreement.service_pattern || agreement.service_name || 'service_visit',
+            site_supervisor_profile_id: null,
+            notes: `Auto-created from recurring agreement ${agreement.agreement_code || agreement.id}`,
+            created_by_profile_id: actorId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }).select('*').single();
+          if (createSessionError) throw createSessionError;
+          sessionRecord = createdSession;
+          await recordSiteActivity(supabase, { event_type:'service_execution_candidate', entity_type:'job_session', entity_id: createdSession.id, severity:'info', title:'Service session auto-created', summary:`${agreement.agreement_code || agreement.id} created session ${createdSession.id}.`, related_job_id: job.id, created_by_profile_id: actorId });
+        }
+      }
+      const finalStatus = job?.id ? 'completed' : 'completed_with_warnings';
+      const finalNotes = job?.id ? runPatch.notes : `${runPatch.notes} No linked job matched service_contract_reference ${agreement.agreement_code || ''}.`;
+      const { data: updatedRun, error: updateRunErr } = await supabase.from('service_execution_scheduler_runs').update({ run_status: finalStatus, sessions_created_count: sessionRecord?.id ? 1 : 0, notes: finalNotes, updated_at: new Date().toISOString() }).eq('id', runRow.id).select('*').single();
+      if (updateRunErr) throw updateRunErr;
+      return Response.json({ ok:true, record:updatedRun, session_record: sessionRecord || null, signed_contract_document: signedDoc || null }, { headers:corsHeaders });
+    }
+
+    if (entity === 'service_contract_document' && action === 'generate_invoice_from_signed') {
+      const doc = await fetchSingle(supabase, 'service_contract_documents', body.item_id);
+      if (!doc?.id) return Response.json({ ok:false, error:'Service contract document not found.' }, { status:404, headers:corsHeaders });
+      if (String(doc.document_status || '') !== 'signed') return Response.json({ ok:false, error:'Only signed contract documents can generate invoices.' }, { status:400, headers:corsHeaders });
+      const existing = await supabase.from('ar_invoices').select('id,invoice_number').eq('service_contract_document_id', doc.id).maybeSingle();
+      if (existing?.data?.id) return Response.json({ ok:true, record: existing.data }, { headers:corsHeaders });
+      const agreement = doc.agreement_id ? await fetchSingle(supabase, 'recurring_service_agreements', doc.agreement_id) : null;
+      const estimate = doc.estimate_id ? await fetchSingle(supabase, 'estimates', doc.estimate_id) : null;
+      const taxCode = agreement?.tax_code_id ? await fetchSingle(supabase, 'tax_codes', agreement.tax_code_id) : null;
+      const subtotal = Number(agreement?.visit_charge_total || estimate?.total_amount || estimate?.subtotal || 0);
+      const taxRate = Number(taxCode?.rate_percent || 0);
+      const taxTotal = Number((subtotal * (taxRate / 100)).toFixed(2));
+      const totalAmount = Number((subtotal + taxTotal).toFixed(2));
+      const invoiceNo = makeDocumentNumber('INV');
+      const { data, error } = await supabase.from('ar_invoices').insert({
+        invoice_number: invoiceNo,
+        client_id: doc.client_id || agreement?.client_id || estimate?.client_id || null,
+        recurring_service_agreement_id: doc.agreement_id || null,
+        service_contract_document_id: doc.id,
+        invoice_source: 'contract',
+        invoice_status: 'issued',
+        invoice_date: new Date().toISOString().slice(0,10),
+        subtotal,
+        tax_total: taxTotal,
+        total_amount: totalAmount,
+        balance_due: totalAmount,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      }).select('*').single();
+      if (error) throw error;
+      await supabase.from('service_contract_documents').update({ generated_invoice_id: data.id, invoice_generated_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', doc.id);
+      await recordSiteActivity(supabase, { event_type:'service_invoice_candidate', entity_type:'ar_invoice', entity_id:data.id, severity:'success', title:'Invoice generated from signed contract', summary:`${doc.document_number || doc.id} generated invoice ${data.invoice_number || data.id}.`, created_by_profile_id: actorId });
+      return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+    }
+
+
     if (entity === 'payroll_export_run' && action === 'generate_export') {
       const run = await fetchSingle(supabase, 'payroll_export_runs', body.item_id);
       if (!run?.id) return Response.json({ ok:false, error:'Payroll export run not found.' }, { status:404, headers:corsHeaders });
       const { data: rows, error: rowsError } = await supabase.from('v_payroll_review_detail').select('*').gte('session_date', run.period_start).lte('session_date', run.period_end).order('session_date', { ascending: true });
       if (rowsError) throw rowsError;
-      const csv = buildPayrollCsv(rows || []);
+      const provider = String(run.export_provider || 'generic_csv');
+      const csv = buildPayrollCsv(rows || [], provider);
       const hours = (rows || []).reduce((sum: number, row: any) => sum + Number(row?.hours_worked || 0), 0);
       const cost = (rows || []).reduce((sum: number, row: any) => sum + Number(row?.payroll_cost_total || 0), 0);
-      const fileName = `${run.run_code || 'payroll-export'}.${String(run.export_format || 'csv').toLowerCase() === 'json' ? 'json' : 'csv'}`;
+      const isJson = String(run.export_format || 'csv').toLowerCase() === 'json' || provider === 'json';
+      const ext = isJson ? 'json' : 'csv';
+      const fileName = `${run.run_code || 'payroll-export'}-${provider}.${ext}`;
       let content = csv;
-      if (String(run.export_format || 'csv').toLowerCase() === 'json') content = JSON.stringify(rows || [], null, 2);
+      if (isJson) content = JSON.stringify(rows || [], null, 2);
       const { data, error } = await supabase.from('payroll_export_runs').update({ export_file_name: fileName, export_file_content: content, exported_entry_count: (rows || []).length, exported_hours_total: Number(hours.toFixed(2)), exported_payroll_cost_total: Number(cost.toFixed(2)), exported_at: new Date().toISOString(), exported_by_profile_id: actorId, status: 'exported', updated_at: new Date().toISOString() }).eq('id', run.id).select('*').single();
       if (error) throw error;
       await supabase.from('job_session_crew_hours').update({ payroll_export_run_id: run.id, payroll_exported_at: new Date().toISOString(), updated_at: new Date().toISOString() }).gte('created_at', `${run.period_start}T00:00:00`).lte('created_at', `${run.period_end}T23:59:59`).is('payroll_export_run_id', null);

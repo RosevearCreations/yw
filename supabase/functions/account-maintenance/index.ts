@@ -222,6 +222,35 @@ function getGeoPayload(body: any, prefix: 'clock_in' | 'clock_out') {
   };
 }
 
+function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const R = 6371000;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+async function evaluateGeofence(supabase: any, siteId: string | null, lat: number | null, lng: number | null) {
+  if (!siteId) return { status: 'not_configured', distance: null, notes: null };
+  const { data: site } = await supabase.from('sites').select('id,site_code,site_name,expected_latitude,expected_longitude,geofence_radius_meters').eq('id', siteId).maybeSingle();
+  if (!site?.id || site.expected_latitude == null || site.expected_longitude == null || site.geofence_radius_meters == null) {
+    return { status: 'not_configured', distance: null, notes: null };
+  }
+  if (lat == null || lng == null) {
+    return { status: 'not_checked', distance: null, notes: null };
+  }
+  const distance = haversineMeters(Number(lat), Number(lng), Number(site.expected_latitude), Number(site.expected_longitude));
+  const radius = Number(site.geofence_radius_meters || 0);
+  const inside = Number.isFinite(distance) && radius > 0 ? distance <= radius : false;
+  return {
+    status: inside ? 'inside' : 'outside',
+    distance: Number.isFinite(distance) ? roundTwo(distance) : null,
+    notes: inside ? null : `Location is ${roundTwo(distance)}m from the configured site geofence (${radius}m).`
+  };
+}
+
 async function syncCrewHoursFromTimeEntry(supabase: any, entry: any, actorProfile: any, nowIso: string) {
   if (!entry?.id || !entry?.profile_id || !entry?.job_id) return null;
   const totalHours = roundTwo(Number(entry.paid_work_minutes || 0) / 60);
@@ -675,6 +704,9 @@ serve(async (req) => {
       return Response.json({ ok: false, error: 'Selected job was not found.' }, { status: 404, headers: corsHeaders });
     }
     const session = await ensureClockJobSession(supabase, actorId, actorProfile, jobId, nowIso);
+    const geoPayload = getGeoPayload(body, 'clock_in');
+    const geofence = await evaluateGeofence(supabase, job.site_id || null, geoPayload.clock_in_latitude ?? null, geoPayload.clock_in_longitude ?? null);
+    const openException = geofence.status === 'outside';
     const { data: entry, error } = await supabase.from('employee_time_entries').insert({
       profile_id: actorId,
       crew_id: job.crew_id || null,
@@ -685,7 +717,12 @@ serve(async (req) => {
       signed_in_at: nowIso,
       last_status_at: nowIso,
       notes: String(body.notes || '').trim() || null,
-      ...getGeoPayload(body, 'clock_in'),
+      ...geoPayload,
+      clock_in_geofence_status: geofence.status,
+      clock_in_geofence_distance_meters: geofence.distance,
+      exception_status: openException ? 'open' : 'clear',
+      exception_notes: openException ? geofence.notes : null,
+      attendance_exception_notes: openException ? geofence.notes : null,
       created_by_profile_id: actorId,
       created_at: nowIso,
       updated_at: nowIso,
@@ -704,9 +741,21 @@ serve(async (req) => {
       related_job_id: job.id,
       related_profile_id: actorId,
       created_by_profile_id: actorId,
-      metadata: { job_code: job.job_code || null, job_name: job.job_name || null, clock_in_geo_source: String(body.geo_source || '') || null, clock_in_photo_note: String(body.photo_note || '').trim() || null },
+      metadata: { job_code: job.job_code || null, job_name: job.job_name || null, clock_in_geo_source: String(body.geo_source || '') || null, clock_in_photo_note: String(body.photo_note || '').trim() || null, clock_in_geofence_status: geofence.status, clock_in_geofence_distance_meters: geofence.distance },
       occurred_at: nowIso,
     });
+    if (openException) {
+      await supabase.from('employee_time_entry_reviews').insert({
+        time_entry_id: entry.id,
+        review_type: 'geofence_review',
+        exception_type: 'geofence_outside',
+        review_status: 'open',
+        resolution_notes: geofence.notes,
+        created_by_profile_id: actorId,
+        created_at: nowIso,
+        updated_at: nowIso,
+      }).catch(() => null);
+    }
     const context = await getClockContext(supabase, actorId, actorProfile);
     return Response.json({ ok: true, entry, ...context }, { headers: corsHeaders });
   }
@@ -803,6 +852,10 @@ serve(async (req) => {
     }
     const totalElapsedMinutes = Math.max(0, Math.floor((new Date(nowIso).getTime() - new Date(entry.signed_in_at).getTime()) / 60000));
     const paidWorkMinutes = Math.max(0, totalElapsedMinutes - unpaidBreakMinutes);
+    const geoPayload = getGeoPayload(body, 'clock_out');
+    const geofence = await evaluateGeofence(supabase, entry.site_id || null, geoPayload.clock_out_latitude ?? null, geoPayload.clock_out_longitude ?? null);
+    const openException = geofence.status === 'outside' || paidWorkMinutes <= 0;
+    const mergedExceptionNotes = [String(entry.exception_notes || '').trim(), geofence.status === 'outside' ? geofence.notes : null, paidWorkMinutes <= 0 ? 'Clocked entry resulted in zero paid work minutes.' : null].filter(Boolean).join(' | ') || null;
     const { data: updated, error } = await supabase.from('employee_time_entries').update({
       clock_status: 'signed_out',
       signed_out_at: nowIso,
@@ -811,7 +864,12 @@ serve(async (req) => {
       unpaid_break_minutes: unpaidBreakMinutes,
       paid_work_minutes: paidWorkMinutes,
       notes: String(body.notes || entry.notes || '').trim() || null,
-      ...getGeoPayload(body, 'clock_out'),
+      ...geoPayload,
+      clock_out_geofence_status: geofence.status,
+      clock_out_geofence_distance_meters: geofence.distance,
+      exception_status: openException ? 'open' : (entry.exception_status || 'clear'),
+      exception_notes: mergedExceptionNotes,
+      attendance_exception_notes: mergedExceptionNotes,
       updated_at: nowIso,
     }).eq('id', entry.id).select('*').single();
     if (error) {
@@ -836,9 +894,22 @@ serve(async (req) => {
       related_job_id: updated.job_id,
       related_profile_id: actorId,
       created_by_profile_id: actorId,
-      metadata: { paid_work_minutes: paidWorkMinutes, unpaid_break_minutes: unpaidBreakMinutes, crew_hours_id: syncedHours?.id || null, clock_out_geo_source: String(body.geo_source || '') || null, clock_out_photo_note: String(body.photo_note || '').trim() || null },
+      metadata: { paid_work_minutes: paidWorkMinutes, unpaid_break_minutes: unpaidBreakMinutes, crew_hours_id: syncedHours?.id || null, clock_out_geo_source: String(body.geo_source || '') || null, clock_out_photo_note: String(body.photo_note || '').trim() || null, clock_out_geofence_status: geofence.status, clock_out_geofence_distance_meters: geofence.distance },
       occurred_at: nowIso,
     });
+    if (openException) {
+      const exceptionType = geofence.status === 'outside' ? 'geofence_outside' : 'zero_paid_time';
+      await supabase.from('employee_time_entry_reviews').insert({
+        time_entry_id: updated.id,
+        review_type: geofence.status === 'outside' ? 'geofence_review' : 'attendance_exception',
+        exception_type: exceptionType,
+        review_status: 'open',
+        resolution_notes: mergedExceptionNotes,
+        created_by_profile_id: actorId,
+        created_at: nowIso,
+        updated_at: nowIso,
+      }).catch(() => null);
+    }
     const context = await getClockContext(supabase, actorId, actorProfile);
     return Response.json({ ok: true, entry: updated, crew_hours: syncedHours || null, ...context }, { headers: corsHeaders });
   }

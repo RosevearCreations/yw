@@ -140,3 +140,11 @@ The latest pass added migration `076_job_pricing_profitability_and_schedule_logi
 
 
 Latest pass moved the app into supervisor attendance review and execution-candidate workflow. Focus areas added: attendance exceptions, geolocation/photo-note capture, payroll export generation, and stronger operations dashboard counts.
+
+
+## 085 Attendance / Geofence / Scheduler / Signed-Contract Invoice Pass
+- Added attendance photo upload/storage for clock-in and clock-out.
+- Added geofence radius evaluation against site coordinates during clock-in/out.
+- Added service execution scheduler runs and signed-contract invoice candidates.
+- Added provider-specific payroll export layouts.
+- Added signed-contract-to-invoice generation support.

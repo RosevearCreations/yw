@@ -209,3 +209,11 @@ Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summarie
 ## 2026-04-19 — supervisor attendance review and execution candidates
 - Added schema 084 for attendance exception review, geolocation/photo-note time-clock fields, operations dashboard summary, and recurring agreement execution candidates.
 - Added admin-manage actions for estimate conversion, printable contract generation, snow invoice generation, payroll export generation, and time-entry review.
+
+
+## 085 Attendance / Geofence / Scheduler / Signed-Contract Invoice Pass
+- Added attendance photo upload/storage for clock-in and clock-out.
+- Added geofence radius evaluation against site coordinates during clock-in/out.
+- Added service execution scheduler runs and signed-contract invoice candidates.
+- Added provider-specific payroll export layouts.
+- Added signed-contract-to-invoice generation support.

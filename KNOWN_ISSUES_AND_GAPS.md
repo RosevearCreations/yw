@@ -384,3 +384,11 @@ Still open:
 - Photo-note support exists on clock in/out, but actual image upload and storage for attendance evidence is still pending.
 - Payroll export file generation exists, but provider-specific layouts and final posting handoff still need completion.
 - Agreement execution candidates are now staged, but automatic scheduler-driven session/invoice creation is still pending.
+
+
+## 085 Attendance / Geofence / Scheduler / Signed-Contract Invoice Pass
+- Added attendance photo upload/storage for clock-in and clock-out.
+- Added geofence radius evaluation against site coordinates during clock-in/out.
+- Added service execution scheduler runs and signed-contract invoice candidates.
+- Added provider-specific payroll export layouts.
+- Added signed-contract-to-invoice generation support.
