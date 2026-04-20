@@ -51,6 +51,7 @@ const requiredFiles = [
   'sql/080_service_agreements_assets_payroll_and_login_tracking.sql',
   'sql/081_contract_conversion_payroll_exports_and_snow_invoice_automation.sql',
   'sql/082_site_activity_audit_and_admin_recent_events.sql',
+  'sql/083_employee_time_clock_and_break_tracking.sql',
   'js/hse-ops-ui.js',
   'supabase/functions/jobs-directory/index.ts',
   'supabase/functions/jobs-manage/index.ts',
@@ -91,7 +92,7 @@ addCheck('account-has-conflict-review', accountUi.includes('Conflict Review'), '
 addCheck('account-has-support-export', accountUi.includes('Export Support Snapshot'), 'account-ui.js should render the support snapshot export button.');
 
 const schema = read('sql/000_full_schema_reference.sql');
-addCheck('schema-header-current', /082_site_activity_audit_and_admin_recent_events/i.test(schema), 'Schema snapshot header should reflect the latest 082 pass.');
+addCheck('schema-header-current', /083_employee_time_clock_and_break_tracking/i.test(schema), 'Schema snapshot header should reflect the latest 083 pass.');
 
 console.log(JSON.stringify({ ok: !failed, checks: results }, null, 2));
 if (failed) process.exit(1);

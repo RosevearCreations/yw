@@ -65,6 +65,18 @@
       meEmergencyPhone: $('#me_emergency_contact_phone'),
       meSave: $('#me_save'),
       meReload: $('#me_reload'),
+      timeSummary: $('#me_time_summary'),
+      timeJob: $('#me_time_job_id'),
+      timeNotes: $('#me_time_notes'),
+      timeClockIn: $('#me_time_clock_in'),
+      timeBreakStart: $('#me_time_break_start'),
+      timeBreakEnd: $('#me_time_break_end'),
+      timeClockOut: $('#me_time_clock_out'),
+      timeStatus: $('#me_time_status'),
+      timeActiveSince: $('#me_time_active_since'),
+      timePaidMinutes: $('#me_time_paid_minutes'),
+      timeBreakMinutes: $('#me_time_break_minutes'),
+      timeRecentBody: document.querySelector('#me_time_recent_table tbody'),
 
       crewSearch: $('#crew_search'),
       crewRoleFilter: $('#crew_role_filter'),
@@ -73,7 +85,7 @@
     };
 
     const PROFILE_DRAFT_KEY = 'ywi_profile_self_draft_v1';
-    const state = { selfProfile: null, crewRows: [], selfLoadVersion: 0, crewLoadVersion: 0, bound: false, routeBound: false, initialized: false };
+    const state = { selfProfile: null, crewRows: [], selfLoadVersion: 0, crewLoadVersion: 0, timeClockContext: null, bound: false, routeBound: false, initialized: false };
 
 
     function refreshEls() {
@@ -118,6 +130,18 @@
         meEmergencyPhone: $('#me_emergency_contact_phone'),
         meSave: $('#me_save'),
         meReload: $('#me_reload'),
+        timeSummary: $('#me_time_summary'),
+        timeJob: $('#me_time_job_id'),
+        timeNotes: $('#me_time_notes'),
+        timeClockIn: $('#me_time_clock_in'),
+        timeBreakStart: $('#me_time_break_start'),
+        timeBreakEnd: $('#me_time_break_end'),
+        timeClockOut: $('#me_time_clock_out'),
+        timeStatus: $('#me_time_status'),
+        timeActiveSince: $('#me_time_active_since'),
+        timePaidMinutes: $('#me_time_paid_minutes'),
+        timeBreakMinutes: $('#me_time_break_minutes'),
+        timeRecentBody: document.querySelector('#me_time_recent_table tbody'),
         crewSearch: $('#crew_search'),
         crewRoleFilter: $('#crew_role_filter'),
         crewLoad: $('#crew_load'),
@@ -169,6 +193,33 @@
           </div>
           <label style="display:block;margin-top:12px;">Strengths<textarea id="me_strengths" rows="3"></textarea></label>
           <label style="display:block;margin-top:12px;">Preferences / Notes<textarea id="me_feature_preferences" rows="3"></textarea></label>
+          <div class="section-heading" style="margin-top:20px;">
+            <div>
+              <h3 style="margin:0;">Site Time Clock</h3>
+              <p class="section-subtitle">Clock in on arrival, pause unpaid breaks, and sign out when leaving the site.</p>
+            </div>
+            <div class="admin-heading-actions">
+              <button id="me_time_clock_in" class="secondary" type="button">Clock In</button>
+              <button id="me_time_break_start" class="secondary" type="button">Start Unpaid Break</button>
+              <button id="me_time_break_end" class="secondary" type="button">End Break</button>
+              <button id="me_time_clock_out" class="primary" type="button">Clock Out</button>
+            </div>
+          </div>
+          <div id="me_time_summary" class="notice" style="display:none;margin-bottom:14px;"></div>
+          <div class="grid">
+            <label>Job / Site<select id="me_time_job_id"></select></label>
+            <label>Current Status<input id="me_time_status" type="text" readonly /></label>
+            <label>Active Since<input id="me_time_active_since" type="text" readonly /></label>
+            <label>Paid Minutes<input id="me_time_paid_minutes" type="text" readonly /></label>
+            <label>Unpaid Break Minutes<input id="me_time_break_minutes" type="text" readonly /></label>
+          </div>
+          <label style="display:block;margin-top:12px;">Clock Notes<textarea id="me_time_notes" rows="2" placeholder="Optional site or shift note"></textarea></label>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="me_time_recent_table">
+              <thead><tr><th>Signed In</th><th>Job</th><th>Status</th><th>Paid</th><th>Break</th><th>Signed Out</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
         `
       }
       const crewSection = document.getElementById('crew');
@@ -321,6 +372,78 @@
       if (els.meEmergencyPhone) els.meEmergencyPhone.value = profile.emergency_contact_phone || '';
     }
 
+
+    function renderTimeClock(context) {
+      state.timeClockContext = context || { active_entry: null, recent_entries: [], available_jobs: [] };
+      const jobs = Array.isArray(state.timeClockContext.available_jobs) ? state.timeClockContext.available_jobs : [];
+      if (els.timeJob) {
+        els.timeJob.innerHTML = `<option value="">Select active job / site</option>` + jobs.map((row) => {
+          const label = [row.job_code, row.job_name, row.site_name].filter(Boolean).join(' — ');
+          return `<option value="${escHtml(row.id)}">${escHtml(label || row.id)}</option>`;
+        }).join('');
+      }
+      const active = state.timeClockContext.active_entry || null;
+      if (active && els.timeJob) els.timeJob.value = String(active.job_id || '');
+      if (els.timeStatus) els.timeStatus.value = active ? String(active.clock_status || '').replaceAll('_', ' ') : 'Not clocked in';
+      if (els.timeActiveSince) els.timeActiveSince.value = active?.signed_in_at_local || active?.signed_in_at || '';
+      if (els.timePaidMinutes) els.timePaidMinutes.value = String(active?.paid_work_minutes ?? 0);
+      if (els.timeBreakMinutes) els.timeBreakMinutes.value = String(active?.unpaid_break_minutes ?? 0);
+      if (els.timeRecentBody) {
+        const recent = Array.isArray(state.timeClockContext.recent_entries) ? state.timeClockContext.recent_entries : [];
+        els.timeRecentBody.innerHTML = recent.map((row) => `
+          <tr>
+            <td>${escHtml(row.signed_in_at_local || row.signed_in_at || '')}</td>
+            <td>${escHtml([row.job_code, row.job_name].filter(Boolean).join(' — '))}</td>
+            <td>${escHtml(String(row.clock_status || '').replaceAll('_', ' '))}</td>
+            <td>${escHtml(String(row.paid_work_minutes ?? 0))}</td>
+            <td>${escHtml(String(row.unpaid_break_minutes ?? 0))}</td>
+            <td>${escHtml(row.signed_out_at_local || row.signed_out_at || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="6" class="muted">No recent site time entries yet.</td></tr>';
+      }
+      if (els.timeClockIn) els.timeClockIn.disabled = !!active;
+      if (els.timeBreakStart) els.timeBreakStart.disabled = !active || String(active?.clock_status || '') !== 'active';
+      if (els.timeBreakEnd) els.timeBreakEnd.disabled = !active || String(active?.clock_status || '') !== 'paused';
+      if (els.timeClockOut) els.timeClockOut.disabled = !active;
+    }
+
+    async function loadTimeClockContext() {
+      try {
+        const authState = getAuthState();
+        if (!authState?.isAuthenticated || authState?.isLoggingOut) {
+          renderTimeClock(null);
+          return;
+        }
+        setNotice(els.timeSummary, 'Loading time clock...');
+        const resp = await (api.fetchMyTimeClockContext ? api.fetchMyTimeClockContext() : api.accountRecoveryAction({ action: 'list_my_time_clock_context' }, true));
+        renderTimeClock(resp || null);
+        setNotice(els.timeSummary, '');
+      } catch (err) {
+        console.error(err);
+        setNotice(els.timeSummary, err?.message || 'Failed to load your time clock.');
+      }
+    }
+
+    async function runTimeClockAction(action) {
+      try {
+        const payload = { notes: els.timeNotes?.value?.trim?.() || null };
+        if (action === 'employee_clock_in') payload.job_id = els.timeJob?.value || null;
+        const resp = await (api.employeeTimeClockAction ? api.employeeTimeClockAction(action, payload) : api.accountRecoveryAction({ action, ...payload }, true));
+        if (!resp?.ok) throw new Error(resp?.error || 'Time clock action failed.');
+        renderTimeClock(resp);
+        const messageMap = {
+          employee_clock_in: 'Signed in to site time.',
+          employee_start_break: 'Unpaid break started.',
+          employee_end_break: 'Unpaid break ended.',
+          employee_clock_out: 'Signed out from site time.'
+        };
+        setNotice(els.timeSummary, messageMap[action] || 'Time clock updated.');
+      } catch (err) {
+        console.error(err);
+        setNotice(els.timeSummary, err?.message || 'Time clock action failed.');
+      }
+    }
+
     function renderCrew(rows) {
       state.crewRows = Array.isArray(rows) ? rows : [];
       if (!els.crewTableBody) return;
@@ -458,6 +581,7 @@
             return;
           }
           loadSelfProfile();
+          loadTimeClockContext();
           if (getAccessProfile(getCurrentRole()).canViewCrew) loadCrew();
         });
         document.addEventListener('ywi:route-shown', (event) => {
@@ -466,7 +590,7 @@
           ensureLayout();
           refreshEls();
           applyRoleVisibility();
-          if (allowed === 'me' && getAuthState()?.isAuthenticated) loadSelfProfile();
+          if (allowed === 'me' && getAuthState()?.isAuthenticated) { loadSelfProfile(); loadTimeClockContext(); }
           if (allowed === 'crew' && getAuthState()?.isAuthenticated && getAccessProfile(getCurrentRole()).canViewCrew) loadCrew();
         });
         state.bound = true;
@@ -484,6 +608,22 @@
         els.crewLoad.dataset.bound = '1';
         els.crewLoad.addEventListener('click', loadCrew);
       }
+      if (els.timeClockIn && els.timeClockIn.dataset.bound !== '1') {
+        els.timeClockIn.dataset.bound = '1';
+        els.timeClockIn.addEventListener('click', () => runTimeClockAction('employee_clock_in'));
+      }
+      if (els.timeBreakStart && els.timeBreakStart.dataset.bound !== '1') {
+        els.timeBreakStart.dataset.bound = '1';
+        els.timeBreakStart.addEventListener('click', () => runTimeClockAction('employee_start_break'));
+      }
+      if (els.timeBreakEnd && els.timeBreakEnd.dataset.bound !== '1') {
+        els.timeBreakEnd.dataset.bound = '1';
+        els.timeBreakEnd.addEventListener('click', () => runTimeClockAction('employee_end_break'));
+      }
+      if (els.timeClockOut && els.timeClockOut.dataset.bound !== '1') {
+        els.timeClockOut.dataset.bound = '1';
+        els.timeClockOut.addEventListener('click', () => runTimeClockAction('employee_clock_out'));
+      }
       if (els.sessionLogout && els.sessionLogout.dataset.bound !== '1') {
         els.sessionLogout.dataset.bound = '1';
         els.sessionLogout.addEventListener('click', clearCurrentSession);
@@ -496,6 +636,7 @@
       bind();
       applyRoleVisibility();
       await loadSelfProfile();
+      await loadTimeClockContext();
       if (getAccessProfile(getCurrentRole()).canViewCrew) await loadCrew();
       state.initialized = true;
     }

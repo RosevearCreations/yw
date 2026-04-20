@@ -540,6 +540,7 @@
                   <option value="change_order">Change Orders</option>
                   <option value="service_contract_document">Service Contract Documents</option>
                   <option value="payroll_export_run">Payroll Export Runs</option>
+                  <option value="employee_time_entry">Employee Time Entries</option>
                 </optgroup>
                 <optgroup label="Analytics and Monitoring">
                   <option value="app_traffic_event">Traffic Events</option>
@@ -1472,6 +1473,9 @@
         state.accountingEntries = Array.isArray(resp?.accounting_entries) ? resp.accounting_entries : [];
         state.siteActivityEvents = Array.isArray(resp?.site_activity_events) ? resp.site_activity_events : [];
         state.siteActivitySummary = Array.isArray(resp?.site_activity_summary) ? resp.site_activity_summary : [];
+        state.employeeTimeClockEntries = Array.isArray(resp?.employee_time_clock_entries) ? resp.employee_time_clock_entries : [];
+        state.employeeTimeClockCurrent = Array.isArray(resp?.employee_time_clock_current) ? resp.employee_time_clock_current : [];
+        state.employeeTimeClockSummary = Array.isArray(resp?.employee_time_clock_summary) ? resp.employee_time_clock_summary : [];
         state.serviceAreas = Array.isArray(resp?.service_areas) ? resp.service_areas : [];
         state.routes = Array.isArray(resp?.routes) ? resp.routes : [];
         state.jobs = Array.isArray(resp?.jobs) ? resp.jobs : [];
@@ -1579,6 +1583,9 @@
           state.siteActivitySummary = Array.isArray(resp?.site_activity_summary) ? resp.site_activity_summary : [];
         state.siteActivityEvents = Array.isArray(resp?.site_activity_events) ? resp.site_activity_events : [];
         state.siteActivitySummary = Array.isArray(resp?.site_activity_summary) ? resp.site_activity_summary : [];
+        state.employeeTimeClockEntries = Array.isArray(resp?.employee_time_clock_entries) ? resp.employee_time_clock_entries : [];
+        state.employeeTimeClockCurrent = Array.isArray(resp?.employee_time_clock_current) ? resp.employee_time_clock_current : [];
+        state.employeeTimeClockSummary = Array.isArray(resp?.employee_time_clock_summary) ? resp.employee_time_clock_summary : [];
           state.serviceAreas = Array.isArray(resp?.service_areas) ? resp.service_areas : [];
           state.routes = Array.isArray(resp?.routes) ? resp.routes : [];
           state.jobs = Array.isArray(resp?.jobs) ? resp.jobs : [];
@@ -1662,6 +1669,9 @@
       state.sites = [];
       state.assignments = [];
       state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [], jobFinancialEvents: [], jobFinancialRollups: [], recurringServiceAgreements: [], snowEventTriggers: [], changeOrders: [], customerAssets: [], customerAssetJobLinks: [], warrantyCallbackEvents: [], payrollExportRuns: [], payrollReviewSummary: [], routeProfitabilitySummary: [], serviceContractDocuments: [], serviceAgreementProfitabilitySummary: [], snowEventInvoiceCandidates: [], callbackWarrantyDashboardSummary: [], payrollReviewDetail: [], estimateConversionCandidates: [] };
+      state.employeeTimeClockEntries = [];
+      state.employeeTimeClockCurrent = [];
+      state.employeeTimeClockSummary = [];
       state.serviceAreas = [];
       state.routes = [];
       state.clients = [];
@@ -3408,8 +3418,9 @@
       `).join('') || '<tr><td colspan="5" class="muted">No recent site activity yet.</td></tr>';
       if (e.siteActivitySummary) {
         const summary = Array.isArray(state.siteActivitySummary) ? state.siteActivitySummary[0] : null;
+        const timeSummary = Array.isArray(state.employeeTimeClockSummary) ? state.employeeTimeClockSummary[0] : null;
         e.siteActivitySummary.textContent = summary
-          ? `Last 24 hours: ${Number(summary.last_24h_event_count || 0)} event(s), ${Number(summary.last_24h_job_created_count || 0)} job(s), ${Number(summary.last_24h_staff_created_count || 0)} staff record(s), ${Number(summary.last_24h_equipment_created_count || 0)} equipment item(s).`
+          ? `Last 24 hours: ${Number(summary.last_24h_event_count || 0)} event(s), ${Number(summary.last_24h_job_created_count || 0)} job(s), ${Number(summary.last_24h_staff_created_count || 0)} staff record(s), ${Number(summary.last_24h_equipment_created_count || 0)} equipment item(s), ${Number(timeSummary?.last_24h_clock_in_count || 0)} clock-in(s), ${Number(timeSummary?.currently_clocked_in_count || 0)} active on-site.`
           : (rows.length ? `Loaded ${rows.length} recent site activity item(s).` : 'No recent site activity yet.');
         e.siteActivitySummary.dataset.kind = summary && Number(summary.last_24h_attention_count || 0) > 0 ? 'warning' : 'info';
       }

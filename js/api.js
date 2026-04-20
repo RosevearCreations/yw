@@ -666,6 +666,14 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
     return accountRecoveryAction({ action: 'session_health' }, true);
   }
 
+  async function fetchMyTimeClockContext() {
+    return accountRecoveryAction({ action: 'list_my_time_clock_context' }, true);
+  }
+
+  async function employeeTimeClockAction(action, payload = {}) {
+    return accountRecoveryAction({ action, ...payload }, true);
+  }
+
   async function fetchLogData(payload = {}) {
     try {
       return await jsonFetch('review-list', {
@@ -887,6 +895,8 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
     sendPhoneVerificationCode,
     verifyPhoneCode,
     fetchSessionHealth,
+    fetchMyTimeClockContext,
+    employeeTimeClockAction,
     fetchLogData,
     fetchSubmissionDetail,
     saveSubmissionReview,
