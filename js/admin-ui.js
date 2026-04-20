@@ -39,6 +39,8 @@
       selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalSyncExceptions: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], fieldUploadFailures: [], appTrafficEvents: [], backendMonitorEvents: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [], jobFinancialEvents: [], jobFinancialRollups: [], recurringServiceAgreements: [], snowEventTriggers: [], changeOrders: [], customerAssets: [], customerAssetJobLinks: [], warrantyCallbackEvents: [], payrollExportRuns: [], payrollReviewSummary: [], routeProfitabilitySummary: [], serviceContractDocuments: [], serviceAgreementProfitabilitySummary: [], snowEventInvoiceCandidates: [], callbackWarrantyDashboardSummary: [], payrollReviewDetail: [], estimateConversionCandidates: [] },
       salesOrders: [],
       accountingEntries: [],
+      siteActivityEvents: [],
+      siteActivitySummary: [],
       serviceAreas: [],
       routes: [],
       jobs: [],
@@ -205,9 +207,21 @@
           <div class="admin-stat-card"><span>Orders</span><strong id="ad_orders_count">0</strong></div>
         </div>
 
-
-
-
+        <div class="admin-panel-block" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
+              <h3 style="margin:0;">Recent Site Activity</h3>
+              <p class="section-subtitle">Track new jobs, staff additions, equipment changes, agreements, contracts, payroll exports, and other key admin-visible activity from one place.</p>
+            </div>
+          </div>
+          <div id="ad_site_activity_summary" class="notice" style="display:block;margin-bottom:12px;">No recent site activity yet.</div>
+          <div class="table-scroll">
+            <table id="ad_site_activity_table">
+              <thead><tr><th>When</th><th>Type</th><th>Title</th><th>Actor</th><th>Summary</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
 
         <div class="admin-section-nav" id="ad_section_nav" role="tablist" aria-label="Admin sections"></div>
 
@@ -740,6 +754,8 @@
         assignmentsCount: document.getElementById('ad_assignments_count'),
         notificationsCount: document.getElementById('ad_notifications_count'),
         ordersCount: document.getElementById('ad_orders_count'),
+        siteActivitySummary: document.getElementById('ad_site_activity_summary'),
+        siteActivityBody: document.querySelector('#ad_site_activity_table tbody'),
         passwordForm: document.getElementById('ad_password_form'),
         passwordProfileId: document.getElementById('ad_password_profile_id'),
         passwordNew: document.getElementById('ad_password_new'),
@@ -1454,6 +1470,8 @@
         state.assignments = Array.isArray(resp?.assignments) ? resp.assignments : [];
         state.salesOrders = Array.isArray(resp?.sales_orders) ? resp.sales_orders : [];
         state.accountingEntries = Array.isArray(resp?.accounting_entries) ? resp.accounting_entries : [];
+        state.siteActivityEvents = Array.isArray(resp?.site_activity_events) ? resp.site_activity_events : [];
+        state.siteActivitySummary = Array.isArray(resp?.site_activity_summary) ? resp.site_activity_summary : [];
         state.serviceAreas = Array.isArray(resp?.service_areas) ? resp.service_areas : [];
         state.routes = Array.isArray(resp?.routes) ? resp.routes : [];
         state.jobs = Array.isArray(resp?.jobs) ? resp.jobs : [];
@@ -1537,6 +1555,7 @@
         fillBackboneForm(getSelectedBackboneRecord());
         renderNotifications();
         renderOrders();
+        renderSiteActivityTable();
         await refreshSelectors();
 
         saveAdminCache(resp);
@@ -1556,6 +1575,10 @@
           state.assignments = Array.isArray(resp?.assignments) ? resp.assignments : [];
           state.salesOrders = Array.isArray(resp?.sales_orders) ? resp.sales_orders : [];
           state.accountingEntries = Array.isArray(resp?.accounting_entries) ? resp.accounting_entries : [];
+          state.siteActivityEvents = Array.isArray(resp?.site_activity_events) ? resp.site_activity_events : [];
+          state.siteActivitySummary = Array.isArray(resp?.site_activity_summary) ? resp.site_activity_summary : [];
+        state.siteActivityEvents = Array.isArray(resp?.site_activity_events) ? resp.site_activity_events : [];
+        state.siteActivitySummary = Array.isArray(resp?.site_activity_summary) ? resp.site_activity_summary : [];
           state.serviceAreas = Array.isArray(resp?.service_areas) ? resp.service_areas : [];
           state.routes = Array.isArray(resp?.routes) ? resp.routes : [];
           state.jobs = Array.isArray(resp?.jobs) ? resp.jobs : [];
@@ -3368,6 +3391,29 @@
       }
     }
 
+
+
+    function renderSiteActivityTable() {
+      const e = els();
+      if (!e.siteActivityBody) return;
+      const rows = Array.isArray(state.siteActivityEvents) ? state.siteActivityEvents : [];
+      e.siteActivityBody.innerHTML = rows.map((item) => `
+        <tr>
+          <td>${escHtml(item.occurred_at || item.created_at || '')}</td>
+          <td>${escHtml(String(item.event_type || '').replaceAll('_', ' '))}</td>
+          <td><strong>${escHtml(item.title || '')}</strong></td>
+          <td>${escHtml(item.created_by_name || '')}</td>
+          <td>${escHtml(item.summary || '')}</td>
+        </tr>
+      `).join('') || '<tr><td colspan="5" class="muted">No recent site activity yet.</td></tr>';
+      if (e.siteActivitySummary) {
+        const summary = Array.isArray(state.siteActivitySummary) ? state.siteActivitySummary[0] : null;
+        e.siteActivitySummary.textContent = summary
+          ? `Last 24 hours: ${Number(summary.last_24h_event_count || 0)} event(s), ${Number(summary.last_24h_job_created_count || 0)} job(s), ${Number(summary.last_24h_staff_created_count || 0)} staff record(s), ${Number(summary.last_24h_equipment_created_count || 0)} equipment item(s).`
+          : (rows.length ? `Loaded ${rows.length} recent site activity item(s).` : 'No recent site activity yet.');
+        e.siteActivitySummary.dataset.kind = summary && Number(summary.last_24h_attention_count || 0) > 0 ? 'warning' : 'info';
+      }
+    }
 
     function renderConflictTable() {
       const e = els();

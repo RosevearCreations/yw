@@ -1,4 +1,4 @@
-<!-- Reviewed during schema 081 contract conversion / payroll export / callback dashboard / snow invoice automation pass on 2026-04-17. -->
+<!-- Reviewed during schema 082 site activity audit / admin recent-activity pass on 2026-04-18. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 # Service agreements, payroll review, asset history, and account tracking
 
@@ -28,3 +28,10 @@ This app is moving toward a landscaping + recurring service + custom project + a
 2. Turn payroll export generation into provider-specific exports and accounting handoff summaries.
 3. Surface callback / warranty pressure more aggressively on Admin home cards and route unresolved items into crew follow-up.
 4. Tighten agreement profitability and snow-event invoicing into seasonal billing review and posting workflows.
+
+## 2026-04-18 site activity audit and admin visibility pass
+
+- Added DB-backed `site_activity_events`, `v_site_activity_recent`, and `v_site_activity_summary` so Admin can review durable activity for staff creation/updates, new jobs, equipment changes, agreements, payroll exports, contracts, and related operational changes.
+- Admin now loads and renders a Recent Site Activity table directly from the backend instead of relying only on login traces or per-screen notices.
+- `admin-manage`, `jobs-manage`, and `account-maintenance` now record key activity events while still failing safely if the audit trail insert itself has a problem.
+- Current schema target is now 082.
