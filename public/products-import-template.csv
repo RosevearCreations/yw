@@ -1,3 +1,0 @@
-slug,name,product_type,status,price_cents,currency,sku,short_description,description,compare_at_price_cents,taxable,tax_class_id,requires_shipping,weight_grams,inventory_tracking,inventory_quantity,digital_file_url,featured_image_url,sort_order
-example-ring,Example Ring,physical,draft,4500,CAD,DD-EXAMPLE-001,Short summary for search and cards,Longer storefront description,,1,,1,35,1,3,,,0
-example-digital-guide,Example Digital Guide,digital,draft,1200,CAD,DD-EXAMPLE-002,Short summary for a digital item,Longer digital description,,1,,0,,0,0,https://example.com/downloads/example-guide.pdf,,10
