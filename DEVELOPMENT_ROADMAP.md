@@ -1,3 +1,18 @@
+<!-- Reviewed during schema 087 evidence review, scheduler settings, and signed-contract kickoff pass on 2026-04-20. -->
+## Immediate next build priorities after 087
+1. **Platform scheduler hookup**
+   - call the service execution scheduler on a real timer using the new settings/status flow
+   - add duplicate-run safeguards and per-setting last/next-run review
+2. **Evidence review closure**
+   - turn attendance/HSE evidence tables into richer media-review queues with supervisor approval notes
+   - add clearer exception disposition actions from the same review shell
+3. **Signed contract to live operations**
+   - deepen kickoff from signed contract -> live job into signed contract -> job + work order + first planned session where appropriate
+4. **Payroll close workflow**
+   - add provider-delivery confirmation, export receipts, and payroll-close signoff
+5. **Selector and dashboard slimming**
+   - continue splitting Admin dashboard, evidence, and backbone loads into narrower scopes beyond the current `admin_core` improvement
+
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 ## 2026-04-17 contract conversion, payroll export, callback dashboard, and snow-invoice automation pass
 - Added migration `sql/083_employee_time_clock_and_break_tracking.sql`.

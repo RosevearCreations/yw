@@ -303,3 +303,6 @@ This build now includes labor-aware job profitability review and DB-backed job f
 
 ## Latest workflow direction
 The app now pushes beyond static tracking into operational execution: employee attendance photos and geofence review, scheduler-tracked recurring agreement execution, provider-aware payroll export generation, and signed contract to draft invoice conversion.
+
+## Latest implementation focus
+The newest pass adds Admin evidence review, scheduler settings/status groundwork, signed-contract live-job kickoff support, payroll-close review summaries, and lighter Admin selector loading for backbone forms.

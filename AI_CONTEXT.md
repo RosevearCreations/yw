@@ -1,3 +1,9 @@
+## 2026-04-20 context refresh (schema 087)
+- Admin backbone forms now use `admin_core` selector loading to reduce payload size.
+- New migration `087_evidence_review_scheduler_settings_and_signed_contract_kickoff.sql` adds scheduler settings/status, evidence review views, signed-contract kickoff candidates, and payroll-close review summaries.
+- Admin UI now includes activity-rollup drill-through plus attendance/HSE evidence review tables.
+- Signed service contracts can kick off live jobs, not only draft invoices.
+
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## 2026-04-17 snapshot

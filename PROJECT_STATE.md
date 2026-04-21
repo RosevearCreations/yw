@@ -1,3 +1,13 @@
+## 2026-04-20 project-state update (schema 087)
+The app now has stronger operational review tooling on top of the earlier backbone work:
+- evidence review for attendance/HSE media
+- scheduler settings/status groundwork
+- signed-contract live-job kickoff support
+- payroll-close review summary
+- lighter Admin selector scope for backbone forms
+
+The project is now more about automation closure and workflow polish than missing tables.
+
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## Current pass: 2026-04-17 recurring agreements, asset history, payroll review, and account tracking

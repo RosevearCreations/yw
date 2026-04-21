@@ -1,3 +1,15 @@
+## Latest pass: schema 087 evidence review, scheduler settings, payroll-close, and signed-contract kickoff
+- Added Admin evidence review tables for attendance photos and HSE packet proof rows.
+- Added service execution scheduler settings/status DB support and lighter `admin_core` selector loading.
+- Added signed-contract live-job kickoff support plus payroll-close review summaries.
+- Renamed stray `test_write.txt` to `test_write2_OLD.txt`.
+
+### Best next steps
+1. wire the scheduler to a real timer/cron
+2. turn evidence tables into richer review/approval flows
+3. deepen signed-contract kickoff into work-order and first-session orchestration
+4. add payroll-close signoff and provider delivery acknowledgement
+
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## Fresh-chat handoff: schema 080 pass

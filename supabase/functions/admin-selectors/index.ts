@@ -70,6 +70,50 @@ serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const scope = String(body.scope || 'all').trim().toLowerCase();
 
+
+  if (scope === 'admin_core') {
+    return Response.json({
+      ok: true,
+      profiles,
+      sites,
+      assignments,
+      positions: await safeList(supabase, 'position_catalog', '*', 'sort_order'),
+      trades: await safeList(supabase, 'trade_catalog', '*', 'sort_order'),
+      staff_tiers: await safeList(supabase, 'staff_tier_catalog', '*', 'sort_order'),
+      seniority_levels: await safeList(supabase, 'seniority_level_catalog', '*', 'sort_order'),
+      employment_statuses: await safeList(supabase, 'employment_status_catalog', '*', 'sort_order'),
+      job_types: await safeList(supabase, 'job_type_catalog', '*', 'sort_order'),
+      units_of_measure: await safeList(supabase, 'units_of_measure', 'id,code,name,category,sort_order,is_active', 'sort_order'),
+      cost_codes: await safeList(supabase, 'cost_codes', 'id,code,name,category,is_active', 'code'),
+      service_areas: await safeList(supabase, 'service_areas', 'id,area_code,name,region,is_active', 'name'),
+      routes: await safeList(supabase, 'routes', 'id,route_code,name,service_area_id,route_type,is_active', 'name'),
+      jobs: await safeList(supabase, 'jobs', 'id,job_code,job_name,job_type,job_status,client_id,client_site_id,service_contract_reference', 'job_code'),
+      clients: await safeList(supabase, 'clients', 'id,client_code,legal_name,display_name,is_active', 'legal_name'),
+      client_sites: await safeList(supabase, 'client_sites', 'id,client_id,site_code,site_name,is_active', 'site_name'),
+      materials_catalog: await safeList(supabase, 'materials_catalog', 'id,sku,item_name,material_category,unit_id,is_active', 'item_name'),
+      equipment_master: await safeList(supabase, 'equipment_master', 'id,equipment_code,item_name,equipment_category,is_active', 'item_name'),
+      estimates: await safeList(supabase, 'estimates', 'id,estimate_number,client_id,client_site_id,status,total_amount', 'estimate_number'),
+      work_orders: await safeList(supabase, 'work_orders', 'id,work_order_number,client_id,client_site_id,work_type,status,route_id', 'work_order_number'),
+      subcontract_clients: await safeList(supabase, 'subcontract_clients', 'id,subcontract_code,company_name,is_active', 'company_name'),
+      subcontract_dispatches: await safeList(supabase, 'subcontract_dispatches', 'id,dispatch_number,subcontract_client_id,dispatch_status', 'dispatch_number'),
+      linked_hse_packets: await safeList(supabase, 'linked_hse_packets', 'id,packet_number,packet_type,packet_status,job_id,work_order_id', 'packet_number'),
+      chart_of_accounts: await safeList(supabase, 'chart_of_accounts', 'id,account_number,account_name,account_type,is_active', 'account_number'),
+      ap_vendors: await safeList(supabase, 'ap_vendors', 'id,vendor_code,legal_name,display_name,is_active', 'legal_name'),
+      ar_invoices: await safeList(supabase, 'ar_invoices', 'id,invoice_number,client_id,invoice_status,total_amount,balance_due', 'invoice_number'),
+      ap_bills: await safeList(supabase, 'ap_bills', 'id,bill_number,vendor_id,bill_status,total_amount,balance_due', 'bill_number'),
+      tax_codes: await safeList(supabase, 'tax_codes', '*', 'code'),
+      business_tax_settings: await safeList(supabase, 'business_tax_settings', '*', 'profile_name'),
+      service_pricing_templates: await safeList(supabase, 'service_pricing_templates', '*', 'template_name'),
+      recurring_service_agreements: await safeList(supabase, 'recurring_service_agreements', 'id,agreement_code,service_name,agreement_status,billing_method,client_id,client_site_id,contract_document_id', 'agreement_code'),
+      change_orders: await safeList(supabase, 'change_orders', 'id,change_order_number,job_id,status,requested_at', 'requested_at', 250, false),
+      customer_assets: await safeList(supabase, 'customer_assets', 'id,asset_code,asset_name,asset_type,client_id,client_site_id,is_active', 'asset_name'),
+      warranty_callback_events: await safeList(supabase, 'warranty_callback_events', 'id,callback_number,callback_type,status,job_id,asset_id', 'opened_at', 250, false),
+      payroll_export_runs: await safeList(supabase, 'payroll_export_runs', 'id,run_code,period_start,period_end,status,export_provider', 'period_start', 250, false),
+      service_contract_documents: await safeList(supabase, 'service_contract_documents', 'id,document_number,document_kind,document_status,agreement_id,estimate_id,job_id,signed_at,linked_invoice_id', 'created_at', 250, false),
+      service_execution_scheduler_settings: await safeList(supabase, 'service_execution_scheduler_settings', '*', 'setting_code')
+    }, { headers: corsHeaders });
+  }
+
   if (scope === 'hse_ops') {
     const linkedHsePackets = await safeList(supabase, 'linked_hse_packets', '*', 'packet_number');
     const hseProgress = await safeList(supabase, 'v_hse_packet_progress', '*', 'packet_number');

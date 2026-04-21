@@ -239,6 +239,178 @@ function buildPayrollCsv(rows: any[] = []) {
   return lines.join('\n');
 }
 
+function buildPayrollExportContent(rows: any[] = [], provider = 'generic_csv', format = 'csv') {
+  const cleanProvider = String(provider || 'generic_csv').trim().toLowerCase();
+  const cleanFormat = String(format || 'csv').trim().toLowerCase();
+  if (cleanFormat === 'json' || cleanProvider === 'json') {
+    return {
+      content: JSON.stringify({ provider: cleanProvider, generated_at: new Date().toISOString(), rows }, null, 2),
+      mimeType: 'application/json',
+      fileName: 'payroll-export.json'
+    };
+  }
+  const mapper = {
+    generic_csv: (input: any[]) => buildPayrollCsv(input),
+    quickbooks_time_csv: (input: any[]) => {
+      const headers = ['team_member','date','hours','jobcode','notes'];
+      const lines = [headers.join(',')];
+      for (const row of input) {
+        lines.push([
+          row?.full_name || '',
+          row?.session_date || '',
+          row?.hours_worked || 0,
+          row?.job_code || '',
+          row?.job_name || ''
+        ].map((value) => `"${String(value ?? '').replaceAll('"', '""')}"`).join(','));
+      }
+      return lines.join('\n');
+    },
+    simplepay_csv: (input: any[]) => {
+      const headers = ['employee_number','employee_name','regular_hours','overtime_hours','period_note'];
+      const lines = [headers.join(',')];
+      for (const row of input) {
+        lines.push([
+          row?.employee_number || '',
+          row?.full_name || '',
+          row?.regular_hours || 0,
+          row?.overtime_hours || 0,
+          row?.job_code || ''
+        ].map((value) => `"${String(value ?? '').replaceAll('"', '""')}"`).join(','));
+      }
+      return lines.join('\n');
+    },
+    adp_csv: (input: any[]) => {
+      const headers = ['file_number','employee_name','earning_code','hours','cost_center'];
+      const lines = [headers.join(',')];
+      for (const row of input) {
+        lines.push([
+          row?.employee_number || '',
+          row?.full_name || '',
+          Number(row?.overtime_hours || 0) > 0 ? 'OT' : 'REG',
+          row?.hours_worked || 0,
+          row?.job_code || ''
+        ].map((value) => `"${String(value ?? '').replaceAll('"', '""')}"`).join(','));
+      }
+      return lines.join('\n');
+    }
+  } as Record<string, (rows: any[]) => string>;
+  const chosen = mapper[cleanProvider] || mapper.generic_csv;
+  return {
+    content: chosen(rows),
+    mimeType: 'text/csv',
+    fileName: `${cleanProvider || 'generic_csv'}.csv`
+  };
+}
+
+async function createInvoiceFromSignedContract(supabase: any, contract: any, actorId: string) {
+  const existing = contract?.linked_invoice_id ? await fetchSingle(supabase, 'ar_invoices', contract.linked_invoice_id) : null;
+  if (existing?.id) return existing;
+  const agreement = contract?.agreement_id ? await fetchSingle(supabase, 'recurring_service_agreements', contract.agreement_id) : null;
+  const estimate = contract?.estimate_id ? await fetchSingle(supabase, 'estimates', contract.estimate_id) : null;
+  const taxCode = agreement?.tax_code_id ? await fetchSingle(supabase, 'tax_codes', agreement.tax_code_id) : null;
+  const subtotal = Number(agreement?.visit_charge_total || estimate?.total_amount || estimate?.subtotal || 0);
+  const taxRate = Number(taxCode?.rate_percent || 0);
+  const total = Number((subtotal * (1 + taxRate / 100)).toFixed(2));
+  const { data, error } = await supabase.from('ar_invoices').insert({
+    invoice_number: makeDocumentNumber('INV'),
+    client_id: contract.client_id || agreement?.client_id || estimate?.client_id || null,
+    recurring_service_agreement_id: contract.agreement_id || null,
+    service_contract_document_id: contract.id,
+    invoice_source: 'signed_contract',
+    invoice_status: 'draft',
+    invoice_date: new Date().toISOString().slice(0,10),
+    subtotal,
+    tax_total: Number((subtotal * (taxRate / 100)).toFixed(2)),
+    total_amount: total,
+    balance_due: total,
+    created_by_profile_id: actorId,
+    updated_at: new Date().toISOString(),
+  }).select('*').single();
+  if (error) throw error;
+  await supabase.from('service_contract_documents').update({ linked_invoice_id: data.id, invoice_generated_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', contract.id);
+  return data;
+}
+
+async function createLiveJobFromSignedContract(supabase: any, contract: any, actorId: string) {
+  const agreement = contract?.agreement_id ? await fetchSingle(supabase, 'recurring_service_agreements', contract.agreement_id) : null;
+  const estimate = contract?.estimate_id ? await fetchSingle(supabase, 'estimates', contract.estimate_id) : null;
+  const linkedByReference = agreement?.agreement_code
+    ? await supabase.from('jobs').select('*').eq('service_contract_reference', agreement.agreement_code).maybeSingle()
+    : { data: null };
+  if (contract?.job_id) {
+    const existing = await fetchSingle(supabase, 'jobs', contract.job_id);
+    if (existing?.id) return existing;
+  }
+  if (linkedByReference?.data?.id) return linkedByReference.data;
+  const codeSeed = String(agreement?.agreement_code || contract?.document_number || contract?.contract_reference || contract?.id || 'CONTRACT').replace(/[^A-Z0-9-]/gi, '').toUpperCase();
+  const jobCode = `JOB-${codeSeed}`.slice(0, 64);
+  const { data, error } = await supabase.from('jobs').insert({
+    job_code: jobCode,
+    job_name: agreement?.service_name || contract?.title || `Live job for ${contract?.document_number || contract?.id}`,
+    job_type: 'recurring_service',
+    job_status: 'draft',
+    client_id: contract?.client_id || agreement?.client_id || estimate?.client_id || null,
+    client_site_id: contract?.client_site_id || agreement?.client_site_id || estimate?.client_site_id || null,
+    crew_id: agreement?.crew_id || null,
+    service_contract_reference: agreement?.agreement_code || contract?.contract_reference || contract?.document_number || null,
+    estimated_cost_total: Number(agreement?.visit_cost_total || estimate?.subtotal || 0),
+    quoted_charge_total: Number(agreement?.visit_charge_total || estimate?.total_amount || 0),
+    pricing_method: 'manual',
+    created_by_profile_id: actorId,
+    updated_at: new Date().toISOString(),
+  }).select('*').single();
+  if (error) throw error;
+  await supabase.from('service_contract_documents').update({ job_id: data.id, updated_at: new Date().toISOString() }).eq('id', contract.id);
+  return data;
+}
+
+async function runServiceExecutionScheduler(supabase: any, actorId: string, agreementId: string | null, options: any = {}) {
+  let query = supabase.from('v_service_execution_scheduler_candidates').select('*').eq('scheduler_status', 'ready').order('candidate_date', { ascending: true });
+  if (agreementId) query = query.eq('agreement_id', agreementId);
+  const { data: candidates, error } = await query;
+  if (error) throw error;
+  let createdCount = 0;
+  let invoiceCandidateCount = 0;
+  let skippedCount = 0;
+  for (const row of candidates || []) {
+    if (row.candidate_kind === 'service_session') {
+      if (!row.job_id && options.requireLinkedJob !== false) { skippedCount += 1; continue; }
+      const existing = row.job_id ? await supabase.from('job_sessions').select('id').eq('job_id', row.job_id).eq('session_date', row.candidate_date).maybeSingle() : { data: null };
+      if (existing?.data?.id) { skippedCount += 1; continue; }
+      if (row.job_id) {
+        const { data: created } = await supabase.from('job_sessions').insert({
+          job_id: row.job_id,
+          session_date: row.candidate_date,
+          session_kind: 'scheduled_service',
+          session_status: 'planned',
+          service_frequency_label: row.service_name || 'scheduled_service',
+          created_by_profile_id: actorId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }).select('id').single();
+        if (created?.id) createdCount += 1; else skippedCount += 1;
+      }
+    } else {
+      invoiceCandidateCount += 1;
+    }
+  }
+  const { data: run, error: runErr } = await supabase.from('service_execution_scheduler_runs').insert({
+    agreement_id: agreementId,
+    candidate_count: (candidates || []).length,
+    session_created_count: createdCount,
+    invoice_candidate_count: invoiceCandidateCount,
+    skipped_count: skippedCount,
+    created_by_profile_id: actorId,
+    run_code: makeDocumentNumber('SCH'),
+    run_mode: agreementId ? 'agreement_trigger' : 'manual',
+    run_status: 'completed',
+    payload: { candidates: candidates || [] },
+    updated_at: new Date().toISOString(),
+  }).select('*').single();
+  if (runErr) throw runErr;
+  return { run, createdCount, invoiceCandidateCount, skippedCount };
+}
+
 async function fetchSingle(supabase: any, table: string, id: any) {
   if (!id) return null;
   const { data } = await supabase.from(table).select('*').eq('id', id).maybeSingle();
@@ -1135,6 +1307,50 @@ serve(async (req) => {
       }
       if (action === 'delete') {
         const { error } = await supabase.from('change_orders').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'service_execution_scheduler_setting') {
+      const patch = {
+        setting_code: String(body.setting_code || '').trim().toLowerCase(),
+        is_enabled: body.is_enabled !== false,
+        run_timezone: body.run_timezone ?? 'America/Toronto',
+        cadence: body.cadence ?? 'daily',
+        run_hour_local: asNumber(body.run_hour_local, 4),
+        run_minute_local: asNumber(body.run_minute_local, 0),
+        lookahead_days: asNumber(body.lookahead_days, 1),
+        auto_create_sessions: body.auto_create_sessions !== false,
+        auto_stage_invoices: body.auto_stage_invoices !== false,
+        require_linked_job: body.require_linked_job !== false,
+        last_run_at: asNullableDateTime(body.last_run_at),
+        next_run_at: asNullableDateTime(body.next_run_at),
+        notes: body.notes ?? null,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.setting_code) return Response.json({ ok:false, error:'setting_code is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('service_execution_scheduler_settings').insert(patch).select('*').single();
+        if (error) throw error;
+        await recordSiteActivity(supabase, { event_type:'service_execution_scheduler_run', entity_type:'service_execution_scheduler_setting', entity_id:data.id, severity:'info', title:'Scheduler setting created', summary:`Scheduler setting ${data.setting_code} was created.`, created_by_profile_id: actorId });
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('service_execution_scheduler_settings').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'run_now') {
+        const setting = await fetchSingle(supabase, 'service_execution_scheduler_settings', body.item_id);
+        if (!setting?.id) return Response.json({ ok:false, error:'Scheduler setting not found.' }, { status:404, headers:corsHeaders });
+        const result = await runServiceExecutionScheduler(supabase, actorId, null, { requireLinkedJob: setting.require_linked_job !== false });
+        await supabase.from('service_execution_scheduler_settings').update({ last_run_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', setting.id);
+        return Response.json({ ok:true, record:setting, scheduler_run: result.run, created_count: result.createdCount, invoice_candidate_count: result.invoiceCandidateCount, skipped_count: result.skippedCount }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('service_execution_scheduler_settings').delete().eq('id', body.item_id);
         if (error) throw error;
         return Response.json({ ok:true }, { headers:corsHeaders });
       }
@@ -2859,6 +3075,17 @@ serve(async (req) => {
       return Response.json({ ok:true, record:data, export_file_name:fileName, export_file_content:exportPayload.content, export_mime_type: exportPayload.mimeType }, { headers:corsHeaders });
     }
 
+
+    if (entity === 'service_contract_document' && action === 'kickoff_live_job_from_signed') {
+      const contract = await fetchSingle(supabase, 'service_contract_documents', body.item_id);
+      if (!contract?.id) return Response.json({ ok:false, error:'Service contract document not found.' }, { status:404, headers:corsHeaders });
+      if (!(String(contract.document_status || '') === 'signed' || contract.signed_at)) {
+        return Response.json({ ok:false, error:'The service contract must be signed before creating a live job.' }, { status:400, headers:corsHeaders });
+      }
+      const job = await createLiveJobFromSignedContract(supabase, contract, actorId);
+      await recordSiteActivity(supabase, { event_type:'job_created', entity_type:'job', entity_id:job.id, severity:'success', title:'Live job kicked off from signed contract', summary:`${contract.document_number || contract.id} created or linked job ${job.job_code || job.id}.`, related_job_id: job.id, created_by_profile_id: actorId });
+      return Response.json({ ok:true, record:job }, { headers:corsHeaders });
+    }
 
     if (entity === 'service_contract_document' && action === 'generate_invoice_from_signed') {
       const contract = await fetchSingle(supabase, 'service_contract_documents', body.item_id);

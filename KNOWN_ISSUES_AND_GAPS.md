@@ -99,6 +99,13 @@ Remaining strongest gaps:
 
 # Known Issues and Gaps
 
+## April 20, 2026 evidence-review and workflow-automation gap refresh
+- Attendance and HSE evidence are now easier to review, but the current Admin view is still table-first rather than a full media gallery / approve-reject workflow.
+- Scheduler settings and due-status groundwork now exist, but a real platform timer still needs to invoke the scheduler automatically.
+- Signed contracts can now kick off live jobs, but the deeper contract -> work-order -> first-session automation is still incomplete.
+- Payroll export generation is stronger, but provider delivery confirmation and payroll-close signoff are still missing.
+- Admin selector scope is lighter for backbone forms, but more dashboard/evidence lanes should move to narrower loads over time.
+
 ## April 20, 2026 issue/gap refresh
 - The HSE Operations hub now uses a smaller selector scope, but more screens still overfetch broad Admin payloads and should move to targeted scopes over time.
 - Site activity tracing is stronger for jobs, staff, equipment, attendance, agreements, contracts, and payroll, but summary cards still need deeper drill-through and retention controls.

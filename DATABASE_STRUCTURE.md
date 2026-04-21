@@ -330,3 +330,11 @@ New accounting-facing additions include:
 
 ## 085 schema direction
 Added migration 085 for attendance photo metadata, payroll export provider fields, signed contract invoice linkage, and service execution scheduler runs/candidate views.
+
+## Schema 087 additions
+- `service_execution_scheduler_settings`
+- `v_service_execution_scheduler_status`
+- `v_attendance_photo_review`
+- `v_hse_evidence_review`
+- `v_signed_contract_job_kickoff_candidates`
+- `v_payroll_close_review_summary`

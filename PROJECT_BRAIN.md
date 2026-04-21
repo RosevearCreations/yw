@@ -1,3 +1,9 @@
+## Schema 087 mental model update
+- Attendance and HSE evidence now have dedicated Admin review lanes.
+- Service execution scheduler now has a settings/status concept, not just ad-hoc runs.
+- Signed contracts can now kick off live jobs.
+- Payroll close review is now a first-class summary concern alongside exports.
+
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## Current repo anchor (schema 080)

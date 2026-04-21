@@ -227,3 +227,10 @@ Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summarie
 - Renamed the stray `test_write.txt` file to `test_write_OLD.txt` as part of repo cleanup.
 
 ## 2026-04-17 contract conversion, payroll export, callback dashboard, and snow-invoice automation pass
+
+## 2026-04-20 evidence review, scheduler settings, payroll-close, and signed-contract kickoff pass
+- Added migration `sql/087_evidence_review_scheduler_settings_and_signed_contract_kickoff.sql`.
+- Added Admin evidence-review lanes for attendance photos and HSE proof items, plus activity-rollup drill-through into filtered Admin records.
+- Added scheduler settings/status groundwork for service execution automation and a signed-contract-to-live-job kickoff path.
+- Added payroll close review summary visibility so export delivery can be checked against attendance exceptions and unexported labor.
+- Reduced Admin selector overfetch by switching backbone selector loading to the new `admin_core` scope.

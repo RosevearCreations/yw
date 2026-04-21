@@ -603,6 +603,18 @@ table textarea {
   padding: 16px;
 }
 
+button.admin-stat-card {
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+}
+
+#ad_site_activity_table tbody tr[data-activity-entity-type],
+#ad_attendance_evidence_table tbody tr[data-evidence-entity],
+#ad_hse_evidence_table tbody tr[data-evidence-entity] {
+  cursor: pointer;
+}
+
 .admin-stat-label {
   color: var(--text-soft);
   font-size: 0.9rem;
