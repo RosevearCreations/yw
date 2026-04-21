@@ -1,4 +1,4 @@
-<!-- Reviewed during schema 084 supervisor attendance / execution-candidate pass on 2026-04-19. -->
+<!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## Current repo anchor (schema 080)
 Think of the product now as a landscaping/service/construction operations system with: jobs, crews, equipment, recurring agreements, payroll-aware costing, customer assets/history, callbacks/warranty, and Ontario-facing accounting review.

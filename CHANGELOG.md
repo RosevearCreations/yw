@@ -1,4 +1,4 @@
-<!-- Reviewed during schema 084 supervisor attendance / execution-candidate pass on 2026-04-19. -->
+<!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 ## 2026-04-17 contract conversion, payroll export generation, callback dashboard, and snow invoice automation pass
 - Added migration `sql/083_employee_time_clock_and_break_tracking.sql`.
 - Added estimate-to-agreement conversion candidates, service contract / application document storage, payroll export file generation support, agreement profitability summaries, snow-event invoice candidates, and callback / warranty dashboard summaries.
@@ -217,3 +217,13 @@ Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summarie
 - Added provider-specific payroll export layouts.
 - Added signed-contract invoice generation support.
 - Added service execution scheduler runs and scheduler candidate views.
+
+
+## 2026-04-20 HSE ops performance, site-activity rollups, and repo hygiene pass
+- Added migration `sql/086_hseops_performance_and_site_activity_rollups.sql`.
+- Moved the HSE Operations page to a lighter `admin-selectors` scope so the hub no longer asks the server for the full Admin selector payload every time it opens.
+- Added DB-backed site-activity rollup views for event-type and entity-type summaries so Admin can keep watching new jobs, staff adds, equipment adds, and attention events without reading only raw rows.
+- Tightened the HSE Operations rendering path with delegated click handling, render batching, and stale-load avoidance to reduce avoidable layout work when the route opens repeatedly.
+- Renamed the stray `test_write.txt` file to `test_write_OLD.txt` as part of repo cleanup.
+
+## 2026-04-17 contract conversion, payroll export, callback dashboard, and snow-invoice automation pass

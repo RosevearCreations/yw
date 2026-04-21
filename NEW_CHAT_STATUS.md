@@ -1,4 +1,4 @@
-<!-- Reviewed during schema 084 supervisor attendance / execution-candidate pass on 2026-04-19. -->
+<!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## Fresh-chat handoff: schema 080 pass
 This repo now includes:
@@ -143,3 +143,12 @@ Latest pass moved the app into supervisor attendance review and execution-candid
 
 ## Latest handoff - 085 pass
 The repo now includes attendance photo upload metadata, geofence distance/status rules, provider-specific payroll export output, signed-contract invoice generation, and scheduler-run tracking for recurring agreement execution candidates. The next chat should focus on deployment-ready scheduler invocation, contract-signature capture polish, and richer Admin dashboard surfacing of the new scheduler/invoice states.
+
+
+## Current repo handoff
+- Latest repo state: schema 086 HSE ops performance and site-activity rollup pass.
+- Key fix in this pass: HSE Ops no longer requests the full Admin selector payload just to render shortcut cards, which should reduce avoidable runtime work and repeated route-open cost.
+- Key repo hygiene step: the stray `test_write.txt` file was renamed to `test_write_OLD.txt`.
+- Next strongest steps: automate scheduler runs, finish attendance media review, harden signed-contract-to-live-job kickoff, and complete provider-ready payroll output.
+
+## Current repo handoff

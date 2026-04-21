@@ -1,8 +1,20 @@
-<!-- Reviewed during schema 084 supervisor attendance / execution-candidate pass on 2026-04-19. -->
+<!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 ## 2026-04-17 contract conversion, payroll export, callback dashboard, and snow-invoice automation pass
 - Added migration `sql/083_employee_time_clock_and_break_tracking.sql`.
 - Added estimate conversion candidates, service contract documents, payroll export generation, agreement profitability summaries, snow-event invoice candidates, and callback / warranty dashboard summaries.
 - Extended Admin so the office workflow can move from estimate -> agreement -> printable contract, then from snow trigger -> invoice, and from weekly labor review -> exportable payroll output.
+
+## Immediate next build priorities after 086
+1. **Attendance photo evidence completion**
+   - store and review clock-in/clock-out images directly in Admin with stronger exception workflows
+2. **Service scheduler automation**
+   - invoke the service execution scheduler on a real timer and prevent duplicate session creation once jobs are linked to agreements
+3. **Payroll close and provider exports**
+   - move from generated export content to provider-ready file delivery plus posted payroll-close review
+4. **Signed contract execution**
+   - convert signed contract/application acceptance into live job/session kickoff with less manual Admin work
+5. **Issue closure and repo hygiene**
+   - keep retiring stale helper/test files, continue reducing selector overfetch, and tighten dense Admin screens that still depend on broad payloads
 
 ## Immediate next build priorities after 081
 1. **Contract outputs and acceptance flow**

@@ -1,4 +1,4 @@
-<!-- Reviewed during schema 084 supervisor attendance / execution-candidate pass on 2026-04-19. -->
+<!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## 2026-04-17 snapshot
 The app now supports recurring service agreements, snow triggers, change orders, customer assets/history, payroll export review, warranty/callback tracking, account login auditing, material-to-job auto-costing, and route profitability summaries. Treat schema 082 as current.

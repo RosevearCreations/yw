@@ -1,4 +1,4 @@
-<!-- Reviewed during schema 084 supervisor attendance / execution-candidate pass on 2026-04-19. -->
+<!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## Current pass: 2026-04-17 recurring agreements, asset history, payroll review, and account tracking
 - Schema now advances through migration 080.
@@ -262,3 +262,12 @@ The app is now moving from generic HSE/job management into a more realistic land
 
 ## 085 state update
 Operations, attendance, payroll, and contract flow are now more connected. Employee arrivals can store photos and geofence results, payroll exports are provider-aware, recurring agreements can be processed through scheduler runs, and signed contract documents can generate draft invoices.
+
+
+## Current build state
+- Schema is now advanced through 086 with lighter HSE Ops selector usage and new site-activity rollup views.
+- HSE Ops performance has been tightened at both the client and edge-function levels: smaller payload, fewer repeated renders, delegated actions, and cached summary reuse.
+- Admin tracing now has stronger summary coverage for new jobs, staff adds, equipment adds, attendance activity, and attention events.
+- The main open risks have shifted toward automation depth rather than schema coverage: scheduler timers, signed-contract kickoff, payroll delivery, and richer media review.
+
+## Current build state

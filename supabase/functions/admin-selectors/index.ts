@@ -67,6 +67,40 @@ serve(async (req) => {
   if (!actorProfile?.is_active) return Response.json({ ok:false, error:'Inactive profile' }, { status:403, headers:corsHeaders });
   if (roleRank(actorRole) < roleRank('supervisor')) return Response.json({ ok:false, error:'Supervisor+ required' }, { status:403, headers:corsHeaders });
 
+  const body = await req.json().catch(() => ({}));
+  const scope = String(body.scope || 'all').trim().toLowerCase();
+
+  if (scope === 'hse_ops') {
+    const linkedHsePackets = await safeList(supabase, 'linked_hse_packets', '*', 'packet_number');
+    const hseProgress = await safeList(supabase, 'v_hse_packet_progress', '*', 'packet_number');
+    const hsePacketActionItems = await safeList(supabase, 'v_hse_packet_action_items', '*', 'action_priority', 250, true);
+    const hseDashboardSummary = await safeList(supabase, 'v_hse_dashboard_summary');
+    const accountingReviewSummary = await safeList(supabase, 'v_accounting_review_summary');
+    const fieldUploadFailures = await safeList(supabase, 'v_field_upload_failure_rollups', '*', 'created_at', 120, false);
+    const backendMonitorEvents = await safeList(supabase, 'v_backend_monitor_recent', '*', 'created_at', 120, false);
+    const appTrafficDailySummary = await safeList(supabase, 'v_app_traffic_daily_summary', '*', 'event_date', 14, false);
+    const monitorThresholdAlerts = await safeList(supabase, 'v_monitor_threshold_alerts', '*', 'alert_key', 120, true);
+    const hseLinkContextSummary = await safeList(supabase, 'v_hse_link_context_summary', '*', 'sort_order', 50, true);
+    const monitorReviewSummary = await safeList(supabase, 'v_monitor_review_summary', '*', 'sort_order', 50, true);
+    const operationsDashboardSummary = await safeList(supabase, 'v_operations_dashboard_summary');
+    const siteActivitySummary = await safeList(supabase, 'v_site_activity_summary');
+    return Response.json({
+      ok: true,
+      linked_hse_packets: mergeRowsById(linkedHsePackets, hseProgress),
+      hse_packet_action_items: hsePacketActionItems,
+      hse_dashboard_summary: hseDashboardSummary,
+      accounting_review_summary: accountingReviewSummary,
+      field_upload_failures: fieldUploadFailures,
+      backend_monitor_events: backendMonitorEvents,
+      app_traffic_daily_summary: appTrafficDailySummary,
+      monitor_threshold_alerts: monitorThresholdAlerts,
+      hse_link_context_summary: hseLinkContextSummary,
+      monitor_review_summary: monitorReviewSummary,
+      operations_dashboard_summary: operationsDashboardSummary,
+      site_activity_summary: siteActivitySummary
+    }, { headers: corsHeaders });
+  }
+
   const profiles = await safeList(supabase, 'v_people_directory', 'id,email,full_name,role,is_active,default_supervisor_name,default_admin_name,staff_tier,current_position,trade_specialty', 'full_name');
   const sites = await safeList(supabase, 'sites', 'id,site_code,site_name,is_active,region,client_name,project_code,project_status', 'site_code');
   const assignments = await safeList(supabase, 'site_assignments', 'id,site_id,profile_id,assignment_role,is_primary,reports_to_supervisor_profile_id,reports_to_admin_profile_id', 'id');

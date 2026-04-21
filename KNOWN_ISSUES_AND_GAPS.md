@@ -1,4 +1,4 @@
-<!-- Reviewed during schema 084 supervisor attendance / execution-candidate pass on 2026-04-19. -->
+<!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## 2026-04-17 pass update
 Closed or tightened in this pass:
@@ -98,6 +98,11 @@ Remaining strongest gaps:
 - With the current build reported as stable, the biggest remaining risks shift from shell repair toward implementation depth, validation quality, and operational/accounting convergence.
 
 # Known Issues and Gaps
+
+## April 20, 2026 issue/gap refresh
+- The HSE Operations hub now uses a smaller selector scope, but more screens still overfetch broad Admin payloads and should move to targeted scopes over time.
+- Site activity tracing is stronger for jobs, staff, equipment, attendance, agreements, contracts, and payroll, but summary cards still need deeper drill-through and retention controls.
+- The biggest remaining workflow gaps are scheduler automation, signed-contract-to-live-operations kickoff, provider-ready payroll delivery, and richer evidence review for attendance/HSE media.
 
 ## April 10, 2026 issue/gap refresh
 - The schema snapshot gap is now corrected: the full reference file includes the newer workflow migrations instead of only referencing them in comments.
