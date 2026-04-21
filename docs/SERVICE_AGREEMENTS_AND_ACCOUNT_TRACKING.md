@@ -40,3 +40,8 @@ This app is moving toward a landscaping + recurring service + custom project + a
 - Recurring agreements now feed scheduler candidate views and scheduler run logs.
 - Signed service contract documents can now be used as invoice-generation sources.
 - Payroll export runs now support provider-specific export layouts.
+
+
+## 2026-04-21 sync note
+
+Service agreements and signed contracts now flow farther into execution: a signed contract can create/link the job, create a work order, and create the first planned session. Scheduler settings also now influence session creation lookahead and eligibility.

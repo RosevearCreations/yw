@@ -26,3 +26,8 @@ The app now has a stronger field-to-backoffice flow:
 ## 085 enhancements
 - Attendance review now sits beside stored photo and geofence evidence.
 - Execution candidates now have a scheduler-ready companion view and scheduler run tracking.
+
+
+## 2026-04-21 sync note
+
+Supervisor-facing candidate review now has deeper backend support: attendance evidence can be reviewed with stored outcomes, and scheduler candidates can be run from settings-aware execution logic rather than static candidate views alone.

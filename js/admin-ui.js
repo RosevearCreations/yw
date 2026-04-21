@@ -249,13 +249,13 @@
           <div id="ad_evidence_summary" class="notice" style="display:block;margin-bottom:12px;">No evidence review items loaded yet.</div>
           <div class="table-scroll" style="margin-bottom:12px;">
             <table id="ad_attendance_evidence_table">
-              <thead><tr><th>Uploaded</th><th>Employee</th><th>Job</th><th>Stage</th><th>Geofence</th><th>Evidence</th></tr></thead>
+              <thead><tr><th>Uploaded</th><th>Employee</th><th>Job</th><th>Stage</th><th>Geofence</th><th>Review</th><th>Evidence / Actions</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
           <div class="table-scroll">
             <table id="ad_hse_evidence_table">
-              <thead><tr><th>Uploaded</th><th>Packet</th><th>Stage</th><th>Kind</th><th>Caption</th><th>Evidence</th></tr></thead>
+              <thead><tr><th>Uploaded</th><th>Packet</th><th>Stage</th><th>Kind</th><th>Caption</th><th>Review</th><th>Evidence / Actions</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -1879,7 +1879,7 @@
       service_execution_scheduler_setting: { label:'Service Execution Scheduler Settings', rowsKey:'serviceExecutionSchedulerSettings', valueKey:'id', labelField:'setting_code', fields:[
         { name:'setting_code', label:'Setting Code', type:'text', required:true }, { name:'is_enabled', label:'Enabled', type:'checkbox' }, { name:'run_timezone', label:'Timezone', type:'text' }, { name:'cadence', label:'Cadence', type:'select', options:[['manual','Manual'],['hourly','Hourly'],['daily','Daily'],['weekly','Weekly']] },
         { name:'run_hour_local', label:'Run Hour', type:'number' }, { name:'run_minute_local', label:'Run Minute', type:'number' }, { name:'lookahead_days', label:'Lookahead Days', type:'number' }, { name:'auto_create_sessions', label:'Auto Create Sessions', type:'checkbox' },
-        { name:'auto_stage_invoices', label:'Auto Stage Invoices', type:'checkbox' }, { name:'require_linked_job', label:'Require Linked Job', type:'checkbox' }, { name:'last_run_at', label:'Last Run', type:'datetime-local' }, { name:'next_run_at', label:'Next Run', type:'datetime-local' }, { name:'notes', label:'Notes', type:'textarea' }
+        { name:'auto_stage_invoices', label:'Auto Stage Invoices', type:'checkbox' }, { name:'require_linked_job', label:'Require Linked Job', type:'checkbox' }, { name:'invoke_url', label:'Invoke URL', type:'text' }, { name:'last_run_at', label:'Last Run', type:'datetime-local' }, { name:'next_run_at', label:'Next Run', type:'datetime-local' }, { name:'last_dispatch_at', label:'Last Dispatch', type:'datetime-local', readonly:true }, { name:'last_dispatch_status', label:'Dispatch Status', type:'text', readonly:true }, { name:'last_dispatch_notes', label:'Dispatch Notes', type:'textarea', readonly:true }, { name:'notes', label:'Notes', type:'textarea' }
       ], columns:[['setting_code','Setting'],['cadence','Cadence'],['is_enabled','Enabled'],['next_run_at','Next Run']] },
       customer_asset: { label:'Customer Assets', rowsKey:'customerAssets', valueKey:'id', labelField:'asset_name', fields:[
         { name:'asset_code', label:'Asset Code', type:'text', required:true }, { name:'client_id', label:'Client', type:'select', source:'clients' }, { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' },
@@ -1893,7 +1893,7 @@
         { name:'callback_type', label:'Callback Type', type:'select', options:[['callback','Callback'],['warranty','Warranty'],['service_revisit','Service Revisit'],['deficiency','Deficiency']] }, { name:'status', label:'Status', type:'select', options:[['open','Open'],['scheduled','Scheduled'],['in_progress','In Progress'],['closed','Closed'],['void','Void']] }, { name:'warranty_covered', label:'Warranty Covered', type:'checkbox' }, { name:'opened_at', label:'Opened At', type:'datetime-local' }, { name:'closed_at', label:'Closed At', type:'datetime-local' }, { name:'estimated_cost_total', label:'Estimated Cost', type:'number' }, { name:'actual_cost_total', label:'Actual Cost', type:'number' }, { name:'notes', label:'Notes', type:'textarea' }
       ], columns:[['callback_number','Callback'],['callback_type','Type'],['status','Status'],['actual_cost_total','Actual Cost']] },
       payroll_export_run: { label:'Payroll Export Runs', rowsKey:'payrollExportRuns', valueKey:'id', labelField:'run_code', fields:[
-        { name:'run_code', label:'Run Code', type:'text', required:true }, { name:'period_start', label:'Period Start', type:'date', required:true }, { name:'period_end', label:'Period End', type:'date', required:true }, { name:'status', label:'Status', type:'select', options:[['draft','Draft'],['ready','Ready'],['exported','Exported'],['void','Void']] }, { name:'export_provider', label:'Export Provider', type:'select', options:[['generic_csv','Generic CSV'],['quickbooks_time_csv','QuickBooks Time CSV'],['simplepay_csv','SimplePay CSV'],['adp_csv','ADP CSV'],['json','JSON']] }, { name:'export_format', label:'Export Format', type:'select', options:[['csv','CSV'],['json','JSON']] }, { name:'export_file_name', label:'File Name', type:'text' }, { name:'export_mime_type', label:'MIME Type', type:'text' }, { name:'exported_entry_count', label:'Entry Count', type:'number', readonly:true }, { name:'exported_hours_total', label:'Hours', type:'number', readonly:true }, { name:'exported_payroll_cost_total', label:'Payroll Cost', type:'number', readonly:true }, { name:'exported_at', label:'Exported At', type:'datetime-local' }, { name:'exported_by_profile_id', label:'Exported By', type:'select', source:'profiles' }, { name:'notes', label:'Notes', type:'textarea' }
+        { name:'run_code', label:'Run Code', type:'text', required:true }, { name:'period_start', label:'Period Start', type:'date', required:true }, { name:'period_end', label:'Period End', type:'date', required:true }, { name:'status', label:'Status', type:'select', options:[['draft','Draft'],['ready','Ready'],['exported','Exported'],['void','Void']] }, { name:'export_provider', label:'Export Provider', type:'select', options:[['generic_csv','Generic CSV'],['quickbooks_time_csv','QuickBooks Time CSV'],['simplepay_csv','SimplePay CSV'],['adp_csv','ADP CSV'],['json','JSON']] }, { name:'export_format', label:'Export Format', type:'select', options:[['csv','CSV'],['json','JSON']] }, { name:'export_file_name', label:'File Name', type:'text' }, { name:'export_mime_type', label:'MIME Type', type:'text' }, { name:'exported_entry_count', label:'Entry Count', type:'number', readonly:true }, { name:'exported_hours_total', label:'Hours', type:'number', readonly:true }, { name:'exported_payroll_cost_total', label:'Payroll Cost', type:'number', readonly:true }, { name:'exported_at', label:'Exported At', type:'datetime-local' }, { name:'exported_by_profile_id', label:'Exported By', type:'select', source:'profiles' }, { name:'delivery_status', label:'Delivery Status', type:'select', options:[['pending','Pending'],['delivered','Delivered'],['confirmed','Confirmed']] }, { name:'delivery_reference', label:'Delivery Reference', type:'text' }, { name:'delivery_notes', label:'Delivery Notes', type:'textarea' }, { name:'delivered_at', label:'Delivered At', type:'datetime-local', readonly:true }, { name:'delivered_by_profile_id', label:'Delivered By', type:'select', source:'profiles', readonly:true }, { name:'delivery_confirmed_at', label:'Delivery Confirmed At', type:'datetime-local', readonly:true }, { name:'payroll_close_status', label:'Payroll Close Status', type:'select', options:[['open','Open'],['ready_to_close','Ready to Close'],['closed','Closed']] }, { name:'payroll_closed_at', label:'Payroll Closed At', type:'datetime-local', readonly:true }, { name:'payroll_closed_by_profile_id', label:'Payroll Closed By', type:'select', source:'profiles', readonly:true }, { name:'payroll_close_notes', label:'Payroll Close Notes', type:'textarea' }, { name:'notes', label:'Notes', type:'textarea' }
       ], columns:[['run_code','Run'],['period_start','Start'],['period_end','End'],['export_provider','Provider'],['status','Status'],['exported_entry_count','Entries']] },
       employee_time_entry: { label:'Employee Time Entries', rowsKey:'employeeTimeClockEntries', valueKey:'id', labelField:'full_name', fields:[
         { name:'profile_id', label:'Employee', type:'select', source:'profiles', required:true }, { name:'job_id', label:'Job', type:'select', source:'jobs', required:true }, { name:'site_id', label:'Site', type:'select', source:'sites' }, { name:'job_session_id', label:'Job Session ID', type:'text' },
@@ -2603,14 +2603,16 @@
 
       if (entity === 'payroll_export_run') {
         const close = Array.isArray(state.payrollCloseReviewSummary) ? state.payrollCloseReviewSummary[0] : null;
-        cards.push({ title: 'Unexported Hours', value: String(close?.unexported_hours_total || 0), help: 'Hours still waiting for payroll export close.' });
+        cards.push({ title: 'Delivery Status', value: String(selected?.delivery_status || 'pending').replaceAll('_', ' '), help: selected?.delivery_confirmed_at || selected?.delivered_at || 'Delivery has not been confirmed yet.' });
+        cards.push({ title: 'Payroll Close', value: String(selected?.payroll_close_status || 'open').replaceAll('_', ' '), help: selected?.payroll_closed_at || 'Close signoff has not been completed yet.' });
         cards.push({ title: 'Attendance Reviews', value: String(close?.attendance_review_needed_count || 0), help: 'Open attendance exceptions should be reviewed before payroll close.' });
       }
 
       if (entity === 'service_execution_scheduler_setting') {
-        const status = Array.isArray(state.serviceExecutionSchedulerStatus) ? state.serviceExecutionSchedulerStatus[0] : null;
+        const status = (Array.isArray(state.serviceExecutionSchedulerStatus) ? state.serviceExecutionSchedulerStatus : []).find((item) => item?.id === selected?.id) || (Array.isArray(state.serviceExecutionSchedulerStatus) ? state.serviceExecutionSchedulerStatus[0] : null);
         cards.push({ title: 'Latest Run', value: status?.latest_run_code || 'None', help: status?.latest_run_status || 'No scheduler run has been recorded yet.' });
         cards.push({ title: 'Due Now', value: status?.is_due ? 'Yes' : 'No', help: status?.next_run_at || 'Next scheduled run time is not set.' });
+        cards.push({ title: 'Last Dispatch', value: status?.last_dispatch_status || selected?.last_dispatch_status || 'None', help: status?.last_dispatch_notes || selected?.invoke_url || 'Cron dispatch URL has not been configured yet.' });
       }
 
       e.backboneInsights.innerHTML = cards.map((card) => `
@@ -3085,6 +3087,24 @@
       });
     }
 
+    function getBackboneGenerateLabel(entity, row) {
+      if (entity === 'payroll_export_run') {
+        if (!row?.exported_at) return 'Generate Export';
+        if (!['delivered','confirmed'].includes(String(row?.delivery_status || '').toLowerCase())) return 'Confirm Delivery';
+        if (String(row?.payroll_close_status || '').toLowerCase() !== 'closed') return 'Close Payroll Run';
+        return 'Refresh Export State';
+      }
+      if (entity === 'service_contract_document') {
+        if (String(row?.document_status || '').toLowerCase() === 'signed' || row?.signed_at) {
+          if (!row?.job_id) return 'Kickoff Job / Work Order';
+          return 'Generate Signed Invoice';
+        }
+        return 'Open Print / Invoice';
+      }
+      const labels = { estimate: 'Convert to Agreement', recurring_service_agreement: 'Generate Contract / Run Scheduler', snow_event_trigger: 'Generate Snow Invoice', service_execution_scheduler_setting: 'Run Scheduler Now' };
+      return labels[entity] || 'Generate Output';
+    }
+
     function renderBackboneFields(entity, row = null) {
       const e = els();
       const cfg = BACKBONE_CONFIG[entity];
@@ -3114,9 +3134,9 @@
       bindBackboneUploadLogic(entity, row || null);
       if (e.backbonePostBtn) e.backbonePostBtn.style.display = entity === 'gl_journal_batch' ? '' : 'none';
       if (e.backboneGenerateBtn) {
-        const labels = { estimate: 'Convert to Agreement', recurring_service_agreement: 'Generate Contract / Run Scheduler', snow_event_trigger: 'Generate Snow Invoice', payroll_export_run: 'Generate Export', service_contract_document: 'Open Print / Invoice' };
-        e.backboneGenerateBtn.style.display = labels[entity] ? '' : 'none';
-        e.backboneGenerateBtn.textContent = labels[entity] || 'Generate Output';
+        const allowed = ['estimate','recurring_service_agreement','snow_event_trigger','payroll_export_run','service_execution_scheduler_setting','service_contract_document'];
+        e.backboneGenerateBtn.style.display = allowed.includes(entity) ? '' : 'none';
+        e.backboneGenerateBtn.textContent = getBackboneGenerateLabel(entity, row || null);
       }
       if (e.backboneDownloadBtn) {
         const labels = { payroll_export_run: 'Download Export', service_contract_document: 'Download / Print' };
@@ -3205,14 +3225,26 @@
         return;
       }
       if (entity === 'payroll_export_run') {
-        const resp = await manageAdminEntity({ entity: 'payroll_export_run', action: 'generate_export', item_id: itemId });
-        if (!resp?.ok) throw new Error(resp?.error || 'Payroll export generation failed.');
+        let resp = null;
+        if (!row?.exported_at) {
+          resp = await manageAdminEntity({ entity: 'payroll_export_run', action: 'generate_export', item_id: itemId });
+          if (!resp?.ok) throw new Error(resp?.error || 'Payroll export generation failed.');
+        } else if (!['delivered','confirmed'].includes(String(row?.delivery_status || '').toLowerCase())) {
+          resp = await manageAdminEntity({ entity: 'payroll_export_run', action: 'mark_delivered', item_id: itemId, delivery_status: 'confirmed' });
+          if (!resp?.ok) throw new Error(resp?.error || 'Payroll export delivery confirmation failed.');
+        } else if (String(row?.payroll_close_status || '').toLowerCase() !== 'closed') {
+          resp = await manageAdminEntity({ entity: 'payroll_export_run', action: 'close_run', item_id: itemId });
+          if (!resp?.ok) throw new Error(resp?.error || 'Payroll close signoff failed.');
+        } else {
+          setSummary('Payroll export is already delivered and closed.');
+          return;
+        }
         await loadDirectory();
         await refreshSelectors();
         fillBackboneForm(resp.record || null);
         renderBackboneTable();
         if (resp.export_file_content) downloadTextFile(resp.export_file_name || 'payroll-export.csv', resp.export_file_content, resp.export_mime_type || 'text/csv;charset=utf-8');
-        setSummary('Payroll export generated and downloaded.');
+        setSummary(!row?.exported_at ? 'Payroll export generated and downloaded.' : (!['delivered','confirmed'].includes(String(row?.delivery_status || '').toLowerCase()) ? 'Payroll export delivery confirmed.' : 'Payroll export closed and signed off.'));
         return;
       }
       if (entity === 'service_execution_scheduler_setting') {
@@ -3653,6 +3685,26 @@
       e.siteActivityRollups.innerHTML = cards.join('') || '<div class="muted">No activity rollups yet.</div>';
     }
 
+    function renderEvidenceReviewStatus(row) {
+      const status = String(row?.review_status || 'pending').replaceAll('_', ' ');
+      const note = row?.review_notes ? ` · ${row.review_notes}` : '';
+      const reviewer = row?.reviewed_by_name ? ` · ${row.reviewed_by_name}` : '';
+      return `<div><strong>${escHtml(status)}</strong></div><small class="muted">${escHtml(`${row?.reviewed_at || 'Awaiting review'}${reviewer}${note}`)}</small>`;
+    }
+
+    function renderEvidenceReviewActions(entity, row) {
+      const id = entity === 'employee_time_entry' ? row.time_entry_id : row.proof_id;
+      const mediaStage = entity === 'employee_time_entry' ? row.photo_stage : row.proof_stage;
+      const openLink = entity === 'employee_time_entry' ? row.photo_url : row.public_url;
+      return `
+        <div class="table-actions evidence-review-actions">
+          ${openLink ? `<a href="${escHtml(openLink)}" target="_blank" rel="noopener">Open</a>` : '<span class="muted">No file</span>'}
+          <button type="button" class="secondary evidence-review-btn" data-review-entity="${escHtml(entity)}" data-review-id="${escHtml(id || '')}" data-review-stage="${escHtml(mediaStage || '')}" data-review-status="approved">Approve</button>
+          <button type="button" class="secondary evidence-review-btn" data-review-entity="${escHtml(entity)}" data-review-id="${escHtml(id || '')}" data-review-stage="${escHtml(mediaStage || '')}" data-review-status="rejected">Reject</button>
+          <button type="button" class="secondary evidence-review-btn" data-review-entity="${escHtml(entity)}" data-review-id="${escHtml(id || '')}" data-review-stage="${escHtml(mediaStage || '')}" data-review-status="follow_up">Follow Up</button>
+        </div>`;
+    }
+
     function renderEvidenceReview() {
       const e = els();
       const attendance = (Array.isArray(state.attendancePhotoReview) ? state.attendancePhotoReview : []).slice(0, 8);
@@ -3665,9 +3717,10 @@
             <td>${escHtml(row.job_code || row.job_name || '')}</td>
             <td>${escHtml(String(row.photo_stage || '').replaceAll('_', ' '))}</td>
             <td>${escHtml(String(row.geofence_status || 'not_checked').replaceAll('_', ' '))}${row.geofence_distance_meters != null ? ` · ${escHtml(String(row.geofence_distance_meters))}m` : ''}</td>
-            <td>${row.photo_url ? `<a href="${escHtml(row.photo_url)}" target="_blank" rel="noopener">Open</a>` : '<span class="muted">No file</span>'}</td>
+            <td>${renderEvidenceReviewStatus(row)}</td>
+            <td>${renderEvidenceReviewActions('employee_time_entry', row)}</td>
           </tr>
-        `).join('') || '<tr><td colspan="6" class="muted">No attendance evidence loaded yet.</td></tr>';
+        `).join('') || '<tr><td colspan="7" class="muted">No attendance evidence loaded yet.</td></tr>';
       }
       if (e.hseEvidenceBody) {
         e.hseEvidenceBody.innerHTML = hse.map((row) => `
@@ -3677,14 +3730,16 @@
             <td>${escHtml(String(row.proof_stage || '').replaceAll('_', ' '))}</td>
             <td>${escHtml(String(row.proof_kind || '').replaceAll('_', ' '))}</td>
             <td>${escHtml(row.caption || row.proof_notes || '')}</td>
-            <td>${row.public_url ? `<a href="${escHtml(row.public_url)}" target="_blank" rel="noopener">Open</a>` : '<span class="muted">No file</span>'}</td>
+            <td>${renderEvidenceReviewStatus(row)}</td>
+            <td>${renderEvidenceReviewActions('hse_packet_proof', row)}</td>
           </tr>
-        `).join('') || '<tr><td colspan="6" class="muted">No HSE proof items loaded yet.</td></tr>';
+        `).join('') || '<tr><td colspan="7" class="muted">No HSE proof items loaded yet.</td></tr>';
       }
       if (e.evidenceSummary) {
-        const attendanceFlags = attendance.filter((row) => ['outside','override'].includes(String(row.geofence_status || '').toLowerCase())).length;
-        e.evidenceSummary.textContent = `Attendance evidence: ${attendance.length} row(s), ${attendanceFlags} geofence exception row(s). HSE evidence: ${hse.length} row(s).`;
-        e.evidenceSummary.dataset.kind = attendanceFlags ? 'warning' : 'info';
+        const attendanceFlags = attendance.filter((row) => row?.needs_review || ['outside','override'].includes(String(row.geofence_status || '').toLowerCase())).length;
+        const hseFlags = hse.filter((row) => row?.needs_review).length;
+        e.evidenceSummary.textContent = `Attendance evidence: ${attendance.length} row(s), ${attendanceFlags} needing review. HSE evidence: ${hse.length} row(s), ${hseFlags} needing review.`;
+        e.evidenceSummary.dataset.kind = attendanceFlags || hseFlags ? 'warning' : 'info';
       }
     }
 
@@ -3739,7 +3794,29 @@
       }
     }
 
-    function handleEvidenceDrillClick(event) {
+    async function handleEvidenceDrillClick(event) {
+      const reviewBtn = event.target.closest('.evidence-review-btn');
+      if (reviewBtn) {
+        event.preventDefault();
+        event.stopPropagation();
+        const entity = reviewBtn.getAttribute('data-review-entity') || '';
+        const id = reviewBtn.getAttribute('data-review-id') || '';
+        const mediaStage = reviewBtn.getAttribute('data-review-stage') || '';
+        const reviewStatus = reviewBtn.getAttribute('data-review-status') || 'pending';
+        const reviewNotes = window.prompt(`Add a note for ${reviewStatus.replaceAll('_', ' ')}:`, '') || '';
+        try {
+          const actionEntity = entity === 'employee_time_entry' ? 'employee_time_entry' : 'hse_packet_proof';
+          const resp = await manageAdminEntity({ entity: actionEntity, action: 'review_media', item_id: id, media_stage: mediaStage, review_status: reviewStatus, review_notes: reviewNotes });
+          if (!resp?.ok) throw new Error(resp?.error || 'Evidence review update failed.');
+          await loadDirectory();
+          await refreshSelectors();
+          setSummary(`Evidence marked ${reviewStatus.replaceAll('_', ' ')}.`);
+        } catch (err) {
+          setSummary(err?.message || 'Unable to update evidence review.', true);
+        }
+        return;
+      }
+      if (event.target.closest('a')) return;
       const tr = event.target.closest('[data-evidence-entity]');
       if (!tr) return;
       const entity = tr.getAttribute('data-evidence-entity') || '';

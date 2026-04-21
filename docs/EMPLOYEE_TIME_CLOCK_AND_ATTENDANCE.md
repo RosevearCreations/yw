@@ -28,3 +28,8 @@ This pass adds a self-service employee attendance layer tied to jobs, sites, job
 - Attendance photos can now be uploaded and tied to clock-in / clock-out rows.
 - Geofence checks now compare captured coordinates to configured site coordinates and radius.
 - Outside-geofence results can open attendance exceptions for supervisor review.
+
+
+## 2026-04-21 sync note
+
+Attendance exceptions and media review are now closer together operationally: evidence review actions can update the stored review state while payroll-close summaries continue surfacing remaining attendance review work.

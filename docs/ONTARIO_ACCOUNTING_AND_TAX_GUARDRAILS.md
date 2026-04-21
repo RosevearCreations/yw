@@ -44,3 +44,8 @@ This repo now has the start of a labor-aware profitability model. Ontario tax gu
 - Admin now loads and renders a Recent Site Activity table directly from the backend instead of relying only on login traces or per-screen notices.
 - `admin-manage`, `jobs-manage`, and `account-maintenance` now record key activity events while still failing safely if the audit trail insert itself has a problem.
 - Current schema target is now 082.
+
+
+## 2026-04-21 sync note
+
+Payroll workflow documentation should now assume three post-export states: exported, delivered/confirmed, and closed. Continue validating Ontario payroll/accounting handling before final postings.

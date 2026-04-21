@@ -16,3 +16,12 @@ Reviewed and updated during schema 087 on 2026-04-20.
 3. Convert signed-contract kickoff from job-only creation into job + work-order + initial session orchestration where appropriate.
 4. Add provider-specific payroll delivery receipts / acknowledgement logging after export generation.
 5. Continue trimming heavy Admin payloads by splitting dashboard, backbone, and evidence review loads even further.
+
+
+## 2026-04-21 sync note
+
+Workflow automation now includes:
+- cron-ready scheduler dispatch support
+- stored evidence review actions
+- signed-contract kickoff into live operations records
+- payroll delivery confirmation and close signoff after export generation

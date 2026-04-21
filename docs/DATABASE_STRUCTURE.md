@@ -291,3 +291,8 @@ New accounting-facing additions include:
 - Admin now loads and renders a Recent Site Activity table directly from the backend instead of relying only on login traces or per-screen notices.
 - `admin-manage`, `jobs-manage`, and `account-maintenance` now record key activity events while still failing safely if the audit trail insert itself has a problem.
 - Current schema target is now 082.
+
+
+## 2026-04-21 schema sync
+
+Docs synced to schema 088. Key additions are media review actions, scheduler dispatch metadata, payroll close delivery/signoff fields, and updated review/status views.

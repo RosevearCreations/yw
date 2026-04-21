@@ -13,3 +13,8 @@ Next likely follow-up work:
 - full map/geofence admin setup UX
 - provider-specific file QA against real payroll vendor imports
 - signed acceptance capture beyond status/manual fields
+
+
+## 2026-04-21 sync note
+
+Attendance photo review now stores approve / reject / follow-up outcomes in `media_review_actions`, and scheduler settings now include dispatch metadata plus cron-ready next-run handling.
