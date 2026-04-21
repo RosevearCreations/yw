@@ -140,3 +140,8 @@ Deployments should now be treated as operations-critical because session integri
 - after deploy, hard refresh the Jobs page to load the new pricing and duration fields
 > Synchronized for the 2026-04-16 accounting-profitability and job-financial-rollup pass.
 
+
+
+## 2026-04-21 deployment note
+
+After deploying this build, apply schema 088 and verify environment configuration for the service execution scheduler secret plus the per-setting invoke URL. Then test the full Admin flow for evidence review, signed-contract kickoff, and payroll export delivery/close actions.

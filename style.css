@@ -1095,3 +1095,18 @@ body[data-user-role="admin"] #admin[data-admin-locked="false"] {
 #job_tracking_block table th {
   vertical-align: top;
 }
+
+
+.evidence-review-actions {
+  align-items: center;
+}
+
+.evidence-review-actions a,
+.evidence-review-actions button {
+  white-space: nowrap;
+}
+
+#ad_attendance_evidence_table td,
+#ad_hse_evidence_table td {
+  vertical-align: top;
+}

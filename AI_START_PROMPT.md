@@ -357,3 +357,12 @@ Continue from a landscaping-first application perspective. Jobs already support 
 - Admin now loads and renders a Recent Site Activity table directly from the backend instead of relying only on login traces or per-screen notices.
 - `admin-manage`, `jobs-manage`, and `account-maintenance` now record key activity events while still failing safely if the audit trail insert itself has a problem.
 - Current schema target is now 082.
+
+
+## 2026-04-21 sync note
+
+Start from schema 088 and assume the Admin hub now includes:
+- stored evidence review outcomes
+- scheduler setting dispatch metadata
+- signed-contract kickoff action
+- payroll delivery confirmation / close-signoff workflow

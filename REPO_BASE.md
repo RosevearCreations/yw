@@ -108,3 +108,8 @@ Schema version now extends through migration 076 for job pricing/profitability a
 - Admin now loads and renders a Recent Site Activity table directly from the backend instead of relying only on login traces or per-screen notices.
 - `admin-manage`, `jobs-manage`, and `account-maintenance` now record key activity events while still failing safely if the audit trail insert itself has a problem.
 - Current schema target is now 082.
+
+
+## 2026-04-21 repo sync
+
+Important latest files: `sql/088_scheduler_cron_media_review_payroll_close_receipts.sql`, updated `sql/000_full_schema_reference.sql`, updated `supabase/functions/admin-manage/index.ts`, updated `supabase/functions/service-execution-scheduler/index.ts`, updated `js/admin-ui.js`.

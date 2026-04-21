@@ -176,3 +176,12 @@ Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summarie
 - Admin now loads and renders a Recent Site Activity table directly from the backend instead of relying only on login traces or per-screen notices.
 - `admin-manage`, `jobs-manage`, and `account-maintenance` now record key activity events while still failing safely if the audit trail insert itself has a problem.
 - Current schema target is now 082.
+
+
+## 2026-04-21 added checks
+
+- Verify the single public H1 remains intact on the exposed page.
+- Verify scheduler setting save/run-now flow and next-run updates.
+- Verify evidence approve / reject / follow-up actions persist and refresh the review tables.
+- Verify signed contract kickoff creates or links a job, creates a work order, and creates the first session.
+- Verify payroll export can be generated, confirmed delivered, and closed.

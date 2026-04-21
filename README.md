@@ -306,3 +306,8 @@ The app now pushes beyond static tracking into operational execution: employee a
 
 ## Latest implementation focus
 The newest pass adds Admin evidence review, scheduler settings/status groundwork, signed-contract live-job kickoff support, payroll-close review summaries, and lighter Admin selector loading for backbone forms.
+
+
+## Latest build sync — 2026-04-21
+
+This build advances the operations backend beyond passive review tables. The scheduler now has cron-ready dispatch scaffolding, evidence review has stored workflow states, signed contracts can kick off live job/work-order/session records, and payroll exports can move through delivery confirmation and close signoff.

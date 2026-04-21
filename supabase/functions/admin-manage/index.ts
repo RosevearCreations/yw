@@ -256,9 +256,68 @@ function validateAdminSetPassword(password?: string | null) {
 }
 
 
+
+function normalizePayrollExportProvider(provider?: string | null) {
+  const clean = String(provider || 'generic_csv').trim().toLowerCase();
+  if (clean === 'quickbooks_time_csv') return 'quickbooks_time';
+  if (clean === 'simplepay_csv') return 'simplepay';
+  if (clean === 'adp_csv') return 'adp';
+  return clean || 'generic_csv';
+}
+
+function computeSchedulerNextRunAt(setting: any, base = new Date()) {
+  const cadence = String(setting?.cadence || 'manual').trim().toLowerCase();
+  if (!setting?.is_enabled || cadence === 'manual') return null;
+  const next = new Date(base.getTime());
+  if (cadence === 'hourly') {
+    next.setMinutes(0, 0, 0);
+    next.setHours(next.getHours() + 1);
+    return next.toISOString();
+  }
+  const hour = Math.max(0, Math.min(23, Number(setting?.run_hour_local ?? 0) || 0));
+  const minute = Math.max(0, Math.min(59, Number(setting?.run_minute_local ?? 0) || 0));
+  next.setSeconds(0, 0);
+  next.setHours(hour, minute, 0, 0);
+  if (cadence === 'weekly') {
+    if (next <= base) next.setDate(next.getDate() + 7);
+    return next.toISOString();
+  }
+  if (next <= base) next.setDate(next.getDate() + 1);
+  return next.toISOString();
+}
+
+async function upsertMediaReviewAction(supabase: any, payload: { target_entity: string; target_id: string; media_stage?: string | null; review_status: string; review_notes?: string | null; reviewed_by_profile_id?: string | null; created_by_profile_id?: string | null; }) {
+  const patch = {
+    target_entity: payload.target_entity,
+    target_id: payload.target_id,
+    media_stage: String(payload.media_stage || 'evidence').trim() || 'evidence',
+    review_status: String(payload.review_status || 'pending').trim() || 'pending',
+    review_notes: payload.review_notes || null,
+    reviewed_at: new Date().toISOString(),
+    reviewed_by_profile_id: payload.reviewed_by_profile_id || null,
+    created_by_profile_id: payload.created_by_profile_id || null,
+    updated_at: new Date().toISOString(),
+  };
+  const { data, error } = await supabase.from('media_review_actions').upsert(patch, { onConflict: 'target_entity,target_id,media_stage' }).select('*').single();
+  if (error) throw error;
+  return data;
+}
+
+function makeSlugCode(prefix: string, base: unknown) {
+  const clean = String(base || '').trim().replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '').toUpperCase();
+  return `${prefix}-${clean || crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+}
+
+function pickSuggestedFirstSessionDate(contract: any, agreement: any) {
+  const base = String(agreement?.start_date || contract?.effective_date || '').trim();
+  const today = new Date().toISOString().slice(0, 10);
+  if (!base) return today;
+  return base >= today ? base : today;
+}
+
 function buildPayrollExportContent(rows: any[] = [], provider = 'generic_csv', format = 'csv') {
   const safeRows = Array.isArray(rows) ? rows : [];
-  const safeProvider = String(provider || 'generic_csv').trim().toLowerCase();
+  const safeProvider = normalizePayrollExportProvider(provider);
   const safeFormat = String(format || 'csv').trim().toLowerCase();
 
   const csvEscape = (value: unknown) => `"${String(value ?? '').replaceAll('"', '""')}"`;
@@ -386,27 +445,34 @@ async function createInvoiceFromSignedContract(supabase: any, contract: any, act
   return data;
 }
 
-async function runServiceExecutionScheduler(supabase: any, actorId: string, agreementId?: string | null) {
+async function runServiceExecutionScheduler(supabase: any, actorId: string, agreementId?: string | null, schedulerSetting?: any | null) {
+  const setting = schedulerSetting || (await supabase.from('service_execution_scheduler_settings').select('*').eq('setting_code', 'default').maybeSingle()).data || null;
   let query = supabase.from('v_service_execution_scheduler_candidates').select('*').eq('scheduler_status', 'ready').order('candidate_date', { ascending: true });
   if (agreementId) query = query.eq('agreement_id', agreementId);
   const { data: candidates, error } = await query;
   if (error) throw error;
 
+  const today = new Date();
+  const lastAllowed = new Date(today.getTime());
+  lastAllowed.setDate(lastAllowed.getDate() + Math.max(0, Number(setting?.lookahead_days ?? 1) || 0));
+  const lastAllowedIso = lastAllowed.toISOString().slice(0, 10);
+  const filtered = (candidates || []).filter((row: any) => {
+    const date = String(row?.candidate_date || '').slice(0, 10);
+    if (date && date > lastAllowedIso) return false;
+    if (row?.candidate_kind === 'service_session' && setting?.require_linked_job !== false && !row?.job_id) return false;
+    return true;
+  });
+
   let createdCount = 0;
   let invoiceCandidateCount = 0;
   let skippedCount = 0;
 
-  for (const row of candidates || []) {
+  for (const row of filtered) {
     if (row.candidate_kind === 'service_session') {
-      if (!row.job_id) {
-        skippedCount += 1;
-        continue;
-      }
+      if (setting?.auto_create_sessions === false) { skippedCount += 1; continue; }
+      if (!row.job_id) { skippedCount += 1; continue; }
       const { data: existing } = await supabase.from('job_sessions').select('id').eq('job_id', row.job_id).eq('session_date', row.candidate_date).maybeSingle();
-      if (existing?.id) {
-        skippedCount += 1;
-        continue;
-      }
+      if (existing?.id) { skippedCount += 1; continue; }
       const { data: created } = await supabase.from('job_sessions').insert({
         job_id: row.job_id,
         session_date: row.candidate_date,
@@ -418,26 +484,38 @@ async function runServiceExecutionScheduler(supabase: any, actorId: string, agre
         updated_at: new Date().toISOString(),
       }).select('id').single();
       if (created?.id) createdCount += 1; else skippedCount += 1;
-    } else {
-      invoiceCandidateCount += 1;
+      continue;
     }
+    if (setting?.auto_stage_invoices === false) { skippedCount += 1; continue; }
+    invoiceCandidateCount += 1;
   }
 
   const runCode = `SCH-${new Date().toISOString().slice(0,10).replaceAll('-','')}-${crypto.randomUUID().slice(0,8).toUpperCase()}`;
+  const nowIso = new Date().toISOString();
   const { data: run, error: runErr } = await supabase.from('service_execution_scheduler_runs').insert({
     agreement_id: agreementId || null,
     run_code: runCode,
     run_mode: agreementId ? 'agreement_trigger' : 'manual',
     run_status: 'completed',
-    candidate_count: (candidates || []).length,
+    candidate_count: filtered.length,
     session_created_count: createdCount,
     invoice_candidate_count: invoiceCandidateCount,
     skipped_count: skippedCount,
-    payload: { candidates: candidates || [] },
+    payload: { candidates: filtered, scheduler_setting: setting ? { setting_code: setting.setting_code, lookahead_days: setting.lookahead_days, auto_create_sessions: setting.auto_create_sessions, auto_stage_invoices: setting.auto_stage_invoices, require_linked_job: setting.require_linked_job } : null },
     created_by_profile_id: actorId,
-    updated_at: new Date().toISOString(),
+    updated_at: nowIso,
   }).select('*').single();
   if (runErr) throw runErr;
+
+  if (setting?.id) {
+    await supabase.from('service_execution_scheduler_settings').update({
+      last_run_at: nowIso,
+      next_run_at: computeSchedulerNextRunAt(setting, new Date(nowIso)),
+      last_dispatch_status: 'completed',
+      last_dispatch_notes: 'Run completed from Admin or direct scheduler invocation.',
+      updated_at: nowIso,
+    }).eq('id', setting.id);
+  }
 
   await recordSiteActivity(supabase, {
     event_type: 'service_execution_scheduler_run',
@@ -449,7 +527,7 @@ async function runServiceExecutionScheduler(supabase: any, actorId: string, agre
     created_by_profile_id: actorId,
   });
 
-  return { run, createdCount, invoiceCandidateCount, skippedCount };
+  return { run, createdCount, invoiceCandidateCount, skippedCount, filteredCount: filtered.length };
 }
 
 serve(async (req) => {
@@ -1484,12 +1562,22 @@ serve(async (req) => {
         period_end: asNullableDate(body.period_end),
         status: body.status ?? 'draft',
         export_format: body.export_format ?? 'csv',
-        export_provider: body.export_provider ?? 'generic_csv',
+        export_provider: normalizePayrollExportProvider(body.export_provider ?? 'generic_csv'),
         export_file_name: body.export_file_name ?? null,
         export_mime_type: body.export_mime_type ?? null,
         export_layout_version: body.export_layout_version ?? null,
         exported_at: asNullableDateTime(body.exported_at),
         exported_by_profile_id: asNullableText(body.exported_by_profile_id),
+        delivery_status: body.delivery_status ?? 'pending',
+        delivery_reference: body.delivery_reference ?? null,
+        delivery_notes: body.delivery_notes ?? null,
+        delivered_at: asNullableDateTime(body.delivered_at),
+        delivered_by_profile_id: asNullableText(body.delivered_by_profile_id),
+        delivery_confirmed_at: asNullableDateTime(body.delivery_confirmed_at),
+        payroll_close_status: body.payroll_close_status ?? 'open',
+        payroll_closed_at: asNullableDateTime(body.payroll_closed_at),
+        payroll_closed_by_profile_id: asNullableText(body.payroll_closed_by_profile_id),
+        payroll_close_notes: body.payroll_close_notes ?? null,
         notes: body.notes ?? null,
         updated_at: new Date().toISOString(),
       };
@@ -1509,6 +1597,50 @@ serve(async (req) => {
         const { error } = await supabase.from('payroll_export_runs').delete().eq('id', body.item_id);
         if (error) throw error;
         return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+
+    if (entity === 'service_execution_scheduler_setting') {
+      const patch = {
+        setting_code: String(body.setting_code || '').trim().toLowerCase(),
+        is_enabled: body.is_enabled === true,
+        run_timezone: body.run_timezone ?? 'America/Toronto',
+        cadence: body.cadence ?? 'daily',
+        run_hour_local: asNumber(body.run_hour_local, 4),
+        run_minute_local: asNumber(body.run_minute_local, 0),
+        lookahead_days: asNumber(body.lookahead_days, 1),
+        auto_create_sessions: body.auto_create_sessions !== false,
+        auto_stage_invoices: body.auto_stage_invoices !== false,
+        require_linked_job: body.require_linked_job !== false,
+        invoke_url: body.invoke_url ?? null,
+        notes: body.notes ?? null,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.setting_code) return Response.json({ ok:false, error:'setting_code is required' }, { status:400, headers:corsHeaders });
+      const now = new Date();
+      const nextRunAt = computeSchedulerNextRunAt(patch, now);
+      if (action === 'create') {
+        const { data, error } = await supabase.from('service_execution_scheduler_settings').insert({ ...patch, next_run_at: nextRunAt, created_by_profile_id: actorId }).select('*').single();
+        if (error) throw error;
+        await recordSiteActivity(supabase, { event_type:'service_execution_scheduler_setting_created', entity_type:'service_execution_scheduler_setting', entity_id:data.id, severity:'info', title:'Scheduler setting created', summary:`${data.setting_code} scheduler setting was created.`, created_by_profile_id: actorId });
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('service_execution_scheduler_settings').update({ ...patch, next_run_at: nextRunAt }).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('service_execution_scheduler_settings').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+      if (action === 'run_now') {
+        const setting = await fetchSingle(supabase, 'service_execution_scheduler_settings', body.item_id);
+        if (!setting?.id) return Response.json({ ok:false, error:'Scheduler setting not found.' }, { status:404, headers:corsHeaders });
+        const result = await runServiceExecutionScheduler(supabase, actorId, null, setting);
+        return Response.json({ ok:true, record: setting, scheduler_run: result.run, created_count: result.createdCount, invoice_candidate_count: result.invoiceCandidateCount, skipped_count: result.skippedCount, filtered_count: result.filteredCount }, { headers:corsHeaders });
       }
     }
 
@@ -1655,6 +1787,29 @@ serve(async (req) => {
         const { error } = await supabase.from('employee_time_entries').delete().eq('id', body.item_id);
         if (error) throw error;
         return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+      if (action === 'review_media') {
+        const entry = await fetchSingle(supabase, 'employee_time_entries', body.item_id);
+        if (!entry?.id) return Response.json({ ok:false, error:'Employee time entry not found.' }, { status:404, headers:corsHeaders });
+        const stage = String(body.media_stage || 'clock_in').trim() || 'clock_in';
+        const review = await upsertMediaReviewAction(supabase, {
+          target_entity: 'employee_time_entry',
+          target_id: entry.id,
+          media_stage: stage,
+          review_status: String(body.review_status || 'pending'),
+          review_notes: body.review_notes ?? null,
+          reviewed_by_profile_id: actorId,
+          created_by_profile_id: actorId,
+        });
+        await supabase.from('employee_time_entries').update({
+          exception_status: review.review_status === 'approved' ? 'reviewed' : (review.review_status === 'rejected' ? 'flagged' : 'reviewed'),
+          exception_notes: review.review_notes || entry.exception_notes || null,
+          exception_reviewed_at: review.reviewed_at,
+          exception_reviewed_by_profile_id: actorId,
+          updated_at: new Date().toISOString(),
+        }).eq('id', entry.id);
+        await recordSiteActivity(supabase, { event_type: review.review_status === 'approved' ? 'attendance_evidence_approved' : (review.review_status === 'rejected' ? 'attendance_evidence_rejected' : 'attendance_evidence_follow_up'), entity_type: 'employee_time_entry', entity_id: entry.id, severity: review.review_status === 'approved' ? 'success' : 'warning', title: 'Attendance evidence reviewed', summary: `${stage.replaceAll('_', ' ')} evidence marked ${review.review_status.replaceAll('_', ' ')}.`, related_job_id: entry.job_id || null, related_profile_id: entry.profile_id || null, created_by_profile_id: actorId });
+        return Response.json({ ok:true, record: review }, { headers:corsHeaders });
       }
     }
 
@@ -2775,6 +2930,21 @@ serve(async (req) => {
         if (error) throw error;
         return Response.json({ ok:true }, { headers:corsHeaders });
       }
+      if (action === 'review_media') {
+        const proof = await fetchSingle(supabase, 'hse_packet_proofs', body.item_id);
+        if (!proof?.id) return Response.json({ ok:false, error:'HSE packet proof not found.' }, { status:404, headers:corsHeaders });
+        const review = await upsertMediaReviewAction(supabase, {
+          target_entity: 'hse_packet_proof',
+          target_id: proof.id,
+          media_stage: String(body.media_stage || proof.proof_stage || 'field'),
+          review_status: String(body.review_status || 'pending'),
+          review_notes: body.review_notes ?? null,
+          reviewed_by_profile_id: actorId,
+          created_by_profile_id: actorId,
+        });
+        await recordSiteActivity(supabase, { event_type: review.review_status === 'approved' ? 'hse_evidence_approved' : (review.review_status === 'rejected' ? 'hse_evidence_rejected' : 'hse_evidence_follow_up'), entity_type: 'hse_packet_proof', entity_id: proof.id, severity: review.review_status === 'approved' ? 'success' : 'warning', title: 'HSE evidence reviewed', summary: `${String(proof.file_name || proof.proof_stage || proof.id)} marked ${review.review_status.replaceAll('_', ' ')}.`, created_by_profile_id: actorId });
+        return Response.json({ ok:true, record: review }, { headers:corsHeaders });
+      }
     }
 
     if (entity === 'hse_packet_event') {
@@ -3036,13 +3206,129 @@ serve(async (req) => {
       if (rowsError) throw rowsError;
       const hours = (rows || []).reduce((sum: number, row: any) => sum + Number(row?.hours_worked || 0), 0);
       const cost = (rows || []).reduce((sum: number, row: any) => sum + Number(row?.payroll_cost_total || 0), 0);
-      const exportPayload = buildPayrollExportContent(rows || [], run.export_provider || 'generic_csv', run.export_format || 'csv');
-      const fileName = `${run.run_code || 'payroll-export'}-${String(run.export_provider || 'generic_csv')}.${String(exportPayload.fileName || '').split('.').pop() || 'csv'}`;
-      const { data, error } = await supabase.from('payroll_export_runs').update({ export_file_name: fileName, export_file_content: exportPayload.content, export_mime_type: exportPayload.mimeType, exported_entry_count: (rows || []).length, exported_hours_total: Number(hours.toFixed(2)), exported_payroll_cost_total: Number(cost.toFixed(2)), exported_at: new Date().toISOString(), exported_by_profile_id: actorId, status: 'exported', updated_at: new Date().toISOString() }).eq('id', run.id).select('*').single();
+      const normalizedProvider = normalizePayrollExportProvider(run.export_provider || 'generic_csv');
+      const exportPayload = buildPayrollExportContent(rows || [], normalizedProvider, run.export_format || 'csv');
+      const fileName = `${run.run_code || 'payroll-export'}-${String(normalizedProvider || 'generic_csv')}.${String(exportPayload.fileName || '').split('.').pop() || 'csv'}`;
+      const exportedAt = new Date().toISOString();
+      const { data, error } = await supabase.from('payroll_export_runs').update({ export_provider: normalizedProvider, export_file_name: fileName, export_file_content: exportPayload.content, export_mime_type: exportPayload.mimeType, exported_entry_count: (rows || []).length, exported_hours_total: Number(hours.toFixed(2)), exported_payroll_cost_total: Number(cost.toFixed(2)), exported_at: exportedAt, exported_by_profile_id: actorId, status: 'exported', delivery_status: 'pending', delivery_confirmed_at: null, payroll_close_status: 'open', payroll_closed_at: null, payroll_closed_by_profile_id: null, updated_at: exportedAt }).eq('id', run.id).select('*').single();
       if (error) throw error;
       await supabase.from('job_session_crew_hours').update({ payroll_export_run_id: run.id, payroll_exported_at: new Date().toISOString(), updated_at: new Date().toISOString() }).gte('created_at', `${run.period_start}T00:00:00`).lte('created_at', `${run.period_end}T23:59:59`).is('payroll_export_run_id', null);
       await recordSiteActivity(supabase, { event_type:'payroll_export_generated', entity_type:'payroll_export_run', entity_id:data.id, severity:'success', title:'Payroll export generated', summary:`${data.run_code} generated ${data.exported_entry_count || 0} row(s) using ${data.export_provider || 'generic_csv'}.`, created_by_profile_id: actorId });
       return Response.json({ ok:true, record:data, export_file_name:fileName, export_file_content:exportPayload.content, export_mime_type: exportPayload.mimeType }, { headers:corsHeaders });
+    }
+
+
+    if (entity === 'payroll_export_run' && action === 'mark_delivered') {
+      const run = await fetchSingle(supabase, 'payroll_export_runs', body.item_id);
+      if (!run?.id) return Response.json({ ok:false, error:'Payroll export run not found.' }, { status:404, headers:corsHeaders });
+      if (!run.exported_at) return Response.json({ ok:false, error:'Generate the payroll export before marking it delivered.' }, { status:400, headers:corsHeaders });
+      const nowIso = new Date().toISOString();
+      const nextStatus = String(body.delivery_status || 'confirmed').toLowerCase() === 'delivered' ? 'delivered' : 'confirmed';
+      const { data, error } = await supabase.from('payroll_export_runs').update({ delivery_status: nextStatus, delivery_reference: body.delivery_reference ?? run.delivery_reference ?? null, delivery_notes: body.delivery_notes ?? run.delivery_notes ?? null, delivered_at: run.delivered_at || nowIso, delivered_by_profile_id: run.delivered_by_profile_id || actorId, delivery_confirmed_at: nextStatus === 'confirmed' ? nowIso : run.delivery_confirmed_at, payroll_close_status: nextStatus === 'confirmed' ? 'ready_to_close' : (run.payroll_close_status || 'open'), updated_at: nowIso }).eq('id', run.id).select('*').single();
+      if (error) throw error;
+      await recordSiteActivity(supabase, { event_type:'payroll_export_delivered', entity_type:'payroll_export_run', entity_id:data.id, severity:'success', title:'Payroll export delivery recorded', summary:`${data.run_code || data.id} marked ${data.delivery_status}.`, created_by_profile_id: actorId });
+      return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+    }
+
+    if (entity === 'payroll_export_run' && action === 'close_run') {
+      const run = await fetchSingle(supabase, 'payroll_export_runs', body.item_id);
+      if (!run?.id) return Response.json({ ok:false, error:'Payroll export run not found.' }, { status:404, headers:corsHeaders });
+      if (!run.exported_at || !['delivered','confirmed'].includes(String(run.delivery_status || '').toLowerCase())) return Response.json({ ok:false, error:'Confirm delivery before closing this payroll run.' }, { status:400, headers:corsHeaders });
+      const nowIso = new Date().toISOString();
+      const { data, error } = await supabase.from('payroll_export_runs').update({ payroll_close_status: 'closed', payroll_closed_at: nowIso, payroll_closed_by_profile_id: actorId, payroll_close_notes: body.payroll_close_notes ?? run.payroll_close_notes ?? null, updated_at: nowIso }).eq('id', run.id).select('*').single();
+      if (error) throw error;
+      await recordSiteActivity(supabase, { event_type:'payroll_export_closed', entity_type:'payroll_export_run', entity_id:data.id, severity:'success', title:'Payroll export closed', summary:`${data.run_code || data.id} was signed off as closed.`, created_by_profile_id: actorId });
+      return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+    }
+
+    if (entity === 'service_contract_document' && action === 'kickoff_live_job_from_signed') {
+      const contract = await fetchSingle(supabase, 'service_contract_documents', body.item_id);
+      if (!contract?.id) return Response.json({ ok:false, error:'Service contract document not found.' }, { status:404, headers:corsHeaders });
+      if (!(String(contract.document_status || '') === 'signed' || contract.signed_at)) return Response.json({ ok:false, error:'The contract must be signed before kickoff.' }, { status:400, headers:corsHeaders });
+      const agreement = contract.agreement_id ? await fetchSingle(supabase, 'recurring_service_agreements', contract.agreement_id) : null;
+      const estimate = contract.estimate_id ? await fetchSingle(supabase, 'estimates', contract.estimate_id) : null;
+      let jobId = contract.job_id || null;
+      if (!jobId) {
+        const serviceRef = agreement?.agreement_code || contract.contract_reference || contract.document_number || null;
+        const existingJob = serviceRef ? (await supabase.from('jobs').select('*').ilike('service_contract_reference', serviceRef).limit(1).maybeSingle()).data : null;
+        if (existingJob?.id) {
+          jobId = existingJob.id;
+        } else {
+          const jobCode = makeSlugCode('JOB', agreement?.agreement_code || contract.document_number || contract.contract_reference || contract.id);
+          const jobName = String(agreement?.service_name || contract.title || 'Signed Contract Job').trim();
+          const { data: createdJob, error: jobError } = await supabase.from('jobs').insert({
+            job_code: jobCode,
+            job_name: jobName,
+            status: 'planned',
+            priority: 'normal',
+            client_name: estimate?.client_name || null,
+            start_date: pickSuggestedFirstSessionDate(contract, agreement),
+            end_date: agreement?.end_date || null,
+            crew_id: agreement?.crew_id || null,
+            service_contract_reference: serviceRef,
+            client_reference: contract.document_number || null,
+            notes: `Kickoff created from signed contract ${contract.document_number || contract.id}.`,
+            created_by_profile_id: actorId,
+            updated_at: new Date().toISOString(),
+          }).select('*').single();
+          if (jobError) throw jobError;
+          jobId = createdJob.id;
+          await recordSiteActivity(supabase, { event_type:'signed_contract_job_created', entity_type:'job', entity_id: createdJob.id, severity:'success', title:'Live job created from signed contract', summary:`${createdJob.job_code} was created from ${contract.document_number || contract.id}.`, created_by_profile_id: actorId });
+        }
+      }
+
+      let workOrder = jobId ? (await supabase.from('work_orders').select('*').eq('legacy_job_id', jobId).order('created_at', { ascending: false }).limit(1).maybeSingle()).data : null;
+      if (!workOrder?.id) {
+        const workOrderNumber = makeSlugCode('WO', agreement?.agreement_code || contract.document_number || contract.contract_reference || contract.id);
+        const scheduledDate = pickSuggestedFirstSessionDate(contract, agreement);
+        const { data: createdWo, error: workOrderError } = await supabase.from('work_orders').insert({
+          work_order_number: workOrderNumber,
+          estimate_id: contract.estimate_id || null,
+          client_id: contract.client_id || null,
+          client_site_id: contract.client_site_id || null,
+          legacy_job_id: jobId,
+          work_type: 'service',
+          status: 'scheduled',
+          scheduled_start: `${scheduledDate}T08:00:00`,
+          scheduled_end: `${scheduledDate}T10:00:00`,
+          route_id: agreement?.route_id || null,
+          supervisor_profile_id: null,
+          crew_notes: agreement?.service_notes || null,
+          customer_notes: contract.notes || null,
+          safety_notes: agreement?.trigger_notes || null,
+          subtotal: Number(agreement?.visit_charge_total || estimate?.subtotal || 0),
+          tax_total: Number(estimate?.tax_total || 0),
+          total_amount: Number(agreement?.visit_charge_total || estimate?.total_amount || 0),
+          created_by_profile_id: actorId,
+          updated_at: new Date().toISOString(),
+        }).select('*').single();
+        if (workOrderError) throw workOrderError;
+        workOrder = createdWo;
+      }
+
+      const firstSessionDate = pickSuggestedFirstSessionDate(contract, agreement);
+      const existingSession = jobId ? (await supabase.from('job_sessions').select('id').eq('job_id', jobId).eq('session_date', firstSessionDate).limit(1).maybeSingle()).data : null;
+      let sessionRecord = existingSession || null;
+      if (jobId && !existingSession?.id) {
+        const { data: createdSession, error: sessionError } = await supabase.from('job_sessions').insert({
+          job_id: jobId,
+          session_date: firstSessionDate,
+          session_kind: 'scheduled_service',
+          session_status: 'planned',
+          service_frequency_label: agreement?.service_name || contract.title || 'scheduled_service',
+          notes: `First planned session created from signed contract ${contract.document_number || contract.id}.`,
+          created_by_profile_id: actorId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }).select('*').single();
+        if (sessionError) throw sessionError;
+        sessionRecord = createdSession;
+      }
+
+      const { data: updatedContract, error: updateContractError } = await supabase.from('service_contract_documents').update({ job_id: jobId, updated_at: new Date().toISOString() }).eq('id', contract.id).select('*').single();
+      if (updateContractError) throw updateContractError;
+      await recordSiteActivity(supabase, { event_type:'signed_contract_kickoff_completed', entity_type:'service_contract_document', entity_id: contract.id, severity:'success', title:'Signed contract kickoff completed', summary:`${contract.document_number || contract.id} linked to live job/work order scheduling.`, related_job_id: jobId || null, created_by_profile_id: actorId });
+      return Response.json({ ok:true, record: updatedContract, job_id: jobId, work_order: workOrder, first_session: sessionRecord }, { headers:corsHeaders });
     }
 
 

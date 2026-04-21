@@ -338,3 +338,12 @@ Added migration 085 for attendance photo metadata, payroll export provider field
 - `v_hse_evidence_review`
 - `v_signed_contract_job_kickoff_candidates`
 - `v_payroll_close_review_summary`
+
+
+## 2026-04-21 schema sync
+
+The database structure is now aligned through schema pass 088, including:
+- `media_review_actions`
+- extended `service_execution_scheduler_settings` dispatch fields
+- extended `payroll_export_runs` delivery / close fields
+- refreshed scheduler, evidence review, kickoff, and payroll close views

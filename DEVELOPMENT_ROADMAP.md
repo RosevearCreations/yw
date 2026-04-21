@@ -517,3 +517,21 @@ Next recommended build steps:
 - Keep payroll export generation provider-aware instead of one generic CSV.
 - Move contract flow toward signed-document to invoice conversion.
 - Next strongest pass: actual scheduled invocation, signed file upload capture for contracts, and richer dashboard cards from scheduler and invoice candidate views.
+
+
+## 2026-04-21 implementation pass
+
+### Completed in this pass
+- Wired scheduler settings into actual execution logic, including lookahead filtering, auto-create session behavior, invoice staging counters, and next-run updates.
+- Added cron-dispatch schema support so the scheduler can be driven from database-backed timing rather than manual-only runs.
+- Converted evidence review from read-only links into approve / reject / follow-up workflow controls backed by a review table.
+- Deepened signed-contract kickoff from “candidate only” into live job + work order + first planned session creation.
+- Added payroll delivery confirmation and payroll close signoff states after export generation.
+- Kept one public H1 on the main page, bumped cache versions, and continued CSS drift cleanup around review tables/actions.
+
+### Best next steps after this pass
+1. Wire environment/config deployment for the scheduler secret and invoke URL in each environment, then verify pg_cron dispatch history in Supabase.
+2. Add invoice staging actions from scheduler candidates so invoice candidate counts can turn into draft invoices from the same Admin workflow.
+3. Extend payroll-close with export receipt upload / signed acknowledgement document support.
+4. Add a dedicated work-order details drill-down after signed-contract kickoff so supervisors can confirm route, packet, and crew assignment from one screen.
+5. Continue JSON-to-DB cleanup where duplicate state still exists in admin summaries or selector payloads.

@@ -164,3 +164,27 @@ The repo now includes attendance photo upload metadata, geofence distance/status
 - Next strongest steps: automate scheduler runs, finish attendance media review, harden signed-contract-to-live-job kickoff, and complete provider-ready payroll output.
 
 ## Current repo handoff
+
+
+## 2026-04-21 handoff snapshot
+
+### What changed this pass
+- Added schema `088_scheduler_cron_media_review_payroll_close_receipts.sql` and synced `sql/000_full_schema_reference.sql` to 088.
+- Added service execution scheduler cron/dispatch plumbing, richer scheduler status fields, and settings-backed execution behavior.
+- Added `media_review_actions` and upgraded evidence review views plus Admin approve/reject/follow-up controls.
+- Added signed-contract kickoff action that creates/links a job, creates a work order, and creates the first planned job session.
+- Added payroll delivery confirmation and payroll close signoff fields/actions after export generation.
+- Fixed payroll export provider normalization for QuickBooks Time / SimplePay / ADP paths.
+- Updated docs/roadmap/issues/changelog and bumped cache-busting version strings.
+
+### Deployment / verify next
+1. Apply SQL through 088.
+2. Configure scheduler secret and invoke URL for the scheduler settings row in each environment.
+3. Verify pg_cron + pg_net are available and dispatching.
+4. Test Admin evidence approve/reject/follow-up buttons.
+5. Test signed contract -> kickoff -> work order -> first session.
+6. Test payroll export -> confirm delivery -> close payroll run.
+
+### Known follow-up
+- Scheduler currently records invoice candidates but does not yet auto-create invoices from those candidates.
+- Evidence review notes are prompt-driven in the current Admin UI.

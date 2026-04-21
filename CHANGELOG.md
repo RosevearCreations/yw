@@ -234,3 +234,15 @@ Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summarie
 - Added scheduler settings/status groundwork for service execution automation and a signed-contract-to-live-job kickoff path.
 - Added payroll close review summary visibility so export delivery can be checked against attendance exceptions and unexported labor.
 - Reduced Admin selector overfetch by switching backbone selector loading to the new `admin_core` scope.
+
+
+## 2026-04-21 — Scheduler cron, evidence review, kickoff, and payroll close pass
+
+- Added schema pass `088_scheduler_cron_media_review_payroll_close_receipts.sql`.
+- Added cron-ready service execution scheduler dispatch plumbing using scheduler settings, invoke URLs, pg_net, and pg_cron.
+- Added `media_review_actions` plus richer attendance/HSE evidence review views with review status, notes, reviewer, and needs-review flags.
+- Extended signed-contract kickoff so a signed contract can create/link a live job, create a work order, and create the first planned session.
+- Extended payroll export runs with delivery confirmation, close-signoff fields, and summary rollups after export generation.
+- Normalized payroll export provider handling so QuickBooks Time / SimplePay / ADP CSV selections map correctly into generated layouts.
+- Refined Admin evidence review UI, scheduler controls, and payroll export workflow states.
+- Bumped frontend cache/version strings and re-ran the repo smoke check.

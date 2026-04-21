@@ -176,3 +176,8 @@ The landscaping stack is now explicitly blending operations and commercial logic
 - Admin now loads and renders a Recent Site Activity table directly from the backend instead of relying only on login traces or per-screen notices.
 - `admin-manage`, `jobs-manage`, and `account-maintenance` now record key activity events while still failing safely if the audit trail insert itself has a problem.
 - Current schema target is now 082.
+
+
+## 2026-04-21 architecture note
+
+The architecture now treats scheduler timing, evidence review state, signed-contract kickoff, and payroll close as connected workflow stages rather than isolated tables. Scheduler timing can be driven from DB-backed settings, review decisions are persisted, and downstream ops/payroll steps now have explicit state transitions.

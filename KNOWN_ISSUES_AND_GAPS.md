@@ -402,3 +402,20 @@ Still open:
 - Service execution scheduling is callable and recorded, but it still needs real timed automation in deployment.
 - Signed-contract invoice flow now exists, but signature collection/upload UX still needs polish.
 - Provider-specific payroll layouts are present, but downstream provider validation with real exports still needs testing.
+
+
+## 2026-04-21 status update
+
+### Closed or materially reduced
+- Scheduler settings are no longer documentation-only; Admin now has a real run-now path, next-run updates, and cron/dispatch schema support.
+- Attendance and HSE evidence review are no longer passive link tables; they now support stored review outcomes.
+- Signed-contract kickoff is no longer only a review candidate; it can now create/link the live job, create the work order, and create the first session.
+- Payroll export workflow now has delivery confirmation and close-signoff stages instead of stopping at raw file generation.
+- Payroll provider label mismatch was corrected so provider-specific exports no longer silently fall back as often.
+
+### Remaining gaps
+- Cron dispatch still requires environment-specific secret + invoke URL configuration during deployment.
+- Invoice candidate staging is still counted and surfaced, but automatic invoice creation from scheduler candidates is not yet fully wired.
+- Evidence review still uses prompt-based notes in the Admin UI; a richer inline notes editor would improve mobile use.
+- Work-order kickoff does not yet auto-create HSE packets, dispatches, or route-stop execution shells.
+- More public-page SEO/meta passes and ongoing CSS drift review are still expected on each build.

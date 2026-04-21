@@ -168,3 +168,8 @@ Do not collapse recurring service visits into only the parent job record.
 
 ## 085 implementation notes
 This pass adds attendance-photo storage metadata, geofence evaluation against site coordinates/radius, service execution scheduler runs/candidates, provider-specific payroll export generation, and signed-contract invoice support. Treat `jobs.service_contract_reference = recurring_service_agreements.agreement_code` as the current scheduler link rule.
+
+
+## 2026-04-21 sync note
+
+This repo is now aligned through schema pass 088. The newest operational additions are scheduler cron/dispatch support, evidence review actions, signed-contract kickoff into job/work-order/session records, and payroll delivery/close workflow states.

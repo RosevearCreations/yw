@@ -281,3 +281,12 @@ Operations, attendance, payroll, and contract flow are now more connected. Emplo
 - The main open risks have shifted toward automation depth rather than schema coverage: scheduler timers, signed-contract kickoff, payroll delivery, and richer media review.
 
 ## Current build state
+
+
+## 2026-04-21 current state
+
+- Schema baseline is now synchronized through pass 088.
+- Admin evidence review is interactive rather than read-only.
+- Scheduler settings are partially production-ready, pending environment secret + invoke URL deployment.
+- Signed contracts can now advance deeper into live execution records.
+- Payroll close now includes export generation, delivery confirmation, and close signoff states.

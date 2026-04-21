@@ -232,3 +232,20 @@ Treat jobs as the operational parent record, but treat recurring visits, actual 
 - New edge functions: `upload-employee-time-photo`, `service-execution-scheduler`
 - Payroll exports now support provider-specific layouts
 - Signed contract docs can now drive invoice generation
+
+
+## 2026-04-21 quick brain refresh
+
+Focus areas completed this pass:
+- scheduler timing + dispatch foundation
+- evidence review state storage
+- signed contract kickoff into live ops records
+- payroll export delivery + close states
+
+First things to inspect in a fresh chat:
+- `sql/088_scheduler_cron_media_review_payroll_close_receipts.sql`
+- `supabase/functions/admin-manage/index.ts`
+- `supabase/functions/service-execution-scheduler/index.ts`
+- `js/admin-ui.js`
+- `DEVELOPMENT_ROADMAP.md`
+- `KNOWN_ISSUES_AND_GAPS.md`

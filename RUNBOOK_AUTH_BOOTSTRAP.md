@@ -112,3 +112,8 @@ Auth bootstrap is stable enough for the current pass; active build focus has shi
 - Admin now loads and renders a Recent Site Activity table directly from the backend instead of relying only on login traces or per-screen notices.
 - `admin-manage`, `jobs-manage`, and `account-maintenance` now record key activity events while still failing safely if the audit trail insert itself has a problem.
 - Current schema target is now 082.
+
+
+## 2026-04-21 note
+
+Auth/bootstrap flow was not the main target of this pass, but Admin-driven workflow depth increased. Re-test permissions for the new scheduler, evidence review, kickoff, and payroll close actions after deployment.
