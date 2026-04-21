@@ -55,6 +55,7 @@ const requiredFiles = [
   'sql/084_supervisor_attendance_review_and_execution_candidates.sql',
   'sql/085_attendance_photo_geofence_scheduler_and_signed_contract_invoice.sql',
   'sql/086_hseops_performance_and_site_activity_rollups.sql',
+  'sql/087_evidence_review_scheduler_settings_and_signed_contract_kickoff.sql',
   'js/hse-ops-ui.js',
   'supabase/functions/jobs-directory/index.ts',
   'supabase/functions/jobs-manage/index.ts',
@@ -97,7 +98,7 @@ addCheck('account-has-conflict-review', accountUi.includes('Conflict Review'), '
 addCheck('account-has-support-export', accountUi.includes('Export Support Snapshot'), 'account-ui.js should render the support snapshot export button.');
 
 const schema = read('sql/000_full_schema_reference.sql');
-addCheck('schema-header-current', /086_hseops_performance_and_site_activity_rollups/i.test(schema), 'Schema snapshot header should reflect the latest 086 pass.');
+addCheck('schema-header-current', /087_evidence_review_scheduler_settings_and_signed_contract_kickoff/i.test(schema), 'Schema snapshot header should reflect the latest 087 pass.');
 
 console.log(JSON.stringify({ ok: !failed, checks: results }, null, 2));
 if (failed) process.exit(1);

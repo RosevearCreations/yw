@@ -36,13 +36,19 @@
       users: [],
       sites: [],
       assignments: [],
-      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalSyncExceptions: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], fieldUploadFailures: [], appTrafficEvents: [], backendMonitorEvents: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [], jobFinancialEvents: [], jobFinancialRollups: [], recurringServiceAgreements: [], snowEventTriggers: [], changeOrders: [], customerAssets: [], customerAssetJobLinks: [], warrantyCallbackEvents: [], payrollExportRuns: [], payrollReviewSummary: [], routeProfitabilitySummary: [], serviceContractDocuments: [], serviceAgreementProfitabilitySummary: [], snowEventInvoiceCandidates: [], callbackWarrantyDashboardSummary: [], payrollReviewDetail: [], estimateConversionCandidates: [] },
+      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalSyncExceptions: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], fieldUploadFailures: [], appTrafficEvents: [], backendMonitorEvents: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [], jobFinancialEvents: [], jobFinancialRollups: [], recurringServiceAgreements: [], snowEventTriggers: [], changeOrders: [], customerAssets: [], customerAssetJobLinks: [], warrantyCallbackEvents: [], payrollExportRuns: [], payrollReviewSummary: [], routeProfitabilitySummary: [], serviceContractDocuments: [], serviceAgreementProfitabilitySummary: [], snowEventInvoiceCandidates: [], callbackWarrantyDashboardSummary: [], payrollReviewDetail: [], estimateConversionCandidates: [], serviceExecutionSchedulerSettings: [], serviceExecutionSchedulerStatus: [], signedContractJobKickoffCandidates: [] },
       salesOrders: [],
       accountingEntries: [],
       siteActivityEvents: [],
       siteActivitySummary: [],
       siteActivityTypeRollups: [],
       siteActivityEntityRollups: [],
+      attendancePhotoReview: [],
+      hseEvidenceReview: [],
+      payrollCloseReviewSummary: [],
+      serviceExecutionSchedulerSettings: [],
+      serviceExecutionSchedulerStatus: [],
+      signedContractJobKickoffCandidates: [],
       serviceAreas: [],
       routes: [],
       jobs: [],
@@ -77,6 +83,8 @@
       employeeTimeEntryReviews: [],
       operationsDashboardSummary: [],
       serviceAgreementExecutionCandidates: [],
+      employeeTimeReviewQueue: [],
+      employeeTimeReviewSummary: [],
       materialsCatalog: [],
       equipmentMaster: [],
       estimates: [],
@@ -222,9 +230,32 @@
           </div>
           <div id="ad_site_activity_summary" class="notice" style="display:block;margin-bottom:12px;">No recent site activity yet.</div>
           <div id="ad_ops_dashboard_cards" class="admin-stats-grid" style="margin-bottom:12px;"></div>
+          <div id="ad_site_activity_rollups" class="admin-stats-grid" style="margin-bottom:12px;"></div>
           <div class="table-scroll">
             <table id="ad_site_activity_table">
               <thead><tr><th>When</th><th>Type</th><th>Title</th><th>Actor</th><th>Summary</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="admin-panel-block" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
+              <h3 style="margin:0;">Attendance and HSE Evidence Review</h3>
+              <p class="section-subtitle">Review attendance photos, geofence exceptions, and HSE packet proof links without opening each record one at a time.</p>
+            </div>
+          </div>
+          <div id="ad_evidence_summary" class="notice" style="display:block;margin-bottom:12px;">No evidence review items loaded yet.</div>
+          <div class="table-scroll" style="margin-bottom:12px;">
+            <table id="ad_attendance_evidence_table">
+              <thead><tr><th>Uploaded</th><th>Employee</th><th>Job</th><th>Stage</th><th>Geofence</th><th>Evidence</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll">
+            <table id="ad_hse_evidence_table">
+              <thead><tr><th>Uploaded</th><th>Packet</th><th>Stage</th><th>Kind</th><th>Caption</th><th>Evidence</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -547,6 +578,7 @@
                   <option value="change_order">Change Orders</option>
                   <option value="service_contract_document">Service Contract Documents</option>
                   <option value="payroll_export_run">Payroll Export Runs</option>
+                  <option value="service_execution_scheduler_setting">Scheduler Settings</option>
                   <option value="employee_time_entry">Employee Time Entries</option>
                   <option value="employee_time_entry_review">Employee Time Reviews</option>
                 </optgroup>
@@ -765,7 +797,11 @@
         ordersCount: document.getElementById('ad_orders_count'),
         siteActivitySummary: document.getElementById('ad_site_activity_summary'),
         opsDashboardCards: document.getElementById('ad_ops_dashboard_cards'),
+        siteActivityRollups: document.getElementById('ad_site_activity_rollups'),
         siteActivityBody: document.querySelector('#ad_site_activity_table tbody'),
+        evidenceSummary: document.getElementById('ad_evidence_summary'),
+        attendanceEvidenceBody: document.querySelector('#ad_attendance_evidence_table tbody'),
+        hseEvidenceBody: document.querySelector('#ad_hse_evidence_table tbody'),
         passwordForm: document.getElementById('ad_password_form'),
         passwordProfileId: document.getElementById('ad_password_profile_id'),
         passwordNew: document.getElementById('ad_password_new'),
@@ -1484,17 +1520,29 @@
         state.siteActivitySummary = Array.isArray(resp?.site_activity_summary) ? resp.site_activity_summary : [];
         state.siteActivityTypeRollups = Array.isArray(resp?.site_activity_type_rollups) ? resp.site_activity_type_rollups : [];
         state.siteActivityEntityRollups = Array.isArray(resp?.site_activity_entity_rollups) ? resp.site_activity_entity_rollups : [];
+        state.attendancePhotoReview = Array.isArray(resp?.attendance_photo_review) ? resp.attendance_photo_review : [];
+        state.hseEvidenceReview = Array.isArray(resp?.hse_evidence_review) ? resp.hse_evidence_review : [];
         state.employeeTimeClockEntries = Array.isArray(resp?.employee_time_clock_entries) ? resp.employee_time_clock_entries : [];
         state.employeeTimeClockCurrent = Array.isArray(resp?.employee_time_clock_current) ? resp.employee_time_clock_current : [];
         state.employeeTimeClockSummary = Array.isArray(resp?.employee_time_clock_summary) ? resp.employee_time_clock_summary : [];
         state.employeeTimeAttendanceExceptions = Array.isArray(resp?.employee_time_attendance_exceptions) ? resp.employee_time_attendance_exceptions : [];
         state.employeeTimeEntryReviews = Array.isArray(resp?.employee_time_entry_reviews) ? resp.employee_time_entry_reviews : [];
+        state.employeeTimeReviewQueue = Array.isArray(resp?.employee_time_review_queue) ? resp.employee_time_review_queue : [];
+        state.employeeTimeReviewSummary = Array.isArray(resp?.employee_time_review_summary) ? resp.employee_time_review_summary : [];
         state.operationsDashboardSummary = Array.isArray(resp?.operations_dashboard_summary) ? resp.operations_dashboard_summary : [];
         state.serviceAgreementExecutionCandidates = Array.isArray(resp?.service_agreement_execution_candidates) ? resp.service_agreement_execution_candidates : [];
+        state.serviceExecutionSchedulerSettings = Array.isArray(resp?.service_execution_scheduler_settings) ? resp.service_execution_scheduler_settings : [];
+        state.serviceExecutionSchedulerStatus = Array.isArray(resp?.service_execution_scheduler_status) ? resp.service_execution_scheduler_status : [];
+        state.signedContractJobKickoffCandidates = Array.isArray(resp?.signed_contract_job_kickoff_candidates) ? resp.signed_contract_job_kickoff_candidates : [];
         state.employeeTimeAttendanceExceptions = Array.isArray(resp?.employee_time_attendance_exceptions) ? resp.employee_time_attendance_exceptions : [];
         state.employeeTimeEntryReviews = Array.isArray(resp?.employee_time_entry_reviews) ? resp.employee_time_entry_reviews : [];
+        state.employeeTimeReviewQueue = Array.isArray(resp?.employee_time_review_queue) ? resp.employee_time_review_queue : [];
+        state.employeeTimeReviewSummary = Array.isArray(resp?.employee_time_review_summary) ? resp.employee_time_review_summary : [];
         state.operationsDashboardSummary = Array.isArray(resp?.operations_dashboard_summary) ? resp.operations_dashboard_summary : [];
         state.serviceAgreementExecutionCandidates = Array.isArray(resp?.service_agreement_execution_candidates) ? resp.service_agreement_execution_candidates : [];
+        state.serviceExecutionSchedulerSettings = Array.isArray(resp?.service_execution_scheduler_settings) ? resp.service_execution_scheduler_settings : [];
+        state.serviceExecutionSchedulerStatus = Array.isArray(resp?.service_execution_scheduler_status) ? resp.service_execution_scheduler_status : [];
+        state.signedContractJobKickoffCandidates = Array.isArray(resp?.signed_contract_job_kickoff_candidates) ? resp.signed_contract_job_kickoff_candidates : [];
         state.serviceAreas = Array.isArray(resp?.service_areas) ? resp.service_areas : [];
         state.routes = Array.isArray(resp?.routes) ? resp.routes : [];
         state.jobs = Array.isArray(resp?.jobs) ? resp.jobs : [];
@@ -1522,6 +1570,7 @@
         state.snowEventInvoiceCandidates = Array.isArray(resp?.snow_event_invoice_candidates) ? resp.snow_event_invoice_candidates : [];
         state.callbackWarrantyDashboardSummary = Array.isArray(resp?.callback_warranty_dashboard_summary) ? resp.callback_warranty_dashboard_summary : [];
         state.payrollReviewDetail = Array.isArray(resp?.payroll_review_detail) ? resp.payroll_review_detail : [];
+        state.payrollCloseReviewSummary = Array.isArray(resp?.payroll_close_review_summary) ? resp.payroll_close_review_summary : [];
         state.estimateConversionCandidates = Array.isArray(resp?.estimate_conversion_candidates) ? resp.estimate_conversion_candidates : [];
         state.jobFinancialEvents = Array.isArray(resp?.job_financial_events) ? resp.job_financial_events : [];
         state.jobFinancialRollups = Array.isArray(resp?.job_financial_rollups) ? resp.job_financial_rollups : [];
@@ -1602,13 +1651,20 @@
           state.siteActivitySummary = Array.isArray(resp?.site_activity_summary) ? resp.site_activity_summary : [];
           state.siteActivityTypeRollups = Array.isArray(resp?.site_activity_type_rollups) ? resp.site_activity_type_rollups : [];
           state.siteActivityEntityRollups = Array.isArray(resp?.site_activity_entity_rollups) ? resp.site_activity_entity_rollups : [];
+        state.attendancePhotoReview = Array.isArray(resp?.attendance_photo_review) ? resp.attendance_photo_review : [];
+        state.hseEvidenceReview = Array.isArray(resp?.hse_evidence_review) ? resp.hse_evidence_review : [];
           state.employeeTimeClockEntries = Array.isArray(resp?.employee_time_clock_entries) ? resp.employee_time_clock_entries : [];
           state.employeeTimeClockCurrent = Array.isArray(resp?.employee_time_clock_current) ? resp.employee_time_clock_current : [];
           state.employeeTimeClockSummary = Array.isArray(resp?.employee_time_clock_summary) ? resp.employee_time_clock_summary : [];
           state.employeeTimeAttendanceExceptions = Array.isArray(resp?.employee_time_attendance_exceptions) ? resp.employee_time_attendance_exceptions : [];
           state.employeeTimeEntryReviews = Array.isArray(resp?.employee_time_entry_reviews) ? resp.employee_time_entry_reviews : [];
+        state.employeeTimeReviewQueue = Array.isArray(resp?.employee_time_review_queue) ? resp.employee_time_review_queue : [];
+        state.employeeTimeReviewSummary = Array.isArray(resp?.employee_time_review_summary) ? resp.employee_time_review_summary : [];
           state.operationsDashboardSummary = Array.isArray(resp?.operations_dashboard_summary) ? resp.operations_dashboard_summary : [];
           state.serviceAgreementExecutionCandidates = Array.isArray(resp?.service_agreement_execution_candidates) ? resp.service_agreement_execution_candidates : [];
+        state.serviceExecutionSchedulerSettings = Array.isArray(resp?.service_execution_scheduler_settings) ? resp.service_execution_scheduler_settings : [];
+        state.serviceExecutionSchedulerStatus = Array.isArray(resp?.service_execution_scheduler_status) ? resp.service_execution_scheduler_status : [];
+        state.signedContractJobKickoffCandidates = Array.isArray(resp?.signed_contract_job_kickoff_candidates) ? resp.signed_contract_job_kickoff_candidates : [];
           state.serviceAreas = Array.isArray(resp?.service_areas) ? resp.service_areas : [];
           state.routes = Array.isArray(resp?.routes) ? resp.routes : [];
           state.jobs = Array.isArray(resp?.jobs) ? resp.jobs : [];
@@ -1636,6 +1692,7 @@
           state.snowEventInvoiceCandidates = Array.isArray(resp?.snow_event_invoice_candidates) ? resp.snow_event_invoice_candidates : [];
           state.callbackWarrantyDashboardSummary = Array.isArray(resp?.callback_warranty_dashboard_summary) ? resp.callback_warranty_dashboard_summary : [];
           state.payrollReviewDetail = Array.isArray(resp?.payroll_review_detail) ? resp.payroll_review_detail : [];
+        state.payrollCloseReviewSummary = Array.isArray(resp?.payroll_close_review_summary) ? resp.payroll_close_review_summary : [];
           state.estimateConversionCandidates = Array.isArray(resp?.estimate_conversion_candidates) ? resp.estimate_conversion_candidates : [];
           state.jobFinancialEvents = Array.isArray(resp?.job_financial_events) ? resp.job_financial_events : [];
           state.jobFinancialRollups = Array.isArray(resp?.job_financial_rollups) ? resp.job_financial_rollups : [];
@@ -1691,7 +1748,7 @@
       state.notifications = [];
       state.sites = [];
       state.assignments = [];
-      state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [], jobFinancialEvents: [], jobFinancialRollups: [], recurringServiceAgreements: [], snowEventTriggers: [], changeOrders: [], customerAssets: [], customerAssetJobLinks: [], warrantyCallbackEvents: [], payrollExportRuns: [], payrollReviewSummary: [], routeProfitabilitySummary: [], serviceContractDocuments: [], serviceAgreementProfitabilitySummary: [], snowEventInvoiceCandidates: [], callbackWarrantyDashboardSummary: [], payrollReviewDetail: [], estimateConversionCandidates: [] };
+      state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [], jobFinancialEvents: [], jobFinancialRollups: [], recurringServiceAgreements: [], snowEventTriggers: [], changeOrders: [], customerAssets: [], customerAssetJobLinks: [], warrantyCallbackEvents: [], payrollExportRuns: [], payrollReviewSummary: [], routeProfitabilitySummary: [], serviceContractDocuments: [], serviceAgreementProfitabilitySummary: [], snowEventInvoiceCandidates: [], callbackWarrantyDashboardSummary: [], payrollReviewDetail: [], estimateConversionCandidates: [], serviceExecutionSchedulerSettings: [], serviceExecutionSchedulerStatus: [], signedContractJobKickoffCandidates: [] };
       state.employeeTimeClockEntries = [];
       state.employeeTimeClockCurrent = [];
       state.employeeTimeClockSummary = [];
@@ -1818,6 +1875,12 @@
         { name:'document_kind', label:'Document Kind', type:'select', options:[['application','Application'],['contract','Contract'],['change_order','Change Order'],['service_summary','Service Summary'],['payroll_export_cover','Payroll Export Cover']] }, { name:'document_status', label:'Status', type:'select', options:[['draft','Draft'],['issued','Issued'],['signed','Signed'],['archived','Archived'],['void','Void']] }, { name:'title', label:'Title', type:'text', required:true }, { name:'contract_reference', label:'Contract Reference', type:'text' },
         { name:'effective_date', label:'Effective Date', type:'date' }, { name:'expiry_date', label:'Expiry Date', type:'date' }, { name:'issued_at', label:'Issued At', type:'datetime-local' }, { name:'signed_at', label:'Signed At', type:'datetime-local' }, { name:'signed_by_name', label:'Signed By Name', type:'text' }, { name:'signed_by_title', label:'Signed By Title', type:'text' }, { name:'signed_by_email', label:'Signed By Email', type:'email' }, { name:'signed_document_url', label:'Signed Document URL', type:'text' }, { name:'linked_invoice_id', label:'Linked Invoice', type:'select', source:'arInvoices' }, { name:'rendered_html', label:'Rendered HTML', type:'textarea' }, { name:'rendered_text', label:'Rendered Text', type:'textarea' }, { name:'notes', label:'Notes', type:'textarea' }
       ], columns:[['document_number','Document'],['document_kind','Kind'],['document_status','Status'],['signed_at','Signed'],['linked_invoice_id','Invoice']] },
+
+      service_execution_scheduler_setting: { label:'Service Execution Scheduler Settings', rowsKey:'serviceExecutionSchedulerSettings', valueKey:'id', labelField:'setting_code', fields:[
+        { name:'setting_code', label:'Setting Code', type:'text', required:true }, { name:'is_enabled', label:'Enabled', type:'checkbox' }, { name:'run_timezone', label:'Timezone', type:'text' }, { name:'cadence', label:'Cadence', type:'select', options:[['manual','Manual'],['hourly','Hourly'],['daily','Daily'],['weekly','Weekly']] },
+        { name:'run_hour_local', label:'Run Hour', type:'number' }, { name:'run_minute_local', label:'Run Minute', type:'number' }, { name:'lookahead_days', label:'Lookahead Days', type:'number' }, { name:'auto_create_sessions', label:'Auto Create Sessions', type:'checkbox' },
+        { name:'auto_stage_invoices', label:'Auto Stage Invoices', type:'checkbox' }, { name:'require_linked_job', label:'Require Linked Job', type:'checkbox' }, { name:'last_run_at', label:'Last Run', type:'datetime-local' }, { name:'next_run_at', label:'Next Run', type:'datetime-local' }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['setting_code','Setting'],['cadence','Cadence'],['is_enabled','Enabled'],['next_run_at','Next Run']] },
       customer_asset: { label:'Customer Assets', rowsKey:'customerAssets', valueKey:'id', labelField:'asset_name', fields:[
         { name:'asset_code', label:'Asset Code', type:'text', required:true }, { name:'client_id', label:'Client', type:'select', source:'clients' }, { name:'client_site_id', label:'Client Site', type:'select', source:'clientSites' },
         { name:'asset_name', label:'Asset Name', type:'text', required:true }, { name:'asset_type', label:'Asset Type', type:'text' }, { name:'serial_number', label:'Serial Number', type:'text' }, { name:'install_date', label:'Install Date', type:'date' }, { name:'warranty_expiry_date', label:'Warranty Expiry', type:'date' }, { name:'manufacturer', label:'Manufacturer', type:'text' }, { name:'model', label:'Model', type:'text' }, { name:'location_notes', label:'Location Notes', type:'textarea' }, { name:'service_notes', label:'Service Notes', type:'textarea' }, { name:'is_active', label:'Active', type:'checkbox' }
@@ -2073,7 +2136,7 @@
     };
 
     function getBackboneRows(entity) {
-      const map = { unit_of_measure: state.unitsOfMeasure || [], cost_code: state.costCodes || [], tax_code: state.taxCodes || [], business_tax_setting: state.businessTaxSettings || [], service_pricing_template: state.servicePricingTemplates || [], job_financial_event: state.jobFinancialEvents || [], recurring_service_agreement: state.recurringServiceAgreements || [], snow_event_trigger: state.snowEventTriggers || [], change_order: state.changeOrders || [], service_contract_document: state.serviceContractDocuments || [], customer_asset: state.customerAssets || [], customer_asset_job_link: state.customerAssetJobLinks || [], warranty_callback_event: state.warrantyCallbackEvents || [], payroll_export_run: state.payrollExportRuns || [], employee_time_entry: state.employeeTimeClockEntries || [], employee_time_entry_review: state.employeeTimeEntryReviews || [], service_area: state.serviceAreas || [], route: state.routes || [], route_stop: state.routeStops || [], route_stop_execution: state.routeStopExecutions || [], route_stop_execution_attachment: state.routeStopExecutionAttachments || [], client: state.clients || [], client_site: state.clientSites || [], material: state.materialsCatalog || [], equipment_master: state.equipmentMaster || [], estimate: state.estimates || [], estimate_line: state.estimateLines || [], work_order: state.workOrders || [], work_order_line: state.workOrderLines || [], subcontract_client: state.subcontractClients || [], subcontract_dispatch: state.subcontractDispatches || [], linked_hse_packet: state.linkedHsePackets || [], hse_packet_event: state.hsePacketEvents || [], hse_packet_proof: state.hsePacketProofs || [], field_upload_failure: state.fieldUploadFailures || [], app_traffic_event: state.appTrafficEvents || [], backend_monitor_event: state.backendMonitorEvents || [], gl_account: state.chartOfAccounts || [], gl_journal_batch: state.glJournalBatches || [], gl_journal_sync_exception: state.glJournalSyncExceptions || [], gl_journal_entry: state.glJournalEntries || [], ap_vendor: state.apVendors || [], ar_invoice: state.arInvoices || [], ar_payment: state.arPayments || [], ap_bill: state.apBills || [], ap_payment: state.apPayments || [], material_receipt: state.materialReceipts || [], material_receipt_line: state.materialReceiptLines || [], material_issue: state.materialIssues || [], material_issue_line: state.materialIssueLines || [] };
+      const map = { unit_of_measure: state.unitsOfMeasure || [], cost_code: state.costCodes || [], tax_code: state.taxCodes || [], business_tax_setting: state.businessTaxSettings || [], service_pricing_template: state.servicePricingTemplates || [], job_financial_event: state.jobFinancialEvents || [], recurring_service_agreement: state.recurringServiceAgreements || [], snow_event_trigger: state.snowEventTriggers || [], change_order: state.changeOrders || [], service_contract_document: state.serviceContractDocuments || [], customer_asset: state.customerAssets || [], customer_asset_job_link: state.customerAssetJobLinks || [], warranty_callback_event: state.warrantyCallbackEvents || [], payroll_export_run: state.payrollExportRuns || [], employee_time_entry: state.employeeTimeClockEntries || [], employee_time_entry_review: state.employeeTimeEntryReviews || [], service_execution_scheduler_setting: state.serviceExecutionSchedulerSettings || [], service_area: state.serviceAreas || [], route: state.routes || [], route_stop: state.routeStops || [], route_stop_execution: state.routeStopExecutions || [], route_stop_execution_attachment: state.routeStopExecutionAttachments || [], client: state.clients || [], client_site: state.clientSites || [], material: state.materialsCatalog || [], equipment_master: state.equipmentMaster || [], estimate: state.estimates || [], estimate_line: state.estimateLines || [], work_order: state.workOrders || [], work_order_line: state.workOrderLines || [], subcontract_client: state.subcontractClients || [], subcontract_dispatch: state.subcontractDispatches || [], linked_hse_packet: state.linkedHsePackets || [], hse_packet_event: state.hsePacketEvents || [], hse_packet_proof: state.hsePacketProofs || [], field_upload_failure: state.fieldUploadFailures || [], app_traffic_event: state.appTrafficEvents || [], backend_monitor_event: state.backendMonitorEvents || [], gl_account: state.chartOfAccounts || [], gl_journal_batch: state.glJournalBatches || [], gl_journal_sync_exception: state.glJournalSyncExceptions || [], gl_journal_entry: state.glJournalEntries || [], ap_vendor: state.apVendors || [], ar_invoice: state.arInvoices || [], ar_payment: state.arPayments || [], ap_bill: state.apBills || [], ap_payment: state.apPayments || [], material_receipt: state.materialReceipts || [], material_receipt_line: state.materialReceiptLines || [], material_issue: state.materialIssues || [], material_issue_line: state.materialIssueLines || [] };
       return Array.isArray(map[entity]) ? map[entity] : [];
     }
 
@@ -2247,8 +2310,8 @@
       const clean = String(entity || '').trim();
       if (!clean) return 'people';
       if (['linked_hse_packet','hse_packet_event','hse_packet_proof','field_upload_failure','app_traffic_event','backend_monitor_event'].includes(clean)) return 'safety';
-      if (['gl_account','gl_journal_batch','gl_journal_entry','gl_journal_sync_exception','ap_vendor','ar_invoice','ar_payment','ap_bill','ap_payment','material_receipt','material_receipt_line','material_issue','material_issue_line','job_financial_event'].includes(clean)) return 'accounting';
-      if (['route','route_stop','route_stop_execution','route_stop_execution_attachment','client','client_site','material','equipment_master','estimate','estimate_line','work_order','work_order_line','subcontract_client','subcontract_dispatch'].includes(clean)) return 'operations';
+      if (['gl_account','gl_journal_batch','gl_journal_entry','gl_journal_sync_exception','ap_vendor','ar_invoice','ar_payment','ap_bill','ap_payment','material_receipt','material_receipt_line','material_issue','material_issue_line','job_financial_event','payroll_export_run'].includes(clean)) return 'accounting';
+      if (['route','route_stop','route_stop_execution','route_stop_execution_attachment','client','client_site','material','equipment_master','estimate','estimate_line','work_order','work_order_line','subcontract_client','subcontract_dispatch','recurring_service_agreement','service_contract_document','customer_asset','customer_asset_job_link','warranty_callback_event','service_execution_scheduler_setting','employee_time_entry','employee_time_entry_review'].includes(clean)) return 'operations';
       return 'people';
     }
 
@@ -2517,6 +2580,37 @@
         cards.push({ title: 'Suggested Status', value: preview.status.replaceAll('_', ' '), help: 'Draft, in progress, ready for closeout, or closed based on completion.' });
         cards.push({ title: 'Action Priority', value: String(actionItem?.action_priority || 'normal'), help: actionItem?.action_title || actionItem?.action_summary || 'No immediate blocker is flagged for this packet.' });
         cards.push({ title: 'Open HSE Follow-up', value: String(openActionItems.length), help: 'Linked or standalone packets still carrying critical or warning action items.' });
+      }
+
+      if (entity === 'employee_time_entry') {
+        cards.push({ title: 'Clock-in Photo', value: selected?.clock_in_photo_url ? 'Available' : 'Missing', help: selected?.clock_in_photo_url || 'No clock-in photo is linked to this time entry.' });
+        cards.push({ title: 'Clock-out Photo', value: selected?.clock_out_photo_url ? 'Available' : 'Missing', help: selected?.clock_out_photo_url || 'No clock-out photo is linked to this time entry.' });
+        cards.push({ title: 'Clock-in Geofence', value: String(selected?.clock_in_geofence_status || 'not_checked').replaceAll('_', ' '), help: selected?.clock_in_geofence_distance_meters != null ? `${selected.clock_in_geofence_distance_meters}m from site center.` : 'No clock-in distance was recorded.' });
+        cards.push({ title: 'Clock-out Geofence', value: String(selected?.clock_out_geofence_status || 'not_checked').replaceAll('_', ' '), help: selected?.clock_out_geofence_distance_meters != null ? `${selected.clock_out_geofence_distance_meters}m from site center.` : 'No clock-out distance was recorded.' });
+      }
+
+      if (entity === 'hse_packet_proof') {
+        cards.push({ title: 'Proof URL', value: selected?.public_url ? 'Available' : 'Missing', help: selected?.public_url || 'No public proof URL is linked to this record.' });
+        cards.push({ title: 'Proof Kind', value: String(selected?.proof_kind || 'proof').replaceAll('_', ' '), help: selected?.caption || selected?.proof_notes || 'Caption or proof notes will help evidence review.' });
+      }
+
+      if (entity === 'service_contract_document') {
+        const kickoff = (state.signedContractJobKickoffCandidates || []).find((item) => String(item.contract_document_id || '') === String(selected?.id || '')) || null;
+        cards.push({ title: 'Signed Status', value: selected?.signed_at || String(selected?.document_status || '') === 'signed' ? 'Signed' : 'Pending', help: selected?.signed_at || 'Contract must be signed before live-job kickoff and invoice generation.' });
+        cards.push({ title: 'Kickoff Status', value: String(kickoff?.kickoff_status || (selected?.job_id ? 'linked_job_exists' : 'unknown')).replaceAll('_', ' '), help: kickoff?.suggested_job_code || 'Kickoff will create or link a live job using the agreement code as the service-contract reference.' });
+        cards.push({ title: 'Linked Invoice', value: selected?.linked_invoice_id ? 'Generated' : 'Pending', help: selected?.linked_invoice_id || 'No invoice has been linked to this contract yet.' });
+      }
+
+      if (entity === 'payroll_export_run') {
+        const close = Array.isArray(state.payrollCloseReviewSummary) ? state.payrollCloseReviewSummary[0] : null;
+        cards.push({ title: 'Unexported Hours', value: String(close?.unexported_hours_total || 0), help: 'Hours still waiting for payroll export close.' });
+        cards.push({ title: 'Attendance Reviews', value: String(close?.attendance_review_needed_count || 0), help: 'Open attendance exceptions should be reviewed before payroll close.' });
+      }
+
+      if (entity === 'service_execution_scheduler_setting') {
+        const status = Array.isArray(state.serviceExecutionSchedulerStatus) ? state.serviceExecutionSchedulerStatus[0] : null;
+        cards.push({ title: 'Latest Run', value: status?.latest_run_code || 'None', help: status?.latest_run_status || 'No scheduler run has been recorded yet.' });
+        cards.push({ title: 'Due Now', value: status?.is_due ? 'Yes' : 'No', help: status?.next_run_at || 'Next scheduled run time is not set.' });
       }
 
       e.backboneInsights.innerHTML = cards.map((card) => `
@@ -3121,8 +3215,27 @@
         setSummary('Payroll export generated and downloaded.');
         return;
       }
+      if (entity === 'service_execution_scheduler_setting') {
+        const resp = await manageAdminEntity({ entity: 'service_execution_scheduler_setting', action: 'run_now', item_id: itemId });
+        if (!resp?.ok) throw new Error(resp?.error || 'Scheduler run failed.');
+        await loadDirectory();
+        await refreshSelectors();
+        setSummary(`Scheduler run completed. Created ${resp.created_count || 0} session(s), ${resp.invoice_candidate_count || 0} invoice candidate(s), ${resp.skipped_count || 0} skipped.`);
+        return;
+      }
       if (entity === 'service_contract_document') {
         if (String(row?.document_status || '').toLowerCase() === 'signed' || row?.signed_at) {
+          if (!row?.job_id) {
+            const kickoff = await manageAdminEntity({ entity: 'service_contract_document', action: 'kickoff_live_job_from_signed', item_id: itemId });
+            if (!kickoff?.ok) throw new Error(kickoff?.error || 'Live job kickoff from signed contract failed.');
+            await loadDirectory();
+            await refreshSelectors();
+            if (e.backboneEntity) e.backboneEntity.value = 'work_order';
+            renderBackboneTable();
+            fillBackboneForm(getSelectedBackboneRecord());
+            setSummary('Live job kickoff completed from the signed contract. Run Generate again to stage the invoice if needed.');
+            return;
+          }
           const resp = await manageAdminEntity({ entity: 'service_contract_document', action: 'generate_invoice_from_signed', item_id: itemId });
           if (!resp?.ok) throw new Error(resp?.error || 'Invoice generation from signed contract failed.');
           await loadDirectory();
@@ -3390,7 +3503,7 @@
     async function refreshSelectors() {
       if (!loadAdminSelectors) return true;
       try {
-        const payload = await loadAdminSelectors({ scope: 'all' });
+        const payload = await loadAdminSelectors({ scope: 'admin_core' });
         state.selectors = {
           profiles: Array.isArray(payload?.profiles) ? payload.profiles : state.users,
           sites: Array.isArray(payload?.sites) ? payload.sites : state.sites,
@@ -3491,6 +3604,8 @@
       const e = els();
       if (!e.opsDashboardCards) return;
       const summary = Array.isArray(state.operationsDashboardSummary) ? state.operationsDashboardSummary[0] : null;
+      const payrollClose = Array.isArray(state.payrollCloseReviewSummary) ? state.payrollCloseReviewSummary[0] : null;
+      const reviewSummary = Array.isArray(state.employeeTimeReviewSummary) ? state.employeeTimeReviewSummary[0] : null;
       const cards = summary ? [
         ['Active Crews', summary.active_crews_on_site_count],
         ['Active Staff', summary.active_staff_on_site_count],
@@ -3498,17 +3613,90 @@
         ['Unsigned Sessions', summary.unsigned_session_job_count],
         ['Delayed Jobs', summary.delayed_job_count],
         ['Loss-making Jobs', summary.loss_making_job_count],
+        ['Attendance Reviews', reviewSummary?.needs_review_count || payrollClose?.attendance_review_needed_count || 0],
+        ['Unexported Payroll Hrs', payrollClose?.unexported_hours_total || 0],
       ] : [];
       e.opsDashboardCards.innerHTML = cards.map(([label, value]) => `<div class="admin-stat-card"><span>${escHtml(label)}</span><strong>${escHtml(String(value ?? 0))}</strong></div>`).join('') || '<div class="muted">No dashboard summary available yet.</div>';
     }
 
+    function mapActivityEntityToBackbone(entityType = '') {
+      const clean = String(entityType || '').trim().toLowerCase();
+      const map = {
+        profile: 'profile',
+        job: 'work_order',
+        equipment_master: 'equipment_master',
+        recurring_service_agreement: 'recurring_service_agreement',
+        service_contract_document: 'service_contract_document',
+        payroll_export_run: 'payroll_export_run',
+        employee_time_entry: 'employee_time_entry',
+        employee_time_entry_review: 'employee_time_entry_review',
+        linked_hse_packet: 'linked_hse_packet',
+        hse_packet_proof: 'hse_packet_proof',
+        route_stop_execution_attachment: 'route_stop_execution_attachment',
+        warranty_callback_event: 'warranty_callback_event',
+      };
+      return map[clean] || '';
+    }
+
+    function renderActivityRollups() {
+      const e = els();
+      if (!e.siteActivityRollups) return;
+      const entityRows = (Array.isArray(state.siteActivityEntityRollups) ? state.siteActivityEntityRollups : []).slice(0, 4);
+      const typeRows = (Array.isArray(state.siteActivityTypeRollups) ? state.siteActivityTypeRollups : []).slice(0, 4);
+      const cards = [];
+      for (const row of entityRows) {
+        cards.push(`<button class="admin-stat-card admin-activity-drill" type="button" data-drill-kind="entity" data-entity-type="${escHtml(row.entity_type || '')}"><span>${escHtml(String(row.entity_type || '').replaceAll('_', ' '))}</span><strong>${escHtml(String(row.last_24h_event_count || 0))}</strong></button>`);
+      }
+      for (const row of typeRows) {
+        cards.push(`<button class="admin-stat-card admin-activity-drill" type="button" data-drill-kind="type" data-event-type="${escHtml(row.event_type || '')}" data-entity-type="${escHtml(row.entity_type || '')}"><span>${escHtml(String(row.event_type || '').replaceAll('_', ' '))}</span><strong>${escHtml(String(row.last_24h_event_count || 0))}</strong></button>`);
+      }
+      e.siteActivityRollups.innerHTML = cards.join('') || '<div class="muted">No activity rollups yet.</div>';
+    }
+
+    function renderEvidenceReview() {
+      const e = els();
+      const attendance = (Array.isArray(state.attendancePhotoReview) ? state.attendancePhotoReview : []).slice(0, 8);
+      const hse = (Array.isArray(state.hseEvidenceReview) ? state.hseEvidenceReview : []).slice(0, 8);
+      if (e.attendanceEvidenceBody) {
+        e.attendanceEvidenceBody.innerHTML = attendance.map((row) => `
+          <tr data-evidence-entity="employee_time_entry" data-evidence-id="${escHtml(row.time_entry_id || '')}">
+            <td>${escHtml(row.uploaded_at || '')}</td>
+            <td>${escHtml(row.full_name || '')}</td>
+            <td>${escHtml(row.job_code || row.job_name || '')}</td>
+            <td>${escHtml(String(row.photo_stage || '').replaceAll('_', ' '))}</td>
+            <td>${escHtml(String(row.geofence_status || 'not_checked').replaceAll('_', ' '))}${row.geofence_distance_meters != null ? ` · ${escHtml(String(row.geofence_distance_meters))}m` : ''}</td>
+            <td>${row.photo_url ? `<a href="${escHtml(row.photo_url)}" target="_blank" rel="noopener">Open</a>` : '<span class="muted">No file</span>'}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="6" class="muted">No attendance evidence loaded yet.</td></tr>';
+      }
+      if (e.hseEvidenceBody) {
+        e.hseEvidenceBody.innerHTML = hse.map((row) => `
+          <tr data-evidence-entity="hse_packet_proof" data-evidence-id="${escHtml(row.proof_id || '')}">
+            <td>${escHtml(row.created_at || '')}</td>
+            <td>${escHtml(row.packet_number || '')}</td>
+            <td>${escHtml(String(row.proof_stage || '').replaceAll('_', ' '))}</td>
+            <td>${escHtml(String(row.proof_kind || '').replaceAll('_', ' '))}</td>
+            <td>${escHtml(row.caption || row.proof_notes || '')}</td>
+            <td>${row.public_url ? `<a href="${escHtml(row.public_url)}" target="_blank" rel="noopener">Open</a>` : '<span class="muted">No file</span>'}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="6" class="muted">No HSE proof items loaded yet.</td></tr>';
+      }
+      if (e.evidenceSummary) {
+        const attendanceFlags = attendance.filter((row) => ['outside','override'].includes(String(row.geofence_status || '').toLowerCase())).length;
+        e.evidenceSummary.textContent = `Attendance evidence: ${attendance.length} row(s), ${attendanceFlags} geofence exception row(s). HSE evidence: ${hse.length} row(s).`;
+        e.evidenceSummary.dataset.kind = attendanceFlags ? 'warning' : 'info';
+      }
+    }
+
     function renderSiteActivityTable() {
       renderOperationsDashboardCards();
+      renderActivityRollups();
+      renderEvidenceReview();
       const e = els();
       if (!e.siteActivityBody) return;
       const rows = Array.isArray(state.siteActivityEvents) ? state.siteActivityEvents : [];
       e.siteActivityBody.innerHTML = rows.map((item) => `
-        <tr>
+        <tr data-activity-entity-type="${escHtml(item.entity_type || '')}" data-activity-entity-id="${escHtml(item.entity_id || '')}">
           <td>${escHtml(item.occurred_at || item.created_at || '')}</td>
           <td>${escHtml(String(item.event_type || '').replaceAll('_', ' '))}</td>
           <td><strong>${escHtml(item.title || '')}</strong></td>
@@ -3529,6 +3717,34 @@
           : (rows.length ? `Loaded ${rows.length} recent site activity item(s).` : 'No recent site activity yet.');
         e.siteActivitySummary.dataset.kind = summary && Number(summary.last_24h_attention_count || 0) > 0 ? 'warning' : 'info';
       }
+    }
+
+    function handleActivityDrillClick(event) {
+      const btn = event.target.closest('.admin-activity-drill');
+      if (btn) {
+        const entityType = btn.getAttribute('data-entity-type') || '';
+        const targetEntity = mapActivityEntityToBackbone(entityType);
+        if (targetEntity) {
+          focusAdminHubEntity(targetEntity, { summary: `Focused ${String(entityType || '').replaceAll('_', ' ')} from activity rollup.` });
+        }
+        return;
+      }
+      const tr = event.target.closest('[data-activity-entity-type]');
+      if (!tr) return;
+      const entityType = tr.getAttribute('data-activity-entity-type') || '';
+      const entityId = tr.getAttribute('data-activity-entity-id') || '';
+      const targetEntity = mapActivityEntityToBackbone(entityType);
+      if (targetEntity) {
+        focusAdminHubEntity(targetEntity, { preferredId: entityId, summary: `Focused ${String(entityType || '').replaceAll('_', ' ')} from recent activity.` });
+      }
+    }
+
+    function handleEvidenceDrillClick(event) {
+      const tr = event.target.closest('[data-evidence-entity]');
+      if (!tr) return;
+      const entity = tr.getAttribute('data-evidence-entity') || '';
+      const id = tr.getAttribute('data-evidence-id') || '';
+      if (entity) focusAdminHubEntity(entity, { preferredId: id, summary: `Focused ${entity.replaceAll('_', ' ')} from evidence review.` });
     }
 
     function renderConflictTable() {
@@ -3639,6 +3855,23 @@
         e.staffProfileId.dataset.bound = '1';
         e.staffProfileId.addEventListener('change', () => fillStaffForm(getSelectedStaff()));
       }
+      if (e.siteActivityBody && e.siteActivityBody.dataset.bound !== '1') {
+        e.siteActivityBody.dataset.bound = '1';
+        e.siteActivityBody.addEventListener('click', handleActivityDrillClick);
+      }
+      if (e.siteActivityRollups && e.siteActivityRollups.dataset.bound !== '1') {
+        e.siteActivityRollups.dataset.bound = '1';
+        e.siteActivityRollups.addEventListener('click', handleActivityDrillClick);
+      }
+      if (e.attendanceEvidenceBody && e.attendanceEvidenceBody.dataset.bound !== '1') {
+        e.attendanceEvidenceBody.dataset.bound = '1';
+        e.attendanceEvidenceBody.addEventListener('click', handleEvidenceDrillClick);
+      }
+      if (e.hseEvidenceBody && e.hseEvidenceBody.dataset.bound !== '1') {
+        e.hseEvidenceBody.dataset.bound = '1';
+        e.hseEvidenceBody.addEventListener('click', handleEvidenceDrillClick);
+      }
+
       if (e.staffBody && e.staffBody.dataset.bound !== '1') {
         e.staffBody.dataset.bound = '1';
         e.staffBody.addEventListener('click', (event) => {
