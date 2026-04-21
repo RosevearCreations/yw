@@ -1,3 +1,4 @@
+<!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 # Attendance Photos, Geofence, Scheduler, and Signed-Contract Invoice Flow
 
 This pass adds:

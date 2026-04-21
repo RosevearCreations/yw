@@ -1,3 +1,4 @@
+<!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 # Employee Time Clock and Attendance
 
 This pass adds a self-service employee attendance layer tied to jobs, sites, job sessions, and payroll-linked crew hours.

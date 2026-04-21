@@ -41,6 +41,8 @@
       accountingEntries: [],
       siteActivityEvents: [],
       siteActivitySummary: [],
+      siteActivityTypeRollups: [],
+      siteActivityEntityRollups: [],
       serviceAreas: [],
       routes: [],
       jobs: [],
@@ -1480,6 +1482,8 @@
         state.accountingEntries = Array.isArray(resp?.accounting_entries) ? resp.accounting_entries : [];
         state.siteActivityEvents = Array.isArray(resp?.site_activity_events) ? resp.site_activity_events : [];
         state.siteActivitySummary = Array.isArray(resp?.site_activity_summary) ? resp.site_activity_summary : [];
+        state.siteActivityTypeRollups = Array.isArray(resp?.site_activity_type_rollups) ? resp.site_activity_type_rollups : [];
+        state.siteActivityEntityRollups = Array.isArray(resp?.site_activity_entity_rollups) ? resp.site_activity_entity_rollups : [];
         state.employeeTimeClockEntries = Array.isArray(resp?.employee_time_clock_entries) ? resp.employee_time_clock_entries : [];
         state.employeeTimeClockCurrent = Array.isArray(resp?.employee_time_clock_current) ? resp.employee_time_clock_current : [];
         state.employeeTimeClockSummary = Array.isArray(resp?.employee_time_clock_summary) ? resp.employee_time_clock_summary : [];
@@ -1596,6 +1600,8 @@
           state.accountingEntries = Array.isArray(resp?.accounting_entries) ? resp.accounting_entries : [];
           state.siteActivityEvents = Array.isArray(resp?.site_activity_events) ? resp.site_activity_events : [];
           state.siteActivitySummary = Array.isArray(resp?.site_activity_summary) ? resp.site_activity_summary : [];
+          state.siteActivityTypeRollups = Array.isArray(resp?.site_activity_type_rollups) ? resp.site_activity_type_rollups : [];
+          state.siteActivityEntityRollups = Array.isArray(resp?.site_activity_entity_rollups) ? resp.site_activity_entity_rollups : [];
           state.employeeTimeClockEntries = Array.isArray(resp?.employee_time_clock_entries) ? resp.employee_time_clock_entries : [];
           state.employeeTimeClockCurrent = Array.isArray(resp?.employee_time_clock_current) ? resp.employee_time_clock_current : [];
           state.employeeTimeClockSummary = Array.isArray(resp?.employee_time_clock_summary) ? resp.employee_time_clock_summary : [];
@@ -3513,8 +3519,13 @@
       if (e.siteActivitySummary) {
         const summary = Array.isArray(state.siteActivitySummary) ? state.siteActivitySummary[0] : null;
         const timeSummary = Array.isArray(state.employeeTimeClockSummary) ? state.employeeTimeClockSummary[0] : null;
+        const topTypes = (Array.isArray(state.siteActivityTypeRollups) ? state.siteActivityTypeRollups : [])
+          .filter((item) => Number(item.last_24h_event_count || 0) > 0)
+          .slice(0, 3)
+          .map((item) => `${String(item.event_type || '').replaceAll('_', ' ')} ${Number(item.last_24h_event_count || 0)}`)
+          .join(' · ');
         e.siteActivitySummary.textContent = summary
-          ? `Last 24 hours: ${Number(summary.last_24h_event_count || 0)} event(s), ${Number(summary.last_24h_job_created_count || 0)} job(s), ${Number(summary.last_24h_staff_created_count || 0)} staff record(s), ${Number(summary.last_24h_equipment_created_count || 0)} equipment item(s), ${Number(timeSummary?.last_24h_clock_in_count || 0)} clock-in(s), ${Number(timeSummary?.currently_clocked_in_count || 0)} active on-site, ${Number((state.operationsDashboardSummary?.[0] || {}).overdue_sign_out_count || 0)} overdue sign-out(s).`
+          ? `Last 24 hours: ${Number(summary.last_24h_event_count || 0)} event(s), ${Number(summary.last_24h_job_created_count || 0)} job(s), ${Number(summary.last_24h_staff_created_count || 0)} staff record(s), ${Number(summary.last_24h_equipment_created_count || 0)} equipment item(s), ${Number(timeSummary?.last_24h_clock_in_count || 0)} clock-in(s), ${Number(timeSummary?.currently_clocked_in_count || 0)} active on-site, ${Number((state.operationsDashboardSummary?.[0] || {}).overdue_sign_out_count || 0)} overdue sign-out(s)${topTypes ? `. Top activity: ${topTypes}.` : ''}`
           : (rows.length ? `Loaded ${rows.length} recent site activity item(s).` : 'No recent site activity yet.');
         e.siteActivitySummary.dataset.kind = summary && Number(summary.last_24h_attention_count || 0) > 0 ? 'warning' : 'info';
       }

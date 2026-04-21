@@ -10,7 +10,7 @@
   const SECTION_ID = 'hseops';
   const ADMIN_CACHE_KEY = 'ywi_admin_directory_cache_v1';
   const HSE_CACHE_KEY = 'ywi_hse_ops_cache_v1';
-  const state = { loaded: false, loading: false, payload: null, summary: null };
+  const state = { loaded: false, loading: false, payload: null, summary: null, lastLoadedAt: 0, renderScheduled: false, renderKey: '' };
 
   function getSection() {
     return document.getElementById(SECTION_ID);
@@ -55,6 +55,35 @@
     try {
       localStorage.setItem(HSE_CACHE_KEY, JSON.stringify({ savedAt: new Date().toISOString(), payload }));
     } catch {}
+  }
+
+  function buildRenderKey(summary = null, options = {}) {
+    const hse = summary?.hse || {};
+    const acct = summary?.accounting || {};
+    return JSON.stringify({
+      cached: !!options.cached,
+      total: hse.total_packets || 0,
+      action: hse.action_needed_packets || 0,
+      ready: hse.ready_for_closeout_packets || 0,
+      traffic: summary?.latestTraffic?.total_events || 0,
+      alerts: Array.isArray(summary?.alerts) ? summary.alerts.length : 0,
+      uploads: Array.isArray(summary?.monitorSummary) ? summary.monitorSummary.length : 0,
+      packets: Array.isArray(summary?.linkedContext) ? summary.linkedContext.length : 0,
+      acctOpen: acct.open_sync_exception_count || 0
+    });
+  }
+
+  function scheduleRender(summary = null, options = {}) {
+    const key = buildRenderKey(summary, options);
+    if (state.renderScheduled && state.renderKey === key) return;
+    state.renderKey = key;
+    state.renderScheduled = true;
+    const run = () => {
+      state.renderScheduled = false;
+      render(summary, options);
+    };
+    if (typeof window.requestAnimationFrame === 'function') window.requestAnimationFrame(run);
+    else setTimeout(run, 0);
   }
 
   function rankAlertLevel(level) {
@@ -368,20 +397,30 @@
         ${guidanceMarkup()}
       </div>`;
 
-    section.querySelectorAll('[data-route]').forEach((btn) => {
-      btn.addEventListener('click', () => window.YWIRouter?.showSection?.(btn.getAttribute('data-route') || 'toolbox'));
-    });
-    section.querySelectorAll('[data-admin-focus]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const entity = btn.getAttribute('data-admin-focus') || 'linked_hse_packet';
-        const preferredId = btn.getAttribute('data-preferred-id') || '';
-        const summaryText = btn.getAttribute('data-summary') || '';
-        const targetEntity = btn.getAttribute('data-target-entity') || '';
+  }
+
+
+  function bindSectionClicks() {
+    const section = getSection();
+    if (!section || section.dataset.boundClicks === '1') return;
+    section.dataset.boundClicks = '1';
+    section.addEventListener('click', (event) => {
+      const routeBtn = event.target.closest('[data-route]');
+      if (routeBtn && section.contains(routeBtn)) {
+        window.YWIRouter?.showSection?.(routeBtn.getAttribute('data-route') || 'toolbox');
+        return;
+      }
+      const focusBtn = event.target.closest('[data-admin-focus]');
+      if (focusBtn && section.contains(focusBtn)) {
+        const entity = focusBtn.getAttribute('data-admin-focus') || 'linked_hse_packet';
+        const preferredId = focusBtn.getAttribute('data-preferred-id') || '';
+        const summaryText = focusBtn.getAttribute('data-summary') || '';
+        const targetEntity = focusBtn.getAttribute('data-target-entity') || '';
         window.YWIRouter?.showSection?.('admin', { skipFocus: true });
         window.setTimeout(() => {
           document.dispatchEvent(new CustomEvent('ywi:admin-focus-request', { detail: { entity, preferredId, summary: summaryText, targetEntity } }));
         }, 80);
-      });
+      }
     });
   }
 
@@ -389,17 +428,17 @@
     if (state.loading || !canLoadOperationalData() || !window.YWIAPI?.loadAdminSelectors) return;
     state.loading = true;
     try {
-      const payload = await window.YWIAPI.loadAdminSelectors({ scope: 'all' });
+      const payload = await window.YWIAPI.loadAdminSelectors({ scope: 'hse_ops' });
       state.payload = payload || {};
       state.summary = normalizeSummary(state.payload);
       saveCache(state.payload);
-      render(state.summary, { cached: false });
+      scheduleRender(state.summary, { cached: false });
     } catch {
       const cached = loadCachedPayload();
       if (cached) {
         state.payload = cached;
         state.summary = normalizeSummary(cached);
-        render(state.summary, { cached: true });
+        scheduleRender(state.summary, { cached: true });
       }
     } finally {
       state.loading = false;
@@ -411,16 +450,17 @@
     const cached = loadCachedPayload();
     state.payload = cached || {};
     state.summary = normalizeSummary(state.payload || {});
-    render(state.summary, { cached: !!cached });
+    scheduleRender(state.summary, { cached: !!cached });
   }
 
   function init() {
+    bindSectionClicks();
     ensureBaseRender();
     document.addEventListener('ywi:route-shown', (event) => {
       const allowed = event?.detail?.allowed || '';
       if (allowed === SECTION_ID) {
-        ensureBaseRender();
-        loadLiveSummary();
+        if (!state.loaded) ensureBaseRender();
+        if (!state.lastLoadedAt || (Date.now() - state.lastLoadedAt) > 60000) loadLiveSummary();
       }
     });
     document.addEventListener('ywi:auth-changed', () => {
