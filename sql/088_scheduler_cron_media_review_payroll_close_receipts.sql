@@ -222,13 +222,8 @@ select
   s.auto_create_sessions,
   s.auto_stage_invoices,
   s.require_linked_job,
-  s.invoke_url,
   s.last_run_at,
   s.next_run_at,
-  s.last_dispatch_at,
-  s.last_dispatch_request_id,
-  s.last_dispatch_status,
-  s.last_dispatch_notes,
   s.notes,
   lr.id as latest_run_id,
   lr.run_code as latest_run_code,
@@ -242,7 +237,12 @@ select
   case
     when s.is_enabled = true and s.next_run_at is not null and s.next_run_at <= now() then true
     else false
-  end as is_due
+  end as is_due,
+  s.invoke_url,
+  s.last_dispatch_at,
+  s.last_dispatch_request_id,
+  s.last_dispatch_status,
+  s.last_dispatch_notes
 from public.service_execution_scheduler_settings s
 left join latest_run lr on lr.agreement_key = 'ALL';
 
@@ -457,8 +457,8 @@ select
     else 'not_signed'
   end as kickoff_status,
   concat('JOB-', regexp_replace(coalesce(a.agreement_code, d.document_number, d.contract_reference, d.id::text), '[^A-Za-z0-9]+', '-', 'g')) as suggested_job_code,
-  concat('WO-', regexp_replace(coalesce(a.agreement_code, d.document_number, d.contract_reference, d.id::text), '[^A-Za-z0-9]+', '-', 'g')) as suggested_work_order_number,
   coalesce(a.service_name, d.title, 'Signed Contract Job') as suggested_job_name,
+  concat('WO-', regexp_replace(coalesce(a.agreement_code, d.document_number, d.contract_reference, d.id::text), '[^A-Za-z0-9]+', '-', 'g')) as suggested_work_order_number,
   greatest(current_date, coalesce(a.start_date, current_date))::date as suggested_first_session_date,
   coalesce(a.visit_estimated_duration_hours, 0)::numeric(10,2) as suggested_first_session_hours
 from public.service_contract_documents d
@@ -503,14 +503,7 @@ with export_rollup as (
 select
   er.export_run_count,
   er.open_export_run_count,
-  er.delivery_pending_count,
-  er.delivery_recorded_count,
-  er.delivery_confirmed_count,
-  er.ready_to_close_count,
-  er.closed_run_count,
   er.last_exported_at,
-  er.last_delivery_confirmed_at,
-  er.last_payroll_closed_at,
   er.exported_entry_count_total,
   er.exported_hours_total,
   er.exported_payroll_cost_total,
@@ -519,7 +512,14 @@ select
   ar.unexported_payroll_cost_total,
   rr.attendance_review_needed_count,
   cr.overdue_sign_out_count,
-  cr.attendance_exception_count
+  cr.attendance_exception_count,
+  er.delivery_pending_count,
+  er.delivery_recorded_count,
+  er.delivery_confirmed_count,
+  er.ready_to_close_count,
+  er.closed_run_count,
+  er.last_delivery_confirmed_at,
+  er.last_payroll_closed_at
 from export_rollup er
 cross join attendance_rollup ar
 cross join review_rollup rr
