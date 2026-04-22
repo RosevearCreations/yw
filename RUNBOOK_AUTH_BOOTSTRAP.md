@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
@@ -120,3 +121,6 @@ Auth bootstrap is stable enough for the current pass; active build focus has shi
 ## 2026-04-21 note
 
 Auth/bootstrap flow was not the main target of this pass, but Admin-driven workflow depth increased. Re-test permissions for the new scheduler, evidence review, kickoff, and payroll close actions after deployment.
+
+## 2026-04-22 deployment reminder
+The scheduler Edge Function still uses its own shared secret header; bootstrap/auth fixes elsewhere should not re-enable JWT verification for that function.

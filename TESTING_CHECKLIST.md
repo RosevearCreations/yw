@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
@@ -192,3 +193,10 @@ Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summarie
 - Verify evidence approve / reject / follow-up actions persist and refresh the review tables.
 - Verify signed contract kickoff creates or links a job, creates a work order, and creates the first session.
 - Verify payroll export can be generated, confirmed delivered, and closed.
+
+### 2026-04-22 regression targets
+- Apply schema 088 on both Vault-capable and non-Vault environments and verify the dispatcher function compiles cleanly in both cases.
+- In Admin evidence review, record approve/reject/follow-up notes and confirm the review note appears immediately after reload.
+- From a signed contract, run kickoff and confirm the Admin summary reports the linked job, work order, and first planned session date.
+- For payroll export runs, verify the UI now requires delivered, then confirmed, then closed in that order.
+- Verify the new image-score documentation matches the intended completeness-score weighting before future merchandising score work begins.

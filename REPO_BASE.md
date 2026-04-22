@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
@@ -117,3 +118,7 @@ Schema version now extends through migration 076 for job pricing/profitability a
 ## 2026-04-21 repo sync
 
 Important latest files: `sql/088_scheduler_cron_media_review_payroll_close_receipts.sql`, updated `sql/000_full_schema_reference.sql`, updated `supabase/functions/admin-manage/index.ts`, updated `supabase/functions/service-execution-scheduler/index.ts`, updated `js/admin-ui.js`.
+
+## 2026-04-22 repo-alignment note
+- `sql/088_scheduler_cron_media_review_payroll_close_receipts.sql` and `sql/000_full_schema_reference.sql` now contain the portable scheduler dispatcher.
+- `sql/000_full_schema_reference.fixed.sql` has been removed again so the repo keeps one canonical full-schema reference.

@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
@@ -156,3 +157,6 @@ Deployments should now be treated as operations-critical because session integri
 ## 2026-04-21 deployment note
 
 After deploying this build, apply schema 088 and verify environment configuration for the service execution scheduler secret plus the per-setting invoke URL. Then test the full Admin flow for evidence review, signed-contract kickoff, and payroll export delivery/close actions.
+
+### 2026-04-22 scheduler environment note
+Use Vault on hosted Supabase when available. If the target environment does not provide the `vault` extension, keep the same secret in the Edge Function and set the fallback runtime config `app.settings.service_execution_scheduler_secret` for dispatcher testing or deployment-specific runtime wiring.

@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
@@ -185,3 +186,6 @@ The landscaping stack is now explicitly blending operations and commercial logic
 ## 2026-04-21 architecture note
 
 The architecture now treats scheduler timing, evidence review state, signed-contract kickoff, and payroll close as connected workflow stages rather than isolated tables. Scheduler timing can be driven from DB-backed settings, review decisions are persisted, and downstream ops/payroll steps now have explicit state transitions.
+
+## 2026-04-22 workflow architecture note
+Scheduler architecture remains DB settings row -> DB dispatcher -> `pg_net` -> `service-execution-scheduler-run` -> DB writeback, but secret lookup is now intentionally portable across Vault and non-Vault environments.

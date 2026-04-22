@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
@@ -424,3 +425,9 @@ Still open:
 - Evidence review still uses prompt-based notes in the Admin UI; a richer inline notes editor would improve mobile use.
 - Work-order kickoff does not yet auto-create HSE packets, dispatches, or route-stop execution shells.
 - More public-page SEO/meta passes and ongoing CSS drift review are still expected on each build.
+
+## 2026-04-22 open workflow notes
+- Evidence approve/reject/follow-up is live, but still needs more real-record testing across older attendance and HSE proof rows.
+- Signed-contract kickoff now returns clearer job/work-order/session feedback in Admin, but it still needs broader client/crew/route test coverage.
+- Payroll close is now intentionally sequential (delivered -> confirmed -> closed); older records created before this pass may need manual normalization if they skipped confirmation.
+- Image scoring is currently a rule-based completeness score, not an AI quality score; merchandising-focused checks such as sharpness, exposure, duplicate-angle detection, and subject framing remain future work.

@@ -3224,6 +3224,7 @@ serve(async (req) => {
       if (!run.exported_at) return Response.json({ ok:false, error:'Generate the payroll export before marking it delivered.' }, { status:400, headers:corsHeaders });
       const nowIso = new Date().toISOString();
       const nextStatus = String(body.delivery_status || 'confirmed').toLowerCase() === 'delivered' ? 'delivered' : 'confirmed';
+      if (nextStatus === 'confirmed' && !['delivered','confirmed'].includes(String(run.delivery_status || '').toLowerCase())) return Response.json({ ok:false, error:'Mark this payroll export delivered before confirming receipt.' }, { status:400, headers:corsHeaders });
       const { data, error } = await supabase.from('payroll_export_runs').update({ delivery_status: nextStatus, delivery_reference: body.delivery_reference ?? run.delivery_reference ?? null, delivery_notes: body.delivery_notes ?? run.delivery_notes ?? null, delivered_at: run.delivered_at || nowIso, delivered_by_profile_id: run.delivered_by_profile_id || actorId, delivery_confirmed_at: nextStatus === 'confirmed' ? nowIso : run.delivery_confirmed_at, payroll_close_status: nextStatus === 'confirmed' ? 'ready_to_close' : (run.payroll_close_status || 'open'), updated_at: nowIso }).eq('id', run.id).select('*').single();
       if (error) throw error;
       await recordSiteActivity(supabase, { event_type:'payroll_export_delivered', entity_type:'payroll_export_run', entity_id:data.id, severity:'success', title:'Payroll export delivery recorded', summary:`${data.run_code || data.id} marked ${data.delivery_status}.`, created_by_profile_id: actorId });
@@ -3233,7 +3234,7 @@ serve(async (req) => {
     if (entity === 'payroll_export_run' && action === 'close_run') {
       const run = await fetchSingle(supabase, 'payroll_export_runs', body.item_id);
       if (!run?.id) return Response.json({ ok:false, error:'Payroll export run not found.' }, { status:404, headers:corsHeaders });
-      if (!run.exported_at || !['delivered','confirmed'].includes(String(run.delivery_status || '').toLowerCase())) return Response.json({ ok:false, error:'Confirm delivery before closing this payroll run.' }, { status:400, headers:corsHeaders });
+      if (!run.exported_at || String(run.delivery_status || '').toLowerCase() !== 'confirmed') return Response.json({ ok:false, error:'Confirm delivery before closing this payroll run.' }, { status:400, headers:corsHeaders });
       const nowIso = new Date().toISOString();
       const { data, error } = await supabase.from('payroll_export_runs').update({ payroll_close_status: 'closed', payroll_closed_at: nowIso, payroll_closed_by_profile_id: actorId, payroll_close_notes: body.payroll_close_notes ?? run.payroll_close_notes ?? null, updated_at: nowIso }).eq('id', run.id).select('*').single();
       if (error) throw error;

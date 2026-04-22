@@ -1,7 +1,8 @@
+<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 ## 2026-04-17 contract conversion, payroll export generation, callback dashboard, and snow invoice automation pass
-- Synced the repo to the live scheduler deployment fix by moving the cron dispatcher from `current_setting('app.settings.service_execution_scheduler_secret', true)` to Supabase Vault (`vault.decrypted_secrets`).
+- Synced the repo to the live scheduler deployment fix by updating the cron dispatcher to prefer Vault when available while cleanly falling back to `current_setting('app.settings.service_execution_scheduler_secret', true)` on environments where the Vault extension is unavailable.
 - Added canonical Edge Function config for `service-execution-scheduler-run` with `verify_jwt = false` so repo deploys match the live environment.
 - Refreshed the full schema reference and schema 088 so scheduler status, signed-contract kickoff, and payroll-close summary views preserve stable column order during `create or replace view` updates.
 - Removed the stray `sql/000_full_schema_reference.fixed.sql` helper copy so the repo has one canonical full schema file again.
@@ -252,3 +253,10 @@ Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summarie
 - Normalized payroll export provider handling so QuickBooks Time / SimplePay / ADP CSV selections map correctly into generated layouts.
 - Refined Admin evidence review UI, scheduler controls, and payroll export workflow states.
 - Bumped frontend cache/version strings and re-ran the repo smoke check.
+
+## 2026-04-22 portable scheduler fallback, evidence review polish, contract kickoff messaging, payroll close sequencing, and image-score documentation pass
+- Reworked schema 088 and the canonical full schema so scheduler dispatch prefers Vault when available but no longer fails on environments where the `vault` extension is unavailable.
+- Removed the unsupported `create extension if not exists vault;` requirement from canonical schema files and restored a safe `app.settings.*` fallback path.
+- Tightened payroll export workflow sequencing so Admin now moves through delivered -> confirmed -> closed instead of jumping directly to confirmed/closed.
+- Improved Admin prompts and summaries for evidence review notes, signed-contract kickoff results, and payroll delivery/close notes.
+- Added explicit documentation that image rating is a rule-based completeness score, not an AI quality grade, and recorded the current weighting plus possible future merchandising signals.

@@ -1,8 +1,9 @@
+<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 087 evidence review, scheduler settings, and signed-contract kickoff pass on 2026-04-20. -->
 ## Immediate next build priorities after 087
 1. **Scheduler live-path follow-through**
-   - repo and live database are now aligned on Vault-backed scheduler dispatch plus the `service-execution-scheduler-run` Edge Function
+   - repo and live database are now aligned on a portable scheduler dispatch path: Vault-backed when available, with a fallback secret source when Vault is unavailable
    - next scheduler work is duplicate-run safeguards, richer invoice staging from scheduler payloads, and alerting when dispatch fails repeatedly
 2. **Operational verification pass**
    - test the richer attendance/HSE approve-reject-follow-up workflow in real Admin usage
@@ -545,3 +546,8 @@ Next recommended build steps:
 3. Extend payroll-close with export receipt upload / signed acknowledgement document support.
 4. Add a dedicated work-order details drill-down after signed-contract kickoff so supervisors can confirm route, packet, and crew assignment from one screen.
 5. Continue JSON-to-DB cleanup where duplicate state still exists in admin summaries or selector payloads.
+
+## 2026-04-22 workflow polish update
+- Scheduler SQL now needs to stay portable across environments: hosted Supabase can use Vault, but canonical repo SQL must keep the non-Vault fallback.
+- Payroll export workflow now expects a full delivered -> confirmed -> closed progression in Admin.
+- Image scoring guidance is now documented as a rule-based completeness score rather than an AI quality score; a future merchandising pass can add blur, exposure, duplicate-angle, and lifestyle bonuses/penalties.

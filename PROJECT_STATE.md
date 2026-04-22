@@ -1,7 +1,8 @@
+<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 ## 2026-04-20 project-state update (schema 087)
 The live/runtime drift from the scheduler setup is now closed:
-- schema 088 and the full schema reference now point to a Vault-backed scheduler secret instead of `app.settings.*`
+- schema 088 and the full schema reference now prefer Vault for the scheduler secret but intentionally retain a fallback path for environments without the Vault extension
 - the `service-execution-scheduler-run` Edge Function is now part of the committed deployment config, not just a live-only fix
 - the operations roadmap has shifted from plumbing to real workflow verification for evidence review, signed-contract kickoff, and payroll close
 
@@ -296,3 +297,6 @@ Operations, attendance, payroll, and contract flow are now more connected. Emplo
 - Scheduler settings are partially production-ready, pending environment secret + invoke URL deployment.
 - Signed contracts can now advance deeper into live execution records.
 - Payroll close now includes export generation, delivery confirmation, and close signoff states.
+
+## 2026-04-22 project-state note
+The scheduler is no longer only a hosted-Vault story; repo truth is now portable enough to survive environments where the Vault extension is missing, which reduces deployment drift risk.

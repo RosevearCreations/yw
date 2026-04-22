@@ -1,9 +1,10 @@
+<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## 2026-04-13 staff admin save verification pass
 - Scheduler dispatch is now defined as `pg_cron` -> `dispatch_due_service_execution_scheduler_runs()` -> `pg_net` HTTP POST -> `service-execution-scheduler-run` Edge Function.
-- The scheduler shared secret is now treated as a Vault secret (`service_execution_scheduler_secret`) read through `vault.decrypted_secrets`, not as an `app.settings.*` runtime config.
+- The scheduler shared secret now prefers Vault (`service_execution_scheduler_secret`) when available, but canonical SQL also falls back to `app.settings.service_execution_scheduler_secret` for environments where Vault is not installed.
 - Canonical schema files now keep stable column order for the scheduler status, signed-contract kickoff, and payroll-close review views so full-schema rebuilds do not fail on `create or replace view` column-layout changes.
 
 - Added visible inline create/save/reset/block/delete confirmations in the Staff Directory screen so staff actions no longer fail silently from the operator’s point of view.
@@ -352,3 +353,6 @@ The database structure is now aligned through schema pass 088, including:
 - extended `service_execution_scheduler_settings` dispatch fields
 - extended `payroll_export_runs` delivery / close fields
 - refreshed scheduler, evidence review, kickoff, and payroll close views
+
+## 2026-04-22 scheduler portability note
+Canonical scheduler SQL now prefers Vault for `service_execution_scheduler_secret` when the extension exists, but it no longer hard-requires the `vault` extension to compile or run.

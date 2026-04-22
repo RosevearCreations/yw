@@ -1,6 +1,7 @@
+<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 ## 2026-04-20 context refresh (schema 087)
-- Scheduler runtime is now proven live through Vault-backed dispatch plus the `service-execution-scheduler-run` Edge Function.
+- Scheduler runtime is now proven live through Hosted scheduler runtime is proven through Vault-backed dispatch plus the `service-execution-scheduler-run` Edge Function, while canonical SQL now falls back cleanly when Vault is unavailable.
 - When editing scheduler files, keep SQL, full schema, function code, function config, deployment guide, testing checklist, roadmap, and new-chat handoff in sync.
 
 - Admin backbone forms now use `admin_core` selector loading to reduce payload size.
@@ -177,3 +178,8 @@ This pass adds attendance-photo storage metadata, geofence evaluation against si
 ## 2026-04-21 sync note
 
 This repo is now aligned through schema pass 088. The newest operational additions are scheduler cron/dispatch support, evidence review actions, signed-contract kickoff into job/work-order/session records, and payroll delivery/close workflow states.
+
+## 2026-04-22 context refresh
+- Canonical schema truth is now portable for scheduler secret lookup: Vault first when available, `app.settings.*` fallback otherwise.
+- Payroll exports are intended to progress delivered -> confirmed -> closed, not jump straight to closed.
+- Image score language should stay framed as a rule-based completeness score, not an AI quality rating.

@@ -1,7 +1,8 @@
+<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 ## Latest pass: schema 087 evidence review, scheduler settings, payroll-close, and signed-contract kickoff
 - Live scheduler plumbing now works end-to-end using `pg_cron` + `pg_net` + `service-execution-scheduler-run` with the shared secret stored in Supabase Vault.
-- Repo files were brought back into line with the live database fix: canonical schema 088/full-schema dispatcher now reads `vault.decrypted_secrets`, and the scheduler-run function has committed `verify_jwt = false` config.
+- Repo files were brought back into line with the live database fix: canonical schema 088/full-schema dispatcher now prefers `vault.decrypted_secrets` but falls back cleanly where Vault is unavailable, and the scheduler-run function has committed `verify_jwt = false` config.
 - The next chat should focus on operational testing and polish for evidence review, signed-contract kickoff, payroll close, and scheduler duplicate/invoice staging safeguards.
 
 - Added Admin evidence review tables for attendance photos and HSE packet proof rows.
@@ -193,3 +194,8 @@ The repo now includes attendance photo upload metadata, geofence distance/status
 ### Known follow-up
 - Scheduler currently records invoice candidates but does not yet auto-create invoices from those candidates.
 - Evidence review notes are prompt-driven in the current Admin UI.
+
+## Latest pass: 2026-04-22 portable scheduler fallback and workflow polish
+- Canonical schema files no longer require the unavailable `vault` extension; scheduler dispatch now prefers Vault when available and falls back cleanly when it is not.
+- Admin evidence review now prompts for optional notes more clearly, signed-contract kickoff returns richer completion messaging, and payroll export actions now step through delivered -> confirmed -> closed.
+- Image-rating guidance is now documented as a rule-based completeness score rather than an AI quality rating.

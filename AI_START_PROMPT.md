@@ -1,8 +1,9 @@
+<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## 2026-04-13 staff admin save verification pass
-- Current scheduler truth: cron dispatch uses Supabase Vault plus `service-execution-scheduler-run`; repo/config/docs were aligned on 2026-04-21.
+- Current scheduler truth: cron dispatch uses `service-execution-scheduler-run`; hosted Supabase can use Vault, and repo SQL now includes a safe fallback for environments where the Vault extension is unavailable.
 
 - Added visible inline create/save/reset/block/delete confirmations in the Staff Directory screen so staff actions no longer fail silently from the operator’s point of view.
 - Added stronger front-end email and password validation plus busy-state feedback for staff actions.
@@ -369,3 +370,8 @@ Start from schema 088 and assume the Admin hub now includes:
 - scheduler setting dispatch metadata
 - signed-contract kickoff action
 - payroll delivery confirmation / close-signoff workflow
+
+## 2026-04-22 operator note
+- Treat image score language as rule-based completeness, not AI judging.
+- Keep scheduler SQL portable across Vault and non-Vault environments.
+- Preserve the delivered -> confirmed -> closed payroll sequence in future passes.

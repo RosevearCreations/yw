@@ -1,6 +1,7 @@
+<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 ## Schema 087 mental model update
-- Treat the scheduler secret as Vault-backed repo truth now; do not reintroduce `current_setting('app.settings.service_execution_scheduler_secret', true)` in future passes.
+- Treat the scheduler secret flow as portable repo truth now: prefer Vault where available, but keep the coded fallback to `current_setting('app.settings.service_execution_scheduler_secret', true)` for environments where Vault is unavailable.
 - The highest-value next pass is workflow verification/polish, not more scheduler plumbing.
 
 - Attendance and HSE evidence now have dedicated Admin review lanes.
@@ -253,3 +254,6 @@ First things to inspect in a fresh chat:
 - `js/admin-ui.js`
 - `DEVELOPMENT_ROADMAP.md`
 - `KNOWN_ISSUES_AND_GAPS.md`
+
+## 2026-04-22 mental note
+Do not assume every environment has the `vault` extension even if hosted Supabase does. Keep scheduler code portable and keep Admin workflow steps human-readable.
