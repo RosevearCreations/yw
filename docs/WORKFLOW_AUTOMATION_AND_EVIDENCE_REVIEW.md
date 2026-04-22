@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
 # Workflow Automation and Evidence Review
 
 Reviewed and updated during schema 087 on 2026-04-20.
@@ -25,3 +26,6 @@ Workflow automation now includes:
 - stored evidence review actions
 - signed-contract kickoff into live operations records
 - payroll delivery confirmation and close signoff after export generation
+
+## 2026-04-22 workflow polish note
+Evidence review buttons now prompt for clearer optional notes, payroll close is intentionally sequential, and signed-contract kickoff messaging now surfaces job/work-order/session results more clearly to the operator.

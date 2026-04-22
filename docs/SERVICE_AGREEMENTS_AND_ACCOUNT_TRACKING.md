@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 # Service agreements, payroll review, asset history, and account tracking
@@ -45,3 +46,6 @@ This app is moving toward a landscaping + recurring service + custom project + a
 ## 2026-04-21 sync note
 
 Service agreements and signed contracts now flow farther into execution: a signed contract can create/link the job, create a work order, and create the first planned session. Scheduler settings also now influence session creation lookahead and eligibility.
+
+## 2026-04-22 signed-contract kickoff note
+Signed-contract kickoff now returns clearer downstream feedback so operators can verify the linked job, created work order, and first planned session without guessing which record was produced.

@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## 2026-04-13 staff admin save verification pass
@@ -296,3 +297,6 @@ New accounting-facing additions include:
 ## 2026-04-21 schema sync
 
 Docs synced to schema 088. Key additions are media review actions, scheduler dispatch metadata, payroll close delivery/signoff fields, and updated review/status views.
+
+## 2026-04-22 canonical-schema note
+Canonical schema files now avoid hard-requiring the `vault` extension even though hosted Supabase can still use Vault for the scheduler secret.

@@ -7,7 +7,6 @@
 
 create extension if not exists pg_net;
 create extension if not exists pg_cron;
-create extension if not exists vault;
 
 create table if not exists public.media_review_actions (
   id uuid primary key default gen_random_uuid(),
@@ -107,25 +106,40 @@ language plpgsql
 security definer
 as $$
 declare
-  v_secret text := (
-    select decrypted_secret
-    from vault.decrypted_secrets
-    where name = 'service_execution_scheduler_secret'
-    limit 1
-  );
+  v_secret text := null;
   v_dispatched integer := 0;
   v_request_id bigint;
   r record;
 begin
+  -- Try Supabase Vault first.
+  begin
+    execute $sql$
+      select decrypted_secret
+      from vault.decrypted_secrets
+      where name = 'service_execution_scheduler_secret'
+      limit 1
+    $sql$
+    into v_secret;
+  exception
+    when undefined_table or invalid_schema_name then
+      v_secret := null;
+  end;
+
+  -- Fallback for environments where Vault is unavailable.
+  if coalesce(v_secret, '') = '' then
+    v_secret := nullif(current_setting('app.settings.service_execution_scheduler_secret', true), '');
+  end if;
+
   if coalesce(v_secret, '') = '' then
     update public.service_execution_scheduler_settings
     set
       last_dispatch_status = 'failed',
-      last_dispatch_notes = 'Missing Vault secret: service_execution_scheduler_secret.',
+      last_dispatch_notes = 'Missing scheduler secret. Checked Vault first, then app.settings.service_execution_scheduler_secret.',
       updated_at = now()
     where is_enabled = true
       and coalesce(invoke_url, '') <> ''
       and coalesce(next_run_at, now()) <= now();
+
     return 0;
   end if;
 
@@ -154,7 +168,14 @@ begin
         last_dispatch_at = now(),
         last_dispatch_request_id = v_request_id,
         last_dispatch_status = 'queued',
-        last_dispatch_notes = 'Queued through pg_cron/pg_net dispatcher.',
+        last_dispatch_notes = case
+          when exists (
+            select 1
+            from pg_namespace
+            where nspname = 'vault'
+          ) then 'Queued through pg_cron/pg_net dispatcher using Vault-backed secret when available.'
+          else 'Queued through pg_cron/pg_net dispatcher using fallback secret source.'
+        end,
         updated_at = now()
       where id = r.id;
 

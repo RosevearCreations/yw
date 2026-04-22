@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Added during schema 084 supervisor attendance / execution-candidate pass on 2026-04-19. -->
 # Supervisor Attendance and Execution Candidates
@@ -31,3 +32,6 @@ The app now has a stronger field-to-backoffice flow:
 ## 2026-04-21 sync note
 
 Supervisor-facing candidate review now has deeper backend support: attendance evidence can be reviewed with stored outcomes, and scheduler candidates can be run from settings-aware execution logic rather than static candidate views alone.
+
+## 2026-04-22 review sequencing note
+Attendance review and scheduler execution now feed directly into payroll-close readiness, so the delivered -> confirmed -> closed payroll sequence should be preserved in testing.

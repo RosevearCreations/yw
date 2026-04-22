@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 # Ontario accounting and tax guardrails
@@ -49,3 +50,6 @@ This repo now has the start of a labor-aware profitability model. Ontario tax gu
 ## 2026-04-21 sync note
 
 Payroll workflow documentation should now assume three post-export states: exported, delivered/confirmed, and closed. Continue validating Ontario payroll/accounting handling before final postings.
+
+## 2026-04-22 payroll note
+Payroll export closeout now assumes an explicit delivery confirmation step before final close signoff.

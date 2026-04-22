@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 # Employee Time Clock and Attendance
 
@@ -33,3 +34,6 @@ This pass adds a self-service employee attendance layer tied to jobs, sites, job
 ## 2026-04-21 sync note
 
 Attendance exceptions and media review are now closer together operationally: evidence review actions can update the stored review state while payroll-close summaries continue surfacing remaining attendance review work.
+
+## 2026-04-22 attendance-review note
+Attendance evidence review remains rule-driven and operator-reviewed; follow-up notes should be captured during approve/reject/follow-up actions so later payroll close checks have better context.

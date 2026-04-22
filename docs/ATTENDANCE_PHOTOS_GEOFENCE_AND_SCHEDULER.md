@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 # Attendance Photos, Geofence, Scheduler, and Signed-Contract Invoice Flow
 
@@ -18,3 +19,6 @@ Next likely follow-up work:
 ## 2026-04-21 sync note
 
 Attendance photo review now stores approve / reject / follow-up outcomes in `media_review_actions`, and scheduler settings now include dispatch metadata plus cron-ready next-run handling.
+
+## 2026-04-22 scheduler note
+When documenting scheduler setup, describe the secret source as Vault-preferred but fallback-capable so local or non-Vault environments do not drift from the canonical repo SQL.
