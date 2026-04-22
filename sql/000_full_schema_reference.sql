@@ -2,6 +2,7 @@
 -- Current reference remains aligned through 088_scheduler_cron_media_review_payroll_close_receipts.sql.
 
 create extension if not exists pgcrypto;
+create extension if not exists vault;
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -3677,7 +3678,12 @@ select
   case
     when s.is_enabled = true and s.next_run_at is not null and s.next_run_at <= now() then true
     else false
-  end as is_due
+  end as is_due,
+  s.invoke_url,
+  s.last_dispatch_at,
+  s.last_dispatch_request_id,
+  s.last_dispatch_status,
+  s.last_dispatch_notes
 from public.service_execution_scheduler_settings s
 left join latest_run lr on lr.agreement_key = 'ALL';
 
@@ -3803,7 +3809,10 @@ select
     else 'not_signed'
   end as kickoff_status,
   concat('JOB-', regexp_replace(coalesce(a.agreement_code, d.document_number, d.contract_reference, d.id::text), '[^A-Za-z0-9]+', '-', 'g')) as suggested_job_code,
-  coalesce(a.service_name, d.title, 'Signed Contract Job') as suggested_job_name
+  coalesce(a.service_name, d.title, 'Signed Contract Job') as suggested_job_name,
+  concat('WO-', regexp_replace(coalesce(a.agreement_code, d.document_number, d.contract_reference, d.id::text), '[^A-Za-z0-9]+', '-', 'g')) as suggested_work_order_number,
+  greatest(current_date, coalesce(a.start_date, current_date))::date as suggested_first_session_date,
+  coalesce(a.visit_estimated_duration_hours, 0)::numeric(10,2) as suggested_first_session_hours
 from public.service_contract_documents d
 left join public.recurring_service_agreements a on a.id = d.agreement_id
 left join public.estimates e on e.id = d.estimate_id
@@ -3815,7 +3824,14 @@ with export_rollup as (
   select
     count(*)::int as export_run_count,
     count(*) filter (where coalesce(status, '') <> 'exported')::int as open_export_run_count,
+    count(*) filter (where coalesce(delivery_status, 'pending') = 'pending')::int as delivery_pending_count,
+    count(*) filter (where coalesce(delivery_status, '') in ('delivered','confirmed'))::int as delivery_recorded_count,
+    count(*) filter (where coalesce(delivery_status, '') = 'confirmed')::int as delivery_confirmed_count,
+    count(*) filter (where coalesce(payroll_close_status, 'open') = 'ready_to_close')::int as ready_to_close_count,
+    count(*) filter (where coalesce(payroll_close_status, 'open') = 'closed')::int as closed_run_count,
     max(exported_at) as last_exported_at,
+    max(delivery_confirmed_at) as last_delivery_confirmed_at,
+    max(payroll_closed_at) as last_payroll_closed_at,
     coalesce(sum(coalesce(exported_entry_count, 0)), 0)::int as exported_entry_count_total,
     coalesce(sum(coalesce(exported_hours_total, 0)), 0)::numeric(10,2) as exported_hours_total,
     coalesce(sum(coalesce(exported_payroll_cost_total, 0)), 0)::numeric(12,2) as exported_payroll_cost_total
@@ -3848,7 +3864,14 @@ select
   ar.unexported_payroll_cost_total,
   rr.attendance_review_needed_count,
   cr.overdue_sign_out_count,
-  cr.attendance_exception_count
+  cr.attendance_exception_count,
+  er.delivery_pending_count,
+  er.delivery_recorded_count,
+  er.delivery_confirmed_count,
+  er.ready_to_close_count,
+  er.closed_run_count,
+  er.last_delivery_confirmed_at,
+  er.last_payroll_closed_at
 from export_rollup er
 cross join attendance_rollup ar
 cross join review_rollup rr
@@ -3963,7 +3986,12 @@ language plpgsql
 security definer
 as $$
 declare
-  v_secret text := nullif(current_setting('app.settings.service_execution_scheduler_secret', true), '');
+  v_secret text := (
+    select decrypted_secret
+    from vault.decrypted_secrets
+    where name = 'service_execution_scheduler_secret'
+    limit 1
+  );
   v_dispatched integer := 0;
   v_request_id bigint;
   r record;
@@ -3972,7 +4000,7 @@ begin
     update public.service_execution_scheduler_settings
     set
       last_dispatch_status = 'failed',
-      last_dispatch_notes = 'Missing app.settings.service_execution_scheduler_secret setting.',
+      last_dispatch_notes = 'Missing Vault secret: service_execution_scheduler_secret.',
       updated_at = now()
     where is_enabled = true
       and coalesce(invoke_url, '') <> ''
@@ -4079,13 +4107,8 @@ select
   s.auto_create_sessions,
   s.auto_stage_invoices,
   s.require_linked_job,
-  s.invoke_url,
   s.last_run_at,
   s.next_run_at,
-  s.last_dispatch_at,
-  s.last_dispatch_request_id,
-  s.last_dispatch_status,
-  s.last_dispatch_notes,
   s.notes,
   lr.id as latest_run_id,
   lr.run_code as latest_run_code,
@@ -4099,7 +4122,12 @@ select
   case
     when s.is_enabled = true and s.next_run_at is not null and s.next_run_at <= now() then true
     else false
-  end as is_due
+  end as is_due,
+  s.invoke_url,
+  s.last_dispatch_at,
+  s.last_dispatch_request_id,
+  s.last_dispatch_status,
+  s.last_dispatch_notes
 from public.service_execution_scheduler_settings s
 left join latest_run lr on lr.agreement_key = 'ALL';
 
@@ -4314,8 +4342,8 @@ select
     else 'not_signed'
   end as kickoff_status,
   concat('JOB-', regexp_replace(coalesce(a.agreement_code, d.document_number, d.contract_reference, d.id::text), '[^A-Za-z0-9]+', '-', 'g')) as suggested_job_code,
-  concat('WO-', regexp_replace(coalesce(a.agreement_code, d.document_number, d.contract_reference, d.id::text), '[^A-Za-z0-9]+', '-', 'g')) as suggested_work_order_number,
   coalesce(a.service_name, d.title, 'Signed Contract Job') as suggested_job_name,
+  concat('WO-', regexp_replace(coalesce(a.agreement_code, d.document_number, d.contract_reference, d.id::text), '[^A-Za-z0-9]+', '-', 'g')) as suggested_work_order_number,
   greatest(current_date, coalesce(a.start_date, current_date))::date as suggested_first_session_date,
   coalesce(a.visit_estimated_duration_hours, 0)::numeric(10,2) as suggested_first_session_hours
 from public.service_contract_documents d
@@ -4360,14 +4388,7 @@ with export_rollup as (
 select
   er.export_run_count,
   er.open_export_run_count,
-  er.delivery_pending_count,
-  er.delivery_recorded_count,
-  er.delivery_confirmed_count,
-  er.ready_to_close_count,
-  er.closed_run_count,
   er.last_exported_at,
-  er.last_delivery_confirmed_at,
-  er.last_payroll_closed_at,
   er.exported_entry_count_total,
   er.exported_hours_total,
   er.exported_payroll_cost_total,
@@ -4376,7 +4397,14 @@ select
   ar.unexported_payroll_cost_total,
   rr.attendance_review_needed_count,
   cr.overdue_sign_out_count,
-  cr.attendance_exception_count
+  cr.attendance_exception_count,
+  er.delivery_pending_count,
+  er.delivery_recorded_count,
+  er.delivery_confirmed_count,
+  er.ready_to_close_count,
+  er.closed_run_count,
+  er.last_delivery_confirmed_at,
+  er.last_payroll_closed_at
 from export_rollup er
 cross join attendance_rollup ar
 cross join review_rollup rr

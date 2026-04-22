@@ -7,6 +7,7 @@
 
 create extension if not exists pg_net;
 create extension if not exists pg_cron;
+create extension if not exists vault;
 
 create table if not exists public.media_review_actions (
   id uuid primary key default gen_random_uuid(),
@@ -106,7 +107,12 @@ language plpgsql
 security definer
 as $$
 declare
-  v_secret text := nullif(current_setting('app.settings.service_execution_scheduler_secret', true), '');
+  v_secret text := (
+    select decrypted_secret
+    from vault.decrypted_secrets
+    where name = 'service_execution_scheduler_secret'
+    limit 1
+  );
   v_dispatched integer := 0;
   v_request_id bigint;
   r record;
@@ -115,7 +121,7 @@ begin
     update public.service_execution_scheduler_settings
     set
       last_dispatch_status = 'failed',
-      last_dispatch_notes = 'Missing app.settings.service_execution_scheduler_secret setting.',
+      last_dispatch_notes = 'Missing Vault secret: service_execution_scheduler_secret.',
       updated_at = now()
     where is_enabled = true
       and coalesce(invoke_url, '') <> ''
