@@ -1,6 +1,13 @@
+<!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## 2026-04-13 staff admin save verification pass
+### 2026-04-21 operational workflow checks
+- Run `select public.dispatch_due_service_execution_scheduler_runs();` and verify a fresh scheduler run plus updated dispatch status.
+- In Admin evidence review, approve one attendance photo, reject one attendance/HSE row, and mark one item follow-up; confirm notes/reviewer/timestamps refresh immediately.
+- From a signed contract row, run kickoff and verify a job, a work order, and the first planned session are created/linked as expected.
+- Generate a payroll export, mark it delivered/confirmed, then close it and verify delivery/close timestamps plus actor fields populate.
+
 - Added visible inline create/save/reset/block/delete confirmations in the Staff Directory screen so staff actions no longer fail silently from the operator’s point of view.
 - Added stronger front-end email and password validation plus busy-state feedback for staff actions.
 - Updated `supabase/functions/admin-manage/index.ts` so staff-detail saves now persist email changes instead of leaving the visible Email field unsaved.

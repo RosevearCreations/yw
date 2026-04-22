@@ -1,4 +1,8 @@
+<!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 ## Schema 087 mental model update
+- Treat the scheduler secret as Vault-backed repo truth now; do not reintroduce `current_setting('app.settings.service_execution_scheduler_secret', true)` in future passes.
+- The highest-value next pass is workflow verification/polish, not more scheduler plumbing.
+
 - Attendance and HSE evidence now have dedicated Admin review lanes.
 - Service execution scheduler now has a settings/status concept, not just ad-hoc runs.
 - Signed contracts can now kick off live jobs.

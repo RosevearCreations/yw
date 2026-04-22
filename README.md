@@ -1,6 +1,12 @@
+<!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## 2026-04-13 staff admin save verification pass
+The current repo state now matches the live scheduler deployment:
+- `sql/088_scheduler_cron_media_review_payroll_close_receipts.sql` and `sql/000_full_schema_reference.sql` both use Supabase Vault for the scheduler shared secret
+- `supabase/functions/service-execution-scheduler-run/index.ts` is the cron target Edge Function
+- `supabase/functions/service-execution-scheduler-run/config.toml` and `supabase/config.toml` both record `verify_jwt = false` so deployments do not drift from the working live setup
+
 - Added visible inline create/save/reset/block/delete confirmations in the Staff Directory screen so staff actions no longer fail silently from the operator’s point of view.
 - Added stronger front-end email and password validation plus busy-state feedback for staff actions.
 - Updated `supabase/functions/admin-manage/index.ts` so staff-detail saves now persist email changes instead of leaving the visible Email field unsaved.

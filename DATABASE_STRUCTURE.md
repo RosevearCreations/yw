@@ -1,6 +1,11 @@
+<!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## 2026-04-13 staff admin save verification pass
+- Scheduler dispatch is now defined as `pg_cron` -> `dispatch_due_service_execution_scheduler_runs()` -> `pg_net` HTTP POST -> `service-execution-scheduler-run` Edge Function.
+- The scheduler shared secret is now treated as a Vault secret (`service_execution_scheduler_secret`) read through `vault.decrypted_secrets`, not as an `app.settings.*` runtime config.
+- Canonical schema files now keep stable column order for the scheduler status, signed-contract kickoff, and payroll-close review views so full-schema rebuilds do not fail on `create or replace view` column-layout changes.
+
 - Added visible inline create/save/reset/block/delete confirmations in the Staff Directory screen so staff actions no longer fail silently from the operator’s point of view.
 - Added stronger front-end email and password validation plus busy-state feedback for staff actions.
 - Updated `supabase/functions/admin-manage/index.ts` so staff-detail saves now persist email changes instead of leaving the visible Email field unsaved.

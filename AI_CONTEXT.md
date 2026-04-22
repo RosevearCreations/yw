@@ -1,4 +1,8 @@
+<!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 ## 2026-04-20 context refresh (schema 087)
+- Scheduler runtime is now proven live through Vault-backed dispatch plus the `service-execution-scheduler-run` Edge Function.
+- When editing scheduler files, keep SQL, full schema, function code, function config, deployment guide, testing checklist, roadmap, and new-chat handoff in sync.
+
 - Admin backbone forms now use `admin_core` selector loading to reduce payload size.
 - New migration `087_evidence_review_scheduler_settings_and_signed_contract_kickoff.sql` adds scheduler settings/status, evidence review views, signed-contract kickoff candidates, and payroll-close review summaries.
 - Admin UI now includes activity-rollup drill-through plus attendance/HSE evidence review tables.

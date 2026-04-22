@@ -1,6 +1,11 @@
+<!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## 2026-04-17 pass update
+- The live scheduler now works with Vault-backed secrets, but the remaining scheduler gap is **workflow depth**, not plumbing: duplicate-run safeguards, invoice staging automation, and failure alerting still need another pass.
+- Evidence review, signed-contract kickoff, and payroll-close actions are now wired in Admin/back-end code, but they still need broader real-record testing across edge cases and older records.
+- Secret rotation is still required after the live scheduler proof because the previous shared secret was exposed during setup/testing.
+
 Closed or tightened in this pass:
 - recurring agreements are no longer only a roadmap concept; they now have DB-backed records with per-visit pricing and snow-trigger support
 - account access now has Admin-visible last-login tracking and login-event rollups instead of only raw auth assumptions

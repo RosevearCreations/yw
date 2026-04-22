@@ -1,6 +1,17 @@
+<!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## 2026-04-13 staff admin save verification pass
+### Scheduler deployment alignment (2026-04-21)
+1. Deploy `service-execution-scheduler-run`.
+2. Ensure `verify_jwt = false` remains committed for that function.
+3. Store the same shared secret in both places:
+   - Edge Function secret: `SERVICE_EXECUTION_SCHEDULER_SECRET`
+   - Supabase Vault secret name: `service_execution_scheduler_secret`
+4. Set `service_execution_scheduler_settings.invoke_url` to the deployed function URL.
+5. Run `select public.dispatch_due_service_execution_scheduler_runs();` once to verify the database dispatcher, Vault secret, and Edge Function all work together.
+6. Confirm `service_execution_scheduler_settings.last_dispatch_status` and `service_execution_scheduler_runs` show successful activity before relying on cron alone.
+
 - Added visible inline create/save/reset/block/delete confirmations in the Staff Directory screen so staff actions no longer fail silently from the operator’s point of view.
 - Added stronger front-end email and password validation plus busy-state feedback for staff actions.
 - Updated `supabase/functions/admin-manage/index.ts` so staff-detail saves now persist email changes instead of leaving the visible Email field unsaved.

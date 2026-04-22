@@ -3,3 +3,6 @@ verify_jwt = false
 
 [functions.analytics-traffic]
 verify_jwt = false
+
+[functions.service-execution-scheduler-run]
+verify_jwt = false

@@ -1,5 +1,11 @@
+<!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 ## 2026-04-17 contract conversion, payroll export generation, callback dashboard, and snow invoice automation pass
+- Synced the repo to the live scheduler deployment fix by moving the cron dispatcher from `current_setting('app.settings.service_execution_scheduler_secret', true)` to Supabase Vault (`vault.decrypted_secrets`).
+- Added canonical Edge Function config for `service-execution-scheduler-run` with `verify_jwt = false` so repo deploys match the live environment.
+- Refreshed the full schema reference and schema 088 so scheduler status, signed-contract kickoff, and payroll-close summary views preserve stable column order during `create or replace view` updates.
+- Removed the stray `sql/000_full_schema_reference.fixed.sql` helper copy so the repo has one canonical full schema file again.
+
 - Added migration `sql/083_employee_time_clock_and_break_tracking.sql`.
 - Added estimate-to-agreement conversion candidates, service contract / application document storage, payroll export file generation support, agreement profitability summaries, snow-event invoice candidates, and callback / warranty dashboard summaries.
 - Extended Admin backbone flows so estimates can convert to agreements, agreements can generate printable contracts, payroll runs can generate CSV exports, and snow events can generate draft invoices.

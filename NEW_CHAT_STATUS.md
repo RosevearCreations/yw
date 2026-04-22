@@ -1,4 +1,9 @@
+<!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 ## Latest pass: schema 087 evidence review, scheduler settings, payroll-close, and signed-contract kickoff
+- Live scheduler plumbing now works end-to-end using `pg_cron` + `pg_net` + `service-execution-scheduler-run` with the shared secret stored in Supabase Vault.
+- Repo files were brought back into line with the live database fix: canonical schema 088/full-schema dispatcher now reads `vault.decrypted_secrets`, and the scheduler-run function has committed `verify_jwt = false` config.
+- The next chat should focus on operational testing and polish for evidence review, signed-contract kickoff, payroll close, and scheduler duplicate/invoice staging safeguards.
+
 - Added Admin evidence review tables for attendance photos and HSE packet proof rows.
 - Added service execution scheduler settings/status DB support and lighter `admin_core` selector loading.
 - Added signed-contract live-job kickoff support plus payroll-close review summaries.

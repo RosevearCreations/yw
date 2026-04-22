@@ -1,5 +1,15 @@
+<!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 087 evidence review, scheduler settings, and signed-contract kickoff pass on 2026-04-20. -->
 ## Immediate next build priorities after 087
+1. **Scheduler live-path follow-through**
+   - repo and live database are now aligned on Vault-backed scheduler dispatch plus the `service-execution-scheduler-run` Edge Function
+   - next scheduler work is duplicate-run safeguards, richer invoice staging from scheduler payloads, and alerting when dispatch fails repeatedly
+2. **Operational verification pass**
+   - test the richer attendance/HSE approve-reject-follow-up workflow in real Admin usage
+   - test signed-contract kickoff all the way through job, work order, and first planned session creation with real records
+3. **Payroll closure finish**
+   - verify provider delivery confirmation, payroll close signoff, and downstream accounting/journal handoff notes in office workflow
+
 1. **Platform scheduler hookup**
    - call the service execution scheduler on a real timer using the new settings/status flow
    - add duplicate-run safeguards and per-setting last/next-run review

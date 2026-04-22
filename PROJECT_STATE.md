@@ -1,4 +1,10 @@
+<!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 ## 2026-04-20 project-state update (schema 087)
+The live/runtime drift from the scheduler setup is now closed:
+- schema 088 and the full schema reference now point to a Vault-backed scheduler secret instead of `app.settings.*`
+- the `service-execution-scheduler-run` Edge Function is now part of the committed deployment config, not just a live-only fix
+- the operations roadmap has shifted from plumbing to real workflow verification for evidence review, signed-contract kickoff, and payroll close
+
 The app now has stronger operational review tooling on top of the earlier backbone work:
 - evidence review for attendance/HSE media
 - scheduler settings/status groundwork
