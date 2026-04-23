@@ -1,10 +1,11 @@
-<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
+<!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
 ## 2026-04-13 staff admin save verification pass
 - Canonical scheduler deployment files now include `supabase/functions/service-execution-scheduler-run/index.ts`, `supabase/functions/service-execution-scheduler-run/config.toml`, `supabase/config.toml`, `sql/088_scheduler_cron_media_review_payroll_close_receipts.sql`, and `sql/000_full_schema_reference.sql`.
 - The repo intentionally no longer keeps the stray `sql/000_full_schema_reference.fixed.sql` copy; `sql/000_full_schema_reference.sql` is the only canonical full-schema reference.
+- Admin workflow guardrails are slightly stricter now: rejected/follow-up evidence needs notes, delivered payroll runs need a reference, and payroll close requires a signoff note.
 
 - Added visible inline create/save/reset/block/delete confirmations in the Staff Directory screen so staff actions no longer fail silently from the operator’s point of view.
 - Added stronger front-end email and password validation plus busy-state feedback for staff actions.

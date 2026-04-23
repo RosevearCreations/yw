@@ -1,4 +1,4 @@
-<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
+<!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
@@ -104,6 +104,11 @@ Remaining strongest gaps:
 - With the current build reported as stable, the biggest remaining risks shift from shell repair toward implementation depth, validation quality, and operational/accounting convergence.
 
 # Known Issues and Gaps
+
+## April 22, 2026 workflow guardrail refresh
+- Evidence review is now stricter for rejected/follow-up decisions, but the Admin shell still uses simple prompts rather than a richer side-panel or modal review form.
+- Payroll export delivery/close now requires better audit notes, but provider receipt attachments and posted accounting handoff files are still missing.
+- Signed-contract kickoff feedback is clearer, but the workflow still needs broader real-record testing across multiple agreement/job edge cases.
 
 ## April 20, 2026 evidence-review and workflow-automation gap refresh
 - Attendance and HSE evidence are now easier to review, but the current Admin view is still table-first rather than a full media gallery / approve-reject workflow.

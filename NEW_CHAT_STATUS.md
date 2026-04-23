@@ -1,5 +1,11 @@
-<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
+<!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
+## Latest pass: 2026-04-22 workflow guardrail and repo alignment
+- Re-tightened evidence review so rejected/follow-up outcomes require notes.
+- Re-tightened payroll workflow so delivery requires a reference and close requires a signoff note.
+- Signed-contract kickoff feedback now states whether job/work-order/session records were created or linked.
+- Removed the stray fixed full-schema helper copy again so the repo keeps one canonical full schema file.
+
 ## Latest pass: schema 087 evidence review, scheduler settings, payroll-close, and signed-contract kickoff
 - Live scheduler plumbing now works end-to-end using `pg_cron` + `pg_net` + `service-execution-scheduler-run` with the shared secret stored in Supabase Vault.
 - Repo files were brought back into line with the live database fix: canonical schema 088/full-schema dispatcher now prefers `vault.decrypted_secrets` but falls back cleanly where Vault is unavailable, and the scheduler-run function has committed `verify_jwt = false` config.

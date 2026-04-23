@@ -1792,12 +1792,17 @@ serve(async (req) => {
         const entry = await fetchSingle(supabase, 'employee_time_entries', body.item_id);
         if (!entry?.id) return Response.json({ ok:false, error:'Employee time entry not found.' }, { status:404, headers:corsHeaders });
         const stage = String(body.media_stage || 'clock_in').trim() || 'clock_in';
+        const requestedStatus = String(body.review_status || 'pending').trim() || 'pending';
+        const requestedNotes = String(body.review_notes || '').trim();
+        if (['rejected', 'follow_up'].includes(requestedStatus) && !requestedNotes) {
+          return Response.json({ ok:false, error:'Add a review note before rejecting evidence or sending it to follow-up.' }, { status:400, headers:corsHeaders });
+        }
         const review = await upsertMediaReviewAction(supabase, {
           target_entity: 'employee_time_entry',
           target_id: entry.id,
           media_stage: stage,
-          review_status: String(body.review_status || 'pending'),
-          review_notes: body.review_notes ?? null,
+          review_status: requestedStatus,
+          review_notes: requestedNotes || null,
           reviewed_by_profile_id: actorId,
           created_by_profile_id: actorId,
         });
@@ -2933,12 +2938,17 @@ serve(async (req) => {
       if (action === 'review_media') {
         const proof = await fetchSingle(supabase, 'hse_packet_proofs', body.item_id);
         if (!proof?.id) return Response.json({ ok:false, error:'HSE packet proof not found.' }, { status:404, headers:corsHeaders });
+        const requestedStatus = String(body.review_status || 'pending').trim() || 'pending';
+        const requestedNotes = String(body.review_notes || '').trim();
+        if (['rejected', 'follow_up'].includes(requestedStatus) && !requestedNotes) {
+          return Response.json({ ok:false, error:'Add a review note before rejecting evidence or sending it to follow-up.' }, { status:400, headers:corsHeaders });
+        }
         const review = await upsertMediaReviewAction(supabase, {
           target_entity: 'hse_packet_proof',
           target_id: proof.id,
           media_stage: String(body.media_stage || proof.proof_stage || 'field'),
-          review_status: String(body.review_status || 'pending'),
-          review_notes: body.review_notes ?? null,
+          review_status: requestedStatus,
+          review_notes: requestedNotes || null,
           reviewed_by_profile_id: actorId,
           created_by_profile_id: actorId,
         });
@@ -3224,10 +3234,14 @@ serve(async (req) => {
       if (!run.exported_at) return Response.json({ ok:false, error:'Generate the payroll export before marking it delivered.' }, { status:400, headers:corsHeaders });
       const nowIso = new Date().toISOString();
       const nextStatus = String(body.delivery_status || 'confirmed').toLowerCase() === 'delivered' ? 'delivered' : 'confirmed';
+      const deliveryReference = String(body.delivery_reference ?? run.delivery_reference ?? '').trim();
+      const deliveryNotes = String(body.delivery_notes ?? run.delivery_notes ?? '').trim();
+      if (nextStatus === 'delivered' && !deliveryReference) return Response.json({ ok:false, error:'Add a delivery reference or batch ID before marking this payroll export delivered.' }, { status:400, headers:corsHeaders });
       if (nextStatus === 'confirmed' && !['delivered','confirmed'].includes(String(run.delivery_status || '').toLowerCase())) return Response.json({ ok:false, error:'Mark this payroll export delivered before confirming receipt.' }, { status:400, headers:corsHeaders });
-      const { data, error } = await supabase.from('payroll_export_runs').update({ delivery_status: nextStatus, delivery_reference: body.delivery_reference ?? run.delivery_reference ?? null, delivery_notes: body.delivery_notes ?? run.delivery_notes ?? null, delivered_at: run.delivered_at || nowIso, delivered_by_profile_id: run.delivered_by_profile_id || actorId, delivery_confirmed_at: nextStatus === 'confirmed' ? nowIso : run.delivery_confirmed_at, payroll_close_status: nextStatus === 'confirmed' ? 'ready_to_close' : (run.payroll_close_status || 'open'), updated_at: nowIso }).eq('id', run.id).select('*').single();
+      if (nextStatus === 'confirmed' && !deliveryReference) return Response.json({ ok:false, error:'Keep the delivery reference on the payroll run before confirming receipt.' }, { status:400, headers:corsHeaders });
+      const { data, error } = await supabase.from('payroll_export_runs').update({ delivery_status: nextStatus, delivery_reference: deliveryReference || null, delivery_notes: deliveryNotes || null, delivered_at: run.delivered_at || nowIso, delivered_by_profile_id: run.delivered_by_profile_id || actorId, delivery_confirmed_at: nextStatus === 'confirmed' ? nowIso : run.delivery_confirmed_at, payroll_close_status: nextStatus === 'confirmed' ? 'ready_to_close' : (run.payroll_close_status || 'open'), updated_at: nowIso }).eq('id', run.id).select('*').single();
       if (error) throw error;
-      await recordSiteActivity(supabase, { event_type:'payroll_export_delivered', entity_type:'payroll_export_run', entity_id:data.id, severity:'success', title:'Payroll export delivery recorded', summary:`${data.run_code || data.id} marked ${data.delivery_status}.`, created_by_profile_id: actorId });
+      await recordSiteActivity(supabase, { event_type: nextStatus === 'confirmed' ? 'payroll_export_confirmed' : 'payroll_export_delivered', entity_type:'payroll_export_run', entity_id:data.id, severity:'success', title: nextStatus === 'confirmed' ? 'Payroll export receipt confirmed' : 'Payroll export delivery recorded', summary:`${data.run_code || data.id} marked ${data.delivery_status}.`, created_by_profile_id: actorId });
       return Response.json({ ok:true, record:data }, { headers:corsHeaders });
     }
 
@@ -3235,8 +3249,10 @@ serve(async (req) => {
       const run = await fetchSingle(supabase, 'payroll_export_runs', body.item_id);
       if (!run?.id) return Response.json({ ok:false, error:'Payroll export run not found.' }, { status:404, headers:corsHeaders });
       if (!run.exported_at || String(run.delivery_status || '').toLowerCase() !== 'confirmed') return Response.json({ ok:false, error:'Confirm delivery before closing this payroll run.' }, { status:400, headers:corsHeaders });
+      const closeNotes = String(body.payroll_close_notes ?? run.payroll_close_notes ?? '').trim();
+      if (!closeNotes) return Response.json({ ok:false, error:'Add a payroll close signoff note before closing this payroll run.' }, { status:400, headers:corsHeaders });
       const nowIso = new Date().toISOString();
-      const { data, error } = await supabase.from('payroll_export_runs').update({ payroll_close_status: 'closed', payroll_closed_at: nowIso, payroll_closed_by_profile_id: actorId, payroll_close_notes: body.payroll_close_notes ?? run.payroll_close_notes ?? null, updated_at: nowIso }).eq('id', run.id).select('*').single();
+      const { data, error } = await supabase.from('payroll_export_runs').update({ payroll_close_status: 'closed', payroll_closed_at: nowIso, payroll_closed_by_profile_id: actorId, payroll_close_notes: closeNotes, updated_at: nowIso }).eq('id', run.id).select('*').single();
       if (error) throw error;
       await recordSiteActivity(supabase, { event_type:'payroll_export_closed', entity_type:'payroll_export_run', entity_id:data.id, severity:'success', title:'Payroll export closed', summary:`${data.run_code || data.id} was signed off as closed.`, created_by_profile_id: actorId });
       return Response.json({ ok:true, record:data }, { headers:corsHeaders });
@@ -3249,11 +3265,16 @@ serve(async (req) => {
       const agreement = contract.agreement_id ? await fetchSingle(supabase, 'recurring_service_agreements', contract.agreement_id) : null;
       const estimate = contract.estimate_id ? await fetchSingle(supabase, 'estimates', contract.estimate_id) : null;
       let jobId = contract.job_id || null;
+      let linkedExistingJob = false;
+      let jobCreated = false;
+      let workOrderCreated = false;
+      let firstSessionCreated = false;
       if (!jobId) {
         const serviceRef = agreement?.agreement_code || contract.contract_reference || contract.document_number || null;
         const existingJob = serviceRef ? (await supabase.from('jobs').select('*').ilike('service_contract_reference', serviceRef).limit(1).maybeSingle()).data : null;
         if (existingJob?.id) {
           jobId = existingJob.id;
+          linkedExistingJob = true;
         } else {
           const jobCode = makeSlugCode('JOB', agreement?.agreement_code || contract.document_number || contract.contract_reference || contract.id);
           const jobName = String(agreement?.service_name || contract.title || 'Signed Contract Job').trim();
@@ -3274,6 +3295,7 @@ serve(async (req) => {
           }).select('*').single();
           if (jobError) throw jobError;
           jobId = createdJob.id;
+          jobCreated = true;
           await recordSiteActivity(supabase, { event_type:'signed_contract_job_created', entity_type:'job', entity_id: createdJob.id, severity:'success', title:'Live job created from signed contract', summary:`${createdJob.job_code} was created from ${contract.document_number || contract.id}.`, created_by_profile_id: actorId });
         }
       }
@@ -3305,6 +3327,7 @@ serve(async (req) => {
         }).select('*').single();
         if (workOrderError) throw workOrderError;
         workOrder = createdWo;
+        workOrderCreated = true;
       }
 
       const firstSessionDate = pickSuggestedFirstSessionDate(contract, agreement);
@@ -3324,12 +3347,13 @@ serve(async (req) => {
         }).select('*').single();
         if (sessionError) throw sessionError;
         sessionRecord = createdSession;
+        firstSessionCreated = true;
       }
 
       const { data: updatedContract, error: updateContractError } = await supabase.from('service_contract_documents').update({ job_id: jobId, updated_at: new Date().toISOString() }).eq('id', contract.id).select('*').single();
       if (updateContractError) throw updateContractError;
       await recordSiteActivity(supabase, { event_type:'signed_contract_kickoff_completed', entity_type:'service_contract_document', entity_id: contract.id, severity:'success', title:'Signed contract kickoff completed', summary:`${contract.document_number || contract.id} linked to live job/work order scheduling.`, related_job_id: jobId || null, created_by_profile_id: actorId });
-      return Response.json({ ok:true, record: updatedContract, job_id: jobId, work_order: workOrder, first_session: sessionRecord }, { headers:corsHeaders });
+      return Response.json({ ok:true, record: updatedContract, job_id: jobId, work_order: workOrder, first_session: sessionRecord, linked_existing_job: linkedExistingJob, job_created: jobCreated, work_order_created: workOrderCreated, first_session_created: firstSessionCreated }, { headers:corsHeaders });
     }
 
 

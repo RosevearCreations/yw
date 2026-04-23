@@ -1,11 +1,18 @@
-<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
+<!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
+## 2026-04-22 workflow guardrail and repo-alignment pass
+- Tightened Admin evidence review so rejected and follow-up decisions now require an operator note before the action is saved.
+- Tightened payroll delivery and close actions so a delivery reference is required before delivery/confirmation and a close signoff note is required before payroll close.
+- Improved signed-contract kickoff feedback so the Admin summary now tells the operator whether the job, work order, and first session were created new or linked to existing records.
+- Removed the stray `sql/000_full_schema_reference.fixed.sql` helper copy again so the repo keeps one canonical full schema file.
+- Refreshed schema headers, deployment/testing notes, roadmap, issues/gaps, and handoff docs to match the current portable scheduler path and the stricter workflow guardrails.
+
 ## 2026-04-17 contract conversion, payroll export generation, callback dashboard, and snow invoice automation pass
 - Synced the repo to the live scheduler deployment fix by updating the cron dispatcher to prefer Vault when available while cleanly falling back to `current_setting('app.settings.service_execution_scheduler_secret', true)` on environments where the Vault extension is unavailable.
 - Added canonical Edge Function config for `service-execution-scheduler-run` with `verify_jwt = false` so repo deploys match the live environment.
 - Refreshed the full schema reference and schema 088 so scheduler status, signed-contract kickoff, and payroll-close summary views preserve stable column order during `create or replace view` updates.
-- Removed the stray `sql/000_full_schema_reference.fixed.sql` helper copy so the repo has one canonical full schema file again.
+- Removed the stray `sql/000_full_schema_reference.fixed.sql` helper copy again so the repo keeps one canonical full schema file.
 
 - Added migration `sql/083_employee_time_clock_and_break_tracking.sql`.
 - Added estimate-to-agreement conversion candidates, service contract / application document storage, payroll export file generation support, agreement profitability summaries, snow-event invoice candidates, and callback / warranty dashboard summaries.

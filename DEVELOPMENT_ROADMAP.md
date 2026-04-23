@@ -1,4 +1,4 @@
-<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
+<!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 087 evidence review, scheduler settings, and signed-contract kickoff pass on 2026-04-20. -->
 ## Immediate next build priorities after 087
@@ -7,9 +7,11 @@
    - next scheduler work is duplicate-run safeguards, richer invoice staging from scheduler payloads, and alerting when dispatch fails repeatedly
 2. **Operational verification pass**
    - test the richer attendance/HSE approve-reject-follow-up workflow in real Admin usage
+   - confirm the new rejected/follow-up note requirement feels clear in Admin
    - test signed-contract kickoff all the way through job, work order, and first planned session creation with real records
 3. **Payroll closure finish**
    - verify provider delivery confirmation, payroll close signoff, and downstream accounting/journal handoff notes in office workflow
+   - keep the new delivery-reference and close-note guardrails in place so payroll runs do not close with thin audit context
 
 1. **Platform scheduler hookup**
    - call the service execution scheduler on a real timer using the new settings/status flow

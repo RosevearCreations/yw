@@ -1,4 +1,4 @@
-<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
+<!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 ## 2026-04-20 project-state update (schema 087)
 The live/runtime drift from the scheduler setup is now closed:
@@ -8,6 +8,7 @@ The live/runtime drift from the scheduler setup is now closed:
 
 The app now has stronger operational review tooling on top of the earlier backbone work:
 - evidence review for attendance/HSE media
+- stricter workflow guardrails for rejected evidence, payroll delivery references, and payroll close signoff notes
 - scheduler settings/status groundwork
 - signed-contract live-job kickoff support
 - payroll-close review summary

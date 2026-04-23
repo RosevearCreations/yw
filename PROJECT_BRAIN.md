@@ -1,4 +1,4 @@
-<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
+<!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 ## Schema 087 mental model update
 - Treat the scheduler secret flow as portable repo truth now: prefer Vault where available, but keep the coded fallback to `current_setting('app.settings.service_execution_scheduler_secret', true)` for environments where Vault is unavailable.

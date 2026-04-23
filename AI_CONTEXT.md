@@ -1,4 +1,4 @@
-<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
+<!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 ## 2026-04-20 context refresh (schema 087)
 - Scheduler runtime is now proven live through Hosted scheduler runtime is proven through Vault-backed dispatch plus the `service-execution-scheduler-run` Edge Function, while canonical SQL now falls back cleanly when Vault is unavailable.

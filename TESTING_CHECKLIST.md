@@ -1,4 +1,4 @@
-<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
+<!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->
@@ -6,6 +6,8 @@
 ### 2026-04-21 operational workflow checks
 - Run `select public.dispatch_due_service_execution_scheduler_runs();` and verify a fresh scheduler run plus updated dispatch status.
 - In Admin evidence review, approve one attendance photo, reject one attendance/HSE row, and mark one item follow-up; confirm notes/reviewer/timestamps refresh immediately.
+- Confirm rejected/follow-up evidence cannot be saved without a note.
+- Confirm payroll delivery cannot be marked delivered without a delivery reference and cannot be closed without a signoff note.
 - From a signed contract row, run kickoff and verify a job, a work order, and the first planned session are created/linked as expected.
 - Generate a payroll export, mark it delivered/confirmed, then close it and verify delivery/close timestamps plus actor fields populate.
 
