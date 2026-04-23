@@ -1,4 +1,4 @@
--- Last synchronized: April 21, 2026. Reviewed during the scheduler cron, evidence review, and payroll close pass.
+-- Last synchronized: April 22, 2026. Reviewed during the portable scheduler, workflow-guardrail, and repo-alignment pass.
 -- Current reference remains aligned through 088_scheduler_cron_media_review_payroll_close_receipts.sql.
 
 create extension if not exists pgcrypto;

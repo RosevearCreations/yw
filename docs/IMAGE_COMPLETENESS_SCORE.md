@@ -1,4 +1,4 @@
-<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
+<!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 # Image Completeness Score
 
 This score is a rule-based completeness score. It is not an AI quality rating.
@@ -49,3 +49,7 @@ Future work can add a separate merchandising score or a deeper second-pass score
 - brightness and contrast checks
 - duplicate-angle penalty
 - lifestyle shot bonus versus plain record-shot evidence
+
+
+## Clarification
+This is meant as a merchandising-completeness signal for Admin workflow and save guardrails. It should not be described to operators as an AI quality score, photo-aesthetic score, or subjective product-image judgment.

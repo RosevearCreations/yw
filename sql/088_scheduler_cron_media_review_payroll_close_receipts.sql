@@ -4,6 +4,7 @@
 -- - richer media review actions for attendance and HSE evidence
 -- - payroll export delivery confirmation and payroll-close signoff fields
 -- - stronger signed-contract kickoff suggestions for first planned session timing
+-- - portable secret-source handling for environments where Vault is unavailable
 
 create extension if not exists pg_net;
 create extension if not exists pg_cron;

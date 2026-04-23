@@ -1,4 +1,4 @@
-<!-- Reviewed during 2026-04-22 portable scheduler fallback, evidence review polish, signed-contract kickoff, payroll-close confirmation, and image-score documentation pass. -->
+<!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 # Workflow Automation and Evidence Review
 
 Reviewed and updated during schema 087 on 2026-04-20.
@@ -29,3 +29,9 @@ Workflow automation now includes:
 
 ## 2026-04-22 workflow polish note
 Evidence review buttons now prompt for clearer optional notes, payroll close is intentionally sequential, and signed-contract kickoff messaging now surfaces job/work-order/session results more clearly to the operator.
+
+
+## Current guardrails
+- Rejected and follow-up evidence reviews now require notes so later payroll / exception review has clearer operator context.
+- Payroll export delivery now expects a delivery reference before the run is marked delivered or confirmed.
+- Payroll close now requires a signoff note before the run can be closed.

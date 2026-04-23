@@ -3230,16 +3230,29 @@
           resp = await manageAdminEntity({ entity: 'payroll_export_run', action: 'generate_export', item_id: itemId });
           if (!resp?.ok) throw new Error(resp?.error || 'Payroll export generation failed.');
         } else if (!['delivered','confirmed'].includes(String(row?.delivery_status || '').toLowerCase())) {
-          const deliveryReference = window.prompt('Delivery reference or batch ID (optional):', row?.delivery_reference || '') || '';
+          const deliveryReference = window.prompt('Delivery reference or batch ID (required):', row?.delivery_reference || '') || '';
+          if (!String(deliveryReference || '').trim()) {
+            setSummary('Add a delivery reference or batch ID before marking the payroll export delivered.', true);
+            return;
+          }
           const deliveryNotes = window.prompt('Delivery note (optional):', row?.delivery_notes || 'Export file delivered to payroll provider.') || '';
           resp = await manageAdminEntity({ entity: 'payroll_export_run', action: 'mark_delivered', item_id: itemId, delivery_status: 'delivered', delivery_reference: deliveryReference, delivery_notes: deliveryNotes });
           if (!resp?.ok) throw new Error(resp?.error || 'Payroll export delivery update failed.');
         } else if (String(row?.delivery_status || '').toLowerCase() === 'delivered') {
+          const deliveryReference = window.prompt('Keep the delivery reference or batch ID:', row?.delivery_reference || '') || '';
+          if (!String(deliveryReference || '').trim()) {
+            setSummary('Keep the delivery reference on the payroll export before confirming receipt.', true);
+            return;
+          }
           const confirmNotes = window.prompt('Confirmation note (optional):', row?.delivery_notes || 'Provider receipt confirmed.') || '';
-          resp = await manageAdminEntity({ entity: 'payroll_export_run', action: 'mark_delivered', item_id: itemId, delivery_status: 'confirmed', delivery_reference: row?.delivery_reference || '', delivery_notes: confirmNotes });
+          resp = await manageAdminEntity({ entity: 'payroll_export_run', action: 'mark_delivered', item_id: itemId, delivery_status: 'confirmed', delivery_reference: deliveryReference, delivery_notes: confirmNotes });
           if (!resp?.ok) throw new Error(resp?.error || 'Payroll export confirmation failed.');
         } else if (String(row?.payroll_close_status || '').toLowerCase() !== 'closed') {
-          const closeNotes = window.prompt('Close signoff note (optional):', row?.payroll_close_notes || 'Payroll run closed after confirmed delivery.') || '';
+          const closeNotes = window.prompt('Close signoff note (required):', row?.payroll_close_notes || 'Payroll run closed after confirmed delivery.') || '';
+          if (!String(closeNotes || '').trim()) {
+            setSummary('Add a close signoff note before closing the payroll export.', true);
+            return;
+          }
           resp = await manageAdminEntity({ entity: 'payroll_export_run', action: 'close_run', item_id: itemId, payroll_close_notes: closeNotes });
           if (!resp?.ok) throw new Error(resp?.error || 'Payroll close signoff failed.');
         } else {
@@ -3272,10 +3285,16 @@
             if (e.backboneEntity) e.backboneEntity.value = 'work_order';
             renderBackboneTable();
             fillBackboneForm(getSelectedBackboneRecord());
-            const jobCode = kickoff?.job_id ? ` Job ${kickoff.job_id} linked.` : '';
-            const workOrderNo = kickoff?.work_order?.work_order_number ? ` Work order ${kickoff.work_order.work_order_number} ready.` : '';
-            const sessionDate = kickoff?.first_session?.session_date ? ` First session ${kickoff.first_session.session_date}.` : '';
-            setSummary(`Live job kickoff completed from the signed contract.${jobCode}${workOrderNo}${sessionDate} Run Generate again to stage the invoice if needed.`.trim());
+            const jobMessage = kickoff?.job_created
+              ? (kickoff?.record?.job_id ? ` Job ${kickoff.record.job_id} created.` : ' Job created.')
+              : (kickoff?.linked_existing_job || kickoff?.job_id ? ` Existing job ${kickoff.job_id || kickoff?.record?.job_id || ''} linked.` : ' Existing job linkage retained.');
+            const workOrderNo = kickoff?.work_order?.work_order_number
+              ? `${kickoff?.work_order_created ? ' Work order ' : ' Existing work order '}${kickoff.work_order.work_order_number} ready.`
+              : '';
+            const sessionDate = kickoff?.first_session?.session_date
+              ? `${kickoff?.first_session_created ? ' First session ' : ' Existing first session '}${kickoff.first_session.session_date}.`
+              : '';
+            setSummary(`Live job kickoff completed from the signed contract.${jobMessage}${workOrderNo}${sessionDate} Run Generate again to stage the invoice if needed.`.trim());
             return;
           }
           const resp = await manageAdminEntity({ entity: 'service_contract_document', action: 'generate_invoice_from_signed', item_id: itemId });
@@ -3813,8 +3832,13 @@
         const id = reviewBtn.getAttribute('data-review-id') || '';
         const mediaStage = reviewBtn.getAttribute('data-review-stage') || '';
         const reviewStatus = reviewBtn.getAttribute('data-review-status') || 'pending';
-        const defaultNote = reviewStatus === 'follow_up' ? 'Needs follow-up review.' : '';
-        const reviewNotes = window.prompt(`Optional note for ${reviewStatus.replaceAll('_', ' ')} on ${mediaStage.replaceAll('_', ' ')}:`, defaultNote) || '';
+        const needsNote = ['rejected', 'follow_up'].includes(String(reviewStatus || '').toLowerCase());
+        const defaultNote = reviewStatus === 'follow_up' ? 'Needs follow-up review.' : (reviewStatus === 'rejected' ? 'Reason for rejection.' : '');
+        const reviewNotes = window.prompt(`${needsNote ? 'Required' : 'Optional'} note for ${reviewStatus.replaceAll('_', ' ')} on ${mediaStage.replaceAll('_', ' ')}:`, defaultNote) || '';
+        if (needsNote && !String(reviewNotes || '').trim()) {
+          setSummary(`A note is required when evidence is marked ${reviewStatus.replaceAll('_', ' ')}.`, true);
+          return;
+        }
         try {
           const actionEntity = entity === 'employee_time_entry' ? 'employee_time_entry' : 'hse_packet_proof';
           const resp = await manageAdminEntity({ entity: actionEntity, action: 'review_media', item_id: id, media_stage: mediaStage, review_status: reviewStatus, review_notes: reviewNotes });
