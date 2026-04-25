@@ -4029,6 +4029,10 @@ begin
       and cadence <> 'manual'
       and coalesce(invoke_url, '') <> ''
       and coalesce(next_run_at, now()) <= now()
+      and not (
+        coalesce(last_dispatch_status, '') = 'queued'
+        and coalesce(last_dispatch_at, now() - interval '1 hour') > now() - interval '10 minutes'
+      )
     order by next_run_at nulls first, created_at
     for update skip locked
   loop
@@ -4052,8 +4056,8 @@ begin
             select 1
             from pg_namespace
             where nspname = 'vault'
-          ) then 'Queued through pg_cron/pg_net dispatcher using Vault-backed secret when available.'
-          else 'Queued through pg_cron/pg_net dispatcher using fallback secret source.'
+          ) then 'Queued through pg_cron/pg_net dispatcher using Vault-backed secret when available; duplicate queued dispatches are suppressed for 10 minutes.'
+          else 'Queued through pg_cron/pg_net dispatcher using fallback secret source; duplicate queued dispatches are suppressed for 10 minutes.'
         end,
         updated_at = now()
       where id = r.id;

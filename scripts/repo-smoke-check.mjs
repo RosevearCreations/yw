@@ -66,7 +66,9 @@ const requiredFiles = [
   'supabase/functions/upload-hse-packet-proof/index.ts',
   'supabase/functions/analytics-traffic/index.ts',
   'supabase/functions/upload-employee-time-photo/index.ts',
-  'supabase/functions/service-execution-scheduler/index.ts'
+  'supabase/functions/service-execution-scheduler/index.ts',
+  'supabase/functions/service-execution-scheduler-run/index.ts',
+  'supabase/functions/service-execution-scheduler-run/config.toml'
 ];
 for (const relPath of requiredFiles) {
   addCheck(`file:${relPath}`, fileExists(relPath), fileExists(relPath) ? 'Present.' : 'Missing.');
@@ -100,6 +102,10 @@ addCheck('account-has-support-export', accountUi.includes('Export Support Snapsh
 
 const schema = read('sql/000_full_schema_reference.sql');
 addCheck('schema-header-current', /088_scheduler_cron_media_review_payroll_close_receipts/i.test(schema), 'Schema snapshot header should reflect the latest 088 pass.');
+
+const schedulerRun = read('supabase/functions/service-execution-scheduler-run/index.ts');
+addCheck('scheduler-run-advances-next-run', schedulerRun.includes('next_run_at: computeNextRunAt'), 'Scheduler Edge Function should advance next_run_at after successful runs.');
+addCheck('scheduler-run-has-duplicate-note', schema.includes('duplicate queued dispatches are suppressed for 10 minutes'), 'Canonical schema should document the 10-minute duplicate dispatch guard.');
 
 console.log(JSON.stringify({ ok: !failed, checks: results }, null, 2));
 if (failed) process.exit(1);

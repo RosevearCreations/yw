@@ -1,3 +1,6 @@
+## 2026-04-23 note
+Image scoring is still a rule-based completeness score only. No AI quality rating has been added in this pass.
+
 <!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 # Image Completeness Score
 

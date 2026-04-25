@@ -1,3 +1,6 @@
+## 2026-04-23 note
+Scheduler reliability now includes two guards: the Edge Function recalculates `next_run_at` after a successful run, and SQL skips rows already queued in the last 10 minutes.
+
 <!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 # Attendance Photos, Geofence, Scheduler, and Signed-Contract Invoice Flow
