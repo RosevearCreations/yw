@@ -21,6 +21,31 @@ function roleRank(role: string) {
   return { employee:10, worker:10, staff:10, onsite_admin:18, site_leader:20, supervisor:30, hse:40, job_admin:45, admin:50 }[normalizeRole(role)] ?? 0;
 }
 
+
+function normalizeFormFilter(value?: string | null) {
+  const clean = String(value || '').trim().toLowerCase();
+  const map: Record<string, string[]> = {
+    toolbox: ['toolbox','e'],
+    ppe: ['ppe','d'],
+    firstaid: ['firstaid','first_aid','b'],
+    inspection: ['inspection','site_inspection','inspect','c'],
+    drill: ['drill','emergency_drill','a'],
+    incident: ['incident','incident_near_miss','near_miss','f'],
+  };
+  return map[clean] || (clean ? [clean] : []);
+}
+
+function formLabel(value?: string | null) {
+  const clean = String(value || '').trim().toLowerCase();
+  if (['toolbox','e'].includes(clean)) return 'Toolbox Talk';
+  if (['ppe','d'].includes(clean)) return 'PPE Check';
+  if (['firstaid','first_aid','b'].includes(clean)) return 'First Aid Kit';
+  if (['inspection','site_inspection','inspect','c'].includes(clean)) return 'Site Inspection';
+  if (['drill','emergency_drill','a'].includes(clean)) return 'Emergency Drill';
+  if (['incident','incident_near_miss','near_miss','f'].includes(clean)) return 'Incident / Near Miss';
+  return String(value || '');
+}
+
 function effectiveRole(profile: any, user: any) {
   const direct = normalizeRole(profile?.role);
   const tier = normalizeRole(profile?.staff_tier || user?.user_metadata?.staff_tier);
@@ -45,12 +70,14 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const siteFilter = String(body.site || '').trim().toLowerCase();
     const formFilter = String(body.form || '').trim().toLowerCase();
+    const formFilterValues = normalizeFormFilter(formFilter);
     const statusFilter = String(body.status || '').trim().toLowerCase();
     const fromDate = String(body.from || '').trim();
     const toDate = String(body.to || '').trim();
 
     let query = supabase.from('submissions').select('*').order('created_at', { ascending:false }).limit(500);
-    if (formFilter) query = query.eq('form_type', formFilter);
+    if (formFilterValues.length === 1) query = query.ilike('form_type', formFilterValues[0]);
+    if (formFilterValues.length > 1) query = query.or(formFilterValues.map((value) => `form_type.ilike.${value}`).join(','));
     if (statusFilter) query = query.eq('status', statusFilter);
     if (fromDate) query = query.gte('submission_date', fromDate);
     if (toDate) query = query.lte('submission_date', toDate);
@@ -71,6 +98,7 @@ serve(async (req) => {
       submission_date: row.submission_date || row.date || row.created_at,
       created_at: row.created_at,
       form_type: row.form_type || '',
+      form_label: formLabel(row.form_type || ''),
       site: row.site || row.site_name || row.site_code || '',
       site_name: row.site_name || row.site || '',
       status: row.status || 'submitted',

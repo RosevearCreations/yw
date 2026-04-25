@@ -557,6 +557,49 @@ serve(async (req) => {
       return Response.json({ ok: true, record: data }, { headers: corsHeaders });
     }
 
+    if (entity === 'report_preset') {
+      if (roleRank(actorProfile.role) < roleRank('supervisor')) {
+        return Response.json({ ok:false, error:'Supervisor access is required.' }, { status:403, headers:corsHeaders });
+      }
+      const now = new Date().toISOString();
+      const itemId = String(body.item_id || '').trim();
+      const patch = {
+        preset_scope: String(body.preset_scope || 'hse_reporting').trim() || 'hse_reporting',
+        preset_name: String(body.preset_name || '').trim(),
+        visibility: String(body.visibility || 'private').trim() || 'private',
+        preset_payload: body.preset_payload && typeof body.preset_payload === 'object' ? body.preset_payload : {},
+        is_active: body.is_active !== false,
+        updated_at: now,
+      };
+      if (!patch.preset_name) return Response.json({ ok:false, error:'Preset name is required.' }, { status:400, headers:corsHeaders });
+      if (!['hse_reporting'].includes(String(patch.preset_scope))) return Response.json({ ok:false, error:'Unsupported preset scope.' }, { status:400, headers:corsHeaders });
+      if (!['private','shared'].includes(String(patch.visibility))) return Response.json({ ok:false, error:'Unsupported preset visibility.' }, { status:400, headers:corsHeaders });
+
+      if (action === 'create') {
+        const { data, error } = await supabase.from('report_presets').insert({ ...patch, created_by_profile_id: actorId, created_at: now }).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+
+      const preset = itemId ? await fetchSingle(supabase, 'report_presets', itemId) : null;
+      if (!preset?.id) return Response.json({ ok:false, error:'Report preset not found.' }, { status:404, headers:corsHeaders });
+      if (!isAdmin && String(preset.created_by_profile_id || '') !== String(actorId)) {
+        return Response.json({ ok:false, error:'You can only manage your own report presets.' }, { status:403, headers:corsHeaders });
+      }
+
+      if (action === 'update') {
+        const { data, error } = await supabase.from('report_presets').update(patch).eq('id', preset.id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('report_presets').update({ is_active:false, updated_at:now }).eq('id', preset.id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+
     if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, { status: 403, headers: corsHeaders });
 
 
