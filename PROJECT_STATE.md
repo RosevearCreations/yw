@@ -1,3 +1,8 @@
+## 2026-04-23 project state update
+- Scheduler deployment is no longer just connected; it now has a duplicate-dispatch guard and successful Edge Function runs advance `next_run_at` so cron should not continually dispatch every minute.
+- Repo schema and runtime files remain aligned to the portable secret strategy: Vault when available, `app.settings.service_execution_scheduler_secret` fallback when Vault is unavailable.
+- The strongest next feature step is invoice staging from scheduler invoice candidates, after confirming the current scheduler cycle behaves correctly in production.
+
 <!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 ## 2026-04-20 project-state update (schema 087)

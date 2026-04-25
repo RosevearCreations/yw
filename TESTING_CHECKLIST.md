@@ -1,3 +1,9 @@
+## 2026-04-23 required test additions
+- Run the scheduler manually and verify `service_execution_scheduler_settings.next_run_at` is recalculated after the Edge Function completes.
+- Let cron run for at least 10 minutes and confirm it does not create duplicate scheduler runs for the same due window.
+- Confirm rejected/follow-up evidence requires notes.
+- Confirm payroll delivered requires a delivery reference, confirmed requires an existing delivered state/reference, and closed requires a close signoff note.
+
 <!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->

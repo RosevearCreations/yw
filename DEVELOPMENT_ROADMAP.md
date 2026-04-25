@@ -1,3 +1,17 @@
+<!-- Reviewed during 2026-04-23 scheduler duplicate-dispatch guard, cache refresh, and repo-hygiene pass. -->
+## Immediate next build priorities after 088 duplicate-dispatch guard
+1. **Scheduler reliability verification**
+   - confirm cron advances `next_run_at` after the Edge Function completes
+   - watch for duplicate `service_execution_scheduler_runs` rows during a 10-minute window and keep the new queued-dispatch guard in place
+   - next scheduler enhancement remains true invoice staging from logged invoice candidates
+2. **Workflow test pass**
+   - test attendance/HSE approve, reject, and follow-up with required notes
+   - test signed-contract kickoff against both new and already-linked records
+   - test payroll export delivered -> confirmed -> closed with delivery references and close notes
+3. **Admin/mobile polish**
+   - continue slimming dense Admin panels, especially evidence review and payroll close, for phone use
+   - keep image score wording framed as rule-based completeness, not AI quality judgment
+
 <!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 087 evidence review, scheduler settings, and signed-contract kickoff pass on 2026-04-20. -->

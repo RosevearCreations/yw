@@ -1,3 +1,7 @@
+## 2026-04-23 deployment note
+- After deploying the scheduler Edge Function, verify that completed runs update `next_run_at`. If `next_run_at` remains null, cron may keep dispatching.
+- The SQL dispatcher now skips rows with `last_dispatch_status = queued` and a dispatch time inside the last 10 minutes as an extra safety guard.
+
 <!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->

@@ -1,3 +1,6 @@
+## 2026-04-23 architecture note
+- Scheduler architecture now includes a duplicate-dispatch safety layer: SQL suppresses recently queued rows, while the Edge Function advances `next_run_at` after completion.
+
 <!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->

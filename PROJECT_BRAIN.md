@@ -1,3 +1,6 @@
+## 2026-04-23 project brain update
+- Scheduler reliability guard added: do not allow completed Edge Function runs to leave `next_run_at` null unless the cadence is manual. The SQL dispatcher also skips recently queued rows.
+
 <!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 ## Schema 087 mental model update

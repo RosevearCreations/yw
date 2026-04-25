@@ -1,3 +1,7 @@
+## 2026-04-23 update note
+- Scheduler runtime files now include duplicate-dispatch protection and automatic `next_run_at` advancement after successful Edge Function runs.
+- Keep `supabase/functions/service-execution-scheduler-run/index.ts`, `sql/088_scheduler_cron_media_review_payroll_close_receipts.sql`, and `sql/000_full_schema_reference.sql` in sync whenever scheduler behavior changes.
+
 <!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->

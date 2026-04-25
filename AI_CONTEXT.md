@@ -1,3 +1,6 @@
+## 2026-04-23 AI context update
+- Scheduler truth: successful `service-execution-scheduler-run` executions must write a future `next_run_at`; SQL also suppresses recently queued dispatches for 10 minutes. Do not revert this to a null next-run behavior.
+
 <!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 ## 2026-04-20 context refresh (schema 087)

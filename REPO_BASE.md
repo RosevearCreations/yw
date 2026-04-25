@@ -1,3 +1,7 @@
+## 2026-04-23 repo base note
+- `sql/000_full_schema_reference.fixed.sql` should not be kept in the repo. The canonical full schema remains `sql/000_full_schema_reference.sql`.
+- Scheduler duplicate-dispatch behavior is implemented in both the Edge Function and SQL dispatcher; update both places together if the cadence logic changes.
+
 <!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->

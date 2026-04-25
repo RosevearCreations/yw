@@ -1,3 +1,10 @@
+<!-- Reviewed during 2026-04-23 scheduler duplicate-dispatch guard, cache refresh, and repo-hygiene pass. -->
+## Current open gaps after the 2026-04-23 pass
+- Scheduler duplicate-dispatch protection is now present in SQL and the Edge Function now advances `next_run_at`, but this should still be watched in production for at least one scheduled cycle.
+- Scheduler invoice candidates are still logged for review rather than fully staged into invoice records; this remains the next deeper automation step.
+- Evidence review, signed-contract kickoff, and payroll-close workflows are wired and guarded, but they still need real-record operator testing before being marked complete.
+- Image scoring remains a rule-based completeness score. Merchandising-quality checks such as sharpness, exposure, duplicate-angle detection, subject fill, and background consistency remain future work.
+
 <!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->

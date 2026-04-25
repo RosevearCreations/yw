@@ -71,6 +71,33 @@ function addDays(dateStr: string, days: number) {
   return d.toISOString().slice(0, 10)
 }
 
+function computeNextRunAt(setting: SchedulerSetting, baseIso = new Date().toISOString()) {
+  const cadence = String(setting.cadence || 'manual').toLowerCase()
+  if (cadence === 'manual') return null
+
+  const base = new Date(baseIso)
+  const hour = Math.max(0, Math.min(Number(setting.run_hour_local ?? 0), 23))
+  const minute = Math.max(0, Math.min(Number(setting.run_minute_local ?? 0), 59))
+
+  if (cadence === 'hourly') {
+    const next = new Date(base)
+    next.setUTCMinutes(0, 0, 0)
+    next.setUTCHours(next.getUTCHours() + 1)
+    return next.toISOString()
+  }
+
+  // Portable approximation for the DB function. The configured timezone is still
+  // stored/displayed by Admin; this keeps cron from repeatedly firing every
+  // minute after a successful Edge Function run even when timezone libraries are
+  // not available inside the function bundle.
+  const next = new Date(base)
+  next.setUTCHours(hour, minute, 0, 0)
+  if (next <= base) {
+    next.setUTCDate(next.getUTCDate() + (cadence === 'weekly' ? 7 : 1))
+  }
+  return next.toISOString()
+}
+
 Deno.serve(async (req) => {
   try {
     if (req.method !== 'POST') {
@@ -362,9 +389,9 @@ Deno.serve(async (req) => {
       .from('service_execution_scheduler_settings')
       .update({
         last_run_at: nowIso,
-        next_run_at: null,
+        next_run_at: computeNextRunAt(setting, nowIso),
         last_dispatch_status: 'completed',
-        last_dispatch_notes: `Edge Function completed run ${runCode}`,
+        last_dispatch_notes: `Edge Function completed run ${runCode}; next run recalculated.`,
         updated_at: nowIso,
       })
       .eq('id', setting.id)
@@ -376,7 +403,8 @@ Deno.serve(async (req) => {
       session_created_count: sessionCreatedCount,
       invoice_candidate_count: invoiceCandidateCount,
       skipped_count: skippedCount,
-      note: 'This first version creates missing planned job_sessions and logs invoice candidates into the run payload.',
+      next_run_at: computeNextRunAt(setting, nowIso),
+      note: 'Creates missing planned job_sessions, logs invoice candidates into the run payload, and advances next_run_at so cron does not refire every minute.',
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'

@@ -1,3 +1,6 @@
+## 2026-04-23 schema note
+- Scheduler settings now rely on `next_run_at`, `last_dispatch_at`, and `last_dispatch_status` together: successful Edge Function runs advance `next_run_at`, and the SQL dispatcher avoids re-queuing recently queued rows.
+
 <!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->

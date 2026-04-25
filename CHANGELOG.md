@@ -1,3 +1,9 @@
+## 2026-04-23 scheduler duplicate-dispatch guard and repo hygiene pass
+- Updated the committed scheduler Edge Function so successful scheduled runs recalculate and store `next_run_at` instead of leaving it null. This prevents the cron dispatcher from repeatedly re-firing the same enabled scheduler row every minute after a successful run.
+- Hardened the SQL dispatcher in both `sql/088_scheduler_cron_media_review_payroll_close_receipts.sql` and `sql/000_full_schema_reference.sql` so rows already queued in the last 10 minutes are skipped. This gives the system a simple duplicate-dispatch guard while preserving the portable Vault/fallback secret flow.
+- Removed the stray `sql/000_full_schema_reference.fixed.sql` helper copy again; the canonical schema reference is `sql/000_full_schema_reference.sql`.
+- Bumped public cache/version strings and the service-worker cache name so Admin users receive the updated scheduler and workflow code.
+
 <!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->

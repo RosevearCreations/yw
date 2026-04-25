@@ -1,3 +1,8 @@
+## 2026-04-23 handoff update
+- Latest repo pass hardened scheduler repeat-run behavior: the Edge Function now writes a calculated `next_run_at`, and the SQL dispatcher suppresses rows that were already queued in the last 10 minutes.
+- Canonical schema files are `sql/088_scheduler_cron_media_review_payroll_close_receipts.sql` and `sql/000_full_schema_reference.sql`; the stray fixed copy has been removed.
+- Next tests should focus on one full scheduled cycle, evidence approve/reject/follow-up, signed-contract kickoff, and payroll delivered -> confirmed -> closed.
+
 <!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during 2026-04-21 scheduler Vault sync, evidence review, signed-contract kickoff, and payroll-close repo alignment pass. -->
 ## Latest pass: 2026-04-22 workflow guardrail and repo alignment
