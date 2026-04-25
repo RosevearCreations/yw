@@ -741,3 +741,67 @@ select
   'SDS acknowledgement reporting view';
 
 select * from audit_results order by item;
+
+
+insert into audit_results(item, status, details)
+select
+  'table:report_subscriptions',
+  case when exists (
+    select 1 from information_schema.tables
+    where table_schema = 'public' and table_name = 'report_subscriptions'
+  ) then 'ok' else 'missing' end,
+  'Scheduled report delivery subscriptions';
+
+insert into audit_results(item, status, details)
+select
+  'table:equipment_jsa_hazard_links',
+  case when exists (
+    select 1 from information_schema.tables
+    where table_schema = 'public' and table_name = 'equipment_jsa_hazard_links'
+  ) then 'ok' else 'missing' end,
+  'Equipment-specific hazard / JSA linkage';
+
+insert into audit_results(item, status, details)
+select
+  'view:v_overdue_action_alerts',
+  case when exists (
+    select 1 from information_schema.views
+    where table_schema = 'public' and table_name = 'v_overdue_action_alerts'
+  ) then 'ok' else 'missing' end,
+  'Overdue alert rollup view';
+
+insert into audit_results(item, status, details)
+select
+  'view:v_site_safety_scorecards',
+  case when exists (
+    select 1 from information_schema.views
+    where table_schema = 'public' and table_name = 'v_site_safety_scorecards'
+  ) then 'ok' else 'missing' end,
+  'Site scorecard view';
+
+insert into audit_results(item, status, details)
+select
+  'view:v_supervisor_scorecards',
+  case when exists (
+    select 1 from information_schema.views
+    where table_schema = 'public' and table_name = 'v_supervisor_scorecards'
+  ) then 'ok' else 'missing' end,
+  'Supervisor scorecard view';
+
+insert into audit_results(item, status, details)
+select
+  'view:v_report_subscription_directory',
+  case when exists (
+    select 1 from information_schema.views
+    where table_schema = 'public' and table_name = 'v_report_subscription_directory'
+  ) then 'ok' else 'missing' end,
+  'Report subscription directory';
+
+insert into audit_results(item, status, details)
+select
+  'view:v_equipment_jsa_hazard_link_directory',
+  case when exists (
+    select 1 from information_schema.views
+    where table_schema = 'public' and table_name = 'v_equipment_jsa_hazard_link_directory'
+  ) then 'ok' else 'missing' end,
+  'Equipment JSA / hazard link directory';
