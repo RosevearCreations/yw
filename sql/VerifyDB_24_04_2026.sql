@@ -676,4 +676,68 @@ select
   ) then 'ok' else 'missing' end,
   'Scheduler status view';
 
+
+insert into audit_results(item, status, details)
+select
+  'table:corrective_action_tasks',
+  case when exists (
+    select 1 from information_schema.tables
+    where table_schema = 'public' and table_name = 'corrective_action_tasks'
+  ) then 'ok' else 'missing' end,
+  'Incident corrective-action task table';
+
+insert into audit_results(item, status, details)
+select
+  'table:training_courses',
+  case when exists (
+    select 1 from information_schema.tables
+    where table_schema = 'public' and table_name = 'training_courses'
+  ) then 'ok' else 'missing' end,
+  'Training / certification course catalog';
+
+insert into audit_results(item, status, details)
+select
+  'table:training_records',
+  case when exists (
+    select 1 from information_schema.tables
+    where table_schema = 'public' and table_name = 'training_records'
+  ) then 'ok' else 'missing' end,
+  'Worker training completion history';
+
+insert into audit_results(item, status, details)
+select
+  'table:sds_acknowledgements',
+  case when exists (
+    select 1 from information_schema.tables
+    where table_schema = 'public' and table_name = 'sds_acknowledgements'
+  ) then 'ok' else 'missing' end,
+  'SDS acknowledgement history';
+
+insert into audit_results(item, status, details)
+select
+  'view:v_corrective_action_task_directory',
+  case when exists (
+    select 1 from information_schema.views
+    where table_schema = 'public' and table_name = 'v_corrective_action_task_directory'
+  ) then 'ok' else 'missing' end,
+  'Corrective action reporting view';
+
+insert into audit_results(item, status, details)
+select
+  'view:v_training_record_directory',
+  case when exists (
+    select 1 from information_schema.views
+    where table_schema = 'public' and table_name = 'v_training_record_directory'
+  ) then 'ok' else 'missing' end,
+  'Training / certification reporting view';
+
+insert into audit_results(item, status, details)
+select
+  'view:v_sds_acknowledgement_directory',
+  case when exists (
+    select 1 from information_schema.views
+    where table_schema = 'public' and table_name = 'v_sds_acknowledgement_directory'
+  ) then 'ok' else 'missing' end,
+  'SDS acknowledgement reporting view';
+
 select * from audit_results order by item;

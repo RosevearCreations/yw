@@ -14,6 +14,27 @@ const corsHeaders = {
 };
 
 
+function normalizeRole(role?: string | null) {
+  const clean = String(role || 'employee').trim().toLowerCase() || 'employee';
+  if (clean === 'worker' || clean === 'staff') return 'employee';
+  return clean;
+}
+
+function roleRank(role: string) {
+  return { employee:10, worker:10, staff:10, onsite_admin:18, site_leader:20, supervisor:30, hse:40, job_admin:45, admin:50 }[normalizeRole(role)] ?? 0;
+}
+
+function addMonthsToDate(baseDate?: string | null, months?: number | null) {
+  const clean = String(baseDate || '').trim();
+  const count = Number(months || 0);
+  if (!clean || !Number.isFinite(count) || count <= 0) return null;
+  const d = new Date(`${clean}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return null;
+  d.setUTCMonth(d.getUTCMonth() + count);
+  return d.toISOString().slice(0, 10);
+}
+
+
 async function updateDeliveryState(supabase: any, notificationId: any, kind: 'email' | 'sms', provider: string, ok: boolean, errorText = '') {
   if (!notificationId) return;
   const countField = kind === 'sms' ? 'sms_attempt_count' : 'email_attempt_count';
@@ -557,52 +578,251 @@ serve(async (req) => {
       return Response.json({ ok: true, record: data }, { headers: corsHeaders });
     }
 
-    if (entity === 'report_preset') {
-      if (roleRank(actorProfile.role) < roleRank('supervisor')) {
-        return Response.json({ ok:false, error:'Supervisor access is required.' }, { status:403, headers:corsHeaders });
-      }
-      const now = new Date().toISOString();
-      const itemId = String(body.item_id || '').trim();
-      const patch = {
-        preset_scope: String(body.preset_scope || 'hse_reporting').trim() || 'hse_reporting',
-        preset_name: String(body.preset_name || '').trim(),
-        visibility: String(body.visibility || 'private').trim() || 'private',
-        preset_payload: body.preset_payload && typeof body.preset_payload === 'object' ? body.preset_payload : {},
-        is_active: body.is_active !== false,
-        updated_at: now,
-      };
-      if (!patch.preset_name) return Response.json({ ok:false, error:'Preset name is required.' }, { status:400, headers:corsHeaders });
-      if (!['hse_reporting'].includes(String(patch.preset_scope))) return Response.json({ ok:false, error:'Unsupported preset scope.' }, { status:400, headers:corsHeaders });
-      if (!['private','shared'].includes(String(patch.visibility))) return Response.json({ ok:false, error:'Unsupported preset visibility.' }, { status:400, headers:corsHeaders });
 
-      if (action === 'create') {
-        const { data, error } = await supabase.from('report_presets').insert({ ...patch, created_by_profile_id: actorId, created_at: now }).select('*').single();
-        if (error) throw error;
-        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
-      }
+if (entity === 'report_preset') {
+  if (roleRank(actorProfile.role) < roleRank('supervisor')) {
+    return Response.json({ ok:false, error:'Supervisor access is required.' }, { status:403, headers:corsHeaders });
+  }
+  const now = new Date().toISOString();
+  const itemId = String(body.item_id || '').trim();
+  const patch = {
+    preset_scope: String(body.preset_scope || 'hse_reporting').trim() || 'hse_reporting',
+    preset_name: String(body.preset_name || '').trim(),
+    visibility: String(body.visibility || 'private').trim() || 'private',
+    preset_payload: body.preset_payload && typeof body.preset_payload === 'object' ? body.preset_payload : {},
+    is_active: body.is_active !== false,
+    updated_at: now,
+  };
+  if (!patch.preset_name) return Response.json({ ok:false, error:'Preset name is required.' }, { status:400, headers:corsHeaders });
+  if (!['hse_reporting'].includes(String(patch.preset_scope))) return Response.json({ ok:false, error:'Unsupported preset scope.' }, { status:400, headers:corsHeaders });
+  if (!['private','shared'].includes(String(patch.visibility))) return Response.json({ ok:false, error:'Unsupported preset visibility.' }, { status:400, headers:corsHeaders });
 
-      const preset = itemId ? await fetchSingle(supabase, 'report_presets', itemId) : null;
-      if (!preset?.id) return Response.json({ ok:false, error:'Report preset not found.' }, { status:404, headers:corsHeaders });
-      if (!isAdmin && String(preset.created_by_profile_id || '') !== String(actorId)) {
-        return Response.json({ ok:false, error:'You can only manage your own report presets.' }, { status:403, headers:corsHeaders });
-      }
+  if (action === 'create') {
+    const { data, error } = await supabase.from('report_presets').insert({ ...patch, created_by_profile_id: actorId, created_at: now }).select('*').single();
+    if (error) throw error;
+    return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+  }
 
-      if (action === 'update') {
-        const { data, error } = await supabase.from('report_presets').update(patch).eq('id', preset.id).select('*').single();
-        if (error) throw error;
-        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
-      }
-      if (action === 'delete') {
-        const { error } = await supabase.from('report_presets').update({ is_active:false, updated_at:now }).eq('id', preset.id);
-        if (error) throw error;
-        return Response.json({ ok:true }, { headers:corsHeaders });
-      }
+  const preset = itemId ? await fetchSingle(supabase, 'report_presets', itemId) : null;
+  if (!preset?.id) return Response.json({ ok:false, error:'Report preset not found.' }, { status:404, headers:corsHeaders });
+  if (!isAdmin && String(preset.created_by_profile_id || '') !== String(actorId)) {
+    return Response.json({ ok:false, error:'You can only manage your own report presets.' }, { status:403, headers:corsHeaders });
+  }
+
+  if (action === 'update') {
+    const { data, error } = await supabase.from('report_presets').update(patch).eq('id', preset.id).select('*').single();
+    if (error) throw error;
+    return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+  }
+  if (action === 'delete') {
+    const { error } = await supabase.from('report_presets').update({ is_active:false, updated_at:now }).eq('id', preset.id);
+    if (error) throw error;
+    return Response.json({ ok:true }, { headers:corsHeaders });
+  }
+}
+
+if (entity === 'corrective_action_task') {
+  if (roleRank(actorProfile.role) < roleRank('supervisor')) {
+    return Response.json({ ok:false, error:'Supervisor access is required.' }, { status:403, headers:corsHeaders });
+  }
+  const now = new Date().toISOString();
+  const itemId = String(body.item_id || body.task_id || '').trim();
+  const patch: Record<string, unknown> = {
+    source_submission_id: body.source_submission_id ?? null,
+    source_history_type: String(body.source_history_type || 'incident_submission').trim() || 'incident_submission',
+    source_record_number: asNullableText(body.source_record_number),
+    task_scope: String(body.task_scope || 'incident_corrective_action').trim() || 'incident_corrective_action',
+    task_title: String(body.task_title || '').trim(),
+    task_description: asNullableText(body.task_description),
+    priority: String(body.priority || 'medium').trim() || 'medium',
+    status: String(body.status || 'open').trim() || 'open',
+    assigned_to_profile_id: asNullableText(body.assigned_to_profile_id),
+    assigned_by_profile_id: actorId,
+    owner_name: asNullableText(body.owner_name),
+    due_date: asNullableDate(body.due_date),
+    started_at: asNullableDateTime(body.started_at),
+    completed_at: asNullableDateTime(body.completed_at),
+    escalation_level: Number.isFinite(Number(body.escalation_level)) ? Number(body.escalation_level) : 0,
+    reminder_last_sent_at: asNullableDateTime(body.reminder_last_sent_at),
+    closeout_notes: asNullableText(body.closeout_notes),
+    payload: body.payload && typeof body.payload === 'object' ? body.payload : {},
+    updated_at: now,
+  };
+  if (!patch.task_title) return Response.json({ ok:false, error:'Task title is required.' }, { status:400, headers:corsHeaders });
+  if (!['low','medium','high','critical'].includes(String(patch.priority))) return Response.json({ ok:false, error:'Unsupported priority.' }, { status:400, headers:corsHeaders });
+  if (!['open','in_progress','blocked','ready_for_review','closed','cancelled'].includes(String(patch.status))) return Response.json({ ok:false, error:'Unsupported task status.' }, { status:400, headers:corsHeaders });
+  if (String(patch.status) === 'closed' && !String(patch.closeout_notes || '').trim()) {
+    return Response.json({ ok:false, error:'Closeout notes are required when closing a corrective action.' }, { status:400, headers:corsHeaders });
+  }
+  if (String(patch.status) === 'in_progress' && !patch.started_at) patch.started_at = now;
+  if (String(patch.status) === 'closed' && !patch.completed_at) patch.completed_at = now;
+
+  if (action === 'create') {
+    const { data, error } = await supabase.from('corrective_action_tasks').insert({ ...patch, created_at: now }).select('*').single();
+    if (error) throw error;
+    await supabase.from('corrective_action_task_events').insert({ task_id: data.id, event_type: 'created', event_status: data.status, event_notes: asNullableText(body.event_notes) || 'Task created.', changed_by_profile_id: actorId, metadata: { source_submission_id: data.source_submission_id || null } });
+    return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+  }
+
+  const task = itemId ? await fetchSingle(supabase, 'corrective_action_tasks', itemId) : null;
+  if (!task?.id) return Response.json({ ok:false, error:'Corrective action task not found.' }, { status:404, headers:corsHeaders });
+
+  if (action === 'update' || action === 'set_status') {
+    if (action === 'set_status' && !body.status) return Response.json({ ok:false, error:'A new status is required.' }, { status:400, headers:corsHeaders });
+    const nextStatus = String((body.status ?? patch.status) || '').trim();
+    const nextPatch = { ...patch, status: nextStatus };
+    if (nextStatus === 'closed' && !String(body.closeout_notes || patch.closeout_notes || '').trim()) {
+      return Response.json({ ok:false, error:'Closeout notes are required when closing a corrective action.' }, { status:400, headers:corsHeaders });
     }
+    if (nextStatus === 'in_progress' && !task.started_at && !nextPatch.started_at) nextPatch.started_at = now;
+    if (nextStatus === 'closed' && !nextPatch.completed_at) nextPatch.completed_at = now;
+    const { data, error } = await supabase.from('corrective_action_tasks').update(nextPatch).eq('id', task.id).select('*').single();
+    if (error) throw error;
+    await supabase.from('corrective_action_task_events').insert({
+      task_id: task.id,
+      event_type: action === 'set_status' ? 'status_changed' : 'updated',
+      event_status: data.status,
+      event_notes: asNullableText(body.event_notes) || asNullableText(body.closeout_notes) || asNullableText(body.task_description) || 'Task updated.',
+      changed_by_profile_id: actorId,
+      metadata: { previous_status: task.status || null, next_status: data.status || null }
+    });
+    return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+  }
 
+  if (action === 'delete') {
+    const { error } = await supabase.from('corrective_action_tasks').update({ status:'cancelled', updated_at:now }).eq('id', task.id);
+    if (error) throw error;
+    await supabase.from('corrective_action_task_events').insert({ task_id: task.id, event_type: 'cancelled', event_status: 'cancelled', event_notes: asNullableText(body.event_notes) || 'Task cancelled.', changed_by_profile_id: actorId });
+    return Response.json({ ok:true }, { headers:corsHeaders });
+  }
+}
 
-    if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, { status: 403, headers: corsHeaders });
+if (entity === 'training_record') {
+  if (roleRank(actorProfile.role) < roleRank('supervisor')) {
+    return Response.json({ ok:false, error:'Supervisor access is required.' }, { status:403, headers:corsHeaders });
+  }
+  const now = new Date().toISOString();
+  const itemId = String(body.item_id || body.training_record_id || '').trim();
+  const courseId = asNullableText(body.course_id);
+  const profileId = asNullableText(body.profile_id);
+  if (!courseId || !profileId) return Response.json({ ok:false, error:'Profile and course are required.' }, { status:400, headers:corsHeaders });
+  const course = await fetchSingle(supabase, 'training_courses', courseId);
+  const completedAt = asNullableDate(body.completed_at);
+  const expiresAt = asNullableDate(body.expires_at) || addMonthsToDate(completedAt, Number(course?.validity_months || 0));
+  const patch: Record<string, unknown> = {
+    profile_id: profileId,
+    course_id: courseId,
+    completion_status: String(body.completion_status || 'completed').trim() || 'completed',
+    completed_at: completedAt,
+    expires_at: expiresAt,
+    trainer_name: asNullableText(body.trainer_name),
+    provider_name: asNullableText(body.provider_name),
+    certificate_number: asNullableText(body.certificate_number),
+    license_number: asNullableText(body.license_number),
+    source_submission_id: body.source_submission_id ?? null,
+    notes: asNullableText(body.notes),
+    created_by_profile_id: actorId,
+    updated_at: now,
+  };
+  if (!['scheduled','in_progress','completed','expired','waived'].includes(String(patch.completion_status))) return Response.json({ ok:false, error:'Unsupported training status.' }, { status:400, headers:corsHeaders });
+  if (action === 'create') {
+    const { data, error } = await supabase.from('training_records').insert({ ...patch, created_at: now }).select('*').single();
+    if (error) throw error;
+    return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+  }
+  const record = itemId ? await fetchSingle(supabase, 'training_records', itemId) : null;
+  if (!record?.id) return Response.json({ ok:false, error:'Training record not found.' }, { status:404, headers:corsHeaders });
+  if (action === 'update') {
+    const { data, error } = await supabase.from('training_records').update(patch).eq('id', record.id).select('*').single();
+    if (error) throw error;
+    return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+  }
+  if (action === 'delete') {
+    const { error } = await supabase.from('training_records').delete().eq('id', record.id);
+    if (error) throw error;
+    return Response.json({ ok:true }, { headers:corsHeaders });
+  }
+}
 
+if (entity === 'sds_acknowledgement') {
+  if (roleRank(actorProfile.role) < roleRank('supervisor')) {
+    return Response.json({ ok:false, error:'Supervisor access is required.' }, { status:403, headers:corsHeaders });
+  }
+  const now = new Date().toISOString();
+  const itemId = String(body.item_id || body.sds_acknowledgement_id || '').trim();
+  const patch: Record<string, unknown> = {
+    profile_id: asNullableText(body.profile_id),
+    chemical_name: String(body.chemical_name || '').trim(),
+    product_name: asNullableText(body.product_name),
+    vendor_name: asNullableText(body.vendor_name),
+    sds_revision_date: asNullableDate(body.sds_revision_date),
+    acknowledged_at: asNullableDate(body.acknowledged_at) || now.slice(0, 10),
+    expires_at: asNullableDate(body.expires_at),
+    status: String(body.status || 'acknowledged').trim() || 'acknowledged',
+    source_submission_id: body.source_submission_id ?? null,
+    linked_training_record_id: asNullableText(body.linked_training_record_id),
+    acknowledged_by_profile_id: actorId,
+    notes: asNullableText(body.notes),
+    updated_at: now,
+  };
+  if (!patch.profile_id || !patch.chemical_name) return Response.json({ ok:false, error:'Profile and chemical name are required.' }, { status:400, headers:corsHeaders });
+  if (!['acknowledged','expired','revoked'].includes(String(patch.status))) return Response.json({ ok:false, error:'Unsupported SDS acknowledgement status.' }, { status:400, headers:corsHeaders });
+  if (action === 'create') {
+    const { data, error } = await supabase.from('sds_acknowledgements').insert({ ...patch, created_at: now }).select('*').single();
+    if (error) throw error;
+    return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+  }
+  const record = itemId ? await fetchSingle(supabase, 'sds_acknowledgements', itemId) : null;
+  if (!record?.id) return Response.json({ ok:false, error:'SDS acknowledgement not found.' }, { status:404, headers:corsHeaders });
+  if (action === 'update') {
+    const { data, error } = await supabase.from('sds_acknowledgements').update(patch).eq('id', record.id).select('*').single();
+    if (error) throw error;
+    return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+  }
+  if (action === 'delete') {
+    const { error } = await supabase.from('sds_acknowledgements').delete().eq('id', record.id);
+    if (error) throw error;
+    return Response.json({ ok:true }, { headers:corsHeaders });
+  }
+}
 
+if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, { status: 403, headers: corsHeaders });
+
+if (entity === 'training_course') {
+  const now = new Date().toISOString();
+  const itemId = String(body.item_id || body.course_id || '').trim();
+  const patch: Record<string, unknown> = {
+    course_code: String(body.course_code || '').trim().toUpperCase(),
+    course_name: String(body.course_name || '').trim(),
+    category: String(body.category || 'safety').trim() || 'safety',
+    validity_months: asNullableNumber(body.validity_months),
+    reminder_days_before: Number.isFinite(Number(body.reminder_days_before)) ? Number(body.reminder_days_before) : 30,
+    requires_sds_acknowledgement: !!body.requires_sds_acknowledgement,
+    is_active: body.is_active !== false,
+    notes: asNullableText(body.notes),
+    updated_at: now,
+  };
+  if (!patch.course_code || !patch.course_name) return Response.json({ ok:false, error:'Course code and course name are required.' }, { status:400, headers:corsHeaders });
+  if (action === 'create') {
+    const { data, error } = await supabase.from('training_courses').insert({ ...patch, created_at: now }).select('*').single();
+    if (error) throw error;
+    return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+  }
+  const course = itemId ? await fetchSingle(supabase, 'training_courses', itemId) : null;
+  if (!course?.id) return Response.json({ ok:false, error:'Training course not found.' }, { status:404, headers:corsHeaders });
+  if (action === 'update') {
+    const { data, error } = await supabase.from('training_courses').update(patch).eq('id', course.id).select('*').single();
+    if (error) throw error;
+    return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+  }
+  if (action === 'delete') {
+    const { error } = await supabase.from('training_courses').update({ is_active:false, updated_at:now }).eq('id', course.id);
+    if (error) throw error;
+    return Response.json({ ok:true }, { headers:corsHeaders });
+  }
+}
+
+if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, { status: 403, headers: corsHeaders });
     if (entity === 'credential' && action === 'create_user') {
       const email = String(body.email || '').trim().toLowerCase();
       const password = validateAdminSetPassword(body.new_password || body.password || '');

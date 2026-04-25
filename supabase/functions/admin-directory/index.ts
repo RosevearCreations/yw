@@ -252,6 +252,13 @@ if ((scope === 'all' || scope === 'reporting') && roleRank(actorRole) >= roleRan
   response.hse_reporting_worker_rollup = await safeList(supabase, 'v_hse_reporting_worker_rollup', '*', 'last_submission_date', limit, false);
   response.hse_reporting_context_rollup = await safeList(supabase, 'v_hse_reporting_context_rollup', '*', 'last_submission_date', limit, false);
   response.report_preset_directory = await safeList(supabase, 'v_report_preset_directory', '*', 'updated_at', limit, false);
+  response.corrective_action_task_directory = await safeList(supabase, 'v_corrective_action_task_directory', '*', 'due_date', limit, true);
+  response.corrective_action_task_summary = await safeList(supabase, 'v_corrective_action_task_summary');
+  response.training_course_directory = await safeList(supabase, 'v_training_course_directory', '*', 'course_name', limit, true);
+  response.training_record_directory = await safeList(supabase, 'v_training_record_directory', '*', 'expires_at', limit, true);
+  response.training_expiry_summary = await safeList(supabase, 'v_training_expiry_summary');
+  response.sds_acknowledgement_directory = await safeList(supabase, 'v_sds_acknowledgement_directory', '*', 'expires_at', limit, true);
+  response.supervisor_safety_queue = await safeList(supabase, 'v_supervisor_safety_queue', '*', 'sort_at', limit, false);
 }
   if (scope === 'self') response.profile = filteredPeople[0] || null;
   return Response.json(response, { headers: corsHeaders });

@@ -93,7 +93,6 @@ with review_rollup as (
   from public.submissions s
 )
 select
-  -- keep old 089 column order first
   s.id as submission_id,
   s.form_type,
   s.date as submission_date,
@@ -123,7 +122,6 @@ select
   rev.last_reviewed_by_name,
   s.created_at,
   s.updated_at,
-  -- append new columns only after the legacy layout
   s.form_key,
   s.form_label,
   s.payload,
@@ -151,7 +149,6 @@ with base as (
   select * from public.v_hse_submission_history_report
 )
 select
-  -- keep old 089 column order first
   submission_date as report_date,
   max(form_type) as form_type,
   status,
@@ -164,18 +161,11 @@ select
        or coalesce(status, '') = 'rejected'
   )::int as rejected_count,
   max(last_reviewed_at) as last_reviewed_at,
-  -- append new columns only
   form_key,
   max(form_label) as form_label,
   count(*) filter (where form_key = 'incident')::int as incident_count,
-  count(*) filter (
-    where form_key = 'incident'
-      and lower(coalesce(incident_kind, '')) = 'near_miss'
-  )::int as near_miss_count,
-  count(*) filter (
-    where form_key = 'incident'
-      and lower(coalesce(severity, '')) in ('high','critical')
-  )::int as high_severity_incident_count
+  count(*) filter (where form_key = 'incident' and lower(coalesce(incident_kind, '')) = 'near_miss')::int as near_miss_count,
+  count(*) filter (where form_key = 'incident' and lower(coalesce(severity, '')) in ('high','critical'))::int as high_severity_incident_count
 from base
 group by submission_date, form_key, status;
 
@@ -184,7 +174,6 @@ with base as (
   select * from public.v_hse_submission_history_report
 )
 select
-  -- keep old 089 column order first
   coalesce(site_id::text, site_code, site_name, 'unknown') as site_ref,
   site_id,
   site_code,
@@ -200,7 +189,6 @@ select
   coalesce(sum(image_count), 0)::int as image_count,
   max(submission_date) as last_submission_date,
   max(last_reviewed_at) as last_reviewed_at,
-  -- append new columns only
   form_key,
   max(form_label) as form_label,
   count(*) filter (where form_key = 'incident')::int as incident_count
@@ -269,7 +257,8 @@ select
   last_review_action,
   last_reviewed_at,
   created_at,
-  updated_at
+  updated_at,
+  payload
 from public.v_hse_submission_history_report
 where form_key = 'incident';
 
@@ -283,14 +272,8 @@ select
   max(form_label) as form_label,
   count(*)::int as submission_count,
   count(*) filter (where form_key = 'incident')::int as incident_count,
-  count(*) filter (
-    where form_key = 'incident'
-      and lower(coalesce(incident_kind, '')) = 'near_miss'
-  )::int as near_miss_count,
-  count(*) filter (
-    where form_key = 'incident'
-      and lower(coalesce(severity, '')) in ('high','critical')
-  )::int as high_severity_incident_count,
+  count(*) filter (where form_key = 'incident' and lower(coalesce(incident_kind, '')) = 'near_miss')::int as near_miss_count,
+  count(*) filter (where form_key = 'incident' and lower(coalesce(severity, '')) in ('high','critical'))::int as high_severity_incident_count,
   count(*) filter (where coalesce(review_count, 0) > 0)::int as reviewed_count,
   count(*) filter (
     where coalesce(last_review_action, '') = 'rejected'
@@ -309,14 +292,8 @@ select
   max(submitted_by_name) as submitted_by_name,
   count(*)::int as submission_count,
   count(*) filter (where form_key = 'incident')::int as incident_count,
-  count(*) filter (
-    where form_key = 'incident'
-      and lower(coalesce(incident_kind, '')) = 'near_miss'
-  )::int as near_miss_count,
-  count(*) filter (
-    where form_key = 'incident'
-      and lower(coalesce(severity, '')) in ('high','critical')
-  )::int as high_severity_incident_count,
+  count(*) filter (where form_key = 'incident' and lower(coalesce(incident_kind, '')) = 'near_miss')::int as near_miss_count,
+  count(*) filter (where form_key = 'incident' and lower(coalesce(severity, '')) in ('high','critical'))::int as high_severity_incident_count,
   count(*) filter (where coalesce(review_count, 0) > 0)::int as reviewed_count,
   max(submission_date) as last_submission_date,
   string_agg(distinct form_label, ', ' order by form_label) as form_labels
@@ -334,10 +311,7 @@ with base as (
     coalesce(nullif(route_code, ''), '—') as route_code,
     count(*)::int as submission_count,
     count(*) filter (where form_key = 'incident')::int as incident_count,
-    count(*) filter (
-      where form_key = 'incident'
-        and lower(coalesce(incident_kind, '')) = 'near_miss'
-    )::int as near_miss_count,
+    count(*) filter (where form_key = 'incident' and lower(coalesce(incident_kind, '')) = 'near_miss')::int as near_miss_count,
     count(*) filter (where coalesce(review_count, 0) > 0)::int as reviewed_count,
     max(submission_date) as last_submission_date
   from base
