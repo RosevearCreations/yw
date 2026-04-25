@@ -1,6 +1,35 @@
-
 -- 089_historical_reporting_and_auth_wall_support.sql
 -- Adds historical reporting views for OSHA/HSE submissions and cross-workflow history.
+-- Includes compatibility upgrades for older databases missing newer columns.
+
+alter table if exists public.submissions
+  add column if not exists site_id uuid references public.sites(id) on delete set null,
+  add column if not exists submitted_by_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists supervisor_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists signing_supervisor_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists admin_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists reviewed_at timestamptz,
+  add column if not exists updated_at timestamptz not null default now();
+
+alter table if exists public.hse_packet_events
+  add column if not exists event_summary text,
+  add column if not exists event_notes text;
+
+alter table if exists public.payroll_export_runs
+  add column if not exists export_provider text not null default 'generic_csv',
+  add column if not exists export_mime_type text,
+  add column if not exists export_layout_version text,
+  add column if not exists export_batch_number text,
+  add column if not exists delivery_status text not null default 'pending',
+  add column if not exists delivery_reference text,
+  add column if not exists delivery_notes text,
+  add column if not exists delivered_at timestamptz,
+  add column if not exists delivered_by_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists delivery_confirmed_at timestamptz,
+  add column if not exists payroll_close_status text not null default 'open',
+  add column if not exists payroll_closed_at timestamptz,
+  add column if not exists payroll_closed_by_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists payroll_close_notes text;
 
 create or replace view public.v_hse_submission_history_report as
 with review_rollup as (
@@ -15,7 +44,9 @@ with review_rollup as (
   left join public.profiles p on p.id = sr.reviewer_id
   group by sr.submission_id
 ), image_rollup as (
-  select si.submission_id, count(*)::int as image_count
+  select
+    si.submission_id,
+    count(*)::int as image_count
   from public.submission_images si
   group by si.submission_id
 )
@@ -27,7 +58,13 @@ select
   s.site_id,
   coalesce(st.site_code, s.site, '') as site_code,
   st.site_name,
-  trim(both ' ' from concat(coalesce(st.site_code, ''), case when st.site_code is not null and st.site_name is not null then ' — ' else '' end, coalesce(st.site_name, s.site, ''))) as site_label,
+  trim(
+    both ' ' from concat(
+      coalesce(st.site_code, ''),
+      case when st.site_code is not null and st.site_name is not null then ' — ' else '' end,
+      coalesce(st.site_name, s.site, '')
+    )
+  ) as site_label,
   s.submitted_by_profile_id,
   coalesce(sp.full_name, sp.email, s.submitted_by, '') as submitted_by_name,
   s.supervisor_profile_id,
@@ -63,7 +100,10 @@ select
   count(distinct coalesce(site_id::text, site_code, site_name, 'unknown'))::int as unique_site_count,
   coalesce(sum(image_count), 0)::int as image_count,
   count(*) filter (where coalesce(review_count, 0) > 0)::int as reviewed_count,
-  count(*) filter (where coalesce(last_review_action, '') = 'rejected' or coalesce(status, '') = 'rejected')::int as rejected_count,
+  count(*) filter (
+    where coalesce(last_review_action, '') = 'rejected'
+       or coalesce(status, '') = 'rejected'
+  )::int as rejected_count,
   max(last_reviewed_at) as last_reviewed_at
 from base
 group by submission_date, form_type, status;
@@ -81,12 +121,21 @@ select
   form_type,
   count(*)::int as submission_count,
   count(*) filter (where coalesce(review_count, 0) > 0)::int as reviewed_count,
-  count(*) filter (where coalesce(last_review_action, '') = 'rejected' or coalesce(status, '') = 'rejected')::int as rejected_count,
+  count(*) filter (
+    where coalesce(last_review_action, '') = 'rejected'
+       or coalesce(status, '') = 'rejected'
+  )::int as rejected_count,
   coalesce(sum(image_count), 0)::int as image_count,
   max(submission_date) as last_submission_date,
   max(last_reviewed_at) as last_reviewed_at
 from base
-group by coalesce(site_id::text, site_code, site_name, 'unknown'), site_id, site_code, site_name, site_label, form_type;
+group by
+  coalesce(site_id::text, site_code, site_name, 'unknown'),
+  site_id,
+  site_code,
+  site_name,
+  site_label,
+  form_type;
 
 create or replace view public.v_workflow_history_report as
 select
@@ -97,7 +146,11 @@ select
   coalesce(s.status, 'submitted') as record_status,
   s.id::text as record_number,
   concat(upper(coalesce(s.form_type, 'form')), ' submission') as headline,
-  concat(coalesce(st.site_code, st.site_name, s.site, 'Unknown site'), ' • ', coalesce(s.submitted_by, 'submitted')) as detail,
+  concat(
+    coalesce(st.site_code, st.site_name, s.site, 'Unknown site'),
+    ' • ',
+    coalesce(s.submitted_by, 'submitted')
+  ) as detail,
   st.site_code,
   st.site_name
 from public.submissions s
@@ -144,7 +197,12 @@ select
   coalesce(r.run_status, 'queued') as record_status,
   coalesce(r.run_code, r.id::text) as record_number,
   'Service execution scheduler run' as headline,
-  concat('Candidates: ', coalesce(r.candidate_count, 0), ' • Sessions: ', coalesce(r.session_created_count, 0), ' • Invoice candidates: ', coalesce(r.invoice_candidate_count, 0), ' • Skipped: ', coalesce(r.skipped_count, 0)) as detail,
+  concat(
+    'Candidates: ', coalesce(r.candidate_count, 0),
+    ' • Sessions: ', coalesce(r.session_created_count, 0),
+    ' • Invoice candidates: ', coalesce(r.invoice_candidate_count, 0),
+    ' • Skipped: ', coalesce(r.skipped_count, 0)
+  ) as detail,
   null::text as site_code,
   null::text as site_name
 from public.service_execution_scheduler_runs r
@@ -157,9 +215,14 @@ select
   p.id::text,
   coalesce(p.payroll_closed_at, p.delivery_confirmed_at, p.delivered_at, p.exported_at, p.created_at) as occurred_at,
   coalesce(p.payroll_close_status, p.delivery_status, p.status, 'open') as record_status,
-  coalesce(p.export_batch_number, p.id::text) as record_number,
+  coalesce(p.export_batch_number, p.run_code, p.id::text) as record_number,
   'Payroll export workflow' as headline,
-  concat('Provider: ', coalesce(p.export_provider, 'n/a'), ' • Period: ', coalesce(p.period_start::text, ''), ' to ', coalesce(p.period_end::text, ''), ' • Delivery: ', coalesce(p.delivery_status, 'pending')) as detail,
+  concat(
+    'Provider: ', coalesce(p.export_provider, 'n/a'),
+    ' • Period: ', coalesce(p.period_start::text, ''),
+    ' to ', coalesce(p.period_end::text, ''),
+    ' • Delivery: ', coalesce(p.delivery_status, 'pending')
+  ) as detail,
   null::text as site_code,
   null::text as site_name
 from public.payroll_export_runs p
@@ -174,7 +237,10 @@ select
   coalesce(d.document_status, 'draft') as record_status,
   coalesce(d.document_number, d.contract_reference, d.id::text) as record_number,
   coalesce(d.title, 'Service contract document') as headline,
-  concat('Kind: ', coalesce(d.document_kind, 'contract'), case when d.signed_by_name is not null then concat(' • Signed by ', d.signed_by_name) else '' end) as detail,
+  concat(
+    'Kind: ', coalesce(d.document_kind, 'contract'),
+    case when d.signed_by_name is not null then concat(' • Signed by ', d.signed_by_name) else '' end
+  ) as detail,
   null::text as site_code,
   null::text as site_name
 from public.service_contract_documents d;
