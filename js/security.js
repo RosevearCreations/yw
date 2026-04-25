@@ -29,6 +29,7 @@
     settings: 'worker',
     crew: 'supervisor',
     log: 'worker',
+    reports: 'supervisor',
     hseops: 'worker',
     admin: 'admin',
     jobs: 'worker',

@@ -48,7 +48,9 @@
     configClearBtn: document.getElementById('runtimeConfigClearBtn'),
     configStatus: document.getElementById('runtimeConfigStatus'),
     tabButtons: Array.from(document.querySelectorAll('[data-auth-tab]')),
-    panels: Array.from(document.querySelectorAll('[data-auth-panel]'))
+    panels: Array.from(document.querySelectorAll('[data-auth-panel]')),
+    headerNav: document.querySelector('.app-header nav'),
+    appMain: document.querySelector('main.container')
   };
 
   const uiState = {
@@ -167,6 +169,23 @@
     els.authLoading.setAttribute('aria-busy', show ? 'true' : 'false');
   }
 
+
+function syncAuthWall(state = {}) {
+  const isAuthenticated = !!state.isAuthenticated;
+  document.body.dataset.authenticated = isAuthenticated ? 'true' : 'false';
+  document.body.dataset.authPending = state.pendingAuthResolution ? 'true' : 'false';
+  if (els.headerNav) els.headerNav.style.display = isAuthenticated ? '' : 'none';
+  if (els.appMain) els.appMain.style.display = isAuthenticated ? '' : 'none';
+  if (els.authInfo) {
+    if (isAuthenticated) {
+      els.authInfo.hidden = false;
+    } else {
+      els.authInfo.hidden = true;
+      els.authInfo.style.display = 'none';
+    }
+  }
+}
+
   function syncHeader(state) {
     const profile = state?.profile || {};
     const user = state?.user || {};
@@ -184,6 +203,7 @@
     syncOfflineBanner();
     const isAuthenticated = !!state.isAuthenticated;
     syncHeader(state);
+    syncAuthWall(state);
     if (els.whoami) {
       const profile = state.profile || {};
       const user = state.user || {};
@@ -206,6 +226,7 @@
       if (els.loginView) els.loginView.style.display = 'none';
       if (els.authInfo) {
         els.authInfo.hidden = false;
+        els.authInfo.style.display = '';
         const quick = document.getElementById('dashboardQuickLinks');
         if (quick) quick.style.display = '';
       }
