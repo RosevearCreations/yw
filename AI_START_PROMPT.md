@@ -398,3 +398,6 @@ Start from schema 088 and assume the Admin hub now includes:
 ## 2026-04-25 corrective actions + training pass
 - Synced the repo to include first-class corrective-action tasks, training / certification expiry tracking, SDS acknowledgement history, and management-focused reporting.
 - See `docs/CORRECTIVE_ACTIONS_AND_TRAINING.md` and the new `sql/091_corrective_actions_training_and_sds_tracking.sql` migration.
+
+
+Current repo includes management workflow migration 092; continue from subscriptions/delivery automation, worker self-service acknowledgement UI, and JSA drill-through.

@@ -232,3 +232,6 @@ The repo now includes attendance photo upload metadata, geofence distance/status
 ## 2026-04-25 corrective actions + training pass
 - Synced the repo to include first-class corrective-action tasks, training / certification expiry tracking, SDS acknowledgement history, and management-focused reporting.
 - See `docs/CORRECTIVE_ACTIONS_AND_TRAINING.md` and the new `sql/091_corrective_actions_training_and_sds_tracking.sql` migration.
+
+
+Latest completed pass: management workflows and subscriptions (092). Ask next about notification delivery wiring, worker-facing acknowledgement UI, or deeper JSA form linkage.

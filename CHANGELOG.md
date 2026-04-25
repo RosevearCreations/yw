@@ -1,3 +1,8 @@
+## 2026-04-25 management workflow reminders, subscriptions, and JSA linkage pass
+- Added migration `sql/092_management_workflows_and_subscriptions.sql`.
+- Added reminder/escalation fields for corrective actions, worker self-service training acknowledgements, SDS context prompts, report subscriptions, site/supervisor scorecards, overdue alerts, and equipment-specific JSA/hazard linkage.
+- Extended reporting so management views now surface due subscriptions, overdue actions, and scorecards instead of only raw history.
+
 ## 2026-04-23 scheduler duplicate-dispatch guard and repo hygiene pass
 - Updated the committed scheduler Edge Function so successful scheduled runs recalculate and store `next_run_at` instead of leaving it null. This prevents the cron dispatcher from repeatedly re-firing the same enabled scheduler row every minute after a successful run.
 - Hardened the SQL dispatcher in both `sql/088_scheduler_cron_media_review_payroll_close_receipts.sql` and `sql/000_full_schema_reference.sql` so rows already queued in the last 10 minutes are skipped. This gives the system a simple duplicate-dispatch guard while preserving the portable Vault/fallback secret flow.

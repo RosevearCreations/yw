@@ -149,3 +149,7 @@ Important latest files: `sql/088_scheduler_cron_media_review_payroll_close_recei
 ## 2026-04-25 corrective actions + training pass
 - Synced the repo to include first-class corrective-action tasks, training / certification expiry tracking, SDS acknowledgement history, and management-focused reporting.
 - See `docs/CORRECTIVE_ACTIONS_AND_TRAINING.md` and the new `sql/091_corrective_actions_training_and_sds_tracking.sql` migration.
+
+
+### Latest schema additions
+- `sql/092_management_workflows_and_subscriptions.sql` extends the reporting/management layer after 091.

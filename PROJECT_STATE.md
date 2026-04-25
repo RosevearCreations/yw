@@ -326,3 +326,7 @@ The scheduler is no longer only a hosted-Vault story; repo truth is now portable
 ## 2026-04-25 corrective actions + training pass
 - Synced the repo to include first-class corrective-action tasks, training / certification expiry tracking, SDS acknowledgement history, and management-focused reporting.
 - See `docs/CORRECTIVE_ACTIONS_AND_TRAINING.md` and the new `sql/091_corrective_actions_training_and_sds_tracking.sql` migration.
+
+
+## April 25, 2026 status
+The repo now supports management-oriented safety workflows beyond raw history: reminder-ready corrective actions, self-attested training records, contextual SDS acknowledgement tracking, scorecards, overdue alerts, report subscriptions, and equipment JSA / hazard links.

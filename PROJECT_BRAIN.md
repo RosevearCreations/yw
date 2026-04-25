@@ -280,3 +280,6 @@ Do not assume every environment has the `vault` extension even if hosted Supabas
 ## 2026-04-25 corrective actions + training pass
 - Synced the repo to include first-class corrective-action tasks, training / certification expiry tracking, SDS acknowledgement history, and management-focused reporting.
 - See `docs/CORRECTIVE_ACTIONS_AND_TRAINING.md` and the new `sql/091_corrective_actions_training_and_sds_tracking.sql` migration.
+
+
+- 092 adds management workflows on top of 090/091: reminder/escalation support, report subscriptions, scorecards, alerts, and equipment JSA links.

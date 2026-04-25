@@ -186,3 +186,6 @@ Use Vault on hosted Supabase when available. If the target environment does not 
 ## 2026-04-25 corrective actions + training pass
 - Synced the repo to include first-class corrective-action tasks, training / certification expiry tracking, SDS acknowledgement history, and management-focused reporting.
 - See `docs/CORRECTIVE_ACTIONS_AND_TRAINING.md` and the new `sql/091_corrective_actions_training_and_sds_tracking.sql` migration.
+
+
+After applying migration 092, reload the reporting/admin data scope so new views (`v_report_subscription_directory`, `v_overdue_action_alerts`, `v_site_safety_scorecards`, `v_supervisor_scorecards`, `v_equipment_jsa_hazard_link_directory`) are available to the frontend.

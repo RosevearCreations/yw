@@ -594,3 +594,10 @@ Next recommended build steps:
 ## 2026-04-25 corrective actions + training pass
 - Synced the repo to include first-class corrective-action tasks, training / certification expiry tracking, SDS acknowledgement history, and management-focused reporting.
 - See `docs/CORRECTIVE_ACTIONS_AND_TRAINING.md` and the new `sql/091_corrective_actions_training_and_sds_tracking.sql` migration.
+
+
+## Next step after migration 092
+- Wire actual scheduled delivery for `report_subscriptions` using the existing scheduler/backbone.
+- Add corrective-action reminder dispatch history and escalation policy rules by priority.
+- Build worker-facing acknowledgement UI for self-service training and SDS prompts.
+- Add equipment-specific JSA review forms tied directly to jobs, route stops, and packets.

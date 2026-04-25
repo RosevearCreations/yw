@@ -212,3 +212,6 @@ Scheduler architecture remains DB settings row -> DB dispatcher -> `pg_net` -> `
 ## 2026-04-25 corrective actions + training pass
 - Synced the repo to include first-class corrective-action tasks, training / certification expiry tracking, SDS acknowledgement history, and management-focused reporting.
 - See `docs/CORRECTIVE_ACTIONS_AND_TRAINING.md` and the new `sql/091_corrective_actions_training_and_sds_tracking.sql` migration.
+
+
+The architecture now includes a management-reporting layer above form capture: corrective-action follow-up, training/SDS renewal visibility, subscriptions, alert rollups, and scorecards fed from DB-backed views.

@@ -206,3 +206,6 @@ This repo is now aligned through schema pass 088. The newest operational additio
 ## 2026-04-25 corrective actions + training pass
 - Synced the repo to include first-class corrective-action tasks, training / certification expiry tracking, SDS acknowledgement history, and management-focused reporting.
 - See `docs/CORRECTIVE_ACTIONS_AND_TRAINING.md` and the new `sql/091_corrective_actions_training_and_sds_tracking.sql` migration.
+
+
+Recent pass: 092_management_workflows_and_subscriptions adds report subscriptions, overdue alerts, site/supervisor scorecards, worker self-ack training support, and equipment-specific JSA/hazard linkage.

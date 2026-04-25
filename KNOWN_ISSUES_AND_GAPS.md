@@ -1,3 +1,9 @@
+## April 25, 2026 management-workflow gap refresh
+- Reminder/escalation fields and scorecards now exist, but scheduled delivery and notification dispatch still need wiring.
+- Worker self-service acknowledgement is available at the data/API level, but still needs a dedicated worker-facing UI.
+- Equipment JSA / hazard linkage now exists, but richer review forms and operational drill-through are still next-step work.
+- Report subscriptions are DB-backed, but delivery execution and digest generation are not yet automated.
+
 <!-- Reviewed during 2026-04-23 scheduler duplicate-dispatch guard, cache refresh, and repo-hygiene pass. -->
 ## Current open gaps after the 2026-04-23 pass
 - Scheduler duplicate-dispatch protection is now present in SQL and the Edge Function now advances `next_run_at`, but this should still be watched in production for at least one scheduled cycle.

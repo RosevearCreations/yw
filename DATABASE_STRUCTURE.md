@@ -379,3 +379,10 @@ Canonical scheduler SQL now prefers Vault for `service_execution_scheduler_secre
 ## 2026-04-25 corrective actions + training pass
 - Synced the repo to include first-class corrective-action tasks, training / certification expiry tracking, SDS acknowledgement history, and management-focused reporting.
 - See `docs/CORRECTIVE_ACTIONS_AND_TRAINING.md` and the new `sql/091_corrective_actions_training_and_sds_tracking.sql` migration.
+
+
+## Added management workflow structures
+- `report_subscriptions`
+- `equipment_jsa_hazard_links`
+- extended fields on corrective actions, training records, training courses, and SDS acknowledgements
+- new management/reporting views for alerts, scorecards, subscriptions, and JSA linkage
