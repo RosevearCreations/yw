@@ -506,6 +506,7 @@
             <button class="admin-hub-card" type="button" data-admin-route="toolbox"><strong>Toolbox Talk</strong><span>Daily briefings, hazards, attendance, and work-start signoff.</span><em>Live</em></button>
             <button class="admin-hub-card" type="button" data-admin-route="ppe"><strong>PPE Check</strong><span>Verify required PPE before task start, dispatch, or visitor entry.</span><em>Live</em></button>
             <button class="admin-hub-card" type="button" data-admin-route="firstaid"><strong>First Aid Kit</strong><span>Track kit status and readiness for crews, parks, splash pads, and public works.</span><em>Live</em></button>
+            <button class="admin-hub-card" type="button" data-admin-route="incident"><strong>Incident / Near Miss</strong><span>Capture injuries, close calls, equipment damage, vehicle events, and corrective-action ownership.</span><em>New</em></button>
             <button class="admin-hub-card" type="button" data-admin-route="inspection"><strong>Site Inspection</strong><span>Capture hazards for landscaping, construction, subcontract, and unscheduled work.</span><em>Live</em></button>
             <button class="admin-hub-card" type="button" data-admin-route="drill"><strong>Emergency Drill</strong><span>Document preparedness checks and emergency-response exercises.</span><em>Live</em></button>
             <button class="admin-hub-card" type="button" data-admin-route="log"><strong>Logbook / Review</strong><span>Review safety records, approvals, images, and linked field history.</span><em>Stabilized</em></button>

@@ -41,6 +41,18 @@
     return text;
   }
 
+
+  function normalizeFormLabel(value) {
+    const clean = String(value || '').trim().toLowerCase();
+    if (['toolbox','e'].includes(clean)) return 'Toolbox Talk';
+    if (['ppe','d'].includes(clean)) return 'PPE Check';
+    if (['firstaid','first_aid','b'].includes(clean)) return 'First Aid Kit';
+    if (['inspection','site_inspection','inspect','c'].includes(clean)) return 'Site Inspection';
+    if (['drill','emergency_drill','a'].includes(clean)) return 'Emergency Drill';
+    if (['incident','incident_near_miss','near_miss','f'].includes(clean)) return 'Incident / Near Miss';
+    return String(value || '');
+  }
+
   function downloadTextFile(filename, content, mime = 'text/plain;charset=utf-8') {
     const blob = new Blob([content], { type: mime });
     const url = URL.createObjectURL(blob);
@@ -169,6 +181,7 @@
               <option value="firstaid">First Aid</option>
               <option value="inspection">Inspection</option>
               <option value="drill">Drill</option>
+              <option value="incident">Incident / Near Miss</option>
             </select>
           </label>
           <label>Status
@@ -276,7 +289,7 @@
         tr.innerHTML = `
           <td>${escHtml(row.id || '')}</td>
           <td>${escHtml(formatDate(row.submission_date || row.date || row.created_at || ''))}</td>
-          <td>${escHtml(row.form_type || '')}</td>
+          <td>${escHtml(row.form_label || normalizeFormLabel(row.form_type || ''))}</td>
           <td>${escHtml(row.site || row.site_name || '')}</td>
           <td>${escHtml(row.status || '')}</td>
           <td>${escHtml(getSummaryText(row))}</td>
@@ -410,7 +423,7 @@
       const submission = detail?.submission || detail || {};
 
       if (els.sdSubmissionId) els.sdSubmissionId.value = submission.id || '';
-      if (els.sdFormType) els.sdFormType.value = submission.form_type || '';
+      if (els.sdFormType) els.sdFormType.value = normalizeFormLabel(submission.form_type || '');
       if (els.sdStatus) els.sdStatus.value = submission.status || '';
       if (els.sdSite) els.sdSite.value = submission.site || submission.site_name || '';
       if (els.sdDate) els.sdDate.value = formatDateTime(submission.submission_date || submission.date || submission.created_at || '');

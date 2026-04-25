@@ -23,6 +23,7 @@
     toolbox: 'worker',
     ppe: 'worker',
     firstaid: 'worker',
+    incident: 'worker',
     inspect: 'worker',
     drill: 'worker',
     me: 'worker',

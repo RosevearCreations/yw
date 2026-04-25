@@ -397,6 +397,37 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
     });
   }
 
+
+  async function uploadImagesForSubmission(items = [], submissionId) {
+    const results = [];
+    for (const item of Array.isArray(items) ? items : []) {
+      if (!submissionId || !item?.file) continue;
+      const formData = new FormData();
+      formData.set('submission_id', String(submissionId));
+      formData.set('image_type', String(item.image_type || item.imageType || 'general'));
+      if (item.caption) formData.set('caption', String(item.caption));
+      formData.set('file', item.file);
+
+      const token = await getAccessToken();
+      const anonKey = getSupabaseAnonKey();
+      if (!token) throw new Error('Missing authorization header');
+      const response = await fetch(`${getFunctionsBaseUrl()}/upload-image`, {
+        method: 'POST',
+        headers: {
+          ...(anonKey ? { apikey: anonKey } : {}),
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+      const rawText = await response.text();
+      let payload = null;
+      try { payload = rawText ? JSON.parse(rawText) : null; } catch { payload = null; }
+      if (!response.ok) throw enrichUploadError(buildError(response.status, rawText, payload));
+      results.push(payload);
+    }
+    return results;
+  }
+
   async function uploadEquipmentEvidenceBatch(items = []) {
     const results = [];
     for (const item of Array.isArray(items) ? items : []) {
@@ -924,6 +955,7 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
     jsonFetch,
     sendToFunction,
     uploadEquipmentEvidence,
+    uploadImagesForSubmission,
     uploadEquipmentEvidenceBatch,
     uploadJobCommentAttachment,
     uploadJobCommentAttachmentBatch,
