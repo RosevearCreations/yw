@@ -92,6 +92,10 @@ addCheck('app-exposes-module-timings', appJs.includes('window.YWIModuleTimings')
 const bootstrapJs = read('js/bootstrap.js');
 addCheck('bootstrap-exposes-timing-events', bootstrapJs.includes('ywi:timing'), 'bootstrap.js should emit timing events.');
 
+const reportsUi = read('js/reports-ui.js');
+addCheck('reports-has-corrective-actions', reportsUi.includes('Corrective Actions'), 'reports-ui.js should render the corrective actions panel.');
+addCheck('reports-has-training-expiry', reportsUi.includes('Training / Certification Records'), 'reports-ui.js should render the training and certification panel.');
+
 const adminUi = read('js/admin-ui.js');
 addCheck('admin-has-smoke-check', adminUi.includes('Run Smoke Check'), 'admin-ui.js should render the smoke check controls.');
 addCheck('admin-has-conflict-review', adminUi.includes('Conflict Review'), 'admin-ui.js should render the conflict review panel.');
@@ -101,7 +105,7 @@ addCheck('account-has-conflict-review', accountUi.includes('Conflict Review'), '
 addCheck('account-has-support-export', accountUi.includes('Export Support Snapshot'), 'account-ui.js should render the support snapshot export button.');
 
 const schema = read('sql/000_full_schema_reference.sql');
-addCheck('schema-header-current', /088_scheduler_cron_media_review_payroll_close_receipts/i.test(schema), 'Schema snapshot header should reflect the latest 088 pass.');
+addCheck('schema-header-current', /091_corrective_actions_training_and_sds_tracking/i.test(schema), 'Schema snapshot header should reflect the latest 091 pass.');
 
 const schedulerRun = read('supabase/functions/service-execution-scheduler-run/index.ts');
 addCheck('scheduler-run-advances-next-run', schedulerRun.includes('next_run_at: computeNextRunAt'), 'Scheduler Edge Function should advance next_run_at after successful runs.');

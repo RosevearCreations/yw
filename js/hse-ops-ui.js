@@ -271,7 +271,7 @@
         <button class="hseops-card" type="button" data-route="incident"><strong>Incident / Near Miss</strong><span>Capture incidents, close calls, damage, witnesses, and corrective action owners from the field.</span><em>Open</em></button>
         <button class="hseops-card" type="button" data-route="drill"><strong>Emergency Drill</strong><span>Review preparedness, response, and repeat-crew safety expectations.</span><em>Open</em></button>
         <button class="hseops-card" type="button" data-route="log"><strong>Logbook / Review</strong><span>Review submissions, images, approvals, and linked field history.</span><em>Open</em></button>
-        <button class="hseops-card" type="button" data-route="reports"><strong>Historical Reports</strong><span>Open date-filtered safety, payroll, scheduler, and contract history reporting.</span><em>Open</em></button>
+        <button class="hseops-card" type="button" data-route="reports"><strong>Historical Reports</strong><span>Open date-filtered safety, corrective-action, training expiry, payroll, scheduler, and contract history reporting.</span><em>Open</em></button>
       </div>`;
   }
 
