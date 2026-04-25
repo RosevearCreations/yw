@@ -208,3 +208,18 @@ Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summarie
 - From a signed contract, run kickoff and confirm the Admin summary reports the linked job, work order, and first planned session date.
 - For payroll export runs, verify the UI now requires delivered, then confirmed, then closed in that order.
 - Verify the new image-score documentation matches the intended completeness-score weighting before future merchandising score work begins.
+
+## 2026-04-24 auth wall, historical reports, and OSHA reporting pass
+- Fixed the public auth wall so logged-out users no longer see the live Toolbox Talk, PPE Check, First Aid Kit, Site Inspection, or Emergency Drill screens underneath the sign-in interface.
+- Added a supervisor/admin **Historical Reports** screen with export-ready HSE form history, site/form rollups, and cross-workflow history covering submissions, HSE packet events, evidence review, scheduler runs, payroll exports, and signed contracts.
+- Added migration `sql/089_historical_reporting_and_auth_wall_support.sql` and synced the full schema reference so reporting stays DB-backed instead of drifting into browser-only JSON snapshots.
+- Continued the OSHA-facing direction by keeping the five field forms first-class while making their historical retrieval and review more usable for office and supervisor follow-up.
+- Next strongest follow-up: add incident / near-miss reporting, saved report presets, richer trend charts, and deeper drill-down exports by site, worker, route, and work-order context.
+
+
+
+## Historical reporting tests
+- Verify logged-out users see only the sign-in shell and no live form sections below it.
+- Verify the Reports screen loads for supervisor/admin roles and stays hidden for worker-level roles.
+- Verify HSE CSV export respects date/site/form filters.
+- Verify Workflow CSV export includes payroll export, scheduler run, signed contract, evidence review, and packet-event rows.

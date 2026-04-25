@@ -210,3 +210,11 @@ The repo now includes attendance photo upload metadata, geofence distance/status
 - Canonical schema files no longer require the unavailable `vault` extension; scheduler dispatch now prefers Vault when available and falls back cleanly when it is not.
 - Admin evidence review now prompts for optional notes more clearly, signed-contract kickoff returns richer completion messaging, and payroll export actions now step through delivered -> confirmed -> closed.
 - Image-rating guidance is now documented as a rule-based completeness score rather than an AI quality rating.
+
+## 2026-04-24 auth wall, historical reports, and OSHA reporting pass
+- Fixed the public auth wall so logged-out users no longer see the live Toolbox Talk, PPE Check, First Aid Kit, Site Inspection, or Emergency Drill screens underneath the sign-in interface.
+- Added a supervisor/admin **Historical Reports** screen with export-ready HSE form history, site/form rollups, and cross-workflow history covering submissions, HSE packet events, evidence review, scheduler runs, payroll exports, and signed contracts.
+- Added migration `sql/089_historical_reporting_and_auth_wall_support.sql` and synced the full schema reference so reporting stays DB-backed instead of drifting into browser-only JSON snapshots.
+- Continued the OSHA-facing direction by keeping the five field forms first-class while making their historical retrieval and review more usable for office and supervisor follow-up.
+- Next strongest follow-up: add incident / near-miss reporting, saved report presets, richer trend charts, and deeper drill-down exports by site, worker, route, and work-order context.
+

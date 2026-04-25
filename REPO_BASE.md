@@ -127,3 +127,11 @@ Important latest files: `sql/088_scheduler_cron_media_review_payroll_close_recei
 ## 2026-04-22 repo-alignment note
 - `sql/088_scheduler_cron_media_review_payroll_close_receipts.sql` and `sql/000_full_schema_reference.sql` now contain the portable scheduler dispatcher.
 - `sql/000_full_schema_reference.fixed.sql` has been removed again so the repo keeps one canonical full-schema reference.
+
+## 2026-04-24 auth wall, historical reports, and OSHA reporting pass
+- Fixed the public auth wall so logged-out users no longer see the live Toolbox Talk, PPE Check, First Aid Kit, Site Inspection, or Emergency Drill screens underneath the sign-in interface.
+- Added a supervisor/admin **Historical Reports** screen with export-ready HSE form history, site/form rollups, and cross-workflow history covering submissions, HSE packet events, evidence review, scheduler runs, payroll exports, and signed contracts.
+- Added migration `sql/089_historical_reporting_and_auth_wall_support.sql` and synced the full schema reference so reporting stays DB-backed instead of drifting into browser-only JSON snapshots.
+- Continued the OSHA-facing direction by keeping the five field forms first-class while making their historical retrieval and review more usable for office and supervisor follow-up.
+- Next strongest follow-up: add incident / near-miss reporting, saved report presets, richer trend charts, and deeper drill-down exports by site, worker, route, and work-order context.
+

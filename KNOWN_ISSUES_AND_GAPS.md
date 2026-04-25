@@ -443,3 +443,17 @@ Still open:
 - Signed-contract kickoff now returns clearer job/work-order/session feedback in Admin, but it still needs broader client/crew/route test coverage.
 - Payroll close is now intentionally sequential (delivered -> confirmed -> closed); older records created before this pass may need manual normalization if they skipped confirmation.
 - Image scoring is currently a rule-based completeness score, not an AI quality score; merchandising-focused checks such as sharpness, exposure, duplicate-angle detection, and subject framing remain future work.
+
+## 2026-04-24 auth wall, historical reports, and OSHA reporting pass
+- Fixed the public auth wall so logged-out users no longer see the live Toolbox Talk, PPE Check, First Aid Kit, Site Inspection, or Emergency Drill screens underneath the sign-in interface.
+- Added a supervisor/admin **Historical Reports** screen with export-ready HSE form history, site/form rollups, and cross-workflow history covering submissions, HSE packet events, evidence review, scheduler runs, payroll exports, and signed contracts.
+- Added migration `sql/089_historical_reporting_and_auth_wall_support.sql` and synced the full schema reference so reporting stays DB-backed instead of drifting into browser-only JSON snapshots.
+- Continued the OSHA-facing direction by keeping the five field forms first-class while making their historical retrieval and review more usable for office and supervisor follow-up.
+- Next strongest follow-up: add incident / near-miss reporting, saved report presets, richer trend charts, and deeper drill-down exports by site, worker, route, and work-order context.
+
+
+
+### Historical reporting gaps still open
+- Historical Reports is read-only in this pass; there are no saved presets, scheduled reports, or chart trend panels yet.
+- Incident / near-miss, SDS acknowledgement, and training history are still not surfaced as first-class report rows.
+- Workflow history is intentionally broad but not yet linked to every job/site/route/work-order drill-down screen.

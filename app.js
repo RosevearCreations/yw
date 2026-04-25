@@ -28,6 +28,7 @@ const appState = {
 const modules = {
   adminUI: null,
   logbookUI: null,
+  reportsUI: null,
   toolboxFormUI: null,
   ppeFormUI: null,
   firstAidFormUI: null,
@@ -248,6 +249,10 @@ function applyRoleVisibility() {
     modules.logbookUI.applyRoleVisibility();
   }
 
+  if (modules.reportsUI?.applyRoleVisibility) {
+    modules.reportsUI.applyRoleVisibility();
+  }
+
   if (modules.profileUI?.applyRoleVisibility) {
     modules.profileUI.applyRoleVisibility();
   }
@@ -332,6 +337,7 @@ function initProtectedModules() {
 
   initAdminModule();
   initLogbookModule();
+  initReportsModule();
   initProfileModule();
   initReferenceDataModule();
   initJobsModule();
@@ -377,6 +383,20 @@ function initJobsModule() {
   timedRun('jobs-ui.init', () => Promise.resolve(modules.jobsUI.init())).catch((err) => {
     console.error('Jobs UI init failed', err);
     pushDiagnostic('jobs-ui', err?.message || 'Jobs or Equipment screens failed to initialize.');
+  });
+}
+
+
+function initReportsModule() {
+  if (!canInitProtectedModules() || modules.reportsUI || !window.YWIReportsUI?.create || !api()) return;
+  modules.reportsUI = window.YWIReportsUI.create({
+    loadAdminDirectory: api().loadAdminDirectory,
+    getCurrentRole: () => appState.currentRole,
+    getAccessProfile
+  });
+  timedRun('reports-ui.init', () => Promise.resolve(modules.reportsUI.init())).catch((err) => {
+    console.error('Reports UI init failed', err);
+    pushDiagnostic('reports-ui', err?.message || 'Historical reports failed to initialize.');
   });
 }
 

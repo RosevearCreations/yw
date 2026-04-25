@@ -567,3 +567,17 @@ Next recommended build steps:
 - Scheduler SQL now needs to stay portable across environments: hosted Supabase can use Vault, but canonical repo SQL must keep the non-Vault fallback.
 - Payroll export workflow now expects a full delivered -> confirmed -> closed progression in Admin.
 - Image scoring guidance is now documented as a rule-based completeness score rather than an AI quality score; a future merchandising pass can add blur, exposure, duplicate-angle, and lifestyle bonuses/penalties.
+
+## 2026-04-24 auth wall, historical reports, and OSHA reporting pass
+- Fixed the public auth wall so logged-out users no longer see the live Toolbox Talk, PPE Check, First Aid Kit, Site Inspection, or Emergency Drill screens underneath the sign-in interface.
+- Added a supervisor/admin **Historical Reports** screen with export-ready HSE form history, site/form rollups, and cross-workflow history covering submissions, HSE packet events, evidence review, scheduler runs, payroll exports, and signed contracts.
+- Added migration `sql/089_historical_reporting_and_auth_wall_support.sql` and synced the full schema reference so reporting stays DB-backed instead of drifting into browser-only JSON snapshots.
+- Continued the OSHA-facing direction by keeping the five field forms first-class while making their historical retrieval and review more usable for office and supervisor follow-up.
+- Next strongest follow-up: add incident / near-miss reporting, saved report presets, richer trend charts, and deeper drill-down exports by site, worker, route, and work-order context.
+
+
+
+### Historical reporting direction now started
+- Historical Reports screen is now the main place to retrieve HSE form history plus payroll/scheduler/contract workflow history without opening each workflow separately.
+- Next strongest follow-up: incident / near-miss form, saved report presets, chart summaries, and deeper worker/site/route/work-order drilldowns.
+- Keep pushing DB-backed reporting views rather than local-only JSON summaries so exports and office follow-up remain consistent across sessions.

@@ -1110,3 +1110,31 @@ body[data-user-role="admin"] #admin[data-admin-locked="false"] {
 #ad_hse_evidence_table td {
   vertical-align: top;
 }
+
+
+body[data-authenticated="false"] .app-header nav,
+body[data-authenticated="false"] #authInfo,
+body[data-authenticated="false"] main.container {
+  display: none !important;
+}
+
+body[data-authenticated="true"] #loginView {
+  display: none !important;
+}
+
+.reports-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (min-width: 980px) {
+  .reports-grid {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  }
+}
+
+.report-mini-note {
+  color: var(--text-faint);
+  font-size: 0.88rem;
+}
