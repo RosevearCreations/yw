@@ -581,3 +581,12 @@ Next recommended build steps:
 - Historical Reports screen is now the main place to retrieve HSE form history plus payroll/scheduler/contract workflow history without opening each workflow separately.
 - Next strongest follow-up: incident / near-miss form, saved report presets, chart summaries, and deeper worker/site/route/work-order drilldowns.
 - Keep pushing DB-backed reporting views rather than local-only JSON summaries so exports and office follow-up remain consistent across sessions.
+
+## 2026-04-24 incident reporting, DB-backed report presets, and richer HSE analytics pass
+- Added a new **Incident / Near Miss** field form so workers and supervisors can capture injuries, close calls, damage, witness names, immediate actions, and corrective-action ownership without waiting for office follow-up.
+- Added migration `sql/090_incident_reporting_saved_report_presets_and_trends.sql`.
+- Added DB-backed reporting presets (`report_presets`) so supervisors and admins can reuse saved report filters without depending on local browser storage.
+- Expanded reporting with DB-backed views for incident history, monthly trends, worker rollups, and site/job/route context rollups.
+- Reworked the historical reports screen to use the richer DB-backed datasets and added incident CSV export.
+- Added a dedicated incident quick link in the public nav, HSE Ops, and Admin hub so the OSHA-facing workflows stay easy to reach on mobile and desktop.
+- Next strongest follow-up: training history + certification expiry, SDS acknowledgement tracking, OSHA 300/300A/301-oriented recordkeeping helpers, and corrective-action task assignment from incident rows.

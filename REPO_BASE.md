@@ -135,3 +135,13 @@ Important latest files: `sql/088_scheduler_cron_media_review_payroll_close_recei
 - Continued the OSHA-facing direction by keeping the five field forms first-class while making their historical retrieval and review more usable for office and supervisor follow-up.
 - Next strongest follow-up: add incident / near-miss reporting, saved report presets, richer trend charts, and deeper drill-down exports by site, worker, route, and work-order context.
 
+## 2026-04-24 incident reporting, DB-backed report presets, and richer HSE analytics pass
+- Added a new **Incident / Near Miss** field form so workers and supervisors can capture injuries, close calls, damage, witness names, immediate actions, and corrective-action ownership without waiting for office follow-up.
+- Added migration `sql/090_incident_reporting_saved_report_presets_and_trends.sql`.
+- Added DB-backed reporting presets (`report_presets`) so supervisors and admins can reuse saved report filters without depending on local browser storage.
+- Expanded reporting with DB-backed views for incident history, monthly trends, worker rollups, and site/job/route context rollups.
+- Reworked the historical reports screen to use the richer DB-backed datasets and added incident CSV export.
+- Added a dedicated incident quick link in the public nav, HSE Ops, and Admin hub so the OSHA-facing workflows stay easy to reach on mobile and desktop.
+- Next strongest follow-up: training history + certification expiry, SDS acknowledgement tracking, OSHA 300/300A/301-oriented recordkeeping helpers, and corrective-action task assignment from incident rows.
+
+- Added `js/forms-incident.js` and `sql/090_incident_reporting_saved_report_presets_and_trends.sql`. Reports now also depend on `report_presets`, `v_incident_near_miss_history`, `v_hse_reporting_monthly_trends`, `v_hse_reporting_worker_rollup`, `v_hse_reporting_context_rollup`, and `v_report_preset_directory`.

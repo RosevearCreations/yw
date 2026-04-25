@@ -34,6 +34,7 @@ const modules = {
   firstAidFormUI: null,
   inspectionFormUI: null,
   drillFormUI: null,
+  incidentFormUI: null,
   adminActions: null,
   profileUI: null,
   referenceDataUI: null,
@@ -294,7 +295,7 @@ function syncAuthStateFromBoot(detail = {}) {
 }
 
 function applyDateFallback() {
-  ['#tb_date', '#ppe_date', '#fa_date', '#insp_date', '#dr_date', '#lg_from', '#lg_to'].forEach((sel) => {
+  ['#tb_date', '#ppe_date', '#fa_date', '#insp_date', '#dr_date', '#inc_date', '#lg_from', '#lg_to'].forEach((sel) => {
     const el = $(sel);
     if (el && !el.value) el.value = todayISO();
   });
@@ -391,8 +392,10 @@ function initReportsModule() {
   if (!canInitProtectedModules() || modules.reportsUI || !window.YWIReportsUI?.create || !api()) return;
   modules.reportsUI = window.YWIReportsUI.create({
     loadAdminDirectory: api().loadAdminDirectory,
+    manageAdminEntity: api().manageAdminEntity,
     getCurrentRole: () => appState.currentRole,
-    getAccessProfile
+    getAccessProfile,
+    getAuthState: () => auth()?.getState?.() || {}
   });
   timedRun('reports-ui.init', () => Promise.resolve(modules.reportsUI.init())).catch((err) => {
     console.error('Reports UI init failed', err);
@@ -479,6 +482,20 @@ function initFormModules() {
     timedRun('drill-form.init', () => Promise.resolve(modules.drillFormUI.init())).catch((err) => {
       console.error('Drill form init failed', err);
       pushDiagnostic('drill-form', err?.message || 'Emergency Drill failed to initialize.');
+    });
+  }
+
+
+  if (!modules.incidentFormUI && window.YWIFormsIncident?.create) {
+    modules.incidentFormUI = window.YWIFormsIncident.create({
+      sendToFunction: api().sendToFunction,
+      uploadImagesForSubmission: api().uploadImagesForSubmission,
+      getOutbox: outbox().getItems,
+      setOutbox: outbox().setItems
+    });
+    timedRun('incident-form.init', () => Promise.resolve(modules.incidentFormUI.init())).catch((err) => {
+      console.error('Incident form init failed', err);
+      pushDiagnostic('incident-form', err?.message || 'Incident / near miss form failed to initialize.');
     });
   }
 }

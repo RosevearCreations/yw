@@ -457,3 +457,12 @@ Still open:
 - Historical Reports is read-only in this pass; there are no saved presets, scheduled reports, or chart trend panels yet.
 - Incident / near-miss, SDS acknowledgement, and training history are still not surfaced as first-class report rows.
 - Workflow history is intentionally broad but not yet linked to every job/site/route/work-order drill-down screen.
+
+## 2026-04-24 incident reporting, DB-backed report presets, and richer HSE analytics pass
+- Added a new **Incident / Near Miss** field form so workers and supervisors can capture injuries, close calls, damage, witness names, immediate actions, and corrective-action ownership without waiting for office follow-up.
+- Added migration `sql/090_incident_reporting_saved_report_presets_and_trends.sql`.
+- Added DB-backed reporting presets (`report_presets`) so supervisors and admins can reuse saved report filters without depending on local browser storage.
+- Expanded reporting with DB-backed views for incident history, monthly trends, worker rollups, and site/job/route context rollups.
+- Reworked the historical reports screen to use the richer DB-backed datasets and added incident CSV export.
+- Added a dedicated incident quick link in the public nav, HSE Ops, and Admin hub so the OSHA-facing workflows stay easy to reach on mobile and desktop.
+- Next strongest follow-up: training history + certification expiry, SDS acknowledgement tracking, OSHA 300/300A/301-oriented recordkeeping helpers, and corrective-action task assignment from incident rows.

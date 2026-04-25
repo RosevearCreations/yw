@@ -8,17 +8,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>YWI Southern Ontario HSE, Safety Reports & Field Operations App | Jobs, Crews, Equipment</title>
-  <meta name="description" content="YWI Southern Ontario HSE, safety reporting, and field operations app for Southern Ontario jobs, crews, routes, equipment, linked safety packets, inspections, historical reports, and admin workflow records." />
+  <title>YWI Southern Ontario HSE, Incident Reporting & Field Operations App | Jobs, Crews, Equipment</title>
+  <meta name="description" content="YWI Southern Ontario HSE, incident reporting, safety reporting, and field operations app for Southern Ontario jobs, crews, routes, equipment, linked safety packets, inspections, historical reports, and admin workflow records." />
   <meta name="theme-color" content="#0f172a" />
   <meta name="color-scheme" content="dark light" />
 
-  <link rel="manifest" href="/manifest.json?v=2026-04-24a" />
-  <link rel="icon" href="/icons/icon-192.png?v=2026-04-24a" sizes="192x192" />
-  <link rel="stylesheet" href="/style.css?v=2026-04-24a" />
+  <link rel="manifest" href="/manifest.json?v=2026-04-24c" />
+  <link rel="icon" href="/icons/icon-192.png?v=2026-04-24c" sizes="192x192" />
+  <link rel="stylesheet" href="/style.css?v=2026-04-24c" />
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/js/app-config.js?v=2026-04-24a"></script>
+  <script src="/js/app-config.js?v=2026-04-24c"></script>
 
   <style>
     #authLoading {
@@ -104,7 +104,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-04-24a');
+          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-04-24c');
           if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
           }
@@ -135,6 +135,7 @@
       <a href="#toolbox" class="active">Toolbox Talk</a>
       <a href="#ppe">PPE Check</a>
       <a href="#firstaid">First Aid Kit</a>
+      <a href="#incident">Incident / Near Miss</a>
       <a href="#inspect">Site Inspection</a>
       <a href="#drill">Emergency Drill</a>
       <a href="#log">Logbook</a>
@@ -320,6 +321,7 @@
     <section id="toolbox" class="card active"><h2>Toolbox Talk</h2></section>
     <section id="ppe" class="card"><h2>PPE Check</h2></section>
     <section id="firstaid" class="card"><h2>First Aid Kit</h2></section>
+    <section id="incident" class="card"><h2>Incident / Near Miss</h2></section>
     <section id="inspect" class="card"><h2>Site Inspection</h2></section>
     <section id="drill" class="card"><h2>Emergency Drill</h2></section>
     <section id="log" class="card"><h2>Logbook</h2></section>
@@ -348,28 +350,29 @@
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
 
   <!-- Correct module order -->
-  <script src="/js/router.js?v=2026-04-24a"></script>
-  <script src="/js/bootstrap.js?v=2026-04-24a"></script>
-  <script src="/js/auth.js?v=2026-04-24a"></script>
-  <script src="/js/security.js?v=2026-04-24a"></script>
-  <script src="/js/api.js?v=2026-04-24a"></script>
-  <script src="/js/outbox.js?v=2026-04-24a"></script>
-  <script src="/js/admin-actions.js?v=2026-04-24a"></script>
-  <script src="/js/ui-auth.js?v=2026-04-24a"></script>
-  <script src="/js/account-ui.js?v=2026-04-24a"></script>
-  <script src="/js/profile-ui.js?v=2026-04-24a"></script>
-  <script src="/js/reference-data.js?v=2026-04-24a"></script>
-  <script src="/js/admin-ui.js?v=2026-04-24a"></script>
-  <script src="/js/hse-ops-ui.js?v=2026-04-24a"></script>
-  <script src="/js/logbook-ui.js?v=2026-04-24a"></script>
-  <script src="/js/reports-ui.js?v=2026-04-24a"></script>
-  <script src="/js/jobs-ui.js?v=2026-04-24a"></script>
-  <script src="/js/forms-toolbox.js?v=2026-04-24a"></script>
-  <script src="/js/forms-ppe.js?v=2026-04-24a"></script>
-  <script src="/js/forms-firstaid.js?v=2026-04-24a"></script>
-  <script src="/js/forms-inspection.js?v=2026-04-24a"></script>
-  <script src="/js/forms-drill.js?v=2026-04-24a"></script>
-  <script src="/app.js?v=2026-04-24a" defer></script>
+  <script src="/js/router.js?v=2026-04-24c"></script>
+  <script src="/js/bootstrap.js?v=2026-04-24c"></script>
+  <script src="/js/auth.js?v=2026-04-24c"></script>
+  <script src="/js/security.js?v=2026-04-24c"></script>
+  <script src="/js/api.js?v=2026-04-24c"></script>
+  <script src="/js/outbox.js?v=2026-04-24c"></script>
+  <script src="/js/admin-actions.js?v=2026-04-24c"></script>
+  <script src="/js/ui-auth.js?v=2026-04-24c"></script>
+  <script src="/js/account-ui.js?v=2026-04-24c"></script>
+  <script src="/js/profile-ui.js?v=2026-04-24c"></script>
+  <script src="/js/reference-data.js?v=2026-04-24c"></script>
+  <script src="/js/admin-ui.js?v=2026-04-24c"></script>
+  <script src="/js/hse-ops-ui.js?v=2026-04-24c"></script>
+  <script src="/js/logbook-ui.js?v=2026-04-24c"></script>
+  <script src="/js/reports-ui.js?v=2026-04-24c"></script>
+  <script src="/js/jobs-ui.js?v=2026-04-24c"></script>
+  <script src="/js/forms-toolbox.js?v=2026-04-24c"></script>
+  <script src="/js/forms-ppe.js?v=2026-04-24c"></script>
+  <script src="/js/forms-firstaid.js?v=2026-04-24c"></script>
+  <script src="/js/forms-incident.js?v=2026-04-24c"></script>
+  <script src="/js/forms-inspection.js?v=2026-04-24c"></script>
+  <script src="/js/forms-drill.js?v=2026-04-24c"></script>
+  <script src="/app.js?v=2026-04-24c" defer></script>
 
   <script>
     document.addEventListener('ywi:auth-changed', (e) => {
