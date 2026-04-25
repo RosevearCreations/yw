@@ -63,7 +63,8 @@
     const state = {
       submissionHistory: [], workflowHistory: [], dailyRollups: [], siteRollups: [],
       incidentHistory: [], monthlyTrends: [], workerRollups: [], contextRollups: [], presets: [],
-      correctiveTasks: [], correctiveSummary: [], trainingCourses: [], trainingRecords: [], trainingSummary: [], sdsAcknowledgements: [], supervisorQueue: []
+      correctiveTasks: [], correctiveSummary: [], trainingCourses: [], trainingRecords: [], trainingSummary: [], sdsAcknowledgements: [], supervisorQueue: [],
+      siteScorecards: [], supervisorScorecards: [], overdueAlerts: [], reportSubscriptions: [], reportDeliveryCandidates: [], equipmentJsaLinks: []
     };
     const els = {};
 
@@ -77,6 +78,7 @@
         siteRollupBody: $('#rp_site_rollup_table tbody'), incidentBody: $('#rp_incident_table tbody'),
         trendBody: $('#rp_trend_table tbody'), workerBody: $('#rp_worker_table tbody'), contextBody: $('#rp_context_table tbody'),
         correctiveBody: $('#rp_corrective_table tbody'), trainingBody: $('#rp_training_table tbody'), sdsBody: $('#rp_sds_table tbody'), queueBody: $('#rp_queue_table tbody'),
+        siteScorecardBody: $('#rp_site_scorecard_table tbody'), supervisorScorecardBody: $('#rp_supervisor_scorecard_table tbody'), overdueAlertBody: $('#rp_alert_table tbody'), subscriptionBody: $('#rp_subscription_table tbody'), jsaBody: $('#rp_jsa_table tbody'),
         loadBtn: $('#rp_load'), exportSubmissionsBtn: $('#rp_export_submissions'), exportWorkflowBtn: $('#rp_export_workflow'),
         exportIncidentBtn: $('#rp_export_incidents'), exportCorrectiveBtn: $('#rp_export_corrective'), exportTrainingBtn: $('#rp_export_training'),
         savePresetBtn: $('#rp_save_preset'), deletePresetBtn: $('#rp_delete_preset')
@@ -176,8 +178,20 @@
 
         <div class="reports-grid" style="margin-top:16px;">
           <div class="admin-panel-block">
-            <div class="section-heading"><div><h3 style="margin:0;">Supervisor Safety Queue</h3><p class="section-subtitle">Open corrective actions plus expiring training and SDS acknowledgements that need follow-up.</p></div></div>
+            <div class="section-heading"><div><h3 style="margin:0;">Supervisor Safety Queue</h3><p class="section-subtitle">Open corrective actions plus expiring training, SDS acknowledgements, subscriptions, and JSA reviews that need follow-up.</p></div></div>
             <div class="table-scroll"><table id="rp_queue_table"><thead><tr><th>Type</th><th>Context</th><th>Headline</th><th>Status</th><th>Priority</th><th>Owner</th><th>Due</th></tr></thead><tbody><tr><td colspan="7" class="muted">Load reports to view the queue.</td></tr></tbody></table></div>
+          </div>
+          <div class="admin-panel-block">
+            <div class="section-heading"><div><h3 style="margin:0;">Overdue Alerts</h3><p class="section-subtitle">Reminder and escalation-ready items across corrective actions, training, SDS, subscriptions, and JSA review.</p></div></div>
+            <div class="table-scroll"><table id="rp_alert_table"><thead><tr><th>Type</th><th>Context</th><th>Headline</th><th>Status</th><th>Priority</th><th>Due</th></tr></thead><tbody><tr><td colspan="6" class="muted">Load reports to view overdue alerts.</td></tr></tbody></table></div>
+          </div>
+          <div class="admin-panel-block">
+            <div class="section-heading"><div><h3 style="margin:0;">Site Safety Scorecards</h3><p class="section-subtitle">Operational safety rollups by site to highlight rejected forms, incidents, and overdue corrective work.</p></div></div>
+            <div class="table-scroll"><table id="rp_site_scorecard_table"><thead><tr><th>Site</th><th>Status</th><th>Submissions</th><th>Incidents</th><th>Rejected</th><th>Open Corrective</th><th>Overdue</th></tr></thead><tbody><tr><td colspan="7" class="muted">Load reports to view site scorecards.</td></tr></tbody></table></div>
+          </div>
+          <div class="admin-panel-block">
+            <div class="section-heading"><div><h3 style="margin:0;">Supervisor Scorecards</h3><p class="section-subtitle">Which supervisors have expiring training, overdue actions, or verification backlogs.</p></div></div>
+            <div class="table-scroll"><table id="rp_supervisor_scorecard_table"><thead><tr><th>Supervisor</th><th>Status</th><th>Open Tasks</th><th>Overdue</th><th>Training Expiring</th><th>SDS Expiring</th><th>Verification Pending</th></tr></thead><tbody><tr><td colspan="7" class="muted">Load reports to view supervisor scorecards.</td></tr></tbody></table></div>
           </div>
           <div class="admin-panel-block">
             <div class="section-heading"><div><h3 style="margin:0;">Corrective Actions</h3><p class="section-subtitle">Incident-driven follow-up tasks with due dates, escalation, status changes, and closeout history.</p></div></div>
@@ -369,7 +383,32 @@
       });
     }
 
-    function renderStats(subs, incidents, workflow, corrective, training, sds) {
+
+    function getFilteredSiteScorecards() { return (state.siteScorecards || []); }
+    function getFilteredSupervisorScorecards() { return (state.supervisorScorecards || []); }
+    function getFilteredAlerts() {
+      const f = currentFilters();
+      return (state.overdueAlerts || []).filter((row) => {
+        if (!filterDate(row.sort_at, f.from, f.to)) return false;
+        if (f.status && String(row.alert_status || '').toLowerCase() !== f.status) return false;
+        if (f.severity && String(row.alert_priority || '').toLowerCase() !== f.severity) return false;
+        if (!applyTextFilter([row.primary_context, row.headline], f.site || f.context)) return false;
+        if (!applyTextFilter([row.owner_name], f.worker)) return false;
+        return true;
+      });
+    }
+    function getFilteredSubscriptions() { return (state.reportSubscriptions || []); }
+    function getFilteredJsaLinks() {
+      const f = currentFilters();
+      return (state.equipmentJsaLinks || []).filter((row) => {
+        if (!filterDate(row.updated_at, f.from, f.to)) return false;
+        if (f.status && String(row.status || '').toLowerCase() !== f.status) return false;
+        if (!applyTextFilter([row.equipment_code, row.job_code, row.work_order_number, row.route_code, row.hazard_title], f.context || f.site)) return false;
+        return true;
+      });
+    }
+
+    function renderStats(subs, incidents, workflow, corrective, training, sds, alerts, subscriptions, jsaLinks) {
       if (!els.stats) return;
       const reviewed = subs.filter((row) => Number(row.review_count || 0) > 0).length;
       const rejected = subs.filter((row) => String(row.status || '').toLowerCase() === 'rejected' || String(row.last_review_action || '').toLowerCase() === 'rejected').length;
@@ -379,6 +418,9 @@
       const overdueCorrective = corrective.filter((row) => !!row.is_overdue).length;
       const expiringTraining = training.filter((row) => !!row.expires_within_30_days || !!row.is_expired).length;
       const expiringSds = sds.filter((row) => !!row.expires_within_30_days || !!row.is_expired).length;
+      const alertCount = (alerts || []).length;
+      const dueSubscriptions = (subscriptions || []).filter((row) => !!row.send_due).length;
+      const openJsaLinks = (jsaLinks || []).filter((row) => String(row.status || '').toLowerCase() !== 'closed').length;
       const cards = [
         ['HSE submissions', subs.length, 'All DB-backed form rows that match the current filters.'],
         ['Incident / near miss rows', incidents.length, 'Incident, close-call, damage, and vehicle event history parsed into report-safe columns.'],
@@ -391,7 +433,10 @@
         ['Training / cert expiry', expiringTraining, 'Records that are expired or within 30 days of expiry.'],
         ['SDS acknowledgements expiring', expiringSds, 'Chemical acknowledgement records that need renewal or review.'],
         ['Workflow events', workflow.length, 'Combined payroll, scheduler, contract, evidence, packet, and submission history.'],
-        ['Saved presets', (state.presets || []).length, 'DB-backed report filters supervisors and admins can reuse.']
+        ['Saved presets', (state.presets || []).length, 'DB-backed report filters supervisors and admins can reuse.'],
+        ['Overdue alerts', alertCount, 'Reminder / escalation-ready items across corrective actions, training, SDS, subscriptions, and JSA review.'],
+        ['Subscriptions due', dueSubscriptions, 'Scheduled report subscriptions that are due to send or review.'],
+        ['Open JSA / hazard links', openJsaLinks, 'Equipment-specific hazard / JSA items tied to work context.']
       ];
       els.stats.innerHTML = cards.map(([label, value, help]) => `
         <div class="admin-stat-card">
@@ -561,6 +606,75 @@
           <td>${escHtml(row.notes || '')}</td>
         </tr>`).join('');
     }
+
+    function renderSiteScorecards(rows) {
+      if (!els.siteScorecardBody) return;
+      if (!rows.length) { els.siteScorecardBody.innerHTML = '<tr><td colspan="7" class="muted">No site scorecards are available.</td></tr>'; return; }
+      els.siteScorecardBody.innerHTML = rows.map((row) => `
+        <tr>
+          <td>${escHtml(row.site_label || row.site_name || row.site_code || '')}</td>
+          <td>${escHtml(row.scorecard_status || '')}</td>
+          <td>${escHtml(row.submission_count || 0)}</td>
+          <td>${escHtml(row.incident_count || 0)}</td>
+          <td>${escHtml(row.rejected_count || 0)}</td>
+          <td>${escHtml(row.open_corrective_count || 0)}</td>
+          <td>${escHtml(row.overdue_corrective_count || 0)}</td>
+        </tr>`).join('');
+    }
+    function renderSupervisorScorecards(rows) {
+      if (!els.supervisorScorecardBody) return;
+      if (!rows.length) { els.supervisorScorecardBody.innerHTML = '<tr><td colspan="7" class="muted">No supervisor scorecards are available.</td></tr>'; return; }
+      els.supervisorScorecardBody.innerHTML = rows.map((row) => `
+        <tr>
+          <td>${escHtml(row.supervisor_name || '')}</td>
+          <td>${escHtml(row.scorecard_status || '')}</td>
+          <td>${escHtml(row.open_task_count || 0)}</td>
+          <td>${escHtml(row.overdue_task_count || 0)}</td>
+          <td>${escHtml((row.expired_training_count || 0) + (row.expiring_training_count || 0))}</td>
+          <td>${escHtml((row.expired_sds_count || 0) + (row.expiring_sds_count || 0))}</td>
+          <td>${escHtml(row.verification_pending_count || 0)}</td>
+        </tr>`).join('');
+    }
+    function renderAlerts(rows) {
+      if (!els.overdueAlertBody) return;
+      if (!rows.length) { els.overdueAlertBody.innerHTML = '<tr><td colspan="6" class="muted">No overdue alerts match the current filters.</td></tr>'; return; }
+      els.overdueAlertBody.innerHTML = rows.map((row) => `
+        <tr>
+          <td>${escHtml(row.alert_type || '')}</td>
+          <td>${escHtml(row.primary_context || '')}</td>
+          <td>${escHtml(row.headline || '')}</td>
+          <td>${escHtml(row.alert_status || '')}</td>
+          <td>${escHtml(row.alert_priority || '')}</td>
+          <td>${escHtml(row.due_label || '')}</td>
+        </tr>`).join('');
+    }
+    function renderSubscriptions(rows) {
+      if (!els.subscriptionBody) return;
+      if (!rows.length) { els.subscriptionBody.innerHTML = '<tr><td colspan="6" class="muted">No report subscriptions are available.</td></tr>'; return; }
+      els.subscriptionBody.innerHTML = rows.map((row) => `
+        <tr>
+          <td>${escHtml(row.subscription_name || '')}</td>
+          <td>${escHtml(row.report_kind || '')}</td>
+          <td>${escHtml(row.cadence || '')}</td>
+          <td>${escHtml(row.target_profile_name || row.recipient_email || row.target_role || '')}</td>
+          <td>${escHtml(formatDateTime(row.next_send_at || ''))}</td>
+          <td>${escHtml(row.last_status || '')}${row.send_due ? '<div class="report-mini-note">Due</div>' : ''}</td>
+        </tr>`).join('');
+    }
+    function renderJsaLinks(rows) {
+      if (!els.jsaBody) return;
+      if (!rows.length) { els.jsaBody.innerHTML = '<tr><td colspan="6" class="muted">No equipment JSA / hazard links match the current filters.</td></tr>'; return; }
+      els.jsaBody.innerHTML = rows.map((row) => `
+        <tr>
+          <td>${escHtml(row.equipment_code || row.job_code || row.work_order_number || row.route_code || '')}</td>
+          <td>${escHtml(row.hazard_title || '')}</td>
+          <td>${escHtml(row.status || '')}${row.is_overdue ? '<div class="report-mini-note">Overdue</div>' : ''}</td>
+          <td>${escHtml(formatDate(row.review_due_date || ''))}</td>
+          <td>${escHtml(row.linked_packet_number || '')}</td>
+          <td>${escHtml(row.notes || row.hazard_summary || '')}</td>
+        </tr>`).join('');
+    }
+
     function currentPresetPayload() {
       const f = currentFilters();
       return { from: f.from, to: f.to, site: els.site?.value || '', worker: els.worker?.value || '', context: els.context?.value || '', form: f.form, status: f.status, severity: f.severity, workflow_type: f.type };
@@ -673,8 +787,16 @@
       const training = getFilteredTrainingRecords();
       const sds = getFilteredSds();
       const queue = getFilteredQueue();
-      renderStats(subs, incidents, workflow, corrective, training, sds);
+      const siteScorecards = getFilteredSiteScorecards();
+      const supervisorScorecards = getFilteredSupervisorScorecards();
+      const alerts = getFilteredAlerts();
+      const subscriptions = getFilteredSubscriptions();
+      const jsaLinks = getFilteredJsaLinks();
+      renderStats(subs, incidents, workflow, corrective, training, sds, alerts, subscriptions, jsaLinks);
       renderQueueTable(queue);
+      renderAlerts(alerts);
+      renderSiteScorecards(siteScorecards);
+      renderSupervisorScorecards(supervisorScorecards);
       renderCorrectiveActions(corrective);
       renderTraining(training);
       renderSds(sds);
@@ -685,7 +807,9 @@
       renderWorkerTable(workers);
       renderContextTable(contexts);
       renderWorkflowTable(workflow);
-      setSummary(`Loaded ${subs.length} HSE row(s), ${incidents.length} incident row(s), ${corrective.length} corrective action row(s), ${training.length} training row(s), ${sds.length} SDS row(s), and ${workflow.length} workflow event row(s) for the current filters.`);
+      renderSubscriptions(subscriptions);
+      renderJsaLinks(jsaLinks);
+      setSummary(`Loaded ${subs.length} HSE row(s), ${incidents.length} incident row(s), ${corrective.length} corrective action row(s), ${training.length} training row(s), ${sds.length} SDS row(s), ${alerts.length} overdue alert row(s), ${subscriptions.length} subscription row(s), ${jsaLinks.length} JSA / hazard row(s), and ${workflow.length} workflow event row(s) for the current filters.`);
     }
     function exportCsv(kind) {
       let rows = [];
@@ -741,6 +865,12 @@
         state.trainingSummary = Array.isArray(payload?.training_expiry_summary) ? payload.training_expiry_summary : [];
         state.sdsAcknowledgements = Array.isArray(payload?.sds_acknowledgement_directory) ? payload.sds_acknowledgement_directory : [];
         state.supervisorQueue = Array.isArray(payload?.supervisor_safety_queue) ? payload.supervisor_safety_queue : [];
+        state.siteScorecards = Array.isArray(payload?.site_safety_scorecards) ? payload.site_safety_scorecards : [];
+        state.supervisorScorecards = Array.isArray(payload?.supervisor_scorecards) ? payload.supervisor_scorecards : [];
+        state.overdueAlerts = Array.isArray(payload?.overdue_action_alerts) ? payload.overdue_action_alerts : [];
+        state.reportSubscriptions = Array.isArray(payload?.report_subscription_directory) ? payload.report_subscription_directory : [];
+        state.reportDeliveryCandidates = Array.isArray(payload?.report_delivery_candidates) ? payload.report_delivery_candidates : [];
+        state.equipmentJsaLinks = Array.isArray(payload?.equipment_jsa_hazard_link_directory) ? payload.equipment_jsa_hazard_link_directory : [];
         const actorId = String(getAuthState()?.user?.id || getAuthState()?.profile?.id || '');
         state.presets = (Array.isArray(payload?.report_preset_directory) ? payload.report_preset_directory : []).filter((row) => row.visibility === 'shared' || String(row.created_by_profile_id || '') === actorId);
         populatePresetSelect();
