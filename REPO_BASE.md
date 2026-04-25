@@ -145,3 +145,7 @@ Important latest files: `sql/088_scheduler_cron_media_review_payroll_close_recei
 - Next strongest follow-up: training history + certification expiry, SDS acknowledgement tracking, OSHA 300/300A/301-oriented recordkeeping helpers, and corrective-action task assignment from incident rows.
 
 - Added `js/forms-incident.js` and `sql/090_incident_reporting_saved_report_presets_and_trends.sql`. Reports now also depend on `report_presets`, `v_incident_near_miss_history`, `v_hse_reporting_monthly_trends`, `v_hse_reporting_worker_rollup`, `v_hse_reporting_context_rollup`, and `v_report_preset_directory`.
+
+## 2026-04-25 corrective actions + training pass
+- Synced the repo to include first-class corrective-action tasks, training / certification expiry tracking, SDS acknowledgement history, and management-focused reporting.
+- See `docs/CORRECTIVE_ACTIONS_AND_TRAINING.md` and the new `sql/091_corrective_actions_training_and_sds_tracking.sql` migration.

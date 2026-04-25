@@ -182,3 +182,7 @@ Use Vault on hosted Supabase when available. If the target environment does not 
 - Next strongest follow-up: training history + certification expiry, SDS acknowledgement tracking, OSHA 300/300A/301-oriented recordkeeping helpers, and corrective-action task assignment from incident rows.
 
 - Apply `sql/090_incident_reporting_saved_report_presets_and_trends.sql` after `089` so incident history, report presets, and richer reporting views are available before the next UI deploy.
+
+## 2026-04-25 corrective actions + training pass
+- Synced the repo to include first-class corrective-action tasks, training / certification expiry tracking, SDS acknowledgement history, and management-focused reporting.
+- See `docs/CORRECTIVE_ACTIONS_AND_TRAINING.md` and the new `sql/091_corrective_actions_training_and_sds_tracking.sql` migration.

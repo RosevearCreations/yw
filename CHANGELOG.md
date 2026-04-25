@@ -291,3 +291,7 @@ Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summarie
 - Next strongest follow-up: training history + certification expiry, SDS acknowledgement tracking, OSHA 300/300A/301-oriented recordkeeping helpers, and corrective-action task assignment from incident rows.
 
 - 2026-04-24: Added incident / near-miss field form, DB-backed report presets, incident/trend/worker/context reporting views, uploadImagesForSubmission helper, and reporting/admin/HSE Ops route updates.
+
+## 2026-04-25 corrective actions + training pass
+- Synced the repo to include first-class corrective-action tasks, training / certification expiry tracking, SDS acknowledgement history, and management-focused reporting.
+- See `docs/CORRECTIVE_ACTIONS_AND_TRAINING.md` and the new `sql/091_corrective_actions_training_and_sds_tracking.sql` migration.

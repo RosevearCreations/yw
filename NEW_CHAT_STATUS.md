@@ -228,3 +228,7 @@ The repo now includes attendance photo upload metadata, geofence distance/status
 - Next strongest follow-up: training history + certification expiry, SDS acknowledgement tracking, OSHA 300/300A/301-oriented recordkeeping helpers, and corrective-action task assignment from incident rows.
 
 - Current strongest next work after this pass: training/certification expiry, SDS acknowledgement, OSHA log helpers, and corrective-action assignment with reminders.
+
+## 2026-04-25 corrective actions + training pass
+- Synced the repo to include first-class corrective-action tasks, training / certification expiry tracking, SDS acknowledgement history, and management-focused reporting.
+- See `docs/CORRECTIVE_ACTIONS_AND_TRAINING.md` and the new `sql/091_corrective_actions_training_and_sds_tracking.sql` migration.
