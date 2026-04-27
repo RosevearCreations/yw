@@ -44,6 +44,19 @@ async function safeList(supabase: any, table: string, columns = '*', orderColumn
   }
 }
 
+async function safeListWhere(supabase: any, table: string, columns = '*', filters: Array<[string, any]> = [], orderColumn?: string, limit = 200, ascending = true) {
+  try {
+    let q = supabase.from(table).select(columns).limit(limit);
+    for (const [column, value] of filters) q = q.eq(column, value);
+    if (orderColumn) q = q.order(orderColumn, { ascending });
+    const { data, error } = await q;
+    if (error) return [];
+    return data || [];
+  } catch {
+    return [];
+  }
+}
+
 function mergeRowsById(baseRows: any[], extraRows: any[]) {
   const map = new Map<string, any>();
   for (const row of Array.isArray(baseRows) ? baseRows : []) {
@@ -265,7 +278,15 @@ if ((scope === 'all' || scope === 'reporting') && roleRank(actorRole) >= roleRan
   response.report_subscription_directory = await safeList(supabase, 'v_report_subscription_directory', '*', 'next_send_at', limit, false);
   response.report_delivery_candidates = await safeList(supabase, 'v_report_delivery_candidates', '*', 'next_send_at', limit, false);
   response.equipment_jsa_hazard_link_directory = await safeList(supabase, 'v_equipment_jsa_hazard_link_directory', '*', 'review_due_date', limit, false);
+  response.report_delivery_run_history = await safeList(supabase, 'v_report_delivery_run_history', '*', 'started_at', limit, false);
+  response.report_delivery_scheduler_status = await safeList(supabase, 'v_report_delivery_scheduler_status', '*', 'setting_code', 5, true);
 }
-  if (scope === 'self') response.profile = filteredPeople[0] || null;
+  if (scope === 'self') {
+    response.profile = filteredPeople[0] || null;
+    response.self_training_available_courses = (await safeList(supabase, 'v_training_course_directory', '*', 'course_name', limit, true)).filter((row: any) => row?.self_service_enabled !== false);
+    response.self_training_records = await safeListWhere(supabase, 'v_training_record_directory', '*', [['profile_id', actorId]], 'expires_at', limit, true);
+    response.self_sds_acknowledgements = await safeListWhere(supabase, 'v_sds_acknowledgement_directory', '*', [['profile_id', actorId]], 'expires_at', limit, true);
+    response.self_sds_prompts = await safeListWhere(supabase, 'v_worker_sds_prompt_queue', '*', [['profile_id', actorId]], 'acknowledged_at', limit, false);
+  }
   return Response.json(response, { headers: corsHeaders });
 });

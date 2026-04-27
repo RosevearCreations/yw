@@ -6,3 +6,6 @@ verify_jwt = false
 
 [functions.service-execution-scheduler-run]
 verify_jwt = false
+
+[functions.report-subscription-delivery-run]
+verify_jwt = false

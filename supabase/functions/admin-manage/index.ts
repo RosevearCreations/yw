@@ -622,6 +622,62 @@ if (entity === 'training_self_acknowledgement') {
 }
 
 
+if (entity === 'worker_sds_self_acknowledgement') {
+  const now = new Date().toISOString();
+  const today = now.slice(0, 10);
+  const itemId = String(body.item_id || body.sds_acknowledgement_id || '').trim();
+  const linkedTrainingRecordId = asNullableText(body.linked_training_record_id);
+  let linkedTrainingRecord = null;
+  let course = null;
+  if (linkedTrainingRecordId) {
+    linkedTrainingRecord = await fetchSingle(supabase, 'training_records', linkedTrainingRecordId);
+    if (!linkedTrainingRecord?.id || String(linkedTrainingRecord.profile_id || '') !== String(actorId)) {
+      return Response.json({ ok:false, error:'Training record not found for this worker.' }, { status:404, headers:corsHeaders });
+    }
+    if (linkedTrainingRecord.course_id) course = await fetchSingle(supabase, 'training_courses', linkedTrainingRecord.course_id);
+  }
+  const acknowledgedAt = asNullableDate(body.acknowledged_at) || today;
+  const expiresAt = asNullableDate(body.expires_at) || addMonthsToDate(acknowledgedAt, Number(course?.validity_months || 12)) || addMonthsToDate(acknowledgedAt, 12);
+  const patch: Record<string, unknown> = {
+    profile_id: actorId,
+    chemical_name: asNullableText(body.chemical_name) || asNullableText(body.product_name),
+    product_name: asNullableText(body.product_name) || asNullableText(course?.course_name),
+    vendor_name: asNullableText(body.vendor_name),
+    sds_revision_date: asNullableDate(body.sds_revision_date),
+    acknowledged_at: acknowledgedAt,
+    expires_at: expiresAt,
+    status: 'acknowledged',
+    source_submission_id: body.source_submission_id ?? null,
+    linked_training_record_id: linkedTrainingRecordId,
+    acknowledged_by_profile_id: actorId,
+    notes: asNullableText(body.notes),
+    product_context: body.product_context && typeof body.product_context === 'object' ? body.product_context : {},
+    equipment_code: asNullableText(body.equipment_code),
+    job_code: asNullableText(body.job_code),
+    work_order_number: asNullableText(body.work_order_number),
+    route_code: asNullableText(body.route_code),
+    updated_at: now,
+  };
+  if (!patch.product_name && !patch.chemical_name) {
+    return Response.json({ ok:false, error:'Product or chemical name is required.' }, { status:400, headers:corsHeaders });
+  }
+  const existing = itemId ? await fetchSingle(supabase, 'sds_acknowledgements', itemId) : null;
+  if (action === 'create') {
+    const { data, error } = await supabase.from('sds_acknowledgements').insert({ ...patch, created_at: now }).select('*').single();
+    if (error) throw error;
+    return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+  }
+  if (!existing?.id || String(existing.profile_id || '') !== String(actorId)) {
+    return Response.json({ ok:false, error:'SDS acknowledgement not found.' }, { status:404, headers:corsHeaders });
+  }
+  if (action === 'update') {
+    const { data, error } = await supabase.from('sds_acknowledgements').update(patch).eq('id', existing.id).select('*').single();
+    if (error) throw error;
+    return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+  }
+}
+
+
 
 if (entity === 'report_preset') {
   if (roleRank(actorProfile.role) < roleRank('supervisor')) {
