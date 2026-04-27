@@ -53,3 +53,6 @@ The Historical Reports screen now surfaces:
 - connect SDS acknowledgement to chemical / product catalogs and HSE packet context
 - add equipment-specific JSA / hazard-assessment linkage
 - add OSHA recordkeeping helpers only if the workflow needs formal log support
+
+## Latest pass note (2026-04-25d)
+- Synced for scheduled report delivery, worker self-service training/SDS acknowledgement, and Jobs commercial/accounting foundation planning.

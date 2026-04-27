@@ -65,6 +65,25 @@
       meEmergencyPhone: $('#me_emergency_contact_phone'),
       meSave: $('#me_save'),
       meReload: $('#me_reload'),
+      safetySummary: $('#me_safety_summary'),
+      trainingCourse: $('#me_training_course_id'),
+      trainingCompletedAt: $('#me_training_completed_at'),
+      trainingTrainer: $('#me_training_trainer_name'),
+      trainingProvider: $('#me_training_provider_name'),
+      trainingCertificate: $('#me_training_certificate_number'),
+      trainingNotes: $('#me_training_notes'),
+      trainingSave: $('#me_training_self_ack'),
+      trainingTableBody: document.querySelector('#me_training_record_table tbody'),
+      sdsProductName: $('#me_sds_product_name'),
+      sdsChemicalName: $('#me_sds_chemical_name'),
+      sdsRevisionDate: $('#me_sds_revision_date'),
+      sdsJobCode: $('#me_sds_job_code'),
+      sdsWorkOrder: $('#me_sds_work_order_number'),
+      sdsRouteCode: $('#me_sds_route_code'),
+      sdsEquipmentCode: $('#me_sds_equipment_code'),
+      sdsNotes: $('#me_sds_notes'),
+      sdsSave: $('#me_sds_self_ack'),
+      sdsPromptBody: document.querySelector('#me_sds_prompt_table tbody'),
       timeSummary: $('#me_time_summary'),
       timeJob: $('#me_time_job_id'),
       timeNotes: $('#me_time_notes'),
@@ -134,6 +153,25 @@
         meEmergencyPhone: $('#me_emergency_contact_phone'),
         meSave: $('#me_save'),
         meReload: $('#me_reload'),
+        safetySummary: $('#me_safety_summary'),
+        trainingCourse: $('#me_training_course_id'),
+        trainingCompletedAt: $('#me_training_completed_at'),
+        trainingTrainer: $('#me_training_trainer_name'),
+        trainingProvider: $('#me_training_provider_name'),
+        trainingCertificate: $('#me_training_certificate_number'),
+        trainingNotes: $('#me_training_notes'),
+        trainingSave: $('#me_training_self_ack'),
+        trainingTableBody: document.querySelector('#me_training_record_table tbody'),
+        sdsProductName: $('#me_sds_product_name'),
+        sdsChemicalName: $('#me_sds_chemical_name'),
+        sdsRevisionDate: $('#me_sds_revision_date'),
+        sdsJobCode: $('#me_sds_job_code'),
+        sdsWorkOrder: $('#me_sds_work_order_number'),
+        sdsRouteCode: $('#me_sds_route_code'),
+        sdsEquipmentCode: $('#me_sds_equipment_code'),
+        sdsNotes: $('#me_sds_notes'),
+        sdsSave: $('#me_sds_self_ack'),
+        sdsPromptBody: document.querySelector('#me_sds_prompt_table tbody'),
         timeSummary: $('#me_time_summary'),
         timeJob: $('#me_time_job_id'),
         timeNotes: $('#me_time_notes'),
@@ -276,6 +314,172 @@
 
 
 
+
+function ensureSelfServiceLayout() {
+  const meSection = document.getElementById('me');
+  if (!meSection || meSection.querySelector('#me_safety_summary')) return;
+  meSection.insertAdjacentHTML('beforeend', `
+      <div class="section-heading" style="margin-top:20px;">
+        <div>
+          <h3 style="margin:0;">Worker Safety Self-Service</h3>
+          <p class="section-subtitle">Self-acknowledge training completions and SDS prompts so supervisors can review without chasing paper records.</p>
+        </div>
+      </div>
+      <div id="me_safety_summary" class="notice" style="display:none;margin-bottom:14px;"></div>
+      <div class="grid">
+        <label>Training Course<select id="me_training_course_id"></select></label>
+        <label>Completed Date<input id="me_training_completed_at" type="date" /></label>
+        <label>Trainer / Source<input id="me_training_trainer_name" type="text" placeholder="Supervisor, vendor, or self-study source" /></label>
+        <label>Provider<input id="me_training_provider_name" type="text" placeholder="Provider or platform" /></label>
+        <label>Certificate / Licence<input id="me_training_certificate_number" type="text" placeholder="Optional certificate or licence number" /></label>
+      </div>
+      <label style="display:block;margin-top:12px;">Training Notes<textarea id="me_training_notes" rows="2" placeholder="Optional completion note for supervisor verification"></textarea></label>
+      <div class="admin-heading-actions" style="margin-top:10px;">
+        <button id="me_training_self_ack" class="secondary" type="button">Save Training Acknowledgement</button>
+      </div>
+      <div class="table-scroll" style="margin-top:12px;">
+        <table id="me_training_record_table">
+          <thead><tr><th>Course</th><th>Status</th><th>Completed</th><th>Expires</th><th>Verification</th><th>Method</th></tr></thead>
+          <tbody><tr><td colspan="6" class="muted">Load your profile to view training history.</td></tr></tbody>
+        </table>
+      </div>
+      <div class="section-heading" style="margin-top:20px;">
+        <div>
+          <h3 style="margin:0;">SDS Prompt Queue</h3>
+          <p class="section-subtitle">Acknowledge products and chemical prompts tied to your current training, jobs, routes, and equipment context.</p>
+        </div>
+      </div>
+      <div class="grid">
+        <label>Product Name<input id="me_sds_product_name" type="text" placeholder="Product or product family" /></label>
+        <label>Chemical Name<input id="me_sds_chemical_name" type="text" placeholder="Optional chemical name" /></label>
+        <label>SDS Revision Date<input id="me_sds_revision_date" type="date" /></label>
+        <label>Job Code<input id="me_sds_job_code" type="text" placeholder="Optional job code" /></label>
+        <label>Work Order<input id="me_sds_work_order_number" type="text" placeholder="Optional work order" /></label>
+        <label>Route Code<input id="me_sds_route_code" type="text" placeholder="Optional route" /></label>
+        <label>Equipment Code<input id="me_sds_equipment_code" type="text" placeholder="Optional equipment code" /></label>
+      </div>
+      <label style="display:block;margin-top:12px;">SDS Notes<textarea id="me_sds_notes" rows="2" placeholder="Optional acknowledgement note or context"></textarea></label>
+      <div class="admin-heading-actions" style="margin-top:10px;">
+        <button id="me_sds_self_ack" class="secondary" type="button">Record SDS Acknowledgement</button>
+      </div>
+      <div class="table-scroll" style="margin-top:12px;">
+        <table id="me_sds_prompt_table">
+          <thead><tr><th>Prompt</th><th>Status</th><th>Acknowledged</th><th>Expiry</th><th>Context</th><th>Action</th></tr></thead>
+          <tbody><tr><td colspan="6" class="muted">Load your profile to view SDS prompts.</td></tr></tbody>
+        </table>
+      </div>
+  `);
+}
+
+function renderSelfSafety(payload) {
+  const courses = Array.isArray(payload?.self_training_available_courses) ? payload.self_training_available_courses : [];
+  const trainingRows = Array.isArray(payload?.self_training_records) ? payload.self_training_records : [];
+  const sdsRows = Array.isArray(payload?.self_sds_acknowledgements) ? payload.self_sds_acknowledgements : [];
+  const sdsPrompts = Array.isArray(payload?.self_sds_prompts) ? payload.self_sds_prompts : [];
+
+  if (els.trainingCourse) {
+    const options = courses.map((row) => `<option value="${escHtml(row.id)}">${escHtml([row.course_code, row.course_name].filter(Boolean).join(' — ') || row.course_name || row.id)}</option>`).join('');
+    els.trainingCourse.innerHTML = `<option value="">Select self-service course</option>${options}`;
+  }
+  if (els.trainingCompletedAt && !els.trainingCompletedAt.value) els.trainingCompletedAt.value = new Date().toISOString().slice(0, 10);
+
+  if (els.trainingTableBody) {
+    els.trainingTableBody.innerHTML = trainingRows.map((row) => `
+      <tr>
+        <td>${escHtml(row.course_name || '')}</td>
+        <td>${escHtml(row.completion_status || '')}${row.is_expired ? '<div class="report-mini-note">Expired</div>' : row.expires_within_30_days ? '<div class="report-mini-note">Expiring</div>' : ''}</td>
+        <td>${escHtml(row.completed_at || '')}</td>
+        <td>${escHtml(row.expires_at || '')}</td>
+        <td>${row.verification_pending ? '<span class="status-chip warn">Pending</span>' : (row.verified_at ? `<span class="status-chip ok">Verified ${escHtml(row.verified_at)}</span>` : '')}</td>
+        <td>${escHtml(row.acknowledgement_method || '')}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="6" class="muted">No self-service training records are available yet.</td></tr>';
+  }
+
+  const promptMap = new Map();
+  for (const row of sdsPrompts) {
+    const key = String(row.training_record_id || row.course_id || row.product_name || crypto.randomUUID());
+    promptMap.set(key, row);
+  }
+  for (const row of sdsRows) {
+    if (!row.linked_training_record_id) continue;
+    const key = String(row.linked_training_record_id);
+    if (!promptMap.has(key)) promptMap.set(key, row);
+  }
+  const promptRows = Array.from(promptMap.values());
+  if (els.sdsPromptBody) {
+    els.sdsPromptBody.innerHTML = promptRows.map((row) => `
+      <tr>
+        <td>${escHtml(row.course_name || row.product_name || row.chemical_name || 'SDS prompt')}</td>
+        <td>${escHtml(row.prompt_status || row.status || row.sds_status || '')}</td>
+        <td>${escHtml(row.acknowledged_at || '')}</td>
+        <td>${escHtml(row.expires_at || '')}</td>
+        <td>${escHtml(row.prompt_context_label || [row.job_code, row.work_order_number, row.route_code, row.equipment_code].filter(Boolean).join(' / '))}</td>
+        <td><button type="button" class="secondary" data-sds-prompt='${escHtml(JSON.stringify({ training_record_id: row.training_record_id || row.linked_training_record_id || '', course_name: row.course_name || '', product_name: row.product_name || row.course_name || '', chemical_name: row.chemical_name || '', job_code: row.job_code || '', work_order_number: row.work_order_number || '', route_code: row.route_code || '', equipment_code: row.equipment_code || '', prompt_context_label: row.prompt_context_label || '' }))}'>Use</button></td>
+      </tr>
+    `).join('') || '<tr><td colspan="6" class="muted">No SDS prompts are due for your profile right now.</td></tr>';
+  }
+
+  const duePromptCount = promptRows.filter((row) => row.prompt_due || row.is_expired || row.expires_within_7_days).length;
+  const verificationPending = trainingRows.filter((row) => row.verification_pending).length;
+  setNotice(els.safetySummary, `Loaded ${trainingRows.length} training record(s), ${promptRows.length} SDS prompt row(s), ${verificationPending} training verification item(s), and ${duePromptCount} due SDS prompt(s).`);
+}
+
+async function saveTrainingSelfAcknowledgement() {
+  try {
+    const courseId = els.trainingCourse?.value || '';
+    if (!courseId) throw new Error('Choose a self-service training course first.');
+    setNotice(els.safetySummary, 'Saving training acknowledgement...');
+    const resp = await api.manageAdminEntity({
+      entity: 'training_self_acknowledgement',
+      action: 'create',
+      course_id: courseId,
+      completed_at: els.trainingCompletedAt?.value || null,
+      trainer_name: els.trainingTrainer?.value?.trim?.() || null,
+      provider_name: els.trainingProvider?.value?.trim?.() || null,
+      certificate_number: els.trainingCertificate?.value?.trim?.() || null,
+      notes: els.trainingNotes?.value?.trim?.() || null,
+    });
+    if (!resp?.ok) throw new Error(resp?.error || 'Training acknowledgement failed.');
+    setNotice(els.safetySummary, 'Training acknowledgement saved.');
+    await loadSelfProfile();
+  } catch (err) {
+    console.error(err);
+    setNotice(els.safetySummary, err?.message || 'Training acknowledgement failed.');
+  }
+}
+
+async function saveWorkerSdsAcknowledgement(overrides = {}) {
+  try {
+    const payload = {
+      entity: 'worker_sds_self_acknowledgement',
+      action: 'create',
+      linked_training_record_id: overrides.training_record_id || null,
+      product_name: overrides.product_name || els.sdsProductName?.value?.trim?.() || null,
+      chemical_name: overrides.chemical_name || els.sdsChemicalName?.value?.trim?.() || null,
+      sds_revision_date: els.sdsRevisionDate?.value || null,
+      job_code: overrides.job_code || els.sdsJobCode?.value?.trim?.() || null,
+      work_order_number: overrides.work_order_number || els.sdsWorkOrder?.value?.trim?.() || null,
+      route_code: overrides.route_code || els.sdsRouteCode?.value?.trim?.() || null,
+      equipment_code: overrides.equipment_code || els.sdsEquipmentCode?.value?.trim?.() || null,
+      notes: els.sdsNotes?.value?.trim?.() || null,
+      product_context: {
+        prompt_context_label: overrides.prompt_context_label || null,
+        course_name: overrides.course_name || null,
+      },
+    };
+    if (!payload.product_name && !payload.chemical_name) throw new Error('Enter the product or chemical name for the SDS acknowledgement.');
+    setNotice(els.safetySummary, 'Recording SDS acknowledgement...');
+    const resp = await api.manageAdminEntity(payload);
+    if (!resp?.ok) throw new Error(resp?.error || 'SDS acknowledgement failed.');
+    setNotice(els.safetySummary, 'SDS acknowledgement recorded.');
+    await loadSelfProfile();
+  } catch (err) {
+    console.error(err);
+    setNotice(els.safetySummary, err?.message || 'SDS acknowledgement failed.');
+  }
+}
+
     function loadDraft() {
       try { return JSON.parse(localStorage.getItem(PROFILE_DRAFT_KEY) || '{}'); } catch { return {}; }
     }
@@ -360,7 +564,11 @@
 
     function renderSelf(profile) {
       state.selfProfile = profile || null;
-      if (!profile) return;
+      if (!profile) {
+        if (els.trainingTableBody) els.trainingTableBody.innerHTML = '<tr><td colspan="6" class="muted">Sign in to view training history.</td></tr>';
+        if (els.sdsPromptBody) els.sdsPromptBody.innerHTML = '<tr><td colspan="6" class="muted">Sign in to view SDS prompts.</td></tr>';
+        return;
+      }
       if (els.meName) els.meName.value = profile.full_name || '';
       if (els.meEmail) els.meEmail.value = profile.email || '';
       if (els.meRole) els.meRole.value = profile.role || '';
@@ -521,6 +729,7 @@
         if (loadVersion !== state.selfLoadVersion) return;
         const profile = resp?.profile || resp?.profiles?.[0] || localProfile || null;
         renderSelf(profile);
+        renderSelfSafety(resp || {});
         restoreDraft();
         setNotice(els.meSummary, profile ? '' : 'No profile record was returned.');
       } catch (err) {
@@ -529,6 +738,7 @@
         if (authState?.isLoggingOut || !authState?.isAuthenticated) return;
         const fallbackProfile = authState?.profile || state.selfProfile || null;
         if (fallbackProfile) renderSelf(fallbackProfile);
+        renderSelfSafety({});
         console.error(err);
         setNotice(els.meSummary, fallbackProfile ? 'Loaded the last available profile details on this device. Live refresh failed.' : 'Failed to load your profile.');
       }
@@ -613,11 +823,13 @@
       if (!state.bound) {
         document.addEventListener('ywi:auth-changed', () => {
           ensureLayout();
+          ensureSelfServiceLayout();
           refreshEls();
           applyRoleVisibility();
           const authState = getAuthState();
           if (!authState?.isAuthenticated) {
             renderSelf(null);
+            renderSelfSafety({});
             renderCrew([]);
             setNotice(els.meSummary, '');
             setNotice(els.crewSummary, '');
@@ -631,10 +843,28 @@
           const allowed = event?.detail?.allowed || event?.detail?.requested || '';
           if (!['me', 'crew', 'settings'].includes(String(allowed))) return;
           ensureLayout();
+          ensureSelfServiceLayout();
           refreshEls();
           applyRoleVisibility();
           if (allowed === 'me' && getAuthState()?.isAuthenticated) { loadSelfProfile(); loadTimeClockContext(); }
           if (allowed === 'crew' && getAuthState()?.isAuthenticated && getAccessProfile(getCurrentRole()).canViewCrew) loadCrew();
+        });
+        document.addEventListener('click', (event) => {
+          const btn = event.target instanceof Element ? event.target.closest('[data-sds-prompt]') : null;
+          if (!btn) return;
+          try {
+            const payload = JSON.parse(btn.getAttribute('data-sds-prompt') || '{}');
+            if (els.sdsProductName && !els.sdsProductName.value) els.sdsProductName.value = payload.product_name || payload.course_name || '';
+            if (els.sdsChemicalName && !els.sdsChemicalName.value) els.sdsChemicalName.value = payload.chemical_name || '';
+            if (els.sdsJobCode) els.sdsJobCode.value = payload.job_code || '';
+            if (els.sdsWorkOrder) els.sdsWorkOrder.value = payload.work_order_number || '';
+            if (els.sdsRouteCode) els.sdsRouteCode.value = payload.route_code || '';
+            if (els.sdsEquipmentCode) els.sdsEquipmentCode.value = payload.equipment_code || '';
+            saveWorkerSdsAcknowledgement(payload);
+          } catch (err) {
+            console.error(err);
+            setNotice(els.safetySummary, 'Could not load the selected SDS prompt.');
+          }
         });
         state.bound = true;
       }
@@ -646,6 +876,14 @@
       if (els.meSave && els.meSave.dataset.bound !== '1') {
         els.meSave.dataset.bound = '1';
         els.meSave.addEventListener('click', saveSelfProfile);
+      }
+      if (els.trainingSave && els.trainingSave.dataset.bound !== '1') {
+        els.trainingSave.dataset.bound = '1';
+        els.trainingSave.addEventListener('click', saveTrainingSelfAcknowledgement);
+      }
+      if (els.sdsSave && els.sdsSave.dataset.bound !== '1') {
+        els.sdsSave.dataset.bound = '1';
+        els.sdsSave.addEventListener('click', () => saveWorkerSdsAcknowledgement({}));
       }
       if (els.crewLoad && els.crewLoad.dataset.bound !== '1') {
         els.crewLoad.dataset.bound = '1';
@@ -675,6 +913,7 @@
 
     async function init() {
       ensureLayout();
+      ensureSelfServiceLayout();
       refreshEls();
       bind();
       applyRoleVisibility();

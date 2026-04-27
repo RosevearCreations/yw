@@ -41,3 +41,6 @@ The strongest value of this application is linking safety activity to the operat
 3. Record an SDS acknowledgement with product/job/route/equipment context and confirm it appears in alerts and queue views.
 4. Create a report subscription with a next send date in the past and confirm it appears in delivery candidates.
 5. Create an equipment JSA / hazard link and confirm it appears in the queue and overdue alerts.
+
+## Latest pass note (2026-04-25d)
+- Synced for scheduled report delivery, worker self-service training/SDS acknowledgement, and Jobs commercial/accounting foundation planning.
