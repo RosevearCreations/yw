@@ -215,3 +215,6 @@ Scheduler architecture remains DB settings row -> DB dispatcher -> `pg_net` -> `
 
 
 The architecture now includes a management-reporting layer above form capture: corrective-action follow-up, training/SDS renewal visibility, subscriptions, alert rollups, and scorecards fed from DB-backed views.
+
+## Latest pass note (2026-04-25d)
+- Synced for scheduled report delivery, worker self-service training/SDS acknowledgement, and Jobs commercial/accounting foundation planning.

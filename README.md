@@ -349,3 +349,6 @@ The repo now treats scheduler secret handling as portable deployment logic: pref
 
 ## Current management layer
 The reporting stack now includes corrective-action reminders/escalation readiness, self-service training acknowledgement tracking, SDS context prompts, site and supervisor scorecards, overdue alerts, report subscriptions, and equipment-specific JSA / hazard linkage.
+
+## Latest pass note (2026-04-25d)
+- Synced for scheduled report delivery, worker self-service training/SDS acknowledgement, and Jobs commercial/accounting foundation planning.

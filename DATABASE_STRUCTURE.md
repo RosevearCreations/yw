@@ -386,3 +386,6 @@ Canonical scheduler SQL now prefers Vault for `service_execution_scheduler_secre
 - `equipment_jsa_hazard_links`
 - extended fields on corrective actions, training records, training courses, and SDS acknowledgements
 - new management/reporting views for alerts, scorecards, subscriptions, and JSA linkage
+
+## Latest pass note (2026-04-25d)
+- Synced for scheduled report delivery, worker self-service training/SDS acknowledgement, and Jobs commercial/accounting foundation planning.

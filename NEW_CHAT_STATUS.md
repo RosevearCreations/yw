@@ -235,3 +235,15 @@ The repo now includes attendance photo upload metadata, geofence distance/status
 
 
 Latest completed pass: management workflows and subscriptions (092). Ask next about notification delivery wiring, worker-facing acknowledgement UI, or deeper JSA form linkage.
+
+## Latest pass note (2026-04-25d)
+- Synced for scheduled report delivery, worker self-service training/SDS acknowledgement, and Jobs commercial/accounting foundation planning.
+
+## Ready-to-continue status
+The repo now includes:
+- report subscription delivery scheduler plumbing
+- report delivery Edge Function scaffold
+- worker self-service training acknowledgements in My Profile
+- worker SDS prompt queue and self-ack flow
+
+Next major phase: expand the Jobs section into a fuller quoting / estimate / approval / costing / completion-to-accounting workflow.

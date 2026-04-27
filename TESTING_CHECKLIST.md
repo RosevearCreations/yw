@@ -244,3 +244,6 @@ Last synchronized: April 11, 2026 (admin focus buttons, HSE action-item summarie
 - Create an SDS acknowledgement with job/work-order/route/equipment context.
 - Create a report subscription with a due send date and verify it appears in reporting.
 - Create an equipment JSA / hazard link and verify queue + alert visibility.
+
+## Latest pass note (2026-04-25d)
+- Synced for scheduled report delivery, worker self-service training/SDS acknowledgement, and Jobs commercial/accounting foundation planning.

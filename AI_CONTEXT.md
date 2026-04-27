@@ -209,3 +209,6 @@ This repo is now aligned through schema pass 088. The newest operational additio
 
 
 Recent pass: 092_management_workflows_and_subscriptions adds report subscriptions, overdue alerts, site/supervisor scorecards, worker self-ack training support, and equipment-specific JSA/hazard linkage.
+
+## Latest pass note (2026-04-25d)
+- Synced for scheduled report delivery, worker self-service training/SDS acknowledgement, and Jobs commercial/accounting foundation planning.

@@ -401,3 +401,6 @@ Start from schema 088 and assume the Admin hub now includes:
 
 
 Current repo includes management workflow migration 092; continue from subscriptions/delivery automation, worker self-service acknowledgement UI, and JSA drill-through.
+
+## Latest pass note (2026-04-25d)
+- Synced for scheduled report delivery, worker self-service training/SDS acknowledgement, and Jobs commercial/accounting foundation planning.

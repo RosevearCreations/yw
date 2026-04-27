@@ -601,3 +601,15 @@ Next recommended build steps:
 - Add corrective-action reminder dispatch history and escalation policy rules by priority.
 - Build worker-facing acknowledgement UI for self-service training and SDS prompts.
 - Add equipment-specific JSA review forms tied directly to jobs, route stops, and packets.
+
+## Latest pass note (2026-04-25d)
+- Synced for scheduled report delivery, worker self-service training/SDS acknowledgement, and Jobs commercial/accounting foundation planning.
+
+## 2026-04-25d priority after report delivery and worker self-service
+- Apply `093_report_delivery_and_worker_self_service.sql`
+- Deploy `report-subscription-delivery-run`
+- Configure `report_delivery_scheduler_settings.invoke_url`
+- Test scheduled report delivery with one due subscription
+- Test worker training self-acknowledgement in My Profile
+- Test worker SDS prompt acknowledgement in My Profile
+- Begin Jobs commercial/accounting phase from the existing Jobs + Estimates + Work Orders foundation

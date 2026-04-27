@@ -153,3 +153,6 @@ Important latest files: `sql/088_scheduler_cron_media_review_payroll_close_recei
 
 ### Latest schema additions
 - `sql/092_management_workflows_and_subscriptions.sql` extends the reporting/management layer after 091.
+
+## Latest pass note (2026-04-25d)
+- Synced for scheduled report delivery, worker self-service training/SDS acknowledgement, and Jobs commercial/accounting foundation planning.

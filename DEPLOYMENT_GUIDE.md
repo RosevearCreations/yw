@@ -189,3 +189,6 @@ Use Vault on hosted Supabase when available. If the target environment does not 
 
 
 After applying migration 092, reload the reporting/admin data scope so new views (`v_report_subscription_directory`, `v_overdue_action_alerts`, `v_site_safety_scorecards`, `v_supervisor_scorecards`, `v_equipment_jsa_hazard_link_directory`) are available to the frontend.
+
+## Latest pass note (2026-04-25d)
+- Synced for scheduled report delivery, worker self-service training/SDS acknowledgement, and Jobs commercial/accounting foundation planning.

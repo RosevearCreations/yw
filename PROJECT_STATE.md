@@ -330,3 +330,6 @@ The scheduler is no longer only a hosted-Vault story; repo truth is now portable
 
 ## April 25, 2026 status
 The repo now supports management-oriented safety workflows beyond raw history: reminder-ready corrective actions, self-attested training records, contextual SDS acknowledgement tracking, scorecards, overdue alerts, report subscriptions, and equipment JSA / hazard links.
+
+## Latest pass note (2026-04-25d)
+- Synced for scheduled report delivery, worker self-service training/SDS acknowledgement, and Jobs commercial/accounting foundation planning.

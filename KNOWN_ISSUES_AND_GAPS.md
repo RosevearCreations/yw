@@ -476,3 +476,11 @@ Still open:
 ## 2026-04-25 corrective actions + training pass
 - Synced the repo to include first-class corrective-action tasks, training / certification expiry tracking, SDS acknowledgement history, and management-focused reporting.
 - See `docs/CORRECTIVE_ACTIONS_AND_TRAINING.md` and the new `sql/091_corrective_actions_training_and_sds_tracking.sql` migration.
+
+## Latest pass note (2026-04-25d)
+- Synced for scheduled report delivery, worker self-service training/SDS acknowledgement, and Jobs commercial/accounting foundation planning.
+
+## Current practical gaps after the report-delivery / self-service pass
+- Scheduled report delivery still needs deployment/configuration in the target Supabase project.
+- Worker self-service is now in My Profile, but supervisor verification workflows and reminders still need live-use testing.
+- The next large gap is the Jobs commercial lifecycle: quote/estimate discipline, discount controls, completion review, and accounting-ready trigger flow.

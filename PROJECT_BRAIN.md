@@ -283,3 +283,6 @@ Do not assume every environment has the `vault` extension even if hosted Supabas
 
 
 - 092 adds management workflows on top of 090/091: reminder/escalation support, report subscriptions, scorecards, alerts, and equipment JSA links.
+
+## Latest pass note (2026-04-25d)
+- Synced for scheduled report delivery, worker self-service training/SDS acknowledgement, and Jobs commercial/accounting foundation planning.
