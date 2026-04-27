@@ -441,7 +441,7 @@ create or replace view public.v_site_safety_scorecards as
 with submission_rollup as (
   select
     coalesce(site_id::text, site_label, site_name, site_code, 'unknown') as site_ref,
-    max(site_id) as site_id,
+    (array_agg(site_id order by site_id nulls last))[1] as site_id,
     max(site_code) as site_code,
     max(site_name) as site_name,
     max(site_label) as site_label,
@@ -485,7 +485,7 @@ create or replace view public.v_supervisor_scorecards as
 with corrective_rollup as (
   select
     coalesce(supervisor_profile_id::text, assigned_to_profile_id::text, 'unassigned') as supervisor_ref,
-    max(supervisor_profile_id) as supervisor_profile_id,
+    (array_agg(supervisor_profile_id order by supervisor_profile_id nulls last))[1] as supervisor_profile_id,
     count(*)::int as task_count,
     count(*) filter (where status <> 'closed')::int as open_task_count,
     count(*) filter (where is_overdue = true)::int as overdue_task_count,

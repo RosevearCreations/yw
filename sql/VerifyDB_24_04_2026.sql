@@ -805,3 +805,15 @@ select
     where table_schema = 'public' and table_name = 'v_equipment_jsa_hazard_link_directory'
   ) then 'ok' else 'missing' end,
   'Equipment JSA / hazard link directory';
+
+
+insert into audit_results(item, status, details)
+select 'table:report_delivery_runs', case when exists (select 1 from information_schema.tables where table_schema='public' and table_name='report_delivery_runs') then 'ok' else 'missing' end, 'Scheduled report delivery run history';
+insert into audit_results(item, status, details)
+select 'table:report_delivery_scheduler_settings', case when exists (select 1 from information_schema.tables where table_schema='public' and table_name='report_delivery_scheduler_settings') then 'ok' else 'missing' end, 'Report delivery scheduler settings';
+insert into audit_results(item, status, details)
+select 'view:v_report_delivery_scheduler_status', case when exists (select 1 from information_schema.views where table_schema='public' and table_name='v_report_delivery_scheduler_status') then 'ok' else 'missing' end, 'Report delivery scheduler status';
+insert into audit_results(item, status, details)
+select 'view:v_report_delivery_run_history', case when exists (select 1 from information_schema.views where table_schema='public' and table_name='v_report_delivery_run_history') then 'ok' else 'missing' end, 'Report delivery run history';
+insert into audit_results(item, status, details)
+select 'view:v_worker_sds_prompt_queue', case when exists (select 1 from information_schema.views where table_schema='public' and table_name='v_worker_sds_prompt_queue') then 'ok' else 'missing' end, 'Worker SDS self-service prompt queue';
