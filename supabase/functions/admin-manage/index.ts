@@ -2524,6 +2524,7 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
     if (entity === 'estimate') {
       const patch = {
         estimate_number: body.estimate_number ?? null,
+        quote_title: asNullableText(body.quote_title),
         client_id: asNullableText(body.client_id),
         client_site_id: asNullableText(body.client_site_id),
         estimate_type: body.estimate_type ?? 'landscaping',
@@ -2532,8 +2533,20 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         subtotal: asNumber(body.subtotal, 0),
         tax_total: asNumber(body.tax_total, 0),
         total_amount: asNumber(body.total_amount, 0),
+        discount_mode: body.discount_mode ?? 'none',
+        discount_value: asNumber(body.discount_value, 0),
+        pricing_basis_label: asNullableText(body.pricing_basis_label),
+        margin_estimate_total: asNumber(body.margin_estimate_total, 0),
+        margin_estimate_percent: asNumber(body.margin_estimate_percent, 0),
+        approval_status: body.approval_status ?? 'draft',
+        approval_required: body.approval_required === true,
+        approval_requested_at: asNullableDateTime(body.approval_requested_at),
+        approved_by_profile_id: asNullableText(body.approved_by_profile_id),
+        approved_at: asNullableDateTime(body.approved_at),
         scope_notes: body.scope_notes ?? null,
         terms_notes: body.terms_notes ?? null,
+        client_notes: body.client_notes ?? null,
+        internal_notes: body.internal_notes ?? null,
         created_by_profile_id: actorId,
         updated_at: new Date().toISOString(),
       };
@@ -2572,9 +2585,24 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         crew_notes: body.crew_notes ?? null,
         customer_notes: body.customer_notes ?? null,
         safety_notes: body.safety_notes ?? null,
+        internal_notes: body.internal_notes ?? null,
         subtotal: asNumber(body.subtotal, 0),
         tax_total: asNumber(body.tax_total, 0),
         total_amount: asNumber(body.total_amount, 0),
+        discount_mode: body.discount_mode ?? 'none',
+        discount_value: asNumber(body.discount_value, 0),
+        pricing_basis_label: asNullableText(body.pricing_basis_label),
+        margin_estimate_total: asNumber(body.margin_estimate_total, 0),
+        margin_estimate_percent: asNumber(body.margin_estimate_percent, 0),
+        approval_status: body.approval_status ?? 'draft',
+        approval_required: body.approval_required === true,
+        approval_requested_at: asNullableDateTime(body.approval_requested_at),
+        approved_by_profile_id: asNullableText(body.approved_by_profile_id),
+        approved_at: asNullableDateTime(body.approved_at),
+        completion_review_status: body.completion_review_status ?? 'draft',
+        completion_ready_for_accounting: body.completion_ready_for_accounting === true,
+        completion_ready_at: asNullableDateTime(body.completion_ready_at),
+        accounting_trigger_status: body.accounting_trigger_status ?? 'pending',
         created_by_profile_id: actorId,
         updated_at: new Date().toISOString(),
       };
@@ -2594,6 +2622,108 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         if (error) throw error;
         return Response.json({ ok:true }, { headers:corsHeaders });
       }
+    }
+
+
+    if (entity === 'job_completion_review') {
+      const jobId = asNullableNumber(body.job_id);
+      if (!jobId) return Response.json({ ok:false, error:'job_id is required' }, { status:400, headers:corsHeaders });
+      const revenueTotal = asNumber(body.revenue_total, 0);
+      const costTotal = asNumber(body.cost_total, 0);
+      const profitTotal = asNumber(body.profit_total, revenueTotal - costTotal);
+      const marginPercent = revenueTotal > 0 ? asNumber(body.margin_percent, ((profitTotal / revenueTotal) * 100)) : 0;
+      const patch = {
+        job_id: jobId,
+        work_order_id: asNullableText(body.work_order_id),
+        estimate_id: asNullableText(body.estimate_id),
+        review_status: body.review_status ?? 'draft',
+        completion_date: asNullableDate(body.completion_date),
+        completion_notes: body.completion_notes ?? null,
+        closeout_evidence_complete: body.closeout_evidence_complete === true,
+        supervisor_signoff_complete: body.supervisor_signoff_complete === true,
+        client_signoff_complete: body.client_signoff_complete === true,
+        all_sessions_signed_off: body.all_sessions_signed_off === true,
+        revenue_total: revenueTotal,
+        cost_total: costTotal,
+        profit_total: profitTotal,
+        margin_percent: marginPercent,
+        variance_summary: body.variance_summary ?? null,
+        accounting_ready: body.accounting_ready === true,
+        accounting_ready_at: asNullableDateTime(body.accounting_ready_at),
+        accounting_trigger_status: body.accounting_trigger_status ?? 'pending',
+        reviewed_by_profile_id: actorId,
+        approved_by_profile_id: asNullableText(body.approved_by_profile_id),
+        approved_at: asNullableDateTime(body.approved_at),
+        updated_at: new Date().toISOString(),
+      };
+      if (action === 'create') {
+        const { data, error } = await supabase.from('job_completion_reviews').insert({ ...patch, created_at: new Date().toISOString() }).select('*').single();
+        if (error) throw error;
+        await supabase.from('work_orders').update({ completion_review_status: patch.review_status, completion_ready_for_accounting: patch.accounting_ready, completion_ready_at: patch.accounting_ready_at || null, accounting_trigger_status: patch.accounting_trigger_status, updated_at: new Date().toISOString() }).eq('id', patch.work_order_id);
+        await recordSiteActivity(supabase, { event_type:'job_completion_review_created', entity_type:'job_completion_review', entity_id:data.id, severity:'info', title:'Job completion review created', summary:`Completion review created for job ${jobId}.`, related_job_id: jobId, created_by_profile_id: actorId });
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('job_completion_reviews').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        await supabase.from('work_orders').update({ completion_review_status: patch.review_status, completion_ready_for_accounting: patch.accounting_ready, completion_ready_at: patch.accounting_ready_at || null, accounting_trigger_status: patch.accounting_trigger_status, updated_at: new Date().toISOString() }).eq('id', patch.work_order_id);
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'queue_accounting') {
+        const review = await fetchSingle(supabase, 'job_completion_reviews', body.item_id);
+        if (!review?.id) return Response.json({ ok:false, error:'Completion review not found.' }, { status:404, headers:corsHeaders });
+        const { data, error } = await supabase.from('job_completion_accounting_events').insert({ completion_review_id: review.id, job_id: review.job_id, accounting_action: 'queue_review', event_status: 'queued', memo: body.memo ?? 'Queued from commercial workflow.', payload: { review_status: review.review_status, profit_total: review.profit_total || 0 }, created_by_profile_id: actorId }).select('*').single();
+        if (error) throw error;
+        await supabase.from('job_completion_reviews').update({ accounting_ready: true, accounting_ready_at: new Date().toISOString(), accounting_trigger_status: 'queued', review_status: review.review_status === 'approved' ? 'ready_for_accounting' : review.review_status, updated_at: new Date().toISOString() }).eq('id', review.id);
+        await supabase.from('work_orders').update({ completion_ready_for_accounting: true, completion_ready_at: new Date().toISOString(), accounting_trigger_status: 'queued', completion_review_status: 'ready_for_accounting', updated_at: new Date().toISOString() }).eq('id', review.work_order_id);
+        await recordSiteActivity(supabase, { event_type:'job_accounting_queue_created', entity_type:'job_completion_review', entity_id:review.id, severity:'success', title:'Job queued for accounting review', summary:`${review.job_id} is ready for accounting review.`, related_job_id: review.job_id, created_by_profile_id: actorId });
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'commercial_approval_event') {
+      const entityType = String(body.entity_type || '').trim();
+      const itemId = body.item_id || body.entity_id;
+      const approvalAction = String(action || body.approval_action || '').trim() || 'request_approval';
+      const notes = body.notes ?? body.decision_notes ?? null;
+      if (!entityType || !itemId) return Response.json({ ok:false, error:'entity_type and item_id are required' }, { status:400, headers:corsHeaders });
+      let tableName = entityType === 'estimate' ? 'estimates' : (entityType === 'work_order' ? 'work_orders' : 'jobs');
+      let approvalStatus = approvalAction === 'approve' ? 'approved' : (approvalAction === 'reject' ? 'rejected' : (approvalAction === 'release' ? 'released' : 'pending'));
+      const now = new Date().toISOString();
+      const patch:any = { updated_at: now };
+      if (tableName !== 'jobs') {
+        patch.approval_status = approvalStatus;
+        if (approvalAction === 'request_approval') patch.approval_requested_at = now;
+        if (approvalAction === 'approve') { patch.approved_at = now; patch.approved_by_profile_id = actorId; }
+      } else {
+        patch.approval_status = approvalAction === 'approve' ? 'approved' : (approvalAction === 'reject' ? 'rejected' : 'requested');
+        if (approvalAction === 'request_approval') patch.approval_requested_at = now;
+        if (approvalAction === 'approve') { patch.approved_at = now; patch.approved_by_profile_id = actorId; }
+        patch.approval_notes = notes;
+      }
+      const { error } = await supabase.from(tableName).update(patch).eq('id', itemId);
+      if (error) throw error;
+      const { data } = await supabase.from('commercial_approval_events').insert({ entity_type: entityType, entity_id: String(itemId), approval_action: approvalAction, approval_status: approvalStatus, actor_profile_id: actorId, notes }).select('*').single();
+      return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+    }
+
+    if (entity === 'estimate' && action === 'convert_to_job_package') {
+      const estimate:any = await fetchSingle(supabase, 'estimates', body.item_id);
+      if (!estimate?.id) return Response.json({ ok:false, error:'Estimate not found.' }, { status:404, headers:corsHeaders });
+      const now = new Date().toISOString();
+      const jobCode = body.job_code || `JOB-${String(estimate.estimate_number || estimate.id).replace(/[^A-Z0-9]/gi, '').slice(-10).toUpperCase()}`;
+      const workOrderNumber = body.work_order_number || `WO-${String(estimate.estimate_number || estimate.id).replace(/[^A-Z0-9]/gi, '').slice(-10).toUpperCase()}`;
+      const { data: job, error: jobErr } = await supabase.from('jobs').insert({ job_code: jobCode, job_name: body.job_name || estimate.quote_title || estimate.scope_notes || `Job from ${estimate.estimate_number}`, client_name: body.client_name || null, start_date: asNullableDate(body.start_date), status: 'planned', client_reference: estimate.client_id || null, estimated_cost_total: asNumber(estimate.subtotal,0), quoted_charge_total: asNumber(estimate.total_amount,0), approval_status: 'approved', created_by_profile_id: actorId, updated_at: now }).select('*').single();
+      if (jobErr) throw jobErr;
+      const { data: wo, error: woErr } = await supabase.from('work_orders').insert({ work_order_number: workOrderNumber, estimate_id: estimate.id, client_id: estimate.client_id || null, client_site_id: estimate.client_site_id || null, legacy_job_id: job.id, work_type: estimate.estimate_type || 'service', status: 'released', subtotal: asNumber(estimate.subtotal,0), tax_total: asNumber(estimate.tax_total,0), total_amount: asNumber(estimate.total_amount,0), discount_mode: estimate.discount_mode || 'none', discount_value: asNumber(estimate.discount_value,0), approval_status: 'approved', approved_at: now, approved_by_profile_id: actorId, created_by_profile_id: actorId, updated_at: now }).select('*').single();
+      if (woErr) throw woErr;
+      await supabase.from('estimates').update({ approval_status: 'converted', converted_job_id: job.id, converted_work_order_id: wo.id, converted_at: now, updated_at: now }).eq('id', estimate.id);
+      const { data: lines } = await supabase.from('estimate_lines').select('*').eq('estimate_id', estimate.id).order('line_order');
+      if (Array.isArray(lines) && lines.length) {
+        await supabase.from('work_order_lines').insert(lines.map((line:any) => ({ work_order_id: wo.id, line_order: line.line_order || 0, line_type: line.line_type || 'service', description: line.description || '', cost_code_id: line.cost_code_id || null, unit_id: line.unit_id || null, quantity: line.quantity || 1, unit_cost: line.unit_cost || 0, unit_price: line.unit_price || 0, line_total: line.line_total || 0, material_id: line.material_id || null, equipment_master_id: line.equipment_master_id || null, discount_percent: line.discount_percent || 0, discount_amount: line.discount_amount || 0, cost_total: line.cost_total || 0, margin_total: line.margin_total || 0, margin_percent: line.margin_percent || 0, pricing_basis_label: line.pricing_basis_label || null, client_visible: line.client_visible !== false })));
+      }
+      await recordSiteActivity(supabase, { event_type:'estimate_converted_to_job_package', entity_type:'estimate', entity_id:estimate.id, severity:'success', title:'Estimate converted to live job package', summary:`${estimate.estimate_number || estimate.id} converted to ${job.job_code} and ${wo.work_order_number}.`, related_job_id: job.id, created_by_profile_id: actorId });
+      return Response.json({ ok:true, job, work_order: wo }, { headers:corsHeaders });
     }
 
     if (entity === 'subcontract_client') {
@@ -2835,6 +2965,13 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         line_total: asNumber(body.line_total, quantity * asNumber(body.unit_price, 0)),
         material_id: asNullableText(body.material_id),
         equipment_master_id: asNullableText(body.equipment_master_id),
+        discount_percent: asNumber(body.discount_percent, 0),
+        discount_amount: asNumber(body.discount_amount, 0),
+        cost_total: asNumber(body.cost_total, 0),
+        margin_total: asNumber(body.margin_total, 0),
+        margin_percent: asNumber(body.margin_percent, 0),
+        pricing_basis_label: asNullableText(body.pricing_basis_label),
+        client_visible: body.client_visible !== false,
         updated_at: new Date().toISOString(),
       };
       if (patch.material_id) {
@@ -2857,6 +2994,10 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         }
       }
       patch.line_total = asNumber(body.line_total, patch.quantity * patch.unit_price);
+      patch.cost_total = asNumber(body.cost_total, patch.cost_total || (patch.quantity * patch.unit_cost));
+      patch.discount_amount = asNumber(body.discount_amount, patch.discount_amount || 0);
+      patch.margin_total = asNumber(body.margin_total, patch.margin_total || (patch.line_total - patch.discount_amount - patch.cost_total));
+      patch.margin_percent = patch.line_total > 0 ? asNumber(body.margin_percent, ((patch.margin_total / patch.line_total) * 100)) : 0;
       if (!patch.estimate_id || !patch.description) return Response.json({ ok:false, error:'estimate_id and description are required' }, { status:400, headers:corsHeaders });
       if (action === 'create') {
         const { data, error } = await supabase.from('estimate_lines').insert(patch).select('*').single();
@@ -2890,6 +3031,13 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         line_total: asNumber(body.line_total, quantity * asNumber(body.unit_price, 0)),
         material_id: asNullableText(body.material_id),
         equipment_master_id: asNullableText(body.equipment_master_id),
+        discount_percent: asNumber(body.discount_percent, 0),
+        discount_amount: asNumber(body.discount_amount, 0),
+        cost_total: asNumber(body.cost_total, 0),
+        margin_total: asNumber(body.margin_total, 0),
+        margin_percent: asNumber(body.margin_percent, 0),
+        pricing_basis_label: asNullableText(body.pricing_basis_label),
+        client_visible: body.client_visible !== false,
         updated_at: new Date().toISOString(),
       };
       if (patch.material_id) {
@@ -2912,6 +3060,10 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         }
       }
       patch.line_total = asNumber(body.line_total, patch.quantity * patch.unit_price);
+      patch.cost_total = asNumber(body.cost_total, patch.cost_total || (patch.quantity * patch.unit_cost));
+      patch.discount_amount = asNumber(body.discount_amount, patch.discount_amount || 0);
+      patch.margin_total = asNumber(body.margin_total, patch.margin_total || (patch.line_total - patch.discount_amount - patch.cost_total));
+      patch.margin_percent = patch.line_total > 0 ? asNumber(body.margin_percent, ((patch.margin_total / patch.line_total) * 100)) : 0;
       if (!patch.work_order_id || !patch.description) return Response.json({ ok:false, error:'work_order_id and description are required' }, { status:400, headers:corsHeaders });
       if (action === 'create') {
         const { data, error } = await supabase.from('work_order_lines').insert(patch).select('*').single();

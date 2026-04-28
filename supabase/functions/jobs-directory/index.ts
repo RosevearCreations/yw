@@ -66,6 +66,13 @@ serve(async (req) => {
   const { data: servicePricingTemplates } = await supabase.from('service_pricing_templates').select('*').eq('is_active', true).order('template_name');
   const { data: taxCodes } = await supabase.from('tax_codes').select('*').eq('is_active', true).order('code');
   const { data: businessTaxSettings } = await supabase.from('business_tax_settings').select('*').order('profile_name');
+  const estimateCommercial = await safeSelect(supabase, 'v_estimate_commercial_directory', '*', (query) => query.order('created_at', { ascending:false }).limit(1000));
+  const estimateLines = await safeSelect(supabase, 'estimate_lines', '*', (query) => query.order('line_order', { ascending:true }).limit(3000));
+  const workOrderCommercial = await safeSelect(supabase, 'v_work_order_commercial_directory', '*', (query) => query.order('scheduled_start', { ascending:false }).limit(1000));
+  const workOrderLines = await safeSelect(supabase, 'work_order_lines', '*', (query) => query.order('line_order', { ascending:true }).limit(3000));
+  const completionReviews = await safeSelect(supabase, 'v_job_completion_review_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
+  const accountingReadyQueue = await safeSelect(supabase, 'v_job_accounting_ready_queue', '*', (query) => query.order('accounting_ready_at', { ascending:false }).limit(1000));
+  const commercialApprovalEvents = await safeSelect(supabase, 'commercial_approval_events', '*', (query) => query.order('created_at', { ascending:false }).limit(1000));
   const jobSessions = await safeSelect(supabase, 'v_job_session_directory', '*', (query) => query.order('started_at', { ascending:false }).limit(2000));
   const jobCrewHours = await safeSelect(supabase, 'v_job_crew_hours_directory', '*', (query) => query.order('created_at', { ascending:false }).limit(3000));
   const jobReassignments = await safeSelect(supabase, 'v_job_reassignment_directory', '*', (query) => query.order('started_at', { ascending:false }).limit(1000));
@@ -161,6 +168,13 @@ serve(async (req) => {
     service_pricing_templates: servicePricingTemplates || [],
     tax_codes: taxCodes || [],
     business_tax_settings: businessTaxSettings || [],
+    estimates: estimateCommercial || [],
+    estimate_lines: estimateLines || [],
+    work_orders: workOrderCommercial || [],
+    work_order_lines: workOrderLines || [],
+    job_completion_reviews: completionReviews || [],
+    job_accounting_ready_queue: accountingReadyQueue || [],
+    commercial_approval_events: commercialApprovalEvents || [],
     evidence_assets: evidenceAssets
   }, { headers: corsHeaders });
 });
