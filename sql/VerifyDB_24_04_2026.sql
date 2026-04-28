@@ -817,3 +817,9 @@ insert into audit_results(item, status, details)
 select 'view:v_report_delivery_run_history', case when exists (select 1 from information_schema.views where table_schema='public' and table_name='v_report_delivery_run_history') then 'ok' else 'missing' end, 'Report delivery run history';
 insert into audit_results(item, status, details)
 select 'view:v_worker_sds_prompt_queue', case when exists (select 1 from information_schema.views where table_schema='public' and table_name='v_worker_sds_prompt_queue') then 'ok' else 'missing' end, 'Worker SDS self-service prompt queue';
+
+-- 2026-04-26 Jobs commercial workflow checks
+select 'v_estimate_commercial_directory' as item, count(*) as row_count from public.v_estimate_commercial_directory;
+select 'v_work_order_commercial_directory' as item, count(*) as row_count from public.v_work_order_commercial_directory;
+select 'v_job_completion_review_directory' as item, count(*) as row_count from public.v_job_completion_review_directory;
+select 'v_job_accounting_ready_queue' as item, count(*) as row_count from public.v_job_accounting_ready_queue;
