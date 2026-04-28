@@ -61,3 +61,8 @@ Evidence review buttons now prompt for clearer optional notes, payroll close is 
 
 ## Latest pass note (2026-04-25d)
 - Synced for scheduled report delivery, worker self-service training/SDS acknowledgement, and Jobs commercial/accounting foundation planning.
+
+## 2026-04-26 pass note
+
+This pass moves the project into the Jobs commercial/accounting phase.
+It adds the 094 Jobs commercial workflow foundation, updates the repo status toward estimate/work-order/completion/accounting readiness, and keeps the schema/docs aligned for the next phase.

@@ -47,6 +47,13 @@
       jobReassignments: [],
       jobFinancialEvents: [],
       jobFinancialRollups: [],
+      estimates: [],
+      estimateLines: [],
+      workOrders: [],
+      workOrderLines: [],
+      completionReviews: [],
+      accountingQueue: [],
+      commercialApprovals: [],
       selectedJobId: null,
       jobSort: { key: 'start_date', dir: 'desc' },
       editingJobId: null,
@@ -443,6 +450,53 @@
       }
     }
 
+    function ensureCommercialPanel() {
+      const jobs = document.getElementById('jobs');
+      if (!jobs || document.getElementById('job_commercial_block')) return;
+      const panel = document.createElement('div');
+      panel.id = 'job_commercial_block';
+      panel.className = 'admin-panel-block';
+      panel.style.marginTop = '16px';
+      panel.innerHTML = `
+        <h3 style="margin-top:0;">Commercial Workflow and Completion</h3>
+        <div class="form-footer">
+          <button id="job_create_estimate" class="secondary" type="button">Create Estimate From Job</button>
+          <button id="job_add_estimate_line" class="secondary" type="button">Add Estimate Line</button>
+          <button id="job_convert_to_package" class="secondary" type="button">Convert Estimate to Job Package</button>
+          <button id="job_completion_review" class="secondary" type="button">Create / Update Completion Review</button>
+          <button id="job_queue_accounting" class="secondary" type="button">Queue for Accounting Review</button>
+        </div>
+        <div id="job_commercial_summary" class="notice" style="display:none;margin-top:12px;"></div>
+        <div class="table-scroll" style="margin-top:12px;">
+          <table id="job_estimate_table">
+            <thead><tr><th>Estimate</th><th>Client</th><th>Status</th><th>Approval</th><th>Total</th><th>Margin</th><th>Converted</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="table-scroll" style="margin-top:12px;">
+          <table id="job_work_order_table">
+            <thead><tr><th>Work Order</th><th>Estimate</th><th>Status</th><th>Completion</th><th>Accounting</th><th>Total</th><th>Margin</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="table-scroll" style="margin-top:12px;">
+          <table id="job_completion_review_table">
+            <thead><tr><th>Job</th><th>Status</th><th>Completion Date</th><th>Revenue</th><th>Cost</th><th>Profit</th><th>Accounting</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="table-scroll" style="margin-top:12px;">
+          <table id="job_accounting_queue_table">
+            <thead><tr><th>Job</th><th>Review</th><th>Accounting Trigger</th><th>Profit</th><th>Last Event</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      `;
+      const savedJobsBlock = document.querySelector('#jobs .admin-panel-block:last-of-type');
+      if (savedJobsBlock?.parentNode) savedJobsBlock.parentNode.insertBefore(panel, savedJobsBlock);
+      else jobs.appendChild(panel);
+    }
+
     function els() {
       return {
         jobsSection: $('#jobs'),
@@ -537,6 +591,16 @@
         jobAccessNotice: $('#job_access_notice'),
         jobSummary: $('#job_summary'),
         jobListBody: $('#job_list_table tbody'),
+        jobCreateEstimate: $('#job_create_estimate'),
+        jobAddEstimateLine: $('#job_add_estimate_line'),
+        jobConvertToPackage: $('#job_convert_to_package'),
+        jobCompletionReview: $('#job_completion_review'),
+        jobQueueAccounting: $('#job_queue_accounting'),
+        jobCommercialSummary: $('#job_commercial_summary'),
+        jobEstimateBody: $('#job_estimate_table tbody'),
+        jobWorkOrderBody: $('#job_work_order_table tbody'),
+        jobCompletionReviewBody: $('#job_completion_review_table tbody'),
+        jobAccountingQueueBody: $('#job_accounting_queue_table tbody'),
         eqCode: $('#eq_code'),
         eqName: $('#eq_name'),
         eqCategory: $('#eq_category'),
@@ -774,7 +838,7 @@
         const el = document.getElementById(id);
         if (el) el.disabled = !allowed;
       });
-      ['job_add_equipment','job_request_approval','job_save','job_clear','job_comment_save','job_track_session','job_track_hours','job_track_reassign','eq_save','eq_checkout','eq_return','eq_add_inspection','eq_add_maintenance','eq_lockout','eq_clear_lockout','eq_clear'].forEach((id)=>{
+      ['job_add_equipment','job_request_approval','job_save','job_clear','job_comment_save','job_track_session','job_track_hours','job_track_reassign','job_create_estimate','job_add_estimate_line','job_convert_to_package','job_completion_review','job_queue_accounting','eq_save','eq_checkout','eq_return','eq_add_inspection','eq_add_maintenance','eq_lockout','eq_clear_lockout','eq_clear'].forEach((id)=>{
         const el = document.getElementById(id);
         if (el) el.disabled = !allowed;
       });
@@ -1282,6 +1346,110 @@
         e.jobListBody.appendChild(tr);
       });
       renderJobTracking();
+      renderCommercialWorkflow();
+    }
+
+    function getSelectedCommercialContext() {
+      const activeJobId = Number(state.selectedJobId || state.editingJobId || 0);
+      const jobRow = (state.jobs || []).find((row) => Number(row.id) === activeJobId) || null;
+      const workOrders = (state.workOrders || []).filter((row) => Number(row.legacy_job_id || 0) === activeJobId);
+      const estimateIds = new Set(workOrders.map((row) => String(row.estimate_id || '')).filter(Boolean));
+      const estimates = (state.estimates || []).filter((row) => Number(row.converted_job_id || 0) === activeJobId || estimateIds.has(String(row.id || '')));
+      const completionReviews = (state.completionReviews || []).filter((row) => Number(row.job_id || 0) === activeJobId);
+      const accountingQueue = (state.accountingQueue || []).filter((row) => Number(row.job_id || 0) === activeJobId);
+      return { activeJobId, jobRow, workOrders, estimates, completionReviews, accountingQueue };
+    }
+
+    function renderCommercialWorkflow() {
+      const e = els();
+      if (!e.jobEstimateBody || !e.jobWorkOrderBody || !e.jobCompletionReviewBody || !e.jobAccountingQueueBody) return;
+      const { activeJobId, jobRow, workOrders, estimates, completionReviews, accountingQueue } = getSelectedCommercialContext();
+      if (!activeJobId || !jobRow) {
+        e.jobEstimateBody.innerHTML = '<tr><td colspan="7" class="muted">Load a job to manage estimates.</td></tr>';
+        e.jobWorkOrderBody.innerHTML = '<tr><td colspan="7" class="muted">Load a job to manage work orders.</td></tr>';
+        e.jobCompletionReviewBody.innerHTML = '<tr><td colspan="7" class="muted">Load a job to manage completion review.</td></tr>';
+        e.jobAccountingQueueBody.innerHTML = '<tr><td colspan="5" class="muted">Load a job to review accounting readiness.</td></tr>';
+        setNotice(e.jobCommercialSummary, '');
+        return;
+      }
+      e.jobEstimateBody.innerHTML = estimates.length ? estimates.map((row) => `<tr><td>${escHtml(row.estimate_number || '')}</td><td>${escHtml(row.client_name || '')}</td><td>${escHtml(row.status || '')}</td><td>${escHtml(row.approval_status || '')}</td><td>$${Number(row.total_amount || 0).toFixed(2)}</td><td>$${Number(row.margin_estimate_total || row.line_margin_total || 0).toFixed(2)}</td><td>${escHtml(row.converted_work_order_number || row.converted_job_code || '')}</td></tr>`).join('') : '<tr><td colspan="7" class="muted">No commercial estimate package linked to this job yet.</td></tr>';
+      e.jobWorkOrderBody.innerHTML = workOrders.length ? workOrders.map((row) => `<tr><td>${escHtml(row.work_order_number || '')}</td><td>${escHtml(row.estimate_number || '')}</td><td>${escHtml(row.status || '')}</td><td>${escHtml(row.completion_review_status || '')}</td><td>${escHtml(row.accounting_trigger_status || '')}</td><td>$${Number(row.total_amount || 0).toFixed(2)}</td><td>$${Number(row.margin_estimate_total || row.line_margin_total || 0).toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="7" class="muted">No linked work order yet.</td></tr>';
+      e.jobCompletionReviewBody.innerHTML = completionReviews.length ? completionReviews.map((row) => `<tr><td>${escHtml(row.job_code || '')}</td><td>${escHtml(row.review_status || '')}</td><td>${escHtml(row.completion_date || '')}</td><td>$${Number(row.revenue_total || 0).toFixed(2)}</td><td>$${Number(row.cost_total || 0).toFixed(2)}</td><td>$${Number(row.profit_total || 0).toFixed(2)}</td><td>${row.accounting_ready ? 'Ready' : escHtml(row.accounting_trigger_status || '')}</td></tr>`).join('') : '<tr><td colspan="7" class="muted">No completion review yet.</td></tr>';
+      e.jobAccountingQueueBody.innerHTML = accountingQueue.length ? accountingQueue.map((row) => `<tr><td>${escHtml(row.job_code || '')}</td><td>${escHtml(row.review_status || '')}</td><td>${escHtml(row.accounting_trigger_status || '')}</td><td>$${Number(row.profit_total || 0).toFixed(2)}</td><td>${escHtml(row.last_accounting_action || row.last_accounting_event_status || '')}</td></tr>`).join('') : '<tr><td colspan="5" class="muted">This job is not queued for accounting yet.</td></tr>';
+      setNotice(e.jobCommercialSummary, `Commercial package for ${jobRow.job_code || jobRow.job_name}: ${estimates.length} estimate(s), ${workOrders.length} work order(s), ${completionReviews.length} completion review(s).`);
+    }
+
+    async function createEstimateFromJob() {
+      const e = els();
+      const ctx = getSelectedCommercialContext();
+      if (!ctx.jobRow) return setNotice(e.jobCommercialSummary, 'Load a job before creating an estimate.', true);
+      const estimateNumber = window.prompt('Estimate number:', `EST-${String(ctx.jobRow.job_code || ctx.jobRow.id).replace(/[^A-Z0-9]/gi, '').toUpperCase()}`) || '';
+      if (!estimateNumber) return;
+      const quoteTitle = window.prompt('Quote / estimate title:', ctx.jobRow.job_name || '') || '';
+      const clientName = window.prompt('Client name for this estimate:', ctx.jobRow.client_name || ctx.jobRow.client_reference || '') || '';
+      const subtotal = Number(window.prompt('Subtotal before tax:', String(ctx.jobRow.quoted_charge_total || 0)) || '0');
+      const taxTotal = Number(window.prompt('Tax total:', String(ctx.jobRow.estimated_tax_total || 0)) || '0');
+      const totalAmount = Number(window.prompt('Total amount:', String((Number(subtotal||0) + Number(taxTotal||0)).toFixed(2))) || '0');
+      const resp = await api.manageAdminEntity({ entity: 'estimate', action: 'create', estimate_number: estimateNumber, quote_title: quoteTitle, estimate_type: ctx.jobRow.job_type || 'service', status: 'draft', subtotal, tax_total: taxTotal, total_amount: totalAmount, approval_required: true, approval_status: 'draft', scope_notes: ctx.jobRow.notes || '', internal_notes: `Created from job ${ctx.jobRow.job_code || ctx.jobRow.id}.`, client_notes: clientName ? `Client: ${clientName}` : '' });
+      if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'Estimate create failed.', true);
+      setNotice(e.jobCommercialSummary, `Estimate ${resp.record?.estimate_number || estimateNumber} created.`);
+      await loadData();
+    }
+
+    async function addEstimateLineFromSelectedJob() {
+      const e = els();
+      const ctx = getSelectedCommercialContext();
+      const estimate = ctx.estimates[0];
+      if (!estimate?.id) return setNotice(e.jobCommercialSummary, 'Create or convert an estimate first.', true);
+      const description = window.prompt('Estimate line description:', ctx.jobRow?.job_name || 'Service line') || '';
+      if (!description) return;
+      const quantity = Number(window.prompt('Quantity:', '1') || '1');
+      const unitCost = Number(window.prompt('Unit cost:', String(ctx.jobRow?.estimated_cost_total || 0)) || '0');
+      const unitPrice = Number(window.prompt('Unit price:', String(ctx.jobRow?.quoted_charge_total || 0)) || '0');
+      const resp = await api.manageAdminEntity({ entity: 'estimate_line', action: 'create', estimate_id: estimate.id, line_order: (state.estimateLines || []).filter((row) => String(row.estimate_id||'')===String(estimate.id)).length + 1, description, quantity, unit_cost: unitCost, unit_price: unitPrice, pricing_basis_label: 'job-derived' });
+      if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'Estimate line create failed.', true);
+      setNotice(e.jobCommercialSummary, 'Estimate line added.');
+      await loadData();
+    }
+
+    async function convertEstimateToJobPackage() {
+      const e = els();
+      const ctx = getSelectedCommercialContext();
+      const estimate = ctx.estimates.find((row) => !row.converted_job_id) || ctx.estimates[0];
+      if (!estimate?.id) return setNotice(e.jobCommercialSummary, 'Create an estimate first.', true);
+      const resp = await api.manageAdminEntity({ entity: 'estimate', action: 'convert_to_job_package', item_id: estimate.id, job_code: ctx.jobRow?.job_code, job_name: ctx.jobRow?.job_name, start_date: ctx.jobRow?.start_date, client_name: ctx.jobRow?.client_name });
+      if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'Estimate conversion failed.', true);
+      setNotice(e.jobCommercialSummary, `Estimate converted to ${resp.job?.job_code || ''} / ${resp.work_order?.work_order_number || ''}.`);
+      await loadData();
+    }
+
+    async function createOrUpdateCompletionReview() {
+      const e = els();
+      const ctx = getSelectedCommercialContext();
+      if (!ctx.jobRow) return setNotice(e.jobCommercialSummary, 'Load a job first.', true);
+      const workOrder = ctx.workOrders[0] || null;
+      const existing = ctx.completionReviews[0] || null;
+      const revenueTotal = Number(window.prompt('Completion revenue total:', String(ctx.jobRow.actual_charge_rollup_total || ctx.jobRow.actual_charge_total || ctx.jobRow.quoted_charge_total || 0)) || '0');
+      const costTotal = Number(window.prompt('Completion cost total:', String(ctx.jobRow.actual_cost_rollup_total || ctx.jobRow.actual_cost_total || ctx.jobRow.estimated_cost_total || 0)) || '0');
+      const reviewStatus = window.prompt('Review status (draft, pending, approved, rejected, ready_for_accounting, posted):', existing?.review_status || 'pending') || 'pending';
+      const completionDate = window.prompt('Completion date (YYYY-MM-DD):', existing?.completion_date || ctx.jobRow.end_date || new Date().toISOString().slice(0,10)) || '';
+      const varianceSummary = window.prompt('Variance summary:', existing?.variance_summary || '') || '';
+      const payload = { entity: 'job_completion_review', action: existing?.id ? 'update' : 'create', item_id: existing?.id, job_id: ctx.jobRow.id, work_order_id: workOrder?.id || null, estimate_id: ctx.estimates[0]?.id || null, review_status: reviewStatus, completion_date: completionDate, completion_notes: ctx.jobRow.notes || '', closeout_evidence_complete: true, supervisor_signoff_complete: true, all_sessions_signed_off: true, revenue_total: revenueTotal, cost_total: costTotal, variance_summary: varianceSummary, accounting_ready: reviewStatus === 'ready_for_accounting', accounting_trigger_status: reviewStatus === 'ready_for_accounting' ? 'queued' : 'pending' };
+      const resp = await api.manageAdminEntity(payload);
+      if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'Completion review save failed.', true);
+      setNotice(e.jobCommercialSummary, 'Completion review saved.');
+      await loadData();
+    }
+
+    async function queueSelectedJobForAccounting() {
+      const e = els();
+      const ctx = getSelectedCommercialContext();
+      const review = ctx.completionReviews[0];
+      if (!review?.id) return setNotice(e.jobCommercialSummary, 'Create a completion review first.', true);
+      const resp = await api.manageAdminEntity({ entity: 'job_completion_review', action: 'queue_accounting', item_id: review.id, memo: 'Queued from Jobs commercial workflow.' });
+      if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'Accounting queue action failed.', true);
+      setNotice(e.jobCommercialSummary, 'Job queued for accounting review.');
+      await loadData();
     }
 
     function renderGallery(signoutId = null) {
@@ -1477,6 +1645,13 @@
         state.servicePricingTemplates = Array.isArray(resp?.service_pricing_templates) ? resp.service_pricing_templates : [];
         state.taxCodes = Array.isArray(resp?.tax_codes) ? resp.tax_codes : [];
         state.businessTaxSettings = Array.isArray(resp?.business_tax_settings) ? resp.business_tax_settings : [];
+        state.estimates = Array.isArray(resp?.estimates) ? resp.estimates : [];
+        state.estimateLines = Array.isArray(resp?.estimate_lines) ? resp.estimate_lines : [];
+        state.workOrders = Array.isArray(resp?.work_orders) ? resp.work_orders : [];
+        state.workOrderLines = Array.isArray(resp?.work_order_lines) ? resp.work_order_lines : [];
+        state.completionReviews = Array.isArray(resp?.job_completion_reviews) ? resp.job_completion_reviews : [];
+        state.accountingQueue = Array.isArray(resp?.job_accounting_ready_queue) ? resp.job_accounting_ready_queue : [];
+        state.commercialApprovals = Array.isArray(resp?.commercial_approval_events) ? resp.commercial_approval_events : [];
         fillSiteSelect(e.jobSiteName);
         fillSiteSelect(e.eqHomeSite);
         fillCrewSelect(e.jobCrewId);
@@ -1488,6 +1663,7 @@
         renderRequirementReviewPanel();
         renderJobActivity();
         renderJobTracking();
+      renderCommercialWorkflow();
         setNotice(e.jobSummary, `Loaded ${state.jobs.length} jobs and ${state.requirements.length} requirements.`);
         setNotice(e.eqSummary, `Loaded ${state.equipment.length} equipment items across ${state.pools.length} pools.`);
       } catch (err) {
@@ -1931,6 +2107,27 @@
           await loadData();
         });
       }
+      if (e.jobCreateEstimate && e.jobCreateEstimate.dataset.bound !== '1') {
+        e.jobCreateEstimate.dataset.bound = '1';
+        e.jobCreateEstimate.addEventListener('click', () => createEstimateFromJob());
+      }
+      if (e.jobAddEstimateLine && e.jobAddEstimateLine.dataset.bound !== '1') {
+        e.jobAddEstimateLine.dataset.bound = '1';
+        e.jobAddEstimateLine.addEventListener('click', () => addEstimateLineFromSelectedJob());
+      }
+      if (e.jobConvertToPackage && e.jobConvertToPackage.dataset.bound !== '1') {
+        e.jobConvertToPackage.dataset.bound = '1';
+        e.jobConvertToPackage.addEventListener('click', () => convertEstimateToJobPackage());
+      }
+      if (e.jobCompletionReview && e.jobCompletionReview.dataset.bound !== '1') {
+        e.jobCompletionReview.dataset.bound = '1';
+        e.jobCompletionReview.addEventListener('click', () => createOrUpdateCompletionReview());
+      }
+      if (e.jobQueueAccounting && e.jobQueueAccounting.dataset.bound !== '1') {
+        e.jobQueueAccounting.dataset.bound = '1';
+        e.jobQueueAccounting.addEventListener('click', () => queueSelectedJobForAccounting());
+      }
+
       if (e.jobFinancialBody && e.jobFinancialBody.dataset.bound !== '1') {
         e.jobFinancialBody.dataset.bound = '1';
         e.jobFinancialBody.addEventListener('click', async (event) => {
@@ -2039,6 +2236,7 @@
     async function init() {
       ensureLayout();
       ensureExtendedJobsPanel();
+      ensureCommercialPanel();
       bind();
       applyRoleVisibility();
       await loadData();
