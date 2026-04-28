@@ -613,3 +613,8 @@ Next recommended build steps:
 - Test worker training self-acknowledgement in My Profile
 - Test worker SDS prompt acknowledgement in My Profile
 - Begin Jobs commercial/accounting phase from the existing Jobs + Estimates + Work Orders foundation
+
+## 2026-04-26 pass note
+
+This pass moves the project into the Jobs commercial/accounting phase.
+It adds the 094 Jobs commercial workflow foundation, updates the repo status toward estimate/work-order/completion/accounting readiness, and keeps the schema/docs aligned for the next phase.

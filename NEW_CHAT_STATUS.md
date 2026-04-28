@@ -247,3 +247,8 @@ The repo now includes:
 - worker SDS prompt queue and self-ack flow
 
 Next major phase: expand the Jobs section into a fuller quoting / estimate / approval / costing / completion-to-accounting workflow.
+
+## 2026-04-26 pass note
+
+This pass moves the project into the Jobs commercial/accounting phase.
+It adds the 094 Jobs commercial workflow foundation, updates the repo status toward estimate/work-order/completion/accounting readiness, and keeps the schema/docs aligned for the next phase.

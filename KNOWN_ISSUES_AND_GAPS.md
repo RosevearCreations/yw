@@ -484,3 +484,8 @@ Still open:
 - Scheduled report delivery still needs deployment/configuration in the target Supabase project.
 - Worker self-service is now in My Profile, but supervisor verification workflows and reminders still need live-use testing.
 - The next large gap is the Jobs commercial lifecycle: quote/estimate discipline, discount controls, completion review, and accounting-ready trigger flow.
+
+## 2026-04-26 pass note
+
+This pass moves the project into the Jobs commercial/accounting phase.
+It adds the 094 Jobs commercial workflow foundation, updates the repo status toward estimate/work-order/completion/accounting readiness, and keeps the schema/docs aligned for the next phase.
