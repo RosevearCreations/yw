@@ -73,6 +73,14 @@ serve(async (req) => {
   const completionReviews = await safeSelect(supabase, 'v_job_completion_review_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
   const accountingReadyQueue = await safeSelect(supabase, 'v_job_accounting_ready_queue', '*', (query) => query.order('accounting_ready_at', { ascending:false }).limit(1000));
   const commercialApprovalEvents = await safeSelect(supabase, 'commercial_approval_events', '*', (query) => query.order('created_at', { ascending:false }).limit(1000));
+  const quotePackages = await safeSelect(supabase, 'v_estimate_quote_package_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
+  const approvalThresholds = await safeSelect(supabase, 'v_commercial_approval_threshold_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
+  const workOrderReleaseReviews = await safeSelect(supabase, 'v_work_order_release_review_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
+  const completionPackageItems = await safeSelect(supabase, 'v_job_completion_package_directory', '*', (query) => query.order('sort_order', { ascending:true }).limit(3000));
+  const invoiceCandidates = await safeSelect(supabase, 'v_job_invoice_candidate_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
+  const journalCandidates = await safeSelect(supabase, 'v_job_journal_candidate_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
+  const arapReviewQueue = await safeSelect(supabase, 'v_job_ar_ap_review_queue_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
+  const profitabilityScorecards = await safeSelect(supabase, 'v_job_profitability_scorecard_directory', '*', (query) => query.order('group_type', { ascending:true }).limit(1000));
   const jobSessions = await safeSelect(supabase, 'v_job_session_directory', '*', (query) => query.order('started_at', { ascending:false }).limit(2000));
   const jobCrewHours = await safeSelect(supabase, 'v_job_crew_hours_directory', '*', (query) => query.order('created_at', { ascending:false }).limit(3000));
   const jobReassignments = await safeSelect(supabase, 'v_job_reassignment_directory', '*', (query) => query.order('started_at', { ascending:false }).limit(1000));
@@ -175,6 +183,14 @@ serve(async (req) => {
     job_completion_reviews: completionReviews || [],
     job_accounting_ready_queue: accountingReadyQueue || [],
     commercial_approval_events: commercialApprovalEvents || [],
+    quote_packages: quotePackages || [],
+    commercial_approval_thresholds: approvalThresholds || [],
+    work_order_release_reviews: workOrderReleaseReviews || [],
+    completion_package_items: completionPackageItems || [],
+    invoice_candidates: invoiceCandidates || [],
+    journal_candidates: journalCandidates || [],
+    ar_ap_review_queue: arapReviewQueue || [],
+    profitability_scorecards: profitabilityScorecards || [],
     evidence_assets: evidenceAssets
   }, { headers: corsHeaders });
 });

@@ -618,3 +618,16 @@ Next recommended build steps:
 
 This pass moves the project into the Jobs commercial/accounting phase.
 It adds the 094 Jobs commercial workflow foundation, updates the repo status toward estimate/work-order/completion/accounting readiness, and keeps the schema/docs aligned for the next phase.
+
+---
+
+## Pass 095 sync note
+
+Synced through the Jobs quote / approval / release / accounting-candidate pass.
+This pass adds client-ready quote package rendering, approval thresholds, release controls, completion package drilldown, invoice/journal candidates, AR/AP coordination, and business-entity / tax-profile mapping for corporation and LLC-style filing handoff.
+### Strongest next steps after Pass 095
+- branded printable / email quote package output
+- automated threshold evaluation before work-order release
+- invoice/journal candidate posting rules and accountant handoff exports
+- closeout evidence upload linkage into completion package items
+

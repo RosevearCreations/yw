@@ -2679,6 +2679,48 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         await recordSiteActivity(supabase, { event_type:'job_accounting_queue_created', entity_type:'job_completion_review', entity_id:review.id, severity:'success', title:'Job queued for accounting review', summary:`${review.job_id} is ready for accounting review.`, related_job_id: review.job_id, created_by_profile_id: actorId });
         return Response.json({ ok:true, record:data }, { headers:corsHeaders });
       }
+      if (action === 'create_invoice_candidate') {
+        const review:any = await fetchSingle(supabase, 'job_completion_reviews', body.item_id);
+        if (!review?.id) return Response.json({ ok:false, error:'Completion review not found.' }, { status:404, headers:corsHeaders });
+        const workOrder:any = review.work_order_id ? await fetchSingle(supabase, 'work_orders', review.work_order_id) : null;
+        const estimate:any = review.estimate_id ? await fetchSingle(supabase, 'estimates', review.estimate_id) : null;
+        const candidateNumber = body.candidate_number || `INV-CAND-${String(review.job_id).padStart(4,'0')}`;
+        const { data, error } = await supabase.from('job_invoice_candidates').insert({ completion_review_id: review.id, job_id: review.job_id, work_order_id: review.work_order_id || null, estimate_id: review.estimate_id || null, business_tax_setting_id: asNullableText(body.business_tax_setting_id), candidate_status: body.candidate_status || 'ready', candidate_number: candidateNumber, client_id: workOrder?.client_id || estimate?.client_id || null, client_site_id: workOrder?.client_site_id || estimate?.client_site_id || null, subtotal: asNumber(body.subtotal, review.revenue_total || 0), tax_total: asNumber(body.tax_total, 0), total_amount: asNumber(body.total_amount, review.revenue_total || 0), memo: body.memo ?? 'Generated from completion review.', payload: { review_status: review.review_status, margin_percent: review.margin_percent || 0 }, created_by_profile_id: actorId }).select('*').single();
+        if (error) throw error;
+        await supabase.from('job_completion_accounting_events').insert({ completion_review_id: review.id, job_id: review.job_id, accounting_action: 'create_invoice_candidate', event_status: 'completed', memo: body.memo ?? 'Invoice candidate created.', payload: { candidate_id: data.id, candidate_number: candidateNumber }, created_by_profile_id: actorId, completed_at: new Date().toISOString() });
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'create_journal_candidate') {
+        const review:any = await fetchSingle(supabase, 'job_completion_reviews', body.item_id);
+        if (!review?.id) return Response.json({ ok:false, error:'Completion review not found.' }, { status:404, headers:corsHeaders });
+        const { data, error } = await supabase.from('job_journal_candidates').insert({ completion_review_id: review.id, job_id: review.job_id, business_tax_setting_id: asNullableText(body.business_tax_setting_id), candidate_status: body.candidate_status || 'ready', journal_memo: body.journal_memo ?? `Closeout journal candidate for job ${review.job_id}`, ledger_summary: body.ledger_summary || { revenue_total: review.revenue_total || 0, cost_total: review.cost_total || 0, profit_total: review.profit_total || 0 }, payload: { review_status: review.review_status, accounting_ready: review.accounting_ready === true }, created_by_profile_id: actorId }).select('*').single();
+        if (error) throw error;
+        await supabase.from('job_completion_accounting_events').insert({ completion_review_id: review.id, job_id: review.job_id, accounting_action: 'create_journal_candidate', event_status: 'completed', memo: body.journal_memo ?? 'Journal candidate created.', payload: { candidate_id: data.id }, created_by_profile_id: actorId, completed_at: new Date().toISOString() });
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'queue_ar_ap_review') {
+        const review:any = await fetchSingle(supabase, 'job_completion_reviews', body.item_id);
+        if (!review?.id) return Response.json({ ok:false, error:'Completion review not found.' }, { status:404, headers:corsHeaders });
+        const { data, error } = await supabase.from('job_ar_ap_review_queue').insert({ source_type: body.source_type || 'completion_review', source_id: String(review.id), job_id: review.job_id, queue_status: body.queue_status || 'open', assigned_profile_id: asNullableText(body.assigned_profile_id), notes: body.notes ?? 'Queued from completion package.', created_by_profile_id: actorId }).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'export_closeout_summary') {
+        const review:any = await fetchSingle(supabase, 'v_job_completion_review_directory', body.item_id);
+        if (!review?.id) return Response.json({ ok:false, error:'Completion review not found.' }, { status:404, headers:corsHeaders });
+        const { data: items } = await supabase.from('v_job_completion_package_directory').select('*').eq('completion_review_id', review.id).order('sort_order');
+        const summary = [
+          `# Job Closeout Summary`, '', `Job: ${review.job_code || ''} ${review.job_name || ''}`,
+          `Work Order: ${review.work_order_number || ''}`, `Estimate: ${review.estimate_number || ''}`,
+          `Completion Date: ${review.completion_date || ''}`, `Review Status: ${review.review_status || ''}`,
+          `Revenue: $${Number(review.revenue_total || 0).toFixed(2)}`, `Cost: $${Number(review.cost_total || 0).toFixed(2)}`,
+          `Profit: $${Number(review.profit_total || 0).toFixed(2)}`, `Margin: ${Number(review.margin_percent || 0).toFixed(2)}%`, '',
+          '## Variance Summary', review.variance_summary || '', '', '## Closeout Items',
+          ...(Array.isArray(items) && items.length ? items.map((item:any) => `- ${item.label || item.item_type} [${item.item_status || ''}]${item.notes ? ` — ${item.notes}` : ''}`) : ['- No closeout items'])
+        ].join('
+');
+        return Response.json({ ok:true, export_markdown: summary }, { headers:corsHeaders });
+      }
     }
 
     if (entity === 'commercial_approval_event') {
@@ -2724,6 +2766,223 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
       }
       await recordSiteActivity(supabase, { event_type:'estimate_converted_to_job_package', entity_type:'estimate', entity_id:estimate.id, severity:'success', title:'Estimate converted to live job package', summary:`${estimate.estimate_number || estimate.id} converted to ${job.job_code} and ${wo.work_order_number}.`, related_job_id: job.id, created_by_profile_id: actorId });
       return Response.json({ ok:true, job, work_order: wo }, { headers:corsHeaders });
+    }
+
+
+    if (entity === 'business_tax_setting') {
+      const patch = {
+        profile_name: body.profile_name ?? null,
+        province_code: body.province_code ?? 'ON',
+        country_code: body.country_code ?? 'CA',
+        currency_code: body.currency_code ?? 'CAD',
+        default_sales_tax_code_id: asNullableText(body.default_sales_tax_code_id),
+        default_purchase_tax_code_id: asNullableText(body.default_purchase_tax_code_id),
+        hst_registration_number: body.hst_registration_number ?? null,
+        fiscal_year_end_mmdd: body.fiscal_year_end_mmdd ?? null,
+        small_supplier_flag: body.small_supplier_flag === true,
+        legal_entity_type: body.legal_entity_type ?? 'corp_canada',
+        legal_entity_name: body.legal_entity_name ?? null,
+        federal_return_type: body.federal_return_type ?? null,
+        provincial_return_type: body.provincial_return_type ?? null,
+        usa_entity_type: body.usa_entity_type ?? null,
+        usa_tax_classification: body.usa_tax_classification ?? null,
+        business_number: body.business_number ?? null,
+        corporation_number: body.corporation_number ?? null,
+        ein: body.ein ?? null,
+        state_filing_state: body.state_filing_state ?? null,
+        llc_tax_election: body.llc_tax_election ?? null,
+        default_ar_account_id: asNullableText(body.default_ar_account_id),
+        default_unbilled_revenue_account_id: asNullableText(body.default_unbilled_revenue_account_id),
+        default_deferred_revenue_account_id: asNullableText(body.default_deferred_revenue_account_id),
+        default_wip_account_id: asNullableText(body.default_wip_account_id),
+        default_job_cogs_account_id: asNullableText(body.default_job_cogs_account_id),
+        default_tax_liability_account_id: asNullableText(body.default_tax_liability_account_id),
+        notes: body.notes ?? null,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.profile_name) return Response.json({ ok:false, error:'profile_name is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('business_tax_settings').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('business_tax_settings').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'commercial_approval_threshold') {
+      const patch = {
+        threshold_name: body.threshold_name ?? null,
+        entity_type: body.entity_type ?? 'estimate',
+        applies_to_scope: body.applies_to_scope ?? 'global',
+        applies_to_value: body.applies_to_value ?? null,
+        discount_percent_cap: asNullableNumber(body.discount_percent_cap),
+        fixed_discount_cap: asNullableNumber(body.fixed_discount_cap),
+        minimum_margin_percent: asNullableNumber(body.minimum_margin_percent),
+        maximum_total_without_approval: asNullableNumber(body.maximum_total_without_approval),
+        required_signoff_role: body.required_signoff_role ?? 'supervisor',
+        hard_block: body.hard_block === true,
+        is_active: body.is_active !== false,
+        notes: body.notes ?? null,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.threshold_name) return Response.json({ ok:false, error:'threshold_name is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('commercial_approval_thresholds').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('commercial_approval_thresholds').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('commercial_approval_thresholds').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'estimate_quote_package') {
+      const estimateId = asNullableText(body.estimate_id);
+      const patch = {
+        estimate_id: estimateId,
+        business_tax_setting_id: asNullableText(body.business_tax_setting_id),
+        package_status: body.package_status ?? 'draft',
+        render_version: body.render_version ?? 'v1',
+        rendered_title: body.rendered_title ?? null,
+        rendered_markdown: body.rendered_markdown ?? null,
+        rendered_html: body.rendered_html ?? null,
+        client_email: body.client_email ?? null,
+        sent_at: asNullableDateTime(body.sent_at),
+        viewed_at: asNullableDateTime(body.viewed_at),
+        accepted_at: asNullableDateTime(body.accepted_at),
+        accepted_by_name: body.accepted_by_name ?? null,
+        acceptance_notes: body.acceptance_notes ?? null,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!estimateId) return Response.json({ ok:false, error:'estimate_id is required' }, { status:400, headers:corsHeaders });
+      if (action === 'render_from_estimate') {
+        const estimate:any = await fetchSingle(supabase, 'v_estimate_commercial_directory', estimateId);
+        if (!estimate?.id) return Response.json({ ok:false, error:'Estimate not found.' }, { status:404, headers:corsHeaders });
+        const { data: lines } = await supabase.from('estimate_lines').select('*').eq('estimate_id', estimateId).order('line_order');
+        const taxProfileId = asNullableText(body.business_tax_setting_id) || null;
+        const { data: taxProfile } = taxProfileId ? await supabase.from('business_tax_settings').select('*').eq('id', taxProfileId).maybeSingle() : { data: null };
+        const lineText = (lines || []).map((line:any) => `- ${line.description || 'Line'} | qty ${Number(line.quantity || 0).toFixed(2)} | unit ${Number(line.unit_price || 0).toFixed(2)} | line ${Number(line.line_total || 0).toFixed(2)}`).join('
+');
+        const entityLine = taxProfile ? `Entity: ${taxProfile.legal_entity_name || taxProfile.profile_name || ''} (${taxProfile.legal_entity_type || ''})` : '';
+        const filingLine = taxProfile ? `Tax filing mapping: ${taxProfile.federal_return_type || ''}${taxProfile.provincial_return_type ? ` / ${taxProfile.provincial_return_type}` : ''}${taxProfile.usa_tax_classification ? ` / ${taxProfile.usa_tax_classification}` : ''}` : '';
+        const renderedTitle = body.rendered_title || estimate.quote_title || estimate.estimate_number;
+        const renderedMarkdown = [
+          `# ${renderedTitle}`,'',`Estimate: ${estimate.estimate_number || ''}`,`Client: ${estimate.client_name || ''}`,
+          entityLine,filingLine,`Approval: ${estimate.approval_status || ''}`,
+          `Subtotal: $${Number(estimate.subtotal || 0).toFixed(2)}`,
+          `Tax: $${Number(estimate.tax_total || 0).toFixed(2)}`,
+          `Total: $${Number(estimate.total_amount || 0).toFixed(2)}`,
+          `Margin: $${Number(estimate.margin_estimate_total || 0).toFixed(2)} (${Number(estimate.margin_estimate_percent || 0).toFixed(2)}%)`,
+          '','## Scope',estimate.scope_notes || '','','## Estimate Lines',lineText || '- No lines yet','','## Terms',estimate.terms_notes || '','','## Client Notes',estimate.client_notes || ''
+        ].filter(Boolean).join('
+');
+        const renderedHtml = renderedMarkdown.replace(/
+/g, '<br>');
+        const upsert = { ...patch, business_tax_setting_id: taxProfileId, package_status: body.package_status || 'rendered', rendered_title: renderedTitle, rendered_markdown: renderedMarkdown, rendered_html: renderedHtml };
+        const existing = await supabase.from('estimate_quote_packages').select('id').eq('estimate_id', estimateId).maybeSingle();
+        const q = existing.data?.id ? supabase.from('estimate_quote_packages').update(upsert).eq('id', existing.data.id).select('*').single() : supabase.from('estimate_quote_packages').insert(upsert).select('*').single();
+        const { data, error } = await q;
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('estimate_quote_packages').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'mark_sent' || action === 'mark_accepted') {
+        const patch2:any = { updated_at: new Date().toISOString() };
+        if (action === 'mark_sent') { patch2.package_status = 'sent'; patch2.sent_at = new Date().toISOString(); }
+        if (action === 'mark_accepted') { patch2.package_status = 'accepted'; patch2.accepted_at = new Date().toISOString(); patch2.accepted_by_name = body.accepted_by_name ?? null; patch2.acceptance_notes = body.acceptance_notes ?? null; }
+        const { data, error } = await supabase.from('estimate_quote_packages').update(patch2).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'work_order_release_review') {
+      const workOrderId = asNullableText(body.work_order_id);
+      if (!workOrderId) return Response.json({ ok:false, error:'work_order_id is required' }, { status:400, headers:corsHeaders });
+      const patch = {
+        work_order_id: workOrderId,
+        estimate_id: asNullableText(body.estimate_id),
+        release_status: body.release_status ?? 'draft',
+        threshold_status: body.threshold_status ?? 'pass',
+        discount_percent: asNumber(body.discount_percent, 0),
+        margin_percent: asNumber(body.margin_percent, 0),
+        required_signoff_role: body.required_signoff_role ?? null,
+        release_notes: body.release_notes ?? null,
+        signoff_profile_id: asNullableText(body.signoff_profile_id),
+        signoff_at: asNullableDateTime(body.signoff_at),
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (action === 'create') {
+        const { data, error } = await supabase.from('work_order_release_reviews').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('work_order_release_reviews').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'release') {
+        const review:any = body.item_id ? await fetchSingle(supabase, 'work_order_release_reviews', body.item_id) : null;
+        const active = review || patch;
+        if (active.threshold_status === 'block') return Response.json({ ok:false, error:'Work order release is blocked by approval threshold rules.' }, { status:400, headers:corsHeaders });
+        const statusPatch:any = { release_status: 'released', signoff_profile_id: actorId, signoff_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+        if (review?.id) await supabase.from('work_order_release_reviews').update(statusPatch).eq('id', review.id);
+        else await supabase.from('work_order_release_reviews').insert({ ...patch, ...statusPatch });
+        await supabase.from('work_orders').update({ status: 'released', approval_status: 'released', updated_at: new Date().toISOString() }).eq('id', workOrderId);
+        await supabase.from('commercial_approval_events').insert({ entity_type: 'work_order', entity_id: String(workOrderId), approval_action: 'release', approval_status: 'released', actor_profile_id: actorId, notes: body.release_notes ?? 'Released from release review.' });
+        return Response.json({ ok:true, released:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'job_completion_closeout_item') {
+      const patch = {
+        completion_review_id: asNullableText(body.completion_review_id),
+        item_type: body.item_type ?? 'evidence',
+        item_status: body.item_status ?? 'pending',
+        label: body.label ?? null,
+        notes: body.notes ?? null,
+        due_at: asNullableDateTime(body.due_at),
+        completed_at: asNullableDateTime(body.completed_at),
+        completed_by_profile_id: asNullableText(body.completed_by_profile_id),
+        required_item: body.required_item !== false,
+        sort_order: asNumber(body.sort_order, 100),
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.completion_review_id || !patch.label) return Response.json({ ok:false, error:'completion_review_id and label are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('job_completion_closeout_items').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('job_completion_closeout_items').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('job_completion_closeout_items').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
     }
 
     if (entity === 'subcontract_client') {
