@@ -54,6 +54,14 @@
       completionReviews: [],
       accountingQueue: [],
       commercialApprovals: [],
+      quotePackages: [],
+      approvalThresholds: [],
+      workOrderReleaseReviews: [],
+      completionPackageItems: [],
+      invoiceCandidates: [],
+      journalCandidates: [],
+      arapReviewQueue: [],
+      profitabilityScorecards: [],
       selectedJobId: null,
       jobSort: { key: 'start_date', dir: 'desc' },
       editingJobId: null,
@@ -462,9 +470,16 @@
         <div class="form-footer">
           <button id="job_create_estimate" class="secondary" type="button">Create Estimate From Job</button>
           <button id="job_add_estimate_line" class="secondary" type="button">Add Estimate Line</button>
+          <button id="job_render_quote_package" class="secondary" type="button">Render Quote Package</button>
           <button id="job_convert_to_package" class="secondary" type="button">Convert Estimate to Job Package</button>
+          <button id="job_release_review" class="secondary" type="button">Review / Release Work Order</button>
           <button id="job_completion_review" class="secondary" type="button">Create / Update Completion Review</button>
+          <button id="job_add_closeout_item" class="secondary" type="button">Add Closeout Item</button>
           <button id="job_queue_accounting" class="secondary" type="button">Queue for Accounting Review</button>
+          <button id="job_create_invoice_candidate" class="secondary" type="button">Create Invoice Candidate</button>
+          <button id="job_create_journal_candidate" class="secondary" type="button">Create Journal Candidate</button>
+          <button id="job_queue_arap_review" class="secondary" type="button">Queue AR / AP Review</button>
+          <button id="job_export_closeout_summary" class="secondary" type="button">Export Closeout Summary</button>
         </div>
         <div id="job_commercial_summary" class="notice" style="display:none;margin-top:12px;"></div>
         <div class="table-scroll" style="margin-top:12px;">
@@ -488,6 +503,48 @@
         <div class="table-scroll" style="margin-top:12px;">
           <table id="job_accounting_queue_table">
             <thead><tr><th>Job</th><th>Review</th><th>Accounting Trigger</th><th>Profit</th><th>Last Event</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="table-scroll" style="margin-top:12px;">
+          <table id="job_quote_package_table">
+            <thead><tr><th>Estimate</th><th>Package</th><th>Tax Profile</th><th>Status</th><th>Sent</th><th>Accepted</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="table-scroll" style="margin-top:12px;">
+          <table id="job_release_review_table">
+            <thead><tr><th>Work Order</th><th>Release</th><th>Threshold</th><th>Discount %</th><th>Margin %</th><th>Required Signoff</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="table-scroll" style="margin-top:12px;">
+          <table id="job_closeout_item_table">
+            <thead><tr><th>Item</th><th>Type</th><th>Status</th><th>Required</th><th>Due</th><th>Completed</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="table-scroll" style="margin-top:12px;">
+          <table id="job_invoice_candidate_table">
+            <thead><tr><th>Candidate</th><th>Status</th><th>Tax Profile</th><th>Total</th><th>Client</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="table-scroll" style="margin-top:12px;">
+          <table id="job_journal_candidate_table">
+            <thead><tr><th>Job</th><th>Status</th><th>Tax Profile</th><th>Journal Memo</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="table-scroll" style="margin-top:12px;">
+          <table id="job_arap_queue_table">
+            <thead><tr><th>Source</th><th>Status</th><th>Assigned</th><th>Notes</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="table-scroll" style="margin-top:12px;">
+          <table id="job_profitability_scorecard_table">
+            <thead><tr><th>Group</th><th>Label</th><th>Jobs</th><th>Revenue</th><th>Cost</th><th>Profit</th><th>Margin %</th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -593,14 +650,28 @@
         jobListBody: $('#job_list_table tbody'),
         jobCreateEstimate: $('#job_create_estimate'),
         jobAddEstimateLine: $('#job_add_estimate_line'),
+        jobRenderQuotePackage: $('#job_render_quote_package'),
         jobConvertToPackage: $('#job_convert_to_package'),
+        jobReleaseReview: $('#job_release_review'),
         jobCompletionReview: $('#job_completion_review'),
+        jobAddCloseoutItem: $('#job_add_closeout_item'),
         jobQueueAccounting: $('#job_queue_accounting'),
+        jobCreateInvoiceCandidate: $('#job_create_invoice_candidate'),
+        jobCreateJournalCandidate: $('#job_create_journal_candidate'),
+        jobQueueArapReview: $('#job_queue_arap_review'),
+        jobExportCloseoutSummary: $('#job_export_closeout_summary'),
         jobCommercialSummary: $('#job_commercial_summary'),
         jobEstimateBody: $('#job_estimate_table tbody'),
         jobWorkOrderBody: $('#job_work_order_table tbody'),
         jobCompletionReviewBody: $('#job_completion_review_table tbody'),
         jobAccountingQueueBody: $('#job_accounting_queue_table tbody'),
+        jobQuotePackageBody: $('#job_quote_package_table tbody'),
+        jobReleaseReviewBody: $('#job_release_review_table tbody'),
+        jobCloseoutItemBody: $('#job_closeout_item_table tbody'),
+        jobInvoiceCandidateBody: $('#job_invoice_candidate_table tbody'),
+        jobJournalCandidateBody: $('#job_journal_candidate_table tbody'),
+        jobArapQueueBody: $('#job_arap_queue_table tbody'),
+        jobProfitabilityScorecardBody: $('#job_profitability_scorecard_table tbody'),
         eqCode: $('#eq_code'),
         eqName: $('#eq_name'),
         eqCategory: $('#eq_category'),
@@ -838,7 +909,7 @@
         const el = document.getElementById(id);
         if (el) el.disabled = !allowed;
       });
-      ['job_add_equipment','job_request_approval','job_save','job_clear','job_comment_save','job_track_session','job_track_hours','job_track_reassign','job_create_estimate','job_add_estimate_line','job_convert_to_package','job_completion_review','job_queue_accounting','eq_save','eq_checkout','eq_return','eq_add_inspection','eq_add_maintenance','eq_lockout','eq_clear_lockout','eq_clear'].forEach((id)=>{
+      ['job_add_equipment','job_request_approval','job_save','job_clear','job_comment_save','job_track_session','job_track_hours','job_track_reassign','job_create_estimate','job_add_estimate_line','job_render_quote_package','job_convert_to_package','job_release_review','job_completion_review','job_add_closeout_item','job_queue_accounting','job_create_invoice_candidate','job_create_journal_candidate','job_queue_arap_review','job_export_closeout_summary','eq_save','eq_checkout','eq_return','eq_add_inspection','eq_add_maintenance','eq_lockout','eq_clear_lockout','eq_clear'].forEach((id)=>{
         const el = document.getElementById(id);
         if (el) el.disabled = !allowed;
       });
@@ -1364,11 +1435,25 @@
       const e = els();
       if (!e.jobEstimateBody || !e.jobWorkOrderBody || !e.jobCompletionReviewBody || !e.jobAccountingQueueBody) return;
       const { activeJobId, jobRow, workOrders, estimates, completionReviews, accountingQueue } = getSelectedCommercialContext();
+      const quotePackages = (state.quotePackages || []).filter((row) => estimates.some((est) => String(est.id || '') === String(row.estimate_id || '')));
+      const releaseReviews = (state.workOrderReleaseReviews || []).filter((row) => workOrders.some((wo) => String(wo.id || '') === String(row.work_order_id || '')));
+      const closeoutItems = (state.completionPackageItems || []).filter((row) => completionReviews.some((cr) => String(cr.id || '') === String(row.completion_review_id || '')));
+      const invoiceCandidates = (state.invoiceCandidates || []).filter((row) => String(row.job_id || '') === String(activeJobId));
+      const journalCandidates = (state.journalCandidates || []).filter((row) => String(row.job_id || '') === String(activeJobId));
+      const arapQueue = (state.arapReviewQueue || []).filter((row) => String(row.job_id || '') === String(activeJobId));
+      const scorecards = (state.profitabilityScorecards || []).filter((row) => ['site','supervisor','route','job_family'].includes(String(row.group_type || '')));
       if (!activeJobId || !jobRow) {
         e.jobEstimateBody.innerHTML = '<tr><td colspan="7" class="muted">Load a job to manage estimates.</td></tr>';
         e.jobWorkOrderBody.innerHTML = '<tr><td colspan="7" class="muted">Load a job to manage work orders.</td></tr>';
         e.jobCompletionReviewBody.innerHTML = '<tr><td colspan="7" class="muted">Load a job to manage completion review.</td></tr>';
         e.jobAccountingQueueBody.innerHTML = '<tr><td colspan="5" class="muted">Load a job to review accounting readiness.</td></tr>';
+        e.jobQuotePackageBody.innerHTML = '<tr><td colspan="6" class="muted">Load a job to review quote packages.</td></tr>';
+        e.jobReleaseReviewBody.innerHTML = '<tr><td colspan="6" class="muted">Load a job to review release controls.</td></tr>';
+        e.jobCloseoutItemBody.innerHTML = '<tr><td colspan="6" class="muted">Load a job to review closeout items.</td></tr>';
+        e.jobInvoiceCandidateBody.innerHTML = '<tr><td colspan="5" class="muted">Load a job to review invoice candidates.</td></tr>';
+        e.jobJournalCandidateBody.innerHTML = '<tr><td colspan="4" class="muted">Load a job to review journal candidates.</td></tr>';
+        e.jobArapQueueBody.innerHTML = '<tr><td colspan="4" class="muted">Load a job to review AR/AP coordination.</td></tr>';
+        e.jobProfitabilityScorecardBody.innerHTML = '<tr><td colspan="7" class="muted">Load a job to review profitability scorecards.</td></tr>';
         setNotice(e.jobCommercialSummary, '');
         return;
       }
@@ -1376,7 +1461,14 @@
       e.jobWorkOrderBody.innerHTML = workOrders.length ? workOrders.map((row) => `<tr><td>${escHtml(row.work_order_number || '')}</td><td>${escHtml(row.estimate_number || '')}</td><td>${escHtml(row.status || '')}</td><td>${escHtml(row.completion_review_status || '')}</td><td>${escHtml(row.accounting_trigger_status || '')}</td><td>$${Number(row.total_amount || 0).toFixed(2)}</td><td>$${Number(row.margin_estimate_total || row.line_margin_total || 0).toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="7" class="muted">No linked work order yet.</td></tr>';
       e.jobCompletionReviewBody.innerHTML = completionReviews.length ? completionReviews.map((row) => `<tr><td>${escHtml(row.job_code || '')}</td><td>${escHtml(row.review_status || '')}</td><td>${escHtml(row.completion_date || '')}</td><td>$${Number(row.revenue_total || 0).toFixed(2)}</td><td>$${Number(row.cost_total || 0).toFixed(2)}</td><td>$${Number(row.profit_total || 0).toFixed(2)}</td><td>${row.accounting_ready ? 'Ready' : escHtml(row.accounting_trigger_status || '')}</td></tr>`).join('') : '<tr><td colspan="7" class="muted">No completion review yet.</td></tr>';
       e.jobAccountingQueueBody.innerHTML = accountingQueue.length ? accountingQueue.map((row) => `<tr><td>${escHtml(row.job_code || '')}</td><td>${escHtml(row.review_status || '')}</td><td>${escHtml(row.accounting_trigger_status || '')}</td><td>$${Number(row.profit_total || 0).toFixed(2)}</td><td>${escHtml(row.last_accounting_action || row.last_accounting_event_status || '')}</td></tr>`).join('') : '<tr><td colspan="5" class="muted">This job is not queued for accounting yet.</td></tr>';
-      setNotice(e.jobCommercialSummary, `Commercial package for ${jobRow.job_code || jobRow.job_name}: ${estimates.length} estimate(s), ${workOrders.length} work order(s), ${completionReviews.length} completion review(s).`);
+      e.jobQuotePackageBody.innerHTML = quotePackages.length ? quotePackages.map((row) => `<tr><td>${escHtml(row.estimate_number || '')}</td><td>${escHtml(row.rendered_title || row.quote_title || '')}</td><td>${escHtml(row.tax_profile_name || row.legal_entity_type || '')}</td><td>${escHtml(row.package_status || '')}</td><td>${escHtml(row.sent_at || '')}</td><td>${escHtml(row.accepted_at || '')}</td></tr>`).join('') : '<tr><td colspan="6" class="muted">No quote package yet.</td></tr>';
+      e.jobReleaseReviewBody.innerHTML = releaseReviews.length ? releaseReviews.map((row) => `<tr><td>${escHtml(row.work_order_number || '')}</td><td>${escHtml(row.release_status || '')}</td><td>${escHtml(row.threshold_status || '')}</td><td>${Number(row.discount_percent || 0).toFixed(2)}</td><td>${Number(row.margin_percent || 0).toFixed(2)}</td><td>${escHtml(row.required_signoff_role || '')}</td></tr>`).join('') : '<tr><td colspan="6" class="muted">No release review yet.</td></tr>';
+      e.jobCloseoutItemBody.innerHTML = closeoutItems.length ? closeoutItems.map((row) => `<tr><td>${escHtml(row.label || '')}</td><td>${escHtml(row.item_type || '')}</td><td>${escHtml(row.item_status || '')}</td><td>${row.required_item ? 'Yes' : 'No'}</td><td>${escHtml(row.due_at || '')}</td><td>${escHtml(row.completed_at || row.completed_by_name || '')}</td></tr>`).join('') : '<tr><td colspan="6" class="muted">No closeout items yet.</td></tr>';
+      e.jobInvoiceCandidateBody.innerHTML = invoiceCandidates.length ? invoiceCandidates.map((row) => `<tr><td>${escHtml(row.candidate_number || '')}</td><td>${escHtml(row.candidate_status || '')}</td><td>${escHtml(row.tax_profile_name || row.legal_entity_type || '')}</td><td>$${Number(row.total_amount || 0).toFixed(2)}</td><td>${escHtml(row.client_name || '')}</td></tr>`).join('') : '<tr><td colspan="5" class="muted">No invoice candidates yet.</td></tr>';
+      e.jobJournalCandidateBody.innerHTML = journalCandidates.length ? journalCandidates.map((row) => `<tr><td>${escHtml(row.job_code || '')}</td><td>${escHtml(row.candidate_status || '')}</td><td>${escHtml(row.tax_profile_name || row.legal_entity_type || '')}</td><td>${escHtml(row.journal_memo || '')}</td></tr>`).join('') : '<tr><td colspan="4" class="muted">No journal candidates yet.</td></tr>';
+      e.jobArapQueueBody.innerHTML = arapQueue.length ? arapQueue.map((row) => `<tr><td>${escHtml(row.source_type || '')}</td><td>${escHtml(row.queue_status || '')}</td><td>${escHtml(row.assigned_name || '')}</td><td>${escHtml(row.notes || '')}</td></tr>`).join('') : '<tr><td colspan="4" class="muted">No AR/AP review items yet.</td></tr>';
+      e.jobProfitabilityScorecardBody.innerHTML = scorecards.length ? scorecards.map((row) => `<tr><td>${escHtml(row.group_type || '')}</td><td>${escHtml(row.group_label || '')}</td><td>${Number(row.job_count || 0)}</td><td>$${Number(row.revenue_total || 0).toFixed(2)}</td><td>$${Number(row.cost_total || 0).toFixed(2)}</td><td>$${Number(row.profit_total || 0).toFixed(2)}</td><td>${Number(row.margin_percent || 0).toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="7" class="muted">No profitability scorecards available yet.</td></tr>';
+      setNotice(e.jobCommercialSummary, `Commercial package for ${jobRow.job_code || jobRow.job_name}: ${estimates.length} estimate(s), ${workOrders.length} work order(s), ${completionReviews.length} completion review(s), ${quotePackages.length} quote package(s), ${invoiceCandidates.length} invoice candidate(s), ${journalCandidates.length} journal candidate(s).`);
     }
 
     async function createEstimateFromJob() {
@@ -1450,6 +1542,106 @@
       if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'Accounting queue action failed.', true);
       setNotice(e.jobCommercialSummary, 'Job queued for accounting review.');
       await loadData();
+    }
+
+
+    async function renderSelectedQuotePackage() {
+      const e = els();
+      const ctx = getSelectedCommercialContext();
+      const estimate = ctx.estimates[0];
+      if (!estimate?.id) return setNotice(e.jobCommercialSummary, 'Create an estimate first.', true);
+      const taxProfile = (state.businessTaxSettings || [])[0] || null;
+      const resp = await api.manageAdminEntity({ entity: 'estimate_quote_package', action: 'render_from_estimate', estimate_id: estimate.id, business_tax_setting_id: taxProfile?.id || null, rendered_title: estimate.quote_title || estimate.estimate_number });
+      if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'Quote package render failed.', true);
+      setNotice(e.jobCommercialSummary, `Quote package rendered for ${estimate.estimate_number || ''}.`);
+      await loadData();
+    }
+
+    async function reviewOrReleaseSelectedWorkOrder() {
+      const e = els();
+      const ctx = getSelectedCommercialContext();
+      const workOrder = ctx.workOrders[0];
+      if (!workOrder?.id) return setNotice(e.jobCommercialSummary, 'Convert an estimate to a work order first.', true);
+      const discountPercent = Number(window.prompt('Discount percent for release review:', String(workOrder.discount_value || 0)) || '0');
+      const marginPercent = Number(window.prompt('Margin percent for release review:', String(workOrder.margin_estimate_percent || 0)) || '0');
+      const threshold = (state.approvalThresholds || []).find((row) => row.applies_to_scope === 'global' || String(row.applies_to_value || '') === String(ctx.jobRow?.job_family || ''));
+      const thresholdStatus = threshold?.hard_block && threshold.minimum_margin_percent != null && marginPercent < Number(threshold.minimum_margin_percent || 0) ? 'block' : ((threshold?.minimum_margin_percent != null && marginPercent < Number(threshold.minimum_margin_percent || 0)) || (threshold?.discount_percent_cap != null && discountPercent > Number(threshold.discount_percent_cap || 0)) ? 'warn' : 'pass');
+      const requiredSignoffRole = threshold?.required_signoff_role || (thresholdStatus === 'pass' ? 'supervisor' : 'admin');
+      const existing = (state.workOrderReleaseReviews || []).find((row) => String(row.work_order_id || '') === String(workOrder.id || ''));
+      const releaseNow = window.confirm(`Threshold result: ${thresholdStatus}. Required signoff: ${requiredSignoffRole}. Click OK to release now, or Cancel to only save the review.`);
+      const action = releaseNow ? 'release' : (existing?.id ? 'update' : 'create');
+      const resp = await api.manageAdminEntity({ entity: 'work_order_release_review', action, item_id: existing?.id, work_order_id: workOrder.id, estimate_id: workOrder.estimate_id || null, release_status: releaseNow ? 'released' : 'pending', threshold_status: thresholdStatus, discount_percent: discountPercent, margin_percent: marginPercent, required_signoff_role: requiredSignoffRole, release_notes: `Commercial release review for ${workOrder.work_order_number || workOrder.id}.` });
+      if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'Release review failed.', true);
+      setNotice(e.jobCommercialSummary, releaseNow ? 'Work order released.' : 'Release review saved.');
+      await loadData();
+    }
+
+    async function addCloseoutItemToSelectedReview() {
+      const e = els();
+      const ctx = getSelectedCommercialContext();
+      const review = ctx.completionReviews[0];
+      if (!review?.id) return setNotice(e.jobCommercialSummary, 'Create a completion review first.', true);
+      const label = window.prompt('Closeout item label:', 'Supervisor signoff package') || '';
+      if (!label) return;
+      const itemType = window.prompt('Item type (evidence, supervisor_signoff, client_signoff, variance_explanation, session_closeout, materials, equipment, other):', 'evidence') || 'evidence';
+      const resp = await api.manageAdminEntity({ entity: 'job_completion_closeout_item', action: 'create', completion_review_id: review.id, label, item_type: itemType, item_status: 'pending', required_item: true });
+      if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'Closeout item create failed.', true);
+      setNotice(e.jobCommercialSummary, 'Closeout item added.');
+      await loadData();
+    }
+
+    async function createInvoiceCandidateForSelectedReview() {
+      const e = els();
+      const ctx = getSelectedCommercialContext();
+      const review = ctx.completionReviews[0];
+      if (!review?.id) return setNotice(e.jobCommercialSummary, 'Create a completion review first.', true);
+      const taxProfile = (state.businessTaxSettings || [])[0] || null;
+      const totalAmount = Number(window.prompt('Invoice candidate total amount:', String(review.revenue_total || 0)) || '0');
+      const resp = await api.manageAdminEntity({ entity: 'job_completion_review', action: 'create_invoice_candidate', item_id: review.id, business_tax_setting_id: taxProfile?.id || null, total_amount: totalAmount, subtotal: totalAmount, tax_total: 0 });
+      if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'Invoice candidate create failed.', true);
+      setNotice(e.jobCommercialSummary, `Invoice candidate ${resp.record?.candidate_number || ''} created.`);
+      await loadData();
+    }
+
+    async function createJournalCandidateForSelectedReview() {
+      const e = els();
+      const ctx = getSelectedCommercialContext();
+      const review = ctx.completionReviews[0];
+      if (!review?.id) return setNotice(e.jobCommercialSummary, 'Create a completion review first.', true);
+      const taxProfile = (state.businessTaxSettings || [])[0] || null;
+      const resp = await api.manageAdminEntity({ entity: 'job_completion_review', action: 'create_journal_candidate', item_id: review.id, business_tax_setting_id: taxProfile?.id || null, journal_memo: `Commercial closeout journal for ${ctx.jobRow?.job_code || review.job_id}` });
+      if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'Journal candidate create failed.', true);
+      setNotice(e.jobCommercialSummary, 'Journal candidate created.');
+      await loadData();
+    }
+
+    async function queueArapReviewForSelectedReview() {
+      const e = els();
+      const ctx = getSelectedCommercialContext();
+      const review = ctx.completionReviews[0];
+      if (!review?.id) return setNotice(e.jobCommercialSummary, 'Create a completion review first.', true);
+      const resp = await api.manageAdminEntity({ entity: 'job_completion_review', action: 'queue_ar_ap_review', item_id: review.id, notes: 'Queued from Jobs commercial workflow.' });
+      if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'AR/AP review queue failed.', true);
+      setNotice(e.jobCommercialSummary, 'AR/AP review queued.');
+      await loadData();
+    }
+
+    async function exportSelectedCloseoutSummary() {
+      const e = els();
+      const ctx = getSelectedCommercialContext();
+      const review = ctx.completionReviews[0];
+      if (!review?.id) return setNotice(e.jobCommercialSummary, 'Create a completion review first.', true);
+      const resp = await api.manageAdminEntity({ entity: 'job_completion_review', action: 'export_closeout_summary', item_id: review.id });
+      if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'Closeout summary export failed.', true);
+      const summary = String(resp.export_markdown || '').trim();
+      if (!summary) return setNotice(e.jobCommercialSummary, 'No closeout summary was returned.', true);
+      try {
+        await navigator.clipboard.writeText(summary);
+        setNotice(e.jobCommercialSummary, 'Closeout summary copied to clipboard.');
+      } catch {
+        setNotice(e.jobCommercialSummary, 'Closeout summary generated. Check the console output.');
+      }
+      console.log(summary);
     }
 
     function renderGallery(signoutId = null) {
@@ -1652,6 +1844,14 @@
         state.completionReviews = Array.isArray(resp?.job_completion_reviews) ? resp.job_completion_reviews : [];
         state.accountingQueue = Array.isArray(resp?.job_accounting_ready_queue) ? resp.job_accounting_ready_queue : [];
         state.commercialApprovals = Array.isArray(resp?.commercial_approval_events) ? resp.commercial_approval_events : [];
+        state.quotePackages = Array.isArray(resp?.quote_packages) ? resp.quote_packages : [];
+        state.approvalThresholds = Array.isArray(resp?.commercial_approval_thresholds) ? resp.commercial_approval_thresholds : [];
+        state.workOrderReleaseReviews = Array.isArray(resp?.work_order_release_reviews) ? resp.work_order_release_reviews : [];
+        state.completionPackageItems = Array.isArray(resp?.completion_package_items) ? resp.completion_package_items : [];
+        state.invoiceCandidates = Array.isArray(resp?.invoice_candidates) ? resp.invoice_candidates : [];
+        state.journalCandidates = Array.isArray(resp?.journal_candidates) ? resp.journal_candidates : [];
+        state.arapReviewQueue = Array.isArray(resp?.ar_ap_review_queue) ? resp.ar_ap_review_queue : [];
+        state.profitabilityScorecards = Array.isArray(resp?.profitability_scorecards) ? resp.profitability_scorecards : [];
         fillSiteSelect(e.jobSiteName);
         fillSiteSelect(e.eqHomeSite);
         fillCrewSelect(e.jobCrewId);
@@ -2126,6 +2326,13 @@
       if (e.jobQueueAccounting && e.jobQueueAccounting.dataset.bound !== '1') {
         e.jobQueueAccounting.dataset.bound = '1';
         e.jobQueueAccounting.addEventListener('click', () => queueSelectedJobForAccounting());
+      e.jobRenderQuotePackage.addEventListener('click', () => renderSelectedQuotePackage());
+      e.jobReleaseReview.addEventListener('click', () => reviewOrReleaseSelectedWorkOrder());
+      e.jobAddCloseoutItem.addEventListener('click', () => addCloseoutItemToSelectedReview());
+      e.jobCreateInvoiceCandidate.addEventListener('click', () => createInvoiceCandidateForSelectedReview());
+      e.jobCreateJournalCandidate.addEventListener('click', () => createJournalCandidateForSelectedReview());
+      e.jobQueueArapReview.addEventListener('click', () => queueArapReviewForSelectedReview());
+      e.jobExportCloseoutSummary.addEventListener('click', () => exportSelectedCloseoutSummary());
       }
 
       if (e.jobFinancialBody && e.jobFinancialBody.dataset.bound !== '1') {
