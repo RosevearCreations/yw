@@ -1530,11 +1530,11 @@
       e.jobReleaseReviewBody.innerHTML = releaseReviews.length ? releaseReviews.map((row) => `<tr><td>${escHtml(row.work_order_number || '')}</td><td>${escHtml(row.release_status || '')}</td><td>${escHtml(row.threshold_status || '')}</td><td>${Number(row.discount_percent || 0).toFixed(2)}</td><td>${Number(row.margin_percent || 0).toFixed(2)}</td><td>${escHtml(row.required_signoff_role || '')}</td></tr>`).join('') : '<tr><td colspan="6" class="muted">No release review yet.</td></tr>';
       e.jobThresholdEvalBody.innerHTML = thresholdEvaluations.length ? thresholdEvaluations.map((row) => `<tr><td>${escHtml(row.threshold_name || '')}</td><td>${escHtml(row.evaluated_status || '')}</td><td>${Number(row.discount_percent || 0).toFixed(2)}</td><td>${Number(row.margin_percent || 0).toFixed(2)}</td><td>$${Number(row.total_amount || 0).toFixed(2)}</td><td>${escHtml(row.evaluation_message || '')}</td></tr>`).join('') : '<tr><td colspan="6" class="muted">No threshold evaluations yet.</td></tr>';
       e.jobCloseoutItemBody.innerHTML = closeoutItems.length ? closeoutItems.map((row) => `<tr><td>${escHtml(row.label || '')}</td><td>${escHtml(row.item_type || '')}</td><td>${escHtml(row.item_status || '')}</td><td>${row.required_item ? 'Yes' : 'No'}</td><td>${escHtml(row.due_at || '')}</td><td>${escHtml(row.completed_at || row.completed_by_name || '')}</td></tr>`).join('') : '<tr><td colspan="6" class="muted">No closeout items yet.</td></tr>';
-      e.jobCloseoutEvidenceBody.innerHTML = closeoutEvidence.length ? closeoutEvidence.map((row) => `<tr><td>${escHtml(row.label || '')}</td><td>${escHtml(row.asset_kind || '')}</td><td>${escHtml(row.notes || '')}</td><td>${escHtml(row.source_table || row.asset_url || '')}</td><td>${escHtml(row.created_at || '')}</td></tr>`).join('') : '<tr><td colspan="5" class="muted">No closeout evidence linked yet.</td></tr>';
+      e.jobCloseoutEvidenceBody.innerHTML = closeoutEvidence.length ? closeoutEvidence.map((row) => `<tr><td>${escHtml(row.label || row.resolved_file_name || '')}</td><td>${escHtml(row.asset_kind || '')}</td><td>${escHtml(row.notes || row.resolved_caption || '')}</td><td>${escHtml(row.source_table || row.resolved_asset_url || row.asset_url || '')}</td><td>${escHtml(row.created_at || '')}</td></tr>`).join('') : '<tr><td colspan="5" class="muted">No closeout evidence linked yet.</td></tr>';
       e.jobInvoiceCandidateBody.innerHTML = invoiceCandidates.length ? invoiceCandidates.map((row) => `<tr><td>${escHtml(row.candidate_number || '')}</td><td>${escHtml(row.candidate_status || '')}</td><td>${escHtml(row.tax_profile_name || row.legal_entity_type || '')}</td><td>$${Number(row.total_amount || 0).toFixed(2)}</td><td>${escHtml(row.client_name || '')}</td></tr>`).join('') : '<tr><td colspan="5" class="muted">No invoice candidates yet.</td></tr>';
       e.jobJournalCandidateBody.innerHTML = journalCandidates.length ? journalCandidates.map((row) => `<tr><td>${escHtml(row.job_code || '')}</td><td>${escHtml(row.candidate_status || '')}</td><td>${escHtml(row.tax_profile_name || row.legal_entity_type || '')}</td><td>${escHtml(row.journal_memo || '')}</td></tr>`).join('') : '<tr><td colspan="4" class="muted">No journal candidates yet.</td></tr>';
       e.jobArapQueueBody.innerHTML = arapQueue.length ? arapQueue.map((row) => `<tr><td>${escHtml(row.source_type || '')}</td><td>${escHtml(row.queue_status || '')}</td><td>${escHtml(row.assigned_name || '')}</td><td>${escHtml(row.notes || '')}</td></tr>`).join('') : '<tr><td colspan="4" class="muted">No AR/AP review items yet.</td></tr>';
-      e.jobAccountantExportBody.innerHTML = accountantExports.length ? accountantExports.map((row) => `<tr><td>${escHtml(row.export_kind || '')}</td><td>${escHtml(row.export_status || '')}</td><td>${escHtml(row.export_title || '')}</td><td>${escHtml(row.tax_profile_name || row.legal_entity_type || '')}</td><td>${escHtml(row.generated_at || '')}</td></tr>`).join('') : '<tr><td colspan="5" class="muted">No accountant handoff exports yet.</td></tr>';
+      e.jobAccountantExportBody.innerHTML = accountantExports.length ? accountantExports.map((row) => `<tr><td>${escHtml(row.export_kind || '')}</td><td>${escHtml(row.export_status || '')}</td><td>${escHtml(row.export_title || '')}</td><td>${escHtml(row.legal_entity_name || row.tax_profile_name || row.legal_entity_type || '')}</td><td>${escHtml(row.generated_at || '')}</td></tr>`).join('') : '<tr><td colspan="5" class="muted">No accountant handoff exports yet.</td></tr>';
       e.jobVarianceBody.innerHTML = varianceRows.length ? varianceRows.map((row) => `<tr><td>${escHtml(row.group_type || '')}</td><td>${escHtml(row.group_label || '')}</td><td>$${Number(row.quoted_total || 0).toFixed(2)}</td><td>$${Number(row.estimated_cost_total || 0).toFixed(2)}</td><td>$${Number(row.actual_revenue_total || 0).toFixed(2)}</td><td>$${Number(row.actual_cost_total || 0).toFixed(2)}</td><td>$${Number(row.revenue_variance_total || 0).toFixed(2)}</td><td>$${Number(row.cost_variance_total || 0).toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="8" class="muted">No variance rows yet.</td></tr>';
       e.jobProfitabilityScorecardBody.innerHTML = scorecards.length ? scorecards.map((row) => `<tr><td>${escHtml(row.group_type || '')}</td><td>${escHtml(row.group_label || '')}</td><td>${Number(row.job_count || 0)}</td><td>$${Number(row.revenue_total || 0).toFixed(2)}</td><td>$${Number(row.cost_total || 0).toFixed(2)}</td><td>$${Number(row.profit_total || 0).toFixed(2)}</td><td>${Number(row.margin_percent || 0).toFixed(2)}</td></tr>`).join('') : '<tr><td colspan="7" class="muted">No profitability scorecards available yet.</td></tr>';
       setNotice(e.jobCommercialSummary, `Commercial package for ${jobRow.job_code || jobRow.job_name}: ${estimates.length} estimate(s), ${workOrders.length} work order(s), ${completionReviews.length} completion review(s), ${quotePackages.length} quote package(s), ${thresholdEvaluations.length} threshold evaluation(s), ${invoiceCandidates.length} invoice candidate(s), ${journalCandidates.length} journal candidate(s), ${accountantExports.length} accountant export(s).`);
@@ -1635,7 +1635,16 @@
       await api.manageAdminEntity({ entity: 'estimate_quote_package', action: 'mark_printed', item_id: pkg.id });
       const html = String(pkg.printable_html || pkg.rendered_html || '').trim();
       if (!html) return setNotice(e.jobCommercialSummary, 'No printable quote content is available yet.', true);
-      try { await navigator.clipboard.writeText(html); setNotice(e.jobCommercialSummary, 'Printable quote HTML copied to clipboard.'); } catch { setNotice(e.jobCommercialSummary, 'Printable quote HTML generated. Check the console output.'); }
+      try {
+        const win = window.open('', '_blank', 'noopener,noreferrer,width=980,height=820');
+        if (win) {
+          win.document.open();
+          win.document.write(html);
+          win.document.close();
+          win.focus();
+        }
+      } catch {}
+      try { await navigator.clipboard.writeText(html); setNotice(e.jobCommercialSummary, 'Printable quote HTML opened in a new window and copied to clipboard.'); } catch { setNotice(e.jobCommercialSummary, 'Printable quote HTML opened in a new window.'); }
       console.log(html);
       await loadData();
     }
@@ -1645,9 +1654,9 @@
       const ctx = getSelectedCommercialContext();
       const pkg = (state.quotePackages || []).find((row) => ctx.estimates.some((est) => String(est.id || '') === String(row.estimate_id || '')));
       if (!pkg?.id) return setNotice(e.jobCommercialSummary, 'Render a quote package first.', true);
-      const email = window.prompt('Recipient email:', pkg.client_email || ctx.jobRow?.client_name || '') || '';
+      const email = window.prompt('Recipient email:', pkg.client_email || '') || '';
       if (!email) return;
-      const resp = await api.manageAdminEntity({ entity: 'estimate_quote_package', action: 'send_quote_output', item_id: pkg.id, client_email: email, output_type: 'email' });
+      const resp = await api.manageAdminEntity({ entity: 'estimate_quote_package', action: 'send_quote_output', item_id: pkg.id, client_email: email, output_type: 'email', recipient_email: email, email_subject: pkg.email_subject || null });
       if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'Quote send flag failed.', true);
       setNotice(e.jobCommercialSummary, 'Quote package marked as sent.');
       await loadData();
@@ -1669,10 +1678,12 @@
       const ctx = getSelectedCommercialContext();
       const item = (state.completionPackageItems || []).find((row) => ctx.completionReviews.some((cr) => String(cr.id || '') === String(row.completion_review_id || '')) && String(row.item_type || '') === 'evidence') || (ctx.completionReviews[0] ? (state.completionPackageItems || []).find((row) => String(row.completion_review_id || '') === String(ctx.completionReviews[0].id || '')) : null);
       if (!item?.id) return setNotice(e.jobCommercialSummary, 'Add a closeout item first.', true);
-      const assetUrl = window.prompt('Evidence URL or storage path:', '') || '';
-      if (!assetUrl) return;
+      const sourceTable = window.prompt('Evidence source table (job_comment_attachments, submission_images, equipment_evidence_assets) or leave blank for a direct URL:', '') || '';
+      const sourceId = sourceTable ? (window.prompt('Source row id:', '') || '') : '';
+      const assetUrl = sourceTable ? '' : (window.prompt('Evidence URL or storage path:', '') || '');
+      if (!sourceTable && !assetUrl) return;
       const label = window.prompt('Evidence label:', 'Closeout evidence') || 'Closeout evidence';
-      const resp = await api.manageAdminEntity({ entity: 'job_completion_closeout_asset', action: 'create', closeout_item_id: item.id, asset_kind: 'url', label, asset_url: assetUrl, notes: `Linked from Jobs commercial workflow for ${ctx.jobRow?.job_code || item.id}.` });
+      const resp = await api.manageAdminEntity({ entity: 'job_completion_closeout_asset', action: 'create', closeout_item_id: item.id, asset_kind: sourceTable ? 'file' : 'url', label, asset_url: assetUrl, source_table: sourceTable || null, source_id: sourceId || null, notes: `Linked from Jobs commercial workflow for ${ctx.jobRow?.job_code || item.id}.` });
       if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'Closeout evidence link failed.', true);
       setNotice(e.jobCommercialSummary, 'Closeout evidence linked.');
       await loadData();
@@ -1688,7 +1699,17 @@
       const resp = await api.manageAdminEntity({ entity: 'job_completion_review', action: 'export_accountant_handoff', item_id: review.id, business_tax_setting_id: taxProfile?.id || null, export_kind: exportKind });
       if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'Accountant handoff export failed.', true);
       const summary = String(resp.export_markdown || '').trim();
-      if (summary) { try { await navigator.clipboard.writeText(summary); setNotice(e.jobCommercialSummary, 'Accountant handoff copied to clipboard.'); } catch { console.log(summary); setNotice(e.jobCommercialSummary, 'Accountant handoff generated. Check the console output.'); } }
+      if (summary) {
+        try {
+          const win = window.open('', '_blank', 'noopener,noreferrer,width=900,height=780');
+          if (win) {
+            win.document.open();
+            win.document.write(`<pre style="white-space:pre-wrap;font-family:Arial,sans-serif;padding:20px;">${summary.replace(/[&<>]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</pre>`);
+            win.document.close();
+          }
+        } catch {}
+        try { await navigator.clipboard.writeText(summary); setNotice(e.jobCommercialSummary, 'Accountant handoff opened in a new window and copied to clipboard.'); } catch { console.log(summary); setNotice(e.jobCommercialSummary, 'Accountant handoff generated. Check the new window or console output.'); }
+      }
       await loadData();
     }
 
@@ -1732,7 +1753,8 @@
       if (!review?.id) return setNotice(e.jobCommercialSummary, 'Create a completion review first.', true);
       const taxProfile = (state.businessTaxSettings || [])[0] || null;
       const totalAmount = Number(window.prompt('Invoice candidate total amount:', String(review.revenue_total || 0)) || '0');
-      const resp = await api.manageAdminEntity({ entity: 'job_completion_review', action: 'create_invoice_candidate', item_id: review.id, business_tax_setting_id: taxProfile?.id || null, total_amount: totalAmount, subtotal: totalAmount, tax_total: 0 });
+      const taxTotal = Number(window.prompt('Invoice candidate tax amount:', '0') || '0');
+      const resp = await api.manageAdminEntity({ entity: 'job_completion_review', action: 'create_invoice_candidate', item_id: review.id, business_tax_setting_id: taxProfile?.id || null, total_amount: totalAmount + taxTotal, subtotal: totalAmount, tax_total: taxTotal });
       if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'Invoice candidate create failed.', true);
       setNotice(e.jobCommercialSummary, `Invoice candidate ${resp.record?.candidate_number || ''} created.`);
       await loadData();
