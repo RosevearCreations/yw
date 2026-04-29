@@ -823,3 +823,17 @@ select 'v_estimate_commercial_directory' as item, count(*) as row_count from pub
 select 'v_work_order_commercial_directory' as item, count(*) as row_count from public.v_work_order_commercial_directory;
 select 'v_job_completion_review_directory' as item, count(*) as row_count from public.v_job_completion_review_directory;
 select 'v_job_accounting_ready_queue' as item, count(*) as row_count from public.v_job_accounting_ready_queue;
+
+
+-- Pass 096 verification
+select to_regclass('public.quote_package_output_events') as quote_package_output_events;
+select to_regclass('public.work_order_release_threshold_evaluations') as work_order_release_threshold_evaluations;
+select to_regclass('public.job_completion_closeout_assets') as job_completion_closeout_assets;
+select to_regclass('public.invoice_candidate_posting_rules') as invoice_candidate_posting_rules;
+select to_regclass('public.journal_candidate_posting_rules') as journal_candidate_posting_rules;
+select to_regclass('public.accountant_handoff_exports') as accountant_handoff_exports;
+select to_regclass('public.v_quote_package_output_directory') as v_quote_package_output_directory;
+select to_regclass('public.v_work_order_threshold_evaluation_directory') as v_work_order_threshold_evaluation_directory;
+select to_regclass('public.v_job_closeout_evidence_directory') as v_job_closeout_evidence_directory;
+select to_regclass('public.v_accountant_handoff_export_directory') as v_accountant_handoff_export_directory;
+select to_regclass('public.v_job_profitability_variance_directory') as v_job_profitability_variance_directory;
