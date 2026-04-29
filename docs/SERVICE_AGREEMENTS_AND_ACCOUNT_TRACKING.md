@@ -77,3 +77,8 @@ Signed-contract kickoff now returns clearer downstream feedback so operators can
 
 This pass moves the project into the Jobs commercial/accounting phase.
 It adds the 094 Jobs commercial workflow foundation, updates the repo status toward estimate/work-order/completion/accounting readiness, and keeps the schema/docs aligned for the next phase.
+
+
+## Pass 096 notes
+
+This pass adds branded quote output, automatic threshold evaluation, closeout evidence linkage, invoice/journal posting-rule structures, accountant handoff exports, and profitability/variance scorecards for the Jobs commercial workflow.

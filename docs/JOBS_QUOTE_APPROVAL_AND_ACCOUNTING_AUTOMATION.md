@@ -60,3 +60,8 @@ This is bookkeeping and accountant-handoff mapping, not tax advice.
 4. closeout evidence upload linkage into package items
 5. profitability scorecards by site, supervisor, route, and job family
 6. accountant-handoff exports for T2 / corporation and LLC-style bookkeeping review
+
+
+## Pass 096 notes
+
+This pass adds branded quote output, automatic threshold evaluation, closeout evidence linkage, invoice/journal posting-rule structures, accountant handoff exports, and profitability/variance scorecards for the Jobs commercial workflow.
