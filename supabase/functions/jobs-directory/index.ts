@@ -81,6 +81,13 @@ serve(async (req) => {
   const journalCandidates = await safeSelect(supabase, 'v_job_journal_candidate_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
   const arapReviewQueue = await safeSelect(supabase, 'v_job_ar_ap_review_queue_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
   const profitabilityScorecards = await safeSelect(supabase, 'v_job_profitability_scorecard_directory', '*', (query) => query.order('group_type', { ascending:true }).limit(1000));
+  const quoteOutputRows = await safeSelect(supabase, 'v_quote_package_output_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
+  const thresholdEvaluations = await safeSelect(supabase, 'v_work_order_threshold_evaluation_directory', '*', (query) => query.order('created_at', { ascending:false }).limit(2000));
+  const closeoutEvidence = await safeSelect(supabase, 'v_job_closeout_evidence_directory', '*', (query) => query.order('created_at', { ascending:false }).limit(3000));
+  const invoicePostingRules = await safeSelect(supabase, 'v_invoice_candidate_posting_rule_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
+  const journalPostingRules = await safeSelect(supabase, 'v_journal_candidate_posting_rule_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
+  const accountantHandoffExports = await safeSelect(supabase, 'v_accountant_handoff_export_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
+  const profitabilityVariance = await safeSelect(supabase, 'v_job_profitability_variance_directory', '*', (query) => query.order('group_type', { ascending:true }).limit(2000));
   const jobSessions = await safeSelect(supabase, 'v_job_session_directory', '*', (query) => query.order('started_at', { ascending:false }).limit(2000));
   const jobCrewHours = await safeSelect(supabase, 'v_job_crew_hours_directory', '*', (query) => query.order('created_at', { ascending:false }).limit(3000));
   const jobReassignments = await safeSelect(supabase, 'v_job_reassignment_directory', '*', (query) => query.order('started_at', { ascending:false }).limit(1000));
@@ -191,6 +198,13 @@ serve(async (req) => {
     journal_candidates: journalCandidates || [],
     ar_ap_review_queue: arapReviewQueue || [],
     profitability_scorecards: profitabilityScorecards || [],
+    quote_output_rows: quoteOutputRows || [],
+    threshold_evaluations: thresholdEvaluations || [],
+    closeout_evidence: closeoutEvidence || [],
+    invoice_posting_rules: invoicePostingRules || [],
+    journal_posting_rules: journalPostingRules || [],
+    accountant_handoff_exports: accountantHandoffExports || [],
+    profitability_variance: profitabilityVariance || [],
     evidence_assets: evidenceAssets
   }, { headers: corsHeaders });
 });

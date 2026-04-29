@@ -260,3 +260,8 @@ It adds the 094 Jobs commercial workflow foundation, updates the repo status tow
 Synced through the Jobs quote / approval / release / accounting-candidate pass.
 This pass adds client-ready quote package rendering, approval thresholds, release controls, completion package drilldown, invoice/journal candidates, AR/AP coordination, and business-entity / tax-profile mapping for corporation and LLC-style filing handoff.
 
+
+
+## Pass 096 notes
+
+This pass adds branded quote output, automatic threshold evaluation, closeout evidence linkage, invoice/journal posting-rule structures, accountant handoff exports, and profitability/variance scorecards for the Jobs commercial workflow.

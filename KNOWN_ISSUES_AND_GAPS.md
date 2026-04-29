@@ -502,3 +502,8 @@ This pass adds client-ready quote package rendering, approval thresholds, releas
 - invoice and journal candidates are created, but not yet fully posted into accounting journals/AR
 - report delivery and worker self-service still need continued hardening
 
+
+
+## Pass 096 notes
+
+This pass adds branded quote output, automatic threshold evaluation, closeout evidence linkage, invoice/journal posting-rule structures, accountant handoff exports, and profitability/variance scorecards for the Jobs commercial workflow.
