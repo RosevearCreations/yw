@@ -308,3 +308,5 @@ This pass adds branded quote output, automatic threshold evaluation, closeout ev
 
 ---
 Pass 097 sync note (2026-04-26d): quote output, threshold enforcement on save/release, closeout evidence linkage to real records, posting-rule-aware invoice/journal candidates, accountant handoff enrichment, and extended profitability scorecards.
+
+Pass 098 continues the Jobs commercial/accounting track: move from candidate/queue structures into actual delivery, signoff, and posting markers while keeping the operational backbone tied to jobs, work orders, completion reviews, and accountant handoff.

@@ -325,3 +325,10 @@ This pass adds branded quote output, automatic threshold evaluation, closeout ev
 
 ---
 Pass 097 sync note (2026-04-26d): quote output, threshold enforcement on save/release, closeout evidence linkage to real records, posting-rule-aware invoice/journal candidates, accountant handoff enrichment, and extended profitability scorecards.
+
+## Pass 098 - Jobs quote email, signoff, and GL posting
+- Added actual quote email delivery tracking and provider/error metadata.
+- Added harder threshold policy targeting by role, client, site, and job family.
+- Added completion-package signoff drilldown.
+- Added invoice/journal posting records for fuller AR/AP and GL workflow.
+- Added profitability management scorecards.

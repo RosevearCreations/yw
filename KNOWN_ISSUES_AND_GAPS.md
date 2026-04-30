@@ -511,3 +511,8 @@ This pass adds branded quote output, automatic threshold evaluation, closeout ev
 
 ---
 Pass 097 sync note (2026-04-26d): quote output, threshold enforcement on save/release, closeout evidence linkage to real records, posting-rule-aware invoice/journal candidates, accountant handoff enrichment, and extended profitability scorecards.
+
+## Pass 098 notes
+- Quote email delivery now exists, but richer acceptance/open tracking is still needed.
+- Invoice and journal posting are now represented, but not yet a full double-entry / subledger suite.
+- Threshold policy is stronger by role/client/site/job family, but policy administration and audit UX can still be improved.

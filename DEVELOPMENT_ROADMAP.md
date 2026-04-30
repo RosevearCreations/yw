@@ -640,3 +640,11 @@ This pass adds branded quote output, automatic threshold evaluation, closeout ev
 
 ---
 Pass 097 sync note (2026-04-26d): quote output, threshold enforcement on save/release, closeout evidence linkage to real records, posting-rule-aware invoice/journal candidates, accountant handoff enrichment, and extended profitability scorecards.
+
+## Pass 098 sync
+Next strongest commercial/accounting direction after this pass:
+1. quote delivery status and acceptance workflow hardening
+2. automatic threshold enforcement on all save/release paths
+3. deeper completion signoff and evidence packaging
+4. invoice/journal posting into fuller AR/AP and GL lifecycle states
+5. accountant handoff exports carrying posted references and filing mappings
