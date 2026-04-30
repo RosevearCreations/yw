@@ -850,3 +850,11 @@ select to_regclass('public.v_work_order_threshold_evaluation_directory') as v_wo
 select to_regclass('public.v_job_closeout_evidence_directory') as v_job_closeout_evidence_directory;
 select to_regclass('public.v_accountant_handoff_export_directory') as v_accountant_handoff_export_directory;
 select to_regclass('public.v_job_profitability_scorecard_directory') as v_job_profitability_scorecard_directory;
+
+select to_regclass('public.job_completion_signoff_steps') as job_completion_signoff_steps;
+select to_regclass('public.job_invoice_postings') as job_invoice_postings;
+select to_regclass('public.job_journal_postings') as job_journal_postings;
+select to_regclass('public.v_job_completion_signoff_directory') as v_job_completion_signoff_directory;
+select to_regclass('public.v_job_invoice_posting_directory') as v_job_invoice_posting_directory;
+select to_regclass('public.v_job_journal_posting_directory') as v_job_journal_posting_directory;
+select to_regclass('public.v_job_profitability_management_scorecard_directory') as v_job_profitability_management_scorecard_directory;
