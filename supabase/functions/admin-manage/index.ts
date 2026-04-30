@@ -81,6 +81,33 @@ async function sendEmailIfConfigured(row: any, overrides: Record<string, unknown
   return { attempted: true, status: 'sent', error: '' };
 }
 
+
+async function sendQuotePackageEmail(opts: { to: string; cc?: string | null; subject: string; text: string; html?: string | null; }) {
+  const apiKey = Deno.env.get('RESEND_API_KEY');
+  const from = Deno.env.get('RESEND_FROM_EMAIL') || Deno.env.get('EMAIL_FROM');
+  const to = String(opts.to || '').trim();
+  if (!apiKey || !from || !to) return { attempted: false, status: 'pending', error: 'Missing email delivery config.' };
+  const payload: Record<string, unknown> = {
+    from,
+    to: to.split(/[;,]/).map((v) => v.trim()).filter(Boolean),
+    subject: opts.subject,
+    text: opts.text,
+  };
+  const cc = String(opts.cc || '').trim();
+  if (cc) payload.cc = cc.split(/[;,]/).map((v) => v.trim()).filter(Boolean);
+  if (opts.html) payload.html = opts.html;
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify(payload)
+  });
+  const body = await res.text();
+  if (!res.ok) throw new Error(body);
+  let providerMessageId = '';
+  try { providerMessageId = JSON.parse(body || '{}')?.id || ''; } catch {}
+  return { attempted: true, status: 'sent', error: '', provider: 'resend', providerMessageId };
+}
+
 async function resolveProfileIdByNameOrEmail(supabase: any, value?: string | null) {
   const clean = String(value || '').trim();
   if (!clean) return null;
@@ -230,24 +257,40 @@ async function recordSiteActivity(supabase: any, payload: any) {
 
 
 
-function evaluateCommercialThresholds(thresholds: any[], context: { totalAmount:number; discountPercent:number; marginPercent:number; jobFamily?:string | null; }) {
-  const applicable = (thresholds || []).filter((row) => row?.is_active !== false && String(row.entity_type || 'work_order') === 'work_order' && (String(row.applies_to_scope || 'global') === 'global' || String(row.applies_to_value || '') === String(context.jobFamily || '')));
+function evaluateCommercialThresholds(thresholds: any[], context: { totalAmount:number; discountPercent:number; marginPercent:number; jobFamily?:string | null; clientId?:string | null; clientSiteId?:string | null; actorRole?:string | null; jobId?:string | number | null; }) {
+  const applicable = (thresholds || []).filter((row) => {
+    if (row?.is_active === false) return false;
+    if (String(row.entity_type || 'work_order') !== 'work_order') return false;
+    const scope = String(row.applies_to_scope || 'global');
+    const scopeValue = String(row.applies_to_value || '');
+    let scopeMatch = scope === 'global';
+    if (scope === 'job_family') scopeMatch = scopeValue === String(context.jobFamily || '');
+    else if (scope === 'client') scopeMatch = scopeValue === String(context.clientId || '') || String(row.applies_to_client_id || '') === String(context.clientId || '');
+    else if (scope === 'site') scopeMatch = scopeValue === String(context.clientSiteId || '') || String(row.applies_to_client_site_id || '') === String(context.clientSiteId || '');
+    else if (scope === 'role') scopeMatch = scopeValue === String(context.actorRole || '') || String(row.applies_to_role || '') === String(context.actorRole || '');
+    else if (scope === 'job') scopeMatch = scopeValue === String(context.jobId || '');
+    else if (scope === 'service_pattern') scopeMatch = scopeValue === String(context.jobFamily || '');
+    if (!scopeMatch) return false;
+    if (row.applies_to_client_id && String(row.applies_to_client_id) !== String(context.clientId || '')) return false;
+    if (row.applies_to_client_site_id && String(row.applies_to_client_site_id) !== String(context.clientSiteId || '')) return false;
+    if (row.applies_to_role && String(row.applies_to_role) !== String(context.actorRole || '')) return false;
+    return true;
+  });
   let status = 'pass';
   let message = 'Thresholds passed.';
   let requiredSignoffRole = 'supervisor';
   let matchedThreshold: any = null;
   for (const row of applicable) {
-    const block = (row.minimum_margin_percent != null && context.marginPercent < Number(row.minimum_margin_percent || 0) && row.hard_block)
-      || (row.discount_percent_cap != null && context.discountPercent > Number(row.discount_percent_cap || 0) && row.hard_block)
-      || (row.maximum_total_without_approval != null && context.totalAmount > Number(row.maximum_total_without_approval || 0) && row.hard_block);
-    const warn = block || (row.minimum_margin_percent != null && context.marginPercent < Number(row.minimum_margin_percent || 0))
-      || (row.discount_percent_cap != null && context.discountPercent > Number(row.discount_percent_cap || 0))
-      || (row.maximum_total_without_approval != null && context.totalAmount > Number(row.maximum_total_without_approval || 0));
+    const marginBreach = row.minimum_margin_percent != null && context.marginPercent < Number(row.minimum_margin_percent || 0);
+    const discountBreach = row.discount_percent_cap != null && context.discountPercent > Number(row.discount_percent_cap || 0);
+    const totalBreach = row.maximum_total_without_approval != null && context.totalAmount > Number(row.maximum_total_without_approval || 0);
+    const block = (marginBreach || discountBreach || totalBreach) && row.hard_block;
+    const warn = block || marginBreach || discountBreach || totalBreach;
     if (warn) {
       matchedThreshold = row;
       requiredSignoffRole = row.required_signoff_role || 'admin';
       status = block ? 'block' : 'warn';
-      message = block ? `Blocked by threshold: ${row.threshold_name || 'commercial threshold'}` : `Approval required: ${row.threshold_name || 'commercial threshold'}`;
+      message = block ? (row.block_text || `Blocked by threshold: ${row.threshold_name || 'commercial threshold'}`) : (row.warning_text || `Approval required: ${row.threshold_name || 'commercial threshold'}`);
       if (status === 'block') break;
     }
   }
@@ -369,7 +412,7 @@ function selectApplicablePostingRule(rules: any[], context: { scopeValue?: strin
     || null;
 }
 
-function buildAccountantHandoffMarkdown(opts: { review: any; job?: any; workOrder?: any; estimate?: any; quotePackage?: any; taxProfile?: any; closeoutItems?: any[]; closeoutAssets?: any[]; invoiceCandidates?: any[]; journalCandidates?: any[]; }) {
+function buildAccountantHandoffMarkdown(opts: { review: any; job?: any; workOrder?: any; estimate?: any; quotePackage?: any; taxProfile?: any; closeoutItems?: any[]; closeoutAssets?: any[]; signoffSteps?: any[]; invoiceCandidates?: any[]; journalCandidates?: any[]; invoicePostings?: any[]; journalPostings?: any[]; }) {
   const review = opts.review || {};
   const job = opts.job || {};
   const workOrder = opts.workOrder || {};
@@ -380,6 +423,9 @@ function buildAccountantHandoffMarkdown(opts: { review: any; job?: any; workOrde
   const closeoutAssets = Array.isArray(opts.closeoutAssets) ? opts.closeoutAssets : [];
   const invoiceCandidates = Array.isArray(opts.invoiceCandidates) ? opts.invoiceCandidates : [];
   const journalCandidates = Array.isArray(opts.journalCandidates) ? opts.journalCandidates : [];
+  const signoffSteps = Array.isArray(opts.signoffSteps) ? opts.signoffSteps : [];
+  const invoicePostings = Array.isArray(opts.invoicePostings) ? opts.invoicePostings : [];
+  const journalPostings = Array.isArray(opts.journalPostings) ? opts.journalPostings : [];
   const entityLine = [taxProfile.legal_entity_name || taxProfile.profile_name, taxProfile.legal_entity_type].filter(Boolean).join(' — ');
   const filingLine = [taxProfile.federal_return_type, taxProfile.provincial_return_type, taxProfile.usa_tax_classification].filter(Boolean).join(' / ');
   return [
@@ -2897,10 +2943,13 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         const taxProfile = asNullableText(body.business_tax_setting_id) ? await supabase.from('business_tax_settings').select('*').eq('id', asNullableText(body.business_tax_setting_id)).maybeSingle() : { data: null };
         const { data: closeoutItems } = await supabase.from('v_job_completion_package_directory').select('*').eq('completion_review_id', review.id).order('sort_order');
         const { data: closeoutAssets } = await supabase.from('v_job_closeout_evidence_directory').select('*').eq('completion_review_id', review.id).order('created_at');
+        const { data: signoffSteps } = await supabase.from('v_job_completion_signoff_directory').select('*').eq('completion_review_id', review.id).order('sort_order');
         const { data: invoiceCandidates } = await supabase.from('v_job_invoice_candidate_directory').select('*').eq('completion_review_id', review.id).order('created_at');
         const { data: journalCandidates } = await supabase.from('v_job_journal_candidate_directory').select('*').eq('completion_review_id', review.id).order('created_at');
-        const payload = { job_code: review.job_code, review_status: review.review_status, revenue_total: review.revenue_total, cost_total: review.cost_total, profit_total: review.profit_total, accounting_ready: review.accounting_ready, estimate_id: review.estimate_id, work_order_id: review.work_order_id, quote_package: quotePkg.data || null, closeout_item_count: (closeoutItems || []).length, closeout_asset_count: (closeoutAssets || []).length, invoice_candidate_count: (invoiceCandidates || []).length, journal_candidate_count: (journalCandidates || []).length, tax_profile: taxProfile.data || null };
-        const md = buildAccountantHandoffMarkdown({ review, job, workOrder, estimate, quotePackage: quotePkg.data || null, taxProfile: taxProfile.data || null, closeoutItems: closeoutItems || [], closeoutAssets: closeoutAssets || [], invoiceCandidates: invoiceCandidates || [], journalCandidates: journalCandidates || [] });
+        const { data: invoicePostings } = await supabase.from('v_job_invoice_posting_directory').select('*').eq('completion_review_id', review.id).order('created_at');
+        const { data: journalPostings } = await supabase.from('v_job_journal_posting_directory').select('*').eq('completion_review_id', review.id).order('created_at');
+        const payload = { job_code: review.job_code, review_status: review.review_status, revenue_total: review.revenue_total, cost_total: review.cost_total, profit_total: review.profit_total, accounting_ready: review.accounting_ready, estimate_id: review.estimate_id, work_order_id: review.work_order_id, quote_package: quotePkg.data || null, closeout_item_count: (closeoutItems || []).length, closeout_asset_count: (closeoutAssets || []).length, signoff_step_count: (signoffSteps || []).length, invoice_candidate_count: (invoiceCandidates || []).length, journal_candidate_count: (journalCandidates || []).length, invoice_posting_count: (invoicePostings || []).length, journal_posting_count: (journalPostings || []).length, tax_profile: taxProfile.data || null };
+        const md = buildAccountantHandoffMarkdown({ review, job, workOrder, estimate, quotePackage: quotePkg.data || null, taxProfile: taxProfile.data || null, closeoutItems: closeoutItems || [], closeoutAssets: closeoutAssets || [], signoffSteps: signoffSteps || [], invoiceCandidates: invoiceCandidates || [], journalCandidates: journalCandidates || [], invoicePostings: invoicePostings || [], journalPostings: journalPostings || [] });
         const titlePrefix = taxProfile.data?.federal_return_type === 'T2' ? 'Corporation / T2 accountant handoff' : ((taxProfile.data?.legal_entity_type || '').includes('llc') ? 'LLC bookkeeping handoff' : 'Accountant handoff');
         const { data, error } = await supabase.from('accountant_handoff_exports').insert({ export_kind: body.export_kind || (taxProfile.data?.federal_return_type === 'T2' ? 't2_package' : ((taxProfile.data?.legal_entity_type || '').includes('llc') ? 'llc_package' : 'closeout_bundle')), entity_scope: 'completion_review', entity_id: String(review.id), business_tax_setting_id: asNullableText(body.business_tax_setting_id), export_status: 'generated', export_title: `${titlePrefix} - ${review.job_code || review.job_id}`, export_markdown: md, export_payload: payload, generated_by_profile_id: actorId, generated_at: new Date().toISOString(), updated_at: new Date().toISOString() }).select('*').single();
         if (error) throw error;
@@ -3089,12 +3138,38 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         return Response.json({ ok:true, record:data }, { headers:corsHeaders });
       }
       if (action === 'send_quote_output') {
-        const email = asNullableText(body.client_email) || asNullableText(body.recipient_email);
-        const patchSend:any = { package_status: 'sent', sent_at: new Date().toISOString(), client_email: email, last_sent_via: body.output_type || 'email', updated_at: new Date().toISOString() };
-        const { data, error } = await supabase.from('estimate_quote_packages').update(patchSend).eq('id', body.item_id).select('*').single();
-        if (error) throw error;
-        await supabase.from('quote_package_output_events').insert({ quote_package_id: body.item_id, output_type: body.output_type || 'email', output_status: 'sent', recipient_email: email, email_subject: data.email_subject || body.email_subject || null, output_payload: { rendered_title: data.rendered_title || null }, created_by_profile_id: actorId });
-        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+        const quotePkg:any = await fetchSingle(supabase, 'estimate_quote_packages', body.item_id);
+        if (!quotePkg?.id) return Response.json({ ok:false, error:'Quote package not found.' }, { status:404, headers:corsHeaders });
+        const email = asNullableText(body.client_email) || asNullableText(body.recipient_email) || asNullableText(quotePkg.client_email);
+        if (!email) return Response.json({ ok:false, error:'Recipient email is required.' }, { status:400, headers:corsHeaders });
+        const sendPatch:any = {
+          client_email: email,
+          recipient_name: body.recipient_name ?? quotePkg.recipient_name ?? null,
+          recipient_profile_id: asNullableText(body.recipient_profile_id) || quotePkg.recipient_profile_id || null,
+          copied_to_emails: body.copied_to_emails ?? quotePkg.copied_to_emails ?? null,
+          last_sent_via: body.output_type || 'email',
+          last_send_attempt_at: new Date().toISOString(),
+          send_status: 'sending',
+          updated_at: new Date().toISOString()
+        };
+        await supabase.from('estimate_quote_packages').update(sendPatch).eq('id', quotePkg.id);
+        try {
+          const subject = String(body.email_subject || quotePkg.email_subject || quotePkg.rendered_title || 'Quote package');
+          const text = String(body.email_body || quotePkg.email_body || quotePkg.rendered_markdown || 'Please review your quote package.');
+          const html = String(quotePkg.printable_html || quotePkg.rendered_html || '').trim() || null;
+          const sent = await sendQuotePackageEmail({ to: email, cc: body.copied_to_emails || quotePkg.copied_to_emails || null, subject, text, html });
+          if (!sent.attempted) return Response.json({ ok:false, error: sent.error || 'Quote email delivery is not configured.' }, { status:400, headers:corsHeaders });
+          const patchSend:any = { package_status: 'sent', send_status: 'sent', send_error: null, sent_at: new Date().toISOString(), client_email: email, last_sent_via: body.output_type || 'email', last_email_message_id: sent.providerMessageId || null, resend_count: Number(quotePkg.resend_count || 0) + 1, updated_at: new Date().toISOString() };
+          const { data, error } = await supabase.from('estimate_quote_packages').update(patchSend).eq('id', body.item_id).select('*').single();
+          if (error) throw error;
+          await supabase.from('quote_package_output_events').insert({ quote_package_id: body.item_id, output_type: body.output_type || 'email', output_status: 'sent', recipient_email: email, email_subject: subject, provider_name: sent.provider || 'resend', provider_message_id: sent.providerMessageId || null, output_payload: { rendered_title: data.rendered_title || null }, created_by_profile_id: actorId });
+          return Response.json({ ok:true, record:data, delivered:true }, { headers:corsHeaders });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Quote send failed.';
+          await supabase.from('estimate_quote_packages').update({ send_status: 'failed', send_error: message, updated_at: new Date().toISOString() }).eq('id', quotePkg.id);
+          await supabase.from('quote_package_output_events').insert({ quote_package_id: body.item_id, output_type: body.output_type || 'email', output_status: 'failed', recipient_email: email, email_subject: body.email_subject || quotePkg.email_subject || null, provider_name: 'resend', output_error: message, output_payload: { rendered_title: quotePkg.rendered_title || null }, created_by_profile_id: actorId });
+          return Response.json({ ok:false, error: message }, { status:400, headers:corsHeaders });
+        }
       }
       if (action === 'mark_printed') {
         await supabase.from('quote_package_output_events').insert({ quote_package_id: body.item_id, output_type: 'printable_html', output_status: 'rendered', output_payload: { note: 'Printable quote package generated.' }, created_by_profile_id: actorId });
@@ -3131,7 +3206,7 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
       if (action === 'create' || action === 'update') {
         const workOrder:any = await fetchSingle(supabase, 'v_work_order_commercial_directory', workOrderId);
         const thresholds:any[] = await safeSelect(supabase, 'commercial_approval_thresholds', '*', (query:any) => query.eq('is_active', true));
-        const evaluation = evaluateCommercialThresholds(thresholds, { totalAmount: asNumber(workOrder?.total_amount, 0), discountPercent: asNumber(body.discount_percent ?? workOrder?.discount_value, 0), marginPercent: asNumber(body.margin_percent ?? workOrder?.margin_estimate_percent, 0), jobFamily: body.job_family ?? null });
+        const evaluation = evaluateCommercialThresholds(thresholds, { totalAmount: asNumber(workOrder?.total_amount, 0), discountPercent: asNumber(body.discount_percent ?? workOrder?.discount_value, 0), marginPercent: asNumber(body.margin_percent ?? workOrder?.margin_estimate_percent, 0), jobFamily: body.job_family ?? null, clientId: workOrder?.client_id || null, clientSiteId: workOrder?.client_site_id || null, actorRole, jobId: workOrder?.legacy_job_id || null });
         const autoPatch:any = { ...patch, threshold_status: evaluation.status, required_signoff_role: evaluation.requiredSignoffRole, release_status: evaluation.status === 'block' ? 'blocked' : (patch.release_status === 'released' ? 'released' : 'pending'), release_notes: body.release_notes ?? evaluation.message };
         const q = action === 'create' ? supabase.from('work_order_release_reviews').insert(autoPatch).select('*').single() : supabase.from('work_order_release_reviews').update(autoPatch).eq('id', body.item_id).select('*').single();
         const { data, error } = await q;
@@ -3142,7 +3217,7 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
       if (action === 'evaluate_thresholds') {
         const workOrder:any = await fetchSingle(supabase, 'v_work_order_commercial_directory', workOrderId);
         const thresholds:any[] = await safeSelect(supabase, 'commercial_approval_thresholds', '*', (query:any) => query.eq('is_active', true));
-        const evaluation = evaluateCommercialThresholds(thresholds, { totalAmount: asNumber(workOrder?.total_amount, 0), discountPercent: asNumber(body.discount_percent ?? workOrder?.discount_value, 0), marginPercent: asNumber(body.margin_percent ?? workOrder?.margin_estimate_percent, 0), jobFamily: body.job_family ?? null });
+        const evaluation = evaluateCommercialThresholds(thresholds, { totalAmount: asNumber(workOrder?.total_amount, 0), discountPercent: asNumber(body.discount_percent ?? workOrder?.discount_value, 0), marginPercent: asNumber(body.margin_percent ?? workOrder?.margin_estimate_percent, 0), jobFamily: body.job_family ?? null, clientId: workOrder?.client_id || null, clientSiteId: workOrder?.client_site_id || null, actorRole, jobId: workOrder?.legacy_job_id || null });
         const reviewPatch:any = { ...patch, release_status: evaluation.status === 'block' ? 'blocked' : 'pending', threshold_status: evaluation.status, required_signoff_role: evaluation.requiredSignoffRole, release_notes: body.release_notes ?? evaluation.message };
         let reviewId = body.item_id;
         if (reviewId) { const { error } = await supabase.from('work_order_release_reviews').update(reviewPatch).eq('id', reviewId); if (error) throw error; }
@@ -3155,7 +3230,7 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         const review:any = body.item_id ? await fetchSingle(supabase, 'work_order_release_reviews', body.item_id) : null;
         const workOrder:any = await fetchSingle(supabase, 'v_work_order_commercial_directory', workOrderId);
         const thresholds:any[] = await safeSelect(supabase, 'commercial_approval_thresholds', '*', (query:any) => query.eq('is_active', true));
-        const evaluation = evaluateCommercialThresholds(thresholds, { totalAmount: asNumber(workOrder?.total_amount, 0), discountPercent: asNumber(body.discount_percent ?? workOrder?.discount_value, 0), marginPercent: asNumber(body.margin_percent ?? workOrder?.margin_estimate_percent, 0), jobFamily: body.job_family ?? null });
+        const evaluation = evaluateCommercialThresholds(thresholds, { totalAmount: asNumber(workOrder?.total_amount, 0), discountPercent: asNumber(body.discount_percent ?? workOrder?.discount_value, 0), marginPercent: asNumber(body.margin_percent ?? workOrder?.margin_estimate_percent, 0), jobFamily: body.job_family ?? null, clientId: workOrder?.client_id || null, clientSiteId: workOrder?.client_site_id || null, actorRole, jobId: workOrder?.legacy_job_id || null });
         const active = { ...(review || patch), threshold_status: evaluation.status };
         if (active.threshold_status === 'block') return Response.json({ ok:false, error:evaluation.message || 'Work order release is blocked by approval threshold rules.' }, { status:400, headers:corsHeaders });
         if (active.threshold_status === 'warn' && evaluation.requiredSignoffRole && !asNullableText(body.signoff_profile_id) && !review?.signoff_profile_id) return Response.json({ ok:false, error:`${evaluation.message || 'Approval threshold triggered.'} A ${evaluation.requiredSignoffRole} signoff is required before release.` }, { status:400, headers:corsHeaders });
@@ -3241,6 +3316,70 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
       if (!patch.entity_id) return Response.json({ ok:false, error:'entity_id is required' }, { status:400, headers:corsHeaders });
       if (action === 'create' || action === 'generate') { const { data, error } = await supabase.from('accountant_handoff_exports').insert(patch).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
       if (action === 'update') { const { data, error } = await supabase.from('accountant_handoff_exports').update(patch).eq('id', body.item_id).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
+    }
+
+
+    if (entity === 'job_completion_signoff_step') {
+      const patch = {
+        completion_review_id: asNullableText(body.completion_review_id),
+        signoff_kind: body.signoff_kind ?? 'field_supervisor',
+        signoff_status: body.signoff_status ?? 'pending',
+        required_role: body.required_role ?? null,
+        signoff_profile_id: asNullableText(body.signoff_profile_id),
+        signoff_name: body.signoff_name ?? null,
+        signoff_notes: body.signoff_notes ?? null,
+        signed_at: asNullableDateTime(body.signed_at),
+        sort_order: asNumber(body.sort_order, 100),
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.completion_review_id) return Response.json({ ok:false, error:'completion_review_id is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') {
+        const { data, error } = await supabase.from('job_completion_signoff_steps').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        const { data, error } = await supabase.from('job_completion_signoff_steps').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'sign') {
+        const { data, error } = await supabase.from('job_completion_signoff_steps').update({ signoff_status: 'signed', signoff_profile_id: actorId, signoff_name: body.signoff_name ?? actorProfile?.full_name ?? actorProfile?.email ?? null, signoff_notes: body.signoff_notes ?? null, signed_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('job_completion_signoff_steps').delete().eq('id', body.item_id);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'job_invoice_candidate') {
+      if (action === 'post_candidate') {
+        const candidate:any = await fetchSingle(supabase, 'v_job_invoice_candidate_directory', body.item_id);
+        if (!candidate?.id) return Response.json({ ok:false, error:'Invoice candidate not found.' }, { status:404, headers:corsHeaders });
+        const queue:any = await supabase.from('job_ar_ap_review_queue').insert({ source_type: 'invoice_candidate', source_id: String(candidate.id), job_id: candidate.job_id, queue_status: body.queue_status || 'approved', assigned_profile_id: asNullableText(body.assigned_profile_id), notes: body.notes ?? 'Invoice candidate posted from Jobs workflow.', created_by_profile_id: actorId }).select('*').single();
+        const payload = { ...(candidate.payload || {}), posting_rule_reviewed: true, ar_ap_queue_id: queue.data?.id || null, external_system: body.external_system || 'manual', external_invoice_number: body.external_invoice_number || candidate.candidate_number || null };
+        const { data, error } = await supabase.from('job_invoice_postings').upsert({ invoice_candidate_id: candidate.id, ar_ap_queue_id: queue.data?.id || null, posting_status: 'posted', external_system: body.external_system || 'manual', external_invoice_number: body.external_invoice_number || candidate.candidate_number || null, posting_payload: payload, posted_by_profile_id: actorId, posted_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: 'invoice_candidate_id' }).select('*').single();
+        if (error) throw error;
+        await supabase.from('job_invoice_candidates').update({ candidate_status: 'posted', updated_at: new Date().toISOString() }).eq('id', candidate.id);
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'job_journal_candidate') {
+      if (action === 'post_candidate') {
+        const candidate:any = await fetchSingle(supabase, 'v_job_journal_candidate_directory', body.item_id);
+        if (!candidate?.id) return Response.json({ ok:false, error:'Journal candidate not found.' }, { status:404, headers:corsHeaders });
+        const queue:any = await supabase.from('job_ar_ap_review_queue').insert({ source_type: 'journal_candidate', source_id: String(candidate.id), job_id: candidate.job_id, queue_status: body.queue_status || 'approved', assigned_profile_id: asNullableText(body.assigned_profile_id), notes: body.notes ?? 'Journal candidate posted from Jobs workflow.', created_by_profile_id: actorId }).select('*').single();
+        const payload = { ...(candidate.payload || {}), ledger_summary: candidate.ledger_summary || {}, ar_ap_queue_id: queue.data?.id || null, external_system: body.external_system || 'manual', journal_entry_number: body.journal_entry_number || null, batch_number: body.batch_number || null };
+        const { data, error } = await supabase.from('job_journal_postings').upsert({ journal_candidate_id: candidate.id, ar_ap_queue_id: queue.data?.id || null, posting_status: 'posted', external_system: body.external_system || 'manual', journal_entry_number: body.journal_entry_number || null, batch_number: body.batch_number || null, posting_payload: payload, posted_by_profile_id: actorId, posted_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: 'journal_candidate_id' }).select('*').single();
+        if (error) throw error;
+        await supabase.from('job_journal_candidates').update({ candidate_status: 'posted', updated_at: new Date().toISOString() }).eq('id', candidate.id);
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
     }
 
     if (entity === 'subcontract_client') {

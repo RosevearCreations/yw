@@ -88,6 +88,10 @@ serve(async (req) => {
   const journalPostingRules = await safeSelect(supabase, 'v_journal_candidate_posting_rule_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
   const accountantHandoffExports = await safeSelect(supabase, 'v_accountant_handoff_export_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
   const profitabilityVariance = await safeSelect(supabase, 'v_job_profitability_variance_directory', '*', (query) => query.order('group_type', { ascending:true }).limit(2000));
+  const completionSignoffs = await safeSelect(supabase, 'v_job_completion_signoff_directory', '*', (query) => query.order('sort_order', { ascending:true }).limit(3000));
+  const invoicePostings = await safeSelect(supabase, 'v_job_invoice_posting_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
+  const journalPostings = await safeSelect(supabase, 'v_job_journal_posting_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
+  const profitabilityManagement = await safeSelect(supabase, 'v_job_profitability_management_scorecard_directory', '*', (query) => query.order('group_type', { ascending:true }).limit(2000));
   const jobSessions = await safeSelect(supabase, 'v_job_session_directory', '*', (query) => query.order('started_at', { ascending:false }).limit(2000));
   const jobCrewHours = await safeSelect(supabase, 'v_job_crew_hours_directory', '*', (query) => query.order('created_at', { ascending:false }).limit(3000));
   const jobReassignments = await safeSelect(supabase, 'v_job_reassignment_directory', '*', (query) => query.order('started_at', { ascending:false }).limit(1000));
@@ -205,6 +209,10 @@ serve(async (req) => {
     journal_posting_rules: journalPostingRules || [],
     accountant_handoff_exports: accountantHandoffExports || [],
     profitability_variance: profitabilityVariance || [],
+    completion_signoff_steps: completionSignoffs || [],
+    invoice_postings: invoicePostings || [],
+    journal_postings: journalPostings || [],
+    profitability_management: profitabilityManagement || [],
     evidence_assets: evidenceAssets
   }, { headers: corsHeaders });
 });
