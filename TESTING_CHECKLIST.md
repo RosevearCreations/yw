@@ -276,3 +276,9 @@ Pass 097 sync note (2026-04-26d): quote output, threshold enforcement on save/re
 - Add and sign a completion signoff step.
 - Post an invoice candidate and confirm posting row creation.
 - Post a journal candidate and confirm posting row creation.
+
+## Pass 099 checks
+- Mark a quote as viewed, accepted, and declined and confirm engagement rows update.
+- Save a release review and confirm evaluation_count and last_evaluated_at update.
+- Sign a completion step and confirm completion readiness changes.
+- Post invoice/journal candidates and confirm accounting lifecycle events are written.

@@ -332,3 +332,8 @@ Pass 097 sync note (2026-04-26d): quote output, threshold enforcement on save/re
 - Added completion-package signoff drilldown.
 - Added invoice/journal posting records for fuller AR/AP and GL workflow.
 - Added profitability management scorecards.
+
+## Pass 099 - Quote acceptance, release enforcement state, and accounting lifecycle
+- Added quote engagement tracking, completion readiness rollups, and accounting lifecycle events.
+- Added sql/099_quote_acceptance_threshold_autoeval_and_accounting_lifecycle.sql and synced full schema.
+- Extended Jobs backend/UI hooks for quote client-event tracking and lifecycle visibility.

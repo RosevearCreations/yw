@@ -180,3 +180,6 @@ This pass adds branded quote output, automatic threshold evaluation, closeout ev
 Pass 097 sync note (2026-04-26d): quote output, threshold enforcement on save/release, closeout evidence linkage to real records, posting-rule-aware invoice/journal candidates, accountant handoff enrichment, and extended profitability scorecards.
 
 Pass 098 added `sql/098_jobs_quote_email_signoff_and_gl_posting.sql`, updated `sql/000_full_schema_reference.sql`, expanded Jobs backend/UI handling, and removed stray fixed-copy schema files.
+
+## SQL status
+Canonical SQL chain now includes sql/099_quote_acceptance_threshold_autoeval_and_accounting_lifecycle.sql. Remove and avoid any stray fixed-copy schema files.

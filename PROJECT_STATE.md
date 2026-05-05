@@ -358,3 +358,6 @@ Pass 097 sync note (2026-04-26d): quote output, threshold enforcement on save/re
 
 ## Pass 098 state
 The Jobs commercial/accounting workflow now includes actual quote send logic, targeted approval thresholds, signoff drilldown, invoice/journal posting records, and management scorecards. This is still not the final accounting suite, but the workflow backbone is materially stronger.
+
+## Pass 099 status
+The Jobs commercial layer now tracks quote engagement, release enforcement state, completion readiness, and accounting lifecycle history.

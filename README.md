@@ -381,3 +381,6 @@ Pass 097 sync note (2026-04-26d): quote output, threshold enforcement on save/re
 - completion signoff drilldown
 - invoice/journal posting records
 - profitability management scorecards
+
+## Latest focus
+The current Jobs/commercial phase now includes quote engagement, completion readiness, and accounting lifecycle tracking in addition to quote packages, release gates, and posting markers.

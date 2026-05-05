@@ -257,6 +257,23 @@ async function recordSiteActivity(supabase: any, payload: any) {
 
 
 
+
+async function recordJobAccountingLifecycleEvent(supabase: any, payload: { job_id?: string | number | null; source_type: string; source_id: string | number; lifecycle_stage: string; lifecycle_status?: string; headline?: string | null; notes?: string | null; created_by_profile_id?: string | null; }) {
+  try {
+    await supabase.from('job_accounting_lifecycle_events').insert({
+      job_id: payload.job_id != null && String(payload.job_id).trim() !== '' ? Number(payload.job_id) : null,
+      source_type: payload.source_type,
+      source_id: String(payload.source_id),
+      lifecycle_stage: payload.lifecycle_stage,
+      lifecycle_status: payload.lifecycle_status || 'open',
+      headline: payload.headline || null,
+      notes: payload.notes || null,
+      created_by_profile_id: payload.created_by_profile_id || null,
+      updated_at: new Date().toISOString(),
+    })
+  } catch {}
+}
+
 function evaluateCommercialThresholds(thresholds: any[], context: { totalAmount:number; discountPercent:number; marginPercent:number; jobFamily?:string | null; clientId?:string | null; clientSiteId?:string | null; actorRole?:string | null; jobId?:string | number | null; }) {
   const applicable = (thresholds || []).filter((row) => {
     if (row?.is_active === false) return false;
@@ -3113,7 +3130,17 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         viewed_at: asNullableDateTime(body.viewed_at),
         accepted_at: asNullableDateTime(body.accepted_at),
         accepted_by_name: body.accepted_by_name ?? null,
+        accepted_by_email: body.accepted_by_email ?? null,
         acceptance_notes: body.acceptance_notes ?? null,
+        first_viewed_at: asNullableDateTime(body.first_viewed_at),
+        last_viewed_at: asNullableDateTime(body.last_viewed_at),
+        open_count: asNumber(body.open_count, 0),
+        last_client_action: body.last_client_action ?? null,
+        last_client_action_at: asNullableDateTime(body.last_client_action_at),
+        declined_at: asNullableDateTime(body.declined_at),
+        declined_notes: body.declined_notes ?? null,
+        last_client_ip: body.last_client_ip ?? null,
+        last_client_user_agent: body.last_client_user_agent ?? null,
         created_by_profile_id: actorId,
         updated_at: new Date().toISOString(),
       };
@@ -3159,10 +3186,12 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
           const html = String(quotePkg.printable_html || quotePkg.rendered_html || '').trim() || null;
           const sent = await sendQuotePackageEmail({ to: email, cc: body.copied_to_emails || quotePkg.copied_to_emails || null, subject, text, html });
           if (!sent.attempted) return Response.json({ ok:false, error: sent.error || 'Quote email delivery is not configured.' }, { status:400, headers:corsHeaders });
-          const patchSend:any = { package_status: 'sent', send_status: 'sent', send_error: null, sent_at: new Date().toISOString(), client_email: email, last_sent_via: body.output_type || 'email', last_email_message_id: sent.providerMessageId || null, resend_count: Number(quotePkg.resend_count || 0) + 1, updated_at: new Date().toISOString() };
+          const nowIso = new Date().toISOString();
+          const patchSend:any = { package_status: 'sent', send_status: 'sent', send_error: null, sent_at: nowIso, client_email: email, last_sent_via: body.output_type || 'email', last_email_message_id: sent.providerMessageId || null, resend_count: Number(quotePkg.resend_count || 0) + 1, last_client_action: 'sent', last_client_action_at: nowIso, updated_at: nowIso };
           const { data, error } = await supabase.from('estimate_quote_packages').update(patchSend).eq('id', body.item_id).select('*').single();
           if (error) throw error;
           await supabase.from('quote_package_output_events').insert({ quote_package_id: body.item_id, output_type: body.output_type || 'email', output_status: 'sent', recipient_email: email, email_subject: subject, provider_name: sent.provider || 'resend', provider_message_id: sent.providerMessageId || null, output_payload: { rendered_title: data.rendered_title || null }, created_by_profile_id: actorId });
+          await supabase.from('quote_package_client_events').insert({ quote_package_id: body.item_id, event_action: 'sent', event_at: nowIso, event_email: email, notes: `Quote package sent via ${body.output_type || 'email'}.`, created_by_profile_id: actorId });
           return Response.json({ ok:true, record:data, delivered:true }, { headers:corsHeaders });
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Quote send failed.';
@@ -3171,17 +3200,48 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
           return Response.json({ ok:false, error: message }, { status:400, headers:corsHeaders });
         }
       }
+      if (action === 'record_client_event') {
+        const quotePkg:any = await fetchSingle(supabase, 'estimate_quote_packages', body.item_id);
+        if (!quotePkg?.id) return Response.json({ ok:false, error:'Quote package not found.' }, { status:404, headers:corsHeaders });
+        const eventAction = String(body.event_action || 'viewed');
+        const nowIso = new Date().toISOString();
+        const patchEvent:any = { updated_at: nowIso, last_client_action: eventAction, last_client_action_at: nowIso, last_client_ip: body.event_ip ?? null, last_client_user_agent: body.user_agent ?? null };
+        if (eventAction === 'viewed') {
+          patchEvent.first_viewed_at = quotePkg.first_viewed_at || nowIso;
+          patchEvent.last_viewed_at = nowIso;
+          patchEvent.viewed_at = nowIso;
+          patchEvent.open_count = Number(quotePkg.open_count || 0) + 1;
+        }
+        if (eventAction === 'accepted') {
+          patchEvent.package_status = 'accepted';
+          patchEvent.accepted_at = nowIso;
+          patchEvent.accepted_by_name = body.accepted_by_name ?? quotePkg.accepted_by_name ?? null;
+          patchEvent.accepted_by_email = body.accepted_by_email ?? quotePkg.client_email ?? null;
+          patchEvent.acceptance_notes = body.acceptance_notes ?? quotePkg.acceptance_notes ?? null;
+        }
+        if (eventAction === 'declined') {
+          patchEvent.declined_at = nowIso;
+          patchEvent.declined_notes = body.declined_notes ?? null;
+        }
+        const { data, error } = await supabase.from('estimate_quote_packages').update(patchEvent).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        await supabase.from('quote_package_client_events').insert({ quote_package_id: body.item_id, event_action: eventAction, event_at: nowIso, event_email: body.accepted_by_email ?? quotePkg.client_email ?? null, event_name: body.accepted_by_name ?? null, event_ip: body.event_ip ?? null, user_agent: body.user_agent ?? null, notes: body.acceptance_notes ?? body.declined_notes ?? null, created_by_profile_id: actorId });
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+
       if (action === 'mark_printed') {
         await supabase.from('quote_package_output_events').insert({ quote_package_id: body.item_id, output_type: 'printable_html', output_status: 'rendered', output_payload: { note: 'Printable quote package generated.' }, created_by_profile_id: actorId });
         return Response.json({ ok:true }, { headers:corsHeaders });
       }
 
       if (action === 'mark_sent' || action === 'mark_accepted') {
-        const patch2:any = { updated_at: new Date().toISOString() };
-        if (action === 'mark_sent') { patch2.package_status = 'sent'; patch2.sent_at = new Date().toISOString(); }
-        if (action === 'mark_accepted') { patch2.package_status = 'accepted'; patch2.accepted_at = new Date().toISOString(); patch2.accepted_by_name = body.accepted_by_name ?? null; patch2.acceptance_notes = body.acceptance_notes ?? null; }
+        const nowIso = new Date().toISOString();
+        const patch2:any = { updated_at: nowIso };
+        if (action === 'mark_sent') { patch2.package_status = 'sent'; patch2.sent_at = nowIso; patch2.last_client_action = 'sent'; patch2.last_client_action_at = nowIso; }
+        if (action === 'mark_accepted') { patch2.package_status = 'accepted'; patch2.accepted_at = nowIso; patch2.accepted_by_name = body.accepted_by_name ?? null; patch2.accepted_by_email = body.accepted_by_email ?? null; patch2.acceptance_notes = body.acceptance_notes ?? null; patch2.last_client_action = 'accepted'; patch2.last_client_action_at = nowIso; }
         const { data, error } = await supabase.from('estimate_quote_packages').update(patch2).eq('id', body.item_id).select('*').single();
         if (error) throw error;
+        await supabase.from('quote_package_client_events').insert({ quote_package_id: body.item_id, event_action: action === 'mark_sent' ? 'sent' : 'accepted', event_at: nowIso, event_email: body.accepted_by_email ?? data.client_email ?? null, event_name: body.accepted_by_name ?? null, notes: body.acceptance_notes ?? null, created_by_profile_id: actorId });
         return Response.json({ ok:true, record:data }, { headers:corsHeaders });
       }
     }
@@ -3206,8 +3266,9 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
       if (action === 'create' || action === 'update') {
         const workOrder:any = await fetchSingle(supabase, 'v_work_order_commercial_directory', workOrderId);
         const thresholds:any[] = await safeSelect(supabase, 'commercial_approval_thresholds', '*', (query:any) => query.eq('is_active', true));
-        const evaluation = evaluateCommercialThresholds(thresholds, { totalAmount: asNumber(workOrder?.total_amount, 0), discountPercent: asNumber(body.discount_percent ?? workOrder?.discount_value, 0), marginPercent: asNumber(body.margin_percent ?? workOrder?.margin_estimate_percent, 0), jobFamily: body.job_family ?? null, clientId: workOrder?.client_id || null, clientSiteId: workOrder?.client_site_id || null, actorRole, jobId: workOrder?.legacy_job_id || null });
-        const autoPatch:any = { ...patch, threshold_status: evaluation.status, required_signoff_role: evaluation.requiredSignoffRole, release_status: evaluation.status === 'block' ? 'blocked' : (patch.release_status === 'released' ? 'released' : 'pending'), release_notes: body.release_notes ?? evaluation.message };
+        const evaluation = evaluateCommercialThresholds(thresholds, { totalAmount: asNumber(workOrder?.total_amount, 0), discountPercent: asNumber(body.discount_percent ?? workOrder?.discount_value, 0), marginPercent: asNumber(body.margin_percent ?? workOrder?.margin_estimate_percent, 0), jobFamily: body.job_family ?? null, clientId: workOrder?.client_id || null, clientSiteId: workOrder?.client_site_id || null, actorRole: actorProfile?.role || null, jobId: workOrder?.legacy_job_id || null });
+        const existingReview:any = action === 'update' && body.item_id ? await fetchSingle(supabase, 'work_order_release_reviews', body.item_id) : null;
+        const autoPatch:any = { ...patch, threshold_status: evaluation.status, required_signoff_role: evaluation.requiredSignoffRole, release_status: evaluation.status === 'block' ? 'blocked' : (patch.release_status === 'released' ? 'released' : 'pending'), release_notes: body.release_notes ?? evaluation.message, last_evaluated_at: new Date().toISOString(), evaluation_count: Number(existingReview?.evaluation_count || 0) + 1, last_threshold_message: evaluation.message || null };
         const q = action === 'create' ? supabase.from('work_order_release_reviews').insert(autoPatch).select('*').single() : supabase.from('work_order_release_reviews').update(autoPatch).eq('id', body.item_id).select('*').single();
         const { data, error } = await q;
         if (error) throw error;
@@ -3217,9 +3278,10 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
       if (action === 'evaluate_thresholds') {
         const workOrder:any = await fetchSingle(supabase, 'v_work_order_commercial_directory', workOrderId);
         const thresholds:any[] = await safeSelect(supabase, 'commercial_approval_thresholds', '*', (query:any) => query.eq('is_active', true));
-        const evaluation = evaluateCommercialThresholds(thresholds, { totalAmount: asNumber(workOrder?.total_amount, 0), discountPercent: asNumber(body.discount_percent ?? workOrder?.discount_value, 0), marginPercent: asNumber(body.margin_percent ?? workOrder?.margin_estimate_percent, 0), jobFamily: body.job_family ?? null, clientId: workOrder?.client_id || null, clientSiteId: workOrder?.client_site_id || null, actorRole, jobId: workOrder?.legacy_job_id || null });
-        const reviewPatch:any = { ...patch, release_status: evaluation.status === 'block' ? 'blocked' : 'pending', threshold_status: evaluation.status, required_signoff_role: evaluation.requiredSignoffRole, release_notes: body.release_notes ?? evaluation.message };
+        const evaluation = evaluateCommercialThresholds(thresholds, { totalAmount: asNumber(workOrder?.total_amount, 0), discountPercent: asNumber(body.discount_percent ?? workOrder?.discount_value, 0), marginPercent: asNumber(body.margin_percent ?? workOrder?.margin_estimate_percent, 0), jobFamily: body.job_family ?? null, clientId: workOrder?.client_id || null, clientSiteId: workOrder?.client_site_id || null, actorRole: actorProfile?.role || null, jobId: workOrder?.legacy_job_id || null });
         let reviewId = body.item_id;
+        const existingReview:any = reviewId ? await fetchSingle(supabase, 'work_order_release_reviews', reviewId) : null;
+        const reviewPatch:any = { ...patch, release_status: evaluation.status === 'block' ? 'blocked' : 'pending', threshold_status: evaluation.status, required_signoff_role: evaluation.requiredSignoffRole, release_notes: body.release_notes ?? evaluation.message, last_evaluated_at: new Date().toISOString(), evaluation_count: Number(existingReview?.evaluation_count || 0) + 1, last_threshold_message: evaluation.message || null };
         if (reviewId) { const { error } = await supabase.from('work_order_release_reviews').update(reviewPatch).eq('id', reviewId); if (error) throw error; }
         else { const { data, error } = await supabase.from('work_order_release_reviews').insert(reviewPatch).select('*').single(); if (error) throw error; reviewId = data.id; }
         await supabase.from('work_order_release_threshold_evaluations').insert({ work_order_release_review_id: reviewId, threshold_id: evaluation.matchedThreshold?.id || null, work_order_id: workOrderId, estimate_id: asNullableText(body.estimate_id), evaluated_status: evaluation.status, evaluation_message: evaluation.message, discount_percent: asNumber(body.discount_percent ?? workOrder?.discount_value, 0), margin_percent: asNumber(body.margin_percent ?? workOrder?.margin_estimate_percent, 0), total_amount: asNumber(workOrder?.total_amount, 0), required_signoff_role: evaluation.requiredSignoffRole, evaluation_trigger: 'manual', evaluated_at: new Date().toISOString(), created_by_profile_id: actorId });
@@ -3230,12 +3292,12 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         const review:any = body.item_id ? await fetchSingle(supabase, 'work_order_release_reviews', body.item_id) : null;
         const workOrder:any = await fetchSingle(supabase, 'v_work_order_commercial_directory', workOrderId);
         const thresholds:any[] = await safeSelect(supabase, 'commercial_approval_thresholds', '*', (query:any) => query.eq('is_active', true));
-        const evaluation = evaluateCommercialThresholds(thresholds, { totalAmount: asNumber(workOrder?.total_amount, 0), discountPercent: asNumber(body.discount_percent ?? workOrder?.discount_value, 0), marginPercent: asNumber(body.margin_percent ?? workOrder?.margin_estimate_percent, 0), jobFamily: body.job_family ?? null, clientId: workOrder?.client_id || null, clientSiteId: workOrder?.client_site_id || null, actorRole, jobId: workOrder?.legacy_job_id || null });
+        const evaluation = evaluateCommercialThresholds(thresholds, { totalAmount: asNumber(workOrder?.total_amount, 0), discountPercent: asNumber(body.discount_percent ?? workOrder?.discount_value, 0), marginPercent: asNumber(body.margin_percent ?? workOrder?.margin_estimate_percent, 0), jobFamily: body.job_family ?? null, clientId: workOrder?.client_id || null, clientSiteId: workOrder?.client_site_id || null, actorRole: actorProfile?.role || null, jobId: workOrder?.legacy_job_id || null });
         const active = { ...(review || patch), threshold_status: evaluation.status };
         if (active.threshold_status === 'block') return Response.json({ ok:false, error:evaluation.message || 'Work order release is blocked by approval threshold rules.' }, { status:400, headers:corsHeaders });
         if (active.threshold_status === 'warn' && evaluation.requiredSignoffRole && !asNullableText(body.signoff_profile_id) && !review?.signoff_profile_id) return Response.json({ ok:false, error:`${evaluation.message || 'Approval threshold triggered.'} A ${evaluation.requiredSignoffRole} signoff is required before release.` }, { status:400, headers:corsHeaders });
         await supabase.from('work_order_release_threshold_evaluations').insert({ work_order_release_review_id: review?.id || null, threshold_id: evaluation.matchedThreshold?.id || null, work_order_id: workOrderId, estimate_id: asNullableText(body.estimate_id), evaluated_status: evaluation.status, evaluation_message: evaluation.message, discount_percent: asNumber(body.discount_percent ?? workOrder?.discount_value, 0), margin_percent: asNumber(body.margin_percent ?? workOrder?.margin_estimate_percent, 0), total_amount: asNumber(workOrder?.total_amount, 0), required_signoff_role: evaluation.requiredSignoffRole, evaluation_trigger: 'release', evaluated_at: new Date().toISOString(), created_by_profile_id: actorId });
-        const statusPatch:any = { release_status: 'released', signoff_profile_id: asNullableText(body.signoff_profile_id) || actorId, signoff_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+        const statusPatch:any = { release_status: 'released', signoff_profile_id: asNullableText(body.signoff_profile_id) || actorId, signoff_at: new Date().toISOString(), last_evaluated_at: new Date().toISOString(), evaluation_count: Number(review?.evaluation_count || 0) + 1, last_threshold_message: evaluation.message || null, updated_at: new Date().toISOString() };
         if (review?.id) await supabase.from('work_order_release_reviews').update(statusPatch).eq('id', review.id);
         else await supabase.from('work_order_release_reviews').insert({ ...patch, ...statusPatch });
         await supabase.from('work_orders').update({ status: 'released', approval_status: 'released', updated_at: new Date().toISOString() }).eq('id', workOrderId);
@@ -3314,7 +3376,7 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
     if (entity === 'accountant_handoff_export') {
       const patch = { export_kind: body.export_kind ?? 'closeout_bundle', entity_scope: body.entity_scope ?? 'completion_review', entity_id: body.entity_id != null ? String(body.entity_id) : null, business_tax_setting_id: asNullableText(body.business_tax_setting_id), export_status: body.export_status ?? 'draft', export_title: body.export_title ?? null, export_markdown: body.export_markdown ?? null, export_payload: body.export_payload || {}, generated_by_profile_id: actorId, generated_at: body.generated_at ?? new Date().toISOString(), delivered_at: asNullableDateTime(body.delivered_at), updated_at: new Date().toISOString() };
       if (!patch.entity_id) return Response.json({ ok:false, error:'entity_id is required' }, { status:400, headers:corsHeaders });
-      if (action === 'create' || action === 'generate') { const { data, error } = await supabase.from('accountant_handoff_exports').insert(patch).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
+      if (action === 'create' || action === 'generate') { const { data, error } = await supabase.from('accountant_handoff_exports').insert(patch).select('*').single(); if (error) throw error; await recordJobAccountingLifecycleEvent(supabase, { job_id: null, source_type: 'accountant_export', source_id: data?.id || patch.entity_id || 'export', lifecycle_stage: 'accountant_handoff', lifecycle_status: patch.export_status || 'draft', headline: patch.export_title || 'Accountant handoff export generated', notes: body.notes ?? null, created_by_profile_id: actorId }); return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
       if (action === 'update') { const { data, error } = await supabase.from('accountant_handoff_exports').update(patch).eq('id', body.item_id).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
     }
 
@@ -3347,6 +3409,8 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
       if (action === 'sign') {
         const { data, error } = await supabase.from('job_completion_signoff_steps').update({ signoff_status: 'signed', signoff_profile_id: actorId, signoff_name: body.signoff_name ?? actorProfile?.full_name ?? actorProfile?.email ?? null, signoff_notes: body.signoff_notes ?? null, signed_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', body.item_id).select('*').single();
         if (error) throw error;
+        const completionReview:any = data?.completion_review_id ? await fetchSingle(supabase, 'v_job_completion_review_directory', data.completion_review_id) : null;
+        await recordJobAccountingLifecycleEvent(supabase, { job_id: completionReview?.job_id || null, source_type: 'completion_review', source_id: data?.completion_review_id || body.item_id, lifecycle_stage: 'completion_signoff', lifecycle_status: 'signed', headline: `Completion signoff recorded for ${completionReview?.job_code || 'job'}`, notes: data?.signoff_notes || null, created_by_profile_id: actorId });
         return Response.json({ ok:true, record:data }, { headers:corsHeaders });
       }
       if (action === 'delete') {
@@ -3365,6 +3429,7 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         const { data, error } = await supabase.from('job_invoice_postings').upsert({ invoice_candidate_id: candidate.id, ar_ap_queue_id: queue.data?.id || null, posting_status: 'posted', external_system: body.external_system || 'manual', external_invoice_number: body.external_invoice_number || candidate.candidate_number || null, posting_payload: payload, posted_by_profile_id: actorId, posted_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: 'invoice_candidate_id' }).select('*').single();
         if (error) throw error;
         await supabase.from('job_invoice_candidates').update({ candidate_status: 'posted', updated_at: new Date().toISOString() }).eq('id', candidate.id);
+        await recordJobAccountingLifecycleEvent(supabase, { job_id: candidate.job_id, source_type: 'invoice_posting', source_id: data?.id || candidate.id, lifecycle_stage: 'ar_ap_posted', lifecycle_status: 'posted', headline: `Invoice candidate ${candidate.candidate_number || candidate.id} posted`, notes: body.notes ?? null, created_by_profile_id: actorId });
         return Response.json({ ok:true, record:data }, { headers:corsHeaders });
       }
     }
@@ -3378,6 +3443,7 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         const { data, error } = await supabase.from('job_journal_postings').upsert({ journal_candidate_id: candidate.id, ar_ap_queue_id: queue.data?.id || null, posting_status: 'posted', external_system: body.external_system || 'manual', journal_entry_number: body.journal_entry_number || null, batch_number: body.batch_number || null, posting_payload: payload, posted_by_profile_id: actorId, posted_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: 'journal_candidate_id' }).select('*').single();
         if (error) throw error;
         await supabase.from('job_journal_candidates').update({ candidate_status: 'posted', updated_at: new Date().toISOString() }).eq('id', candidate.id);
+        await recordJobAccountingLifecycleEvent(supabase, { job_id: candidate.job_id, source_type: 'journal_posting', source_id: data?.id || candidate.id, lifecycle_stage: 'gl_posted', lifecycle_status: 'posted', headline: `Journal candidate ${candidate.id} posted`, notes: body.notes ?? null, created_by_profile_id: actorId });
         return Response.json({ ok:true, record:data }, { headers:corsHeaders });
       }
     }

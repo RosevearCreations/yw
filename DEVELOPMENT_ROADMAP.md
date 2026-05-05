@@ -648,3 +648,9 @@ Next strongest commercial/accounting direction after this pass:
 3. deeper completion signoff and evidence packaging
 4. invoice/journal posting into fuller AR/AP and GL lifecycle states
 5. accountant handoff exports carrying posted references and filing mappings
+
+## Current next-build direction after Pass 099
+- Public/client-safe quote open/accept/decline workflow
+- Automatic threshold checks on every commercial save path
+- Completion readiness drilldown and signoff/evidence enforcement
+- Fuller AR/AP and GL lifecycle after posting markers

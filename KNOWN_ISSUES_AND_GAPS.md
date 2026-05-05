@@ -516,3 +516,8 @@ Pass 097 sync note (2026-04-26d): quote output, threshold enforcement on save/re
 - Quote email delivery now exists, but richer acceptance/open tracking is still needed.
 - Invoice and journal posting are now represented, but not yet a full double-entry / subledger suite.
 - Threshold policy is stronger by role/client/site/job family, but policy administration and audit UX can still be improved.
+
+## Current known gaps after Pass 099
+- Quote engagement is still recorded from admin-side actions rather than a public client package flow.
+- Accounting lifecycle is present, but downstream AR/AP and GL stages are still markers rather than full closeout automation.
+- Threshold enforcement is stronger, but still not yet evaluated on every commercial data mutation.

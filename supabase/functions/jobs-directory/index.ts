@@ -92,6 +92,10 @@ serve(async (req) => {
   const invoicePostings = await safeSelect(supabase, 'v_job_invoice_posting_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
   const journalPostings = await safeSelect(supabase, 'v_job_journal_posting_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
   const profitabilityManagement = await safeSelect(supabase, 'v_job_profitability_management_scorecard_directory', '*', (query) => query.order('group_type', { ascending:true }).limit(2000));
+  const quoteEngagement = await safeSelect(supabase, 'v_quote_package_engagement_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
+  const releaseEnforcement = await safeSelect(supabase, 'v_work_order_release_enforcement_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
+  const completionReadiness = await safeSelect(supabase, 'v_job_completion_readiness_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
+  const accountingLifecycle = await safeSelect(supabase, 'v_job_accounting_lifecycle_directory', '*', (query) => query.order('created_at', { ascending:false }).limit(2000));
   const jobSessions = await safeSelect(supabase, 'v_job_session_directory', '*', (query) => query.order('started_at', { ascending:false }).limit(2000));
   const jobCrewHours = await safeSelect(supabase, 'v_job_crew_hours_directory', '*', (query) => query.order('created_at', { ascending:false }).limit(3000));
   const jobReassignments = await safeSelect(supabase, 'v_job_reassignment_directory', '*', (query) => query.order('started_at', { ascending:false }).limit(1000));
@@ -213,6 +217,10 @@ serve(async (req) => {
     invoice_postings: invoicePostings || [],
     journal_postings: journalPostings || [],
     profitability_management: profitabilityManagement || [],
+    quote_package_engagement: quoteEngagement || [],
+    release_enforcement: releaseEnforcement || [],
+    completion_readiness: completionReadiness || [],
+    accounting_lifecycle: accountingLifecycle || [],
     evidence_assets: evidenceAssets
   }, { headers: corsHeaders });
 });
