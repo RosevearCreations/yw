@@ -72,7 +72,7 @@ select
   qp.id,
   qp.estimate_id,
   e.estimate_number,
-  e.client_name,
+  c.legal_name as client_name,
   qp.package_status,
   qp.send_status,
   qp.client_email,
@@ -103,6 +103,7 @@ select
   qp.created_at
 from public.estimate_quote_packages qp
 left join public.estimates e on e.id = qp.estimate_id
+left join public.clients c on c.id = e.client_id
 left join event_rollup sent on sent.quote_package_id = qp.id and sent.event_action = 'sent'
 left join event_rollup viewed on viewed.quote_package_id = qp.id and viewed.event_action = 'viewed'
 left join event_rollup accepted on accepted.quote_package_id = qp.id and accepted.event_action = 'accepted'
