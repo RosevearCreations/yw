@@ -858,3 +858,10 @@ select to_regclass('public.v_job_completion_signoff_directory') as v_job_complet
 select to_regclass('public.v_job_invoice_posting_directory') as v_job_invoice_posting_directory;
 select to_regclass('public.v_job_journal_posting_directory') as v_job_journal_posting_directory;
 select to_regclass('public.v_job_profitability_management_scorecard_directory') as v_job_profitability_management_scorecard_directory;
+
+-- Pass 099 quick checks
+select to_regclass('public.quote_package_client_events') as quote_package_client_events,
+       to_regclass('public.job_accounting_lifecycle_events') as job_accounting_lifecycle_events,
+       to_regclass('public.v_quote_package_engagement_directory') as v_quote_package_engagement_directory,
+       to_regclass('public.v_job_completion_readiness_directory') as v_job_completion_readiness_directory,
+       to_regclass('public.v_job_accounting_lifecycle_directory') as v_job_accounting_lifecycle_directory;
