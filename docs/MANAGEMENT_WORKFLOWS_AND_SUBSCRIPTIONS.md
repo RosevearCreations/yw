@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 # Management Workflows and Subscriptions
 
 This pass moves the safety system from historical reporting into management workflow support.

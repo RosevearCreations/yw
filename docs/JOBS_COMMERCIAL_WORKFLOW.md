@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 # Jobs Commercial Workflow Foundation
 
 This pass expands the Jobs area toward a complete commercial and accounting workflow without replacing the existing jobs page.

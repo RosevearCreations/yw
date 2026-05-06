@@ -57,6 +57,17 @@ const requiredFiles = [
   'sql/086_hseops_performance_and_site_activity_rollups.sql',
   'sql/087_evidence_review_scheduler_settings_and_signed_contract_kickoff.sql',
   'sql/088_scheduler_cron_media_review_payroll_close_receipts.sql',
+  'sql/089_historical_reporting_and_auth_wall_support.sql',
+  'sql/090_incident_reporting_saved_report_presets_and_trends.sql',
+  'sql/091_corrective_actions_training_and_sds_tracking.sql',
+  'sql/092_management_workflows_and_subscriptions.sql',
+  'sql/093_report_delivery_and_worker_self_service.sql',
+  'sql/094_jobs_commercial_completion_and_accounting_ready.sql',
+  'sql/095_jobs_quote_approval_release_and_accounting_candidates.sql',
+  'sql/096_jobs_quote_output_threshold_enforcement_and_closeout_posting.sql',
+  'sql/097_jobs_quote_delivery_threshold_rules_and_accountant_exports.sql',
+  'sql/098_jobs_quote_email_signoff_and_gl_posting.sql',
+  'sql/099_quote_acceptance_threshold_autoeval_and_accounting_lifecycle.sql',
   'js/hse-ops-ui.js',
   'supabase/functions/jobs-directory/index.ts',
   'supabase/functions/jobs-manage/index.ts',
@@ -68,6 +79,8 @@ const requiredFiles = [
   'supabase/functions/upload-employee-time-photo/index.ts',
   'supabase/functions/service-execution-scheduler/index.ts',
   'supabase/functions/service-execution-scheduler-run/index.ts',
+  'supabase/functions/report-subscription-delivery-run/index.ts',
+  'supabase/functions/report-subscription-delivery-run/config.toml',
   'supabase/functions/service-execution-scheduler-run/config.toml'
 ];
 for (const relPath of requiredFiles) {
@@ -105,11 +118,17 @@ addCheck('account-has-conflict-review', accountUi.includes('Conflict Review'), '
 addCheck('account-has-support-export', accountUi.includes('Export Support Snapshot'), 'account-ui.js should render the support snapshot export button.');
 
 const schema = read('sql/000_full_schema_reference.sql');
-addCheck('schema-header-current', /091_corrective_actions_training_and_sds_tracking/i.test(schema), 'Schema snapshot header should reflect the latest 091 pass.');
+addCheck('schema-header-current', /099_quote_acceptance_threshold_autoeval_and_accounting_lifecycle/i.test(schema), 'Schema snapshot header should reflect the latest 099 pass.');
 
 const schedulerRun = read('supabase/functions/service-execution-scheduler-run/index.ts');
 addCheck('scheduler-run-advances-next-run', schedulerRun.includes('next_run_at: computeNextRunAt'), 'Scheduler Edge Function should advance next_run_at after successful runs.');
 addCheck('scheduler-run-has-duplicate-note', schema.includes('duplicate queued dispatches are suppressed for 10 minutes'), 'Canonical schema should document the 10-minute duplicate dispatch guard.');
+
+
+addCheck('no-fixed-schema-copy', !fileExists('sql/000_full_schema_reference.fixed.sql'), 'sql/000_full_schema_reference.fixed.sql should not exist.');
+addCheck('no-fixed-092-copy', !fileExists('sql/092_management_workflows_and_subscriptions.fixed.sql'), 'sql/092_management_workflows_and_subscriptions.fixed.sql should not exist.');
+addCheck('schema-has-commercial-engagement-view', schema.includes('v_quote_package_engagement_directory'), 'Canonical schema should include the quote engagement directory view.');
+addCheck('schema-uses-client-join-for-quote-engagement', schema.includes('left join public.clients c on c.id = e.client_id'), 'Canonical schema should join clients when building quote engagement data.');
 
 console.log(JSON.stringify({ ok: !failed, checks: results }, null, 2));
 if (failed) process.exit(1);

@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 # Jobs Quote Approval and Accounting Automation
 
 This pass adds the next commercial layer on top of the Jobs workflow:

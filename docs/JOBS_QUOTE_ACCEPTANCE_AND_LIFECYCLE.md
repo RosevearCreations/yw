@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 # Jobs Quote Acceptance and Accounting Lifecycle
 
 Pass 099 adds the next commercial/accounting layer on top of the quote, release, completion, and posting foundations.
@@ -40,3 +41,7 @@ This moves the Jobs page from isolated actions into a clearer management workflo
 3. Deeper completion package signoff and evidence workflow
 4. Fuller AR/AP and GL lifecycle beyond manual posting markers
 5. Profitability and variance scorecards that can be filtered by site, supervisor, route, and job family
+
+## 2026-05-05 sync note
+The quote engagement lifecycle now assumes the repaired 099 migration and the synced full schema reference. Client name resolution should come from `public.clients`, not a raw `estimates.client_name` column.
+

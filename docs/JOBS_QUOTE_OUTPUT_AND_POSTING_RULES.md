@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 # Jobs Quote Output and Posting Rules
 
 This pass extends Jobs commercial workflow with:
@@ -26,3 +27,7 @@ This pass adds branded quote output, automatic threshold evaluation, closeout ev
 
 ---
 Pass 097 sync note (2026-04-26d): quote output, threshold enforcement on save/release, closeout evidence linkage to real records, posting-rule-aware invoice/journal candidates, accountant handoff enrichment, and extended profitability scorecards.
+
+## 2026-05-05 sync note
+The 096 migration in the repo is now the compatibility-safe canonical version. If this workflow evolves again, later passes should preserve view layouts instead of redefining them with fewer columns.
+

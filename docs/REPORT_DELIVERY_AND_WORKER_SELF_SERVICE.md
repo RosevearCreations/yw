@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 # Report Delivery and Worker Self-Service
 
 Latest pass focus:

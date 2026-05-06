@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 # Jobs Quote Email, Signoff, and GL Posting
 
 This pass extends the Jobs commercial/accounting workflow with:
@@ -59,3 +60,7 @@ This pass extends the Jobs commercial/accounting workflow with:
   - deeper quote-send delivery status tracking
   - accountant handoff exports with posted invoice/journal references
   - fuller AR/AP and GL lifecycle beyond manual posting markers
+
+## 2026-05-05 continuity note
+This layer now sits on top of the repaired 096-099 migration chain. Continue pushing the next value into quote acceptance, stricter threshold policy, and deeper AR/AP + GL lifecycle automation.
+

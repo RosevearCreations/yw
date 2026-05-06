@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 # Jobs Commercial and Accounting Next Steps
 
 The next major build phase should turn the existing Jobs area into a full commercial workflow, then tie completed work into accounting-ready review.

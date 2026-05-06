@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 note
 Scheduler reliability now includes two guards: the Edge Function recalculates `next_run_at` after a successful run, and SQL skips rows already queued in the last 10 minutes.
 

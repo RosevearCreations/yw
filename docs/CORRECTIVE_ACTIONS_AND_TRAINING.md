@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 # Corrective Actions, Training, and SDS Tracking
 
 This pass adds a management-focused safety layer on top of the incident and historical-reporting work.

@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 # Jobs Quote Automation and Accountant Handoff
 
 Pass 097 deepens the Jobs commercial/accounting path beyond the earlier foundation passes.
