@@ -67,6 +67,61 @@ select
   ) then 'ok' else 'missing' end,
   'Needed by evidence review history';
 
+
+insert into audit_results(item, status, details)
+select
+  'table:estimate_quote_packages',
+  case when exists (
+    select 1 from information_schema.tables
+    where table_schema = 'public' and table_name = 'estimate_quote_packages'
+  ) then 'ok' else 'missing' end,
+  'Jobs commercial quote package table';
+
+insert into audit_results(item, status, details)
+select
+  'table:work_order_release_reviews',
+  case when exists (
+    select 1 from information_schema.tables
+    where table_schema = 'public' and table_name = 'work_order_release_reviews'
+  ) then 'ok' else 'missing' end,
+  'Jobs release gate table';
+
+insert into audit_results(item, status, details)
+select
+  'table:job_accounting_lifecycle_events',
+  case when exists (
+    select 1 from information_schema.tables
+    where table_schema = 'public' and table_name = 'job_accounting_lifecycle_events'
+  ) then 'ok' else 'missing' end,
+  'Jobs accounting lifecycle history';
+
+insert into audit_results(item, status, details)
+select
+  'view:v_quote_package_engagement_directory',
+  case when exists (
+    select 1 from information_schema.views
+    where table_schema = 'public' and table_name = 'v_quote_package_engagement_directory'
+  ) then 'ok' else 'missing' end,
+  'Commercial quote engagement view';
+
+insert into audit_results(item, status, details)
+select
+  'view:v_job_completion_readiness_directory',
+  case when exists (
+    select 1 from information_schema.views
+    where table_schema = 'public' and table_name = 'v_job_completion_readiness_directory'
+  ) then 'ok' else 'missing' end,
+  'Commercial completion readiness view';
+
+insert into audit_results(item, status, details)
+select
+  'view:v_job_accounting_lifecycle_directory',
+  case when exists (
+    select 1 from information_schema.views
+    where table_schema = 'public' and table_name = 'v_job_accounting_lifecycle_directory'
+  ) then 'ok' else 'missing' end,
+  'Commercial accounting lifecycle view';
+
 insert into audit_results(item, status, details)
 select
   'table:service_execution_scheduler_settings',
@@ -666,6 +721,34 @@ select
     where table_schema = 'public' and table_name = 'v_workflow_history_report'
   ) then 'ok' else 'missing' end,
   'Workflow history report view';
+
+
+insert into audit_results(item, status, details)
+select
+  'view:v_quote_package_engagement_directory',
+  case when exists (
+    select 1 from information_schema.views
+    where table_schema = 'public' and table_name = 'v_quote_package_engagement_directory'
+  ) then 'ok' else 'missing' end,
+  'Commercial quote engagement view';
+
+insert into audit_results(item, status, details)
+select
+  'view:v_job_completion_readiness_directory',
+  case when exists (
+    select 1 from information_schema.views
+    where table_schema = 'public' and table_name = 'v_job_completion_readiness_directory'
+  ) then 'ok' else 'missing' end,
+  'Commercial completion readiness view';
+
+insert into audit_results(item, status, details)
+select
+  'view:v_job_accounting_lifecycle_directory',
+  case when exists (
+    select 1 from information_schema.views
+    where table_schema = 'public' and table_name = 'v_job_accounting_lifecycle_directory'
+  ) then 'ok' else 'missing' end,
+  'Commercial accounting lifecycle view';
 
 insert into audit_results(item, status, details)
 select

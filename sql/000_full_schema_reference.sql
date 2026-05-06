@@ -5797,7 +5797,7 @@ create or replace view public.v_site_safety_scorecards as
 with submission_rollup as (
   select
     coalesce(site_id::text, site_label, site_name, site_code, 'unknown') as site_ref,
-    max(site_id) as site_id,
+    (array_agg(site_id order by site_id nulls last))[1] as site_id,
     max(site_code) as site_code,
     max(site_name) as site_name,
     max(site_label) as site_label,
@@ -5841,7 +5841,7 @@ create or replace view public.v_supervisor_scorecards as
 with corrective_rollup as (
   select
     coalesce(supervisor_profile_id::text, assigned_to_profile_id::text, 'unassigned') as supervisor_ref,
-    max(supervisor_profile_id) as supervisor_profile_id,
+    (array_agg(supervisor_profile_id order by supervisor_profile_id nulls last))[1] as supervisor_profile_id,
     count(*)::int as task_count,
     count(*) filter (where status <> 'closed')::int as open_task_count,
     count(*) filter (where is_overdue = true)::int as overdue_task_count,
@@ -7351,7 +7351,6 @@ from base group by job_family;
 
 
 -- 096_jobs_quote_output_threshold_enforcement_and_closeout_posting.sql
--- 096_jobs_quote_output_threshold_enforcement_and_closeout_posting.sql
 -- Extends the commercial Jobs workflow with:
 -- - branded printable/email quote output
 -- - automatic threshold evaluations
@@ -7506,6 +7505,17 @@ alter table if exists public.accountant_handoff_exports
   add constraint accountant_handoff_exports_status_check
   check (export_status in ('draft','generated','delivered','archived'));
 
+
+alter table if exists public.work_order_release_threshold_evaluations
+  add column if not exists evaluation_trigger text not null default 'manual',
+  add column if not exists evaluated_at timestamptz not null default now();
+
+alter table if exists public.work_order_release_threshold_evaluations
+  drop constraint if exists work_order_release_threshold_evaluations_trigger_check;
+alter table if exists public.work_order_release_threshold_evaluations
+  add constraint work_order_release_threshold_evaluations_trigger_check
+  check (evaluation_trigger in ('save','manual','release','system'));
+
 create or replace view public.v_quote_package_output_directory as
 select
   qp.id,
@@ -7530,12 +7540,23 @@ select
   coalesce(count(qoe.id), 0)::int as output_event_count,
   max(qoe.created_at) as last_output_event_at,
   qp.created_at,
-  qp.updated_at
+  qp.updated_at,
+  qp.printable_html,
+  qp.email_body,
+  qp.render_payload,
+  bts.legal_entity_name,
+  bts.federal_return_type,
+  bts.provincial_return_type,
+  bts.usa_tax_classification,
+  coalesce((qp.render_payload->>'preview_text')::text, '') as preview_text,
+  coalesce(e.total_amount, 0)::numeric(12,2) as estimate_total_amount,
+  coalesce(e.margin_estimate_percent, 0)::numeric(7,2) as estimate_margin_percent
 from public.estimate_quote_packages qp
 left join public.estimates e on e.id = qp.estimate_id
 left join public.business_tax_settings bts on bts.id = qp.business_tax_setting_id
 left join public.quote_package_output_events qoe on qoe.quote_package_id = qp.id
-group by qp.id, e.estimate_number, e.quote_title, bts.profile_name, bts.legal_entity_type;
+group by qp.id, e.estimate_number, e.quote_title, e.total_amount, e.margin_estimate_percent, bts.profile_name, bts.legal_entity_type, bts.legal_entity_name, bts.federal_return_type, bts.provincial_return_type, bts.usa_tax_classification;
+
 
 create or replace view public.v_work_order_threshold_evaluation_directory as
 select
@@ -7555,12 +7576,18 @@ select
   te.required_signoff_role,
   te.created_by_profile_id,
   coalesce(p.full_name, p.email, '') as created_by_name,
-  te.created_at
+  te.created_at,
+  te.evaluation_trigger,
+  te.evaluated_at,
+  cat.applies_to_scope,
+  cat.applies_to_value,
+  cat.hard_block
 from public.work_order_release_threshold_evaluations te
 left join public.commercial_approval_thresholds cat on cat.id = te.threshold_id
 left join public.work_orders wo on wo.id = te.work_order_id
 left join public.estimates e on e.id = te.estimate_id
 left join public.profiles p on p.id = te.created_by_profile_id;
+
 
 create or replace view public.v_job_closeout_evidence_directory as
 select
@@ -7581,13 +7608,22 @@ select
   ca.created_by_profile_id,
   coalesce(p.full_name, p.email, '') as created_by_name,
   ca.created_at,
-  ca.updated_at
+  ca.updated_at,
+  coalesce(jca.preview_url, eea.preview_url, ca.asset_url) as resolved_asset_url,
+  coalesce(jca.file_name, si.file_name, eea.file_name, ca.label) as resolved_file_name,
+  coalesce(si.caption, eea.caption, ca.notes) as resolved_caption,
+  coalesce(jca.storage_bucket, eea.storage_bucket, '') as resolved_storage_bucket,
+  coalesce(jca.storage_path, si.file_path, eea.storage_path, '') as resolved_storage_path
 from public.job_completion_closeout_assets ca
 left join public.job_completion_closeout_items ci on ci.id = ca.closeout_item_id
 left join public.job_completion_reviews cr on cr.id = ci.completion_review_id
 left join public.jobs j on j.id = cr.job_id
 left join public.work_orders wo on wo.id = cr.work_order_id
-left join public.profiles p on p.id = ca.created_by_profile_id;
+left join public.profiles p on p.id = ca.created_by_profile_id
+left join public.job_comment_attachments jca on ca.source_table = 'job_comment_attachments' and ca.source_id = jca.id::text
+left join public.submission_images si on ca.source_table = 'submission_images' and ca.source_id = si.id::text
+left join public.equipment_evidence_assets eea on ca.source_table = 'equipment_evidence_assets' and ca.source_id = eea.id::text;
+
 
 create or replace view public.v_invoice_candidate_posting_rule_directory as
 select
@@ -7665,10 +7701,20 @@ select
   ah.generated_at,
   ah.delivered_at,
   ah.created_at,
-  ah.updated_at
+  ah.updated_at,
+  bts.legal_entity_name,
+  bts.business_number,
+  bts.corporation_number,
+  bts.ein,
+  left(coalesce(ah.export_markdown, ''), 400) as export_preview,
+  coalesce((ah.export_payload->>'invoice_candidate_count')::int, 0) as invoice_candidate_count,
+  coalesce((ah.export_payload->>'journal_candidate_count')::int, 0) as journal_candidate_count,
+  coalesce((ah.export_payload->>'closeout_item_count')::int, 0) as closeout_item_count,
+  coalesce((ah.export_payload->>'closeout_asset_count')::int, 0) as closeout_asset_count
 from public.accountant_handoff_exports ah
 left join public.business_tax_settings bts on bts.id = ah.business_tax_setting_id
 left join public.profiles p on p.id = ah.generated_by_profile_id;
+
 
 create or replace view public.v_job_profitability_variance_directory as
 with base as (
@@ -8243,7 +8289,7 @@ select
   qp.id,
   qp.estimate_id,
   e.estimate_number,
-  e.client_name,
+  c.legal_name as client_name,
   qp.package_status,
   qp.send_status,
   qp.client_email,
@@ -8274,6 +8320,7 @@ select
   qp.created_at
 from public.estimate_quote_packages qp
 left join public.estimates e on e.id = qp.estimate_id
+left join public.clients c on c.id = e.client_id
 left join event_rollup sent on sent.quote_package_id = qp.id and sent.event_action = 'sent'
 left join event_rollup viewed on viewed.quote_package_id = qp.id and viewed.event_action = 'viewed'
 left join event_rollup accepted on accepted.quote_package_id = qp.id and accepted.event_action = 'accepted'
