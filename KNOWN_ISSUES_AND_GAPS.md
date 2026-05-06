@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## April 25, 2026 management-workflow gap refresh
 - Reminder/escalation fields and scorecards now exist, but scheduled delivery and notification dispatch still need wiring.
 - Worker self-service acknowledgement is available at the data/API level, but still needs a dedicated worker-facing UI.
@@ -521,3 +522,9 @@ Pass 097 sync note (2026-04-26d): quote output, threshold enforcement on save/re
 - Quote engagement is still recorded from admin-side actions rather than a public client package flow.
 - Accounting lifecycle is present, but downstream AR/AP and GL stages are still markers rather than full closeout automation.
 - Threshold enforcement is stronger, but still not yet evaluated on every commercial data mutation.
+
+## May 5, 2026 migration compatibility refresh
+- The strongest active risk has been migration drift between canonical SQL files, ad hoc fixed copies, and the live database shape. This pass repairs the canonical 092/096/099 chain, but future passes should continue favoring one canonical migration per step.
+- The commercial/accounting layer is now much deeper, but still depends on continued hardening of quote acceptance flow, threshold enforcement, closeout evidence linkage, and posting lifecycle automation.
+- Full schema reference drift was a real source of confusion in recent passes, so future schema changes should always be mirrored there in the same pass.
+

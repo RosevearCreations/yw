@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 handoff update
 - Latest repo pass hardened scheduler repeat-run behavior: the Edge Function now writes a calculated `next_run_at`, and the SQL dispatcher suppresses rows that were already queued in the last 10 minutes.
 - Canonical schema files are `sql/088_scheduler_cron_media_review_payroll_close_receipts.sql` and `sql/000_full_schema_reference.sql`; the stray fixed copy has been removed.
@@ -274,3 +275,10 @@ Pass 098 sync note (2026-04-27): quote email delivery, harder threshold policy m
 
 ## Hand-off note
 Pass 099 adds quote engagement tracking, release-evaluation state, completion readiness, and accounting lifecycle history. The next pass should push into public/client quote tracking, stricter threshold auto-evaluation, and deeper posting lifecycle automation.
+
+## 2026-05-05 handoff update
+- Canonical SQL is now re-hardened around the commercial chain: 092 uses the fixed management-workflow version, 096 uses the compatibility-safe quote/threshold/closeout posting version, and 099 now joins client names through `public.clients`.
+- `sql/000_full_schema_reference.sql` has been synchronized with those fixes, and duplicate fixed-copy SQL helpers were removed from the repo again.
+- `sql/VerifyDB_24_04_2026.sql` now checks key commercial objects, and `scripts/repo-smoke-check.mjs` now covers migrations 089-099 plus absence of stray fixed schema copies.
+- Next chat should continue from the repaired commercial/accounting foundation: public/client-safe quote engagement, stricter threshold policy, completion-to-accounting automation, and profitability management scorecards.
+

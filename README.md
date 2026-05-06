@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 update note
 - Scheduler runtime files now include duplicate-dispatch protection and automatic `next_run_at` advancement after successful Edge Function runs.
 - Keep `supabase/functions/service-execution-scheduler-run/index.ts`, `sql/088_scheduler_cron_media_review_payroll_close_receipts.sql`, and `sql/000_full_schema_reference.sql` in sync whenever scheduler behavior changes.
@@ -384,3 +385,7 @@ Pass 097 sync note (2026-04-26d): quote output, threshold enforcement on save/re
 
 ## Latest focus
 The current Jobs/commercial phase now includes quote engagement, completion readiness, and accounting lifecycle tracking in addition to quote packages, release gates, and posting markers.
+
+## Latest repo synchronization note (2026-05-05)
+This build re-hardens the canonical SQL chain for the commercial/accounting layer, specifically the 092/096/099 migrations and the full schema reference. The repo now prefers one canonical migration per step and stronger verification via the updated VerifyDB and smoke-check scripts.
+

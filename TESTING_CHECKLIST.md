@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 required test additions
 - Run the scheduler manually and verify `service_execution_scheduler_settings.next_run_at` is recalculated after the Edge Function completes.
 - Let cron run for at least 10 minutes and confirm it does not create duplicate scheduler runs for the same due window.
@@ -282,3 +283,10 @@ Pass 097 sync note (2026-04-26d): quote output, threshold enforcement on save/re
 - Save a release review and confirm evaluation_count and last_evaluated_at update.
 - Sign a completion step and confirm completion readiness changes.
 - Post invoice/journal candidates and confirm accounting lifecycle events are written.
+
+## Added verification focus - 2026-05-05
+- Run the repo smoke check and confirm migrations 089-099 plus report-delivery functions are present.
+- Confirm there are no stray `sql/000_full_schema_reference.fixed.sql` or `sql/092_management_workflows_and_subscriptions.fixed.sql` files left in the repo.
+- Run `sql/VerifyDB_24_04_2026.sql` and confirm the commercial quote/completion/accounting lifecycle views are present.
+- Re-test 096 and 099 on a drifted database and confirm the quote engagement and completion/accounting views now apply cleanly.
+

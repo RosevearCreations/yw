@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-25 management workflow reminders, subscriptions, and JSA linkage pass
 - Added migration `sql/092_management_workflows_and_subscriptions.sql`.
 - Added reminder/escalation fields for corrective actions, worker self-service training acknowledgements, SDS context prompts, report subscriptions, site/supervisor scorecards, overdue alerts, and equipment-specific JSA/hazard linkage.
@@ -337,3 +338,10 @@ Pass 097 sync note (2026-04-26d): quote output, threshold enforcement on save/re
 - Added quote engagement tracking, completion readiness rollups, and accounting lifecycle events.
 - Added sql/099_quote_acceptance_threshold_autoeval_and_accounting_lifecycle.sql and synced full schema.
 - Extended Jobs backend/UI hooks for quote client-event tracking and lifecycle visibility.
+
+## 2026-05-05 migration compatibility and commercial schema sync pass
+- Replaced the canonical `sql/092_management_workflows_and_subscriptions.sql` with the fixed version and removed the duplicate fixed-copy migration from the repo.
+- Replaced the canonical `sql/096_jobs_quote_output_threshold_enforcement_and_closeout_posting.sql` with the compatibility-safe version so reruns do not try to drop columns from evolved views.
+- Corrected `sql/099_quote_acceptance_threshold_autoeval_and_accounting_lifecycle.sql` and the full schema reference so quote engagement joins client names from `public.clients` instead of assuming `public.estimates.client_name` exists.
+- Synced `sql/000_full_schema_reference.sql`, expanded `sql/VerifyDB_24_04_2026.sql` with commercial checks, and strengthened `scripts/repo-smoke-check.mjs` to validate migrations 089-099 plus absence of stray fixed-copy files.
+

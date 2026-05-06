@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 architecture note
 - Scheduler architecture now includes a duplicate-dispatch safety layer: SQL suppresses recently queued rows, while the Edge Function advances `next_run_at` after completion.
 

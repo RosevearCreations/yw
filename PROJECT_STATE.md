@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 project state update
 - Scheduler deployment is no longer just connected; it now has a duplicate-dispatch guard and successful Edge Function runs advance `next_run_at` so cron should not continually dispatch every minute.
 - Repo schema and runtime files remain aligned to the portable secret strategy: Vault when available, `app.settings.service_execution_scheduler_secret` fallback when Vault is unavailable.
@@ -361,3 +362,9 @@ The Jobs commercial/accounting workflow now includes actual quote send logic, ta
 
 ## Pass 099 status
 The Jobs commercial layer now tracks quote engagement, release enforcement state, completion readiness, and accounting lifecycle history.
+
+## May 5, 2026 current state
+- The repo is now better aligned with the live commercial/accounting direction because the canonical migrations and the full schema reference have been brought back into sync for the 092/096/099 chain.
+- The biggest immediate value remains in turning the current quote, threshold, closeout, and posting foundations into stricter end-to-end workflows rather than adding parallel structures.
+- Verification now includes stronger repo smoke checks and database audit checks for the commercial layer, reducing the chance of repeat migration confusion.
+

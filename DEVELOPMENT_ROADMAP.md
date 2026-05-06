@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 <!-- Reviewed during 2026-04-23 scheduler duplicate-dispatch guard, cache refresh, and repo-hygiene pass. -->
 ## Immediate next build priorities after 088 duplicate-dispatch guard
 1. **Scheduler reliability verification**
@@ -654,3 +655,15 @@ Next strongest commercial/accounting direction after this pass:
 - Automatic threshold checks on every commercial save path
 - Completion readiness drilldown and signoff/evidence enforcement
 - Fuller AR/AP and GL lifecycle after posting markers
+
+## Immediate next build priorities after the 2026-05-05 migration compatibility pass
+1. **Commercial workflow stabilization**
+   - continue public/client-safe quote viewing and acceptance flow on top of the repaired 096-099 chain
+   - keep threshold auto-evaluation and release enforcement aligned across every save/release path
+2. **Completion-to-accounting automation**
+   - deepen invoice/journal posting from candidate markers into fuller AR/AP and GL lifecycle handling
+   - expand accountant handoff exports and profitability scorecards by site, supervisor, route, and job family
+3. **Repo hygiene and deploy safety**
+   - keep the canonical SQL chain authoritative and avoid duplicate `*.fixed.sql` copies in the repo
+   - keep the VerifyDB and smoke-check scripts aligned with the real latest migration set
+

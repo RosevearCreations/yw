@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 repo base note
 - `sql/000_full_schema_reference.fixed.sql` should not be kept in the repo. The canonical full schema remains `sql/000_full_schema_reference.sql`.
 - Scheduler duplicate-dispatch behavior is implemented in both the Edge Function and SQL dispatcher; update both places together if the cadence logic changes.
@@ -183,3 +184,9 @@ Pass 098 added `sql/098_jobs_quote_email_signoff_and_gl_posting.sql`, updated `s
 
 ## SQL status
 Canonical SQL chain now includes sql/099_quote_acceptance_threshold_autoeval_and_accounting_lifecycle.sql. Remove and avoid any stray fixed-copy schema files.
+
+## Repo hygiene note - 2026-05-05
+- Canonical SQL files should remain the only migration source of truth.
+- Duplicate `*.fixed.sql` helper files should be removed after their contents are merged into the canonical migration.
+- The full schema reference, VerifyDB script, and repo smoke check must move forward in the same pass as the canonical migration changes.
+

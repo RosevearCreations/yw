@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 AI context update
 - Scheduler truth: successful `service-execution-scheduler-run` executions must write a future `next_run_at`; SQL also suppresses recently queued dispatches for 10 minutes. Do not revert this to a null next-run behavior.
 
@@ -239,3 +240,7 @@ Pass 098 summary: actual quote email delivery from stored quote packages, harder
 
 ## Pass 099 context
 We added quote engagement tracking, completion readiness rollups, and accounting lifecycle events. The next likely direction is public/client-safe quote tracking plus deeper AR/AP and GL automation.
+
+## 2026-05-05 context refresh
+This pass focused on repo/schema compatibility hardening rather than expanding the feature surface. Canonical 092/096/099 are now the files to trust, the full schema reference is synced to them, and the verification scripts were updated so future chats can detect drift earlier.
+

@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 project brain update
 - Scheduler reliability guard added: do not allow completed Edge Function runs to leave `next_run_at` null unless the cadence is manual. The SQL dispatcher also skips recently queued rows.
 
@@ -313,3 +314,8 @@ Pass 098 continues the Jobs commercial/accounting track: move from candidate/que
 
 ## Pass 099 memory
 Jobs commercial workflow now includes quote-package engagement events and accounting lifecycle history.
+
+## 2026-05-05 memory refresh
+- Recent user pain came from migration drift and out-of-sync fixed copies, not just from missing features.
+- The practical value of this pass is keeping the commercial/accounting chain trustworthy enough that the next feature work can focus on quote engagement, threshold enforcement, and completion-to-accounting automation.
+
