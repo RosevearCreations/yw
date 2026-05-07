@@ -1,3 +1,6 @@
+## Architecture note
+The architecture now explicitly includes an accounting-close layer and an accounting automation layer on top of the Jobs commercial workflow.
+
 <!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 architecture note

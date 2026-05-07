@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-06 accounting automation + docs archive pass. -->
 <!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 update note

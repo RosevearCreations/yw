@@ -1,3 +1,8 @@
+## 2026-05-06 accounting automation + docs archive pass
+- Added migration `sql/101_accounting_posting_automation_and_export_bundle.sql`.
+- Added AR-linked invoice posting automation, GL-batch-linked journal posting automation, sales-tax prep, payroll remittance prep, bank reconciliation match-candidate views, and accountant handoff bundle structures.
+- Archived older pass-specific docs under `docs/archive/legacy-passes/` and added a new active `docs/README.md` index.
+
 <!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-25 management workflow reminders, subscriptions, and JSA linkage pass

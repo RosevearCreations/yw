@@ -1,3 +1,11 @@
+## Current known gaps after schema 101
+- AR invoice posting still needs payment application and receipt automation.
+- GL posting still needs fuller journal-line automation from ledger summary.
+- Sales tax prep is period rollup assistance, not a full filing engine yet.
+- Payroll remittance prep still needs remitter-profile formulas and due-date logic.
+- Bank reconciliation matching is assistance/suggestion logic, not a final matcher yet.
+- Accountant bundle generation exists, but delivery/packaging is still early-stage.
+
 <!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## April 25, 2026 management-workflow gap refresh

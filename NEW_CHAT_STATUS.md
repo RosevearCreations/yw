@@ -1,3 +1,6 @@
+## Start here in a new chat
+The current active docs set lives in the repo root plus `docs/README.md`. Older pass-specific docs have been archived under `docs/archive/legacy-passes/`. The next strongest build pass is the accounting workflow completion pass on top of schema 101.
+
 <!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 handoff update

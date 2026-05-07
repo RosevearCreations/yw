@@ -1,3 +1,6 @@
+## Current schema baseline
+The latest schema baseline is `101_accounting_posting_automation_and_export_bundle.sql`.
+
 <!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 schema note

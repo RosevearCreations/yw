@@ -1,3 +1,11 @@
+## Accounting automation checks
+- Post one invoice candidate and confirm an AR invoice is created/linked.
+- Post one journal candidate and confirm a GL batch is created/linked.
+- Prepare one sales tax filing from a selected period.
+- Prepare one payroll remittance run from a payroll export.
+- Run bank reconciliation auto-match on one session with test rows.
+- Build one accountant handoff bundle and confirm bundle items are created.
+
 <!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 required test additions

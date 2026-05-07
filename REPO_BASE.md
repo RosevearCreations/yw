@@ -1,3 +1,6 @@
+## Documentation cleanup note
+The main active Markdown set now lives in the repo root and `docs/README.md`. Older pass-specific docs have been retired into `docs/archive/legacy-passes/` so the working set stays easier to follow.
+
 <!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 repo base note

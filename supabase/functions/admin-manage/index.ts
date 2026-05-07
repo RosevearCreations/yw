@@ -3374,9 +3374,43 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
     }
 
     if (entity === 'accountant_handoff_export') {
-      const patch = { export_kind: body.export_kind ?? 'closeout_bundle', entity_scope: body.entity_scope ?? 'completion_review', entity_id: body.entity_id != null ? String(body.entity_id) : null, business_tax_setting_id: asNullableText(body.business_tax_setting_id), export_status: body.export_status ?? 'draft', export_title: body.export_title ?? null, export_markdown: body.export_markdown ?? null, export_payload: body.export_payload || {}, generated_by_profile_id: actorId, generated_at: body.generated_at ?? new Date().toISOString(), delivered_at: asNullableDateTime(body.delivered_at), updated_at: new Date().toISOString() };
+      const patch = { export_kind: body.export_kind ?? 'closeout_bundle', entity_scope: body.entity_scope ?? 'completion_review', entity_id: body.entity_id != null ? String(body.entity_id) : null, business_tax_setting_id: asNullableText(body.business_tax_setting_id), export_status: body.export_status ?? 'draft', export_title: body.export_title ?? null, export_markdown: body.export_markdown ?? null, export_payload: body.export_payload || {}, bundle_kind: body.bundle_kind ?? 'management_close_bundle', delivery_channel: body.delivery_channel ?? 'manual', delivered_to_email: body.delivered_to_email ?? null, bundle_payload: body.bundle_payload || {}, generated_by_profile_id: actorId, generated_at: body.generated_at ?? new Date().toISOString(), delivered_at: asNullableDateTime(body.delivered_at), updated_at: new Date().toISOString() };
       if (!patch.entity_id) return Response.json({ ok:false, error:'entity_id is required' }, { status:400, headers:corsHeaders });
       if (action === 'create' || action === 'generate') { const { data, error } = await supabase.from('accountant_handoff_exports').insert(patch).select('*').single(); if (error) throw error; await recordJobAccountingLifecycleEvent(supabase, { job_id: null, source_type: 'accountant_export', source_id: data?.id || patch.entity_id || 'export', lifecycle_stage: 'accountant_handoff', lifecycle_status: patch.export_status || 'draft', headline: patch.export_title || 'Accountant handoff export generated', notes: body.notes ?? null, created_by_profile_id: actorId }); return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
+      if (action === 'build_bundle') {
+        const record:any = body.item_id ? await fetchSingle(supabase, 'v_accountant_handoff_export_directory', body.item_id) : null;
+        const exportId = body.item_id || record?.id;
+        if (!exportId) return Response.json({ ok:false, error:'item_id is required for build_bundle' }, { status:400, headers:corsHeaders });
+        const sections = [] as any[];
+        const closeDash = await safeList(supabase, 'v_accounting_close_dashboard', '*', 'created_at', 200, false);
+        const trial = await safeList(supabase, 'v_gl_trial_balance_summary', '*', 'account_number', 400, false);
+        const ar = await safeList(supabase, 'v_ar_invoice_aging_detail', '*', 'due_date', 200, true);
+        const ap = await safeList(supabase, 'v_ap_bill_aging_detail', '*', 'due_date', 200, true);
+        const taxPrep = await safeList(supabase, 'v_sales_tax_prep_directory', '*', 'period_end', 50, false);
+        const payrollPrep = await safeList(supabase, 'v_payroll_remittance_prep_directory', '*', 'period_end', 50, false);
+        const rows = [
+          { kind: 'dashboard', label: 'Accounting close dashboard', payload: { row_count: closeDash.length, rows: closeDash.slice(0,50) } },
+          { kind: 'trial_balance', label: 'Trial balance summary', payload: { row_count: trial.length, rows: trial.slice(0,120) } },
+          { kind: 'ar_aging', label: 'AR aging detail', payload: { row_count: ar.length, rows: ar.slice(0,120) } },
+          { kind: 'ap_aging', label: 'AP aging detail', payload: { row_count: ap.length, rows: ap.slice(0,120) } },
+          { kind: 'sales_tax_prep', label: 'Sales tax prep', payload: { row_count: taxPrep.length, rows: taxPrep.slice(0,24) } },
+          { kind: 'payroll_remittance_prep', label: 'Payroll remittance prep', payload: { row_count: payrollPrep.length, rows: payrollPrep.slice(0,24) } },
+        ];
+        for (let i = 0; i < rows.length; i += 1) {
+          const row = rows[i];
+          sections.push({ export_id: exportId, item_kind: row.kind, item_label: row.label, source_type: 'view', source_id: row.kind, item_order: (i + 1) * 10, item_payload: row.payload });
+        }
+        await supabase.from('accountant_handoff_export_items').delete().eq('export_id', exportId);
+        if (sections.length) {
+          const { error } = await supabase.from('accountant_handoff_export_items').insert(sections);
+          if (error) throw error;
+        }
+        const bundlePayload = { section_count: sections.length, built_at: new Date().toISOString(), kinds: rows.map((row) => row.kind) };
+        const md = ['# Accountant Handoff Bundle', '', `Sections: ${sections.length}`, '', ...rows.map((row) => `- ${row.label}: ${row.payload.row_count} row(s)`)].join('\n');
+        const { data, error } = await supabase.from('accountant_handoff_exports').update({ export_status: 'generated', bundle_item_count: sections.length, bundle_payload: bundlePayload, export_markdown: md, generated_by_profile_id: actorId, generated_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', exportId).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
       if (action === 'update') { const { data, error } = await supabase.from('accountant_handoff_exports').update(patch).eq('id', body.item_id).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
     }
 
@@ -3425,12 +3459,25 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         const candidate:any = await fetchSingle(supabase, 'v_job_invoice_candidate_directory', body.item_id);
         if (!candidate?.id) return Response.json({ ok:false, error:'Invoice candidate not found.' }, { status:404, headers:corsHeaders });
         const queue:any = await supabase.from('job_ar_ap_review_queue').insert({ source_type: 'invoice_candidate', source_id: String(candidate.id), job_id: candidate.job_id, queue_status: body.queue_status || 'approved', assigned_profile_id: asNullableText(body.assigned_profile_id), notes: body.notes ?? 'Invoice candidate posted from Jobs workflow.', created_by_profile_id: actorId }).select('*').single();
-        const payload = { ...(candidate.payload || {}), posting_rule_reviewed: true, ar_ap_queue_id: queue.data?.id || null, external_system: body.external_system || 'manual', external_invoice_number: body.external_invoice_number || candidate.candidate_number || null };
-        const { data, error } = await supabase.from('job_invoice_postings').upsert({ invoice_candidate_id: candidate.id, ar_ap_queue_id: queue.data?.id || null, posting_status: 'posted', external_system: body.external_system || 'manual', external_invoice_number: body.external_invoice_number || candidate.candidate_number || null, posting_payload: payload, posted_by_profile_id: actorId, posted_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: 'invoice_candidate_id' }).select('*').single();
+        const invoiceNumber = body.invoice_number || candidate.candidate_number || `AR-${String(candidate.job_code || 'JOB').replace(/[^A-Za-z0-9]+/g, '-').toUpperCase()}-${new Date().toISOString().slice(0,10).replace(/-/g,'')}`;
+        const dueDate = body.due_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0,10);
+        const arInvoicePatch = { invoice_number: invoiceNumber, client_id: candidate.client_id, work_order_id: candidate.work_order_id || null, invoice_status: 'draft', invoice_date: body.invoice_date || new Date().toISOString().slice(0,10), due_date: dueDate, subtotal: Number(candidate.subtotal || 0), tax_total: Number(candidate.tax_total || 0), total_amount: Number(candidate.total_amount || 0), balance_due: Number(candidate.total_amount || 0), created_by_profile_id: actorId, updated_at: new Date().toISOString() };
+        let arInvoice:any = null;
+        const { data: existingPosting } = await supabase.from('job_invoice_postings').select('ar_invoice_id').eq('invoice_candidate_id', candidate.id).maybeSingle();
+        if (existingPosting?.ar_invoice_id) {
+          arInvoice = await fetchSingle(supabase, 'ar_invoices', existingPosting.ar_invoice_id);
+        }
+        if (!arInvoice?.id) {
+          const { data: createdInvoice, error: arError } = await supabase.from('ar_invoices').insert(arInvoicePatch).select('*').single();
+          if (arError) throw arError;
+          arInvoice = createdInvoice;
+        }
+        const payload = { ...(candidate.payload || {}), posting_rule_reviewed: true, ar_ap_queue_id: queue.data?.id || null, external_system: body.external_system || 'manual', external_invoice_number: body.external_invoice_number || invoiceNumber, ar_invoice_id: arInvoice?.id || null };
+        const { data, error } = await supabase.from('job_invoice_postings').upsert({ invoice_candidate_id: candidate.id, ar_ap_queue_id: queue.data?.id || null, posting_status: 'posted', external_system: body.external_system || 'manual', external_invoice_number: body.external_invoice_number || invoiceNumber, ar_invoice_id: arInvoice?.id || null, posting_message: `Posted to AR invoice ${invoiceNumber}.`, posting_payload: payload, posted_by_profile_id: actorId, posted_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: 'invoice_candidate_id' }).select('*').single();
         if (error) throw error;
         await supabase.from('job_invoice_candidates').update({ candidate_status: 'posted', updated_at: new Date().toISOString() }).eq('id', candidate.id);
-        await recordJobAccountingLifecycleEvent(supabase, { job_id: candidate.job_id, source_type: 'invoice_posting', source_id: data?.id || candidate.id, lifecycle_stage: 'ar_ap_posted', lifecycle_status: 'posted', headline: `Invoice candidate ${candidate.candidate_number || candidate.id} posted`, notes: body.notes ?? null, created_by_profile_id: actorId });
-        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+        await recordJobAccountingLifecycleEvent(supabase, { job_id: candidate.job_id, source_type: 'invoice_posting', source_id: data?.id || candidate.id, lifecycle_stage: 'ar_ap_posted', lifecycle_status: 'posted', headline: `Invoice candidate ${candidate.candidate_number || candidate.id} posted`, notes: `AR invoice ${invoiceNumber} created/linked. ${body.notes || ''}`.trim(), created_by_profile_id: actorId });
+        return Response.json({ ok:true, record:data, ar_invoice: arInvoice }, { headers:corsHeaders });
       }
     }
 
@@ -3439,12 +3486,21 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         const candidate:any = await fetchSingle(supabase, 'v_job_journal_candidate_directory', body.item_id);
         if (!candidate?.id) return Response.json({ ok:false, error:'Journal candidate not found.' }, { status:404, headers:corsHeaders });
         const queue:any = await supabase.from('job_ar_ap_review_queue').insert({ source_type: 'journal_candidate', source_id: String(candidate.id), job_id: candidate.job_id, queue_status: body.queue_status || 'approved', assigned_profile_id: asNullableText(body.assigned_profile_id), notes: body.notes ?? 'Journal candidate posted from Jobs workflow.', created_by_profile_id: actorId }).select('*').single();
-        const payload = { ...(candidate.payload || {}), ledger_summary: candidate.ledger_summary || {}, ar_ap_queue_id: queue.data?.id || null, external_system: body.external_system || 'manual', journal_entry_number: body.journal_entry_number || null, batch_number: body.batch_number || null };
-        const { data, error } = await supabase.from('job_journal_postings').upsert({ journal_candidate_id: candidate.id, ar_ap_queue_id: queue.data?.id || null, posting_status: 'posted', external_system: body.external_system || 'manual', journal_entry_number: body.journal_entry_number || null, batch_number: body.batch_number || null, posting_payload: payload, posted_by_profile_id: actorId, posted_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: 'journal_candidate_id' }).select('*').single();
+        const batchNumber = body.batch_number || `GL-${String(candidate.job_code || 'JOB').replace(/[^A-Za-z0-9]+/g, '-').toUpperCase()}-${new Date().toISOString().slice(0,10).replace(/-/g,'')}`;
+        let glBatch:any = null;
+        const { data: existingPosting } = await supabase.from('job_journal_postings').select('gl_batch_id').eq('journal_candidate_id', candidate.id).maybeSingle();
+        if (existingPosting?.gl_batch_id) glBatch = await fetchSingle(supabase, 'gl_journal_batches', existingPosting.gl_batch_id);
+        if (!glBatch?.id) {
+          const { data: createdBatch, error: batchError } = await supabase.from('gl_journal_batches').insert({ batch_number: batchNumber, source_module: 'jobs', batch_status: 'review', batch_date: body.batch_date || new Date().toISOString().slice(0,10), memo: candidate.journal_memo || body.notes || 'Jobs journal candidate posting batch', source_record_type: 'job_journal_candidate', source_record_id: candidate.id, posting_notes: body.notes ?? null, created_by_profile_id: actorId, updated_at: new Date().toISOString() }).select('*').single();
+          if (batchError) throw batchError;
+          glBatch = createdBatch;
+        }
+        const payload = { ...(candidate.payload || {}), ledger_summary: candidate.ledger_summary || {}, ar_ap_queue_id: queue.data?.id || null, external_system: body.external_system || 'manual', journal_entry_number: body.journal_entry_number || null, batch_number: glBatch?.batch_number || batchNumber, gl_batch_id: glBatch?.id || null };
+        const { data, error } = await supabase.from('job_journal_postings').upsert({ journal_candidate_id: candidate.id, ar_ap_queue_id: queue.data?.id || null, posting_status: 'posted', external_system: body.external_system || 'manual', journal_entry_number: body.journal_entry_number || null, batch_number: glBatch?.batch_number || batchNumber, gl_batch_id: glBatch?.id || null, posting_message: `Linked to GL batch ${glBatch?.batch_number || batchNumber}.`, posting_payload: payload, posted_by_profile_id: actorId, posted_at: new Date().toISOString(), updated_at: new Date().toISOString() }, { onConflict: 'journal_candidate_id' }).select('*').single();
         if (error) throw error;
         await supabase.from('job_journal_candidates').update({ candidate_status: 'posted', updated_at: new Date().toISOString() }).eq('id', candidate.id);
-        await recordJobAccountingLifecycleEvent(supabase, { job_id: candidate.job_id, source_type: 'journal_posting', source_id: data?.id || candidate.id, lifecycle_stage: 'gl_posted', lifecycle_status: 'posted', headline: `Journal candidate ${candidate.id} posted`, notes: body.notes ?? null, created_by_profile_id: actorId });
-        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+        await recordJobAccountingLifecycleEvent(supabase, { job_id: candidate.job_id, source_type: 'journal_posting', source_id: data?.id || candidate.id, lifecycle_stage: 'gl_posted', lifecycle_status: 'posted', headline: `Journal candidate ${candidate.id} posted`, notes: `GL batch ${glBatch?.batch_number || batchNumber} created/linked. ${body.notes || ''}`.trim(), created_by_profile_id: actorId });
+        return Response.json({ ok:true, record:data, gl_batch: glBatch }, { headers:corsHeaders });
       }
     }
 
@@ -3522,10 +3578,20 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
       };
       if (!patch.filing_code || !patch.filing_period_start || !patch.filing_period_end) return Response.json({ ok:false, error:'filing_code, filing_period_start, and filing_period_end are required' }, { status:400, headers:corsHeaders });
       if (action === 'create') { const { data, error } = await supabase.from('sales_tax_filings').insert(patch).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
-      if (action === 'update' || action === 'file' || action === 'pay') {
+      if (action === 'prepare_from_period') {
+        if (!patch.filing_period_start || !patch.filing_period_end) return Response.json({ ok:false, error:'filing_period_start and filing_period_end are required' }, { status:400, headers:corsHeaders });
+        const prepRows:any[] = await safeList(supabase, 'v_sales_tax_prep_directory', '*', 'period_end', 120, false);
+        const prep = prepRows.find((row:any) => String(row.period_start || '') === String(patch.filing_period_start) && String(row.period_end || '') === String(patch.filing_period_end));
+        patch.taxable_sales_total = Number(prep?.taxable_sales_total || 0);
+        patch.tax_collected_total = Number(prep?.tax_collected_total || 0);
+        patch.tax_paid_total = Number(prep?.tax_paid_total || 0);
+        patch.net_remittance_total = Number(prep?.suggested_net_remittance_total || 0);
+        patch.filing_status = 'prepared';
+      }
+      if (action === 'update' || action === 'file' || action === 'pay' || action === 'prepare_from_period') {
         if (action === 'file') { patch.filing_status = 'filed'; patch.filed_by_profile_id = actorId; patch.filed_at = new Date().toISOString(); }
         if (action === 'pay') { patch.filing_status = 'paid'; }
-        const { data, error } = await supabase.from('sales_tax_filings').update(patch).eq('id', body.item_id).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
+        const { data, error } = await supabase.from('sales_tax_filings').upsert({ id: body.item_id || undefined, ...patch }).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
     }
 
     if (entity === 'payroll_remittance_run') {
@@ -3550,9 +3616,21 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
       };
       if (!patch.remittance_code || !patch.remittance_period_start || !patch.remittance_period_end) return Response.json({ ok:false, error:'remittance_code, remittance_period_start, and remittance_period_end are required' }, { status:400, headers:corsHeaders });
       if (action === 'create') { const { data, error } = await supabase.from('payroll_remittance_runs').insert(patch).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
-      if (action === 'update' || action === 'remit') {
+      if (action === 'prepare_from_export') {
+        const exportRun:any = patch.payroll_export_run_id ? await fetchSingle(supabase, 'payroll_export_runs', patch.payroll_export_run_id) : null;
+        if (exportRun) {
+          patch.remittance_period_start = exportRun.period_start || patch.remittance_period_start;
+          patch.remittance_period_end = exportRun.period_end || patch.remittance_period_end;
+          patch.gross_pay_total = Number(exportRun.exported_payroll_cost_total || 0);
+          patch.employee_deduction_total = Number(exportRun.exported_payroll_cost_total || 0) * 0.2;
+          patch.employer_contribution_total = Number(exportRun.exported_payroll_cost_total || 0) * 0.08;
+          patch.net_remittance_total = Number(patch.employee_deduction_total || 0) + Number(patch.employer_contribution_total || 0);
+          patch.remittance_status = 'prepared';
+        }
+      }
+      if (action === 'update' || action === 'remit' || action === 'prepare_from_export') {
         if (action === 'remit') { patch.remittance_status = 'remitted'; patch.remitted_by_profile_id = actorId; patch.remitted_at = new Date().toISOString(); }
-        const { data, error } = await supabase.from('payroll_remittance_runs').update(patch).eq('id', body.item_id).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
+        const { data, error } = await supabase.from('payroll_remittance_runs').upsert({ id: body.item_id || undefined, ...patch }).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
     }
 
     if (entity === 'bank_statement_import') {
@@ -3596,7 +3674,21 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
       };
       if (!patch.bank_account_id || !patch.session_code) return Response.json({ ok:false, error:'bank_account_id and session_code are required' }, { status:400, headers:corsHeaders });
       if (action === 'create') { const { data, error } = await supabase.from('bank_reconciliation_sessions').insert(patch).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
-      if (action === 'update' || action === 'close') {
+      if (action === 'auto_match') {
+        const sessionId = body.item_id;
+        const candidates:any[] = await safeList(supabase, 'v_bank_reconciliation_match_candidate_directory', '*', 'reconciliation_session_id', 500, false);
+        const matches = candidates.filter((row:any) => String(row.reconciliation_session_id || '') === String(sessionId) && String(row.match_reason || '') !== 'review');
+        const touched = new Set<string>();
+        for (const match of matches) {
+          if (touched.has(String(match.bank_item_id)) || touched.has(String(match.candidate_item_id))) continue;
+          await supabase.from('bank_reconciliation_items').update({ match_status: 'matched', clearing_status: 'cleared', notes: `Auto-matched with ${match.candidate_source_type} ${match.candidate_source_id}.`, updated_at: new Date().toISOString() }).eq('id', match.bank_item_id);
+          await supabase.from('bank_reconciliation_items').update({ match_status: 'matched', clearing_status: 'cleared', notes: `Auto-matched with ${match.bank_item_source_type} ${match.bank_item_source_id}.`, updated_at: new Date().toISOString() }).eq('id', match.candidate_item_id);
+          touched.add(String(match.bank_item_id));
+          touched.add(String(match.candidate_item_id));
+        }
+        patch.notes = [patch.notes || null, `${touched.size / 2} match(es) auto-applied.`].filter(Boolean).join(' ');
+      }
+      if (action === 'update' || action === 'close' || action === 'auto_match') {
         if (action === 'close') { patch.reconciliation_status = 'closed'; patch.reviewed_by_profile_id = actorId; patch.reviewed_at = new Date().toISOString(); }
         const { data, error } = await supabase.from('bank_reconciliation_sessions').update(patch).eq('id', body.item_id).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
     }

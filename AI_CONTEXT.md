@@ -1,3 +1,6 @@
+## Current active implementation note
+Schema 101 is the new accounting automation baseline. Use `docs/README.md` for the active docs index and treat `docs/archive/legacy-passes/` as historical reference only.
+
 <!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 AI context update

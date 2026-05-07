@@ -1,3 +1,6 @@
+## Deployment note
+After pulling this pass, apply migrations through schema 101 and verify the report-delivery and service-execution scheduler functions still match the live deployment config.
+
 <!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 deployment note

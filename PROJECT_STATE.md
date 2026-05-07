@@ -1,3 +1,6 @@
+## Current state summary
+The repo now has an accounting-close foundation plus a first automation layer for AR posting, GL posting, tax/remittance prep, bank-reconciliation matching, and accountant handoff bundling. The active documentation set has been trimmed and older pass-specific Markdown files have been archived under `docs/archive/legacy-passes/`.
+
 <!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 project state update

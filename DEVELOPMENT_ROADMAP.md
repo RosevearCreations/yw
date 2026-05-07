@@ -1,3 +1,11 @@
+## Current highest-value implementation order
+1. Finish invoice candidate -> AR posting automation.
+2. Finish journal candidate -> GL batch posting and later entry-line automation.
+3. Add sales tax filing prep/review workflow.
+4. Add payroll remittance prep/review workflow.
+5. Add bank reconciliation matching and review workflow.
+6. Add accountant handoff bundle packaging/delivery.
+
 <!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 <!-- Reviewed during 2026-04-23 scheduler duplicate-dispatch guard, cache refresh, and repo-hygiene pass. -->
