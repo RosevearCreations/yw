@@ -69,6 +69,7 @@ const requiredFiles = [
   'sql/098_jobs_quote_email_signoff_and_gl_posting.sql',
   'sql/099_quote_acceptance_threshold_autoeval_and_accounting_lifecycle.sql',
   'sql/100_accounting_close_reconciliation_and_tax_filing_foundation.sql',
+  'sql/101_accounting_posting_automation_and_export_bundle.sql',
   'js/hse-ops-ui.js',
   'supabase/functions/jobs-directory/index.ts',
   'supabase/functions/jobs-manage/index.ts',
@@ -119,7 +120,7 @@ addCheck('account-has-conflict-review', accountUi.includes('Conflict Review'), '
 addCheck('account-has-support-export', accountUi.includes('Export Support Snapshot'), 'account-ui.js should render the support snapshot export button.');
 
 const schema = read('sql/000_full_schema_reference.sql');
-addCheck('schema-header-current', /100_accounting_close_reconciliation_and_tax_filing_foundation/i.test(schema), 'Schema snapshot header should reflect the latest 099 pass.');
+addCheck('schema-header-current', /101_accounting_posting_automation_and_export_bundle/i.test(schema), 'Schema snapshot header should reflect the latest 101 pass.');
 
 const schedulerRun = read('supabase/functions/service-execution-scheduler-run/index.ts');
 addCheck('scheduler-run-advances-next-run', schedulerRun.includes('next_run_at: computeNextRunAt'), 'Scheduler Edge Function should advance next_run_at after successful runs.');
@@ -134,6 +135,10 @@ addCheck('schema-uses-client-join-for-quote-engagement', schema.includes('left j
 addCheck('schema-has-accounting-close-dashboard', schema.includes('v_accounting_close_dashboard'), 'Canonical schema should include the accounting close dashboard view.');
 addCheck('schema-has-trial-balance', schema.includes('v_gl_trial_balance_summary'), 'Canonical schema should include the GL trial balance summary view.');
 addCheck('schema-has-sales-tax-filing-summary', schema.includes('v_sales_tax_filing_summary'), 'Canonical schema should include the sales tax filing summary view.');
+
+addCheck('schema-has-sales-tax-prep', schema.includes('v_sales_tax_prep_directory'), 'Canonical schema should include the sales tax prep directory view.');
+addCheck('schema-has-payroll-remittance-prep', schema.includes('v_payroll_remittance_prep_directory'), 'Canonical schema should include the payroll remittance prep directory view.');
+addCheck('schema-has-accountant-bundle', schema.includes('v_accountant_handoff_bundle_directory'), 'Canonical schema should include the accountant handoff bundle directory view.');
 
 console.log(JSON.stringify({ ok: !failed, checks: results }, null, 2));
 if (failed) process.exit(1);
