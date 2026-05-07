@@ -966,3 +966,13 @@ select to_regclass('public.v_payroll_remittance_summary') as v_payroll_remittanc
 select to_regclass('public.v_bank_reconciliation_summary') as v_bank_reconciliation_summary;
 select to_regclass('public.v_accounting_period_close_directory') as v_accounting_period_close_directory;
 select to_regclass('public.v_accounting_close_dashboard') as v_accounting_close_dashboard;
+
+
+-- Schema 101 accounting posting automation checks
+select to_regclass('public.accountant_handoff_export_items') as accountant_handoff_export_items;
+select to_regclass('public.v_job_invoice_posting_automation_directory') as v_job_invoice_posting_automation_directory;
+select to_regclass('public.v_job_journal_posting_automation_directory') as v_job_journal_posting_automation_directory;
+select to_regclass('public.v_sales_tax_prep_directory') as v_sales_tax_prep_directory;
+select to_regclass('public.v_payroll_remittance_prep_directory') as v_payroll_remittance_prep_directory;
+select to_regclass('public.v_bank_reconciliation_match_candidate_directory') as v_bank_reconciliation_match_candidate_directory;
+select to_regclass('public.v_accountant_handoff_bundle_directory') as v_accountant_handoff_bundle_directory;
