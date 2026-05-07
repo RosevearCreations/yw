@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 # Report Delivery and Worker Self-Service
 

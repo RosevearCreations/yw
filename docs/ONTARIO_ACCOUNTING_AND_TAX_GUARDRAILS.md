@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 <!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
@@ -87,3 +88,7 @@ It adds the 094 Jobs commercial workflow foundation, updates the repo status tow
 ## Pass 096 notes
 
 This pass adds branded quote output, automatic threshold evaluation, closeout evidence linkage, invoice/journal posting-rule structures, accountant handoff exports, and profitability/variance scorecards for the Jobs commercial workflow.
+
+
+## 2026-05-06 accounting-close note
+The repo now has a first-class backend structure for sales-tax filing review, payroll remittance review, bank reconciliation, and accounting period close. The next value comes from automating these from source transactions instead of managing them only as standalone records.

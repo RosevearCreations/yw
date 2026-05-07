@@ -210,6 +210,17 @@ serve(async (req) => {
     response.hse_packet_events = await safeList(supabase, 'hse_packet_events', '*', 'event_at', limit);
     response.hse_packet_proofs = await safeList(supabase, 'hse_packet_proofs', '*', 'created_at', limit);
     response.chart_of_accounts = await safeList(supabase, 'chart_of_accounts', '*', 'account_number', limit);
+    response.bank_accounts = await safeList(supabase, 'bank_accounts', '*', 'account_name', limit);
+    response.accounting_period_closes = await safeList(supabase, 'v_accounting_period_close_directory', '*', 'period_end', limit, false);
+    response.sales_tax_filings = await safeList(supabase, 'v_sales_tax_filing_summary', '*', 'filing_period_end', limit, false);
+    response.payroll_remittance_runs = await safeList(supabase, 'v_payroll_remittance_summary', '*', 'remittance_period_end', limit, false);
+    response.bank_statement_imports = await safeList(supabase, 'bank_statement_imports', '*', 'statement_end', limit, false);
+    response.bank_reconciliation_sessions = await safeList(supabase, 'v_bank_reconciliation_summary', '*', 'period_end', limit, false);
+    response.bank_reconciliation_items = await safeList(supabase, 'bank_reconciliation_items', '*', 'item_date', limit, false);
+    response.ar_invoice_aging_detail = await safeList(supabase, 'v_ar_invoice_aging_detail', '*', 'due_date', limit, true);
+    response.ap_bill_aging_detail = await safeList(supabase, 'v_ap_bill_aging_detail', '*', 'due_date', limit, true);
+    response.gl_trial_balance_summary = await safeList(supabase, 'v_gl_trial_balance_summary', '*', 'account_number', limit);
+    response.accounting_close_dashboard = await safeList(supabase, 'v_accounting_close_dashboard');
     response.ap_vendors = await safeList(supabase, 'ap_vendors', '*', 'legal_name', limit);
     response.ar_invoices = mergeRowsById(
       await safeList(supabase, 'ar_invoices', '*', 'invoice_number', limit),

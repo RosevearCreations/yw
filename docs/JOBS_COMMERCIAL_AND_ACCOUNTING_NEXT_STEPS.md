@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 # Jobs Commercial and Accounting Next Steps
 
@@ -61,3 +62,7 @@ This pass adds branded quote output, automatic threshold evaluation, closeout ev
 
 ---
 Pass 097 sync note (2026-04-26d): quote output, threshold enforcement on save/release, closeout evidence linkage to real records, posting-rule-aware invoice/journal candidates, accountant handoff enrichment, and extended profitability scorecards.
+
+
+## Added accounting-close foundation
+The backend accounting side now includes period close, sales-tax filing, payroll remittance, bank-account, statement-import, reconciliation-session, and reconciliation-item structures. The next commercial/accounting work should now concentrate on promotion and automation rather than more disconnected schema additions.

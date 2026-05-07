@@ -3448,6 +3448,181 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
       }
     }
 
+
+    if (entity === 'bank_account') {
+      const patch = {
+        account_name: body.account_name ?? null,
+        institution_name: body.institution_name ?? null,
+        currency_code: body.currency_code ?? 'CAD',
+        account_mask: body.account_mask ?? null,
+        transit_number: body.transit_number ?? null,
+        institution_number: body.institution_number ?? null,
+        account_number_last4: body.account_number_last4 ?? null,
+        account_status: body.account_status ?? 'open',
+        gl_account_id: asNullableText(body.gl_account_id),
+        is_default: body.is_default === true,
+        notes: body.notes ?? null,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.account_name) return Response.json({ ok:false, error:'account_name is required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') { const { data, error } = await supabase.from('bank_accounts').insert(patch).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
+      if (action === 'update') { const { data, error } = await supabase.from('bank_accounts').update(patch).eq('id', body.item_id).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
+      if (action === 'delete') { const { error } = await supabase.from('bank_accounts').delete().eq('id', body.item_id); if (error) throw error; return Response.json({ ok:true }, { headers:corsHeaders }); }
+    }
+
+    if (entity === 'accounting_period_close') {
+      const patch = {
+        period_code: body.period_code ?? null,
+        period_start: asNullableDate(body.period_start),
+        period_end: asNullableDate(body.period_end),
+        close_scope: body.close_scope ?? 'month_end',
+        close_status: body.close_status ?? 'open',
+        ar_locked: body.ar_locked === true,
+        ap_locked: body.ap_locked === true,
+        gl_locked: body.gl_locked === true,
+        payroll_locked: body.payroll_locked === true,
+        tax_locked: body.tax_locked === true,
+        close_checklist: body.close_checklist || {},
+        close_notes: body.close_notes ?? null,
+        closed_by_profile_id: asNullableText(body.closed_by_profile_id),
+        closed_at: asNullableDateTime(body.closed_at),
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.period_code || !patch.period_start || !patch.period_end) return Response.json({ ok:false, error:'period_code, period_start, and period_end are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') { const { data, error } = await supabase.from('accounting_period_closes').insert(patch).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
+      if (action === 'update' || action === 'close' || action === 'reopen') {
+        if (action === 'close') { patch.close_status = 'closed'; patch.closed_by_profile_id = actorId; patch.closed_at = new Date().toISOString(); }
+        if (action === 'reopen') { patch.close_status = 'reopened'; patch.closed_by_profile_id = null; patch.closed_at = null; }
+        const { data, error } = await supabase.from('accounting_period_closes').update(patch).eq('id', body.item_id).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
+    }
+
+    if (entity === 'sales_tax_filing') {
+      const patch = {
+        filing_code: body.filing_code ?? null,
+        business_tax_setting_id: asNullableText(body.business_tax_setting_id),
+        tax_code_id: asNullableText(body.tax_code_id),
+        filing_scope: body.filing_scope ?? 'hst_return',
+        filing_period_start: asNullableDate(body.filing_period_start),
+        filing_period_end: asNullableDate(body.filing_period_end),
+        due_date: asNullableDate(body.due_date),
+        filing_status: body.filing_status ?? 'draft',
+        taxable_sales_total: asNumber(body.taxable_sales_total, 0),
+        tax_collected_total: asNumber(body.tax_collected_total, 0),
+        tax_paid_total: asNumber(body.tax_paid_total, 0),
+        adjustment_total: asNumber(body.adjustment_total, 0),
+        net_remittance_total: asNumber(body.net_remittance_total, 0),
+        reference_number: body.reference_number ?? null,
+        notes: body.notes ?? null,
+        filed_by_profile_id: asNullableText(body.filed_by_profile_id),
+        filed_at: asNullableDateTime(body.filed_at),
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.filing_code || !patch.filing_period_start || !patch.filing_period_end) return Response.json({ ok:false, error:'filing_code, filing_period_start, and filing_period_end are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') { const { data, error } = await supabase.from('sales_tax_filings').insert(patch).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
+      if (action === 'update' || action === 'file' || action === 'pay') {
+        if (action === 'file') { patch.filing_status = 'filed'; patch.filed_by_profile_id = actorId; patch.filed_at = new Date().toISOString(); }
+        if (action === 'pay') { patch.filing_status = 'paid'; }
+        const { data, error } = await supabase.from('sales_tax_filings').update(patch).eq('id', body.item_id).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
+    }
+
+    if (entity === 'payroll_remittance_run') {
+      const patch = {
+        remittance_code: body.remittance_code ?? null,
+        payroll_export_run_id: asNullableText(body.payroll_export_run_id),
+        remittance_type: body.remittance_type ?? 'source_deductions',
+        remittance_period_start: asNullableDate(body.remittance_period_start),
+        remittance_period_end: asNullableDate(body.remittance_period_end),
+        due_date: asNullableDate(body.due_date),
+        remittance_status: body.remittance_status ?? 'draft',
+        gross_pay_total: asNumber(body.gross_pay_total, 0),
+        employee_deduction_total: asNumber(body.employee_deduction_total, 0),
+        employer_contribution_total: asNumber(body.employer_contribution_total, 0),
+        net_remittance_total: asNumber(body.net_remittance_total, 0),
+        reference_number: body.reference_number ?? null,
+        notes: body.notes ?? null,
+        remitted_by_profile_id: asNullableText(body.remitted_by_profile_id),
+        remitted_at: asNullableDateTime(body.remitted_at),
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.remittance_code || !patch.remittance_period_start || !patch.remittance_period_end) return Response.json({ ok:false, error:'remittance_code, remittance_period_start, and remittance_period_end are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') { const { data, error } = await supabase.from('payroll_remittance_runs').insert(patch).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
+      if (action === 'update' || action === 'remit') {
+        if (action === 'remit') { patch.remittance_status = 'remitted'; patch.remitted_by_profile_id = actorId; patch.remitted_at = new Date().toISOString(); }
+        const { data, error } = await supabase.from('payroll_remittance_runs').update(patch).eq('id', body.item_id).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
+    }
+
+    if (entity === 'bank_statement_import') {
+      const patch = {
+        bank_account_id: asNullableText(body.bank_account_id),
+        import_code: body.import_code ?? null,
+        statement_start: asNullableDate(body.statement_start),
+        statement_end: asNullableDate(body.statement_end),
+        import_status: body.import_status ?? 'draft',
+        opening_balance: asNumber(body.opening_balance, null),
+        closing_balance: asNumber(body.closing_balance, null),
+        transaction_count: asNumber(body.transaction_count, 0),
+        source_file_name: body.source_file_name ?? null,
+        source_format: body.source_format ?? null,
+        import_payload: body.import_payload || {},
+        imported_by_profile_id: asNullableText(body.imported_by_profile_id),
+        imported_at: asNullableDateTime(body.imported_at),
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.bank_account_id || !patch.import_code) return Response.json({ ok:false, error:'bank_account_id and import_code are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') { const { data, error } = await supabase.from('bank_statement_imports').insert(patch).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
+      if (action === 'update') { const { data, error } = await supabase.from('bank_statement_imports').update(patch).eq('id', body.item_id).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
+    }
+
+    if (entity === 'bank_reconciliation_session') {
+      const patch = {
+        bank_account_id: asNullableText(body.bank_account_id),
+        statement_import_id: asNullableText(body.statement_import_id),
+        session_code: body.session_code ?? null,
+        period_start: asNullableDate(body.period_start),
+        period_end: asNullableDate(body.period_end),
+        reconciliation_status: body.reconciliation_status ?? 'draft',
+        book_balance: asNumber(body.book_balance, null),
+        bank_balance: asNumber(body.bank_balance, null),
+        difference_amount: asNumber(body.difference_amount, null),
+        reviewed_by_profile_id: asNullableText(body.reviewed_by_profile_id),
+        reviewed_at: asNullableDateTime(body.reviewed_at),
+        notes: body.notes ?? null,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.bank_account_id || !patch.session_code) return Response.json({ ok:false, error:'bank_account_id and session_code are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') { const { data, error } = await supabase.from('bank_reconciliation_sessions').insert(patch).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
+      if (action === 'update' || action === 'close') {
+        if (action === 'close') { patch.reconciliation_status = 'closed'; patch.reviewed_by_profile_id = actorId; patch.reviewed_at = new Date().toISOString(); }
+        const { data, error } = await supabase.from('bank_reconciliation_sessions').update(patch).eq('id', body.item_id).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
+    }
+
+    if (entity === 'bank_reconciliation_item') {
+      const patch = {
+        reconciliation_session_id: asNullableText(body.reconciliation_session_id),
+        item_source_type: body.item_source_type ?? 'other',
+        item_source_id: body.item_source_id != null ? String(body.item_source_id) : null,
+        item_date: asNullableDate(body.item_date),
+        item_description: body.item_description ?? null,
+        amount: asNumber(body.amount, 0),
+        match_status: body.match_status ?? 'unmatched',
+        clearing_status: body.clearing_status ?? 'open',
+        difference_reason: body.difference_reason ?? null,
+        notes: body.notes ?? null,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.reconciliation_session_id || !patch.item_source_type) return Response.json({ ok:false, error:'reconciliation_session_id and item_source_type are required' }, { status:400, headers:corsHeaders });
+      if (action === 'create') { const { data, error } = await supabase.from('bank_reconciliation_items').insert(patch).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
+      if (action === 'update' || action === 'match') {
+        if (action === 'match') { patch.match_status = 'matched'; patch.clearing_status = 'cleared'; }
+        const { data, error } = await supabase.from('bank_reconciliation_items').update(patch).eq('id', body.item_id).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
+      if (action === 'delete') { const { error } = await supabase.from('bank_reconciliation_items').delete().eq('id', body.item_id); if (error) throw error; return Response.json({ ok:true }, { headers:corsHeaders }); }
+    }
+
     if (entity === 'subcontract_client') {
       const patch = {
         client_id: asNullableText(body.client_id),
