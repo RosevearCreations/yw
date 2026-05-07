@@ -948,3 +948,21 @@ select to_regclass('public.quote_package_client_events') as quote_package_client
        to_regclass('public.v_quote_package_engagement_directory') as v_quote_package_engagement_directory,
        to_regclass('public.v_job_completion_readiness_directory') as v_job_completion_readiness_directory,
        to_regclass('public.v_job_accounting_lifecycle_directory') as v_job_accounting_lifecycle_directory;
+
+
+-- 2026-05-06 accounting close and reconciliation foundation checks
+select to_regclass('public.bank_accounts') as bank_accounts;
+select to_regclass('public.accounting_period_closes') as accounting_period_closes;
+select to_regclass('public.sales_tax_filings') as sales_tax_filings;
+select to_regclass('public.payroll_remittance_runs') as payroll_remittance_runs;
+select to_regclass('public.bank_statement_imports') as bank_statement_imports;
+select to_regclass('public.bank_reconciliation_sessions') as bank_reconciliation_sessions;
+select to_regclass('public.bank_reconciliation_items') as bank_reconciliation_items;
+select to_regclass('public.v_ar_invoice_aging_detail') as v_ar_invoice_aging_detail;
+select to_regclass('public.v_ap_bill_aging_detail') as v_ap_bill_aging_detail;
+select to_regclass('public.v_gl_trial_balance_summary') as v_gl_trial_balance_summary;
+select to_regclass('public.v_sales_tax_filing_summary') as v_sales_tax_filing_summary;
+select to_regclass('public.v_payroll_remittance_summary') as v_payroll_remittance_summary;
+select to_regclass('public.v_bank_reconciliation_summary') as v_bank_reconciliation_summary;
+select to_regclass('public.v_accounting_period_close_directory') as v_accounting_period_close_directory;
+select to_regclass('public.v_accounting_close_dashboard') as v_accounting_close_dashboard;
