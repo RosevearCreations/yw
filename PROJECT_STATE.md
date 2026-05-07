@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 project state update
 - Scheduler deployment is no longer just connected; it now has a duplicate-dispatch guard and successful Edge Function runs advance `next_run_at` so cron should not continually dispatch every minute.
@@ -368,3 +369,7 @@ The Jobs commercial layer now tracks quote engagement, release enforcement state
 - The biggest immediate value remains in turning the current quote, threshold, closeout, and posting foundations into stricter end-to-end workflows rather than adding parallel structures.
 - Verification now includes stronger repo smoke checks and database audit checks for the commercial layer, reducing the chance of repeat migration confusion.
 
+
+
+## 2026-05-06 state update
+The repo now has a stronger backend accounting foundation: chart of accounts + GL + AR/AP + quote/completion posting candidates + tax settings + accountant handoff + close/reconciliation/tax/remittance structures. The system is ready to move into real accounting-close workflow rather than more one-off schema additions.

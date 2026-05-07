@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 update note
 - Scheduler runtime files now include duplicate-dispatch protection and automatic `next_run_at` advancement after successful Edge Function runs.
@@ -389,3 +390,7 @@ The current Jobs/commercial phase now includes quote engagement, completion read
 ## Latest repo synchronization note (2026-05-05)
 This build re-hardens the canonical SQL chain for the commercial/accounting layer, specifically the 092/096/099 migrations and the full schema reference. The repo now prefers one canonical migration per step and stronger verification via the updated VerifyDB and smoke-check scripts.
 
+
+
+## Current emphasis
+The latest pass begins the backend accounting-close layer. The repo now includes period-close, sales-tax filing, payroll-remittance, bank-account, statement-import, reconciliation-session, reconciliation-item, aging, trial-balance, and accounting-close dashboard structures so the commercial Jobs flow can close into real accounting review.

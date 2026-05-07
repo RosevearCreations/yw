@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 schema note
 - Scheduler settings now rely on `next_run_at`, `last_dispatch_at`, and `last_dispatch_status` together: successful Edge Function runs advance `next_run_at`, and the SQL dispatcher avoids re-queuing recently queued rows.
@@ -412,3 +413,20 @@ This pass adds branded quote output, automatic threshold evaluation, closeout ev
 ## 2026-05-05 structure note
 The commercial/accounting schema now depends on a canonical 092-099 chain with synchronized full-schema coverage. Quote engagement, release enforcement, completion readiness, and accounting lifecycle reporting are now part of the expected structure and are validated by the audit script.
 
+
+
+## 2026-05-06 accounting-close structures
+- bank_accounts
+- accounting_period_closes
+- sales_tax_filings
+- payroll_remittance_runs
+- bank_statement_imports
+- bank_reconciliation_sessions
+- bank_reconciliation_items
+- v_ar_invoice_aging_detail
+- v_ap_bill_aging_detail
+- v_gl_trial_balance_summary
+- v_sales_tax_filing_summary
+- v_payroll_remittance_summary
+- v_bank_reconciliation_summary
+- v_accounting_close_dashboard

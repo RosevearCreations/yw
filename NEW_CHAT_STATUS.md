@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 handoff update
 - Latest repo pass hardened scheduler repeat-run behavior: the Edge Function now writes a calculated `next_run_at`, and the SQL dispatcher suppresses rows that were already queued in the last 10 minutes.
@@ -282,3 +283,9 @@ Pass 099 adds quote engagement tracking, release-evaluation state, completion re
 - `sql/VerifyDB_24_04_2026.sql` now checks key commercial objects, and `scripts/repo-smoke-check.mjs` now covers migrations 089-099 plus absence of stray fixed schema copies.
 - Next chat should continue from the repaired commercial/accounting foundation: public/client-safe quote engagement, stricter threshold policy, completion-to-accounting automation, and profitability management scorecards.
 
+
+
+## 2026-05-06 accounting-close handoff
+- Canonical schema now includes schema 100 accounting-close and reconciliation foundations.
+- Backend accounting now has period close, sales-tax filing, payroll remittance, bank-account, statement-import, reconciliation-session, reconciliation-item, aging, trial-balance, and close-dashboard structures.
+- Best next build is no longer more standalone structures; it is posting automation and accountant-export bundling.

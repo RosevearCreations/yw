@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 required test additions
 - Run the scheduler manually and verify `service_execution_scheduler_settings.next_run_at` is recalculated after the Edge Function completes.
@@ -290,3 +291,12 @@ Pass 097 sync note (2026-04-26d): quote output, threshold enforcement on save/re
 - Run `sql/VerifyDB_24_04_2026.sql` and confirm the commercial quote/completion/accounting lifecycle views are present.
 - Re-test 096 and 099 on a drifted database and confirm the quote engagement and completion/accounting views now apply cleanly.
 
+
+
+## Accounting-close checks
+- verify `v_ar_invoice_aging_detail` returns rows without SQL errors
+- verify `v_ap_bill_aging_detail` returns rows without SQL errors
+- verify `v_gl_trial_balance_summary` returns rows without SQL errors
+- verify `v_sales_tax_filing_summary` and `v_payroll_remittance_summary` return rows
+- verify `v_bank_reconciliation_summary` and `v_accounting_close_dashboard` return rows
+- verify CRUD works for bank accounts, period closes, tax filings, payroll remittance runs, statement imports, reconciliation sessions, and reconciliation items

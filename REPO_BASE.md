@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 repo base note
 - `sql/000_full_schema_reference.fixed.sql` should not be kept in the repo. The canonical full schema remains `sql/000_full_schema_reference.sql`.
@@ -190,3 +191,8 @@ Canonical SQL chain now includes sql/099_quote_acceptance_threshold_autoeval_and
 - Duplicate `*.fixed.sql` helper files should be removed after their contents are merged into the canonical migration.
 - The full schema reference, VerifyDB script, and repo smoke check must move forward in the same pass as the canonical migration changes.
 
+
+
+## 2026-05-06 repo base update
+- `sql/100_accounting_close_reconciliation_and_tax_filing_foundation.sql` is now part of the canonical schema chain.
+- Treat schema 100 as the current backend-accounting foundation baseline.

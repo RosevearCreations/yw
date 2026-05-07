@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-25 management workflow reminders, subscriptions, and JSA linkage pass
 - Added migration `sql/092_management_workflows_and_subscriptions.sql`.
@@ -345,3 +346,10 @@ Pass 097 sync note (2026-04-26d): quote output, threshold enforcement on save/re
 - Corrected `sql/099_quote_acceptance_threshold_autoeval_and_accounting_lifecycle.sql` and the full schema reference so quote engagement joins client names from `public.clients` instead of assuming `public.estimates.client_name` exists.
 - Synced `sql/000_full_schema_reference.sql`, expanded `sql/VerifyDB_24_04_2026.sql` with commercial checks, and strengthened `scripts/repo-smoke-check.mjs` to validate migrations 089-099 plus absence of stray fixed-copy files.
 
+
+
+## 2026-05-06 accounting close and reconciliation foundation pass
+- Added migration `sql/100_accounting_close_reconciliation_and_tax_filing_foundation.sql`.
+- Added backend accounting-close structures for period close, sales-tax filings, payroll remittances, bank accounts, statement imports, reconciliation sessions/items, AR aging, AP aging, GL trial balance, and accounting-close dashboard rollups.
+- Extended directory loaders so these accounting-close datasets are now queryable from the admin/reporting backbone.
+- Synced the full schema, VerifyDB checks, smoke check, and Markdown handoff docs to the schema 100 baseline.

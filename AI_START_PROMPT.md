@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 start prompt update
 - Preserve the scheduler duplicate-dispatch guard: Edge Function recalculates `next_run_at`, and SQL skips recently queued rows for 10 minutes.

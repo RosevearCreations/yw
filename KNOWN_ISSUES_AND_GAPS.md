@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## April 25, 2026 management-workflow gap refresh
 - Reminder/escalation fields and scorecards now exist, but scheduled delivery and notification dispatch still need wiring.
@@ -528,3 +529,11 @@ Pass 097 sync note (2026-04-26d): quote output, threshold enforcement on save/re
 - The commercial/accounting layer is now much deeper, but still depends on continued hardening of quote acceptance flow, threshold enforcement, closeout evidence linkage, and posting lifecycle automation.
 - Full schema reference drift was a real source of confusion in recent passes, so future schema changes should always be mirrored there in the same pass.
 
+
+
+## Current backend accounting gaps after schema 100
+- AR and GL posting markers exist, but invoice/journal candidate promotion into the full AR and GL lifecycle is still incomplete.
+- Sales-tax filing and payroll-remittance records now exist, but prep automation from source transactions remains next-step work.
+- Bank accounts, reconciliation sessions, and reconciliation items now exist, but matching logic and statement parsing remain foundation only.
+- Month-end / year-end close records now exist, but the UI close checklist, lock enforcement, and reopen audit path still need implementation.
+- Accountant-handoff exports still need bundling with trial balance, aging, filing, and remittance summaries.

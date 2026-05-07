@@ -1,3 +1,4 @@
+<!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 <!-- Reviewed during 2026-04-23 scheduler duplicate-dispatch guard, cache refresh, and repo-hygiene pass. -->
 ## Immediate next build priorities after 088 duplicate-dispatch guard
@@ -667,3 +668,19 @@ Next strongest commercial/accounting direction after this pass:
    - keep the canonical SQL chain authoritative and avoid duplicate `*.fixed.sql` copies in the repo
    - keep the VerifyDB and smoke-check scripts aligned with the real latest migration set
 
+
+
+## Immediate next build priorities after schema 100
+1. **AR invoice posting automation**
+   - promote invoice candidates into real AR invoice records with numbering, due dates, and source linkage
+   - keep posting results tied back to job completion reviews and accountant handoff records
+2. **GL journal posting automation**
+   - post journal candidates into balanced GL journal batches
+   - add posting, reversal, and correction workflow controls
+3. **Sales tax and payroll remittance prep**
+   - prepare GST/HST filing totals from source invoices and bills
+   - prepare payroll remittance totals from payroll export runs and mark due/paid states
+4. **Bank reconciliation matching**
+   - import statement data, match AR/AP/GL items, and surface unmatched exceptions
+5. **Accountant export bundle**
+   - package trial balance, AR/AP aging, tax, payroll, and close review into one accountant handoff
