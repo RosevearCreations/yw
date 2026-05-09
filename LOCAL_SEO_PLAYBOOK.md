@@ -1,17 +1,6 @@
-> Current pass update — accounting workflow now adds statement CSV import, auto-match staging, a reconciliation exceptions queue, attachment-required month-close guardrails, accountant export bundle v2 groundwork, public colour filters/badges, and catalog table preference controls.
-
-## Current pass update — 2026-05-06
-- Added `accounting_statement_imports`, `accounting_statement_import_rows`, `accounting_reconciliation_exceptions`, and `accounting_fixed_assets`.
-- Added admin accounting import/review tools for statement import, exception handling, sales-tax worksheet review, fixed-asset groundwork, and vendor-statement review.
-- Added public shop colour filter/swatch support plus admin catalog table preferences and dashboard counts for low stock, drafts, stale drafts, external listings, and missing lead images.
-- Next safest pass: deeper provider-specific import mapping and exception tooling, stronger accountant export packaging, and full product-variant structures.
+> Current pass update — this pass preserved the one-H1 rule and kept discovery/local trust moving with cleaner shop browse paths, public colour filtering, and the existing handmade/vintage/marketplace collection split.
 
 > Current pass update — sanity pass focused on product-creation multi-colour support, a compact catalog inventory column, and clearer next-step prioritization around accountant handoff, reconciliation depth, catalog UX, and local-search discovery.
-
-## Current pass update — 2026-05-05
-- Added recurring event schedule fields, event-image support, and vendor-application capture/review to the community-content layer.
-- `/api/community-content` now returns both base events and upcoming occurrences, and admin Operations can review vendor-interest submissions.
-- Next safest steps after this pass: exception dates for recurring events, richer event-image/gallery support, and deeper vendor-management/admin acceptance workflows.
 
 ## Current pass update — 2026-05-03
 - Added a DB-backed/admin-managed community-content layer for public `Events` and `Pickup` pages so local-market dates, pickup guidance, and sales-channel notes are no longer limited to hard-coded page copy.
@@ -23,35 +12,20 @@
 - Added public `Events` and `Pickup` pages plus stronger internal links from Home, Shop, Product, Collections, Marketplaces, About, and Creations so local buyers can understand market/event context, pickup questions, and support paths sooner.
 - Kept this pass small on schema shape: one new automation-settings table plus doc/schema sync, while storefront discovery/trust work stayed page-level.
 
-# Current pass status — 2026-04-25
+# Current pass note — 2026-04-25
 
 ## Current pass update — 2026-04-28
 - Added dedicated public `Collections` and `Marketplaces` pages so handmade work, vintage/collectible stock, hybrid/external listings, and pickup/support questions are easier to understand before a shopper opens one product.
 - Expanded shared navigation/footer plus Home, Shop, About, Creations, and product-detail trust links so collection paths, provenance/condition guidance, and sale-channel explanations stay visible earlier in the browse flow.
 - Kept this pass schema-light on purpose: no new required tables were added, but the schema reference files were refreshed to record that this pass is a discovery/trust/local-SEO storefront pass rather than a DB-shape change pass.
 
-This repo now includes:
-- accounting vendor directory support
-- recurring expense rule support
-- monthly reconciliation review storage for sales tax, processor fees, and shipping
-- a year-end close bundle endpoint/UI foundation
-- richer expense linkage fields (`vendor_id`, `recurring_expense_rule_id`, `source_mode`, `reference_number`)
-- stronger GIFI review tracking (`gifi_reviewed_by_user_id`, `gifi_reviewed_at`)
-
-Safest next pass from here:
-1. finish reviewed GIFI mapping coverage for every active account
-2. add receipt/bill/statement attachment handling
-3. deepen reconciliation logic and filing support
-4. expand the year-end close bundle into a more accountant-handoff-ready package
+No broad public-page SEO rewrite happened in this accounting-heavy pass, but the one-H1 rule and clear title/main-heading habit remain part of the standing checklist.
 
 # Current pass update — 2026-04-24
 
-- Added live DB sanity checking at `/api/admin/db-sanity`.
-- Added year-level GIFI staging at `/api/admin/accounting-gifi-summary` and surfaced it on the accounting admin page.
-- General ledger rows now support grouping, normal balance, sort order, GIFI code/label/section, and deductibility percent.
-- Schema files were aligned with the runtime accounting journal table shape.
+- SEO direction remains unchanged: one clear public H1, locally relevant wording, and straightforward titles/meta continue to be the baseline. This pass did not add public heading complexity.
 
-# New Chat Status
+# Local SEO Playbook (Devil n Dove)
 
 
 ## Current pass update — 2026-04-24
@@ -68,97 +42,75 @@ Safest next pass from here:
 - The phone product-capture page now parses failed responses safely, so HTML 500 pages no longer surface as `Unexpected token '<'` in the admin UI.
 - Rechecked outward-facing HTML pages and the one-H1 rule remains intact across the current public page set.
 
-## Current handoff summary
+This checklist focuses on **local discovery** without risky keyword stuffing. It is meant to be used alongside the site's existing SEO fields.
 
-This handoff is updated for the latest repo pass. The build focus remained admin resilience, mobile follow-up visibility, schema/doc sync, and reducing duplicate truth risks where the repo could safely move forward in one pass.
+## Quick wins (1–2 hours)
 
-## Most important current truths
-- `data/movies/movie_catalog_enriched.v2.json` remains the active movie base truth.
-- `functions/api/admin/catalog-sync.js` now points movie sync work at the v2 JSON source instead of the older enriched file.
-- `movie_catalog` in D1 is still a manual/admin overlay layer, not the primary movie truth.
-- The public movie tab and admin movie list/editor must continue to load from the JSON-first movie source, then merge any D1 overlay rows on top.
-- The admin movie editor must continue to show fuller JSON-backed details, not just image and UPC.
-- `database_schema.sql`, `database_store_schema.sql`, and `database_upgrade_current_pass.sql` were brought forward so the schema references better match the current code paths.
-- Public exposed pages were checked again and still keep the one-H1-per-page rule intact.
+1. **Google Business Profile (GBP)**
+   - Claim/verify it
+   - Use accurate categories
+   - Add photos regularly (workshop, finished pieces, behind-the-scenes)
+   - Ensure hours, phone, and website are consistent
 
-## What just happened
-- Earlier movie admin saves could fail on older databases with: `D1_ERROR: table movie_catalog has no column named imdb_id`.
-- This pass reduced that drift by aligning the repo schema references and upgrade SQL with the richer movie fields the admin editor expects.
-- Catalog-sync movie imports were moved to the same v2 JSON source already preferred by the public/admin movie flows.
-- The movies page received another small SEO wording pass around DVD/Blu-ray collection terms.
+2. **Consistency (NAP)**
+   - NAP = Name, Address, Phone.
+   - Keep this consistent across GBP, website contact page, Facebook page, and listings.
 
-## Current requested direction
-1. Keep movies JSON-first using `movie_catalog_enriched.v2.json`.
-2. Keep admin movie editing stable and visually complete.
-3. Keep D1 movie writes backward-compatible with older table shapes.
-4. Continue moving Known Gaps forward only where it is honest and safe to do so.
-5. Keep all Markdown and schema-reference files in sync each pass.
+3. **Local landing content (no stuffing)**
+   - Add 1–2 short paragraphs on the contact/about pages describing:
+     - where you are (region, not full address if home-based)
+     - what you make (jewelry, custom work, casting, engraving)
+     - what customers can do next (contact, shop, request custom)
 
-## Movie fields the user expects to see/edit
-At minimum, the admin movie workflow should expose and allow edits for:
-- UPC
-- title
-- original title
-- summary
-- release year
-- media format
-- genre
-- director names
-- actor names
-- studio name
-- runtime minutes
-- trailer URL
-- front image URL
-- back image URL
-- status
-- featured rank
-- IMDb id
-- alternate identifier
-- metadata source
-- metadata status
-- estimated value low/high cents
-- estimated value currency
-- rarity notes
-- collection notes
-- value search URL
+4. **Site basics**
+   - Ensure every page has:
+     - one clear H1
+     - a unique title and meta description
+     - fast image loading (avoid oversized images)
 
-## Product intake expectations
-- Mobile product entry must support partial drafts before later mandatory fields are enforced.
-- The repo should include and maintain a detailed finished-products CSV import template for bulk additions.
+## Next layer (half day)
 
-## Known honest remaining gaps
-- Trusted movie enrichment still depends on the external/local enrichment pipeline and cannot be truthfully marked fully complete inside the site repo alone.
-- Broader permission granularity and deeper security segmentation remain future security-pass work, not something already solved.
-- Some legacy admin/read paths may still need more API-first authority cleanup.
+1. **Add a location/service area section**
+   - Example: “Serving Southern Ontario, including …”
+   - Keep it short and real.
 
-## Recommended next actions in a new chat
-- Verify `functions/api/admin/movies.js` in a live environment against an older D1 database and confirm the auto-add column path covers every missing movie field.
-- Continue the Known Gaps list from the remaining repo-safe items.
-- Keep docs aligned with the JSON-first movie truth and overlay-only D1 strategy.
-- Continue reducing duplicate truth paths between JSON, D1, and admin screens where the repo can do so honestly.
+2. **Structured data (JSON-LD)**
+   - If you have a public storefront address, you can add LocalBusiness schema.
+   - If you are home-based, use a service-area approach and avoid publishing a private address.
+
+3. **Reviews workflow**
+   - Ask for reviews after delivery.
+   - Reply to every review.
+
+## Search engine criteria tuning in this repo
+
+- Use product SEO fields (`product_seo`) for:
+  - descriptive titles (what it is + material + style)
+  - plain-language descriptions
+  - keywords that match how people search
+
+Examples of safe keyword patterns:
+- “sterling silver ring”, “custom engraved pendant”, “lost wax casting”, “wax carving”, “laser engraving”
+
+Avoid:
+- repeating city names everywhere
+- copying the same meta description across pages
+
+## Measurement
+
+- Track:
+  - impressions/clicks from Search Console
+  - GBP searches and actions
+  - top pages and queries
+
+## Notes
+
+Local SEO is mostly consistency + trust + relevance. The site can support that, but GBP + reviews + strong product pages are usually the biggest drivers.
 
 
-## Current pass addendum
-- Marked the previous admin preview, products fallback, movie save, and accordion issues as completed/fixed in the documentation.
-- Departmentalized Admin into standalone interfaces: Members, Catalog, Orders, Accounting, Analytics, Operations, and Movies, reducing the size and risk of the main dashboard file.
-- Added real starter routes/UI for tier policy, general ledger accounts, expenses, write-offs, product unit costs, and monthly accounting CSV export.
-- Added accounting templates (CSV + XLSX) so GL and month-end bookkeeping can be seeded faster.
-- Continued mobile direction by making the lighter departmental pages easier to use on smaller screens than the former all-in-one Admin page.
-- Continued JSON-to-DB convergence by moving tier policy and accounting records into D1-backed tables instead of temporary page-only assumptions.
-
-
-## Current pass addendum
-- Fixed the Members department so Access Tiers render as a visible standalone interface instead of only a hidden modal dependency.
-- Rewired Tier Policy admin/member JSON contracts so the admin editor and member account views use the same DB-backed field names.
-- Strengthened the Accounting department with visible starter forms plus month-end, quarter-end, and year-end CSV export presets.
-- Added a new phone-first Admin Dashboard at `/admin/mobile/` with Today, Quick Add, receiving, and export-oriented shortcuts.
-- Continued moving the admin shell toward dashboard-style department buttons instead of long scroll-heavy interfaces.
-
-
-## Current pass status
-- Departmental admin pages remain the active direction and the lighter launcher dashboard is still the preferred shell over a single long admin page.
-- Accounting now has clearer quick-action launch points and export preset entry points, especially for phone use.
-- Mobile-first work should continue by moving more common daily actions onto the phone dashboard before broader stress testing.
+## Current pass local SEO reminder
+- Keep page titles and meta descriptions localized and natural for Southern Ontario intent rather than stuffing repeated city names.
+- Continue using dedicated public landing pages and clean department/admin separation so private routes stay non-indexed and public content remains easier for crawlers to understand.
 
 
 ## Current pass addendum
@@ -174,66 +126,43 @@ At minimum, the admin movie workflow should expose and allow edits for:
 - Schema and template files were updated for the new overhead allocation layer.
 
 
-## Current pass update
-- Fixed the missing phone-draft continuation gap by adding a draft picker to the mobile product capture screen and update-in-place draft saves.
-- Added an estimated item-costing accounting view so rough full unit cost can include direct costs, linked resources, and allocated overhead.
-- Mobile admin quick links now expose item-costing review directly from the phone dashboard.
+## Current pass note
+- Continue prioritizing clear mobile entry points and task-oriented navigation because better mobile experience improves engagement and local conversion signals.
 
-## Current pass update
-- Fixed a real accounting-schema mismatch in the reporting layer: the rough P&L now reads the live `amount` / `tax_amount` accounting columns instead of non-existent cents columns.
-- Fixed the estimated item-costing layer so it now joins product costs by `product_number` and uses real-dollar `cost_per_unit`, then blends that with linked-resource cost and allocated overhead.
-- Mobile draft continuation is better because saved SEO rows reload with the draft and updated drafts stay open in-place after save.
-- The phone dashboard now has a live month snapshot for rough revenue, overhead, costing warnings, and visible draft-product status.
-- Public SEO copy was tuned again around Southern Ontario / Canada language and About/Contact now carry a stronger LocalBusiness-style structured-data graph.
-
-## Honest remaining open items
-- overhead allocation is still rough revenue-share logic, not true final per-item absorption accounting
-- deeper accounting / P&L / double-entry still remains future work
-- remaining mixed JSON/D1 cleanup and broader real-device stress testing still remain open
+## Current pass addendum
+- Reinforced Southern Ontario / Canada relevance in key public-page descriptions so the public copy stays closer to the real regional service/workshop identity.
+- About and Contact now carry a stronger Organization/LocalBusiness structured-data graph tied to the public site identity, region, and social profiles.
+- Keep validating structured data against visible page content and avoid adding location precision that the public pages do not actually support.
 
 ## 2026-04-10 deploy hotfix
 
 - Fixed a Cloudflare Pages build blocker in the accounting CSV export helpers by replacing the regex-based CSV quoting check with a simpler string-contains check.
 - This hotfix does not change the database shape. Schema files remain current for this pass because no SQL migration was required.
 
-## Latest pass update
-- Public gallery/creations pages now rely on `/api/creations` instead of keeping another direct JSON-read fallback in the page code.
-- The public tools page now uses `/api/tools` as its page authority rather than reading `/data/toolshed/toolshed_items_master.json` directly.
-- `/admin/mobile/` now shows open accounting-record count plus paid, outstanding, and tax-liability snapshot values for quicker phone-side review.
-- `functions/api/admin/accounting-summary.js` now shares the same accounting schema helper as the rest of the accounting layer, which reduces future drift.
-- Schema/upgrade SQL now includes extra `catalog_items` indexes to support centralized public catalog reads.
+## Current pass note
 
-## Still open after this pass
-- movies remain intentionally JSON-first with D1 overlay logic rather than full D1 authority
-- social feed content still reads from JSON
-- real phone/desktop stress testing is still needed
-- deeper accounting remains rough and is not yet final double-entry
-
-## Latest pass update
-- `/api/social-feed` now fronts the public social hub so that page no longer reads `data/site/social-feed.json` directly in the browser.
-- Shop, movies, socials, and the phone dashboard now keep last-good snapshot fallback data in the browser for safer public/admin continuity.
-- `/api/admin/runtime-incidents` now exposes recent fallback/error records for admin review.
-- `dashboard-summary` now tracks recent runtime-incident counts for quicker phone/admin health checks.
-
-## Latest handoff note
-
-This pass focused on admin order resiliency rather than new storefront features. The strongest shipped changes are: partial-fallback order APIs, cached admin order snapshots in the browser, and expanded phone dashboard health counts for order/payment incidents. The next strongest step is write-path hardening for refunds/disputes/payment-entry flows plus real device testing.
+- Continue preferring centralized API-backed public catalog reads over page-local JSON reads because consistent shared content sources reduce title/body drift and make future local-search improvements easier to manage across pages.
 
 
-## Latest pass addendum
-- Saved local fallback actions now exist for failed admin order writes in the browser, so operators can retry order-status, manual-payment, and refund/dispute actions without retyping.
-- Server-side runtime incidents now cover these write paths more explicitly, and the mobile dashboard shows those warnings plus the local pending-action count.
-- Composite payment/refund/dispute indexes were added to keep the new follow-up health queries responsive.
 
-## Latest handoff note
+## Current pass update
+- SEO work remains paired with reliability work: if a page can keep rendering with a safe fallback, search users and direct visitors are less likely to hit dead-end empty experiences.
+- Continue keeping one clear H1 per exposed page, descriptive titles/meta, and locally relevant wording while the fallback/runtime hardening work continues underneath.
 
-This pass focused on moving failed admin write actions beyond one browser. A new `admin_pending_actions` table plus `/api/admin/pending-actions` endpoints now back a shared replay queue for order-status updates, manual payment entries, and refund/dispute actions. The order-detail screen now prefers the shared queue and only keeps browser-local fallback when the shared queue cannot be reached. The phone dashboard also shows shared queue health counts.
+## Current pass SEO note
+- This pass kept the one-clear-title pattern on exposed pages while improving runtime resilience, which helps avoid blank/failed catalog screens that can hurt user trust and crawl usefulness.
+- Shop and movie shelf fallback now preserve descriptive page content more reliably during temporary endpoint problems.
 
-## Current pass handoff update
-- Fixed the social hub YouTube thumbnail problem by deriving thumbnail fallbacks in `/api/social-feed` and rendering thumbnail cards in `public/js/social-hub.js`.
-- Moved shared replay coverage beyond order detail by queueing failed product review actions from `public/js/admin-products.js` into `admin_pending_actions`, with retry/dismiss controls in the products screen.
-- Switched `/api/admin/accounting-item-costing` over to the shared `_costing.js` engine, which now exposes basis-aware overhead pools plus rough recognized COGS metrics to the accounting UI.
-- Added `idx_admin_pending_actions_scope_status` to all main schema files and the current-pass upgrade SQL.
+## Current pass note
+
+This pass was mostly admin-resiliency work. Keep the usual one-H1, descriptive title, and local-service wording habits unchanged while order/payment fallback hardening continues in the back office.
+
+## Latest pass note
+
+- SEO work this pass stayed focused on preserving one clear H1 per public page and avoiding layout/fallback regressions while the admin resilience layer was expanded.
+
+## Current pass note
+- The public social hub now uses API-backed thumbnail cards for YouTube content, which keeps the page more stable and more descriptive for visitors while preserving the one-clear-title rule on exposed pages.
 
 ## Current pass completion update
 - Added `accounting_overhead_product_allocations` so monthly overhead can now be assigned directly to specific products by ledger code instead of relying only on pool-wide share logic.
@@ -258,25 +187,16 @@ This pass focused on moving failed admin write actions beyond one browser. A new
 
 - Current pass: the main Catalog admin page no longer shows the day-to-day migration panel after the full D1 catalog sync completed successfully. The sync route remains available only for maintenance or reseed recovery, and the docs now treat catalog migration as completed rather than an active daily admin step.
 
-## Current pass handoff — 2026-04-12
+## Current pass update — 2026-04-12
 
-- Fixed the admin mobile-product numbering bug: the DD sequence now starts at `DD1000` and increments by `1` from the current highest product number.
-- Shared the numbering rule across `/api/admin/product-mobile-bootstrap`, `/api/admin/mobile-create-product`, and `/api/admin/create-product`.
-- Seeded `site.catalog.product_number_start` in the schema files so the baseline is documented as data, while runtime still falls back safely to `1000` on older databases.
-- Added a more graceful mobile bootstrap fallback and tightened the offline fallback page head tags.
-- Next sensible check: verify imports/backfills cannot still create low manual product numbers that break the DD sequence.
+- The public-page audit for this pass still shows one H1 per exposed HTML page.
+- The offline fallback page now includes a description/canonical/Open Graph block so even non-indexed fallback shells stay structurally tidy and easier to maintain.
+- Continue prioritizing clear page titles, visible main headings, and Southern Ontario wording that matches how real shoppers search.
 
 
-## Latest handoff note
-- Mobile/DD numbering remains on the DD1000 baseline introduced in the prior pass.
-- The products admin now also has broader price-control coverage: one item through the normal edit form, or multi-item/category/all-catalog changes through the bulk tools.
-- Bulk pricing now has preview-before-save support and no longer forces shipping/tax flag changes when those fields are left alone.
-- Public exposed pages were checked again and still keep the one-H1 rule.
-- No new required schema tables were introduced in this pass; this was a code, workflow, and documentation sync pass.
-
-## Recommended next actions in a new chat
-- Add bulk raw-material / packaging cost adjustments to `site_item_inventory` using the same scope model as the new catalog pricing controls.
-- Continue the Known Gaps list from the remaining cost, inventory-authority, and analytics items that are still honest and repo-safe.
+## Current pass addendum
+- Another exposed-page audit confirmed the current HTML pages still keep the one-H1 rule.
+- Continue matching page titles, main headings, and visible copy to plain-language product and local-intent terms rather than stacked or repetitive headings.
 
 ## 2026-04-13 pass update
 - Repaired the phone capture next-number display so the admin UI now shows `DD1000`-style labels instead of a bare numeric value when the next product number is loaded.
@@ -284,12 +204,9 @@ This pass focused on moving failed admin write actions beyond one browser. A new
 - Added a catalog-side **Brand, Socials & Creations** helper so reusable brand images can be uploaded as standalone brand assets and the current public social links can be verified from admin.
 - Confirmed that public gallery and creations are still fed through the finished-product plus catalog-sync flow; a fully separate creations-only editor remains a next-step item rather than a completed interface.
 
-## Current pass handoff update
-- Bulk unit-cost updates were added for site inventory through a new admin API route: `/api/admin/bulk-update-site-inventory`.
-- The admin catalog inventory section now includes a preview/apply bulk cost tool with scope by ids, category, source type, or all inventory.
-- Quick inventory updates now also allow one-off unit-cost correction from the table prompt.
-- Public H1 audit still came back clean for exposed HTML pages.
-- No schema expansion was required in this pass; the work reused `site_item_inventory` and `site_inventory_movements`.
+## Current pass note
+- Public HTML pages were rechecked for the one-H1 rule in this pass and the current exposed pages still return one main heading each.
+- Keep continuing the existing pattern of descriptive titles, concise meta descriptions, and Southern Ontario wording on public collection and company pages.
 
 ## Pass 20 note — mobile capture compatibility repair
 - Repaired the phone capture save path so it no longer hard-fails when the live `products` table is missing newer mobile-capture columns such as `capture_reference`.
@@ -414,39 +331,9 @@ Key implementation notes:
 - Public trust/support blocks were broadened so testimonials and support cues are visible in more browsing flows.
 
 
-## Latest handoff note — 2026-04-22
-Completed this pass:
-- strengthened image scoring into a merchandising score with lead-image/gallery weighting
-- persisted upload-time metrics into `media_assets` and `product_image_annotations`
-- improved upload and asset-selection guidance before save/publish
-- fixed the media-upload metric-persistence bug that previously dropped width/height/orientation-derived values
-- re-synced markdown and schema reference files for the current image-scoring direction
+## Pass 99 local SEO alignment
 
-Best next continuation point:
-- test old products with older uploads and decide whether to bulk backfill missing merchandising fields or only refresh them as images are touched
-- then continue the pricing-history/admin-note tightening and broader storefront trust/SEO passes
-
-
-## Pass 99 handoff
-
-Implemented now:
-- accountant/GIFI review notes and Schedule 141 note capture
-- accounting month lock + reopen controls
-- locked-period enforcement on core accounting write routes
-- stronger storefront trust/policy placement on shop, product, and cart
-- contextual-shot visibility in admin product merchandising status
-- schema files synced to runtime for `accounting_journal_lines` and new accounting review/lock tables
-
-Carry forward next:
-- reviewed GIFI mapping for every active ledger account
-- recurring expenses, vendors, sales tax reconciliation, processor fee reconciliation
-- shipping-cost reconciliation versus orders
-- attachments for bills/statements
-- fuller public process-video management and more trust blocks on collection/about pages
-
-
-### Legacy schema drift still noted
-A broader repo-level sanity sweep also found older bootstrap/runtime tables that still appear in legacy setup code but are not yet fully represented in the core schema reference set, including legacy/member/content tables such as `members`, `member_sessions`, `newsletter_subscribers`, `blog_posts`, `blog_comments`, `creations`, `project_updates`, `comments`, `inventory_items`, `inventory_usage`, `store_products`, and several customer-engagement tables. These were noted for a slower follow-up normalization pass rather than being forced into the accounting-focused schema update in this pass.
+This pass keeps the one-H1 rule intact on exposed pages and continues moving trust/support language closer to product and cart decision points. For local relevance, the next content pass should keep adding Ontario-facing wording where appropriate, plus pickup/event/market pages and clearer service-area / workshop-story context.
 
 ## Pass note — 2026-04-25 accounting handoff step
 - Extended the slow T2/GIFI path with stronger GL review completion support, including reviewed/finalized starter mappings and bulk review/finalize actions for mapped active accounts.
@@ -460,14 +347,4 @@ A broader repo-level sanity sweep also found older bootstrap/runtime tables that
 - deepened reconciliation storage for statement/book amounts, tolerances, expected versus observed rates, and unresolved item counts
 - expanded the year-end close bundle so accountant handoff now summarizes GL blockers, reconciliation coverage, attachment coverage by kind/month, and missing support items
 
-
-
-## Latest pass summary
-- Added collectible / vintage / antique / oddity / pre-built product support alongside handmade catalog entries.
-- Added sale-channel handling for on-site, hybrid, and external-only listings, including external listing URL/label support for Facebook Marketplace or similar channels.
-- Storefront shop and product views now surface origin/channel/provenance-style details and suppress on-site cart checkout for external-only items.
-- Year-end close bundle now supports CSV export and scope-aware attachment/reconciliation summaries for accountant handoff.
-
-
-## Latest pass summary
-This pass refined receipt/statement/workpaper coverage, added statement-backed reconciliation detail, made the shop browse path more visibly split between handmade and vintage/collectible stock, and expanded About/Creations trust copy around provenance, condition, and sales channels.
+> Current pass sync: 2026-05-05 recurring events, vendor applications, and event-image support were reviewed against this document.
