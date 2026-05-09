@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Devil n Dove Tools | Workshop Tools We Use</title>
+<link href="/css/styles.css" rel="stylesheet"/>
+<link href="/assets/mark.png" rel="icon" type="image/png"/>
+<style>
+    .area-block { margin-top: 18px; }
+    .area-head {
+      display:flex; align-items:baseline; justify-content:space-between;
+      gap:12px; margin: 10px 0 10px;
+    }
+    .area-head h2 { margin:0; font-size: 18px; text-transform: capitalize; }
+    .area-head .muted { opacity:.75; font-size: 13px; }
+
+    .subgrid{
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 12px;
+    }
+
+    .tool.card{
+      padding: 0;
+      overflow: hidden;
+      display:flex;
+      flex-direction: column;
+      min-height: 330px;
+    }
+
+    .tool.card .thumb{
+      height: 160px;
+      width: 100%;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+    }
+    .tool.card .thumb img{
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display:block;
+    }
+    .tool.card .thumb .ph{
+      width:100%;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      font-size:12px;
+      opacity:.75;
+      padding: 10px;
+      line-height:1.3;
+    }
+
+    .tool.card .body{
+      padding: 12px;
+      display:flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .tool.card .tname{
+      font-weight: 800;
+      line-height: 1.2;
+      font-size: 14px;
+      margin: 0;
+      display:-webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow:hidden;
+    }
+
+    .meta-line{ font-size:12px; opacity:.85; line-height:1.35; }
+    .meta-line strong{ opacity:.95; }
+
+    .tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .tag{
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      opacity: .9;
+      white-space: nowrap;
+    }
+
+    .note{
+      font-size: 12px;
+      opacity: .85;
+      line-height: 1.35;
+      display:-webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow:hidden;
+    }
+
+    .actions{
+      margin-top: auto;
+      padding-top: 6px;
+      display:flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .btnlink{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap: 8px;
+      text-decoration:none;
+      font-size: 12px;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      min-width: 120px;
+      cursor: pointer;
+      color: inherit;
+    }
+    .btnlink:hover{ background: rgba(255,255,255,0.10); }
+
+    .controls .input { width: 100%; }
+    .controls-row{
+      display:grid;
+      grid-template-columns: 1fr 220px 220px 220px;
+      gap: 10px;
+      align-items:end;
+    }
+    @media (max-width: 900px){
+      .controls-row{ grid-template-columns: 1fr 1fr; }
+    }
+
+    .small-note{
+      font-size: 12px;
+      opacity: .8;
+      margin-top: 8px;
+      line-height: 1.35;
+    }
+    .toolbar-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-top:10px}
+    .toolbar-left,.toolbar-right{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .reorder-panel{margin-top:12px;border:1px solid rgba(255,255,255,0.10);border-radius:14px;padding:12px;background:rgba(255,255,255,0.02);display:none}
+    .reorder-panel.open{display:block}
+    .reorder-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+    .reorder-list{display:grid;gap:8px;margin-top:8px}
+    .reorder-row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:8px 10px;background:rgba(255,255,255,0.02)}
+    .reorder-row .name{font-size:13px;line-height:1.25}
+    .reorder-empty{font-size:13px;opacity:.8;padding:8px 2px}
+    .btnlink.secondary{ background: rgba(255,255,255,0.03); }
+    .btnlink.active{ border-color: rgba(140, 200, 255, .55); background: rgba(90, 150, 255, .10); }
+  </style>
+<link href="https://devilndove.com/tools/" rel="canonical"/><meta content="Browse the tools Devil n Dove uses in our Southern Ontario workshop for jewelry making, casting, carving, laser work, resin, and maker experiments." name="description"/><meta content="index,follow" name="robots"/><meta content="Devil n Dove" property="og:site_name"/><meta content="website" property="og:type"/><meta content="Devil n Dove Tools | Workshop Tools We Use" property="og:title"/><meta content="Browse the tools Devil n Dove uses in our Southern Ontario workshop for jewelry making, casting, carving, laser work, resin, and maker experiments." property="og:description"/><meta content="https://devilndove.com/tools/" property="og:url"/><meta content="https://devilndove.com/assets/logo-clear.png" property="og:image"/><meta content="summary_large_image" name="twitter:card"/><meta content="Devil n Dove Tools | Workshop Tools We Use" name="twitter:title"/><meta content="Browse the tools Devil n Dove uses in our Southern Ontario workshop for jewelry making, casting, carving, laser work, resin, and maker experiments." name="twitter:description"/><meta content="https://devilndove.com/assets/logo-clear.png" name="twitter:image"/><script id="pageStructuredData" type="application/ld+json">{"@context":"https://schema.org","@type":"CollectionPage","name":"Workshop tools we use at Devil n Dove","url":"https://devilndove.com/tools/","description":"Browse the tools Devil n Dove uses in our Southern Ontario workshop for jewelry making, casting, carving, laser work, resin, and maker experiments.","isPartOf":{"@type":"WebSite","name":"Devil n Dove","url":"https://devilndove.com/"}}</script></head>
+<body>
+<div class="container">
+<div class="nav">
+<div class="brand">
+<img alt="Devil n Dove logo" src="/assets/logo-clear.png"/>
+<div>
+<div style="font-weight:800;letter-spacing:.2px;line-height:1.1">Devil n Dove</div>
+<div class="small">Workshop • Art • Tools • Movies</div>
+</div>
+</div>
+<div style="display:flex;gap:14px;flex-wrap:wrap">
+<a href="/index.html">Home</a>
+<a href="/about/index.html">About</a>
+<a href="/gallery/index.html">Art</a>
+<a href="/creations/index.html">Creations</a>
+<a href="/tools/index.html">Tools</a>
+<a href="/supplies/index.html">Supplies</a>
+<a href="/shop/index.html">Shop</a>
+<a href="/movies/index.html">Movies</a>
+<a href="/contact/index.html">Contact</a>
+</div>
+</div>
+<div class="hero">
+<span class="badge">Toolshed</span>
+<div class="hero-grid" style="margin-top:12px">
+<div class="card" style="padding:18px">
+<h1>Workshop tools we use at Devil n Dove</h1>
+<p>
+            Our toolshed is a real-world working collection — jewelry tools, resin gear, laser and CNC accessories,
+            safety equipment, filming tools, and workshop helpers. We use duplicates in some cases for different stations/jobs.
+          </p>
+</div>
+<div class="hero-media">
+<img alt="Illustrated workshop scene" src="/assets/hero-workshop.webp"/>
+</div>
+</div>
+</div>
+<div class="card controls" style="margin-top:14px">
+<div class="controls-row">
+<div>
+<label class="small" for="toolQ">Search</label>
+<input class="input" id="toolQ" placeholder="Type a tool name…"/>
+</div>
+<div>
+<label class="small" for="toolArea">Primary Area</label>
+<select class="input" id="toolArea">
+<option value="all">All</option>
+</select>
+</div>
+<div>
+<label class="small" for="toolCat">Category</label>
+<select class="input" id="toolCat">
+<option value="all">All</option>
+</select>
+</div>
+<div>
+<label class="small" for="toolTag">Process Tag</label>
+<select class="input" id="toolTag">
+<option value="all">All</option>
+</select>
+</div>
+</div>
+<div class="small" style="margin-top:10px">
+        Showing <span id="toolShown">0</span> of <span id="toolTotal">0</span>
+</div>
+<div class="toolbar-row">
+<div class="toolbar-left">
+<label class="small" style="display:flex;gap:8px;align-items:center;margin:0">
+<input id="toolReorderOnly" type="checkbox"/>
+<span>Show reorder-needed only</span>
+</label>
+</div>
+<div class="toolbar-right">
+<button class="btnlink secondary" id="toggleToolReorderPanelBtn" type="button">Reorder list</button>
+<button class="btnlink secondary" id="copyToolReorderBtn" type="button">Copy reorder copy</button>
+<button class="btnlink secondary" id="clearToolReorderBtn" type="button">Clear</button>
+</div>
+</div>
+<div aria-live="polite" class="reorder-panel" id="toolReorderPanel">
+<div class="reorder-head">
+<div>
+<strong>Tool reorder list</strong>
+<div class="small">Local browser list for tools you want to reorder or review.</div>
+</div>
+</div>
+<div class="reorder-list" id="toolReorderListWrap"></div>
+</div>
+<div id="toolsGrid" style="margin-top:12px"></div>
+<div class="small" style="margin-top:12px">
+        Links go to Amazon.ca (reference/search links only). Images are served from our R2 bucket.
+      </div>
+<div class="small-note">
+        Public view hides internal storage/location details. Duplicate tools may be intentional (multiple stations / multiple jobs).
+      </div>
+</div>
+<div class="footer">
+      Next: we can add a Toolshed “health” page for duplicate-photo groups and missing images.
+    </div>
+</div>
+<script src="/js/main.js"></script>
+<script>
+    (function () {
+      function escHtml(v){
+        return String(v ?? '')
+          .replaceAll('&', '&amp;')
+          .replaceAll('<', '&lt;')
+          .replaceAll('>', '&gt;')
+          .replaceAll('"', '&quot;')
+          .replaceAll("'", '&#39;');
+      }
+      function safeText(v){ return (v == null ? '' : String(v)).trim(); }
+      function norm(v){ return safeText(v).toLowerCase(); }
+      const ASSET_ORIGIN = "https://assets.devilndove.com";
+      const ASSET_PREFIX = "Toolshed";
+      const DATA_URL = "/api/tools?limit=500";
+      const DATA_FALLBACK_URL = "/data/toolshed/toolshed_items_master.json";
+      const REORDER_STORAGE_KEY = "devilndove_tools_reorder_list_v1";
+      function ensureStatusEl(){
+        let el = document.getElementById('toolsStatus');
+        if (!el) {
+          el = document.createElement('div');
+          el.id = 'toolsStatus';
+          el.className = 'status-note';
+          el.style.display = 'none';
+          const parent = document.getElementById('toolsGrid')?.parentElement;
+          const before = document.getElementById('toolsGrid');
+          if (parent && before) parent.insertBefore(el, before);
+        }
+        return el;
+      }
+      function setStatus(text, tone='info'){
+        const el = ensureStatusEl();
+        if (!text) { el.textContent = ''; el.style.display = 'none'; el.className = 'status-note'; return; }
+        el.textContent = text;
+        el.className = `status-note ${tone}`;
+        el.style.display = 'block';
+      }
+      const AREA_ORDER = ["Security","Safety & PPE","Forge & Metalwork","Resin & UV","Clay","Laser & Engraving","3D & CNC","Sublimation","Craft & Cutting","Hand Tools","Measuring & Layout","Organization & Storage","Power & Tech","Filming & Streaming","Automotive","Reference","Pets","Health & Comfort","Workshop Basics"];
+      const areaRank = new Map(AREA_ORDER.map((a, i) => [a, i]));
+      const byAreaThenName = (a, b) => ((areaRank.has(a) ? areaRank.get(a) : 999) - (areaRank.has(b) ? areaRank.get(b) : 999)) || a.localeCompare(b);
+      const encodeKeyPath = (key) => String(key).split('/').map((seg) => encodeURIComponent(seg)).join('/');
+      function getR2ImageUrl(item){
+        const rawKey = safeText(item.r2_object_key);
+        const file = safeText(item.example_image_file) || safeText(item.image_file) || safeText(item.filename);
+        const finalKey = rawKey ? rawKey.replace(/^\/+/, '') : `${ASSET_PREFIX}/${file}`;
+        return `${ASSET_ORIGIN}/${encodeKeyPath(finalKey)}`;
+      }
+      function getAmazonUrl(item){
+        if (safeText(item.amazon_url)) return item.amazon_url;
+        const q = encodeURIComponent(safeText(item.item_name_suggested) || safeText(item.name) || safeText(item.example_image_file) || 'workshop tool');
+        return `https://www.amazon.ca/s?k=${q}`;
+      }
+      const getToolName = (item) => safeText(item.item_name_suggested) || safeText(item.name) || safeText(item.display_name) || safeText(item.example_image_file) || 'Tool';
+      const getPrimaryArea = (item) => safeText(item.primary_area) || safeText(item.area) || 'Workshop Basics';
+      const getCategory = (item) => safeText(item.category) || safeText(item.tool_category) || 'Uncategorized';
+      function getProcessTags(item){
+        if (Array.isArray(item.process_tags)) return item.process_tags.map(safeText).filter(Boolean);
+        if (typeof item.process_tags === 'string') return item.process_tags.split(',').map((x) => x.trim()).filter(Boolean);
+        if (Array.isArray(item.tags)) return item.tags.map(safeText).filter(Boolean);
+        if (typeof item.tags === 'string') return item.tags.split(',').map((x) => x.trim()).filter(Boolean);
+        return [];
+      }
+      const getHowWeUse = (item) => safeText(item.how_we_use) || safeText(item.use_case) || safeText(item.use_cases) || safeText(item.notes_public) || safeText(item.notes);
+      const getBrand = (item) => safeText(item.brand_guess) || safeText(item.brand);
+      const toolKey = (item) => norm(item.source_key || item.item_group_key_strict || item.item_group_key_loose || getToolName(item));
+      const qEl = document.getElementById('toolQ');
+      const areaEl = document.getElementById('toolArea');
+      const catEl = document.getElementById('toolCat');
+      const tagEl = document.getElementById('toolTag');
+      const reorderOnlyEl = document.getElementById('toolReorderOnly');
+      const shownEl = document.getElementById('toolShown');
+      const totalEl = document.getElementById('toolTotal');
+      const gridEl = document.getElementById('toolsGrid');
+      const reorderPanelEl = document.getElementById('toolReorderPanel');
+      const reorderListWrapEl = document.getElementById('toolReorderListWrap');
+      const toggleReorderPanelBtn = document.getElementById('toggleToolReorderPanelBtn');
+      const copyReorderBtn = document.getElementById('copyToolReorderBtn');
+      const clearReorderBtn = document.getElementById('clearToolReorderBtn');
+      let reorderPanelOpen = false;
+      let allTools = [];
+      function loadReorderList(){ try { return JSON.parse(localStorage.getItem(REORDER_STORAGE_KEY) || '[]'); } catch { return []; } }
+      function saveReorderList(list){ localStorage.setItem(REORDER_STORAGE_KEY, JSON.stringify(list)); }
+      function reorderSet(){ return new Set(loadReorderList().map((entry) => entry.key)); }
+      function renderReorderPanel(){
+        const list = loadReorderList();
+        if (!list.length) { reorderListWrapEl.innerHTML = '<div class="reorder-empty">Your reorder list is empty.</div>'; return; }
+        reorderListWrapEl.innerHTML = list.map((entry) => `
+          <div class="reorder-row">
+            <div class="name"><strong>${escHtml(entry.name)}</strong><div class="small">${escHtml(entry.category || '')}</div></div>
+            <button class="btnlink secondary" type="button" data-remove-key="${escHtml(entry.key)}">Remove</button>
+            <a class="btnlink secondary" href="${escHtml(entry.amazon_url || '#')}" ${entry.amazon_url ? 'target="_blank" rel="noopener"' : ''}>Open link</a>
+          </div>`).join('');
+        Array.from(reorderListWrapEl.querySelectorAll('[data-remove-key]')).forEach((btn) => btn.addEventListener('click', () => {
+          saveReorderList(loadReorderList().filter((entry) => entry.key !== btn.getAttribute('data-remove-key')));
+          renderReorderPanel();
+          renderFiltered();
+        }));
+      }
+      function addToReorder(item){
+        const key = toolKey(item);
+        const list = loadReorderList();
+        if (!list.some((entry) => entry.key === key)) {
+          list.push({ key, name: getToolName(item), category: getCategory(item), amazon_url: getAmazonUrl(item) });
+          saveReorderList(list);
+        }
+        if (reorderPanelOpen) renderReorderPanel();
+      }
+      async function copyReorderText(){
+        const list = loadReorderList();
+        const text = list.length ? list.map((entry) => `${entry.name}${entry.category ? ` — ${entry.category}` : ''}${entry.amazon_url ? ` — ${entry.amazon_url}` : ''}`).join('\n') : 'No tools on reorder list.';
+        try { await navigator.clipboard.writeText(text); } catch {}
+      }
+      async function fetchJsonRows(url){
+        try {
+          const response = await fetch(url, { cache: 'no-store' });
+          if (!response.ok) return [];
+          const data = await response.json().catch(() => null);
+          return Array.isArray(data) ? data : (Array.isArray(data?.items) ? data.items : []);
+        } catch { return []; }
+      }
+      async function fetchCatalogItems(){
+        try {
+          const response = await fetch(DATA_URL, { cache: 'no-store' });
+          const data = await response.json().catch(() => null);
+          if (response.ok && data?.ok && Array.isArray(data.items) && data.items.length) {
+            return {
+              items: data.items,
+              warning: data?.fallback_used || data?.summary?.authority === 'json_fallback'
+                ? 'Showing fallback tools data while the live catalog read recovers.'
+                : ''
+            };
+          }
+          throw new Error(data?.error || `Tools API responded ${response.status}.`);
+        } catch (error) {
+          const fallbackItems = await fetchJsonRows(DATA_FALLBACK_URL);
+          if (fallbackItems.length) {
+            return { items: fallbackItems, warning: 'Live tools API is unavailable. Showing the local tools fallback list.' };
+          }
+          return { items: [], error: error?.message || 'Could not load tools data.' };
+        }
+      }
+      function populateFilters(items){
+        const areas = new Set(), cats = new Set(), tags = new Set();
+        items.forEach((it) => { areas.add(getPrimaryArea(it)); cats.add(getCategory(it)); getProcessTags(it).forEach((t) => tags.add(t)); });
+        Array.from(areas).sort(byAreaThenName).forEach((v) => { const opt = document.createElement('option'); opt.value = v; opt.textContent = v; areaEl.appendChild(opt); });
+        Array.from(cats).sort((a,b) => a.localeCompare(b)).forEach((v) => { const opt = document.createElement('option'); opt.value = v; opt.textContent = v; catEl.appendChild(opt); });
+        Array.from(tags).sort((a,b) => a.localeCompare(b)).forEach((v) => { const opt = document.createElement('option'); opt.value = v; opt.textContent = v; tagEl.appendChild(opt); });
+      }
+      function buildToolCard(item, reorderKeys){
+        const name = getToolName(item), brand = getBrand(item), area = getPrimaryArea(item), cat = getCategory(item), tags = getProcessTags(item), how = getHowWeUse(item), imgUrl = getR2ImageUrl(item), amazon = getAmazonUrl(item), isReorder = reorderKeys.has(toolKey(item));
+        return `
+          <div class="tool card">
+            <div class="thumb">
+              <img src="${imgUrl}" alt="${escHtml(name)}" loading="lazy" onerror="this.outerHTML='<div class=&quot;ph&quot;>Missing image<br><span style=&quot;opacity:.7&quot;>${escHtml(safeText(item.example_image_file) || safeText(item.image_file) || 'Unknown file')}</span></div>';" />
+            </div>
+            <div class="body">
+              <div class="tname">${escHtml(name)}</div>
+              ${brand ? `<div class="meta-line"><strong>Brand:</strong> ${escHtml(brand)}</div>` : ''}
+              <div class="tags">
+                ${[area, cat].concat(tags.slice(0, 3)).map((t) => `<span class="tag">${escHtml(t)}</span>`).join('')}
+                ${isReorder ? '<span class="tag">Reorder</span>' : ''}
+              </div>
+              ${how ? `<div class="note">${escHtml(how)}</div>` : ''}
+              <div class="actions">
+                <button class="btnlink secondary" type="button" data-add-reorder="${escHtml(toolKey(item))}">Add to reorder</button>
+                <a class="btnlink" href="${amazon}" target="_blank" rel="noopener">Amazon.ca search</a>
+              </div>
+            </div>
+          </div>`;
+      }
+      function renderGrouped(items, totalCount){
+        shownEl.textContent = String(items.length);
+        totalEl.textContent = String(totalCount);
+        const reorderKeys = reorderSet();
+        const groups = {};
+        items.forEach((it) => { const area = getPrimaryArea(it); if (!groups[area]) groups[area] = []; groups[area].push(it); });
+        Object.keys(groups).forEach((area) => groups[area].sort((a,b) => getToolName(a).localeCompare(getToolName(b))));
+        const areaNames = Object.keys(groups).sort(byAreaThenName);
+        if (!areaNames.length) { gridEl.innerHTML = '<div class="small">No tools match the current filters.</div>'; return; }
+        gridEl.innerHTML = areaNames.map((area) => `
+          <section class="area-block">
+            <div class="area-head"><h2>${escHtml(area)}</h2><div class="muted">${groups[area].length} item${groups[area].length === 1 ? '' : 's'}</div></div>
+            <div class="subgrid">${groups[area].map((item) => buildToolCard(item, reorderKeys)).join('')}</div>
+          </section>`).join('');
+        Array.from(gridEl.querySelectorAll('[data-add-reorder]')).forEach((btn) => btn.addEventListener('click', () => {
+          const key = btn.getAttribute('data-add-reorder');
+          const item = allTools.find((entry) => toolKey(entry) === key);
+          if (!item) return;
+          addToReorder(item);
+          renderFiltered();
+        }));
+      }
+      function renderFiltered(){
+        const q = norm(qEl.value), areaVal = areaEl.value, catVal = catEl.value, tagVal = tagEl.value, reorderKeys = reorderSet();
+        let list = allTools.slice();
+        if (areaVal !== 'all') list = list.filter((it) => getPrimaryArea(it) === areaVal);
+        if (catVal !== 'all') list = list.filter((it) => getCategory(it) === catVal);
+        if (tagVal !== 'all') list = list.filter((it) => getProcessTags(it).includes(tagVal));
+        if (reorderOnlyEl.checked) list = list.filter((it) => reorderKeys.has(toolKey(it)));
+        if (q) {
+          list = list.filter((it) => [norm(getToolName(it)), norm(getBrand(it)), norm(getPrimaryArea(it)), norm(getCategory(it)), norm(getHowWeUse(it)), norm(it.example_image_file), getProcessTags(it).map(norm).join(' ')].join(' ').includes(q));
+        }
+        renderGrouped(list, allTools.length);
+      }
+      async function initToolsPage(){
+        try {
+          const migrated = await fetchCatalogItems();
+          setStatus(migrated.warning || '', migrated.warning ? 'warning' : 'info');
+          allTools = Array.isArray(migrated.items) ? migrated.items.map((row) => {
+            return Object.assign({}, row, {
+              source_key: row.source_key || row.id || '',
+              item_name_suggested: row.item_name_suggested || row.name || '',
+              brand_guess: row.brand_guess || row.brand || '',
+              category: row.category || '',
+              primary_area: row.primary_area || row.subcategory || '',
+              notes: row.notes || '',
+              how_we_use: row.how_we_use || row.notes || '',
+              amazon_url: row.amazon_url || '',
+              r2_object_key: row.r2_object_key || '',
+              example_image_file: row.example_image_file || '',
+              quantity_owned: row.quantity_owned || row.quantity_on_hand || 0
+            });
+          }) : [];
+          if (!allTools.length) {
+            setStatus(migrated.error || `No tools found from ${DATA_URL}.`, migrated.error ? 'error' : 'warning');
+            gridEl.innerHTML = `<div class="small">No tools are available right now.</div>`;
+            shownEl.textContent = '0'; totalEl.textContent = '0'; return;
+          }
+          populateFilters(allTools);
+          qEl.addEventListener('input', renderFiltered);
+          areaEl.addEventListener('change', renderFiltered);
+          catEl.addEventListener('change', renderFiltered);
+          tagEl.addEventListener('change', renderFiltered);
+          reorderOnlyEl.addEventListener('change', renderFiltered);
+          toggleReorderPanelBtn.addEventListener('click', () => { reorderPanelOpen = !reorderPanelOpen; reorderPanelEl.classList.toggle('open', reorderPanelOpen); toggleReorderPanelBtn.classList.toggle('active', reorderPanelOpen); if (reorderPanelOpen) renderReorderPanel(); });
+          copyReorderBtn.addEventListener('click', copyReorderText);
+          clearReorderBtn.addEventListener('click', () => { localStorage.removeItem(REORDER_STORAGE_KEY); renderReorderPanel(); renderFiltered(); });
+          renderFiltered();
+        } catch (err) {
+          console.error(err);
+          setStatus(err?.message || 'Could not load tools data right now.', 'error');
+          gridEl.innerHTML = `<div class="small">Could not load tools data right now.</div>`;
+        }
+      }
+      initToolsPage();
+    })();
+  </script>
+<script src="/public/js/auth.js"></script><script src="/public/js/site-auth-ui.js"></script></body>
+</html>

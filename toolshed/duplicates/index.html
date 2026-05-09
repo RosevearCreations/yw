@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1" name="viewport"/>
+<title>Toolshed Duplicate Photos | Devil n Dove</title>
+<style>
+    :root{--bg:#0b0b0f;--panel:#12121a;--line:#2a2a3a;--text:#f2f2f2;--muted:rgba(242,242,242,.78);}
+    body{font-family:system-ui,Arial;margin:0;padding:24px;background:var(--bg);color:var(--text)}
+    .wrap{max-width:1160px;margin:0 auto}
+    h1{margin:0 0 6px}
+    .sub{color:var(--muted);margin-bottom:14px}
+    a{color:var(--text);opacity:.9}
+    .group{border:1px solid var(--line);border-radius:16px;background:var(--panel);padding:12px;margin:12px 0}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:10px}
+    .thumb{border:1px solid #333;border-radius:12px;overflow:hidden;background:#000}
+    .thumb img{width:100%;height:140px;object-fit:cover;display:block}
+    .meta{color:var(--muted);font-size:13px;margin-top:6px}
+    code{font-size:12px}
+  </style>
+<link href="https://devilndove.com/toolshed/duplicates/" rel="canonical"/><meta content="Internal duplicate photo review page for the Devil n Dove toolshed." name="description"/><meta content="noindex,follow" name="robots"/><meta content="Devil n Dove" property="og:site_name"/><meta content="website" property="og:type"/><meta content="Toolshed Duplicate Photos | Devil n Dove" property="og:title"/><meta content="Internal duplicate photo review page for the Devil n Dove toolshed." property="og:description"/><meta content="https://devilndove.com/toolshed/duplicates/" property="og:url"/><meta content="https://devilndove.com/assets/logo-clear.png" property="og:image"/><meta content="summary_large_image" name="twitter:card"/><meta content="Toolshed Duplicate Photos | Devil n Dove" name="twitter:title"/><meta content="Internal duplicate photo review page for the Devil n Dove toolshed." name="twitter:description"/><meta content="https://devilndove.com/assets/logo-clear.png" name="twitter:image"/><script id="pageStructuredData" type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Exact Duplicate Photos","url":"https://devilndove.com/toolshed/duplicates/","description":"Internal duplicate photo review page for the Devil n Dove toolshed.","isPartOf":{"@type":"WebSite","name":"Devil n Dove","url":"https://devilndove.com/"}}</script></head>
+<body><div class="nav"></div>
+<div class="wrap">
+<h1>Exact Duplicate Photos</h1>
+<div class="sub">These are photo files that are byte-for-byte identical (same SHA-256). This is safe to dedupe if you want to save space later.</div>
+<div class="meta"><a href="/toolshed/">← Back to Toolshed</a></div>
+<div id="out"></div>
+</div>
+<script>
+  const ASSET_BASE = "https://assets.devilndove.com";
+  // Optional folder prefix, e.g. "toolshed/":
+  const ASSET_PREFIX = "";
+  const DATA_URL = "/data/toolshed/exact_duplicate_report.json";
+  const $out = document.getElementById("out");
+
+  function imgUrl(fileName){
+    return `${ASSET_BASE}/${ASSET_PREFIX}${encodeURIComponent(fileName)}`;
+  }
+
+  async function init(){
+    const res = await fetch(DATA_URL);
+    const groups = await res.json(); // [{sha256,count,files:[...]}]
+
+    if (!Array.isArray(groups) || groups.length === 0){
+      $out.innerHTML = "<p class='meta'>No duplicates reported.</p>";
+      return;
+    }
+
+    $out.innerHTML = groups.map(g => `
+      <div class="group">
+        <div><strong>${g.count} duplicates</strong> • <code>${g.sha256}</code></div>
+        <div class="grid">
+          ${(g.files||[]).map(fn => `
+            <div class="thumb">
+              <img loading="lazy" src="${imgUrl(fn)}" alt="">
+              <div class="meta" style="padding:8px">${fn}</div>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `).join("");
+  }
+
+  init();
+</script>
+<div class="footer card" style="margin-top:18px"></div><script src="/js/main.js"></script><script src="/public/js/auth.js"></script><script src="/public/js/site-auth-ui.js"></script></body>
+</html>
