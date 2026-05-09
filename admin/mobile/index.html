@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <link rel="stylesheet" href="/css/styles.css"/>
+  <link rel="icon" href="/assets/mark.png" type="image/png"/>
+  <title>Mobile Admin Dashboard — Devil n Dove</title>
+  <meta name="description" content="Phone-first admin dashboard with quick actions for today, expenses, write-offs, receiving, and new products."/>
+</head>
+<body>
+  <div class="container admin-shell">
+    <div class="nav"><div class="brand"><img src="/assets/logo-clear.png" alt="Devil n Dove logo"/><div><div style="font-weight:800;letter-spacing:.2px;line-height:1.1">Devil n Dove</div><div class="small">Mobile Admin</div></div></div><div class="links"><a href="/admin/">Admin</a><a href="/admin/accounting/">Accounting</a><button class="btn" data-nav-logout type="button">Logout</button></div></div>
+    <div class="hero"><div><h1>Phone Dashboard</h1><p>Use quick actions for Today, expenses, write-offs, new product intake, and receiving.</p></div></div>
+    <details class="card mobile-admin-tree" open>
+      <summary>
+        <div>
+          <strong>Admin menu</strong>
+          <div class="small">Open only the section you need instead of scrolling one long list.</div>
+        </div>
+      </summary>
+      <div class="mobile-admin-tree-groups">
+        <section class="mobile-admin-tree-group">
+          <h2>Quick actions</h2>
+          <div class="mobile-admin-tree-links">
+            <a class="btn primary" href="/admin/mobile/">Phone Dashboard</a>
+            <a class="btn primary" href="/admin/mobile-product/">New Product</a>
+            <a class="btn primary" href="/admin/mobile-inventory/">Barcode & Receiving</a>
+          </div>
+        </section>
+        <section class="mobile-admin-tree-group">
+          <h2>Accounting</h2>
+          <div class="mobile-admin-tree-links">
+            <a class="btn" href="/admin/accounting/#gl-accounts">General Ledger</a>
+            <a class="btn" href="/admin/accounting/#expense-entry">Quick Add Expense</a>
+            <a class="btn" href="/admin/accounting/#writeoff-entry">Quick Add Write-Off</a>
+            <a class="btn" href="/admin/accounting/#item-costing">Review Item Costing</a>
+            <a class="btn" href="/admin/accounting/#product-costs">Product Costs</a>
+            <a class="btn" href="/admin/accounting/#overhead-allocation">Overhead Allocation</a>
+            <a class="btn" href="/admin/accounting/#export-presets">Export Presets</a>
+          </div>
+        </section>
+        <section class="mobile-admin-tree-group">
+          <h2>Departments</h2>
+          <div class="mobile-admin-tree-links">
+            <a class="btn" href="/admin/members/">Members</a>
+            <a class="btn" href="/admin/catalog/">Catalog</a>
+            <a class="btn" href="/admin/orders/">Orders</a>
+            <a class="btn" href="/admin/analytics/">Analytics</a>
+            <a class="btn" href="/admin/operations/">Operations</a>
+            <a class="btn" href="/admin/movies/">Movies</a>
+          </div>
+        </section>
+      </div>
+    </details>
+    <div class="card" style="margin-top:18px"><div style="display:flex;justify-content:space-between;gap:12px;align-items:end;flex-wrap:wrap"><div><h2 style="margin-top:0">Phone accounting snapshot</h2><p class="small" style="margin:6px 0 0 0">Quick month view for rough revenue, overhead, costing warnings, and drafts without leaving the phone dashboard.</p></div><div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap"><label><span class="small">Month</span><input class="input" id="mobileDashboardMonth" type="month"/></label><button class="btn" id="mobileDashboardRefreshButton" type="button">Refresh snapshot</button></div></div><div class="small" id="mobileDashboardMessage" style="display:none;margin-top:10px"></div><div class="admin-summary-grid" id="mobileAdminMonthSummary" style="margin-top:14px"></div><div class="grid cols-2" style="gap:14px;margin-top:14px"><div class="card" style="margin:0"><h3 style="margin-top:0">Draft products</h3><div id="mobileAdminDraftSummary"></div></div><div class="card" style="margin:0"><h3 style="margin-top:0">Fast accounting jumps</h3><div class="admin-dashboard-grid"><a class="btn" href="/admin/accounting/#expense-entry">Expense Entry</a><a class="btn" href="/admin/accounting/#writeoff-entry">Write-Off Entry</a><a class="btn" href="/admin/accounting/#overhead-allocation">Overhead Allocation</a><a class="btn" href="/admin/accounting/#item-costing">Item Costing</a><a class="btn" href="/admin/accounting/#journal-health">Journal Health</a></div></div></div><div class="card" style="margin-top:14px"><h3 style="margin-top:0">Fallback and queue health</h3><p class="small" style="margin:6px 0 12px 0">Quick phone view for runtime incidents, shared admin replay queue health, order/payment plus product-review and product-edit fallback warnings, journal imbalance signals, outstanding orders, and provider refund-sync failures.</p><div id="mobileAdminHealthSummary"></div></div></div><div class="grid cols-2" style="gap:18px;margin-top:18px">
+      <div class="card"><h2 style="margin-top:0">Today</h2><p class="small">Jump into the most common admin actions without loading the full desktop dashboard.</p><div class="admin-dashboard-grid"><a class="btn primary" href="/admin/mobile-product/">New Product</a><a class="btn primary" href="/admin/mobile-inventory/">Barcode-first Receiving</a><a class="btn" href="/admin/accounting/#expense-entry">Quick Add Expense</a><a class="btn" href="/admin/accounting/#writeoff-entry">Quick Add Write-Off</a><a class="btn" href="/admin/accounting/#item-costing">Review Item Costing</a></div></div>
+      <div class="card"><h2 style="margin-top:0">Month-End & Exports</h2><p class="small">Use accounting export presets for month-end, quarter-end, or yearly accountant packages.</p><div class="admin-dashboard-grid"><a class="btn" href="/admin/accounting/#export-presets">Month-End Package</a><a class="btn" href="/admin/accounting/#export-presets">Quarter-End Package</a><a class="btn" href="/admin/accounting/#export-presets">Year-End Package</a></div></div>
+    </div>
+    <div class="card" style="margin-top:18px"><h2 style="margin-top:0">Today at a glance</h2><div class="admin-dashboard-grid"><a class="btn" href="/admin/orders/">Open orders</a><a class="btn" href="/admin/members/">Tier changes</a><a class="btn" href="/admin/catalog/">Stock review</a><a class="btn" href="/admin/analytics/">Live traffic</a><a class="btn" href="/admin/accounting/#expense-entry">Add expense</a><a class="btn" href="/admin/accounting/#writeoff-entry">Add write-off</a><a class="btn" href="/admin/accounting/#overhead-allocation">Allocate overhead</a></div></div>
+    <div class="card" style="margin-top:18px"><h2 style="margin-top:0">Barcode-first ideas now active</h2><ul class="small"><li>Open Inventory for barcode-first receiving and supply capture.</li><li>Capture write-offs from the phone workflow through Accounting.</li><li>Use department buttons instead of scrolling a large admin page.</li></ul></div>
+    <div class="footer card" style="margin-top:18px"></div>
+  </div>
+  <script src="/js/main.js"></script><script src="/public/js/auth.js"></script><script src="/public/js/site-auth-ui.js"></script><script src="/public/js/site-analytics.js"></script><script src="/public/js/admin-self-protect.js"></script>
+  <script src="/public/js/admin-mobile-dashboard.js"></script>
+</body>
+</html>

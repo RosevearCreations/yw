@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width,initial-scale=1" name="viewport"/>
+  <link href="/css/styles.css" rel="stylesheet"/>
+  <link href="/assets/mark.png" rel="icon" type="image/png"/>
+  <title>Members Department — Devil n Dove</title>
+  <meta content="Manage member accounts, roles, tiers, and member-facing tier policy content from one lighter admin screen." name="description"/>
+</head>
+<body>
+  <div class="container admin-shell">
+    <div class="nav">
+      <div class="brand">
+        <img alt="Devil n Dove logo" src="/assets/logo-clear.png"/>
+        <div><div style="font-weight:800;letter-spacing:.2px;line-height:1.1">Devil n Dove</div><div class="small">Admin Department</div></div>
+      </div>
+      <div class="links">
+        <a href="/">Home</a>
+        <a href="/shop/">Shop</a>
+        <a href="/members/?admin_preview=1">Members</a>
+        <a href="/admin/">Admin</a>
+        <button class="btn" data-nav-logout="" type="button">Logout</button>
+      </div>
+    </div>
+    <div class="hero">
+      <div><h1>Members & Access</h1><p>Manage member accounts, roles, tiers, and member-facing tier policy content from one lighter admin screen.</p></div>
+    </div>
+    <div class="admin-department-links card">
+      <a class="btn" href="/admin/">Dashboard</a>
+      <a class="btn" href="/admin/members/">Members</a>
+      <a class="btn" href="/admin/catalog/">Catalog</a>
+      <a class="btn" href="/admin/orders/">Orders</a>
+      <a class="btn" href="/admin/accounting/">Accounting</a>
+      <a class="btn" href="/admin/analytics/">Analytics</a>
+      <a class="btn" href="/admin/operations/">Operations</a>
+      <a class="btn" href="/admin/movies/">Movies</a>
+      <a class="btn" href="/admin/mobile/">Phone Dashboard</a>
+    </div>
+
+    <div class="card" id="usersSection" style="margin-top:18px">
+      <h2 style="margin-top:0">Users</h2>
+      <div id="usersAdminMount"></div>
+    </div>
+    <div id="customerEngagementAdminMount" style="margin-top:18px"></div>
+
+    <div class="card" id="accessTiersSection" style="margin-top:18px">
+      <h2 style="margin-top:0">Access Tiers</h2>
+      <p class="small">Assign Bronze, Silver, and Gold access tiers separately from admin/member roles.</p>
+      <div id="accessTiersAdminMount"></div>
+      <div id="tierPolicyAdminMount" style="margin-top:18px"></div>
+    </div>
+    <div class="footer card" style="margin-top:18px"></div>
+  </div>
+  <script src="/js/main.js"></script>
+  <script src="/public/js/auth.js"></script>
+  <script src="/public/js/site-auth-ui.js"></script>
+  <script src="/public/js/site-analytics.js"></script>
+  <script src="/public/js/admin-self-protect.js"></script>
+
+  <script src="/public/js/admin-users.js"></script>
+  <script src="/public/js/admin-create-user.js"></script>
+  <script src="/public/js/admin-user-profiles.js"></script>
+  <script src="/public/js/admin-user-update.js"></script>
+  <script src="/public/js/admin-reset-password.js"></script>
+  <script src="/public/js/admin-delete-user.js"></script>
+  <script src="/public/js/admin-cleanup-sessions.js"></script>
+  <script src="/public/js/admin-customer-engagement.js"></script>
+  <script src="/public/js/admin-access-tiers.js"></script>
+  <script src="/public/js/admin-tier-policy.js"></script>
+
+</body>
+</html>
