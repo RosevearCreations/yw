@@ -1,0 +1,7 @@
+expense_date,vendor_name,amount,tax_amount,ledger_code,notes
+2026-04-01,Hydro One,125.50,16.32,6100,Monthly workshop electricity
+2026-04-01,Enbridge,84.10,10.93,6120,Monthly workshop gas
+2026-04-01,ISP Provider,89.99,11.70,6300,Monthly business internet
+2026-04-01,Phone Provider,55.00,7.15,6310,Monthly business phone
+2026-04-01,Insurance Provider,96.40,0.00,6600,Monthly insurance
+2026-04-01,Software Vendor,29.00,3.77,6500,Monthly software subscription

@@ -1,0 +1,26 @@
+[
+  {
+    "sku": "ART-EXAMPLE-001",
+    "name": "Featured Handmade Item (replace me)",
+    "price": "45.00",
+    "currency": "CAD",
+    "condition": "New",
+    "category": "Featured",
+    "images": [],
+    "notes": "Handmade in our workshop. Each piece is unique.",
+    "stripe_payment_link": "",
+    "paypal_link": ""
+  },
+  {
+    "sku": "ART-EXAMPLE-002",
+    "name": "Workshop Creation (replace me)",
+    "price": "28.00",
+    "currency": "CAD",
+    "condition": "New",
+    "category": "Featured",
+    "images": [],
+    "notes": "Made with love, curiosity, and a bit of chaos.",
+    "stripe_payment_link": "",
+    "paypal_link": ""
+  }
+]

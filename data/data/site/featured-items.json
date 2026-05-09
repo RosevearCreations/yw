@@ -1,0 +1,60 @@
+{
+  "items": [
+    {
+      "name": "Pink Heart Earrings and Pendant",
+      "image": "https://assets.devilndove.com/itemsforsale/DD215-216B.jpeg",
+      "alt": "Pink heart earrings and pendant displayed on a wooden stand",
+      "section": ["home", "gallery", "shop"],
+      "type": "jewelry"
+    },
+    {
+      "name": "Black Jewelry Set on Stone Display",
+      "image": "https://assets.devilndove.com/itemsforsale/DDM04.jpeg",
+      "alt": "Black handmade jewelry pieces displayed on a light stone block",
+      "section": ["gallery", "about"],
+      "type": "jewelry"
+    },
+    {
+      "name": "Purple Jewelry Set",
+      "image": "https://assets.devilndove.com/itemsforsale/DDM06.jpeg",
+      "alt": "Purple handmade jewelry set displayed in the workshop",
+      "section": ["home", "gallery"],
+      "type": "jewelry"
+    },
+    {
+      "name": "Packaged Earrings Display",
+      "image": "https://assets.devilndove.com/itemsforsale/DDPR02.jpeg",
+      "alt": "Handmade earrings displayed on kraft paper cards",
+      "section": ["gallery", "shop"],
+      "type": "display"
+    },
+    {
+      "name": "Spoon Rings on Red Display",
+      "image": "https://assets.devilndove.com/itemsforsale/DDPR09.jpeg",
+      "alt": "Handmade spoon rings displayed on red velvet rolls",
+      "section": ["home", "gallery", "shop"],
+      "type": "ring"
+    },
+    {
+      "name": "Spoon Rings Collection",
+      "image": "https://assets.devilndove.com/itemsforsale/DDPR14.jpeg",
+      "alt": "Collection of handmade spoon rings arranged on a dark surface",
+      "section": ["gallery", "shop"],
+      "type": "ring"
+    },
+    {
+      "name": "Lampwork Pendant Collection",
+      "image": "https://assets.devilndove.com/itemsforsale/LampLight.jpeg",
+      "alt": "Colorful handmade pendant collection displayed on a dark stand",
+      "section": ["home", "gallery"],
+      "type": "pendant"
+    }
+  ],
+  "video": [
+    {
+      "name": "Workshop Clip",
+      "file": "MVI_1966.MP4",
+      "section": ["about", "movies", "home"]
+    }
+  ]
+}
