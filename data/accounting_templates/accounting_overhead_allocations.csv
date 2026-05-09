@@ -1,5 +1,0 @@
-period_month,ledger_code,ledger_name,allocation_basis,amount,notes
-2026-04,6200,Rent allocation,manual,250.00,Monthly workshop rent allocation
-2026-04,6100,Electricity allocation,manual,125.50,Monthly electricity overhead allocation
-2026-04,6120,Gas allocation,manual,84.10,Monthly gas overhead allocation
-2026-04,6300,Internet allocation,manual,89.99,Monthly internet overhead allocation
