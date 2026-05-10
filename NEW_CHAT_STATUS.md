@@ -1,3 +1,6 @@
+## Start here in a new chat — 2026-05-09
+Use `sql/103_accounting_close_admin_ui_controls.sql` as the latest schema step. The strongest next pass is now testing the full Admin accounting-close flow in order: AR/AP payment applications, bank auto-match/manual review, sales-tax prepare/review/approve/file/pay, payroll remittance prepare/review/approve/remit, period close/reopen, and accountant handoff package build/download/delivery.
+
 ## Start here in a new chat
 The current active docs set lives in the repo root plus `docs/README.md`. Older pass-specific docs have been archived under `docs/archive/legacy-passes/`. The next strongest build pass is the accounting workflow completion pass on top of schema 101.
 
@@ -294,7 +297,7 @@ Pass 099 adds quote engagement tracking, release-evaluation state, completion re
 - Best next build is no longer more standalone structures; it is posting automation and accountant-export bundling.
 
 ## Current baseline
-Repo is now synced through schema 102 (`sql/102_accounting_close_end_to_end_workflow.sql`).
+Repo is now synced through schema 103 (`sql/103_accounting_close_admin_ui_controls.sql`).
 
 Latest active accounting-close additions:
 - AR/AP payment applications
@@ -303,5 +306,6 @@ Latest active accounting-close additions:
 - sales tax filing review
 - payroll remittance review
 - accountant handoff package directory
+- Admin close/reopen dashboard, manual reconciliation review queue, and accountant package delivery queue
 
 Best next step: finish the accounting-close workflow end to end in the UI and delivery path.

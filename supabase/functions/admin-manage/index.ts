@@ -3471,7 +3471,7 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
     }
 
     if (entity === 'accountant_handoff_export') {
-      const patch = { export_kind: body.export_kind ?? 'closeout_bundle', entity_scope: body.entity_scope ?? 'completion_review', entity_id: body.entity_id != null ? String(body.entity_id) : null, business_tax_setting_id: asNullableText(body.business_tax_setting_id), export_status: body.export_status ?? 'draft', export_title: body.export_title ?? null, export_markdown: body.export_markdown ?? null, export_payload: body.export_payload || {}, bundle_kind: body.bundle_kind ?? 'management_close_bundle', delivery_channel: body.delivery_channel ?? 'manual', delivered_to_email: body.delivered_to_email ?? null, bundle_payload: body.bundle_payload || {}, package_status: body.package_status ?? 'draft', package_manifest: body.package_manifest || {}, package_markdown: body.package_markdown ?? null, package_json: body.package_json || {}, reviewed_by_profile_id: asNullableText(body.reviewed_by_profile_id), reviewed_at: asNullableDateTime(body.reviewed_at), finalised_at: asNullableDateTime(body.finalised_at), generated_by_profile_id: actorId, generated_at: body.generated_at ?? new Date().toISOString(), delivered_at: asNullableDateTime(body.delivered_at), updated_at: new Date().toISOString() };
+      const patch = { export_kind: body.export_kind ?? 'closeout_bundle', entity_scope: body.entity_scope ?? 'completion_review', entity_id: body.entity_id != null ? String(body.entity_id) : null, business_tax_setting_id: asNullableText(body.business_tax_setting_id), export_status: body.export_status ?? 'draft', export_title: body.export_title ?? null, export_markdown: body.export_markdown ?? null, export_payload: body.export_payload || {}, bundle_kind: body.bundle_kind ?? 'management_close_bundle', delivery_channel: body.delivery_channel ?? 'manual', delivered_to_email: body.delivered_to_email ?? null, delivery_status: body.delivery_status ?? 'pending', delivery_reference: body.delivery_reference ?? null, delivery_notes: body.delivery_notes ?? null, bundle_payload: body.bundle_payload || {}, package_status: body.package_status ?? 'draft', package_manifest: body.package_manifest || {}, package_markdown: body.package_markdown ?? null, package_json: body.package_json || {}, reviewed_by_profile_id: asNullableText(body.reviewed_by_profile_id), reviewed_at: asNullableDateTime(body.reviewed_at), finalised_at: asNullableDateTime(body.finalised_at), generated_by_profile_id: actorId, generated_at: body.generated_at ?? new Date().toISOString(), delivered_at: asNullableDateTime(body.delivered_at), updated_at: new Date().toISOString() };
       if (!patch.entity_id) return Response.json({ ok:false, error:'entity_id is required' }, { status:400, headers:corsHeaders });
       if (action === 'create' || action === 'generate') { const { data, error } = await supabase.from('accountant_handoff_exports').insert(patch).select('*').single(); if (error) throw error; await recordJobAccountingLifecycleEvent(supabase, { job_id: null, source_type: 'accountant_export', source_id: data?.id || patch.entity_id || 'export', lifecycle_stage: 'accountant_handoff', lifecycle_status: patch.export_status || 'draft', headline: patch.export_title || 'Accountant handoff export generated', notes: body.notes ?? null, created_by_profile_id: actorId }); return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
       if (action === 'build_bundle') {
@@ -3523,7 +3523,7 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
       if (action === 'review_package' || action === 'finalize_package' || action === 'deliver_package' || action === 'update') {
         if (action === 'review_package') { patch.package_status = 'reviewed'; patch.reviewed_by_profile_id = actorId; patch.reviewed_at = new Date().toISOString(); }
         if (action === 'finalize_package') { patch.package_status = 'finalized'; patch.finalised_at = new Date().toISOString(); }
-        if (action === 'deliver_package') { patch.package_status = 'delivered'; patch.delivered_at = new Date().toISOString(); }
+        if (action === 'deliver_package') { patch.package_status = 'delivered'; patch.delivery_status = 'delivered'; patch.delivered_at = new Date().toISOString(); }
         const { data, error } = await supabase.from('accountant_handoff_exports').update(patch).eq('id', body.item_id).select('*').single(); if (error) throw error;
         if (action !== 'update') {
           await recordJobAccountingLifecycleEvent(supabase, { job_id: null, source_type: 'accountant_export', source_id: body.item_id, lifecycle_stage: 'accountant_package_status', lifecycle_status: patch.package_status || 'draft', headline: `Accountant package ${patch.package_status || 'updated'}`, notes: body.notes ?? null, created_by_profile_id: actorId });
@@ -3668,6 +3668,11 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         tax_locked: body.tax_locked === true,
         close_checklist: body.close_checklist || {},
         close_notes: body.close_notes ?? null,
+        lock_notes: body.lock_notes ?? null,
+        close_ready_override: body.close_ready_override === true,
+        reopened_by_profile_id: asNullableText(body.reopened_by_profile_id),
+        reopened_at: asNullableDateTime(body.reopened_at),
+        reopen_reason: body.reopen_reason ?? null,
         closed_by_profile_id: asNullableText(body.closed_by_profile_id),
         closed_at: asNullableDateTime(body.closed_at),
         created_by_profile_id: actorId,
@@ -3677,7 +3682,7 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
       if (action === 'create') { const { data, error } = await supabase.from('accounting_period_closes').insert(patch).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
       if (action === 'update' || action === 'close' || action === 'reopen') {
         if (action === 'close') { patch.close_status = 'closed'; patch.closed_by_profile_id = actorId; patch.closed_at = new Date().toISOString(); }
-        if (action === 'reopen') { patch.close_status = 'reopened'; patch.closed_by_profile_id = null; patch.closed_at = null; }
+        if (action === 'reopen') { patch.close_status = 'reopened'; patch.closed_by_profile_id = null; patch.closed_at = null; patch.reopened_by_profile_id = actorId; patch.reopened_at = new Date().toISOString(); patch.reopen_reason = body.reopen_reason ?? body.close_notes ?? 'Reopened from admin close control.'; }
         const { data, error } = await supabase.from('accounting_period_closes').update(patch).eq('id', body.item_id).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
     }
 
@@ -3721,9 +3726,12 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         patch.net_remittance_total = Number(prep?.suggested_net_remittance_total || 0);
         patch.filing_status = 'prepared';
       }
-      if (action === 'update' || action === 'file' || action === 'pay' || action === 'prepare_from_period') {
-        if (action === 'file') { patch.filing_status = 'filed'; patch.filed_by_profile_id = actorId; patch.filed_at = new Date().toISOString(); }
-        if (action === 'pay') { patch.filing_status = 'paid'; }
+      if (action === 'update' || action === 'review' || action === 'approve' || action === 'file' || action === 'pay' || action === 'prepare_from_period') {
+        if (action === 'prepare_from_period') { patch.review_status = 'prepared'; }
+        if (action === 'review') { patch.review_status = 'reviewed'; patch.reviewed_by_profile_id = actorId; patch.reviewed_at = new Date().toISOString(); }
+        if (action === 'approve') { patch.review_status = 'approved'; patch.reviewed_by_profile_id = actorId; patch.reviewed_at = new Date().toISOString(); }
+        if (action === 'file') { patch.filing_status = 'filed'; patch.review_status = 'filed'; patch.filed_by_profile_id = actorId; patch.filed_at = new Date().toISOString(); }
+        if (action === 'pay') { patch.filing_status = 'paid'; patch.review_status = 'paid'; patch.paid_at = new Date().toISOString(); }
         const { data, error } = await supabase.from('sales_tax_filings').upsert({ id: body.item_id || undefined, ...patch }).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
     }
 

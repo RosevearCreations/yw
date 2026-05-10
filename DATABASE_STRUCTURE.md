@@ -1,5 +1,10 @@
 ## Current schema baseline
-The latest schema baseline is `101_accounting_posting_automation_and_export_bundle.sql`.
+The latest schema baseline is `103_accounting_close_admin_ui_controls.sql`.
+
+## 2026-05-09 schema 103 note
+- Added `sql/103_accounting_close_admin_ui_controls.sql` and synchronized `sql/000_full_schema_reference.sql` forward through schema 103.
+- Added accounting period close/reopen audit fields, accountant handoff delivery metadata, and admin views for close readiness, reconciliation manual review, and package delivery queues.
+- Admin directory/selectors now expose the new schema-103 views alongside schema-102 payment application, filing/remittance, reconciliation, and handoff package directories.
 
 <!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->

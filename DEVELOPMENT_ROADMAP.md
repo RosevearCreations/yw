@@ -678,7 +678,7 @@ Next strongest commercial/accounting direction after this pass:
 
 
 
-## Immediate next build priorities after schema 100
+## Historical immediate next build priorities after schema 100
 1. **AR invoice posting automation**
    - promote invoice candidates into real AR invoice records with numbering, due dates, and source linkage
    - keep posting results tied back to job completion reviews and accountant handoff records
@@ -693,10 +693,9 @@ Next strongest commercial/accounting direction after this pass:
 5. **Accountant export bundle**
    - package trial balance, AR/AP aging, tax, payroll, and close review into one accountant handoff
 
-## Immediate next build priorities after schema 102
-1. payment application UI for AR and AP
-2. fuller journal-line automation and validation
-3. stronger reconciliation matching and manual review workflow
-4. filing/remittance review controls in admin/reports
-5. final accountant export packaging and delivery
-6. period close checklist plus lock/reopen controls
+## Immediate next build priorities after schema 103
+1. test the full Admin accounting-close path with real records: AR/AP payment applications, reconciliation session auto-match, sales-tax review, payroll remittance review, period close, and handoff package download
+2. expand generated journal-line automation and posting validation for more source types
+3. add bank statement file parsing/mapping so imports are not only manually keyed statement rows
+4. enforce period locks across AR/AP/GL/tax/payroll mutations once close controls are confirmed in Admin
+5. add optional delivery automation for accountant handoff packages if manual/download delivery is not enough

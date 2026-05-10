@@ -1,3 +1,6 @@
+## Latest build note — 2026-05-09
+Latest schema step: `sql/103_accounting_close_admin_ui_controls.sql`. This pass exposes the accounting-close workflow in Admin Backbone and adds schema support for close/reopen audit controls, reconciliation review queues, and accountant handoff package delivery tracking.
+
 <!-- Reviewed during 2026-05-06 accounting automation + docs archive pass. -->
 <!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->

@@ -1,3 +1,6 @@
+## 2026-05-09 active context
+Latest schema step is 103. Accounting close now has Admin Backbone visibility for payment applications, tax/remittance review, bank reconciliation, period close controls, and accountant handoff package delivery tracking. Continue updating Markdown and schema reference files on every build pass.
+
 ## Current active implementation note
 Schema 101 is the new accounting automation baseline. Use `docs/README.md` for the active docs index and treat `docs/archive/legacy-passes/` as historical reference only.
 

@@ -70,6 +70,11 @@ serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const scope = String(body.scope || 'all').trim().toLowerCase();
 
+  const profiles = await safeList(supabase, 'v_people_directory', 'id,email,full_name,role,is_active,default_supervisor_name,default_admin_name,staff_tier,current_position,trade_specialty', 'full_name');
+  const sites = await safeList(supabase, 'sites', 'id,site_code,site_name,is_active,region,client_name,project_code,project_status', 'site_code');
+  const assignments = await safeList(supabase, 'site_assignments', 'id,site_id,profile_id,assignment_role,is_primary,reports_to_supervisor_profile_id,reports_to_admin_profile_id', 'id');
+
+
 
   if (scope === 'admin_core') {
     return Response.json({
@@ -98,9 +103,24 @@ serve(async (req) => {
       subcontract_dispatches: await safeList(supabase, 'subcontract_dispatches', 'id,dispatch_number,subcontract_client_id,dispatch_status', 'dispatch_number'),
       linked_hse_packets: await safeList(supabase, 'linked_hse_packets', 'id,packet_number,packet_type,packet_status,job_id,work_order_id', 'packet_number'),
       chart_of_accounts: await safeList(supabase, 'chart_of_accounts', 'id,account_number,account_name,account_type,is_active', 'account_number'),
+      bank_accounts: await safeList(supabase, 'bank_accounts', 'id,account_name,institution_name,currency_code,account_status,is_default,gl_account_id', 'account_name'),
       ap_vendors: await safeList(supabase, 'ap_vendors', 'id,vendor_code,legal_name,display_name,is_active', 'legal_name'),
       ar_invoices: await safeList(supabase, 'ar_invoices', 'id,invoice_number,client_id,invoice_status,total_amount,balance_due', 'invoice_number'),
+      ar_payments: await safeList(supabase, 'ar_payments', 'id,payment_number,client_id,invoice_id,payment_date,amount,unapplied_amount,application_status', 'payment_number'),
+      ar_payment_applications: await safeList(supabase, 'v_ar_payment_application_directory', 'id,payment_id,invoice_id,application_date,applied_amount,application_status', 'application_date', 250, false),
       ap_bills: await safeList(supabase, 'ap_bills', 'id,bill_number,vendor_id,bill_status,total_amount,balance_due', 'bill_number'),
+      ap_payments: await safeList(supabase, 'ap_payments', 'id,payment_number,vendor_id,bill_id,payment_date,amount,unapplied_amount,application_status', 'payment_number'),
+      ap_payment_applications: await safeList(supabase, 'v_ap_payment_application_directory', 'id,payment_id,bill_id,application_date,applied_amount,application_status', 'application_date', 250, false),
+      accounting_period_closes: await safeList(supabase, 'v_accounting_period_close_directory', 'id,period_code,period_start,period_end,close_scope,close_status,ar_locked,ap_locked,gl_locked,payroll_locked,tax_locked', 'period_end', 250, false),
+      sales_tax_filings: await safeList(supabase, 'v_sales_tax_filing_review_directory', 'id,filing_code,filing_period_start,filing_period_end,filing_status,review_status,net_remittance_total', 'filing_period_end', 250, false),
+      payroll_remittance_runs: await safeList(supabase, 'v_payroll_remittance_review_directory', 'id,remittance_code,remittance_period_start,remittance_period_end,remittance_status,review_status,net_remittance_total', 'remittance_period_end', 250, false),
+      bank_statement_imports: await safeList(supabase, 'bank_statement_imports', 'id,import_code,bank_account_id,statement_start,statement_end,import_status,closing_balance', 'statement_end', 250, false),
+      bank_reconciliation_sessions: await safeList(supabase, 'v_bank_reconciliation_summary', 'id,session_code,bank_account_id,period_start,period_end,reconciliation_status,difference_amount', 'period_end', 250, false),
+      bank_reconciliation_items: await safeList(supabase, 'bank_reconciliation_items', 'id,reconciliation_session_id,item_source_type,item_date,item_description,amount,match_status,clearing_status', 'item_date', 500, false),
+      accountant_handoff_exports: await safeList(supabase, 'accountant_handoff_exports', 'id,export_title,export_kind,entity_scope,entity_id,package_status,bundle_kind,delivery_channel', 'updated_at', 250, false),
+      accounting_close_admin_control_dashboard: await safeList(supabase, 'v_accounting_close_admin_control_dashboard', '*', 'period_end', 250, false),
+      accounting_reconciliation_manual_review_queue: await safeList(supabase, 'v_accounting_reconciliation_manual_review_queue', '*', 'review_priority', 250, true),
+      accounting_close_package_delivery_queue: await safeList(supabase, 'v_accounting_close_package_delivery_queue', '*', 'updated_at', 250, false),
       tax_codes: await safeList(supabase, 'tax_codes', '*', 'code'),
       business_tax_settings: await safeList(supabase, 'business_tax_settings', '*', 'profile_name'),
       service_pricing_templates: await safeList(supabase, 'service_pricing_templates', '*', 'template_name'),
@@ -144,10 +164,6 @@ serve(async (req) => {
       site_activity_summary: siteActivitySummary
     }, { headers: corsHeaders });
   }
-
-  const profiles = await safeList(supabase, 'v_people_directory', 'id,email,full_name,role,is_active,default_supervisor_name,default_admin_name,staff_tier,current_position,trade_specialty', 'full_name');
-  const sites = await safeList(supabase, 'sites', 'id,site_code,site_name,is_active,region,client_name,project_code,project_status', 'site_code');
-  const assignments = await safeList(supabase, 'site_assignments', 'id,site_id,profile_id,assignment_role,is_primary,reports_to_supervisor_profile_id,reports_to_admin_profile_id', 'id');
 
   const workOrders = await safeList(supabase, 'work_orders', '*', 'work_order_number');
   const workOrderRollups = await safeList(supabase, 'v_work_order_rollups', '*', 'work_order_number');
@@ -218,14 +234,29 @@ serve(async (req) => {
     hse_packet_events: hsePacketEvents,
     hse_packet_proofs: hsePacketProofs,
     chart_of_accounts: await safeList(supabase, 'chart_of_accounts', '*', 'account_number'),
+    bank_accounts: await safeList(supabase, 'bank_accounts', '*', 'account_name'),
+    accounting_period_closes: await safeList(supabase, 'v_accounting_period_close_directory', '*', 'period_end', 500, false),
+    sales_tax_filings: await safeList(supabase, 'v_sales_tax_filing_review_directory', '*', 'filing_period_end', 500, false),
+    payroll_remittance_runs: await safeList(supabase, 'v_payroll_remittance_review_directory', '*', 'remittance_period_end', 500, false),
+    bank_statement_imports: await safeList(supabase, 'bank_statement_imports', '*', 'statement_end', 500, false),
+    bank_reconciliation_sessions: await safeList(supabase, 'v_bank_reconciliation_summary', '*', 'period_end', 500, false),
+    bank_reconciliation_items: await safeList(supabase, 'bank_reconciliation_items', '*', 'item_date', 500, false),
     gl_journal_batches: mergeRowsById(glJournalBatches, glJournalBatchRollups),
     gl_journal_sync_exceptions: glJournalSyncExceptions,
     gl_journal_entries: await safeList(supabase, 'gl_journal_entries', '*', 'line_number'),
     ap_vendors: await safeList(supabase, 'ap_vendors', '*', 'legal_name'),
     ar_invoices: mergeRowsById(arInvoices, (accountRollups || []).filter((row: any) => row?.record_type === 'ar_invoice')),
     ar_payments: await safeList(supabase, 'ar_payments', '*', 'payment_number'),
+    ar_payment_applications: await safeList(supabase, 'v_ar_payment_application_directory', '*', 'application_date', 500, false),
     ap_bills: mergeRowsById(apBills, (accountRollups || []).filter((row: any) => row?.record_type === 'ap_bill')),
     ap_payments: await safeList(supabase, 'ap_payments', '*', 'payment_number'),
+    ap_payment_applications: await safeList(supabase, 'v_ap_payment_application_directory', '*', 'application_date', 500, false),
+    bank_reconciliation_match_scored: await safeList(supabase, 'v_bank_reconciliation_match_scored_directory', '*', 'match_score', 500, false),
+    accountant_handoff_packages: await safeList(supabase, 'v_accountant_handoff_package_directory', '*', 'updated_at', 500, false),
+    accountant_handoff_exports: await safeList(supabase, 'accountant_handoff_exports', '*', 'updated_at', 500, false),
+    accounting_close_admin_control_dashboard: await safeList(supabase, 'v_accounting_close_admin_control_dashboard', '*', 'period_end', 250, false),
+    accounting_reconciliation_manual_review_queue: await safeList(supabase, 'v_accounting_reconciliation_manual_review_queue', '*', 'review_priority', 250, true),
+    accounting_close_package_delivery_queue: await safeList(supabase, 'v_accounting_close_package_delivery_queue', '*', 'updated_at', 250, false),
     material_receipts: mergeRowsById(materialReceipts, materialReceiptRollups),
     material_receipt_lines: await safeList(supabase, 'material_receipt_lines', '*', 'line_order'),
     material_issues: mergeRowsById(materialIssues, materialIssueRollups),

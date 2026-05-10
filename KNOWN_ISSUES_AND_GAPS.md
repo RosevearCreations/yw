@@ -539,16 +539,15 @@ Pass 097 sync note (2026-04-26d): quote output, threshold enforcement on save/re
 
 
 
-## Current backend accounting gaps after schema 100
+## Historical backend accounting gaps after schema 100
 - AR and GL posting markers exist, but invoice/journal candidate promotion into the full AR and GL lifecycle is still incomplete.
 - Sales-tax filing and payroll-remittance records now exist, but prep automation from source transactions remains next-step work.
 - Bank accounts, reconciliation sessions, and reconciliation items now exist, but matching logic and statement parsing remain foundation only.
 - Month-end / year-end close records now exist, but the UI close checklist, lock enforcement, and reopen audit path still need implementation.
 - Accountant-handoff exports still need bundling with trial balance, aging, filing, and remittance summaries.
 
-## Current top accounting gaps after schema 102
-- payment application UI is not finished even though backend application tables now exist
-- generated journal-line automation still needs broader source coverage and validation
-- reconciliation matching needs a manual review UX and stronger matching logic
-- filing/remittance review is foundation-level, not final workflow UX
-- accountant export packaging exists as a richer bundle foundation but not a final delivery workflow
+## Current top accounting gaps after schema 103
+- generated journal-line automation still needs broader source coverage and posting validation beyond the current candidate-ledger path
+- bank statement parsing/import mapping is still manual-row oriented; reconciliation matching now has admin controls, but not full bank-file ingestion
+- period locks are visible in Admin, but lock enforcement still needs to be applied consistently across every AR/AP/GL/tax/payroll mutation
+- accountant handoff packages can be built/downloaded/delivery-tracked, but email/provider delivery automation is still a follow-up if needed

@@ -1,3 +1,10 @@
+## 2026-05-09 accounting-close Admin UI and schema 103 pass
+- Added `sql/103_accounting_close_admin_ui_controls.sql` and appended the same additions to `sql/000_full_schema_reference.sql`.
+- Exposed the accounting-close objects in the Admin Backbone manager: period close, filings/remittances, bank reconciliation, payment applications, and accountant handoff packages.
+- Added sales-tax review/approve/file/pay backend actions and aligned accountant package delivery metadata.
+- Fixed the `admin-selectors` admin-core scope load bug and removed copied insight code from upload/bind handlers that could fail at runtime.
+- Updated accounting close, schema, project state, roadmap, and gaps docs for the schema 103 state.
+
 ## 2026-05-06 accounting automation + docs archive pass
 - Added migration `sql/101_accounting_posting_automation_and_export_bundle.sql`.
 - Added AR-linked invoice posting automation, GL-batch-linked journal posting automation, sales-tax prep, payroll remittance prep, bank reconciliation match-candidate views, and accountant handoff bundle structures.
