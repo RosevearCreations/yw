@@ -90,6 +90,72 @@ serve(async (req) => {
   const roleFilter = String(body.role_filter || body.profile_role || '').trim().toLowerCase();
   const limit = Math.max(1, Math.min(500, Number(body.limit || 200)));
 
+  // Reporting can be a heavy screen. Return it through a narrow fast path so
+  // Admin boot does not need to load people/site/assignment directories first.
+  if (scope === 'reporting' && roleRank(actorRole) >= roleRank('supervisor')) {
+    const reporting: Record<string, unknown> = { ok: true, reporting_scope: 'fast_path' };
+    const [
+      hseSubmissionHistoryReport, hseFormDailyRollup, hseFormSiteRollup, workflowHistoryReport,
+      incidentNearMissHistory, monthlyTrends, workerRollup, contextRollup, reportPresetDirectory,
+      correctiveDirectory, correctiveSummary, trainingCourses, trainingRecords, trainingSummary,
+      sdsAcknowledgements, supervisorQueue, siteScorecards, supervisorScorecards, overdueAlerts,
+      reportSubscriptions, reportDeliveryCandidates, equipmentJsaLinks, deliveryRunHistory, schedulerStatus
+    ] = await Promise.all([
+      safeList(supabase, 'v_hse_submission_history_report', '*', 'submission_date', limit, false),
+      safeList(supabase, 'v_hse_form_daily_rollup', '*', 'report_date', limit, false),
+      safeList(supabase, 'v_hse_form_site_rollup', '*', 'last_submission_date', limit, false),
+      safeList(supabase, 'v_workflow_history_report', '*', 'occurred_at', limit, false),
+      safeList(supabase, 'v_incident_near_miss_history', '*', 'submission_date', limit, false),
+      safeList(supabase, 'v_hse_reporting_monthly_trends', '*', 'month_start', limit, false),
+      safeList(supabase, 'v_hse_reporting_worker_rollup', '*', 'last_submission_date', limit, false),
+      safeList(supabase, 'v_hse_reporting_context_rollup', '*', 'last_submission_date', limit, false),
+      safeList(supabase, 'v_report_preset_directory', '*', 'updated_at', limit, false),
+      safeList(supabase, 'v_corrective_action_task_directory', '*', 'due_date', limit, true),
+      safeList(supabase, 'v_corrective_action_task_summary'),
+      safeList(supabase, 'v_training_course_directory', '*', 'course_name', limit, true),
+      safeList(supabase, 'v_training_record_directory', '*', 'expires_at', limit, true),
+      safeList(supabase, 'v_training_expiry_summary'),
+      safeList(supabase, 'v_sds_acknowledgement_directory', '*', 'expires_at', limit, true),
+      safeList(supabase, 'v_supervisor_safety_queue', '*', 'sort_at', limit, false),
+      safeList(supabase, 'v_site_safety_scorecards', '*', 'last_submission_date', limit, false),
+      safeList(supabase, 'v_supervisor_scorecards', '*', 'last_activity_at', limit, false),
+      safeList(supabase, 'v_overdue_action_alerts', '*', 'sort_at', limit, false),
+      safeList(supabase, 'v_report_subscription_directory', '*', 'next_send_at', limit, false),
+      safeList(supabase, 'v_report_delivery_candidates', '*', 'next_send_at', limit, false),
+      safeList(supabase, 'v_equipment_jsa_hazard_link_directory', '*', 'review_due_date', limit, false),
+      safeList(supabase, 'v_report_delivery_run_history', '*', 'started_at', limit, false),
+      safeList(supabase, 'v_report_delivery_scheduler_status', '*', 'setting_code', 5, true),
+    ]);
+
+    Object.assign(reporting, {
+      hse_submission_history_report: hseSubmissionHistoryReport,
+      hse_form_daily_rollup: hseFormDailyRollup,
+      hse_form_site_rollup: hseFormSiteRollup,
+      workflow_history_report: workflowHistoryReport,
+      incident_near_miss_history: incidentNearMissHistory,
+      hse_reporting_monthly_trends: monthlyTrends,
+      hse_reporting_worker_rollup: workerRollup,
+      hse_reporting_context_rollup: contextRollup,
+      report_preset_directory: reportPresetDirectory,
+      corrective_action_task_directory: correctiveDirectory,
+      corrective_action_task_summary: correctiveSummary,
+      training_course_directory: trainingCourses,
+      training_record_directory: trainingRecords,
+      training_expiry_summary: trainingSummary,
+      sds_acknowledgement_directory: sdsAcknowledgements,
+      supervisor_safety_queue: supervisorQueue,
+      site_safety_scorecards: siteScorecards,
+      supervisor_scorecards: supervisorScorecards,
+      overdue_action_alerts: overdueAlerts,
+      report_subscription_directory: reportSubscriptions,
+      report_delivery_candidates: reportDeliveryCandidates,
+      equipment_jsa_hazard_link_directory: equipmentJsaLinks,
+      report_delivery_run_history: deliveryRunHistory,
+      report_delivery_scheduler_status: schedulerStatus,
+    });
+    return Response.json(reporting, { headers: corsHeaders });
+  }
+
   const { data: peopleRaw } = await supabase.from('v_people_directory').select('*');
   const { data: profileAccessRaw } = await supabase.from('v_profile_access_rollups').select('*');
   const { data: assignmentsRaw } = await supabase.from('v_assignments_directory').select('*');
