@@ -1,3 +1,6 @@
+## 2026-05-09b project brain note
+When troubleshooting Admin load issues, remember that Reports used to auto-load during protected-module initialization. The fix is now in place: Reports lazy-loads on `#reports`, and `admin-directory` has a reporting fast path. If the timeout returns, check whether the deployed frontend/function versions match `2026-05-09b` and schema 104.
+
 <!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 project brain update

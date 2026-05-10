@@ -64,9 +64,22 @@
       submissionHistory: [], workflowHistory: [], dailyRollups: [], siteRollups: [],
       incidentHistory: [], monthlyTrends: [], workerRollups: [], contextRollups: [], presets: [],
       correctiveTasks: [], correctiveSummary: [], trainingCourses: [], trainingRecords: [], trainingSummary: [], sdsAcknowledgements: [], supervisorQueue: [],
-      siteScorecards: [], supervisorScorecards: [], overdueAlerts: [], reportSubscriptions: [], reportDeliveryCandidates: [], equipmentJsaLinks: []
+      siteScorecards: [], supervisorScorecards: [], overdueAlerts: [], reportSubscriptions: [], reportDeliveryCandidates: [], equipmentJsaLinks: [],
+      hasLoaded: false, isLoading: false, lastLoadError: ''
     };
     const els = {};
+
+    function isReportsRouteActive() {
+      return String(location.hash || '').replace(/^#/, '').split('&')[0] === 'reports';
+    }
+
+    function setReportLoading(isLoading) {
+      state.isLoading = !!isLoading;
+      if (els.loadBtn) {
+        els.loadBtn.disabled = !!isLoading;
+        els.loadBtn.textContent = isLoading ? 'Loading Reports...' : 'Reload Reports';
+      }
+    }
 
     function refreshEls() {
       Object.assign(els, {
@@ -846,10 +859,11 @@
       downloadTextFile(`ywi-${kind}-report-${todayISO()}.csv`, lines.join('\n'), 'text/csv;charset=utf-8');
     }
     async function loadReports() {
-      if (!hasAccess()) return;
+      if (!hasAccess() || state.isLoading) return;
+      setReportLoading(true);
       setSummary('Loading historical reports...');
       try {
-        const payload = await loadAdminDirectory({ scope: 'reporting', limit: 500 });
+        const payload = await loadAdminDirectory({ scope: 'reporting', limit: 150, timeoutMs: 45000 });
         state.submissionHistory = Array.isArray(payload?.hse_submission_history_report) ? payload.hse_submission_history_report : [];
         state.workflowHistory = Array.isArray(payload?.workflow_history_report) ? payload.workflow_history_report : [];
         state.dailyRollups = Array.isArray(payload?.hse_form_daily_rollup) ? payload.hse_form_daily_rollup : [];
@@ -873,11 +887,20 @@
         state.equipmentJsaLinks = Array.isArray(payload?.equipment_jsa_hazard_link_directory) ? payload.equipment_jsa_hazard_link_directory : [];
         const actorId = String(getAuthState()?.user?.id || getAuthState()?.profile?.id || '');
         state.presets = (Array.isArray(payload?.report_preset_directory) ? payload.report_preset_directory : []).filter((row) => row.visibility === 'shared' || String(row.created_by_profile_id || '') === actorId);
+        state.hasLoaded = true;
+        state.lastLoadError = '';
         populatePresetSelect();
         renderAll();
       } catch (err) {
         console.error(err);
-        setSummary(err?.message || 'Unable to load historical reports.', true);
+        state.lastLoadError = err?.message || 'Unable to load historical reports.';
+        const timeoutHint = /timed out|abort/i.test(state.lastLoadError)
+          ? 'The report request timed out before Supabase responded. The page stayed usable; try Reload Reports after the updated admin-directory function and schema are deployed.'
+          : state.lastLoadError;
+        setSummary(timeoutHint, true);
+        if (state.hasLoaded) renderAll();
+      } finally {
+        setReportLoading(false);
       }
     }
     function bindEvents() {
@@ -902,7 +925,9 @@
         else if (action === 'close') changeCorrectiveTask(taskId, 'closed');
       });
       document.addEventListener('ywi:route-shown', (event) => {
-        if (event?.detail?.allowed === 'reports' && hasAccess()) renderAll();
+        if (event?.detail?.allowed !== 'reports' || !hasAccess()) return;
+        if (!state.hasLoaded && !state.isLoading) loadReports();
+        else renderAll();
       });
     }
     async function init() {
@@ -910,7 +935,11 @@
       if (els.from && !els.from.value) els.from.value = ninetyDaysAgoISO();
       if (els.to && !els.to.value) els.to.value = todayISO();
       bindEvents();
-      await loadReports();
+      if (isReportsRouteActive()) {
+        await loadReports();
+      } else {
+        setSummary('Reports are ready. Open the Reports tab or choose Reload Reports to fetch the latest history.');
+      }
     }
     return { init, applyRoleVisibility, loadReports };
   }

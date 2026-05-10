@@ -71,6 +71,8 @@ const requiredFiles = [
   'sql/100_accounting_close_reconciliation_and_tax_filing_foundation.sql',
   'sql/101_accounting_posting_automation_and_export_bundle.sql',
   'sql/102_accounting_close_end_to_end_workflow.sql',
+  'sql/103_accounting_close_admin_ui_controls.sql',
+  'sql/104_reporting_loader_timeout_guardrails.sql',
   'js/hse-ops-ui.js',
   'supabase/functions/jobs-directory/index.ts',
   'supabase/functions/jobs-manage/index.ts',
@@ -121,7 +123,7 @@ addCheck('account-has-conflict-review', accountUi.includes('Conflict Review'), '
 addCheck('account-has-support-export', accountUi.includes('Export Support Snapshot'), 'account-ui.js should render the support snapshot export button.');
 
 const schema = read('sql/000_full_schema_reference.sql');
-addCheck('schema-header-current', /102_accounting_close_end_to_end_workflow/i.test(schema), 'Schema snapshot header should reflect the latest 102 pass.');
+addCheck('schema-header-current', /104_reporting_loader_timeout_guardrails/i.test(schema), 'Schema snapshot header should reflect the latest 104 pass.');
 
 const schedulerRun = read('supabase/functions/service-execution-scheduler-run/index.ts');
 addCheck('scheduler-run-advances-next-run', schedulerRun.includes('next_run_at: computeNextRunAt'), 'Scheduler Edge Function should advance next_run_at after successful runs.');
@@ -147,6 +149,8 @@ addCheck('schema-has-reconciliation-match-scored', schema.includes('v_bank_recon
 addCheck('schema-has-sales-tax-review', schema.includes('v_sales_tax_filing_review_directory'), 'Canonical schema should include the sales tax filing review directory view.');
 addCheck('schema-has-payroll-remittance-review', schema.includes('v_payroll_remittance_review_directory'), 'Canonical schema should include the payroll remittance review directory view.');
 addCheck('schema-has-accountant-package-directory', schema.includes('v_accountant_handoff_package_directory'), 'Canonical schema should include the accountant handoff package directory view.');
+addCheck('schema-has-accounting-close-admin-control-dashboard', schema.includes('v_accounting_close_admin_control_dashboard'), 'Canonical schema should include the accounting close admin control dashboard view.');
+addCheck('schema-has-reporting-loader-health', schema.includes('v_reporting_loader_health'), 'Canonical schema should include the schema 104 reporting loader health view.');
 
 console.log(JSON.stringify({ ok: !failed, checks: results }, null, 2));
 if (failed) process.exit(1);

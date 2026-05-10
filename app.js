@@ -59,6 +59,10 @@ function todayISO() {
   return `${d.getFullYear()}-${mm}-${dd}`;
 }
 
+function isBenignBrowserRuntimeMessage(message) {
+  return /A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received/i.test(String(message || ''));
+}
+
 function setNotice(el, text) {
   if (!el) return;
   if (text) {
@@ -638,6 +642,7 @@ document.addEventListener('ywi:route-shown', (e) => {
 });
 
 window.addEventListener('error', (e) => {
+  if (isBenignBrowserRuntimeMessage(e?.message)) return;
   trafficApi()?.trackMonitorEvent?.({
     event_name: 'client_error',
     monitor_scope: 'frontend',
@@ -650,13 +655,15 @@ window.addEventListener('error', (e) => {
 });
 
 window.addEventListener('unhandledrejection', (e) => {
+  const rejectionMessage = String(e?.reason?.message || e?.reason || 'Unknown rejection');
+  if (isBenignBrowserRuntimeMessage(rejectionMessage)) return;
   trafficApi()?.trackMonitorEvent?.({
     event_name: 'client_error',
     monitor_scope: 'frontend',
     severity: 'error',
     route_name: (location.hash || '#toolbox').slice(1),
     title: 'Unhandled promise rejection',
-    message: String(e?.reason?.message || e?.reason || 'Unknown rejection')
+    message: rejectionMessage
   }, !!window.YWI_AUTH?.getState?.()?.isAuthenticated).catch(() => {});
 });
 

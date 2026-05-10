@@ -1,3 +1,8 @@
+## 2026-05-09b documentation sync
+- Latest schema step: `sql/104_reporting_loader_timeout_guardrails.sql`.
+- Accounting-close Admin controls remain documented in `ACCOUNTING_CLOSE_END_TO_END_WORKFLOW.md`; the newest pass is focused on Reports/Admin stability and timeout guardrails.
+- Keep `DEVELOPMENT_ROADMAP.md`, `KNOWN_ISSUES_AND_GAPS.md`, `TESTING_CHECKLIST.md`, and `DATABASE_STRUCTURE.md` aligned on every build pass.
+
 # Documentation Index
 
 ## Main active documents

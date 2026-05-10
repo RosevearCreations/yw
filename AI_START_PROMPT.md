@@ -1,3 +1,6 @@
+## 2026-05-09b start prompt update
+Use schema 104 as the latest schema marker. First verify the Reports timeout fix by opening `#admin` and confirming Reports does not auto-load, then opening `#reports` and reloading reports. After that, resume accounting-close live workflow testing from schema 103.
+
 <!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 ## 2026-04-23 start prompt update

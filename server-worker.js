@@ -5,7 +5,7 @@
 
 'use strict';
 
-const CACHE_NAME = 'ywi-shell-v2026-05-06c';
+const CACHE_NAME = 'ywi-shell-v2026-05-09b';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -35,6 +35,7 @@ const APP_SHELL = [
   '/js/forms-toolbox.js',
   '/js/forms-ppe.js',
   '/js/forms-firstaid.js',
+  '/js/forms-incident.js',
   '/js/forms-inspection.js',
   '/js/forms-drill.js'
 ];

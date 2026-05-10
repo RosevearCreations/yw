@@ -1,5 +1,13 @@
+## 2026-05-09 reporting timeout and admin stability pass
+- Latest schema step is now `sql/104_reporting_loader_timeout_guardrails.sql`.
+- Fixed the Reports screen so it no longer auto-loads the heavy reporting directory while the user is on `#admin`; Reports now lazy-loads only when the Reports route opens or Reload Reports is pressed.
+- Added an `admin-directory` reporting fast path so `scope: reporting` skips unrelated people/site/assignment directory loading and runs the reporting datasets in parallel.
+- Added clearer timeout fallback messaging in Reports and preserved the page instead of leaving an unhandled loading failure.
+- Added a small schema health marker view, `v_reporting_loader_health`, and synchronized `sql/000_full_schema_reference.sql` and the smoke check through schema 104.
+- Verified the public shell still has a single `<h1>` and bumped frontend/service-worker cache strings to `2026-05-09b`.
+
 ## 2026-05-09 project-state update
-The accounting close workflow is now documented through schema 103. Schema 103 adds close/reopen audit support, accountant package delivery metadata, and dashboard/review views. The Admin Backbone manager can now load and operate the key accounting-close entities instead of leaving them backend-only.
+The repo is now documented through schema 104. Schema 103 added close/reopen audit support, accountant package delivery metadata, and dashboard/review views; schema 104 adds a reporting loader health marker and pairs with the Reports/Admin timeout guardrail code.
 
 ## Current state summary
 The repo now has an accounting-close foundation plus a first automation layer for AR posting, GL posting, tax/remittance prep, bank-reconciliation matching, and accountant handoff bundling. The active documentation set has been trimmed and older pass-specific Markdown files have been archived under `docs/archive/legacy-passes/`.

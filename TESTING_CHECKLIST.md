@@ -1,3 +1,11 @@
+## 2026-05-09b regression tests — Reports/Admin timeout
+- Open the app directly at `/#admin` as an admin/supervisor and confirm Reports does not auto-load in the console.
+- Confirm no `reports-ui.js Request timed out` message appears while staying on Admin.
+- Open `/#reports`; confirm the Reports screen lazy-loads and shows either data or a friendly timeout message.
+- Press Reload Reports and confirm the button disables while loading, then re-enables afterward.
+- Deploy/apply `sql/104_reporting_loader_timeout_guardrails.sql`, then confirm `select * from public.v_reporting_loader_health;` returns one row.
+- Re-run `node scripts/repo-smoke-check.mjs` and the existing `node --check` commands before deployment.
+
 ## Accounting automation checks
 - Post one invoice candidate and confirm an AR invoice is created/linked.
 - Post one journal candidate and confirm a GL batch is created/linked.

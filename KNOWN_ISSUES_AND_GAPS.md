@@ -1,3 +1,9 @@
+## May 9, 2026 reporting/admin stability gap refresh
+- Reports no longer auto-loads during Admin boot, but live Supabase verification is still needed after deploying the updated `admin-directory` function and schema 104 marker.
+- The browser-console message `A listener indicated an asynchronous response...` is usually caused by Chrome/extension runtime messaging rather than this app; app telemetry now ignores that benign message so it does not pollute monitor events.
+- Broad Admin payloads are still a long-term performance risk. Continue moving screens to narrow scopes instead of loading `scope: all` whenever a page only needs one workflow lane.
+- Accounting-close workflow depth remains the next business-value gap after this stability pass: payment applications, reconciliation review, filing/remittance approval, close locks, and accountant package delivery all need full live test coverage.
+
 ## Current known gaps after schema 101
 - AR invoice posting still needs payment application and receipt automation.
 - GL posting still needs fuller journal-line automation from ledger summary.

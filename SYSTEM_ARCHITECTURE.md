@@ -1,3 +1,8 @@
+## 2026-05-09b architecture note
+- Historical Reports now load lazily from the Reports route instead of during protected-module boot.
+- `admin-directory` now treats `scope: reporting` as a targeted fast path and avoids unrelated directory hydration for that request.
+- This keeps Admin accounting work responsive while preserving the same DB-backed reporting datasets for supervisors/admins.
+
 ## Architecture note
 The architecture now explicitly includes an accounting-close layer and an accounting automation layer on top of the Jobs commercial workflow.
 

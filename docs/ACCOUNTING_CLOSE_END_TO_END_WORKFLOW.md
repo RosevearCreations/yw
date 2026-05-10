@@ -1,3 +1,8 @@
+## 2026-05-09b stability note after schema 103
+- Schema 104 does not replace the schema 103 accounting-close controls; it adds a lightweight reporting loader health marker and supports the Admin/Reports timeout fix.
+- Reports now lazy-loads so accounting-close Admin work is not slowed by historical reporting data.
+- Continue testing accounting-close workflow screens after applying schema 103 and schema 104 and redeploying the updated Edge Functions.
+
 <!-- Reviewed during 2026-05-09 accounting-close admin UI control pass. -->
 
 # Accounting Close End-to-End Workflow

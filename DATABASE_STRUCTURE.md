@@ -1,5 +1,11 @@
+## 2026-05-09 schema 104 note
+- Latest schema baseline is now `104_reporting_loader_timeout_guardrails.sql`.
+- Added `v_reporting_loader_health` as a small DB marker/health view for the reporting timeout guardrail pass.
+- `sql/000_full_schema_reference.sql` and `scripts/repo-smoke-check.mjs` are synchronized through schema 104.
+- No accounting table shape was changed in schema 104; schema 103 remains the accounting-close Admin UI control migration, while schema 104 records the reporting loader stability pass.
+
 ## Current schema baseline
-The latest schema baseline is `103_accounting_close_admin_ui_controls.sql`.
+The latest schema baseline is `104_reporting_loader_timeout_guardrails.sql`. Schema 103 remains the accounting-close Admin-control migration immediately before it.
 
 ## 2026-05-09 schema 103 note
 - Added `sql/103_accounting_close_admin_ui_controls.sql` and synchronized `sql/000_full_schema_reference.sql` forward through schema 103.

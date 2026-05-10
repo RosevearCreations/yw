@@ -1,3 +1,6 @@
+## 2026-05-09b repo baseline note
+Latest expected schema marker: `sql/104_reporting_loader_timeout_guardrails.sql`. Latest frontend cache string: `2026-05-09b`. Run `node scripts/repo-smoke-check.mjs` plus JavaScript syntax checks before packaging or deployment.
+
 ## Documentation cleanup note
 The main active Markdown set now lives in the repo root and `docs/README.md`. Older pass-specific docs have been retired into `docs/archive/legacy-passes/` so the working set stays easier to follow.
 

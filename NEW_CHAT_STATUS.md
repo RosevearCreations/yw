@@ -1,5 +1,8 @@
+## Start here in a new chat — 2026-05-09b
+Use `sql/104_reporting_loader_timeout_guardrails.sql` as the latest schema step. The newest fix is a Reports/Admin stability pass: Reports no longer fetches the heavy reporting directory while the user is on `#admin`, and `admin-directory` now has a faster reporting-only path. Next live verification should test `#admin` load, open `#reports`, press Reload Reports, then continue the full accounting-close workflow tests from schema 103.
+
 ## Start here in a new chat — 2026-05-09
-Use `sql/103_accounting_close_admin_ui_controls.sql` as the latest schema step. The strongest next pass is now testing the full Admin accounting-close flow in order: AR/AP payment applications, bank auto-match/manual review, sales-tax prepare/review/approve/file/pay, payroll remittance prepare/review/approve/remit, period close/reopen, and accountant handoff package build/download/delivery.
+Previous schema 103 handoff: the strongest accounting-close pass remains live testing in order: AR/AP payment applications, bank auto-match/manual review, sales-tax prepare/review/approve/file/pay, payroll remittance prepare/review/approve/remit, period close/reopen, and accountant handoff package build/download/delivery. Schema 104 is now the latest marker after the Reports/Admin timeout guardrail pass.
 
 ## Start here in a new chat
 The current active docs set lives in the repo root plus `docs/README.md`. Older pass-specific docs have been archived under `docs/archive/legacy-passes/`. The next strongest build pass is the accounting workflow completion pass on top of schema 101.

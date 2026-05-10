@@ -1,3 +1,9 @@
+## 2026-05-09b roadmap update — reporting stability before more workflow depth
+- Finish live verification of the Reports lazy-load fix: load `#admin`, confirm no Reports timeout appears, then open `#reports` and press Reload Reports.
+- Continue accounting-close workflow testing in order: AR/AP payment applications, bank reconciliation match/manual review, sales-tax review, payroll remittance review, period close/reopen, and accountant package delivery.
+- Move more admin/report screens from broad payloads to targeted scopes where possible; this is now a standing performance rule.
+- Keep each pass checking one-H1 public markup, cache version drift, mobile/table CSS drift, schema synchronization, and Markdown handoff updates.
+
 ## Current highest-value implementation order
 1. Finish invoice candidate -> AR posting automation.
 2. Finish journal candidate -> GL batch posting and later entry-line automation.

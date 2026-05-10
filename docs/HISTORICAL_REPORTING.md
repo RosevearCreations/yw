@@ -1,3 +1,8 @@
+## 2026-05-09b reporting timeout guardrail
+- Reports now lazy-loads only when the Reports route is opened or Reload Reports is pressed, so Admin/accounting work no longer triggers historical report fetches in the background.
+- The `admin-directory` Edge Function now has a reporting fast path for `scope: reporting`, reducing unrelated directory work and loading the reporting datasets in parallel.
+- Schema 104 adds `v_reporting_loader_health` as the marker/health view for this stability pass.
+
 <!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 # Historical Reporting
@@ -24,7 +29,7 @@ This keeps OSHA-facing form history retrievable in one place and reduces the ris
 
 ## Current UI behavior
 
-- date filters default to the last 30 days
+- date filters default to the last 90 days
 - HSE and workflow tables can be exported to CSV
 - the screen is hidden from logged-out users and requires supervisor-or-higher access
 

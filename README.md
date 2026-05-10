@@ -1,5 +1,13 @@
+## 2026-05-09 reporting timeout and admin stability pass
+- Latest schema step is now `sql/104_reporting_loader_timeout_guardrails.sql`.
+- Fixed the Reports screen so it no longer auto-loads the heavy reporting directory while the user is on `#admin`; Reports now lazy-loads only when the Reports route opens or Reload Reports is pressed.
+- Added an `admin-directory` reporting fast path so `scope: reporting` skips unrelated people/site/assignment directory loading and runs the reporting datasets in parallel.
+- Added clearer timeout fallback messaging in Reports and preserved the page instead of leaving an unhandled loading failure.
+- Added a small schema health marker view, `v_reporting_loader_health`, and synchronized `sql/000_full_schema_reference.sql` and the smoke check through schema 104.
+- Verified the public shell still has a single `<h1>` and bumped frontend/service-worker cache strings to `2026-05-09b`.
+
 ## Latest build note — 2026-05-09
-Latest schema step: `sql/103_accounting_close_admin_ui_controls.sql`. This pass exposes the accounting-close workflow in Admin Backbone and adds schema support for close/reopen audit controls, reconciliation review queues, and accountant handoff package delivery tracking.
+Previous schema 103 note: `sql/103_accounting_close_admin_ui_controls.sql` exposes the accounting-close workflow in Admin Backbone and adds support for close/reopen audit controls, reconciliation review queues, and accountant handoff package delivery tracking. Schema 104 is now the latest marker for reporting timeout guardrails.
 
 <!-- Reviewed during 2026-05-06 accounting automation + docs archive pass. -->
 <!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->

@@ -1,5 +1,8 @@
+## 2026-05-09b active context
+Latest schema step is 104. The newest build fixes Reports/Admin stability: Reports now lazy-loads instead of auto-fetching while the user is on `#admin`, and `admin-directory` has a reporting-only fast path. Schema 103 remains the accounting-close Admin-control migration; schema 104 is a lightweight reporting-loader health marker.
+
 ## 2026-05-09 active context
-Latest schema step is 103. Accounting close now has Admin Backbone visibility for payment applications, tax/remittance review, bank reconciliation, period close controls, and accountant handoff package delivery tracking. Continue updating Markdown and schema reference files on every build pass.
+Previous schema 103 context: accounting close now has Admin Backbone visibility for payment applications, tax/remittance review, bank reconciliation, period close controls, and accountant handoff package delivery tracking. Continue updating Markdown and schema reference files on every build pass.
 
 ## Current active implementation note
 Schema 101 is the new accounting automation baseline. Use `docs/README.md` for the active docs index and treat `docs/archive/legacy-passes/` as historical reference only.

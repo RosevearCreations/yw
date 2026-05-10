@@ -1,3 +1,9 @@
+## 2026-05-09b deployment note
+- Apply `sql/104_reporting_loader_timeout_guardrails.sql` after schema 103 if it is not already applied.
+- Redeploy `supabase/functions/admin-directory` so the reporting fast path is live.
+- Clear/browser-refresh the service worker cache after deployment; cache strings were bumped to `2026-05-09b`.
+- Verify `/#admin` first, then `/#reports`, before continuing accounting-close workflow testing.
+
 ## Deployment note
 After pulling this pass, apply migrations through schema 101 and verify the report-delivery and service-execution scheduler functions still match the live deployment config.
 

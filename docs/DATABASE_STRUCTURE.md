@@ -1,3 +1,8 @@
+## 2026-05-09 schema 104 note
+- Latest schema marker is `sql/104_reporting_loader_timeout_guardrails.sql`.
+- Added `v_reporting_loader_health` as a small health/marker view for the Reports/Admin timeout guardrail pass.
+- Schema 103 remains the accounting-close Admin UI control migration; schema 104 is intentionally light and focused on deployment/smoke-check alignment for the reporting fast path.
+
 <!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
 

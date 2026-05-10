@@ -299,7 +299,7 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
       if (responseType === 'text') return rawText;
       return parsed;
     } catch (err) {
-      if (err?.name === 'AbortError') {
+      if (err?.name === 'AbortError' || /aborted|timed out/i.test(String(err?.message || ''))) {
         if (!String(url).includes(ANALYTICS_ENDPOINT)) {
           trackMonitorEvent({
             event_name: 'api_error',
@@ -673,10 +673,15 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
   }
 
   async function loadAdminDirectory(payload = {}) {
+    const body = (payload && typeof payload === 'object') ? { ...payload } : {};
+    const requestedTimeout = Number(body.timeoutMs || 0);
+    delete body.timeoutMs;
+
     return jsonFetch('admin-directory', {
       method: 'POST',
-      body: payload,
-      requireAuth: true
+      body,
+      requireAuth: true,
+      timeoutMs: Number.isFinite(requestedTimeout) && requestedTimeout > 0 ? requestedTimeout : DEFAULT_FUNCTION_TIMEOUT_MS
     });
   }
 
