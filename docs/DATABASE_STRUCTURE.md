@@ -1,5 +1,10 @@
 <!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
 <!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
+
+## 2026-05-09 schema 103 note
+- Added `sql/103_accounting_close_admin_ui_controls.sql` and synchronized `sql/000_full_schema_reference.sql` forward through schema 103.
+- Added accounting period close/reopen audit fields, accountant handoff delivery metadata, and admin views for close readiness, reconciliation manual review, and package delivery queues.
+- Admin directory/selectors now expose the new schema-103 views alongside schema-102 payment application, filing/remittance, reconciliation, and handoff package directories.
 <!-- Reviewed during 2026-04-22 workflow guardrail, portable scheduler sync, and repo-alignment pass. -->
 <!-- Reviewed during schema 086 HSE ops performance and site-activity rollup pass on 2026-04-20. -->
 <!-- Reviewed during schema 080 recurring agreements / payroll / asset history / login tracking pass on 2026-04-17. -->

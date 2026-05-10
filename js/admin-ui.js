@@ -105,6 +105,21 @@
       arPayments: [],
       apBills: [],
       apPayments: [],
+      bankAccounts: [],
+      accountingPeriodCloses: [],
+      salesTaxFilings: [],
+      payrollRemittanceRuns: [],
+      bankStatementImports: [],
+      bankReconciliationSessions: [],
+      bankReconciliationItems: [],
+      bankReconciliationMatchScored: [],
+      arPaymentApplications: [],
+      apPaymentApplications: [],
+      accountantHandoffExports: [],
+      accountantHandoffPackages: [],
+      accountingCloseAdminControlDashboard: [],
+      accountingReconciliationManualReviewQueue: [],
+      accountingClosePackageDeliveryQueue: [],
       materialReceipts: [],
       materialReceiptLines: [],
       materialIssues: [],
@@ -568,6 +583,16 @@
                   <option value="gl_journal_batch">Journal Batches</option>
                   <option value="gl_journal_entry">Journal Entries</option>
                   <option value="gl_journal_sync_exception">Journal Sync Exceptions</option>
+                  <option value="bank_account">Bank Accounts</option>
+                  <option value="accounting_period_close">Period Close Control</option>
+                  <option value="sales_tax_filing">Sales Tax Filings</option>
+                  <option value="payroll_remittance_run">Payroll Remittance Runs</option>
+                  <option value="bank_statement_import">Bank Statement Imports</option>
+                  <option value="bank_reconciliation_session">Bank Reconciliation Sessions</option>
+                  <option value="bank_reconciliation_item">Bank Reconciliation Items</option>
+                  <option value="ar_payment_application">AR Payment Applications</option>
+                  <option value="ap_payment_application">AP Payment Applications</option>
+                  <option value="accountant_handoff_export">Accountant Handoff Packages</option>
                   <option value="ap_vendor">Vendors</option>
                   <option value="ar_invoice">AR Invoices</option>
                   <option value="ar_payment">AR Payments</option>
@@ -1718,6 +1743,21 @@
           state.arPayments = Array.isArray(resp?.ar_payments) ? resp.ar_payments : [];
           state.apBills = Array.isArray(resp?.ap_bills) ? resp.ap_bills : [];
           state.apPayments = Array.isArray(resp?.ap_payments) ? resp.ap_payments : [];
+          state.bankAccounts = Array.isArray(resp?.bank_accounts) ? resp.bank_accounts : [];
+          state.accountingPeriodCloses = Array.isArray(resp?.accounting_period_closes) ? resp.accounting_period_closes : [];
+          state.salesTaxFilings = Array.isArray(resp?.sales_tax_filings) ? resp.sales_tax_filings : [];
+          state.payrollRemittanceRuns = Array.isArray(resp?.payroll_remittance_runs) ? resp.payroll_remittance_runs : [];
+          state.bankStatementImports = Array.isArray(resp?.bank_statement_imports) ? resp.bank_statement_imports : [];
+          state.bankReconciliationSessions = Array.isArray(resp?.bank_reconciliation_sessions) ? resp.bank_reconciliation_sessions : [];
+          state.bankReconciliationItems = Array.isArray(resp?.bank_reconciliation_items) ? resp.bank_reconciliation_items : [];
+          state.bankReconciliationMatchScored = Array.isArray(resp?.bank_reconciliation_match_scored) ? resp.bank_reconciliation_match_scored : [];
+          state.arPaymentApplications = Array.isArray(resp?.ar_payment_applications) ? resp.ar_payment_applications : [];
+          state.apPaymentApplications = Array.isArray(resp?.ap_payment_applications) ? resp.ap_payment_applications : [];
+          state.accountantHandoffExports = Array.isArray(resp?.accountant_handoff_exports) ? resp.accountant_handoff_exports : [];
+          state.accountantHandoffPackages = Array.isArray(resp?.accountant_handoff_packages) ? resp.accountant_handoff_packages : [];
+          state.accountingCloseAdminControlDashboard = Array.isArray(resp?.accounting_close_admin_control_dashboard) ? resp.accounting_close_admin_control_dashboard : [];
+          state.accountingReconciliationManualReviewQueue = Array.isArray(resp?.accounting_reconciliation_manual_review_queue) ? resp.accounting_reconciliation_manual_review_queue : [];
+          state.accountingClosePackageDeliveryQueue = Array.isArray(resp?.accounting_close_package_delivery_queue) ? resp.accounting_close_package_delivery_queue : [];
           state.materialReceipts = Array.isArray(resp?.material_receipts) ? resp.material_receipts : [];
           state.materialReceiptLines = Array.isArray(resp?.material_receipt_lines) ? resp.material_receipt_lines : [];
           state.materialIssues = Array.isArray(resp?.material_issues) ? resp.material_issues : [];
@@ -1773,6 +1813,24 @@
       state.chartOfAccounts = [];
       state.apVendors = [];
       state.arInvoices = [];
+      state.arPayments = [];
+      state.apBills = [];
+      state.apPayments = [];
+      state.bankAccounts = [];
+      state.accountingPeriodCloses = [];
+      state.salesTaxFilings = [];
+      state.payrollRemittanceRuns = [];
+      state.bankStatementImports = [];
+      state.bankReconciliationSessions = [];
+      state.bankReconciliationItems = [];
+      state.bankReconciliationMatchScored = [];
+      state.arPaymentApplications = [];
+      state.apPaymentApplications = [];
+      state.accountantHandoffExports = [];
+      state.accountantHandoffPackages = [];
+      state.accountingCloseAdminControlDashboard = [];
+      state.accountingReconciliationManualReviewQueue = [];
+      state.accountingClosePackageDeliveryQueue = [];
       state.apBills = [];
       renderNotifications();
       const e = els();
@@ -2073,6 +2131,53 @@
         { name:'account_id', label:'Account', type:'select', source:'glAccounts', required:true }, { name:'debit_amount', label:'Debit Amount', type:'number' }, { name:'credit_amount', label:'Credit Amount', type:'number' },
         { name:'client_id', label:'Client', type:'select', source:'clients' }, { name:'work_order_id', label:'Work Order', type:'select', source:'workOrders' }, { name:'dispatch_id', label:'Dispatch', type:'select', source:'subcontractDispatches' }, { name:'memo', label:'Memo', type:'textarea' }
       ], columns:[['batch_id','Batch'],['line_number','Line'],['account_id','Account'],['debit_amount','Debit']] },
+
+      bank_account: { label:'Bank Accounts', rowsKey:'bankAccounts', valueKey:'id', labelField:'account_name', fields:[
+        { name:'account_name', label:'Account Name', type:'text', required:true }, { name:'institution_name', label:'Institution', type:'text' }, { name:'currency_code', label:'Currency', type:'text' }, { name:'account_mask', label:'Account Mask', type:'text' },
+        { name:'account_status', label:'Status', type:'select', options:[['open','Open'],['inactive','Inactive'],['closed','Closed']] }, { name:'gl_account_id', label:'GL Account', type:'select', source:'glAccounts' }, { name:'is_default', label:'Default', type:'checkbox' }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['account_name','Account'],['institution_name','Institution'],['currency_code','Currency'],['account_status','Status'],['is_default','Default']] },
+      accounting_period_close: { label:'Period Close Control', rowsKey:'accountingPeriodCloses', valueKey:'id', labelField:'period_code', fields:[
+        { name:'period_code', label:'Period Code', type:'text', required:true }, { name:'period_start', label:'Start Date', type:'date', required:true }, { name:'period_end', label:'End Date', type:'date', required:true },
+        { name:'close_scope', label:'Scope', type:'select', options:[['month_end','Month End'],['quarter_end','Quarter End'],['year_end','Year End'],['custom','Custom']] }, { name:'close_status', label:'Status', type:'select', options:[['open','Open'],['in_review','In Review'],['closed','Closed'],['reopened','Reopened']] },
+        { name:'ar_locked', label:'Lock AR', type:'checkbox' }, { name:'ap_locked', label:'Lock AP', type:'checkbox' }, { name:'gl_locked', label:'Lock GL', type:'checkbox' }, { name:'payroll_locked', label:'Lock Payroll', type:'checkbox' }, { name:'tax_locked', label:'Lock Tax', type:'checkbox' }, { name:'close_notes', label:'Close Notes', type:'textarea' }
+      ], columns:[['period_code','Period'],['period_start','Start'],['period_end','End'],['close_status','Status'],['gl_locked','GL Locked']] },
+      sales_tax_filing: { label:'Sales Tax Filings', rowsKey:'salesTaxFilings', valueKey:'id', labelField:'filing_code', fields:[
+        { name:'filing_code', label:'Filing Code', type:'text', required:true }, { name:'business_tax_setting_id', label:'Tax Profile', type:'select', source:'businessTaxSettings' }, { name:'tax_code_id', label:'Tax Code', type:'select', source:'taxCodes' },
+        { name:'filing_scope', label:'Scope', type:'select', options:[['hst_return','HST Return'],['gst_return','GST Return'],['pst_return','PST Return'],['custom','Custom']] }, { name:'filing_period_start', label:'Start Date', type:'date', required:true }, { name:'filing_period_end', label:'End Date', type:'date', required:true }, { name:'due_date', label:'Due Date', type:'date' },
+        { name:'filing_status', label:'Filing Status', type:'select', options:[['draft','Draft'],['prepared','Prepared'],['filed','Filed'],['paid','Paid'],['amended','Amended']] }, { name:'review_status', label:'Review Status', type:'select', options:[['draft','Draft'],['prepared','Prepared'],['reviewed','Reviewed'],['approved','Approved'],['filed','Filed'],['paid','Paid']] },
+        { name:'taxable_sales_total', label:'Taxable Sales', type:'number' }, { name:'tax_collected_total', label:'Tax Collected', type:'number' }, { name:'tax_paid_total', label:'Tax Paid', type:'number' }, { name:'adjustment_total', label:'Adjustments', type:'number' }, { name:'net_remittance_total', label:'Net Remittance', type:'number' },
+        { name:'reference_number', label:'Filing Reference', type:'text' }, { name:'payment_reference', label:'Payment Reference', type:'text' }, { name:'review_notes', label:'Review Notes', type:'textarea' }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['filing_code','Filing'],['filing_period_end','Period End'],['filing_status','Status'],['review_status','Review'],['net_remittance_total','Net']] },
+      payroll_remittance_run: { label:'Payroll Remittance Runs', rowsKey:'payrollRemittanceRuns', valueKey:'id', labelField:'remittance_code', fields:[
+        { name:'remittance_code', label:'Remittance Code', type:'text', required:true }, { name:'payroll_export_run_id', label:'Payroll Export', type:'select', source:'payrollExportRuns' }, { name:'remittance_type', label:'Type', type:'select', options:[['source_deductions','Source Deductions'],['wsib','WSIB'],['benefits','Benefits'],['custom','Custom']] },
+        { name:'remittance_period_start', label:'Start Date', type:'date', required:true }, { name:'remittance_period_end', label:'End Date', type:'date', required:true }, { name:'due_date', label:'Due Date', type:'date' },
+        { name:'remittance_status', label:'Remittance Status', type:'select', options:[['draft','Draft'],['prepared','Prepared'],['remitted','Remitted'],['void','Void']] }, { name:'review_status', label:'Review Status', type:'select', options:[['draft','Draft'],['prepared','Prepared'],['reviewed','Reviewed'],['approved','Approved'],['remitted','Remitted']] },
+        { name:'gross_pay_total', label:'Gross Pay', type:'number' }, { name:'employee_deduction_total', label:'Employee Deductions', type:'number' }, { name:'employer_contribution_total', label:'Employer Contributions', type:'number' }, { name:'net_remittance_total', label:'Net Remittance', type:'number' },
+        { name:'reference_number', label:'Reference Number', type:'text' }, { name:'payment_reference', label:'Payment Reference', type:'text' }, { name:'review_notes', label:'Review Notes', type:'textarea' }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['remittance_code','Run'],['remittance_period_end','Period End'],['remittance_status','Status'],['review_status','Review'],['net_remittance_total','Net']] },
+      bank_statement_import: { label:'Bank Statement Imports', rowsKey:'bankStatementImports', valueKey:'id', labelField:'import_code', fields:[
+        { name:'bank_account_id', label:'Bank Account', type:'select', source:'bankAccounts', required:true }, { name:'import_code', label:'Import Code', type:'text', required:true }, { name:'statement_start', label:'Statement Start', type:'date' }, { name:'statement_end', label:'Statement End', type:'date' },
+        { name:'import_status', label:'Import Status', type:'select', options:[['draft','Draft'],['imported','Imported'],['reviewed','Reviewed'],['reconciled','Reconciled'],['rejected','Rejected']] }, { name:'opening_balance', label:'Opening Balance', type:'number' }, { name:'closing_balance', label:'Closing Balance', type:'number' }, { name:'transaction_count', label:'Transaction Count', type:'number' }, { name:'source_file_name', label:'Source File', type:'text' }, { name:'source_format', label:'Format', type:'text' }
+      ], columns:[['import_code','Import'],['bank_account_id','Bank'],['statement_end','End'],['import_status','Status'],['closing_balance','Closing']] },
+      bank_reconciliation_session: { label:'Bank Reconciliation Sessions', rowsKey:'bankReconciliationSessions', valueKey:'id', labelField:'session_code', fields:[
+        { name:'bank_account_id', label:'Bank Account', type:'select', source:'bankAccounts', required:true }, { name:'statement_import_id', label:'Statement Import', type:'select', source:'bankStatementImports' }, { name:'session_code', label:'Session Code', type:'text', required:true }, { name:'period_start', label:'Period Start', type:'date' }, { name:'period_end', label:'Period End', type:'date' },
+        { name:'reconciliation_status', label:'Status', type:'select', options:[['draft','Draft'],['in_review','In Review'],['balanced','Balanced'],['closed','Closed'],['difference_pending','Difference Pending']] }, { name:'book_balance', label:'Book Balance', type:'number' }, { name:'bank_balance', label:'Bank Balance', type:'number' }, { name:'difference_amount', label:'Difference', type:'number' }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['session_code','Session'],['bank_account_id','Bank'],['period_end','Period End'],['reconciliation_status','Status'],['difference_amount','Difference']] },
+      bank_reconciliation_item: { label:'Bank Reconciliation Items', rowsKey:'bankReconciliationItems', valueKey:'id', labelField:'item_description', fields:[
+        { name:'reconciliation_session_id', label:'Session', type:'select', source:'bankReconciliationSessions', required:true }, { name:'item_source_type', label:'Source Type', type:'select', options:[['bank_statement_line','Bank Statement Line'],['ar_payment','AR Payment'],['ap_payment','AP Payment'],['gl_journal_entry','GL Journal Entry'],['processor_payout','Processor Payout'],['adjustment','Adjustment'],['other','Other']] },
+        { name:'item_date', label:'Item Date', type:'date' }, { name:'item_description', label:'Description', type:'text' }, { name:'amount', label:'Amount', type:'number' }, { name:'match_status', label:'Match Status', type:'select', options:[['unmatched','Unmatched'],['matched','Matched'],['partial','Partial'],['exception','Exception']] }, { name:'clearing_status', label:'Clearing Status', type:'select', options:[['open','Open'],['cleared','Cleared'],['void','Void'],['ignored','Ignored']] }, { name:'difference_reason', label:'Difference Reason', type:'text' }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['item_date','Date'],['item_description','Description'],['amount','Amount'],['match_status','Match'],['clearing_status','Clearing']] },
+      ar_payment_application: { label:'AR Payment Applications', rowsKey:'arPaymentApplications', valueKey:'id', labelField:'payment_number', fields:[
+        { name:'payment_id', label:'AR Payment', type:'select', source:'arPayments', required:true }, { name:'invoice_id', label:'AR Invoice', type:'select', source:'arInvoices', required:true }, { name:'applied_amount', label:'Applied Amount', type:'number', required:true }, { name:'application_date', label:'Application Date', type:'date' }, { name:'application_status', label:'Status', type:'select', options:[['applied','Applied'],['reversed','Reversed'],['void','Void']] }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['payment_id','Payment'],['invoice_id','Invoice'],['application_date','Date'],['applied_amount','Applied'],['application_status','Status']] },
+      ap_payment_application: { label:'AP Payment Applications', rowsKey:'apPaymentApplications', valueKey:'id', labelField:'payment_number', fields:[
+        { name:'payment_id', label:'AP Payment', type:'select', source:'apPayments', required:true }, { name:'bill_id', label:'AP Bill', type:'select', source:'apBills', required:true }, { name:'applied_amount', label:'Applied Amount', type:'number', required:true }, { name:'application_date', label:'Application Date', type:'date' }, { name:'application_status', label:'Status', type:'select', options:[['applied','Applied'],['reversed','Reversed'],['void','Void']] }, { name:'notes', label:'Notes', type:'textarea' }
+      ], columns:[['payment_id','Payment'],['bill_id','Bill'],['application_date','Date'],['applied_amount','Applied'],['application_status','Status']] },
+      accountant_handoff_export: { label:'Accountant Handoff Packages', rowsKey:'accountantHandoffExports', valueKey:'id', labelField:'export_title', fields:[
+        { name:'export_kind', label:'Export Kind', type:'select', options:[['closeout_bundle','Closeout Bundle'],['period_close','Period Close'],['accountant_review','Accountant Review'],['custom','Custom']] }, { name:'entity_scope', label:'Entity Scope', type:'text' }, { name:'entity_id', label:'Entity ID / Period ID', type:'text', required:true }, { name:'business_tax_setting_id', label:'Tax Profile', type:'select', source:'businessTaxSettings' },
+        { name:'export_status', label:'Export Status', type:'select', options:[['draft','Draft'],['prepared','Prepared'],['generated','Generated'],['delivered','Delivered'],['void','Void']] }, { name:'export_title', label:'Title', type:'text' }, { name:'bundle_kind', label:'Bundle Kind', type:'select', options:[['management_close_bundle','Management Close Bundle'],['corp_t2_bundle','Corp/T2 Bundle'],['llc_review_bundle','LLC Review Bundle'],['custom','Custom']] }, { name:'delivery_channel', label:'Delivery Channel', type:'select', options:[['manual','Manual'],['email','Email'],['download','Download']] }, { name:'delivered_to_email', label:'Delivered To Email', type:'email' },
+        { name:'package_status', label:'Package Status', type:'select', options:[['draft','Draft'],['prepared','Prepared'],['reviewed','Reviewed'],['finalized','Finalized'],['delivered','Delivered']] }, { name:'package_markdown', label:'Package Markdown', type:'textarea', readonly:true }
+      ], columns:[['export_title','Package'],['bundle_kind','Kind'],['package_status','Status'],['delivery_channel','Delivery'],['generated_at','Generated']] },
       ap_vendor: { label:'Vendors', rowsKey:'apVendors', valueKey:'id', labelField:'legal_name', fields:[
         { name:'vendor_code', label:'Vendor Code', type:'text' }, { name:'legal_name', label:'Legal Name', type:'text', required:true }, { name:'display_name', label:'Display Name', type:'text' },
         { name:'contact_name', label:'Contact Name', type:'text' }, { name:'contact_email', label:'Contact Email', type:'email' }, { name:'contact_phone', label:'Contact Phone', type:'text' }, { name:'payment_terms_days', label:'Terms (days)', type:'number' },
@@ -2138,7 +2243,7 @@
     };
 
     function getBackboneRows(entity) {
-      const map = { unit_of_measure: state.unitsOfMeasure || [], cost_code: state.costCodes || [], tax_code: state.taxCodes || [], business_tax_setting: state.businessTaxSettings || [], service_pricing_template: state.servicePricingTemplates || [], job_financial_event: state.jobFinancialEvents || [], recurring_service_agreement: state.recurringServiceAgreements || [], snow_event_trigger: state.snowEventTriggers || [], change_order: state.changeOrders || [], service_contract_document: state.serviceContractDocuments || [], customer_asset: state.customerAssets || [], customer_asset_job_link: state.customerAssetJobLinks || [], warranty_callback_event: state.warrantyCallbackEvents || [], payroll_export_run: state.payrollExportRuns || [], employee_time_entry: state.employeeTimeClockEntries || [], employee_time_entry_review: state.employeeTimeEntryReviews || [], service_execution_scheduler_setting: state.serviceExecutionSchedulerSettings || [], service_area: state.serviceAreas || [], route: state.routes || [], route_stop: state.routeStops || [], route_stop_execution: state.routeStopExecutions || [], route_stop_execution_attachment: state.routeStopExecutionAttachments || [], client: state.clients || [], client_site: state.clientSites || [], material: state.materialsCatalog || [], equipment_master: state.equipmentMaster || [], estimate: state.estimates || [], estimate_line: state.estimateLines || [], work_order: state.workOrders || [], work_order_line: state.workOrderLines || [], subcontract_client: state.subcontractClients || [], subcontract_dispatch: state.subcontractDispatches || [], linked_hse_packet: state.linkedHsePackets || [], hse_packet_event: state.hsePacketEvents || [], hse_packet_proof: state.hsePacketProofs || [], field_upload_failure: state.fieldUploadFailures || [], app_traffic_event: state.appTrafficEvents || [], backend_monitor_event: state.backendMonitorEvents || [], gl_account: state.chartOfAccounts || [], gl_journal_batch: state.glJournalBatches || [], gl_journal_sync_exception: state.glJournalSyncExceptions || [], gl_journal_entry: state.glJournalEntries || [], ap_vendor: state.apVendors || [], ar_invoice: state.arInvoices || [], ar_payment: state.arPayments || [], ap_bill: state.apBills || [], ap_payment: state.apPayments || [], material_receipt: state.materialReceipts || [], material_receipt_line: state.materialReceiptLines || [], material_issue: state.materialIssues || [], material_issue_line: state.materialIssueLines || [] };
+      const map = { unit_of_measure: state.unitsOfMeasure || [], cost_code: state.costCodes || [], tax_code: state.taxCodes || [], business_tax_setting: state.businessTaxSettings || [], service_pricing_template: state.servicePricingTemplates || [], job_financial_event: state.jobFinancialEvents || [], recurring_service_agreement: state.recurringServiceAgreements || [], snow_event_trigger: state.snowEventTriggers || [], change_order: state.changeOrders || [], service_contract_document: state.serviceContractDocuments || [], customer_asset: state.customerAssets || [], customer_asset_job_link: state.customerAssetJobLinks || [], warranty_callback_event: state.warrantyCallbackEvents || [], payroll_export_run: state.payrollExportRuns || [], employee_time_entry: state.employeeTimeClockEntries || [], employee_time_entry_review: state.employeeTimeEntryReviews || [], service_execution_scheduler_setting: state.serviceExecutionSchedulerSettings || [], service_area: state.serviceAreas || [], route: state.routes || [], route_stop: state.routeStops || [], route_stop_execution: state.routeStopExecutions || [], route_stop_execution_attachment: state.routeStopExecutionAttachments || [], client: state.clients || [], client_site: state.clientSites || [], material: state.materialsCatalog || [], equipment_master: state.equipmentMaster || [], estimate: state.estimates || [], estimate_line: state.estimateLines || [], work_order: state.workOrders || [], work_order_line: state.workOrderLines || [], subcontract_client: state.subcontractClients || [], subcontract_dispatch: state.subcontractDispatches || [], linked_hse_packet: state.linkedHsePackets || [], hse_packet_event: state.hsePacketEvents || [], hse_packet_proof: state.hsePacketProofs || [], field_upload_failure: state.fieldUploadFailures || [], app_traffic_event: state.appTrafficEvents || [], backend_monitor_event: state.backendMonitorEvents || [], gl_account: state.chartOfAccounts || [], gl_journal_batch: state.glJournalBatches || [], gl_journal_sync_exception: state.glJournalSyncExceptions || [], gl_journal_entry: state.glJournalEntries || [], ap_vendor: state.apVendors || [], ar_invoice: state.arInvoices || [], ar_payment: state.arPayments || [], ap_bill: state.apBills || [], ap_payment: state.apPayments || [], bank_account: state.bankAccounts || [], accounting_period_close: state.accountingPeriodCloses || [], sales_tax_filing: state.salesTaxFilings || [], payroll_remittance_run: state.payrollRemittanceRuns || [], bank_statement_import: state.bankStatementImports || [], bank_reconciliation_session: state.bankReconciliationSessions || [], bank_reconciliation_item: state.bankReconciliationItems || [], ar_payment_application: state.arPaymentApplications || [], ap_payment_application: state.apPaymentApplications || [], accountant_handoff_export: state.accountantHandoffExports || [], material_receipt: state.materialReceipts || [], material_receipt_line: state.materialReceiptLines || [], material_issue: state.materialIssues || [], material_issue_line: state.materialIssueLines || [] };
       return Array.isArray(map[entity]) ? map[entity] : [];
     }
 
@@ -2176,6 +2281,16 @@
         arPayments: state.selectors.arPayments || state.arPayments || [],
         apBills: state.selectors.apBills || state.apBills || [],
         apPayments: state.selectors.apPayments || state.apPayments || [],
+        bankAccounts: state.selectors.bankAccounts || state.bankAccounts || [],
+        accountingPeriodCloses: state.selectors.accountingPeriodCloses || state.accountingPeriodCloses || [],
+        salesTaxFilings: state.selectors.salesTaxFilings || state.salesTaxFilings || [],
+        payrollRemittanceRuns: state.selectors.payrollRemittanceRuns || state.payrollRemittanceRuns || [],
+        bankStatementImports: state.selectors.bankStatementImports || state.bankStatementImports || [],
+        bankReconciliationSessions: state.selectors.bankReconciliationSessions || state.bankReconciliationSessions || [],
+        bankReconciliationItems: state.selectors.bankReconciliationItems || state.bankReconciliationItems || [],
+        arPaymentApplications: state.selectors.arPaymentApplications || state.arPaymentApplications || [],
+        apPaymentApplications: state.selectors.apPaymentApplications || state.apPaymentApplications || [],
+        accountantHandoffExports: state.selectors.accountantHandoffExports || state.accountantHandoffExports || [],
         materialReceipts: state.selectors.materialReceipts || state.materialReceipts || [],
         materialReceiptLines: state.selectors.materialReceiptLines || state.materialReceiptLines || [],
         materialIssues: state.selectors.materialIssues || state.materialIssues || [],
@@ -2225,6 +2340,15 @@
       if (source === 'arPayments') return row.payment_number || row.id;
       if (source === 'apBills') return row.bill_number || row.id;
       if (source === 'apPayments') return row.payment_number || row.id;
+      if (source === 'bankAccounts') return `${row.account_name || row.institution_name || row.id}${row.account_mask ? ` (${row.account_mask})` : ''}`;
+      if (source === 'accountingPeriodCloses') return `${row.period_code || row.id}${row.close_status ? ` - ${row.close_status}` : ''}`;
+      if (source === 'salesTaxFilings') return `${row.filing_code || row.id}${row.review_status ? ` - ${row.review_status}` : ''}`;
+      if (source === 'payrollRemittanceRuns') return `${row.remittance_code || row.id}${row.review_status ? ` - ${row.review_status}` : ''}`;
+      if (source === 'bankStatementImports') return `${row.import_code || row.id}${row.statement_end ? ` - ${row.statement_end}` : ''}`;
+      if (source === 'bankReconciliationSessions') return `${row.session_code || row.id}${row.reconciliation_status ? ` - ${row.reconciliation_status}` : ''}`;
+      if (source === 'bankReconciliationItems') return `${row.item_date || ''} ${row.item_description || row.id}`.trim();
+      if (source === 'arPaymentApplications' || source === 'apPaymentApplications') return `${row.application_date || ''} ${row.applied_amount || ''}`.trim() || row.id;
+      if (source === 'accountantHandoffExports') return row.export_title || row.export_kind || row.id;
       if (source === 'materialReceipts') return row.receipt_number || row.id;
       if (source === 'materialReceiptLines') return `${row.line_order ?? ''} - ${row.description || row.id}`;
       if (source === 'materialIssues') return row.issue_number || row.id;
@@ -2312,7 +2436,7 @@
       const clean = String(entity || '').trim();
       if (!clean) return 'people';
       if (['linked_hse_packet','hse_packet_event','hse_packet_proof','field_upload_failure','app_traffic_event','backend_monitor_event'].includes(clean)) return 'safety';
-      if (['gl_account','gl_journal_batch','gl_journal_entry','gl_journal_sync_exception','ap_vendor','ar_invoice','ar_payment','ap_bill','ap_payment','material_receipt','material_receipt_line','material_issue','material_issue_line','job_financial_event','payroll_export_run'].includes(clean)) return 'accounting';
+      if (['gl_account','gl_journal_batch','gl_journal_entry','gl_journal_sync_exception','bank_account','accounting_period_close','sales_tax_filing','payroll_remittance_run','bank_statement_import','bank_reconciliation_session','bank_reconciliation_item','ar_payment_application','ap_payment_application','accountant_handoff_export','ap_vendor','ar_invoice','ar_payment','ap_bill','ap_payment','material_receipt','material_receipt_line','material_issue','material_issue_line','job_financial_event','payroll_export_run'].includes(clean)) return 'accounting';
       if (['route','route_stop','route_stop_execution','route_stop_execution_attachment','client','client_site','material','equipment_master','estimate','estimate_line','work_order','work_order_line','subcontract_client','subcontract_dispatch','recurring_service_agreement','service_contract_document','customer_asset','customer_asset_job_link','warranty_callback_event','service_execution_scheduler_setting','employee_time_entry','employee_time_entry_review'].includes(clean)) return 'operations';
       return 'people';
     }
@@ -2739,117 +2863,6 @@
           renderBackboneInsights();
         }, 'change');
       }
-      if (entity === 'material_issue' || entity === 'material_issue_line') {
-        const issueId = entity === 'material_issue' ? (selected?.id || e.backboneItemId?.value || '') : (val('issue_id') || selected?.issue_id || '');
-        const lines = (state.materialIssueLines || []).filter((item) => String(item.issue_id || '') === String(issueId));
-        const issueTotal = lines.reduce((sum, item) => sum + formatMoney(item.line_total), 0);
-        cards.push({ title: 'Issue Lines', value: String(lines.length), help: 'Material issue/usage lines for this issue header.' });
-        cards.push({ title: 'Issued Total', value: formatMoney(selected?.issue_total ?? issueTotal), help: 'Total issued material cost from issue lines.' });
-        cards.push({ title: 'Estimated Cost', value: formatMoney(selected?.estimated_material_total), help: 'Estimated material cost from linked work-order lines.' });
-        cards.push({ title: 'Variance', value: formatMoney(selected?.variance_amount), help: 'Actual issued cost minus estimated material cost.' });
-      }
-      if (entity === 'linked_hse_packet' || entity === 'hse_packet_event') {
-        const packetId = entity === 'linked_hse_packet' ? (selected?.id || e.backboneItemId?.value || '') : (val('packet_id') || selected?.packet_id || '');
-        const events = (state.hsePacketEvents || []).filter((item) => String(item.packet_id || '') === String(packetId));
-        cards.push({ title: 'HSE Events', value: String(events.length), help: 'Weather, heat, chemical, traffic, signoff, and closeout events linked to this packet.' });
-        cards.push({ title: 'Weather / Heat', value: `${Number(selected?.weather_event_count || 0)} / ${Number(selected?.heat_event_count || 0)}`, help: 'Latest weather and heat workflow check counts for this packet.' });
-        cards.push({ title: 'Chemical / Traffic', value: `${Number(selected?.chemical_event_count || 0)} / ${Number(selected?.traffic_event_count || 0)}`, help: 'Chemical-handling and traffic/public interaction event counts.' });
-        cards.push({ title: 'Signoff / Closeout', value: `${Number(selected?.signoff_event_count || 0)} / ${Number(selected?.closeout_event_count || 0)}`, help: 'Field signoff and closeout events completed against the packet.' });
-      }
-
-      if (entity === 'estimate') {
-        const candidate = (state.estimateConversionCandidates || []).find((item) => String(item.id) === String(selected?.id || ''));
-        cards.push({ title: 'Linked Agreements', value: String(candidate?.linked_agreement_count || 0), help: 'Shows whether this estimate has already been converted into a recurring agreement.' });
-        cards.push({ title: 'Printable Docs', value: String(candidate?.linked_document_count || 0), help: 'Application / contract documents already generated from this estimate.' });
-      }
-
-      if (entity === 'recurring_service_agreement') {
-        const summary = (state.serviceAgreementProfitabilitySummary || []).find((item) => String(item.id) === String(selected?.id || ''));
-        cards.push({ title: 'Linked Jobs', value: String(summary?.linked_job_count || 0), help: 'Jobs currently tied back to this agreement code.' });
-        cards.push({ title: 'Agreement Profit', value: formatMoney(summary?.actual_profit_rollup_total), help: 'Rolls up actual job profitability currently linked to this agreement.' });
-        cards.push({ title: 'Snow Events / Invoices', value: `${Number(summary?.triggered_snow_event_count || 0)} / ${Number(summary?.snow_invoice_count || 0)}`, help: 'Triggered snow events versus invoices already produced from those triggers.' });
-        cards.push({ title: 'Open Invoice Balance', value: formatMoney(summary?.open_invoice_balance), help: 'Outstanding AR balance linked to this recurring agreement.' });
-      }
-
-      if (entity === 'snow_event_trigger') {
-        const summary = (state.snowEventInvoiceCandidates || []).find((item) => String(item.id) === String(selected?.id || ''));
-        cards.push({ title: 'Trigger Status', value: summary?.trigger_met ? 'Ready to Invoice' : 'Below Threshold', help: 'Triggered snow events can generate a draft AR invoice directly from Admin.' });
-        cards.push({ title: 'Existing Invoice', value: summary?.existing_invoice_number || 'None', help: 'Prevents duplicate snow-event invoicing when an invoice already exists.' });
-        cards.push({ title: 'Estimated Invoice Total', value: formatMoney(summary?.estimated_total_with_tax), help: 'Uses the agreement visit charge and linked tax code to preview draft billing.' });
-      }
-
-      if (entity === 'employee_time_entry') {
-        const openExceptions = (state.employeeTimeAttendanceExceptions || []).filter((item) => String(item.id || '') === String(selected?.id || ''));
-        cards.push({ title: 'Break Count', value: String(selected?.break_count || 0), help: 'Unpaid breaks recorded on this time entry.' });
-        cards.push({ title: 'Geo Capture', value: `${selected?.clock_in_geo_source || 'manual'}${selected?.clock_out_geo_source ? ` / ${selected.clock_out_geo_source}` : ''}`, help: 'Shows how location was captured for clock-in and clock-out.' });
-        cards.push({ title: 'Exception State', value: String(selected?.exception_status || (openExceptions[0]?.exception_type || 'clear')), help: 'Attendance exception status for supervisor review.' });
-      }
-
-      if (entity === 'recurring_service_agreement') {
-        const candidates = (state.serviceAgreementExecutionCandidates || []).filter((item) => String(item.id || '') === String(selected?.id || ''));
-        cards.push({ title: 'Execution Candidates', value: String(candidates.length), help: 'Service-session and invoice candidates currently staged from this agreement.' });
-      }
-
-      if (entity === 'warranty_callback_event') {
-        const summary = (state.callbackWarrantyDashboardSummary || [])[0] || null;
-        cards.push({ title: 'Open Callbacks', value: String(summary?.open_callback_count || 0), help: 'Open callback / warranty items across the business.' });
-        cards.push({ title: 'Open Warranty Items', value: String(summary?.open_warranty_callback_count || 0), help: 'Warranty-covered callback items still needing follow-up.' });
-        cards.push({ title: 'Open Callback Cost', value: formatMoney(summary?.open_callback_cost_total), help: 'Current actual cost tied up in unresolved callback and warranty work.' });
-      }
-
-      if (entity === 'payroll_export_run') {
-        const start = selected?.period_start ? Date.parse(`${selected.period_start}T00:00:00`) : NaN;
-        const end = selected?.period_end ? Date.parse(`${selected.period_end}T23:59:59`) : NaN;
-        const detailRows = (state.payrollReviewDetail || []).filter((item) => {
-          const stamp = Date.parse(`${item?.session_date || ''}T12:00:00`);
-          return Number.isFinite(start) && Number.isFinite(end) && Number.isFinite(stamp) && stamp >= start && stamp <= end;
-        });
-        const hours = detailRows.reduce((sum, item) => sum + Number(item?.hours_worked || 0), 0);
-        const payroll = detailRows.reduce((sum, item) => sum + Number(item?.payroll_cost_total || 0), 0);
-        cards.push({ title: 'Detail Rows', value: String(detailRows.length), help: 'Crew-hour detail rows inside this payroll period.' });
-        cards.push({ title: 'Period Hours', value: Number(hours || 0).toFixed(2), help: 'Hours available for export in this payroll period.' });
-        cards.push({ title: 'Payroll Cost', value: formatMoney(payroll), help: 'Burden-aware payroll cost inside the selected export period.' });
-      }
-
-      if (entity === 'service_contract_document') {
-        cards.push({ title: 'Document Kind', value: String(selected?.document_kind || 'contract'), help: 'Application, contract, change-order, or other printable service document.' });
-        cards.push({ title: 'Source', value: `${selected?.source_entity || ''} ${selected?.contract_reference ? `· ${selected.contract_reference}` : ''}`.trim(), help: 'Shows the source estimate / agreement / job that generated this printable document.' });
-      }
-
-      if (entity === 'app_traffic_event' || entity === 'backend_monitor_event') {
-        const now = Date.now();
-        const dayMs = 24 * 60 * 60 * 1000;
-        const recentTraffic = (state.appTrafficEvents || []).filter((item) => {
-          const stamp = Date.parse(item?.created_at || item?.last_event_at || '');
-          return Number.isFinite(stamp) && (now - stamp) <= dayMs;
-        });
-        const recentMonitor = (state.backendMonitorEvents || []).filter((item) => {
-          const stamp = Date.parse(item?.created_at || item?.last_seen_at || '');
-          return Number.isFinite(stamp) && (now - stamp) <= dayMs;
-        });
-        const openMonitor = (state.backendMonitorEvents || []).filter((item) => ['open','investigating'].includes(String(item?.lifecycle_status || '').toLowerCase()));
-        const pendingUploads = (state.fieldUploadFailures || []).filter((item) => ['pending','retrying'].includes(String(item?.retry_status || '').toLowerCase()));
-        const latestDay = (state.trafficDailySummary || [])[0] || null;
-        const topAlert = resolveTopMonitorAlert();
-        cards.push({ title: '24h Traffic Events', value: String(recentTraffic.length), help: 'Page, route, API, and upload telemetry captured in the last 24 hours.' });
-        cards.push({ title: '24h Monitor Incidents', value: String(recentMonitor.length), help: 'Frontend/backend/storage/auth incidents captured in the last 24 hours.' });
-        cards.push({ title: 'Open Monitor Incidents', value: String(openMonitor.length), help: 'Incidents still marked open or investigating.' });
-        cards.push({ title: 'Pending Upload Retries', value: String(pendingUploads.length), help: 'Upload failures still waiting for retry or replacement.' });
-        cards.push({ title: 'Latest Daily Traffic', value: latestDay ? `${latestDay.event_date || ''} · ${latestDay.total_events || 0} events` : 'No daily summary yet', help: 'Daily rollup view for traffic and error monitoring.' });
-        cards.push({ title: 'Threshold Alert', value: topAlert ? `${topAlert.alert_level || 'warning'} · ${topAlert.metric_value || 0}` : 'normal · 0', help: topAlert?.alert_title || 'No active threshold alert right now.' });
-      }
-
-      if (entity === 'gl_journal_sync_exception') {
-        const openExceptions = (state.glJournalSyncExceptions || []).filter((item) => String(item?.exception_status || '').toLowerCase() === 'open');
-        const warningOrHigher = openExceptions.filter((item) => ['warning','error'].includes(String(item?.severity || '').toLowerCase()));
-        cards.push({ title: 'Open Exceptions', value: String(openExceptions.length), help: 'Source-generated accounting batches still waiting for sync review.' });
-        cards.push({ title: 'Warning / Error', value: String(warningOrHigher.length), help: 'Higher-severity journal sync exceptions should be reviewed before posting.' });
-      }
-
-      if (entity === 'field_upload_failure') {
-        cards.push({ title: 'Retry Status', value: String(selected?.retry_status || 'pending'), help: 'Tracks whether the upload issue still needs manual retry or has been resolved.' });
-        cards.push({ title: 'Failure Stage', value: String(selected?.failure_stage || 'upload'), help: 'Shows which upload stage failed so field/office staff know where to investigate.' });
-      }
       if (entity === 'linked_hse_packet') {
         ['briefing_required', 'briefing_completed', 'inspection_required', 'inspection_completed', 'emergency_review_required', 'emergency_review_completed', 'weather_monitoring_required', 'weather_monitoring_completed', 'heat_monitoring_required', 'heat_monitoring_completed', 'chemical_handling_required', 'chemical_handling_completed', 'traffic_control_required', 'traffic_control_completed', 'field_signoff_required', 'field_signoff_completed', 'packet_status', 'reopen_in_progress', 'packet_type', 'packet_scope'].forEach((name) => bind(name, () => {
           const preview = getHsePreviewFromInputs();
@@ -2919,95 +2932,6 @@
         formData.set('proof_notes', document.getElementById('ad_bb_proof_notes')?.value || '');
         formData.set('file', file);
         return window.YWIAPI?.uploadHsePacketProof?.(formData, true);
-      }
-
-      if (entity === 'estimate') {
-        const candidate = (state.estimateConversionCandidates || []).find((item) => String(item.id) === String(selected?.id || ''));
-        cards.push({ title: 'Linked Agreements', value: String(candidate?.linked_agreement_count || 0), help: 'Shows whether this estimate has already been converted into a recurring agreement.' });
-        cards.push({ title: 'Printable Docs', value: String(candidate?.linked_document_count || 0), help: 'Application / contract documents already generated from this estimate.' });
-      }
-
-      if (entity === 'recurring_service_agreement') {
-        const summary = (state.serviceAgreementProfitabilitySummary || []).find((item) => String(item.id) === String(selected?.id || ''));
-        cards.push({ title: 'Linked Jobs', value: String(summary?.linked_job_count || 0), help: 'Jobs currently tied back to this agreement code.' });
-        cards.push({ title: 'Agreement Profit', value: formatMoney(summary?.actual_profit_rollup_total), help: 'Rolls up actual job profitability currently linked to this agreement.' });
-        cards.push({ title: 'Snow Events / Invoices', value: `${Number(summary?.triggered_snow_event_count || 0)} / ${Number(summary?.snow_invoice_count || 0)}`, help: 'Triggered snow events versus invoices already produced from those triggers.' });
-        cards.push({ title: 'Open Invoice Balance', value: formatMoney(summary?.open_invoice_balance), help: 'Outstanding AR balance linked to this recurring agreement.' });
-      }
-
-      if (entity === 'snow_event_trigger') {
-        const summary = (state.snowEventInvoiceCandidates || []).find((item) => String(item.id) === String(selected?.id || ''));
-        cards.push({ title: 'Trigger Status', value: summary?.trigger_met ? 'Ready to Invoice' : 'Below Threshold', help: 'Triggered snow events can generate a draft AR invoice directly from Admin.' });
-        cards.push({ title: 'Existing Invoice', value: summary?.existing_invoice_number || 'None', help: 'Prevents duplicate snow-event invoicing when an invoice already exists.' });
-        cards.push({ title: 'Estimated Invoice Total', value: formatMoney(summary?.estimated_total_with_tax), help: 'Uses the agreement visit charge and linked tax code to preview draft billing.' });
-      }
-
-      if (entity === 'employee_time_entry') {
-        const openExceptions = (state.employeeTimeAttendanceExceptions || []).filter((item) => String(item.id || '') === String(selected?.id || ''));
-        cards.push({ title: 'Break Count', value: String(selected?.break_count || 0), help: 'Unpaid breaks recorded on this time entry.' });
-        cards.push({ title: 'Geo Capture', value: `${selected?.clock_in_geo_source || 'manual'}${selected?.clock_out_geo_source ? ` / ${selected.clock_out_geo_source}` : ''}`, help: 'Shows how location was captured for clock-in and clock-out.' });
-        cards.push({ title: 'Exception State', value: String(selected?.exception_status || (openExceptions[0]?.exception_type || 'clear')), help: 'Attendance exception status for supervisor review.' });
-      }
-
-      if (entity === 'recurring_service_agreement') {
-        const candidates = (state.serviceAgreementExecutionCandidates || []).filter((item) => String(item.id || '') === String(selected?.id || ''));
-        cards.push({ title: 'Execution Candidates', value: String(candidates.length), help: 'Service-session and invoice candidates currently staged from this agreement.' });
-      }
-
-      if (entity === 'warranty_callback_event') {
-        const summary = (state.callbackWarrantyDashboardSummary || [])[0] || null;
-        cards.push({ title: 'Open Callbacks', value: String(summary?.open_callback_count || 0), help: 'Open callback / warranty items across the business.' });
-        cards.push({ title: 'Open Warranty Items', value: String(summary?.open_warranty_callback_count || 0), help: 'Warranty-covered callback items still needing follow-up.' });
-        cards.push({ title: 'Open Callback Cost', value: formatMoney(summary?.open_callback_cost_total), help: 'Current actual cost tied up in unresolved callback and warranty work.' });
-      }
-
-      if (entity === 'payroll_export_run') {
-        const start = selected?.period_start ? Date.parse(`${selected.period_start}T00:00:00`) : NaN;
-        const end = selected?.period_end ? Date.parse(`${selected.period_end}T23:59:59`) : NaN;
-        const detailRows = (state.payrollReviewDetail || []).filter((item) => {
-          const stamp = Date.parse(`${item?.session_date || ''}T12:00:00`);
-          return Number.isFinite(start) && Number.isFinite(end) && Number.isFinite(stamp) && stamp >= start && stamp <= end;
-        });
-        const hours = detailRows.reduce((sum, item) => sum + Number(item?.hours_worked || 0), 0);
-        const payroll = detailRows.reduce((sum, item) => sum + Number(item?.payroll_cost_total || 0), 0);
-        cards.push({ title: 'Detail Rows', value: String(detailRows.length), help: 'Crew-hour detail rows inside this payroll period.' });
-        cards.push({ title: 'Period Hours', value: Number(hours || 0).toFixed(2), help: 'Hours available for export in this payroll period.' });
-        cards.push({ title: 'Payroll Cost', value: formatMoney(payroll), help: 'Burden-aware payroll cost inside the selected export period.' });
-      }
-
-      if (entity === 'service_contract_document') {
-        cards.push({ title: 'Document Kind', value: String(selected?.document_kind || 'contract'), help: 'Application, contract, change-order, or other printable service document.' });
-        cards.push({ title: 'Source', value: `${selected?.source_entity || ''} ${selected?.contract_reference ? `· ${selected.contract_reference}` : ''}`.trim(), help: 'Shows the source estimate / agreement / job that generated this printable document.' });
-      }
-
-      if (entity === 'app_traffic_event' || entity === 'backend_monitor_event') {
-        const now = Date.now();
-        const dayMs = 24 * 60 * 60 * 1000;
-        const recentTraffic = (state.appTrafficEvents || []).filter((item) => {
-          const stamp = Date.parse(item?.created_at || item?.last_event_at || '');
-          return Number.isFinite(stamp) && (now - stamp) <= dayMs;
-        });
-        const recentMonitor = (state.backendMonitorEvents || []).filter((item) => {
-          const stamp = Date.parse(item?.created_at || item?.last_seen_at || '');
-          return Number.isFinite(stamp) && (now - stamp) <= dayMs;
-        });
-        const openMonitor = (state.backendMonitorEvents || []).filter((item) => ['open','investigating'].includes(String(item?.lifecycle_status || '').toLowerCase()));
-        const pendingUploads = (state.fieldUploadFailures || []).filter((item) => ['pending','retrying'].includes(String(item?.retry_status || '').toLowerCase()));
-        const latestDay = (state.trafficDailySummary || [])[0] || null;
-        const topAlert = resolveTopMonitorAlert();
-        cards.push({ title: '24h Traffic Events', value: String(recentTraffic.length), help: 'Page, route, API, and upload telemetry captured in the last 24 hours.' });
-        cards.push({ title: '24h Monitor Incidents', value: String(recentMonitor.length), help: 'Frontend/backend/storage/auth incidents captured in the last 24 hours.' });
-        cards.push({ title: 'Open Monitor Incidents', value: String(openMonitor.length), help: 'Incidents still marked open or investigating.' });
-        cards.push({ title: 'Pending Upload Retries', value: String(pendingUploads.length), help: 'Upload failures still waiting for retry or replacement.' });
-        cards.push({ title: 'Latest Daily Traffic', value: latestDay ? `${latestDay.event_date || ''} · ${latestDay.total_events || 0} events` : 'No daily summary yet', help: 'Daily rollup view for traffic and error monitoring.' });
-        cards.push({ title: 'Threshold Alert', value: topAlert ? `${topAlert.alert_level || 'warning'} · ${topAlert.metric_value || 0}` : 'normal · 0', help: topAlert?.alert_title || 'No active threshold alert right now.' });
-      }
-
-      if (entity === 'gl_journal_sync_exception') {
-        const openExceptions = (state.glJournalSyncExceptions || []).filter((item) => String(item?.exception_status || '').toLowerCase() === 'open');
-        const warningOrHigher = openExceptions.filter((item) => ['warning','error'].includes(String(item?.severity || '').toLowerCase()));
-        cards.push({ title: 'Open Exceptions', value: String(openExceptions.length), help: 'Source-generated accounting batches still waiting for sync review.' });
-        cards.push({ title: 'Warning / Error', value: String(warningOrHigher.length), help: 'Higher-severity journal sync exceptions should be reviewed before posting.' });
       }
 
       if (entity === 'field_upload_failure') {
@@ -3103,7 +3027,7 @@
         }
         return 'Open Print / Invoice';
       }
-      const labels = { estimate: 'Convert to Agreement', recurring_service_agreement: 'Generate Contract / Run Scheduler', snow_event_trigger: 'Generate Snow Invoice', service_execution_scheduler_setting: 'Run Scheduler Now' };
+      const labels = { estimate: 'Convert to Agreement', recurring_service_agreement: 'Generate Contract / Run Scheduler', snow_event_trigger: 'Generate Snow Invoice', service_execution_scheduler_setting: 'Run Scheduler Now', ar_payment_application: 'Auto-Apply AR Payment', ap_payment_application: 'Auto-Apply AP Payment', bank_reconciliation_session: 'Auto-Match Reconciliation', sales_tax_filing: 'Advance Filing Review', payroll_remittance_run: 'Advance Remittance Review', accountant_handoff_export: 'Build / Deliver Package', accounting_period_close: 'Close / Reopen Period' };
       return labels[entity] || 'Generate Output';
     }
 
@@ -3136,12 +3060,12 @@
       bindBackboneUploadLogic(entity, row || null);
       if (e.backbonePostBtn) e.backbonePostBtn.style.display = entity === 'gl_journal_batch' ? '' : 'none';
       if (e.backboneGenerateBtn) {
-        const allowed = ['estimate','recurring_service_agreement','snow_event_trigger','payroll_export_run','service_execution_scheduler_setting','service_contract_document'];
+        const allowed = ['estimate','recurring_service_agreement','snow_event_trigger','payroll_export_run','service_execution_scheduler_setting','service_contract_document','ar_payment_application','ap_payment_application','bank_reconciliation_session','sales_tax_filing','payroll_remittance_run','accountant_handoff_export','accounting_period_close'];
         e.backboneGenerateBtn.style.display = allowed.includes(entity) ? '' : 'none';
         e.backboneGenerateBtn.textContent = getBackboneGenerateLabel(entity, row || null);
       }
       if (e.backboneDownloadBtn) {
-        const labels = { payroll_export_run: 'Download Export', service_contract_document: 'Download / Print' };
+        const labels = { payroll_export_run: 'Download Export', service_contract_document: 'Download / Print', accountant_handoff_export: 'Download Package' };
         e.backboneDownloadBtn.style.display = labels[entity] ? '' : 'none';
         e.backboneDownloadBtn.textContent = labels[entity] || 'Download / Print';
       }
@@ -3181,7 +3105,86 @@
       const entity = e.backboneEntity?.value || 'unit_of_measure';
       const itemId = e.backboneItemId?.value || '';
       const row = getSelectedBackboneRecord();
-      if (!itemId && entity !== 'service_contract_document') throw new Error('Select a record first.');
+      if (!itemId && !['service_contract_document','ar_payment_application','ap_payment_application'].includes(entity)) throw new Error('Select a record first.');
+      if (entity === 'ar_payment_application') {
+        const paymentId = row?.payment_id || document.getElementById('ad_bb_payment_id')?.value || '';
+        if (!paymentId) throw new Error('Select an AR payment or payment application first.');
+        const resp = await manageAdminEntity({ entity: 'ar_payment_application', action: 'auto_apply', payment_id: paymentId });
+        if (!resp?.ok) throw new Error(resp?.error || 'AR payment auto-apply failed.');
+        await loadDirectory();
+        await refreshSelectors();
+        renderBackboneTable();
+        setSummary(`AR payment auto-apply completed. Created ${resp.applied_count || 0} application(s).`);
+        return;
+      }
+      if (entity === 'ap_payment_application') {
+        const paymentId = row?.payment_id || document.getElementById('ad_bb_payment_id')?.value || '';
+        if (!paymentId) throw new Error('Select an AP payment or payment application first.');
+        const resp = await manageAdminEntity({ entity: 'ap_payment_application', action: 'auto_apply', payment_id: paymentId });
+        if (!resp?.ok) throw new Error(resp?.error || 'AP payment auto-apply failed.');
+        await loadDirectory();
+        await refreshSelectors();
+        renderBackboneTable();
+        setSummary(`AP payment auto-apply completed. Created ${resp.applied_count || 0} application(s).`);
+        return;
+      }
+      if (entity === 'bank_reconciliation_session') {
+        const resp = await manageAdminEntity({ entity: 'bank_reconciliation_session', action: 'auto_match', item_id: itemId });
+        if (!resp?.ok) throw new Error(resp?.error || 'Bank reconciliation auto-match failed.');
+        await loadDirectory();
+        await refreshSelectors();
+        fillBackboneForm(resp.record || row || null);
+        renderBackboneTable();
+        setSummary(`Bank reconciliation auto-match completed. Matched ${resp.matched_count || 0} item(s).`);
+        return;
+      }
+      if (entity === 'sales_tax_filing') {
+        const status = String(row?.review_status || row?.filing_status || 'draft').toLowerCase();
+        const action = status === 'draft' ? 'prepare_from_period' : status === 'prepared' ? 'review' : status === 'reviewed' ? 'approve' : status === 'approved' ? 'file' : status === 'filed' ? 'pay' : 'update';
+        const resp = await manageAdminEntity({ ...collectBackbonePayload(), action, item_id: itemId });
+        if (!resp?.ok) throw new Error(resp?.error || 'Sales tax filing workflow action failed.');
+        await loadDirectory();
+        await refreshSelectors();
+        fillBackboneForm(resp.record || null);
+        renderBackboneTable();
+        setSummary(`Sales tax filing moved with action: ${action.replaceAll('_', ' ')}.`);
+        return;
+      }
+      if (entity === 'payroll_remittance_run') {
+        const status = String(row?.review_status || row?.remittance_status || 'draft').toLowerCase();
+        const action = status === 'draft' ? 'prepare_from_export' : status === 'prepared' ? 'review' : status === 'reviewed' ? 'approve' : status === 'approved' ? 'remit' : 'update';
+        const resp = await manageAdminEntity({ ...collectBackbonePayload(), action, item_id: itemId });
+        if (!resp?.ok) throw new Error(resp?.error || 'Payroll remittance workflow action failed.');
+        await loadDirectory();
+        await refreshSelectors();
+        fillBackboneForm(resp.record || null);
+        renderBackboneTable();
+        setSummary(`Payroll remittance moved with action: ${action.replaceAll('_', ' ')}.`);
+        return;
+      }
+      if (entity === 'accountant_handoff_export') {
+        const status = String(row?.package_status || 'draft').toLowerCase();
+        const action = status === 'draft' ? 'build_bundle' : status === 'prepared' ? 'review_package' : status === 'reviewed' ? 'finalize_package' : status === 'finalized' ? 'deliver_package' : 'build_bundle';
+        const resp = await manageAdminEntity({ ...collectBackbonePayload(), action, item_id: itemId });
+        if (!resp?.ok) throw new Error(resp?.error || 'Accountant handoff package workflow action failed.');
+        await loadDirectory();
+        await refreshSelectors();
+        fillBackboneForm(resp.record || null);
+        renderBackboneTable();
+        setSummary(`Accountant handoff package moved with action: ${action.replaceAll('_', ' ')}.`);
+        return;
+      }
+      if (entity === 'accounting_period_close') {
+        const action = String(row?.close_status || '').toLowerCase() === 'closed' ? 'reopen' : 'close';
+        const resp = await manageAdminEntity({ ...collectBackbonePayload(), action, item_id: itemId });
+        if (!resp?.ok) throw new Error(resp?.error || 'Accounting period close action failed.');
+        await loadDirectory();
+        await refreshSelectors();
+        fillBackboneForm(resp.record || null);
+        renderBackboneTable();
+        setSummary(`Accounting period ${action === 'close' ? 'closed and locked' : 'reopened'}.`);
+        return;
+      }
       if (entity === 'estimate') {
         const resp = await manageAdminEntity({ entity: 'estimate', action: 'convert_to_agreement', item_id: itemId });
         if (!resp?.ok) throw new Error(resp?.error || 'Estimate conversion failed.');
@@ -3325,6 +3328,17 @@
         if (!row.export_file_content) throw new Error('Generate the payroll export first.');
         downloadTextFile(row.export_file_name || `${row.run_code || 'payroll-export'}.csv`, row.export_file_content, row.export_mime_type || 'text/csv;charset=utf-8');
         return;
+      }
+      if (entity === 'accountant_handoff_export') {
+        if (row.package_markdown) {
+          downloadTextFile(`${row.export_title || row.id || 'accountant-handoff'}.md`.replace(/[^a-z0-9._-]+/gi, '-'), row.package_markdown, 'text/markdown;charset=utf-8');
+          return;
+        }
+        if (row.package_json || row.bundle_payload || row.export_payload) {
+          downloadTextFile(`${row.export_title || row.id || 'accountant-handoff'}.json`.replace(/[^a-z0-9._-]+/gi, '-'), JSON.stringify(row.package_json || row.bundle_payload || row.export_payload || {}, null, 2), 'application/json;charset=utf-8');
+          return;
+        }
+        throw new Error('No package markdown or JSON is stored on this accountant handoff record.');
       }
       if (entity === 'service_contract_document') {
         if (row.rendered_html) {
@@ -3610,6 +3624,16 @@
           arPayments: Array.isArray(payload?.ar_payments) ? payload.ar_payments : state.arPayments,
           apBills: Array.isArray(payload?.ap_bills) ? payload.ap_bills : state.apBills,
           apPayments: Array.isArray(payload?.ap_payments) ? payload.ap_payments : state.apPayments,
+          bankAccounts: Array.isArray(payload?.bank_accounts) ? payload.bank_accounts : state.bankAccounts,
+          accountingPeriodCloses: Array.isArray(payload?.accounting_period_closes) ? payload.accounting_period_closes : state.accountingPeriodCloses,
+          salesTaxFilings: Array.isArray(payload?.sales_tax_filings) ? payload.sales_tax_filings : state.salesTaxFilings,
+          payrollRemittanceRuns: Array.isArray(payload?.payroll_remittance_runs) ? payload.payroll_remittance_runs : state.payrollRemittanceRuns,
+          bankStatementImports: Array.isArray(payload?.bank_statement_imports) ? payload.bank_statement_imports : state.bankStatementImports,
+          bankReconciliationSessions: Array.isArray(payload?.bank_reconciliation_sessions) ? payload.bank_reconciliation_sessions : state.bankReconciliationSessions,
+          bankReconciliationItems: Array.isArray(payload?.bank_reconciliation_items) ? payload.bank_reconciliation_items : state.bankReconciliationItems,
+          arPaymentApplications: Array.isArray(payload?.ar_payment_applications) ? payload.ar_payment_applications : state.arPaymentApplications,
+          apPaymentApplications: Array.isArray(payload?.ap_payment_applications) ? payload.ap_payment_applications : state.apPaymentApplications,
+          accountantHandoffExports: Array.isArray(payload?.accountant_handoff_exports) ? payload.accountant_handoff_exports : state.accountantHandoffExports,
           materialReceipts: Array.isArray(payload?.material_receipts) ? payload.material_receipts : state.materialReceipts,
           materialReceiptLines: Array.isArray(payload?.material_receipt_lines) ? payload.material_receipt_lines : state.materialReceiptLines,
           materialIssues: Array.isArray(payload?.material_issues) ? payload.material_issues : state.materialIssues,

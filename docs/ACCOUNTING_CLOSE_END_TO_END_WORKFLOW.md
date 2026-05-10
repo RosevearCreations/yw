@@ -1,4 +1,4 @@
-<!-- Reviewed during 2026-05-06 accounting-close end-to-end workflow pass. -->
+<!-- Reviewed during 2026-05-09 accounting-close admin UI control pass. -->
 
 # Accounting Close End-to-End Workflow
 
@@ -38,8 +38,8 @@ Main additions:
 8. moving payroll remittances through draft, prepared, reviewed, approved, and remitted
 9. building a more complete accountant handoff package from accounting-close datasets
 
-## Remaining gaps after schema 102
-The accounting-close workflow is stronger, but still not final.
+## Remaining gaps originally identified after schema 102
+The accounting-close workflow became stronger in schema 102, but was not final before the schema 103 Admin-control pass.
 
 Still needed:
 - invoice payment receipt UI and payment application screens
@@ -50,10 +50,24 @@ Still needed:
 - final accountant export packaging and delivery flow
 - deeper period close lock/reopen controls
 
-## Best next steps after schema 102
+## Best next steps identified before schema 103
 1. payment application UI for AR and AP
 2. fuller journal-line automation and validation
 3. stronger reconciliation matching and manual review workflow
 4. filing/remittance review screens with approval controls
 5. final accountant export packaging and delivery workflow
 6. month-end close checklist and lock/reopen controls
+
+## 2026-05-09 schema 103 + Admin UI control pass
+- Added migration `sql/103_accounting_close_admin_ui_controls.sql` and appended it to `sql/000_full_schema_reference.sql`.
+- Added admin-facing close/reopen audit fields, accountant handoff delivery status fields, and three review views: `v_accounting_close_admin_control_dashboard`, `v_accounting_reconciliation_manual_review_queue`, and `v_accounting_close_package_delivery_queue`.
+- Exposed the schema-102 accounting-close workflow objects in the Admin Backbone manager: bank accounts, period close controls, sales-tax filings, payroll remittance runs, bank statement imports, reconciliation sessions/items, AR/AP payment applications, and accountant handoff packages.
+- Extended `admin-manage` so sales-tax filings now advance through prepare, review, approve, file, and pay actions, matching the review statuses added in schema 102.
+- Fixed the `admin-selectors` `admin_core` scope bug where selector rows were referenced before they were declared.
+- Removed copied insight code from upload/bind handlers that could reference `cards` outside the insight renderer.
+
+### Remaining follow-up after schema 103
+- Expand generated GL journal-line automation beyond the current candidate ledger sources.
+- Add true statement-file parsing/import mapping instead of manual statement import rows only.
+- Add stricter period-lock enforcement across every AR/AP/GL/tax/payroll mutation.
+- Add final accountant delivery integrations if email/provider delivery is required instead of manual/download delivery.
