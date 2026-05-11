@@ -1,29 +1,27 @@
-## 2026-05-09b documentation sync
-- Latest schema step: `sql/104_reporting_loader_timeout_guardrails.sql`.
-- Accounting-close Admin controls remain documented in `ACCOUNTING_CLOSE_END_TO_END_WORKFLOW.md`; the newest pass is focused on Reports/Admin stability and timeout guardrails.
-- Keep `DEVELOPMENT_ROADMAP.md`, `KNOWN_ISSUES_AND_GAPS.md`, `TESTING_CHECKLIST.md`, and `DATABASE_STRUCTURE.md` aligned on every build pass.
+# Docs Index
 
-# Documentation Index
+Last refreshed: **2026-05-10**
 
-## Main active documents
-- ACCOUNTING_CLOSE_AND_RECONCILIATION_FOUNDATION.md
-- CORRECTIVE_ACTIONS_AND_TRAINING.md
-- DATABASE_STRUCTURE.md
-- HISTORICAL_REPORTING.md
-- JOBS_COMMERCIAL_WORKFLOW.md
-- JOBS_QUOTE_AUTOMATION_AND_ACCOUNTANT_HANDOFF.md
-- ONTARIO_ACCOUNTING_AND_TAX_GUARDRAILS.md
-- REPORT_DELIVERY_AND_WORKER_SELF_SERVICE.md
-- WORKFLOW_AUTOMATION_AND_EVIDENCE_REVIEW.md
-- ACCOUNTING_WORKFLOW_AUTOMATION.md
-- ACCOUNTING_CLOSE_END_TO_END_WORKFLOW.md
+The `docs/` folder now contains only active reference docs. Older pass notes were moved to `archive/markdown-retired-2026-05-10/docs/`.
 
-## Archived pass documents
-Older phase/pass-specific Markdown files have been moved under `docs/archive/legacy-passes/` so the active docs set is easier to navigate and maintain.
+## Active docs
 
-## Current direction
-The active documentation set now centers on:
-- operational + HSE workflow automation
-- jobs commercial workflow
-- accounting close, reconciliation, and accountant handoff
-- Ontario/Canada tax guardrails with entity-profile support for corporation/T2 and LLC-style review exports
+| File | Purpose |
+| --- | --- |
+| `ACCOUNTING_CLOSE_END_TO_END_WORKFLOW.md` | Current accounting-close workflow plan |
+| `HISTORICAL_REPORTING.md` | Reporting and history direction |
+| `JOBS_COMMERCIAL_WORKFLOW.md` | Jobs, estimates, work orders, and commercial workflow direction |
+| `ONTARIO_ACCOUNTING_AND_TAX_GUARDRAILS.md` | Ontario accounting/tax guardrails and caution notes |
+| `WORKFLOW_AUTOMATION_AND_EVIDENCE_REVIEW.md` | Scheduler, evidence, review, and workflow automation direction |
+
+## Root docs to use first
+
+- `README.md`
+- `PROJECT_STATE.md`
+- `NEW_CHAT_STATUS.md`
+- `DEVELOPMENT_ROADMAP.md`
+- `KNOWN_ISSUES_AND_GAPS.md`
+- `DATABASE_STRUCTURE.md`
+- `SYSTEM_ARCHITECTURE.md`
+- `DEPLOYMENT_GUIDE.md`
+- `TESTING_CHECKLIST.md`

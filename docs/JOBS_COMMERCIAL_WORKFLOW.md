@@ -1,83 +1,26 @@
-<!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
-<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
-# Jobs Commercial Workflow Foundation
+# Jobs and Commercial Workflow
 
-This pass expands the Jobs area toward a complete commercial and accounting workflow without replacing the existing jobs page.
+Last refreshed: **2026-05-10**
 
-## What is included in this pass
+## Target workflow
 
-- DB-backed commercial estimate fields:
-  - quote title
-  - pricing basis label
-  - discount mode/value
-  - approval required/status
-  - margin estimate totals
-  - client/internal notes
-  - conversion links to job and work order
-- DB-backed work-order commercial fields:
-  - pricing basis label
-  - discount mode/value
-  - approval required/status
-  - completion review status
-  - accounting trigger status
-  - completion-ready flags
-  - internal notes
-- line-level estimate/work-order commercial fields:
-  - cost total
-  - discount amount/percent
-  - margin total/percent
-  - pricing basis label
-  - client-visible toggle
-- commercial approval history table
-- job completion review table
-- accounting completion event queue table
-- views for:
-  - estimate commercial directory
-  - work-order commercial directory
-  - job completion review directory
-  - accounting-ready queue
+1. Lead/client/site record.
+2. Estimate or quote package.
+3. Approval/release rules.
+4. Customer acceptance/signoff.
+5. Job/work order creation.
+6. Schedule service sessions.
+7. Assign crew/equipment/materials.
+8. Execute route/session.
+9. Capture evidence and completion notes.
+10. Generate invoice candidate.
+11. Feed accounting and close workflows.
+12. Track callbacks, warranty, and follow-up.
 
-## What the UI now does
+## Next app-level improvement
 
-Inside Jobs, the commercial panel now supports:
+Create a Jobs Center that shows the above workflow as cards and queues instead of only raw admin tables.
 
-- create estimate from a selected job
-- add estimate line to the active estimate
-- convert estimate into a live job package
-  - creates a linked work order
-  - copies estimate lines into work-order lines
-- create/update completion review
-- queue completion review for accounting follow-through
+## DB-first rule
 
-## Why this direction matters
-
-This preserves the strongest value of the application:
-commercial workflow is connected directly to the live job, work order, completion, and downstream accounting review path.
-
-That is more valuable than building a separate quoting tool that later has to be re-keyed into operations.
-
-## Best next steps after this pass
-
-1. client-ready quote rendering and estimate print/email package
-2. commercial approval thresholds and margin warnings
-3. work-order release / dispatch lock controls
-4. completion package drilldown with evidence, signoff, and variance review
-5. accounting follow-through:
-   - invoice candidate creation
-   - journal candidate creation
-   - post-completion review queue
-   - closeout summary export
-
-## 2026-04-26 pass note
-
-This pass moves the project into the Jobs commercial/accounting phase.
-It adds the 094 Jobs commercial workflow foundation, updates the repo status toward estimate/work-order/completion/accounting readiness, and keeps the schema/docs aligned for the next phase.
-
-
-## Pass 096 notes
-
-This pass adds branded quote output, automatic threshold evaluation, closeout evidence linkage, invoice/journal posting-rule structures, accountant handoff exports, and profitability/variance scorecards for the Jobs commercial workflow.
-
-
----
-Pass 097 sync note (2026-04-26d): quote output, threshold enforcement on save/release, closeout evidence linkage to real records, posting-rule-aware invoice/journal candidates, accountant handoff enrichment, and extended profitability scorecards.
+Any data reused by quotes, jobs, accounting, reports, or admin review should be DB-backed instead of duplicated in JSON.
