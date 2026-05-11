@@ -73,6 +73,7 @@ const requiredFiles = [
   'sql/102_accounting_close_end_to_end_workflow.sql',
   'sql/103_accounting_close_admin_ui_controls.sql',
   'sql/104_reporting_loader_timeout_guardrails.sql',
+  'sql/105_repo_cleanup_and_roadmap_refresh.sql',
   'js/hse-ops-ui.js',
   'supabase/functions/jobs-directory/index.ts',
   'supabase/functions/jobs-manage/index.ts',
@@ -123,7 +124,7 @@ addCheck('account-has-conflict-review', accountUi.includes('Conflict Review'), '
 addCheck('account-has-support-export', accountUi.includes('Export Support Snapshot'), 'account-ui.js should render the support snapshot export button.');
 
 const schema = read('sql/000_full_schema_reference.sql');
-addCheck('schema-header-current', /104_reporting_loader_timeout_guardrails/i.test(schema), 'Schema snapshot header should reflect the latest 104 pass.');
+addCheck('schema-header-current', /105_repo_cleanup_and_roadmap_refresh/i.test(schema), 'Schema snapshot header should reflect the latest 105 pass.');
 
 const schedulerRun = read('supabase/functions/service-execution-scheduler-run/index.ts');
 addCheck('scheduler-run-advances-next-run', schedulerRun.includes('next_run_at: computeNextRunAt'), 'Scheduler Edge Function should advance next_run_at after successful runs.');
@@ -151,6 +152,10 @@ addCheck('schema-has-payroll-remittance-review', schema.includes('v_payroll_remi
 addCheck('schema-has-accountant-package-directory', schema.includes('v_accountant_handoff_package_directory'), 'Canonical schema should include the accountant handoff package directory view.');
 addCheck('schema-has-accounting-close-admin-control-dashboard', schema.includes('v_accounting_close_admin_control_dashboard'), 'Canonical schema should include the accounting close admin control dashboard view.');
 addCheck('schema-has-reporting-loader-health', schema.includes('v_reporting_loader_health'), 'Canonical schema should include the schema 104 reporting loader health view.');
+addCheck('schema-has-repo-cleanup-roadmap-health', schema.includes('v_repo_cleanup_and_roadmap_health'), 'Canonical schema should include the schema 105 repo cleanup and roadmap health view.');
+addCheck('active-docs-archived-snapshot', fileExists('archive/markdown-current-snapshot-2026-05-10/root/README.md'), 'Archive snapshot should preserve the previous root README.');
+addCheck('retired-markdown-not-in-root', !fileExists('AI_START_PROMPT.md') && !fileExists('PROJECT_BRAIN.md') && !fileExists('REPO_BASE.md') && !fileExists('RUNBOOK_AUTH_BOOTSTRAP.md'), 'Retired root Markdown should be moved out of the active root.');
+addCheck('no-test-write-files', !fileExists('test_write.txt') && !fileExists('test_write2_OLD.txt') && !fileExists('test_write3.txt') && !fileExists('test_write_OLD.txt'), 'Temporary test_write files should not exist in the active root.');
 
 console.log(JSON.stringify({ ok: !failed, checks: results }, null, 2));
 if (failed) process.exit(1);
