@@ -1,5 +1,5 @@
--- Last synchronized: May 9, 2026. Reviewed during the reporting timeout guardrail and admin stability pass.
--- Current reference remains aligned through 104_reporting_loader_timeout_guardrails.sql.
+-- Last synchronized: May 10, 2026. Reviewed during the Markdown archive cleanup and roadmap refresh pass.
+-- Current reference remains aligned through 105_repo_cleanup_and_roadmap_refresh.sql.
 
 create extension if not exists pgcrypto;
 
@@ -9902,3 +9902,23 @@ select
 
 comment on view public.v_reporting_loader_health is
   'Schema 104 marker and health view for the reporting timeout guardrail pass. The frontend lazy-loads Reports only on the Reports route; admin-directory also has a reporting fast path.';
+
+
+-- Schema 105: repo cleanup and roadmap refresh marker.
+-- 105_repo_cleanup_and_roadmap_refresh.sql
+-- Repo cleanup, Markdown archive reset, and roadmap refresh marker.
+-- This migration is intentionally light. It gives live deployments a simple
+-- schema marker confirming that the 2026-05-10 cleanup/roadmap pass was applied
+-- after the reporting timeout guardrail work in schema 104.
+
+create or replace view public.v_repo_cleanup_and_roadmap_health as
+select
+  now() as checked_at,
+  '105_repo_cleanup_and_roadmap_refresh'::text as schema_marker,
+  'ok'::text as status,
+  20::int as next_roadmap_step_count,
+  'Active Markdown was refreshed, older Markdown was archived, obvious temp files were removed, and the next 20 production-readiness steps were documented.'::text as note;
+
+comment on view public.v_repo_cleanup_and_roadmap_health is
+  'Schema 105 marker for the 2026-05-10 repository cleanup and next-step roadmap refresh pass.';
+
