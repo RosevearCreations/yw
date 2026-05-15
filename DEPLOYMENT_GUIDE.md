@@ -1,68 +1,55 @@
 # Deployment Guide
 
-Last refreshed: **2026-05-10**
+Last refreshed: **2026-05-15a**
 
-## Before deploying
+## Pre-deploy checks
 
-Run:
+Run from the repo root:
 
 ```bash
 node --check js/api.js
-node --check js/reports-ui.js
 node --check js/admin-ui.js
+node --check js/reports-ui.js
 node --check js/jobs-ui.js
+node --check js/hse-ops-ui.js
 node --check app.js
 node --check server-worker.js
 node scripts/repo-smoke-check.mjs
 ```
 
-Check:
+## Database
 
-- `index.html` has no more than one `<h1>`.
-- `server-worker.js` cache name matches the current version.
-- `index.html` script/style query strings match the current version.
-- New SQL migrations are present and the full schema reference is updated.
-- Markdown reflects the new state.
-
-## Database deployment
-
-Apply migrations in order through:
+Apply migrations through:
 
 ```text
-sql/105_repo_cleanup_and_roadmap_refresh.sql
+sql/106_admin_command_center_schema_tracking_and_health.sql
 ```
 
-Then confirm these marker views exist:
+Then confirm the live database has:
 
-- `v_reporting_loader_health`
-- `v_repo_cleanup_and_roadmap_health`
+- `app_schema_versions`
+- `v_app_schema_version_status`
+- `v_admin_home_command_center`
+- `v_admin_error_health_center`
+- `v_admin_task_inbox`
 
-## Function deployment
+## Supabase Edge Functions
 
-Redeploy Supabase functions when their source changes. Recent important functions include:
+Redeploy at least:
 
 - `admin-directory`
-- `admin-manage`
-- `admin-selectors`
-- `jobs-directory`
-- `jobs-manage`
-- `account-maintenance`
-- `service-execution-scheduler-run`
-- `report-subscription-delivery-run`
 
-## Frontend deployment
+Recommended to redeploy all changed functions if using a full build pipeline.
 
-Deploy the static app after DB/function changes are live.
+## Static app
 
-After deployment:
+Deploy the static app files after SQL and functions are updated. The static cache version is `2026-05-15a`.
+
+## Browser test
 
 1. Hard refresh.
-2. Confirm the service worker uses the newest cache.
-3. Open `#admin` and confirm Reports do not auto-load.
-4. Open `#reports` and confirm reports load only there.
-5. Open `#jobs`, `#hseops`, `#settings`, and `#me`.
-6. Check browser console for missing assets, failed functions, or stale-cache errors.
-
-## Rollback note
-
-If the frontend is deployed before schema/function changes, workflow screens may show missing-view or timeout messages. Keep the previous ZIP and deploy logs until live verification passes.
+2. Log in.
+3. Open `#admin`.
+4. Confirm Command Center, Health Center, and Task Inbox render.
+5. Open `#reports` and confirm reports still lazy-load.
+6. Check browser console for missing assets or stale cache references.

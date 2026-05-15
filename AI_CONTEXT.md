@@ -1,40 +1,44 @@
 # AI Context
 
-Last refreshed: **2026-05-10**
+Last refreshed: **2026-05-15a**
 
-This is the concise AI handoff file. Older AI/context prompt history has been archived.
+## How to work on this repo
 
-## Project identity
+- Keep code changes reflected in Markdown.
+- Keep schema changes reflected in both a numbered migration and `sql/000_full_schema_reference.sql`.
+- Keep smoke checks current.
+- Do not keep retired root Markdown active in the root.
+- Do not keep temp test files in the active build.
+- Keep exposed pages to one H1.
+- Keep SEO wording clear, local, and useful when public pages exist.
 
-YWI HSE is a mobile-first HSE, jobs, operations, reporting, and backend accounting app for field/service work. The user wants steady practical progress, all Markdown updated each pass, schema files kept current, CSS drift checked, and no more than one H1 on exposed pages.
+## Current build priority
 
-## Current build state
+The project is moving toward a real operations app. The Admin experience should be workflow-first, not raw table-first.
 
-- Latest schema marker: `sql/105_repo_cleanup_and_roadmap_refresh.sql`
-- Full schema: `sql/000_full_schema_reference.sql`
-- Active roadmap: `DEVELOPMENT_ROADMAP.md`
-- Active issues: `KNOWN_ISSUES_AND_GAPS.md`
-- Fresh chat handoff: `NEW_CHAT_STATUS.md`
+Current active dashboard pieces:
 
-## Standing rules
+- Admin Home Command Center.
+- App Health and Schema Center.
+- Admin Task Inbox.
+- Accounting close and reconciliation managers.
+- Jobs and operations manager.
+- HSE Ops and evidence review.
+- Reports with lazy-load guardrails.
 
-- Update Markdown every pass.
-- Update schema reference and migration files when DB shape changes.
-- Keep local SEO direction active on public pages.
-- Keep CSS/mobile layout checks active.
-- Prefer DB-backed shared data over duplicated JSON where it reduces failure points.
-- Keep operator-facing error messages and fallbacks visible.
+## Latest migration
 
-## Recent cleanup
+`sql/106_admin_command_center_schema_tracking_and_health.sql`
 
-The Markdown set was cleaned on 2026-05-10. Older root/docs Markdown was archived under `archive/`, and the active docs were rebuilt as shorter current handoffs.
+Adds:
 
-## Next work
+- `app_schema_versions`
+- schema status view
+- role dashboard presets view
+- command center view
+- health center view
+- admin task inbox view
 
-Start with the 20-step roadmap in `DEVELOPMENT_ROADMAP.md`, especially:
+## Next best work
 
-1. Admin Home Command Center.
-2. Error/Health Center.
-3. Accounting Close Center.
-4. Bank reconciliation import/matching.
-5. Role-based dashboards.
+Start with the next 20-step roadmap in `DEVELOPMENT_ROADMAP.md`. The most valuable next build is deeper drill-down filtering from Command Center cards, then a real Close Center wizard.

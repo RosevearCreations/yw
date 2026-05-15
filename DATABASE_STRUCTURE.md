@@ -1,41 +1,40 @@
 # Database Structure
 
-Last refreshed: **2026-05-10**  
-Canonical schema file: `sql/000_full_schema_reference.sql`  
-Latest migration marker: `sql/105_repo_cleanup_and_roadmap_refresh.sql`
+Last refreshed: **2026-05-15a**
 
-## Schema policy
+Canonical schema file: `sql/000_full_schema_reference.sql`.
 
-- Keep numbered SQL migrations in `sql/`.
-- Keep `sql/000_full_schema_reference.sql` synchronized with the latest applied schema direction.
-- Add a new migration whenever DB tables, columns, views, policies, functions, or schema health markers change.
-- Do not use old one-off verification files as the source of truth.
+Latest migration: **106** — `sql/106_admin_command_center_schema_tracking_and_health.sql`.
 
-## Current major schema areas
+## Current schema areas
 
-| Area | Examples |
-| --- | --- |
-| Identity/profile | profiles, roles, account setup, login activity, account recovery |
-| Sites/work context | sites, assignments, crews, supervisors, service areas |
-| HSE | forms, inspections, incidents, PPE, first aid, emergency drills, linked HSE packets, corrective actions, training/SDS |
-| Jobs/commercial | clients, sites, estimates, quote packages, work orders, sessions, crews, routes, service agreements |
-| Equipment/materials | equipment, reservations, maintenance/lockout, materials, units, receipts, issues |
-| Reporting | report presets, delivery subscriptions, historical rollups, management scorecards |
-| Accounting | chart of accounts, GL batches/entries/lines, AR/AP invoices and payments, payment applications, reconciliation, tax/remittance reviews, close periods, accountant exports |
-| Monitoring/fallbacks | upload failures, monitor incidents, scheduler settings/status, schema health marker views |
+- Profiles, sites, assignments, roles, access rollups.
+- HSE submissions, reviews, images, logbook history.
+- Jobs, routes, route stops, work orders, estimates, service agreements, snow triggers, customer assets.
+- Equipment, signouts, evidence, maintenance, lockout/history.
+- Attendance/time clock, payroll review, payroll exports.
+- Reports, report presets, report subscriptions, report delivery scheduler.
+- Corrective actions, training, SDS acknowledgements, supervisor safety queues.
+- Accounting foundation: tax codes, business tax settings, chart of accounts, AR/AP, GL, bank accounts, reconciliation, close, tax filing, payroll remittance, accountant handoff packages.
+- Admin monitoring: site activity, traffic/monitor events where available, upload failures where available, task/health rollups.
 
-## Latest marker view
+## Schema 106 additions
 
-Schema 105 adds `public.v_repo_cleanup_and_roadmap_health` as a lightweight marker that confirms the cleanup/roadmap refresh has been applied.
+- `public.app_schema_versions`
+- `public.v_app_schema_version_status`
+- `public.v_role_dashboard_presets`
+- `public.v_admin_home_command_center`
+- `public.v_admin_error_health_center`
+- `public.v_admin_task_inbox`
+- `public.v_schema_106_admin_command_center_health`
 
-## Archived schema helper
+## Why schema 106 matters
 
-`sql/VerifyDB_24_04_2026.sql` was moved to `archive/sql-retired-2026-05-10/` because it is older than the current schema reference and should not be treated as the latest validation script.
+The app can now show a live schema marker in Admin instead of relying only on file names. This makes deploy drift easier to spot when the frontend has been deployed but Supabase migrations are behind.
 
-## Next database improvements
+## Deploy order
 
-1. Add an actual `app_schema_versions` table for migration visibility inside Admin.
-2. Add stronger DB-level locked-period guards for accounting posting changes.
-3. Add indexed reporting rollups for heavy report screens.
-4. Add audit tables for close/reopen, export delivery, manual reconciliation override, and permission-sensitive admin actions.
-5. Add a production backup/restore checklist tied to actual DB/export commands.
+1. Apply SQL through 106.
+2. Redeploy Edge Functions.
+3. Deploy static files.
+4. Open Admin Health and Schema Center and confirm the latest schema row is 106.

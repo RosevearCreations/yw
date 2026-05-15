@@ -1144,3 +1144,129 @@ body[data-authenticated="true"] #loginView {
   color: var(--text-faint);
   font-size: 0.88rem;
 }
+
+/* 2026-05-15a: Admin command center, health center, and mobile production polish */
+.admin-command-grid,
+.admin-health-grid,
+.admin-task-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.admin-command-card,
+.admin-health-card,
+.admin-task-card {
+  min-height: 112px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(30, 45, 78, 0.94), rgba(16, 25, 46, 0.94));
+  color: var(--text);
+  padding: 14px;
+  text-align: left;
+}
+
+button.admin-command-card,
+button.admin-task-card {
+  cursor: pointer;
+}
+
+.admin-command-card:hover,
+.admin-command-card:focus-visible,
+.admin-task-card:hover,
+.admin-task-card:focus-visible {
+  border-color: rgba(96, 165, 250, 0.52);
+  outline: none;
+  background: linear-gradient(180deg, rgba(42, 66, 112, 0.96), rgba(21, 35, 62, 0.96));
+}
+
+.admin-command-card strong,
+.admin-health-card strong,
+.admin-task-card strong {
+  display: block;
+  font-size: 1.45rem;
+  line-height: 1.1;
+  margin: 6px 0;
+}
+
+.admin-command-card span,
+.admin-health-card span,
+.admin-task-card span {
+  color: var(--text-soft);
+  font-size: 0.88rem;
+}
+
+.admin-command-card small,
+.admin-health-card small,
+.admin-task-card small {
+  display: block;
+  margin-top: 8px;
+  color: var(--text-faint);
+  line-height: 1.35;
+}
+
+.admin-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 0.78rem;
+  color: var(--text-soft);
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.admin-status-pill[data-severity="error"] {
+  color: #ffd4d4;
+  border-color: rgba(248, 113, 113, 0.34);
+  background: rgba(127, 29, 29, 0.22);
+}
+
+.admin-status-pill[data-severity="warning"] {
+  color: #fff3c4;
+  border-color: rgba(251, 191, 36, 0.34);
+  background: rgba(113, 63, 18, 0.22);
+}
+
+.admin-status-pill[data-severity="ok"] {
+  color: #d7ffe9;
+  border-color: rgba(52, 211, 153, 0.28);
+  background: rgba(6, 78, 59, 0.22);
+}
+
+.admin-table-note {
+  max-width: 360px;
+  white-space: normal;
+}
+
+@media (max-width: 720px) {
+  .section-heading,
+  .panel-heading {
+    gap: 10px;
+  }
+
+  .admin-command-card,
+  .admin-health-card,
+  .admin-task-card,
+  .admin-stat-card {
+    min-height: auto;
+    padding: 13px;
+  }
+
+  .app-header nav a {
+    padding: 9px 11px;
+    font-size: 0.9rem;
+  }
+
+  #admin table th,
+  #admin table td,
+  #jobs table th,
+  #jobs table td,
+  #equipment table th,
+  #equipment table td {
+    padding: 8px;
+  }
+}
+

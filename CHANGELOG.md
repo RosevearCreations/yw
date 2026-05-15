@@ -1,25 +1,34 @@
 # Changelog
 
-## 2026-05-10 — Markdown cleanup, archive reset, and roadmap refresh
+## 2026-05-15a
 
-- Archived current root/docs Markdown snapshots into `archive/markdown-current-snapshot-2026-05-10/`.
-- Moved retired root Markdown into `archive/markdown-retired-2026-05-10/root/`.
-- Moved older pass-specific docs into `archive/markdown-retired-2026-05-10/docs/`.
-- Removed obvious temp test-write files from the active build.
-- Retired `sql/VerifyDB_24_04_2026.sql` into `archive/sql-retired-2026-05-10/`.
-- Rebuilt the active root Markdown set as fresh, concise project handoff files.
-- Added the next logical 20-step roadmap in `DEVELOPMENT_ROADMAP.md`.
-- Added schema marker `sql/105_repo_cleanup_and_roadmap_refresh.sql`.
-- Updated `sql/000_full_schema_reference.sql` and `scripts/repo-smoke-check.mjs` for schema 105.
-- Bumped app-shell cache/query versions to `2026-05-10a`.
+- Added Admin Home Command Center.
+- Added App Health and Schema Center.
+- Added Admin Task Inbox.
+- Added schema migration tracking table and schema status view.
+- Added role dashboard presets view.
+- Added schema `106_admin_command_center_schema_tracking_and_health.sql`.
+- Updated canonical schema reference through schema 106.
+- Updated `admin-directory` to return command/health/task/schema view data.
+- Added frontend rendering for Command Center, Health Center, schema table, and task inbox.
+- Added local diagnostic dispatch for API timeout/auth/network failures.
+- Added mobile/admin dashboard CSS polish.
+- Bumped frontend/service-worker cache version to `2026-05-15a`.
+- Removed reintroduced active test-write files.
+- Archived reintroduced root legacy Markdown.
+- Retired active `sql/VerifyDB_24_04_2026.sql` back into archive.
+- Updated smoke checks to verify schema 106 and cleanup guardrails.
+- Refreshed active Markdown handoff docs and next 20-step roadmap.
 
-## 2026-05-09 — Reporting timeout guardrails
+## 2026-05-10a
 
-- Reports were changed to lazy-load only when the Reports route opens or Reload Reports is pressed.
-- Added admin-directory reporting fast path and lighter initial reporting payload.
-- Added `sql/104_reporting_loader_timeout_guardrails.sql`.
+- Cleaned active Markdown set.
+- Archived old root and docs Markdown.
+- Added schema 105 cleanup/roadmap marker.
+- Removed temp test-write files.
 
-## 2026-05-09 — Accounting close admin UI controls
+## 2026-05-09b
 
-- Added schema/UI direction for accounting period close/reopen controls, reconciliation review, filing/remittance review, payment application, and accountant package delivery.
-- Added `sql/103_accounting_close_admin_ui_controls.sql`.
+- Stopped Reports from auto-loading on Admin.
+- Added reporting lazy-load guardrails.
+- Added schema 104 reporting health marker.

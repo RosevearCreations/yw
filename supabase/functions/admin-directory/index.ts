@@ -193,6 +193,14 @@ serve(async (req) => {
   });
 
   const response: Record<string, unknown> = { ok:true, profiles: filteredPeople, users: filteredPeople };
+
+  if ((scope === 'all' || scope === 'health' || scope === 'command_center') && roleRank(actorRole) >= roleRank('supervisor')) {
+    response.admin_home_command_center = await safeList(supabase, 'v_admin_home_command_center');
+    response.admin_error_health_center = await safeList(supabase, 'v_admin_error_health_center', '*', 'severity_rank', 100, true);
+    response.admin_task_inbox = await safeList(supabase, 'v_admin_task_inbox', '*', 'priority_rank', 120, true);
+    response.app_schema_version_status = await safeList(supabase, 'v_app_schema_version_status', '*', 'schema_version', 120, false);
+    response.role_dashboard_presets = await safeList(supabase, 'v_role_dashboard_presets', '*', 'sort_order', 40, true);
+  }
   if ((scope === 'all' || scope === 'sites') && roleRank(actorRole) >= roleRank('supervisor')) {
     response.sites = await safeList(supabase, 'sites', '*', 'site_code', limit);
   }

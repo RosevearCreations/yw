@@ -1,60 +1,44 @@
 # System Architecture
 
-Last refreshed: **2026-05-10**
+Last refreshed: **2026-05-15a**
 
-## Current architecture
+## Frontend
 
-YWI HSE is a static frontend app backed by Supabase services.
+Static single-page app:
 
-```text
-Browser / PWA shell
-  index.html
-  style.css
-  app.js
-  js/*.js modules
-  service worker cache
+- `index.html`
+- `style.css`
+- `app.js`
+- `server-worker.js`
+- `js/*.js`
 
-Supabase
-  Postgres schema
-  Edge Functions
-  Storage/evidence uploads
-  Auth/session handling
+The app uses a hash router and auth-aware module boot. Protected modules only initialize after sign-in and account setup checks pass.
 
-Compatibility API routes
-  api/auth/*.js
-  api/logbook/*.js
-```
+## Backend
 
-## Main modules
+Supabase Edge Functions are the active backend API layer. The most important admin read function is:
 
-| Module | Responsibility |
-| --- | --- |
-| `js/api.js` | Shared API calls, timeout handling, compatibility fallback routing |
-| `js/admin-ui.js` | Admin manager shell and workflow controls |
-| `js/reports-ui.js` | Lazy-loaded reporting screens |
-| `js/jobs-ui.js` | Jobs/commercial screens |
-| `js/hse-ops-ui.js` | HSE operations dashboard |
-| `js/forms-*.js` | Field form capture |
-| `js/outbox.js` | Offline/save-later behavior |
-| `server-worker.js` | App shell caching and offline fallback |
+- `supabase/functions/admin-directory/index.ts`
 
-## Current reliability pattern
+This function now returns:
 
-- Direct Supabase function calls are preferred.
-- Host compatibility routes return JSON instead of HTML when direct calls fail or stall.
-- Reports are lazy-loaded to avoid Admin route timeouts.
-- Service worker avoids caching API/auth callback traffic.
-- Error handling should now move into a central Error/Health Center.
+- standard admin directory data;
+- jobs/operations/accounting manager data;
+- reporting fast-path data;
+- Admin Command Center data;
+- Admin Health and Schema Center data;
+- Admin Task Inbox data;
+- role dashboard preset data.
 
-## Architecture direction
+## Database
 
-The next version should introduce workflow-specific dashboards over the raw manager screens:
+Supabase Postgres stores operational records. SQL migrations are in `sql/` and canonical reference is `sql/000_full_schema_reference.sql`.
 
-- Admin Home Command Center
-- Accounting Close Center
-- Jobs Center
-- HSE Review Center
-- Media/Evidence Manager
-- Error/Health Center
+Schema 106 adds DB-visible migration tracking with `app_schema_versions`.
 
-These screens should use narrow API scopes, pagination, cached rollups, and clear fallback messages.
+## Diagnostics and resilience
+
+- `app.js` exposes `window.YWIAppDiagnostics` and `window.YWIModuleTimings`.
+- `js/api.js` dispatches validation, timeout, auth, and network diagnostics.
+- Admin Health and Schema Center renders local diagnostics plus DB health rows.
+- Service worker cache version is `ywi-shell-v2026-05-15a`.
