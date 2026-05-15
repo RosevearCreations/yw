@@ -1,53 +1,41 @@
 # Accounting Close End-to-End Workflow
 
-Last refreshed: **2026-05-10**
+Last refreshed: **2026-05-15a**
 
-## Goal
+## Current foundation
 
-Create a practical close workflow that an operator can follow monthly without needing to understand every raw accounting table.
+The database and Admin UI now support visibility for:
 
-## Target flow
+- accounting period close status;
+- AR/AP payment applications;
+- bank reconciliation sessions/items;
+- reconciliation review queue;
+- sales tax filing review;
+- payroll remittance review;
+- accountant handoff exports/packages;
+- package delivery attention;
+- schema status.
 
-1. Select accounting period.
-2. Confirm period is open.
-3. Review AR invoices and customer payments.
-4. Apply payments to invoices.
-5. Review AP bills and vendor payments.
-6. Apply payments to bills.
-7. Generate/post journal lines from approved source records.
-8. Review unposted, unbalanced, or exception journal candidates.
-9. Import or enter bank statement lines.
-10. Auto-match bank items to payments/journals where possible.
-11. Manually review unmatched/partial/exception matches.
-12. Review sales tax filing support.
-13. Review payroll remittance support.
-14. Review trial balance and close dashboard.
-15. Lock the period when ready.
-16. Generate accountant handoff package.
-17. Track package delivery and confirmation.
-18. Reopen only with required reason/audit trail.
+Schema 106 adds Command Center and Task Inbox visibility over these areas.
 
-## Current status
+## Remaining close workflow
 
-Schemas 100–104 created much of the foundation. Schema 105 is a cleanup marker. The next build work should focus on UI polish and live verification, not just more tables.
+1. Select close period.
+2. Confirm AR invoices and payments.
+3. Confirm AP bills and payments.
+4. Confirm payment applications.
+5. Import bank statement.
+6. Match/review reconciliation items.
+7. Review generated journal lines.
+8. Confirm tax filing support.
+9. Confirm payroll remittance support.
+10. Lock period sections.
+11. Generate accountant handoff package.
+12. Deliver/export package.
+13. Mark package confirmed.
+14. Close period.
+15. Reopen only with reason and audit trail.
 
-## Required UI centers
+## Next build target
 
-- Accounting Close Center
-- Payment Application screen
-- Reconciliation screen
-- Filing/Remittance review screen
-- Accountant Export screen
-- Close/Reopen controls
-
-## Guardrails
-
-- Do not post into a locked period.
-- Require balanced journal entries.
-- Keep every manual override auditable.
-- Separate preparation, review, approval, filing/payment, and final close states.
-- Make exports reviewable before delivery.
-
-## Accountant caution
-
-This app can prepare support records and export packages, but a qualified accountant should review tax filings, corporate filings, and year-end adjustments.
+Create a dedicated Close Center wizard that uses the existing tables/views and the new task inbox to guide these steps in order.

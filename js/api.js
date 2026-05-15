@@ -80,6 +80,12 @@
     }));
   }
 
+  function dispatchAppError(scope, message, details = []) {
+    window.dispatchEvent(new CustomEvent('ywi:app-error', {
+      detail: { scope: scope || 'api', message: message || 'API request failed.', details: Array.isArray(details) ? details : [] }
+    }));
+  }
+
   async function getLiveSession() {
     const sb = window.YWI_SB || window._sb;
     if (!sb?.auth?.getSession) return null;
@@ -310,6 +316,7 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
             message: 'Request timed out.'
           }, requireAuth).catch(() => {});
         }
+        dispatchAppError('api-timeout', `${String(pathOrUrl)} timed out.`, ['The request was stopped before the server returned data. Try the screen reload button or narrow the date range.']);
         throw new Error('Request timed out.');
       }
       if (String(err?.message || '').includes('Missing authorization header')) {
@@ -328,6 +335,7 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
             message: authErr.message
           }, false).catch(() => {});
         }
+        dispatchAppError('api-auth', authErr.message, ['Sign in again if this continues.']);
         throw authErr;
       }
       if (!String(url).includes(ANALYTICS_ENDPOINT)) {
@@ -340,6 +348,7 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
           message: String(err?.message || err || 'Unknown request failure')
         }, requireAuth).catch(() => {});
       }
+      dispatchAppError('api-network', String(err?.message || err || 'Unknown request failure'), [String(pathOrUrl)]);
       throw err;
     } finally {
       clearTimeout(timer);

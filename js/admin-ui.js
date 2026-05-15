@@ -36,7 +36,7 @@
       users: [],
       sites: [],
       assignments: [],
-      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalSyncExceptions: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], fieldUploadFailures: [], appTrafficEvents: [], backendMonitorEvents: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [], jobFinancialEvents: [], jobFinancialRollups: [], recurringServiceAgreements: [], snowEventTriggers: [], changeOrders: [], customerAssets: [], customerAssetJobLinks: [], warrantyCallbackEvents: [], payrollExportRuns: [], payrollReviewSummary: [], routeProfitabilitySummary: [], serviceContractDocuments: [], serviceAgreementProfitabilitySummary: [], snowEventInvoiceCandidates: [], callbackWarrantyDashboardSummary: [], payrollReviewDetail: [], estimateConversionCandidates: [], serviceExecutionSchedulerSettings: [], serviceExecutionSchedulerStatus: [], signedContractJobKickoffCandidates: [] },
+      selectors: { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalSyncExceptions: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], fieldUploadFailures: [], appTrafficEvents: [], backendMonitorEvents: [], trafficDailySummary: [], monitorThresholdAlerts: [], adminHomeCommandCenter: [], adminErrorHealthCenter: [], adminTaskInbox: [], appSchemaVersionStatus: [], roleDashboardPresets: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [], jobFinancialEvents: [], jobFinancialRollups: [], recurringServiceAgreements: [], snowEventTriggers: [], changeOrders: [], customerAssets: [], customerAssetJobLinks: [], warrantyCallbackEvents: [], payrollExportRuns: [], payrollReviewSummary: [], routeProfitabilitySummary: [], serviceContractDocuments: [], serviceAgreementProfitabilitySummary: [], snowEventInvoiceCandidates: [], callbackWarrantyDashboardSummary: [], payrollReviewDetail: [], estimateConversionCandidates: [], serviceExecutionSchedulerSettings: [], serviceExecutionSchedulerStatus: [], signedContractJobKickoffCandidates: [] },
       salesOrders: [],
       accountingEntries: [],
       siteActivityEvents: [],
@@ -129,26 +129,36 @@
       backendMonitorEvents: [],
       trafficDailySummary: [],
       monitorThresholdAlerts: [],
+      adminHomeCommandCenter: [],
+      adminErrorHealthCenter: [],
+      adminTaskInbox: [],
+      appSchemaVersionStatus: [],
+      roleDashboardPresets: [],
       hsePacketActionItems: [],
       hseDashboardSummary: [],
       accountingReviewSummary: [],
       smokeChecks: [],
-      adminSection: 'people'
+      adminSection: 'home'
     };
 
     const DRAFT_KEY = 'ywi_admin_workspace_draft_v2';
     const ADMIN_CACHE_KEY = 'ywi_admin_directory_cache_v1';
 
     const ADMIN_SECTION_GROUPS = [
+      ['home', 'Command Center'],
       ['people', 'People and Access'],
       ['operations', 'Jobs and Operations'],
       ['safety', 'Safety and Monitoring'],
       ['accounting', 'Accounting'],
       ['messaging', 'Messaging and Diagnostics'],
+      ['health', 'Health and Schema'],
       ['all', 'Show All']
     ];
 
     const ADMIN_PANEL_GROUPS = {
+      'Admin Home Command Center': ['home'],
+      'App Health and Schema Center': ['home','health','messaging'],
+      'Admin Task Inbox': ['home','health','operations','safety','accounting'],
       'Staff Directory and Access': ['people'],
       'Assignment Workbench': ['people'],
       'Dropdown and Catalog Manager': ['people','operations'],
@@ -234,6 +244,56 @@
           <div class="admin-stat-card"><span>Assignments</span><strong id="ad_assignments_count">0</strong></div>
           <div class="admin-stat-card"><span>Queue</span><strong id="ad_notifications_count">0</strong></div>
           <div class="admin-stat-card"><span>Orders</span><strong id="ad_orders_count">0</strong></div>
+        </div>
+
+        <div class="admin-panel-block" data-admin-panel-title="Admin Home Command Center" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
+              <h3 style="margin:0;">Admin Home Command Center</h3>
+              <p class="section-subtitle">One-stop dashboard for open jobs, HSE reviews, accounting close, failed uploads, reporting health, and schema status.</p>
+            </div>
+          </div>
+          <div id="ad_command_center" class="admin-command-grid"></div>
+        </div>
+
+        <div class="admin-panel-block" data-admin-panel-title="App Health and Schema Center" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
+              <h3 style="margin:0;">App Health and Schema Center</h3>
+              <p class="section-subtitle">Central place for frontend/API issues, backend alerts, schema markers, and fallback status so operators do not need the browser console first.</p>
+            </div>
+            <button id="ad_clear_diagnostics" class="secondary" type="button">Clear Local Diagnostics</button>
+          </div>
+          <div id="ad_health_summary" class="notice" style="display:block;margin-bottom:12px;">Health data has not loaded yet.</div>
+          <div id="ad_health_cards" class="admin-health-grid"></div>
+          <div class="table-scroll">
+            <table id="ad_health_table">
+              <thead><tr><th>Status</th><th>Source</th><th>Title</th><th>Message</th><th>Last Seen</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_schema_table">
+              <thead><tr><th>Schema</th><th>Migration</th><th>Status</th><th>Applied</th><th>Notes</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="admin-panel-block" data-admin-panel-title="Admin Task Inbox" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
+              <h3 style="margin:0;">Admin Task Inbox</h3>
+              <p class="section-subtitle">DB-backed follow-up queue for notifications, close work, bank reconciliation exceptions, tax/remittance review, training, and corrective actions.</p>
+            </div>
+          </div>
+          <div id="ad_task_cards" class="admin-task-grid"></div>
+          <div class="table-scroll">
+            <table id="ad_task_table">
+              <thead><tr><th>Priority</th><th>Task</th><th>Source</th><th>Due / Last Seen</th><th>Route</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
 
         <div class="admin-panel-block" style="margin-top:16px;">
@@ -822,6 +882,14 @@
         assignmentsCount: document.getElementById('ad_assignments_count'),
         notificationsCount: document.getElementById('ad_notifications_count'),
         ordersCount: document.getElementById('ad_orders_count'),
+        commandCenter: document.getElementById('ad_command_center'),
+        healthSummary: document.getElementById('ad_health_summary'),
+        healthCards: document.getElementById('ad_health_cards'),
+        healthBody: document.querySelector('#ad_health_table tbody'),
+        schemaBody: document.querySelector('#ad_schema_table tbody'),
+        taskCards: document.getElementById('ad_task_cards'),
+        taskBody: document.querySelector('#ad_task_table tbody'),
+        clearDiagnosticsBtn: document.getElementById('ad_clear_diagnostics'),
         siteActivitySummary: document.getElementById('ad_site_activity_summary'),
         opsDashboardCards: document.getElementById('ad_ops_dashboard_cards'),
         siteActivityRollups: document.getElementById('ad_site_activity_rollups'),
@@ -1630,6 +1698,11 @@
         state.backendMonitorEvents = Array.isArray(resp?.backend_monitor_events) ? resp.backend_monitor_events : [];
         state.trafficDailySummary = Array.isArray(resp?.app_traffic_daily_summary) ? resp.app_traffic_daily_summary : [];
         state.monitorThresholdAlerts = Array.isArray(resp?.monitor_threshold_alerts) ? resp.monitor_threshold_alerts : [];
+        state.adminHomeCommandCenter = Array.isArray(resp?.admin_home_command_center) ? resp.admin_home_command_center : [];
+        state.adminErrorHealthCenter = Array.isArray(resp?.admin_error_health_center) ? resp.admin_error_health_center : [];
+        state.adminTaskInbox = Array.isArray(resp?.admin_task_inbox) ? resp.admin_task_inbox : [];
+        state.appSchemaVersionStatus = Array.isArray(resp?.app_schema_version_status) ? resp.app_schema_version_status : [];
+        state.roleDashboardPresets = Array.isArray(resp?.role_dashboard_presets) ? resp.role_dashboard_presets : [];
         state.hsePacketActionItems = Array.isArray(resp?.hse_packet_action_items) ? resp.hse_packet_action_items : [];
         state.hseDashboardSummary = Array.isArray(resp?.hse_dashboard_summary) ? resp.hse_dashboard_summary : [];
         state.accountingReviewSummary = Array.isArray(resp?.accounting_review_summary) ? resp.accounting_review_summary : [];
@@ -1655,6 +1728,9 @@
         renderNotifications();
         renderOrders();
         renderSiteActivityTable();
+        renderAdminCommandCenter();
+        renderAdminHealthCenter();
+        renderAdminTaskInbox();
         await refreshSelectors();
 
         saveAdminCache(resp);
@@ -1767,6 +1843,11 @@
           state.backendMonitorEvents = Array.isArray(resp?.backend_monitor_events) ? resp.backend_monitor_events : [];
           state.trafficDailySummary = Array.isArray(resp?.app_traffic_daily_summary) ? resp.app_traffic_daily_summary : [];
           state.monitorThresholdAlerts = Array.isArray(resp?.monitor_threshold_alerts) ? resp.monitor_threshold_alerts : [];
+          state.adminHomeCommandCenter = Array.isArray(resp?.admin_home_command_center) ? resp.admin_home_command_center : [];
+          state.adminErrorHealthCenter = Array.isArray(resp?.admin_error_health_center) ? resp.admin_error_health_center : [];
+          state.adminTaskInbox = Array.isArray(resp?.admin_task_inbox) ? resp.admin_task_inbox : [];
+          state.appSchemaVersionStatus = Array.isArray(resp?.app_schema_version_status) ? resp.app_schema_version_status : [];
+          state.roleDashboardPresets = Array.isArray(resp?.role_dashboard_presets) ? resp.role_dashboard_presets : [];
           state.hsePacketActionItems = Array.isArray(resp?.hse_packet_action_items) ? resp.hse_packet_action_items : [];
           state.hseDashboardSummary = Array.isArray(resp?.hse_dashboard_summary) ? resp.hse_dashboard_summary : [];
           state.accountingReviewSummary = Array.isArray(resp?.accounting_review_summary) ? resp.accounting_review_summary : [];
@@ -1778,6 +1859,10 @@
           fillBackboneForm(getSelectedBackboneRecord());
           renderNotifications();
           renderOrders();
+          renderSiteActivityTable();
+          renderAdminCommandCenter();
+          renderAdminHealthCenter();
+          renderAdminTaskInbox();
           await refreshSelectors();
           setSummary(`Live admin load failed. Showing cached admin data from ${cached.savedAt || 'an earlier session'}.`, true);
           return;
@@ -1790,7 +1875,7 @@
       state.notifications = [];
       state.sites = [];
       state.assignments = [];
-      state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], trafficDailySummary: [], monitorThresholdAlerts: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [], jobFinancialEvents: [], jobFinancialRollups: [], recurringServiceAgreements: [], snowEventTriggers: [], changeOrders: [], customerAssets: [], customerAssetJobLinks: [], warrantyCallbackEvents: [], payrollExportRuns: [], payrollReviewSummary: [], routeProfitabilitySummary: [], serviceContractDocuments: [], serviceAgreementProfitabilitySummary: [], snowEventInvoiceCandidates: [], callbackWarrantyDashboardSummary: [], payrollReviewDetail: [], estimateConversionCandidates: [], serviceExecutionSchedulerSettings: [], serviceExecutionSchedulerStatus: [], signedContractJobKickoffCandidates: [] };
+      state.selectors = { profiles: [], sites: [], assignments: [], positions: [], trades: [], staffTiers: [], seniorityLevels: [], employmentStatuses: [], jobTypes: [], units: [], costCodes: [], serviceAreas: [], routes: [], jobs: [], routeStops: [], routeStopExecutions: [], routeStopExecutionAttachments: [], clients: [], clientSites: [], materials: [], equipmentMaster: [], estimates: [], estimateLines: [], workOrders: [], workOrderLines: [], subcontractClients: [], subcontractDispatches: [], linkedHsePackets: [], hsePacketEvents: [], hsePacketProofs: [], glAccounts: [], glJournalBatches: [], glJournalEntries: [], vendors: [], arInvoices: [], arPayments: [], apBills: [], apPayments: [], materialReceipts: [], materialReceiptLines: [], materialIssues: [], materialIssueLines: [], trafficDailySummary: [], monitorThresholdAlerts: [], adminHomeCommandCenter: [], adminErrorHealthCenter: [], adminTaskInbox: [], appSchemaVersionStatus: [], roleDashboardPresets: [], hsePacketActionItems: [], hseDashboardSummary: [], accountingReviewSummary: [], jobFinancialEvents: [], jobFinancialRollups: [], recurringServiceAgreements: [], snowEventTriggers: [], changeOrders: [], customerAssets: [], customerAssetJobLinks: [], warrantyCallbackEvents: [], payrollExportRuns: [], payrollReviewSummary: [], routeProfitabilitySummary: [], serviceContractDocuments: [], serviceAgreementProfitabilitySummary: [], snowEventInvoiceCandidates: [], callbackWarrantyDashboardSummary: [], payrollReviewDetail: [], estimateConversionCandidates: [], serviceExecutionSchedulerSettings: [], serviceExecutionSchedulerStatus: [], signedContractJobKickoffCandidates: [] };
       state.employeeTimeClockEntries = [];
       state.employeeTimeClockCurrent = [];
       state.employeeTimeClockSummary = [];
@@ -1831,6 +1916,11 @@
       state.accountingCloseAdminControlDashboard = [];
       state.accountingReconciliationManualReviewQueue = [];
       state.accountingClosePackageDeliveryQueue = [];
+      state.adminHomeCommandCenter = [];
+      state.adminErrorHealthCenter = [];
+      state.adminTaskInbox = [];
+      state.appSchemaVersionStatus = [];
+      state.roleDashboardPresets = [];
       state.apBills = [];
       renderNotifications();
       const e = els();
@@ -1844,6 +1934,9 @@
       renderBackboneTable();
       fillBackboneForm(null);
       renderSmokeChecks({ checks: [] });
+      renderAdminCommandCenter();
+      renderAdminHealthCenter();
+      renderAdminTaskInbox();
     }
 
     function getCatalogRows(type) {
@@ -3643,6 +3736,11 @@
           backendMonitorEvents: Array.isArray(payload?.backend_monitor_events) ? payload.backend_monitor_events : state.backendMonitorEvents,
           trafficDailySummary: Array.isArray(payload?.app_traffic_daily_summary) ? payload.app_traffic_daily_summary : state.trafficDailySummary,
           monitorThresholdAlerts: Array.isArray(payload?.monitor_threshold_alerts) ? payload.monitor_threshold_alerts : state.monitorThresholdAlerts,
+          adminHomeCommandCenter: Array.isArray(payload?.admin_home_command_center) ? payload.admin_home_command_center : state.adminHomeCommandCenter,
+          adminErrorHealthCenter: Array.isArray(payload?.admin_error_health_center) ? payload.admin_error_health_center : state.adminErrorHealthCenter,
+          adminTaskInbox: Array.isArray(payload?.admin_task_inbox) ? payload.admin_task_inbox : state.adminTaskInbox,
+          appSchemaVersionStatus: Array.isArray(payload?.app_schema_version_status) ? payload.app_schema_version_status : state.appSchemaVersionStatus,
+          roleDashboardPresets: Array.isArray(payload?.role_dashboard_presets) ? payload.role_dashboard_presets : state.roleDashboardPresets,
           hsePacketActionItems: Array.isArray(payload?.hse_packet_action_items) ? payload.hse_packet_action_items : state.hsePacketActionItems,
           hseDashboardSummary: Array.isArray(payload?.hse_dashboard_summary) ? payload.hse_dashboard_summary : state.hseDashboardSummary,
           accountingReviewSummary: Array.isArray(payload?.accounting_review_summary) ? payload.accounting_review_summary : state.accountingReviewSummary
@@ -3686,6 +3784,162 @@
 
 
 
+
+
+    function getLocalDiagnosticRows() {
+      const diagnostics = window.YWIAppDiagnostics?.getItems?.() || [];
+      return (Array.isArray(diagnostics) ? diagnostics : []).map((item) => ({
+        source: item.scope || 'frontend',
+        severity: 'warning',
+        title: 'Local diagnostic',
+        message: item.message || 'Client-side issue captured.',
+        last_seen_at: item.at || new Date().toISOString(),
+        route_hint: 'health'
+      }));
+    }
+
+    function firstNumber(...values) {
+      for (const value of values) {
+        const n = Number(value);
+        if (Number.isFinite(n)) return n;
+      }
+      return 0;
+    }
+
+    function severityRank(severity = '') {
+      const clean = String(severity || '').toLowerCase();
+      if (clean === 'error' || clean === 'critical') return 1;
+      if (clean === 'warning') return 2;
+      if (clean === 'ok') return 9;
+      return 5;
+    }
+
+    function renderStatusPill(label, severity = 'info') {
+      const clean = String(severity || 'info').toLowerCase();
+      return `<span class="admin-status-pill" data-severity="${escHtml(clean)}">${escHtml(label || clean)}</span>`;
+    }
+
+    function renderAdminCommandCenter() {
+      const e = els();
+      if (!e.commandCenter) return;
+      const db = Array.isArray(state.adminHomeCommandCenter) ? (state.adminHomeCommandCenter[0] || {}) : {};
+      const outboxSummary = window.YWIOutbox?.getActionSummary?.('admin') || { total: 0, conflicts: 0 };
+      const latestSchema = (Array.isArray(state.appSchemaVersionStatus) ? state.appSchemaVersionStatus : [])[0] || {};
+      const closeRows = Array.isArray(state.accountingCloseAdminControlDashboard) ? state.accountingCloseAdminControlDashboard : [];
+      const openClose = closeRows.filter((row) => String(row.close_status || '').toLowerCase() !== 'closed').length;
+      const openJobs = (Array.isArray(state.jobs) ? state.jobs : []).filter((row) => !['complete','completed','closed','cancelled','canceled'].includes(String(row.job_status || '').toLowerCase())).length;
+      const hseActions = Array.isArray(state.hsePacketActionItems) ? state.hsePacketActionItems.length : 0;
+      const failedUploads = firstNumber(db.failed_upload_count, (Array.isArray(state.fieldUploadFailures) ? state.fieldUploadFailures.length : 0));
+      const reconciliationReviews = firstNumber(db.reconciliation_review_count, (Array.isArray(state.accountingReconciliationManualReviewQueue) ? state.accountingReconciliationManualReviewQueue.length : 0));
+      const packageQueue = firstNumber(db.package_delivery_attention_count, (Array.isArray(state.accountingClosePackageDeliveryQueue) ? state.accountingClosePackageDeliveryQueue.filter((row) => row.needs_delivery_attention !== false).length : 0));
+      const healthRows = [...(Array.isArray(state.adminErrorHealthCenter) ? state.adminErrorHealthCenter : []), ...getLocalDiagnosticRows()];
+      const healthIssues = healthRows.filter((row) => severityRank(row.severity) <= 2).length;
+      const cards = [
+        { label: 'Open Jobs', value: firstNumber(db.open_job_count, openJobs), help: 'Jobs not yet closed or cancelled.', route: 'jobs' },
+        { label: 'HSE / Safety Reviews', value: firstNumber(db.hse_review_count, hseActions), help: 'Open packets, corrective actions, or safety follow-up.', route: 'hseops' },
+        { label: 'Accounting Close', value: firstNumber(db.open_accounting_period_count, openClose), help: 'Periods, tax, payroll, or bank reconciliation still open.', entity: 'accounting_period_close' },
+        { label: 'Payment Applications', value: firstNumber(db.payment_application_attention_count, (state.arPaymentApplications?.length || 0) + (state.apPaymentApplications?.length || 0)), help: 'AR/AP payment applications ready for review.', entity: 'ar_payment_application' },
+        { label: 'Bank Reconciliation', value: reconciliationReviews, help: 'Unmatched, partial, or exception bank items.', entity: 'bank_reconciliation_item' },
+        { label: 'Accountant Packages', value: packageQueue, help: 'Export bundles needing finalize, delivery, or confirmation.', entity: 'accountant_handoff_export' },
+        { label: 'Failed Uploads', value: failedUploads, help: 'Evidence/media upload problems needing retry or review.', entity: 'field_upload_failure' },
+        { label: 'App Health', value: healthIssues, help: `Schema ${latestSchema.schema_version || db.latest_schema_version || 'not logged'} · ${outboxSummary.total || 0} queued admin sync item(s).`, route: 'admin', section: 'health' }
+      ];
+      e.commandCenter.innerHTML = cards.map((card) => `
+        <button class="admin-command-card" type="button" ${card.route ? `data-admin-command-route="${escHtml(card.route)}"` : ''} ${card.entity ? `data-admin-command-entity="${escHtml(card.entity)}"` : ''} ${card.section ? `data-admin-command-section="${escHtml(card.section)}"` : ''}>
+          <span>${escHtml(card.label)}</span>
+          <strong>${escHtml(String(card.value ?? 0))}</strong>
+          <small>${escHtml(card.help || '')}</small>
+        </button>
+      `).join('');
+    }
+
+    function renderAdminHealthCenter() {
+      const e = els();
+      if (!e.healthBody && !e.schemaBody && !e.healthCards) return;
+      const localRows = getLocalDiagnosticRows();
+      const dbRows = Array.isArray(state.adminErrorHealthCenter) ? state.adminErrorHealthCenter : [];
+      const rows = [...dbRows, ...localRows].sort((a, b) => severityRank(a.severity) - severityRank(b.severity));
+      const errorCount = rows.filter((row) => severityRank(row.severity) === 1).length;
+      const warningCount = rows.filter((row) => severityRank(row.severity) === 2).length;
+      const latestSchema = (Array.isArray(state.appSchemaVersionStatus) ? state.appSchemaVersionStatus : [])[0] || {};
+      const lastHealth = rows[0]?.last_seen_at || rows[0]?.checked_at || '';
+      if (e.healthSummary) {
+        e.healthSummary.dataset.kind = errorCount ? 'error' : (warningCount ? 'warning' : 'info');
+        e.healthSummary.textContent = rows.length
+          ? `${rows.length} health item(s): ${errorCount} error(s), ${warningCount} warning(s). Latest schema marker: ${latestSchema.schema_version || 'not logged'}.`
+          : `No active health alerts loaded. Latest schema marker: ${latestSchema.schema_version || 'not logged'}.`;
+      }
+      if (e.healthCards) {
+        e.healthCards.innerHTML = [
+          ['Errors', errorCount, 'Critical items that need action.'],
+          ['Warnings', warningCount, 'Timeouts, failed delivery, or review warnings.'],
+          ['Local Diagnostics', localRows.length, 'Client-side issues captured in this browser.'],
+          ['Latest Schema', latestSchema.schema_version || '—', latestSchema.migration_key || latestSchema.notes || 'No schema version table row found yet.']
+        ].map(([label, value, help]) => `<div class="admin-health-card"><span>${escHtml(label)}</span><strong>${escHtml(String(value))}</strong><small>${escHtml(help)}</small></div>`).join('');
+      }
+      if (e.healthBody) {
+        e.healthBody.innerHTML = rows.slice(0, 80).map((row) => `
+          <tr>
+            <td>${renderStatusPill(row.severity || 'info', row.severity || 'info')}</td>
+            <td>${escHtml(row.source || row.monitor_scope || '')}</td>
+            <td><strong>${escHtml(row.title || '')}</strong></td>
+            <td class="admin-table-note">${escHtml(row.message || row.note || '')}</td>
+            <td>${escHtml(row.last_seen_at || row.checked_at || lastHealth || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No health alerts loaded.</td></tr>';
+      }
+      if (e.schemaBody) {
+        const schemaRows = Array.isArray(state.appSchemaVersionStatus) ? state.appSchemaVersionStatus : [];
+        e.schemaBody.innerHTML = schemaRows.slice(0, 30).map((row) => `
+          <tr>
+            <td>${escHtml(row.schema_version || '')}</td>
+            <td>${escHtml(row.migration_key || '')}</td>
+            <td>${renderStatusPill(row.status || 'unknown', String(row.status || '').toLowerCase() === 'applied' ? 'ok' : 'warning')}</td>
+            <td>${escHtml(row.applied_at || '')}</td>
+            <td class="admin-table-note">${escHtml(row.notes || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">Schema tracking table has not been seeded yet. Apply schema 106.</td></tr>';
+      }
+    }
+
+    function renderAdminTaskInbox() {
+      const e = els();
+      if (!e.taskCards && !e.taskBody) return;
+      const rows = Array.isArray(state.adminTaskInbox) ? state.adminTaskInbox : [];
+      const high = rows.filter((row) => Number(row.priority_rank || 99) <= 20).length;
+      const accounting = rows.filter((row) => String(row.source_area || '').toLowerCase().includes('accounting')).length;
+      const safety = rows.filter((row) => /hse|safety|training|corrective/i.test(String(row.source_area || row.task_source || ''))).length;
+      if (e.taskCards) {
+        e.taskCards.innerHTML = [
+          ['High Priority', high, 'Needs the first look.'],
+          ['Accounting', accounting, 'Close, filing, remittance, and reconciliation.'],
+          ['Safety / HSE', safety, 'Corrective action, training, and packet follow-up.'],
+          ['Total Tasks', rows.length, 'Loaded from DB task views and active workflow tables.']
+        ].map(([label, value, help]) => `<div class="admin-task-card"><span>${escHtml(label)}</span><strong>${escHtml(String(value))}</strong><small>${escHtml(help)}</small></div>`).join('');
+      }
+      if (e.taskBody) {
+        e.taskBody.innerHTML = rows.slice(0, 80).map((row) => `
+          <tr>
+            <td>${escHtml(row.priority_label || row.priority_rank || '')}</td>
+            <td><strong>${escHtml(row.task_title || row.title || '')}</strong><div class="muted">${escHtml(row.task_summary || row.message || '')}</div></td>
+            <td>${escHtml(row.source_area || row.task_source || '')}</td>
+            <td>${escHtml(row.due_at || row.last_seen_at || row.created_at || '')}</td>
+            <td>${escHtml(row.route_hint || row.entity_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No admin tasks are currently loaded.</td></tr>';
+      }
+    }
+
+    function handleAdminCommandClick(event) {
+      const btn = event.target.closest('[data-admin-command-route],[data-admin-command-entity],[data-admin-command-section]');
+      if (!btn) return;
+      const section = btn.getAttribute('data-admin-command-section') || '';
+      const route = btn.getAttribute('data-admin-command-route') || '';
+      const entity = btn.getAttribute('data-admin-command-entity') || '';
+      if (section) applyAdminSectionFilter(section);
+      if (entity) focusAdminHubEntity(entity, { summary: `Focused ${entity.replaceAll('_', ' ')} from the Admin Command Center.` });
+      if (route && route !== 'admin') window.YWIRouter?.showSection?.(route);
+    }
 
     function renderOperationsDashboardCards() {
       const e = els();
@@ -3955,6 +4209,18 @@
         }
       });
 
+      if (e.commandCenter && e.commandCenter.dataset.bound !== '1') {
+        e.commandCenter.dataset.bound = '1';
+        e.commandCenter.addEventListener('click', handleAdminCommandClick);
+      }
+      if (e.clearDiagnosticsBtn && e.clearDiagnosticsBtn.dataset.bound !== '1') {
+        e.clearDiagnosticsBtn.dataset.bound = '1';
+        e.clearDiagnosticsBtn.addEventListener('click', () => {
+          window.YWIAppDiagnostics?.clear?.();
+          renderAdminHealthCenter();
+          setSummary('Local diagnostics cleared. Live backend health rows will remain until resolved.');
+        });
+      }
       if (e.reloadBtn && e.reloadBtn.dataset.bound !== '1') {
         e.reloadBtn.dataset.bound = '1';
         e.reloadBtn.addEventListener('click', () => loadDirectory());
