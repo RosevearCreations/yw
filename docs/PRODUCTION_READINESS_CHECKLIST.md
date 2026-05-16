@@ -1,14 +1,20 @@
 # Production Readiness Checklist
 
-Last refreshed: **2026-05-14b**
+Last refreshed: **2026-05-15b**
 
-Schema 107 adds the first DB-backed readiness checklist. The Admin UI now shows the checklist plus schema drift and permission rows.
+## Current readiness foundations
 
-## Required before real production use
+- Schema drift table/view exists through schema 108.
+- Production readiness checklist rows exist.
+- Role permission matrix exists.
+- Deployment gate table/view exists.
+- Public SEO smoke-check table/view exists.
+- Admin Health can log resolution notes.
 
-- Schema drift shows current.
-- RLS reviewed role-by-role.
-- Backups and restore test completed.
-- Error/health center monitored after deploy.
-- Accounting close blockers clear before period lock.
-- Public pages, if added, pass SEO/H1/asset checks.
+## Remaining before production confidence
+
+- Run role-by-role RLS and Edge Function permission tests.
+- Add backup/restore rehearsal proof.
+- Automate deployment gate updates.
+- Add server-side pagination to large admin lists.
+- Convert close overview into a write-enabled wizard.

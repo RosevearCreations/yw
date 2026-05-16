@@ -76,6 +76,7 @@ const requiredFiles = [
   'sql/105_repo_cleanup_and_roadmap_refresh.sql',
   'sql/106_admin_command_center_schema_tracking_and_health.sql',
   'sql/107_admin_readiness_drilldowns_and_live_schema_fix.sql',
+  'sql/108_saved_filters_close_wizard_health_and_seo_gates.sql',
   'js/hse-ops-ui.js',
   'supabase/functions/jobs-directory/index.ts',
   'supabase/functions/jobs-manage/index.ts',
@@ -126,7 +127,7 @@ addCheck('account-has-conflict-review', accountUi.includes('Conflict Review'), '
 addCheck('account-has-support-export', accountUi.includes('Export Support Snapshot'), 'account-ui.js should render the support snapshot export button.');
 
 const schema = read('sql/000_full_schema_reference.sql');
-addCheck('schema-header-current', /107_admin_readiness_drilldowns_and_live_schema_fix/i.test(schema), 'Schema snapshot should reflect the latest 107 pass.');
+addCheck('schema-header-current', /108_saved_filters_close_wizard_health_and_seo_gates/i.test(schema), 'Schema snapshot should reflect the latest 108 pass.');
 
 const schedulerRun = read('supabase/functions/service-execution-scheduler-run/index.ts');
 addCheck('scheduler-run-advances-next-run', schedulerRun.includes('next_run_at: computeNextRunAt'), 'Scheduler Edge Function should advance next_run_at after successful runs.');
@@ -163,12 +164,22 @@ addCheck('schema-has-drift-status', schema.includes('v_schema_drift_status'), 'C
 addCheck('schema-has-production-readiness', schema.includes('v_production_readiness_checklist'), 'Canonical schema should include production readiness checklist view.');
 addCheck('schema-has-role-permission-matrix', schema.includes('v_role_permission_matrix'), 'Canonical schema should include role permission matrix view.');
 addCheck('schema-has-evidence-manager-directory', schema.includes('v_evidence_manager_directory'), 'Canonical schema should include evidence manager directory view.');
+addCheck('schema-has-saved-filter-summary', schema.includes('v_admin_saved_filter_scope_summary'), 'Canonical schema should include saved filter summary view.');
+addCheck('schema-has-close-wizard-steps', schema.includes('v_admin_close_wizard_steps'), 'Canonical schema should include close wizard step view.');
+addCheck('schema-has-health-resolution-queue', schema.includes('v_admin_health_resolution_queue'), 'Canonical schema should include health resolution queue view.');
+addCheck('schema-has-deployment-gates', schema.includes('v_admin_deployment_gate_status'), 'Canonical schema should include deployment gate status view.');
+addCheck('schema-has-public-seo-smoke-check', schema.includes('v_public_seo_smoke_check'), 'Canonical schema should include public SEO smoke check view.');
 addCheck('admin-directory-does-not-select-job-status', !read('supabase/functions/admin-directory/index.ts').includes('job_status,client_id'), 'admin-directory should not select jobs.job_status directly because live schema may use jobs.status.');
 addCheck('admin-selectors-does-not-select-job-status', !read('supabase/functions/admin-selectors/index.ts').includes('job_status,client_id'), 'admin-selectors should not select jobs.job_status directly because live schema may use jobs.status.');
 addCheck('admin-renders-command-center', adminUi.includes('Admin Home Command Center') && adminUi.includes('renderAdminCommandCenter'), 'admin-ui.js should render the Admin Home Command Center.');
+addCheck('admin-renders-saved-filters', adminUi.includes('Save Current View') && adminUi.includes('renderSavedFilters'), 'admin-ui.js should render and save admin saved filters.');
+addCheck('admin-renders-deployment-gates', adminUi.includes('ad_deployment_gate_table') && adminUi.includes('adminDeploymentGateStatus'), 'admin-ui.js should render deployment gates.');
+addCheck('admin-renders-seo-smoke-table', adminUi.includes('ad_seo_smoke_table') && adminUi.includes('publicSeoSmokeCheck'), 'admin-ui.js should render SEO smoke check rows.');
 addCheck('admin-renders-health-center', adminUi.includes('App Health and Schema Center') && adminUi.includes('renderAdminHealthCenter'), 'admin-ui.js should render the App Health and Schema Center.');
 addCheck('edge-loads-command-center', read('supabase/functions/admin-directory/index.ts').includes('v_admin_home_command_center'), 'admin-directory should load the Admin Command Center views.');
-addCheck('active-docs-archived-snapshot', fileExists('archive/markdown-current-snapshot-2026-05-14b/root/README.md'), 'Archive snapshot should preserve the previous root README.');
+addCheck('edge-loads-schema-108-views', read('supabase/functions/admin-directory/index.ts').includes('v_admin_close_wizard_steps') && read('supabase/functions/admin-directory/index.ts').includes('v_admin_deployment_gate_status'), 'admin-directory should load schema 108 readiness views.');
+addCheck('admin-manage-saves-filters', read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_saved_filter'"), 'admin-manage should support saved filter write actions.');
+addCheck('active-docs-archived-snapshot', fileExists('archive/markdown-current-snapshot-2026-05-15b/root/README.md'), 'Archive snapshot should preserve the previous root README.');
 addCheck('retired-markdown-not-in-root', !fileExists('AI_START_PROMPT.md') && !fileExists('PROJECT_BRAIN.md') && !fileExists('REPO_BASE.md') && !fileExists('RUNBOOK_AUTH_BOOTSTRAP.md'), 'Retired root Markdown should be moved out of the active root.');
 addCheck('no-test-write-files', !fileExists('test_write.txt') && !fileExists('test_write2_OLD.txt') && !fileExists('test_write3.txt') && !fileExists('test_write_OLD.txt'), 'Temporary test_write files should not exist in the active root.');
 addCheck('verifydb-retired-from-active-sql', !fileExists('sql/VerifyDB_24_04_2026.sql'), 'Old VerifyDB helper should stay archived, not active in sql/.');

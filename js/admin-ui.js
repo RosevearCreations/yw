@@ -138,7 +138,12 @@
       productionReadinessChecklist: [],
       rolePermissionMatrix: [],
       adminSavedFilterDirectory: [],
+      adminSavedFilterScopeSummary: [],
       adminCloseCenterOverview: [],
+      adminCloseWizardSteps: [],
+      adminHealthResolutionQueue: [],
+      adminDeploymentGateStatus: [],
+      publicSeoSmokeCheck: [],
       evidenceManagerDirectory: [],
       hsePacketActionItems: [],
       hseDashboardSummary: [],
@@ -264,6 +269,31 @@
             </div>
           </div>
           <div id="ad_command_center" class="admin-command-grid"></div>
+          <div class="admin-saved-filter-toolbar" style="margin-top:12px;">
+            <label>Saved view name
+              <input id="ad_saved_filter_name" type="text" placeholder="Example: Accounting close review" />
+            </label>
+            <label>Scope
+              <select id="ad_saved_filter_scope">
+                <option value="home">Command Center</option>
+                <option value="people">People and Access</option>
+                <option value="operations">Operations</option>
+                <option value="accounting">Accounting</option>
+                <option value="safety">Safety / HSE</option>
+                <option value="health">Health</option>
+                <option value="readiness">Readiness</option>
+              </select>
+            </label>
+            <label class="admin-inline-check"><input id="ad_saved_filter_shared" type="checkbox" /> Shared</label>
+            <button id="ad_saved_filter_save" class="secondary" type="button">Save Current View</button>
+          </div>
+          <div id="ad_saved_filter_cards" class="admin-task-grid" style="margin-top:12px;"></div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_saved_filter_table">
+              <thead><tr><th>Scope</th><th>Name</th><th>Owner</th><th>Shared</th><th>Used</th><th>Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
 
         <div class="admin-panel-block" data-admin-panel-title="App Health and Schema Center" style="margin-top:16px;">
@@ -278,7 +308,7 @@
           <div id="ad_health_cards" class="admin-health-grid"></div>
           <div class="table-scroll">
             <table id="ad_health_table">
-              <thead><tr><th>Status</th><th>Source</th><th>Title</th><th>Message</th><th>Last Seen</th></tr></thead>
+              <thead><tr><th>Status</th><th>Source</th><th>Title</th><th>Message</th><th>Last Seen</th><th>Actions</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -351,6 +381,18 @@
           <div class="table-scroll">
             <table id="ad_permissions_table">
               <thead><tr><th>Role</th><th>Workflow</th><th>View</th><th>Create</th><th>Approve</th><th>Close/Reopen</th><th>Export</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_deployment_gate_table">
+              <thead><tr><th>Area</th><th>Gate</th><th>Status</th><th>Command / Check</th><th>Action</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_seo_smoke_table">
+              <thead><tr><th>Page</th><th>Title</th><th>H1</th><th>Local Terms</th><th>Meta</th><th>Broken Assets</th><th>Status</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -943,6 +985,12 @@
         notificationsCount: document.getElementById('ad_notifications_count'),
         ordersCount: document.getElementById('ad_orders_count'),
         commandCenter: document.getElementById('ad_command_center'),
+        savedFilterName: document.getElementById('ad_saved_filter_name'),
+        savedFilterScope: document.getElementById('ad_saved_filter_scope'),
+        savedFilterShared: document.getElementById('ad_saved_filter_shared'),
+        savedFilterSaveBtn: document.getElementById('ad_saved_filter_save'),
+        savedFilterCards: document.getElementById('ad_saved_filter_cards'),
+        savedFilterBody: document.querySelector('#ad_saved_filter_table tbody'),
         healthSummary: document.getElementById('ad_health_summary'),
         healthCards: document.getElementById('ad_health_cards'),
         healthBody: document.querySelector('#ad_health_table tbody'),
@@ -957,6 +1005,8 @@
         readinessCards: document.getElementById('ad_readiness_cards'),
         readinessBody: document.querySelector('#ad_readiness_table tbody'),
         permissionsBody: document.querySelector('#ad_permissions_table tbody'),
+        deploymentGateBody: document.querySelector('#ad_deployment_gate_table tbody'),
+        seoSmokeBody: document.querySelector('#ad_seo_smoke_table tbody'),
         siteActivitySummary: document.getElementById('ad_site_activity_summary'),
         opsDashboardCards: document.getElementById('ad_ops_dashboard_cards'),
         siteActivityRollups: document.getElementById('ad_site_activity_rollups'),
@@ -1796,6 +1846,7 @@
         renderOrders();
         renderSiteActivityTable();
         renderAdminCommandCenter();
+        renderSavedFilters();
         renderAdminHealthCenter();
         renderAdminTaskInbox();
         renderGuidedCloseCenter();
@@ -3815,7 +3866,12 @@
           productionReadinessChecklist: Array.isArray(payload?.production_readiness_checklist) ? payload.production_readiness_checklist : state.productionReadinessChecklist,
           rolePermissionMatrix: Array.isArray(payload?.role_permission_matrix) ? payload.role_permission_matrix : state.rolePermissionMatrix,
           adminSavedFilterDirectory: Array.isArray(payload?.admin_saved_filter_directory) ? payload.admin_saved_filter_directory : state.adminSavedFilterDirectory,
+          adminSavedFilterScopeSummary: Array.isArray(payload?.admin_saved_filter_scope_summary) ? payload.admin_saved_filter_scope_summary : state.adminSavedFilterScopeSummary,
           adminCloseCenterOverview: Array.isArray(payload?.admin_close_center_overview) ? payload.admin_close_center_overview : state.adminCloseCenterOverview,
+          adminCloseWizardSteps: Array.isArray(payload?.admin_close_wizard_steps) ? payload.admin_close_wizard_steps : state.adminCloseWizardSteps,
+          adminHealthResolutionQueue: Array.isArray(payload?.admin_health_resolution_queue) ? payload.admin_health_resolution_queue : state.adminHealthResolutionQueue,
+          adminDeploymentGateStatus: Array.isArray(payload?.admin_deployment_gate_status) ? payload.admin_deployment_gate_status : state.adminDeploymentGateStatus,
+          publicSeoSmokeCheck: Array.isArray(payload?.public_seo_smoke_check) ? payload.public_seo_smoke_check : state.publicSeoSmokeCheck,
           evidenceManagerDirectory: Array.isArray(payload?.evidence_manager_directory) ? payload.evidence_manager_directory : state.evidenceManagerDirectory,
           hsePacketActionItems: Array.isArray(payload?.hse_packet_action_items) ? payload.hse_packet_action_items : state.hsePacketActionItems,
           hseDashboardSummary: Array.isArray(payload?.hse_dashboard_summary) ? payload.hse_dashboard_summary : state.hseDashboardSummary,
@@ -3861,6 +3917,110 @@
 
 
 
+
+
+    function renderSavedFilters() {
+      const e = els();
+      if (!e.savedFilterCards && !e.savedFilterBody) return;
+      const rows = Array.isArray(state.adminSavedFilterDirectory) ? state.adminSavedFilterDirectory : [];
+      const summaries = Array.isArray(state.adminSavedFilterScopeSummary) ? state.adminSavedFilterScopeSummary : [];
+      if (e.savedFilterCards) {
+        e.savedFilterCards.innerHTML = summaries.slice(0, 6).map((row) => `<button class="admin-task-card" type="button" data-admin-section="${escHtml(row.filter_scope || 'home')}"><span>${escHtml(row.filter_scope || 'Scope')}</span><strong>${escHtml(String(row.filter_count || 0))}</strong><small>${escHtml(String(row.shared_filter_count || 0))} shared · last used ${escHtml(row.last_used_at || 'never')}</small></button>`).join('') || '<div class="muted">No saved views yet. Save one from the toolbar above.</div>';
+      }
+      if (e.savedFilterBody) {
+        e.savedFilterBody.innerHTML = rows.slice(0, 40).map((row) => `
+          <tr>
+            <td>${escHtml(row.filter_scope || '')}</td>
+            <td><strong>${escHtml(row.filter_name || '')}</strong><div class="muted">${escHtml(row.section_hint || row.route_hint || '')}</div></td>
+            <td>${escHtml(row.owner_name || 'Me')}</td>
+            <td>${row.is_shared ? 'Yes' : 'No'}</td>
+            <td>${escHtml(String(row.usage_count || 0))}</td>
+            <td><button class="secondary" type="button" data-saved-filter-use="${escHtml(row.id || '')}" data-saved-filter-section="${escHtml(row.section_hint || row.filter_scope || 'home')}">Use</button> <button class="secondary" type="button" data-saved-filter-delete="${escHtml(row.id || '')}">Delete</button></td>
+          </tr>
+        `).join('') || '<tr><td colspan="6" class="muted">No saved filters loaded yet.</td></tr>';
+      }
+    }
+
+    async function saveCurrentAdminFilter() {
+      const e = els();
+      if (!manageAdminEntity) throw new Error('Admin manage API is not available.');
+      const name = String(e.savedFilterName?.value || '').trim();
+      if (!name) throw new Error('Add a saved view name first.');
+      const scope = String(e.savedFilterScope?.value || state.adminSection || 'home').trim() || 'home';
+      await manageAdminEntity({
+        entity: 'admin_saved_filter',
+        action: 'create',
+        filter_scope: scope,
+        filter_name: name,
+        is_shared: !!e.savedFilterShared?.checked,
+        section_hint: state.adminSection || scope,
+        route_hint: 'admin',
+        filter_payload: {
+          section: state.adminSection || scope,
+          queue_search: e.search?.value || '',
+          queue_status: e.filterStatus?.value || '',
+          backbone_entity: e.backboneEntity?.value || '',
+          catalog_type: e.catalogType?.value || ''
+        }
+      });
+      if (e.savedFilterName) e.savedFilterName.value = '';
+      setSummary('Saved admin view.', false);
+      await loadDirectory();
+    }
+
+    async function handleSavedFilterClick(event) {
+      const useBtn = event.target.closest('[data-saved-filter-use]');
+      const delBtn = event.target.closest('[data-saved-filter-delete]');
+      const scopeBtn = event.target.closest('#ad_saved_filter_cards [data-admin-section]');
+      if (scopeBtn) {
+        applyAdminSectionFilter(scopeBtn.getAttribute('data-admin-section') || 'home');
+        return;
+      }
+      if (!useBtn && !delBtn) return;
+      if (!manageAdminEntity) throw new Error('Admin manage API is not available.');
+      const itemId = (useBtn || delBtn).getAttribute(useBtn ? 'data-saved-filter-use' : 'data-saved-filter-delete') || '';
+      if (!itemId) return;
+      if (useBtn) {
+        await manageAdminEntity({ entity: 'admin_saved_filter', action: 'touch', item_id: itemId });
+        applyAdminSectionFilter(useBtn.getAttribute('data-saved-filter-section') || 'home');
+        setSummary('Loaded saved admin view.', false);
+        await loadDirectory();
+      }
+      if (delBtn) {
+        await manageAdminEntity({ entity: 'admin_saved_filter', action: 'delete', item_id: itemId });
+        setSummary('Deleted saved admin view.', false);
+        await loadDirectory();
+      }
+    }
+
+    async function handleAdminHealthAction(event) {
+      const btn = event.target.closest('[data-health-resolve]');
+      if (!btn || !manageAdminEntity) return;
+      const sourceId = btn.getAttribute('data-health-resolve') || '';
+      const sourceArea = btn.getAttribute('data-health-source') || 'health';
+      await manageAdminEntity({ entity: 'admin_health_resolution_note', action: 'resolve', source_area: sourceArea, source_id: sourceId, resolution_status: 'resolved', resolution_notes: 'Resolved from Admin Health panel.' });
+      setSummary('Health item marked resolved in the resolution log.', false);
+      await loadDirectory();
+    }
+
+    async function handleReadinessAction(event) {
+      const btn = event.target.closest('[data-gate-key]');
+      if (!btn || !manageAdminEntity) return;
+      await manageAdminEntity({ entity: 'admin_deployment_gate_check', action: 'update', item_id: btn.getAttribute('data-gate-key'), check_status: btn.getAttribute('data-gate-status') || 'passed' });
+      setSummary('Deployment gate updated.', false);
+      await loadDirectory();
+    }
+
+    async function handleEvidenceManagerAction(event) {
+      const btn = event.target.closest('[data-evidence-action]');
+      if (!btn || !manageAdminEntity) return;
+      const source = btn.getAttribute('data-evidence-source') || '';
+      const sourceId = btn.getAttribute('data-evidence-id') || '';
+      if (!sourceId) return;
+      await manageAdminEntity({ entity: 'admin_health_resolution_note', action: 'create', source_area: `evidence:${source}`, source_id: sourceId, resolution_status: 'assigned', resolution_notes: 'Evidence follow-up opened from Evidence Manager.' });
+      setSummary('Evidence follow-up added to the health resolution queue.', false);
+      await loadDirectory();
+    }
 
     function getLocalDiagnosticRows() {
       const diagnostics = window.YWIAppDiagnostics?.getItems?.() || [];
@@ -3938,6 +4098,7 @@
       const errorCount = rows.filter((row) => severityRank(row.severity) === 1).length;
       const warningCount = rows.filter((row) => severityRank(row.severity) === 2).length;
       const latestSchema = (Array.isArray(state.appSchemaVersionStatus) ? state.appSchemaVersionStatus : [])[0] || {};
+      const drift = (Array.isArray(state.schemaDriftStatus) ? state.schemaDriftStatus : [])[0] || {};
       const lastHealth = rows[0]?.last_seen_at || rows[0]?.checked_at || '';
       if (e.healthSummary) {
         e.healthSummary.dataset.kind = errorCount ? 'error' : (warningCount ? 'warning' : 'info');
@@ -3962,8 +4123,9 @@
             <td><strong>${escHtml(row.title || '')}</strong></td>
             <td class="admin-table-note">${escHtml(row.message || row.note || '')}</td>
             <td>${escHtml(row.last_seen_at || row.checked_at || lastHealth || '')}</td>
+            <td>${row.source_id || row.id ? `<button class="secondary" type="button" data-health-resolve="${escHtml(row.source_id || row.id)}" data-health-source="${escHtml(row.source || row.monitor_scope || 'health')}">Resolve</button>` : '<span class="muted">Local only</span>'}</td>
           </tr>
-        `).join('') || '<tr><td colspan="5" class="muted">No health alerts loaded.</td></tr>';
+        `).join('') || '<tr><td colspan="6" class="muted">No health alerts loaded.</td></tr>';
       }
       if (e.schemaBody) {
         const schemaRows = Array.isArray(state.appSchemaVersionStatus) ? state.appSchemaVersionStatus : [];
@@ -4020,8 +4182,11 @@
         ['Journal Candidates', row.journal_candidate_count || 0, 'Posting candidates or generated lines needing validation.'],
         ['Packages', row.package_delivery_attention_count || 0, 'Accountant exports needing delivery confirmation.']
       ];
+      const steps = Array.isArray(state.adminCloseWizardSteps) ? state.adminCloseWizardSteps : [];
       if (e.closeCenterCards) {
-        e.closeCenterCards.innerHTML = cards.map(([label, value, help]) => `<div class="admin-command-card"><span>${escHtml(label)}</span><strong>${escHtml(String(value))}</strong><small>${escHtml(help)}</small></div>`).join('');
+        const baseCards = cards.map(([label, value, help]) => `<div class="admin-command-card"><span>${escHtml(label)}</span><strong>${escHtml(String(value))}</strong><small>${escHtml(help)}</small></div>`).join('');
+        const stepCards = steps.slice(0, 8).map((step, idx) => `<button class="admin-command-card" type="button" data-admin-command-section="accounting" data-admin-command-entity="${escHtml(step.source_entity || '')}"><span>Step ${idx + 1}: ${escHtml(step.step_group || '')}</span><strong>${escHtml(step.step_title || '')}</strong><small>${escHtml(step.step_detail || '')}</small></button>`).join('');
+        e.closeCenterCards.innerHTML = baseCards + stepCards;
       }
       if (e.closeCenterSummary) {
         const blockerCount = cards.reduce((sum, [, value]) => sum + Number(value || 0), 0);
@@ -4052,7 +4217,7 @@
             <td>${escHtml(row.source_area || row.source_table || '')}</td>
             <td>${escHtml(row.owner_name || row.profile_name || row.created_by_name || '')}</td>
             <td>${escHtml(row.last_seen_at || row.created_at || row.uploaded_at || '')}</td>
-            <td>${escHtml(row.action_hint || row.route_hint || 'Open source record')}</td>
+            <td><div class="admin-row-actions"><span>${escHtml(row.action_hint || row.route_hint || 'Open source record')}</span>${row.source_id ? `<button class="secondary" type="button" data-evidence-action="follow_up" data-evidence-source="${escHtml(row.source_area || '')}" data-evidence-id="${escHtml(row.source_id || '')}">Follow up</button>` : ''}</div></td>
           </tr>
         `).join('') || '<tr><td colspan="6" class="muted">No evidence manager rows loaded yet.</td></tr>';
       }
@@ -4096,6 +4261,32 @@
             <td>${row.can_export ? 'Yes' : 'No'}</td>
           </tr>
         `).join('') || '<tr><td colspan="7" class="muted">No permission matrix rows loaded yet. Apply schema 107.</td></tr>';
+      }
+      if (e.deploymentGateBody) {
+        const gates = Array.isArray(state.adminDeploymentGateStatus) ? state.adminDeploymentGateStatus : [];
+        e.deploymentGateBody.innerHTML = gates.slice(0, 80).map((row) => `
+          <tr>
+            <td>${escHtml(row.check_area || '')}</td>
+            <td><strong>${escHtml(row.check_title || '')}</strong><div class="muted">${escHtml(row.failure_hint || '')}</div></td>
+            <td>${renderStatusPill(row.check_status || 'review', /pass|ok|ready/i.test(String(row.check_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.command_hint || '')}</td>
+            <td><button class="secondary" type="button" data-gate-key="${escHtml(row.check_key || '')}" data-gate-status="passed">Mark Pass</button></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No deployment gates loaded yet. Apply schema 108.</td></tr>';
+      }
+      if (e.seoSmokeBody) {
+        const seoRows = Array.isArray(state.publicSeoSmokeCheck) ? state.publicSeoSmokeCheck : [];
+        e.seoSmokeBody.innerHTML = seoRows.slice(0, 80).map((row) => `
+          <tr>
+            <td>${escHtml(row.page_path || '')}</td>
+            <td>${escHtml(row.page_title || '')}</td>
+            <td>${escHtml(row.h1_count ?? '')}</td>
+            <td>${row.local_terms_present ? 'Yes' : 'No'}</td>
+            <td>${row.meta_description_present ? 'Yes' : 'No'}</td>
+            <td>${escHtml(row.broken_asset_count ?? '')}</td>
+            <td>${renderStatusPill(row.check_status || 'review', /fail/i.test(String(row.check_status || '')) ? 'error' : (/warn|review/i.test(String(row.check_status || '')) ? 'warning' : 'ok'))}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="7" class="muted">No SEO smoke rows loaded yet. Apply schema 108.</td></tr>';
       }
     }
 
@@ -4384,6 +4575,34 @@
       if (e.commandCenter && e.commandCenter.dataset.bound !== '1') {
         e.commandCenter.dataset.bound = '1';
         e.commandCenter.addEventListener('click', handleAdminCommandClick);
+      }
+      if (e.savedFilterSaveBtn && e.savedFilterSaveBtn.dataset.bound !== '1') {
+        e.savedFilterSaveBtn.dataset.bound = '1';
+        e.savedFilterSaveBtn.addEventListener('click', () => saveCurrentAdminFilter().catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.savedFilterCards && e.savedFilterCards.dataset.bound !== '1') {
+        e.savedFilterCards.dataset.bound = '1';
+        e.savedFilterCards.addEventListener('click', (event) => handleSavedFilterClick(event).catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.savedFilterBody && e.savedFilterBody.dataset.bound !== '1') {
+        e.savedFilterBody.dataset.bound = '1';
+        e.savedFilterBody.addEventListener('click', (event) => handleSavedFilterClick(event).catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.healthBody && e.healthBody.dataset.boundHealth !== '1') {
+        e.healthBody.dataset.boundHealth = '1';
+        e.healthBody.addEventListener('click', (event) => handleAdminHealthAction(event).catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.readinessBody && e.readinessBody.dataset.boundReadiness !== '1') {
+        e.readinessBody.dataset.boundReadiness = '1';
+        e.readinessBody.addEventListener('click', (event) => handleReadinessAction(event).catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.deploymentGateBody && e.deploymentGateBody.dataset.boundGate !== '1') {
+        e.deploymentGateBody.dataset.boundGate = '1';
+        e.deploymentGateBody.addEventListener('click', (event) => handleReadinessAction(event).catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.evidenceManagerBody && e.evidenceManagerBody.dataset.boundEvidence !== '1') {
+        e.evidenceManagerBody.dataset.boundEvidence = '1';
+        e.evidenceManagerBody.addEventListener('click', (event) => handleEvidenceManagerAction(event).catch((err) => setSummary(String(err?.message || err), true)));
       }
       if (e.clearDiagnosticsBtn && e.clearDiagnosticsBtn.dataset.bound !== '1') {
         e.clearDiagnosticsBtn.dataset.bound = '1';
