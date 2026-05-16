@@ -192,7 +192,12 @@ serve(async (req) => {
       .some((v) => String(v || '').toLowerCase().includes(search));
   });
 
-  const response: Record<string, unknown> = { ok:true, profiles: filteredPeople, users: filteredPeople };
+  const response: Record<string, unknown> = {
+    ok:true,
+    profiles: filteredPeople,
+    users: filteredPeople,
+    pagination_meta: { scope, limit, search, role_filter: roleFilter, supports_server_paging: true }
+  };
 
   if ((scope === 'all' || scope === 'health' || scope === 'command_center') && roleRank(actorRole) >= roleRank('supervisor')) {
     response.admin_home_command_center = await safeList(supabase, 'v_admin_home_command_center');
@@ -210,6 +215,12 @@ serve(async (req) => {
     response.admin_health_resolution_queue = await safeList(supabase, 'v_admin_health_resolution_queue', '*', 'updated_at', 80, false);
     response.admin_deployment_gate_status = await safeList(supabase, 'v_admin_deployment_gate_status', '*', 'sort_order', 80, true);
     response.public_seo_smoke_check = await safeList(supabase, 'v_public_seo_smoke_check', '*', 'page_path', 80, true);
+    response.admin_audit_event_directory = await safeList(supabase, 'v_admin_audit_event_directory', '*', 'occurred_at', 80, false);
+    response.admin_backup_restore_rehearsal_directory = await safeList(supabase, 'v_admin_backup_restore_rehearsal_directory', '*', 'updated_at', 40, false);
+    response.bank_csv_import_session_directory = await safeList(supabase, 'v_bank_csv_import_session_directory', '*', 'updated_at', 40, false);
+    response.admin_evidence_action_queue = await safeList(supabase, 'v_admin_evidence_action_queue', '*', 'updated_at', 80, false);
+    response.admin_mobile_action_card_directory = await safeList(supabase, 'v_admin_mobile_action_card_directory', '*', 'sort_order', 80, true);
+    response.admin_list_pagination_settings = await safeList(supabase, 'v_admin_list_pagination_settings', '*', 'list_key', 80, true);
     response.evidence_manager_directory = await safeList(supabase, 'v_evidence_manager_directory', '*', 'last_seen_at', 120, false);
   }
   if ((scope === 'all' || scope === 'sites') && roleRank(actorRole) >= roleRank('supervisor')) {

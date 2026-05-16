@@ -1,8 +1,8 @@
 # Testing Checklist
 
-Last refreshed: **2026-05-15b**
+Last refreshed: **2026-05-15c**
 
-## Automated checks
+## Code checks
 
 - [ ] `node --check js/api.js`
 - [ ] `node --check js/admin-ui.js`
@@ -14,15 +14,13 @@ Last refreshed: **2026-05-15b**
 - [ ] `node --check server-worker.js`
 - [ ] `node scripts/repo-smoke-check.mjs`
 
-## Manual checks after deploy
+## Manual app checks
 
-- [ ] Admin page loads with no fatal console error.
-- [ ] Admin Health shows schema 108 current.
-- [ ] Saved admin view can be created.
-- [ ] Saved admin view can be used/touched.
-- [ ] Saved admin view can be deleted by owner/admin.
-- [ ] Guided Close Center cards and step cards render.
-- [ ] Evidence Manager Follow up creates a resolution note.
-- [ ] Deployment Gate Mark Pass works for admin.
-- [ ] SEO smoke row shows current app shell with one H1.
-- [ ] No exposed page has more than one H1.
+- [ ] Admin Command Center loads.
+- [ ] Admin Health shows schema **109** after SQL is applied.
+- [ ] Guided Close Center shows step detail rows.
+- [ ] Complete/Reopen creates close-step event history.
+- [ ] Evidence follow-up creates a health note and evidence action row.
+- [ ] Readiness tables load for deployment gates, SEO checks, bank CSV import sessions, backup rehearsals, mobile action cards, permissions, and audit events.
+- [ ] Service worker loads `2026-05-15c` assets after hard refresh.
+- [ ] Exposed app shell still has one H1.

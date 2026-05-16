@@ -1,26 +1,20 @@
 # New Chat Status
 
-Last refreshed: **2026-05-15b**
+Last refreshed: **2026-05-15c**
 
-## Use this handoff first
+Use this as the handoff if the next conversation starts fresh.
 
-We are working on the YWI HSE / operations app. The latest build is `2026-05-15b` and the latest schema is **108**.
+## Latest completed pass
 
-## What was just done
+- Source build was `yw-main(119).zip`.
+- Output build should be the `2026-05-15c` schema-109 production-readiness pass.
+- Latest migration is `sql/109_pagination_close_wizard_audit_backup_mobile_foundations.sql`.
+- The pass cleaned root Markdown/temp drift and added DB/UI foundations for pagination, guided close step actions, audit log, bank CSV import staging, evidence action queue, backup/restore rehearsals, and mobile action cards.
 
-- Added schema 108.
-- Fixed Admin Health drift rendering.
-- Added saved admin views and `admin_saved_filter` write actions.
-- Added close wizard step metadata and cards.
-- Added health/evidence follow-up logging.
-- Added deployment gate and SEO smoke-check foundations.
-- Updated Markdown and schema references.
-- Removed temp files and retired old root Markdown.
+## Next instruction to continue
 
-## Next best work
+Continue from `DEVELOPMENT_ROADMAP.md`, starting with true server-side pagination and guided close owner/due-date editing.
 
-Start with `DEVELOPMENT_ROADMAP.md` and `KNOWN_ISSUES_AND_GAPS.md`. The next strongest value-add item is server-side pagination plus real saved-filter state replay, followed by a write-enabled Guided Close Center wizard.
+## Must remember
 
-## Validation already run
-
-The package passed JavaScript syntax checks, repo smoke check, and one-H1 verification during this pass.
+Every future code pass should update Markdown, schema reference files, smoke checks, one-H1 status, CSS drift, and deployment notes.

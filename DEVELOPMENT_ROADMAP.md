@@ -1,56 +1,56 @@
 # Development Roadmap
 
-Last refreshed: **2026-05-15b**
+Last refreshed: **2026-05-15c**
 
 ## Completed or advanced in this pass
 
-1. Added schema 108 for saved filters, close wizard step metadata, health resolution notes, deployment gate checks, and SEO smoke checks.
-2. Updated canonical schema reference and smoke checks through schema 108.
-3. Fixed `renderAdminHealthCenter()` so schema drift data is defined before it is rendered.
-4. Added Admin saved-view controls: name, scope, shared flag, save, use, and delete.
-5. Added `admin_saved_filter` write actions in `admin-manage` for create, update, touch/use, and delete.
-6. Added saved-filter scope summaries so managers can see which areas have reusable views.
-7. Added Guided Close Center step cards mapped to accounting entities.
-8. Added DB-backed close workflow step metadata for period review, payments, bank review, tax/payroll, journal preview, and accountant package delivery.
-9. Added health-resolution notes table and Edge Function actions for health/evidence follow-up notes.
-10. Added Resolve buttons to Admin Health rows where source IDs are available.
-11. Added Evidence Manager follow-up buttons that create resolution/follow-up records.
-12. Added deployment gate table and Admin action to mark deployment gates passed.
-13. Added public SEO smoke-check table foundation for page title, H1 count, local terms, meta description, alt coverage, and broken assets.
-14. Added Admin UI rendering for deployment gates and SEO smoke rows.
-15. Added `admin-directory` loading for schema 108 views.
-16. Added CSS polish for saved views, row actions, deployment gate rows, and mobile wrapping.
-17. Removed active temp files again.
-18. Retired old root Markdown into the archive again and created a fresh Markdown snapshot.
-19. Bumped cache/build version to `2026-05-15b`.
-20. Verified JavaScript syntax, smoke checks, and one-H1 status.
+1. Added schema 109 for pagination settings, guided close actions, admin audit events, backup/restore rehearsals, bank CSV import staging, evidence action queue, and mobile action cards.
+2. Updated the canonical schema reference and smoke checks through schema 109.
+3. Added owner, due date, blocker override, completion notes, completed-by, and completed-at fields to guided close workflow steps.
+4. Added close-step event history so complete/reopen/update actions leave an audit trail.
+5. Added Admin UI close-step detail table with Complete and Reopen actions.
+6. Added admin-manage support for guided close step complete/reopen/update actions.
+7. Added admin audit events table and directory view for auth, roles, posting, close/reopen, exports, approvals, settings, and health-resolution logging.
+8. Added Admin UI audit log table in the readiness panel.
+9. Added DB-backed list pagination settings for people, jobs, accounting close, health/evidence, and reports payloads.
+10. Added admin-directory pagination metadata so the next UI pass can send list scope, search, page size, and sort state.
+11. Added bank CSV import session and row staging tables with row counts, duplicate status, accepted/rejected counts, and import notes.
+12. Added Admin UI bank CSV import status table.
+13. Added backup/restore rehearsal tracking with planned restore rehearsal seed rows.
+14. Added Admin UI backup/restore rehearsal table.
+15. Added evidence action queue table for follow-up, retry, replace, archive, and blocked evidence workflows.
+16. Updated Evidence Manager to queue evidence follow-up actions while still creating health-resolution notes.
+17. Added worker/supervisor mobile action card table for clocking, assigned forms, help contact, supervisor daily dashboard, and evidence review.
+18. Added Admin UI mobile action-card table for production-readiness planning.
+19. Cleaned recurring active-root drift by archiving current Markdown, retiring old root Markdown, and removing test_write temp files again.
+20. Bumped cache/build version to 2026-05-15c and verified JavaScript syntax, smoke checks, CSS additions, and one-H1 status.
 
 ## Next logical 20 steps after this pass
 
-1. Convert saved filters from section jumps into true query/state restore for every major admin table.
-2. Add server-side pagination and page-size controls to people, jobs, accounting, health, evidence, and reports lists.
-3. Turn Guided Close Center step cards into a real wizard with step status, owner, due date, blocker drill-down, and completion notes.
-4. Add journal posting preview UI with debit/credit balance checks, source links, locked-period checks, and approval requirements.
-5. Build bank CSV import UI with upload session, duplicate detection, preview, accepted/rejected row counts, and import history.
-6. Build reconciliation manual review controls: accept match, reject match, manual match, split match, and reviewer notes.
-7. Expand payment application forms for partial payment, overpayment, unapplied amount, reversal, void, and audit reason.
-8. Build accountant package generator with manifest index, GL detail, trial balance, AR/AP aging, sales tax, payroll, reconciliation, and receipts.
-9. Add file/package delivery tracking with sent/reviewed/finalized/confirmed states and delivery evidence.
-10. Add media completeness scoring to Evidence Manager for job photos, HSE proof, receipt images, signatures, and upload failures.
-11. Add true retry/replace/archive controls for failed uploads and evidence rows.
-12. Add worker mobile dashboard: clock in/out, assigned forms, training/SDS, offline outbox, and help contact.
-13. Add supervisor daily dashboard: active crews, no-show/late risk, evidence review, incidents, payroll exceptions, and route execution.
-14. Add persistent health workflow: assign, dismiss, retry, resolve, dead-letter note, and reopen.
-15. Add audit log viewer for auth, roles, posting, close/reopen, exports, approvals, settings, and health resolutions.
-16. Add backup/restore scripts and a restore rehearsal checklist with date, operator, result, and next action.
-17. Add CI/deploy gate automation so syntax, smoke, H1, schema marker, service worker version, and changed Edge Functions are checked before packaging.
-18. Add public-page SEO automation when marketing pages are introduced: title/meta/H1/local words/alt/broken assets.
-19. Add role-by-role permission enforcement tests for admin, supervisor, HSE, job admin, and employee.
-20. Add final production sign-off screen with RLS, CORS, env vars, backups, schema drift, monitoring, rate limits, roles, recovery, and deployment gates.
+1. Wire true server-side pagination into admin-directory for people first, then jobs, accounting, health/evidence, and reports.
+2. Add page controls to Admin tables: page size, previous/next, total count, search, and saved sort state.
+3. Finish saved-filter state replay so saved views restore section, table filters, search, sort, page size, and focused entity.
+4. Add owner/due-date editing to Guided Close Center steps with assignment dropdowns and date validation.
+5. Add blocker drill-down for each close step so clicking a blocker opens the exact accounting queue.
+6. Build journal posting preview UI with generated debit/credit lines, out-of-balance warning, approval status, and locked-period checks.
+7. Build bank CSV upload UI that creates import sessions, previews rows, detects duplicates, and lets rows be accepted/rejected before reconciliation.
+8. Add reconciliation manual review buttons: accept match, reject match, manual match, split match, and reviewer notes.
+9. Expand AR/AP payment application forms for partial payments, overpayments, unapplied amounts, reversals, voids, and audit reasons.
+10. Build accountant package generator screen with manifest, GL detail, trial balance, AR/AP aging, sales tax, payroll, reconciliation, and receipts.
+11. Add accountant package delivery tracking with sent, reviewed, finalized, confirmed, failed, and evidence states.
+12. Wire evidence action queue to real upload handlers for retry, replace, archive, dismiss, and reopen.
+13. Add media completeness scoring to Evidence Manager for job photos, HSE proof, receipt images, signatures, and upload failures.
+14. Build worker mobile dashboard with clock in/out, assigned forms, training/SDS, offline outbox, and help contact.
+15. Build supervisor daily dashboard for active crews, late/no-show risk, evidence review, incidents, payroll exceptions, and route execution.
+16. Expand persistent health workflow with assign, dismiss, retry, resolve, reopen, and dead-letter notes.
+17. Expand audit logging across every admin-manage write action and show filters by actor, entity, action, and date.
+18. Add backup/export scripts and record a real restore rehearsal result in the new rehearsal table.
+19. Add CI/deploy gate automation so syntax, smoke, H1, schema marker, service-worker version, changed Edge Functions, and SQL files are checked before packaging.
+20. Add public-page SEO automation for future marketing pages: title, meta, one H1, locality words, alt text, broken assets, and canonical route checks.
 
 ## SEO rule kept during this pass
 
-Keep one clear H1 per exposed page. Use words people search for in titles, main headings, alt text, and helpful link text. For local discovery, keep service area wording accurate and visible. Local ranking still depends on relevance, distance, and prominence.
+Keep one clear H1 per exposed page. Use words people search for in titles, main headings, alt text, and helpful link text. For local discovery, keep service-area wording accurate and visible. Local ranking still depends on relevance, distance, and prominence.
 
 References:
 - Google Search Essentials: https://developers.google.com/search/docs/essentials

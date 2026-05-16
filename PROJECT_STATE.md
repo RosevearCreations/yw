@@ -1,29 +1,21 @@
 # Project State
 
-Last refreshed: **2026-05-15b**
+Last refreshed: **2026-05-15c**
 
-## Current build state
+## Current build
 
-- Frontend build/cache version: `2026-05-15b`.
-- Latest schema marker: **108**.
-- Active Admin focus: Command Center, Health Center, Guided Close Center, Evidence Manager, saved views, deployment gates, and readiness/SEO checks.
-- Root legacy Markdown was moved back into `archive/markdown-retired-2026-05-15b/root/`.
-- Active temp `test_write` files were removed.
+- Build label: `2026-05-15c`
+- Latest schema: `109`
+- Main focus: production-readiness foundations for admin workflow, accounting close, evidence handling, auditability, bank CSV staging, mobile cards, and recovery rehearsal tracking.
 
-## Newly added this pass
+## What is working in this build
 
-- Writable saved admin filters.
-- Saved-filter scope summary view.
-- Close wizard step table and view.
-- Health resolution notes table and queue view.
-- Deployment gate check table and view.
-- Public SEO smoke-check table and view.
-- Admin UI for saved views, close steps, health resolve buttons, evidence follow-up buttons, deployment gates, and SEO smoke rows.
+- Admin Command Center and Health Center are still the main operator entry points.
+- Guided Close Center now has DB-backed step rows and complete/reopen actions.
+- Evidence Manager now creates follow-up records and queues evidence actions.
+- Readiness panel now displays deployment gates, SEO smoke checks, bank CSV import sessions, backup rehearsal rows, mobile action cards, permissions, and audit rows.
+- Root Markdown cleanup is repeated because uploaded zips sometimes reintroduce retired docs and temp files.
 
-## Important live deployment order
+## Main caution
 
-1. Apply SQL through schema 108.
-2. Redeploy `admin-directory`.
-3. Redeploy `admin-manage`.
-4. Clear/hard refresh old service worker cache.
-5. Open Admin Health and confirm schema drift is current.
+Apply schema **109** before expecting the new Admin tables to fill with live data.

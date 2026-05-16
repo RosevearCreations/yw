@@ -1,23 +1,19 @@
 # System Architecture
 
-Last refreshed: **2026-05-15b**
+Last refreshed: **2026-05-15c**
 
-## Main pieces
+## Current architecture focus
 
-- Static frontend: `index.html`, `style.css`, `app.js`, and `js/*` modules.
-- Supabase database: SQL migrations under `sql/`.
-- Supabase Edge Functions: `supabase/functions/*`.
-- Service worker: `server-worker.js` for app-shell caching.
-- Admin backend: `admin-directory`, `admin-manage`, and `admin-selectors`.
+The app is a browser-based operations/HSE/admin system backed by Supabase tables, views, and Edge Functions.
 
-## Current Admin data flow
+## Main app layers
 
-1. Frontend Admin UI calls `YWIAPI.loadAdminDirectory()`.
-2. `admin-directory` loads dashboard/readiness/evidence/accounting views.
-3. Admin write actions call `YWIAPI.manageAdminEntity()`.
-4. `admin-manage` writes saved filters, health notes, deployment gate status, and existing workflow entities.
-5. `app_schema_versions` and `v_schema_drift_status` show live schema status.
+1. **Static frontend:** `index.html`, `style.css`, `app.js`, and files in `js/`.
+2. **Service worker:** `server-worker.js`, currently versioned to `2026-05-15c`.
+3. **Supabase Edge Functions:** admin and operations APIs in `supabase/functions/`.
+4. **Database:** SQL migrations in `sql/`, latest schema **109**.
+5. **Markdown handoff:** root Markdown files are active current docs; older docs are archived.
 
-## Production direction
+## Schema 109 architecture addition
 
-The app is being moved toward role-based dashboards, guided workflows, deployment gates, health resolution, accounting close controls, and evidence-backed operations.
+Schema 109 adds production-style operational control tables for pagination, audit logging, guided close actions, bank CSV staging, backup rehearsal tracking, evidence action queues, and mobile action cards.

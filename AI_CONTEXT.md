@@ -1,25 +1,19 @@
 # AI Context
 
-Last refreshed: **2026-05-15b**
+Last refreshed: **2026-05-15c**
 
-## Current task pattern
+This repo is the YWI HSE / operations app. The user wants every code pass to update Markdown, SQL schema references, smoke checks, CSS drift, SEO checks, and one-H1 status.
 
-Every build pass must update code, SQL schema files, and active Markdown together. Keep old Markdown snapshots in `archive/` and keep active root Markdown clear.
+## Current state
 
-## Current technical state
+- Latest build version: `2026-05-15c`
+- Latest schema: `109`
+- Latest focus: make the app backend feel more like a real production app by adding DB-backed workflow controls, auditability, recovery rehearsal tracking, bank CSV staging, evidence action queues, and mobile dashboard planning.
 
-- Latest schema: 108.
-- Latest cache/version string: `2026-05-15b`.
-- Main changed files this pass: `js/admin-ui.js`, `style.css`, `server-worker.js`, `index.html`, `supabase/functions/admin-directory/index.ts`, `supabase/functions/admin-manage/index.ts`, `sql/108_saved_filters_close_wizard_health_and_seo_gates.sql`, `sql/000_full_schema_reference.sql`, `scripts/repo-smoke-check.mjs`.
+## Critical habits
 
-## Important constraints
-
-- No more than one H1 per exposed page.
-- Keep SEO titles/headings locally relevant when public pages are added.
-- Move retired root Markdown to archive.
-- Remove temporary test files from active root.
-- Update schema reference and smoke check for every schema pass.
-
-## Next recommended work
-
-Server-side pagination and true saved-filter state replay should come next, then a write-enabled Guided Close Center wizard.
+- Do not reintroduce retired root Markdown into the active root.
+- Remove `test_write` temp files from active root.
+- Keep one H1 per exposed page.
+- Keep roadmap and known gaps current after every pass.
+- Apply SQL before relying on new Admin UI panels.

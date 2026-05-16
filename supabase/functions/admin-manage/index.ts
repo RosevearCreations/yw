@@ -1007,6 +1007,82 @@ serve(async (req) => {
       return Response.json({ ok:true, record:data }, { headers:corsHeaders });
     }
 
+    if (entity === 'admin_close_workflow_step') {
+      if (roleRank(actorProfile.role) < roleRank('supervisor')) {
+        return Response.json({ ok:false, error:'Supervisor access is required.' }, { status:403, headers:corsHeaders });
+      }
+      const stepKey = String(body.item_id || body.step_key || '').trim();
+      if (!stepKey) return Response.json({ ok:false, error:'Close step key is required.' }, { status:400, headers:corsHeaders });
+      const { data: existing } = await supabase.from('admin_close_workflow_steps').select('*').eq('step_key', stepKey).maybeSingle();
+      if (!existing?.step_key) return Response.json({ ok:false, error:'Close step not found.' }, { status:404, headers:corsHeaders });
+      const now = new Date().toISOString();
+      const nextStatus = action === 'complete' ? 'completed' : (action === 'reopen' ? 'review' : String(body.step_status || existing.step_status || 'review').trim());
+      const patch: Record<string, unknown> = {
+        step_status: nextStatus,
+        owner_profile_id: asNullableText(body.owner_profile_id) ?? existing.owner_profile_id ?? null,
+        due_at: asNullableText(body.due_at) ?? existing.due_at ?? null,
+        blocker_count_override: body.blocker_count_override === undefined ? existing.blocker_count_override ?? null : asNumber(body.blocker_count_override, 0),
+        completion_notes: asNullableText(body.completion_notes) ?? existing.completion_notes ?? null,
+        completed_by_profile_id: action === 'complete' ? actorId : (action === 'reopen' ? null : existing.completed_by_profile_id ?? null),
+        completed_at: action === 'complete' ? now : (action === 'reopen' ? null : existing.completed_at ?? null),
+        updated_at: now,
+      };
+      const { data, error } = await supabase.from('admin_close_workflow_steps').update(patch).eq('step_key', stepKey).select('*').single();
+      if (error) throw error;
+      await supabase.from('admin_close_step_events').insert({ step_key: stepKey, event_action: action || 'update', from_status: existing.step_status || null, to_status: nextStatus, event_notes: asNullableText(body.completion_notes), actor_profile_id: actorId });
+      await supabase.from('admin_audit_events').insert({ actor_profile_id: actorId, event_area: 'accounting_close', event_action: action || 'update', entity_type: 'admin_close_workflow_step', entity_id: stepKey, event_summary: `Close step ${stepKey} changed from ${existing.step_status || 'unknown'} to ${nextStatus}.`, route_hint: 'admin:accounting' });
+      return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+    }
+
+    if (entity === 'admin_evidence_action') {
+      if (roleRank(actorProfile.role) < roleRank('supervisor')) {
+        return Response.json({ ok:false, error:'Supervisor access is required.' }, { status:403, headers:corsHeaders });
+      }
+      const now = new Date().toISOString();
+      const itemId = String(body.item_id || body.id || '').trim();
+      const patch: Record<string, unknown> = {
+        source_area: String(body.source_area || 'evidence').trim() || 'evidence',
+        source_id: asNullableText(body.source_id),
+        evidence_title: asNullableText(body.evidence_title),
+        action_type: String(body.action_type || 'follow_up').trim() || 'follow_up',
+        action_status: String(body.action_status || (action === 'complete' ? 'completed' : 'queued')).trim() || 'queued',
+        assigned_to_profile_id: asNullableText(body.assigned_to_profile_id),
+        action_notes: asNullableText(body.action_notes),
+        updated_at: now,
+      };
+      if (action === 'create') {
+        const { data, error } = await supabase.from('admin_evidence_action_queue').insert({ ...patch, created_by_profile_id: actorId, created_at: now }).select('*').single();
+        if (error) throw error;
+        await supabase.from('admin_audit_events').insert({ actor_profile_id: actorId, event_area: 'evidence', event_action: 'queued', entity_type: 'admin_evidence_action_queue', entity_id: data.id, event_summary: `${patch.action_type} queued for ${patch.source_area}.`, route_hint: 'admin:safety' });
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (!itemId) return Response.json({ ok:false, error:'Evidence action id is required.' }, { status:400, headers:corsHeaders });
+      const { data, error } = await supabase.from('admin_evidence_action_queue').update(patch).eq('id', itemId).select('*').single();
+      if (error) throw error;
+      await supabase.from('admin_audit_events').insert({ actor_profile_id: actorId, event_area: 'evidence', event_action: action || 'update', entity_type: 'admin_evidence_action_queue', entity_id: itemId, event_summary: `Evidence action ${itemId} updated to ${patch.action_status}.`, route_hint: 'admin:safety' });
+      return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+    }
+
+    if (entity === 'admin_audit_event') {
+      if (roleRank(actorProfile.role) < roleRank('supervisor')) {
+        return Response.json({ ok:false, error:'Supervisor access is required.' }, { status:403, headers:corsHeaders });
+      }
+      const patch = {
+        actor_profile_id: actorId,
+        event_area: String(body.event_area || 'admin').trim() || 'admin',
+        event_action: String(body.event_action || action || 'recorded').trim() || 'recorded',
+        entity_type: asNullableText(body.entity_type),
+        entity_id: asNullableText(body.entity_id),
+        event_summary: asNullableText(body.event_summary),
+        event_status: String(body.event_status || 'recorded').trim() || 'recorded',
+        route_hint: asNullableText(body.route_hint),
+        metadata: body.metadata && typeof body.metadata === 'object' ? body.metadata : {},
+      };
+      const { data, error } = await supabase.from('admin_audit_events').insert(patch).select('*').single();
+      if (error) throw error;
+      return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+    }
+
     if (entity === 'profile' && action === 'self_update') {
       const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
       for (const field of ['full_name','phone','address_line1','address_line2','city','province','postal_code','vehicle_make_model','vehicle_plate','current_position','trade_specialty','feature_preferences','emergency_contact_name','emergency_contact_phone','start_date','strengths','employee_number']) {
