@@ -1388,3 +1388,214 @@ button.admin-task-card {
     min-width: 140px;
   }
 }
+
+/* 2026-05-16a: compact expandable mobile navigation */
+.main-menu-toggle {
+  display: none;
+}
+
+.main-menu-icon {
+  position: relative;
+  width: 18px;
+  height: 12px;
+  flex: 0 0 auto;
+}
+
+.main-menu-icon::before,
+.main-menu-icon::after,
+.main-menu-icon {
+  border-top: 2px solid currentColor;
+}
+
+.main-menu-icon::before,
+.main-menu-icon::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+
+.main-menu-icon::before {
+  top: 4px;
+}
+
+.main-menu-icon::after {
+  top: 10px;
+}
+
+.main-menu-current {
+  color: var(--text-soft);
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-left: auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body[data-authenticated="false"] .main-menu-toggle {
+  display: none !important;
+}
+
+@media (max-width: 759px) {
+  .app-header {
+    padding: 10px 12px;
+  }
+
+  .header-top {
+    align-items: stretch;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .app-header h1,
+  .header-top h1 {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.25;
+  }
+
+  .header-session-actions,
+  .header-session {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .header-session {
+    align-items: stretch;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .header-session-name {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .main-menu-toggle {
+    width: 100%;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+    margin-top: 8px;
+    border: 1px solid rgba(96, 165, 250, 0.34);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(31, 56, 98, 0.94), rgba(17, 31, 57, 0.94));
+    color: var(--text);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .main-menu-toggle-label {
+    font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+
+  .app-header nav.main-nav {
+    display: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+    padding: 10px;
+    max-height: min(70vh, 520px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: rgba(9, 15, 28, 0.96);
+    box-shadow: var(--shadow);
+  }
+
+  .app-header.is-menu-open nav.main-nav {
+    display: grid;
+  }
+
+  .app-header nav.main-nav a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 9px 10px;
+    border-radius: 12px;
+    text-align: center;
+    white-space: normal;
+    line-height: 1.18;
+    font-size: 0.88rem;
+  }
+
+  body.is-main-menu-open {
+    scroll-padding-top: 150px;
+  }
+}
+
+@media (max-width: 420px) {
+  .app-header nav.main-nav {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 2026-05-16a: compact expandable admin section navigation on phones */
+.admin-section-toggle {
+  display: none;
+}
+
+.admin-section-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-section-current {
+  color: var(--text-soft);
+  font-weight: 600;
+  margin-left: auto;
+}
+
+@media (max-width: 720px) {
+  .admin-section-nav {
+    display: block;
+    position: sticky;
+    top: 76px;
+    z-index: 4;
+    padding: 8px 0 6px;
+    background: linear-gradient(180deg, rgba(10, 15, 25, .98), rgba(10, 15, 25, .84));
+    backdrop-filter: blur(8px);
+  }
+
+  .admin-section-toggle {
+    width: 100%;
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border-radius: 13px;
+  }
+
+  .admin-section-list {
+    display: none;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: rgba(9, 15, 28, 0.94);
+  }
+
+  .admin-section-nav.is-open .admin-section-list {
+    display: grid;
+  }
+
+  .admin-section-btn {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+  }
+}

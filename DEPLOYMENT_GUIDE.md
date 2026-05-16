@@ -1,13 +1,12 @@
 # Deployment Guide
 
-Last refreshed: **2026-05-15c**
+Last refreshed: **2026-05-16a**
 
 ## Required deployment order
 
-1. Apply SQL migrations through schema **109**.
-2. Redeploy Supabase functions:
+1. Apply SQL migrations through schema **110**.
+2. Redeploy Supabase function:
    - `admin-directory`
-   - `admin-manage`
 3. Deploy static app files.
 4. Clear/hard refresh browser cache or unregister the service worker if old files stay loaded.
 5. Run a smoke test after deployment.
@@ -15,6 +14,7 @@ Last refreshed: **2026-05-15c**
 ## Local checks before packaging
 
 ```bash
+node --check js/mobile-menu.js
 node --check js/api.js
 node --check js/admin-ui.js
 node --check js/reports-ui.js
@@ -28,8 +28,7 @@ node scripts/repo-smoke-check.mjs
 
 ## Live checks after deployment
 
-- Admin Health shows schema **109** current.
-- Guided Close Center buttons work.
-- Evidence follow-up creates queue rows.
-- Readiness panel loads audit, backup, CSV import, mobile, deployment, and SEO rows.
+- Main phone menu is compact on load.
+- Admin section phone menu is compact on load.
+- Admin Health shows schema **110** current.
 - No more than one H1 appears on exposed public pages.

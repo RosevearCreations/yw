@@ -1,32 +1,33 @@
 # Changelog
 
-Last refreshed: **2026-05-15c**
+Last refreshed: **2026-05-16a**
 
-## 2026-05-15c
+## 2026-05-16a
 
-1. Added schema 109 for pagination settings, guided close actions, admin audit events, backup/restore rehearsals, bank CSV import staging, evidence action queue, and mobile action cards.
-2. Updated the canonical schema reference and smoke checks through schema 109.
-3. Added owner, due date, blocker override, completion notes, completed-by, and completed-at fields to guided close workflow steps.
-4. Added close-step event history so complete/reopen/update actions leave an audit trail.
-5. Added Admin UI close-step detail table with Complete and Reopen actions.
-6. Added admin-manage support for guided close step complete/reopen/update actions.
-7. Added admin audit events table and directory view for auth, roles, posting, close/reopen, exports, approvals, settings, and health-resolution logging.
-8. Added Admin UI audit log table in the readiness panel.
-9. Added DB-backed list pagination settings for people, jobs, accounting close, health/evidence, and reports payloads.
-10. Added admin-directory pagination metadata so the next UI pass can send list scope, search, page size, and sort state.
-11. Added bank CSV import session and row staging tables with row counts, duplicate status, accepted/rejected counts, and import notes.
-12. Added Admin UI bank CSV import status table.
-13. Added backup/restore rehearsal tracking with planned restore rehearsal seed rows.
-14. Added Admin UI backup/restore rehearsal table.
-15. Added evidence action queue table for follow-up, retry, replace, archive, and blocked evidence workflows.
-16. Updated Evidence Manager to queue evidence follow-up actions while still creating health-resolution notes.
-17. Added worker/supervisor mobile action card table for clocking, assigned forms, help contact, supervisor daily dashboard, and evidence review.
-18. Added Admin UI mobile action-card table for production-readiness planning.
-19. Cleaned recurring active-root drift by archiving current Markdown, retiring old root Markdown, and removing test_write temp files again.
-20. Bumped cache/build version to 2026-05-15c and verified JavaScript syntax, smoke checks, CSS additions, and one-H1 status.
+1. Added a compact mobile main-menu toggle in `index.html` so phones no longer load a long list of navigation pills by default.
+2. Added `js/mobile-menu.js` to manage open/close state, `aria-expanded`, current-section label, outside-click close, Escape close, and route-change sync.
+3. Added mobile CSS for a two-column expanded menu, one-column fallback on very narrow screens, scroll-safe menu height, and touch-friendly 44px controls.
+4. Updated the service worker app shell to cache `js/mobile-menu.js` and bumped the static cache to `2026-05-16a`.
+5. Converted the Admin section menu into a compact expandable phone menu with a current-section label.
+6. Kept the Admin section pills visible and wrapped on desktop while hiding them behind a single toggle on small screens.
+7. Added mobile header polish so the title, session name, and buttons do not crowd the top of the screen.
+8. Added schema 110 as a safe frontend quality-gate marker for mobile navigation, one-H1, cache version, and active Markdown readiness.
+9. Added `app_frontend_quality_gates` and `v_mobile_navigation_quality_gates` for DB-backed UI quality tracking.
+10. Updated `v_schema_drift_status` to expect schema 110.
+11. Updated `admin-directory` to load `v_mobile_navigation_quality_gates` when schema 110 is present.
+12. Updated the canonical schema reference through schema 110.
+13. Updated the repo smoke check to require the mobile menu file, mobile menu script reference, mobile CSS collapse rules, compact Admin section toggle, schema 110, and the updated archive path.
+14. Archived the current Markdown snapshot under `archive/markdown-current-snapshot-2026-05-16a/`.
+15. Retired reintroduced root Markdown files back into `archive/markdown-retired-2026-05-16a/`.
+16. Removed reintroduced `test_write` temporary files from the active root.
+17. Verified the exposed app shell still has exactly one H1.
+18. Kept the SEO title/description direction intact while improving mobile usability for mobile-first indexing.
+19. Updated all active root Markdown handoff files for the mobile UX/schema 110 pass.
+20. Updated docs with a mobile navigation/responsive UX note and refreshed the roadmap/gaps for the next pass.
 
 ## Deploy notes
 
-- Apply SQL through schema **109**.
-- Redeploy changed Supabase functions: `admin-directory`, `admin-manage`.
+- Apply SQL through schema **110**.
+- Redeploy changed Supabase function: `admin-directory`.
 - Clear/hard refresh the service worker cache after deployment.
+- Test mobile layout under 760px and Admin section layout under 720px.

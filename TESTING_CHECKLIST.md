@@ -1,9 +1,10 @@
 # Testing Checklist
 
-Last refreshed: **2026-05-15c**
+Last refreshed: **2026-05-16a**
 
 ## Code checks
 
+- [ ] `node --check js/mobile-menu.js`
 - [ ] `node --check js/api.js`
 - [ ] `node --check js/admin-ui.js`
 - [ ] `node --check js/reports-ui.js`
@@ -14,13 +15,20 @@ Last refreshed: **2026-05-15c**
 - [ ] `node --check server-worker.js`
 - [ ] `node scripts/repo-smoke-check.mjs`
 
-## Manual app checks
+## Manual mobile checks
 
-- [ ] Admin Command Center loads.
-- [ ] Admin Health shows schema **109** after SQL is applied.
-- [ ] Guided Close Center shows step detail rows.
-- [ ] Complete/Reopen creates close-step event history.
-- [ ] Evidence follow-up creates a health note and evidence action row.
-- [ ] Readiness tables load for deployment gates, SEO checks, bank CSV import sessions, backup rehearsals, mobile action cards, permissions, and audit events.
-- [ ] Service worker loads `2026-05-15c` assets after hard refresh.
+- [ ] At phone width, the main nav is collapsed behind one Menu button.
+- [ ] Menu expands and closes after choosing a route.
+- [ ] Current route label updates in the Menu button.
+- [ ] Escape key and outside click close the menu.
+- [ ] Admin section menu is collapsed on phones and expands cleanly.
+- [ ] Header session name and buttons do not overflow.
+- [ ] Service worker loads `2026-05-16a` assets after hard refresh.
 - [ ] Exposed app shell still has one H1.
+
+## Admin/backend checks
+
+- [ ] Apply schema **110**.
+- [ ] Admin Health shows schema **110** current.
+- [ ] `v_mobile_navigation_quality_gates` returns rows.
+- [ ] Existing schema 109 panels still load.
