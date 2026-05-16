@@ -1064,7 +1064,7 @@ select
   js.site_supervisor_signed_off_at,
   js.site_supervisor_signoff_notes,
   js.created_by_profile_id,
-  creator.full_name as created_by_name,
+  creator.full_name as uploaded_by_name,
   to_char(js.started_at at time zone 'America/Toronto', 'YYYY-MM-DD HH24:MI') as started_at_local,
   to_char(js.ended_at at time zone 'America/Toronto', 'YYYY-MM-DD HH24:MI') as ended_at_local,
   js.created_at,
@@ -1459,7 +1459,7 @@ select
   jfe.reference_number,
   jfe.notes,
   jfe.created_by_profile_id,
-  p.full_name as created_by_name,
+  p.full_name as uploaded_by_name,
   jfe.created_at,
   jfe.updated_at
 from public.job_financial_events jfe
@@ -2094,7 +2094,7 @@ select
   l.event_type,
   l.notes,
   l.created_by_profile_id,
-  p.full_name as created_by_name,
+  p.full_name as uploaded_by_name,
   l.created_at,
   l.updated_at
 from public.customer_asset_job_links l
@@ -2612,7 +2612,7 @@ select
   em.equipment_code as related_equipment_code,
   em.item_name as related_equipment_name,
   sae.created_by_profile_id,
-  cp.full_name as created_by_name,
+  cp.full_name as uploaded_by_name,
   sae.occurred_at,
   sae.created_at
 from public.site_activity_events sae
@@ -2753,7 +2753,7 @@ select
   te.paid_work_minutes,
   te.notes,
   te.created_by_profile_id,
-  actor.full_name as created_by_name,
+  actor.full_name as uploaded_by_name,
   coalesce(br.break_count, 0)::int as break_count,
   coalesce(br.open_break_count, 0)::int as open_break_count,
   br.last_break_started_at,
@@ -2927,7 +2927,7 @@ select
   te.exception_reviewed_by_profile_id,
   te.notes,
   te.created_by_profile_id,
-  actor.full_name as created_by_name,
+  actor.full_name as uploaded_by_name,
   coalesce(br.break_count, 0)::int as break_count,
   coalesce(br.open_break_count, 0)::int as open_break_count,
   br.last_break_started_at,
@@ -3346,7 +3346,7 @@ select
   te.paid_work_minutes,
   te.notes,
   te.created_by_profile_id,
-  actor.full_name as created_by_name,
+  actor.full_name as uploaded_by_name,
   coalesce(br.break_count, 0)::int as break_count,
   coalesce(br.open_break_count, 0)::int as open_break_count,
   br.last_break_started_at,
@@ -4663,7 +4663,7 @@ select
   rp.visibility,
   rp.preset_payload,
   rp.created_by_profile_id,
-  coalesce(p.full_name, p.email, '') as created_by_name,
+  coalesce(p.full_name, p.email, '') as uploaded_by_name,
   rp.is_active,
   rp.created_at,
   rp.updated_at
@@ -5262,7 +5262,7 @@ select
   tr.source_submission_id,
   tr.notes,
   tr.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as created_by_name,
+  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
   tr.created_at,
   tr.updated_at,
   case when tr.expires_at is not null and tr.expires_at < current_date then true else false end as is_expired,
@@ -5650,7 +5650,7 @@ select
   tr.source_submission_id,
   tr.notes,
   tr.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as created_by_name,
+  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
   tr.created_at,
   tr.updated_at,
   case when tr.expires_at is not null and tr.expires_at < current_date then true else false end as is_expired,
@@ -5733,7 +5733,7 @@ select
   rs.last_status,
   rs.notes,
   rs.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as created_by_name,
+  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
   rs.created_at,
   rs.updated_at,
   case when rs.is_active = true and rs.next_send_at is not null and rs.next_send_at <= now() then true else false end as send_due
@@ -5784,7 +5784,7 @@ select
   j.notes,
   j.payload,
   j.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as created_by_name,
+  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
   j.created_at,
   j.updated_at,
   case when j.status <> 'closed' and j.review_due_date is not null and j.review_due_date < current_date then true else false end as is_overdue,
@@ -6672,7 +6672,7 @@ select
   coalesce(lr.line_discount_total, 0)::numeric(12,2) as line_discount_total,
   coalesce(lr.line_margin_total, 0)::numeric(12,2) as line_margin_total,
   e.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as created_by_name,
+  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
   e.created_at,
   e.updated_at
 from public.estimates e
@@ -6748,7 +6748,7 @@ select
   coalesce(lr.line_discount_total, 0)::numeric(12,2) as line_discount_total,
   coalesce(lr.line_margin_total, 0)::numeric(12,2) as line_margin_total,
   wo.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as created_by_name,
+  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
   wo.created_at,
   wo.updated_at
 from public.work_orders wo
@@ -7093,7 +7093,7 @@ select
   t.is_active,
   t.notes,
   t.created_by_profile_id,
-  coalesce(p.full_name, p.email, '') as created_by_name,
+  coalesce(p.full_name, p.email, '') as uploaded_by_name,
   t.created_at,
   t.updated_at
 from public.commercial_approval_thresholds t
@@ -7128,7 +7128,7 @@ select
   qp.accepted_by_name,
   qp.acceptance_notes,
   qp.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as created_by_name,
+  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
   qp.created_at,
   qp.updated_at
 from public.estimate_quote_packages qp
@@ -7158,7 +7158,7 @@ select
   coalesce(sp.full_name, sp.email, '') as signoff_name,
   rr.signoff_at,
   rr.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as created_by_name,
+  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
   rr.created_at,
   rr.updated_at
 from public.work_order_release_reviews rr
@@ -7225,7 +7225,7 @@ select
   ic.total_amount,
   ic.memo,
   ic.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as created_by_name,
+  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
   ic.created_at,
   ic.updated_at
 from public.job_invoice_candidates ic
@@ -7251,7 +7251,7 @@ select
   jc.journal_memo,
   jc.ledger_summary,
   jc.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as created_by_name,
+  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
   jc.created_at,
   jc.updated_at
 from public.job_journal_candidates jc
@@ -7272,7 +7272,7 @@ select
   coalesce(ap.full_name, ap.email, '') as assigned_name,
   q.notes,
   q.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as created_by_name,
+  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
   q.created_at,
   q.updated_at
 from public.job_ar_ap_review_queue q
@@ -7575,7 +7575,7 @@ select
   te.total_amount,
   te.required_signoff_role,
   te.created_by_profile_id,
-  coalesce(p.full_name, p.email, '') as created_by_name,
+  coalesce(p.full_name, p.email, '') as uploaded_by_name,
   te.created_at,
   te.evaluation_trigger,
   te.evaluated_at,
@@ -7606,7 +7606,7 @@ select
   ca.source_id,
   ca.notes,
   ca.created_by_profile_id,
-  coalesce(p.full_name, p.email, '') as created_by_name,
+  coalesce(p.full_name, p.email, '') as uploaded_by_name,
   ca.created_at,
   ca.updated_at,
   coalesce(jca.preview_url, eea.preview_url, ca.asset_url) as resolved_asset_url,
@@ -7867,7 +7867,7 @@ select
   te.total_amount,
   te.required_signoff_role,
   te.created_by_profile_id,
-  coalesce(p.full_name, p.email, '') as created_by_name,
+  coalesce(p.full_name, p.email, '') as uploaded_by_name,
   te.created_at,
   -- appended columns
   te.evaluation_trigger,
@@ -7899,7 +7899,7 @@ select
   ca.source_id,
   ca.notes,
   ca.created_by_profile_id,
-  coalesce(p.full_name, p.email, '') as created_by_name,
+  coalesce(p.full_name, p.email, '') as uploaded_by_name,
   ca.created_at,
   ca.updated_at,
   -- appended columns
@@ -8133,7 +8133,7 @@ select
   ss.signed_at,
   ss.sort_order,
   ss.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as created_by_name,
+  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
   ss.created_at,
   ss.updated_at
 from public.job_completion_signoff_steps ss
@@ -8451,7 +8451,7 @@ select
   e.headline,
   e.notes,
   e.created_by_profile_id,
-  p.full_name as created_by_name,
+  p.full_name as uploaded_by_name,
   e.created_at,
   e.updated_at
 from public.job_accounting_lifecycle_events e
@@ -9424,7 +9424,7 @@ select
   a.application_status,
   a.notes,
   a.created_by_profile_id,
-  pr.full_name as created_by_name,
+  pr.full_name as uploaded_by_name,
   a.created_at,
   a.updated_at
 from public.ar_payment_applications a
@@ -9473,7 +9473,7 @@ select
   a.application_status,
   a.notes,
   a.created_by_profile_id,
-  pr.full_name as created_by_name,
+  pr.full_name as uploaded_by_name,
   a.created_at,
   a.updated_at
 from public.ap_payment_applications a
@@ -9922,38 +9922,52 @@ select
 comment on view public.v_repo_cleanup_and_roadmap_health is
   'Schema 105 marker for the 2026-05-10 repository cleanup and next-step roadmap refresh pass.';
 
-
 -- Schema 106: admin command center, schema tracking, and health center.
 -- 106_admin_command_center_schema_tracking_and_health.sql
--- Admin Command Center, app health center, schema version tracking, role dashboard presets, and DB-backed task inbox.
--- This migration makes the app feel more production-ready by exposing live operational status to the Admin UI.
+-- Repaired in the 2026-05-14b pass so it creates schema tracking before views read it
+-- and uses jobs.status instead of assuming jobs.job_status exists.
 
 create table if not exists public.app_schema_versions (
   schema_version integer primary key,
-  migration_key text not null unique,
+  migration_key text,
+  schema_name text,
   release_label text,
-  status text not null default 'applied' check (status in ('planned','applied','failed','rolled_back')),
+  description text,
+  status text not null default 'applied',
   applied_at timestamptz not null default now(),
   applied_by text,
   notes text
 );
 
-insert into public.app_schema_versions (schema_version, migration_key, release_label, status, notes)
+alter table public.app_schema_versions add column if not exists migration_key text;
+alter table public.app_schema_versions add column if not exists schema_name text;
+alter table public.app_schema_versions add column if not exists release_label text;
+alter table public.app_schema_versions add column if not exists description text;
+alter table public.app_schema_versions add column if not exists status text not null default 'applied';
+alter table public.app_schema_versions add column if not exists applied_at timestamptz not null default now();
+alter table public.app_schema_versions add column if not exists applied_by text;
+alter table public.app_schema_versions add column if not exists notes text;
+
+insert into public.app_schema_versions (schema_version, migration_key, schema_name, release_label, description, status, notes)
 values
-  (105, '105_repo_cleanup_and_roadmap_refresh', '2026-05-10a', 'applied', 'Baseline marker preserved for the cleaned Markdown and roadmap pass before schema tracking was introduced.'),
-  (106, '106_admin_command_center_schema_tracking_and_health', '2026-05-15a', 'applied', 'Adds Admin Home Command Center, app health/schema views, role dashboard presets, and DB-backed task inbox views.')
+  (105, '105_repo_cleanup_and_roadmap_refresh', '105_repo_cleanup_and_roadmap_refresh.sql', '2026-05-10a', 'Repo cleanup and roadmap refresh marker.', 'applied', 'Preserved baseline marker before schema tracking.'),
+  (106, '106_admin_command_center_schema_tracking_and_health', '106_admin_command_center_schema_tracking_and_health.sql', '2026-05-15a', 'Admin command center, health dashboard, task inbox, and schema tracking support.', 'applied', 'Creates schema tracking before command/health views read it.')
 on conflict (schema_version) do update set
   migration_key = excluded.migration_key,
+  schema_name = excluded.schema_name,
   release_label = excluded.release_label,
+  description = excluded.description,
   status = excluded.status,
-  applied_at = coalesce(public.app_schema_versions.applied_at, now()),
-  notes = excluded.notes;
+  notes = excluded.notes,
+  applied_at = coalesce(public.app_schema_versions.applied_at, now());
 
 create or replace view public.v_app_schema_version_status as
 select
   schema_version,
-  migration_key,
+  coalesce(migration_key, regexp_replace(coalesce(schema_name, ''), '\.sql$', '')) as migration_key,
+  schema_name,
   release_label,
+  description,
   status,
   applied_at,
   applied_by,
@@ -9962,212 +9976,289 @@ select
 from public.app_schema_versions
 order by schema_version desc;
 
-create or replace view public.v_role_dashboard_presets as
-select * from (values
-  ('admin'::text, 10::int, 'Admin Command Center'::text, 'Open Command Center, App Health and Schema Center, Admin Task Inbox, Close Center, Jobs, HSE Ops, and Approvals.'::text, 'home'::text),
-  ('supervisor'::text, 20::int, 'Supervisor Operations'::text, 'Open Jobs, HSE Review, crew time, route execution, evidence review, and worker follow-up.'::text, 'operations'::text),
-  ('hse'::text, 30::int, 'HSE Review Center'::text, 'Open HSE Ops, incidents, inspections, corrective actions, training/SDS, and evidence proof.'::text, 'safety'::text),
-  ('job_admin'::text, 40::int, 'Jobs and Accounting Prep'::text, 'Open estimates, work orders, invoice candidates, job journals, bank reconciliation, and accountant package prep.'::text, 'accounting'::text),
-  ('accountant'::text, 50::int, 'Accounting Close Review'::text, 'Open close status, trial balance support, tax/remittance review, reconciliation exceptions, and handoff exports.'::text, 'accounting'::text),
-  ('employee'::text, 60::int, 'Worker Self-Service'::text, 'Open assigned forms, training/SDS prompts, time clock, and personal profile recovery details.'::text, 'self'::text)
-) as presets(role_key, sort_order, preset_title, preset_summary, default_admin_section);
-
-create or replace view public.v_admin_home_command_center as
+drop view if exists public.v_admin_home_command_center;
+create view public.v_admin_home_command_center as
 select
   now() as checked_at,
   (select count(*) from public.admin_notifications n where coalesce(n.decision_status, n.status, 'pending') in ('pending','needs_review','failed','dead_letter'))::int as pending_notification_count,
   (select count(*) from public.admin_notifications n where coalesce(n.email_status, '') in ('failed','dead_letter'))::int as failed_notification_count,
-  (select count(*) from public.jobs j where coalesce(j.job_status, 'open') not in ('complete','completed','closed','cancelled','canceled'))::int as open_job_count,
+  (select count(*) from public.jobs j where coalesce(j.status, 'open') not in ('complete','completed','closed','cancelled','canceled'))::int as open_job_count,
   (select count(*) from public.accounting_period_closes c where coalesce(c.close_status, 'open') <> 'closed')::int as open_accounting_period_count,
   (select count(*) from public.bank_reconciliation_sessions s where coalesce(s.reconciliation_status, 'draft') <> 'closed')::int as open_reconciliation_count,
   (select count(*) from public.bank_reconciliation_items i where coalesce(i.match_status, 'unmatched') in ('unmatched','partial','exception'))::int as reconciliation_review_count,
   (select count(*) from public.sales_tax_filings f where coalesce(f.review_status, f.filing_status, 'draft') not in ('filed','paid'))::int as open_tax_filing_count,
   (select count(*) from public.payroll_remittance_runs r where coalesce(r.review_status, r.remittance_status, 'draft') <> 'remitted')::int as open_payroll_remittance_count,
-  (select count(*) from public.ar_payment_applications a where coalesce(a.application_status, 'draft') in ('draft','review','exception'))::int
-    + (select count(*) from public.ap_payment_applications a where coalesce(a.application_status, 'draft') in ('draft','review','exception'))::int as payment_application_attention_count,
+  ((select count(*) from public.ar_payment_applications a where coalesce(a.application_status, 'draft') in ('draft','review','exception'))::int +
+   (select count(*) from public.ap_payment_applications a where coalesce(a.application_status, 'draft') in ('draft','review','exception'))::int) as payment_application_attention_count,
   (select count(*) from public.accountant_handoff_exports e where coalesce(e.package_status, 'prepared') in ('prepared','reviewed','finalized') and coalesce(e.delivery_status, 'pending') <> 'confirmed')::int as package_delivery_attention_count,
   (select coalesce(max(schema_version), 0) from public.app_schema_versions where status = 'applied')::int as latest_schema_version;
 
-create or replace view public.v_admin_error_health_center as
-select * from (
-  select
-    'notification_delivery'::text as source,
-    case when coalesce(n.email_status, '') in ('failed','dead_letter') then 'error' else 'warning' end as severity,
-    case when coalesce(n.email_status, '') in ('failed','dead_letter') then 1 else 2 end as severity_rank,
-    'Notification delivery needs review'::text as title,
-    concat(coalesce(n.title, n.notification_type, 'Notification'), ' · ', coalesce(n.email_status, n.status, 'pending')) as message,
-    n.created_at as last_seen_at,
-    'messaging'::text as route_hint
-  from public.admin_notifications n
-  where coalesce(n.email_status, '') in ('failed','dead_letter')
-     or coalesce(n.decision_status, n.status, 'pending') in ('failed','dead_letter')
+drop view if exists public.v_admin_error_health_center;
+create view public.v_admin_error_health_center as
+select 'warning'::text as severity, 'schema'::text as source, 'Latest schema marker'::text as title,
+       concat(schema_version::text, ' · ', coalesce(migration_key, schema_name, 'unknown'), ' · ', status) as message,
+       applied_at as last_seen_at, 'health'::text as route_hint
+from public.app_schema_versions
+where schema_version = (select max(schema_version) from public.app_schema_versions)
+union all
+select 'warning', 'notifications', 'Failed notification delivery', concat(count(*)::text, ' failed/dead-letter notification(s).'), now(), 'notifications'
+from public.admin_notifications
+where coalesce(email_status, '') in ('failed','dead_letter')
+having count(*) > 0
+union all
+select 'warning', 'accounting', 'Bank reconciliation review', concat(count(*)::text, ' reconciliation item(s) need review.'), now(), 'bank_reconciliation_item'
+from public.bank_reconciliation_items
+where coalesce(match_status, 'unmatched') in ('unmatched','partial','exception')
+having count(*) > 0;
 
-  union all
+drop view if exists public.v_admin_task_inbox;
+create view public.v_admin_task_inbox as
+select 10::int as priority_rank, 'High'::text as priority_label, 'Failed notification delivery'::text as task_title,
+       concat(title, ': ', message) as task_summary, 'messaging'::text as source_area, created_at as due_at,
+       'notifications'::text as route_hint, id::text as entity_hint
+from public.admin_notifications
+where coalesce(email_status, '') in ('failed','dead_letter')
+union all
+select 20, 'High', 'Reconcile bank item', coalesce(item_description, 'Bank item needs manual review'),
+       'accounting', created_at, 'bank_reconciliation_item', id::text
+from public.bank_reconciliation_items
+where coalesce(match_status, 'unmatched') in ('unmatched','partial','exception')
+union all
+select 30, 'Review', 'Accounting period still open', concat(period_code, ' · ', close_status),
+       'accounting', period_end::timestamptz, 'accounting_period_close', id::text
+from public.accounting_period_closes
+where coalesce(close_status, 'open') <> 'closed';
 
-  select
-    'bank_reconciliation'::text as source,
-    'warning'::text as severity,
-    2::int as severity_rank,
-    'Bank reconciliation exception'::text as title,
-    concat(coalesce(i.item_description, 'Bank item'), ' · ', coalesce(i.match_status, 'unmatched')) as message,
-    coalesce(i.updated_at, i.created_at, i.item_date::timestamptz) as last_seen_at,
-    'accounting'::text as route_hint
-  from public.bank_reconciliation_items i
-  where coalesce(i.match_status, 'unmatched') in ('unmatched','partial','exception')
+drop view if exists public.v_role_dashboard_presets;
+create view public.v_role_dashboard_presets as
+select * from (values
+  (1, 'admin', 'Command Center', 'home', 'Full command center, health, accounting, operations, and messaging.'),
+  (2, 'supervisor', 'Supervisor Daily Dashboard', 'operations', 'Jobs, crews, attendance, HSE review, and evidence.'),
+  (3, 'hse', 'Safety Review Dashboard', 'safety', 'Corrective actions, training, SDS, HSE proof, and incidents.'),
+  (4, 'employee', 'Worker Mobile Dashboard', 'profile', 'Assigned forms, clock/outbox, training, and self-service records.')
+) as t(sort_order, role_key, dashboard_label, default_section, notes);
 
-  union all
+drop view if exists public.v_schema_106_admin_command_center_health;
+create view public.v_schema_106_admin_command_center_health as
+select 106::int as schema_version, '106_admin_command_center_schema_tracking_and_health'::text as schema_marker, now() as checked_at,
+       'Admin Command Center, App Health and Schema Center, task inbox, schema tracking, role dashboard presets, and live-schema fixes are installed.'::text as note;
 
-  select
-    'accounting_close'::text as source,
-    case when coalesce(c.close_status, 'open') = 'blocked' then 'error' else 'warning' end as severity,
-    case when coalesce(c.close_status, 'open') = 'blocked' then 1 else 2 end as severity_rank,
-    'Accounting period still open'::text as title,
-    concat(coalesce(c.period_code, 'Period'), ' · ', coalesce(c.close_status, 'open')) as message,
-    coalesce(c.updated_at, c.created_at, c.period_end::timestamptz) as last_seen_at,
-    'accounting'::text as route_hint
-  from public.accounting_period_closes c
-  where coalesce(c.close_status, 'open') <> 'closed'
+grant select on public.app_schema_versions to authenticated;
+grant select on public.v_app_schema_version_status to authenticated;
+grant select on public.v_admin_home_command_center to authenticated;
+grant select on public.v_admin_error_health_center to authenticated;
+grant select on public.v_admin_task_inbox to authenticated;
+grant select on public.v_role_dashboard_presets to authenticated;
+grant select on public.v_schema_106_admin_command_center_health to authenticated;
 
-  union all
+-- Schema 107: production readiness, schema drift, saved filters, permissions, close/evidence manager foundations.
+-- 107_admin_readiness_drilldowns_and_live_schema_fix.sql
 
-  select
-    'schema'::text as source,
-    case when status = 'applied' then 'ok' else 'warning' end as severity,
-    case when status = 'applied' then 9 else 2 end as severity_rank,
-    'Schema migration marker'::text as title,
-    concat(schema_version::text, ' · ', migration_key, ' · ', status) as message,
-    applied_at as last_seen_at,
-    'health'::text as route_hint
-  from public.app_schema_versions
-  where schema_version = (select max(schema_version) from public.app_schema_versions)
-) health
-order by severity_rank asc, last_seen_at desc nulls last;
+-- Schema 107 is also safe to run directly after a partial/live failed schema-106 attempt.
+create table if not exists public.app_schema_versions (
+  schema_version integer primary key,
+  migration_key text,
+  schema_name text,
+  release_label text,
+  description text,
+  status text not null default 'applied',
+  applied_at timestamptz not null default now(),
+  applied_by text,
+  notes text
+);
 
-create or replace view public.v_admin_task_inbox as
-select * from (
-  select
-    10::int as priority_rank,
-    'High'::text as priority_label,
-    'Notification needs approval or delivery review'::text as task_title,
-    coalesce(n.title, n.message, n.notification_type, 'Admin notification') as task_summary,
-    'messaging'::text as source_area,
-    n.created_at as due_at,
-    'admin'::text as route_hint,
-    'admin_notification'::text as entity_hint,
-    n.id as entity_id
-  from public.admin_notifications n
-  where coalesce(n.decision_status, n.status, 'pending') in ('pending','needs_review','failed','dead_letter')
+alter table public.app_schema_versions add column if not exists migration_key text;
+alter table public.app_schema_versions add column if not exists schema_name text;
+alter table public.app_schema_versions add column if not exists release_label text;
+alter table public.app_schema_versions add column if not exists description text;
+alter table public.app_schema_versions add column if not exists status text not null default 'applied';
+alter table public.app_schema_versions add column if not exists applied_at timestamptz not null default now();
+alter table public.app_schema_versions add column if not exists applied_by text;
+alter table public.app_schema_versions add column if not exists notes text;
 
-  union all
+insert into public.app_schema_versions (schema_version, migration_key, schema_name, release_label, description, status, notes)
+values (
+  107,
+  '107_admin_readiness_drilldowns_and_live_schema_fix',
+  '107_admin_readiness_drilldowns_and_live_schema_fix.sql',
+  '2026-05-14b',
+  'Adds schema drift status, production readiness checklist, saved admin filters, role permission matrix, close center overview, and evidence manager directory.',
+  'applied',
+  'Follow-up to live schema errors: avoids jobs.job_status assumptions and gives admins production-readiness visibility.'
+)
+on conflict (schema_version) do update set
+  migration_key = excluded.migration_key,
+  schema_name = excluded.schema_name,
+  release_label = excluded.release_label,
+  description = excluded.description,
+  status = excluded.status,
+  notes = excluded.notes,
+  applied_at = now();
 
-  select
-    15::int as priority_rank,
-    'High'::text as priority_label,
-    'Bank reconciliation item needs manual review'::text as task_title,
-    concat(coalesce(i.item_description, 'Bank item'), ' · ', coalesce(i.match_status, 'unmatched')) as task_summary,
-    'accounting'::text as source_area,
-    coalesce(i.item_date::timestamptz, i.created_at) as due_at,
-    'admin'::text as route_hint,
-    'bank_reconciliation_item'::text as entity_hint,
-    i.id as entity_id
-  from public.bank_reconciliation_items i
-  where coalesce(i.match_status, 'unmatched') in ('unmatched','partial','exception')
+create table if not exists public.admin_saved_filters (
+  id uuid primary key default gen_random_uuid(),
+  owner_profile_id uuid references public.profiles(id),
+  filter_scope text not null,
+  filter_name text not null,
+  filter_payload jsonb not null default '{}'::jsonb,
+  is_shared boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
 
-  union all
+create index if not exists idx_admin_saved_filters_scope on public.admin_saved_filters(filter_scope, updated_at desc);
 
-  select
-    20::int as priority_rank,
-    'High'::text as priority_label,
-    'Accounting close needs attention'::text as task_title,
-    concat(coalesce(c.period_code, 'Period'), ' · ', coalesce(c.close_status, 'open')) as task_summary,
-    'accounting'::text as source_area,
-    coalesce(c.period_end::timestamptz, c.updated_at, c.created_at) as due_at,
-    'admin'::text as route_hint,
-    'accounting_period_close'::text as entity_hint,
-    c.id as entity_id
-  from public.accounting_period_closes c
-  where coalesce(c.close_status, 'open') <> 'closed'
+create table if not exists public.admin_production_readiness_checks (
+  check_key text primary key,
+  check_area text not null,
+  check_title text not null,
+  check_detail text,
+  check_status text not null default 'review',
+  next_action text,
+  sort_order int not null default 100,
+  updated_at timestamptz not null default now()
+);
 
-  union all
+insert into public.admin_production_readiness_checks (check_key, check_area, check_title, check_detail, check_status, next_action, sort_order)
+values
+  ('schema_drift', 'Database', 'Live schema matches repo marker', 'Database should have all migrations through schema 107.', 'review', 'Confirm v_schema_drift_status says current.', 10),
+  ('rls_review', 'Security', 'RLS and role policies reviewed', 'Admin, supervisor, HSE, and employee workflows need final live policy review.', 'review', 'Run a role-by-role permission test.', 20),
+  ('backup_restore', 'Recovery', 'Backup and restore tested', 'Supabase DB, storage/media, and export bundles need restore proof.', 'review', 'Run a small restore rehearsal before production sign-off.', 30),
+  ('error_monitoring', 'Monitoring', 'Error and health center monitored', 'Frontend diagnostics and backend health rows should be watched after deploy.', 'review', 'Open Admin Health after deploy and confirm no critical rows.', 40),
+  ('accounting_close', 'Accounting', 'Close workflow has no blockers', 'Close Center should show payment, reconciliation, tax, payroll, journal, and package status.', 'review', 'Clear blockers before locking a period.', 50),
+  ('seo_public_pages', 'SEO', 'Public pages pass SEO smoke check', 'One H1, clear title/meta, local terms, alt text, and no broken assets.', 'review', 'Run public-page smoke checks when marketing pages are added.', 60)
+on conflict (check_key) do update set
+  check_area = excluded.check_area,
+  check_title = excluded.check_title,
+  check_detail = excluded.check_detail,
+  check_status = excluded.check_status,
+  next_action = excluded.next_action,
+  sort_order = excluded.sort_order,
+  updated_at = now();
 
-  select
-    30::int as priority_rank,
-    'Review'::text as priority_label,
-    'Sales tax filing review'::text as task_title,
-    concat(coalesce(f.filing_code, 'Sales tax filing'), ' · ', coalesce(f.review_status, f.filing_status, 'draft')) as task_summary,
-    'accounting'::text as source_area,
-    coalesce(f.due_date::timestamptz, f.filing_period_end::timestamptz, f.updated_at) as due_at,
-    'admin'::text as route_hint,
-    'sales_tax_filing'::text as entity_hint,
-    f.id as entity_id
-  from public.sales_tax_filings f
-  where coalesce(f.review_status, f.filing_status, 'draft') not in ('filed','paid')
+create table if not exists public.admin_role_permission_matrix (
+  id uuid primary key default gen_random_uuid(),
+  role_key text not null,
+  workflow_area text not null,
+  can_view boolean not null default true,
+  can_create boolean not null default false,
+  can_edit boolean not null default false,
+  can_approve boolean not null default false,
+  can_close_reopen boolean not null default false,
+  can_export boolean not null default false,
+  notes text,
+  sort_order int not null default 100,
+  unique(role_key, workflow_area)
+);
 
-  union all
+insert into public.admin_role_permission_matrix (role_key, workflow_area, can_view, can_create, can_edit, can_approve, can_close_reopen, can_export, notes, sort_order)
+values
+  ('admin', 'Admin / Security', true, true, true, true, true, true, 'Full admin access after RLS review.', 10),
+  ('admin', 'Accounting Close', true, true, true, true, true, true, 'Can close/reopen periods and export accountant packages.', 20),
+  ('supervisor', 'Jobs / Operations', true, true, true, true, false, true, 'Can manage jobs and review operational exceptions.', 30),
+  ('supervisor', 'HSE Review', true, true, true, true, false, true, 'Can review evidence and safety tasks.', 40),
+  ('hse', 'HSE Review', true, true, true, true, false, true, 'Safety-focused review and export lane.', 50),
+  ('employee', 'Worker Self-Service', true, true, true, false, false, false, 'Own forms, profile, training, SDS, clock/outbox only.', 60)
+on conflict (role_key, workflow_area) do update set
+  can_view = excluded.can_view,
+  can_create = excluded.can_create,
+  can_edit = excluded.can_edit,
+  can_approve = excluded.can_approve,
+  can_close_reopen = excluded.can_close_reopen,
+  can_export = excluded.can_export,
+  notes = excluded.notes,
+  sort_order = excluded.sort_order;
 
-  select
-    35::int as priority_rank,
-    'Review'::text as priority_label,
-    'Payroll remittance review'::text as task_title,
-    concat(coalesce(r.remittance_code, 'Payroll remittance'), ' · ', coalesce(r.review_status, r.remittance_status, 'draft')) as task_summary,
-    'accounting'::text as source_area,
-    coalesce(r.due_date::timestamptz, r.remittance_period_end::timestamptz, r.updated_at) as due_at,
-    'admin'::text as route_hint,
-    'payroll_remittance_run'::text as entity_hint,
-    r.id as entity_id
-  from public.payroll_remittance_runs r
-  where coalesce(r.review_status, r.remittance_status, 'draft') <> 'remitted'
+drop view if exists public.v_schema_drift_status;
+create view public.v_schema_drift_status as
+select
+  107::int as expected_schema_version,
+  coalesce(max(schema_version) filter (where status = 'applied'), 0)::int as latest_applied_schema_version,
+  case when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 107 then 'current' else 'behind' end as drift_status,
+  case when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 107
+    then 'Live database is at or ahead of the repo schema marker.'
+    else 'Live database is behind the deployed app. Apply migrations through schema 107.'
+  end as message,
+  now() as checked_at
+from public.app_schema_versions;
 
-  union all
+drop view if exists public.v_production_readiness_checklist;
+create view public.v_production_readiness_checklist as
+select check_key, check_area, check_title, check_detail, check_status, next_action, sort_order, updated_at
+from public.admin_production_readiness_checks
+order by sort_order, check_key;
 
-  select
-    40::int as priority_rank,
-    'Review'::text as priority_label,
-    'Corrective action follow-up'::text as task_title,
-    concat(coalesce(t.task_title, 'Corrective action'), ' · ', coalesce(t.status, 'open')) as task_summary,
-    'hse'::text as source_area,
-    coalesce(t.due_date::timestamptz, t.updated_at, t.created_at) as due_at,
-    'hseops'::text as route_hint,
-    'corrective_action_task'::text as entity_hint,
-    t.id as entity_id
-  from public.corrective_action_tasks t
-  where coalesce(t.status, 'open') not in ('closed','complete','completed','cancelled','canceled')
+drop view if exists public.v_role_permission_matrix;
+create view public.v_role_permission_matrix as
+select role_key, workflow_area, can_view, can_create, can_edit, can_approve, can_close_reopen, can_export, notes, sort_order
+from public.admin_role_permission_matrix
+order by sort_order, role_key, workflow_area;
 
-  union all
+drop view if exists public.v_admin_saved_filter_directory;
+create view public.v_admin_saved_filter_directory as
+select f.id, f.filter_scope, f.filter_name, f.filter_payload, f.is_shared, f.created_at, f.updated_at,
+       p.full_name as owner_name
+from public.admin_saved_filters f
+left join public.profiles p on p.id = f.owner_profile_id
+order by f.updated_at desc;
 
-  select
-    45::int as priority_rank,
-    'Review'::text as priority_label,
-    'Training record expired or missing review'::text as task_title,
-    concat(coalesce(c.course_name, 'Training'), ' · ', coalesce(r.completion_status, 'needs review')) as task_summary,
-    'hse'::text as source_area,
-    coalesce(r.expires_at, r.updated_at, r.created_at) as due_at,
-    'reports'::text as route_hint,
-    'training_record'::text as entity_hint,
-    r.id as entity_id
-  from public.training_records r
-  left join public.training_courses c on c.id = r.course_id
-  where coalesce(r.completion_status, 'active') in ('expired','scheduled','in_progress')
-     or (r.expires_at is not null and r.expires_at < now())
-) tasks
-order by priority_rank asc, due_at asc nulls last;
-
-create or replace view public.v_schema_106_admin_command_center_health as
+drop view if exists public.v_admin_close_center_overview;
+create view public.v_admin_close_center_overview as
 select
   now() as checked_at,
-  '106_admin_command_center_schema_tracking_and_health'::text as schema_marker,
-  'ok'::text as status,
-  'Admin Command Center, App Health and Schema Center, task inbox, schema tracking, role dashboard presets, refreshed docs, and cleanup guardrails are installed.'::text as note;
+  (select count(*) from public.accounting_period_closes c where coalesce(c.close_status, 'open') <> 'closed')::int as open_accounting_period_count,
+  ((select count(*) from public.ar_payment_applications a where coalesce(a.application_status, 'draft') in ('draft','review','exception'))::int +
+   (select count(*) from public.ap_payment_applications a where coalesce(a.application_status, 'draft') in ('draft','review','exception'))::int) as payment_application_attention_count,
+  (select count(*) from public.bank_reconciliation_items i where coalesce(i.match_status, 'unmatched') in ('unmatched','partial','exception'))::int as reconciliation_review_count,
+  (select count(*) from public.sales_tax_filings f where coalesce(f.review_status, f.filing_status, 'draft') not in ('filed','paid'))::int as open_tax_filing_count,
+  (select count(*) from public.payroll_remittance_runs r where coalesce(r.review_status, r.remittance_status, 'draft') <> 'remitted')::int as open_payroll_remittance_count,
+  (select count(*) from public.gl_journal_batches b where coalesce(b.batch_status, 'draft') in ('draft','review','exception','generated'))::int as journal_candidate_count,
+  (select count(*) from public.accountant_handoff_exports e where coalesce(e.package_status, 'prepared') in ('prepared','reviewed','finalized') and coalesce(e.delivery_status, 'pending') <> 'confirmed')::int as package_delivery_attention_count;
 
-comment on table public.app_schema_versions is
-  'Tracks applied schema/version markers so the Admin UI can show live DB migration status instead of relying only on repository files.';
+drop view if exists public.v_evidence_manager_directory;
+create view public.v_evidence_manager_directory as
+select
+  'field_upload_failure'::text as source_area,
+  'Failed upload'::text as evidence_type,
+  coalesce(file_name, storage_path, id::text) as evidence_title,
+  coalesce(retry_status, failure_stage, 'failed') as evidence_status,
+  true as needs_review,
+  coalesce(failure_reason, resolution_notes, 'Upload needs retry or admin resolution.') as action_hint,
+  null::text as owner_name,
+  created_at as last_seen_at,
+  id::text as source_id
+from public.field_upload_failures
+union all
+select
+  'attendance_photo'::text,
+  'Attendance photo'::text,
+  coalesce(photo_stage, time_entry_id::text),
+  coalesce(review_status, geofence_status, 'review'),
+  coalesce(needs_review, false),
+  coalesce(review_notes, 'Review attendance photo/geofence status.'),
+  full_name,
+  uploaded_at,
+  time_entry_id::text
+from public.v_attendance_photo_review
+union all
+select
+  'hse_evidence'::text,
+  coalesce(proof_kind, 'HSE proof')::text,
+  coalesce(caption, file_name, proof_id::text),
+  coalesce(review_status, 'review')::text,
+  coalesce(needs_review, false),
+  coalesce(review_notes, proof_notes, 'Review HSE proof.'),
+  uploaded_by_name,
+  created_at,
+  proof_id::text
+from public.v_hse_evidence_review;
 
-comment on view public.v_admin_home_command_center is
-  'High-level Admin Home Command Center counts for open jobs, HSE review, accounting close, reconciliation, payment applications, package delivery, and schema status.';
-
-comment on view public.v_admin_error_health_center is
-  'Central admin health feed for delivery failures, reconciliation exceptions, open accounting close work, and schema status.';
-
-comment on view public.v_admin_task_inbox is
-  'DB-backed admin task inbox for notifications, accounting close/reconciliation/tax/remittance review, corrective actions, and training follow-up.';
-
+grant select on public.v_schema_drift_status to authenticated;
+grant select on public.v_production_readiness_checklist to authenticated;
+grant select on public.v_role_permission_matrix to authenticated;
+grant select on public.v_admin_saved_filter_directory to authenticated;
+grant select on public.v_admin_close_center_overview to authenticated;
+grant select on public.v_evidence_manager_directory to authenticated;
+grant select on public.admin_saved_filters to authenticated;
+grant select on public.admin_production_readiness_checks to authenticated;
+grant select on public.admin_role_permission_matrix to authenticated;
