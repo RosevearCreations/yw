@@ -1,55 +1,23 @@
 # Deployment Guide
 
-Last refreshed: **2026-05-15a**
+Last refreshed: **2026-05-14b**
 
-## Pre-deploy checks
+## Required order
 
-Run from the repo root:
+1. Apply SQL migrations through `sql/107_admin_readiness_drilldowns_and_live_schema_fix.sql`.
+2. Redeploy Supabase Edge Functions, especially `admin-directory` and `admin-selectors`.
+3. Deploy the static app files.
+4. Hard refresh the app or clear service worker cache.
+5. Open Admin and verify:
+   - Command Center renders.
+   - Health shows schema 107/current.
+   - Guided Close Center renders.
+   - Evidence Manager renders.
+   - Production Readiness and Permissions render.
 
-```bash
-node --check js/api.js
-node --check js/admin-ui.js
-node --check js/reports-ui.js
-node --check js/jobs-ui.js
-node --check js/hse-ops-ui.js
-node --check app.js
-node --check server-worker.js
-node scripts/repo-smoke-check.mjs
-```
+## Console checks
 
-## Database
-
-Apply migrations through:
-
-```text
-sql/106_admin_command_center_schema_tracking_and_health.sql
-```
-
-Then confirm the live database has:
-
-- `app_schema_versions`
-- `v_app_schema_version_status`
-- `v_admin_home_command_center`
-- `v_admin_error_health_center`
-- `v_admin_task_inbox`
-
-## Supabase Edge Functions
-
-Redeploy at least:
-
-- `admin-directory`
-
-Recommended to redeploy all changed functions if using a full build pipeline.
-
-## Static app
-
-Deploy the static app files after SQL and functions are updated. The static cache version is `2026-05-15a`.
-
-## Browser test
-
-1. Hard refresh.
-2. Log in.
-3. Open `#admin`.
-4. Confirm Command Center, Health Center, and Task Inbox render.
-5. Open `#reports` and confirm reports still lazy-load.
-6. Check browser console for missing assets or stale cache references.
+- No `public.app_schema_versions does not exist` SQL error.
+- No `jobs.job_status does not exist` SQL/API error.
+- No reports timeout on `#admin`.
+- No missing script/style/icon assets.

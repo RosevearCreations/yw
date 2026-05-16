@@ -1145,7 +1145,7 @@ body[data-authenticated="true"] #loginView {
   font-size: 0.88rem;
 }
 
-/* 2026-05-15a: Admin command center, health center, and mobile production polish */
+/* 2026-05-14b: Admin command center, health center, and mobile production polish */
 .admin-command-grid,
 .admin-health-grid,
 .admin-task-grid {
@@ -1270,3 +1270,42 @@ button.admin-task-card {
   }
 }
 
+
+
+/* 2026-05-14b: Guided close center, evidence manager, readiness matrix polish */
+#ad_close_center_summary,
+#ad_health_summary,
+#ad_evidence_summary {
+  line-height: 1.45;
+}
+#ad_evidence_manager_table td,
+#ad_readiness_table td,
+#ad_permissions_table td {
+  vertical-align: top;
+}
+#ad_permissions_table td:nth-child(n+3) {
+  text-align: center;
+  white-space: nowrap;
+}
+.admin-status-pill[data-severity="ok"] {
+  border-color: rgba(80, 220, 150, .42);
+}
+.admin-status-pill[data-severity="warning"] {
+  border-color: rgba(255, 210, 110, .52);
+}
+.admin-status-pill[data-severity="error"],
+.admin-status-pill[data-severity="critical"] {
+  border-color: rgba(255, 110, 110, .58);
+}
+@media (max-width: 720px) {
+  #ad_permissions_table th,
+  #ad_permissions_table td {
+    min-width: 92px;
+  }
+  #ad_permissions_table th:first-child,
+  #ad_permissions_table td:first-child,
+  #ad_permissions_table th:nth-child(2),
+  #ad_permissions_table td:nth-child(2) {
+    min-width: 150px;
+  }
+}

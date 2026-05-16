@@ -1,34 +1,26 @@
 # Changelog
 
+## 2026-05-14b
+
+- Repaired schema 106 live migration assumptions.
+- Added schema 107 for admin readiness, schema drift, saved filters, permission matrix, close overview, and evidence manager foundations.
+- Updated `admin-directory` to avoid direct `jobs.job_status` selection.
+- Added Admin Guided Close Center, Evidence Manager, and Production Readiness/Permissions panels.
+- Added schema drift visibility to Admin Health.
+- Archived active Markdown snapshots and moved retired Markdown out of root.
+- Moved older legacy pass docs out of active `docs/` root.
+- Removed temp test files.
+- Updated smoke checks through schema 107.
+- Bumped frontend/cache version to `2026-05-14b`.
+
 ## 2026-05-15a
 
-- Added Admin Home Command Center.
-- Added App Health and Schema Center.
-- Added Admin Task Inbox.
-- Added schema migration tracking table and schema status view.
-- Added role dashboard presets view.
-- Added schema `106_admin_command_center_schema_tracking_and_health.sql`.
-- Updated canonical schema reference through schema 106.
-- Updated `admin-directory` to return command/health/task/schema view data.
-- Added frontend rendering for Command Center, Health Center, schema table, and task inbox.
-- Added local diagnostic dispatch for API timeout/auth/network failures.
-- Added mobile/admin dashboard CSS polish.
-- Bumped frontend/service-worker cache version to `2026-05-15a`.
-- Removed reintroduced active test-write files.
-- Archived reintroduced root legacy Markdown.
-- Retired active `sql/VerifyDB_24_04_2026.sql` back into archive.
-- Updated smoke checks to verify schema 106 and cleanup guardrails.
-- Refreshed active Markdown handoff docs and next 20-step roadmap.
+- Added Admin Home Command Center, App Health and Schema Center, task inbox, and schema 106.
 
 ## 2026-05-10a
 
-- Cleaned active Markdown set.
-- Archived old root and docs Markdown.
-- Added schema 105 cleanup/roadmap marker.
-- Removed temp test-write files.
+- Cleaned Markdown, archived retired docs, and added schema 105.
 
 ## 2026-05-09b
 
-- Stopped Reports from auto-loading on Admin.
-- Added reporting lazy-load guardrails.
-- Added schema 104 reporting health marker.
+- Added reporting timeout guardrails and schema 104.

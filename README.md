@@ -1,44 +1,30 @@
-# YWI Southern Ontario HSE and Field Operations App
+# YWI App
 
-Last refreshed: **2026-05-15a**
+Last refreshed: **2026-05-14b**
 
-This build is a single-page HSE, jobs, field operations, reporting, admin, and accounting-control app. It is moving from prototype screens toward an operations dashboard with clearer admin workflows, live schema awareness, and better error handling.
+This build is the current clean working package for the YWI / YardWeasels-style HSE, operations, jobs, admin, and accounting backend app.
 
-## Current build focus
+## Current status
 
-- Admin Home Command Center for open jobs, HSE reviews, accounting close, payment applications, reconciliation, package delivery, failed uploads, and app health.
-- App Health and Schema Center for local diagnostics, backend health rows, and live schema migration markers.
-- DB-backed Admin Task Inbox for approval, accounting close, reconciliation, tax/remittance, corrective action, and training follow-up.
-- Schema tracking table: `public.app_schema_versions`.
-- Latest schema file: `sql/106_admin_command_center_schema_tracking_and_health.sql`.
-- Current frontend/cache version: `2026-05-15a`.
+- Current app/cache version: `2026-05-14b`.
+- Latest schema file: `sql/107_admin_readiness_drilldowns_and_live_schema_fix.sql`.
+- Active Markdown has been refreshed; older root Markdown and legacy pass notes were archived.
+- Admin now has command, health/schema, task inbox, guided close, evidence manager, and production readiness foundations.
+- The live SQL fixes for missing `app_schema_versions` and `jobs.job_status` assumptions are folded into the repo.
 
-## Important files
+## Deploy order
 
-- `index.html` — app shell; currently one public `<h1>`.
-- `style.css` — shared UI, responsive tables, admin cards, command center, and mobile polish.
-- `app.js` — app startup, diagnostics, auth-aware module boot, routing hooks.
-- `js/api.js` — shared API client, timeout handling, validation events, monitor/error dispatch.
-- `js/admin-ui.js` — Admin UI, Command Center, Health Center, Task Inbox, accounting/admin managers.
-- `supabase/functions/admin-directory/index.ts` — main read API for admin/ops/accounting/reporting data.
-- `sql/000_full_schema_reference.sql` — canonical schema snapshot through schema 106.
-- `scripts/repo-smoke-check.mjs` — local repo sanity check.
+1. Apply SQL migrations through schema **107**.
+2. Redeploy Supabase Edge Functions, especially `admin-directory` and `admin-selectors`.
+3. Deploy static files.
+4. Hard refresh the browser or clear old service worker cache.
+5. Open Admin and verify Command Center, Health, Close Center, Evidence Manager, and Readiness panels.
 
-## Deployment order
+## SEO rule kept during this pass
 
-1. Apply SQL migrations through **106**.
-2. Redeploy Supabase Edge Functions, especially `admin-directory`.
-3. Deploy the static app shell and assets.
-4. Hard refresh or clear service worker cache if the browser keeps old `2026-05-10a` assets.
-5. Open `#admin`, confirm the Command Center and Health Center load.
-6. Open `#reports`, confirm Reports still lazy-load only when requested.
-
-## SEO rule for every public page
-
-Keep public page titles and headings descriptive, local, and useful. Exposed pages should have no more than one visible `<h1>`. If public marketing pages are added, use service/town wording, proof content, useful text around images, and clean URLs.
+Keep one clear H1 per exposed page. Use the terms people search for in page titles, main headings, alt text, and helpful link text. For local discovery, keep service area wording accurate and visible; local ranking is still driven by relevance, distance, and prominence.
 
 References:
-
-- https://developers.google.com/search/docs/essentials
-- https://developers.google.com/search/docs/fundamentals/seo-starter-guide
-- https://support.google.com/business/answer/7091
+- Google Search Essentials: https://developers.google.com/search/docs/essentials
+- Google title-link guidance: https://developers.google.com/search/docs/appearance/title-link
+- Google Business Profile local ranking: https://support.google.com/business/answer/7091

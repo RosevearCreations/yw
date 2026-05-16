@@ -1,40 +1,20 @@
 # Database Structure
 
-Last refreshed: **2026-05-15a**
+Last refreshed: **2026-05-14b**
 
-Canonical schema file: `sql/000_full_schema_reference.sql`.
+## Latest schema
 
-Latest migration: **106** — `sql/106_admin_command_center_schema_tracking_and_health.sql`.
+Latest active migration: `sql/107_admin_readiness_drilldowns_and_live_schema_fix.sql`.
 
-## Current schema areas
+## Important schema notes
 
-- Profiles, sites, assignments, roles, access rollups.
-- HSE submissions, reviews, images, logbook history.
-- Jobs, routes, route stops, work orders, estimates, service agreements, snow triggers, customer assets.
-- Equipment, signouts, evidence, maintenance, lockout/history.
-- Attendance/time clock, payroll review, payroll exports.
-- Reports, report presets, report subscriptions, report delivery scheduler.
-- Corrective actions, training, SDS acknowledgements, supervisor safety queues.
-- Accounting foundation: tax codes, business tax settings, chart of accounts, AR/AP, GL, bank accounts, reconciliation, close, tax filing, payroll remittance, accountant handoff packages.
-- Admin monitoring: site activity, traffic/monitor events where available, upload failures where available, task/health rollups.
+- `public.app_schema_versions` is created before schema/health views read it.
+- `public.v_schema_drift_status` reports whether live DB is behind the repo marker.
+- `public.v_admin_home_command_center` uses `jobs.status`, avoiding the previous `jobs.job_status` live error.
+- `public.admin_saved_filters` is the foundation for admin saved views.
+- `public.admin_production_readiness_checks` seeds production sign-off checks.
+- `public.admin_role_permission_matrix` provides a visible role/workflow matrix.
+- `public.v_admin_close_center_overview` summarizes close blockers.
+- `public.v_evidence_manager_directory` unifies failed uploads, attendance photo review, and HSE evidence review.
 
-## Schema 106 additions
-
-- `public.app_schema_versions`
-- `public.v_app_schema_version_status`
-- `public.v_role_dashboard_presets`
-- `public.v_admin_home_command_center`
-- `public.v_admin_error_health_center`
-- `public.v_admin_task_inbox`
-- `public.v_schema_106_admin_command_center_health`
-
-## Why schema 106 matters
-
-The app can now show a live schema marker in Admin instead of relying only on file names. This makes deploy drift easier to spot when the frontend has been deployed but Supabase migrations are behind.
-
-## Deploy order
-
-1. Apply SQL through 106.
-2. Redeploy Edge Functions.
-3. Deploy static files.
-4. Open Admin Health and Schema Center and confirm the latest schema row is 106.
+Apply SQL through schema 107 before treating this build as synced.

@@ -200,6 +200,12 @@ serve(async (req) => {
     response.admin_task_inbox = await safeList(supabase, 'v_admin_task_inbox', '*', 'priority_rank', 120, true);
     response.app_schema_version_status = await safeList(supabase, 'v_app_schema_version_status', '*', 'schema_version', 120, false);
     response.role_dashboard_presets = await safeList(supabase, 'v_role_dashboard_presets', '*', 'sort_order', 40, true);
+    response.schema_drift_status = await safeList(supabase, 'v_schema_drift_status');
+    response.production_readiness_checklist = await safeList(supabase, 'v_production_readiness_checklist', '*', 'sort_order', 80, true);
+    response.role_permission_matrix = await safeList(supabase, 'v_role_permission_matrix', '*', 'sort_order', 120, true);
+    response.admin_saved_filter_directory = await safeList(supabase, 'v_admin_saved_filter_directory', '*', 'updated_at', 80, false);
+    response.admin_close_center_overview = await safeList(supabase, 'v_admin_close_center_overview');
+    response.evidence_manager_directory = await safeList(supabase, 'v_evidence_manager_directory', '*', 'last_seen_at', 120, false);
   }
   if ((scope === 'all' || scope === 'sites') && roleRank(actorRole) >= roleRank('supervisor')) {
     response.sites = await safeList(supabase, 'sites', '*', 'site_code', limit);
@@ -229,7 +235,7 @@ serve(async (req) => {
   if ((scope === 'all' || scope === 'operations' || scope === 'accounting_backbone') && roleRank(actorRole) >= roleRank('supervisor')) {
     response.service_areas = await safeList(supabase, 'service_areas', '*', 'name', limit);
     response.routes = await safeList(supabase, 'routes', '*', 'name', limit);
-    response.jobs = await safeList(supabase, 'jobs', 'id,job_code,job_name,job_type,job_status,client_id,client_site_id', 'job_code', limit);
+    response.jobs = await safeList(supabase, 'jobs', '*', 'job_code', limit);
     response.clients = await safeList(supabase, 'clients', '*', 'legal_name', limit);
     response.client_sites = await safeList(supabase, 'client_sites', '*', 'site_name', limit);
     response.units_of_measure = await safeList(supabase, 'units_of_measure', '*', 'sort_order', limit);
