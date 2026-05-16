@@ -480,7 +480,7 @@
           </div>
         </div>
 
-        <div class="admin-section-nav" id="ad_section_nav" role="tablist" aria-label="Admin sections"></div>
+        <div class="admin-section-nav" id="ad_section_nav" role="navigation" aria-label="Admin sections"></div>
 
         <div class="admin-panel-block" style="margin-top:16px;">
           <div class="section-heading">
@@ -2709,6 +2709,11 @@
       return 'people';
     }
 
+    function getAdminSectionLabel(sectionName = 'people') {
+      const clean = String(sectionName || 'people').trim() || 'people';
+      return ADMIN_SECTION_GROUPS.find(([key]) => key === clean)?.[1] || 'People and Access';
+    }
+
     function applyAdminSectionFilter(sectionName = 'people') {
       const clean = String(sectionName || 'people').trim() || 'people';
       state.adminSection = clean;
@@ -2722,17 +2727,36 @@
         btn.classList.toggle('active', active);
         btn.setAttribute('aria-selected', active ? 'true' : 'false');
       });
+      const current = document.getElementById('ad_section_current');
+      if (current) current.textContent = getAdminSectionLabel(clean);
+      const nav = document.getElementById('ad_section_nav');
+      if (nav && window.matchMedia?.('(max-width: 720px)').matches) {
+        nav.classList.remove('is-open');
+        nav.querySelector('[data-admin-section-toggle]')?.setAttribute('aria-expanded', 'false');
+      }
     }
 
     function setupAdminSectionNav() {
       const nav = document.getElementById('ad_section_nav');
       if (!nav || nav.dataset.ready === '1') return;
       nav.dataset.ready = '1';
-      nav.innerHTML = ADMIN_SECTION_GROUPS.map(([key, label]) => `<button class="secondary admin-section-btn" type="button" data-admin-section="${escHtml(key)}" aria-selected="false">${escHtml(label)}</button>`).join('');
+      nav.innerHTML = `
+        <button class="secondary admin-section-toggle" type="button" data-admin-section-toggle aria-expanded="false">
+          <span>Admin sections</span>
+          <span id="ad_section_current" class="admin-section-current">${escHtml(getAdminSectionLabel(state.adminSection || 'people'))}</span>
+        </button>
+        <div class="admin-section-list" role="tablist" aria-label="Admin section groups">
+          ${ADMIN_SECTION_GROUPS.map(([key, label]) => `<button class="secondary admin-section-btn" type="button" data-admin-section="${escHtml(key)}" aria-selected="false">${escHtml(label)}</button>`).join('')}
+        </div>
+      `;
       document.querySelectorAll('#admin .admin-panel-block').forEach((panel) => {
         const heading = panel.querySelector('h3')?.textContent?.trim() || '';
         const groups = ADMIN_PANEL_GROUPS[heading] || ['operations'];
         panel.setAttribute('data-admin-section-groups', groups.join(','));
+      });
+      nav.querySelector('[data-admin-section-toggle]')?.addEventListener('click', () => {
+        const isOpen = nav.classList.toggle('is-open');
+        nav.querySelector('[data-admin-section-toggle]')?.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
       });
       nav.querySelectorAll('[data-admin-section]').forEach((btn) => {
         btn.addEventListener('click', () => applyAdminSectionFilter(btn.getAttribute('data-admin-section') || 'people'));

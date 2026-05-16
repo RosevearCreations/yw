@@ -29,6 +29,7 @@ const requiredFiles = [
   'server-worker.js',
   'js/app-config.js',
   'js/bootstrap.js',
+  'js/mobile-menu.js',
   'js/api.js',
   'js/jobs-ui.js',
   'sql/000_full_schema_reference.sql',
@@ -78,6 +79,7 @@ const requiredFiles = [
   'sql/107_admin_readiness_drilldowns_and_live_schema_fix.sql',
   'sql/108_saved_filters_close_wizard_health_and_seo_gates.sql',
   'sql/109_pagination_close_wizard_audit_backup_mobile_foundations.sql',
+  'sql/110_mobile_navigation_quality_gates.sql',
   'js/hse-ops-ui.js',
   'supabase/functions/jobs-directory/index.ts',
   'supabase/functions/jobs-manage/index.ts',
@@ -114,12 +116,18 @@ addCheck('app-exposes-module-timings', appJs.includes('window.YWIModuleTimings')
 
 const bootstrapJs = read('js/bootstrap.js');
 addCheck('bootstrap-exposes-timing-events', bootstrapJs.includes('ywi:timing'), 'bootstrap.js should emit timing events.');
+const mobileMenuJs = read('js/mobile-menu.js');
+addCheck('index-has-compact-mobile-menu-toggle', indexHtml.includes('id="mainMenuToggle"') && indexHtml.includes('id="mainNav"'), 'index.html should include the compact mobile menu toggle and main nav target.');
+addCheck('index-loads-mobile-menu-js', /<script[^>]+src="\/js\/mobile-menu\.js\?v=/i.test(indexHtml), 'index.html should load js/mobile-menu.js with a cache-busting query string.');
+addCheck('mobile-menu-binds-expanded-state', mobileMenuJs.includes('aria-expanded') && mobileMenuJs.includes('is-menu-open'), 'mobile-menu.js should toggle aria-expanded and the header open class.');
+addCheck('style-has-mobile-menu-collapse', read('style.css').includes('.main-menu-toggle') && read('style.css').includes('.app-header.is-menu-open nav.main-nav'), 'style.css should collapse the main nav on mobile and expand it when open.');
 
 const reportsUi = read('js/reports-ui.js');
 addCheck('reports-has-corrective-actions', reportsUi.includes('Corrective Actions'), 'reports-ui.js should render the corrective actions panel.');
 addCheck('reports-has-training-expiry', reportsUi.includes('Training / Certification Records'), 'reports-ui.js should render the training and certification panel.');
 
 const adminUi = read('js/admin-ui.js');
+addCheck('admin-has-compact-section-toggle', adminUi.includes('admin-section-toggle') && adminUi.includes('ad_section_current'), 'admin-ui.js should render a compact expandable admin-section menu on phones.');
 addCheck('admin-has-smoke-check', adminUi.includes('Run Smoke Check'), 'admin-ui.js should render the smoke check controls.');
 addCheck('admin-has-conflict-review', adminUi.includes('Conflict Review'), 'admin-ui.js should render the conflict review panel.');
 
@@ -128,7 +136,7 @@ addCheck('account-has-conflict-review', accountUi.includes('Conflict Review'), '
 addCheck('account-has-support-export', accountUi.includes('Export Support Snapshot'), 'account-ui.js should render the support snapshot export button.');
 
 const schema = read('sql/000_full_schema_reference.sql');
-addCheck('schema-header-current', /109_pagination_close_wizard_audit_backup_mobile_foundations/i.test(schema), 'Schema snapshot should reflect the latest 109 pass.');
+addCheck('schema-header-current', /110_mobile_navigation_quality_gates/i.test(schema), 'Schema snapshot should reflect the latest 110 pass.');
 
 const schedulerRun = read('supabase/functions/service-execution-scheduler-run/index.ts');
 addCheck('scheduler-run-advances-next-run', schedulerRun.includes('next_run_at: computeNextRunAt'), 'Scheduler Edge Function should advance next_run_at after successful runs.');
@@ -175,6 +183,8 @@ addCheck('schema-has-bank-csv-import', schema.includes('v_bank_csv_import_sessio
 addCheck('schema-has-backup-rehearsal', schema.includes('v_admin_backup_restore_rehearsal_directory'), 'Canonical schema should include the backup/restore rehearsal directory view.');
 addCheck('schema-has-evidence-action-queue', schema.includes('v_admin_evidence_action_queue'), 'Canonical schema should include the evidence action queue view.');
 addCheck('schema-has-mobile-action-cards', schema.includes('v_admin_mobile_action_card_directory'), 'Canonical schema should include mobile action card view.');
+addCheck('schema-has-mobile-navigation-quality-gates', schema.includes('v_mobile_navigation_quality_gates'), 'Canonical schema should include mobile navigation quality gate tracking.');
+addCheck('schema-has-frontend-quality-gates', schema.includes('app_frontend_quality_gates'), 'Canonical schema should include frontend UI quality gates.');
 addCheck('schema-has-pagination-settings', schema.includes('v_admin_list_pagination_settings'), 'Canonical schema should include admin pagination settings.');
 addCheck('admin-directory-does-not-select-job-status', !read('supabase/functions/admin-directory/index.ts').includes('job_status,client_id'), 'admin-directory should not select jobs.job_status directly because live schema may use jobs.status.');
 addCheck('admin-selectors-does-not-select-job-status', !read('supabase/functions/admin-selectors/index.ts').includes('job_status,client_id'), 'admin-selectors should not select jobs.job_status directly because live schema may use jobs.status.');
@@ -185,10 +195,11 @@ addCheck('admin-renders-seo-smoke-table', adminUi.includes('ad_seo_smoke_table')
 addCheck('admin-renders-health-center', adminUi.includes('App Health and Schema Center') && adminUi.includes('renderAdminHealthCenter'), 'admin-ui.js should render the App Health and Schema Center.');
 addCheck('edge-loads-command-center', read('supabase/functions/admin-directory/index.ts').includes('v_admin_home_command_center'), 'admin-directory should load the Admin Command Center views.');
 addCheck('edge-loads-schema-109-views', read('supabase/functions/admin-directory/index.ts').includes('v_admin_close_wizard_steps') && read('supabase/functions/admin-directory/index.ts').includes('v_admin_audit_event_directory') && read('supabase/functions/admin-directory/index.ts').includes('v_bank_csv_import_session_directory'), 'admin-directory should load schema 109 readiness views.');
+addCheck('edge-loads-mobile-quality-gates', read('supabase/functions/admin-directory/index.ts').includes('v_mobile_navigation_quality_gates'), 'admin-directory should load mobile navigation quality gates when schema 110 is applied.');
 addCheck('admin-manage-saves-filters', read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_saved_filter'"), 'admin-manage should support saved filter write actions.');
 addCheck('admin-manage-close-step-actions', read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_close_workflow_step'"), 'admin-manage should support guided close step actions.');
 addCheck('admin-manage-evidence-actions', read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_evidence_action'"), 'admin-manage should support evidence action queue writes.');
-addCheck('active-docs-archived-snapshot', fileExists('archive/markdown-current-snapshot-2026-05-15c/root/README.md'), 'Archive snapshot should preserve the previous root README.');
+addCheck('active-docs-archived-snapshot', fileExists('archive/markdown-current-snapshot-2026-05-16a/root/README.md'), 'Archive snapshot should preserve the previous root README.');
 addCheck('retired-markdown-not-in-root', !fileExists('AI_START_PROMPT.md') && !fileExists('PROJECT_BRAIN.md') && !fileExists('REPO_BASE.md') && !fileExists('RUNBOOK_AUTH_BOOTSTRAP.md'), 'Retired root Markdown should be moved out of the active root.');
 addCheck('no-test-write-files', !fileExists('test_write.txt') && !fileExists('test_write2_OLD.txt') && !fileExists('test_write3.txt') && !fileExists('test_write_OLD.txt'), 'Temporary test_write files should not exist in the active root.');
 addCheck('verifydb-retired-from-active-sql', !fileExists('sql/VerifyDB_24_04_2026.sql'), 'Old VerifyDB helper should stay archived, not active in sql/.');
