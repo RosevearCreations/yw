@@ -1,6 +1,6 @@
 # Workflow Automation and Evidence Review
 
-Last refreshed: **2026-05-10**
+Last refreshed: **2026-05-15c**
 
 ## Current direction
 
@@ -19,3 +19,9 @@ Automation should reduce silent failure and manual hunting. Every scheduled or a
 ## Next UI improvement
 
 Create an Error/Health Center and Media/Evidence Manager so retries, failures, evidence, and review queues are visible in one place.
+
+---
+
+## 2026-05-15c update
+
+Schema **109** added production-readiness foundations: admin list pagination settings, guided close step actions and event history, admin audit events, bank CSV import staging, evidence action queue, backup/restore rehearsal tracking, and worker/supervisor mobile action cards. Active roadmap and known gaps were refreshed, retired root Markdown was archived again, temp files were removed again, and the one-H1 rule was rechecked.

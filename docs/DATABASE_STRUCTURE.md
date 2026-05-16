@@ -1,6 +1,6 @@
 # Database Structure
 
-Last refreshed: **2026-05-14b**
+Last refreshed: **2026-05-15c**
 
 ## Latest schema
 
@@ -18,3 +18,9 @@ Latest active migration: `sql/107_admin_readiness_drilldowns_and_live_schema_fix
 - `public.v_evidence_manager_directory` unifies failed uploads, attendance photo review, and HSE evidence review.
 
 Apply SQL through schema 107 before treating this build as synced.
+
+---
+
+## 2026-05-15c update
+
+Schema **109** added production-readiness foundations: admin list pagination settings, guided close step actions and event history, admin audit events, bank CSV import staging, evidence action queue, backup/restore rehearsal tracking, and worker/supervisor mobile action cards. Active roadmap and known gaps were refreshed, retired root Markdown was archived again, temp files were removed again, and the one-H1 rule was rechecked.

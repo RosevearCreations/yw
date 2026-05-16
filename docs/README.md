@@ -1,15 +1,26 @@
 # Docs Index
 
-Last refreshed: **2026-05-14b**
+Last refreshed: **2026-05-15c**
 
-Active docs are now kept short and current. Older pass notes were moved to `docs/archive/legacy-passes-2026-05-14b/`.
+The root Markdown files are the active handoff set. These `docs/` files provide topic-specific background and implementation notes.
 
-Start with:
+## Current schema focus
 
-- `../README.md`
-- `../DEVELOPMENT_ROADMAP.md`
-- `../KNOWN_ISSUES_AND_GAPS.md`
+Schema **109** adds production-readiness foundations for:
+
+- Admin list pagination settings
+- Guided close step actions and event history
+- Admin audit events
+- Bank CSV import staging
+- Evidence action queue
+- Backup/restore rehearsal tracking
+- Worker/supervisor mobile action cards
+
+## Most relevant docs now
+
 - `ADMIN_COMMAND_CENTER_AND_HEALTH.md`
 - `ACCOUNTING_CLOSE_END_TO_END_WORKFLOW.md`
+- `BACKUP_RESTORE_PLAN.md`
 - `PRODUCTION_READINESS_CHECKLIST.md`
 - `SEO_PUBLIC_PAGE_RULES.md`
+- `DATABASE_STRUCTURE.md`

@@ -77,6 +77,7 @@ const requiredFiles = [
   'sql/106_admin_command_center_schema_tracking_and_health.sql',
   'sql/107_admin_readiness_drilldowns_and_live_schema_fix.sql',
   'sql/108_saved_filters_close_wizard_health_and_seo_gates.sql',
+  'sql/109_pagination_close_wizard_audit_backup_mobile_foundations.sql',
   'js/hse-ops-ui.js',
   'supabase/functions/jobs-directory/index.ts',
   'supabase/functions/jobs-manage/index.ts',
@@ -127,7 +128,7 @@ addCheck('account-has-conflict-review', accountUi.includes('Conflict Review'), '
 addCheck('account-has-support-export', accountUi.includes('Export Support Snapshot'), 'account-ui.js should render the support snapshot export button.');
 
 const schema = read('sql/000_full_schema_reference.sql');
-addCheck('schema-header-current', /108_saved_filters_close_wizard_health_and_seo_gates/i.test(schema), 'Schema snapshot should reflect the latest 108 pass.');
+addCheck('schema-header-current', /109_pagination_close_wizard_audit_backup_mobile_foundations/i.test(schema), 'Schema snapshot should reflect the latest 109 pass.');
 
 const schedulerRun = read('supabase/functions/service-execution-scheduler-run/index.ts');
 addCheck('scheduler-run-advances-next-run', schedulerRun.includes('next_run_at: computeNextRunAt'), 'Scheduler Edge Function should advance next_run_at after successful runs.');
@@ -169,6 +170,12 @@ addCheck('schema-has-close-wizard-steps', schema.includes('v_admin_close_wizard_
 addCheck('schema-has-health-resolution-queue', schema.includes('v_admin_health_resolution_queue'), 'Canonical schema should include health resolution queue view.');
 addCheck('schema-has-deployment-gates', schema.includes('v_admin_deployment_gate_status'), 'Canonical schema should include deployment gate status view.');
 addCheck('schema-has-public-seo-smoke-check', schema.includes('v_public_seo_smoke_check'), 'Canonical schema should include public SEO smoke check view.');
+addCheck('schema-has-admin-audit-log', schema.includes('v_admin_audit_event_directory'), 'Canonical schema should include the admin audit event directory view.');
+addCheck('schema-has-bank-csv-import', schema.includes('v_bank_csv_import_session_directory'), 'Canonical schema should include the bank CSV import staging directory view.');
+addCheck('schema-has-backup-rehearsal', schema.includes('v_admin_backup_restore_rehearsal_directory'), 'Canonical schema should include the backup/restore rehearsal directory view.');
+addCheck('schema-has-evidence-action-queue', schema.includes('v_admin_evidence_action_queue'), 'Canonical schema should include the evidence action queue view.');
+addCheck('schema-has-mobile-action-cards', schema.includes('v_admin_mobile_action_card_directory'), 'Canonical schema should include mobile action card view.');
+addCheck('schema-has-pagination-settings', schema.includes('v_admin_list_pagination_settings'), 'Canonical schema should include admin pagination settings.');
 addCheck('admin-directory-does-not-select-job-status', !read('supabase/functions/admin-directory/index.ts').includes('job_status,client_id'), 'admin-directory should not select jobs.job_status directly because live schema may use jobs.status.');
 addCheck('admin-selectors-does-not-select-job-status', !read('supabase/functions/admin-selectors/index.ts').includes('job_status,client_id'), 'admin-selectors should not select jobs.job_status directly because live schema may use jobs.status.');
 addCheck('admin-renders-command-center', adminUi.includes('Admin Home Command Center') && adminUi.includes('renderAdminCommandCenter'), 'admin-ui.js should render the Admin Home Command Center.');
@@ -177,9 +184,11 @@ addCheck('admin-renders-deployment-gates', adminUi.includes('ad_deployment_gate_
 addCheck('admin-renders-seo-smoke-table', adminUi.includes('ad_seo_smoke_table') && adminUi.includes('publicSeoSmokeCheck'), 'admin-ui.js should render SEO smoke check rows.');
 addCheck('admin-renders-health-center', adminUi.includes('App Health and Schema Center') && adminUi.includes('renderAdminHealthCenter'), 'admin-ui.js should render the App Health and Schema Center.');
 addCheck('edge-loads-command-center', read('supabase/functions/admin-directory/index.ts').includes('v_admin_home_command_center'), 'admin-directory should load the Admin Command Center views.');
-addCheck('edge-loads-schema-108-views', read('supabase/functions/admin-directory/index.ts').includes('v_admin_close_wizard_steps') && read('supabase/functions/admin-directory/index.ts').includes('v_admin_deployment_gate_status'), 'admin-directory should load schema 108 readiness views.');
+addCheck('edge-loads-schema-109-views', read('supabase/functions/admin-directory/index.ts').includes('v_admin_close_wizard_steps') && read('supabase/functions/admin-directory/index.ts').includes('v_admin_audit_event_directory') && read('supabase/functions/admin-directory/index.ts').includes('v_bank_csv_import_session_directory'), 'admin-directory should load schema 109 readiness views.');
 addCheck('admin-manage-saves-filters', read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_saved_filter'"), 'admin-manage should support saved filter write actions.');
-addCheck('active-docs-archived-snapshot', fileExists('archive/markdown-current-snapshot-2026-05-15b/root/README.md'), 'Archive snapshot should preserve the previous root README.');
+addCheck('admin-manage-close-step-actions', read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_close_workflow_step'"), 'admin-manage should support guided close step actions.');
+addCheck('admin-manage-evidence-actions', read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_evidence_action'"), 'admin-manage should support evidence action queue writes.');
+addCheck('active-docs-archived-snapshot', fileExists('archive/markdown-current-snapshot-2026-05-15c/root/README.md'), 'Archive snapshot should preserve the previous root README.');
 addCheck('retired-markdown-not-in-root', !fileExists('AI_START_PROMPT.md') && !fileExists('PROJECT_BRAIN.md') && !fileExists('REPO_BASE.md') && !fileExists('RUNBOOK_AUTH_BOOTSTRAP.md'), 'Retired root Markdown should be moved out of the active root.');
 addCheck('no-test-write-files', !fileExists('test_write.txt') && !fileExists('test_write2_OLD.txt') && !fileExists('test_write3.txt') && !fileExists('test_write_OLD.txt'), 'Temporary test_write files should not exist in the active root.');
 addCheck('verifydb-retired-from-active-sql', !fileExists('sql/VerifyDB_24_04_2026.sql'), 'Old VerifyDB helper should stay archived, not active in sql/.');

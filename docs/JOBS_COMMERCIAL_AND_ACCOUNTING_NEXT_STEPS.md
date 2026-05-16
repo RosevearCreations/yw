@@ -66,3 +66,9 @@ Pass 097 sync note (2026-04-26d): quote output, threshold enforcement on save/re
 
 ## Added accounting-close foundation
 The backend accounting side now includes period close, sales-tax filing, payroll remittance, bank-account, statement-import, reconciliation-session, and reconciliation-item structures. The next commercial/accounting work should now concentrate on promotion and automation rather than more disconnected schema additions.
+
+---
+
+## 2026-05-15c update
+
+Schema **109** added production-readiness foundations: admin list pagination settings, guided close step actions and event history, admin audit events, bank CSV import staging, evidence action queue, backup/restore rehearsal tracking, and worker/supervisor mobile action cards. Active roadmap and known gaps were refreshed, retired root Markdown was archived again, temp files were removed again, and the one-H1 rule was rechecked.

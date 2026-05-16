@@ -1,6 +1,6 @@
 # Accounting Close End-to-End Workflow
 
-Last refreshed: **2026-05-15b**
+Last refreshed: **2026-05-15c**
 
 ## Current state
 
@@ -20,3 +20,9 @@ The close workflow now has dashboard counts and schema 108 close-step metadata. 
 - Bank CSV import and manual reconciliation controls.
 - Payment application detail forms.
 - Accountant package generation and delivery confirmation.
+
+---
+
+## 2026-05-15c update
+
+Schema **109** added production-readiness foundations: admin list pagination settings, guided close step actions and event history, admin audit events, bank CSV import staging, evidence action queue, backup/restore rehearsal tracking, and worker/supervisor mobile action cards. Active roadmap and known gaps were refreshed, retired root Markdown was archived again, temp files were removed again, and the one-H1 rule was rechecked.

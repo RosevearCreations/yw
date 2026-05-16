@@ -46,3 +46,8 @@ This moves the Jobs page from isolated actions into a clearer management workflo
 ## 2026-05-05 sync note
 The quote engagement lifecycle now assumes the repaired 099 migration and the synced full schema reference. Client name resolution should come from `public.clients`, not a raw `estimates.client_name` column.
 
+---
+
+## 2026-05-15c update
+
+Schema **109** added production-readiness foundations: admin list pagination settings, guided close step actions and event history, admin audit events, bank CSV import staging, evidence action queue, backup/restore rehearsal tracking, and worker/supervisor mobile action cards. Active roadmap and known gaps were refreshed, retired root Markdown was archived again, temp files were removed again, and the one-H1 rule was rechecked.

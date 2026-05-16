@@ -144,6 +144,12 @@
       adminHealthResolutionQueue: [],
       adminDeploymentGateStatus: [],
       publicSeoSmokeCheck: [],
+      adminAuditEventDirectory: [],
+      adminBackupRestoreRehearsals: [],
+      bankCsvImportSessions: [],
+      adminEvidenceActionQueue: [],
+      adminMobileActionCards: [],
+      adminListPaginationSettings: [],
       evidenceManagerDirectory: [],
       hsePacketActionItems: [],
       hseDashboardSummary: [],
@@ -346,6 +352,12 @@
           </div>
           <div id="ad_close_center_cards" class="admin-command-grid"></div>
           <div id="ad_close_center_summary" class="notice" style="display:block;margin:12px 0;">Close Center data has not loaded yet.</div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_close_wizard_detail_table">
+              <thead><tr><th>Step</th><th>Status</th><th>Owner / Due</th><th>Blockers</th><th>Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
 
         <div class="admin-panel-block" data-admin-panel-title="Evidence Manager" style="margin-top:16px;">
@@ -359,6 +371,12 @@
           <div class="table-scroll">
             <table id="ad_evidence_manager_table">
               <thead><tr><th>Status</th><th>Evidence</th><th>Source</th><th>Owner</th><th>Last Seen</th><th>Action</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_evidence_action_queue_table">
+              <thead><tr><th>Status</th><th>Action</th><th>Evidence</th><th>Owner</th><th>Updated</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -393,6 +411,30 @@
           <div class="table-scroll" style="margin-top:12px;">
             <table id="ad_seo_smoke_table">
               <thead><tr><th>Page</th><th>Title</th><th>H1</th><th>Local Terms</th><th>Meta</th><th>Broken Assets</th><th>Status</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_bank_csv_import_table">
+              <thead><tr><th>Status</th><th>File</th><th>Rows</th><th>Duplicates</th><th>Updated</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_backup_rehearsal_table">
+              <thead><tr><th>Status</th><th>Rehearsal</th><th>Operator</th><th>Result</th><th>Next Action</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_mobile_action_card_table">
+              <thead><tr><th>Role</th><th>Action</th><th>Priority</th><th>Status</th><th>Route</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_audit_log_table">
+              <thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Entity</th><th>Summary</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -1000,13 +1042,19 @@
         clearDiagnosticsBtn: document.getElementById('ad_clear_diagnostics'),
         closeCenterCards: document.getElementById('ad_close_center_cards'),
         closeCenterSummary: document.getElementById('ad_close_center_summary'),
+        closeWizardDetailBody: document.querySelector('#ad_close_wizard_detail_table tbody'),
         evidenceManagerCards: document.getElementById('ad_evidence_manager_cards'),
         evidenceManagerBody: document.querySelector('#ad_evidence_manager_table tbody'),
+        evidenceActionQueueBody: document.querySelector('#ad_evidence_action_queue_table tbody'),
         readinessCards: document.getElementById('ad_readiness_cards'),
         readinessBody: document.querySelector('#ad_readiness_table tbody'),
         permissionsBody: document.querySelector('#ad_permissions_table tbody'),
         deploymentGateBody: document.querySelector('#ad_deployment_gate_table tbody'),
         seoSmokeBody: document.querySelector('#ad_seo_smoke_table tbody'),
+        bankCsvImportBody: document.querySelector('#ad_bank_csv_import_table tbody'),
+        backupRehearsalBody: document.querySelector('#ad_backup_rehearsal_table tbody'),
+        mobileActionCardBody: document.querySelector('#ad_mobile_action_card_table tbody'),
+        auditLogBody: document.querySelector('#ad_audit_log_table tbody'),
         siteActivitySummary: document.getElementById('ad_site_activity_summary'),
         opsDashboardCards: document.getElementById('ad_ops_dashboard_cards'),
         siteActivityRollups: document.getElementById('ad_site_activity_rollups'),
@@ -1820,6 +1868,12 @@
         state.adminTaskInbox = Array.isArray(resp?.admin_task_inbox) ? resp.admin_task_inbox : [];
         state.appSchemaVersionStatus = Array.isArray(resp?.app_schema_version_status) ? resp.app_schema_version_status : [];
         state.roleDashboardPresets = Array.isArray(resp?.role_dashboard_presets) ? resp.role_dashboard_presets : [];
+        state.adminAuditEventDirectory = Array.isArray(resp?.admin_audit_event_directory) ? resp.admin_audit_event_directory : [];
+        state.adminBackupRestoreRehearsals = Array.isArray(resp?.admin_backup_restore_rehearsal_directory) ? resp.admin_backup_restore_rehearsal_directory : [];
+        state.bankCsvImportSessions = Array.isArray(resp?.bank_csv_import_session_directory) ? resp.bank_csv_import_session_directory : [];
+        state.adminEvidenceActionQueue = Array.isArray(resp?.admin_evidence_action_queue) ? resp.admin_evidence_action_queue : [];
+        state.adminMobileActionCards = Array.isArray(resp?.admin_mobile_action_card_directory) ? resp.admin_mobile_action_card_directory : [];
+        state.adminListPaginationSettings = Array.isArray(resp?.admin_list_pagination_settings) ? resp.admin_list_pagination_settings : [];
         state.hsePacketActionItems = Array.isArray(resp?.hse_packet_action_items) ? resp.hse_packet_action_items : [];
         state.hseDashboardSummary = Array.isArray(resp?.hse_dashboard_summary) ? resp.hse_dashboard_summary : [];
         state.accountingReviewSummary = Array.isArray(resp?.accounting_review_summary) ? resp.accounting_review_summary : [];
@@ -3872,6 +3926,12 @@
           adminHealthResolutionQueue: Array.isArray(payload?.admin_health_resolution_queue) ? payload.admin_health_resolution_queue : state.adminHealthResolutionQueue,
           adminDeploymentGateStatus: Array.isArray(payload?.admin_deployment_gate_status) ? payload.admin_deployment_gate_status : state.adminDeploymentGateStatus,
           publicSeoSmokeCheck: Array.isArray(payload?.public_seo_smoke_check) ? payload.public_seo_smoke_check : state.publicSeoSmokeCheck,
+          adminAuditEventDirectory: Array.isArray(payload?.admin_audit_event_directory) ? payload.admin_audit_event_directory : state.adminAuditEventDirectory,
+          adminBackupRestoreRehearsals: Array.isArray(payload?.admin_backup_restore_rehearsal_directory) ? payload.admin_backup_restore_rehearsal_directory : state.adminBackupRestoreRehearsals,
+          bankCsvImportSessions: Array.isArray(payload?.bank_csv_import_session_directory) ? payload.bank_csv_import_session_directory : state.bankCsvImportSessions,
+          adminEvidenceActionQueue: Array.isArray(payload?.admin_evidence_action_queue) ? payload.admin_evidence_action_queue : state.adminEvidenceActionQueue,
+          adminMobileActionCards: Array.isArray(payload?.admin_mobile_action_card_directory) ? payload.admin_mobile_action_card_directory : state.adminMobileActionCards,
+          adminListPaginationSettings: Array.isArray(payload?.admin_list_pagination_settings) ? payload.admin_list_pagination_settings : state.adminListPaginationSettings,
           evidenceManagerDirectory: Array.isArray(payload?.evidence_manager_directory) ? payload.evidence_manager_directory : state.evidenceManagerDirectory,
           hsePacketActionItems: Array.isArray(payload?.hse_packet_action_items) ? payload.hse_packet_action_items : state.hsePacketActionItems,
           hseDashboardSummary: Array.isArray(payload?.hse_dashboard_summary) ? payload.hse_dashboard_summary : state.hseDashboardSummary,
@@ -4018,7 +4078,19 @@
       const sourceId = btn.getAttribute('data-evidence-id') || '';
       if (!sourceId) return;
       await manageAdminEntity({ entity: 'admin_health_resolution_note', action: 'create', source_area: `evidence:${source}`, source_id: sourceId, resolution_status: 'assigned', resolution_notes: 'Evidence follow-up opened from Evidence Manager.' });
-      setSummary('Evidence follow-up added to the health resolution queue.', false);
+      await manageAdminEntity({ entity: 'admin_evidence_action', action: 'create', source_area: source || 'evidence', source_id: sourceId, action_type: 'follow_up', evidence_title: 'Evidence follow-up from manager', action_status: 'queued' });
+      setSummary('Evidence follow-up added to the health and evidence action queues.', false);
+      await loadDirectory();
+    }
+
+    async function handleGuidedCloseAction(event) {
+      const btn = event.target.closest('[data-close-step-action]');
+      if (!btn || !manageAdminEntity) return;
+      const stepKey = btn.getAttribute('data-close-step-key') || '';
+      const action = btn.getAttribute('data-close-step-action') || '';
+      if (!stepKey || !action) return;
+      await manageAdminEntity({ entity: 'admin_close_workflow_step', action, item_id: stepKey, completion_notes: `${action} from Guided Close Center.` });
+      setSummary(`Close step ${action === 'complete' ? 'completed' : 'reopened'}.`, false);
       await loadDirectory();
     }
 
@@ -4190,7 +4262,22 @@
       }
       if (e.closeCenterSummary) {
         const blockerCount = cards.reduce((sum, [, value]) => sum + Number(value || 0), 0);
-        e.closeCenterSummary.textContent = blockerCount ? `${blockerCount} close blocker(s) or review item(s) are visible. Use the Accounting backbone manager to open the related entity until the guided actions are wired to write endpoints.` : 'No close blockers loaded from the current dashboard view.';
+        e.closeCenterSummary.textContent = blockerCount ? `${blockerCount} close blocker(s) or review item(s) are visible. Step owners, due dates, blocker counts, and close/reopen actions are now tracked by schema 109.` : 'No close blockers loaded from the current dashboard view.';
+      }
+      if (e.closeWizardDetailBody) {
+        e.closeWizardDetailBody.innerHTML = steps.slice(0, 80).map((step) => {
+          const stepStatus = String(step.step_status || 'review').toLowerCase();
+          const isDone = ['done','complete','completed','closed'].includes(stepStatus);
+          const blockerValue = firstNumber(step.active_blocker_count, step.blocker_count_override, row?.[step.blocker_count_column] || 0);
+          return `
+          <tr>
+            <td><strong>${escHtml(step.step_title || step.step_key || '')}</strong><div class="muted">${escHtml(step.step_group || '')}</div></td>
+            <td>${renderStatusPill(step.step_status || 'review', isDone ? 'ok' : (blockerValue ? 'warning' : 'info'))}</td>
+            <td>${escHtml(step.owner_name || 'Unassigned')}<div class="muted">${escHtml(step.due_at || 'No due date')}</div></td>
+            <td>${escHtml(String(blockerValue))}<div class="muted">${escHtml(step.blocker_count_column || '')}</div></td>
+            <td><div class="admin-row-actions"><button class="secondary" type="button" data-close-step-action="complete" data-close-step-key="${escHtml(step.step_key || '')}">Complete</button><button class="secondary" type="button" data-close-step-action="reopen" data-close-step-key="${escHtml(step.step_key || '')}">Reopen</button></div></td>
+          </tr>`;
+        }).join('') || '<tr><td colspan="5" class="muted">No guided close steps loaded yet. Apply schema 109.</td></tr>';
       }
     }
 
@@ -4220,6 +4307,18 @@
             <td><div class="admin-row-actions"><span>${escHtml(row.action_hint || row.route_hint || 'Open source record')}</span>${row.source_id ? `<button class="secondary" type="button" data-evidence-action="follow_up" data-evidence-source="${escHtml(row.source_area || '')}" data-evidence-id="${escHtml(row.source_id || '')}">Follow up</button>` : ''}</div></td>
           </tr>
         `).join('') || '<tr><td colspan="6" class="muted">No evidence manager rows loaded yet.</td></tr>';
+      }
+      if (e.evidenceActionQueueBody) {
+        const actionRows = Array.isArray(state.adminEvidenceActionQueue) ? state.adminEvidenceActionQueue : [];
+        e.evidenceActionQueueBody.innerHTML = actionRows.slice(0, 80).map((row) => `
+          <tr>
+            <td>${renderStatusPill(row.action_status || 'queued', /complete|done/i.test(String(row.action_status || '')) ? 'ok' : 'warning')}</td>
+            <td>${escHtml(row.action_type || '')}</td>
+            <td><strong>${escHtml(row.evidence_title || row.source_area || '')}</strong><div class="muted">${escHtml(row.source_id || '')}</div></td>
+            <td>${escHtml(row.assigned_to_name || row.created_by_name || '')}</td>
+            <td>${escHtml(row.updated_at || row.created_at || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No retry/replace/archive evidence actions have been queued yet.</td></tr>';
       }
     }
 
@@ -4287,6 +4386,54 @@
             <td>${renderStatusPill(row.check_status || 'review', /fail/i.test(String(row.check_status || '')) ? 'error' : (/warn|review/i.test(String(row.check_status || '')) ? 'warning' : 'ok'))}</td>
           </tr>
         `).join('') || '<tr><td colspan="7" class="muted">No SEO smoke rows loaded yet. Apply schema 108.</td></tr>';
+      }
+      if (e.bankCsvImportBody) {
+        const rows = Array.isArray(state.bankCsvImportSessions) ? state.bankCsvImportSessions : [];
+        e.bankCsvImportBody.innerHTML = rows.slice(0, 40).map((row) => `
+          <tr>
+            <td>${renderStatusPill(row.import_status || 'draft', /complete|accepted/i.test(String(row.import_status || '')) ? 'ok' : 'warning')}</td>
+            <td><strong>${escHtml(row.file_name || 'Bank CSV import')}</strong><div class="muted">${escHtml(row.bank_account_name || '')}</div></td>
+            <td>${escHtml(String(row.total_row_count ?? 0))} total / ${escHtml(String(row.accepted_row_count ?? 0))} accepted</td>
+            <td>${escHtml(String(row.duplicate_row_count ?? 0))}</td>
+            <td>${escHtml(row.updated_at || row.created_at || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No bank CSV import sessions have been staged yet.</td></tr>';
+      }
+      if (e.backupRehearsalBody) {
+        const rows = Array.isArray(state.adminBackupRestoreRehearsals) ? state.adminBackupRestoreRehearsals : [];
+        e.backupRehearsalBody.innerHTML = rows.slice(0, 40).map((row) => `
+          <tr>
+            <td>${renderStatusPill(row.rehearsal_status || 'planned', /pass|complete/i.test(String(row.rehearsal_status || '')) ? 'ok' : 'warning')}</td>
+            <td><strong>${escHtml(row.rehearsal_name || '')}</strong><div class="muted">${escHtml(row.rehearsal_scope || '')}</div></td>
+            <td>${escHtml(row.operator_name || '')}</td>
+            <td>${escHtml(row.result_summary || '')}</td>
+            <td>${escHtml(row.next_action || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No backup/restore rehearsal rows loaded yet.</td></tr>';
+      }
+      if (e.mobileActionCardBody) {
+        const rows = Array.isArray(state.adminMobileActionCards) ? state.adminMobileActionCards : [];
+        e.mobileActionCardBody.innerHTML = rows.slice(0, 60).map((row) => `
+          <tr>
+            <td>${escHtml(row.role_key || '')}</td>
+            <td><strong>${escHtml(row.card_title || '')}</strong><div class="muted">${escHtml(row.card_detail || '')}</div></td>
+            <td>${escHtml(String(row.priority_rank ?? ''))}</td>
+            <td>${renderStatusPill(row.card_status || 'review', /ready|active/i.test(String(row.card_status || '')) ? 'ok' : 'warning')}</td>
+            <td>${escHtml(row.route_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No mobile action cards loaded yet.</td></tr>';
+      }
+      if (e.auditLogBody) {
+        const rows = Array.isArray(state.adminAuditEventDirectory) ? state.adminAuditEventDirectory : [];
+        e.auditLogBody.innerHTML = rows.slice(0, 60).map((row) => `
+          <tr>
+            <td>${escHtml(row.occurred_at || '')}</td>
+            <td>${escHtml(row.actor_name || row.actor_email || '')}</td>
+            <td>${escHtml(row.event_action || '')}</td>
+            <td>${escHtml(row.entity_type || '')}${row.entity_id ? `<div class="muted">${escHtml(row.entity_id)}</div>` : ''}</td>
+            <td class="admin-table-note">${escHtml(row.event_summary || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No audit events loaded yet.</td></tr>';
       }
     }
 

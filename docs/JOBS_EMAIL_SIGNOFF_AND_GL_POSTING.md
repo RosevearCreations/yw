@@ -65,3 +65,8 @@ This pass extends the Jobs commercial/accounting workflow with:
 ## 2026-05-05 continuity note
 This layer now sits on top of the repaired 096-099 migration chain. Continue pushing the next value into quote acceptance, stricter threshold policy, and deeper AR/AP + GL lifecycle automation.
 
+---
+
+## 2026-05-15c update
+
+Schema **109** added production-readiness foundations: admin list pagination settings, guided close step actions and event history, admin audit events, bank CSV import staging, evidence action queue, backup/restore rehearsal tracking, and worker/supervisor mobile action cards. Active roadmap and known gaps were refreshed, retired root Markdown was archived again, temp files were removed again, and the one-H1 rule was rechecked.

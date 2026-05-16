@@ -65,3 +65,9 @@ The repo already had quote, release, completion, invoice-candidate, journal-cand
 10. Accountant handoff package generation.
 11. GIFI / T2 export grouping by account.
 12. LLC / INC entity-profile aware exports and reviews.
+
+---
+
+## 2026-05-15c update
+
+Schema **109** added production-readiness foundations: admin list pagination settings, guided close step actions and event history, admin audit events, bank CSV import staging, evidence action queue, backup/restore rehearsal tracking, and worker/supervisor mobile action cards. Active roadmap and known gaps were refreshed, retired root Markdown was archived again, temp files were removed again, and the one-H1 rule was rechecked.
