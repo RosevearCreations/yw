@@ -1,19 +1,25 @@
 # AI Context
 
-Last refreshed: **2026-05-14b**
+Last refreshed: **2026-05-15b**
 
-The user expects every build pass to update Markdown and schema files, preserve one H1 per exposed page, keep SEO/local search habits in mind, and continue moving duplicated/failure-prone data toward the DB where sensible.
+## Current task pattern
 
-## Current build context
+Every build pass must update code, SQL schema files, and active Markdown together. Keep old Markdown snapshots in `archive/` and keep active root Markdown clear.
 
-- Use `DEVELOPMENT_ROADMAP.md` and `KNOWN_ISSUES_AND_GAPS.md` first.
-- Latest schema is 107.
-- The previous live SQL errors were:
-  - `public.app_schema_versions` did not exist.
-  - `jobs.job_status` did not exist; live DB uses `jobs.status`.
-- Both are now addressed in repo files.
-- Admin has read-only foundations for close, evidence, production readiness, schema drift, and permission matrix.
+## Current technical state
 
-## Response preference
+- Latest schema: 108.
+- Latest cache/version string: `2026-05-15b`.
+- Main changed files this pass: `js/admin-ui.js`, `style.css`, `server-worker.js`, `index.html`, `supabase/functions/admin-directory/index.ts`, `supabase/functions/admin-manage/index.ts`, `sql/108_saved_filters_close_wizard_health_and_seo_gates.sql`, `sql/000_full_schema_reference.sql`, `scripts/repo-smoke-check.mjs`.
 
-Keep explanations brief and practical. Provide complete files/code blocks when requested. For build tasks, produce a ZIP unless the user asks for code only.
+## Important constraints
+
+- No more than one H1 per exposed page.
+- Keep SEO titles/headings locally relevant when public pages are added.
+- Move retired root Markdown to archive.
+- Remove temporary test files from active root.
+- Update schema reference and smoke check for every schema pass.
+
+## Next recommended work
+
+Server-side pagination and true saved-filter state replay should come next, then a write-enabled Guided Close Center wizard.

@@ -204,7 +204,12 @@ serve(async (req) => {
     response.production_readiness_checklist = await safeList(supabase, 'v_production_readiness_checklist', '*', 'sort_order', 80, true);
     response.role_permission_matrix = await safeList(supabase, 'v_role_permission_matrix', '*', 'sort_order', 120, true);
     response.admin_saved_filter_directory = await safeList(supabase, 'v_admin_saved_filter_directory', '*', 'updated_at', 80, false);
+    response.admin_saved_filter_scope_summary = await safeList(supabase, 'v_admin_saved_filter_scope_summary', '*', 'filter_scope', 80, true);
     response.admin_close_center_overview = await safeList(supabase, 'v_admin_close_center_overview');
+    response.admin_close_wizard_steps = await safeList(supabase, 'v_admin_close_wizard_steps', '*', 'sort_order', 80, true);
+    response.admin_health_resolution_queue = await safeList(supabase, 'v_admin_health_resolution_queue', '*', 'updated_at', 80, false);
+    response.admin_deployment_gate_status = await safeList(supabase, 'v_admin_deployment_gate_status', '*', 'sort_order', 80, true);
+    response.public_seo_smoke_check = await safeList(supabase, 'v_public_seo_smoke_check', '*', 'page_path', 80, true);
     response.evidence_manager_directory = await safeList(supabase, 'v_evidence_manager_directory', '*', 'last_seen_at', 120, false);
   }
   if ((scope === 'all' || scope === 'sites') && roleRank(actorRole) >= roleRank('supervisor')) {

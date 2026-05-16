@@ -1309,3 +1309,47 @@ button.admin-task-card {
     min-width: 150px;
   }
 }
+
+/* 2026-05-15b: saved views, close wizard steps, health actions, and deployment gate polish */
+.admin-saved-filter-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) minmax(160px, .8fr) auto auto;
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, .34);
+}
+.admin-inline-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+}
+.admin-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+#admin button.secondary {
+  white-space: nowrap;
+}
+#ad_saved_filter_table td,
+#ad_deployment_gate_table td,
+#ad_seo_smoke_table td {
+  vertical-align: top;
+}
+@media (max-width: 820px) {
+  .admin-saved-filter-toolbar {
+    grid-template-columns: 1fr;
+  }
+  .admin-row-actions {
+    align-items: stretch;
+  }
+  .admin-row-actions button,
+  .admin-saved-filter-toolbar button {
+    width: 100%;
+  }
+}

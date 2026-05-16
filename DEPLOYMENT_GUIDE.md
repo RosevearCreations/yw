@@ -1,23 +1,33 @@
 # Deployment Guide
 
-Last refreshed: **2026-05-14b**
+Last refreshed: **2026-05-15b**
 
-## Required order
+## Deploy order
 
-1. Apply SQL migrations through `sql/107_admin_readiness_drilldowns_and_live_schema_fix.sql`.
-2. Redeploy Supabase Edge Functions, especially `admin-directory` and `admin-selectors`.
-3. Deploy the static app files.
-4. Hard refresh the app or clear service worker cache.
-5. Open Admin and verify:
-   - Command Center renders.
-   - Health shows schema 107/current.
-   - Guided Close Center renders.
-   - Evidence Manager renders.
-   - Production Readiness and Permissions render.
+1. Backup the live database or confirm a recent backup exists.
+2. Apply SQL migrations through `sql/108_saved_filters_close_wizard_health_and_seo_gates.sql`.
+3. Redeploy changed Supabase functions:
+   - `admin-directory`
+   - `admin-manage`
+4. Deploy the static frontend.
+5. Hard refresh browser cache or unregister the old service worker if old assets remain.
+6. Open Admin Health and confirm schema drift says current.
+7. Test saved views, Evidence Manager follow-up, deployment gate Mark Pass, and Guided Close Center cards.
 
-## Console checks
+## Pre-deploy checks
 
-- No `public.app_schema_versions does not exist` SQL error.
-- No `jobs.job_status does not exist` SQL/API error.
-- No reports timeout on `#admin`.
-- No missing script/style/icon assets.
+```bash
+node --check js/api.js
+node --check js/admin-ui.js
+node --check js/reports-ui.js
+node --check js/jobs-ui.js
+node --check js/hse-ops-ui.js
+node --check js/logbook-ui.js
+node --check app.js
+node --check server-worker.js
+node scripts/repo-smoke-check.mjs
+```
+
+## Cache note
+
+The service worker cache is now `ywi-shell-v2026-05-15b`. If the browser still loads `2026-05-14b`, clear site data or unregister the service worker.

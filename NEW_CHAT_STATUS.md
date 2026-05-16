@@ -1,22 +1,26 @@
 # New Chat Status
 
-Last refreshed: **2026-05-14b**
+Last refreshed: **2026-05-15b**
 
-Use this file to continue in a fresh chat.
+## Use this handoff first
 
-## Latest completed pass
+We are working on the YWI HSE / operations app. The latest build is `2026-05-15b` and the latest schema is **108**.
 
-Source ZIP: `yw-main(117).zip`.
-Output build: schema/docs/app refreshed to `2026-05-14b`.
+## What was just done
 
-## Main fixes
+- Added schema 108.
+- Fixed Admin Health drift rendering.
+- Added saved admin views and `admin_saved_filter` write actions.
+- Added close wizard step metadata and cards.
+- Added health/evidence follow-up logging.
+- Added deployment gate and SEO smoke-check foundations.
+- Updated Markdown and schema references.
+- Removed temp files and retired old root Markdown.
 
-- Folded the live SQL fixes into the repo.
-- Added schema 107.
-- Added Admin Guided Close Center, Evidence Manager, and Production Readiness/Permissions foundations.
-- Cleaned active Markdown and archived old/root legacy docs.
-- Removed temp files.
+## Next best work
 
-## Next work
+Start with `DEVELOPMENT_ROADMAP.md` and `KNOWN_ISSUES_AND_GAPS.md`. The next strongest value-add item is server-side pagination plus real saved-filter state replay, followed by a write-enabled Guided Close Center wizard.
 
-Start with `DEVELOPMENT_ROADMAP.md`. The next 20 steps are listed there, with saved filters, close wizard actions, reconciliation review, payment application details, evidence retry controls, pagination, mobile worker dashboard, and production sign-off as the major priorities.
+## Validation already run
+
+The package passed JavaScript syntax checks, repo smoke check, and one-H1 verification during this pass.

@@ -893,6 +893,120 @@ serve(async (req) => {
   const isAdmin = actorProfile.role === 'admin';
 
   try {
+    if (entity === 'admin_saved_filter') {
+      if (roleRank(actorProfile.role) < roleRank('supervisor')) {
+        return Response.json({ ok:false, error:'Supervisor access is required.' }, { status:403, headers:corsHeaders });
+      }
+      const now = new Date().toISOString();
+      const itemId = String(body.item_id || body.id || '').trim();
+      const patch: Record<string, unknown> = {
+        filter_scope: String(body.filter_scope || body.section_hint || 'home').trim() || 'home',
+        filter_name: String(body.filter_name || body.name || 'Saved view').trim() || 'Saved view',
+        filter_payload: body.filter_payload && typeof body.filter_payload === 'object' ? body.filter_payload : {},
+        is_shared: body.is_shared === true,
+        route_hint: asNullableText(body.route_hint),
+        section_hint: asNullableText(body.section_hint),
+        updated_at: now,
+      };
+      if (action === 'create') {
+        const { data, error } = await supabase.from('admin_saved_filters').insert({ ...patch, owner_profile_id: actorId, created_at: now }).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (!itemId) return Response.json({ ok:false, error:'Saved filter id is required.' }, { status:400, headers:corsHeaders });
+      const existing = await fetchSingle(supabase, 'admin_saved_filters', itemId);
+      if (!existing?.id) return Response.json({ ok:false, error:'Saved filter not found.' }, { status:404, headers:corsHeaders });
+      const ownsFilter = String(existing.owner_profile_id || '') === String(actorId);
+      if (!ownsFilter && actorProfile.role !== 'admin') return Response.json({ ok:false, error:'Only the owner or an admin can change this saved filter.' }, { status:403, headers:corsHeaders });
+      if (action === 'update') {
+        const { data, error } = await supabase.from('admin_saved_filters').update(patch).eq('id', itemId).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'touch') {
+        const { data, error } = await supabase.from('admin_saved_filters').update({ last_used_at: now, usage_count: Number(existing.usage_count || 0) + 1, updated_at: now }).eq('id', itemId).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('admin_saved_filters').delete().eq('id', itemId);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'admin_health_resolution_note') {
+      if (roleRank(actorProfile.role) < roleRank('supervisor')) {
+        return Response.json({ ok:false, error:'Supervisor access is required.' }, { status:403, headers:corsHeaders });
+      }
+      const now = new Date().toISOString();
+      const itemId = String(body.item_id || body.id || '').trim();
+      const status = String(body.resolution_status || (action === 'resolve' ? 'resolved' : 'open')).trim() || 'open';
+      const patch: Record<string, unknown> = {
+        source_area: String(body.source_area || 'manual').trim() || 'manual',
+        source_id: asNullableText(body.source_id),
+        resolution_status: status,
+        resolution_notes: asNullableText(body.resolution_notes),
+        assigned_to_profile_id: asNullableText(body.assigned_to_profile_id),
+        resolved_by_profile_id: ['resolved','dismissed'].includes(status) ? actorId : null,
+        resolved_at: ['resolved','dismissed'].includes(status) ? now : null,
+        updated_at: now,
+      };
+      if (action === 'create' || action === 'resolve') {
+        const { data, error } = await supabase.from('admin_health_resolution_notes').insert({ ...patch, created_by_profile_id: actorId, created_at: now }).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (!itemId) return Response.json({ ok:false, error:'Resolution note id is required.' }, { status:400, headers:corsHeaders });
+      if (action === 'update') {
+        const { data, error } = await supabase.from('admin_health_resolution_notes').update(patch).eq('id', itemId).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'delete') {
+        const { error } = await supabase.from('admin_health_resolution_notes').delete().eq('id', itemId);
+        if (error) throw error;
+        return Response.json({ ok:true }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'admin_deployment_gate_check') {
+      if (actorProfile.role !== 'admin') return Response.json({ ok:false, error:'Admin role required.' }, { status:403, headers:corsHeaders });
+      const key = String(body.item_id || body.check_key || '').trim();
+      if (!key) return Response.json({ ok:false, error:'Deployment gate key is required.' }, { status:400, headers:corsHeaders });
+      const patch = {
+        check_status: String(body.check_status || 'review').trim() || 'review',
+        command_hint: body.command_hint ?? undefined,
+        failure_hint: body.failure_hint ?? undefined,
+        updated_at: new Date().toISOString(),
+      };
+      const cleanPatch = Object.fromEntries(Object.entries(patch).filter(([, value]) => value !== undefined));
+      const { data, error } = await supabase.from('admin_deployment_gate_checks').update(cleanPatch).eq('check_key', key).select('*').single();
+      if (error) throw error;
+      return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+    }
+
+    if (entity === 'admin_public_seo_check') {
+      if (actorProfile.role !== 'admin') return Response.json({ ok:false, error:'Admin role required.' }, { status:403, headers:corsHeaders });
+      const pagePath = String(body.page_path || body.item_id || '').trim();
+      if (!pagePath) return Response.json({ ok:false, error:'Page path is required.' }, { status:400, headers:corsHeaders });
+      const patch = {
+        page_path: pagePath,
+        page_title: asNullableText(body.page_title),
+        h1_count: asNumber(body.h1_count, 0),
+        local_terms_present: body.local_terms_present === true,
+        meta_description_present: body.meta_description_present === true,
+        image_alt_coverage_percent: asNullableNumber(body.image_alt_coverage_percent),
+        broken_asset_count: asNumber(body.broken_asset_count, 0),
+        check_status: String(body.check_status || 'review').trim() || 'review',
+        notes: asNullableText(body.notes),
+        checked_at: new Date().toISOString(),
+      };
+      const { data, error } = await supabase.from('admin_public_seo_checks').upsert(patch, { onConflict: 'page_path' }).select('*').single();
+      if (error) throw error;
+      return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+    }
+
     if (entity === 'profile' && action === 'self_update') {
       const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
       for (const field of ['full_name','phone','address_line1','address_line2','city','province','postal_code','vehicle_make_model','vehicle_plate','current_position','trade_specialty','feature_preferences','emergency_contact_name','emergency_contact_phone','start_date','strengths','employee_number']) {

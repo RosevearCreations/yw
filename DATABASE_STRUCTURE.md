@@ -1,20 +1,36 @@
 # Database Structure
 
-Last refreshed: **2026-05-14b**
+Last refreshed: **2026-05-15b**
 
-## Latest schema
+## Current schema marker
 
-Latest active migration: `sql/107_admin_readiness_drilldowns_and_live_schema_fix.sql`.
+Latest migration file:
 
-## Important schema notes
+- `sql/108_saved_filters_close_wizard_health_and_seo_gates.sql`
 
-- `public.app_schema_versions` is created before schema/health views read it.
-- `public.v_schema_drift_status` reports whether live DB is behind the repo marker.
-- `public.v_admin_home_command_center` uses `jobs.status`, avoiding the previous `jobs.job_status` live error.
-- `public.admin_saved_filters` is the foundation for admin saved views.
-- `public.admin_production_readiness_checks` seeds production sign-off checks.
-- `public.admin_role_permission_matrix` provides a visible role/workflow matrix.
-- `public.v_admin_close_center_overview` summarizes close blockers.
-- `public.v_evidence_manager_directory` unifies failed uploads, attendance photo review, and HSE evidence review.
+Canonical reference:
 
-Apply SQL through schema 107 before treating this build as synced.
+- `sql/000_full_schema_reference.sql`
+
+## Schema 108 additions
+
+Tables / extensions:
+
+- `admin_saved_filters` gains `last_used_at`, `usage_count`, `route_hint`, and `section_hint`.
+- `admin_close_workflow_steps`
+- `admin_health_resolution_notes`
+- `admin_deployment_gate_checks`
+- `admin_public_seo_checks`
+
+Views:
+
+- `v_admin_saved_filter_scope_summary`
+- `v_admin_close_wizard_steps`
+- `v_admin_health_resolution_queue`
+- `v_admin_deployment_gate_status`
+- `v_public_seo_smoke_check`
+- refreshed `v_schema_drift_status` expecting schema 108
+
+## Important note
+
+Run schema 108 after schemas 100-107 are already applied. Schema 108 assumes the previous accounting-close, admin health, and production-readiness foundations exist.

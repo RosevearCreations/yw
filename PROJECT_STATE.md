@@ -1,21 +1,29 @@
 # Project State
 
-Last refreshed: **2026-05-14b**
+Last refreshed: **2026-05-15b**
 
-The app has moved another step toward a real production-style backend. The current focus is not adding flashy features; it is making the admin/backend reliable, traceable, recoverable, and easier to operate.
+## Current build state
 
-## Current foundations
+- Frontend build/cache version: `2026-05-15b`.
+- Latest schema marker: **108**.
+- Active Admin focus: Command Center, Health Center, Guided Close Center, Evidence Manager, saved views, deployment gates, and readiness/SEO checks.
+- Root legacy Markdown was moved back into `archive/markdown-retired-2026-05-15b/root/`.
+- Active temp `test_write` files were removed.
 
-- HSE forms and reporting modules exist.
-- Jobs, operations, evidence, and accounting backbone data are increasingly DB-backed.
-- Accounting close, reconciliation, remittance, tax filing, and accountant handoff structures exist.
-- Admin has Command Center, Health/Schema Center, Task Inbox, Guided Close Center, Evidence Manager, and Readiness/Permissions panels.
-- Schema tracking now has a live drift status view.
+## Newly added this pass
 
-## Current risks
+- Writable saved admin filters.
+- Saved-filter scope summary view.
+- Close wizard step table and view.
+- Health resolution notes table and queue view.
+- Deployment gate check table and view.
+- Public SEO smoke-check table and view.
+- Admin UI for saved views, close steps, health resolve buttons, evidence follow-up buttons, deployment gates, and SEO smoke rows.
 
-- Schema 107 must be applied live.
-- Edge Functions must be redeployed after schema changes.
-- Some admin panels are still read-only foundations.
-- RLS/permission enforcement needs a role-by-role review.
-- Large manager tables need pagination before heavy production use.
+## Important live deployment order
+
+1. Apply SQL through schema 108.
+2. Redeploy `admin-directory`.
+3. Redeploy `admin-manage`.
+4. Clear/hard refresh old service worker cache.
+5. Open Admin Health and confirm schema drift is current.

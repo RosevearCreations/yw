@@ -1,30 +1,52 @@
-# YWI App
+# YWI HSE / Operations App
 
-Last refreshed: **2026-05-14b**
+Last refreshed: **2026-05-15b**
 
-This build is the current clean working package for the YWI / YardWeasels-style HSE, operations, jobs, admin, and accounting backend app.
+This build is the current working app package for the YWI HSE, operations, jobs, reporting, accounting-close, and admin backend workflow.
 
-## Current status
+## Current focus
 
-- Current app/cache version: `2026-05-14b`.
-- Latest schema file: `sql/107_admin_readiness_drilldowns_and_live_schema_fix.sql`.
-- Active Markdown has been refreshed; older root Markdown and legacy pass notes were archived.
-- Admin now has command, health/schema, task inbox, guided close, evidence manager, and production readiness foundations.
-- The live SQL fixes for missing `app_schema_versions` and `jobs.job_status` assumptions are folded into the repo.
+The app is moving from working screens toward production-style operations. The latest pass adds Admin saved views, Guided Close Center step metadata, health/evidence follow-up logging, deployment gates, and a public SEO smoke-check foundation.
 
-## Deploy order
+## Latest schema
 
-1. Apply SQL migrations through schema **107**.
-2. Redeploy Supabase Edge Functions, especially `admin-directory` and `admin-selectors`.
-3. Deploy static files.
-4. Hard refresh the browser or clear old service worker cache.
-5. Open Admin and verify Command Center, Health, Close Center, Evidence Manager, and Readiness panels.
+Apply SQL through:
 
-## SEO rule kept during this pass
+- `sql/108_saved_filters_close_wizard_health_and_seo_gates.sql`
 
-Keep one clear H1 per exposed page. Use the terms people search for in page titles, main headings, alt text, and helpful link text. For local discovery, keep service area wording accurate and visible; local ranking is still driven by relevance, distance, and prominence.
+The canonical snapshot is also updated in:
 
-References:
-- Google Search Essentials: https://developers.google.com/search/docs/essentials
-- Google title-link guidance: https://developers.google.com/search/docs/appearance/title-link
-- Google Business Profile local ranking: https://support.google.com/business/answer/7091
+- `sql/000_full_schema_reference.sql`
+
+## Deploy notes
+
+Redeploy changed Supabase Edge Functions after applying SQL:
+
+- `admin-directory`
+- `admin-manage`
+
+Then hard refresh or clear service worker cache so `2026-05-15b` frontend files load.
+
+## Validation command
+
+```bash
+node --check js/api.js
+node --check js/admin-ui.js
+node --check js/reports-ui.js
+node --check js/jobs-ui.js
+node --check js/hse-ops-ui.js
+node --check js/logbook-ui.js
+node --check app.js
+node --check server-worker.js
+node scripts/repo-smoke-check.mjs
+```
+
+## Active planning files
+
+- `DEVELOPMENT_ROADMAP.md`
+- `KNOWN_ISSUES_AND_GAPS.md`
+- `PROJECT_STATE.md`
+- `NEW_CHAT_STATUS.md`
+- `DATABASE_STRUCTURE.md`
+- `TESTING_CHECKLIST.md`
+- `DEPLOYMENT_GUIDE.md`
