@@ -134,6 +134,12 @@
       adminTaskInbox: [],
       appSchemaVersionStatus: [],
       roleDashboardPresets: [],
+      schemaDriftStatus: [],
+      productionReadinessChecklist: [],
+      rolePermissionMatrix: [],
+      adminSavedFilterDirectory: [],
+      adminCloseCenterOverview: [],
+      evidenceManagerDirectory: [],
       hsePacketActionItems: [],
       hseDashboardSummary: [],
       accountingReviewSummary: [],
@@ -152,6 +158,7 @@
       ['accounting', 'Accounting'],
       ['messaging', 'Messaging and Diagnostics'],
       ['health', 'Health and Schema'],
+      ['readiness', 'Readiness'],
       ['all', 'Show All']
     ];
 
@@ -159,6 +166,9 @@
       'Admin Home Command Center': ['home'],
       'App Health and Schema Center': ['home','health','messaging'],
       'Admin Task Inbox': ['home','health','operations','safety','accounting'],
+      'Guided Close Center': ['home','accounting'],
+      'Evidence Manager': ['home','safety','operations'],
+      'Production Readiness and Permissions': ['home','health','readiness'],
       'Staff Directory and Access': ['people'],
       'Assignment Workbench': ['people'],
       'Dropdown and Catalog Manager': ['people','operations'],
@@ -291,6 +301,56 @@
           <div class="table-scroll">
             <table id="ad_task_table">
               <thead><tr><th>Priority</th><th>Task</th><th>Source</th><th>Due / Last Seen</th><th>Route</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+
+        <div class="admin-panel-block" data-admin-panel-title="Guided Close Center" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
+              <h3 style="margin:0;">Guided Close Center</h3>
+              <p class="section-subtitle">One place to see close blockers: open periods, payment applications, reconciliation, tax/remittance review, journal candidates, and accountant package delivery.</p>
+            </div>
+          </div>
+          <div id="ad_close_center_cards" class="admin-command-grid"></div>
+          <div id="ad_close_center_summary" class="notice" style="display:block;margin:12px 0;">Close Center data has not loaded yet.</div>
+        </div>
+
+        <div class="admin-panel-block" data-admin-panel-title="Evidence Manager" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
+              <h3 style="margin:0;">Evidence Manager</h3>
+              <p class="section-subtitle">Unified queue for failed uploads, attendance photos, HSE packet proof, route attachments, signatures, and receipt/job evidence.</p>
+            </div>
+          </div>
+          <div id="ad_evidence_manager_cards" class="admin-task-grid"></div>
+          <div class="table-scroll">
+            <table id="ad_evidence_manager_table">
+              <thead><tr><th>Status</th><th>Evidence</th><th>Source</th><th>Owner</th><th>Last Seen</th><th>Action</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="admin-panel-block" data-admin-panel-title="Production Readiness and Permissions" style="margin-top:16px;">
+          <div class="section-heading">
+            <div>
+              <h3 style="margin:0;">Production Readiness and Permissions</h3>
+              <p class="section-subtitle">Schema drift, deployment gates, backup checks, and practical role permissions before treating the app like production software.</p>
+            </div>
+          </div>
+          <div id="ad_readiness_cards" class="admin-health-grid"></div>
+          <div class="table-scroll" style="margin-bottom:12px;">
+            <table id="ad_readiness_table">
+              <thead><tr><th>Area</th><th>Check</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll">
+            <table id="ad_permissions_table">
+              <thead><tr><th>Role</th><th>Workflow</th><th>View</th><th>Create</th><th>Approve</th><th>Close/Reopen</th><th>Export</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -890,6 +950,13 @@
         taskCards: document.getElementById('ad_task_cards'),
         taskBody: document.querySelector('#ad_task_table tbody'),
         clearDiagnosticsBtn: document.getElementById('ad_clear_diagnostics'),
+        closeCenterCards: document.getElementById('ad_close_center_cards'),
+        closeCenterSummary: document.getElementById('ad_close_center_summary'),
+        evidenceManagerCards: document.getElementById('ad_evidence_manager_cards'),
+        evidenceManagerBody: document.querySelector('#ad_evidence_manager_table tbody'),
+        readinessCards: document.getElementById('ad_readiness_cards'),
+        readinessBody: document.querySelector('#ad_readiness_table tbody'),
+        permissionsBody: document.querySelector('#ad_permissions_table tbody'),
         siteActivitySummary: document.getElementById('ad_site_activity_summary'),
         opsDashboardCards: document.getElementById('ad_ops_dashboard_cards'),
         siteActivityRollups: document.getElementById('ad_site_activity_rollups'),
@@ -1731,6 +1798,9 @@
         renderAdminCommandCenter();
         renderAdminHealthCenter();
         renderAdminTaskInbox();
+        renderGuidedCloseCenter();
+        renderEvidenceManager();
+        renderProductionReadiness();
         await refreshSelectors();
 
         saveAdminCache(resp);
@@ -3741,6 +3811,12 @@
           adminTaskInbox: Array.isArray(payload?.admin_task_inbox) ? payload.admin_task_inbox : state.adminTaskInbox,
           appSchemaVersionStatus: Array.isArray(payload?.app_schema_version_status) ? payload.app_schema_version_status : state.appSchemaVersionStatus,
           roleDashboardPresets: Array.isArray(payload?.role_dashboard_presets) ? payload.role_dashboard_presets : state.roleDashboardPresets,
+          schemaDriftStatus: Array.isArray(payload?.schema_drift_status) ? payload.schema_drift_status : state.schemaDriftStatus,
+          productionReadinessChecklist: Array.isArray(payload?.production_readiness_checklist) ? payload.production_readiness_checklist : state.productionReadinessChecklist,
+          rolePermissionMatrix: Array.isArray(payload?.role_permission_matrix) ? payload.role_permission_matrix : state.rolePermissionMatrix,
+          adminSavedFilterDirectory: Array.isArray(payload?.admin_saved_filter_directory) ? payload.admin_saved_filter_directory : state.adminSavedFilterDirectory,
+          adminCloseCenterOverview: Array.isArray(payload?.admin_close_center_overview) ? payload.admin_close_center_overview : state.adminCloseCenterOverview,
+          evidenceManagerDirectory: Array.isArray(payload?.evidence_manager_directory) ? payload.evidence_manager_directory : state.evidenceManagerDirectory,
           hsePacketActionItems: Array.isArray(payload?.hse_packet_action_items) ? payload.hse_packet_action_items : state.hsePacketActionItems,
           hseDashboardSummary: Array.isArray(payload?.hse_dashboard_summary) ? payload.hse_dashboard_summary : state.hseDashboardSummary,
           accountingReviewSummary: Array.isArray(payload?.accounting_review_summary) ? payload.accounting_review_summary : state.accountingReviewSummary
@@ -3827,7 +3903,7 @@
       const latestSchema = (Array.isArray(state.appSchemaVersionStatus) ? state.appSchemaVersionStatus : [])[0] || {};
       const closeRows = Array.isArray(state.accountingCloseAdminControlDashboard) ? state.accountingCloseAdminControlDashboard : [];
       const openClose = closeRows.filter((row) => String(row.close_status || '').toLowerCase() !== 'closed').length;
-      const openJobs = (Array.isArray(state.jobs) ? state.jobs : []).filter((row) => !['complete','completed','closed','cancelled','canceled'].includes(String(row.job_status || '').toLowerCase())).length;
+      const openJobs = (Array.isArray(state.jobs) ? state.jobs : []).filter((row) => !['complete','completed','closed','cancelled','canceled'].includes(String(row.job_status || row.status || '').toLowerCase())).length;
       const hseActions = Array.isArray(state.hsePacketActionItems) ? state.hsePacketActionItems.length : 0;
       const failedUploads = firstNumber(db.failed_upload_count, (Array.isArray(state.fieldUploadFailures) ? state.fieldUploadFailures.length : 0));
       const reconciliationReviews = firstNumber(db.reconciliation_review_count, (Array.isArray(state.accountingReconciliationManualReviewQueue) ? state.accountingReconciliationManualReviewQueue.length : 0));
@@ -3835,13 +3911,13 @@
       const healthRows = [...(Array.isArray(state.adminErrorHealthCenter) ? state.adminErrorHealthCenter : []), ...getLocalDiagnosticRows()];
       const healthIssues = healthRows.filter((row) => severityRank(row.severity) <= 2).length;
       const cards = [
-        { label: 'Open Jobs', value: firstNumber(db.open_job_count, openJobs), help: 'Jobs not yet closed or cancelled.', route: 'jobs' },
-        { label: 'HSE / Safety Reviews', value: firstNumber(db.hse_review_count, hseActions), help: 'Open packets, corrective actions, or safety follow-up.', route: 'hseops' },
-        { label: 'Accounting Close', value: firstNumber(db.open_accounting_period_count, openClose), help: 'Periods, tax, payroll, or bank reconciliation still open.', entity: 'accounting_period_close' },
-        { label: 'Payment Applications', value: firstNumber(db.payment_application_attention_count, (state.arPaymentApplications?.length || 0) + (state.apPaymentApplications?.length || 0)), help: 'AR/AP payment applications ready for review.', entity: 'ar_payment_application' },
-        { label: 'Bank Reconciliation', value: reconciliationReviews, help: 'Unmatched, partial, or exception bank items.', entity: 'bank_reconciliation_item' },
-        { label: 'Accountant Packages', value: packageQueue, help: 'Export bundles needing finalize, delivery, or confirmation.', entity: 'accountant_handoff_export' },
-        { label: 'Failed Uploads', value: failedUploads, help: 'Evidence/media upload problems needing retry or review.', entity: 'field_upload_failure' },
+        { label: 'Open Jobs', value: firstNumber(db.open_job_count, openJobs), help: 'Jobs not yet closed or cancelled.', route: 'jobs', section: 'operations' },
+        { label: 'HSE / Safety Reviews', value: firstNumber(db.hse_review_count, hseActions), help: 'Open packets, corrective actions, or safety follow-up.', route: 'hseops', section: 'safety' },
+        { label: 'Accounting Close', value: firstNumber(db.open_accounting_period_count, openClose), help: 'Periods, tax, payroll, or bank reconciliation still open.', entity: 'accounting_period_close', section: 'accounting' },
+        { label: 'Payment Applications', value: firstNumber(db.payment_application_attention_count, (state.arPaymentApplications?.length || 0) + (state.apPaymentApplications?.length || 0)), help: 'AR/AP payment applications ready for review.', entity: 'ar_payment_application', section: 'accounting' },
+        { label: 'Bank Reconciliation', value: reconciliationReviews, help: 'Unmatched, partial, or exception bank items.', entity: 'bank_reconciliation_item', section: 'accounting' },
+        { label: 'Accountant Packages', value: packageQueue, help: 'Export bundles needing finalize, delivery, or confirmation.', entity: 'accountant_handoff_export', section: 'accounting' },
+        { label: 'Failed Uploads', value: failedUploads, help: 'Evidence/media upload problems needing retry or review.', entity: 'field_upload_failure', section: 'safety' },
         { label: 'App Health', value: healthIssues, help: `Schema ${latestSchema.schema_version || db.latest_schema_version || 'not logged'} · ${outboxSummary.total || 0} queued admin sync item(s).`, route: 'admin', section: 'health' }
       ];
       e.commandCenter.innerHTML = cards.map((card) => `
@@ -3874,7 +3950,8 @@
           ['Errors', errorCount, 'Critical items that need action.'],
           ['Warnings', warningCount, 'Timeouts, failed delivery, or review warnings.'],
           ['Local Diagnostics', localRows.length, 'Client-side issues captured in this browser.'],
-          ['Latest Schema', latestSchema.schema_version || '—', latestSchema.migration_key || latestSchema.notes || 'No schema version table row found yet.']
+          ['Latest Schema', latestSchema.schema_version || '—', latestSchema.migration_key || latestSchema.notes || 'No schema version table row found yet.'],
+          ['Schema Drift', drift.drift_status || 'unknown', drift.message || 'Apply migrations through the latest repo schema marker.']
         ].map(([label, value, help]) => `<div class="admin-health-card"><span>${escHtml(label)}</span><strong>${escHtml(String(value))}</strong><small>${escHtml(help)}</small></div>`).join('');
       }
       if (e.healthBody) {
@@ -3893,7 +3970,7 @@
         e.schemaBody.innerHTML = schemaRows.slice(0, 30).map((row) => `
           <tr>
             <td>${escHtml(row.schema_version || '')}</td>
-            <td>${escHtml(row.migration_key || '')}</td>
+            <td>${escHtml(row.migration_key || row.schema_name || '')}</td>
             <td>${renderStatusPill(row.status || 'unknown', String(row.status || '').toLowerCase() === 'applied' ? 'ok' : 'warning')}</td>
             <td>${escHtml(row.applied_at || '')}</td>
             <td class="admin-table-note">${escHtml(row.notes || '')}</td>
@@ -3930,6 +4007,98 @@
       }
     }
 
+
+    function renderGuidedCloseCenter() {
+      const e = els();
+      if (!e.closeCenterCards && !e.closeCenterSummary) return;
+      const row = (Array.isArray(state.adminCloseCenterOverview) ? state.adminCloseCenterOverview : [])[0] || {};
+      const cards = [
+        ['Open Periods', row.open_accounting_period_count || 0, 'Close/reopen period work still active.'],
+        ['Payment Review', row.payment_application_attention_count || 0, 'AR/AP payment applications needing review.'],
+        ['Bank Review', row.reconciliation_review_count || 0, 'Unmatched, partial, or exception bank items.'],
+        ['Tax / Payroll', (Number(row.open_tax_filing_count || 0) + Number(row.open_payroll_remittance_count || 0)), 'Filing and remittance prep still open.'],
+        ['Journal Candidates', row.journal_candidate_count || 0, 'Posting candidates or generated lines needing validation.'],
+        ['Packages', row.package_delivery_attention_count || 0, 'Accountant exports needing delivery confirmation.']
+      ];
+      if (e.closeCenterCards) {
+        e.closeCenterCards.innerHTML = cards.map(([label, value, help]) => `<div class="admin-command-card"><span>${escHtml(label)}</span><strong>${escHtml(String(value))}</strong><small>${escHtml(help)}</small></div>`).join('');
+      }
+      if (e.closeCenterSummary) {
+        const blockerCount = cards.reduce((sum, [, value]) => sum + Number(value || 0), 0);
+        e.closeCenterSummary.textContent = blockerCount ? `${blockerCount} close blocker(s) or review item(s) are visible. Use the Accounting backbone manager to open the related entity until the guided actions are wired to write endpoints.` : 'No close blockers loaded from the current dashboard view.';
+      }
+    }
+
+    function renderEvidenceManager() {
+      const e = els();
+      if (!e.evidenceManagerCards && !e.evidenceManagerBody) return;
+      const rows = Array.isArray(state.evidenceManagerDirectory) ? state.evidenceManagerDirectory : [];
+      const failed = rows.filter((row) => /fail|error|retry/i.test(String(row.evidence_status || row.status || ''))).length;
+      const review = rows.filter((row) => row.needs_review || /review|pending/i.test(String(row.evidence_status || row.status || ''))).length;
+      const signatures = rows.filter((row) => /signature|signoff/i.test(String(row.evidence_type || row.source_area || ''))).length;
+      if (e.evidenceManagerCards) {
+        e.evidenceManagerCards.innerHTML = [
+          ['Needs Review', review, 'Photos, receipts, signatures, or proof waiting for review.'],
+          ['Failed / Retry', failed, 'Uploads that need retry, replacement, or admin resolution.'],
+          ['Signatures', signatures, 'Signoff evidence present in the unified queue.'],
+          ['Total Evidence', rows.length, 'Loaded from DB evidence manager view.']
+        ].map(([label, value, help]) => `<div class="admin-task-card"><span>${escHtml(label)}</span><strong>${escHtml(String(value))}</strong><small>${escHtml(help)}</small></div>`).join('');
+      }
+      if (e.evidenceManagerBody) {
+        e.evidenceManagerBody.innerHTML = rows.slice(0, 80).map((row) => `
+          <tr>
+            <td>${renderStatusPill(row.evidence_status || row.status || 'review', row.needs_review ? 'warning' : 'info')}</td>
+            <td><strong>${escHtml(row.evidence_title || row.title || row.file_name || 'Evidence item')}</strong><div class="muted">${escHtml(row.evidence_type || '')}</div></td>
+            <td>${escHtml(row.source_area || row.source_table || '')}</td>
+            <td>${escHtml(row.owner_name || row.profile_name || row.created_by_name || '')}</td>
+            <td>${escHtml(row.last_seen_at || row.created_at || row.uploaded_at || '')}</td>
+            <td>${escHtml(row.action_hint || row.route_hint || 'Open source record')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="6" class="muted">No evidence manager rows loaded yet.</td></tr>';
+      }
+    }
+
+    function renderProductionReadiness() {
+      const e = els();
+      if (!e.readinessCards && !e.readinessBody && !e.permissionsBody) return;
+      const checks = Array.isArray(state.productionReadinessChecklist) ? state.productionReadinessChecklist : [];
+      const perms = Array.isArray(state.rolePermissionMatrix) ? state.rolePermissionMatrix : [];
+      const drift = (Array.isArray(state.schemaDriftStatus) ? state.schemaDriftStatus : [])[0] || {};
+      const blocked = checks.filter((row) => /blocked|fail|missing/i.test(String(row.check_status || ''))).length;
+      const warnings = checks.filter((row) => /warn|review/i.test(String(row.check_status || ''))).length;
+      if (e.readinessCards) {
+        e.readinessCards.innerHTML = [
+          ['Schema Drift', drift.drift_status || 'unknown', drift.message || 'Live database should match repo schema marker.'],
+          ['Blocked Checks', blocked, 'Must be fixed before production sign-off.'],
+          ['Warnings', warnings, 'Review before deployment.'],
+          ['Permission Rows', perms.length, 'Visible role/workflow permission matrix.']
+        ].map(([label, value, help]) => `<div class="admin-health-card"><span>${escHtml(label)}</span><strong>${escHtml(String(value))}</strong><small>${escHtml(help)}</small></div>`).join('');
+      }
+      if (e.readinessBody) {
+        e.readinessBody.innerHTML = checks.slice(0, 80).map((row) => `
+          <tr>
+            <td>${escHtml(row.check_area || '')}</td>
+            <td><strong>${escHtml(row.check_title || '')}</strong><div class="muted">${escHtml(row.check_detail || '')}</div></td>
+            <td>${renderStatusPill(row.check_status || 'review', /ok|ready|pass/i.test(String(row.check_status || '')) ? 'ok' : 'warning')}</td>
+            <td>${escHtml(row.next_action || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="4" class="muted">No production readiness checks loaded yet. Apply schema 107.</td></tr>';
+      }
+      if (e.permissionsBody) {
+        e.permissionsBody.innerHTML = perms.slice(0, 120).map((row) => `
+          <tr>
+            <td>${escHtml(row.role_key || row.role_label || '')}</td>
+            <td>${escHtml(row.workflow_area || '')}</td>
+            <td>${row.can_view ? 'Yes' : 'No'}</td>
+            <td>${row.can_create ? 'Yes' : 'No'}</td>
+            <td>${row.can_approve ? 'Yes' : 'No'}</td>
+            <td>${row.can_close_reopen ? 'Yes' : 'No'}</td>
+            <td>${row.can_export ? 'Yes' : 'No'}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="7" class="muted">No permission matrix rows loaded yet. Apply schema 107.</td></tr>';
+      }
+    }
+
     function handleAdminCommandClick(event) {
       const btn = event.target.closest('[data-admin-command-route],[data-admin-command-entity],[data-admin-command-section]');
       if (!btn) return;
@@ -3937,6 +4106,9 @@
       const route = btn.getAttribute('data-admin-command-route') || '';
       const entity = btn.getAttribute('data-admin-command-entity') || '';
       if (section) applyAdminSectionFilter(section);
+      if (section === 'health') document.querySelector('[data-admin-panel-title=\"App Health and Schema Center\"]')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+      if (section === 'accounting') document.querySelector('[data-admin-panel-title=\"Guided Close Center\"]')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+      if (section === 'safety') document.querySelector('[data-admin-panel-title=\"Evidence Manager\"]')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
       if (entity) focusAdminHubEntity(entity, { summary: `Focused ${entity.replaceAll('_', ' ')} from the Admin Command Center.` });
       if (route && route !== 'admin') window.YWIRouter?.showSection?.(route);
     }

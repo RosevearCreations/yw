@@ -1,0 +1,34 @@
+<!-- Reviewed during 2026-05-06 accounting close, reconciliation, and backend accounting coverage pass. -->
+<!-- Reviewed during 2026-05-05 migration compatibility and commercial-schema sync pass. -->
+# Jobs Quote Output and Posting Rules
+
+This pass extends Jobs commercial workflow with:
+
+- branded printable and email quote output from stored quote packages
+- automatic commercial threshold evaluations before work-order release
+- closeout evidence links tied to completion package items
+- invoice and journal candidate posting rules
+- accountant handoff exports with entity/tax-profile context
+- profitability and variance scorecards by site, supervisor, route, and job family
+
+## Best next checks
+
+1. Render a quote package from an estimate and verify printable/email fields populate.
+2. Mark the quote printed and then sent; verify output events exist.
+3. Evaluate thresholds on a work order and verify pass/warn/block rows are stored.
+4. Link one closeout evidence row to a completion package item.
+5. Export an accountant handoff package for a completion review.
+6. Verify profitability/variance rows appear for job, site, supervisor, route, and job family.
+
+
+## Pass 096 notes
+
+This pass adds branded quote output, automatic threshold evaluation, closeout evidence linkage, invoice/journal posting-rule structures, accountant handoff exports, and profitability/variance scorecards for the Jobs commercial workflow.
+
+
+---
+Pass 097 sync note (2026-04-26d): quote output, threshold enforcement on save/release, closeout evidence linkage to real records, posting-rule-aware invoice/journal candidates, accountant handoff enrichment, and extended profitability scorecards.
+
+## 2026-05-05 sync note
+The 096 migration in the repo is now the compatibility-safe canonical version. If this workflow evolves again, later passes should preserve view layouts instead of redefining them with fewer columns.
+

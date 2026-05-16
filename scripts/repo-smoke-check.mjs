@@ -75,6 +75,7 @@ const requiredFiles = [
   'sql/104_reporting_loader_timeout_guardrails.sql',
   'sql/105_repo_cleanup_and_roadmap_refresh.sql',
   'sql/106_admin_command_center_schema_tracking_and_health.sql',
+  'sql/107_admin_readiness_drilldowns_and_live_schema_fix.sql',
   'js/hse-ops-ui.js',
   'supabase/functions/jobs-directory/index.ts',
   'supabase/functions/jobs-manage/index.ts',
@@ -125,7 +126,7 @@ addCheck('account-has-conflict-review', accountUi.includes('Conflict Review'), '
 addCheck('account-has-support-export', accountUi.includes('Export Support Snapshot'), 'account-ui.js should render the support snapshot export button.');
 
 const schema = read('sql/000_full_schema_reference.sql');
-addCheck('schema-header-current', /106_admin_command_center_schema_tracking_and_health/i.test(schema), 'Schema snapshot should reflect the latest 106 pass.');
+addCheck('schema-header-current', /107_admin_readiness_drilldowns_and_live_schema_fix/i.test(schema), 'Schema snapshot should reflect the latest 107 pass.');
 
 const schedulerRun = read('supabase/functions/service-execution-scheduler-run/index.ts');
 addCheck('scheduler-run-advances-next-run', schedulerRun.includes('next_run_at: computeNextRunAt'), 'Scheduler Edge Function should advance next_run_at after successful runs.');
@@ -158,10 +159,16 @@ addCheck('schema-has-app-schema-versions', schema.includes('app_schema_versions'
 addCheck('schema-has-admin-command-center', schema.includes('v_admin_home_command_center'), 'Canonical schema should include the Admin Home Command Center view.');
 addCheck('schema-has-admin-health-center', schema.includes('v_admin_error_health_center'), 'Canonical schema should include the Admin Error Health Center view.');
 addCheck('schema-has-admin-task-inbox', schema.includes('v_admin_task_inbox'), 'Canonical schema should include the DB-backed Admin Task Inbox view.');
+addCheck('schema-has-drift-status', schema.includes('v_schema_drift_status'), 'Canonical schema should include schema drift status view.');
+addCheck('schema-has-production-readiness', schema.includes('v_production_readiness_checklist'), 'Canonical schema should include production readiness checklist view.');
+addCheck('schema-has-role-permission-matrix', schema.includes('v_role_permission_matrix'), 'Canonical schema should include role permission matrix view.');
+addCheck('schema-has-evidence-manager-directory', schema.includes('v_evidence_manager_directory'), 'Canonical schema should include evidence manager directory view.');
+addCheck('admin-directory-does-not-select-job-status', !read('supabase/functions/admin-directory/index.ts').includes('job_status,client_id'), 'admin-directory should not select jobs.job_status directly because live schema may use jobs.status.');
+addCheck('admin-selectors-does-not-select-job-status', !read('supabase/functions/admin-selectors/index.ts').includes('job_status,client_id'), 'admin-selectors should not select jobs.job_status directly because live schema may use jobs.status.');
 addCheck('admin-renders-command-center', adminUi.includes('Admin Home Command Center') && adminUi.includes('renderAdminCommandCenter'), 'admin-ui.js should render the Admin Home Command Center.');
 addCheck('admin-renders-health-center', adminUi.includes('App Health and Schema Center') && adminUi.includes('renderAdminHealthCenter'), 'admin-ui.js should render the App Health and Schema Center.');
 addCheck('edge-loads-command-center', read('supabase/functions/admin-directory/index.ts').includes('v_admin_home_command_center'), 'admin-directory should load the Admin Command Center views.');
-addCheck('active-docs-archived-snapshot', fileExists('archive/markdown-current-snapshot-2026-05-10/root/README.md'), 'Archive snapshot should preserve the previous root README.');
+addCheck('active-docs-archived-snapshot', fileExists('archive/markdown-current-snapshot-2026-05-14b/root/README.md'), 'Archive snapshot should preserve the previous root README.');
 addCheck('retired-markdown-not-in-root', !fileExists('AI_START_PROMPT.md') && !fileExists('PROJECT_BRAIN.md') && !fileExists('REPO_BASE.md') && !fileExists('RUNBOOK_AUTH_BOOTSTRAP.md'), 'Retired root Markdown should be moved out of the active root.');
 addCheck('no-test-write-files', !fileExists('test_write.txt') && !fileExists('test_write2_OLD.txt') && !fileExists('test_write3.txt') && !fileExists('test_write_OLD.txt'), 'Temporary test_write files should not exist in the active root.');
 addCheck('verifydb-retired-from-active-sql', !fileExists('sql/VerifyDB_24_04_2026.sql'), 'Old VerifyDB helper should stay archived, not active in sql/.');

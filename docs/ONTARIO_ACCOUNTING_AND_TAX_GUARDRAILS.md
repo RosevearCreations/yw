@@ -1,27 +1,5 @@
 # Ontario Accounting and Tax Guardrails
 
-Last refreshed: **2026-05-10**
+Last refreshed: **2026-05-14b**
 
-## Scope
-
-The app can help track accounting support records, but it should not pretend to replace accountant review.
-
-## Practical guardrails
-
-- Keep source records linked to postings.
-- Keep sales tax calculations reviewable.
-- Keep payroll remittance support separate from final filing/payment decisions.
-- Keep accountant exports clear and auditable.
-- Require close/reopen reasons.
-- Preserve receipts, statements, and evidence links.
-
-## Review needed
-
-A qualified accountant should review:
-
-- year-end adjustments;
-- tax filings/remittances;
-- corporate filing support;
-- chart of accounts/GIFI mapping;
-- payroll remittance handling;
-- HST/GST/PST treatment where applicable.
+The app should support review and export workflows, not claim to file taxes directly. Keep accountant-facing support clear: GL detail, trial balance, AR/AP, HST/tax support, payroll remittance support, reconciliation, receipts, and export package index.

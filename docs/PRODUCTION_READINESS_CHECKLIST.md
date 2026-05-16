@@ -1,26 +1,14 @@
 # Production Readiness Checklist
 
-Last refreshed: **2026-05-15a**
+Last refreshed: **2026-05-14b**
 
-## Before production use
+Schema 107 adds the first DB-backed readiness checklist. The Admin UI now shows the checklist plus schema drift and permission rows.
 
-- Apply all migrations through latest schema.
-- Confirm `app_schema_versions` shows latest schema.
-- Verify Supabase RLS policies for every sensitive table.
-- Verify Edge Function auth checks.
-- Verify environment variables.
-- Verify CORS behaviour.
-- Verify backups and restore test.
-- Verify service worker cache version.
-- Verify no stale app files deploy.
-- Verify Admin Health Center is clean or has expected warnings only.
-- Verify role permission matrix.
-- Verify accounting close/reopen audit trail.
-- Verify export package contents.
-- Verify report subscription delivery and scheduler logs.
-- Verify upload failure retry path.
-- Verify mobile field-worker screens.
+## Required before real production use
 
-## Production definition
-
-The app should not be treated as production-ready until security, backup, restore, schema drift, role permissions, and accounting close/export flows are all verified with live records.
+- Schema drift shows current.
+- RLS reviewed role-by-role.
+- Backups and restore test completed.
+- Error/health center monitored after deploy.
+- Accounting close blockers clear before period lock.
+- Public pages, if added, pass SEO/H1/asset checks.

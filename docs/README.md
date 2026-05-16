@@ -1,15 +1,15 @@
 # Docs Index
 
-Last refreshed: **2026-05-15a**
+Last refreshed: **2026-05-14b**
 
-Current active docs:
+Active docs are now kept short and current. Older pass notes were moved to `docs/archive/legacy-passes-2026-05-14b/`.
 
+Start with:
+
+- `../README.md`
+- `../DEVELOPMENT_ROADMAP.md`
+- `../KNOWN_ISSUES_AND_GAPS.md`
 - `ADMIN_COMMAND_CENTER_AND_HEALTH.md`
 - `ACCOUNTING_CLOSE_END_TO_END_WORKFLOW.md`
-- `BACKUP_RESTORE_PLAN.md`
 - `PRODUCTION_READINESS_CHECKLIST.md`
 - `SEO_PUBLIC_PAGE_RULES.md`
-- `ONTARIO_ACCOUNTING_AND_TAX_GUARDRAILS.md`
-- `HISTORICAL_REPORTING.md`
-
-Older pass notes remain in `archive/` for history.
