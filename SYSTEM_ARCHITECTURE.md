@@ -1,18 +1,23 @@
 # System Architecture
 
-Last refreshed: **2026-05-16b**
+Last refreshed: **2026-05-17a**
 
-## App layers
+## Frontend
 
-- Static frontend: `index.html`, `style.css`, `app.js`, and files in `js/`.
-- Service worker: `server-worker.js`, versioned as `2026-05-16b`.
-- Supabase Edge Functions: `admin-directory`, `admin-manage`, `admin-selectors`, and other API functions.
-- Supabase/Postgres schema: SQL migrations through schema 111.
+The static app loads `index.html`, `style.css`, `app.js`, feature UI modules, and a service worker. Current cache/version marker is `2026-05-17a`.
 
-## Current production-readiness direction
+## Admin UI
 
-The Admin backend is being split into smaller, safer read paths rather than one huge payload. Staff Directory now sends list controls to `admin-directory`; the Edge Function returns `pagination_meta` so the UI can show real page state.
+`js/admin-ui.js` renders Admin Command Center, Staff Directory, Operations Backbone, Health, Evidence, Guided Close, and production-readiness panels. Staff and Jobs list controls now use local UI state and send paging/sort metadata to `admin-directory`.
 
-## Important pattern
+## Backend
 
-Keep UI controls, Edge Function payloads, schema markers, and Markdown in sync every pass. This avoids the repeated drift where the UI expects a table/view/function that the live database has not applied yet.
+Supabase Edge Functions provide authenticated reads/writes. Current pass updates `supabase/functions/admin-directory/index.ts` with sanitized sort allowlists, Staff metadata, Jobs metadata, and fast paths for `scope: people` and `scope: operations`.
+
+## Database
+
+SQL migrations live under `sql/`. The canonical reference file is `sql/000_full_schema_reference.sql`. Latest marker is schema 112.
+
+## Offline/cache
+
+The service worker cache is versioned. After each deployment, hard refresh or unregister the service worker if older files remain visible.

@@ -71,6 +71,22 @@ function sanitizeIlikeTerm(value: unknown) {
     .slice(0, 80);
 }
 
+function allowSort(value: unknown, fallback: string, allowed: string[]) {
+  const clean = String(value || '').trim().toLowerCase();
+  return allowed.includes(clean) ? clean : fallback;
+}
+
+function normalizeDirection(value: unknown) {
+  return String(value || '').trim().toLowerCase() === 'desc' ? 'desc' : 'asc';
+}
+
+function compareNullable(a: any, b: any, direction = 'asc') {
+  const left = a == null ? '' : String(a).toLowerCase();
+  const right = b == null ? '' : String(b).toLowerCase();
+  const result = left.localeCompare(right, undefined, { numeric: true, sensitivity: 'base' });
+  return direction === 'desc' ? -result : result;
+}
+
 async function safeListPaged(supabase: any, table: string, options: Record<string, any> = {}) {
   const columns = options.columns || '*';
   const orderColumn = options.orderColumn;
@@ -142,6 +158,10 @@ serve(async (req) => {
   const search = String(body.search || '').trim().toLowerCase();
   const peopleSearch = String(body.people_search ?? body.search ?? '').trim().toLowerCase();
   const roleFilter = String(body.role_filter || body.profile_role || '').trim().toLowerCase();
+  const peopleSort = allowSort(body.people_sort, 'full_name', ['full_name','email','role','employment_status','last_login_at','created_at','updated_at']);
+  const peopleSortDir = normalizeDirection(body.people_sort_dir);
+  const jobsSort = allowSort(body.jobs_sort, 'job_code', ['job_code','job_name','status','priority','start_date','end_date','updated_at','created_at']);
+  const jobsSortDir = normalizeDirection(body.jobs_sort_dir);
   const limit = clampInt(body.limit, 200, 1, 500);
   const peoplePage = clampInt(body.people_page ?? body.page, 1, 1, 10000);
   const peoplePageSize = clampInt(body.people_page_size ?? body.page_size, Math.min(limit, 50), 1, 200);
@@ -251,8 +271,9 @@ serve(async (req) => {
       .some((v) => String(v || '').toLowerCase().includes(peopleSearch));
   });
 
+  const sortedPeople = [...filteredPeople].sort((a: any, b: any) => compareNullable(a?.[peopleSort], b?.[peopleSort], peopleSortDir));
   const peopleOffset = (peoplePage - 1) * peoplePageSize;
-  const pagedPeople = filteredPeople.slice(peopleOffset, peopleOffset + peoplePageSize);
+  const pagedPeople = sortedPeople.slice(peopleOffset, peopleOffset + peoplePageSize);
   const peopleMeta = {
     page: peoplePage,
     page_size: peoplePageSize,
@@ -260,15 +281,40 @@ serve(async (req) => {
     total_pages: Math.max(1, Math.ceil(filteredPeople.length / peoplePageSize)),
     loaded: pagedPeople.length,
     search: peopleSearch,
-    role_filter: roleFilter
+    role_filter: roleFilter,
+    sort: peopleSort,
+    direction: peopleSortDir
   };
 
   const response: Record<string, unknown> = {
     ok:true,
     profiles: pagedPeople,
     users: pagedPeople,
-    pagination_meta: { scope, limit, search, people: peopleMeta, supports_server_paging: true }
+    pagination_meta: { scope, limit, search, people: peopleMeta, supports_server_paging: true, supports_sorting: true }
   };
+
+  if (scope === 'people' && roleRank(actorRole) >= roleRank('supervisor')) {
+    return Response.json(response, { headers: corsHeaders });
+  }
+
+  if (scope === 'operations' && roleRank(actorRole) >= roleRank('supervisor')) {
+    response.service_areas = await safeList(supabase, 'service_areas', '*', 'name', limit);
+    response.routes = await safeList(supabase, 'routes', '*', 'name', limit);
+    const jobsPaged = await safeListPaged(supabase, 'jobs', {
+      orderColumn: jobsSort,
+      ascending: jobsSortDir !== 'desc',
+      page: jobsPage,
+      pageSize: jobsPageSize,
+      search: jobsSearch,
+      searchColumns: ['job_code', 'job_name', 'status', 'priority', 'client_name']
+    });
+    response.jobs = jobsPaged.rows;
+    response.pagination_meta = { ...(response.pagination_meta as Record<string, unknown>), jobs: { ...jobsPaged.meta, sort: jobsSort, direction: jobsSortDir } };
+    response.clients = await safeList(supabase, 'clients', '*', 'legal_name', limit);
+    response.client_sites = await safeList(supabase, 'client_sites', '*', 'site_name', limit);
+    response.operations_dashboard_summary = await safeList(supabase, 'v_operations_dashboard_summary');
+    return Response.json(response, { headers: corsHeaders });
+  }
 
   if ((scope === 'all' || scope === 'health' || scope === 'command_center') && roleRank(actorRole) >= roleRank('supervisor')) {
     response.admin_home_command_center = await safeList(supabase, 'v_admin_home_command_center');
@@ -324,14 +370,15 @@ serve(async (req) => {
     response.service_areas = await safeList(supabase, 'service_areas', '*', 'name', limit);
     response.routes = await safeList(supabase, 'routes', '*', 'name', limit);
     const jobsPaged = await safeListPaged(supabase, 'jobs', {
-      orderColumn: 'job_code',
+      orderColumn: jobsSort,
+      ascending: jobsSortDir !== 'desc',
       page: jobsPage,
       pageSize: jobsPageSize,
       search: jobsSearch,
-      searchColumns: ['job_code', 'job_name', 'status']
+      searchColumns: ['job_code', 'job_name', 'status', 'priority', 'client_name']
     });
     response.jobs = jobsPaged.rows;
-    response.pagination_meta = { ...(response.pagination_meta as Record<string, unknown>), jobs: jobsPaged.meta };
+    response.pagination_meta = { ...(response.pagination_meta as Record<string, unknown>), jobs: { ...jobsPaged.meta, sort: jobsSort, direction: jobsSortDir } };
     response.clients = await safeList(supabase, 'clients', '*', 'legal_name', limit);
     response.client_sites = await safeList(supabase, 'client_sites', '*', 'site_name', limit);
     response.units_of_measure = await safeList(supabase, 'units_of_measure', '*', 'sort_order', limit);

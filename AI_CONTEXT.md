@@ -1,25 +1,21 @@
 # AI Context
 
-Last refreshed: **2026-05-16b**
-
-## Project
-
-YWI operations/HSE/admin app using a static frontend, Supabase Edge Functions, and Postgres schema migrations.
+Last refreshed: **2026-05-17a**
 
 ## Current state
 
-The latest pass is `2026-05-16b`. It advances Admin toward production readiness by adding Staff Directory pagination controls, Edge Function pagination metadata, and saved-view replay for staff filters.
+The latest pass added production-style Admin list controls. Staff Directory now has sort/direction controls. Jobs/Operations now has visible search/sort/page-size/previous/next controls. `admin-directory` now accepts sanitized people/jobs sort payloads and returns paging metadata.
 
-## Must preserve in future passes
+## Key files changed in this pass
 
-- Update Markdown and schema files every pass.
-- Keep retired root Markdown in `archive/`, not active root.
-- Remove recurring `test_write` temp files.
-- Keep one H1 in exposed app shell.
-- Keep mobile navigation compact.
-- Bump cache/script version each frontend pass.
-- Apply SQL before deploying functions that depend on new views/tables.
+- `js/admin-ui.js`
+- `style.css`
+- `supabase/functions/admin-directory/index.ts`
+- `sql/112_admin_operations_pagination_sorting_panel_refresh.sql`
+- `sql/000_full_schema_reference.sql`
+- `scripts/repo-smoke-check.mjs`
+- active Markdown files
 
-## Current latest schema
+## Next best task
 
-`111_admin_directory_pagination_saved_view_replay.sql`
+Add panel-only refresh buttons so Staff, Operations, Health, Accounting, Evidence, and Reporting can refresh independently without reloading the full Admin directory.

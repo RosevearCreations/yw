@@ -1,34 +1,26 @@
 # New Chat Status
 
-Last refreshed: **2026-05-16b**
+Last refreshed: **2026-05-17a**
 
-## Handoff summary
+## Current release package
 
-We are working on the YWI operations/HSE/admin app. The latest build adds production-style Staff Directory paging and saved-view replay after the previous compact mobile menu pass.
+The latest prepared build is expected to be named:
 
-## Latest schema
+`yw-main-122-updated-2026-05-17a-admin-list-sorting-operations-pagination.zip`
 
-- Latest migration: `sql/111_admin_directory_pagination_saved_view_replay.sql`
-- Canonical reference updated: `sql/000_full_schema_reference.sql`
+## What this pass did
 
-## Latest frontend version
+This pass focused on making Admin list screens act more like a real production app on desktop and mobile. Staff Directory now has visible sort/direction controls, Jobs/Operations now has visible search/sort/page-size/previous/next controls, and saved admin views replay both Staff and Jobs filters. The `admin-directory` Edge Function now accepts sanitized sort payloads and has narrower `scope: people` and `scope: operations` fast paths.
 
-- `2026-05-16b`
+## Deploy checklist
 
-## Files changed in the latest pass
+1. Apply SQL through **schema 112**.
+2. Redeploy Supabase Edge Function: `admin-directory`.
+3. Deploy static files.
+4. Hard refresh or unregister the service worker so `2026-05-17a` assets load.
+5. Open Admin on a phone-width viewport and confirm the Staff and Jobs toolbars stack cleanly.
+6. Run `node scripts/repo-smoke-check.mjs` from the repo root after deployment if local tooling is available.
 
-- `js/admin-ui.js`
-- `supabase/functions/admin-directory/index.ts`
-- `style.css`
-- `index.html`
-- `server-worker.js`
-- `scripts/repo-smoke-check.mjs`
-- `sql/111_admin_directory_pagination_saved_view_replay.sql`
-- `sql/000_full_schema_reference.sql`
-- active Markdown files
+## Immediate next work
 
-## Next priorities
-
-1. Apply SQL 111 and redeploy `admin-directory`.
-2. Test Staff Directory paging and saved-view replay with real records.
-3. Continue the next 20-step roadmap in `DEVELOPMENT_ROADMAP.md`.
+Start with panel-only refresh buttons, then add a dedicated Operations jobs review table and direct row actions.

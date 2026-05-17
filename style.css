@@ -1600,10 +1600,10 @@ body[data-authenticated="false"] .main-menu-toggle {
   }
 }
 
-/* 2026-05-16b: production-style list controls for Admin directory pages */
+/* 2026-05-17a: production-style list controls for Admin directory and Operations pages */
 .admin-list-toolbar {
   display: grid;
-  grid-template-columns: minmax(180px, 1.5fr) minmax(130px, .8fr) minmax(90px, .5fr) auto;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 10px;
   align-items: end;
   padding: 12px;
@@ -1644,5 +1644,25 @@ body[data-authenticated="false"] .main-menu-toggle {
   .admin-pager-actions .muted {
     flex: 1 1 100%;
     min-height: 42px;
+  }
+}
+
+
+.admin-jobs-toolbar {
+  margin-bottom: 12px;
+}
+
+.admin-jobs-toolbar .admin-pager-actions {
+  grid-column: 1 / -1;
+}
+
+.admin-list-toolbar input[type="search"],
+.admin-list-toolbar select {
+  width: 100%;
+}
+
+@media (min-width: 960px) {
+  .admin-list-toolbar .admin-pager-actions {
+    grid-column: auto / span 2;
   }
 }

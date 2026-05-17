@@ -1,27 +1,34 @@
 # Database Structure
 
-Last refreshed: **2026-05-16b**
+Last refreshed: **2026-05-17a**
 
-## Latest schema marker
+## Current schema marker
 
-Latest active schema: **111**
+- Latest migration: **112**
+- File: `sql/112_admin_operations_pagination_sorting_panel_refresh.sql`
+- Canonical reference: `sql/000_full_schema_reference.sql`
 
-## New in schema 111
+## Schema 112 purpose
 
-`sql/111_admin_directory_pagination_saved_view_replay.sql` adds a safe production-readiness marker for:
+Schema 112 is a low-risk tracking migration. It does not rebuild core business tables. It updates/records:
 
-- Staff Directory pagination controls.
-- `admin-directory` pagination metadata for people and jobs.
-- Saved admin view replay for Staff Directory filters.
-- Cache/version gate for `2026-05-16b`.
-- `v_schema_drift_status` expected version advanced to 111.
+- `app_schema_versions` marker for release `2026-05-17a`
+- frontend quality gates for Staff sorting
+- frontend quality gates for Jobs/Operations paging
+- Edge Function sorting payload expectations
+- saved-view replay expectations
+- cache version quality gate
+- `v_schema_drift_status` expected version 112
+- `v_mobile_navigation_quality_gates` with current Admin UX gates
 
-## Existing related schema foundations
+## Main DB-backed areas
 
-- Schema 109 created `admin_list_pagination_settings` and `v_admin_list_pagination_settings`.
-- Schema 110 created mobile navigation/frontend quality gates.
-- Schema 111 updates the quality gates and marks the new Admin list behaviour.
+- Profiles, sites, assignments, access views
+- Jobs, routes, work orders, estimates, equipment, materials
+- HSE forms, evidence, corrective actions, training, SDS
+- Accounting close, reconciliation, tax, payroll, AR/AP, GL, accountant handoff
+- Admin health, schema drift, audit, saved filters, deployment gates
 
-## Apply order
+## Deploy rule
 
-Apply migrations in order through schema 111. If the live DB missed schema 106 earlier, run the fixed live-schema versions already included in the current migration chain before schema 111.
+Apply SQL through schema 112 before relying on Admin Health, schema drift, or new quality-gate rows.

@@ -1,29 +1,33 @@
 # Project State
 
-Last refreshed: **2026-05-16b**
+Last refreshed: **2026-05-17a**
 
-## Current state
+## Status
 
-The app is moving from prototype/admin shell toward a more real operations backend. The newest pass focuses on reducing Admin payload weight and making Staff Directory usable on phones and desktops.
+The app is a Supabase-backed HSE/operations/accounting admin system with a growing production-readiness workflow. Current focus is reducing heavy Admin loads, improving mobile usability, and making backend workflows easier to manage safely.
 
-## Working areas
+## Current schema marker
 
-- Authenticated app shell and service worker.
-- Compact mobile main navigation and compact mobile Admin section navigation.
-- Admin Command Center, Health/Schema Center, Task Inbox, Guided Close Center, Evidence Manager, and Readiness panels.
-- Accounting close foundation through payment application, reconciliation, filing/remittance, export packaging, and close wizard tracking.
-- Staff/user management with stronger mobile layout and new paged Staff Directory controls.
-- Admin saved views with section and Staff Directory filter replay.
-- Schema tracking through **111**.
+- Latest repo schema: **112**
+- Latest migration file: `sql/112_admin_operations_pagination_sorting_panel_refresh.sql`
+- Canonical schema reference: `sql/000_full_schema_reference.sql`
 
-## Still needs live deployment/testing
+## Current frontend/cache marker
 
-- Apply SQL through schema 111.
-- Redeploy changed Edge Function `admin-directory`.
-- Clear old service worker cache.
-- Test Staff Directory paging with real production data.
-- Confirm saved views replay Staff Directory filters after real DB reload.
+- Static asset version: **2026-05-17a**
+- Service worker cache: **ywi-shell-v2026-05-17a**
 
-## Current release label
+## Main active areas
 
-`2026-05-16b-admin-directory-pagination-saved-view-replay`
+- Admin Command Center and Health Center
+- Staff Directory and access management
+- Jobs/Operations backbone manager
+- Guided Close Center
+- Evidence Manager
+- Reporting fast path
+- Accounting close and accountant handoff foundations
+- Mobile navigation and responsive Admin toolbars
+
+## Important deploy note
+
+The database must be migrated through schema 112 and `admin-directory` must be redeployed before the new Staff/Jobs sorting and pagination metadata can be trusted live.

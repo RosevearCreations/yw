@@ -1,30 +1,24 @@
 # Deployment Guide
 
-Last refreshed: **2026-05-16b**
+Last refreshed: **2026-05-17a**
 
-## Deploy checklist
+## Required order
 
-1. Apply SQL through `sql/111_admin_directory_pagination_saved_view_replay.sql`.
-2. Deploy Supabase Edge Function changes:
-   - `admin-directory`
-   - `admin-manage` if the live function is behind the saved-filter support pass.
-3. Deploy static files to the hosting target.
-4. Clear/unregister the service worker or hard refresh.
-5. Confirm frontend assets load with `?v=2026-05-16b`.
+1. Apply SQL through schema 112.
+2. Redeploy Supabase Edge Function `admin-directory`.
+3. Deploy static files.
+4. Clear the browser/service-worker cache.
+5. Validate Admin on desktop and mobile.
 
-## Smoke test
+## Post-deploy checks
 
-```bash
-node scripts/repo-smoke-check.mjs
-```
+- Admin Health reports schema 112 current.
+- Staff Directory shows search, role, sort, direction, rows, previous, and next.
+- Jobs/Operations shows search, sort, direction, rows, previous, and next.
+- Saved views replay Staff and Jobs filters.
+- `node scripts/repo-smoke-check.mjs` passes if run locally.
+- `index.html` still has one H1.
 
-## Manual browser test
+## Cache warning
 
-- Open the app on desktop.
-- Open Admin > People and Access.
-- Search Staff Directory.
-- Change role filter.
-- Change page size.
-- Use Previous/Next.
-- Save a view and press Use to confirm Staff filters replay.
-- Open the same Admin screen at phone width and confirm the controls stack cleanly.
+If the old menu or old Admin list controls appear after deployment, unregister the service worker and refresh again. Current expected cache is `ywi-shell-v2026-05-17a`.
