@@ -1,6 +1,6 @@
 # Docs Index
 
-Last refreshed: **2026-05-16a**
+Last refreshed: **2026-05-16b**
 
 The root Markdown files are the active handoff set. These `docs/` files provide topic-specific background and implementation notes.
 
@@ -33,3 +33,5 @@ Schema **110** adds frontend quality-gate tracking for mobile navigation while p
 - Added compact expandable mobile main navigation so the app no longer opens as a long route list on phones.
 - Added compact expandable Admin section navigation for small screens.
 - Added schema 110 frontend quality gates and updated active Markdown/schema references.
+
+_Reviewed in the 2026-05-16b pass for schema 111 documentation consistency._

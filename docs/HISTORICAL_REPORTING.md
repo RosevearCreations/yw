@@ -1,6 +1,6 @@
 # Historical Reporting
 
-Last refreshed: **2026-05-16a**
+Last refreshed: **2026-05-16b**
 
 Reports remain lazy-loaded so Admin does not time out from heavy report fetches. Keep the reporting fast path in `admin-directory` and add pagination/export gates before expanding report payloads.
 
@@ -16,3 +16,5 @@ Schema **109** added production-readiness foundations: admin list pagination set
 - Added compact expandable mobile main navigation so the app no longer opens as a long route list on phones.
 - Added compact expandable Admin section navigation for small screens.
 - Added schema 110 frontend quality gates and updated active Markdown/schema references.
+
+_Reviewed in the 2026-05-16b pass for schema 111 documentation consistency._

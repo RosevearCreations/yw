@@ -155,6 +155,11 @@
       hseDashboardSummary: [],
       accountingReviewSummary: [],
       smokeChecks: [],
+      adminDirectoryMeta: {},
+      directoryPagination: {
+        people: { page: 1, pageSize: 25, total: 0, totalPages: 1, loaded: 0, search: '', roleFilter: '' },
+        jobs: { page: 1, pageSize: 25, total: 0, totalPages: 1, loaded: 0, search: '' }
+      },
       adminSection: 'home'
     };
 
@@ -533,6 +538,31 @@
             <button id="ad_staff_delete" class="secondary" type="button">Delete User</button>
           </div>
           <div id="ad_staff_status_notice" class="notice" style="display:none;margin-top:10px;"></div>
+          <div class="admin-list-toolbar" id="ad_staff_pager" style="margin-top:14px;">
+            <label>Search staff<input id="ad_staff_search" type="search" placeholder="Name, email, phone, trade" /></label>
+            <label>Role
+              <select id="ad_staff_role_filter">
+                <option value="">All roles</option>
+                <option value="employee">Employee</option>
+                <option value="supervisor">Supervisor</option>
+                <option value="admin">Admin</option>
+              </select>
+            </label>
+            <label>Rows
+              <select id="ad_staff_page_size">
+                <option value="10">10</option>
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </label>
+            <div class="admin-pager-actions">
+              <button id="ad_staff_prev_page" class="secondary" type="button">Previous</button>
+              <span id="ad_staff_page_label" class="muted">Page 1 of 1</span>
+              <button id="ad_staff_next_page" class="secondary" type="button">Next</button>
+              <button id="ad_staff_apply_filter" class="secondary" type="button">Apply</button>
+            </div>
+          </div>
           <div class="table-scroll" style="margin-top:14px;">
             <table id="ad_staff_table">
               <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Tier</th><th>Seniority</th><th>Status</th><th>Phone</th><th>Cost/hr</th><th>Bill/hr</th></tr></thead>
@@ -989,6 +1019,13 @@
         staffBlockBtn: document.getElementById('ad_staff_block'),
         staffDeleteBtn: document.getElementById('ad_staff_delete'),
         staffStatusNotice: document.getElementById('ad_staff_status_notice'),
+        staffSearch: document.getElementById('ad_staff_search'),
+        staffRoleFilter: document.getElementById('ad_staff_role_filter'),
+        staffPageSize: document.getElementById('ad_staff_page_size'),
+        staffPrevPage: document.getElementById('ad_staff_prev_page'),
+        staffNextPage: document.getElementById('ad_staff_next_page'),
+        staffPageLabel: document.getElementById('ad_staff_page_label'),
+        staffApplyFilter: document.getElementById('ad_staff_apply_filter'),
         staffBody: document.querySelector('#ad_staff_table tbody'),
         assignmentId: document.getElementById('ad_assignment_id'),
         assignmentSiteId: document.getElementById('ad_assignment_site_id'),
@@ -1245,16 +1282,73 @@
       if (e.staffNotes) e.staffNotes.value = item.notes || '';
     }
 
+    function applyDirectoryPaginationMeta(meta = {}) {
+      const people = meta?.people || {};
+      const jobs = meta?.jobs || {};
+      if (people && typeof people === 'object') {
+        state.directoryPagination.people = {
+          ...state.directoryPagination.people,
+          page: Number(people.page || state.directoryPagination.people.page || 1),
+          pageSize: Number(people.page_size || state.directoryPagination.people.pageSize || 25),
+          total: Number(people.total || 0),
+          totalPages: Number(people.total_pages || 1),
+          loaded: Number(people.loaded || 0),
+          search: String(people.search ?? state.directoryPagination.people.search ?? ''),
+          roleFilter: String(people.role_filter ?? state.directoryPagination.people.roleFilter ?? '')
+        };
+      }
+      if (jobs && typeof jobs === 'object') {
+        state.directoryPagination.jobs = {
+          ...state.directoryPagination.jobs,
+          page: Number(jobs.page || state.directoryPagination.jobs.page || 1),
+          pageSize: Number(jobs.page_size || state.directoryPagination.jobs.pageSize || 25),
+          total: Number(jobs.total || 0),
+          totalPages: Number(jobs.total_pages || 1),
+          loaded: Number(jobs.loaded || 0),
+          search: String(jobs.search ?? state.directoryPagination.jobs.search ?? '')
+        };
+      }
+    }
+
+    function renderStaffPagination() {
+      const e = els();
+      const paging = state.directoryPagination.people || { page: 1, pageSize: 25, total: 0, totalPages: 1, loaded: 0 };
+      if (e.staffSearch && document.activeElement !== e.staffSearch) e.staffSearch.value = paging.search || '';
+      if (e.staffRoleFilter && document.activeElement !== e.staffRoleFilter) e.staffRoleFilter.value = paging.roleFilter || '';
+      if (e.staffPageSize && document.activeElement !== e.staffPageSize) e.staffPageSize.value = String(paging.pageSize || 25);
+      if (e.staffPageLabel) {
+        const start = paging.total ? ((paging.page - 1) * paging.pageSize) + 1 : 0;
+        const end = Math.min(paging.total || 0, (paging.page || 1) * (paging.pageSize || 25));
+        e.staffPageLabel.textContent = `Page ${paging.page || 1} of ${paging.totalPages || 1} · ${start}-${end} of ${paging.total || state.users.length}`;
+      }
+      if (e.staffPrevPage) e.staffPrevPage.disabled = (paging.page || 1) <= 1;
+      if (e.staffNextPage) e.staffNextPage.disabled = (paging.page || 1) >= (paging.totalPages || 1);
+    }
+
     function renderStaffDirectory() {
       const e = els();
+      renderStaffPagination();
       if (e.staffProfileId) {
         const current = e.staffProfileId.value || '';
         e.staffProfileId.innerHTML = '<option value="">Select staff</option>' + state.users.map((row) => `<option value="${escHtml(row.id)}">${escHtml(row.full_name || row.email || row.id)} (${escHtml(row.role || 'employee')})</option>`).join('');
-        if (current) e.staffProfileId.value = current;
+        if (current && state.users.some((row) => String(row.id) === String(current))) e.staffProfileId.value = current;
       }
       if (e.staffBody) {
-        e.staffBody.innerHTML = state.users.map((row) => `<tr data-staff-id="${escHtml(row.id)}"><td>${escHtml(row.full_name || '')}</td><td>${escHtml(row.email || '')}</td><td>${escHtml(row.role || '')}</td><td>${escHtml(row.staff_tier || '')}</td><td>${escHtml(row.seniority_level || '')}</td><td>${escHtml(row.employment_status || (row.is_active === false ? 'blocked' : 'active'))}</td><td>${escHtml(row.phone || '')}</td><td>${escHtml(row.hourly_cost_rate || '')}</td><td>${escHtml(row.hourly_bill_rate || '')}</td><td>${escHtml(row.last_login_at ? new Date(row.last_login_at).toLocaleString() : '')}</td><td>${escHtml(row.login_event_count ?? 0)}</td></tr>`).join('') || '<tr><td colspan="11" class="muted">No staff records loaded.</td></tr>'; 
+        e.staffBody.innerHTML = state.users.map((row) => `<tr data-staff-id="${escHtml(row.id)}"><td>${escHtml(row.full_name || '')}</td><td>${escHtml(row.email || '')}</td><td>${escHtml(row.role || '')}</td><td>${escHtml(row.staff_tier || '')}</td><td>${escHtml(row.seniority_level || '')}</td><td>${escHtml(row.employment_status || (row.is_active === false ? 'blocked' : 'active'))}</td><td>${escHtml(row.phone || '')}</td><td>${escHtml(row.hourly_cost_rate || '')}</td><td>${escHtml(row.hourly_bill_rate || '')}</td><td>${escHtml(row.last_login_at ? new Date(row.last_login_at).toLocaleString() : '')}</td><td>${escHtml(row.login_event_count ?? 0)}</td></tr>`).join('') || '<tr><td colspan="11" class="muted">No staff records loaded for this page/filter.</td></tr>'; 
       }
+    }
+
+    function applyStaffDirectoryFilter(resetPage = true) {
+      const e = els();
+      const nextPageSize = Number(e.staffPageSize?.value || state.directoryPagination.people.pageSize || 25);
+      state.directoryPagination.people = {
+        ...state.directoryPagination.people,
+        search: String(e.staffSearch?.value || '').trim(),
+        roleFilter: String(e.staffRoleFilter?.value || '').trim(),
+        pageSize: Number.isFinite(nextPageSize) && nextPageSize > 0 ? nextPageSize : 25,
+        page: resetPage ? 1 : (state.directoryPagination.people.page || 1)
+      };
+      return loadDirectory();
     }
 
     function getSelectedStaff() {
@@ -1769,9 +1863,23 @@
       if (state.locked) return;
 
       try {
-        const resp = await loadAdminDirectory({ scope: 'all', limit: 200 });
+        const peoplePaging = state.directoryPagination.people || {};
+        const jobsPaging = state.directoryPagination.jobs || {};
+        const resp = await loadAdminDirectory({
+          scope: 'all',
+          limit: 200,
+          people_page: peoplePaging.page || 1,
+          people_page_size: peoplePaging.pageSize || 25,
+          people_search: peoplePaging.search || '',
+          role_filter: peoplePaging.roleFilter || '',
+          jobs_page: jobsPaging.page || 1,
+          jobs_page_size: jobsPaging.pageSize || 25,
+          jobs_search: jobsPaging.search || ''
+        });
         state.notifications = Array.isArray(resp?.notifications) ? resp.notifications : [];
         state.users = Array.isArray(resp?.users) ? resp.users : [];
+        state.adminDirectoryMeta = resp?.pagination_meta || {};
+        applyDirectoryPaginationMeta(state.adminDirectoryMeta);
         state.sites = Array.isArray(resp?.sites) ? resp.sites : [];
         state.assignments = Array.isArray(resp?.assignments) ? resp.assignments : [];
         state.salesOrders = Array.isArray(resp?.sales_orders) ? resp.sales_orders : [];
@@ -1878,7 +1986,7 @@
         state.hseDashboardSummary = Array.isArray(resp?.hse_dashboard_summary) ? resp.hse_dashboard_summary : [];
         state.accountingReviewSummary = Array.isArray(resp?.accounting_review_summary) ? resp.accounting_review_summary : [];
         state.counts = {
-          users: state.users.length,
+          users: state.directoryPagination.people?.total || state.users.length,
           sites: Array.isArray(resp?.sites) ? resp.sites.length : 0,
           assignments: state.assignments.length,
           orders: state.salesOrders.length
@@ -4044,7 +4152,10 @@
           queue_search: e.search?.value || '',
           queue_status: e.filterStatus?.value || '',
           backbone_entity: e.backboneEntity?.value || '',
-          catalog_type: e.catalogType?.value || ''
+          catalog_type: e.catalogType?.value || '',
+          people_search: state.directoryPagination.people?.search || e.staffSearch?.value || '',
+          people_role_filter: state.directoryPagination.people?.roleFilter || e.staffRoleFilter?.value || '',
+          people_page_size: state.directoryPagination.people?.pageSize || e.staffPageSize?.value || 25
         }
       });
       if (e.savedFilterName) e.savedFilterName.value = '';
@@ -4065,9 +4176,22 @@
       const itemId = (useBtn || delBtn).getAttribute(useBtn ? 'data-saved-filter-use' : 'data-saved-filter-delete') || '';
       if (!itemId) return;
       if (useBtn) {
+        const saved = state.adminSavedFilterDirectory.find((row) => String(row.id || '') === String(itemId)) || null;
+        const payload = (saved && typeof saved.filter_payload === 'object') ? saved.filter_payload : {};
         await manageAdminEntity({ entity: 'admin_saved_filter', action: 'touch', item_id: itemId });
-        applyAdminSectionFilter(useBtn.getAttribute('data-saved-filter-section') || 'home');
-        setSummary('Loaded saved admin view.', false);
+        applyAdminSectionFilter(payload.section || useBtn.getAttribute('data-saved-filter-section') || 'home');
+        if (payload.queue_search && els().search) els().search.value = payload.queue_search;
+        if (payload.queue_status && els().filterStatus) els().filterStatus.value = payload.queue_status;
+        if (payload.backbone_entity && els().backboneEntity) els().backboneEntity.value = payload.backbone_entity;
+        if (payload.catalog_type && els().catalogType) els().catalogType.value = payload.catalog_type;
+        state.directoryPagination.people = {
+          ...state.directoryPagination.people,
+          page: 1,
+          search: String(payload.people_search || ''),
+          roleFilter: String(payload.people_role_filter || ''),
+          pageSize: Number(payload.people_page_size || state.directoryPagination.people.pageSize || 25)
+        };
+        setSummary('Loaded saved admin view with section and Staff Directory filters.', false);
         await loadDirectory();
       }
       if (delBtn) {
@@ -4820,6 +4944,42 @@
       if (e.staffProfileId && e.staffProfileId.dataset.bound !== '1') {
         e.staffProfileId.dataset.bound = '1';
         e.staffProfileId.addEventListener('change', () => fillStaffForm(getSelectedStaff()));
+      }
+      if (e.staffApplyFilter && e.staffApplyFilter.dataset.bound !== '1') {
+        e.staffApplyFilter.dataset.bound = '1';
+        e.staffApplyFilter.addEventListener('click', () => applyStaffDirectoryFilter(true).catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.staffSearch && e.staffSearch.dataset.bound !== '1') {
+        e.staffSearch.dataset.bound = '1';
+        e.staffSearch.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            applyStaffDirectoryFilter(true).catch((err) => setSummary(String(err?.message || err), true));
+          }
+        });
+      }
+      if (e.staffRoleFilter && e.staffRoleFilter.dataset.bound !== '1') {
+        e.staffRoleFilter.dataset.bound = '1';
+        e.staffRoleFilter.addEventListener('change', () => applyStaffDirectoryFilter(true).catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.staffPageSize && e.staffPageSize.dataset.bound !== '1') {
+        e.staffPageSize.dataset.bound = '1';
+        e.staffPageSize.addEventListener('change', () => applyStaffDirectoryFilter(true).catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.staffPrevPage && e.staffPrevPage.dataset.bound !== '1') {
+        e.staffPrevPage.dataset.bound = '1';
+        e.staffPrevPage.addEventListener('click', () => {
+          state.directoryPagination.people.page = Math.max(1, (state.directoryPagination.people.page || 1) - 1);
+          loadDirectory().catch((err) => setSummary(String(err?.message || err), true));
+        });
+      }
+      if (e.staffNextPage && e.staffNextPage.dataset.bound !== '1') {
+        e.staffNextPage.dataset.bound = '1';
+        e.staffNextPage.addEventListener('click', () => {
+          const maxPage = state.directoryPagination.people.totalPages || 1;
+          state.directoryPagination.people.page = Math.min(maxPage, (state.directoryPagination.people.page || 1) + 1);
+          loadDirectory().catch((err) => setSummary(String(err?.message || err), true));
+        });
       }
       if (e.siteActivityBody && e.siteActivityBody.dataset.bound !== '1') {
         e.siteActivityBody.dataset.bound = '1';
