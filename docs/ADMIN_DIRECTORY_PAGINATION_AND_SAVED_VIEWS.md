@@ -1,6 +1,6 @@
 # Admin Directory Pagination and Saved Views
 
-Last refreshed: **2026-05-16b**
+Last refreshed: **2026-05-17a**
 
 ## Purpose
 
@@ -44,3 +44,5 @@ This makes saved views more useful than a simple section shortcut.
 - Add sort selectors.
 - Add panel-specific refresh paths.
 - Move more people filtering into direct SQL-side paging for admin-wide lists.
+
+_Reviewed in the 2026-05-17a pass for schema 112 documentation consistency._

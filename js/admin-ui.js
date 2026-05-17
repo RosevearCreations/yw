@@ -157,8 +157,8 @@
       smokeChecks: [],
       adminDirectoryMeta: {},
       directoryPagination: {
-        people: { page: 1, pageSize: 25, total: 0, totalPages: 1, loaded: 0, search: '', roleFilter: '' },
-        jobs: { page: 1, pageSize: 25, total: 0, totalPages: 1, loaded: 0, search: '' }
+        people: { page: 1, pageSize: 25, total: 0, totalPages: 1, loaded: 0, search: '', roleFilter: '', sort: 'full_name', direction: 'asc' },
+        jobs: { page: 1, pageSize: 25, total: 0, totalPages: 1, loaded: 0, search: '', sort: 'job_code', direction: 'asc' }
       },
       adminSection: 'home'
     };
@@ -548,6 +548,23 @@
                 <option value="admin">Admin</option>
               </select>
             </label>
+            <label>Sort
+              <select id="ad_staff_sort">
+                <option value="full_name">Name</option>
+                <option value="email">Email</option>
+                <option value="role">Role</option>
+                <option value="employment_status">Status</option>
+                <option value="last_login_at">Last Login</option>
+                <option value="created_at">Created</option>
+                <option value="updated_at">Updated</option>
+              </select>
+            </label>
+            <label>Direction
+              <select id="ad_staff_sort_dir">
+                <option value="asc">A to Z</option>
+                <option value="desc">Z to A</option>
+              </select>
+            </label>
             <label>Rows
               <select id="ad_staff_page_size">
                 <option value="10">10</option>
@@ -853,6 +870,39 @@
               <select id="ad_backbone_item_id"></select>
             </label>
           </div>
+          <div class="admin-list-toolbar admin-jobs-toolbar" id="ad_jobs_pager" style="margin-top:14px;">
+            <label>Search jobs<input id="ad_jobs_search" type="search" placeholder="Job code, name, status" /></label>
+            <label>Sort
+              <select id="ad_jobs_sort">
+                <option value="job_code">Job Code</option>
+                <option value="job_name">Job Name</option>
+                <option value="status">Status</option>
+                <option value="priority">Priority</option>
+                <option value="start_date">Start Date</option>
+                <option value="updated_at">Updated</option>
+              </select>
+            </label>
+            <label>Direction
+              <select id="ad_jobs_sort_dir">
+                <option value="asc">A to Z / oldest</option>
+                <option value="desc">Z to A / newest</option>
+              </select>
+            </label>
+            <label>Rows
+              <select id="ad_jobs_page_size">
+                <option value="10">10</option>
+                <option value="25" selected>25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </label>
+            <div class="admin-pager-actions">
+              <button id="ad_jobs_prev_page" class="secondary" type="button">Previous</button>
+              <span id="ad_jobs_page_label" class="muted">Page 1 of 1</span>
+              <button id="ad_jobs_next_page" class="secondary" type="button">Next</button>
+              <button id="ad_jobs_apply_filter" class="secondary" type="button">Refresh Jobs</button>
+            </div>
+          </div>
           <div id="ad_backbone_fields" class="grid" style="margin-top:12px;"></div>
           <div id="ad_backbone_insights" class="admin-insights-grid" style="margin-top:12px;"></div>
           <div class="form-footer admin-backbone-footer" style="margin-top:12px;">
@@ -1021,6 +1071,8 @@
         staffStatusNotice: document.getElementById('ad_staff_status_notice'),
         staffSearch: document.getElementById('ad_staff_search'),
         staffRoleFilter: document.getElementById('ad_staff_role_filter'),
+        staffSort: document.getElementById('ad_staff_sort'),
+        staffSortDir: document.getElementById('ad_staff_sort_dir'),
         staffPageSize: document.getElementById('ad_staff_page_size'),
         staffPrevPage: document.getElementById('ad_staff_prev_page'),
         staffNextPage: document.getElementById('ad_staff_next_page'),
@@ -1057,6 +1109,14 @@
         backbonePostBtn: document.getElementById('ad_backbone_post'),
         backboneGenerateBtn: document.getElementById('ad_backbone_generate'),
         backboneDownloadBtn: document.getElementById('ad_backbone_download'),
+        jobsSearch: document.getElementById('ad_jobs_search'),
+        jobsSort: document.getElementById('ad_jobs_sort'),
+        jobsSortDir: document.getElementById('ad_jobs_sort_dir'),
+        jobsPageSize: document.getElementById('ad_jobs_page_size'),
+        jobsPrevPage: document.getElementById('ad_jobs_prev_page'),
+        jobsNextPage: document.getElementById('ad_jobs_next_page'),
+        jobsPageLabel: document.getElementById('ad_jobs_page_label'),
+        jobsApplyFilter: document.getElementById('ad_jobs_apply_filter'),
         backboneHead: document.getElementById('ad_backbone_table_head'),
         backboneBody: document.querySelector('#ad_backbone_table tbody'),
         sitesCount: document.getElementById('ad_sites_count'),
@@ -1294,7 +1354,9 @@
           totalPages: Number(people.total_pages || 1),
           loaded: Number(people.loaded || 0),
           search: String(people.search ?? state.directoryPagination.people.search ?? ''),
-          roleFilter: String(people.role_filter ?? state.directoryPagination.people.roleFilter ?? '')
+          roleFilter: String(people.role_filter ?? state.directoryPagination.people.roleFilter ?? ''),
+          sort: String(people.sort ?? state.directoryPagination.people.sort ?? 'full_name'),
+          direction: String(people.direction ?? state.directoryPagination.people.direction ?? 'asc')
         };
       }
       if (jobs && typeof jobs === 'object') {
@@ -1305,7 +1367,9 @@
           total: Number(jobs.total || 0),
           totalPages: Number(jobs.total_pages || 1),
           loaded: Number(jobs.loaded || 0),
-          search: String(jobs.search ?? state.directoryPagination.jobs.search ?? '')
+          search: String(jobs.search ?? state.directoryPagination.jobs.search ?? ''),
+          sort: String(jobs.order_column ?? jobs.sort ?? state.directoryPagination.jobs.sort ?? 'job_code'),
+          direction: jobs.ascending === false ? 'desc' : String(jobs.direction ?? state.directoryPagination.jobs.direction ?? 'asc')
         };
       }
     }
@@ -1315,6 +1379,8 @@
       const paging = state.directoryPagination.people || { page: 1, pageSize: 25, total: 0, totalPages: 1, loaded: 0 };
       if (e.staffSearch && document.activeElement !== e.staffSearch) e.staffSearch.value = paging.search || '';
       if (e.staffRoleFilter && document.activeElement !== e.staffRoleFilter) e.staffRoleFilter.value = paging.roleFilter || '';
+      if (e.staffSort && document.activeElement !== e.staffSort) e.staffSort.value = paging.sort || 'full_name';
+      if (e.staffSortDir && document.activeElement !== e.staffSortDir) e.staffSortDir.value = paging.direction || 'asc';
       if (e.staffPageSize && document.activeElement !== e.staffPageSize) e.staffPageSize.value = String(paging.pageSize || 25);
       if (e.staffPageLabel) {
         const start = paging.total ? ((paging.page - 1) * paging.pageSize) + 1 : 0;
@@ -1323,6 +1389,36 @@
       }
       if (e.staffPrevPage) e.staffPrevPage.disabled = (paging.page || 1) <= 1;
       if (e.staffNextPage) e.staffNextPage.disabled = (paging.page || 1) >= (paging.totalPages || 1);
+    }
+
+    function renderJobsPagination() {
+      const e = els();
+      const paging = state.directoryPagination.jobs || { page: 1, pageSize: 25, total: 0, totalPages: 1, loaded: 0, search: '', sort: 'job_code', direction: 'asc' };
+      if (e.jobsSearch && document.activeElement !== e.jobsSearch) e.jobsSearch.value = paging.search || '';
+      if (e.jobsSort && document.activeElement !== e.jobsSort) e.jobsSort.value = paging.sort || 'job_code';
+      if (e.jobsSortDir && document.activeElement !== e.jobsSortDir) e.jobsSortDir.value = paging.direction || 'asc';
+      if (e.jobsPageSize && document.activeElement !== e.jobsPageSize) e.jobsPageSize.value = String(paging.pageSize || 25);
+      if (e.jobsPageLabel) {
+        const start = paging.total ? ((paging.page - 1) * paging.pageSize) + 1 : 0;
+        const end = Math.min(paging.total || 0, (paging.page || 1) * (paging.pageSize || 25));
+        e.jobsPageLabel.textContent = `Jobs page ${paging.page || 1} of ${paging.totalPages || 1} · ${start}-${end} of ${paging.total || state.jobs.length}`;
+      }
+      if (e.jobsPrevPage) e.jobsPrevPage.disabled = (paging.page || 1) <= 1;
+      if (e.jobsNextPage) e.jobsNextPage.disabled = (paging.page || 1) >= (paging.totalPages || 1);
+    }
+
+    function applyJobsDirectoryFilter(resetPage = true) {
+      const e = els();
+      const nextPageSize = Number(e.jobsPageSize?.value || state.directoryPagination.jobs.pageSize || 25);
+      state.directoryPagination.jobs = {
+        ...state.directoryPagination.jobs,
+        search: String(e.jobsSearch?.value || '').trim(),
+        sort: String(e.jobsSort?.value || 'job_code').trim() || 'job_code',
+        direction: String(e.jobsSortDir?.value || 'asc').trim() || 'asc',
+        pageSize: Number.isFinite(nextPageSize) && nextPageSize > 0 ? nextPageSize : 25,
+        page: resetPage ? 1 : (state.directoryPagination.jobs.page || 1)
+      };
+      return loadDirectory();
     }
 
     function renderStaffDirectory() {
@@ -1345,6 +1441,8 @@
         ...state.directoryPagination.people,
         search: String(e.staffSearch?.value || '').trim(),
         roleFilter: String(e.staffRoleFilter?.value || '').trim(),
+        sort: String(e.staffSort?.value || 'full_name').trim() || 'full_name',
+        direction: String(e.staffSortDir?.value || 'asc').trim() || 'asc',
         pageSize: Number.isFinite(nextPageSize) && nextPageSize > 0 ? nextPageSize : 25,
         page: resetPage ? 1 : (state.directoryPagination.people.page || 1)
       };
@@ -1872,9 +1970,13 @@
           people_page_size: peoplePaging.pageSize || 25,
           people_search: peoplePaging.search || '',
           role_filter: peoplePaging.roleFilter || '',
+          people_sort: peoplePaging.sort || 'full_name',
+          people_sort_dir: peoplePaging.direction || 'asc',
           jobs_page: jobsPaging.page || 1,
           jobs_page_size: jobsPaging.pageSize || 25,
-          jobs_search: jobsPaging.search || ''
+          jobs_search: jobsPaging.search || '',
+          jobs_sort: jobsPaging.sort || 'job_code',
+          jobs_sort_dir: jobsPaging.direction || 'asc'
         });
         state.notifications = Array.isArray(resp?.notifications) ? resp.notifications : [];
         state.users = Array.isArray(resp?.users) ? resp.users : [];
@@ -3757,6 +3859,7 @@
     function renderBackboneTable() {
       const e = els();
       const entity = e.backboneEntity?.value || 'unit_of_measure';
+      renderJobsPagination();
       setActiveAdminHubFocus(entity);
       const cfg = BACKBONE_CONFIG[entity];
       const rows = getBackboneRows(entity);
@@ -4155,7 +4258,13 @@
           catalog_type: e.catalogType?.value || '',
           people_search: state.directoryPagination.people?.search || e.staffSearch?.value || '',
           people_role_filter: state.directoryPagination.people?.roleFilter || e.staffRoleFilter?.value || '',
-          people_page_size: state.directoryPagination.people?.pageSize || e.staffPageSize?.value || 25
+          people_sort: state.directoryPagination.people?.sort || e.staffSort?.value || 'full_name',
+          people_sort_dir: state.directoryPagination.people?.direction || e.staffSortDir?.value || 'asc',
+          people_page_size: state.directoryPagination.people?.pageSize || e.staffPageSize?.value || 25,
+          jobs_search: state.directoryPagination.jobs?.search || e.jobsSearch?.value || '',
+          jobs_sort: state.directoryPagination.jobs?.sort || e.jobsSort?.value || 'job_code',
+          jobs_sort_dir: state.directoryPagination.jobs?.direction || e.jobsSortDir?.value || 'asc',
+          jobs_page_size: state.directoryPagination.jobs?.pageSize || e.jobsPageSize?.value || 25
         }
       });
       if (e.savedFilterName) e.savedFilterName.value = '';
@@ -4189,9 +4298,19 @@
           page: 1,
           search: String(payload.people_search || ''),
           roleFilter: String(payload.people_role_filter || ''),
+          sort: String(payload.people_sort || state.directoryPagination.people.sort || 'full_name'),
+          direction: String(payload.people_sort_dir || state.directoryPagination.people.direction || 'asc'),
           pageSize: Number(payload.people_page_size || state.directoryPagination.people.pageSize || 25)
         };
-        setSummary('Loaded saved admin view with section and Staff Directory filters.', false);
+        state.directoryPagination.jobs = {
+          ...state.directoryPagination.jobs,
+          page: 1,
+          search: String(payload.jobs_search || ''),
+          sort: String(payload.jobs_sort || state.directoryPagination.jobs.sort || 'job_code'),
+          direction: String(payload.jobs_sort_dir || state.directoryPagination.jobs.direction || 'asc'),
+          pageSize: Number(payload.jobs_page_size || state.directoryPagination.jobs.pageSize || 25)
+        };
+        setSummary('Loaded saved admin view with section, Staff Directory filters, and Jobs paging filters.', false);
         await loadDirectory();
       }
       if (delBtn) {
@@ -4962,6 +5081,14 @@
         e.staffRoleFilter.dataset.bound = '1';
         e.staffRoleFilter.addEventListener('change', () => applyStaffDirectoryFilter(true).catch((err) => setSummary(String(err?.message || err), true)));
       }
+      if (e.staffSort && e.staffSort.dataset.bound !== '1') {
+        e.staffSort.dataset.bound = '1';
+        e.staffSort.addEventListener('change', () => applyStaffDirectoryFilter(true).catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.staffSortDir && e.staffSortDir.dataset.bound !== '1') {
+        e.staffSortDir.dataset.bound = '1';
+        e.staffSortDir.addEventListener('change', () => applyStaffDirectoryFilter(true).catch((err) => setSummary(String(err?.message || err), true)));
+      }
       if (e.staffPageSize && e.staffPageSize.dataset.bound !== '1') {
         e.staffPageSize.dataset.bound = '1';
         e.staffPageSize.addEventListener('change', () => applyStaffDirectoryFilter(true).catch((err) => setSummary(String(err?.message || err), true)));
@@ -4978,6 +5105,46 @@
         e.staffNextPage.addEventListener('click', () => {
           const maxPage = state.directoryPagination.people.totalPages || 1;
           state.directoryPagination.people.page = Math.min(maxPage, (state.directoryPagination.people.page || 1) + 1);
+          loadDirectory().catch((err) => setSummary(String(err?.message || err), true));
+        });
+      }
+      if (e.jobsApplyFilter && e.jobsApplyFilter.dataset.bound !== '1') {
+        e.jobsApplyFilter.dataset.bound = '1';
+        e.jobsApplyFilter.addEventListener('click', () => applyJobsDirectoryFilter(true).catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.jobsSearch && e.jobsSearch.dataset.bound !== '1') {
+        e.jobsSearch.dataset.bound = '1';
+        e.jobsSearch.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            applyJobsDirectoryFilter(true).catch((err) => setSummary(String(err?.message || err), true));
+          }
+        });
+      }
+      if (e.jobsSort && e.jobsSort.dataset.bound !== '1') {
+        e.jobsSort.dataset.bound = '1';
+        e.jobsSort.addEventListener('change', () => applyJobsDirectoryFilter(true).catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.jobsSortDir && e.jobsSortDir.dataset.bound !== '1') {
+        e.jobsSortDir.dataset.bound = '1';
+        e.jobsSortDir.addEventListener('change', () => applyJobsDirectoryFilter(true).catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.jobsPageSize && e.jobsPageSize.dataset.bound !== '1') {
+        e.jobsPageSize.dataset.bound = '1';
+        e.jobsPageSize.addEventListener('change', () => applyJobsDirectoryFilter(true).catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.jobsPrevPage && e.jobsPrevPage.dataset.bound !== '1') {
+        e.jobsPrevPage.dataset.bound = '1';
+        e.jobsPrevPage.addEventListener('click', () => {
+          state.directoryPagination.jobs.page = Math.max(1, (state.directoryPagination.jobs.page || 1) - 1);
+          loadDirectory().catch((err) => setSummary(String(err?.message || err), true));
+        });
+      }
+      if (e.jobsNextPage && e.jobsNextPage.dataset.bound !== '1') {
+        e.jobsNextPage.dataset.bound = '1';
+        e.jobsNextPage.addEventListener('click', () => {
+          const maxPage = state.directoryPagination.jobs.totalPages || 1;
+          state.directoryPagination.jobs.page = Math.min(maxPage, (state.directoryPagination.jobs.page || 1) + 1);
           loadDirectory().catch((err) => setSummary(String(err?.message || err), true));
         });
       }

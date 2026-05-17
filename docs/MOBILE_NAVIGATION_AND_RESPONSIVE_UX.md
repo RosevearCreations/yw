@@ -1,6 +1,6 @@
 # Mobile Navigation and Responsive UX
 
-Last refreshed: **2026-05-16b**
+Last refreshed: **2026-05-17a**
 
 ## Current mobile UX status
 
@@ -10,11 +10,11 @@ This pass adds responsive Staff Directory list controls so the Admin app is not 
 
 ## Files involved
 
-- `index.html`: versioned frontend assets at `2026-05-16b`.
+- `index.html`: versioned frontend assets at `2026-05-17a`.
 - `js/mobile-menu.js`: compact main menu behaviour.
 - `js/admin-ui.js`: compact Admin sections plus Staff Directory pager/search controls.
 - `style.css`: mobile menu and admin list toolbar styles.
-- `server-worker.js`: cache version `2026-05-16b`.
+- `server-worker.js`: cache version `2026-05-17a`.
 - `sql/111_admin_directory_pagination_saved_view_replay.sql`: quality gates for Staff Directory pagination and saved-view replay.
 
 ## Manual test
@@ -26,3 +26,5 @@ This pass adds responsive Staff Directory list controls so the Admin app is not 
 5. Open People and Access.
 6. Confirm Staff Directory controls stack cleanly.
 7. Search, filter by role, change page size, and use Previous/Next.
+
+_Reviewed in the 2026-05-17a pass for schema 112 documentation consistency._

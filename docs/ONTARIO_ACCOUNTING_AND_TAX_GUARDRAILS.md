@@ -1,6 +1,6 @@
 # Ontario Accounting and Tax Guardrails
 
-Last refreshed: **2026-05-16b**
+Last refreshed: **2026-05-17a**
 
 The app should support review and export workflows, not claim to file taxes directly. Keep accountant-facing support clear: GL detail, trial balance, AR/AP, HST/tax support, payroll remittance support, reconciliation, receipts, and export package index.
 
@@ -17,4 +17,4 @@ Schema **109** added production-readiness foundations: admin list pagination set
 - Added compact expandable Admin section navigation for small screens.
 - Added schema 110 frontend quality gates and updated active Markdown/schema references.
 
-_Reviewed in the 2026-05-16b pass for schema 111 documentation consistency._
+_Reviewed in the 2026-05-17a pass for schema 112 documentation consistency._
