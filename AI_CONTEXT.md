@@ -1,20 +1,25 @@
 # AI Context
 
-Last refreshed: **2026-05-16a**
+Last refreshed: **2026-05-16b**
 
-This repo is the YWI HSE / operations app. The user wants every code pass to update Markdown, SQL schema references, smoke checks, CSS drift, SEO checks, and one-H1 status.
+## Project
+
+YWI operations/HSE/admin app using a static frontend, Supabase Edge Functions, and Postgres schema migrations.
 
 ## Current state
 
-- Latest build version: `2026-05-16a`
-- Latest schema: `110`
-- Latest focus: compact mobile navigation, responsive Admin section navigation, frontend quality gates, and continued production-readiness cleanup.
+The latest pass is `2026-05-16b`. It advances Admin toward production readiness by adding Staff Directory pagination controls, Edge Function pagination metadata, and saved-view replay for staff filters.
 
-## Critical habits
+## Must preserve in future passes
 
-- Do not reintroduce retired root Markdown into the active root.
-- Remove `test_write` temp files from active root.
-- Keep one H1 per exposed page.
-- Keep roadmap and known gaps current after every pass.
-- Bump service-worker/static asset versions when changing frontend files.
-- Apply SQL before relying on new Admin UI/schema health rows.
+- Update Markdown and schema files every pass.
+- Keep retired root Markdown in `archive/`, not active root.
+- Remove recurring `test_write` temp files.
+- Keep one H1 in exposed app shell.
+- Keep mobile navigation compact.
+- Bump cache/script version each frontend pass.
+- Apply SQL before deploying functions that depend on new views/tables.
+
+## Current latest schema
+
+`111_admin_directory_pagination_saved_view_replay.sql`

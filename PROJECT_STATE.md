@@ -1,22 +1,29 @@
 # Project State
 
-Last refreshed: **2026-05-16a**
+Last refreshed: **2026-05-16b**
 
-## Current build
+## Current state
 
-- Build label: `2026-05-16a`
-- Latest schema: `110`
-- Main focus: mobile navigation usability, responsive Admin section navigation, active-document cleanup, schema tracking, and continued production-readiness foundations.
+The app is moving from prototype/admin shell toward a more real operations backend. The newest pass focuses on reducing Admin payload weight and making Staff Directory usable on phones and desktops.
 
-## What is working in this build
+## Working areas
 
-- Main mobile navigation is collapsed behind one **Menu** button.
-- The Menu button shows the current route and expands into touch-friendly links.
-- The Admin section navigation is also collapsed on phones, with a current-section label and expandable section list.
-- Desktop navigation remains visible and unchanged.
-- Service worker cache version is bumped to `2026-05-16a`.
-- Schema 110 records frontend quality gates for mobile navigation, cache version, one-H1, and Markdown readiness.
+- Authenticated app shell and service worker.
+- Compact mobile main navigation and compact mobile Admin section navigation.
+- Admin Command Center, Health/Schema Center, Task Inbox, Guided Close Center, Evidence Manager, and Readiness panels.
+- Accounting close foundation through payment application, reconciliation, filing/remittance, export packaging, and close wizard tracking.
+- Staff/user management with stronger mobile layout and new paged Staff Directory controls.
+- Admin saved views with section and Staff Directory filter replay.
+- Schema tracking through **111**.
 
-## Main caution
+## Still needs live deployment/testing
 
-Apply schema **110** and hard refresh after deployment. Old service-worker cache can make the previous long mobile menu appear even when files are updated.
+- Apply SQL through schema 111.
+- Redeploy changed Edge Function `admin-directory`.
+- Clear old service worker cache.
+- Test Staff Directory paging with real production data.
+- Confirm saved views replay Staff Directory filters after real DB reload.
+
+## Current release label
+
+`2026-05-16b-admin-directory-pagination-saved-view-replay`

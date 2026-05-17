@@ -1599,3 +1599,50 @@ body[data-authenticated="false"] .main-menu-toggle {
     justify-content: center;
   }
 }
+
+/* 2026-05-16b: production-style list controls for Admin directory pages */
+.admin-list-toolbar {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.5fr) minmax(130px, .8fr) minmax(90px, .5fr) auto;
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.035);
+}
+
+.admin-list-toolbar label {
+  min-width: 0;
+}
+
+.admin-pager-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.admin-pager-actions .muted {
+  min-width: 130px;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .admin-list-toolbar {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .admin-pager-actions {
+    justify-content: stretch;
+  }
+
+  .admin-pager-actions button,
+  .admin-pager-actions .muted {
+    flex: 1 1 100%;
+    min-height: 42px;
+  }
+}

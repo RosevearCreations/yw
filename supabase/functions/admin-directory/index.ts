@@ -57,6 +57,59 @@ async function safeListWhere(supabase: any, table: string, columns = '*', filter
   }
 }
 
+function clampInt(value: unknown, fallback: number, min = 1, max = 500) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(min, Math.min(max, Math.trunc(parsed)));
+}
+
+function sanitizeIlikeTerm(value: unknown) {
+  return String(value || '')
+    .trim()
+    .replace(/[%,()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .slice(0, 80);
+}
+
+async function safeListPaged(supabase: any, table: string, options: Record<string, any> = {}) {
+  const columns = options.columns || '*';
+  const orderColumn = options.orderColumn;
+  const ascending = options.ascending !== false;
+  const page = clampInt(options.page, 1, 1, 10000);
+  const pageSize = clampInt(options.pageSize, 25, 1, 200);
+  const offset = (page - 1) * pageSize;
+  const searchTerm = sanitizeIlikeTerm(options.search);
+  const searchColumns = Array.isArray(options.searchColumns) ? options.searchColumns.filter(Boolean) : [];
+  try {
+    let q = supabase.from(table).select(columns, { count: 'exact' });
+    if (searchTerm && searchColumns.length) {
+      const pattern = `*${searchTerm}*`;
+      q = q.or(searchColumns.map((column: string) => `${column}.ilike.${pattern}`).join(','));
+    }
+    if (orderColumn) q = q.order(orderColumn, { ascending });
+    const { data, error, count } = await q.range(offset, offset + pageSize - 1);
+    if (error) {
+      return { rows: [], meta: { page, page_size: pageSize, total: 0, total_pages: 1, loaded: 0, error: error.message || 'Query failed.' } };
+    }
+    const total = Number.isFinite(Number(count)) ? Number(count) : (Array.isArray(data) ? data.length : 0);
+    return {
+      rows: data || [],
+      meta: {
+        page,
+        page_size: pageSize,
+        total,
+        total_pages: Math.max(1, Math.ceil(total / pageSize)),
+        loaded: Array.isArray(data) ? data.length : 0,
+        search: searchTerm,
+        order_column: orderColumn || null,
+        ascending
+      }
+    };
+  } catch (err) {
+    return { rows: [], meta: { page, page_size: pageSize, total: 0, total_pages: 1, loaded: 0, error: String((err as any)?.message || err || 'Query failed.') } };
+  }
+}
+
 function mergeRowsById(baseRows: any[], extraRows: any[]) {
   const map = new Map<string, any>();
   for (const row of Array.isArray(baseRows) ? baseRows : []) {
@@ -87,8 +140,14 @@ serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const scope = body.scope || body.mode || 'all';
   const search = String(body.search || '').trim().toLowerCase();
+  const peopleSearch = String(body.people_search ?? body.search ?? '').trim().toLowerCase();
   const roleFilter = String(body.role_filter || body.profile_role || '').trim().toLowerCase();
-  const limit = Math.max(1, Math.min(500, Number(body.limit || 200)));
+  const limit = clampInt(body.limit, 200, 1, 500);
+  const peoplePage = clampInt(body.people_page ?? body.page, 1, 1, 10000);
+  const peoplePageSize = clampInt(body.people_page_size ?? body.page_size, Math.min(limit, 50), 1, 200);
+  const jobsPage = clampInt(body.jobs_page, 1, 1, 10000);
+  const jobsPageSize = clampInt(body.jobs_page_size, Math.min(limit, 50), 1, 200);
+  const jobsSearch = String(body.jobs_search || '').trim().toLowerCase();
 
   // Reporting can be a heavy screen. Return it through a narrow fast path so
   // Admin boot does not need to load people/site/assignment directories first.
@@ -187,16 +246,28 @@ serve(async (req) => {
     return true;
   }).filter((row: any) => {
     if (roleFilter && normalizeRole(row.role) !== roleFilter) return false;
-    if (!search) return true;
+    if (!peopleSearch) return true;
     return [row.full_name, row.email, row.current_position, row.trade_specialty, row.phone, row.default_supervisor_name, row.default_admin_name]
-      .some((v) => String(v || '').toLowerCase().includes(search));
+      .some((v) => String(v || '').toLowerCase().includes(peopleSearch));
   });
+
+  const peopleOffset = (peoplePage - 1) * peoplePageSize;
+  const pagedPeople = filteredPeople.slice(peopleOffset, peopleOffset + peoplePageSize);
+  const peopleMeta = {
+    page: peoplePage,
+    page_size: peoplePageSize,
+    total: filteredPeople.length,
+    total_pages: Math.max(1, Math.ceil(filteredPeople.length / peoplePageSize)),
+    loaded: pagedPeople.length,
+    search: peopleSearch,
+    role_filter: roleFilter
+  };
 
   const response: Record<string, unknown> = {
     ok:true,
-    profiles: filteredPeople,
-    users: filteredPeople,
-    pagination_meta: { scope, limit, search, role_filter: roleFilter, supports_server_paging: true }
+    profiles: pagedPeople,
+    users: pagedPeople,
+    pagination_meta: { scope, limit, search, people: peopleMeta, supports_server_paging: true }
   };
 
   if ((scope === 'all' || scope === 'health' || scope === 'command_center') && roleRank(actorRole) >= roleRank('supervisor')) {
@@ -252,7 +323,15 @@ serve(async (req) => {
   if ((scope === 'all' || scope === 'operations' || scope === 'accounting_backbone') && roleRank(actorRole) >= roleRank('supervisor')) {
     response.service_areas = await safeList(supabase, 'service_areas', '*', 'name', limit);
     response.routes = await safeList(supabase, 'routes', '*', 'name', limit);
-    response.jobs = await safeList(supabase, 'jobs', '*', 'job_code', limit);
+    const jobsPaged = await safeListPaged(supabase, 'jobs', {
+      orderColumn: 'job_code',
+      page: jobsPage,
+      pageSize: jobsPageSize,
+      search: jobsSearch,
+      searchColumns: ['job_code', 'job_name', 'status']
+    });
+    response.jobs = jobsPaged.rows;
+    response.pagination_meta = { ...(response.pagination_meta as Record<string, unknown>), jobs: jobsPaged.meta };
     response.clients = await safeList(supabase, 'clients', '*', 'legal_name', limit);
     response.client_sites = await safeList(supabase, 'client_sites', '*', 'site_name', limit);
     response.units_of_measure = await safeList(supabase, 'units_of_measure', '*', 'sort_order', limit);

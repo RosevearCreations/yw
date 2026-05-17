@@ -1,34 +1,34 @@
 # Testing Checklist
 
-Last refreshed: **2026-05-16a**
+Last refreshed: **2026-05-16b**
 
-## Code checks
+## Automated checks
 
-- [ ] `node --check js/mobile-menu.js`
-- [ ] `node --check js/api.js`
-- [ ] `node --check js/admin-ui.js`
-- [ ] `node --check js/reports-ui.js`
-- [ ] `node --check js/jobs-ui.js`
-- [ ] `node --check js/hse-ops-ui.js`
-- [ ] `node --check js/logbook-ui.js`
-- [ ] `node --check app.js`
-- [ ] `node --check server-worker.js`
-- [ ] `node scripts/repo-smoke-check.mjs`
+```bash
+node --check js/mobile-menu.js
+node --check js/api.js
+node --check js/admin-ui.js
+node --check js/reports-ui.js
+node --check js/jobs-ui.js
+node --check js/hse-ops-ui.js
+node --check js/logbook-ui.js
+node --check app.js
+node --check server-worker.js
+node scripts/repo-smoke-check.mjs
+```
 
-## Manual mobile checks
+## Manual checks
 
-- [ ] At phone width, the main nav is collapsed behind one Menu button.
-- [ ] Menu expands and closes after choosing a route.
-- [ ] Current route label updates in the Menu button.
-- [ ] Escape key and outside click close the menu.
-- [ ] Admin section menu is collapsed on phones and expands cleanly.
-- [ ] Header session name and buttons do not overflow.
-- [ ] Service worker loads `2026-05-16a` assets after hard refresh.
-- [ ] Exposed app shell still has one H1.
+- Mobile main menu is compact by default.
+- Mobile Admin section menu is compact by default.
+- Staff Directory search filters the returned people list.
+- Staff Directory role filter works.
+- Staff Directory page-size selector changes loaded row count.
+- Previous/Next buttons update the page label.
+- Saved admin view replays Staff Directory search/role/page size.
+- Admin Health shows schema 111 after SQL is applied.
+- `index.html` still has no more than one H1.
 
-## Admin/backend checks
+## CSS drift check
 
-- [ ] Apply schema **110**.
-- [ ] Admin Health shows schema **110** current.
-- [ ] `v_mobile_navigation_quality_gates` returns rows.
-- [ ] Existing schema 109 panels still load.
+Confirm CSS brace counts match and mobile controls stack under 760px.

@@ -1,34 +1,30 @@
 # Deployment Guide
 
-Last refreshed: **2026-05-16a**
+Last refreshed: **2026-05-16b**
 
-## Required deployment order
+## Deploy checklist
 
-1. Apply SQL migrations through schema **110**.
-2. Redeploy Supabase function:
+1. Apply SQL through `sql/111_admin_directory_pagination_saved_view_replay.sql`.
+2. Deploy Supabase Edge Function changes:
    - `admin-directory`
-3. Deploy static app files.
-4. Clear/hard refresh browser cache or unregister the service worker if old files stay loaded.
-5. Run a smoke test after deployment.
+   - `admin-manage` if the live function is behind the saved-filter support pass.
+3. Deploy static files to the hosting target.
+4. Clear/unregister the service worker or hard refresh.
+5. Confirm frontend assets load with `?v=2026-05-16b`.
 
-## Local checks before packaging
+## Smoke test
 
 ```bash
-node --check js/mobile-menu.js
-node --check js/api.js
-node --check js/admin-ui.js
-node --check js/reports-ui.js
-node --check js/jobs-ui.js
-node --check js/hse-ops-ui.js
-node --check js/logbook-ui.js
-node --check app.js
-node --check server-worker.js
 node scripts/repo-smoke-check.mjs
 ```
 
-## Live checks after deployment
+## Manual browser test
 
-- Main phone menu is compact on load.
-- Admin section phone menu is compact on load.
-- Admin Health shows schema **110** current.
-- No more than one H1 appears on exposed public pages.
+- Open the app on desktop.
+- Open Admin > People and Access.
+- Search Staff Directory.
+- Change role filter.
+- Change page size.
+- Use Previous/Next.
+- Save a view and press Use to confirm Staff filters replay.
+- Open the same Admin screen at phone width and confirm the controls stack cleanly.

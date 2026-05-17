@@ -1,22 +1,27 @@
 # Database Structure
 
-Last refreshed: **2026-05-16a**
+Last refreshed: **2026-05-16b**
 
-## Latest migration
+## Latest schema marker
 
-`sql/110_mobile_navigation_quality_gates.sql`
+Latest active schema: **111**
 
-## New schema 110 areas
+## New in schema 111
 
-- `app_frontend_quality_gates`: frontend/mobile/SEO/deployment quality gate tracking.
-- `v_mobile_navigation_quality_gates`: compact mobile main menu, Admin section menu, one-H1, cache version, and active Markdown readiness rows.
-- `v_schema_drift_status`: now expects schema **110**.
-- `app_schema_versions`: receives schema 110 marker with release label `2026-05-16a`.
+`sql/111_admin_directory_pagination_saved_view_replay.sql` adds a safe production-readiness marker for:
+
+- Staff Directory pagination controls.
+- `admin-directory` pagination metadata for people and jobs.
+- Saved admin view replay for Staff Directory filters.
+- Cache/version gate for `2026-05-16b`.
+- `v_schema_drift_status` expected version advanced to 111.
+
+## Existing related schema foundations
+
+- Schema 109 created `admin_list_pagination_settings` and `v_admin_list_pagination_settings`.
+- Schema 110 created mobile navigation/frontend quality gates.
+- Schema 111 updates the quality gates and marks the new Admin list behaviour.
 
 ## Apply order
 
-Apply all migrations in order through schema **110**. The canonical reference is `sql/000_full_schema_reference.sql`.
-
-## Prior schema 109 foundations still active
-
-Schema 109 remains the base for pagination settings, guided close actions, admin audit events, backup/restore rehearsals, bank CSV import staging, evidence action queue, and mobile action cards.
+Apply migrations in order through schema 111. If the live DB missed schema 106 earlier, run the fixed live-schema versions already included in the current migration chain before schema 111.
