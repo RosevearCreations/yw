@@ -208,10 +208,18 @@ addCheck('admin-saved-filter-replays-staff-filters', adminUi.includes('people_se
 addCheck('admin-manage-saves-filters', read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_saved_filter'"), 'admin-manage should support saved filter write actions.');
 addCheck('admin-manage-close-step-actions', read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_close_workflow_step'"), 'admin-manage should support guided close step actions.');
 addCheck('admin-manage-evidence-actions', read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_evidence_action'"), 'admin-manage should support evidence action queue writes.');
-addCheck('active-docs-archived-snapshot', fileExists('archive/markdown-current-snapshot-2026-05-17a/root/README.md'), 'Archive snapshot should preserve the previous root README.');
+addCheck('active-docs-archived-snapshot', fileExists('archive/markdown-current-snapshot-2026-05-17b/root/README.md'), 'Archive snapshot should preserve the previous root README.');
 addCheck('retired-markdown-not-in-root', !fileExists('AI_START_PROMPT.md') && !fileExists('PROJECT_BRAIN.md') && !fileExists('REPO_BASE.md') && !fileExists('RUNBOOK_AUTH_BOOTSTRAP.md'), 'Retired root Markdown should be moved out of the active root.');
 addCheck('no-test-write-files', !fileExists('test_write.txt') && !fileExists('test_write2_OLD.txt') && !fileExists('test_write3.txt') && !fileExists('test_write_OLD.txt'), 'Temporary test_write files should not exist in the active root.');
 addCheck('verifydb-retired-from-active-sql', !fileExists('sql/VerifyDB_24_04_2026.sql'), 'Old VerifyDB helper should stay archived, not active in sql/.');
+
+
+addCheck('schema-has-113-panel-refresh-marker', schema.includes('113_admin_panel_refresh_and_job_review_actions'), 'Canonical schema should include schema 113 panel-refresh and job-review marker.');
+addCheck('admin-has-panel-refresh-buttons', adminUi.includes('ad_staff_refresh_panel') && adminUi.includes('ad_jobs_refresh_panel') && adminUi.includes('refreshAdminPanelScope'), 'Admin UI should expose panel-only refresh buttons and handler.');
+addCheck('admin-renders-jobs-review-table', adminUi.includes('ad_jobs_review_table') && adminUi.includes('handleJobReviewAction'), 'Admin UI should render a separate Jobs review table with row actions.');
+addCheck('admin-manage-job-actions', read('supabase/functions/admin-manage/index.ts').includes("entity === 'job'") && read('supabase/functions/admin-manage/index.ts').includes("action === 'add_note'"), 'admin-manage should support job status/note actions from the Jobs review table.');
+addCheck('edge-has-panel-fast-paths', read('supabase/functions/admin-directory/index.ts').includes("operations_scope: 'fast_path'") && read('supabase/functions/admin-directory/index.ts').includes("health_scope: 'fast_path'") && read('supabase/functions/admin-directory/index.ts').includes("accounting_scope: 'fast_path'"), 'admin-directory should expose narrow panel fast paths for operations, health, and accounting.');
+addCheck('active-docs-archived-snapshot-2026-05-17b', fileExists('archive/markdown-current-snapshot-2026-05-17b/root/README.md'), 'Archive snapshot should preserve the previous root README for the 2026-05-17b pass.');
 
 console.log(JSON.stringify({ ok: !failed, checks: results }, null, 2));
 if (failed) process.exit(1);

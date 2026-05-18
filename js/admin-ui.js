@@ -493,6 +493,9 @@
               <h3 style="margin:0;">Staff Directory and Access</h3>
               <p class="section-subtitle">Create staff accounts, assign Admin/Supervisor/Employee tiers, block or delete users, manage verification flags, and prepare the personnel backend for work-order assignment.</p>
             </div>
+            <div class="admin-heading-actions">
+              <button id="ad_staff_refresh_panel" class="secondary" type="button">Refresh Staff Only</button>
+            </div>
           </div>
           <div class="grid">
             <label>Selected User
@@ -788,6 +791,9 @@
               <h3 style="margin:0;">Operations and Accounting Backbone Manager</h3>
               <p class="section-subtitle">Use the new operations/accounting tables end to end: lines, stops, AR/AP posting, material receiving, linked HSE packets, plus the existing estimates, work orders, materials, units, routes, service areas, dispatch, and chart of accounts.</p>
             </div>
+            <div class="admin-heading-actions">
+              <button id="ad_jobs_refresh_panel" class="secondary" type="button">Refresh Jobs Only</button>
+            </div>
           </div>
           <div class="grid">
             <label>Manager
@@ -902,6 +908,12 @@
               <button id="ad_jobs_next_page" class="secondary" type="button">Next</button>
               <button id="ad_jobs_apply_filter" class="secondary" type="button">Refresh Jobs</button>
             </div>
+          </div>
+          <div class="table-scroll admin-jobs-review-wrap" style="margin-top:14px;">
+            <table id="ad_jobs_review_table">
+              <thead><tr><th>Job</th><th>Status</th><th>Priority</th><th>Start</th><th>Updated</th><th>Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
           </div>
           <div id="ad_backbone_fields" class="grid" style="margin-top:12px;"></div>
           <div id="ad_backbone_insights" class="admin-insights-grid" style="margin-top:12px;"></div>
@@ -1078,6 +1090,7 @@
         staffNextPage: document.getElementById('ad_staff_next_page'),
         staffPageLabel: document.getElementById('ad_staff_page_label'),
         staffApplyFilter: document.getElementById('ad_staff_apply_filter'),
+        staffRefreshPanel: document.getElementById('ad_staff_refresh_panel'),
         staffBody: document.querySelector('#ad_staff_table tbody'),
         assignmentId: document.getElementById('ad_assignment_id'),
         assignmentSiteId: document.getElementById('ad_assignment_site_id'),
@@ -1117,6 +1130,8 @@
         jobsNextPage: document.getElementById('ad_jobs_next_page'),
         jobsPageLabel: document.getElementById('ad_jobs_page_label'),
         jobsApplyFilter: document.getElementById('ad_jobs_apply_filter'),
+        jobsRefreshPanel: document.getElementById('ad_jobs_refresh_panel'),
+        jobsReviewBody: document.querySelector('#ad_jobs_review_table tbody'),
         backboneHead: document.getElementById('ad_backbone_table_head'),
         backboneBody: document.querySelector('#ad_backbone_table tbody'),
         sitesCount: document.getElementById('ad_sites_count'),
@@ -1374,6 +1389,107 @@
       }
     }
 
+
+    function mergeAdminDirectoryScopeResponse(resp = {}) {
+      if (!resp || typeof resp !== 'object') return;
+      if (resp.pagination_meta && typeof resp.pagination_meta === 'object') {
+        state.adminDirectoryMeta = { ...(state.adminDirectoryMeta || {}), ...(resp.pagination_meta || {}) };
+        applyDirectoryPaginationMeta(state.adminDirectoryMeta);
+      }
+      if (Array.isArray(resp.users) || Array.isArray(resp.profiles)) state.users = Array.isArray(resp.users) ? resp.users : resp.profiles;
+      if (Array.isArray(resp.sites)) state.sites = resp.sites;
+      if (Array.isArray(resp.assignments)) state.assignments = resp.assignments;
+      if (Array.isArray(resp.jobs)) state.jobs = resp.jobs;
+      if (Array.isArray(resp.service_areas)) state.serviceAreas = resp.service_areas;
+      if (Array.isArray(resp.routes)) state.routes = resp.routes;
+      if (Array.isArray(resp.clients)) state.clients = resp.clients;
+      if (Array.isArray(resp.client_sites)) state.clientSites = resp.client_sites;
+      if (Array.isArray(resp.operations_dashboard_summary)) state.operationsDashboardSummary = resp.operations_dashboard_summary;
+      if (Array.isArray(resp.admin_home_command_center)) state.adminHomeCommandCenter = resp.admin_home_command_center;
+      if (Array.isArray(resp.admin_error_health_center)) state.adminErrorHealthCenter = resp.admin_error_health_center;
+      if (Array.isArray(resp.admin_task_inbox)) state.adminTaskInbox = resp.admin_task_inbox;
+      if (Array.isArray(resp.app_schema_version_status)) state.appSchemaVersionStatus = resp.app_schema_version_status;
+      if (Array.isArray(resp.schema_drift_status)) state.schemaDriftStatus = resp.schema_drift_status;
+      if (Array.isArray(resp.production_readiness_checklist)) state.productionReadinessChecklist = resp.production_readiness_checklist;
+      if (Array.isArray(resp.role_permission_matrix)) state.rolePermissionMatrix = resp.role_permission_matrix;
+      if (Array.isArray(resp.admin_close_center_overview)) state.adminCloseCenterOverview = resp.admin_close_center_overview;
+      if (Array.isArray(resp.admin_close_wizard_steps)) state.adminCloseWizardSteps = resp.admin_close_wizard_steps;
+      if (Array.isArray(resp.evidence_manager_directory)) state.evidenceManagerDirectory = resp.evidence_manager_directory;
+      if (Array.isArray(resp.admin_evidence_action_queue)) state.adminEvidenceActionQueue = resp.admin_evidence_action_queue;
+      state.counts = {
+        users: state.directoryPagination.people?.total || state.users.length,
+        sites: Array.isArray(state.sites) ? state.sites.length : 0,
+        assignments: Array.isArray(state.assignments) ? state.assignments.length : 0,
+        orders: Array.isArray(state.salesOrders) ? state.salesOrders.length : 0
+      };
+    }
+
+    function getAdminDirectoryPagingPayload() {
+      const peoplePaging = state.directoryPagination.people || {};
+      const jobsPaging = state.directoryPagination.jobs || {};
+      return {
+        limit: 200,
+        people_page: peoplePaging.page || 1,
+        people_page_size: peoplePaging.pageSize || 25,
+        people_search: peoplePaging.search || '',
+        role_filter: peoplePaging.roleFilter || '',
+        people_sort: peoplePaging.sort || 'full_name',
+        people_sort_dir: peoplePaging.direction || 'asc',
+        jobs_page: jobsPaging.page || 1,
+        jobs_page_size: jobsPaging.pageSize || 25,
+        jobs_search: jobsPaging.search || '',
+        jobs_sort: jobsPaging.sort || 'job_code',
+        jobs_sort_dir: jobsPaging.direction || 'asc'
+      };
+    }
+
+    async function refreshAdminPanelScope(scope = 'all') {
+      applyRoleAccess();
+      if (state.locked) return null;
+      const cleanScope = String(scope || 'all').trim().toLowerCase() || 'all';
+      const resp = await loadAdminDirectory({ ...getAdminDirectoryPagingPayload(), scope: cleanScope, timeoutMs: cleanScope === 'reporting' ? 20000 : 12000 });
+      mergeAdminDirectoryScopeResponse(resp || {});
+      const e = els();
+      if (e.usersCount) e.usersCount.textContent = String(state.counts.users || 0);
+      if (e.sitesCount) e.sitesCount.textContent = String(state.counts.sites || 0);
+      if (e.assignmentsCount) e.assignmentsCount.textContent = String(state.counts.assignments || 0);
+      if (cleanScope === 'people') {
+        renderStaffDirectory();
+        renderProfileOptions();
+        renderAssignmentWorkbench();
+        setSummary('Staff Directory refreshed without reloading the full Admin manager.');
+        return resp;
+      }
+      if (cleanScope === 'operations') {
+        renderJobsReviewTable();
+        renderBackboneTable();
+        fillBackboneForm(getSelectedBackboneRecord());
+        renderOperationsDashboardCards();
+        renderAdminCommandCenter();
+        setSummary('Jobs and Operations refreshed without reloading the full Admin manager.');
+        return resp;
+      }
+      if (cleanScope === 'health' || cleanScope === 'command_center') {
+        renderAdminCommandCenter();
+        renderAdminHealthCenter();
+        renderAdminTaskInbox();
+        renderProductionReadiness();
+        setSummary('Health and Command Center panels refreshed.');
+        return resp;
+      }
+      if (cleanScope === 'accounting') {
+        renderGuidedCloseCenter();
+        renderAdminCommandCenter();
+        setSummary('Accounting Close panels refreshed.');
+        return resp;
+      }
+      renderStaffDirectory();
+      renderBackboneTable();
+      renderAdminCommandCenter();
+      renderAdminHealthCenter();
+      return resp;
+    }
+
     function renderStaffPagination() {
       const e = els();
       const paging = state.directoryPagination.people || { page: 1, pageSize: 25, total: 0, totalPages: 1, loaded: 0 };
@@ -1418,7 +1534,7 @@
         pageSize: Number.isFinite(nextPageSize) && nextPageSize > 0 ? nextPageSize : 25,
         page: resetPage ? 1 : (state.directoryPagination.jobs.page || 1)
       };
-      return loadDirectory();
+      return refreshAdminPanelScope('operations');
     }
 
     function renderStaffDirectory() {
@@ -1446,7 +1562,7 @@
         pageSize: Number.isFinite(nextPageSize) && nextPageSize > 0 ? nextPageSize : 25,
         page: resetPage ? 1 : (state.directoryPagination.people.page || 1)
       };
-      return loadDirectory();
+      return refreshAdminPanelScope('people');
     }
 
     function getSelectedStaff() {
@@ -1961,22 +2077,9 @@
       if (state.locked) return;
 
       try {
-        const peoplePaging = state.directoryPagination.people || {};
-        const jobsPaging = state.directoryPagination.jobs || {};
         const resp = await loadAdminDirectory({
-          scope: 'all',
-          limit: 200,
-          people_page: peoplePaging.page || 1,
-          people_page_size: peoplePaging.pageSize || 25,
-          people_search: peoplePaging.search || '',
-          role_filter: peoplePaging.roleFilter || '',
-          people_sort: peoplePaging.sort || 'full_name',
-          people_sort_dir: peoplePaging.direction || 'asc',
-          jobs_page: jobsPaging.page || 1,
-          jobs_page_size: jobsPaging.pageSize || 25,
-          jobs_search: jobsPaging.search || '',
-          jobs_sort: jobsPaging.sort || 'job_code',
-          jobs_sort_dir: jobsPaging.direction || 'asc'
+          ...getAdminDirectoryPagingPayload(),
+          scope: 'all'
         });
         state.notifications = Array.isArray(resp?.notifications) ? resp.notifications : [];
         state.users = Array.isArray(resp?.users) ? resp.users : [];
@@ -3856,10 +3959,79 @@
       }
     }
 
+
+    function getJobStatusSeverity(status = '') {
+      const clean = String(status || '').toLowerCase();
+      if (['complete','completed','closed'].includes(clean)) return 'ok';
+      if (['cancelled','canceled','void'].includes(clean)) return 'muted';
+      if (['blocked','on_hold','delayed'].includes(clean)) return 'warning';
+      return 'info';
+    }
+
+    function renderJobsReviewTable() {
+      const e = els();
+      if (!e.jobsReviewBody) return;
+      const rows = Array.isArray(state.jobs) ? state.jobs : [];
+      e.jobsReviewBody.innerHTML = rows.map((row) => {
+        const status = row.status || row.job_status || 'open';
+        const label = `${row.job_code || ''}${row.job_name ? ` — ${row.job_name}` : ''}`.trim() || row.id;
+        return `<tr data-job-id="${escHtml(row.id || '')}">
+          <td><strong>${escHtml(label)}</strong><div class="muted">${escHtml(row.client_name || row.site_name || row.route_name || '')}</div></td>
+          <td>${renderStatusPill(status, getJobStatusSeverity(status))}</td>
+          <td>${escHtml(row.priority || '')}</td>
+          <td>${escHtml(row.start_date || row.scheduled_start_date || '')}</td>
+          <td>${escHtml(row.updated_at || row.created_at || '')}</td>
+          <td><div class="admin-row-actions">
+            <button class="secondary admin-job-action" type="button" data-job-action="open" data-job-id="${escHtml(row.id || '')}">Open</button>
+            <button class="secondary admin-job-action" type="button" data-job-action="complete" data-job-id="${escHtml(row.id || '')}">Complete</button>
+            <button class="secondary admin-job-action" type="button" data-job-action="cancel" data-job-id="${escHtml(row.id || '')}">Cancel</button>
+            <button class="secondary admin-job-action" type="button" data-job-action="note" data-job-id="${escHtml(row.id || '')}">Add Note</button>
+          </div></td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="6" class="muted">No jobs loaded for this filter/page.</td></tr>';
+    }
+
+    async function handleJobReviewAction(event) {
+      const btn = event.target.closest('.admin-job-action');
+      if (!btn) return;
+      const jobId = btn.getAttribute('data-job-id') || '';
+      const action = btn.getAttribute('data-job-action') || 'open';
+      const row = (Array.isArray(state.jobs) ? state.jobs : []).find((job) => String(job.id) === String(jobId));
+      if (!jobId) return;
+      if (action === 'open') {
+        setSummary(`Focused job ${row?.job_code || jobId}. Use the Jobs/Operations toolbar to keep reviewing this page.`);
+        btn.closest('tr')?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      let status = '';
+      if (action === 'complete') status = 'completed';
+      if (action === 'cancel') status = 'cancelled';
+      const notePrompt = action === 'note'
+        ? 'Add a short job note:'
+        : `Optional note for marking this job ${status}:`;
+      const note = window.prompt(notePrompt, '') || '';
+      const payload = action === 'note'
+        ? { entity: 'job', action: 'add_note', item_id: jobId, note }
+        : { entity: 'job', action: 'update_status', item_id: jobId, status, note };
+      if (action === 'note' && !note.trim()) return;
+      btn.disabled = true;
+      try {
+        const resp = await manageAdminEntity(payload);
+        if (!resp?.ok) throw new Error(resp?.error || 'Job action failed.');
+        setSummary(action === 'note' ? 'Job note saved.' : `Job marked ${status}.`);
+        await refreshAdminPanelScope('operations');
+      } catch (err) {
+        setSummary(String(err?.message || err || 'Job action failed.'), true);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
     function renderBackboneTable() {
       const e = els();
       const entity = e.backboneEntity?.value || 'unit_of_measure';
       renderJobsPagination();
+      renderJobsReviewTable();
       setActiveAdminHubFocus(entity);
       const cfg = BACKBONE_CONFIG[entity];
       const rows = getBackboneRows(entity);
@@ -5064,6 +5236,11 @@
         e.staffProfileId.dataset.bound = '1';
         e.staffProfileId.addEventListener('change', () => fillStaffForm(getSelectedStaff()));
       }
+
+      if (e.staffRefreshPanel && e.staffRefreshPanel.dataset.bound !== '1') {
+        e.staffRefreshPanel.dataset.bound = '1';
+        e.staffRefreshPanel.addEventListener('click', () => refreshAdminPanelScope('people').catch((err) => setSummary(String(err?.message || err), true)));
+      }
       if (e.staffApplyFilter && e.staffApplyFilter.dataset.bound !== '1') {
         e.staffApplyFilter.dataset.bound = '1';
         e.staffApplyFilter.addEventListener('click', () => applyStaffDirectoryFilter(true).catch((err) => setSummary(String(err?.message || err), true)));
@@ -5097,7 +5274,7 @@
         e.staffPrevPage.dataset.bound = '1';
         e.staffPrevPage.addEventListener('click', () => {
           state.directoryPagination.people.page = Math.max(1, (state.directoryPagination.people.page || 1) - 1);
-          loadDirectory().catch((err) => setSummary(String(err?.message || err), true));
+          refreshAdminPanelScope('people').catch((err) => setSummary(String(err?.message || err), true));
         });
       }
       if (e.staffNextPage && e.staffNextPage.dataset.bound !== '1') {
@@ -5105,8 +5282,17 @@
         e.staffNextPage.addEventListener('click', () => {
           const maxPage = state.directoryPagination.people.totalPages || 1;
           state.directoryPagination.people.page = Math.min(maxPage, (state.directoryPagination.people.page || 1) + 1);
-          loadDirectory().catch((err) => setSummary(String(err?.message || err), true));
+          refreshAdminPanelScope('people').catch((err) => setSummary(String(err?.message || err), true));
         });
+      }
+
+      if (e.jobsRefreshPanel && e.jobsRefreshPanel.dataset.bound !== '1') {
+        e.jobsRefreshPanel.dataset.bound = '1';
+        e.jobsRefreshPanel.addEventListener('click', () => refreshAdminPanelScope('operations').catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.jobsReviewBody && e.jobsReviewBody.dataset.bound !== '1') {
+        e.jobsReviewBody.dataset.bound = '1';
+        e.jobsReviewBody.addEventListener('click', handleJobReviewAction);
       }
       if (e.jobsApplyFilter && e.jobsApplyFilter.dataset.bound !== '1') {
         e.jobsApplyFilter.dataset.bound = '1';
@@ -5137,7 +5323,7 @@
         e.jobsPrevPage.dataset.bound = '1';
         e.jobsPrevPage.addEventListener('click', () => {
           state.directoryPagination.jobs.page = Math.max(1, (state.directoryPagination.jobs.page || 1) - 1);
-          loadDirectory().catch((err) => setSummary(String(err?.message || err), true));
+          refreshAdminPanelScope('operations').catch((err) => setSummary(String(err?.message || err), true));
         });
       }
       if (e.jobsNextPage && e.jobsNextPage.dataset.bound !== '1') {
@@ -5145,7 +5331,7 @@
         e.jobsNextPage.addEventListener('click', () => {
           const maxPage = state.directoryPagination.jobs.totalPages || 1;
           state.directoryPagination.jobs.page = Math.min(maxPage, (state.directoryPagination.jobs.page || 1) + 1);
-          loadDirectory().catch((err) => setSummary(String(err?.message || err), true));
+          refreshAdminPanelScope('operations').catch((err) => setSummary(String(err?.message || err), true));
         });
       }
       if (e.siteActivityBody && e.siteActivityBody.dataset.bound !== '1') {

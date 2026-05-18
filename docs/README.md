@@ -16,3 +16,5 @@ Important current docs:
 Older pass notes remain in `archive/` when retired from the active root.
 
 _Reviewed in the 2026-05-17a pass for schema 112 documentation consistency._
+
+- `ADMIN_PANEL_REFRESH_AND_JOB_ACTIONS.md` - Panel-only Admin refreshes and Jobs review row actions.
