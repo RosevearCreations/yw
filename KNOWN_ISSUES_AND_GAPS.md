@@ -1,41 +1,36 @@
 # Known Issues and Gaps
 
-Last refreshed: **2026-05-17a**
+Last refreshed: **2026-05-17b**
 
 ## Highest priority after this pass
 
-1. **Apply schema 112 live.** Admin Health will show behind until the database has the latest schema marker.
-2. **Redeploy `admin-directory`.** Staff and Jobs sorting/pagination require the updated Edge Function.
-3. **Clear the service worker cache.** Old `2026-05-16b` files may keep the previous Admin controls visible.
-4. **Test Staff Directory sorting with real users.** Confirm sort direction works for name, email, role, status, and last login.
-5. **Test Jobs/Operations paging with real jobs.** Confirm search, sort, page size, previous/next, and saved-view replay.
-6. **Panel-only refresh is still next.** Fast paths now exist, but the UI still reloads the full Admin directory in many actions.
-7. **People paging is not fully SQL-side yet.** Current logic still merges profile and access views before slicing; this should move closer to SQL for bigger teams.
-8. **Guided Close Center owner/due editing remains next.** Complete/reopen exists, but edit controls are still needed.
-9. **Bank CSV import still has DB staging only.** Upload/preview/accept/reject UI is next.
-10. **Evidence action queue still needs real retry/replace/archive handlers.** Current records track follow-up intent.
-11. **Worker/supervisor mobile dashboard screens are still next.** Navigation is compact, but role-specific mobile dashboards remain to be built.
-12. **Operations jobs review needs its own table.** The toolbar now controls job source data, but we still need a dedicated jobs review table and row actions.
+1. Apply SQL through **schema 113** so Admin Health and schema drift show current.
+2. Redeploy Supabase functions **admin-directory** and **admin-manage**.
+3. Hard refresh or clear the service worker cache so `2026-05-17b` Admin UI assets load.
+4. Test **Refresh Staff Only** on a real account and confirm it does not reload the full Admin manager.
+5. Test **Refresh Jobs Only** with search/sort/page-size/pager values and confirm the current filter is preserved.
+6. Test the Jobs review row actions on a safe test job: Open, Add Note, Complete, and Cancel.
+7. Confirm live `jobs.status` is the correct status column; do not reintroduce `jobs.job_status` assumptions.
+8. Confirm job notes are written to `job_comments` and status actions write site activity rows.
+9. Move Staff Directory paging closer to SQL-side filtering before the team list grows.
+10. Add owner/due-date editing to Guided Close Center steps next.
+11. Add bank CSV upload/preview next; staging tables exist but the import UI is not complete.
+12. Add real evidence retry/replace/archive handlers; current queue tracking is still mostly workflow scaffolding.
 
 ## Recently addressed
 
-1. Compact mobile main menu.
-2. Compact mobile Admin section menu.
-3. Staff Directory search/role/page-size/pager controls.
-4. Staff Directory sort and sort direction controls.
-5. Jobs/Operations search/sort/page-size/pager controls.
-6. Admin directory pagination metadata for people and jobs.
-7. Saved admin view replay for Staff and Jobs list filters.
-8. Schema 112 marker and canonical schema reference.
-9. Repo smoke checks for Admin list controls and Edge Function sorting.
-10. Active Markdown refresh and archive snapshot cleanup.
-11. Repeated cleanup of retired Markdown and temp files.
+- Compact mobile main menu and Admin section menu.
+- Staff Directory pagination, search, role filter, sort, direction, and saved-view replay.
+- Jobs/Operations pagination, search, sort, direction, saved-view replay, and now panel-only refresh.
+- Separate mobile-friendly Jobs review table with row actions.
+- Admin Edge Function fast paths for reporting, operations, health, and accounting.
+- Schema tracking through **113**.
+- Active Markdown refresh and archive snapshot cleanup.
+- Repeated cleanup of retired root Markdown and `test_write` files.
 
 ## Watch items after deploy
 
-- Confirm Admin > People and Access shows Staff sort and direction controls.
-- Confirm Admin > Jobs and Operations shows the Jobs toolbar above the backbone form.
-- Confirm page labels read correctly, such as “Jobs page 1 of 3”.
-- Confirm saved views restore Staff and Jobs filters.
-- Confirm Admin Health shows schema **112** current after SQL is applied.
-- Confirm old service worker cache does not keep `2026-05-16b` assets loaded.
+- Old service worker cache may still show `2026-05-17a` files until cleared.
+- Job action buttons depend on the updated `admin-manage` function.
+- Operations fast path depends on the updated `admin-directory` function.
+- Browser extension async-listener warnings may still appear in the console and are not the app timeout issue.

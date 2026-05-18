@@ -1666,3 +1666,18 @@ body[data-authenticated="false"] .main-menu-toggle {
     grid-column: auto / span 2;
   }
 }
+
+
+/* 2026-05-17b: Admin panel-only refresh and Jobs review mobile polish */
+.admin-jobs-review-wrap table { min-width: 760px; }
+.admin-row-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.admin-row-actions .secondary, .admin-job-action { min-height:34px; }
+.admin-heading-actions { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; align-items:center; }
+@media (max-width: 760px) {
+  .admin-heading-actions { width:100%; justify-content:stretch; }
+  .admin-heading-actions button { width:100%; }
+  .admin-jobs-review-wrap { border:1px solid rgba(255,255,255,.12); border-radius:14px; }
+  .admin-row-actions { flex-direction:column; align-items:stretch; }
+  .admin-row-actions button, .admin-row-actions a { width:100%; text-align:center; }
+  #ad_jobs_review_table td, #ad_staff_table td { vertical-align:top; }
+}

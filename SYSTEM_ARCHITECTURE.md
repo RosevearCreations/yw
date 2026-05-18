@@ -1,23 +1,24 @@
 # System Architecture
 
-Last refreshed: **2026-05-17a**
+Last refreshed: **2026-05-17b**
 
 ## Frontend
 
-The static app loads `index.html`, `style.css`, `app.js`, feature UI modules, and a service worker. Current cache/version marker is `2026-05-17a`.
-
-## Admin UI
-
-`js/admin-ui.js` renders Admin Command Center, Staff Directory, Operations Backbone, Health, Evidence, Guided Close, and production-readiness panels. Staff and Jobs list controls now use local UI state and send paging/sort metadata to `admin-directory`.
+Static app shell with route-based sections, service worker cache, Admin UI modules, Jobs/HSE/Reports modules, and local fallback/outbox helpers.
 
 ## Backend
 
-Supabase Edge Functions provide authenticated reads/writes. Current pass updates `supabase/functions/admin-directory/index.ts` with sanitized sort allowlists, Staff metadata, Jobs metadata, and fast paths for `scope: people` and `scope: operations`.
+Supabase database plus Edge Functions. Key functions updated in this pass:
 
-## Database
+- `admin-directory`: narrow fast paths for panel refreshes.
+- `admin-manage`: job status/note actions from Admin Jobs review table.
 
-SQL migrations live under `sql/`. The canonical reference file is `sql/000_full_schema_reference.sql`. Latest marker is schema 112.
+## Admin loading strategy
 
-## Offline/cache
+The app should avoid one huge Admin reload when only one panel needs fresh data. Current fast paths:
 
-The service worker cache is versioned. After each deployment, hard refresh or unregister the service worker if older files remain visible.
+- `people`
+- `operations`
+- `health`
+- `accounting`
+- `reporting`

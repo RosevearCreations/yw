@@ -1861,6 +1861,39 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
       return Response.json({ ok:true, record: updated }, { headers:corsHeaders });
     }
 
+
+    if (entity === 'job') {
+      const jobId = asNullableNumber(body.job_id ?? body.item_id);
+      if (!jobId) return Response.json({ ok:false, error:'job_id or item_id is required' }, { status:400, headers:corsHeaders });
+      const now = new Date().toISOString();
+      const { data: existingJob, error: jobFetchErr } = await supabase.from('jobs').select('id,job_code,job_name,status,notes').eq('id', jobId).maybeSingle();
+      if (jobFetchErr) throw jobFetchErr;
+      if (!existingJob) return Response.json({ ok:false, error:'Job not found.' }, { status:404, headers:corsHeaders });
+      if (action === 'update_status') {
+        const nextStatus = String(body.status || '').trim().toLowerCase();
+        if (!['open','scheduled','in_progress','completed','complete','closed','cancelled','canceled','on_hold'].includes(nextStatus)) {
+          return Response.json({ ok:false, error:'Unsupported job status.' }, { status:400, headers:corsHeaders });
+        }
+        const note = asNullableText(body.note || body.notes || '');
+        const patch: Record<string, unknown> = { status: nextStatus, updated_at: now };
+        if (note) patch.notes = [existingJob.notes || '', `[${now}] Admin status changed to ${nextStatus}: ${note}`].filter(Boolean).join('
+');
+        const { data: updated, error: updateErr } = await supabase.from('jobs').update(patch).eq('id', jobId).select('*').single();
+        if (updateErr) throw updateErr;
+        await recordSiteActivity(supabase, { event_type:'job_status_updated', entity_type:'job', entity_id:jobId, severity:'info', title:'Job status updated', summary:`${existingJob.job_code || jobId} changed to ${nextStatus}.`, related_job_id:jobId, created_by_profile_id:actorId });
+        return Response.json({ ok:true, record: updated }, { headers:corsHeaders });
+      }
+      if (action === 'add_note') {
+        const note = asNullableText(body.note || body.notes || body.comment_text || '');
+        if (!note) return Response.json({ ok:false, error:'note is required' }, { status:400, headers:corsHeaders });
+        const { data: comment, error: noteErr } = await supabase.from('job_comments').insert({ job_id: jobId, comment_type: 'update', comment_text: note, created_by_profile_id: actorId }).select('*').single();
+        if (noteErr) throw noteErr;
+        await recordSiteActivity(supabase, { event_type:'job_note_added', entity_type:'job_comment', entity_id:comment.id, severity:'info', title:'Job note added', summary:`Note added to ${existingJob.job_code || jobId}.`, related_job_id:jobId, created_by_profile_id:actorId });
+        return Response.json({ ok:true, record: comment }, { headers:corsHeaders });
+      }
+      return Response.json({ ok:false, error:'Unsupported job action.' }, { status:400, headers:corsHeaders });
+    }
+
     if (entity === 'job_requirement') {
       if (!body.requirement_id) return Response.json({ ok:false, error:'requirement_id is required' }, { status:400, headers:corsHeaders });
       const now = new Date().toISOString();

@@ -1,34 +1,22 @@
 # Database Structure
 
-Last refreshed: **2026-05-17a**
+Last refreshed: **2026-05-17b**
 
-## Current schema marker
+## Latest schema marker
 
-- Latest migration: **112**
-- File: `sql/112_admin_operations_pagination_sorting_panel_refresh.sql`
+- Current repo schema: **113**
+- Latest migration file: `sql/113_admin_panel_refresh_and_job_review_actions.sql`
 - Canonical reference: `sql/000_full_schema_reference.sql`
 
-## Schema 112 purpose
+## Schema 113 additions
 
-Schema 112 is a low-risk tracking migration. It does not rebuild core business tables. It updates/records:
+- `admin_panel_refresh_preferences`
+- `admin_job_action_audit`
+- `v_admin_panel_refresh_preferences`
+- `v_admin_job_action_audit_directory`
+- additional `app_frontend_quality_gates` rows
+- updated `v_schema_drift_status` repo marker to 113
 
-- `app_schema_versions` marker for release `2026-05-17a`
-- frontend quality gates for Staff sorting
-- frontend quality gates for Jobs/Operations paging
-- Edge Function sorting payload expectations
-- saved-view replay expectations
-- cache version quality gate
-- `v_schema_drift_status` expected version 112
-- `v_mobile_navigation_quality_gates` with current Admin UX gates
+## Important live-schema guardrail
 
-## Main DB-backed areas
-
-- Profiles, sites, assignments, access views
-- Jobs, routes, work orders, estimates, equipment, materials
-- HSE forms, evidence, corrective actions, training, SDS
-- Accounting close, reconciliation, tax, payroll, AR/AP, GL, accountant handoff
-- Admin health, schema drift, audit, saved filters, deployment gates
-
-## Deploy rule
-
-Apply SQL through schema 112 before relying on Admin Health, schema drift, or new quality-gate rows.
+Use `jobs.status`. Do not assume `jobs.job_status` exists in the live database.

@@ -1,26 +1,21 @@
 # New Chat Status
 
-Last refreshed: **2026-05-17a**
+Use the latest ZIP from this pass as the baseline.
 
-## Current release package
+## Latest pass
 
-The latest prepared build is expected to be named:
+Build label: **2026-05-17b**
+Schema marker: **113**
 
-`yw-main-122-updated-2026-05-17a-admin-list-sorting-operations-pagination.zip`
+## What was just done
 
-## What this pass did
+- Added panel-only refresh buttons for Staff and Jobs.
+- Added a separate Jobs review table with Open, Complete, Cancel, and Add Note actions.
+- Added `admin-manage` job action support.
+- Added Edge Function fast paths for operations, health, and accounting.
+- Removed retired root Markdown and temp files from the active root again.
+- Updated Markdown, schema reference, smoke checks, cache version, and CSS.
 
-This pass focused on making Admin list screens act more like a real production app on desktop and mobile. Staff Directory now has visible sort/direction controls, Jobs/Operations now has visible search/sort/page-size/previous/next controls, and saved admin views replay both Staff and Jobs filters. The `admin-directory` Edge Function now accepts sanitized sort payloads and has narrower `scope: people` and `scope: operations` fast paths.
+## Next best work
 
-## Deploy checklist
-
-1. Apply SQL through **schema 112**.
-2. Redeploy Supabase Edge Function: `admin-directory`.
-3. Deploy static files.
-4. Hard refresh or unregister the service worker so `2026-05-17a` assets load.
-5. Open Admin on a phone-width viewport and confirm the Staff and Jobs toolbars stack cleanly.
-6. Run `node scripts/repo-smoke-check.mjs` from the repo root after deployment if local tooling is available.
-
-## Immediate next work
-
-Start with panel-only refresh buttons, then add a dedicated Operations jobs review table and direct row actions.
+Start with the first five items in `DEVELOPMENT_ROADMAP.md`: SQL-side Staff filtering, richer job detail drawer, supervisor/admin assignment actions, Guided Close owner/due editing, and close blocker drill-downs.

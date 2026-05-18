@@ -1,40 +1,26 @@
-# YWI Main App
+# YWI Operations App
 
-Current release: **2026-05-17a**
+Current build: **2026-05-17b**
 
-This repo contains the YWI web app shell, Admin UI, HSE forms, jobs/operations tools, reporting screens, Supabase Edge Functions, and SQL schema migrations.
+This build continues moving the app toward a production-style operations backend. The main pass added panel-only Admin refreshes, a mobile-friendly Jobs review table, direct job note/status actions, schema 113 tracking, and refreshed active Markdown.
 
-## Current focus
+## Deploy checklist
 
-The app is being moved toward production-style workflows:
-
-- safer Admin loading with pagination and smaller payloads
-- mobile-friendly navigation and list controls
-- schema tracking and health checks
-- accounting close and reconciliation workflows
-- evidence review and HSE operations
-- cleaner Markdown handoff docs and repeatable smoke checks
-
-## Latest pass
-
-Release **2026-05-17a** adds Staff Directory sorting, visible Jobs/Operations pagination controls, sanitized Edge Function sorting, saved-view replay for Staff and Jobs filters, schema 112, updated smoke checks, and refreshed Markdown.
-
-## Deploy order
-
-1. Apply SQL migrations through `sql/112_admin_operations_pagination_sorting_panel_refresh.sql`.
-2. Redeploy Supabase Edge Function `admin-directory`.
+1. Apply SQL through `sql/113_admin_panel_refresh_and_job_review_actions.sql`.
+2. Redeploy Supabase functions:
+   - `admin-directory`
+   - `admin-manage`
 3. Deploy the static app.
-4. Hard refresh or clear the service worker cache.
-5. Test Admin on desktop and mobile widths.
+4. Clear or unregister the old service worker cache.
+5. Run `node scripts/repo-smoke-check.mjs`.
+6. Test Admin on desktop and phone width.
 
-## Validation
+## Active planning docs
 
-Run:
-
-```bash
-node --check js/admin-ui.js
-node --check js/api.js
-node --check app.js
-node --check server-worker.js
-node scripts/repo-smoke-check.mjs
-```
+- `DEVELOPMENT_ROADMAP.md`
+- `KNOWN_ISSUES_AND_GAPS.md`
+- `DATABASE_STRUCTURE.md`
+- `SYSTEM_ARCHITECTURE.md`
+- `DEPLOYMENT_GUIDE.md`
+- `TESTING_CHECKLIST.md`
+- `NEW_CHAT_STATUS.md`

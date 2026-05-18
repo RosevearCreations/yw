@@ -1,33 +1,16 @@
 # Project State
 
-Last refreshed: **2026-05-17a**
+Last refreshed: **2026-05-17b**
 
-## Status
+## Current status
 
-The app is a Supabase-backed HSE/operations/accounting admin system with a growing production-readiness workflow. Current focus is reducing heavy Admin loads, improving mobile usability, and making backend workflows easier to manage safely.
+- Admin app has compact mobile navigation and mobile-friendly Admin list controls.
+- Staff Directory supports search, role filter, sort, direction, page size, previous/next, saved-view replay, and panel-only refresh.
+- Jobs/Operations supports search, sort, direction, page size, previous/next, saved-view replay, panel-only refresh, and a separate Jobs review table.
+- `admin-directory` includes narrow fast paths for reporting, operations, health, and accounting.
+- `admin-manage` now supports safe job note and status actions.
+- Schema tracking is current through **113** in this repo.
 
-## Current schema marker
+## Current build label
 
-- Latest repo schema: **112**
-- Latest migration file: `sql/112_admin_operations_pagination_sorting_panel_refresh.sql`
-- Canonical schema reference: `sql/000_full_schema_reference.sql`
-
-## Current frontend/cache marker
-
-- Static asset version: **2026-05-17a**
-- Service worker cache: **ywi-shell-v2026-05-17a**
-
-## Main active areas
-
-- Admin Command Center and Health Center
-- Staff Directory and access management
-- Jobs/Operations backbone manager
-- Guided Close Center
-- Evidence Manager
-- Reporting fast path
-- Accounting close and accountant handoff foundations
-- Mobile navigation and responsive Admin toolbars
-
-## Important deploy note
-
-The database must be migrated through schema 112 and `admin-directory` must be redeployed before the new Staff/Jobs sorting and pagination metadata can be trusted live.
+`2026-05-17b`

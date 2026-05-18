@@ -1,21 +1,9 @@
 # AI Context
 
-Last refreshed: **2026-05-17a**
+Last refreshed: **2026-05-17b**
 
-## Current state
+The current baseline is a YWI operations/HSE/accounting app with static frontend, Supabase database, and Supabase Edge Functions. The user expects every build pass to update Markdown and SQL schema references, keep one H1 per exposed page, watch CSS drift, add robust fallback/error handling, improve mobile usability, and keep roadmap/gap files current.
 
-The latest pass added production-style Admin list controls. Staff Directory now has sort/direction controls. Jobs/Operations now has visible search/sort/page-size/previous/next controls. `admin-directory` now accepts sanitized people/jobs sort payloads and returns paging metadata.
+Latest pass: schema 113, panel-only Admin refreshes, Jobs review table, job status/note actions, admin-directory fast paths, refreshed Markdown.
 
-## Key files changed in this pass
-
-- `js/admin-ui.js`
-- `style.css`
-- `supabase/functions/admin-directory/index.ts`
-- `sql/112_admin_operations_pagination_sorting_panel_refresh.sql`
-- `sql/000_full_schema_reference.sql`
-- `scripts/repo-smoke-check.mjs`
-- active Markdown files
-
-## Next best task
-
-Add panel-only refresh buttons so Staff, Operations, Health, Accounting, Evidence, and Reporting can refresh independently without reloading the full Admin directory.
+Do not reintroduce retired root Markdown into the active root. Keep historical copies in `archive/`.

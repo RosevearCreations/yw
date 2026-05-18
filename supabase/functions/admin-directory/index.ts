@@ -235,6 +235,54 @@ serve(async (req) => {
     return Response.json(reporting, { headers: corsHeaders });
   }
 
+
+  // Narrow Admin panel fast paths. These avoid loading the full people/site/accounting directory
+  // when the UI only needs one panel refresh on slower mobile connections.
+  if (scope === 'operations' && roleRank(actorRole) >= roleRank('supervisor')) {
+    const operations: Record<string, unknown> = { ok: true, operations_scope: 'fast_path', pagination_meta: { scope, limit, supports_server_paging: true, supports_sorting: true } };
+    const jobsPaged = await safeListPaged(supabase, 'jobs', {
+      orderColumn: jobsSort,
+      ascending: jobsSortDir !== 'desc',
+      page: jobsPage,
+      pageSize: jobsPageSize,
+      search: jobsSearch,
+      searchColumns: ['job_code', 'job_name', 'status', 'priority']
+    });
+    operations.jobs = jobsPaged.rows;
+    operations.pagination_meta = { ...(operations.pagination_meta as Record<string, unknown>), jobs: { ...jobsPaged.meta, sort: jobsSort, direction: jobsSortDir } };
+    operations.service_areas = await safeList(supabase, 'service_areas', '*', 'name', limit);
+    operations.routes = await safeList(supabase, 'routes', '*', 'name', limit);
+    operations.clients = await safeList(supabase, 'clients', '*', 'legal_name', limit);
+    operations.client_sites = await safeList(supabase, 'client_sites', '*', 'site_name', limit);
+    operations.operations_dashboard_summary = await safeList(supabase, 'v_operations_dashboard_summary');
+    return Response.json(operations, { headers: corsHeaders });
+  }
+
+  if ((scope === 'health' || scope === 'command_center') && roleRank(actorRole) >= roleRank('supervisor')) {
+    const health: Record<string, unknown> = { ok: true, health_scope: 'fast_path', pagination_meta: { scope, limit } };
+    health.admin_home_command_center = await safeList(supabase, 'v_admin_home_command_center');
+    health.admin_error_health_center = await safeList(supabase, 'v_admin_error_health_center', '*', 'severity_rank', 100, true);
+    health.admin_task_inbox = await safeList(supabase, 'v_admin_task_inbox', '*', 'priority_rank', 120, true);
+    health.app_schema_version_status = await safeList(supabase, 'v_app_schema_version_status', '*', 'schema_version', 120, false);
+    health.schema_drift_status = await safeList(supabase, 'v_schema_drift_status');
+    health.production_readiness_checklist = await safeList(supabase, 'v_production_readiness_checklist', '*', 'sort_order', 80, true);
+    health.role_permission_matrix = await safeList(supabase, 'v_role_permission_matrix', '*', 'sort_order', 120, true);
+    return Response.json(health, { headers: corsHeaders });
+  }
+
+  if (scope === 'accounting' && roleRank(actorRole) >= roleRank('supervisor')) {
+    const accounting: Record<string, unknown> = { ok: true, accounting_scope: 'fast_path', pagination_meta: { scope, limit } };
+    accounting.admin_home_command_center = await safeList(supabase, 'v_admin_home_command_center');
+    accounting.admin_close_center_overview = await safeList(supabase, 'v_admin_close_center_overview');
+    accounting.admin_close_wizard_steps = await safeList(supabase, 'v_admin_close_wizard_steps', '*', 'sort_order', 80, true);
+    accounting.accounting_close_admin_control_dashboard = await safeList(supabase, 'v_accounting_close_admin_control_dashboard', '*', 'period_end', limit, false);
+    accounting.accounting_reconciliation_manual_review_queue = await safeList(supabase, 'v_accounting_reconciliation_manual_review_queue', '*', 'review_priority', limit, true);
+    accounting.accounting_close_package_delivery_queue = await safeList(supabase, 'v_accounting_close_package_delivery_queue', '*', 'updated_at', limit, false);
+    accounting.sales_tax_filing_review = await safeList(supabase, 'v_sales_tax_filing_review_directory', '*', 'filing_period_end', limit, false);
+    accounting.payroll_remittance_review = await safeList(supabase, 'v_payroll_remittance_review_directory', '*', 'remittance_period_end', limit, false);
+    return Response.json(accounting, { headers: corsHeaders });
+  }
+
   const { data: peopleRaw } = await supabase.from('v_people_directory').select('*');
   const { data: profileAccessRaw } = await supabase.from('v_profile_access_rollups').select('*');
   const { data: assignmentsRaw } = await supabase.from('v_assignments_directory').select('*');
@@ -306,7 +354,7 @@ serve(async (req) => {
       page: jobsPage,
       pageSize: jobsPageSize,
       search: jobsSearch,
-      searchColumns: ['job_code', 'job_name', 'status', 'priority', 'client_name']
+      searchColumns: ['job_code', 'job_name', 'status', 'priority']
     });
     response.jobs = jobsPaged.rows;
     response.pagination_meta = { ...(response.pagination_meta as Record<string, unknown>), jobs: { ...jobsPaged.meta, sort: jobsSort, direction: jobsSortDir } };
@@ -375,7 +423,7 @@ serve(async (req) => {
       page: jobsPage,
       pageSize: jobsPageSize,
       search: jobsSearch,
-      searchColumns: ['job_code', 'job_name', 'status', 'priority', 'client_name']
+      searchColumns: ['job_code', 'job_name', 'status', 'priority']
     });
     response.jobs = jobsPaged.rows;
     response.pagination_meta = { ...(response.pagination_meta as Record<string, unknown>), jobs: { ...jobsPaged.meta, sort: jobsSort, direction: jobsSortDir } };
