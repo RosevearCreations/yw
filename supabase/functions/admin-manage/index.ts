@@ -1876,8 +1876,7 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         }
         const note = asNullableText(body.note || body.notes || '');
         const patch: Record<string, unknown> = { status: nextStatus, updated_at: now };
-        if (note) patch.notes = [existingJob.notes || '', `[${now}] Admin status changed to ${nextStatus}: ${note}`].filter(Boolean).join('
-');
+        if (note) patch.notes = [existingJob.notes || '', `[${now}] Admin status changed to ${nextStatus}: ${note}`].filter(Boolean).join('\n');
         const { data: updated, error: updateErr } = await supabase.from('jobs').update(patch).eq('id', jobId).select('*').single();
         if (updateErr) throw updateErr;
         await recordSiteActivity(supabase, { event_type:'job_status_updated', entity_type:'job', entity_id:jobId, severity:'info', title:'Job status updated', summary:`${existingJob.job_code || jobId} changed to ${nextStatus}.`, related_job_id:jobId, created_by_profile_id:actorId });
