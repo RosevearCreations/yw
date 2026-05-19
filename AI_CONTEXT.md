@@ -1,9 +1,11 @@
 # AI Context
 
-Last refreshed: **2026-05-17b**
+Last refreshed: **2026-05-18a**
 
-The current baseline is a YWI operations/HSE/accounting app with static frontend, Supabase database, and Supabase Edge Functions. The user expects every build pass to update Markdown and SQL schema references, keep one H1 per exposed page, watch CSS drift, add robust fallback/error handling, improve mobile usability, and keep roadmap/gap files current.
+## Current instruction for future passes
 
-Latest pass: schema 113, panel-only Admin refreshes, Jobs review table, job status/note actions, admin-directory fast paths, refreshed Markdown.
+Always update Markdown and schema files with every build change. Keep retired Markdown archived, not active in the root. Keep temp files out of the ZIP. Verify JavaScript syntax, smoke checks, CSS brace balance, and one H1 on exposed pages.
 
-Do not reintroduce retired root Markdown into the active root. Keep historical copies in `archive/`.
+## Latest technical focus
+
+Admin live load was falling back to cached data. The latest fix stages Admin requests by panel scope and reserves `scope: all` for emergency fallback only.

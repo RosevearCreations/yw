@@ -1,21 +1,22 @@
 # New Chat Status
 
-Use the latest ZIP from this pass as the baseline.
+Build label: **2026-05-18a**
 
-## Latest pass
+## What changed most recently
 
-Build label: **2026-05-17b**
-Schema marker: **113**
+Admin no longer starts by depending only on one large `scope: all` backend request. It now tries smaller staged requests for Health, People, Operations, and Accounting, and only falls back to the heavy all-scope request if all staged requests fail.
 
-## What was just done
+## Files changed
 
-- Added panel-only refresh buttons for Staff and Jobs.
-- Added a separate Jobs review table with Open, Complete, Cancel, and Add Note actions.
-- Added `admin-manage` job action support.
-- Added Edge Function fast paths for operations, health, and accounting.
-- Removed retired root Markdown and temp files from the active root again.
-- Updated Markdown, schema reference, smoke checks, cache version, and CSS.
+- `js/admin-ui.js`
+- `index.html`
+- `server-worker.js`
+- `sql/114_staged_admin_load_and_cache_fallback_guardrails.sql`
+- `sql/000_full_schema_reference.sql`
+- `scripts/repo-smoke-check.mjs`
+- `supabase/functions/report-subscription-delivery-run/index.ts`
+- Active Markdown docs
 
-## Next best work
+## Next deploy
 
-Start with the first five items in `DEVELOPMENT_ROADMAP.md`: SQL-side Staff filtering, richer job detail drawer, supervisor/admin assignment actions, Guided Close owner/due editing, and close blocker drill-downs.
+Apply SQL through schema 114, redeploy `admin-directory` and `admin-manage`, then clear the service worker cache.

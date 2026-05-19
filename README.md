@@ -1,26 +1,20 @@
-# YWI Operations App
+# YWI Main App
 
-Current build: **2026-05-17b**
+Current build: **2026-05-18a**
 
-This build continues moving the app toward a production-style operations backend. The main pass added panel-only Admin refreshes, a mobile-friendly Jobs review table, direct job note/status actions, schema 113 tracking, and refreshed active Markdown.
+This build focuses on making the Admin backend load more like a real production app. The first Admin load now uses smaller staged Edge Function scopes instead of starting with one heavy `scope: all` request.
 
-## Deploy checklist
+## Active priorities
 
-1. Apply SQL through `sql/113_admin_panel_refresh_and_job_review_actions.sql`.
-2. Redeploy Supabase functions:
-   - `admin-directory`
-   - `admin-manage`
-3. Deploy the static app.
-4. Clear or unregister the old service worker cache.
-5. Run `node scripts/repo-smoke-check.mjs`.
-6. Test Admin on desktop and phone width.
+- Keep public pages mobile-friendly with one clear H1.
+- Keep Admin panels loading in smaller chunks with retry/fallback messaging.
+- Keep schema files and Markdown synchronized on every pass.
+- Continue moving duplicated/high-risk data toward database-backed directories and views.
+- Keep retired Markdown and temp files out of the active root.
 
-## Active planning docs
+## Deploy notes
 
-- `DEVELOPMENT_ROADMAP.md`
-- `KNOWN_ISSUES_AND_GAPS.md`
-- `DATABASE_STRUCTURE.md`
-- `SYSTEM_ARCHITECTURE.md`
-- `DEPLOYMENT_GUIDE.md`
-- `TESTING_CHECKLIST.md`
-- `NEW_CHAT_STATUS.md`
+1. Apply SQL through schema **114**.
+2. Redeploy Supabase Edge Functions, especially `admin-directory` and `admin-manage`.
+3. Hard refresh or clear/unregister the service worker so `?v=2026-05-18a` assets load.
+4. Open `/#admin` and verify the Admin page loads live data without immediately falling back to cached Admin data.

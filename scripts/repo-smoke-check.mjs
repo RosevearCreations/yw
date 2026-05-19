@@ -208,7 +208,7 @@ addCheck('admin-saved-filter-replays-staff-filters', adminUi.includes('people_se
 addCheck('admin-manage-saves-filters', read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_saved_filter'"), 'admin-manage should support saved filter write actions.');
 addCheck('admin-manage-close-step-actions', read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_close_workflow_step'"), 'admin-manage should support guided close step actions.');
 addCheck('admin-manage-evidence-actions', read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_evidence_action'"), 'admin-manage should support evidence action queue writes.');
-addCheck('active-docs-archived-snapshot', fileExists('archive/markdown-current-snapshot-2026-05-17b/root/README.md'), 'Archive snapshot should preserve the previous root README.');
+addCheck('active-docs-archived-snapshot', fileExists('archive/markdown-current-snapshot-2026-05-18a/root/README.md'), 'Archive snapshot should preserve the previous root README.');
 addCheck('retired-markdown-not-in-root', !fileExists('AI_START_PROMPT.md') && !fileExists('PROJECT_BRAIN.md') && !fileExists('REPO_BASE.md') && !fileExists('RUNBOOK_AUTH_BOOTSTRAP.md'), 'Retired root Markdown should be moved out of the active root.');
 addCheck('no-test-write-files', !fileExists('test_write.txt') && !fileExists('test_write2_OLD.txt') && !fileExists('test_write3.txt') && !fileExists('test_write_OLD.txt'), 'Temporary test_write files should not exist in the active root.');
 addCheck('verifydb-retired-from-active-sql', !fileExists('sql/VerifyDB_24_04_2026.sql'), 'Old VerifyDB helper should stay archived, not active in sql/.');
@@ -219,7 +219,14 @@ addCheck('admin-has-panel-refresh-buttons', adminUi.includes('ad_staff_refresh_p
 addCheck('admin-renders-jobs-review-table', adminUi.includes('ad_jobs_review_table') && adminUi.includes('handleJobReviewAction'), 'Admin UI should render a separate Jobs review table with row actions.');
 addCheck('admin-manage-job-actions', read('supabase/functions/admin-manage/index.ts').includes("entity === 'job'") && read('supabase/functions/admin-manage/index.ts').includes("action === 'add_note'"), 'admin-manage should support job status/note actions from the Jobs review table.');
 addCheck('edge-has-panel-fast-paths', read('supabase/functions/admin-directory/index.ts').includes("operations_scope: 'fast_path'") && read('supabase/functions/admin-directory/index.ts').includes("health_scope: 'fast_path'") && read('supabase/functions/admin-directory/index.ts').includes("accounting_scope: 'fast_path'"), 'admin-directory should expose narrow panel fast paths for operations, health, and accounting.');
-addCheck('active-docs-archived-snapshot-2026-05-17b', fileExists('archive/markdown-current-snapshot-2026-05-17b/root/README.md'), 'Archive snapshot should preserve the previous root README for the 2026-05-17b pass.');
 
+
+addCheck('schema-has-114-staged-admin-load-marker', schema.includes('114_staged_admin_load_and_cache_fallback_guardrails'), 'Canonical schema should include schema 114 staged Admin load marker.');
+addCheck('admin-loads-staged-scopes-first', adminUi.includes("const stagedScopes = ['health', 'people', 'operations', 'accounting']") && adminUi.includes("scope: 'all',") && adminUi.includes('timeoutMs: 90000'), 'Admin initial load should try staged panel scopes before the heavy all-scope emergency fallback.');
+addCheck('admin-summary-reports-staged-warnings', adminUi.includes('state.adminLoadWarnings') && adminUi.includes('Some panels need retry'), 'Admin UI should report staged panel retry warnings instead of immediately showing only cached data.');
+addCheck('cache-version-2026-05-18a', read('server-worker.js').includes('2026-05-18a') && read('index.html').includes('2026-05-18a'), 'Index and service worker should use the 2026-05-18a asset/cache version.');
+addCheck('active-docs-archived-snapshot-2026-05-18a', fileExists('archive/markdown-current-snapshot-2026-05-18a/root/README.md'), 'Archive snapshot should preserve the previous root README for the 2026-05-18a pass.');
+
+addCheck('report-subscription-delivery-run-newline-escapes', !read('supabase/functions/report-subscription-delivery-run/index.ts').includes("join('\n')") || read('supabase/functions/report-subscription-delivery-run/index.ts').includes("lines.join('\\n')"), 'Report delivery function should use escaped newline strings that bundle correctly.');
 console.log(JSON.stringify({ ok: !failed, checks: results }, null, 2));
 if (failed) process.exit(1);

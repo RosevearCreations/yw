@@ -2077,10 +2077,45 @@
       if (state.locked) return;
 
       try {
-        const resp = await loadAdminDirectory({
-          ...getAdminDirectoryPagingPayload(),
-          scope: 'all'
-        });
+        let resp = {};
+        const stagedScopes = ['health', 'people', 'operations', 'accounting'];
+        const stagedWarnings = [];
+
+        for (const stagedScope of stagedScopes) {
+          try {
+            const stagedResp = await loadAdminDirectory({
+              ...getAdminDirectoryPagingPayload(),
+              scope: stagedScope,
+              timeoutMs: stagedScope === 'operations' ? 25000 : 16000
+            });
+
+            if (stagedResp && typeof stagedResp === 'object') {
+              resp = {
+                ...resp,
+                ...stagedResp,
+                pagination_meta: {
+                  ...(resp.pagination_meta || {}),
+                  ...(stagedResp.pagination_meta || {})
+                }
+              };
+              mergeAdminDirectoryScopeResponse(stagedResp);
+            }
+          } catch (scopeErr) {
+            stagedWarnings.push(`${stagedScope}: ${scopeErr?.message || 'failed'}`);
+          }
+        }
+
+        if (!Object.keys(resp).length) {
+          resp = await loadAdminDirectory({
+            ...getAdminDirectoryPagingPayload(),
+            scope: 'all',
+            timeoutMs: 90000
+          });
+        } else if (stagedWarnings.length) {
+          state.adminLoadWarnings = stagedWarnings;
+        } else {
+          state.adminLoadWarnings = [];
+        }
         state.notifications = Array.isArray(resp?.notifications) ? resp.notifications : [];
         state.users = Array.isArray(resp?.users) ? resp.users : [];
         state.adminDirectoryMeta = resp?.pagination_meta || {};
@@ -2223,10 +2258,13 @@
 
         saveAdminCache(resp);
         const outboxSummary = window.YWIOutbox?.getActionSummary?.('admin') || { total: 0, conflicts: 0 };
+        const stagedWarningText = Array.isArray(state.adminLoadWarnings) && state.adminLoadWarnings.length
+          ? ` Some panels need retry: ${state.adminLoadWarnings.join('; ')}.`
+          : '';
         setSummary(
           state.manageLocked
-            ? 'Read-only admin view loaded. Admin role is required for approval actions.'
-            : `Admin view loaded.${outboxSummary.total ? ` Pending admin sync: ${outboxSummary.total} item(s), ${outboxSummary.conflicts || 0} conflict(s).` : ''}`
+            ? `Read-only admin view loaded. Admin role is required for approval actions.${stagedWarningText}`
+            : `Admin view loaded in smaller panels.${outboxSummary.total ? ` Pending admin sync: ${outboxSummary.total} item(s), ${outboxSummary.conflicts || 0} conflict(s).` : ''}${stagedWarningText}`
         );
       } catch (err) {
         const cached = loadAdminCache();

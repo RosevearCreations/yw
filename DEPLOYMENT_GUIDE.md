@@ -1,20 +1,22 @@
 # Deployment Guide
 
-Last refreshed: **2026-05-17b**
+Last refreshed: **2026-05-18a**
 
-1. Apply database migrations through schema **113**.
-2. Redeploy Supabase Edge Functions:
+## Required steps
+
+1. Apply SQL through schema 114.
+2. Redeploy Supabase functions:
    - `admin-directory`
    - `admin-manage`
-3. Deploy static files.
-4. Clear service worker/browser cache.
-5. Run smoke checks.
-6. Verify Admin on mobile width and desktop width.
+   - `admin-selectors` if selectors were changed in the previous deployment
+3. Deploy the static site.
+4. Clear/unregister the service worker or hard refresh until files load with `?v=2026-05-18a`.
+5. Open `/#admin` and confirm the live Admin load does not immediately show cached fallback data.
 
-## Post-deploy checks
+## Live Admin smoke test
 
-- Admin Health reports schema 113 current.
-- Refresh Staff Only works.
-- Refresh Jobs Only works.
-- Jobs row action Add Note works on a safe test job.
-- Jobs Complete/Cancel are tested only on disposable/demo jobs first.
+- Open Admin.
+- Confirm staged requests return for `health`, `people`, `operations`, and `accounting`.
+- Confirm Staff and Jobs pagination still work.
+- Confirm panel-only refresh buttons work.
+- Confirm cached fallback only appears if live requests truly fail.

@@ -1,24 +1,18 @@
 # System Architecture
 
-Last refreshed: **2026-05-17b**
+Last refreshed: **2026-05-18a**
 
-## Frontend
+## Current pattern
 
-Static app shell with route-based sections, service worker cache, Admin UI modules, Jobs/HSE/Reports modules, and local fallback/outbox helpers.
+The app is a static frontend with Supabase Edge Functions and database-backed admin views. Admin data is moving away from one large all-in-one response toward smaller scoped payloads.
 
-## Backend
+## Admin loading pattern
 
-Supabase database plus Edge Functions. Key functions updated in this pass:
+Initial Admin load now stages these scopes:
 
-- `admin-directory`: narrow fast paths for panel refreshes.
-- `admin-manage`: job status/note actions from Admin Jobs review table.
+1. `health`
+2. `people`
+3. `operations`
+4. `accounting`
 
-## Admin loading strategy
-
-The app should avoid one huge Admin reload when only one panel needs fresh data. Current fast paths:
-
-- `people`
-- `operations`
-- `health`
-- `accounting`
-- `reporting`
+The previous `all` scope remains as a last-resort fallback only. This keeps the screen usable when one panel is slow and reduces the chance of stale cached Admin data being shown as the first result.

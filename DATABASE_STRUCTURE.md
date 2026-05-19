@@ -1,22 +1,27 @@
 # Database Structure
 
-Last refreshed: **2026-05-17b**
+Last refreshed: **2026-05-18a**
 
-## Latest schema marker
+## Current schema level
 
-- Current repo schema: **113**
-- Latest migration file: `sql/113_admin_panel_refresh_and_job_review_actions.sql`
-- Canonical reference: `sql/000_full_schema_reference.sql`
+Latest repo schema marker: **114**
 
-## Schema 113 additions
+## New schema
 
-- `admin_panel_refresh_preferences`
-- `admin_job_action_audit`
-- `v_admin_panel_refresh_preferences`
-- `v_admin_job_action_audit_directory`
-- additional `app_frontend_quality_gates` rows
-- updated `v_schema_drift_status` repo marker to 113
+- `sql/114_staged_admin_load_and_cache_fallback_guardrails.sql`
 
-## Important live-schema guardrail
+## Purpose
 
-Use `jobs.status`. Do not assume `jobs.job_status` exists in the live database.
+Schema 114 records the staged Admin load strategy, frontend quality gates, panel timeout expectations, and schema drift status. It does not attempt destructive table changes.
+
+## Important tracking objects
+
+- `public.app_schema_versions`
+- `public.app_frontend_quality_gates`
+- `public.admin_panel_refresh_preferences`
+- `public.v_admin_panel_refresh_preferences`
+- `public.v_schema_drift_status`
+
+## Apply order
+
+Apply migrations through schema 114 in sequence. If schema 113 was partially applied, use the corrected schema 113 file before applying 114.
