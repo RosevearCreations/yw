@@ -1,27 +1,23 @@
 # Database Structure
 
-Last refreshed: **2026-05-18a**
+Last refreshed: **2026-05-18b**
 
-## Current schema level
+## Current schema marker
 
-Latest repo schema marker: **114**
+The active schema set is synchronized through:
 
-## New schema
+```text
+sql/115_admin_panel_retry_timing_and_command_scope.sql
+```
 
-- `sql/114_staged_admin_load_and_cache_fallback_guardrails.sql`
+## Added in schema 115
 
-## Purpose
+- `admin_panel_load_diagnostics` table for future persisted panel load diagnostics.
+- `v_admin_panel_load_diagnostics` view.
+- Additional rows in `admin_panel_refresh_preferences` for command-center, health retry, accounting retry, and scope timing cards.
+- Additional `app_frontend_quality_gates` rows for Admin panel retry/timing and report delivery bundle readiness.
+- `v_schema_drift_status` now expects schema **115** while keeping the column name `expected_schema_version` stable.
 
-Schema 114 records the staged Admin load strategy, frontend quality gates, panel timeout expectations, and schema drift status. It does not attempt destructive table changes.
+## Deployment note
 
-## Important tracking objects
-
-- `public.app_schema_versions`
-- `public.app_frontend_quality_gates`
-- `public.admin_panel_refresh_preferences`
-- `public.v_admin_panel_refresh_preferences`
-- `public.v_schema_drift_status`
-
-## Apply order
-
-Apply migrations through schema 114 in sequence. If schema 113 was partially applied, use the corrected schema 113 file before applying 114.
+Apply migrations through schema **115** before relying on the latest Admin Health/Schema panel. Do not rename `v_schema_drift_status.expected_schema_version`; PostgreSQL requires explicit view column renames and previous deployments failed when this column name changed.

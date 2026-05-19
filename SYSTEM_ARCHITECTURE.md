@@ -1,18 +1,26 @@
 # System Architecture
 
-Last refreshed: **2026-05-18a**
+Last refreshed: **2026-05-18b**
 
-## Current pattern
+## Frontend
 
-The app is a static frontend with Supabase Edge Functions and database-backed admin views. Admin data is moving away from one large all-in-one response toward smaller scoped payloads.
+The static frontend loads versioned JS/CSS assets and uses a service worker cache. The Admin screen is still in `js/admin-ui.js`, but it now loads panels in staged scopes and shows per-panel timing status.
 
-## Admin loading pattern
+## Edge Functions
 
-Initial Admin load now stages these scopes:
+- `admin-directory` provides scoped read payloads for Admin panels.
+- `admin-manage` handles write actions for Admin workflows.
+- `report-subscription-delivery-run` handles scheduled report delivery and must deploy with escaped newline strings.
 
-1. `health`
-2. `people`
-3. `operations`
-4. `accounting`
+## Database
 
-The previous `all` scope remains as a last-resort fallback only. This keeps the screen usable when one panel is slow and reduces the chance of stale cached Admin data being shown as the first result.
+Schema migrations through **115** add operational tracking for Admin panel retry/timing and future persisted diagnostics.
+
+## Current Admin load pattern
+
+1. `command_center`
+2. `health`
+3. `people`
+4. `operations`
+5. `accounting`
+6. `all` only if every staged request fails

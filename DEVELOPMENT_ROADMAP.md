@@ -1,56 +1,58 @@
 # Development Roadmap
 
-Last refreshed: **2026-05-18a**
+Last refreshed: **2026-05-18b**
 
 ## Completed in this pass
 
-- Reworked Admin initial load to use staged panel scopes.
-- Preserved the heavy `all` Admin scope only as an emergency fallback.
-- Added schema 114 to track the staged load and cache fallback guardrails.
-- Updated active docs, smoke checks, schema reference, and cache version.
+- Added visible per-panel retry controls for Command Center, Health, Staff, Jobs, and Accounting.
+- Added a dedicated `command_center` fast path before heavier Admin panel requests.
+- Added Admin scope timing/status cards for live load visibility.
+- Added schema **115** to track panel retry/timing guardrails and report delivery bundle readiness.
+- Updated smoke checks, schema reference, and active Markdown.
+- Reconfirmed one-H1 rule and CSS brace balance.
 
 ## Next logical 20 steps
 
-1. Add visible per-panel retry buttons for Health, People, Operations, and Accounting.
-2. Move Admin Home command cards to a dedicated `command_center` fast path if live load still feels slow.
-3. Add frontend timing metrics for each Admin scope request.
-4. Store Admin panel load failures in a small diagnostics table for review.
-5. Add user-facing stale-data age badges on each Admin panel.
-6. Finish server-side paging for remaining large Admin lists.
-7. Add filtered export buttons for Staff and Jobs views.
-8. Add role-safe write guards around every Admin row action.
-9. Add live schema compatibility checks before showing actions that depend on newer tables.
-10. Add a guided deployment checklist screen using schema gate data.
-11. Build a small mobile supervisor dashboard from the existing mobile action cards.
-12. Add offline queue status badges to Admin action buttons.
-13. Add accounting close blocker explanations beside each close step.
-14. Add bank CSV import preview/validation before posting to reconciliation staging.
-15. Add evidence retry assignment and due-date fields.
-16. Add backup rehearsal result upload/evidence fields.
-17. Add local SEO page audit rows for each public route.
-18. Add structured page metadata checks to the smoke script.
-19. Add a CSS drift report for oversized mobile tables and overflowing buttons.
-20. Add a release health summary to `NEW_CHAT_STATUS.md` on every pass.
+1. Add a small Admin diagnostics drawer that expands the panel timing cards into request details.
+2. Persist failed Admin panel loads into `admin_panel_load_diagnostics` through an Edge Function write path.
+3. Add stale-data age badges directly to each panel header.
+4. Convert Accounting subpanels into smaller `accounting_close`, `banking`, and `tax_payroll` scopes.
+5. Convert Safety/Evidence Manager into a separate `evidence` fast path.
+6. Add filtered export buttons for Staff and Jobs views.
+7. Add role-safe confirmation dialogs for Complete, Cancel, Reopen, and Add Note actions.
+8. Add schema preflight checks before showing Admin actions that depend on newer migrations.
+9. Add a guided deployment checklist screen using frontend quality gates and schema drift data.
+10. Add a mobile supervisor dashboard using existing `admin_mobile_action_card_directory` rows.
+11. Add offline queue badges beside Admin action buttons.
+12. Add close blocker explanations beside every Guided Close step.
+13. Add bank CSV import preview and validation before posting to reconciliation staging.
+14. Add evidence retry assignment, due date, and completion status fields.
+15. Add backup rehearsal evidence upload and signoff fields.
+16. Add local SEO route rows for each public route and service page.
+17. Add structured metadata checks to `repo-smoke-check.mjs`.
+18. Add a CSS drift report for oversized mobile tables and overflowing buttons.
+19. Add sitemap/robots validation to smoke checks.
+20. Add a release health summary table to `NEW_CHAT_STATUS.md` on every pass.
 
 ## Following 20 steps after that
 
-1. Convert `admin-directory` all-scope response into a deprecated compatibility path.
-2. Create separate frontend modules for Admin People, Admin Operations, and Admin Accounting.
-3. Add skeleton loaders for each Admin panel so partial loads feel intentional.
-4. Add an Admin diagnostics drawer showing last request status per scope.
-5. Add persistent panel preferences for default page sizes and sort order.
-6. Add stronger Supabase RLS tests for Admin-only views.
-7. Add a DB migration preflight script that checks missing columns before applying views.
-8. Add a view dependency report for schema files.
-9. Add job status normalization lookup table and map old/new statuses.
-10. Add job action confirmation dialogs with undo-safe notes.
-11. Add payroll close readiness blockers to the close center.
-12. Add sales tax filing export preview and sign-off state.
-13. Add accountant handoff package manifest generation.
-14. Add document/evidence attachment counts to Admin row cards.
-15. Add field-worker mobile task completion shortcuts.
-16. Add Search Console-style public route tracking placeholders.
-17. Add sitemap/robots validation to smoke checks.
-18. Add image alt-text completeness checks for public pages.
-19. Add mobile tap-target checks for key navigation and Admin buttons.
-20. Add a one-page release checklist for each ZIP handoff.
+1. Deprecate the Admin `all` scope after all panels have dedicated scopes.
+2. Split `js/admin-ui.js` into Admin People, Operations, Health, and Accounting modules.
+3. Add skeleton loaders for every Admin panel.
+4. Add DB-backed default page-size and sort preferences per admin user.
+5. Add stronger Supabase RLS tests for Admin-only views and actions.
+6. Add a migration preflight script that checks missing tables/columns before view creation.
+7. Add a view dependency report for every schema file.
+8. Normalize job statuses into a lookup table and map old/new variants.
+9. Add undo-safe notes for job action changes.
+10. Add payroll close blockers to the Guided Close Center.
+11. Add sales tax filing preview/signoff screens.
+12. Add accountant handoff package manifest generation.
+13. Add evidence attachment counts to Admin row cards.
+14. Add worker mobile task completion shortcuts.
+15. Add Search Console-style public route tracking placeholders.
+16. Add image alt-text completeness checks for public routes.
+17. Add mobile tap-target checks for navigation and Admin buttons.
+18. Add public content freshness tracking for local landing pages.
+19. Add structured-data JSON-LD validation for public business/service pages.
+20. Add a one-page release checklist automatically linked from each ZIP handoff.

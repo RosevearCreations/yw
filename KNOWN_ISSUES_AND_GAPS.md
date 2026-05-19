@@ -1,27 +1,30 @@
 # Known Issues and Gaps
 
-Last refreshed: **2026-05-18a**
+Last refreshed: **2026-05-18b**
 
 ## Immediate issues
 
-1. Live Admin may still fall back to cached data until `admin-directory` is redeployed and old service worker files are cleared.
-2. Some Admin panels still rely on broad directory state and should continue moving to panel-only refreshes.
-3. Job actions need live testing against the production table names and permissions.
-4. Accounting close screens still need deeper validation and export packaging tests with real data.
-5. Schema drift checks depend on `app_schema_versions` being applied consistently.
+1. Live Admin must be tested after redeploying `admin-directory`; old cached scripts can still hide the new retry buttons.
+2. The Admin `all` scope still exists as an emergency fallback and should eventually be retired after all panels have dedicated scopes.
+3. `admin_panel_load_diagnostics` is created for future persisted diagnostics, but frontend writes are not wired yet.
+4. Job actions still need live permission/RLS testing against production data.
+5. Accounting close screens still need real-data validation for bank, tax, payroll, and accountant export flows.
 
 ## UX gaps
 
-- Continue testing mobile Admin tables at narrow widths.
-- Continue replacing long lists with paged/filterable panels.
-- Add clearer retry buttons beside panels that fail staged loading.
+- Continue testing Admin on narrow phone widths.
+- Add stale-data age badges to every panel header.
+- Add skeleton loaders so staged panel loading feels intentional.
+- Keep replacing long tables with paged/filterable panel views.
 
 ## SEO/local gaps
 
 - Keep one H1 per public page.
-- Continue checking page titles, meta descriptions, local wording, and mobile usability each pass.
-- Add more local service/location content only when it matches real service coverage.
+- Continue page title, meta description, local wording, alt text, and mobile layout checks each pass.
+- Add local service/location content only when it matches real service coverage.
 
 ## Fixed during this pass
 
-- Corrected newline escaping in `report-subscription-delivery-run/index.ts` to avoid bundle parse failures similar to the previous `admin-manage` issue.
+- Added retry buttons and timing cards so partial Admin load failures are visible and recoverable.
+- Added a smaller `command_center` Edge Function fast path.
+- Kept the report subscription delivery function deploy-safe with escaped newline strings.

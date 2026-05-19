@@ -1681,3 +1681,44 @@ body[data-authenticated="false"] .main-menu-toggle {
   .admin-row-actions button, .admin-row-actions a { width:100%; text-align:center; }
   #ad_jobs_review_table td, #ad_staff_table td { vertical-align:top; }
 }
+
+/* 2026-05-18b: staged Admin panel retry and scope timing cards */
+.admin-scope-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+.admin-scope-status-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px;
+  background: rgba(255,255,255,0.035);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.admin-scope-status-card span,
+.admin-scope-status-card small {
+  color: var(--muted);
+}
+.admin-scope-status-card strong {
+  font-size: 1.05rem;
+}
+.admin-scope-status-card[data-status="ok"] {
+  border-color: rgba(72, 187, 120, .45);
+}
+.admin-scope-status-card[data-status="warning"] {
+  border-color: rgba(237, 137, 54, .45);
+}
+.admin-scope-status-card[data-status="error"] {
+  border-color: rgba(245, 101, 101, .55);
+}
+@media (max-width: 760px) {
+  .admin-scope-status-grid {
+    grid-template-columns: 1fr;
+  }
+  .admin-scope-status-card {
+    padding: 12px;
+  }
+}

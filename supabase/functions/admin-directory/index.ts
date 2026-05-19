@@ -258,15 +258,27 @@ serve(async (req) => {
     return Response.json(operations, { headers: corsHeaders });
   }
 
-  if ((scope === 'health' || scope === 'command_center') && roleRank(actorRole) >= roleRank('supervisor')) {
+  if (scope === 'command_center' && roleRank(actorRole) >= roleRank('supervisor')) {
+    const commandCenter: Record<string, unknown> = { ok: true, command_center_scope: 'fast_path', pagination_meta: { scope, limit } };
+    commandCenter.admin_home_command_center = await safeList(supabase, 'v_admin_home_command_center');
+    commandCenter.admin_task_inbox = await safeList(supabase, 'v_admin_task_inbox', '*', 'priority_rank', 80, true);
+    commandCenter.app_schema_version_status = await safeList(supabase, 'v_app_schema_version_status', '*', 'schema_version', 20, false);
+    commandCenter.schema_drift_status = await safeList(supabase, 'v_schema_drift_status');
+    return Response.json(commandCenter, { headers: corsHeaders });
+  }
+
+  if (scope === 'health' && roleRank(actorRole) >= roleRank('supervisor')) {
     const health: Record<string, unknown> = { ok: true, health_scope: 'fast_path', pagination_meta: { scope, limit } };
-    health.admin_home_command_center = await safeList(supabase, 'v_admin_home_command_center');
     health.admin_error_health_center = await safeList(supabase, 'v_admin_error_health_center', '*', 'severity_rank', 100, true);
     health.admin_task_inbox = await safeList(supabase, 'v_admin_task_inbox', '*', 'priority_rank', 120, true);
     health.app_schema_version_status = await safeList(supabase, 'v_app_schema_version_status', '*', 'schema_version', 120, false);
     health.schema_drift_status = await safeList(supabase, 'v_schema_drift_status');
     health.production_readiness_checklist = await safeList(supabase, 'v_production_readiness_checklist', '*', 'sort_order', 80, true);
     health.role_permission_matrix = await safeList(supabase, 'v_role_permission_matrix', '*', 'sort_order', 120, true);
+    health.admin_health_resolution_queue = await safeList(supabase, 'v_admin_health_resolution_queue', '*', 'updated_at', 80, false);
+    health.admin_deployment_gate_status = await safeList(supabase, 'v_admin_deployment_gate_status', '*', 'sort_order', 80, true);
+    health.public_seo_smoke_check = await safeList(supabase, 'v_public_seo_smoke_check', '*', 'page_path', 80, true);
+    health.admin_audit_event_directory = await safeList(supabase, 'v_admin_audit_event_directory', '*', 'occurred_at', 80, false);
     return Response.json(health, { headers: corsHeaders });
   }
 

@@ -1,27 +1,27 @@
 # Testing Checklist
 
-Last refreshed: **2026-05-18a**
+Last refreshed: **2026-05-18b**
 
-## Automated checks run this pass
+## Automated checks run before ZIP handoff
 
-- `node --check js/admin-ui.js`
-- `node --check js/api.js`
-- `node --check js/reports-ui.js`
-- `node --check js/jobs-ui.js`
-- `node --check js/hse-ops-ui.js`
-- `node --check js/logbook-ui.js`
-- `node --check app.js`
-- `node --check server-worker.js`
-- `node scripts/repo-smoke-check.mjs`
-- Checked Edge Function newline escaping for `admin-manage` and `report-subscription-delivery-run`
-- One-H1 check on `index.html`
-- CSS brace balance check on `style.css`
+```text
+node --check js/mobile-menu.js
+node --check js/api.js
+node --check js/admin-ui.js
+node --check js/reports-ui.js
+node --check js/jobs-ui.js
+node --check js/hse-ops-ui.js
+node --check js/logbook-ui.js
+node --check app.js
+node --check server-worker.js
+node scripts/repo-smoke-check.mjs
+```
 
-## Manual checks after deploy
+## Manual checks after deployment
 
-1. Admin loads live data without immediately using cached fallback.
-2. Staff Directory search/filter/sort/paging works on desktop and mobile.
-3. Jobs/Operations search/filter/sort/paging works on desktop and mobile.
-4. Refresh Staff Only and Refresh Jobs Only work.
-5. Command Center and Health panels can be refreshed separately.
-6. Mobile main menu remains compact and expandable.
+- Confirm `index.html` has no more than one `<h1>`.
+- Confirm the mobile main menu is compact and expandable.
+- Confirm Admin opens with staged live panel calls instead of only cached data.
+- Confirm the Health panel shows per-scope timing cards.
+- Confirm the new panel retry buttons work on phone width.
+- Confirm report delivery Edge Function deploys cleanly.

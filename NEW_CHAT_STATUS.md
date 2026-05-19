@@ -1,22 +1,30 @@
 # New Chat Status
 
-Build label: **2026-05-18a**
+Use this as the handoff for the next pass.
 
-## What changed most recently
+## Latest completed pass
 
-Admin no longer starts by depending only on one large `scope: all` backend request. It now tries smaller staged requests for Health, People, Operations, and Accounting, and only falls back to the heavy all-scope request if all staged requests fail.
+**2026-05-18b — Admin panel retry, timing, and command-center fast path**
 
-## Files changed
+Completed:
 
-- `js/admin-ui.js`
-- `index.html`
-- `server-worker.js`
-- `sql/114_staged_admin_load_and_cache_fallback_guardrails.sql`
-- `sql/000_full_schema_reference.sql`
-- `scripts/repo-smoke-check.mjs`
-- `supabase/functions/report-subscription-delivery-run/index.ts`
-- Active Markdown docs
+- Added schema **115**.
+- Added dedicated `command_center` fast path in `admin-directory`.
+- Added visible Retry Command Center, Retry Health, and Retry Accounting buttons.
+- Kept Staff and Jobs panel-only refresh controls.
+- Added Admin scope timing/status cards to show live load state per panel.
+- Updated Markdown, canonical schema reference, and smoke checks.
+- Archived old Markdown and removed retired/temp files from active root.
 
-## Next deploy
+## Deploy before testing
 
-Apply SQL through schema 114, redeploy `admin-directory` and `admin-manage`, then clear the service worker cache.
+1. Apply SQL through schema **115**.
+2. Redeploy `admin-directory`, `admin-manage`, and `report-subscription-delivery-run`.
+3. Hard refresh/unregister the service worker.
+4. Test `#admin` on desktop and phone width.
+
+## Watch next
+
+- Confirm live Admin no longer falls back to cached data unless all staged panel calls fail.
+- Confirm panel timing cards show Command Center, Health, People, Operations, and Accounting statuses.
+- Continue moving broad Admin data dependencies into smaller panel scopes.

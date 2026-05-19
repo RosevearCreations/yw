@@ -1,13 +1,16 @@
 # Changelog
 
-## 2026-05-18a
+## 2026-05-18b
 
-- Changed Admin initial load to staged panel scopes: `health`, `people`, `operations`, and `accounting`.
-- Kept heavy `scope: all` Admin load only as an emergency fallback with a 90-second timeout.
-- Added partial panel warning text when one staged scope needs retry.
-- Added schema 114 staged Admin load guardrails.
-- Updated full schema reference and smoke checks.
-- Fixed escaped newline strings in `report-subscription-delivery-run` so that Edge Function can bundle cleanly.
-- Updated cache/script version to `2026-05-18a`.
-- Archived active Markdown snapshot and retired old root Markdown again.
-- Removed recurring temp test files again.
+- Added schema **115: `admin_panel_retry_timing_and_command_scope`**.
+- Added a dedicated `command_center` Admin Edge Function fast path.
+- Added visible retry buttons for Command Center, Health, and Accounting panels.
+- Preserved existing Staff and Jobs panel-only refresh controls.
+- Added per-scope Admin load timing/status cards in the Health panel.
+- Updated Admin staged load order to: `command_center`, `health`, `people`, `operations`, `accounting`.
+- Expanded Admin scope response merging so panel-only retries update more of the correct dashboard state.
+- Added mobile CSS for Admin scope timing cards.
+- Confirmed `report-subscription-delivery-run/index.ts` uses escaped newline strings instead of bundle-breaking literal line breaks.
+- Refreshed active Markdown, schema reference, and smoke checks.
+- Archived the previous Markdown snapshot under `archive/markdown-current-snapshot-2026-05-18b/`.
+- Removed reintroduced retired root Markdown and temporary `test_write` files from active root.

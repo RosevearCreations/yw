@@ -1,22 +1,20 @@
 # Deployment Guide
 
-Last refreshed: **2026-05-18a**
+Last refreshed: **2026-05-18b**
 
-## Required steps
+## Required order
 
-1. Apply SQL through schema 114.
-2. Redeploy Supabase functions:
+1. Apply SQL migrations through `sql/115_admin_panel_retry_timing_and_command_scope.sql`.
+2. Redeploy Supabase Edge Functions:
    - `admin-directory`
    - `admin-manage`
-   - `admin-selectors` if selectors were changed in the previous deployment
+   - `report-subscription-delivery-run`
 3. Deploy the static site.
-4. Clear/unregister the service worker or hard refresh until files load with `?v=2026-05-18a`.
-5. Open `/#admin` and confirm the live Admin load does not immediately show cached fallback data.
+4. Hard refresh the browser or unregister the service worker so `2026-05-18b` assets load.
 
-## Live Admin smoke test
+## Post-deploy checks
 
-- Open Admin.
-- Confirm staged requests return for `health`, `people`, `operations`, and `accounting`.
-- Confirm Staff and Jobs pagination still work.
-- Confirm panel-only refresh buttons work.
-- Confirm cached fallback only appears if live requests truly fail.
+- Open `#admin` and confirm no immediate cached-only fallback appears.
+- Confirm Admin panel timing cards show Command Center, Health, People, Operations, and Accounting.
+- Press Retry Command Center, Retry Health, Refresh Staff Only, Refresh Jobs Only, and Retry Accounting.
+- Confirm `report-subscription-delivery-run` bundles without unterminated regexp/string literal errors.
