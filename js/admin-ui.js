@@ -156,6 +156,9 @@
       accountingReviewSummary: [],
       smokeChecks: [],
       adminDirectoryMeta: {},
+      adminLoadWarnings: [],
+      adminScopeTimings: {},
+      adminScopeLastUpdated: {},
       directoryPagination: {
         people: { page: 1, pageSize: 25, total: 0, totalPages: 1, loaded: 0, search: '', roleFilter: '', sort: 'full_name', direction: 'asc' },
         jobs: { page: 1, pageSize: 25, total: 0, totalPages: 1, loaded: 0, search: '', sort: 'job_code', direction: 'asc' }
@@ -278,6 +281,7 @@
               <h3 style="margin:0;">Admin Home Command Center</h3>
               <p class="section-subtitle">One-stop dashboard for open jobs, HSE reviews, accounting close, failed uploads, reporting health, and schema status.</p>
             </div>
+            <button id="ad_command_refresh_panel" class="secondary" type="button">Retry Command Center</button>
           </div>
           <div id="ad_command_center" class="admin-command-grid"></div>
           <div class="admin-saved-filter-toolbar" style="margin-top:12px;">
@@ -313,9 +317,13 @@
               <h3 style="margin:0;">App Health and Schema Center</h3>
               <p class="section-subtitle">Central place for frontend/API issues, backend alerts, schema markers, and fallback status so operators do not need the browser console first.</p>
             </div>
-            <button id="ad_clear_diagnostics" class="secondary" type="button">Clear Local Diagnostics</button>
+            <div class="admin-heading-actions">
+              <button id="ad_health_refresh_panel" class="secondary" type="button">Retry Health</button>
+              <button id="ad_clear_diagnostics" class="secondary" type="button">Clear Local Diagnostics</button>
+            </div>
           </div>
           <div id="ad_health_summary" class="notice" style="display:block;margin-bottom:12px;">Health data has not loaded yet.</div>
+          <div id="ad_scope_status" class="admin-scope-status-grid" style="margin-bottom:12px;"></div>
           <div id="ad_health_cards" class="admin-health-grid"></div>
           <div class="table-scroll">
             <table id="ad_health_table">
@@ -354,6 +362,7 @@
               <h3 style="margin:0;">Guided Close Center</h3>
               <p class="section-subtitle">One place to see close blockers: open periods, payment applications, reconciliation, tax/remittance review, journal candidates, and accountant package delivery.</p>
             </div>
+            <button id="ad_accounting_refresh_panel" class="secondary" type="button">Retry Accounting</button>
           </div>
           <div id="ad_close_center_cards" class="admin-command-grid"></div>
           <div id="ad_close_center_summary" class="notice" style="display:block;margin:12px 0;">Close Center data has not loaded yet.</div>
@@ -1139,6 +1148,7 @@
         notificationsCount: document.getElementById('ad_notifications_count'),
         ordersCount: document.getElementById('ad_orders_count'),
         commandCenter: document.getElementById('ad_command_center'),
+        commandRefreshPanel: document.getElementById('ad_command_refresh_panel'),
         savedFilterName: document.getElementById('ad_saved_filter_name'),
         savedFilterScope: document.getElementById('ad_saved_filter_scope'),
         savedFilterShared: document.getElementById('ad_saved_filter_shared'),
@@ -1146,6 +1156,8 @@
         savedFilterCards: document.getElementById('ad_saved_filter_cards'),
         savedFilterBody: document.querySelector('#ad_saved_filter_table tbody'),
         healthSummary: document.getElementById('ad_health_summary'),
+        scopeStatus: document.getElementById('ad_scope_status'),
+        healthRefreshPanel: document.getElementById('ad_health_refresh_panel'),
         healthCards: document.getElementById('ad_health_cards'),
         healthBody: document.querySelector('#ad_health_table tbody'),
         schemaBody: document.querySelector('#ad_schema_table tbody'),
@@ -1154,6 +1166,7 @@
         clearDiagnosticsBtn: document.getElementById('ad_clear_diagnostics'),
         closeCenterCards: document.getElementById('ad_close_center_cards'),
         closeCenterSummary: document.getElementById('ad_close_center_summary'),
+        accountingRefreshPanel: document.getElementById('ad_accounting_refresh_panel'),
         closeWizardDetailBody: document.querySelector('#ad_close_wizard_detail_table tbody'),
         evidenceManagerCards: document.getElementById('ad_evidence_manager_cards'),
         evidenceManagerBody: document.querySelector('#ad_evidence_manager_table tbody'),
@@ -1413,9 +1426,21 @@
       if (Array.isArray(resp.production_readiness_checklist)) state.productionReadinessChecklist = resp.production_readiness_checklist;
       if (Array.isArray(resp.role_permission_matrix)) state.rolePermissionMatrix = resp.role_permission_matrix;
       if (Array.isArray(resp.admin_close_center_overview)) state.adminCloseCenterOverview = resp.admin_close_center_overview;
+      if (Array.isArray(resp.admin_saved_filter_directory)) state.adminSavedFilterDirectory = resp.admin_saved_filter_directory;
+      if (Array.isArray(resp.admin_saved_filter_scope_summary)) state.adminSavedFilterScopeSummary = resp.admin_saved_filter_scope_summary;
+      if (Array.isArray(resp.admin_close_center_overview)) state.adminCloseCenterOverview = resp.admin_close_center_overview;
       if (Array.isArray(resp.admin_close_wizard_steps)) state.adminCloseWizardSteps = resp.admin_close_wizard_steps;
+      if (Array.isArray(resp.admin_health_resolution_queue)) state.adminHealthResolutionQueue = resp.admin_health_resolution_queue;
+      if (Array.isArray(resp.admin_deployment_gate_status)) state.adminDeploymentGateStatus = resp.admin_deployment_gate_status;
+      if (Array.isArray(resp.public_seo_smoke_check)) state.publicSeoSmokeCheck = resp.public_seo_smoke_check;
+      if (Array.isArray(resp.admin_audit_event_directory)) state.adminAuditEventDirectory = resp.admin_audit_event_directory;
+      if (Array.isArray(resp.admin_backup_restore_rehearsal_directory)) state.adminBackupRestoreRehearsals = resp.admin_backup_restore_rehearsal_directory;
+      if (Array.isArray(resp.bank_csv_import_session_directory)) state.bankCsvImportSessions = resp.bank_csv_import_session_directory;
       if (Array.isArray(resp.evidence_manager_directory)) state.evidenceManagerDirectory = resp.evidence_manager_directory;
       if (Array.isArray(resp.admin_evidence_action_queue)) state.adminEvidenceActionQueue = resp.admin_evidence_action_queue;
+      if (Array.isArray(resp.mobile_navigation_quality_gates)) state.mobileNavigationQualityGates = resp.mobile_navigation_quality_gates;
+      if (Array.isArray(resp.admin_mobile_action_card_directory)) state.adminMobileActionCards = resp.admin_mobile_action_card_directory;
+      if (Array.isArray(resp.admin_list_pagination_settings)) state.adminListPaginationSettings = resp.admin_list_pagination_settings;
       state.counts = {
         users: state.directoryPagination.people?.total || state.users.length,
         sites: Array.isArray(state.sites) ? state.sites.length : 0,
@@ -1443,11 +1468,72 @@
       };
     }
 
+    function getAdminScopeTimeout(scope) {
+      const clean = String(scope || 'all').toLowerCase();
+      if (clean === 'all') return 90000;
+      if (clean === 'operations') return 25000;
+      if (clean === 'reporting') return 20000;
+      return 16000;
+    }
+
+    function recordAdminScopeTiming(scope, startedAt, ok = true, message = '') {
+      const clean = String(scope || 'all').toLowerCase();
+      const elapsedMs = Math.max(0, Math.round(performance.now() - startedAt));
+      state.adminScopeTimings[clean] = {
+        scope: clean,
+        ok: !!ok,
+        elapsedMs,
+        message: String(message || (ok ? 'Loaded' : 'Failed')).slice(0, 180),
+        checkedAt: new Date().toISOString()
+      };
+      if (ok) state.adminScopeLastUpdated[clean] = new Date().toISOString();
+      renderAdminScopeStatus();
+      return state.adminScopeTimings[clean];
+    }
+
+    function renderAdminScopeStatus() {
+      const e = els();
+      if (!e.scopeStatus) return;
+      const labels = {
+        command_center: 'Command Center',
+        health: 'Health',
+        people: 'People',
+        operations: 'Operations',
+        accounting: 'Accounting',
+        all: 'All Fallback'
+      };
+      const scopes = ['command_center', 'health', 'people', 'operations', 'accounting'];
+      e.scopeStatus.innerHTML = scopes.map((scope) => {
+        const row = state.adminScopeTimings[scope] || {};
+        const ok = row.ok === true;
+        const failed = row.ok === false;
+        const severity = ok ? 'ok' : (failed ? 'error' : 'warning');
+        const age = state.adminScopeLastUpdated[scope] ? new Date(state.adminScopeLastUpdated[scope]).toLocaleTimeString() : 'not loaded';
+        const elapsed = Number.isFinite(Number(row.elapsedMs)) ? `${row.elapsedMs}ms` : '—';
+        const msg = row.message || (failed ? 'Failed' : 'Waiting for first live load');
+        return `
+          <div class="admin-scope-status-card" data-status="${escHtml(severity)}">
+            <span>${escHtml(labels[scope] || scope)}</span>
+            <strong>${escHtml(ok ? 'Live' : (failed ? 'Retry' : 'Pending'))}</strong>
+            <small>${escHtml(elapsed)} · ${escHtml(age)}</small>
+            <small>${escHtml(msg)}</small>
+          </div>`;
+      }).join('');
+    }
+
     async function refreshAdminPanelScope(scope = 'all') {
       applyRoleAccess();
       if (state.locked) return null;
       const cleanScope = String(scope || 'all').trim().toLowerCase() || 'all';
-      const resp = await loadAdminDirectory({ ...getAdminDirectoryPagingPayload(), scope: cleanScope, timeoutMs: cleanScope === 'reporting' ? 20000 : 12000 });
+      const startedAt = performance.now();
+      let resp = null;
+      try {
+        resp = await loadAdminDirectory({ ...getAdminDirectoryPagingPayload(), scope: cleanScope, timeoutMs: getAdminScopeTimeout(cleanScope) });
+        recordAdminScopeTiming(cleanScope, startedAt, true, 'Manual refresh loaded.');
+      } catch (err) {
+        recordAdminScopeTiming(cleanScope, startedAt, false, err?.message || 'Panel refresh failed.');
+        throw err;
+      }
       mergeAdminDirectoryScopeResponse(resp || {});
       const e = els();
       if (e.usersCount) e.usersCount.textContent = String(state.counts.users || 0);
@@ -1469,12 +1555,18 @@
         setSummary('Jobs and Operations refreshed without reloading the full Admin manager.');
         return resp;
       }
-      if (cleanScope === 'health' || cleanScope === 'command_center') {
+      if (cleanScope === 'command_center') {
+        renderAdminCommandCenter();
+        renderAdminTaskInbox();
+        setSummary('Command Center refreshed without reloading full Admin data.');
+        return resp;
+      }
+      if (cleanScope === 'health') {
         renderAdminCommandCenter();
         renderAdminHealthCenter();
         renderAdminTaskInbox();
         renderProductionReadiness();
-        setSummary('Health and Command Center panels refreshed.');
+        setSummary('Health and Schema panels refreshed.');
         return resp;
       }
       if (cleanScope === 'accounting') {
@@ -2078,16 +2170,18 @@
 
       try {
         let resp = {};
-        const stagedScopes = ['health', 'people', 'operations', 'accounting'];
+        const stagedScopes = ['command_center', 'health', 'people', 'operations', 'accounting'];
         const stagedWarnings = [];
 
         for (const stagedScope of stagedScopes) {
+          const startedAt = performance.now();
           try {
             const stagedResp = await loadAdminDirectory({
               ...getAdminDirectoryPagingPayload(),
               scope: stagedScope,
-              timeoutMs: stagedScope === 'operations' ? 25000 : 16000
+              timeoutMs: getAdminScopeTimeout(stagedScope)
             });
+            recordAdminScopeTiming(stagedScope, startedAt, true, 'Initial staged load completed.');
 
             if (stagedResp && typeof stagedResp === 'object') {
               resp = {
@@ -2101,16 +2195,25 @@
               mergeAdminDirectoryScopeResponse(stagedResp);
             }
           } catch (scopeErr) {
-            stagedWarnings.push(`${stagedScope}: ${scopeErr?.message || 'failed'}`);
+            const message = scopeErr?.message || 'failed';
+            recordAdminScopeTiming(stagedScope, startedAt, false, message);
+            stagedWarnings.push(`${stagedScope}: ${message}`);
           }
         }
 
         if (!Object.keys(resp).length) {
-          resp = await loadAdminDirectory({
-            ...getAdminDirectoryPagingPayload(),
-            scope: 'all',
-            timeoutMs: 90000
-          });
+          const fallbackStartedAt = performance.now();
+          try {
+            resp = await loadAdminDirectory({
+              ...getAdminDirectoryPagingPayload(),
+              scope: 'all',
+              timeoutMs: 90000
+            });
+            recordAdminScopeTiming('all', fallbackStartedAt, true, 'Emergency all-scope fallback loaded.');
+          } catch (fallbackErr) {
+            recordAdminScopeTiming('all', fallbackStartedAt, false, fallbackErr?.message || 'All-scope fallback failed.');
+            throw fallbackErr;
+          }
         } else if (stagedWarnings.length) {
           state.adminLoadWarnings = stagedWarnings;
         } else {
@@ -4655,11 +4758,14 @@
           ? `${rows.length} health item(s): ${errorCount} error(s), ${warningCount} warning(s). Latest schema marker: ${latestSchema.schema_version || 'not logged'}.`
           : `No active health alerts loaded. Latest schema marker: ${latestSchema.schema_version || 'not logged'}.`;
       }
+      renderAdminScopeStatus();
+      const failedScopes = Object.values(state.adminScopeTimings || {}).filter((row) => row && row.ok === false).length;
       if (e.healthCards) {
         e.healthCards.innerHTML = [
           ['Errors', errorCount, 'Critical items that need action.'],
           ['Warnings', warningCount, 'Timeouts, failed delivery, or review warnings.'],
           ['Local Diagnostics', localRows.length, 'Client-side issues captured in this browser.'],
+          ['Panel Load Issues', failedScopes, 'Failed staged Admin scopes can be retried individually.'],
           ['Latest Schema', latestSchema.schema_version || '—', latestSchema.migration_key || latestSchema.notes || 'No schema version table row found yet.'],
           ['Schema Drift', drift.drift_status || 'unknown', drift.message || 'Apply migrations through the latest repo schema marker.']
         ].map(([label, value, help]) => `<div class="admin-health-card"><span>${escHtml(label)}</span><strong>${escHtml(String(value))}</strong><small>${escHtml(help)}</small></div>`).join('');
@@ -5227,6 +5333,18 @@
       if (e.evidenceManagerBody && e.evidenceManagerBody.dataset.boundEvidence !== '1') {
         e.evidenceManagerBody.dataset.boundEvidence = '1';
         e.evidenceManagerBody.addEventListener('click', (event) => handleEvidenceManagerAction(event).catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.commandRefreshPanel && e.commandRefreshPanel.dataset.bound !== '1') {
+        e.commandRefreshPanel.dataset.bound = '1';
+        e.commandRefreshPanel.addEventListener('click', () => refreshAdminPanelScope('command_center').catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.healthRefreshPanel && e.healthRefreshPanel.dataset.bound !== '1') {
+        e.healthRefreshPanel.dataset.bound = '1';
+        e.healthRefreshPanel.addEventListener('click', () => refreshAdminPanelScope('health').catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.accountingRefreshPanel && e.accountingRefreshPanel.dataset.bound !== '1') {
+        e.accountingRefreshPanel.dataset.bound = '1';
+        e.accountingRefreshPanel.addEventListener('click', () => refreshAdminPanelScope('accounting').catch((err) => setSummary(String(err?.message || err), true)));
       }
       if (e.clearDiagnosticsBtn && e.clearDiagnosticsBtn.dataset.bound !== '1') {
         e.clearDiagnosticsBtn.dataset.bound = '1';
