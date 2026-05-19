@@ -71,8 +71,7 @@ function computeNextSendAt(cadence: string, baseIso = new Date().toISOString()) 
 }
 
 function asCsv(rows: Record<string, unknown>[]) {
-  if (!rows.length) return 'No rows
-'
+  if (!rows.length) return 'No rows\n'
   const cols = Array.from(rows.reduce((set, row) => {
     Object.keys(row || {}).forEach((key) => set.add(key))
     return set
@@ -85,9 +84,7 @@ function asCsv(rows: Record<string, unknown>[]) {
   }
   const lines = [cols.join(',')]
   for (const row of rows) lines.push(cols.map((col) => esc(row[col])).join(','))
-  return `${lines.join('
-')}
-`
+  return `${lines.join('\n')}\n`
 }
 
 async function sendEmail(to: string[], subject: string, text: string, csvName?: string | null, csvText?: string | null) {
@@ -164,8 +161,7 @@ function buildSummaryText(sub: SubscriptionRow, rows: Record<string, unknown>[])
     const due = row.due_label || row.due_date || row.expires_at || row.next_send_at || ''
     lines.push(`- ${label}${status ? ` [${status}]` : ''}${due ? ` due ${due}` : ''}`)
   })
-  return lines.join('
-')
+  return lines.join('\n')
 }
 
 Deno.serve(async (req) => {
