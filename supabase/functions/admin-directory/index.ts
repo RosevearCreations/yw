@@ -283,6 +283,55 @@ serve(async (req) => {
     return Response.json(health, { headers: corsHeaders });
   }
 
+
+
+  if (scope === 'accounting_close' && roleRank(actorRole) >= roleRank('supervisor')) {
+    const accountingClose: Record<string, unknown> = { ok: true, accounting_close_scope: 'fast_path', pagination_meta: { scope, limit } };
+    accountingClose.admin_home_command_center = await safeList(supabase, 'v_admin_home_command_center');
+    accountingClose.admin_close_center_overview = await safeList(supabase, 'v_admin_close_center_overview');
+    accountingClose.admin_close_wizard_steps = await safeList(supabase, 'v_admin_close_wizard_steps', '*', 'sort_order', 80, true);
+    accountingClose.accounting_close_dashboard = await safeList(supabase, 'v_accounting_close_dashboard');
+    accountingClose.accounting_close_admin_control_dashboard = await safeList(supabase, 'v_accounting_close_admin_control_dashboard', '*', 'period_end', limit, false);
+    accountingClose.accounting_close_package_delivery_queue = await safeList(supabase, 'v_accounting_close_package_delivery_queue', '*', 'updated_at', limit, false);
+    accountingClose.accountant_handoff_bundles = await safeList(supabase, 'v_accountant_handoff_bundle_directory', '*', 'updated_at', limit, false);
+    accountingClose.accountant_handoff_packages = await safeList(supabase, 'v_accountant_handoff_package_directory', '*', 'updated_at', limit, false);
+    return Response.json(accountingClose, { headers: corsHeaders });
+  }
+
+  if (scope === 'banking' && roleRank(actorRole) >= roleRank('supervisor')) {
+    const banking: Record<string, unknown> = { ok: true, banking_scope: 'fast_path', pagination_meta: { scope, limit } };
+    banking.bank_reconciliation_sessions = await safeList(supabase, 'v_bank_reconciliation_summary', '*', 'period_end', limit, false);
+    banking.bank_reconciliation_items = await safeList(supabase, 'bank_reconciliation_items', '*', 'item_date', limit, false);
+    banking.accounting_reconciliation_manual_review_queue = await safeList(supabase, 'v_accounting_reconciliation_manual_review_queue', '*', 'review_priority', limit, true);
+    banking.bank_reconciliation_match_candidates = await safeList(supabase, 'v_bank_reconciliation_match_candidate_directory', '*', 'reconciliation_session_id', limit, false);
+    banking.bank_reconciliation_match_scored = await safeList(supabase, 'v_bank_reconciliation_match_scored_directory', '*', 'match_score', limit, false);
+    banking.bank_csv_import_session_directory = await safeList(supabase, 'v_bank_csv_import_session_directory', '*', 'updated_at', 80, false);
+    return Response.json(banking, { headers: corsHeaders });
+  }
+
+  if (scope === 'tax_payroll' && roleRank(actorRole) >= roleRank('supervisor')) {
+    const taxPayroll: Record<string, unknown> = { ok: true, tax_payroll_scope: 'fast_path', pagination_meta: { scope, limit } };
+    taxPayroll.sales_tax_prep = await safeList(supabase, 'v_sales_tax_prep_directory', '*', 'period_end', limit, false);
+    taxPayroll.sales_tax_filing_review = await safeList(supabase, 'v_sales_tax_filing_review_directory', '*', 'filing_period_end', limit, false);
+    taxPayroll.payroll_remittance_prep = await safeList(supabase, 'v_payroll_remittance_prep_directory', '*', 'period_end', limit, false);
+    taxPayroll.payroll_remittance_review = await safeList(supabase, 'v_payroll_remittance_review_directory', '*', 'remittance_period_end', limit, false);
+    taxPayroll.accounting_payment_application_dashboard = await safeList(supabase, 'v_accounting_payment_application_dashboard');
+    taxPayroll.ar_payment_applications = await safeList(supabase, 'v_ar_payment_application_directory', '*', 'application_date', limit, true);
+    taxPayroll.ap_payment_applications = await safeList(supabase, 'v_ap_payment_application_directory', '*', 'application_date', limit, true);
+    return Response.json(taxPayroll, { headers: corsHeaders });
+  }
+
+  if (scope === 'evidence' && roleRank(actorRole) >= roleRank('supervisor')) {
+    const evidence: Record<string, unknown> = { ok: true, evidence_scope: 'fast_path', pagination_meta: { scope, limit } };
+    evidence.evidence_manager_directory = await safeList(supabase, 'v_evidence_manager_directory', '*', 'last_seen_at', 120, false);
+    evidence.admin_evidence_action_queue = await safeList(supabase, 'v_admin_evidence_action_queue', '*', 'updated_at', 80, false);
+    evidence.attendance_photo_review = await safeList(supabase, 'v_attendance_photo_review', '*', 'uploaded_at', 120, false);
+    evidence.hse_evidence_review = await safeList(supabase, 'v_hse_evidence_review', '*', 'created_at', 120, false);
+    evidence.hse_packet_action_items = await safeList(supabase, 'v_hse_packet_action_items', '*', 'action_priority', 80, true);
+    evidence.hse_dashboard_summary = await safeList(supabase, 'v_hse_dashboard_summary');
+    return Response.json(evidence, { headers: corsHeaders });
+  }
+
   if (scope === 'accounting' && roleRank(actorRole) >= roleRank('supervisor')) {
     const accounting: Record<string, unknown> = { ok: true, accounting_scope: 'fast_path', pagination_meta: { scope, limit } };
     accounting.admin_home_command_center = await safeList(supabase, 'v_admin_home_command_center');

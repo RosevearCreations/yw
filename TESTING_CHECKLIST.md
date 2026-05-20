@@ -1,31 +1,25 @@
 # Testing Checklist
 
-Last refreshed: **2026-05-19a**
+Last refreshed: **2026-05-19b**
 
-## Automated checks
+## Local/static checks
 
-Run from repo root when local tools are available:
+- Run JavaScript syntax checks.
+- Run `node scripts/repo-smoke-check.mjs`.
+- Confirm `index.html` has no more than one H1.
+- Confirm CSS braces are balanced.
 
-```bash
-node --check js/mobile-menu.js
-node --check js/api.js
-node --check js/admin-ui.js
-node --check js/reports-ui.js
-node --check js/jobs-ui.js
-node --check js/hse-ops-ui.js
-node --check js/logbook-ui.js
-node --check app.js
-node --check server-worker.js
-node scripts/repo-smoke-check.mjs
-```
+## Admin live checks
 
-## Manual checks
+- Open `#admin` after hard refresh.
+- Confirm staged scope status cards appear for Command Center, Health, People, Operations, Accounting Close, Banking, Tax/Payroll, and Evidence.
+- Press Retry Evidence and confirm only evidence rows reload.
+- Press Retry Accounting and confirm Accounting Close rows reload without a full Admin reload.
+- Confirm failed panel loads are visible in diagnostics.
+- Confirm status-changing buttons show a confirmation prompt.
 
-- Open Admin on desktop.
-- Open Admin on phone-width viewport.
-- Confirm the compact mobile menu expands/collapses.
-- Confirm Admin section menu does not become one long phone list.
-- Expand App Health diagnostics drawer.
-- Confirm stale-data badges wrap cleanly.
-- Use Retry Health, Refresh Staff Only, Refresh Jobs Only, and Retry Accounting.
-- Confirm one H1 remains on the exposed app shell.
+## Mobile checks
+
+- Compact main menu expands/collapses.
+- Admin section menu remains compact.
+- Scope cards, age badges, Jobs row actions, Evidence tables, and Guided Close rows do not create awkward horizontal overflow beyond intentional table scrolling.

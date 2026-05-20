@@ -1,27 +1,30 @@
 # System Architecture
 
-Last refreshed: **2026-05-19a**
+Last refreshed: **2026-05-19b**
 
-## Current direction
+## Current architecture direction
 
-The Admin app is being split into smaller, safer panel scopes:
+The app is moving from one large Admin payload toward smaller app-like panel requests:
 
 - `command_center`
 - `health`
 - `people`
 - `operations`
-- `accounting`
+- `accounting_close`
+- `banking`
+- `tax_payroll`
+- `evidence`
 
-The legacy `all` scope remains only as an emergency fallback.
+The old `all` scope remains only as an emergency fallback. The old broad `accounting` scope remains temporarily while split accounting scopes are tested live.
 
-## New diagnostics flow
+## Frontend
 
-1. `js/admin-ui.js` loads Admin panels through staged scopes.
-2. Each scope records timing, result, message, and stale age in browser state.
-3. Failed scope loads are sent to `admin-manage` as `admin_panel_load_diagnostic` rows.
-4. `admin-directory` returns `v_admin_panel_load_diagnostics` in Health/all scopes.
-5. The Health panel shows both browser-session details and persisted database diagnostics.
+- Static app shell with versioned assets.
+- Admin UI now stages multiple panel requests and records timing/failure state.
+- Mobile menu and Admin section menu are compact/expandable.
+- Admin status-changing actions now ask for confirmation first.
 
-## Mobile UX rule
+## Backend
 
-Admin diagnostics, badges, tables, and action buttons must stack on small screens without horizontal overflow unless a table is intentionally inside a scroll container.
+- Supabase Edge Functions provide Admin directories and write actions.
+- SQL schema files remain the canonical history and include low-risk tracking tables/views for readiness and diagnostics.

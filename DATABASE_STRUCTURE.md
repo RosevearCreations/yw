@@ -1,23 +1,25 @@
 # Database Structure
 
-Last refreshed: **2026-05-19a**
+Last refreshed: **2026-05-19b**
 
 ## Current schema marker
 
-The active schema reference is aligned through:
+Latest schema file: `sql/117_split_admin_scopes_confirmation_and_deployment_checklist.sql`.
 
-- `sql/116_admin_diagnostics_drawer_and_stale_data_badges.sql`
+## Schema 117 additions
 
-## Latest additions
+- `admin_fast_path_scope_registry`
+- `admin_action_confirmation_rules`
+- `admin_deployment_checklist_items`
+- `v_admin_fast_path_scope_registry`
+- `v_admin_action_confirmation_rules`
+- `v_admin_deployment_checklist`
+- `v_schema_drift_status` now expects schema **117**.
 
-- `admin_panel_load_diagnostics` is now used by the frontend write path for failed staged Admin panel loads.
-- `v_admin_panel_load_diagnostics` now includes the captured profile name when available.
-- `v_schema_drift_status` now expects schema version **116**.
-- `app_frontend_quality_gates` includes checks for diagnostics drawer visibility, persisted panel failures, and stale-data badges.
-- `admin_panel_refresh_preferences` includes rows for diagnostics drawer, stale age badges, and persisted panel failures.
+## Purpose
 
-## Safe migration notes
+Schema 117 documents and tracks the move from broad Admin payloads to smaller panel fast paths, records which actions need confirmation guardrails, and adds deployment checklist rows for schema/function/cache readiness.
 
-- Keep `v_schema_drift_status.expected_schema_version` as the column name. Do not rename it through `CREATE OR REPLACE VIEW`.
-- If a view needs a column rename, use `drop view if exists ...` first or use `alter view ... rename column` when safe.
-- Apply migrations in order through schema 116 before deploying functions that depend on the new views.
+## Important compatibility rule
+
+Keep `v_schema_drift_status.expected_schema_version` as the column name. Do not rename it with `create or replace view`, because PostgreSQL can raise `42P16` when a replacement view tries to rename an existing column.

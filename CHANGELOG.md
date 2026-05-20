@@ -1,18 +1,20 @@
 # Changelog
 
-Last refreshed: **2026-05-19a**
+Last refreshed: **2026-05-19b**
 
-## 2026-05-19a
+## 2026-05-19b
 
-- Added schema **116**: `116_admin_diagnostics_drawer_and_stale_data_badges.sql`.
-- Added Admin Health diagnostics drawer for staged load details.
-- Added stale-data age badges for Command Center, Health, Staff, Jobs, and Accounting.
-- Added `admin_panel_load_diagnostic` write support in `admin-manage`.
-- Added `v_admin_panel_load_diagnostics` loading in `admin-directory` Health/all scopes.
-- Added mobile CSS for diagnostics rows and age badges.
-- Updated schema reference, smoke checks, active Markdown, and cache version.
-- Removed reintroduced retired Markdown and `test_write` files from active root.
+- Added schema 117 for split Admin fast paths, confirmation guardrails, and deployment checklist notes.
+- Added `accounting_close`, `banking`, `tax_payroll`, and `evidence` fast paths to `admin-directory`.
+- Updated Admin staged loading to use the split scopes before emergency fallback.
+- Added Evidence retry/age badge controls.
+- Added confirmation prompts for status-changing Admin actions.
+- Added lightweight Admin skeleton loading CSS.
+- Fixed a Production Readiness table markup drift issue.
+- Refreshed schema reference, smoke checks, active Markdown, and cache version.
 
-## Previous active build
+## Recent prior passes
 
-- `2026-05-18b`: Admin retry buttons, scope timing cards, command-center fast path, and report-delivery bundle guardrails.
+- `2026-05-19b`: Admin diagnostics drawer and stale-data age badges.
+- `2026-05-18b`: Admin panel retry timing and command-center fast path.
+- `2026-05-18a`: Staged Admin loading and cache fallback guardrails.

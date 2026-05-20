@@ -1,21 +1,17 @@
 # AI Context
 
-Last refreshed: **2026-05-19a**
+Last refreshed: **2026-05-19b**
 
-This repo is the YWI safety/jobs/accounting/admin app. Every pass must update code, SQL schema files, active Markdown, roadmap/gaps, SEO notes, CSS/mobile checks, and one-H1 verification.
+This repository is the YWI/Rosie Dazzlers operations app. Continue every pass by updating schema files, active Markdown, CSS/mobile checks, one-H1 verification, and roadmap/gaps.
 
-## Latest pass summary
+## Current state
 
-- Source ZIP: `yw-main(126).zip`.
-- Output build label: `2026-05-19a`.
-- Added schema **116**.
-- Main theme: Admin staged loading now has an expandable diagnostics drawer, mobile-safe stale-data age badges, and failed panel load persistence through `admin-manage`.
-- Carried forward previous deploy fix: `report-subscription-delivery-run` must avoid literal multi-line newline strings that cause bundler parse errors.
+- Latest schema: 117.
+- Current asset/cache version: 2026-05-19b.
+- Admin startup is now staged through split scopes, including Accounting Close, Banking, Tax/Payroll, and Evidence.
+- Broad `all` and `accounting` scopes are still emergency fallbacks only.
+- Retired root Markdown and `test_write` files should not remain active in the root.
 
-## Active rules
+## Next priority
 
-- Keep no more than one H1 on exposed pages.
-- Continue compact mobile navigation and Admin mobile table polish.
-- Keep retired root Markdown out of active root; archive snapshots instead.
-- Keep SQL references current and avoid unsafe `CREATE OR REPLACE VIEW` column renames.
-- Prefer small Edge Function scopes over the heavy Admin `all` scope.
+Render the new deployment checklist and fast-path registry rows in the Admin Production Readiness panel, then add schema/function preflight warnings before showing actions that depend on newer migrations.

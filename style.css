@@ -1786,3 +1786,33 @@ body[data-authenticated="false"] .main-menu-toggle {
     gap: 4px;
   }
 }
+
+
+/* 2026-05-19b: split Admin fast paths, evidence retry button, and loading skeletons */
+#admin.is-admin-loading .admin-command-grid:empty,
+#admin.is-admin-loading .admin-health-grid:empty,
+#admin.is-admin-loading .admin-task-grid:empty,
+#admin.is-admin-loading .table-scroll tbody:empty::before {
+  content: "Loading current panel data…";
+  display: block;
+  padding: 12px;
+  border-radius: 12px;
+  color: var(--muted);
+  background: linear-gradient(90deg, rgba(255,255,255,.04), rgba(255,255,255,.09), rgba(255,255,255,.04));
+  background-size: 200% 100%;
+  animation: adminSkeletonPulse 1.2s ease-in-out infinite;
+}
+@keyframes adminSkeletonPulse {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.admin-scope-status-card[data-status="ok"] strong::before { content: "● "; color: #68d391; }
+.admin-scope-status-card[data-status="warning"] strong::before { content: "● "; color: #ed8936; }
+.admin-scope-status-card[data-status="error"] strong::before { content: "● "; color: #fc8181; }
+@media (max-width: 760px) {
+  #ad_evidence_manager_table,
+  #ad_evidence_action_queue_table,
+  #ad_close_wizard_detail_table {
+    min-width: 720px;
+  }
+}

@@ -1,31 +1,22 @@
 # New Chat Status
 
-Last refreshed: **2026-05-19a**
+Last refreshed: **2026-05-19b**
 
-## Current build
+## Current build state
 
-- Latest source ZIP used: `yw-main(126).zip`.
-- Current output label: `2026-05-19a`.
-- Latest schema marker: **116**.
-- Main theme: Admin staged loading is now visible, retryable, and diagnosable with mobile-safe stale-data badges and persisted failure rows.
+- Current output label: `2026-05-19b`.
+- Latest schema marker: **117**.
+- Main focus: split Admin fast paths, Evidence Manager fast path, confirmation guardrails, and mobile-safe loading skeletons.
+- The broad `all` and `accounting` scopes remain emergency fallbacks only.
 
-## Release health summary
+## Must-do after upload/deploy
 
-| Area | Status | Notes |
-| --- | --- | --- |
-| JavaScript syntax | Passed | `node --check` completed for core browser files. |
-| Edge TypeScript parse | Passed with expected Deno/module warnings | `tsc --noEmit --noResolve` reached type/environment warnings only. |
-| Smoke check | Passed | `scripts/repo-smoke-check.mjs` passed after schema/docs updates. |
-| H1 check | Passed | `index.html` still has one H1. |
-| CSS drift | Passed | CSS opening/closing braces are balanced. |
-| Admin diagnostics | Added | Drawer, badges, and persisted failure write path added. |
+1. Apply migrations through `sql/117_split_admin_scopes_confirmation_and_deployment_checklist.sql`.
+2. Redeploy `admin-directory` and `admin-manage`.
+3. Hard refresh or unregister the service worker so `2026-05-19b` assets load.
+4. Open Admin and verify these cards load or show retry status: Command Center, Health, People, Operations, Accounting Close, Banking, Tax/Payroll, Evidence.
+5. Test phone width for menu, Admin scope cards, Evidence Manager, Jobs review table, and Guided Close Center.
 
-## Deploy notes for next chat
+## Next work starts from
 
-1. Apply SQL through `sql/116_admin_diagnostics_drawer_and_stale_data_badges.sql`.
-2. Redeploy Supabase functions:
-   - `admin-directory`
-   - `admin-manage`
-   - `report-subscription-delivery-run` if not already redeployed from the previous fix.
-3. Hard refresh or unregister the service worker so `2026-05-19a` assets load.
-4. Test Admin on mobile width and verify the diagnostics drawer, badges, and retry buttons display cleanly.
+Use `DEVELOPMENT_ROADMAP.md` and `KNOWN_ISSUES_AND_GAPS.md`. The next priority is rendering the new deployment checklist rows and adding schema/function preflight warnings before showing actions that depend on new migrations.
