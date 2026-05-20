@@ -1722,3 +1722,67 @@ body[data-authenticated="false"] .main-menu-toggle {
     padding: 12px;
   }
 }
+
+/* 2026-05-19a: Admin diagnostics drawer and stale-data badges */
+.admin-panel-age-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.admin-age-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: var(--muted);
+  background: rgba(255,255,255,0.035);
+}
+.admin-age-badge strong { color: var(--text); font-size: 0.78rem; }
+.admin-age-badge[data-status="ok"] { border-color: rgba(72, 187, 120, .45); color: var(--text); }
+.admin-age-badge[data-status="warning"] { border-color: rgba(237, 137, 54, .48); }
+.admin-age-badge[data-status="error"] { border-color: rgba(245, 101, 101, .58); color: var(--text); }
+.admin-diagnostics-drawer {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.03);
+  overflow: hidden;
+}
+.admin-diagnostics-drawer summary {
+  cursor: pointer;
+  padding: 10px 12px;
+  font-weight: 700;
+}
+.admin-diagnostics-list {
+  display: grid;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+.admin-diagnostic-row {
+  display: grid;
+  grid-template-columns: 84px 1fr 92px 74px 74px minmax(180px, 2fr);
+  gap: 8px;
+  align-items: start;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 8px;
+  background: rgba(0,0,0,0.12);
+  min-width: 0;
+}
+.admin-diagnostic-row small { color: var(--muted); overflow-wrap: anywhere; }
+.admin-diagnostic-row[data-status="ok"] { border-color: rgba(72, 187, 120, .35); }
+.admin-diagnostic-row[data-status="warning"] { border-color: rgba(237, 137, 54, .40); }
+.admin-diagnostic-row[data-status="error"] { border-color: rgba(245, 101, 101, .50); }
+@media (max-width: 760px) {
+  .admin-panel-age-grid { flex-direction: column; align-items: stretch; }
+  .admin-age-badge { width: 100%; justify-content: space-between; white-space: normal; }
+  .admin-diagnostic-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}

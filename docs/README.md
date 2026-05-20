@@ -1,9 +1,10 @@
 # Documentation Index
 
-Last refreshed: **2026-05-18b**
+Last refreshed: **2026-05-19a**
 
 Current high-value docs:
 
+- `ADMIN_DIAGNOSTICS_DRAWER_AND_STALE_BADGES.md`
 - `ADMIN_PANEL_RETRY_TIMING_AND_COMMAND_SCOPE.md`
 - `ADMIN_STAGED_LOAD_AND_CACHE_FALLBACKS.md`
 - `ADMIN_PANEL_REFRESH_AND_JOB_ACTIONS.md`

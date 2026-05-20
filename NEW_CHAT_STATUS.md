@@ -1,30 +1,31 @@
 # New Chat Status
 
-Use this as the handoff for the next pass.
+Last refreshed: **2026-05-19a**
 
-## Latest completed pass
+## Current build
 
-**2026-05-18b — Admin panel retry, timing, and command-center fast path**
+- Latest source ZIP used: `yw-main(126).zip`.
+- Current output label: `2026-05-19a`.
+- Latest schema marker: **116**.
+- Main theme: Admin staged loading is now visible, retryable, and diagnosable with mobile-safe stale-data badges and persisted failure rows.
 
-Completed:
+## Release health summary
 
-- Added schema **115**.
-- Added dedicated `command_center` fast path in `admin-directory`.
-- Added visible Retry Command Center, Retry Health, and Retry Accounting buttons.
-- Kept Staff and Jobs panel-only refresh controls.
-- Added Admin scope timing/status cards to show live load state per panel.
-- Updated Markdown, canonical schema reference, and smoke checks.
-- Archived old Markdown and removed retired/temp files from active root.
+| Area | Status | Notes |
+| --- | --- | --- |
+| JavaScript syntax | Passed | `node --check` completed for core browser files. |
+| Edge TypeScript parse | Passed with expected Deno/module warnings | `tsc --noEmit --noResolve` reached type/environment warnings only. |
+| Smoke check | Passed | `scripts/repo-smoke-check.mjs` passed after schema/docs updates. |
+| H1 check | Passed | `index.html` still has one H1. |
+| CSS drift | Passed | CSS opening/closing braces are balanced. |
+| Admin diagnostics | Added | Drawer, badges, and persisted failure write path added. |
 
-## Deploy before testing
+## Deploy notes for next chat
 
-1. Apply SQL through schema **115**.
-2. Redeploy `admin-directory`, `admin-manage`, and `report-subscription-delivery-run`.
-3. Hard refresh/unregister the service worker.
-4. Test `#admin` on desktop and phone width.
-
-## Watch next
-
-- Confirm live Admin no longer falls back to cached data unless all staged panel calls fail.
-- Confirm panel timing cards show Command Center, Health, People, Operations, and Accounting statuses.
-- Continue moving broad Admin data dependencies into smaller panel scopes.
+1. Apply SQL through `sql/116_admin_diagnostics_drawer_and_stale_data_badges.sql`.
+2. Redeploy Supabase functions:
+   - `admin-directory`
+   - `admin-manage`
+   - `report-subscription-delivery-run` if not already redeployed from the previous fix.
+3. Hard refresh or unregister the service worker so `2026-05-19a` assets load.
+4. Test Admin on mobile width and verify the diagnostics drawer, badges, and retry buttons display cleanly.

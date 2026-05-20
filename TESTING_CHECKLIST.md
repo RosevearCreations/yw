@@ -1,10 +1,12 @@
 # Testing Checklist
 
-Last refreshed: **2026-05-18b**
+Last refreshed: **2026-05-19a**
 
-## Automated checks run before ZIP handoff
+## Automated checks
 
-```text
+Run from repo root when local tools are available:
+
+```bash
 node --check js/mobile-menu.js
 node --check js/api.js
 node --check js/admin-ui.js
@@ -17,11 +19,13 @@ node --check server-worker.js
 node scripts/repo-smoke-check.mjs
 ```
 
-## Manual checks after deployment
+## Manual checks
 
-- Confirm `index.html` has no more than one `<h1>`.
-- Confirm the mobile main menu is compact and expandable.
-- Confirm Admin opens with staged live panel calls instead of only cached data.
-- Confirm the Health panel shows per-scope timing cards.
-- Confirm the new panel retry buttons work on phone width.
-- Confirm report delivery Edge Function deploys cleanly.
+- Open Admin on desktop.
+- Open Admin on phone-width viewport.
+- Confirm the compact mobile menu expands/collapses.
+- Confirm Admin section menu does not become one long phone list.
+- Expand App Health diagnostics drawer.
+- Confirm stale-data badges wrap cleanly.
+- Use Retry Health, Refresh Staff Only, Refresh Jobs Only, and Retry Accounting.
+- Confirm one H1 remains on the exposed app shell.

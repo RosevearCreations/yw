@@ -1,23 +1,23 @@
 # Database Structure
 
-Last refreshed: **2026-05-18b**
+Last refreshed: **2026-05-19a**
 
 ## Current schema marker
 
-The active schema set is synchronized through:
+The active schema reference is aligned through:
 
-```text
-sql/115_admin_panel_retry_timing_and_command_scope.sql
-```
+- `sql/116_admin_diagnostics_drawer_and_stale_data_badges.sql`
 
-## Added in schema 115
+## Latest additions
 
-- `admin_panel_load_diagnostics` table for future persisted panel load diagnostics.
-- `v_admin_panel_load_diagnostics` view.
-- Additional rows in `admin_panel_refresh_preferences` for command-center, health retry, accounting retry, and scope timing cards.
-- Additional `app_frontend_quality_gates` rows for Admin panel retry/timing and report delivery bundle readiness.
-- `v_schema_drift_status` now expects schema **115** while keeping the column name `expected_schema_version` stable.
+- `admin_panel_load_diagnostics` is now used by the frontend write path for failed staged Admin panel loads.
+- `v_admin_panel_load_diagnostics` now includes the captured profile name when available.
+- `v_schema_drift_status` now expects schema version **116**.
+- `app_frontend_quality_gates` includes checks for diagnostics drawer visibility, persisted panel failures, and stale-data badges.
+- `admin_panel_refresh_preferences` includes rows for diagnostics drawer, stale age badges, and persisted panel failures.
 
-## Deployment note
+## Safe migration notes
 
-Apply migrations through schema **115** before relying on the latest Admin Health/Schema panel. Do not rename `v_schema_drift_status.expected_schema_version`; PostgreSQL requires explicit view column renames and previous deployments failed when this column name changed.
+- Keep `v_schema_drift_status.expected_schema_version` as the column name. Do not rename it through `CREATE OR REPLACE VIEW`.
+- If a view needs a column rename, use `drop view if exists ...` first or use `alter view ... rename column` when safe.
+- Apply migrations in order through schema 116 before deploying functions that depend on the new views.

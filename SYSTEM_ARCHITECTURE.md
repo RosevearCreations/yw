@@ -1,26 +1,27 @@
 # System Architecture
 
-Last refreshed: **2026-05-18b**
+Last refreshed: **2026-05-19a**
 
-## Frontend
+## Current direction
 
-The static frontend loads versioned JS/CSS assets and uses a service worker cache. The Admin screen is still in `js/admin-ui.js`, but it now loads panels in staged scopes and shows per-panel timing status.
+The Admin app is being split into smaller, safer panel scopes:
 
-## Edge Functions
+- `command_center`
+- `health`
+- `people`
+- `operations`
+- `accounting`
 
-- `admin-directory` provides scoped read payloads for Admin panels.
-- `admin-manage` handles write actions for Admin workflows.
-- `report-subscription-delivery-run` handles scheduled report delivery and must deploy with escaped newline strings.
+The legacy `all` scope remains only as an emergency fallback.
 
-## Database
+## New diagnostics flow
 
-Schema migrations through **115** add operational tracking for Admin panel retry/timing and future persisted diagnostics.
+1. `js/admin-ui.js` loads Admin panels through staged scopes.
+2. Each scope records timing, result, message, and stale age in browser state.
+3. Failed scope loads are sent to `admin-manage` as `admin_panel_load_diagnostic` rows.
+4. `admin-directory` returns `v_admin_panel_load_diagnostics` in Health/all scopes.
+5. The Health panel shows both browser-session details and persisted database diagnostics.
 
-## Current Admin load pattern
+## Mobile UX rule
 
-1. `command_center`
-2. `health`
-3. `people`
-4. `operations`
-5. `accounting`
-6. `all` only if every staged request fails
+Admin diagnostics, badges, tables, and action buttons must stack on small screens without horizontal overflow unless a table is intentionally inside a scroll container.

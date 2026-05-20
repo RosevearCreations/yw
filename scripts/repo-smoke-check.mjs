@@ -85,6 +85,7 @@ const requiredFiles = [
   'sql/113_admin_panel_refresh_and_job_review_actions.sql',
   'sql/114_staged_admin_load_and_cache_fallback_guardrails.sql',
   'sql/115_admin_panel_retry_timing_and_command_scope.sql',
+  'sql/116_admin_diagnostics_drawer_and_stale_data_badges.sql',
   'js/hse-ops-ui.js',
   'supabase/functions/jobs-directory/index.ts',
   'supabase/functions/jobs-manage/index.ts',
@@ -141,7 +142,7 @@ addCheck('account-has-conflict-review', accountUi.includes('Conflict Review'), '
 addCheck('account-has-support-export', accountUi.includes('Export Support Snapshot'), 'account-ui.js should render the support snapshot export button.');
 
 const schema = read('sql/000_full_schema_reference.sql');
-addCheck('schema-header-current', /115_admin_panel_retry_timing_and_command_scope/i.test(schema), 'Schema snapshot should reflect the latest 115 pass.');
+addCheck('schema-header-current', /116_admin_diagnostics_drawer_and_stale_data_badges/i.test(schema), 'Schema snapshot should reflect the latest 116 pass.');
 
 const schedulerRun = read('supabase/functions/service-execution-scheduler-run/index.ts');
 addCheck('scheduler-run-advances-next-run', schedulerRun.includes('next_run_at: computeNextRunAt'), 'Scheduler Edge Function should advance next_run_at after successful runs.');
@@ -213,7 +214,7 @@ addCheck('admin-saved-filter-replays-staff-filters', adminUi.includes('people_se
 addCheck('admin-manage-saves-filters', read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_saved_filter'"), 'admin-manage should support saved filter write actions.');
 addCheck('admin-manage-close-step-actions', read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_close_workflow_step'"), 'admin-manage should support guided close step actions.');
 addCheck('admin-manage-evidence-actions', read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_evidence_action'"), 'admin-manage should support evidence action queue writes.');
-addCheck('active-docs-archived-snapshot', fileExists('archive/markdown-current-snapshot-2026-05-18b/root/README.md'), 'Archive snapshot should preserve the previous root README.');
+addCheck('active-docs-archived-snapshot', fileExists('archive/markdown-current-snapshot-2026-05-19a/root/README.md'), 'Archive snapshot should preserve the previous root README.');
 addCheck('retired-markdown-not-in-root', !fileExists('AI_START_PROMPT.md') && !fileExists('PROJECT_BRAIN.md') && !fileExists('REPO_BASE.md') && !fileExists('RUNBOOK_AUTH_BOOTSTRAP.md'), 'Retired root Markdown should be moved out of the active root.');
 addCheck('no-test-write-files', !fileExists('test_write.txt') && !fileExists('test_write2_OLD.txt') && !fileExists('test_write3.txt') && !fileExists('test_write_OLD.txt'), 'Temporary test_write files should not exist in the active root.');
 addCheck('verifydb-retired-from-active-sql', !fileExists('sql/VerifyDB_24_04_2026.sql'), 'Old VerifyDB helper should stay archived, not active in sql/.');
@@ -229,7 +230,7 @@ addCheck('edge-has-panel-fast-paths', read('supabase/functions/admin-directory/i
 addCheck('schema-has-114-staged-admin-load-marker', schema.includes('114_staged_admin_load_and_cache_fallback_guardrails'), 'Canonical schema should include schema 114 staged Admin load marker.');
 addCheck('admin-loads-staged-scopes-first', adminUi.includes("const stagedScopes = ['command_center', 'health', 'people', 'operations', 'accounting']") && adminUi.includes("scope: 'all',") && adminUi.includes('timeoutMs: 90000'), 'Admin initial load should try staged panel scopes before the heavy all-scope emergency fallback.');
 addCheck('admin-summary-reports-staged-warnings', adminUi.includes('state.adminLoadWarnings') && adminUi.includes('Some panels need retry'), 'Admin UI should report staged panel retry warnings instead of immediately showing only cached data.');
-addCheck('cache-version-2026-05-18b', read('server-worker.js').includes('2026-05-18b') && read('index.html').includes('2026-05-18b'), 'Index and service worker should use the 2026-05-18b asset/cache version.');
+addCheck('cache-version-2026-05-19a', read('server-worker.js').includes('2026-05-19a') && read('index.html').includes('2026-05-19a'), 'Index and service worker should use the 2026-05-19a asset/cache version.');
 
 addCheck('schema-has-115-panel-retry-marker', schema.includes('115_admin_panel_retry_timing_and_command_scope'), 'Canonical schema should include schema 115 panel retry/timing marker.');
 addCheck('admin-has-command-center-fast-path-stage', adminUi.includes("'command_center'") && adminUi.includes('Retry Command Center') && adminUi.includes('recordAdminScopeTiming'), 'Admin UI should load a command_center scope and show retry/timing state.');
@@ -237,8 +238,17 @@ addCheck('admin-has-health-accounting-retry-buttons', adminUi.includes('ad_healt
 addCheck('admin-renders-scope-timing-cards', adminUi.includes('renderAdminScopeStatus') && adminUi.includes('admin-scope-status-card'), 'Admin UI should render per-scope live load timing cards.');
 addCheck('edge-has-command-center-fast-path', read('supabase/functions/admin-directory/index.ts').includes("command_center_scope: 'fast_path'"), 'admin-directory should expose a lightweight command_center fast path.');
 addCheck('style-has-admin-scope-status-mobile', read('style.css').includes('.admin-scope-status-grid') && read('style.css').includes('.admin-scope-status-card'), 'style.css should include mobile-safe Admin scope timing cards.');
-addCheck('active-docs-archived-snapshot-2026-05-18b', fileExists('archive/markdown-current-snapshot-2026-05-18b/root/README.md'), 'Archive snapshot should preserve the previous root README for the 2026-05-18b pass.');
+addCheck('active-docs-archived-snapshot-2026-05-19a-legacy-check', fileExists('archive/markdown-current-snapshot-2026-05-19a/root/README.md'), 'Archive snapshot should preserve the previous root README for the 2026-05-19a pass.');
 
 addCheck('report-subscription-delivery-run-newline-escapes', !read('supabase/functions/report-subscription-delivery-run/index.ts').includes("join('\n')") || read('supabase/functions/report-subscription-delivery-run/index.ts').includes("lines.join('\\n')"), 'Report delivery function should use escaped newline strings that bundle correctly.');
+
+addCheck('schema-has-116-admin-diagnostics-marker', schema.includes('116_admin_diagnostics_drawer_and_stale_data_badges'), 'Canonical schema should include schema 116 Admin diagnostics marker.');
+addCheck('admin-has-diagnostics-drawer', adminUi.includes('ad_scope_diagnostics_details') && adminUi.includes('renderAdminScopeDiagnostics'), 'Admin UI should render an expandable panel diagnostics drawer.');
+addCheck('admin-has-stale-age-badges', adminUi.includes('admin-age-badge') && adminUi.includes('renderAdminPanelAgeBadges'), 'Admin UI should show stale-data age badges for staged panel loads.');
+addCheck('admin-persists-panel-failures', adminUi.includes("entity: 'admin_panel_load_diagnostic'") && read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_panel_load_diagnostic'"), 'Admin UI and admin-manage should persist failed staged panel loads.');
+addCheck('edge-loads-panel-diagnostics', read('supabase/functions/admin-directory/index.ts').includes('v_admin_panel_load_diagnostics'), 'admin-directory should return persisted panel diagnostics in health/all scopes.');
+addCheck('style-has-admin-diagnostics-mobile', read('style.css').includes('.admin-diagnostics-drawer') && read('style.css').includes('.admin-age-badge'), 'style.css should include mobile-safe diagnostics drawer and age badge rules.');
+addCheck('active-docs-archived-snapshot-2026-05-19a', fileExists('archive/markdown-current-snapshot-2026-05-19a/root/README.md'), 'Archive snapshot should preserve the previous root README for the 2026-05-19a pass.');
+
 console.log(JSON.stringify({ ok: !failed, checks: results }, null, 2));
 if (failed) process.exit(1);

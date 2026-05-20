@@ -1,20 +1,23 @@
 # Deployment Guide
 
-Last refreshed: **2026-05-18b**
+Last refreshed: **2026-05-19a**
 
-## Required order
+## Deploy order
 
-1. Apply SQL migrations through `sql/115_admin_panel_retry_timing_and_command_scope.sql`.
-2. Redeploy Supabase Edge Functions:
+1. Apply SQL through schema **116**.
+2. Deploy Supabase functions:
    - `admin-directory`
    - `admin-manage`
-   - `report-subscription-delivery-run`
-3. Deploy the static site.
-4. Hard refresh the browser or unregister the service worker so `2026-05-18b` assets load.
+   - `report-subscription-delivery-run` if the previous bundle fix is not live yet.
+3. Deploy the site build.
+4. Clear/unregister service worker cache or hard refresh.
+5. Test Admin on desktop and mobile width.
 
-## Post-deploy checks
+## Live checks
 
-- Open `#admin` and confirm no immediate cached-only fallback appears.
-- Confirm Admin panel timing cards show Command Center, Health, People, Operations, and Accounting.
-- Press Retry Command Center, Retry Health, Refresh Staff Only, Refresh Jobs Only, and Retry Accounting.
-- Confirm `report-subscription-delivery-run` bundles without unterminated regexp/string literal errors.
+- Admin loads without falling immediately to cached data.
+- Health panel shows scope timing cards.
+- Panel diagnostics drawer expands.
+- Stale-data badges show either current age or retry/error state.
+- Failed panel requests create rows in `admin_panel_load_diagnostics`.
+- `v_schema_drift_status.expected_schema_version` returns `116`.
