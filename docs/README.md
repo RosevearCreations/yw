@@ -14,3 +14,5 @@ Current high-value docs:
 - `ACCOUNTING_CLOSE_END_TO_END_WORKFLOW.md`
 - `PRODUCTION_READINESS_CHECKLIST.md`
 - `REPORT_DELIVERY_AND_WORKER_SELF_SERVICE.md`
+
+- `ADMIN_SPLIT_SCOPES_AND_CONFIRMATION_GUARDRAILS.md` — Admin split fast paths, evidence retry, and confirmation guardrails.

@@ -393,6 +393,10 @@
               <h3 style="margin:0;">Evidence Manager</h3>
               <p class="section-subtitle">Unified queue for failed uploads, attendance photos, HSE packet proof, route attachments, signatures, and receipt/job evidence.</p>
             </div>
+            <div class="admin-heading-actions">
+              <span id="ad_evidence_age_badge" class="admin-age-badge" data-status="warning">Not loaded</span>
+              <button id="ad_evidence_refresh_panel" class="secondary" type="button">Retry Evidence</button>
+            </div>
           </div>
           <div id="ad_evidence_manager_cards" class="admin-task-grid"></div>
           <div class="table-scroll">
@@ -1180,6 +1184,7 @@
         staffAgeBadge: document.getElementById('ad_staff_age_badge'),
         jobsAgeBadge: document.getElementById('ad_jobs_age_badge'),
         accountingAgeBadge: document.getElementById('ad_accounting_age_badge'),
+        evidenceAgeBadge: document.getElementById('ad_evidence_age_badge'),
         healthRefreshPanel: document.getElementById('ad_health_refresh_panel'),
         healthCards: document.getElementById('ad_health_cards'),
         healthBody: document.querySelector('#ad_health_table tbody'),
@@ -1190,6 +1195,7 @@
         closeCenterCards: document.getElementById('ad_close_center_cards'),
         closeCenterSummary: document.getElementById('ad_close_center_summary'),
         accountingRefreshPanel: document.getElementById('ad_accounting_refresh_panel'),
+        evidenceRefreshPanel: document.getElementById('ad_evidence_refresh_panel'),
         closeWizardDetailBody: document.querySelector('#ad_close_wizard_detail_table tbody'),
         evidenceManagerCards: document.getElementById('ad_evidence_manager_cards'),
         evidenceManagerBody: document.querySelector('#ad_evidence_manager_table tbody'),
@@ -1497,6 +1503,8 @@
       if (clean === 'all') return 90000;
       if (clean === 'operations') return 25000;
       if (clean === 'reporting') return 20000;
+      if (clean === 'accounting') return 30000;
+      if (['accounting_close', 'banking', 'tax_payroll', 'evidence'].includes(clean)) return 18000;
       return 16000;
     }
 
@@ -1505,7 +1513,11 @@
       health: 'Health',
       people: 'People',
       operations: 'Operations',
-      accounting: 'Accounting',
+      accounting_close: 'Accounting Close',
+      banking: 'Banking',
+      tax_payroll: 'Tax/Payroll',
+      evidence: 'Evidence',
+      accounting: 'Accounting Fallback',
       all: 'All Fallback'
     };
 
@@ -1514,7 +1526,11 @@
       health: 'admin_health_schema',
       people: 'admin_staff_directory',
       operations: 'admin_jobs_operations',
-      accounting: 'admin_accounting_close',
+      accounting_close: 'admin_accounting_close',
+      banking: 'admin_banking_reconciliation',
+      tax_payroll: 'admin_tax_payroll',
+      evidence: 'admin_evidence_manager',
+      accounting: 'admin_accounting_fallback',
       all: 'admin_all_fallback'
     };
 
@@ -1559,9 +1575,10 @@
       setAdminAgeBadge(e.healthAgeBadge, 'health');
       setAdminAgeBadge(e.staffAgeBadge, 'people');
       setAdminAgeBadge(e.jobsAgeBadge, 'operations');
-      setAdminAgeBadge(e.accountingAgeBadge, 'accounting');
+      setAdminAgeBadge(e.accountingAgeBadge, 'accounting_close');
+      setAdminAgeBadge(e.evidenceAgeBadge, 'evidence');
       if (!e.panelAgeBadges) return;
-      const scopes = ['command_center', 'health', 'people', 'operations', 'accounting'];
+      const scopes = ['command_center', 'health', 'people', 'operations', 'accounting_close', 'banking', 'tax_payroll', 'evidence'];
       e.panelAgeBadges.innerHTML = scopes.map((scope) => {
         const severity = getAdminScopeAgeSeverity(scope);
         const row = state.adminScopeTimings[scope] || {};
@@ -1572,7 +1589,7 @@
     function renderAdminScopeDiagnostics() {
       const e = els();
       if (!e.scopeDiagnosticsBody) return;
-      const scopes = ['command_center', 'health', 'people', 'operations', 'accounting', 'all'];
+      const scopes = ['command_center', 'health', 'people', 'operations', 'accounting_close', 'banking', 'tax_payroll', 'evidence', 'accounting', 'all'];
       const liveRows = scopes.map((scope) => ({
         row_kind: 'browser',
         edge_scope: scope,
@@ -1646,7 +1663,7 @@
       const e = els();
       if (!e.scopeStatus) return;
       const labels = ADMIN_SCOPE_LABELS;
-      const scopes = ['command_center', 'health', 'people', 'operations', 'accounting'];
+      const scopes = ['command_center', 'health', 'people', 'operations', 'accounting_close', 'banking', 'tax_payroll', 'evidence'];
       e.scopeStatus.innerHTML = scopes.map((scope) => {
         const row = state.adminScopeTimings[scope] || {};
         const ok = row.ok === true;
@@ -1715,10 +1732,18 @@
         setSummary('Health and Schema panels refreshed.');
         return resp;
       }
-      if (cleanScope === 'accounting') {
+      if (['accounting_close', 'banking', 'tax_payroll', 'accounting'].includes(cleanScope)) {
         renderGuidedCloseCenter();
+        renderProductionReadiness();
         renderAdminCommandCenter();
-        setSummary('Accounting Close panels refreshed.');
+        setSummary(`${ADMIN_SCOPE_LABELS[cleanScope] || 'Accounting'} refreshed without reloading the full Admin manager.`);
+        return resp;
+      }
+      if (cleanScope === 'evidence') {
+        renderEvidenceManager();
+        renderEvidenceReview();
+        renderAdminCommandCenter();
+        setSummary('Evidence Manager refreshed without reloading the full Admin manager.');
         return resp;
       }
       renderStaffDirectory();
@@ -2310,13 +2335,22 @@
       }
     }
 
+
+    function setAdminLoading(isLoading, scope = 'all') {
+      const section = document.getElementById('admin');
+      if (!section) return;
+      section.classList.toggle('is-admin-loading', !!isLoading);
+      section.dataset.loadingScope = isLoading ? String(scope || 'all') : '';
+    }
+
     async function loadDirectory() {
       applyRoleAccess();
       if (state.locked) return;
 
       try {
+        setAdminLoading(true, 'staged');
         let resp = {};
-        const stagedScopes = ['command_center', 'health', 'people', 'operations', 'accounting'];
+        const stagedScopes = ['command_center', 'health', 'people', 'operations', 'accounting_close', 'banking', 'tax_payroll', 'evidence'];
         const stagedWarnings = [];
 
         for (const stagedScope of stagedScopes) {
@@ -2511,12 +2545,14 @@
         const stagedWarningText = Array.isArray(state.adminLoadWarnings) && state.adminLoadWarnings.length
           ? ` Some panels need retry: ${state.adminLoadWarnings.join('; ')}.`
           : '';
+        setAdminLoading(false);
         setSummary(
           state.manageLocked
             ? `Read-only admin view loaded. Admin role is required for approval actions.${stagedWarningText}`
             : `Admin view loaded in smaller panels.${outboxSummary.total ? ` Pending admin sync: ${outboxSummary.total} item(s), ${outboxSummary.conflicts || 0} conflict(s).` : ''}${stagedWarningText}`
         );
       } catch (err) {
+        setAdminLoading(false);
         const cached = loadAdminCache();
         if (cached?.payload) {
           const resp = cached.payload;
@@ -4279,6 +4315,13 @@
       }).join('') || '<tr><td colspan="6" class="muted">No jobs loaded for this filter/page.</td></tr>';
     }
 
+
+    function confirmAdminAction(message, details = '') {
+      const clean = String(message || 'Continue?').trim();
+      const suffix = String(details || '').trim();
+      return window.confirm(suffix ? `${clean}\n\n${suffix}` : clean);
+    }
+
     async function handleJobReviewAction(event) {
       const btn = event.target.closest('.admin-job-action');
       if (!btn) return;
@@ -4294,6 +4337,10 @@
       let status = '';
       if (action === 'complete') status = 'completed';
       if (action === 'cancel') status = 'cancelled';
+      if (action !== 'note') {
+        const label = row?.job_code || row?.job_name || jobId;
+        if (!confirmAdminAction(`Mark job ${label} as ${status}?`, 'This changes the job status and writes an admin activity record.')) return;
+      }
       const notePrompt = action === 'note'
         ? 'Add a short job note:'
         : `Optional note for marking this job ${status}:`;
@@ -4785,6 +4832,7 @@
       if (!btn || !manageAdminEntity) return;
       const sourceId = btn.getAttribute('data-health-resolve') || '';
       const sourceArea = btn.getAttribute('data-health-source') || 'health';
+      if (!confirmAdminAction('Mark this health item resolved?', 'Use this only after the issue has been checked or a follow-up note has been added.')) return;
       await manageAdminEntity({ entity: 'admin_health_resolution_note', action: 'resolve', source_area: sourceArea, source_id: sourceId, resolution_status: 'resolved', resolution_notes: 'Resolved from Admin Health panel.' });
       setSummary('Health item marked resolved in the resolution log.', false);
       await loadDirectory();
@@ -4793,6 +4841,7 @@
     async function handleReadinessAction(event) {
       const btn = event.target.closest('[data-gate-key]');
       if (!btn || !manageAdminEntity) return;
+      if (!confirmAdminAction('Update this deployment gate?', 'This changes the readiness status shown to future Admin users.')) return;
       await manageAdminEntity({ entity: 'admin_deployment_gate_check', action: 'update', item_id: btn.getAttribute('data-gate-key'), check_status: btn.getAttribute('data-gate-status') || 'passed' });
       setSummary('Deployment gate updated.', false);
       await loadDirectory();
@@ -4804,6 +4853,7 @@
       const source = btn.getAttribute('data-evidence-source') || '';
       const sourceId = btn.getAttribute('data-evidence-id') || '';
       if (!sourceId) return;
+      if (!confirmAdminAction('Create an evidence follow-up?', 'This adds the item to the evidence action queue for review.')) return;
       await manageAdminEntity({ entity: 'admin_health_resolution_note', action: 'create', source_area: `evidence:${source}`, source_id: sourceId, resolution_status: 'assigned', resolution_notes: 'Evidence follow-up opened from Evidence Manager.' });
       await manageAdminEntity({ entity: 'admin_evidence_action', action: 'create', source_area: source || 'evidence', source_id: sourceId, action_type: 'follow_up', evidence_title: 'Evidence follow-up from manager', action_status: 'queued' });
       setSummary('Evidence follow-up added to the health and evidence action queues.', false);
@@ -4816,6 +4866,7 @@
       const stepKey = btn.getAttribute('data-close-step-key') || '';
       const action = btn.getAttribute('data-close-step-action') || '';
       if (!stepKey || !action) return;
+      if (!confirmAdminAction(`${action === 'complete' ? 'Complete' : 'Reopen'} this close step?`, 'Close steps affect the accounting close checklist and review flow.')) return;
       await manageAdminEntity({ entity: 'admin_close_workflow_step', action, item_id: stepKey, completion_notes: `${action} from Guided Close Center.` });
       setSummary(`Close step ${action === 'complete' ? 'completed' : 'reopened'}.`, false);
       await loadDirectory();
@@ -5493,7 +5544,11 @@
       }
       if (e.accountingRefreshPanel && e.accountingRefreshPanel.dataset.bound !== '1') {
         e.accountingRefreshPanel.dataset.bound = '1';
-        e.accountingRefreshPanel.addEventListener('click', () => refreshAdminPanelScope('accounting').catch((err) => setSummary(String(err?.message || err), true)));
+        e.accountingRefreshPanel.addEventListener('click', () => refreshAdminPanelScope('accounting_close').catch((err) => setSummary(String(err?.message || err), true)));
+      }
+      if (e.evidenceRefreshPanel && e.evidenceRefreshPanel.dataset.bound !== '1') {
+        e.evidenceRefreshPanel.dataset.bound = '1';
+        e.evidenceRefreshPanel.addEventListener('click', () => refreshAdminPanelScope('evidence').catch((err) => setSummary(String(err?.message || err), true)));
       }
       if (e.clearDiagnosticsBtn && e.clearDiagnosticsBtn.dataset.bound !== '1') {
         e.clearDiagnosticsBtn.dataset.bound = '1';
