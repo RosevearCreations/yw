@@ -935,6 +935,38 @@ serve(async (req) => {
       }
     }
 
+    if (entity === 'admin_panel_load_diagnostic') {
+      if (roleRank(actorProfile.role) < roleRank('supervisor')) {
+        return Response.json({ ok:false, error:'Supervisor access is required.' }, { status:403, headers:corsHeaders });
+      }
+      const now = new Date().toISOString();
+      const patch: Record<string, unknown> = {
+        panel_key: String(body.panel_key || 'admin_panel').trim() || 'admin_panel',
+        edge_scope: String(body.edge_scope || body.scope || 'all').trim().toLowerCase() || 'all',
+        load_status: String(body.load_status || body.status || 'observed').trim().toLowerCase() || 'observed',
+        elapsed_ms: asNullableNumber(body.elapsed_ms),
+        stale_age_seconds: asNullableNumber(body.stale_age_seconds),
+        diagnostic_message: asNullableText(body.diagnostic_message || body.message || body.error),
+        captured_by_profile_id: actorId,
+        captured_at: now,
+        metadata: body.metadata && typeof body.metadata === 'object' ? body.metadata : {},
+      };
+      const { data, error } = await supabase.from('admin_panel_load_diagnostics').insert(patch).select('*').single();
+      if (error) throw error;
+      await supabase.from('admin_audit_events').insert({
+        actor_profile_id: actorId,
+        event_area: 'admin_diagnostics',
+        event_action: 'panel_load_observed',
+        entity_type: 'admin_panel_load_diagnostics',
+        entity_id: data.id,
+        event_summary: `${patch.edge_scope} panel load recorded as ${patch.load_status}.`,
+        route_hint: 'admin:health',
+        metadata: { elapsed_ms: patch.elapsed_ms, stale_age_seconds: patch.stale_age_seconds }
+      });
+      return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+    }
+
+
     if (entity === 'admin_health_resolution_note') {
       if (roleRank(actorProfile.role) < roleRank('supervisor')) {
         return Response.json({ ok:false, error:'Supervisor access is required.' }, { status:403, headers:corsHeaders });
