@@ -1,25 +1,24 @@
 # Database Structure
 
-Last refreshed: **2026-05-19b**
+Last refreshed: **2026-05-20a**
 
-## Current schema marker
+## Latest schema marker
 
-Latest schema file: `sql/117_split_admin_scopes_confirmation_and_deployment_checklist.sql`.
+Latest migration: **118**
 
-## Schema 117 additions
+`sql/118_admin_preflight_registry_deployment_checklist_ui.sql`
 
-- `admin_fast_path_scope_registry`
-- `admin_action_confirmation_rules`
-- `admin_deployment_checklist_items`
-- `v_admin_fast_path_scope_registry`
-- `v_admin_action_confirmation_rules`
-- `v_admin_deployment_checklist`
-- `v_schema_drift_status` now expects schema **117**.
+## New schema 118 additions
 
-## Purpose
+- `admin_function_readiness_checks`
+- `v_admin_function_readiness_checks`
+- additional `admin_deployment_checklist_items` rows for schema 118 deployment
+- `app_frontend_quality_gates` rows for registry-driven Admin loading and readiness-table rendering
+- `v_schema_drift_status` now expects schema 118
+- `app_schema_versions` marker for release `2026-05-20a`
 
-Schema 117 documents and tracks the move from broad Admin payloads to smaller panel fast paths, records which actions need confirmation guardrails, and adds deployment checklist rows for schema/function/cache readiness.
+## Important compatibility notes
 
-## Important compatibility rule
-
-Keep `v_schema_drift_status.expected_schema_version` as the column name. Do not rename it with `create or replace view`, because PostgreSQL can raise `42P16` when a replacement view tries to rename an existing column.
+- `v_schema_drift_status` keeps the column name `expected_schema_version` to avoid PostgreSQL view-column rename errors.
+- Schema 118 re-creates/guards the small tracking tables it depends on, so it is safer after partial earlier migration attempts.
+- The Admin UI still keeps static fallbacks while the DB-backed fast-path registry is being proven live.

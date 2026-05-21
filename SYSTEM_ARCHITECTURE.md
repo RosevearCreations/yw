@@ -1,30 +1,31 @@
 # System Architecture
 
-Last refreshed: **2026-05-19b**
+Last refreshed: **2026-05-20a**
 
-## Current architecture direction
+## Current shape
 
-The app is moving from one large Admin payload toward smaller app-like panel requests:
+- Static frontend: `index.html`, `style.css`, `app.js`, and feature modules in `js/`.
+- Supabase Edge Functions: `admin-directory`, `admin-manage`, reporting/scheduler functions, jobs functions, and upload helpers.
+- Database: Supabase/Postgres migrations in `sql/`, with `000_full_schema_reference.sql` kept current.
+- Service worker: `server-worker.js` app-shell cache, currently versioned `2026-05-20a`.
 
-- `command_center`
-- `health`
-- `people`
-- `operations`
-- `accounting_close`
-- `banking`
-- `tax_payroll`
-- `evidence`
+## Admin loading pattern
 
-The old `all` scope remains only as an emergency fallback. The old broad `accounting` scope remains temporarily while split accounting scopes are tested live.
+1. Admin loads `command_center` first.
+2. `command_center` returns the fast-path scope registry if schema/function deployment is current.
+3. The UI uses the registry for the staged initial Admin scopes.
+4. If the registry is unavailable, the UI uses the built-in safe fallback scope list.
+5. If every staged panel fails, the old broad `scope: all` call remains as an emergency fallback.
 
-## Frontend
+## Readiness pattern
 
-- Static app shell with versioned assets.
-- Admin UI now stages multiple panel requests and records timing/failure state.
-- Mobile menu and Admin section menu are compact/expandable.
-- Admin status-changing actions now ask for confirmation first.
+Production Readiness now combines:
 
-## Backend
-
-- Supabase Edge Functions provide Admin directories and write actions.
-- SQL schema files remain the canonical history and include low-risk tracking tables/views for readiness and diagnostics.
+- schema drift
+- production readiness checks
+- role permission matrix
+- deployment gates
+- deployment checklist items
+- function readiness rows
+- SEO smoke checks
+- bank CSV import and backup rehearsal state

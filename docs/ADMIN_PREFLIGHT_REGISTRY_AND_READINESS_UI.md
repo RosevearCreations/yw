@@ -1,0 +1,29 @@
+# Admin Preflight Registry and Readiness UI
+
+Last refreshed: **2026-05-20a**
+
+## Purpose
+
+Schema 118 and this UI pass make deployment state visible inside Admin instead of leaving it only in Markdown notes.
+
+## What changed
+
+- Admin loads `command_center` first.
+- `admin-directory` returns the fast-path scope registry when the deployed function and database are current.
+- Admin uses the registry to decide the remaining staged scopes.
+- Production Readiness now shows deployment checklist rows.
+- Production Readiness now shows function readiness rows.
+
+## Safety behavior
+
+If the registry is missing because schema 118 or the updated `admin-directory` function has not been deployed yet, the UI keeps using the built-in safe staged scope list. If every staged scope fails, the broad `scope: all` fallback still exists.
+
+## Live validation
+
+After deployment, open `#admin` and confirm:
+
+1. Command Center loads first.
+2. Scope timing cards populate.
+3. Deployment checklist rows appear.
+4. Function readiness rows appear.
+5. No cached-data warning appears after hard refresh.

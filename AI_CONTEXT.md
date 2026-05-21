@@ -1,17 +1,20 @@
 # AI Context
 
-Last refreshed: **2026-05-19b**
+Last refreshed: **2026-05-20a**
 
-This repository is the YWI/Rosie Dazzlers operations app. Continue every pass by updating schema files, active Markdown, CSS/mobile checks, one-H1 verification, and roadmap/gaps.
+The user is iteratively hardening the YWI main app. Every pass should update code, SQL schema files, and active Markdown. Keep public SEO hygiene in mind: one H1 per exposed page, clear titles/meta, local wording, mobile usability, and image/alt text checks.
 
-## Current state
+## Current build
 
-- Latest schema: 117.
-- Current asset/cache version: 2026-05-19b.
-- Admin startup is now staged through split scopes, including Accounting Close, Banking, Tax/Payroll, and Evidence.
-- Broad `all` and `accounting` scopes are still emergency fallbacks only.
-- Retired root Markdown and `test_write` files should not remain active in the root.
+- Asset/cache version: `2026-05-20a`.
+- Latest schema marker: **118**.
+- Main feature: Admin preflight/readiness visibility.
+- New SQL: `sql/118_admin_preflight_registry_deployment_checklist_ui.sql`.
+
+## Current Admin direction
+
+Admin should keep moving away from one large backend payload. It now loads Command Center first, reads the DB-backed fast-path scope registry when available, and renders readiness/deployment/function status directly in Admin.
 
 ## Next priority
 
-Render the new deployment checklist and fast-path registry rows in the Admin Production Readiness panel, then add schema/function preflight warnings before showing actions that depend on newer migrations.
+Add role-aware disabled states and per-panel retry/backoff controls.

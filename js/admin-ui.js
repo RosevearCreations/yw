@@ -160,6 +160,10 @@
       adminScopeTimings: {},
       adminScopeLastUpdated: {},
       adminPanelLoadDiagnostics: [],
+      adminFastPathScopeRegistry: [],
+      adminActionConfirmationRules: [],
+      adminDeploymentChecklist: [],
+      adminFunctionReadinessChecks: [],
       directoryPagination: {
         people: { page: 1, pageSize: 25, total: 0, totalPages: 1, loaded: 0, search: '', roleFilter: '', sort: 'full_name', direction: 'asc' },
         jobs: { page: 1, pageSize: 25, total: 0, totalPages: 1, loaded: 0, search: '', sort: 'job_code', direction: 'asc' }
@@ -436,6 +440,18 @@
           <div class="table-scroll" style="margin-top:12px;">
             <table id="ad_deployment_gate_table">
               <thead><tr><th>Area</th><th>Gate</th><th>Status</th><th>Command / Check</th><th>Action</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_deployment_checklist_table">
+              <thead><tr><th>Area</th><th>Checklist Item</th><th>Status</th><th>Command / Check</th><th>Risk if Missed</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_function_readiness_table">
+              <thead><tr><th>Function</th><th>Scope / Use</th><th>Status</th><th>Deploy Hint</th><th>Failure Hint</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -1204,6 +1220,8 @@
         readinessBody: document.querySelector('#ad_readiness_table tbody'),
         permissionsBody: document.querySelector('#ad_permissions_table tbody'),
         deploymentGateBody: document.querySelector('#ad_deployment_gate_table tbody'),
+        deploymentChecklistBody: document.querySelector('#ad_deployment_checklist_table tbody'),
+        functionReadinessBody: document.querySelector('#ad_function_readiness_table tbody'),
         seoSmokeBody: document.querySelector('#ad_seo_smoke_table tbody'),
         bankCsvImportBody: document.querySelector('#ad_bank_csv_import_table tbody'),
         backupRehearsalBody: document.querySelector('#ad_backup_rehearsal_table tbody'),
@@ -1471,6 +1489,10 @@
       if (Array.isArray(resp.admin_mobile_action_card_directory)) state.adminMobileActionCards = resp.admin_mobile_action_card_directory;
       if (Array.isArray(resp.admin_list_pagination_settings)) state.adminListPaginationSettings = resp.admin_list_pagination_settings;
       if (Array.isArray(resp.admin_panel_load_diagnostics)) state.adminPanelLoadDiagnostics = resp.admin_panel_load_diagnostics;
+      if (Array.isArray(resp.admin_fast_path_scope_registry)) state.adminFastPathScopeRegistry = resp.admin_fast_path_scope_registry;
+      if (Array.isArray(resp.admin_action_confirmation_rules)) state.adminActionConfirmationRules = resp.admin_action_confirmation_rules;
+      if (Array.isArray(resp.admin_deployment_checklist)) state.adminDeploymentChecklist = resp.admin_deployment_checklist;
+      if (Array.isArray(resp.admin_function_readiness_checks)) state.adminFunctionReadinessChecks = resp.admin_function_readiness_checks;
       state.counts = {
         users: state.directoryPagination.people?.total || state.users.length,
         sites: Array.isArray(state.sites) ? state.sites.length : 0,
@@ -1498,8 +1520,28 @@
       };
     }
 
+    function getRegisteredInitialAdminScopes() {
+      const fallback = ['command_center', 'health', 'people', 'operations', 'accounting_close', 'banking', 'tax_payroll', 'evidence'];
+      const rows = Array.isArray(state.adminFastPathScopeRegistry) ? state.adminFastPathScopeRegistry : [];
+      const configured = rows
+        .filter((row) => row && row.is_initial_load_scope && !row.is_deprecated && row.scope_key)
+        .map((row) => String(row.scope_key).trim().toLowerCase())
+        .filter(Boolean);
+      const ordered = configured.length ? configured : fallback;
+      return Array.from(new Set(['command_center', ...ordered]));
+    }
+
+    function getAdminScopeRegistryRow(scope) {
+      const clean = String(scope || '').trim().toLowerCase();
+      const rows = Array.isArray(state.adminFastPathScopeRegistry) ? state.adminFastPathScopeRegistry : [];
+      return rows.find((row) => String(row.scope_key || '').trim().toLowerCase() === clean) || null;
+    }
+
     function getAdminScopeTimeout(scope) {
       const clean = String(scope || 'all').toLowerCase();
+      const registryRow = getAdminScopeRegistryRow(clean);
+      const registryTimeout = Number(registryRow?.preferred_timeout_ms || 0);
+      if (Number.isFinite(registryTimeout) && registryTimeout >= 5000) return registryTimeout;
       if (clean === 'all') return 90000;
       if (clean === 'operations') return 25000;
       if (clean === 'reporting') return 20000;
@@ -2350,10 +2392,11 @@
       try {
         setAdminLoading(true, 'staged');
         let resp = {};
-        const stagedScopes = ['command_center', 'health', 'people', 'operations', 'accounting_close', 'banking', 'tax_payroll', 'evidence'];
+        let stagedScopes = ['command_center'];
         const stagedWarnings = [];
 
-        for (const stagedScope of stagedScopes) {
+        for (let stagedIndex = 0; stagedIndex < stagedScopes.length; stagedIndex += 1) {
+          const stagedScope = stagedScopes[stagedIndex];
           const startedAt = performance.now();
           try {
             const stagedResp = await loadAdminDirectory({
@@ -2373,11 +2416,17 @@
                 }
               };
               mergeAdminDirectoryScopeResponse(stagedResp);
+              if (stagedScope === 'command_center') {
+                stagedScopes = Array.from(new Set([...stagedScopes, ...getRegisteredInitialAdminScopes()]));
+              }
             }
           } catch (scopeErr) {
             const message = scopeErr?.message || 'failed';
             recordAdminScopeTiming(stagedScope, startedAt, false, message);
             stagedWarnings.push(`${stagedScope}: ${message}`);
+            if (stagedScope === 'command_center') {
+              stagedScopes = Array.from(new Set([...stagedScopes, ...getRegisteredInitialAdminScopes()]));
+            }
           }
         }
 
@@ -2506,6 +2555,10 @@
         state.adminMobileActionCards = Array.isArray(resp?.admin_mobile_action_card_directory) ? resp.admin_mobile_action_card_directory : [];
         state.adminListPaginationSettings = Array.isArray(resp?.admin_list_pagination_settings) ? resp.admin_list_pagination_settings : [];
         state.adminPanelLoadDiagnostics = Array.isArray(resp?.admin_panel_load_diagnostics) ? resp.admin_panel_load_diagnostics : state.adminPanelLoadDiagnostics;
+        state.adminFastPathScopeRegistry = Array.isArray(resp?.admin_fast_path_scope_registry) ? resp.admin_fast_path_scope_registry : state.adminFastPathScopeRegistry;
+        state.adminActionConfirmationRules = Array.isArray(resp?.admin_action_confirmation_rules) ? resp.admin_action_confirmation_rules : state.adminActionConfirmationRules;
+        state.adminDeploymentChecklist = Array.isArray(resp?.admin_deployment_checklist) ? resp.admin_deployment_checklist : state.adminDeploymentChecklist;
+        state.adminFunctionReadinessChecks = Array.isArray(resp?.admin_function_readiness_checks) ? resp.admin_function_readiness_checks : state.adminFunctionReadinessChecks;
         state.hsePacketActionItems = Array.isArray(resp?.hse_packet_action_items) ? resp.hse_packet_action_items : [];
         state.hseDashboardSummary = Array.isArray(resp?.hse_dashboard_summary) ? resp.hse_dashboard_summary : [];
         state.accountingReviewSummary = Array.isArray(resp?.accounting_review_summary) ? resp.accounting_review_summary : [];
@@ -5155,6 +5208,30 @@
             <td><button class="secondary" type="button" data-gate-key="${escHtml(row.check_key || '')}" data-gate-status="passed">Mark Pass</button></td>
           </tr>
         `).join('') || '<tr><td colspan="5" class="muted">No deployment gates loaded yet. Apply schema 108.</td></tr>';
+      }
+      if (e.deploymentChecklistBody) {
+        const rows = Array.isArray(state.adminDeploymentChecklist) ? state.adminDeploymentChecklist : [];
+        e.deploymentChecklistBody.innerHTML = rows.slice(0, 80).map((row) => `
+          <tr>
+            <td>${escHtml(row.checklist_area || row.check_area || '')}</td>
+            <td><strong>${escHtml(row.checklist_title || row.check_title || '')}</strong></td>
+            <td>${renderStatusPill(row.check_status || 'review', /pass|ready|complete|ok/i.test(String(row.check_status || '')) ? 'ok' : (/fail|blocked/i.test(String(row.check_status || '')) ? 'error' : 'warning'))}</td>
+            <td class="admin-table-note">${escHtml(row.command_hint || '')}</td>
+            <td class="admin-table-note">${escHtml(row.failure_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No deployment checklist rows loaded yet. Apply schema 117 or later.</td></tr>';
+      }
+      if (e.functionReadinessBody) {
+        const rows = Array.isArray(state.adminFunctionReadinessChecks) ? state.adminFunctionReadinessChecks : [];
+        e.functionReadinessBody.innerHTML = rows.slice(0, 80).map((row) => `
+          <tr>
+            <td><strong>${escHtml(row.function_name || row.function_key || '')}</strong></td>
+            <td>${escHtml(row.expected_scope || row.scope_key || '')}</td>
+            <td>${renderStatusPill(row.readiness_status || 'review', /pass|ready|deployed|ok/i.test(String(row.readiness_status || '')) ? 'ok' : (/fail|blocked|missing/i.test(String(row.readiness_status || '')) ? 'error' : 'warning'))}</td>
+            <td class="admin-table-note">${escHtml(row.deploy_hint || row.command_hint || '')}</td>
+            <td class="admin-table-note">${escHtml(row.failure_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No function readiness rows loaded yet. Apply schema 118.</td></tr>';
       }
       if (e.seoSmokeBody) {
         const seoRows = Array.isArray(state.publicSeoSmokeCheck) ? state.publicSeoSmokeCheck : [];

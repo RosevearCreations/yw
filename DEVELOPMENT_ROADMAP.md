@@ -1,42 +1,46 @@
 # Development Roadmap
 
-Last refreshed: **2026-05-19b**
+Last refreshed: **2026-05-20a**
 
 ## Completed in this pass
 
-- Split the staged Admin startup into smaller panel scopes: `accounting_close`, `banking`, `tax_payroll`, and `evidence`.
-- Added dedicated `admin-directory` fast paths for Accounting Close, Banking/Reconciliation, Tax/Payroll, and Evidence Manager data.
-- Added a Retry Evidence button and Evidence stale-data age badge so the evidence queue can be refreshed without reloading the full Admin manager.
-- Added confirmation guardrails before status-changing actions: job complete/cancel, close-step complete/reopen, health resolve, deployment gate update, and evidence follow-up.
-- Added lightweight Admin skeleton loading state so staged mobile loads look intentional rather than frozen.
-- Fixed a small Admin markup drift issue in the Production Readiness permissions table.
-- Removed recurring retired root Markdown and `test_write` files from the active root again while preserving archive snapshots.
-- Added schema **117** for split Admin scope tracking, confirmation guardrails, deployment checklist rows, and updated schema drift status.
+- Added schema **118** for Admin preflight registry, deployment checklist rendering, and function readiness tracking.
+- Updated Admin startup so it loads `command_center` first, then uses `v_admin_fast_path_scope_registry` to decide the remaining staged initial scopes when available.
+- Kept the hard-coded staged scope list as a fallback when schema/function deployment is behind.
+- Kept the broad `scope: all` call only as an emergency fallback if every staged panel fails.
+- Updated `admin-directory` so Command Center and Health payloads return:
+  - `admin_fast_path_scope_registry`
+  - `admin_action_confirmation_rules`
+  - `admin_deployment_checklist`
+  - `admin_function_readiness_checks`
+- Added deployment checklist rendering to the Production Readiness panel.
+- Added function readiness rendering to the Production Readiness panel.
+- Added readiness rows for `admin-directory`, `admin-manage`, `report-subscription-delivery-run`, and `service-execution-scheduler-run`.
 - Updated schema reference, smoke checks, active Markdown, archive snapshots, and cache version.
 - Reconfirmed the exposed app shell has one H1 and balanced CSS braces.
 
 ## Next logical 20 steps
 
-1. Make Admin startup fully configurable from `v_admin_fast_path_scope_registry` instead of hard-coded JavaScript arrays.
-2. Render the new `v_admin_deployment_checklist` rows directly in the Production Readiness panel.
-3. Add per-panel retry/backoff rules so repeatedly failing panels do not hammer Edge Functions.
-4. Add a schema preflight card that warns before rendering actions that depend on missing views/tables.
-5. Add a small “function readiness” table for `admin-directory`, `admin-manage`, report delivery, and scheduler functions.
-6. Add role-aware disabled states for buttons instead of only showing confirmation prompts.
-7. Add CSV exports for Staff Directory and Jobs with current filters applied.
-8. Add evidence action assignment, due date, and completion fields to the Evidence Manager UI.
-9. Add bank CSV import preview rows before writing to reconciliation staging.
-10. Add close blocker explanation text beside each Guided Close Center step.
-11. Add backup rehearsal evidence upload/signoff fields.
-12. Add offline queue badges beside Admin action buttons.
-13. Add mobile supervisor dashboard cards from `admin_mobile_action_card_directory`.
-14. Add smoke-check validation for sitemap, robots, title, H1, meta description, and missing image alt text.
-15. Add structured-data JSON-LD checks for local business/service pages.
-16. Add public route freshness rows for local landing pages.
-17. Add service-area content proof fields so local SEO pages only mention real coverage.
-18. Split `js/admin-ui.js` into smaller Admin modules after the split scopes settle.
-19. Add RLS/function permission test notes to every Admin action document.
-20. Add one release checklist file per ZIP handoff.
+1. Add role-aware disabled states for Admin buttons before the user clicks, not only confirmation prompts after the click.
+2. Add per-panel retry/backoff rules so repeatedly failing Admin panels do not hammer Edge Functions.
+3. Add a visible schema preflight card that names missing tables/views before action buttons are rendered.
+4. Add a “function readiness last checked” timestamp and operator signoff field.
+5. Add Admin action permissions to the DB registry so the UI can hide/disable controls by role and workflow.
+6. Add CSV exports for Staff Directory and Jobs with current filters applied.
+7. Add evidence action assignment, due date, completion, and owner filters.
+8. Add bank CSV import preview rows before accepting records into reconciliation staging.
+9. Add close blocker explanation text beside every Guided Close Center step.
+10. Add backup rehearsal evidence upload/signoff fields.
+11. Add offline queue badges beside Admin action buttons.
+12. Add mobile supervisor dashboard cards from `admin_mobile_action_card_directory`.
+13. Add smoke-check validation for sitemap, robots, title, H1, meta description, and missing image alt text.
+14. Add structured-data JSON-LD checks for local business/service pages.
+15. Add public route freshness rows for local landing pages.
+16. Add service-area content proof fields so local SEO pages only mention real coverage.
+17. Split `js/admin-ui.js` into smaller modules after the split scope pattern is stable.
+18. Add RLS/function permission test notes to every Admin action document.
+19. Add one release checklist file per ZIP handoff.
+20. Add a simple Admin deploy dashboard that links schema version, function readiness, cache version, and smoke checks.
 
 ## Following 20 steps after that
 

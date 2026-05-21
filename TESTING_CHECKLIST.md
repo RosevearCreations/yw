@@ -1,25 +1,27 @@
 # Testing Checklist
 
-Last refreshed: **2026-05-19b**
+Last refreshed: **2026-05-20a**
 
-## Local/static checks
+## Automated checks run during build
 
-- Run JavaScript syntax checks.
-- Run `node scripts/repo-smoke-check.mjs`.
-- Confirm `index.html` has no more than one H1.
-- Confirm CSS braces are balanced.
+- JavaScript syntax checks for key frontend modules.
+- Repo smoke check.
+- Public H1 count check.
+- CSS brace balance check.
 
-## Admin live checks
+## Manual checks after deploy
 
-- Open `#admin` after hard refresh.
-- Confirm staged scope status cards appear for Command Center, Health, People, Operations, Accounting Close, Banking, Tax/Payroll, and Evidence.
-- Press Retry Evidence and confirm only evidence rows reload.
-- Press Retry Accounting and confirm Accounting Close rows reload without a full Admin reload.
-- Confirm failed panel loads are visible in diagnostics.
-- Confirm status-changing buttons show a confirmation prompt.
-
-## Mobile checks
-
-- Compact main menu expands/collapses.
-- Admin section menu remains compact.
-- Scope cards, age badges, Jobs row actions, Evidence tables, and Guided Close rows do not create awkward horizontal overflow beyond intentional table scrolling.
+1. Open the public home page and verify only one visible main heading is used.
+2. Test mobile width and confirm the main menu is compact until expanded.
+3. Open `#admin` and confirm staged scope cards show live/failed/pending state.
+4. Confirm the Production Readiness panel includes:
+   - readiness checks
+   - permissions matrix
+   - deployment gates
+   - deployment checklist rows
+   - function readiness rows
+   - SEO smoke rows
+5. Click Refresh Staff Only and Refresh Jobs Only.
+6. Click Retry Evidence.
+7. Test one safe Jobs note action.
+8. Confirm no old `test_write` files or retired root Markdown are present in the active root.

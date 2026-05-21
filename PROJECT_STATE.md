@@ -1,23 +1,35 @@
 # Project State
 
-Last refreshed: **2026-05-19b**
+Last refreshed: **2026-05-20a**
 
-The app is moving from one large Admin load toward smaller production-style panel loads. Current work focuses on reliability, mobile usability, accounting close readiness, evidence review, and local SEO hygiene.
+## Build label
 
-## Current state
+`yw-main-128-updated-2026-05-20a-admin-preflight-registry.zip`
 
-- Admin first load uses staged scopes and keeps `scope: all` only as an emergency fallback.
-- Accounting is now split into `accounting_close`, `banking`, and `tax_payroll` fast paths.
-- Evidence Manager now has its own `evidence` fast path, retry button, and stale-data age badge.
-- Admin panels have visible retry buttons, timing/status cards, diagnostics, and stale-data badges.
-- Status-changing Admin actions now ask for confirmation before changing live data.
-- Staff and Jobs lists support server-side paging/sorting foundations.
-- Mobile main menu and Admin section menu are compact/expandable.
-- SQL reference is current through schema **117**.
+## Schema
 
-## Deployment focus
+Latest schema marker: **118**
 
-- Apply schema 117.
-- Redeploy `admin-directory` and `admin-manage`.
-- Clear browser/service worker cache.
-- Test split Admin scopes, Evidence retry, confirmation prompts, and mobile table/card layout.
+New migration:
+
+- `sql/118_admin_preflight_registry_deployment_checklist_ui.sql`
+
+## Main work completed
+
+- Added Admin deployment checklist rendering in Production Readiness.
+- Added Admin function readiness rendering in Production Readiness.
+- Updated `admin-directory` so Command Center/Health can return:
+  - `v_admin_fast_path_scope_registry`
+  - `v_admin_action_confirmation_rules`
+  - `v_admin_deployment_checklist`
+  - `v_admin_function_readiness_checks`
+- Changed Admin startup to load `command_center` first and then use the DB-backed fast-path scope registry when available.
+- Kept a hard-coded fallback scope list and `scope: all` emergency fallback for safety.
+- Archived current Markdown snapshots and retired old root Markdown from the active root.
+- Removed recurring `test_write` temp files.
+- Bumped cache version to `2026-05-20a`.
+- Verified public app shell still has one H1.
+
+## Deploy reminders
+
+Apply SQL through schema 118, redeploy `admin-directory`, then hard refresh the browser/service worker cache.

@@ -1,32 +1,37 @@
-# YWI / Rosie Dazzlers Operations App
+# YWI Main App
 
-Last refreshed: **2026-05-19b**
+Last refreshed: **2026-05-20a**
 
-This build continues moving the site and backend toward a real production app: smaller Admin payloads, safer mobile controls, stronger diagnostics, cleaner schema tracking, and clearer deployment handoff notes.
+This build focuses on making the Admin app more production-ready by showing deployment/preflight state directly in the Admin Readiness panel and reducing hard-coded Admin startup assumptions.
 
-## Current focus
+## Current state
 
-- Admin now loads through staged panel scopes instead of relying on one large request.
-- Accounting is being split into Accounting Close, Banking/Reconciliation, and Tax/Payroll paths.
-- Evidence Manager now has its own fast path and retry control.
-- Status-changing Admin actions now ask for confirmation before changing live data.
-- Active Markdown and schema files are kept current every pass; older root Markdown is archived out of the active root.
+- Current asset/cache version: `2026-05-20a`.
+- Latest schema marker: **118**.
+- Admin startup now loads `command_center` first, then reads the DB-backed fast-path scope registry when available.
+- Production Readiness now renders deployment checklist rows and function readiness rows.
+- The broad `all` Admin scope remains only as an emergency fallback.
+- Public app shell still has one H1.
 
-## Deploy checklist
+## Deploy order
 
-1. Apply SQL through `sql/117_split_admin_scopes_confirmation_and_deployment_checklist.sql`.
-2. Redeploy Supabase functions, especially `admin-directory` and `admin-manage`.
-3. Deploy the updated static site files.
-4. Hard refresh or unregister the service worker so `2026-05-19b` assets load.
-5. Open `#admin` on desktop and phone width and confirm split scope cards show live or retry status.
+1. Apply SQL through `sql/118_admin_preflight_registry_deployment_checklist_ui.sql`.
+2. Redeploy Supabase functions:
+   - `admin-directory`
+   - `admin-manage`
+   - `report-subscription-delivery-run` if not already redeployed after the newline/CSV escaping fix.
+3. Deploy the static site files.
+4. Hard refresh or unregister the service worker so `2026-05-20a` assets load.
+5. Open `#admin`, then check Command Center, Health, Readiness, Staff, Jobs, Accounting, and Evidence panels.
 
-## Active handoff docs
+## Active docs
 
-- `DEVELOPMENT_ROADMAP.md`
-- `KNOWN_ISSUES_AND_GAPS.md`
-- `NEW_CHAT_STATUS.md`
-- `DATABASE_STRUCTURE.md`
-- `SYSTEM_ARCHITECTURE.md`
-- `DEPLOYMENT_GUIDE.md`
-- `TESTING_CHECKLIST.md`
-- `AI_CONTEXT.md`
+- `PROJECT_STATE.md` — current build state.
+- `NEW_CHAT_STATUS.md` — handoff for the next chat/pass.
+- `DEVELOPMENT_ROADMAP.md` — completed work and next steps.
+- `KNOWN_ISSUES_AND_GAPS.md` — remaining risks and gaps.
+- `DATABASE_STRUCTURE.md` — schema marker and database notes.
+- `DEPLOYMENT_GUIDE.md` — deploy order and cache notes.
+- `TESTING_CHECKLIST.md` — manual and smoke checks.
+- `SYSTEM_ARCHITECTURE.md` — current app structure.
+- `AI_CONTEXT.md` — compact orientation file for future work.

@@ -1,18 +1,17 @@
 # Documentation Index
 
-Last refreshed: **2026-05-19a**
+Last refreshed: **2026-05-20a**
 
-Current high-value docs:
+## Current high-priority docs
 
+- `ADMIN_PREFLIGHT_REGISTRY_AND_READINESS_UI.md`
+- `ADMIN_SPLIT_SCOPES_AND_CONFIRMATION_GUARDRAILS.md`
 - `ADMIN_DIAGNOSTICS_DRAWER_AND_STALE_BADGES.md`
 - `ADMIN_PANEL_RETRY_TIMING_AND_COMMAND_SCOPE.md`
 - `ADMIN_STAGED_LOAD_AND_CACHE_FALLBACKS.md`
-- `ADMIN_PANEL_REFRESH_AND_JOB_ACTIONS.md`
-- `ADMIN_DIRECTORY_PAGINATION_AND_SAVED_VIEWS.md`
 - `MOBILE_NAVIGATION_AND_RESPONSIVE_UX.md`
-- `SEO_PUBLIC_PAGE_RULES.md`
 - `ACCOUNTING_CLOSE_END_TO_END_WORKFLOW.md`
 - `PRODUCTION_READINESS_CHECKLIST.md`
-- `REPORT_DELIVERY_AND_WORKER_SELF_SERVICE.md`
+- `SEO_PUBLIC_PAGE_RULES.md`
 
-- `ADMIN_SPLIT_SCOPES_AND_CONFIRMATION_GUARDRAILS.md` — Admin split fast paths, evidence retry, and confirmation guardrails.
+Older pass notes are useful history, but the root Markdown files are the current handoff set.
