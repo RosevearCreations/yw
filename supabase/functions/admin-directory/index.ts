@@ -264,6 +264,10 @@ serve(async (req) => {
     commandCenter.admin_task_inbox = await safeList(supabase, 'v_admin_task_inbox', '*', 'priority_rank', 80, true);
     commandCenter.app_schema_version_status = await safeList(supabase, 'v_app_schema_version_status', '*', 'schema_version', 20, false);
     commandCenter.schema_drift_status = await safeList(supabase, 'v_schema_drift_status');
+    commandCenter.admin_fast_path_scope_registry = await safeList(supabase, 'v_admin_fast_path_scope_registry', '*', 'scope_key', 40, true);
+    commandCenter.admin_action_confirmation_rules = await safeList(supabase, 'v_admin_action_confirmation_rules', '*', 'action_area', 80, true);
+    commandCenter.admin_deployment_checklist = await safeList(supabase, 'v_admin_deployment_checklist', '*', 'sort_order', 80, true);
+    commandCenter.admin_function_readiness_checks = await safeList(supabase, 'v_admin_function_readiness_checks', '*', 'sort_order', 80, true);
     return Response.json(commandCenter, { headers: corsHeaders });
   }
 
@@ -280,6 +284,10 @@ serve(async (req) => {
     health.public_seo_smoke_check = await safeList(supabase, 'v_public_seo_smoke_check', '*', 'page_path', 80, true);
     health.admin_audit_event_directory = await safeList(supabase, 'v_admin_audit_event_directory', '*', 'occurred_at', 80, false);
     health.admin_panel_load_diagnostics = await safeList(supabase, 'v_admin_panel_load_diagnostics', '*', 'captured_at', 80, false);
+    health.admin_fast_path_scope_registry = await safeList(supabase, 'v_admin_fast_path_scope_registry', '*', 'scope_key', 40, true);
+    health.admin_action_confirmation_rules = await safeList(supabase, 'v_admin_action_confirmation_rules', '*', 'action_area', 80, true);
+    health.admin_deployment_checklist = await safeList(supabase, 'v_admin_deployment_checklist', '*', 'sort_order', 80, true);
+    health.admin_function_readiness_checks = await safeList(supabase, 'v_admin_function_readiness_checks', '*', 'sort_order', 80, true);
     return Response.json(health, { headers: corsHeaders });
   }
 
@@ -444,6 +452,10 @@ serve(async (req) => {
     response.public_seo_smoke_check = await safeList(supabase, 'v_public_seo_smoke_check', '*', 'page_path', 80, true);
     response.admin_audit_event_directory = await safeList(supabase, 'v_admin_audit_event_directory', '*', 'occurred_at', 80, false);
     response.admin_panel_load_diagnostics = await safeList(supabase, 'v_admin_panel_load_diagnostics', '*', 'captured_at', 80, false);
+    response.admin_fast_path_scope_registry = await safeList(supabase, 'v_admin_fast_path_scope_registry', '*', 'scope_key', 40, true);
+    response.admin_action_confirmation_rules = await safeList(supabase, 'v_admin_action_confirmation_rules', '*', 'action_area', 80, true);
+    response.admin_deployment_checklist = await safeList(supabase, 'v_admin_deployment_checklist', '*', 'sort_order', 80, true);
+    response.admin_function_readiness_checks = await safeList(supabase, 'v_admin_function_readiness_checks', '*', 'sort_order', 80, true);
     response.admin_backup_restore_rehearsal_directory = await safeList(supabase, 'v_admin_backup_restore_rehearsal_directory', '*', 'updated_at', 40, false);
     response.bank_csv_import_session_directory = await safeList(supabase, 'v_bank_csv_import_session_directory', '*', 'updated_at', 40, false);
     response.admin_evidence_action_queue = await safeList(supabase, 'v_admin_evidence_action_queue', '*', 'updated_at', 80, false);
