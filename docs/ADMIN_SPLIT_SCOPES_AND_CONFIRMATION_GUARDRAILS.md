@@ -1,6 +1,6 @@
 # Admin Split Scopes and Confirmation Guardrails
 
-Last refreshed: **2026-05-19b**
+Last refreshed: **2026-05-20b**
 
 ## What changed
 

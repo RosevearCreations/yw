@@ -1,20 +1,31 @@
 # AI Context
 
-Last refreshed: **2026-05-20a**
+Last refreshed: **2026-05-20b**
 
-The user is iteratively hardening the YWI main app. Every pass should update code, SQL schema files, and active Markdown. Keep public SEO hygiene in mind: one H1 per exposed page, clear titles/meta, local wording, mobile usability, and image/alt text checks.
+## Current build context
 
-## Current build
+The latest pass is `2026-05-20b`. Current schema marker is **119**.
 
-- Asset/cache version: `2026-05-20a`.
-- Latest schema marker: **118**.
-- Main feature: Admin preflight/readiness visibility.
-- New SQL: `sql/118_admin_preflight_registry_deployment_checklist_ui.sql`.
+This project has been moving Admin from one giant load into staged fast paths. Continue to avoid broad payloads unless they are an emergency fallback.
 
-## Current Admin direction
+## Important current rules
 
-Admin should keep moving away from one large backend payload. It now loads Command Center first, reads the DB-backed fast-path scope registry when available, and renders readiness/deployment/function status directly in Admin.
+- Keep active Markdown fresh on every build pass.
+- Keep `sql/000_full_schema_reference.sql` updated with the latest schema file.
+- Keep retired root Markdown out of the active root; archive it instead.
+- Remove recurring `test_write` files from the active root.
+- Keep exposed/public pages to one H1.
+- Keep CSS mobile-friendly and verify braces.
+- Prefer DB-backed registries/checks over hard-coded frontend assumptions.
 
-## Next priority
+## Latest additions
 
-Add role-aware disabled states and per-panel retry/backoff controls.
+- `admin_action_permission_registry`
+- `admin_panel_retry_policy`
+- `admin_schema_preflight_checks`
+- role-aware Admin action disabled states
+- function readiness signoff metadata
+
+## Next pass direction
+
+Use `DEVELOPMENT_ROADMAP.md` and `KNOWN_ISSUES_AND_GAPS.md`. The next logical work is to make the registry rows writable/reviewable from Admin, add CSV exports, and expand the public SEO smoke checker.

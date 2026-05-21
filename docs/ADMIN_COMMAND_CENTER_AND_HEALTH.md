@@ -1,6 +1,6 @@
 # Admin Command Center and Health
 
-Last refreshed: **2026-05-17a**
+Last refreshed: **2026-05-20b**
 
 The Admin Command Center now includes DB-backed dashboard counts, saved admin views, App Health, schema drift, task inbox, Guided Close Center, Evidence Manager, deployment gates, and SEO smoke checks.
 

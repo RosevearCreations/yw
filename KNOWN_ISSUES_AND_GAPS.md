@@ -1,20 +1,21 @@
 # Known Issues and Gaps
 
-Last refreshed: **2026-05-20a**
+Last refreshed: **2026-05-20b**
 
 ## Immediate issues
 
-1. Live Admin must be tested after applying schema 118 and redeploying `admin-directory`; old cached scripts can hide the new checklist/function readiness tables.
-2. The broad Admin `all` and `accounting` fallback scopes still exist and should be retired only after split scopes pass production testing.
-3. Role-aware disabled states are not complete yet; confirmation prompts exist, but buttons can still appear enabled until clicked.
-4. Per-panel retry/backoff rules still need to be added so failed panels do not repeatedly retry too aggressively.
-5. Function readiness rows are tracking rows, not automatic live deploy verification yet.
+1. Live Admin must be tested after applying schema 119 and redeploying `admin-directory`; old cached scripts can hide the new action/preflight/retry tables.
+2. `admin_schema_preflight_checks.live_status` is currently a visible checklist row, not an automatic metadata verifier yet.
+3. `admin_panel_retry_policy` is visible in Admin but browser retry counters still need to be wired to enforce cooldown/backoff.
+4. Action permission rows can disable known buttons, but the registry still needs a full Admin edit UI.
+5. Function readiness rows now have signoff fields, but signoff buttons are not wired yet.
+6. The broad Admin `all` and `accounting` fallback scopes still exist and should be retired only after split scopes pass production testing.
 
 ## UX gaps
 
-- Continue testing Admin on narrow phone widths after every new table/card is added.
+- Keep testing Admin on phone-width screens after every table/card addition.
 - Add stronger skeleton placeholders for individual tables and cards.
-- Add visible retry/backoff state for panels that fail repeatedly.
+- Add visible retry/backoff countdown state for panels that fail repeatedly.
 - Add offline queue badges beside action buttons.
 - Keep replacing long tables with paged/filterable panel views.
 
@@ -28,8 +29,9 @@ Last refreshed: **2026-05-20a**
 
 ## Fixed during this pass
 
-- Added DB-backed Admin fast-path registry use during startup.
-- Added deployment checklist table rendering.
-- Added function readiness table rendering.
-- Added schema 118 and updated schema drift tracking to expected version 118.
+- Added DB-backed Admin action permission registry.
+- Added DB-backed Admin schema preflight rows.
+- Added DB-backed Admin panel retry/backoff policy rows.
+- Added role-aware disabled states for known risky Admin action buttons.
+- Added schema 119 and updated schema drift tracking to expected version 119.
 - Removed retired root Markdown and temporary `test_write` files again.

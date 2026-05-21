@@ -1,24 +1,43 @@
 # Database Structure
 
-Last refreshed: **2026-05-20a**
+Last refreshed: **2026-05-20b**
 
-## Latest schema marker
+## Current migration marker
 
-Latest migration: **118**
+Latest schema: **119**
 
-`sql/118_admin_preflight_registry_deployment_checklist_ui.sql`
+Latest migration file:
 
-## New schema 118 additions
+`sql/119_admin_action_permissions_preflight_and_retry_rules.sql`
 
-- `admin_function_readiness_checks`
-- `v_admin_function_readiness_checks`
-- additional `admin_deployment_checklist_items` rows for schema 118 deployment
-- `app_frontend_quality_gates` rows for registry-driven Admin loading and readiness-table rendering
-- `v_schema_drift_status` now expects schema 118
-- `app_schema_versions` marker for release `2026-05-20a`
+Canonical reference:
 
-## Important compatibility notes
+`sql/000_full_schema_reference.sql`
 
-- `v_schema_drift_status` keeps the column name `expected_schema_version` to avoid PostgreSQL view-column rename errors.
-- Schema 118 re-creates/guards the small tracking tables it depends on, so it is safer after partial earlier migration attempts.
-- The Admin UI still keeps static fallbacks while the DB-backed fast-path registry is being proven live.
+## Added in schema 119
+
+### Tables
+
+- `public.admin_action_permission_registry`
+- `public.admin_panel_retry_policy`
+- `public.admin_schema_preflight_checks`
+
+### Updated table
+
+- `public.admin_function_readiness_checks`
+  - `last_checked_at`
+  - `operator_signoff_at`
+  - `operator_signoff_by`
+  - `operator_notes`
+
+### Views
+
+- `public.v_admin_action_permission_registry`
+- `public.v_admin_panel_retry_policy`
+- `public.v_admin_schema_preflight_checks`
+- `public.v_admin_function_readiness_checks`
+- `public.v_schema_drift_status` now expects schema **119**.
+
+## Purpose
+
+Schema 119 is a production-readiness layer. It does not replace the existing app workflow tables. It gives Admin a DB-backed way to show required schema objects, action role requirements, panel retry/backoff rules, and function readiness signoff state before operators click risky buttons.

@@ -1,35 +1,42 @@
 # Project State
 
-Last refreshed: **2026-05-20a**
+Last refreshed: **2026-05-20b**
 
-## Build label
+Current output label: `yw-main-129-updated-2026-05-20b-admin-action-preflight-retry.zip`
 
-`yw-main-128-updated-2026-05-20a-admin-preflight-registry.zip`
+## Current state
 
-## Schema
+The app is moving from one large Admin backend load into smaller, production-style Admin panels. Prior passes added staged scopes, diagnostics, stale-data badges, split accounting/evidence fast paths, confirmation guardrails, and DB-backed deployment/function readiness rows.
 
-Latest schema marker: **118**
+This pass adds the next safety layer: Admin now has DB-backed action permissions, schema preflight checks, and panel retry/backoff policy rows. These are visible in Production Readiness and are loaded from `admin-directory` with `actor_role` so the UI can disable known risky action buttons before click.
 
-New migration:
+## Current schema
 
-- `sql/118_admin_preflight_registry_deployment_checklist_ui.sql`
+- Latest migration: `sql/119_admin_action_permissions_preflight_and_retry_rules.sql`
+- Canonical schema: `sql/000_full_schema_reference.sql`
+- Schema drift marker: expected schema version **119**
 
-## Main work completed
+## Current frontend
 
-- Added Admin deployment checklist rendering in Production Readiness.
-- Added Admin function readiness rendering in Production Readiness.
-- Updated `admin-directory` so Command Center/Health can return:
-  - `v_admin_fast_path_scope_registry`
-  - `v_admin_action_confirmation_rules`
-  - `v_admin_deployment_checklist`
-  - `v_admin_function_readiness_checks`
-- Changed Admin startup to load `command_center` first and then use the DB-backed fast-path scope registry when available.
-- Kept a hard-coded fallback scope list and `scope: all` emergency fallback for safety.
-- Archived current Markdown snapshots and retired old root Markdown from the active root.
-- Removed recurring `test_write` temp files.
-- Bumped cache version to `2026-05-20a`.
-- Verified public app shell still has one H1.
+- Cache version: `2026-05-20b`
+- Main mobile menu remains compact/expandable.
+- Admin sections remain compact/expandable on mobile.
+- Production Readiness now includes:
+  - readiness cards,
+  - schema preflight rows,
+  - production checks,
+  - role permission matrix,
+  - action permission registry,
+  - deployment gates,
+  - deployment checklist,
+  - panel retry/backoff policy,
+  - function readiness rows,
+  - SEO smoke rows,
+  - backup and audit helper rows.
 
-## Deploy reminders
+## Current backend focus
 
-Apply SQL through schema 118, redeploy `admin-directory`, then hard refresh the browser/service worker cache.
+- Keep Admin payloads smaller through fast paths.
+- Keep schema drift visible before action buttons fail.
+- Keep action buttons guarded by role and DB registry.
+- Keep retry/backoff rules visible so failed panels do not keep hammering Edge Functions.

@@ -1,17 +1,20 @@
-# Documentation Index
+# Docs Index
 
-Last refreshed: **2026-05-20a**
+Last refreshed: **2026-05-20b**
 
-## Current high-priority docs
+## Current high-value docs
 
+- `ADMIN_ACTION_PERMISSIONS_PREFLIGHT_AND_RETRY_RULES.md`
 - `ADMIN_PREFLIGHT_REGISTRY_AND_READINESS_UI.md`
 - `ADMIN_SPLIT_SCOPES_AND_CONFIRMATION_GUARDRAILS.md`
 - `ADMIN_DIAGNOSTICS_DRAWER_AND_STALE_BADGES.md`
-- `ADMIN_PANEL_RETRY_TIMING_AND_COMMAND_SCOPE.md`
 - `ADMIN_STAGED_LOAD_AND_CACHE_FALLBACKS.md`
 - `MOBILE_NAVIGATION_AND_RESPONSIVE_UX.md`
-- `ACCOUNTING_CLOSE_END_TO_END_WORKFLOW.md`
 - `PRODUCTION_READINESS_CHECKLIST.md`
+- `ACCOUNTING_CLOSE_END_TO_END_WORKFLOW.md`
+- `JOBS_COMMERCIAL_AND_ACCOUNTING_NEXT_STEPS.md`
 - `SEO_PUBLIC_PAGE_RULES.md`
 
-Older pass notes are useful history, but the root Markdown files are the current handoff set.
+## Current pass
+
+Schema 119 adds DB-backed action permissions, schema preflight checks, panel retry/backoff policy rows, and function readiness signoff metadata.

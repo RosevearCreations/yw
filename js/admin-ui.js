@@ -162,8 +162,13 @@
       adminPanelLoadDiagnostics: [],
       adminFastPathScopeRegistry: [],
       adminActionConfirmationRules: [],
+      adminActionPermissionRegistry: [],
+      adminPanelRetryPolicy: [],
+      adminSchemaPreflightChecks: [],
       adminDeploymentChecklist: [],
       adminFunctionReadinessChecks: [],
+      actorRole: '',
+      actorProfileId: '',
       directoryPagination: {
         people: { page: 1, pageSize: 25, total: 0, totalPages: 1, loaded: 0, search: '', roleFilter: '', sort: 'full_name', direction: 'asc' },
         jobs: { page: 1, pageSize: 25, total: 0, totalPages: 1, loaded: 0, search: '', sort: 'job_code', direction: 'asc' }
@@ -426,6 +431,12 @@
           </div>
           <div id="ad_readiness_cards" class="admin-health-grid"></div>
           <div class="table-scroll" style="margin-bottom:12px;">
+            <table id="ad_schema_preflight_table">
+              <thead><tr><th>Area</th><th>Object</th><th>Status</th><th>Operator Hint</th><th>Risk if Missing</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-bottom:12px;">
             <table id="ad_readiness_table">
               <thead><tr><th>Area</th><th>Check</th><th>Status</th><th>Action</th></tr></thead>
               <tbody></tbody>
@@ -434,6 +445,12 @@
           <div class="table-scroll">
             <table id="ad_permissions_table">
               <thead><tr><th>Role</th><th>Workflow</th><th>View</th><th>Create</th><th>Approve</th><th>Close/Reopen</th><th>Export</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_action_permission_table">
+              <thead><tr><th>Action</th><th>Area</th><th>Required Role</th><th>Status</th><th>Disabled Message</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -450,8 +467,14 @@
             </table>
           </div>
           <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_panel_retry_policy_table">
+              <thead><tr><th>Panel</th><th>Scope</th><th>Attempts / Cooldown</th><th>Status</th><th>Operator Hint</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
             <table id="ad_function_readiness_table">
-              <thead><tr><th>Function</th><th>Scope / Use</th><th>Status</th><th>Deploy Hint</th><th>Failure Hint</th></tr></thead>
+              <thead><tr><th>Function</th><th>Scope / Use</th><th>Status</th><th>Last Checked</th><th>Signoff</th><th>Deploy Hint</th><th>Failure Hint</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -1217,10 +1240,13 @@
         evidenceManagerBody: document.querySelector('#ad_evidence_manager_table tbody'),
         evidenceActionQueueBody: document.querySelector('#ad_evidence_action_queue_table tbody'),
         readinessCards: document.getElementById('ad_readiness_cards'),
+        schemaPreflightBody: document.querySelector('#ad_schema_preflight_table tbody'),
         readinessBody: document.querySelector('#ad_readiness_table tbody'),
         permissionsBody: document.querySelector('#ad_permissions_table tbody'),
+        actionPermissionBody: document.querySelector('#ad_action_permission_table tbody'),
         deploymentGateBody: document.querySelector('#ad_deployment_gate_table tbody'),
         deploymentChecklistBody: document.querySelector('#ad_deployment_checklist_table tbody'),
+        panelRetryPolicyBody: document.querySelector('#ad_panel_retry_policy_table tbody'),
         functionReadinessBody: document.querySelector('#ad_function_readiness_table tbody'),
         seoSmokeBody: document.querySelector('#ad_seo_smoke_table tbody'),
         bankCsvImportBody: document.querySelector('#ad_bank_csv_import_table tbody'),
@@ -1456,6 +1482,8 @@
         state.adminDirectoryMeta = { ...(state.adminDirectoryMeta || {}), ...(resp.pagination_meta || {}) };
         applyDirectoryPaginationMeta(state.adminDirectoryMeta);
       }
+      if (resp.actor_role) state.actorRole = resp.actor_role;
+      if (resp.actor_profile_id) state.actorProfileId = resp.actor_profile_id;
       if (Array.isArray(resp.users) || Array.isArray(resp.profiles)) state.users = Array.isArray(resp.users) ? resp.users : resp.profiles;
       if (Array.isArray(resp.sites)) state.sites = resp.sites;
       if (Array.isArray(resp.assignments)) state.assignments = resp.assignments;
@@ -1491,6 +1519,9 @@
       if (Array.isArray(resp.admin_panel_load_diagnostics)) state.adminPanelLoadDiagnostics = resp.admin_panel_load_diagnostics;
       if (Array.isArray(resp.admin_fast_path_scope_registry)) state.adminFastPathScopeRegistry = resp.admin_fast_path_scope_registry;
       if (Array.isArray(resp.admin_action_confirmation_rules)) state.adminActionConfirmationRules = resp.admin_action_confirmation_rules;
+      if (Array.isArray(resp.admin_action_permission_registry)) state.adminActionPermissionRegistry = resp.admin_action_permission_registry;
+      if (Array.isArray(resp.admin_panel_retry_policy)) state.adminPanelRetryPolicy = resp.admin_panel_retry_policy;
+      if (Array.isArray(resp.admin_schema_preflight_checks)) state.adminSchemaPreflightChecks = resp.admin_schema_preflight_checks;
       if (Array.isArray(resp.admin_deployment_checklist)) state.adminDeploymentChecklist = resp.admin_deployment_checklist;
       if (Array.isArray(resp.admin_function_readiness_checks)) state.adminFunctionReadinessChecks = resp.admin_function_readiness_checks;
       state.counts = {
@@ -2451,6 +2482,8 @@
         state.notifications = Array.isArray(resp?.notifications) ? resp.notifications : [];
         state.users = Array.isArray(resp?.users) ? resp.users : [];
         state.adminDirectoryMeta = resp?.pagination_meta || {};
+        if (resp?.actor_role) state.actorRole = resp.actor_role;
+        if (resp?.actor_profile_id) state.actorProfileId = resp.actor_profile_id;
         applyDirectoryPaginationMeta(state.adminDirectoryMeta);
         state.sites = Array.isArray(resp?.sites) ? resp.sites : [];
         state.assignments = Array.isArray(resp?.assignments) ? resp.assignments : [];
@@ -2557,6 +2590,9 @@
         state.adminPanelLoadDiagnostics = Array.isArray(resp?.admin_panel_load_diagnostics) ? resp.admin_panel_load_diagnostics : state.adminPanelLoadDiagnostics;
         state.adminFastPathScopeRegistry = Array.isArray(resp?.admin_fast_path_scope_registry) ? resp.admin_fast_path_scope_registry : state.adminFastPathScopeRegistry;
         state.adminActionConfirmationRules = Array.isArray(resp?.admin_action_confirmation_rules) ? resp.admin_action_confirmation_rules : state.adminActionConfirmationRules;
+        state.adminActionPermissionRegistry = Array.isArray(resp?.admin_action_permission_registry) ? resp.admin_action_permission_registry : state.adminActionPermissionRegistry;
+        state.adminPanelRetryPolicy = Array.isArray(resp?.admin_panel_retry_policy) ? resp.admin_panel_retry_policy : state.adminPanelRetryPolicy;
+        state.adminSchemaPreflightChecks = Array.isArray(resp?.admin_schema_preflight_checks) ? resp.admin_schema_preflight_checks : state.adminSchemaPreflightChecks;
         state.adminDeploymentChecklist = Array.isArray(resp?.admin_deployment_checklist) ? resp.admin_deployment_checklist : state.adminDeploymentChecklist;
         state.adminFunctionReadinessChecks = Array.isArray(resp?.admin_function_readiness_checks) ? resp.admin_function_readiness_checks : state.adminFunctionReadinessChecks;
         state.hsePacketActionItems = Array.isArray(resp?.hse_packet_action_items) ? resp.hse_packet_action_items : [];
@@ -4345,6 +4381,55 @@
       return 'info';
     }
 
+    const ADMIN_ROLE_RANK = { employee: 10, worker: 10, staff: 10, onsite_admin: 18, site_leader: 20, supervisor: 30, hse: 40, job_admin: 45, admin: 50 };
+
+    function normalizeAdminRole(role = '') {
+      const clean = String(role || '').trim().toLowerCase();
+      if (clean === 'worker' || clean === 'staff') return 'employee';
+      return clean || 'employee';
+    }
+
+    function canAdminRoleRun(requiredRole = 'employee') {
+      const actor = normalizeAdminRole(state.actorRole || state.adminDirectoryMeta?.actor_role || '');
+      if (!actor) return true;
+      return (ADMIN_ROLE_RANK[actor] || 0) >= (ADMIN_ROLE_RANK[normalizeAdminRole(requiredRole)] || 0);
+    }
+
+    function getActionPermission(actionKey) {
+      return (Array.isArray(state.adminActionPermissionRegistry) ? state.adminActionPermissionRegistry : [])
+        .find((row) => String(row.action_key || '') === String(actionKey));
+    }
+
+    function applyAdminActionDisabledStates() {
+      const registry = Array.isArray(state.adminActionPermissionRegistry) ? state.adminActionPermissionRegistry : [];
+      if (!registry.length) return;
+      const buttonRules = [
+        ['job_status_update', '[data-job-action="complete"], [data-job-action="cancel"]'],
+        ['job_add_note', '[data-job-action="note"]'],
+        ['close_step_complete', '[data-close-step-action="complete"]'],
+        ['close_step_reopen', '[data-close-step-action="reopen"]'],
+        ['deployment_gate_update', '[data-gate-key]'],
+        ['evidence_follow_up', '[data-evidence-action="follow_up"]']
+      ];
+      buttonRules.forEach(([actionKey, selector]) => {
+        const rule = getActionPermission(actionKey);
+        if (!rule) return;
+        const isEnabled = rule.is_enabled !== false && String(rule.is_enabled || 'true') !== 'false';
+        const allowed = isEnabled && canAdminRoleRun(rule.required_role || 'employee');
+        document.querySelectorAll(selector).forEach((button) => {
+          button.disabled = !allowed;
+          button.classList.toggle('is-disabled-by-role', !allowed);
+          button.setAttribute('data-permission-action', actionKey);
+          if (!allowed) {
+            button.title = rule.disabled_message || `Requires ${rule.required_role || 'a higher role'}.`;
+            button.setAttribute('aria-disabled', 'true');
+          } else {
+            button.removeAttribute('aria-disabled');
+          }
+        });
+      });
+    }
+
     function renderJobsReviewTable() {
       const e = els();
       if (!e.jobsReviewBody) return;
@@ -4366,6 +4451,7 @@
           </div></td>
         </tr>`;
       }).join('') || '<tr><td colspan="6" class="muted">No jobs loaded for this filter/page.</td></tr>';
+      applyAdminActionDisabledStates();
     }
 
 
@@ -5163,16 +5249,33 @@
       if (!e.readinessCards && !e.readinessBody && !e.permissionsBody) return;
       const checks = Array.isArray(state.productionReadinessChecklist) ? state.productionReadinessChecklist : [];
       const perms = Array.isArray(state.rolePermissionMatrix) ? state.rolePermissionMatrix : [];
+      const preflight = Array.isArray(state.adminSchemaPreflightChecks) ? state.adminSchemaPreflightChecks : [];
+      const actionPerms = Array.isArray(state.adminActionPermissionRegistry) ? state.adminActionPermissionRegistry : [];
+      const retryPolicies = Array.isArray(state.adminPanelRetryPolicy) ? state.adminPanelRetryPolicy : [];
       const drift = (Array.isArray(state.schemaDriftStatus) ? state.schemaDriftStatus : [])[0] || {};
       const blocked = checks.filter((row) => /blocked|fail|missing/i.test(String(row.check_status || ''))).length;
       const warnings = checks.filter((row) => /warn|review/i.test(String(row.check_status || ''))).length;
+      const missingPreflight = preflight.filter((row) => /missing|fail|blocked/i.test(String(row.check_status || row.live_status || ''))).length;
       if (e.readinessCards) {
         e.readinessCards.innerHTML = [
           ['Schema Drift', drift.drift_status || 'unknown', drift.message || 'Live database should match repo schema marker.'],
+          ['Schema Preflight', missingPreflight ? `${missingPreflight} missing` : `${preflight.length} checks`, 'Names missing tables/views before risky Admin actions are used.'],
           ['Blocked Checks', blocked, 'Must be fixed before production sign-off.'],
-          ['Warnings', warnings, 'Review before deployment.'],
+          ['Action Rules', actionPerms.length, 'DB-backed action button role guardrails.'],
+          ['Retry Policies', retryPolicies.length, 'Panel retry/backoff rules for safer Edge Function calls.'],
           ['Permission Rows', perms.length, 'Visible role/workflow permission matrix.']
         ].map(([label, value, help]) => `<div class="admin-health-card"><span>${escHtml(label)}</span><strong>${escHtml(String(value))}</strong><small>${escHtml(help)}</small></div>`).join('');
+      }
+      if (e.schemaPreflightBody) {
+        e.schemaPreflightBody.innerHTML = preflight.slice(0, 120).map((row) => `
+          <tr>
+            <td>${escHtml(row.check_area || '')}</td>
+            <td><strong>${escHtml(row.required_object_name || '')}</strong><div class="muted">${escHtml(row.required_object_type || '')}</div></td>
+            <td>${renderStatusPill(row.check_status || row.live_status || 'review', /present|pass|ok|ready/i.test(String(row.check_status || row.live_status || '')) ? 'ok' : (/missing|fail|blocked/i.test(String(row.check_status || row.live_status || '')) ? 'error' : 'warning'))}</td>
+            <td class="admin-table-note">${escHtml(row.operator_hint || '')}</td>
+            <td class="admin-table-note">${escHtml(row.failure_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No schema preflight rows loaded yet. Apply schema 119.</td></tr>';
       }
       if (e.readinessBody) {
         e.readinessBody.innerHTML = checks.slice(0, 80).map((row) => `
@@ -5196,6 +5299,20 @@
             <td>${row.can_export ? 'Yes' : 'No'}</td>
           </tr>
         `).join('') || '<tr><td colspan="7" class="muted">No permission matrix rows loaded yet. Apply schema 107.</td></tr>';
+      }
+      if (e.actionPermissionBody) {
+        e.actionPermissionBody.innerHTML = actionPerms.slice(0, 120).map((row) => {
+          const isEnabled = row.is_enabled !== false && String(row.is_enabled || 'true') !== 'false';
+          const allowed = isEnabled && canAdminRoleRun(row.required_role || 'employee');
+          return `
+            <tr>
+              <td><strong>${escHtml(row.action_label || row.action_key || '')}</strong><div class="muted">${escHtml(row.action_key || '')}</div></td>
+              <td>${escHtml(row.action_area || '')}</td>
+              <td>${escHtml(row.required_role || 'employee')}</td>
+              <td>${renderStatusPill(allowed ? 'enabled' : 'disabled', allowed ? 'ok' : 'warning')}</td>
+              <td class="admin-table-note">${escHtml(allowed ? (row.enabled_message || 'Allowed for this role.') : (row.disabled_message || 'Not allowed for this role.'))}</td>
+            </tr>`;
+        }).join('') || '<tr><td colspan="5" class="muted">No action permission rows loaded yet. Apply schema 119.</td></tr>';
       }
       if (e.deploymentGateBody) {
         const gates = Array.isArray(state.adminDeploymentGateStatus) ? state.adminDeploymentGateStatus : [];
@@ -5221,6 +5338,17 @@
           </tr>
         `).join('') || '<tr><td colspan="5" class="muted">No deployment checklist rows loaded yet. Apply schema 117 or later.</td></tr>';
       }
+      if (e.panelRetryPolicyBody) {
+        e.panelRetryPolicyBody.innerHTML = retryPolicies.slice(0, 80).map((row) => `
+          <tr>
+            <td><strong>${escHtml(row.panel_title || row.panel_key || '')}</strong></td>
+            <td>${escHtml(row.scope_key || '')}</td>
+            <td>${escHtml(String(row.max_attempts ?? ''))} / ${escHtml(String(row.cooldown_seconds ?? ''))}s</td>
+            <td>${renderStatusPill(row.retry_status || 'active', /active|ready|ok/i.test(String(row.retry_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.operator_hint || row.failure_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No panel retry policy rows loaded yet. Apply schema 119.</td></tr>';
+      }
       if (e.functionReadinessBody) {
         const rows = Array.isArray(state.adminFunctionReadinessChecks) ? state.adminFunctionReadinessChecks : [];
         e.functionReadinessBody.innerHTML = rows.slice(0, 80).map((row) => `
@@ -5228,11 +5356,14 @@
             <td><strong>${escHtml(row.function_name || row.function_key || '')}</strong></td>
             <td>${escHtml(row.expected_scope || row.scope_key || '')}</td>
             <td>${renderStatusPill(row.readiness_status || 'review', /pass|ready|deployed|ok/i.test(String(row.readiness_status || '')) ? 'ok' : (/fail|blocked|missing/i.test(String(row.readiness_status || '')) ? 'error' : 'warning'))}</td>
+            <td class="admin-table-note">${escHtml(row.last_checked_at || row.checked_at || '')}</td>
+            <td class="admin-table-note">${escHtml(row.operator_signoff_at ? `Signed ${row.operator_signoff_at}` : (row.operator_notes || 'Pending'))}</td>
             <td class="admin-table-note">${escHtml(row.deploy_hint || row.command_hint || '')}</td>
             <td class="admin-table-note">${escHtml(row.failure_hint || '')}</td>
           </tr>
-        `).join('') || '<tr><td colspan="5" class="muted">No function readiness rows loaded yet. Apply schema 118.</td></tr>';
+        `).join('') || '<tr><td colspan="7" class="muted">No function readiness rows loaded yet. Apply schema 118.</td></tr>';
       }
+      applyAdminActionDisabledStates();
       if (e.seoSmokeBody) {
         const seoRows = Array.isArray(state.publicSeoSmokeCheck) ? state.publicSeoSmokeCheck : [];
         e.seoSmokeBody.innerHTML = seoRows.slice(0, 80).map((row) => `

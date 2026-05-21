@@ -1,6 +1,6 @@
 # Admin Panel Retry, Timing, and Command Scope
 
-Last refreshed: **2026-05-18b**
+Last refreshed: **2026-05-20b**
 
 ## Purpose
 

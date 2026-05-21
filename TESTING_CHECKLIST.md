@@ -1,27 +1,46 @@
 # Testing Checklist
 
-Last refreshed: **2026-05-20a**
+Last refreshed: **2026-05-20b**
 
-## Automated checks run during build
+## Smoke checks
 
-- JavaScript syntax checks for key frontend modules.
-- Repo smoke check.
-- Public H1 count check.
-- CSS brace balance check.
+Run from the repo root when local tools are available:
 
-## Manual checks after deploy
+```bash
+node --check js/mobile-menu.js
+node --check js/api.js
+node --check js/admin-ui.js
+node --check js/reports-ui.js
+node --check js/jobs-ui.js
+node --check js/hse-ops-ui.js
+node --check js/logbook-ui.js
+node --check app.js
+node --check server-worker.js
+node scripts/repo-smoke-check.mjs
+```
 
-1. Open the public home page and verify only one visible main heading is used.
-2. Test mobile width and confirm the main menu is compact until expanded.
-3. Open `#admin` and confirm staged scope cards show live/failed/pending state.
-4. Confirm the Production Readiness panel includes:
-   - readiness checks
-   - permissions matrix
-   - deployment gates
-   - deployment checklist rows
-   - function readiness rows
-   - SEO smoke rows
-5. Click Refresh Staff Only and Refresh Jobs Only.
-6. Click Retry Evidence.
-7. Test one safe Jobs note action.
-8. Confirm no old `test_write` files or retired root Markdown are present in the active root.
+## Manual Admin checks
+
+- Admin loads Command Center first.
+- Admin continues loading staged panels after Command Center.
+- Admin > Readiness shows:
+  - Schema Preflight,
+  - Production Checks,
+  - Role Permissions,
+  - Action Permissions,
+  - Deployment Gates,
+  - Deployment Checklist,
+  - Panel Retry Policy,
+  - Function Readiness,
+  - SEO Smoke.
+- Job complete/cancel buttons are disabled for roles below `job_admin`.
+- Close step reopen is disabled for non-admin roles.
+- Deployment gate mark-pass is disabled for non-admin roles.
+- Evidence follow-up is disabled below the configured HSE/job-admin/admin threshold.
+
+## Public checks
+
+- `index.html` has no more than one H1.
+- Mobile main menu starts collapsed and expands cleanly.
+- Admin section menu remains usable on a phone-width viewport.
+- CSS braces remain balanced.

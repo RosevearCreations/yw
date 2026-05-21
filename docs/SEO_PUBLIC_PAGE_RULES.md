@@ -1,6 +1,6 @@
 # SEO Public Page Rules
 
-Last refreshed: **2026-05-18b**
+Last refreshed: **2026-05-20b**
 
 ## Standing rules
 

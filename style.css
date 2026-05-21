@@ -1816,3 +1816,29 @@ body[data-authenticated="false"] .main-menu-toggle {
     min-width: 720px;
   }
 }
+
+/* 2026-05-20b Admin production readiness guardrails */
+button.is-disabled-by-role,
+button[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.58;
+  filter: grayscale(0.2);
+}
+button.is-disabled-by-role:hover,
+button[aria-disabled="true"]:hover {
+  transform: none;
+}
+#ad_schema_preflight_table td,
+#ad_action_permission_table td,
+#ad_panel_retry_policy_table td,
+#ad_function_readiness_table td {
+  vertical-align: top;
+}
+@media (max-width: 760px) {
+  #ad_schema_preflight_table,
+  #ad_action_permission_table,
+  #ad_panel_retry_policy_table,
+  #ad_function_readiness_table {
+    min-width: 720px;
+  }
+}

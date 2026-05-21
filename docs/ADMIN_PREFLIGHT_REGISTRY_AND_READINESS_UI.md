@@ -1,6 +1,6 @@
 # Admin Preflight Registry and Readiness UI
 
-Last refreshed: **2026-05-20a**
+Last refreshed: **2026-05-20b**
 
 ## Purpose
 

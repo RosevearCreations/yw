@@ -1,6 +1,6 @@
 # Production Readiness Checklist
 
-Last refreshed: **2026-05-17a**
+Last refreshed: **2026-05-20b**
 
 ## Current readiness foundations
 

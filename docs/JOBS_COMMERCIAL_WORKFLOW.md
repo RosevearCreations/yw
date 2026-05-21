@@ -1,6 +1,6 @@
 # Jobs Commercial Workflow
 
-Last refreshed: **2026-05-17a**
+Last refreshed: **2026-05-20b**
 
 Jobs remain a core workflow. This pass fixed Admin directory loading so the Edge Function no longer assumes `jobs.job_status`; live schema may use `jobs.status`.
 

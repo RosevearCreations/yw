@@ -1,31 +1,25 @@
 # System Architecture
 
-Last refreshed: **2026-05-20a**
+Last refreshed: **2026-05-20b**
 
-## Current shape
+## Frontend
 
-- Static frontend: `index.html`, `style.css`, `app.js`, and feature modules in `js/`.
-- Supabase Edge Functions: `admin-directory`, `admin-manage`, reporting/scheduler functions, jobs functions, and upload helpers.
-- Database: Supabase/Postgres migrations in `sql/`, with `000_full_schema_reference.sql` kept current.
-- Service worker: `server-worker.js` app-shell cache, currently versioned `2026-05-20a`.
+- `index.html` loads versioned app-shell assets.
+- `server-worker.js` caches app-shell files using cache version `2026-05-20b`.
+- `js/mobile-menu.js` controls the compact mobile main menu.
+- `js/admin-ui.js` renders the Admin backend, staged panel loading, diagnostics, readiness tables, and role-aware action disabled states.
 
-## Admin loading pattern
+## Backend
 
-1. Admin loads `command_center` first.
-2. `command_center` returns the fast-path scope registry if schema/function deployment is current.
-3. The UI uses the registry for the staged initial Admin scopes.
-4. If the registry is unavailable, the UI uses the built-in safe fallback scope list.
-5. If every staged panel fails, the old broad `scope: all` call remains as an emergency fallback.
+- Supabase Edge Functions provide Admin and workflow APIs.
+- `admin-directory` returns staged Admin panel payloads.
+- `admin-manage` handles write actions.
+- Schema drift and readiness rows are tracked through DB views rather than hard-coded frontend assumptions.
 
-## Readiness pattern
+## Admin loading model
 
-Production Readiness now combines:
-
-- schema drift
-- production readiness checks
-- role permission matrix
-- deployment gates
-- deployment checklist items
-- function readiness rows
-- SEO smoke checks
-- bank CSV import and backup rehearsal state
+1. Load Command Center first.
+2. Read the DB-backed fast-path scope registry when available.
+3. Load smaller panel scopes.
+4. Keep broad `scope: all` only as emergency fallback.
+5. Show stale badges, diagnostics, preflight rows, retry rules, and action permissions so failures are visible instead of silent.

@@ -1,37 +1,52 @@
 # YWI Main App
 
-Last refreshed: **2026-05-20a**
+Last refreshed: **2026-05-20b**
 
-This build focuses on making the Admin app more production-ready by showing deployment/preflight state directly in the Admin Readiness panel and reducing hard-coded Admin startup assumptions.
+Current build label: `yw-main-129-updated-2026-05-20b-admin-action-preflight-retry.zip`
 
-## Current state
+Current schema marker: **119**
 
-- Current asset/cache version: `2026-05-20a`.
-- Latest schema marker: **118**.
-- Admin startup now loads `command_center` first, then reads the DB-backed fast-path scope registry when available.
-- Production Readiness now renders deployment checklist rows and function readiness rows.
-- The broad `all` Admin scope remains only as an emergency fallback.
-- Public app shell still has one H1.
+Current asset/cache version: `2026-05-20b`
 
-## Deploy order
+## Current pass summary
 
-1. Apply SQL through `sql/118_admin_preflight_registry_deployment_checklist_ui.sql`.
-2. Redeploy Supabase functions:
-   - `admin-directory`
-   - `admin-manage`
-   - `report-subscription-delivery-run` if not already redeployed after the newline/CSV escaping fix.
-3. Deploy the static site files.
-4. Hard refresh or unregister the service worker so `2026-05-20a` assets load.
-5. Open `#admin`, then check Command Center, Health, Readiness, Staff, Jobs, Accounting, and Evidence panels.
+This pass continues the Admin production-readiness work by adding DB-backed action permissions, schema preflight rows, and panel retry/backoff policy rows. The Admin UI now renders those rows in Production Readiness and uses the action-permission registry to disable known risky buttons for roles that should not run them.
 
-## Active docs
+## What changed
 
-- `PROJECT_STATE.md` — current build state.
-- `NEW_CHAT_STATUS.md` — handoff for the next chat/pass.
-- `DEVELOPMENT_ROADMAP.md` — completed work and next steps.
-- `KNOWN_ISSUES_AND_GAPS.md` — remaining risks and gaps.
-- `DATABASE_STRUCTURE.md` — schema marker and database notes.
-- `DEPLOYMENT_GUIDE.md` — deploy order and cache notes.
-- `TESTING_CHECKLIST.md` — manual and smoke checks.
-- `SYSTEM_ARCHITECTURE.md` — current app structure.
-- `AI_CONTEXT.md` — compact orientation file for future work.
+- Added `sql/119_admin_action_permissions_preflight_and_retry_rules.sql`.
+- Updated `sql/000_full_schema_reference.sql` through schema 119.
+- Added Admin Production Readiness tables for:
+  - schema preflight checks,
+  - action permission registry,
+  - panel retry/backoff policy.
+- Updated `admin-directory` to return the new readiness arrays and `actor_role` for role-aware UI decisions.
+- Added role-aware disabled states for known Admin action buttons:
+  - job complete/cancel,
+  - job note,
+  - close step complete/reopen,
+  - deployment gate update,
+  - evidence follow-up.
+- Updated mobile/table CSS and bumped the service worker cache version.
+- Archived the previous Markdown snapshot and moved retired root Markdown out of the active root again.
+
+## Deploy checklist
+
+1. Apply SQL through **schema 119**.
+2. Redeploy Supabase function `admin-directory`.
+3. Redeploy `admin-manage` if the live copy is not already current.
+4. Hard refresh or unregister the browser service worker so `2026-05-20b` assets load.
+5. Open Admin > Readiness and confirm schema preflight, action permissions, retry policies, deployment checklist, and function readiness tables populate.
+
+## Active handoff files
+
+- `PROJECT_STATE.md`
+- `NEW_CHAT_STATUS.md`
+- `DEVELOPMENT_ROADMAP.md`
+- `KNOWN_ISSUES_AND_GAPS.md`
+- `DATABASE_STRUCTURE.md`
+- `SYSTEM_ARCHITECTURE.md`
+- `DEPLOYMENT_GUIDE.md`
+- `TESTING_CHECKLIST.md`
+- `AI_CONTEXT.md`
+- `CHANGELOG.md`

@@ -1,6 +1,6 @@
 # Admin Diagnostics Drawer and Stale Badges
 
-Last refreshed: **2026-05-19a**
+Last refreshed: **2026-05-20b**
 
 ## Purpose
 
