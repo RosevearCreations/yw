@@ -1,31 +1,22 @@
 # AI Context
 
-Last refreshed: **2026-05-26a**
+Last refreshed: **2026-05-27a**
 
-## Current build context
+## Current priorities
 
-The latest pass is `2026-05-26a`. Current schema marker is **120**.
+- Mobile-first field usage is the main priority.
+- Visible Ontario safety wording should say Ontario **OHSA**, Ontario workplace safety, or Safety Ops. Avoid U.S. OSHA wording for Ontario procedures.
+- Every build pass must update Markdown and schema files.
+- Keep one H1 on exposed pages.
+- Keep CSS drift checks and JavaScript syntax checks.
+- Archive old Markdown snapshots and keep the active root clean.
 
-This project is moving toward a mobile-first field operations app. Continue to avoid one giant Admin load and continue to favour staged fast paths, DB-backed registries, and phone-friendly workflows.
+## Current build state
 
-## Important current rules
+- Latest schema: 121
+- Latest cache marker: 2026-05-27a
+- Latest feature: Today mobile dashboard, PWA install helper, and quick-action badges.
 
-- Keep active Markdown fresh on every build pass.
-- Keep `sql/000_full_schema_reference.sql` updated with the latest schema file.
-- Keep retired root Markdown out of the active root; archive it instead.
-- Remove recurring `test_write` files from the active root.
-- Keep exposed/public pages to one H1.
-- Keep CSS mobile-friendly and verify braces.
-- Use Ontario OHSA / Ontario workplace safety wording for Ontario safety procedures.
-- Prefer DB-backed registries/checks over hard-coded frontend assumptions.
+## Next recommended implementation
 
-## Latest additions
-
-- `app_mobile_first_quality_gates`
-- `app_jurisdiction_wording_gates`
-- mobile bottom quick-action navigation
-- Ontario OHSA / workplace safety wording refresh
-
-## Next pass direction
-
-Use `DEVELOPMENT_ROADMAP.md` and `KNOWN_ISSUES_AND_GAPS.md`. The next strongest work is a role-aware mobile Today dashboard, offline queue badges, and mobile form steppers for field submissions.
+Build mobile steppers and draft/resume chips for Toolbox Talk, Incident, PPE, First Aid, Inspection, and Drill forms.

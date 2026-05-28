@@ -1,22 +1,18 @@
 # New Chat Status
 
-Last refreshed: **2026-05-26a**
+Last refreshed: **2026-05-27a**
 
-## Latest build
+Continue from build **2026-05-27a** / schema **121**.
 
-`yw-main-130-updated-2026-05-26a-ontario-ohsa-mobile-first.zip`
+## What just changed
 
-## Latest schema
+- Added a new `#today` route and made it the default route.
+- Added `js/mobile-today.js`.
+- Added mobile Today cards, queue count status, PWA install guidance, and quick-action badges.
+- Updated mobile quick navigation to Today, Talk, Incident, Safety, Jobs, and Admin.
+- Added schema `121_mobile_today_dashboard_pwa_and_offline_badges.sql`.
+- Updated active Markdown and canonical schema reference.
 
-`sql/120_ontario_ohsa_mobile_first_app_guardrails.sql`
+## Next best pass
 
-## What changed most recently
-
-- Corrected user-facing safety wording for Ontario.
-- Added a mobile bottom quick-action bar.
-- Added mobile-first quality gates and Ontario wording gates.
-- Updated `admin-directory`, canonical schema, smoke checks, active Markdown, manifest, H1/title/meta copy, and cache version.
-
-## Next work direction
-
-Use `DEVELOPMENT_ROADMAP.md` and `KNOWN_ISSUES_AND_GAPS.md`. The strongest next move is a true role-aware mobile Today dashboard with offline queue badges and large tap targets for field submissions.
+Start mobile form steppers and draft/resume chips for the most-used field forms. Keep Ontario OHSA wording, mobile-first layout, one-H1 validation, CSS drift checks, and schema/Markdown updates in every pass.

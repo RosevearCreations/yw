@@ -1928,3 +1928,85 @@ button[aria-disabled="true"]:hover {
     display: none !important;
   }
 }
+
+/* 2026-05-27a: mobile Today dashboard, quick-action badges, and PWA install helper */
+.mobile-today-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+.mobile-today-card,
+.mobile-install-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.035);
+  padding: 14px;
+  box-shadow: 0 10px 22px rgba(0,0,0,0.12);
+}
+.mobile-today-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.mobile-today-card-head strong { font-size: 1.02rem; }
+.mobile-today-card-head span {
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 999px;
+  color: var(--text-soft);
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1;
+  padding: 5px 8px;
+  white-space: nowrap;
+  background: rgba(14, 165, 233, 0.14);
+}
+.mobile-today-card p,
+.mobile-install-card p {
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+.mobile-today-action {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 42px;
+  width: 100%;
+  text-align: center;
+}
+.mobile-install-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 14px;
+}
+.mobile-install-card small { color: var(--muted); display:block; }
+.mobile-quick-nav a { position: relative; }
+.mobile-quick-badge {
+  position: absolute;
+  top: -5px;
+  right: -4px;
+  min-width: 18px;
+  min-height: 18px;
+  padding: 2px 5px;
+  border-radius: 999px;
+  color: #fff;
+  background: #ef4444;
+  border: 1px solid rgba(255,255,255,0.72);
+  font-size: 0.68rem;
+  line-height: 1;
+  font-weight: 900;
+}
+@media (max-width: 759px) {
+  .mobile-today-heading { align-items: stretch; }
+  .mobile-today-grid { grid-template-columns: 1fr; gap: 10px; }
+  .mobile-today-card,
+  .mobile-install-card { padding: 12px; border-radius: 15px; }
+  .mobile-install-card { align-items: stretch; flex-direction: column; }
+  .mobile-install-card button { width: 100%; min-height: 44px; }
+  .mobile-quick-nav { grid-template-columns: repeat(6, minmax(0, 1fr)); left: 6px; right: 6px; gap: 4px; padding: 6px; }
+  .mobile-quick-nav a { min-height: 48px; padding: 4px 2px; font-size: 0.68rem; }
+  .mobile-quick-nav a span { overflow: hidden; text-overflow: ellipsis; }
+}

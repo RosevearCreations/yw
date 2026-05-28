@@ -1,62 +1,66 @@
 # Development Roadmap
 
-Last refreshed: **2026-05-26a**
+Last refreshed: **2026-05-27a**
 
 ## Completed in this pass
 
-- Added schema **120** for Ontario OHSA wording gates and mobile-first quality gates.
-- Replaced visible U.S. safety wording with Ontario OHSA / Ontario workplace safety wording.
-- Updated the app title, meta description, H1, manifest, HSE Ops labels, Admin hub copy, and Reports subtitle.
-- Added a fixed mobile quick-action bar for Toolbox Talk, Incident, Safety Ops, Jobs, and Admin.
-- Updated `js/mobile-menu.js` so the mobile quick bar tracks the active route.
-- Added phone-friendly CSS for the quick bar, mobile card spacing, and stacked action buttons.
-- Updated `admin-directory` to expose mobile-first and Ontario wording gate views.
-- Added `docs/ONTARIO_OHSA_AND_MOBILE_FIRST_APP_PASS.md`.
-- Updated canonical schema, smoke checks, active Markdown, archive snapshot, and cache version.
-- Reconfirmed the exposed app shell has one H1 and balanced CSS braces.
+- Added schema **121** for the mobile Today dashboard, PWA install helper, quick-action queue badges, and mobile action registry.
+- Added the `#today` route and made it the default app/PWA start screen.
+- Added `js/mobile-today.js` for role-aware Today cards, online/offline status, queued form/action counts, and install guidance.
+- Expanded the bottom mobile quick-action bar to **Today, Talk, Incident, Safety, Jobs, and Admin**.
+- Added live quick-action badges for queued form submissions and queued admin/action items.
+- Updated `js/outbox.js` so form/action queue changes notify the mobile UI immediately.
+- Updated `manifest.json` so installed phone users open directly on `/#today`.
+- Updated `js/router.js` and `js/security.js` so the Today route is available to every signed-in role.
+- Updated Admin readiness loading to include mobile Today and PWA install quality-gate views.
+- Updated visible copy to continue using Ontario **OHSA** and workplace-safety wording for Ontario procedures.
+- Added mobile CSS for Today cards, install helper, queue badges, and the six-button quick bar.
+- Updated the service worker app shell for `js/mobile-today.js` and cache version `2026-05-27a`.
+- Archived older Markdown snapshots, moved retired root Markdown out of the active root again, and removed recurring temp files.
+- Reconfirmed one-H1 discipline, JavaScript syntax, CSS brace balance, and smoke-check coverage.
 
 ## Next logical 20 steps
 
-1. Build a role-aware mobile Today dashboard that shows the next 3–5 actions for worker, supervisor, admin, and accounting roles.
-2. Add offline queue count badges to the mobile quick-action bar.
-3. Add a PWA install helper card for phone users, including iOS and Android install notes.
-4. Add mobile form stepper layouts for Toolbox Talk, Incident / Near Miss, Site Inspection, PPE, First Aid, and Drill forms.
-5. Add one-tap draft save and resume chips for incomplete mobile field submissions.
-6. Add camera/photo attachment quality checks before upload on phone.
-7. Add mobile-friendly evidence assignment filters: owner, due date, status, and source.
-8. Add supervisor mobile card actions for approve, follow up, and return for correction.
-9. Add browser retry counters that enforce `admin_panel_retry_policy` instead of only displaying the policy.
-10. Add Admin edit screens for `admin_action_permission_registry` and `admin_panel_retry_policy`.
-11. Add a schema-object verifier that updates `admin_schema_preflight_checks.live_status` from database metadata.
-12. Add function readiness signoff buttons for deploy verification.
-13. Add CSV exports for Staff and Jobs using current filters/sorts.
-14. Add bank CSV import preview rows before accepting reconciliation records.
-15. Add close blocker explanation text beside every Guided Close Center step.
-16. Add backup rehearsal evidence upload/signoff fields.
-17. Add smoke-check validation for sitemap, robots, title, H1, meta description, missing alt text, and mobile quick-nav presence.
-18. Add structured-data JSON-LD checks for public service/location pages.
-19. Add service-area content proof fields so local pages only mention real coverage.
+1. Add mobile form steppers for Toolbox Talk, Incident / Near Miss, PPE, First Aid, Inspection, and Drill screens.
+2. Add one-tap draft save/resume chips beside each mobile form.
+3. Add camera/photo attachment quality checks before upload on mobile.
+4. Add image compression and upload retry progress for phone photos.
+5. Add Today dashboard live data cards from `admin_mobile_action_card_directory` when the user has supervisor/admin access.
+6. Add Today dashboard role ordering preferences saved per user.
+7. Add offline queue detail drawer from the Today dashboard.
+8. Add conflict review shortcuts for queued admin/action items from the Today dashboard.
+9. Add push-notification readiness placeholders for overdue training, corrective actions, and job updates.
+10. Add mobile deep links from notifications into the exact form/action row.
+11. Add supervisor mobile approve/follow-up/return-for-correction card actions.
+12. Add evidence owner/due/status/source filters optimized for phone screens.
+13. Add close-step blocker explanations as mobile cards instead of only table rows.
+14. Add function readiness signoff buttons for deploy verification.
+15. Add schema metadata verifier to update `admin_schema_preflight_checks.live_status` from live database metadata.
+16. Add CSV exports for Staff and Jobs using current filters/sorts.
+17. Add bank CSV preview rows before accepting reconciliation records.
+18. Add public SEO smoke checks for sitemap, robots, title, H1, meta description, alt text, and structured data.
+19. Add local service-area proof fields so local pages only mention real coverage.
 20. Split `js/admin-ui.js` into smaller modules once the split-scope registry is stable.
 
 ## Following 20 steps after that
 
-1. Add a true mobile worker task inbox with today, overdue, and pending-sync tabs.
-2. Add push-notification readiness placeholders for mobile reminders.
-3. Add mobile deep links from notifications into the correct form/action row.
-4. Add role-specific home screen ordering preferences saved per user.
-5. Add route/job start checklist shortcuts with large tap targets.
-6. Add geofence/weather/context cards on the mobile Today dashboard.
-7. Add image compression and upload retry status for phone photos.
-8. Add mobile signature-capture review improvements.
-9. Add accessibility checks for touch target size, contrast, labels, and keyboard focus.
-10. Add server-side page/sort/filter preferences per Admin user.
-11. Normalize job statuses into a lookup table and migrate legacy status variants.
-12. Add undo-safe job status/action history in the Jobs review table.
-13. Add payroll close blockers to the Guided Close Center.
-14. Add sales tax filing preview/signoff screens.
-15. Add accountant handoff package manifest generation.
-16. Add evidence attachment counts and source previews to Admin row cards.
-17. Add customer-facing service FAQs with one-H1 checks.
-18. Add local review/testimonial proof blocks for location pages.
-19. Add image completeness scoring for public gallery/service images.
-20. Add staging-vs-production schema drift comparison notes.
+1. Build a true mobile worker task inbox with today, overdue, and pending-sync tabs.
+2. Add route/job start checklist shortcuts with large tap targets.
+3. Add geofence/weather/context cards on the Today dashboard.
+4. Add mobile signature-capture review improvements.
+5. Add accessibility checks for touch target size, contrast, labels, and keyboard focus.
+6. Add server-side page/sort/filter preferences per Admin user.
+7. Normalize job statuses into a lookup table and migrate legacy status variants.
+8. Add undo-safe job status/action history in the Jobs review table.
+9. Add payroll close blockers to the Guided Close Center.
+10. Add sales tax filing preview/signoff screens.
+11. Add accountant handoff package manifest generation.
+12. Add evidence attachment counts and source previews to Admin row cards.
+13. Add customer-facing service FAQs with one-H1 checks.
+14. Add local review/testimonial proof blocks for location pages.
+15. Add image completeness scoring for public gallery/service images.
+16. Add staging-vs-production schema drift comparison notes.
+17. Add per-role onboarding checklists for phone users.
+18. Add app install analytics events for installed vs browser sessions.
+19. Add a mobile support snapshot export that includes queued items and panel status.
+20. Add module-level JS splitting for Today, Admin, Jobs, Reports, and Safety Ops.

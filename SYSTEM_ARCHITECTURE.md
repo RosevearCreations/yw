@@ -1,23 +1,22 @@
 # System Architecture
 
-Last refreshed: **2026-05-26a**
+Last refreshed: **2026-05-27a**
 
-## Current shape
+## Frontend
 
 - Single-page app shell in `index.html`.
-- Frontend modules in `js/`.
-- Service worker app shell cache in `server-worker.js`.
-- Supabase Edge Functions under `supabase/functions/`.
-- SQL migrations under `sql/` with `sql/000_full_schema_reference.sql` as the canonical reference.
+- Shared router in `js/router.js`.
+- Mobile navigation in `js/mobile-menu.js`.
+- Mobile Today dashboard in `js/mobile-today.js`.
+- Offline queues in `js/outbox.js`.
+- Service worker app shell in `server-worker.js`.
 
-## Current architecture direction
+## Backend
 
-- Mobile-first field usage before desktop-heavy tables.
-- Staged Admin fast paths instead of one giant Admin payload.
-- DB-backed readiness, permission, retry, mobile, and wording registries.
-- Cached fallbacks when live Admin panels fail.
-- One exposed H1 in the app shell.
+- Supabase Edge Functions provide Admin directory/management data.
+- Schema tracking is handled with numbered SQL migration files and `app_schema_versions`.
+- Admin data loading is split into staged scopes so mobile/Admin screens are less likely to time out.
 
-## Latest architecture addition
+## Current design rule
 
-Schema 120 adds mobile-first and Ontario wording gates. The app shell adds a bottom mobile quick-action bar while keeping the existing compact expandable main menu.
+Prioritize mobile screens first, then widen gracefully for desktop Admin use.

@@ -24,6 +24,36 @@
     };
   }
 
+  function getOutboxSummary() {
+    const outbox = window.YWIOutbox || null;
+    let formCount = 0;
+    let actionCount = 0;
+    try { formCount = outbox?.getItems?.()?.length || 0; } catch {}
+    try { actionCount = outbox?.getActionItems?.()?.length || 0; } catch {}
+    return { formCount, actionCount, total: formCount + actionCount };
+  }
+
+  function setBadge(name, count) {
+    const badge = document.querySelector(`[data-mobile-badge="${name}"]`);
+    if (!badge) return;
+    const safeCount = Math.max(0, Number(count || 0));
+    badge.hidden = safeCount <= 0;
+    badge.textContent = safeCount > 99 ? '99+' : String(safeCount);
+  }
+
+  function syncBadges() {
+    const counts = getOutboxSummary();
+    setBadge('today', counts.total);
+    setBadge('outbox', counts.formCount);
+    setBadge('actions', counts.actionCount);
+    document.dispatchEvent(new CustomEvent('ywi:mobile-badges-updated', { detail: counts }));
+    return counts;
+  }
+
+  function getVisibleQuickKeys() {
+    return Array.from(document.querySelectorAll('#mobileQuickNav [data-mobile-quick]')).map((link) => link.getAttribute('data-mobile-quick') || '');
+  }
+
   function isMobile() {
     if (!state.media && typeof window.matchMedia === 'function') {
       state.media = window.matchMedia(MOBILE_QUERY);
@@ -76,6 +106,7 @@
     const { current, nav } = getEls();
     if (current) current.textContent = activeLinkText();
     syncQuickNav();
+    syncBadges();
     if (!isMobile()) {
       setOpen(false);
       if (nav) nav.setAttribute('aria-hidden', 'false');
@@ -123,9 +154,12 @@
       state.media.addEventListener?.('change', sync);
     }
     window.addEventListener('resize', sync);
+    window.addEventListener('storage', syncBadges);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) syncBadges(); });
+    window.setInterval(syncBadges, 30000);
     sync();
   }
 
-  window.YWIMobileMenu = { bind, open, close, toggle, sync };
+  window.YWIMobileMenu = { bind, open, close, toggle, sync, syncBadges, getOutboxSummary, getVisibleQuickKeys };
   document.addEventListener('DOMContentLoaded', bind);
 })();

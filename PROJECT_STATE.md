@@ -1,31 +1,26 @@
 # Project State
 
-Last refreshed: **2026-05-26a**
+Last refreshed: **2026-05-27a**
 
-Current output label: `yw-main-130-updated-2026-05-26a-ontario-ohsa-mobile-first.zip`
+The project is now focused on making the app behave like a practical mobile-first field tool while keeping the Admin backend staged, safer, and easier to debug.
 
-## Current state
+## Current build marker
 
-The app is now moving from "desktop Admin first" toward **mobile-first field operation**. Admin still keeps the production-readiness registry work from prior passes, but this pass adds a practical phone layer: a bottom quick-action bar and Ontario-specific safety wording.
+- Current schema marker: **121**
+- Current cache marker: **2026-05-27a**
+- Latest focus: **mobile Today dashboard, PWA install helper, and offline queue badges**
 
-## Current schema
+## Current app direction
 
-- Latest migration: `sql/120_ontario_ohsa_mobile_first_app_guardrails.sql`
-- Canonical schema: `sql/000_full_schema_reference.sql`
-- Schema drift marker: expected schema version **120**
+- Use Ontario **OHSA** / Ontario workplace safety wording for visible Ontario procedures.
+- Keep the app phone-first because most field usage is expected on mobile.
+- Keep Admin loading split into staged scopes instead of one heavy all-scope request.
+- Keep root Markdown clean and archive older handoff files.
+- Keep one exposed H1 in the app shell.
 
-## Current frontend
+## Current deployment expectation
 
-- Cache version: `2026-05-26a`
-- Main menu remains compact/expandable on mobile.
-- New mobile quick-action bar appears on phone-width screens.
-- Visible safety wording now uses Ontario OHSA / Ontario workplace safety language.
-- App shell still has one H1.
-- CSS brace counts were verified.
-
-## Current backend focus
-
-- Keep Admin payloads smaller through fast paths.
-- Keep schema drift and readiness rows visible.
-- Keep action buttons guarded by role and DB registry.
-- Add phone-first rows and mobile quality gates before expanding more field workflows.
+1. Apply SQL through schema 121.
+2. Redeploy `admin-directory`.
+3. Hard refresh or clear/unregister the service worker so `2026-05-27a` assets load.
+4. Test `/#today`, quick-action badges, install helper, Admin, Jobs, and Safety Ops on a phone-width viewport.

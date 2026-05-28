@@ -8,17 +8,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>YWI Southern Ontario OHSA Workplace Safety & Mobile Field Operations App | Jobs, Crews, Equipment</title>
-  <meta name="description" content="YWI Southern Ontario OHSA workplace safety, incident reporting, corrective-action tracking, worker self-service training and SDS acknowledgement, report subscriptions, and mobile field operations app for Southern Ontario jobs, crews, routes, equipment, inspections, historical reports, and admin workflow records." />
+  <title>YWI Southern Ontario OHSA Mobile Field App | Today, Safety, Jobs</title>
+  <meta name="description" content="YWI Southern Ontario OHSA mobile field app for Today actions, workplace safety, incident reporting, corrective-action tracking, worker self-service training, SDS acknowledgement, Southern Ontario jobs, crews, routes, equipment, inspections, reports, and admin workflow records." />
   <meta name="theme-color" content="#0f172a" />
   <meta name="color-scheme" content="dark light" />
 
-  <link rel="manifest" href="/manifest.json?v=2026-05-26a" />
-  <link rel="icon" href="/icons/icon-192.png?v=2026-05-26a" sizes="192x192" />
-  <link rel="stylesheet" href="/style.css?v=2026-05-26a" />
+  <link rel="manifest" href="/manifest.json?v=2026-05-27a" />
+  <link rel="icon" href="/icons/icon-192.png?v=2026-05-27a" sizes="192x192" />
+  <link rel="stylesheet" href="/style.css?v=2026-05-27a" />
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/js/app-config.js?v=2026-05-26a"></script>
+  <script src="/js/app-config.js?v=2026-05-27a"></script>
 
   <style>
     #authLoading {
@@ -104,7 +104,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-05-26a');
+          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-05-27a');
           if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
           }
@@ -144,7 +144,8 @@
     </button>
 
     <nav id="mainNav" class="main-nav" aria-label="Main app sections">
-      <a href="#toolbox" class="active">Toolbox Talk</a>
+      <a href="#today" class="active">Today</a>
+      <a href="#toolbox">Toolbox Talk</a>
       <a href="#ppe">PPE Check</a>
       <a href="#firstaid">First Aid Kit</a>
       <a href="#incident">Incident / Near Miss</a>
@@ -330,7 +331,18 @@
   </section>
 
   <main class="container">
-    <section id="toolbox" class="card active"><h2>Toolbox Talk</h2></section>
+    <section id="today" class="card active">
+      <div class="section-heading mobile-today-heading">
+        <div>
+          <h2>Today</h2>
+          <p class="section-subtitle">Fast phone-first shortcuts for the current role, open offline queue, and the next field actions.</p>
+        </div>
+      </div>
+      <div id="mobileTodayStatus" class="notice" style="display:none;margin-bottom:12px;"></div>
+      <div id="mobileTodayGrid" class="mobile-today-grid" aria-live="polite"></div>
+      <div id="mobileInstallCard" class="mobile-install-card" hidden></div>
+    </section>
+    <section id="toolbox" class="card"><h2>Toolbox Talk</h2></section>
     <section id="ppe" class="card"><h2>PPE Check</h2></section>
     <section id="firstaid" class="card"><h2>First Aid Kit</h2></section>
     <section id="incident" class="card"><h2>Incident / Near Miss</h2></section>
@@ -356,11 +368,12 @@
   </main>
 
   <nav id="mobileQuickNav" class="mobile-quick-nav" aria-label="Mobile quick actions">
-    <a href="#toolbox" data-mobile-quick="toolbox"><span>Talk</span></a>
+    <a href="#today" data-mobile-quick="today"><span>Today</span><small class="mobile-quick-badge" data-mobile-badge="today" hidden>0</small></a>
+    <a href="#toolbox" data-mobile-quick="toolbox"><span>Talk</span><small class="mobile-quick-badge" data-mobile-badge="outbox" hidden>0</small></a>
     <a href="#incident" data-mobile-quick="incident"><span>Incident</span></a>
     <a href="#hseops" data-mobile-quick="hseops"><span>Safety</span></a>
     <a href="#jobs" data-mobile-quick="jobs"><span>Jobs</span></a>
-    <a href="#admin" data-mobile-quick="admin"><span>Admin</span></a>
+    <a href="#admin" data-mobile-quick="admin"><span>Admin</span><small class="mobile-quick-badge" data-mobile-badge="actions" hidden>0</small></a>
   </nav>
 
   <datalist id="site-options"></datalist>
@@ -370,30 +383,31 @@
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
 
   <!-- Correct module order -->
-  <script src="/js/router.js?v=2026-05-26a"></script>
-  <script src="/js/mobile-menu.js?v=2026-05-26a"></script>
-  <script src="/js/bootstrap.js?v=2026-05-26a"></script>
-  <script src="/js/auth.js?v=2026-05-26a"></script>
-  <script src="/js/security.js?v=2026-05-26a"></script>
-  <script src="/js/api.js?v=2026-05-26a"></script>
-  <script src="/js/outbox.js?v=2026-05-26a"></script>
-  <script src="/js/admin-actions.js?v=2026-05-26a"></script>
-  <script src="/js/ui-auth.js?v=2026-05-26a"></script>
-  <script src="/js/account-ui.js?v=2026-05-26a"></script>
-  <script src="/js/profile-ui.js?v=2026-05-26a"></script>
-  <script src="/js/reference-data.js?v=2026-05-26a"></script>
-  <script src="/js/admin-ui.js?v=2026-05-26a"></script>
-  <script src="/js/hse-ops-ui.js?v=2026-05-26a"></script>
-  <script src="/js/logbook-ui.js?v=2026-05-26a"></script>
-  <script src="/js/reports-ui.js?v=2026-05-26a"></script>
-  <script src="/js/jobs-ui.js?v=2026-05-26a"></script>
-  <script src="/js/forms-toolbox.js?v=2026-05-26a"></script>
-  <script src="/js/forms-ppe.js?v=2026-05-26a"></script>
-  <script src="/js/forms-firstaid.js?v=2026-05-26a"></script>
-  <script src="/js/forms-incident.js?v=2026-05-26a"></script>
-  <script src="/js/forms-inspection.js?v=2026-05-26a"></script>
-  <script src="/js/forms-drill.js?v=2026-05-26a"></script>
-  <script src="/app.js?v=2026-05-26a" defer></script>
+  <script src="/js/router.js?v=2026-05-27a"></script>
+  <script src="/js/mobile-menu.js?v=2026-05-27a"></script>
+  <script src="/js/mobile-today.js?v=2026-05-27a"></script>
+  <script src="/js/bootstrap.js?v=2026-05-27a"></script>
+  <script src="/js/auth.js?v=2026-05-27a"></script>
+  <script src="/js/security.js?v=2026-05-27a"></script>
+  <script src="/js/api.js?v=2026-05-27a"></script>
+  <script src="/js/outbox.js?v=2026-05-27a"></script>
+  <script src="/js/admin-actions.js?v=2026-05-27a"></script>
+  <script src="/js/ui-auth.js?v=2026-05-27a"></script>
+  <script src="/js/account-ui.js?v=2026-05-27a"></script>
+  <script src="/js/profile-ui.js?v=2026-05-27a"></script>
+  <script src="/js/reference-data.js?v=2026-05-27a"></script>
+  <script src="/js/admin-ui.js?v=2026-05-27a"></script>
+  <script src="/js/hse-ops-ui.js?v=2026-05-27a"></script>
+  <script src="/js/logbook-ui.js?v=2026-05-27a"></script>
+  <script src="/js/reports-ui.js?v=2026-05-27a"></script>
+  <script src="/js/jobs-ui.js?v=2026-05-27a"></script>
+  <script src="/js/forms-toolbox.js?v=2026-05-27a"></script>
+  <script src="/js/forms-ppe.js?v=2026-05-27a"></script>
+  <script src="/js/forms-firstaid.js?v=2026-05-27a"></script>
+  <script src="/js/forms-incident.js?v=2026-05-27a"></script>
+  <script src="/js/forms-inspection.js?v=2026-05-27a"></script>
+  <script src="/js/forms-drill.js?v=2026-05-27a"></script>
+  <script src="/app.js?v=2026-05-27a" defer></script>
 
   <script>
     document.addEventListener('ywi:auth-changed', (e) => {

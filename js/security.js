@@ -20,6 +20,7 @@
   };
 
   const SECTION_RULES = {
+    today: 'worker',
     toolbox: 'worker',
     ppe: 'worker',
     firstaid: 'worker',
@@ -125,10 +126,10 @@
 
   function getDefaultSectionForRole(role) {
     const normalized = normalizeRole(role);
-    if (normalized === 'employee' || normalized === 'onsite_admin') return 'toolbox';
-    if (normalized === 'supervisor' || normalized === 'hse' || normalized === 'job_admin') return 'crew';
-    if (normalized === 'admin') return 'admin';
-    return 'toolbox';
+    if (normalized === 'employee' || normalized === 'onsite_admin') return 'today';
+    if (normalized === 'supervisor' || normalized === 'hse' || normalized === 'job_admin') return 'today';
+    if (normalized === 'admin') return 'today';
+    return 'today';
   }
 
   function getDeniedMessage(sectionId, role) {

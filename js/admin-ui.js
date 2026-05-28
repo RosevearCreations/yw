@@ -152,6 +152,8 @@
       mobileNavigationQualityGates: [],
       mobileFirstQualityGates: [],
       jurisdictionWordingGates: [],
+      mobileTodayActionRegistry: [],
+      mobilePwaInstallQualityGates: [],
       adminListPaginationSettings: [],
       evidenceManagerDirectory: [],
       hsePacketActionItems: [],
@@ -1519,6 +1521,8 @@
       if (Array.isArray(resp.mobile_navigation_quality_gates)) state.mobileNavigationQualityGates = resp.mobile_navigation_quality_gates;
       if (Array.isArray(resp.mobile_first_quality_gates)) state.mobileFirstQualityGates = resp.mobile_first_quality_gates;
       if (Array.isArray(resp.jurisdiction_wording_gates)) state.jurisdictionWordingGates = resp.jurisdiction_wording_gates;
+      if (Array.isArray(resp.mobile_today_action_registry)) state.mobileTodayActionRegistry = resp.mobile_today_action_registry;
+      if (Array.isArray(resp.mobile_pwa_install_quality_gates)) state.mobilePwaInstallQualityGates = resp.mobile_pwa_install_quality_gates;
       if (Array.isArray(resp.admin_mobile_action_card_directory)) state.adminMobileActionCards = resp.admin_mobile_action_card_directory;
       if (Array.isArray(resp.admin_list_pagination_settings)) state.adminListPaginationSettings = resp.admin_list_pagination_settings;
       if (Array.isArray(resp.admin_panel_load_diagnostics)) state.adminPanelLoadDiagnostics = resp.admin_panel_load_diagnostics;
@@ -2593,6 +2597,8 @@
         state.adminMobileActionCards = Array.isArray(resp?.admin_mobile_action_card_directory) ? resp.admin_mobile_action_card_directory : [];
         state.mobileFirstQualityGates = Array.isArray(resp?.mobile_first_quality_gates) ? resp.mobile_first_quality_gates : state.mobileFirstQualityGates;
         state.jurisdictionWordingGates = Array.isArray(resp?.jurisdiction_wording_gates) ? resp.jurisdiction_wording_gates : state.jurisdictionWordingGates;
+        state.mobileTodayActionRegistry = Array.isArray(resp?.mobile_today_action_registry) ? resp.mobile_today_action_registry : state.mobileTodayActionRegistry;
+        state.mobilePwaInstallQualityGates = Array.isArray(resp?.mobile_pwa_install_quality_gates) ? resp.mobile_pwa_install_quality_gates : state.mobilePwaInstallQualityGates;
         state.adminListPaginationSettings = Array.isArray(resp?.admin_list_pagination_settings) ? resp.admin_list_pagination_settings : [];
         state.adminPanelLoadDiagnostics = Array.isArray(resp?.admin_panel_load_diagnostics) ? resp.admin_panel_load_diagnostics : state.adminPanelLoadDiagnostics;
         state.adminFastPathScopeRegistry = Array.isArray(resp?.admin_fast_path_scope_registry) ? resp.admin_fast_path_scope_registry : state.adminFastPathScopeRegistry;
@@ -5274,6 +5280,8 @@
           ['Retry Policies', retryPolicies.length, 'Panel retry/backoff rules for safer Edge Function calls.'],
           ['Permission Rows', perms.length, 'Visible role/workflow permission matrix.'],
           ['Mobile Gates', mobileGates.length, 'Phone-first workflow checks for field usage.'],
+          ['Today Actions', (state.mobileTodayActionRegistry || []).length, 'Role-aware mobile Today dashboard action registry.'],
+          ['PWA Gates', (state.mobilePwaInstallQualityGates || []).length, 'Install helper and offline badge checks for phone users.'],
           ['Ontario Wording', wordingGates.length, 'Jurisdiction wording guardrails for Ontario OHSA copy.']
         ].map(([label, value, help]) => `<div class="admin-health-card"><span>${escHtml(label)}</span><strong>${escHtml(String(value))}</strong><small>${escHtml(help)}</small></div>`).join('');
       }
@@ -5424,6 +5432,24 @@
             <td>${escHtml(row.route_hint || '')}</td>
           </tr>
         `).join('') || '<tr><td colspan="5" class="muted">No mobile action cards loaded yet.</td></tr>';
+        const todayRows = (Array.isArray(state.mobileTodayActionRegistry) ? state.mobileTodayActionRegistry : []).map((row) => `
+          <tr>
+            <td>${escHtml(row.required_role || 'employee')}</td>
+            <td><strong>${escHtml(row.action_title || '')}</strong><div class="muted">${escHtml(row.action_detail || row.mobile_hint || '')}</div></td>
+            <td>${escHtml(String(row.priority_rank ?? ''))}</td>
+            <td>${renderStatusPill(row.action_status || 'review', /active|ready|pass/i.test(String(row.action_status || '')) ? 'ok' : 'warning')}</td>
+            <td>${escHtml(row.route_hint || '')}</td>
+          </tr>
+        `).join('');
+        const pwaRows = (Array.isArray(state.mobilePwaInstallQualityGates) ? state.mobilePwaInstallQualityGates : []).map((row) => `
+          <tr>
+            <td>PWA</td>
+            <td><strong>${escHtml(row.gate_title || '')}</strong><div class="muted">${escHtml(row.test_hint || '')}</div></td>
+            <td>${escHtml(String(row.sort_order ?? ''))}</td>
+            <td>${renderStatusPill(row.gate_status || 'review', /pass|ready|active/i.test(String(row.gate_status || '')) ? 'ok' : 'warning')}</td>
+            <td>${escHtml(row.platform_hint || '')}</td>
+          </tr>
+        `).join('');
         const mobileGateRows = (Array.isArray(state.mobileFirstQualityGates) ? state.mobileFirstQualityGates : []).map((row) => `
           <tr>
             <td>mobile</td>
@@ -5442,7 +5468,7 @@
             <td>${escHtml(row.route_hint || '')}</td>
           </tr>
         `).join('');
-        if (mobileGateRows || wordingRows) e.mobileActionCardBody.insertAdjacentHTML('beforeend', mobileGateRows + wordingRows);
+        if (todayRows || pwaRows || mobileGateRows || wordingRows) e.mobileActionCardBody.insertAdjacentHTML('beforeend', todayRows + pwaRows + mobileGateRows + wordingRows);
       }
       if (e.auditLogBody) {
         const rows = Array.isArray(state.adminAuditEventDirectory) ? state.adminAuditEventDirectory : [];

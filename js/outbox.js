@@ -18,8 +18,16 @@
     }
   }
 
+  function notifyQueueChanged(kind = 'forms') {
+    try {
+      window.YWIMobileMenu?.syncBadges?.();
+      document.dispatchEvent(new CustomEvent('ywi:outbox-changed', { detail: { kind } }));
+    } catch {}
+  }
+
   function setItems(list) {
     localStorage.setItem(OUTBOX_KEY, JSON.stringify(Array.isArray(list) ? list : []));
+    notifyQueueChanged('forms');
   }
 
   function push(item) {
@@ -89,6 +97,7 @@
 
   function setActionItems(list) {
     localStorage.setItem(ACTION_QUEUE_KEY, JSON.stringify(Array.isArray(list) ? list : []));
+    notifyQueueChanged('actions');
   }
 
   function buildConflictKey(item = {}) {
@@ -238,6 +247,7 @@
     retryAll,
     bindRetryButtons,
     ACTION_QUEUE_KEY,
+    notifyQueueChanged,
     getActionItems,
     setActionItems,
     queueAction,

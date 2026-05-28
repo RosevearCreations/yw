@@ -1,23 +1,23 @@
 # Known Issues and Gaps
 
-Last refreshed: **2026-05-26a**
+Last refreshed: **2026-05-27a**
 
 ## Immediate issues
 
-1. Live Admin must be tested after applying schema 120 and redeploying `admin-directory`.
-2. Old service worker caches can hide the new mobile quick-action bar until the browser is hard refreshed or the service worker is cleared.
-3. Historical migration filenames may still contain old wording; user-facing app copy now uses Ontario OHSA / workplace safety wording.
-4. `admin_schema_preflight_checks.live_status` is still a visible checklist row, not a live metadata verifier yet.
-5. `admin_panel_retry_policy` is visible in Admin, but browser retry counters still need to enforce cooldown/backoff.
-6. Mobile quick actions are now present, but there is not yet a full role-aware mobile Today dashboard.
+1. Live Admin must be tested after applying schema 121 and redeploying `admin-directory`.
+2. Old service worker caches can hide the new `#today` route, quick badges, and `js/mobile-today.js` until the browser is hard refreshed or the service worker is cleared.
+3. Historical migration filenames may still contain old wording; user-facing app copy should continue to use Ontario OHSA / Ontario workplace safety wording.
+4. The Today dashboard currently uses local role/security/outbox state. Live DB-backed Today cards from `v_mobile_today_action_registry` are exposed for Admin readiness but not yet used directly by the public Today screen.
+5. The PWA install helper depends on browser support for `beforeinstallprompt`; iOS still requires manual Share → Add to Home Screen guidance.
+6. Mobile forms still need stepper layouts, draft chips, and photo quality checks.
 
 ## UX gaps
 
 - Keep testing every Admin and form screen at phone width.
-- Add a role-aware mobile Today dashboard.
-- Add offline queue badges beside mobile quick actions.
-- Add stronger form steppers for field submissions.
-- Keep replacing long tables with paged/filterable card views.
+- Add form steppers for the most-used phone forms.
+- Replace long Admin tables with card views where mobile users do action work.
+- Add Today dashboard live cards for supervisor/admin roles.
+- Add a queue detail drawer so users can see what is waiting to sync.
 
 ## SEO/local gaps
 
@@ -29,9 +29,9 @@ Last refreshed: **2026-05-26a**
 
 ## Fixed during this pass
 
-- Added Ontario OHSA / workplace safety wording gates.
-- Added mobile-first quality gates.
-- Added bottom mobile quick-action navigation.
-- Updated visible safety wording away from U.S. safety wording.
-- Added schema 120 and updated schema drift tracking to expected version 120.
+- Added the mobile Today dashboard route and made it the default app/PWA start screen.
+- Added quick-action badges for queued form/admin action items.
+- Added PWA install helper text for Android/iOS phone users.
+- Added schema 121 and updated schema drift tracking to expected version 121.
+- Updated service worker cache/app shell to include `js/mobile-today.js`.
 - Removed retired root Markdown and temporary `test_write` files again.
