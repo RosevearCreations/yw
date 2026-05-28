@@ -1,5 +1,5 @@
 -- 089_historical_reporting_and_auth_wall_support.sql
--- Adds historical reporting views for OSHA/HSE submissions and cross-workflow history.
+-- Adds historical reporting views for Ontario OHSA / HSE submissions and cross-workflow history.
 -- Includes compatibility upgrades for older databases missing newer columns.
 
 alter table if exists public.submissions

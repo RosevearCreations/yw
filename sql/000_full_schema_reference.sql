@@ -4438,7 +4438,7 @@ cross join clock_rollup cr;
 
 
 -- 089_historical_reporting_and_auth_wall_support.sql
--- Adds historical reporting views for OSHA/HSE submissions and cross-workflow history.
+-- Adds historical reporting views for Ontario OHSA / HSE submissions and cross-workflow history.
 
 create or replace view public.v_hse_submission_history_report as
 with review_rollup as (
@@ -13118,10 +13118,10 @@ insert into public.admin_schema_preflight_checks (
 values
   ('schema_versions_table', 'Database', 'table', 'public.app_schema_versions', 'present', 'not_checked', 'review', 'Confirm the table exists before relying on schema drift cards.', 'Schema status cards cannot show current/behind state without app_schema_versions.', 100, now()),
   ('fast_path_registry_view', 'Admin Startup', 'view', 'public.v_admin_fast_path_scope_registry', 'present', 'not_checked', 'review', 'Apply schema 118+ so Admin can read startup scopes from DB.', 'Admin falls back to hard-coded scope order if this view is missing.', 110, now()),
-  ('action_permission_view', 'Admin Actions', 'view', 'public.v_admin_action_permission_registry', 'present', 'not_checked', 'review', 'Apply schema 119 before relying on role-aware disabled buttons.', 'Unsafe action buttons cannot be disabled by registry if this view is missing.', 120, now()),
-  ('panel_retry_policy_view', 'Admin Reliability', 'view', 'public.v_admin_panel_retry_policy', 'present', 'not_checked', 'review', 'Apply schema 119 before tuning retry/backoff rules from DB.', 'Repeated panel failures can keep hammering functions without an operator-visible policy.', 130, now()),
+  ('action_permission_view', 'Admin Actions', 'view', 'public.v_admin_action_permission_registry', 'present', 'not_checked', 'review', 'Apply schema 120 before relying on role-aware disabled buttons.', 'Unsafe action buttons cannot be disabled by registry if this view is missing.', 120, now()),
+  ('panel_retry_policy_view', 'Admin Reliability', 'view', 'public.v_admin_panel_retry_policy', 'present', 'not_checked', 'review', 'Apply schema 120 before tuning retry/backoff rules from DB.', 'Repeated panel failures can keep hammering functions without an operator-visible policy.', 130, now()),
   ('schema_preflight_view', 'Deployment Preflight', 'view', 'public.v_admin_schema_preflight_checks', 'present', 'not_checked', 'review', 'Use this table as the first visible checklist before deployment.', 'Operators may miss missing schema objects until a button fails.', 140, now()),
-  ('admin_directory_function', 'Edge Functions', 'function', 'supabase/functions/admin-directory', 'deployed', 'not_checked', 'review', 'Redeploy admin-directory after schema 119.', 'New readiness/preflight/permission arrays will not reach the browser until admin-directory is current.', 200, now())
+  ('admin_directory_function', 'Edge Functions', 'function', 'supabase/functions/admin-directory', 'deployed', 'not_checked', 'review', 'Redeploy admin-directory after schema 120.', 'New readiness/preflight/permission arrays will not reach the browser until admin-directory is current.', 200, now())
 on conflict (check_key) do update set
   check_area = excluded.check_area,
   required_object_type = excluded.required_object_type,
@@ -13151,7 +13151,7 @@ insert into public.app_frontend_quality_gates (
   sort_order
 )
 values
-  ('admin_action_permission_registry_visible', 'Admin Actions', 'Action permission registry renders and disables risky buttons', 'passed', '#admin', 'Open Admin > Readiness and confirm action permission rows are visible. Test with a non-admin role before production.', 'Apply schema 119 and redeploy admin-directory if the table is empty or buttons are not annotated.', now(), 540),
+  ('admin_action_permission_registry_visible', 'Admin Actions', 'Action permission registry renders and disables risky buttons', 'passed', '#admin', 'Open Admin > Readiness and confirm action permission rows are visible. Test with a non-admin role before production.', 'Apply schema 120 and redeploy admin-directory if the table is empty or buttons are not annotated.', now(), 540),
   ('admin_schema_preflight_visible', 'Deployment Preflight', 'Schema preflight table names required tables/views/functions', 'passed', '#admin', 'Open Admin > Readiness and confirm schema preflight rows are visible.', 'Missing preflight rows make it harder to diagnose schema drift before button clicks.', now(), 550),
   ('admin_panel_retry_policy_visible', 'Admin Reliability', 'Panel retry policy rows render in Production Readiness', 'passed', '#admin', 'Open Admin > Readiness and confirm retry/backoff rows are visible.', 'Repeated failing panels may retry too aggressively if no policy rows are visible.', now(), 560)
 on conflict (gate_key) do update set
@@ -13239,17 +13239,17 @@ order by sort_order, function_name;
 drop view if exists public.v_schema_drift_status;
 create view public.v_schema_drift_status as
 select
-  119::int as expected_schema_version,
+  120::int as expected_schema_version,
   coalesce(max(schema_version) filter (where status = 'applied'), 0)::int as latest_applied_schema_version,
   case
-    when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 119
+    when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 120
       then 'current'
     else 'behind'
   end as drift_status,
   case
-    when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 119
+    when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 120
       then 'Live database is at or ahead of the repo schema marker.'
-    else 'Live database is behind the deployed app. Apply migrations through schema 119.'
+    else 'Live database is behind the deployed app. Apply migrations through schema 120.'
   end as message,
   now() as checked_at
 from public.app_schema_versions;
@@ -13289,3 +13289,240 @@ grant select on public.v_admin_panel_retry_policy to authenticated;
 grant select on public.v_admin_schema_preflight_checks to authenticated;
 grant select on public.v_admin_function_readiness_checks to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
+
+
+-- BEGIN 120_ontario_ohsa_mobile_first_app_guardrails.sql
+-- Schema 120: Ontario OHSA wording and mobile-first app guardrails.
+-- Tracks the 2026-05-26a pass that removed user-facing U.S. safety wording
+-- and promoted mobile-first field use for Ontario workplace safety workflows.
+
+create table if not exists public.app_schema_versions (
+  schema_version integer primary key,
+  schema_name text,
+  description text,
+  status text not null default 'applied',
+  applied_at timestamptz not null default now(),
+  applied_by text,
+  notes text
+);
+
+alter table public.app_schema_versions add column if not exists migration_key text;
+alter table public.app_schema_versions add column if not exists release_label text;
+
+create table if not exists public.app_mobile_first_quality_gates (
+  gate_key text primary key,
+  gate_area text not null default 'Mobile UX',
+  gate_title text not null,
+  gate_status text not null default 'review',
+  route_hint text,
+  test_hint text,
+  failure_hint text,
+  sort_order integer not null default 100,
+  checked_at timestamptz,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.app_jurisdiction_wording_gates (
+  gate_key text primary key,
+  jurisdiction text not null default 'Ontario',
+  gate_title text not null,
+  preferred_terms text not null default 'Ontario OHSA; Ontario workplace safety; safety operations',
+  avoid_terms text not null default 'U.S. safety terminology when describing Ontario workplace procedures',
+  gate_status text not null default 'review',
+  route_hint text,
+  operator_hint text,
+  sort_order integer not null default 100,
+  checked_at timestamptz,
+  updated_at timestamptz not null default now()
+);
+
+insert into public.app_mobile_first_quality_gates (
+  gate_key,
+  gate_area,
+  gate_title,
+  gate_status,
+  route_hint,
+  test_hint,
+  failure_hint,
+  sort_order,
+  checked_at
+)
+values
+  (
+    'mobile_quick_nav_core_routes',
+    'Mobile UX',
+    'Mobile quick-action bar exposes the five most-used field routes',
+    'passed',
+    '#toolbox #incident #hseops #jobs #admin',
+    'Open a phone-width viewport and confirm Talk, Incident, Safety, Jobs, and Admin remain visible at the bottom.',
+    'Check index.html mobileQuickNav, js/mobile-menu.js syncQuickNav, and style.css mobile-quick-nav rules.',
+    120,
+    now()
+  ),
+  (
+    'mobile_admin_action_spacing',
+    'Mobile UX',
+    'Admin and form actions stack as phone-friendly buttons',
+    'passed',
+    '#admin',
+    'Confirm Admin retry/action buttons are one-column and easy to tap on phone width.',
+    'Review .admin-heading-actions and .form-footer mobile CSS if actions overflow.',
+    130,
+    now()
+  ),
+  (
+    'mobile_content_one_h1',
+    'SEO / Mobile',
+    'Public app shell keeps one main H1 for clearer mobile title signals',
+    'passed',
+    '/',
+    'Run the smoke check and confirm H1_COUNT remains 1.',
+    'Remove extra public H1 tags or convert section headings to H2/H3.',
+    140,
+    now()
+  )
+on conflict (gate_key) do update set
+  gate_area = excluded.gate_area,
+  gate_title = excluded.gate_title,
+  gate_status = excluded.gate_status,
+  route_hint = excluded.route_hint,
+  test_hint = excluded.test_hint,
+  failure_hint = excluded.failure_hint,
+  sort_order = excluded.sort_order,
+  checked_at = excluded.checked_at,
+  updated_at = now();
+
+insert into public.app_jurisdiction_wording_gates (
+  gate_key,
+  jurisdiction,
+  gate_title,
+  preferred_terms,
+  avoid_terms,
+  gate_status,
+  route_hint,
+  operator_hint,
+  sort_order,
+  checked_at
+)
+values
+  (
+    'ontario_ohsa_not_us_osha',
+    'Ontario',
+    'Use Ontario OHSA / workplace safety language instead of U.S. safety wording',
+    'Ontario OHSA; Ontario workplace safety; safety operations; HSE where used as internal shorthand',
+    'U.S. safety terminology for Ontario workplace procedures',
+    'passed',
+    '#hseops #admin #reports',
+    'Historical migration filenames may remain unchanged, but user-facing text should use Ontario terms.',
+    110,
+    now()
+  ),
+  (
+    'mobile_first_field_app_copy',
+    'Ontario',
+    'App copy emphasizes phone-first field use',
+    'mobile-first; phone; field workflow; quick action',
+    'desktop-only workflow assumptions',
+    'passed',
+    '#toolbox #incident #hseops',
+    'Keep new field workflows usable on phone before adding desktop-only tables.',
+    120,
+    now()
+  )
+on conflict (gate_key) do update set
+  jurisdiction = excluded.jurisdiction,
+  gate_title = excluded.gate_title,
+  preferred_terms = excluded.preferred_terms,
+  avoid_terms = excluded.avoid_terms,
+  gate_status = excluded.gate_status,
+  route_hint = excluded.route_hint,
+  operator_hint = excluded.operator_hint,
+  sort_order = excluded.sort_order,
+  checked_at = excluded.checked_at,
+  updated_at = now();
+
+drop view if exists public.v_app_mobile_first_quality_gates;
+create view public.v_app_mobile_first_quality_gates as
+select
+  gate_key,
+  gate_area,
+  gate_title,
+  gate_status,
+  route_hint,
+  test_hint,
+  failure_hint,
+  sort_order,
+  checked_at,
+  updated_at
+from public.app_mobile_first_quality_gates
+order by sort_order, gate_key;
+
+drop view if exists public.v_app_jurisdiction_wording_gates;
+create view public.v_app_jurisdiction_wording_gates as
+select
+  gate_key,
+  jurisdiction,
+  gate_title,
+  preferred_terms,
+  avoid_terms,
+  gate_status,
+  route_hint,
+  operator_hint,
+  sort_order,
+  checked_at,
+  updated_at
+from public.app_jurisdiction_wording_gates
+order by sort_order, gate_key;
+
+drop view if exists public.v_schema_drift_status;
+create view public.v_schema_drift_status as
+select
+  120::int as expected_schema_version,
+  coalesce(max(schema_version) filter (where status = 'applied'), 0)::int as latest_applied_schema_version,
+  case
+    when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 120
+      then 'current'
+    else 'behind'
+  end as drift_status,
+  case
+    when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 120
+      then 'Live database is at or ahead of the repo schema marker.'
+    else 'Live database is behind the deployed app. Apply migrations through schema 120.'
+  end as message,
+  now() as checked_at
+from public.app_schema_versions;
+
+insert into public.app_schema_versions (
+  schema_version,
+  migration_key,
+  schema_name,
+  release_label,
+  description,
+  status,
+  notes
+)
+values (
+  120,
+  '120_ontario_ohsa_mobile_first_app_guardrails',
+  '120_ontario_ohsa_mobile_first_app_guardrails.sql',
+  '2026-05-26a',
+  'Adds Ontario OHSA wording gates and mobile-first app quality gates for phone-heavy field usage.',
+  'applied',
+  'Mobile-first pass focused on Ontario workplace safety terminology, bottom quick navigation, PWA copy, and phone-friendly field workflows.'
+)
+on conflict (schema_version) do update set
+  migration_key = excluded.migration_key,
+  schema_name = excluded.schema_name,
+  release_label = excluded.release_label,
+  description = excluded.description,
+  status = excluded.status,
+  notes = excluded.notes,
+  applied_at = now();
+
+grant select on public.app_mobile_first_quality_gates to authenticated;
+grant select on public.app_jurisdiction_wording_gates to authenticated;
+grant select on public.v_app_mobile_first_quality_gates to authenticated;
+grant select on public.v_app_jurisdiction_wording_gates to authenticated;
+grant select on public.v_schema_drift_status to authenticated;
+
+-- END 120_ontario_ohsa_mobile_first_app_guardrails.sql
