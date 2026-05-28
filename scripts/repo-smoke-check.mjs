@@ -89,6 +89,7 @@ const requiredFiles = [
   'sql/117_split_admin_scopes_confirmation_and_deployment_checklist.sql',
   'sql/118_admin_preflight_registry_deployment_checklist_ui.sql',
   'sql/119_admin_action_permissions_preflight_and_retry_rules.sql',
+  'sql/120_ontario_ohsa_mobile_first_app_guardrails.sql',
   'js/hse-ops-ui.js',
   'supabase/functions/jobs-directory/index.ts',
   'supabase/functions/jobs-manage/index.ts',
@@ -217,7 +218,7 @@ addCheck('admin-saved-filter-replays-staff-filters', adminUi.includes('people_se
 addCheck('admin-manage-saves-filters', read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_saved_filter'"), 'admin-manage should support saved filter write actions.');
 addCheck('admin-manage-close-step-actions', read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_close_workflow_step'"), 'admin-manage should support guided close step actions.');
 addCheck('admin-manage-evidence-actions', read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_evidence_action'"), 'admin-manage should support evidence action queue writes.');
-addCheck('active-docs-archived-snapshot', fileExists('archive/markdown-current-snapshot-2026-05-20b/root/README.md'), 'Archive snapshot should preserve the previous root README for the current pass.');
+addCheck('active-docs-archived-snapshot', fileExists('archive/markdown-current-snapshot-2026-05-26a/README.md'), 'Archive snapshot should preserve the previous root README for the current pass.');
 addCheck('retired-markdown-not-in-root', !fileExists('AI_START_PROMPT.md') && !fileExists('PROJECT_BRAIN.md') && !fileExists('REPO_BASE.md') && !fileExists('RUNBOOK_AUTH_BOOTSTRAP.md'), 'Retired root Markdown should be moved out of the active root.');
 addCheck('no-test-write-files', !fileExists('test_write.txt') && !fileExists('test_write2_OLD.txt') && !fileExists('test_write3.txt') && !fileExists('test_write_OLD.txt'), 'Temporary test_write files should not exist in the active root.');
 addCheck('verifydb-retired-from-active-sql', !fileExists('sql/VerifyDB_24_04_2026.sql'), 'Old VerifyDB helper should stay archived, not active in sql/.');
@@ -233,7 +234,7 @@ addCheck('edge-has-panel-fast-paths', read('supabase/functions/admin-directory/i
 addCheck('schema-has-114-staged-admin-load-marker', schema.includes('114_staged_admin_load_and_cache_fallback_guardrails'), 'Canonical schema should include schema 114 staged Admin load marker.');
 addCheck('admin-loads-staged-scopes-first', adminUi.includes('getRegisteredInitialAdminScopes') && adminUi.includes("let stagedScopes = ['command_center']") && adminUi.includes("scope: 'all',") && adminUi.includes('timeoutMs: 90000'), 'Admin initial load should try staged panel scopes before the heavy all-scope emergency fallback.');
 addCheck('admin-summary-reports-staged-warnings', adminUi.includes('state.adminLoadWarnings') && adminUi.includes('Some panels need retry'), 'Admin UI should report staged panel retry warnings instead of immediately showing only cached data.');
-addCheck('cache-version-2026-05-20b', read('server-worker.js').includes('2026-05-20b') && read('index.html').includes('2026-05-20b'), 'Index and service worker should use the 2026-05-20b asset/cache version.');
+addCheck('cache-version-2026-05-26a', read('server-worker.js').includes('2026-05-26a') && read('index.html').includes('2026-05-26a'), 'Index and service worker should use the 2026-05-26a asset/cache version.');
 
 addCheck('schema-has-115-panel-retry-marker', schema.includes('115_admin_panel_retry_timing_and_command_scope'), 'Canonical schema should include schema 115 panel retry/timing marker.');
 addCheck('admin-has-command-center-fast-path-stage', adminUi.includes("'command_center'") && adminUi.includes('Retry Command Center') && adminUi.includes('recordAdminScopeTiming'), 'Admin UI should load a command_center scope and show retry/timing state.');
@@ -241,7 +242,7 @@ addCheck('admin-has-health-accounting-retry-buttons', adminUi.includes('ad_healt
 addCheck('admin-renders-scope-timing-cards', adminUi.includes('renderAdminScopeStatus') && adminUi.includes('admin-scope-status-card'), 'Admin UI should render per-scope live load timing cards.');
 addCheck('edge-has-command-center-fast-path', read('supabase/functions/admin-directory/index.ts').includes("command_center_scope: 'fast_path'"), 'admin-directory should expose a lightweight command_center fast path.');
 addCheck('style-has-admin-scope-status-mobile', read('style.css').includes('.admin-scope-status-grid') && read('style.css').includes('.admin-scope-status-card'), 'style.css should include mobile-safe Admin scope timing cards.');
-addCheck('active-docs-archived-snapshot-2026-05-20b-legacy-check', fileExists('archive/markdown-current-snapshot-2026-05-20b/root/README.md'), 'Archive snapshot should preserve the previous root README for the 2026-05-20b pass.');
+addCheck('active-docs-archived-snapshot-2026-05-26a-legacy-check', fileExists('archive/markdown-current-snapshot-2026-05-26a/README.md'), 'Archive snapshot should preserve the previous root README for the 2026-05-26a pass.');
 
 addCheck('report-subscription-delivery-run-newline-escapes', !read('supabase/functions/report-subscription-delivery-run/index.ts').includes("join('\n')") || read('supabase/functions/report-subscription-delivery-run/index.ts').includes("lines.join('\\n')"), 'Report delivery function should use escaped newline strings that bundle correctly.');
 
@@ -251,7 +252,7 @@ addCheck('admin-has-stale-age-badges', adminUi.includes('admin-age-badge') && ad
 addCheck('admin-persists-panel-failures', adminUi.includes("entity: 'admin_panel_load_diagnostic'") && read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_panel_load_diagnostic'"), 'Admin UI and admin-manage should persist failed staged panel loads.');
 addCheck('edge-loads-panel-diagnostics', read('supabase/functions/admin-directory/index.ts').includes('v_admin_panel_load_diagnostics'), 'admin-directory should return persisted panel diagnostics in health/all scopes.');
 addCheck('style-has-admin-diagnostics-mobile', read('style.css').includes('.admin-diagnostics-drawer') && read('style.css').includes('.admin-age-badge'), 'style.css should include mobile-safe diagnostics drawer and age badge rules.');
-addCheck('active-docs-archived-snapshot-2026-05-20b', fileExists('archive/markdown-current-snapshot-2026-05-20b/root/README.md'), 'Archive snapshot should preserve the previous root README for the 2026-05-20b pass.');
+addCheck('active-docs-archived-snapshot-2026-05-26a', fileExists('archive/markdown-current-snapshot-2026-05-26a/README.md'), 'Archive snapshot should preserve the previous root README for the 2026-05-26a pass.');
 
 
 addCheck('schema-has-117-split-scope-marker', schema.includes('117_split_admin_scopes_confirmation_and_deployment_checklist'), 'Canonical schema should include schema 117 split Admin scope marker.');
@@ -260,7 +261,7 @@ addCheck('edge-has-evidence-fast-path', read('supabase/functions/admin-directory
 addCheck('admin-loads-split-scopes-first', adminUi.includes("'accounting_close'") && adminUi.includes("'tax_payroll'") && adminUi.includes("'evidence'"), 'Admin initial load should use split accounting/evidence scopes.');
 addCheck('admin-has-confirmation-guardrails', adminUi.includes('confirmAdminAction') && adminUi.includes('Mark job') && adminUi.includes('Create an evidence follow-up'), 'Admin UI should confirm status-changing actions.');
 addCheck('style-has-admin-skeleton-loaders', read('style.css').includes('is-admin-loading') && read('style.css').includes('adminSkeletonPulse'), 'style.css should include Admin skeleton loader rules.');
-addCheck('active-docs-archived-snapshot-2026-05-20b', fileExists('archive/markdown-current-snapshot-2026-05-20b/root/README.md'), 'Archive snapshot should preserve the previous root README for the 2026-05-20b pass.');
+addCheck('active-docs-archived-snapshot-2026-05-26a', fileExists('archive/markdown-current-snapshot-2026-05-26a/README.md'), 'Archive snapshot should preserve the previous root README for the 2026-05-26a pass.');
 
 addCheck('schema-has-118-admin-preflight-marker', schema.includes('118_admin_preflight_registry_deployment_checklist_ui'), 'Canonical schema should include schema 118 Admin preflight/readiness marker.');
 addCheck('admin-renders-deployment-checklist-table', adminUi.includes('ad_deployment_checklist_table') && adminUi.includes('adminDeploymentChecklist'), 'Admin UI should render deployment checklist rows from v_admin_deployment_checklist.');
@@ -277,7 +278,25 @@ addCheck('admin-renders-action-permission-table', adminUi.includes('ad_action_pe
 addCheck('admin-renders-schema-preflight-table', adminUi.includes('ad_schema_preflight_table') && adminUi.includes('adminSchemaPreflightChecks'), 'Admin UI should render schema preflight rows in Production Readiness.');
 addCheck('admin-renders-panel-retry-policy-table', adminUi.includes('ad_panel_retry_policy_table') && adminUi.includes('adminPanelRetryPolicy'), 'Admin UI should render panel retry/backoff policy rows.');
 addCheck('edge-loads-admin-action-permission-registry', read('supabase/functions/admin-directory/index.ts').includes('v_admin_action_permission_registry') && read('supabase/functions/admin-directory/index.ts').includes('actor_role'), 'admin-directory should return action permission registry rows and actor_role for role-aware disabled states.');
-addCheck('cache-version-2026-05-20b-latest', read('server-worker.js').includes('2026-05-20b') && read('index.html').includes('2026-05-20b'), 'Index and service worker should use the 2026-05-20b asset/cache version.');
+addCheck('cache-version-2026-05-26a-latest', read('server-worker.js').includes('2026-05-26a') && read('index.html').includes('2026-05-26a'), 'Index and service worker should use the 2026-05-26a asset/cache version.');
+
+
+addCheck('schema-has-120-ontario-mobile-marker', schema.includes('120_ontario_ohsa_mobile_first_app_guardrails'), 'Canonical schema should include schema 120 Ontario OHSA/mobile-first marker.');
+addCheck('schema-has-mobile-first-quality-gates', schema.includes('v_app_mobile_first_quality_gates') && schema.includes('app_mobile_first_quality_gates'), 'Canonical schema should include mobile-first quality gates and view.');
+addCheck('schema-has-jurisdiction-wording-gates', schema.includes('v_app_jurisdiction_wording_gates') && schema.includes('app_jurisdiction_wording_gates'), 'Canonical schema should include Ontario jurisdiction wording gates and view.');
+addCheck('edge-loads-mobile-and-wording-gates', read('supabase/functions/admin-directory/index.ts').includes('v_app_mobile_first_quality_gates') && read('supabase/functions/admin-directory/index.ts').includes('v_app_jurisdiction_wording_gates'), 'admin-directory should return mobile-first and Ontario wording gate rows.');
+const visibleCopyFiles = ['index.html', 'js/admin-ui.js', 'js/hse-ops-ui.js', 'js/reports-ui.js', 'manifest.json'];
+const visibleCopy = visibleCopyFiles.map((file) => read(file)).join('\n');
+addCheck(
+  'ontario-ohsa-visible-copy',
+  !/OSHA/.test(visibleCopy),
+  'Visible app copy should use Ontario OHSA / workplace safety wording, not U.S. safety wording.'
+);
+addCheck(
+  'mobile-quick-nav-present',
+  /id="mobileQuickNav"/.test(indexHtml) && /mobile-quick-nav/.test(read('style.css')),
+  'Mobile quick-action bar should be present for phone-first field usage.'
+);
 
 console.log(JSON.stringify({ ok: !failed, checks: results }, null, 2));
 if (failed) process.exit(1);

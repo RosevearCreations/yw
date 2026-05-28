@@ -8,17 +8,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>YWI Southern Ontario HSE, Incident Reporting, Corrective Actions & Field Operations App | Jobs, Crews, Equipment</title>
-  <meta name="description" content="YWI Southern Ontario HSE, incident reporting, corrective-action tracking, worker self-service training and SDS acknowledgement, report subscriptions, and field operations app for Southern Ontario jobs, crews, routes, equipment, inspections, historical reports, and admin workflow records." />
+  <title>YWI Southern Ontario OHSA Workplace Safety & Mobile Field Operations App | Jobs, Crews, Equipment</title>
+  <meta name="description" content="YWI Southern Ontario OHSA workplace safety, incident reporting, corrective-action tracking, worker self-service training and SDS acknowledgement, report subscriptions, and mobile field operations app for Southern Ontario jobs, crews, routes, equipment, inspections, historical reports, and admin workflow records." />
   <meta name="theme-color" content="#0f172a" />
   <meta name="color-scheme" content="dark light" />
 
-  <link rel="manifest" href="/manifest.json?v=2026-05-20b" />
-  <link rel="icon" href="/icons/icon-192.png?v=2026-05-20b" sizes="192x192" />
-  <link rel="stylesheet" href="/style.css?v=2026-05-20b" />
+  <link rel="manifest" href="/manifest.json?v=2026-05-26a" />
+  <link rel="icon" href="/icons/icon-192.png?v=2026-05-26a" sizes="192x192" />
+  <link rel="stylesheet" href="/style.css?v=2026-05-26a" />
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/js/app-config.js?v=2026-05-20b"></script>
+  <script src="/js/app-config.js?v=2026-05-26a"></script>
 
   <style>
     #authLoading {
@@ -104,7 +104,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-05-20b');
+          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-05-26a');
           if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
           }
@@ -118,7 +118,7 @@
 <body>
   <header class="app-header">
     <div class="header-top">
-      <h1>YWI Southern Ontario HSE</h1>
+      <h1>YWI Southern Ontario OHSA</h1>
 
       <div class="header-session-actions">
         <button id="headerLoginBtn" class="secondary" type="button">Login</button>
@@ -152,7 +152,7 @@
       <a href="#drill">Emergency Drill</a>
       <a href="#log">Logbook</a>
       <a href="#reports">Reports</a>
-      <a href="#hseops">HSE Ops</a>
+      <a href="#hseops">Safety Ops</a>
       <a href="#me">My Profile</a>
       <a href="#crew">Crew</a>
       <a href="#jobs">Jobs</a>
@@ -338,7 +338,7 @@
     <section id="drill" class="card"><h2>Emergency Drill</h2></section>
     <section id="log" class="card"><h2>Logbook</h2></section>
     <section id="reports" class="card"><h2>Historical Reports</h2></section>
-    <section id="hseops" class="card"><h2>HSE Operations</h2></section>
+    <section id="hseops" class="card"><h2>Ontario Safety Operations</h2></section>
     <section id="me" class="card">
       <div class="section-heading">
         <div>
@@ -355,6 +355,14 @@
     <section id="admin" class="card"><h2>Admin</h2></section>
   </main>
 
+  <nav id="mobileQuickNav" class="mobile-quick-nav" aria-label="Mobile quick actions">
+    <a href="#toolbox" data-mobile-quick="toolbox"><span>Talk</span></a>
+    <a href="#incident" data-mobile-quick="incident"><span>Incident</span></a>
+    <a href="#hseops" data-mobile-quick="hseops"><span>Safety</span></a>
+    <a href="#jobs" data-mobile-quick="jobs"><span>Jobs</span></a>
+    <a href="#admin" data-mobile-quick="admin"><span>Admin</span></a>
+  </nav>
+
   <datalist id="site-options"></datalist>
   <datalist id="employee-options"></datalist>
   <datalist id="fa-catalog"></datalist>
@@ -362,30 +370,30 @@
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
 
   <!-- Correct module order -->
-  <script src="/js/router.js?v=2026-05-20b"></script>
-  <script src="/js/mobile-menu.js?v=2026-05-20b"></script>
-  <script src="/js/bootstrap.js?v=2026-05-20b"></script>
-  <script src="/js/auth.js?v=2026-05-20b"></script>
-  <script src="/js/security.js?v=2026-05-20b"></script>
-  <script src="/js/api.js?v=2026-05-20b"></script>
-  <script src="/js/outbox.js?v=2026-05-20b"></script>
-  <script src="/js/admin-actions.js?v=2026-05-20b"></script>
-  <script src="/js/ui-auth.js?v=2026-05-20b"></script>
-  <script src="/js/account-ui.js?v=2026-05-20b"></script>
-  <script src="/js/profile-ui.js?v=2026-05-20b"></script>
-  <script src="/js/reference-data.js?v=2026-05-20b"></script>
-  <script src="/js/admin-ui.js?v=2026-05-20b"></script>
-  <script src="/js/hse-ops-ui.js?v=2026-05-20b"></script>
-  <script src="/js/logbook-ui.js?v=2026-05-20b"></script>
-  <script src="/js/reports-ui.js?v=2026-05-20b"></script>
-  <script src="/js/jobs-ui.js?v=2026-05-20b"></script>
-  <script src="/js/forms-toolbox.js?v=2026-05-20b"></script>
-  <script src="/js/forms-ppe.js?v=2026-05-20b"></script>
-  <script src="/js/forms-firstaid.js?v=2026-05-20b"></script>
-  <script src="/js/forms-incident.js?v=2026-05-20b"></script>
-  <script src="/js/forms-inspection.js?v=2026-05-20b"></script>
-  <script src="/js/forms-drill.js?v=2026-05-20b"></script>
-  <script src="/app.js?v=2026-05-20b" defer></script>
+  <script src="/js/router.js?v=2026-05-26a"></script>
+  <script src="/js/mobile-menu.js?v=2026-05-26a"></script>
+  <script src="/js/bootstrap.js?v=2026-05-26a"></script>
+  <script src="/js/auth.js?v=2026-05-26a"></script>
+  <script src="/js/security.js?v=2026-05-26a"></script>
+  <script src="/js/api.js?v=2026-05-26a"></script>
+  <script src="/js/outbox.js?v=2026-05-26a"></script>
+  <script src="/js/admin-actions.js?v=2026-05-26a"></script>
+  <script src="/js/ui-auth.js?v=2026-05-26a"></script>
+  <script src="/js/account-ui.js?v=2026-05-26a"></script>
+  <script src="/js/profile-ui.js?v=2026-05-26a"></script>
+  <script src="/js/reference-data.js?v=2026-05-26a"></script>
+  <script src="/js/admin-ui.js?v=2026-05-26a"></script>
+  <script src="/js/hse-ops-ui.js?v=2026-05-26a"></script>
+  <script src="/js/logbook-ui.js?v=2026-05-26a"></script>
+  <script src="/js/reports-ui.js?v=2026-05-26a"></script>
+  <script src="/js/jobs-ui.js?v=2026-05-26a"></script>
+  <script src="/js/forms-toolbox.js?v=2026-05-26a"></script>
+  <script src="/js/forms-ppe.js?v=2026-05-26a"></script>
+  <script src="/js/forms-firstaid.js?v=2026-05-26a"></script>
+  <script src="/js/forms-incident.js?v=2026-05-26a"></script>
+  <script src="/js/forms-inspection.js?v=2026-05-26a"></script>
+  <script src="/js/forms-drill.js?v=2026-05-26a"></script>
+  <script src="/app.js?v=2026-05-26a" defer></script>
 
   <script>
     document.addEventListener('ywi:auth-changed', (e) => {

@@ -1,28 +1,19 @@
 # Deployment Guide
 
-Last refreshed: **2026-05-20b**
+Last refreshed: **2026-05-26a**
 
-## Required deployment order
+## Deploy order
 
-1. Apply SQL migrations through **schema 119**.
-2. Redeploy Supabase Edge Function `admin-directory`.
-3. Redeploy `admin-manage` if it is not already current.
-4. Deploy the updated site bundle.
-5. Hard refresh or unregister the service worker so `2026-05-20b` assets load.
+1. Upload the updated app files.
+2. Apply SQL through **schema 120**.
+3. Redeploy Supabase function `admin-directory`.
+4. Redeploy `admin-manage` only if the live copy is behind the prior action-permission work.
+5. Hard refresh the browser or unregister the service worker.
 
-## Important live checks
+## Post-deploy checks
 
-After deployment, open Admin > Readiness and confirm:
-
-- Schema preflight table is visible.
-- Action permission table is visible.
-- Panel retry policy table is visible.
-- Function readiness table includes last-checked/signoff columns.
-- Known risky buttons disable for roles below the DB registry requirement.
-
-## If Admin still shows cached data
-
-- Confirm schema 119 was applied.
-- Confirm `admin-directory` was redeployed after the schema change.
-- Clear/unregister the service worker.
-- Open the browser console and check whether the failed panel is named in Admin diagnostics.
+- Confirm the loaded asset version is `2026-05-26a`.
+- Confirm the mobile bottom quick-action bar appears on phone width.
+- Confirm Admin > Readiness loads schema 120 gates.
+- Confirm the app shell still has one H1.
+- Confirm visible safety wording uses Ontario OHSA / Ontario workplace safety wording.

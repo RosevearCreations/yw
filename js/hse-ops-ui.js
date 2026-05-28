@@ -1,6 +1,6 @@
 /* File: js/hse-ops-ui.js
-   Brief description: Separate HSE Operations hub outside Admin.
-   Renders OSHA-oriented workflow cards, mobile-safe quick actions, linked packet review lanes,
+   Brief description: Separate Ontario Safety Operations hub outside Admin.
+   Renders Ontario OHSA-aware workflow cards, mobile-safe quick actions, linked packet review lanes,
    monitoring drill-through shortcuts, and cached fallback summaries.
 */
 
@@ -368,14 +368,14 @@
     section.innerHTML = `
       <div class="section-heading">
         <div>
-          <h2>HSE Operations</h2>
-          <p class="section-subtitle">A cleaner safety hub outside Admin for linked packets, dispatch safety, weather and heat checks, chemical handling, traffic/public interaction, and field closeout.</p>
+          <h2>Ontario Safety Operations</h2>
+          <p class="section-subtitle">A mobile-first Ontario workplace safety hub outside Admin for linked packets, dispatch safety, weather and heat checks, chemical handling, traffic/public interaction, and field closeout.</p>
         </div>
       </div>
       ${cacheNote}
       <div class="notice" style="margin-bottom:14px;">
         <strong>Current focus</strong>
-        <p style="margin:8px 0 0;">Use this area to move field safety forward without digging through the full Admin page. ${escHtml(label)} access still controls which linked packet and monitoring shortcuts are available.</p>
+        <p style="margin:8px 0 0;">Use this area to move field safety forward from a phone without digging through the full Admin page. ${escHtml(label)} access still controls which linked packet and monitoring shortcuts are available.</p>
       </div>
       ${summaryMarkup(summary)}
       <div class="admin-panel-block" style="margin-top:16px;">
@@ -383,7 +383,7 @@
         ${quickActionsMarkup()}
       </div>
       <div class="admin-panel-block" style="margin-top:16px;">
-        <div class="section-heading"><div><h3 style="margin:0;">Linked HSE packet shortcuts</h3><p class="section-subtitle">Keep HSE standalone-capable, but open linked packets when a formal job, route, dispatch, site, or equipment record exists.</p></div></div>
+        <div class="section-heading"><div><h3 style="margin:0;">Linked safety packet shortcuts</h3><p class="section-subtitle">Keep safety records standalone-capable, but open linked packets when a formal job, route, dispatch, site, or equipment record exists.</p></div></div>
         ${linkedShortcutCardsMarkup(summary)}
       </div>
       <div class="admin-panel-block" style="margin-top:16px;">
@@ -395,7 +395,7 @@
         ${routeShortcutMarkup(role)}
       </div>
       <div class="admin-panel-block" style="margin-top:16px;">
-        <div class="section-heading"><div><h3 style="margin:0;">OSHA-oriented field reminders</h3><p class="section-subtitle">Use the packet workflow to keep machinery, lifting, slips, chemicals, traffic, and heat controls visible for the crew.</p></div></div>
+        <div class="section-heading"><div><h3 style="margin:0;">Ontario workplace safety reminders</h3><p class="section-subtitle">Use the packet workflow to keep machinery, lifting, slips, chemicals, traffic, heat controls, and Ontario due-diligence notes visible for the crew.</p></div></div>
         ${guidanceMarkup()}
       </div>`;
 

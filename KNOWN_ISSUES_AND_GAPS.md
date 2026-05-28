@@ -1,23 +1,23 @@
 # Known Issues and Gaps
 
-Last refreshed: **2026-05-20b**
+Last refreshed: **2026-05-26a**
 
 ## Immediate issues
 
-1. Live Admin must be tested after applying schema 119 and redeploying `admin-directory`; old cached scripts can hide the new action/preflight/retry tables.
-2. `admin_schema_preflight_checks.live_status` is currently a visible checklist row, not an automatic metadata verifier yet.
-3. `admin_panel_retry_policy` is visible in Admin but browser retry counters still need to be wired to enforce cooldown/backoff.
-4. Action permission rows can disable known buttons, but the registry still needs a full Admin edit UI.
-5. Function readiness rows now have signoff fields, but signoff buttons are not wired yet.
-6. The broad Admin `all` and `accounting` fallback scopes still exist and should be retired only after split scopes pass production testing.
+1. Live Admin must be tested after applying schema 120 and redeploying `admin-directory`.
+2. Old service worker caches can hide the new mobile quick-action bar until the browser is hard refreshed or the service worker is cleared.
+3. Historical migration filenames may still contain old wording; user-facing app copy now uses Ontario OHSA / workplace safety wording.
+4. `admin_schema_preflight_checks.live_status` is still a visible checklist row, not a live metadata verifier yet.
+5. `admin_panel_retry_policy` is visible in Admin, but browser retry counters still need to enforce cooldown/backoff.
+6. Mobile quick actions are now present, but there is not yet a full role-aware mobile Today dashboard.
 
 ## UX gaps
 
-- Keep testing Admin on phone-width screens after every table/card addition.
-- Add stronger skeleton placeholders for individual tables and cards.
-- Add visible retry/backoff countdown state for panels that fail repeatedly.
-- Add offline queue badges beside action buttons.
-- Keep replacing long tables with paged/filterable panel views.
+- Keep testing every Admin and form screen at phone width.
+- Add a role-aware mobile Today dashboard.
+- Add offline queue badges beside mobile quick actions.
+- Add stronger form steppers for field submissions.
+- Keep replacing long tables with paged/filterable card views.
 
 ## SEO/local gaps
 
@@ -29,9 +29,9 @@ Last refreshed: **2026-05-20b**
 
 ## Fixed during this pass
 
-- Added DB-backed Admin action permission registry.
-- Added DB-backed Admin schema preflight rows.
-- Added DB-backed Admin panel retry/backoff policy rows.
-- Added role-aware disabled states for known risky Admin action buttons.
-- Added schema 119 and updated schema drift tracking to expected version 119.
+- Added Ontario OHSA / workplace safety wording gates.
+- Added mobile-first quality gates.
+- Added bottom mobile quick-action navigation.
+- Updated visible safety wording away from U.S. safety wording.
+- Added schema 120 and updated schema drift tracking to expected version 120.
 - Removed retired root Markdown and temporary `test_write` files again.

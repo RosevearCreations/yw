@@ -1,42 +1,35 @@
 # YWI Main App
 
-Last refreshed: **2026-05-20b**
+Last refreshed: **2026-05-26a**
 
-Current build label: `yw-main-129-updated-2026-05-20b-admin-action-preflight-retry.zip`
+Current build label: `yw-main-130-updated-2026-05-26a-ontario-ohsa-mobile-first.zip`
 
-Current schema marker: **119**
+Current schema marker: **120**
 
-Current asset/cache version: `2026-05-20b`
+Current asset/cache version: `2026-05-26a`
 
 ## Current pass summary
 
-This pass continues the Admin production-readiness work by adding DB-backed action permissions, schema preflight rows, and panel retry/backoff policy rows. The Admin UI now renders those rows in Production Readiness and uses the action-permission registry to disable known risky buttons for roles that should not run them.
+This pass corrects the jurisdiction wording for Ontario and moves the app more strongly toward phone-first field usage. Visible app copy now uses **Ontario OHSA / Ontario workplace safety** wording instead of U.S. safety wording, and the mobile UI now includes a fixed quick-action bar for the routes most likely to be used on a phone.
 
 ## What changed
 
-- Added `sql/119_admin_action_permissions_preflight_and_retry_rules.sql`.
-- Updated `sql/000_full_schema_reference.sql` through schema 119.
-- Added Admin Production Readiness tables for:
-  - schema preflight checks,
-  - action permission registry,
-  - panel retry/backoff policy.
-- Updated `admin-directory` to return the new readiness arrays and `actor_role` for role-aware UI decisions.
-- Added role-aware disabled states for known Admin action buttons:
-  - job complete/cancel,
-  - job note,
-  - close step complete/reopen,
-  - deployment gate update,
-  - evidence follow-up.
-- Updated mobile/table CSS and bumped the service worker cache version.
-- Archived the previous Markdown snapshot and moved retired root Markdown out of the active root again.
+- Added `sql/120_ontario_ohsa_mobile_first_app_guardrails.sql`.
+- Updated `sql/000_full_schema_reference.sql` through schema 120.
+- Added mobile-first quality gates and Ontario jurisdiction wording gates.
+- Updated `admin-directory` to return mobile and wording gate rows to Admin readiness.
+- Added a fixed mobile quick-action bar for Toolbox Talk, Incident, Safety Ops, Jobs, and Admin.
+- Updated app title, manifest, H1, HSE Ops labels, Admin hub labels, and Reports copy for Ontario wording.
+- Added `docs/ONTARIO_OHSA_AND_MOBILE_FIRST_APP_PASS.md`.
+- Updated active Markdown, archived the previous Markdown snapshot, and removed retired/temp root files again.
 
 ## Deploy checklist
 
-1. Apply SQL through **schema 119**.
+1. Apply SQL through **schema 120**.
 2. Redeploy Supabase function `admin-directory`.
-3. Redeploy `admin-manage` if the live copy is not already current.
-4. Hard refresh or unregister the browser service worker so `2026-05-20b` assets load.
-5. Open Admin > Readiness and confirm schema preflight, action permissions, retry policies, deployment checklist, and function readiness tables populate.
+3. Hard refresh or unregister the browser service worker so `2026-05-26a` assets load.
+4. Test on a phone-width viewport and confirm the bottom quick-action bar works.
+5. Open Admin > Readiness and confirm mobile-first and Ontario wording gate rows load.
 
 ## Active handoff files
 

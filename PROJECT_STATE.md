@@ -1,42 +1,31 @@
 # Project State
 
-Last refreshed: **2026-05-20b**
+Last refreshed: **2026-05-26a**
 
-Current output label: `yw-main-129-updated-2026-05-20b-admin-action-preflight-retry.zip`
+Current output label: `yw-main-130-updated-2026-05-26a-ontario-ohsa-mobile-first.zip`
 
 ## Current state
 
-The app is moving from one large Admin backend load into smaller, production-style Admin panels. Prior passes added staged scopes, diagnostics, stale-data badges, split accounting/evidence fast paths, confirmation guardrails, and DB-backed deployment/function readiness rows.
-
-This pass adds the next safety layer: Admin now has DB-backed action permissions, schema preflight checks, and panel retry/backoff policy rows. These are visible in Production Readiness and are loaded from `admin-directory` with `actor_role` so the UI can disable known risky action buttons before click.
+The app is now moving from "desktop Admin first" toward **mobile-first field operation**. Admin still keeps the production-readiness registry work from prior passes, but this pass adds a practical phone layer: a bottom quick-action bar and Ontario-specific safety wording.
 
 ## Current schema
 
-- Latest migration: `sql/119_admin_action_permissions_preflight_and_retry_rules.sql`
+- Latest migration: `sql/120_ontario_ohsa_mobile_first_app_guardrails.sql`
 - Canonical schema: `sql/000_full_schema_reference.sql`
-- Schema drift marker: expected schema version **119**
+- Schema drift marker: expected schema version **120**
 
 ## Current frontend
 
-- Cache version: `2026-05-20b`
-- Main mobile menu remains compact/expandable.
-- Admin sections remain compact/expandable on mobile.
-- Production Readiness now includes:
-  - readiness cards,
-  - schema preflight rows,
-  - production checks,
-  - role permission matrix,
-  - action permission registry,
-  - deployment gates,
-  - deployment checklist,
-  - panel retry/backoff policy,
-  - function readiness rows,
-  - SEO smoke rows,
-  - backup and audit helper rows.
+- Cache version: `2026-05-26a`
+- Main menu remains compact/expandable on mobile.
+- New mobile quick-action bar appears on phone-width screens.
+- Visible safety wording now uses Ontario OHSA / Ontario workplace safety language.
+- App shell still has one H1.
+- CSS brace counts were verified.
 
 ## Current backend focus
 
 - Keep Admin payloads smaller through fast paths.
-- Keep schema drift visible before action buttons fail.
+- Keep schema drift and readiness rows visible.
 - Keep action buttons guarded by role and DB registry.
-- Keep retry/backoff rules visible so failed panels do not keep hammering Edge Functions.
+- Add phone-first rows and mobile quality gates before expanding more field workflows.

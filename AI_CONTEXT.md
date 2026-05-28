@@ -1,12 +1,12 @@
 # AI Context
 
-Last refreshed: **2026-05-20b**
+Last refreshed: **2026-05-26a**
 
 ## Current build context
 
-The latest pass is `2026-05-20b`. Current schema marker is **119**.
+The latest pass is `2026-05-26a`. Current schema marker is **120**.
 
-This project has been moving Admin from one giant load into staged fast paths. Continue to avoid broad payloads unless they are an emergency fallback.
+This project is moving toward a mobile-first field operations app. Continue to avoid one giant Admin load and continue to favour staged fast paths, DB-backed registries, and phone-friendly workflows.
 
 ## Important current rules
 
@@ -16,16 +16,16 @@ This project has been moving Admin from one giant load into staged fast paths. C
 - Remove recurring `test_write` files from the active root.
 - Keep exposed/public pages to one H1.
 - Keep CSS mobile-friendly and verify braces.
+- Use Ontario OHSA / Ontario workplace safety wording for Ontario safety procedures.
 - Prefer DB-backed registries/checks over hard-coded frontend assumptions.
 
 ## Latest additions
 
-- `admin_action_permission_registry`
-- `admin_panel_retry_policy`
-- `admin_schema_preflight_checks`
-- role-aware Admin action disabled states
-- function readiness signoff metadata
+- `app_mobile_first_quality_gates`
+- `app_jurisdiction_wording_gates`
+- mobile bottom quick-action navigation
+- Ontario OHSA / workplace safety wording refresh
 
 ## Next pass direction
 
-Use `DEVELOPMENT_ROADMAP.md` and `KNOWN_ISSUES_AND_GAPS.md`. The next logical work is to make the registry rows writable/reviewable from Admin, add CSV exports, and expand the public SEO smoke checker.
+Use `DEVELOPMENT_ROADMAP.md` and `KNOWN_ISSUES_AND_GAPS.md`. The next strongest work is a role-aware mobile Today dashboard, offline queue badges, and mobile form steppers for field submissions.

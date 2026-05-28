@@ -59,11 +59,11 @@ Future work can add a separate merchandising score or a deeper second-pass score
 ## Clarification
 This is meant as a merchandising-completeness signal for Admin workflow and save guardrails. It should not be described to operators as an AI quality score, photo-aesthetic score, or subjective product-image judgment.
 
-## 2026-04-24 auth wall, historical reports, and OSHA reporting pass
+## 2026-04-24 auth wall, historical reports, and Ontario workplace safety reporting pass
 - Fixed the public auth wall so logged-out users no longer see the live Toolbox Talk, PPE Check, First Aid Kit, Site Inspection, or Emergency Drill screens underneath the sign-in interface.
 - Added a supervisor/admin **Historical Reports** screen with export-ready HSE form history, site/form rollups, and cross-workflow history covering submissions, HSE packet events, evidence review, scheduler runs, payroll exports, and signed contracts.
 - Added migration `sql/089_historical_reporting_and_auth_wall_support.sql` and synced the full schema reference so reporting stays DB-backed instead of drifting into browser-only JSON snapshots.
-- Continued the OSHA-facing direction by keeping the five field forms first-class while making their historical retrieval and review more usable for office and supervisor follow-up.
+- Continued the Ontario workplace safety direction by keeping the five field forms first-class while making their historical retrieval and review more usable for office and supervisor follow-up.
 - Next strongest follow-up: add incident / near-miss reporting, saved report presets, richer trend charts, and deeper drill-down exports by site, worker, route, and work-order context.
 
 ## 2026-04-24 incident reporting, DB-backed report presets, and richer HSE analytics pass
@@ -72,8 +72,8 @@ This is meant as a merchandising-completeness signal for Admin workflow and save
 - Added DB-backed reporting presets (`report_presets`) so supervisors and admins can reuse saved report filters without depending on local browser storage.
 - Expanded reporting with DB-backed views for incident history, monthly trends, worker rollups, and site/job/route context rollups.
 - Reworked the historical reports screen to use the richer DB-backed datasets and added incident CSV export.
-- Added a dedicated incident quick link in the public nav, HSE Ops, and Admin hub so the OSHA-facing workflows stay easy to reach on mobile and desktop.
-- Next strongest follow-up: training history + certification expiry, SDS acknowledgement tracking, OSHA 300/300A/301-oriented recordkeeping helpers, and corrective-action task assignment from incident rows.
+- Added a dedicated incident quick link in the public nav, HSE Ops, and Admin hub so the Ontario workplace safety workflows stay easy to reach on mobile and desktop.
+- Next strongest follow-up: training history + certification expiry, SDS acknowledgement tracking, Ontario OHSA-aligned incident and due-diligence recordkeeping helpers, and corrective-action task assignment from incident rows.
 
 ## 2026-04-25 corrective actions + training pass
 - Synced the repo to include first-class corrective-action tasks, training / certification expiry tracking, SDS acknowledgement history, and management-focused reporting.

@@ -1,10 +1,9 @@
 {
   "_file": "manifest.json",
-  "_description": "Progressive Web App manifest for YWI HSE. Defines app name, icons, theme colors, display mode, and start URL for installable app behavior.",
-
-  "name": "YWI HSE Safety System",
-  "short_name": "YWI HSE",
-  "description": "Safety compliance web app for toolbox talks, PPE checks, first aid checks, inspections, drills, logbook review, and admin management.",
+  "_description": "Progressive Web App manifest for YWI Ontario OHSA workplace safety and mobile field operations. Defines app name, icons, theme colors, display mode, and start URL for installable app behavior.",
+  "name": "YWI Ontario Workplace Safety System",
+  "short_name": "YWI Safety",
+  "description": "Ontario workplace safety and mobile field operations web app for toolbox talks, PPE checks, first aid checks, inspections, drills, logbook review, jobs, equipment, and admin management.",
   "start_url": "/#toolbox",
   "scope": "/",
   "display": "standalone",

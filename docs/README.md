@@ -1,15 +1,16 @@
 # Docs Index
 
-Last refreshed: **2026-05-20b**
+Last refreshed: **2026-05-26a**
 
 ## Current high-value docs
 
+- `ONTARIO_OHSA_AND_MOBILE_FIRST_APP_PASS.md`
+- `MOBILE_NAVIGATION_AND_RESPONSIVE_UX.md`
 - `ADMIN_ACTION_PERMISSIONS_PREFLIGHT_AND_RETRY_RULES.md`
 - `ADMIN_PREFLIGHT_REGISTRY_AND_READINESS_UI.md`
 - `ADMIN_SPLIT_SCOPES_AND_CONFIRMATION_GUARDRAILS.md`
 - `ADMIN_DIAGNOSTICS_DRAWER_AND_STALE_BADGES.md`
 - `ADMIN_STAGED_LOAD_AND_CACHE_FALLBACKS.md`
-- `MOBILE_NAVIGATION_AND_RESPONSIVE_UX.md`
 - `PRODUCTION_READINESS_CHECKLIST.md`
 - `ACCOUNTING_CLOSE_END_TO_END_WORKFLOW.md`
 - `JOBS_COMMERCIAL_AND_ACCOUNTING_NEXT_STEPS.md`
@@ -17,4 +18,4 @@ Last refreshed: **2026-05-20b**
 
 ## Current pass
 
-Schema 119 adds DB-backed action permissions, schema preflight checks, panel retry/backoff policy rows, and function readiness signoff metadata.
+Schema 120 adds Ontario OHSA wording gates, mobile-first quality gates, and a bottom mobile quick-action bar for phone-heavy field usage.

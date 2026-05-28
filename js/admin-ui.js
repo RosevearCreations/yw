@@ -149,6 +149,9 @@
       bankCsvImportSessions: [],
       adminEvidenceActionQueue: [],
       adminMobileActionCards: [],
+      mobileNavigationQualityGates: [],
+      mobileFirstQualityGates: [],
+      jurisdictionWordingGates: [],
       adminListPaginationSettings: [],
       evidenceManagerDirectory: [],
       hsePacketActionItems: [],
@@ -183,7 +186,7 @@
       ['home', 'Command Center'],
       ['people', 'People and Access'],
       ['operations', 'Jobs and Operations'],
-      ['safety', 'Safety and Monitoring'],
+      ['safety', 'Ontario Safety'],
       ['accounting', 'Accounting'],
       ['messaging', 'Messaging and Diagnostics'],
       ['health', 'Health and Schema'],
@@ -203,7 +206,7 @@
       'Dropdown and Catalog Manager': ['people','operations'],
       'Admin Password Control': ['people'],
       'Orders and Accounting Stub': ['accounting'],
-      'HSE / OSHA Operations Hub': ['safety'],
+      'Ontario OHSA / Workplace Safety Hub': ['safety'],
       'Operations and Accounting Backbone Manager': ['operations','safety','accounting'],
       'Deploy Smoke Check': ['messaging'],
       'Conflict Review': ['messaging'],
@@ -833,8 +836,8 @@
         <div class="admin-panel-block" style="margin-top:16px;">
           <div class="section-heading">
             <div>
-              <h3 style="margin:0;">HSE / OSHA Operations Hub</h3>
-              <p class="section-subtitle">Primary safety interface for standalone jobs and linked operations work. Use these controls to move between core HSE workflows while the landscaping/construction backbone grows around them.</p>
+              <h3 style="margin:0;">Ontario OHSA / Workplace Safety Hub</h3>
+              <p class="section-subtitle">Primary mobile safety interface for standalone jobs and linked operations work. Use these controls to move between Ontario OHSA-aware safety workflows while the operations backbone grows around them.</p>
             </div>
           </div>
           <div class="admin-hub-grid">
@@ -846,7 +849,7 @@
             <button class="admin-hub-card" type="button" data-admin-route="drill"><strong>Emergency Drill</strong><span>Document preparedness checks and emergency-response exercises.</span><em>Live</em></button>
             <button class="admin-hub-card" type="button" data-admin-route="log"><strong>Logbook / Review</strong><span>Review safety records, approvals, images, and linked field history.</span><em>Stabilized</em></button>
             <button class="admin-hub-card" type="button" data-admin-route="reports"><strong>Historical Reports</strong><span>Pull date-filtered HSE, corrective-action, training expiry, payroll, scheduler, and contract history with export-ready tables.</span><em>New</em></button>
-            <button class="admin-hub-card" type="button" data-admin-focus-entity="linked_hse_packet"><strong>Linked HSE Packets</strong><span>Standalone-capable packets with direct linkage to jobs, work orders, routes, equipment, dispatches, sites, and subcontract work.</span><em>Live</em></button>
+            <button class="admin-hub-card" type="button" data-admin-focus-entity="linked_hse_packet"><strong>Linked HSE Packets</strong><span>Standalone-capable safety packets with direct linkage to jobs, work orders, routes, equipment, dispatches, sites, and subcontract work.</span><em>Live</em></button>
             <button class="admin-hub-card" type="button" data-admin-focus-entity="app_traffic_event" data-admin-focus-secondary="backend_monitor_event"><strong>Analytics / Traffic Monitor</strong><span>Review page traffic, API failures, upload issues, runtime incidents, and alert thresholds from the same Admin shell.</span><em>Live</em></button>
           </div>
         </div>
@@ -1514,6 +1517,8 @@
       if (Array.isArray(resp.evidence_manager_directory)) state.evidenceManagerDirectory = resp.evidence_manager_directory;
       if (Array.isArray(resp.admin_evidence_action_queue)) state.adminEvidenceActionQueue = resp.admin_evidence_action_queue;
       if (Array.isArray(resp.mobile_navigation_quality_gates)) state.mobileNavigationQualityGates = resp.mobile_navigation_quality_gates;
+      if (Array.isArray(resp.mobile_first_quality_gates)) state.mobileFirstQualityGates = resp.mobile_first_quality_gates;
+      if (Array.isArray(resp.jurisdiction_wording_gates)) state.jurisdictionWordingGates = resp.jurisdiction_wording_gates;
       if (Array.isArray(resp.admin_mobile_action_card_directory)) state.adminMobileActionCards = resp.admin_mobile_action_card_directory;
       if (Array.isArray(resp.admin_list_pagination_settings)) state.adminListPaginationSettings = resp.admin_list_pagination_settings;
       if (Array.isArray(resp.admin_panel_load_diagnostics)) state.adminPanelLoadDiagnostics = resp.admin_panel_load_diagnostics;
@@ -2586,6 +2591,8 @@
         state.bankCsvImportSessions = Array.isArray(resp?.bank_csv_import_session_directory) ? resp.bank_csv_import_session_directory : [];
         state.adminEvidenceActionQueue = Array.isArray(resp?.admin_evidence_action_queue) ? resp.admin_evidence_action_queue : [];
         state.adminMobileActionCards = Array.isArray(resp?.admin_mobile_action_card_directory) ? resp.admin_mobile_action_card_directory : [];
+        state.mobileFirstQualityGates = Array.isArray(resp?.mobile_first_quality_gates) ? resp.mobile_first_quality_gates : state.mobileFirstQualityGates;
+        state.jurisdictionWordingGates = Array.isArray(resp?.jurisdiction_wording_gates) ? resp.jurisdiction_wording_gates : state.jurisdictionWordingGates;
         state.adminListPaginationSettings = Array.isArray(resp?.admin_list_pagination_settings) ? resp.admin_list_pagination_settings : [];
         state.adminPanelLoadDiagnostics = Array.isArray(resp?.admin_panel_load_diagnostics) ? resp.admin_panel_load_diagnostics : state.adminPanelLoadDiagnostics;
         state.adminFastPathScopeRegistry = Array.isArray(resp?.admin_fast_path_scope_registry) ? resp.admin_fast_path_scope_registry : state.adminFastPathScopeRegistry;
@@ -5252,6 +5259,8 @@
       const preflight = Array.isArray(state.adminSchemaPreflightChecks) ? state.adminSchemaPreflightChecks : [];
       const actionPerms = Array.isArray(state.adminActionPermissionRegistry) ? state.adminActionPermissionRegistry : [];
       const retryPolicies = Array.isArray(state.adminPanelRetryPolicy) ? state.adminPanelRetryPolicy : [];
+      const mobileGates = Array.isArray(state.mobileFirstQualityGates) ? state.mobileFirstQualityGates : [];
+      const wordingGates = Array.isArray(state.jurisdictionWordingGates) ? state.jurisdictionWordingGates : [];
       const drift = (Array.isArray(state.schemaDriftStatus) ? state.schemaDriftStatus : [])[0] || {};
       const blocked = checks.filter((row) => /blocked|fail|missing/i.test(String(row.check_status || ''))).length;
       const warnings = checks.filter((row) => /warn|review/i.test(String(row.check_status || ''))).length;
@@ -5263,7 +5272,9 @@
           ['Blocked Checks', blocked, 'Must be fixed before production sign-off.'],
           ['Action Rules', actionPerms.length, 'DB-backed action button role guardrails.'],
           ['Retry Policies', retryPolicies.length, 'Panel retry/backoff rules for safer Edge Function calls.'],
-          ['Permission Rows', perms.length, 'Visible role/workflow permission matrix.']
+          ['Permission Rows', perms.length, 'Visible role/workflow permission matrix.'],
+          ['Mobile Gates', mobileGates.length, 'Phone-first workflow checks for field usage.'],
+          ['Ontario Wording', wordingGates.length, 'Jurisdiction wording guardrails for Ontario OHSA copy.']
         ].map(([label, value, help]) => `<div class="admin-health-card"><span>${escHtml(label)}</span><strong>${escHtml(String(value))}</strong><small>${escHtml(help)}</small></div>`).join('');
       }
       if (e.schemaPreflightBody) {
@@ -5413,6 +5424,25 @@
             <td>${escHtml(row.route_hint || '')}</td>
           </tr>
         `).join('') || '<tr><td colspan="5" class="muted">No mobile action cards loaded yet.</td></tr>';
+        const mobileGateRows = (Array.isArray(state.mobileFirstQualityGates) ? state.mobileFirstQualityGates : []).map((row) => `
+          <tr>
+            <td>mobile</td>
+            <td><strong>${escHtml(row.gate_title || '')}</strong><div class="muted">${escHtml(row.test_hint || '')}</div></td>
+            <td>${escHtml(String(row.sort_order ?? ''))}</td>
+            <td>${renderStatusPill(row.gate_status || 'review', /pass|ready|active/i.test(String(row.gate_status || '')) ? 'ok' : 'warning')}</td>
+            <td>${escHtml(row.route_hint || '')}</td>
+          </tr>
+        `).join('');
+        const wordingRows = (Array.isArray(state.jurisdictionWordingGates) ? state.jurisdictionWordingGates : []).map((row) => `
+          <tr>
+            <td>Ontario</td>
+            <td><strong>${escHtml(row.gate_title || '')}</strong><div class="muted">Use: ${escHtml(row.preferred_terms || '')}</div></td>
+            <td>${escHtml(String(row.sort_order ?? ''))}</td>
+            <td>${renderStatusPill(row.gate_status || 'review', /pass|ready|active/i.test(String(row.gate_status || '')) ? 'ok' : 'warning')}</td>
+            <td>${escHtml(row.route_hint || '')}</td>
+          </tr>
+        `).join('');
+        if (mobileGateRows || wordingRows) e.mobileActionCardBody.insertAdjacentHTML('beforeend', mobileGateRows + wordingRows);
       }
       if (e.auditLogBody) {
         const rows = Array.isArray(state.adminAuditEventDirectory) ? state.adminAuditEventDirectory : [];

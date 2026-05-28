@@ -19,7 +19,8 @@
       header: document.querySelector('.app-header'),
       toggle: document.getElementById('mainMenuToggle'),
       nav: document.getElementById('mainNav'),
-      current: document.getElementById('mainMenuCurrent')
+      current: document.getElementById('mainMenuCurrent'),
+      quickNav: document.getElementById('mobileQuickNav')
     };
   }
 
@@ -59,9 +60,22 @@
     setOpen(!state.open);
   }
 
+  function syncQuickNav() {
+    const { quickNav } = getEls();
+    if (!quickNav) return;
+    const active = (document.querySelector('#mainNav a.active[href^="#"]')?.getAttribute('href') || window.location.hash || '#toolbox').replace('#', '');
+    quickNav.querySelectorAll('[data-mobile-quick]').forEach((link) => {
+      const key = link.getAttribute('data-mobile-quick') || '';
+      link.classList.toggle('active', key === active);
+      if (key === active) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
+  }
+
   function sync() {
     const { current, nav } = getEls();
     if (current) current.textContent = activeLinkText();
+    syncQuickNav();
     if (!isMobile()) {
       setOpen(false);
       if (nav) nav.setAttribute('aria-hidden', 'false');
@@ -89,6 +103,13 @@
     nav.querySelectorAll('a[href^="#"]').forEach((link) => {
       link.addEventListener('click', () => {
         if (isMobile()) close();
+      });
+    });
+    const quickNav = document.getElementById('mobileQuickNav');
+    quickNav?.querySelectorAll('a[href^="#"]').forEach((link) => {
+      link.addEventListener('click', () => {
+        if (isMobile()) close();
+        window.setTimeout(syncQuickNav, 40);
       });
     });
     document.addEventListener('click', onDocumentClick);

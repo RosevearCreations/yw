@@ -106,7 +106,7 @@
         <div class="section-heading">
           <div>
             <h2>Historical Reports</h2>
-            <p class="section-subtitle">Supervisor and Admin reporting for OSHA-facing form history, incidents, corrective actions, training / certification expiry, SDS acknowledgement, evidence review, payroll close, scheduler activity, and signed-contract workflow events.</p>
+            <p class="section-subtitle">Supervisor and Admin reporting for Ontario workplace safety form history, incidents, corrective actions, training / certification expiry, SDS acknowledgement, evidence review, payroll close, scheduler activity, and signed-contract workflow events.</p>
           </div>
           <div class="admin-heading-actions">
             <button id="rp_load" class="secondary" type="button">Reload Reports</button>
