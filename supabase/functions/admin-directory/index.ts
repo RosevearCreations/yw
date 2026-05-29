@@ -273,6 +273,8 @@ serve(async (req) => {
     commandCenter.admin_function_readiness_checks = await safeList(supabase, 'v_admin_function_readiness_checks', '*', 'sort_order', 80, true);
     commandCenter.mobile_today_action_registry = await safeList(supabase, 'v_mobile_today_action_registry', '*', 'priority_rank', 80, true);
     commandCenter.mobile_pwa_install_quality_gates = await safeList(supabase, 'v_mobile_pwa_install_quality_gates', '*', 'sort_order', 40, true);
+    commandCenter.mobile_form_stepper_registry = await safeList(supabase, 'v_mobile_form_stepper_registry', '*', 'sort_order', 80, true);
+    commandCenter.mobile_form_quality_gates = await safeList(supabase, 'v_mobile_form_quality_gates', '*', 'sort_order', 80, true);
     return Response.json(commandCenter, { headers: corsHeaders });
   }
 
@@ -280,7 +282,7 @@ serve(async (req) => {
     const health: Record<string, unknown> = { ok: true, health_scope: 'fast_path', actor_role: actorRole, actor_profile_id: actorId, pagination_meta: { scope, limit, actor_role: actorRole } };
     health.admin_error_health_center = await safeList(supabase, 'v_admin_error_health_center', '*', 'severity_rank', 100, true);
     health.admin_task_inbox = await safeList(supabase, 'v_admin_task_inbox', '*', 'priority_rank', 120, true);
-    health.app_schema_version_status = await safeList(supabase, 'v_app_schema_version_status', '*', 'schema_version', 121, false);
+    health.app_schema_version_status = await safeList(supabase, 'v_app_schema_version_status', '*', 'schema_version', 122, false);
     health.schema_drift_status = await safeList(supabase, 'v_schema_drift_status');
     health.production_readiness_checklist = await safeList(supabase, 'v_production_readiness_checklist', '*', 'sort_order', 80, true);
     health.role_permission_matrix = await safeList(supabase, 'v_role_permission_matrix', '*', 'sort_order', 120, true);
@@ -298,6 +300,8 @@ serve(async (req) => {
     health.admin_function_readiness_checks = await safeList(supabase, 'v_admin_function_readiness_checks', '*', 'sort_order', 80, true);
     health.mobile_today_action_registry = await safeList(supabase, 'v_mobile_today_action_registry', '*', 'priority_rank', 80, true);
     health.mobile_pwa_install_quality_gates = await safeList(supabase, 'v_mobile_pwa_install_quality_gates', '*', 'sort_order', 40, true);
+    health.mobile_form_stepper_registry = await safeList(supabase, 'v_mobile_form_stepper_registry', '*', 'sort_order', 80, true);
+    health.mobile_form_quality_gates = await safeList(supabase, 'v_mobile_form_quality_gates', '*', 'sort_order', 80, true);
     return Response.json(health, { headers: corsHeaders });
   }
 
@@ -450,7 +454,7 @@ serve(async (req) => {
     response.admin_home_command_center = await safeList(supabase, 'v_admin_home_command_center');
     response.admin_error_health_center = await safeList(supabase, 'v_admin_error_health_center', '*', 'severity_rank', 100, true);
     response.admin_task_inbox = await safeList(supabase, 'v_admin_task_inbox', '*', 'priority_rank', 120, true);
-    response.app_schema_version_status = await safeList(supabase, 'v_app_schema_version_status', '*', 'schema_version', 121, false);
+    response.app_schema_version_status = await safeList(supabase, 'v_app_schema_version_status', '*', 'schema_version', 122, false);
     response.role_dashboard_presets = await safeList(supabase, 'v_role_dashboard_presets', '*', 'sort_order', 40, true);
     response.schema_drift_status = await safeList(supabase, 'v_schema_drift_status');
     response.production_readiness_checklist = await safeList(supabase, 'v_production_readiness_checklist', '*', 'sort_order', 80, true);
@@ -481,6 +485,8 @@ serve(async (req) => {
     response.jurisdiction_wording_gates = await safeList(supabase, 'v_app_jurisdiction_wording_gates', '*', 'sort_order', 40, true);
     response.mobile_today_action_registry = await safeList(supabase, 'v_mobile_today_action_registry', '*', 'priority_rank', 80, true);
     response.mobile_pwa_install_quality_gates = await safeList(supabase, 'v_mobile_pwa_install_quality_gates', '*', 'sort_order', 40, true);
+    response.mobile_form_stepper_registry = await safeList(supabase, 'v_mobile_form_stepper_registry', '*', 'sort_order', 80, true);
+    response.mobile_form_quality_gates = await safeList(supabase, 'v_mobile_form_quality_gates', '*', 'sort_order', 80, true);
     response.evidence_manager_directory = await safeList(supabase, 'v_evidence_manager_directory', '*', 'last_seen_at', 120, false);
   }
   if ((scope === 'all' || scope === 'sites') && roleRank(actorRole) >= roleRank('supervisor')) {
