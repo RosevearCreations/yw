@@ -26,11 +26,14 @@
 
   function getOutboxSummary() {
     const outbox = window.YWIOutbox || null;
+    const forms = window.YWIMobileFormAssist || null;
     let formCount = 0;
     let actionCount = 0;
+    let draftCount = 0;
     try { formCount = outbox?.getItems?.()?.length || 0; } catch {}
     try { actionCount = outbox?.getActionItems?.()?.length || 0; } catch {}
-    return { formCount, actionCount, total: formCount + actionCount };
+    try { draftCount = forms?.countDrafts?.() || 0; } catch {}
+    return { formCount, actionCount, draftCount, total: formCount + actionCount + draftCount };
   }
 
   function setBadge(name, count) {
@@ -155,6 +158,7 @@
     }
     window.addEventListener('resize', sync);
     window.addEventListener('storage', syncBadges);
+    document.addEventListener('ywi:mobile-drafts-updated', syncBadges);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) syncBadges(); });
     window.setInterval(syncBadges, 30000);
     sync();

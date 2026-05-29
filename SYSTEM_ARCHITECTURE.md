@@ -1,22 +1,16 @@
 # System Architecture
 
-Last refreshed: **2026-05-27a**
+Last refreshed: **2026-05-28a**
 
-## Frontend
+## Current architecture direction
 
-- Single-page app shell in `index.html`.
-- Shared router in `js/router.js`.
-- Mobile navigation in `js/mobile-menu.js`.
-- Mobile Today dashboard in `js/mobile-today.js`.
-- Offline queues in `js/outbox.js`.
-- Service worker app shell in `server-worker.js`.
+- Phone-first app shell with `#today` as the default entry point.
+- Reusable mobile helpers layered on top of existing form modules instead of replacing stable submit flows.
+- Offline outbox remains responsible for queued submissions/actions.
+- Local draft helper is separate from the outbox and stores draft field values on the current device only.
+- Admin loads through staged Edge Function scopes before the emergency broad fallback.
+- Schema readiness and quality-gate tables document production expectations without forcing risky live-table changes.
 
-## Backend
+## New mobile helper
 
-- Supabase Edge Functions provide Admin directory/management data.
-- Schema tracking is handled with numbered SQL migration files and `app_schema_versions`.
-- Admin data loading is split into staged scopes so mobile/Admin screens are less likely to time out.
-
-## Current design rule
-
-Prioritize mobile screens first, then widen gracefully for desktop Admin use.
+`js/mobile-form-helper.js` watches for known field forms, adds step chips, and provides Save/Resume/Clear draft controls. It does not change the submit payload; existing form modules still own collection, upload, and outbox behavior.

@@ -1,6 +1,6 @@
 # Mobile Today Dashboard, PWA Install Helper, and Offline Badges
 
-Last refreshed: **2026-05-27a**
+Last refreshed: **2026-05-28a**
 
 ## What changed
 

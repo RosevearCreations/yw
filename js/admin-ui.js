@@ -154,6 +154,8 @@
       jurisdictionWordingGates: [],
       mobileTodayActionRegistry: [],
       mobilePwaInstallQualityGates: [],
+      mobileFormStepperRegistry: [],
+      mobileFormQualityGates: [],
       adminListPaginationSettings: [],
       evidenceManagerDirectory: [],
       hsePacketActionItems: [],
@@ -1523,6 +1525,8 @@
       if (Array.isArray(resp.jurisdiction_wording_gates)) state.jurisdictionWordingGates = resp.jurisdiction_wording_gates;
       if (Array.isArray(resp.mobile_today_action_registry)) state.mobileTodayActionRegistry = resp.mobile_today_action_registry;
       if (Array.isArray(resp.mobile_pwa_install_quality_gates)) state.mobilePwaInstallQualityGates = resp.mobile_pwa_install_quality_gates;
+      if (Array.isArray(resp.mobile_form_stepper_registry)) state.mobileFormStepperRegistry = resp.mobile_form_stepper_registry;
+      if (Array.isArray(resp.mobile_form_quality_gates)) state.mobileFormQualityGates = resp.mobile_form_quality_gates;
       if (Array.isArray(resp.admin_mobile_action_card_directory)) state.adminMobileActionCards = resp.admin_mobile_action_card_directory;
       if (Array.isArray(resp.admin_list_pagination_settings)) state.adminListPaginationSettings = resp.admin_list_pagination_settings;
       if (Array.isArray(resp.admin_panel_load_diagnostics)) state.adminPanelLoadDiagnostics = resp.admin_panel_load_diagnostics;
@@ -2599,6 +2603,8 @@
         state.jurisdictionWordingGates = Array.isArray(resp?.jurisdiction_wording_gates) ? resp.jurisdiction_wording_gates : state.jurisdictionWordingGates;
         state.mobileTodayActionRegistry = Array.isArray(resp?.mobile_today_action_registry) ? resp.mobile_today_action_registry : state.mobileTodayActionRegistry;
         state.mobilePwaInstallQualityGates = Array.isArray(resp?.mobile_pwa_install_quality_gates) ? resp.mobile_pwa_install_quality_gates : state.mobilePwaInstallQualityGates;
+        state.mobileFormStepperRegistry = Array.isArray(resp?.mobile_form_stepper_registry) ? resp.mobile_form_stepper_registry : state.mobileFormStepperRegistry;
+        state.mobileFormQualityGates = Array.isArray(resp?.mobile_form_quality_gates) ? resp.mobile_form_quality_gates : state.mobileFormQualityGates;
         state.adminListPaginationSettings = Array.isArray(resp?.admin_list_pagination_settings) ? resp.admin_list_pagination_settings : [];
         state.adminPanelLoadDiagnostics = Array.isArray(resp?.admin_panel_load_diagnostics) ? resp.admin_panel_load_diagnostics : state.adminPanelLoadDiagnostics;
         state.adminFastPathScopeRegistry = Array.isArray(resp?.admin_fast_path_scope_registry) ? resp.admin_fast_path_scope_registry : state.adminFastPathScopeRegistry;
@@ -5282,6 +5288,7 @@
           ['Mobile Gates', mobileGates.length, 'Phone-first workflow checks for field usage.'],
           ['Today Actions', (state.mobileTodayActionRegistry || []).length, 'Role-aware mobile Today dashboard action registry.'],
           ['PWA Gates', (state.mobilePwaInstallQualityGates || []).length, 'Install helper and offline badge checks for phone users.'],
+          ['Mobile Forms', (state.mobileFormStepperRegistry || []).length, 'Phone steppers, draft resume chips, and form quality gates.'],
           ['Ontario Wording', wordingGates.length, 'Jurisdiction wording guardrails for Ontario OHSA copy.']
         ].map(([label, value, help]) => `<div class="admin-health-card"><span>${escHtml(label)}</span><strong>${escHtml(String(value))}</strong><small>${escHtml(help)}</small></div>`).join('');
       }
@@ -5459,6 +5466,24 @@
             <td>${escHtml(row.route_hint || '')}</td>
           </tr>
         `).join('');
+        const formStepperRows = (Array.isArray(state.mobileFormStepperRegistry) ? state.mobileFormStepperRegistry : []).map((row) => `
+          <tr>
+            <td>form</td>
+            <td><strong>${escHtml(row.form_title || row.form_key || '')}</strong><div class="muted">${escHtml(Array.isArray(row.step_labels) ? row.step_labels.join(' → ') : (row.offline_hint || ''))}</div></td>
+            <td>${escHtml(String(row.sort_order ?? ''))}</td>
+            <td>${renderStatusPill(row.quality_status || 'review', /pass|ready|active/i.test(String(row.quality_status || '')) ? 'ok' : 'warning')}</td>
+            <td>${escHtml(row.route_hint || '')}</td>
+          </tr>
+        `).join('');
+        const formGateRows = (Array.isArray(state.mobileFormQualityGates) ? state.mobileFormQualityGates : []).map((row) => `
+          <tr>
+            <td>form gate</td>
+            <td><strong>${escHtml(row.gate_title || '')}</strong><div class="muted">${escHtml(row.test_hint || '')}</div></td>
+            <td>${escHtml(String(row.sort_order ?? ''))}</td>
+            <td>${renderStatusPill(row.gate_status || 'review', /pass|ready|active/i.test(String(row.gate_status || '')) ? 'ok' : 'warning')}</td>
+            <td>${escHtml(row.route_hint || '')}</td>
+          </tr>
+        `).join('');
         const wordingRows = (Array.isArray(state.jurisdictionWordingGates) ? state.jurisdictionWordingGates : []).map((row) => `
           <tr>
             <td>Ontario</td>
@@ -5468,7 +5493,7 @@
             <td>${escHtml(row.route_hint || '')}</td>
           </tr>
         `).join('');
-        if (todayRows || pwaRows || mobileGateRows || wordingRows) e.mobileActionCardBody.insertAdjacentHTML('beforeend', todayRows + pwaRows + mobileGateRows + wordingRows);
+        if (todayRows || pwaRows || mobileGateRows || formStepperRows || formGateRows || wordingRows) e.mobileActionCardBody.insertAdjacentHTML('beforeend', todayRows + pwaRows + mobileGateRows + formStepperRows + formGateRows + wordingRows);
       }
       if (e.auditLogBody) {
         const rows = Array.isArray(state.adminAuditEventDirectory) ? state.adminAuditEventDirectory : [];

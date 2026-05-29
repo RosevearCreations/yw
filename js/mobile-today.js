@@ -55,6 +55,14 @@
     try { return outbox()?.getActionItems?.()?.length || 0; } catch { return 0; }
   }
 
+  function countDraftForms() {
+    try { return window.YWIMobileFormAssist?.countDrafts?.() || 0; } catch { return 0; }
+  }
+
+  function firstDraftRoute() {
+    try { return window.YWIMobileFormAssist?.draftSummaries?.()?.[0]?.route || '#today'; } catch { return '#today'; }
+  }
+
   function isStandalonePwa() {
     return window.matchMedia?.('(display-mode: standalone)')?.matches || window.navigator.standalone === true;
   }
@@ -63,9 +71,11 @@
     const online = navigator.onLine !== false;
     const pendingForms = countOutboxItems();
     const pendingActions = countActionItems();
+    const draftForms = countDraftForms();
     const chunks = [];
     chunks.push(online ? 'Online' : 'Offline mode');
-    chunks.push(`${pendingForms} form draft${pendingForms === 1 ? '' : 's'} queued`);
+    chunks.push(`${pendingForms} form submission${pendingForms === 1 ? '' : 's'} queued`);
+    chunks.push(`${draftForms} saved form draft${draftForms === 1 ? '' : 's'}`);
     chunks.push(`${pendingActions} admin/action item${pendingActions === 1 ? '' : 's'} queued`);
     return chunks.join(' • ');
   }
@@ -141,10 +151,23 @@
 
   function visibleCards() {
     const role = currentRole();
-    return baseCards()
+    const draftCount = countDraftForms();
+    const cards = baseCards()
       .filter((card) => card.roles.includes(role) || canView(card.key))
-      .filter((card, index, list) => list.findIndex((item) => item.key === card.key) === index)
-      .slice(0, 6);
+      .filter((card, index, list) => list.findIndex((item) => item.key === card.key) === index);
+
+    if (draftCount > 0) {
+      cards.unshift({
+        key: 'drafts',
+        title: 'Resume Saved Drafts',
+        body: `${draftCount} phone form draft${draftCount === 1 ? '' : 's'} saved on this device. Open the newest draft and use Resume Draft.`,
+        href: firstDraftRoute(),
+        roles: ['employee','onsite_admin','site_leader','supervisor','hse','job_admin','admin'],
+        badge: `${draftCount} draft${draftCount === 1 ? '' : 's'}`
+      });
+    }
+
+    return cards.slice(0, 6);
   }
 
   function renderCard(card) {
@@ -199,7 +222,7 @@
   function render() {
     const grid = document.getElementById('mobileTodayGrid');
     if (!grid) return;
-    const renderKey = JSON.stringify({ role: currentRole(), forms: countOutboxItems(), actions: countActionItems(), online: navigator.onLine !== false });
+    const renderKey = JSON.stringify({ role: currentRole(), forms: countOutboxItems(), drafts: countDraftForms(), actions: countActionItems(), online: navigator.onLine !== false });
     if (state.lastRenderKey === renderKey && grid.innerHTML.trim()) {
       updateStatus();
       renderInstallCard();
@@ -234,6 +257,7 @@
     document.addEventListener('ywi:auth-changed', render);
     document.addEventListener('ywi:route-shown', render);
     document.addEventListener('ywi:mobile-badges-updated', render);
+    document.addEventListener('ywi:mobile-drafts-updated', render);
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden) render();
     });
@@ -241,6 +265,6 @@
     render();
   }
 
-  window.YWIMobileToday = { bind, render, countOutboxItems, countActionItems };
+  window.YWIMobileToday = { bind, render, countOutboxItems, countActionItems, countDraftForms };
   document.addEventListener('DOMContentLoaded', bind);
 })();

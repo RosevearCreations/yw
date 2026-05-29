@@ -1,18 +1,19 @@
 # New Chat Status
 
-Last refreshed: **2026-05-27a**
+Continue from build **2026-05-28a** / schema **122**.
 
-Continue from build **2026-05-27a** / schema **121**.
+## Last completed pass
 
-## What just changed
+- Added schema **122** for mobile form steppers, local draft-resume chips, and phone-form quality gates.
+- Added `js/mobile-form-helper.js` as a reusable helper for Toolbox Talk, PPE, First Aid, Incident / Near Miss, Site Inspection, and Drill forms.
+- Added phone step chips, Back/Next navigation, Save Draft, Resume Draft, and Clear actions for common field forms.
+- Added local-device draft counts to the Today dashboard and mobile quick-action badge totals.
+- Updated `js/mobile-menu.js` and `js/mobile-today.js` so saved local drafts are visible beside queued submissions/actions.
+- Updated Admin readiness loading and rendering for mobile form stepper registry and form quality gates.
+- Updated `server-worker.js`, `index.html`, and cache marker to **2026-05-28a**.
+- Kept visible Ontario **OHSA** / Ontario workplace-safety wording, while moving old root Markdown into archive.
+- Reconfirmed one-H1 discipline, JavaScript syntax, CSS brace balance, and smoke-check coverage.
 
-- Added a new `#today` route and made it the default route.
-- Added `js/mobile-today.js`.
-- Added mobile Today cards, queue count status, PWA install guidance, and quick-action badges.
-- Updated mobile quick navigation to Today, Talk, Incident, Safety, Jobs, and Admin.
-- Added schema `121_mobile_today_dashboard_pwa_and_offline_badges.sql`.
-- Updated active Markdown and canonical schema reference.
+## Next focus
 
-## Next best pass
-
-Start mobile form steppers and draft/resume chips for the most-used field forms. Keep Ontario OHSA wording, mobile-first layout, one-H1 validation, CSS drift checks, and schema/Markdown updates in every pass.
+Continue the mobile-first roadmap. The strongest next step is mobile photo handling: quality checks, compression, retry progress, and clearer evidence upload status before final submission.

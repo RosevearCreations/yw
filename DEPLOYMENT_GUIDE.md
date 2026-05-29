@@ -1,20 +1,18 @@
 # Deployment Guide
 
-Last refreshed: **2026-05-27a**
+Last refreshed: **2026-05-28a**
 
-## Required order
+## Deploy checklist
 
-1. Apply SQL migrations through schema 121.
-2. Redeploy `supabase/functions/admin-directory`.
-3. Deploy the static app assets.
-4. Clear/unregister the browser service worker or hard refresh.
-5. Confirm `server-worker.js` and `index.html` reference `2026-05-27a`.
+1. Apply all migrations through `sql/122_mobile_form_stepper_draft_resume_guardrails.sql`.
+2. Confirm `sql/000_full_schema_reference.sql` includes schema **122**.
+3. Redeploy `supabase/functions/admin-directory`.
+4. Confirm `index.html`, `server-worker.js`, and `manifest.json` use cache marker **2026-05-28a**.
+5. Hard refresh or clear/unregister the service worker after deploy.
+6. Test Admin Command Center and Health scopes.
+7. Test phone routes: `#today`, `#toolbox`, `#incident`, `#ppe`, `#firstaid`, `#inspect`, `#drill`, and `#jobs`.
+8. Save and resume one mobile form draft before declaring the mobile pass complete.
 
-## Post-deploy checks
+## Rollback note
 
-- `/#today` loads as the default route.
-- Mobile quick nav shows Today, Talk, Incident, Safety, Jobs, and Admin.
-- Queue badges appear after a failed/queued submission or action.
-- PWA install helper appears when not installed.
-- Admin still loads staged scopes and shows retry/timing status.
-- Exposed app shell has one H1.
+If the mobile helper causes trouble, remove the `js/mobile-form-helper.js` script tag and service-worker cache entry. Existing form submit/outbox modules should continue to work.

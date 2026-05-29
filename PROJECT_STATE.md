@@ -1,26 +1,26 @@
 # Project State
 
-Last refreshed: **2026-05-27a**
+Last refreshed: **2026-05-28a**
 
-The project is now focused on making the app behave like a practical mobile-first field tool while keeping the Admin backend staged, safer, and easier to debug.
+## Current status
 
-## Current build marker
+- Repo build marker: **2026-05-28a**
+- Latest schema marker: **122**
+- Current priority: mobile-first field usage, staged Admin loading, production-readiness checks, and Ontario OHSA-friendly safety workflow language.
+- Latest mobile improvement: reusable mobile form stepper/draft helper for the main field forms.
 
-- Current schema marker: **121**
-- Current cache marker: **2026-05-27a**
-- Latest focus: **mobile Today dashboard, PWA install helper, and offline queue badges**
+## Stable expectations
 
-## Current app direction
+- Public/exposed app shell should keep one H1.
+- Mobile screens should avoid long unstructured scrolls where a stepper/card layout is safer.
+- Admin should load through staged fast paths first and fall back gracefully.
+- Schema files and Markdown must be refreshed every pass.
+- Retired root Markdown belongs in `archive/`, not active root.
 
-- Use Ontario **OHSA** / Ontario workplace safety wording for visible Ontario procedures.
-- Keep the app phone-first because most field usage is expected on mobile.
-- Keep Admin loading split into staged scopes instead of one heavy all-scope request.
-- Keep root Markdown clean and archive older handoff files.
-- Keep one exposed H1 in the app shell.
+## Immediate deployment checks
 
-## Current deployment expectation
-
-1. Apply SQL through schema 121.
+1. Apply SQL through schema **122**.
 2. Redeploy `admin-directory`.
-3. Hard refresh or clear/unregister the service worker so `2026-05-27a` assets load.
-4. Test `/#today`, quick-action badges, install helper, Admin, Jobs, and Safety Ops on a phone-width viewport.
+3. Clear service worker cache and confirm `2026-05-28a` scripts are loaded.
+4. On a phone-width viewport, save/resume a Toolbox or Incident draft.
+5. Confirm Today status includes saved draft counts and queued items.

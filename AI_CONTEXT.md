@@ -1,22 +1,18 @@
 # AI Context
 
-Last refreshed: **2026-05-27a**
+Last refreshed: **2026-05-28a**
 
-## Current priorities
+## Build context
 
-- Mobile-first field usage is the main priority.
-- Visible Ontario safety wording should say Ontario **OHSA**, Ontario workplace safety, or Safety Ops. Avoid U.S. OSHA wording for Ontario procedures.
-- Every build pass must update Markdown and schema files.
-- Keep one H1 on exposed pages.
-- Keep CSS drift checks and JavaScript syntax checks.
-- Archive old Markdown snapshots and keep the active root clean.
+- Latest build/cache marker: **2026-05-28a**
+- Latest schema marker: **122**
+- Current priority: mobile-first usage, Ontario OHSA-friendly safety wording, staged Admin loads, and production-readiness guardrails.
+- Retired root Markdown should stay in `archive/`.
 
-## Current build state
+## Important current behavior
 
-- Latest schema: 121
-- Latest cache marker: 2026-05-27a
-- Latest feature: Today mobile dashboard, PWA install helper, and quick-action badges.
-
-## Next recommended implementation
-
-Build mobile steppers and draft/resume chips for Toolbox Talk, Incident, PPE, First Aid, Inspection, and Drill forms.
+- `#today` is the default route.
+- `js/mobile-form-helper.js` adds phone step chips and local draft controls to known field forms.
+- Local drafts do not restore file inputs; users must reselect photos before final submit.
+- Admin should prefer staged scopes and use `scope: all` only as emergency fallback.
+- Keep one H1 per exposed page/shell.

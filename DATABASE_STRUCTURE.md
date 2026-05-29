@@ -1,22 +1,24 @@
 # Database Structure
 
-Last refreshed: **2026-05-27a**
+Last refreshed: **2026-05-28a**
 
-## Latest schema marker
+## Current schema marker
 
-- **121** — `sql/121_mobile_today_dashboard_pwa_and_offline_badges.sql`
+Latest migration: **122** — `sql/122_mobile_form_stepper_draft_resume_guardrails.sql`
 
-## New objects in schema 121
+## Current schema focus
 
-- `mobile_today_action_registry`
-- `mobile_pwa_install_quality_gates`
-- `v_mobile_today_action_registry`
-- `v_mobile_pwa_install_quality_gates`
-- additional rows in `app_mobile_first_quality_gates`
-- updated `v_schema_drift_status` expected version to 121
+Schema 122 adds low-risk metadata tables and views for mobile form stepper readiness:
 
-## Existing tracking expectations
+- `mobile_form_stepper_registry`
+- `mobile_form_quality_gates`
+- `v_mobile_form_stepper_registry`
+- `v_mobile_form_quality_gates`
+- updated `v_schema_drift_status` expected version **122**
+- `app_schema_versions` marker for release **2026-05-28a**
 
-- `app_schema_versions` remains the schema marker table.
-- `sql/000_full_schema_reference.sql` should remain the canonical schema reference.
-- New migrations should be appended to the canonical reference and smoke check.
+No live submission table shape is changed by this pass.
+
+## Canonical reference
+
+`sql/000_full_schema_reference.sql` has been updated through schema **122**.
