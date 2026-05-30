@@ -1,6 +1,6 @@
 # Mobile Today Dashboard, PWA Install Helper, and Offline Badges
 
-Last refreshed: **2026-05-28a**
+Last refreshed: **2026-05-29a**
 
 ## What changed
 
@@ -17,3 +17,5 @@ Most usage is expected to happen from a phone. The app should open to a short ac
 ## Next follow-up
 
 Build mobile steppers, draft/resume chips, and photo quality checks for field forms.
+
+<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->

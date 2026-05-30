@@ -33,3 +33,5 @@ Schema **109** added production-readiness foundations: admin list pagination set
 - Added schema 110 frontend quality gates and updated active Markdown/schema references.
 
 _Reviewed in the 2026-05-17a pass for schema 112 documentation consistency._
+
+<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->

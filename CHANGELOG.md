@@ -1,17 +1,15 @@
 # Changelog
 
-## 2026-05-28a
+## 2026-05-29a
 
-- Added schema **122** for mobile form steppers, local draft-resume chips, and phone-form quality gates.
-- Added `js/mobile-form-helper.js` as a reusable helper for Toolbox Talk, PPE, First Aid, Incident / Near Miss, Site Inspection, and Drill forms.
-- Added phone step chips, Back/Next navigation, Save Draft, Resume Draft, and Clear actions for common field forms.
-- Added local-device draft counts to the Today dashboard and mobile quick-action badge totals.
-- Updated `js/mobile-menu.js` and `js/mobile-today.js` so saved local drafts are visible beside queued submissions/actions.
-- Updated Admin readiness loading and rendering for mobile form stepper registry and form quality gates.
-- Updated `server-worker.js`, `index.html`, and cache marker to **2026-05-28a**.
-- Kept visible Ontario **OHSA** / Ontario workplace-safety wording, while moving old root Markdown into archive.
-- Reconfirmed one-H1 discipline, JavaScript syntax, CSS brace balance, and smoke-check coverage.
+- Added schema **123** for equipment transfer, site-arrival verification, return verification, transfer event history, return exceptions, and operational-depth gates.
+- Updated Equipment UI with Current Site, Destination Site, checkout safety test, arrival/site test, return test, exception list, transfer history, and final return verification.
+- Updated `jobs-manage` with checkout destination handling, `verify_arrival`, return exception handling, and `verify_return_complete`.
+- Updated `jobs-directory` to return equipment transfer history, return exceptions, and operational-depth gates.
+- Updated canonical schema reference, smoke checks, CSS, cache marker, and active Markdown.
 
-## 2026-05-27a
+## 2026-05-29a prior context
 
-- Added mobile Today dashboard, PWA install helper, offline badges, and `#today` default route.
+- Mobile form stepper, draft-resume, Today draft count, and phone-first quality-gate work remains present from schema 122.
+
+<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->

@@ -1,22 +1,38 @@
 # Known Issues and Gaps
 
-Last refreshed: **2026-05-28a**
+Last refreshed: **2026-05-29a**
 
 ## Immediate issues
 
-1. Live Admin must be tested after applying schema **122** and redeploying `admin-directory`.
-2. Old service worker caches can hide `js/mobile-form-helper.js`, new draft badges, and `2026-05-28a` assets until the browser is hard refreshed or the service worker is cleared.
-3. Historical migration filenames may still contain old wording; user-facing app copy should continue to use Ontario OHSA / Ontario workplace-safety wording.
-4. Mobile form drafts are local-device only. File inputs cannot be restored by browsers, so photos still need to be re-selected before final submit.
-5. The Today dashboard now shows draft counts, but DB-backed live Today cards still need deeper integration for supervisor/admin roles.
-6. Mobile photo quality checks, compression, and upload retry progress are still outstanding.
+1. Live Admin must be tested after applying schema **123** and redeploying `jobs-directory` and `jobs-manage`.
+2. Old service worker caches can hide `2026-05-29a` assets until the browser is hard refreshed or the service worker is cleared.
+3. The equipment transfer workflow now captures destination, arrival, return, and final verification states, but it still needs live production testing with real equipment records, real sites, and real supervisors.
+4. Equipment photo capture still needs compression, quality checks, upload progress, and mobile camera guidance.
+5. Return exceptions are visible, but follow-up service tasks and repair-cost posting still need a deeper connection to accounting.
+6. Mobile form drafts remain local-device only. File inputs cannot be restored by browsers, so photos still need to be re-selected before final submit.
 
 ## UX gaps
 
 - Keep testing every form/Admin screen at phone width.
 - Convert long Admin tables into action cards where users actually work on phones.
 - Add photo/evidence previews and upload progress suitable for slow mobile connections.
-- Add queue/detail drawers for pending submissions, local drafts, and admin/action items.
+- Add queue/detail drawers for pending submissions, local drafts, equipment exceptions, and admin/action items.
+- Add scan-to-select equipment lookup to reduce typing errors on site.
+
+## Equipment accountability gaps
+
+- Arrival verification is now captured, but permission rules need to be tightened so the right site lead/supervisor performs the signoff.
+- Return verification is now separate from simple return receipt, but repair/service follow-up tasks need to be automatically created when return tests fail.
+- Accessories, batteries, chargers, safety guards, keys, and consumable kits should be tracked with equipment signout/return.
+- Equipment cost depth still needs repair cost, delay cost, replacement cost, and job chargeback rules.
+
+## Accounting depth gaps
+
+- Payment application needs a clearer screen for applying payments to invoices, deposits, credits, discounts, write-offs, and overpayments.
+- Journal-line automation needs posting validation against real account mappings.
+- Reconciliation matching needs bank CSV import preview, confidence score review, manual match, and undo handling.
+- HST/GST and payroll/remittance review flows need source totals, signoff, lock state, and accountant export proof.
+- Month-end close needs period lock/reopen controls and a final accountant export package manifest.
 
 ## SEO/local gaps
 
@@ -27,8 +43,10 @@ Last refreshed: **2026-05-28a**
 
 ## Fixed during this pass
 
-- Added reusable mobile form stepper/draft helper.
-- Added saved local draft counts to Today and quick badges.
-- Added schema 122 and Admin readiness views for mobile form quality gates.
-- Updated active Markdown and schema reference files.
+- Added equipment destination, arrival verification, return testing, and final return verification fields.
+- Added transfer event history, return exception visibility, and operational-depth gates.
+- Added schema 123 and updated the canonical schema reference.
+- Updated Jobs UI, Jobs directory, Jobs manage, CSS, cache marker, smoke script, and active Markdown.
 - Removed retired root Markdown and temporary `test_write` files again.
+
+<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->

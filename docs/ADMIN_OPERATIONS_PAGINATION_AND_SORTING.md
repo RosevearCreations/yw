@@ -27,3 +27,5 @@ Saved admin views now preserve and replay Staff Directory and Jobs/Operations fi
 Add true panel-only refresh buttons and a dedicated Jobs review table with row actions.
 
 _Reviewed in the 2026-05-17a pass for schema 112 documentation consistency._
+
+<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->

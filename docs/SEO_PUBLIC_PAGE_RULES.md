@@ -1,17 +1,19 @@
 # SEO Public Page Rules
 
-Last refreshed: **2026-05-20b**
+Last refreshed: **2026-05-29a**
 
-## Standing rules
+## Current rule set
 
-- Keep no more than one visible H1 on each exposed public page.
-- Use clear page titles, descriptions, headings, link text, and image alt text.
-- Keep local wording natural and tied to real service areas.
-- Keep mobile content and desktop content consistent.
-- Do not promise first-page ranking; document quality improvements and local relevance work instead.
+- Keep no more than one H1 on each exposed/public page.
+- Keep page titles clear, unique, and descriptive.
+- Keep meta descriptions useful and aligned with the visible page.
+- Use words people actually search for in titles, headings, and visible content.
+- Keep local wording honest and backed by real service-area proof.
+- Add structured data only where the page content supports it.
+- Keep mobile layout clean because mobile usability affects real users and conversion.
 
-## Current checks
+## Smoke-check direction
 
-- `index.html` H1 count is checked by `scripts/repo-smoke-check.mjs`.
-- Mobile navigation is compact and expandable.
-- Future work should add route-by-route title/meta/alt/local-term checks.
+The smoke script currently checks the app shell H1 and cache markers. A later pass should add public-route checks for sitemap, robots, title, H1, meta description, alt text, structured data, and local wording.
+
+<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->

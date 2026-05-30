@@ -46,3 +46,5 @@ This makes saved views more useful than a simple section shortcut.
 - Move more people filtering into direct SQL-side paging for admin-wide lists.
 
 _Reviewed in the 2026-05-17a pass for schema 112 documentation consistency._
+
+<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->

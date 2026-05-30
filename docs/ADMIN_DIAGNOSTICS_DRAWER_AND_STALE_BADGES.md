@@ -27,3 +27,5 @@ This pass makes staged Admin loading easier to understand without opening the br
 - Split Accounting into smaller fast paths.
 - Split Evidence Manager into its own fast path.
 - Add skeleton loaders so staged loading feels more intentional.
+
+<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->

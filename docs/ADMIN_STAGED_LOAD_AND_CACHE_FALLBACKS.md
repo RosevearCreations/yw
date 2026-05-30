@@ -29,3 +29,5 @@ The Health panel also shows per-scope timing cards so a slow or failed panel is 
 ## Next work
 
 Persist failed panel load events into `admin_panel_load_diagnostics` through a write action so recurring production issues can be reviewed later.
+
+<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->

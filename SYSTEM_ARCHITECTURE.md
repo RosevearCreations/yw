@@ -1,16 +1,23 @@
 # System Architecture
 
-Last refreshed: **2026-05-28a**
+Last refreshed: **2026-05-29a**
 
-## Current architecture direction
+## Current architecture
 
-- Phone-first app shell with `#today` as the default entry point.
-- Reusable mobile helpers layered on top of existing form modules instead of replacing stable submit flows.
-- Offline outbox remains responsible for queued submissions/actions.
-- Local draft helper is separate from the outbox and stores draft field values on the current device only.
-- Admin loads through staged Edge Function scopes before the emergency broad fallback.
-- Schema readiness and quality-gate tables document production expectations without forcing risky live-table changes.
+- Static frontend: `index.html`, `style.css`, `app.js`, and modular files in `js/`.
+- Service worker: `server-worker.js` with cache marker **2026-05-29a**.
+- Supabase database: schema migrations through **123**.
+- Supabase Edge Functions: Admin, Jobs, upload, scheduler, reporting, and analytics functions.
 
-## New mobile helper
+## Equipment workflow architecture
 
-`js/mobile-form-helper.js` watches for known field forms, adds step chips, and provides Save/Resume/Clear draft controls. It does not change the submit payload; existing form modules still own collection, upload, and outbox behavior.
+- `js/jobs-ui.js` captures equipment master data, checkout, arrival verification, return receipt, final return verification, exceptions, and transfer history.
+- `supabase/functions/jobs-manage/index.ts` writes equipment state changes and transfer/return notifications.
+- `supabase/functions/jobs-directory/index.ts` reads directory rows, transfer verification events, return exceptions, and operational-depth gates.
+- Schema 123 adds the columns/views needed to separate simple return receipt from final return verification.
+
+## Reliability pattern
+
+The app keeps staged/safe loading, smoke checks, service-worker cache markers, visible exception tables, and depth gates so incomplete features do not silently disappear.
+
+<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->

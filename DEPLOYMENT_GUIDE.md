@@ -1,18 +1,19 @@
 # Deployment Guide
 
-Last refreshed: **2026-05-28a**
+Last refreshed: **2026-05-29a**
 
-## Deploy checklist
+## Deploy order for this build
 
-1. Apply all migrations through `sql/122_mobile_form_stepper_draft_resume_guardrails.sql`.
-2. Confirm `sql/000_full_schema_reference.sql` includes schema **122**.
-3. Redeploy `supabase/functions/admin-directory`.
-4. Confirm `index.html`, `server-worker.js`, and `manifest.json` use cache marker **2026-05-28a**.
-5. Hard refresh or clear/unregister the service worker after deploy.
-6. Test Admin Command Center and Health scopes.
-7. Test phone routes: `#today`, `#toolbox`, `#incident`, `#ppe`, `#firstaid`, `#inspect`, `#drill`, and `#jobs`.
-8. Save and resume one mobile form draft before declaring the mobile pass complete.
+1. Apply SQL migrations through `sql/123_equipment_transfer_arrival_return_accounting_seo_guardrails.sql`.
+2. Deploy `supabase/functions/jobs-directory`.
+3. Deploy `supabase/functions/jobs-manage`.
+4. Deploy upload functions if their live versions are older than this repo.
+5. Upload/deploy the static files with cache marker **2026-05-29a**.
+6. Clear/unregister the old service worker on test devices, then reload.
+7. Run the repo smoke check and live test equipment Save → Check Out → Verify Arrival → Return → Mark Return Verified.
 
 ## Rollback note
 
-If the mobile helper causes trouble, remove the `js/mobile-form-helper.js` script tag and service-worker cache entry. Existing form submit/outbox modules should continue to work.
+If schema 123 is not applied, the new Equipment UI will still load, but arrival/return verification writes will fail because the expected columns/views will be missing. Apply the schema before relying on the new equipment workflow.
+
+<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->

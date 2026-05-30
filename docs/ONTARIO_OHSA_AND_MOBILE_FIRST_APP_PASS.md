@@ -1,6 +1,6 @@
 # Ontario OHSA and Mobile-First App Pass
 
-Last refreshed: **2026-05-28a**
+Last refreshed: **2026-05-29a**
 
 ## What changed
 
@@ -22,6 +22,8 @@ Ontario uses the Occupational Health and Safety Act (OHSA), not the U.S. workpla
 - Add large tap targets and simplified forms for phone-first field submissions.
 
 
-## 2026-05-28a follow-up
+## 2026-05-29a follow-up
 
 The next pass added the mobile Today dashboard, quick-action queue badges, and PWA install helper while keeping Ontario OHSA / workplace safety wording in visible app copy.
+
+<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->

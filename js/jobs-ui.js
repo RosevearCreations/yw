@@ -81,7 +81,10 @@
       checkoutPhotos: [],
       returnPhotos: [],
       checkoutPhotoFiles: [],
-      returnPhotoFiles: []
+      returnPhotoFiles: [],
+      transferVerifications: [],
+      returnExceptions: [],
+      operationalDepthGates: []
     };
 
     function ensureLayout() {
@@ -191,6 +194,8 @@
             <label>Category<input id="eq_category" type="text" /></label>
             <label>Pool Key<input id="eq_pool_key" type="text" /></label>
             <label>Home Site<select id="eq_home_site"></select></label>
+            <label>Current Site<select id="eq_current_site"></select></label>
+            <label>Destination Site<select id="eq_target_site"></select></label>
             <label>Status<input id="eq_status" type="text" value="available" /></label>
             <label>Current Job<input id="eq_current_job_code" type="text" /></label>
             <label>Assigned Supervisor<input id="eq_assigned_supervisor" type="text" /></label>
@@ -225,11 +230,19 @@
               <label>Supervisor Signature<input id="eq_supervisor_signature" type="text" placeholder="Supervisor sign-off name" /></label>
               <label>Admin Signature<input id="eq_admin_signature" type="text" placeholder="Admin sign-off name" /></label>
               <label>Checkout Condition<input id="eq_checkout_condition" type="text" placeholder="Ready / worn / damaged" /></label>
+              <label>Checkout Test<select id="eq_checkout_test_status"><option value="not_recorded">Not recorded</option><option value="passed">Passed</option><option value="failed">Failed</option><option value="needs_service">Needs service</option><option value="not_required">Not required</option></select></label>
               <label>Return Condition<input id="eq_return_condition" type="text" placeholder="Returned condition" /></label>
+              <label>Return Test<select id="eq_return_test_status"><option value="not_recorded">Not recorded</option><option value="passed">Passed</option><option value="failed">Failed</option><option value="needs_service">Needs service</option><option value="not_required">Not required</option></select></label>
               <label style="display:flex;align-items:center;gap:8px;"><input id="eq_damage_reported" type="checkbox" /> Damage noted on return</label>
             </div>
             <label style="display:block;margin-top:12px;">Damage Notes
               <textarea id="eq_damage_notes" rows="2" placeholder="Describe cracks, dents, missing parts, or new wear found on return."></textarea>
+            </label>
+            <label style="display:block;margin-top:12px;">Checkout / Transport Notes
+              <textarea id="eq_checkout_test_notes" rows="2" placeholder="Pre-use test, accessories released, transport handoff, safety check notes."></textarea>
+            </label>
+            <label style="display:block;margin-top:12px;">Return Test Notes
+              <textarea id="eq_return_test_notes" rows="2" placeholder="Post-return test, cleaning, charging, damage review, lockout notes."></textarea>
             </label>
             <div class="grid" style="margin-top:12px;">
               <label>Checkout Photos<input id="eq_checkout_photos" type="file" accept="image/*" multiple /></label>
@@ -238,6 +251,14 @@
             <div class="grid compact" style="margin-top:8px;">
               <div><strong>Checkout Evidence</strong><div id="eq_checkout_photo_preview" class="photo-preview-grid"></div></div>
               <div><strong>Return / Damage Evidence</strong><div id="eq_return_photo_preview" class="photo-preview-grid"></div></div>
+            </div>
+            <div class="equipment-verification-panel" style="margin-top:12px;">
+              <strong>Arrival Verification</strong>
+              <div class="grid" style="margin-top:8px;">
+                <label>Arrival Condition<input id="eq_arrival_condition" type="text" placeholder="Arrived clean / damage / missing parts" /></label>
+                <label>Arrival Test<select id="eq_arrival_test_status"><option value="not_recorded">Not recorded</option><option value="passed">Passed</option><option value="failed">Failed</option><option value="needs_service">Needs service</option><option value="not_required">Not required</option></select></label>
+              </div>
+              <label style="display:block;margin-top:8px;">Arrival Notes<textarea id="eq_arrival_notes" rows="2" placeholder="Confirm equipment arrived on the correct site and passed a safe-start / visual test."></textarea></label>
             </div>
             <div class="grid" style="margin-top:12px;">
               <div class="signature-capture-block">
@@ -260,7 +281,9 @@
           <div class="form-footer" style="margin-top:12px;">
             <button id="eq_save" class="primary" type="button">Save Equipment</button>
             <button id="eq_checkout" class="secondary" type="button">Check Out</button>
+            <button id="eq_verify_arrival" class="secondary" type="button">Verify Arrival / Site Test</button>
             <button id="eq_return" class="secondary" type="button">Return</button>
+            <button id="eq_verify_return" class="secondary" type="button">Mark Return Verified</button>
             <button id="eq_add_inspection" class="secondary" type="button">Record Inspection</button>
             <button id="eq_add_maintenance" class="secondary" type="button">Record Service</button>
             <button id="eq_lockout" class="secondary" type="button">Lockout</button>
@@ -273,6 +296,26 @@
             <div class="table-scroll">
               <table id="eq_pool_table">
                 <thead><tr><th>Pool</th><th>Category</th><th>Total</th><th>Available</th><th>Reserved</th><th>Checked Out</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="admin-panel-block" style="margin-top:16px;">
+            <h3 style="margin-top:0;">Transfer / Return Exceptions</h3>
+            <p class="section-subtitle">Items needing arrival proof, damage review, return verification, or lockout attention.</p>
+            <div id="eq_exception_summary" class="notice" style="display:none;margin-bottom:10px;"></div>
+            <div class="table-scroll">
+              <table id="eq_exception_table">
+                <thead><tr><th>Equipment</th><th>Job</th><th>Status</th><th>Expected Site</th><th>Out</th><th>Returned</th><th>Notes</th><th>Action</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="admin-panel-block" style="margin-top:16px;">
+            <h3 style="margin-top:0;">Operational Depth Gates</h3>
+            <div class="table-scroll">
+              <table id="eq_depth_gate_table">
+                <thead><tr><th>Area</th><th>Gate</th><th>Status</th><th>Owner</th><th>Test</th></tr></thead>
                 <tbody></tbody>
               </table>
             </div>
@@ -299,6 +342,15 @@
             <h3 style="margin-top:0;">Evidence Gallery</h3>
             <div id="eq_gallery_summary" class="notice" style="display:none;margin-bottom:12px;"></div>
             <div id="eq_gallery" class="photo-preview-grid"><span class="muted">Select a history row gallery to view equipment evidence.</span></div>
+          </div>
+          <div class="admin-panel-block" style="margin-top:16px;">
+            <h3 style="margin-top:0;">Transfer Verification History</h3>
+            <div class="table-scroll">
+              <table id="eq_transfer_table">
+                <thead><tr><th>Equipment</th><th>Event</th><th>Job</th><th>From</th><th>To</th><th>Test</th><th>Verifier</th><th>Notes</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
           </div>
           <div class="admin-panel-block" style="margin-top:16px;">
             <h3 style="margin-top:0;">Inspection History</h3>
@@ -799,6 +851,8 @@
         eqName: $('#eq_name'),
         eqCategory: $('#eq_category'),
         eqHomeSite: $('#eq_home_site'),
+        eqCurrentSite: $('#eq_current_site'),
+        eqTargetSite: $('#eq_target_site'),
         eqStatus: $('#eq_status'),
         eqCurrentJobCode: $('#eq_current_job_code'),
         eqAssignedSupervisor: $('#eq_assigned_supervisor'),
@@ -832,7 +886,14 @@
         eqSupervisorSignatureClear: $('#eq_supervisor_signature_clear'),
         eqAdminSignatureClear: $('#eq_admin_signature_clear'),
         eqCheckoutCondition: $('#eq_checkout_condition'),
+        eqCheckoutTestStatus: $('#eq_checkout_test_status'),
+        eqCheckoutTestNotes: $('#eq_checkout_test_notes'),
         eqReturnCondition: $('#eq_return_condition'),
+        eqReturnTestStatus: $('#eq_return_test_status'),
+        eqReturnTestNotes: $('#eq_return_test_notes'),
+        eqArrivalCondition: $('#eq_arrival_condition'),
+        eqArrivalTestStatus: $('#eq_arrival_test_status'),
+        eqArrivalNotes: $('#eq_arrival_notes'),
         eqDamageReported: $('#eq_damage_reported'),
         eqDamageNotes: $('#eq_damage_notes'),
         eqCheckoutPhotos: $('#eq_checkout_photos'),
@@ -844,7 +905,9 @@
         eqLoad: $('#eq_load'),
         eqClear: $('#eq_clear'),
         eqCheckout: $('#eq_checkout'),
+        eqVerifyArrival: $('#eq_verify_arrival'),
         eqReturn: $('#eq_return'),
+        eqVerifyReturn: $('#eq_verify_return'),
         eqAddInspection: $('#eq_add_inspection'),
         eqAddMaintenance: $('#eq_add_maintenance'),
         eqLockout: $('#eq_lockout'),
@@ -853,6 +916,10 @@
         eqListBody: $('#eq_list_table tbody'),
         eqPoolBody: $('#eq_pool_table tbody'),
         eqHistoryBody: $('#eq_history_table tbody'),
+        eqExceptionBody: $('#eq_exception_table tbody'),
+        eqExceptionSummary: $('#eq_exception_summary'),
+        eqDepthGateBody: $('#eq_depth_gate_table tbody'),
+        eqTransferBody: $('#eq_transfer_table tbody'),
         eqGallery: $('#eq_gallery'),
         eqGallerySummary: $('#eq_gallery_summary'),
         eqInspectionBody: $('#eq_inspection_table tbody'),
@@ -1022,17 +1089,17 @@
         'job_code','job_name','job_site_name','job_type','job_status','job_priority','job_start_date','job_end_date',
         'job_supervisor_name','job_signing_supervisor_name','job_admin_name','job_client_name','job_notes',
         'job_crew_id','job_crew_name','job_crew_code','job_crew_kind','job_assigned_supervisor_name','job_crew_lead_name','job_job_family','job_project_scope','job_service_pattern','job_schedule_mode','job_recurrence_basis','job_recurrence_summary','job_recurrence_rule','job_recurrence_interval','job_recurrence_anchor_date','job_recurrence_custom_days','job_estimated_visit_minutes','job_estimated_duration_hours','job_estimated_duration_days','job_estimated_cost_total','job_quoted_charge_total','job_pricing_method','job_markup_percent','job_discount_mode','job_discount_value','job_delay_cost_total','job_equipment_repair_cost_total','job_actual_cost_total','job_actual_charge_total','job_reservation_window_start','job_reservation_window_end','job_equipment_planning_status','job_equipment_readiness_required','job_open_end_date','job_delayed_schedule','job_crew_member_names','job_custom_schedule_notes','job_tiered_discount_notes','job_delay_reason','job_reservation_notes','job_special_instructions','job_comment_type','job_comment_special_instruction','job_comment_visible_to_client','job_comment_files','job_comment_text',
-        'eq_code','eq_name','eq_category','eq_pool_key','eq_home_site','eq_status','eq_current_job_code','eq_assigned_supervisor',
+        'eq_code','eq_name','eq_category','eq_pool_key','eq_home_site','eq_current_site','eq_target_site','eq_status','eq_current_job_code','eq_assigned_supervisor',
         'eq_serial','eq_asset_tag','eq_manufacturer','eq_model','eq_year','eq_purchase_date','eq_purchase_price','eq_condition',
         'eq_image_url','eq_service_interval_days','eq_last_service_date','eq_next_service_due_date','eq_last_inspection_at',
         'eq_next_inspection_due_date','eq_defect_status','eq_defect_notes','eq_is_locked_out','eq_comments','eq_notes',
-        'eq_worker_signature','eq_supervisor_signature','eq_admin_signature','eq_checkout_condition','eq_return_condition','eq_damage_notes','eq_damage_reported','eq_checkout_photos','eq_return_photos'
+        'eq_worker_signature','eq_supervisor_signature','eq_admin_signature','eq_checkout_condition','eq_checkout_test_status','eq_checkout_test_notes','eq_return_condition','eq_return_test_status','eq_return_test_notes','eq_arrival_condition','eq_arrival_test_status','eq_arrival_notes','eq_damage_notes','eq_damage_reported','eq_checkout_photos','eq_return_photos'
       ];
       editableIds.forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.disabled = !allowed;
       });
-      ['job_add_equipment','job_request_approval','job_save','job_clear','job_comment_save','job_track_session','job_track_hours','job_track_reassign','job_create_estimate','job_add_estimate_line','job_render_quote_package','job_print_quote_package','job_send_quote_package','job_mark_quote_viewed','job_mark_quote_accepted','job_mark_quote_declined','job_convert_to_package','job_release_review','job_evaluate_thresholds','job_completion_review','job_add_closeout_item','job_add_closeout_evidence','job_queue_accounting','job_create_invoice_candidate','job_create_journal_candidate','job_queue_arap_review','job_export_closeout_summary','job_export_accountant_handoff','eq_save','eq_checkout','eq_return','eq_add_inspection','eq_add_maintenance','eq_lockout','eq_clear_lockout','eq_clear'].forEach((id)=>{
+      ['job_add_equipment','job_request_approval','job_save','job_clear','job_comment_save','job_track_session','job_track_hours','job_track_reassign','job_create_estimate','job_add_estimate_line','job_render_quote_package','job_print_quote_package','job_send_quote_package','job_mark_quote_viewed','job_mark_quote_accepted','job_mark_quote_declined','job_convert_to_package','job_release_review','job_evaluate_thresholds','job_completion_review','job_add_closeout_item','job_add_closeout_evidence','job_queue_accounting','job_create_invoice_candidate','job_create_journal_candidate','job_queue_arap_review','job_export_closeout_summary','job_export_accountant_handoff','eq_save','eq_checkout','eq_verify_arrival','eq_return','eq_verify_return','eq_add_inspection','eq_add_maintenance','eq_lockout','eq_clear_lockout','eq_clear'].forEach((id)=>{
         const el = document.getElementById(id);
         if (el) el.disabled = !allowed;
       });
@@ -1194,6 +1261,8 @@
         category: e.eqCategory?.value || '',
         equipment_pool_key: e.eqPoolKey?.value || '',
         home_site: e.eqHomeSite?.value || '',
+        current_site: e.eqCurrentSite?.value || '',
+        target_site: e.eqTargetSite?.value || '',
         status: e.eqStatus?.value || '',
         current_job_code: e.eqCurrentJobCode?.value || '',
         assigned_supervisor_name: e.eqAssignedSupervisor?.value || '',
@@ -1220,7 +1289,14 @@
         supervisor_signature_name: e.eqSupervisorSignature?.value || '',
         admin_signature_name: e.eqAdminSignature?.value || '',
         checkout_condition: e.eqCheckoutCondition?.value || '',
+        checkout_safety_test_status: e.eqCheckoutTestStatus?.value || 'not_recorded',
+        checkout_test_notes: e.eqCheckoutTestNotes?.value || '',
         return_condition: e.eqReturnCondition?.value || '',
+        return_test_status: e.eqReturnTestStatus?.value || 'not_recorded',
+        return_test_notes: e.eqReturnTestNotes?.value || '',
+        arrival_condition: e.eqArrivalCondition?.value || '',
+        arrival_test_status: e.eqArrivalTestStatus?.value || 'not_recorded',
+        arrival_notes: e.eqArrivalNotes?.value || '',
         damage_reported: !!e.eqDamageReported?.checked,
         damage_notes: e.eqDamageNotes?.value || ''
       });
@@ -1283,6 +1359,8 @@
         e.eqCategory.value = eqDraft.category || '';
         e.eqPoolKey.value = eqDraft.equipment_pool_key || '';
         e.eqHomeSite.value = eqDraft.home_site || '';
+        if (e.eqCurrentSite) e.eqCurrentSite.value = eqDraft.current_site || '';
+        if (e.eqTargetSite) e.eqTargetSite.value = eqDraft.target_site || '';
         e.eqStatus.value = eqDraft.status || 'available';
         e.eqCurrentJobCode.value = eqDraft.current_job_code || '';
         e.eqAssignedSupervisor.value = eqDraft.assigned_supervisor_name || '';
@@ -1309,7 +1387,14 @@
         e.eqSupervisorSignature.value = eqDraft.supervisor_signature_name || '';
         e.eqAdminSignature.value = eqDraft.admin_signature_name || '';
         e.eqCheckoutCondition.value = eqDraft.checkout_condition || '';
+        if (e.eqCheckoutTestStatus) e.eqCheckoutTestStatus.value = eqDraft.checkout_safety_test_status || 'not_recorded';
+        if (e.eqCheckoutTestNotes) e.eqCheckoutTestNotes.value = eqDraft.checkout_test_notes || '';
         e.eqReturnCondition.value = eqDraft.return_condition || '';
+        if (e.eqReturnTestStatus) e.eqReturnTestStatus.value = eqDraft.return_test_status || 'not_recorded';
+        if (e.eqReturnTestNotes) e.eqReturnTestNotes.value = eqDraft.return_test_notes || '';
+        if (e.eqArrivalCondition) e.eqArrivalCondition.value = eqDraft.arrival_condition || '';
+        if (e.eqArrivalTestStatus) e.eqArrivalTestStatus.value = eqDraft.arrival_test_status || 'not_recorded';
+        if (e.eqArrivalNotes) e.eqArrivalNotes.value = eqDraft.arrival_notes || '';
         e.eqDamageReported.checked = !!eqDraft.damage_reported;
         e.eqDamageNotes.value = eqDraft.damage_notes || '';
         setNotice(e.eqSummary, 'Recovered unsaved equipment draft from this device.');
@@ -1355,10 +1440,15 @@
     function clearEquipmentForm() {
       const e = els();
       state.editingEquipmentCode = '';
-      [e.eqCode, e.eqName, e.eqCategory, e.eqStatus, e.eqCurrentJobCode, e.eqAssignedSupervisor, e.eqSerial, e.eqPoolKey, e.eqAssetTag, e.eqManufacturer, e.eqModel, e.eqYear, e.eqPurchaseDate, e.eqPurchasePrice, e.eqCondition, e.eqImageUrl, e.eqComments, e.eqWorkerSignature, e.eqSupervisorSignature, e.eqAdminSignature, e.eqCheckoutCondition, e.eqReturnCondition, e.eqDamageNotes].forEach((el) => { if (el) el.value = ''; });
+      [e.eqCode, e.eqName, e.eqCategory, e.eqStatus, e.eqCurrentSite, e.eqTargetSite, e.eqCurrentJobCode, e.eqAssignedSupervisor, e.eqSerial, e.eqPoolKey, e.eqAssetTag, e.eqManufacturer, e.eqModel, e.eqYear, e.eqPurchaseDate, e.eqPurchasePrice, e.eqCondition, e.eqImageUrl, e.eqComments, e.eqWorkerSignature, e.eqSupervisorSignature, e.eqAdminSignature, e.eqCheckoutCondition, e.eqCheckoutTestStatus, e.eqCheckoutTestNotes, e.eqReturnCondition, e.eqReturnTestStatus, e.eqReturnTestNotes, e.eqArrivalCondition, e.eqArrivalTestStatus, e.eqArrivalNotes, e.eqDamageNotes].forEach((el) => { if (el) el.value = ''; });
       if (e.eqStatus) e.eqStatus.value = 'available';
       if (e.eqCondition) e.eqCondition.value = 'ready';
       if (e.eqHomeSite) e.eqHomeSite.value = '';
+      if (e.eqCurrentSite) e.eqCurrentSite.value = '';
+      if (e.eqTargetSite) e.eqTargetSite.value = '';
+      if (e.eqCheckoutTestStatus) e.eqCheckoutTestStatus.value = 'not_recorded';
+      if (e.eqReturnTestStatus) e.eqReturnTestStatus.value = 'not_recorded';
+      if (e.eqArrivalTestStatus) e.eqArrivalTestStatus.value = 'not_recorded';
       if (e.eqDamageReported) e.eqDamageReported.checked = false;
       if (e.eqNotes) e.eqNotes.value = '';
       state.checkoutPhotos = [];
@@ -1459,6 +1549,8 @@
       e.eqName.value = row.equipment_name || '';
       e.eqCategory.value = row.category || '';
       e.eqHomeSite.value = row.home_site_code || row.home_site_name || '';
+      if (e.eqCurrentSite) e.eqCurrentSite.value = row.current_site_code || row.current_site_name || row.home_site_code || row.home_site_name || '';
+      if (e.eqTargetSite) e.eqTargetSite.value = row.target_site_code || row.target_site_name || row.current_site_code || row.current_site_name || '';
       e.eqStatus.value = row.status || 'available';
       e.eqCurrentJobCode.value = row.current_job_code || '';
       e.eqAssignedSupervisor.value = row.assigned_supervisor_name || '';
@@ -1474,6 +1566,8 @@
       e.eqImageUrl.value = row.image_url || '';
       e.eqComments.value = row.comments || '';
       e.eqNotes.value = row.notes || '';
+      if (e.eqArrivalTestStatus) e.eqArrivalTestStatus.value = row.last_arrival_test_status || 'not_recorded';
+      if (e.eqReturnTestStatus) e.eqReturnTestStatus.value = row.last_return_test_status || 'not_recorded';
       clearSignaturePads();
       setNotice(e.eqSummary, `Loaded equipment ${row.equipment_code} into the form for editing.`);
       window.YWIRouter?.showSection?.('equipment', { skipFocus: true });
@@ -2016,13 +2110,64 @@
       setNotice(e.eqGallerySummary, `Viewing ${row.evidence_assets.length} evidence asset(s) for ${row.equipment_code || row.equipment_item_id}. Use Select all and Delete selected for bulk cleanup.`);
     }
 
+
+    function renderEquipmentExceptions() {
+      const e = els();
+      if (!e.eqExceptionBody) return;
+      const rows = Array.isArray(state.returnExceptions) ? state.returnExceptions : [];
+      setNotice(e.eqExceptionSummary, rows.length ? `${rows.length} equipment transfer/return exception(s) need review.` : 'No equipment transfer or return exceptions loaded.');
+      e.eqExceptionBody.innerHTML = rows.length ? rows.map((row) => `
+        <tr>
+          <td>${escHtml(row.equipment_code || '')}<br><span class="muted">${escHtml(row.equipment_name || '')}</span></td>
+          <td>${escHtml(row.job_code || '')}</td>
+          <td><span class="status-pill">${escHtml(row.exception_status || row.verification_status || '')}</span></td>
+          <td>${escHtml(row.expected_site_code || row.expected_site_name || '')}</td>
+          <td>${escHtml(row.checked_out_at || '')}</td>
+          <td>${escHtml(row.returned_at || '')}</td>
+          <td>${escHtml(row.exception_notes || '')}</td>
+          <td><button type="button" class="secondary" data-equipment-load="${escHtml(row.equipment_code || '')}">Load</button></td>
+        </tr>`).join('') : '<tr><td colspan="8" class="muted">No open equipment exceptions.</td></tr>';
+    }
+
+    function renderOperationalDepthGates() {
+      const e = els();
+      if (!e.eqDepthGateBody) return;
+      const rows = Array.isArray(state.operationalDepthGates) ? state.operationalDepthGates : [];
+      e.eqDepthGateBody.innerHTML = rows.length ? rows.map((row) => `
+        <tr>
+          <td>${escHtml(row.gate_area || '')}</td>
+          <td>${escHtml(row.gate_title || '')}</td>
+          <td><span class="status-pill">${escHtml(row.gate_status || '')}</span></td>
+          <td>${escHtml(row.owner_hint || '')}</td>
+          <td>${escHtml(row.test_hint || '')}</td>
+        </tr>`).join('') : '<tr><td colspan="5" class="muted">No operational depth gates loaded yet. Apply schema 123.</td></tr>';
+    }
+
+    function renderTransferHistory() {
+      const e = els();
+      if (!e.eqTransferBody) return;
+      const rows = Array.isArray(state.transferVerifications) ? state.transferVerifications.slice(0, 80) : [];
+      e.eqTransferBody.innerHTML = rows.length ? rows.map((row) => `
+        <tr>
+          <td>${escHtml(row.equipment_code || '')}</td>
+          <td>${escHtml(row.event_type || '')}</td>
+          <td>${escHtml(row.job_code || '')}</td>
+          <td>${escHtml(row.from_site_code || row.from_site_name || '')}</td>
+          <td>${escHtml(row.to_site_code || row.to_site_name || '')}</td>
+          <td>${escHtml(row.test_status || '')}</td>
+          <td>${escHtml(row.verified_by_name || '')}</td>
+          <td>${escHtml(row.verification_notes || '')}</td>
+        </tr>`).join('') : '<tr><td colspan="8" class="muted">No transfer verification events loaded yet.</td></tr>';
+    }
+
     function renderEquipment() {
       const e = els();
       if (e.eqListBody) {
         e.eqListBody.innerHTML = '';
         state.equipment.forEach((row) => {
           const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${escHtml(row.equipment_code)}</td><td>${escHtml(row.equipment_name)}</td><td>${escHtml(row.status)}</td><td>${escHtml(row.serial_number || '')}</td><td>${escHtml(row.equipment_pool_key || '')}</td><td>${escHtml(row.next_service_due_date || '')}</td><td>${escHtml(row.next_inspection_due_date || '')}</td><td>${row.is_locked_out ? 'Yes' : 'No'}</td><td><button type="button" class="secondary" data-equipment-load="${escHtml(row.equipment_code)}">Load</button></td>`;
+          const siteLabel = row.current_site_code || row.current_site_name || row.home_site_code || row.home_site_name || '';
+        tr.innerHTML = `<td>${escHtml(row.equipment_code)}</td><td>${escHtml(row.equipment_name)}<br><span class="muted">${escHtml(siteLabel)}</span></td><td>${escHtml(row.status)}<br><span class="muted">${escHtml(row.last_transfer_status || '')}</span></td><td>${escHtml(row.serial_number || '')}</td><td>${escHtml(row.equipment_pool_key || '')}</td><td>${escHtml(row.next_service_due_date || '')}</td><td>${escHtml(row.next_inspection_due_date || '')}</td><td>${row.is_locked_out ? 'Yes' : 'No'}</td><td><button type="button" class="secondary" data-equipment-load="${escHtml(row.equipment_code)}">Load</button></td>`;
           e.eqListBody.appendChild(tr);
         });
       }
@@ -2206,8 +2351,13 @@
         state.releaseEnforcement = Array.isArray(resp?.release_enforcement) ? resp.release_enforcement : [];
         state.completionReadiness = Array.isArray(resp?.completion_readiness) ? resp.completion_readiness : [];
         state.accountingLifecycle = Array.isArray(resp?.accounting_lifecycle) ? resp.accounting_lifecycle : [];
+        state.transferVerifications = Array.isArray(resp?.equipment_transfer_verifications) ? resp.equipment_transfer_verifications : [];
+        state.returnExceptions = Array.isArray(resp?.equipment_return_exceptions) ? resp.equipment_return_exceptions : [];
+        state.operationalDepthGates = Array.isArray(resp?.operational_depth_gates) ? resp.operational_depth_gates : [];
         fillSiteSelect(e.jobSiteName);
         fillSiteSelect(e.eqHomeSite);
+        fillSiteSelect(e.eqCurrentSite);
+        fillSiteSelect(e.eqTargetSite);
         fillCrewSelect(e.jobCrewId);
         fillServiceTemplateSelect(e.jobServicePricingTemplateId);
         fillTaxCodeSelect(e.jobSalesTaxCodeId);
@@ -2219,7 +2369,7 @@
         renderJobTracking();
       renderCommercialWorkflow();
         setNotice(e.jobSummary, `Loaded ${state.jobs.length} jobs and ${state.requirements.length} requirements.`);
-        setNotice(e.eqSummary, `Loaded ${state.equipment.length} equipment items across ${state.pools.length} pools.`);
+        setNotice(e.eqSummary, `Loaded ${state.equipment.length} equipment items across ${state.pools.length} pools. ${state.returnExceptions.length} transfer/return exception(s) need review.`);
       } catch (err) {
         setNotice(e.jobSummary, err?.message || 'Failed to load jobs.', true);
         setNotice(e.eqSummary, err?.message || 'Failed to load equipment.', true);
@@ -2404,6 +2554,8 @@
           equipment_name: e.eqName?.value?.trim?.() || '',
           category: e.eqCategory?.value?.trim?.() || '',
           home_site: e.eqHomeSite?.value?.trim?.() || '',
+          current_site: e.eqCurrentSite?.value?.trim?.() || '',
+          target_site: e.eqTargetSite?.value?.trim?.() || '',
           status: e.eqStatus?.value?.trim?.() || 'available',
           current_job_code: e.eqCurrentJobCode?.value?.trim?.() || '',
           assigned_supervisor_name: e.eqAssignedSupervisor?.value?.trim?.() || '',
@@ -2440,7 +2592,24 @@
     async function checkoutEquipment() {
       const e = els();
       try {
-        const resp = await api.manageJobsEntity({ entity: 'equipment', action: 'checkout', equipment_code: e.eqCode?.value?.trim?.() || '', job_code: e.eqCurrentJobCode?.value?.trim?.() || '', supervisor_name: e.eqAssignedSupervisor?.value?.trim?.() || '', worker_signature_name: e.eqWorkerSignature?.value?.trim?.() || '', supervisor_signature_name: e.eqSupervisorSignature?.value?.trim?.() || '', admin_signature_name: e.eqAdminSignature?.value?.trim?.() || '', checkout_condition: e.eqCheckoutCondition?.value?.trim?.() || '', notes: e.eqNotes?.value?.trim?.() || '', ...collectSignaturePayload() });
+        const resp = await api.manageJobsEntity({
+          entity: 'equipment',
+          action: 'checkout',
+          equipment_code: e.eqCode?.value?.trim?.() || '',
+          job_code: e.eqCurrentJobCode?.value?.trim?.() || '',
+          supervisor_name: e.eqAssignedSupervisor?.value?.trim?.() || '',
+          intended_site: e.eqTargetSite?.value?.trim?.() || e.eqCurrentSite?.value?.trim?.() || e.eqHomeSite?.value?.trim?.() || '',
+          current_site: e.eqCurrentSite?.value?.trim?.() || e.eqHomeSite?.value?.trim?.() || '',
+          worker_signature_name: e.eqWorkerSignature?.value?.trim?.() || '',
+          supervisor_signature_name: e.eqSupervisorSignature?.value?.trim?.() || '',
+          admin_signature_name: e.eqAdminSignature?.value?.trim?.() || '',
+          checkout_condition: e.eqCheckoutCondition?.value?.trim?.() || '',
+          checkout_safety_test_status: e.eqCheckoutTestStatus?.value || 'not_recorded',
+          checkout_test_notes: e.eqCheckoutTestNotes?.value?.trim?.() || '',
+          transport_handoff_notes: e.eqCheckoutTestNotes?.value?.trim?.() || '',
+          notes: e.eqNotes?.value?.trim?.() || '',
+          ...collectSignaturePayload()
+        });
         if (!resp?.ok) throw new Error(resp?.error || 'Checkout failed');
         try { await uploadEquipmentEvidence(resp?.signout_id || resp?.record?.id, 'checkout'); } catch (uploadErr) { setNotice(e.eqSummary, `Equipment checked out, but evidence upload failed: ${uploadErr?.message || uploadErr}`, true); }
         clearDrafts('equipment');
@@ -2451,10 +2620,47 @@
       }
     }
 
+
+    async function verifyEquipmentArrival() {
+      const e = els();
+      try {
+        const resp = await api.manageJobsEntity({
+          entity: 'equipment',
+          action: 'verify_arrival',
+          equipment_code: e.eqCode?.value?.trim?.() || '',
+          arrival_site: e.eqTargetSite?.value?.trim?.() || e.eqCurrentSite?.value?.trim?.() || e.eqHomeSite?.value?.trim?.() || '',
+          arrival_condition: e.eqArrivalCondition?.value?.trim?.() || e.eqCondition?.value?.trim?.() || '',
+          arrival_test_status: e.eqArrivalTestStatus?.value || 'not_recorded',
+          arrival_verification_notes: e.eqArrivalNotes?.value?.trim?.() || '',
+          notes: e.eqArrivalNotes?.value?.trim?.() || ''
+        });
+        if (!resp?.ok) throw new Error(resp?.error || 'Arrival verification failed');
+        setNotice(e.eqSummary, `Arrival/site test recorded for ${e.eqCode?.value || ''}.`);
+        await loadData();
+      } catch (err) {
+        setNotice(e.eqSummary, err?.message || 'Arrival verification failed.', true);
+      }
+    }
+
     async function returnEquipment() {
       const e = els();
       try {
-        const resp = await api.manageJobsEntity({ entity: 'equipment', action: 'return', equipment_code: e.eqCode?.value?.trim?.() || '', worker_signature_name: e.eqWorkerSignature?.value?.trim?.() || '', supervisor_signature_name: e.eqSupervisorSignature?.value?.trim?.() || '', admin_signature_name: e.eqAdminSignature?.value?.trim?.() || '', return_condition: e.eqReturnCondition?.value?.trim?.() || '', return_notes: e.eqNotes?.value?.trim?.() || '', damage_reported: !!e.eqDamageReported?.checked, damage_notes: e.eqDamageNotes?.value?.trim?.() || '', ...collectSignaturePayload() });
+        const resp = await api.manageJobsEntity({
+          entity: 'equipment',
+          action: 'return',
+          equipment_code: e.eqCode?.value?.trim?.() || '',
+          return_destination_site: e.eqTargetSite?.value?.trim?.() || e.eqCurrentSite?.value?.trim?.() || e.eqHomeSite?.value?.trim?.() || '',
+          worker_signature_name: e.eqWorkerSignature?.value?.trim?.() || '',
+          supervisor_signature_name: e.eqSupervisorSignature?.value?.trim?.() || '',
+          admin_signature_name: e.eqAdminSignature?.value?.trim?.() || '',
+          return_condition: e.eqReturnCondition?.value?.trim?.() || '',
+          return_test_status: e.eqReturnTestStatus?.value || 'not_recorded',
+          return_test_notes: e.eqReturnTestNotes?.value?.trim?.() || '',
+          return_notes: e.eqNotes?.value?.trim?.() || '',
+          damage_reported: !!e.eqDamageReported?.checked,
+          damage_notes: e.eqDamageNotes?.value?.trim?.() || '',
+          ...collectSignaturePayload()
+        });
         if (!resp?.ok) throw new Error(resp?.error || 'Return failed');
         try { await uploadEquipmentEvidence(resp?.signout_id || resp?.record?.id, 'return'); } catch (uploadErr) { setNotice(e.eqSummary, `Equipment returned, but evidence upload failed: ${uploadErr?.message || uploadErr}`, true); }
         clearDrafts('equipment');
@@ -2465,6 +2671,26 @@
       }
     }
 
+
+
+    async function verifyEquipmentReturn() {
+      const e = els();
+      try {
+        const resp = await api.manageJobsEntity({
+          entity: 'equipment',
+          action: 'verify_return_complete',
+          equipment_code: e.eqCode?.value?.trim?.() || '',
+          return_test_status: e.eqReturnTestStatus?.value || 'not_recorded',
+          return_test_notes: e.eqReturnTestNotes?.value?.trim?.() || e.eqDamageNotes?.value?.trim?.() || '',
+          return_condition: e.eqReturnCondition?.value?.trim?.() || ''
+        });
+        if (!resp?.ok) throw new Error(resp?.error || 'Return verification failed');
+        setNotice(e.eqSummary, `Return verification completed for ${e.eqCode?.value || ''}.`);
+        await loadData();
+      } catch (err) {
+        setNotice(e.eqSummary, err?.message || 'Return verification failed.', true);
+      }
+    }
 
     async function recordInspection() {
       const e = els();
@@ -2768,6 +2994,15 @@
           await loadData();
         });
       }
+      if (e.eqExceptionBody && e.eqExceptionBody.dataset.bound !== '1') {
+        e.eqExceptionBody.dataset.bound = '1';
+        e.eqExceptionBody.addEventListener('click', (event) => {
+          const btn = event.target.closest('[data-equipment-load]');
+          if (!btn) return;
+          const row = state.equipment.find((item) => String(item.equipment_code) === String(btn.getAttribute('data-equipment-load')));
+          loadEquipmentIntoForm(row);
+        });
+      }
       if (e.eqListBody && e.eqListBody.dataset.bound !== '1') {
         e.eqListBody.dataset.bound = '1';
         e.eqListBody.addEventListener('click', (event) => {
@@ -2836,9 +3071,17 @@
         e.eqCheckout.dataset.bound = '1';
         e.eqCheckout.addEventListener('click', checkoutEquipment);
       }
+      if (e.eqVerifyArrival && e.eqVerifyArrival.dataset.bound !== '1') {
+        e.eqVerifyArrival.dataset.bound = '1';
+        e.eqVerifyArrival.addEventListener('click', verifyEquipmentArrival);
+      }
       if (e.eqReturn && e.eqReturn.dataset.bound !== '1') {
         e.eqReturn.dataset.bound = '1';
         e.eqReturn.addEventListener('click', returnEquipment);
+      }
+      if (e.eqVerifyReturn && e.eqVerifyReturn.dataset.bound !== '1') {
+        e.eqVerifyReturn.dataset.bound = '1';
+        e.eqVerifyReturn.addEventListener('click', verifyEquipmentReturn);
       }
       if (e.eqAddInspection && e.eqAddInspection.dataset.bound !== '1') {
         e.eqAddInspection.dataset.bound = '1';

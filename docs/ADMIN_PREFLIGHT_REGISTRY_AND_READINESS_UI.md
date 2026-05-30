@@ -27,3 +27,5 @@ After deployment, open `#admin` and confirm:
 3. Deployment checklist rows appear.
 4. Function readiness rows appear.
 5. No cached-data warning appears after hard refresh.
+
+<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->

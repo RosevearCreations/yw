@@ -1,19 +1,16 @@
 # New Chat Status
 
-Continue from build **2026-05-28a** / schema **122**.
+Continue from build **2026-05-29a** / schema **123**.
 
-## Last completed pass
+## Latest pass summary
 
-- Added schema **122** for mobile form steppers, local draft-resume chips, and phone-form quality gates.
-- Added `js/mobile-form-helper.js` as a reusable helper for Toolbox Talk, PPE, First Aid, Incident / Near Miss, Site Inspection, and Drill forms.
-- Added phone step chips, Back/Next navigation, Save Draft, Resume Draft, and Clear actions for common field forms.
-- Added local-device draft counts to the Today dashboard and mobile quick-action badge totals.
-- Updated `js/mobile-menu.js` and `js/mobile-today.js` so saved local drafts are visible beside queued submissions/actions.
-- Updated Admin readiness loading and rendering for mobile form stepper registry and form quality gates.
-- Updated `server-worker.js`, `index.html`, and cache marker to **2026-05-28a**.
-- Kept visible Ontario **OHSA** / Ontario workplace-safety wording, while moving old root Markdown into archive.
-- Reconfirmed one-H1 discipline, JavaScript syntax, CSS brace balance, and smoke-check coverage.
+- Added equipment transfer, arrival verification, return verification, return exception, and operational-depth schema in `sql/123_equipment_transfer_arrival_return_accounting_seo_guardrails.sql`.
+- Updated Jobs UI with Current Site, Destination Site, checkout test, arrival test, return test, Verify Arrival / Site Test, Mark Return Verified, exception table, depth gates, and transfer history.
+- Updated Jobs Edge Functions so equipment checkout/arrival/return/verification states write to DB and notifications.
+- Updated canonical schema, smoke script, CSS, active Markdown, `index.html`, and `server-worker.js`.
 
-## Next focus
+## Next best work
 
-Continue the mobile-first roadmap. The strongest next step is mobile photo handling: quality checks, compression, retry progress, and clearer evidence upload status before final submission.
+Live-test schema 123, then tighten equipment permissions and add mobile photo quality/compression for arrival and return evidence.
+
+<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->

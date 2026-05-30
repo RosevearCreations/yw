@@ -28,3 +28,5 @@ This pass adds responsive Staff Directory list controls so the Admin app is not 
 7. Search, filter by role, change page size, and use Previous/Next.
 
 _Reviewed in the 2026-05-17a pass for schema 112 documentation consistency._
+
+<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->

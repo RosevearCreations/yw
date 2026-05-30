@@ -31,3 +31,5 @@ The frontend now asks before status-changing actions such as job complete/cancel
 - Add role-aware disabled states.
 - Add retry/backoff behavior for repeatedly failing panels.
 - Retire broad fallback scopes after live testing.
+
+<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->

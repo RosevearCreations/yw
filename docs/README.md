@@ -1,6 +1,6 @@
 # Docs Index
 
-Last refreshed: **2026-05-28a**
+Last refreshed: **2026-05-29a**
 
 Current major docs:
 
@@ -11,3 +11,5 @@ Current major docs:
 - `ADMIN_PREFLIGHT_REGISTRY_AND_READINESS_UI.md`
 - `ACCOUNTING_CLOSE_END_TO_END_WORKFLOW.md`
 - `SEO_PUBLIC_PAGE_RULES.md`
+
+<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->

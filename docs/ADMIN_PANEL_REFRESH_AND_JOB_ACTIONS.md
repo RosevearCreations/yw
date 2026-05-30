@@ -21,3 +21,5 @@ Jobs row actions must stack cleanly on phone-width screens and avoid a long hori
 ## Deploy requirement
 
 Redeploy `admin-directory` and `admin-manage` after applying schema 113.
+
+<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->

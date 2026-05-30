@@ -1,6 +1,6 @@
 # Mobile Form Steppers and Drafts
 
-Last refreshed: **2026-05-28a**
+Last refreshed: **2026-05-29a**
 
 ## Purpose
 
@@ -31,3 +31,5 @@ Browsers do not allow JavaScript to restore file input values. Draft text/select
 ## Schema support
 
 Schema **122** adds quality-gate metadata only. It does not alter live submission tables.
+
+<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->

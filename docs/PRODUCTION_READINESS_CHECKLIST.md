@@ -1,35 +1,28 @@
 # Production Readiness Checklist
 
-Last refreshed: **2026-05-20b**
+Last refreshed: **2026-05-29a**
 
-## Current readiness foundations
+## Schema 123 readiness
 
-- Schema drift table/view exists through schema 108.
-- Production readiness checklist rows exist.
-- Role permission matrix exists.
-- Deployment gate table/view exists.
-- Public SEO smoke-check table/view exists.
-- Admin Health can log resolution notes.
+- Apply `sql/123_equipment_transfer_arrival_return_accounting_seo_guardrails.sql`.
+- Confirm `v_schema_drift_status.expected_schema_version` is **123**.
+- Confirm `v_equipment_directory` includes current/destination site and transfer status fields.
+- Confirm `v_equipment_transfer_verification_directory` returns audit rows.
+- Confirm `v_equipment_return_exception_directory` returns pending/issue rows.
+- Confirm `v_app_operational_depth_gates` returns equipment/accounting/SEO gate rows.
 
-## Remaining before production confidence
+## Edge Function readiness
 
-- Run role-by-role RLS and Edge Function permission tests.
-- Add backup/restore rehearsal proof.
-- Automate deployment gate updates.
-- Add server-side pagination to large admin lists.
-- Convert close overview into a write-enabled wizard.
+- Deploy `jobs-directory`.
+- Deploy `jobs-manage`.
+- Test checkout, arrival verification, return, and final return verification.
+- Confirm new notifications appear for arrival verification, return verification, and return exceptions.
 
----
+## Frontend readiness
 
-## 2026-05-15c update
+- Confirm `index.html` and `server-worker.js` use **2026-05-29a**.
+- Confirm the Equipment panel works at phone width.
+- Confirm exception/history/depth-gate tables render without breaking the page.
+- Run repository smoke check before shipping.
 
-Schema **109** added production-readiness foundations: admin list pagination settings, guided close step actions and event history, admin audit events, bank CSV import staging, evidence action queue, backup/restore rehearsal tracking, and worker/supervisor mobile action cards. Active roadmap and known gaps were refreshed, retired root Markdown was archived again, temp files were removed again, and the one-H1 rule was rechecked.
-
-
-## 2026-05-16a update
-
-- Added compact expandable mobile main navigation so the app no longer opens as a long route list on phones.
-- Added compact expandable Admin section navigation for small screens.
-- Added schema 110 frontend quality gates and updated active Markdown/schema references.
-
-_Reviewed in the 2026-05-17a pass for schema 112 documentation consistency._
+<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->
