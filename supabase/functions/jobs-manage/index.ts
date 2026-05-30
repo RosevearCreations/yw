@@ -282,6 +282,39 @@ async function sendEmailIfConfigured(notification: any) {
   if (!res.ok) throw new Error(`Resend email failed: ${body}`);
   return { attempted: true, status: 'sent' };
 }
+
+async function insertEquipmentTransferEvent(supabase: any, payload: any) {
+  try {
+    const row = {
+      equipment_item_id: payload.equipment_item_id,
+      signout_id: payload.signout_id || null,
+      job_id: payload.job_id || null,
+      event_type: payload.event_type,
+      from_site_id: payload.from_site_id || null,
+      to_site_id: payload.to_site_id || null,
+      test_status: payload.test_status || 'not_recorded',
+      condition_status: payload.condition_status || null,
+      verified_by_profile_id: payload.verified_by_profile_id || null,
+      verification_notes: payload.verification_notes || null,
+      event_payload: payload.event_payload || {},
+    };
+    await supabase.from('equipment_transfer_verification_events').insert(row);
+  } catch {
+    // Keep the field workflow alive even if the optional audit table is not migrated yet.
+  }
+}
+
+function normalizeEquipmentTestStatus(value?: string | null) {
+  const clean = String(value || 'not_recorded').trim();
+  if (['passed','failed','needs_service','not_required'].includes(clean)) return clean;
+  return 'not_recorded';
+}
+
+function isPassingEquipmentTest(value?: string | null) {
+  const clean = normalizeEquipmentTestStatus(value);
+  return clean === 'passed' || clean === 'not_required';
+}
+
 async function insertNotification(supabase: any, row: any) {
   const payload = row?.payload || {};
   const insertRow = {
@@ -775,13 +808,18 @@ serve(async (req) => {
 
     if (body.entity === 'equipment' && body.action === 'upsert') {
       const homeSiteId = await resolveSiteIdByCodeOrName(supabase, body.home_site);
+      const currentSiteId = await resolveSiteIdByCodeOrName(supabase, body.current_site || body.current_site_name || body.home_site);
+      const targetSiteId = await resolveSiteIdByCodeOrName(supabase, body.target_site || body.destination_site || body.destination_site_name);
       const currentJobId = await resolveJobIdByCode(supabase, body.current_job_code);
       const poolKey = normalizePoolKey(body.equipment_pool_key || body.category || body.equipment_name || body.equipment_code);
+      const transferStatus = body.is_locked_out ? 'locked_out' : (targetSiteId ? 'reserved' : (body.last_transfer_status || 'ready'));
       const { data, error } = await supabase.from('equipment_items').upsert({
         equipment_code: body.equipment_code,
         equipment_name: body.equipment_name,
         category: body.category ?? null,
         home_site_id: homeSiteId,
+        current_site_id: currentSiteId,
+        target_site_id: targetSiteId,
         status: body.status ?? 'available',
         current_job_id: currentJobId,
         assigned_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.assigned_supervisor_name),
@@ -805,6 +843,8 @@ serve(async (req) => {
         is_locked_out: body.is_locked_out ?? false,
         locked_out_at: body.is_locked_out ? new Date().toISOString() : null,
         locked_out_by_profile_id: body.is_locked_out ? actorProfile.id : null,
+        last_transfer_status: transferStatus,
+        last_transfer_notes: body.last_transfer_notes || body.transfer_notes || null,
         comments: body.comments ?? null,
         notes: body.notes ?? null,
         updated_at: new Date().toISOString(),
@@ -818,16 +858,87 @@ serve(async (req) => {
       const jobId = await resolveJobIdByCode(supabase, body.job_code);
       if (!equipmentId || !jobId) return Response.json({ ok:false, error:'Equipment and job are required' }, { status:400, headers:corsHeaders });
       const { data: item } = await supabase.from('equipment_items').select('*').eq('id', equipmentId).single();
+      const { data: job } = await supabase.from('jobs').select('id,site_id').eq('id', jobId).maybeSingle();
       if (!item) return Response.json({ ok:false, error:'Equipment not found' }, { status:404, headers:corsHeaders });
       if (item.is_locked_out) return Response.json({ ok:false, error:'Equipment is locked out for a defect or failed inspection' }, { status:409, headers:corsHeaders });
       if (!['available','reserved'].includes(item.status)) return Response.json({ ok:false, error:'Equipment is not available for checkout' }, { status:409, headers:corsHeaders });
-      await supabase.from('equipment_items').update({ status:'checked_out', current_job_id: jobId, assigned_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.supervisor_name), condition_status: body.checkout_condition ?? item.condition_status ?? null, updated_at:new Date().toISOString() }).eq('id', equipmentId);
-      const { data, error } = await supabase.from('equipment_signouts').insert({ equipment_item_id: equipmentId, job_id: jobId, checked_out_by_profile_id: actorProfile.id, checked_out_to_supervisor_profile_id: await resolveProfileIdByNameOrEmail(supabase, body.supervisor_name), signout_notes: body.notes ?? null, checkout_worker_signature_name: body.worker_signature_name ?? null, checkout_supervisor_signature_name: body.supervisor_signature_name ?? null, checkout_admin_signature_name: body.admin_signature_name ?? null, checkout_condition: body.checkout_condition ?? null }).select('*').single();
+      const supervisorId = await resolveProfileIdByNameOrEmail(supabase, body.supervisor_name);
+      const currentSiteId = await resolveSiteIdByCodeOrName(supabase, body.current_site || body.current_site_name) || item.current_site_id || item.home_site_id || null;
+      const intendedSiteId = await resolveSiteIdByCodeOrName(supabase, body.intended_site || body.checkout_to_site || body.destination_site || body.target_site || body.target_site_name) || job?.site_id || item.target_site_id || item.home_site_id || null;
+      const checkoutTestStatus = normalizeEquipmentTestStatus(body.checkout_safety_test_status || body.checkout_test_status);
+      await supabase.from('equipment_items').update({
+        status:'checked_out',
+        current_job_id: jobId,
+        assigned_supervisor_profile_id: supervisorId,
+        current_site_id: currentSiteId,
+        target_site_id: intendedSiteId,
+        condition_status: body.checkout_condition ?? item.condition_status ?? null,
+        last_transfer_status: 'in_transit',
+        last_transfer_notes: body.transport_handoff_notes || body.notes || null,
+        updated_at:new Date().toISOString()
+      }).eq('id', equipmentId);
+      const { data, error } = await supabase.from('equipment_signouts').insert({
+        equipment_item_id: equipmentId,
+        job_id: jobId,
+        intended_site_id: intendedSiteId,
+        checkout_to_site_id: intendedSiteId,
+        checked_out_by_profile_id: actorProfile.id,
+        checked_out_to_supervisor_profile_id: supervisorId,
+        signout_notes: body.notes ?? null,
+        checkout_worker_signature_name: body.worker_signature_name ?? null,
+        checkout_supervisor_signature_name: body.supervisor_signature_name ?? null,
+        checkout_admin_signature_name: body.admin_signature_name ?? null,
+        checkout_condition: body.checkout_condition ?? null,
+        checkout_safety_test_status: checkoutTestStatus,
+        checkout_test_notes: body.checkout_test_notes ?? null,
+        transport_handoff_notes: body.transport_handoff_notes ?? null,
+        verification_status: 'in_transit'
+      }).select('*').single();
       if (error) throw error;
-      await insertNotification(supabase, { notification_type:'equipment_checkout', target_table:'equipment_signouts', target_id:data.id, recipient_role:'admin', title:`Equipment checked out: ${body.equipment_code}`, body: JSON.stringify({ equipment_code: body.equipment_code, job_code: body.job_code }), created_by_profile_id: actorProfile.id, email_subject: `YWI HSE equipment checkout: ${body.equipment_code}`, payload: { equipment_code: body.equipment_code, job_code: body.job_code, signout_id: data.id } });
+      await insertEquipmentTransferEvent(supabase, { equipment_item_id: equipmentId, signout_id: data.id, job_id: jobId, event_type:'checkout_released', from_site_id: currentSiteId, to_site_id: intendedSiteId, test_status: checkoutTestStatus, condition_status: body.checkout_condition ?? item.condition_status ?? null, verified_by_profile_id: actorProfile.id, verification_notes: body.transport_handoff_notes || body.checkout_test_notes || body.notes || null, event_payload: { equipment_code: body.equipment_code, job_code: body.job_code } });
+      await insertNotification(supabase, { notification_type:'equipment_checkout', target_table:'equipment_signouts', target_id:data.id, recipient_role:'admin', title:`Equipment checked out: ${body.equipment_code}`, body: JSON.stringify({ equipment_code: body.equipment_code, job_code: body.job_code, intended_site_id: intendedSiteId }), created_by_profile_id: actorProfile.id, email_subject: `YWI HSE equipment checkout: ${body.equipment_code}`, payload: { equipment_code: body.equipment_code, job_code: body.job_code, signout_id: data.id, intended_site_id: intendedSiteId, checkout_test_status: checkoutTestStatus } });
       return Response.json({ ok:true, record:data, signout_id: data.id }, { headers:corsHeaders });
     }
 
+
+    if (body.entity === 'equipment' && body.action === 'verify_arrival') {
+      const equipmentId = await resolveEquipmentIdByCode(supabase, body.equipment_code);
+      if (!equipmentId) return Response.json({ ok:false, error:'Equipment required' }, { status:400, headers:corsHeaders });
+      const { data: signout } = await supabase.from('equipment_signouts').select('*').eq('equipment_item_id', equipmentId).is('returned_at', null).order('checked_out_at', { ascending:false }).limit(1).maybeSingle();
+      if (!signout?.id) return Response.json({ ok:false, error:'No open equipment checkout was found for arrival verification.' }, { status:404, headers:corsHeaders });
+      const arrivalSiteId = await resolveSiteIdByCodeOrName(supabase, body.arrival_site || body.arrival_site_name || body.destination_site || body.target_site) || signout.intended_site_id || signout.checkout_to_site_id || null;
+      const arrivalTestStatus = normalizeEquipmentTestStatus(body.arrival_test_status || body.site_test_status);
+      const arrivalOk = isPassingEquipmentTest(arrivalTestStatus) && String(body.arrival_condition || '').toLowerCase() !== 'damaged';
+      const verificationStatus = arrivalOk ? 'arrived_verified' : 'arrival_issue';
+      const now = new Date().toISOString();
+      const { data, error } = await supabase.from('equipment_signouts').update({
+        arrived_at_site_at: now,
+        arrived_at_site_by_profile_id: actorProfile.id,
+        arrival_condition: body.arrival_condition ?? null,
+        arrival_test_status: arrivalTestStatus,
+        arrival_verification_notes: body.arrival_verification_notes || body.notes || null,
+        verification_status: verificationStatus,
+      }).eq('id', signout.id).select('*').single();
+      if (error) throw error;
+      await supabase.from('equipment_items').update({
+        current_site_id: arrivalSiteId,
+        target_site_id: null,
+        condition_status: body.arrival_condition ?? null,
+        last_arrival_verified_at: now,
+        last_arrival_verified_by_profile_id: actorProfile.id,
+        last_arrival_test_status: arrivalTestStatus,
+        last_transfer_status: verificationStatus,
+        last_transfer_notes: body.arrival_verification_notes || body.notes || null,
+        defect_status: arrivalOk ? 'clear' : 'open',
+        is_locked_out: arrivalOk ? false : true,
+        locked_out_at: arrivalOk ? null : now,
+        locked_out_by_profile_id: arrivalOk ? null : actorProfile.id,
+        updated_at: now,
+      }).eq('id', equipmentId);
+      await insertEquipmentTransferEvent(supabase, { equipment_item_id: equipmentId, signout_id: signout.id, job_id: signout.job_id, event_type: arrivalOk ? 'site_arrival_verified' : 'site_arrival_issue', from_site_id: signout.checkout_to_site_id || null, to_site_id: arrivalSiteId, test_status: arrivalTestStatus, condition_status: body.arrival_condition ?? null, verified_by_profile_id: actorProfile.id, verification_notes: body.arrival_verification_notes || body.notes || null, event_payload: { equipment_code: body.equipment_code, verification_status: verificationStatus } });
+      await insertNotification(supabase, { notification_type:'equipment_arrival_verification', target_table:'equipment_signouts', target_id:signout.id, recipient_role:'admin', title:`Equipment arrival ${arrivalOk ? 'verified' : 'issue'}: ${body.equipment_code}`, body: JSON.stringify({ equipment_code: body.equipment_code, arrival_test_status: arrivalTestStatus, verification_status: verificationStatus }), created_by_profile_id: actorProfile.id, email_subject: `YWI HSE equipment arrival: ${body.equipment_code}`, payload: { equipment_code: body.equipment_code, signout_id: signout.id, arrival_site_id: arrivalSiteId, arrival_test_status: arrivalTestStatus, verification_status: verificationStatus } });
+      return Response.json({ ok:true, record:data, signout_id: signout.id }, { headers:corsHeaders });
+    }
 
     if (body.entity === 'equipment' && body.action === 'inspect') {
       const equipmentId = await resolveEquipmentIdByCode(supabase, body.equipment_code);
@@ -907,11 +1018,84 @@ serve(async (req) => {
     if (body.entity === 'equipment' && body.action === 'return') {
       const equipmentId = await resolveEquipmentIdByCode(supabase, body.equipment_code);
       if (!equipmentId) return Response.json({ ok:false, error:'Equipment required' }, { status:400, headers:corsHeaders });
-      await supabase.from('equipment_items').update({ status:'available', current_job_id:null, assigned_supervisor_profile_id:null, condition_status: body.return_condition ?? null, updated_at:new Date().toISOString() }).eq('id', equipmentId);
+      const { data: item } = await supabase.from('equipment_items').select('*').eq('id', equipmentId).maybeSingle();
       const { data: signout } = await supabase.from('equipment_signouts').select('*').eq('equipment_item_id', equipmentId).is('returned_at', null).order('checked_out_at', { ascending:false }).limit(1).maybeSingle();
-      if (signout?.id) await supabase.from('equipment_signouts').update({ returned_at:new Date().toISOString(), return_worker_signature_name: body.worker_signature_name ?? null, return_supervisor_signature_name: body.supervisor_signature_name ?? null, return_admin_signature_name: body.admin_signature_name ?? null, return_condition: body.return_condition ?? null, return_notes: body.return_notes ?? null, damage_reported: !!body.damage_reported, damage_notes: body.damage_notes ?? null }).eq('id', signout.id);
-      await insertNotification(supabase, { notification_type:'equipment_return', target_table:'equipment_items', target_id:equipmentId, recipient_role:'admin', title:`Equipment returned: ${body.equipment_code}`, body: JSON.stringify({ equipment_code: body.equipment_code }), created_by_profile_id: actorProfile.id, email_subject: `YWI HSE equipment return: ${body.equipment_code}`, payload: { equipment_code: body.equipment_code, damage_reported: !!body.damage_reported, damage_notes: body.damage_notes ?? null, signout_id: signout?.id || null } });
-      return Response.json({ ok:true, signout_id: signout?.id || null }, { headers:corsHeaders });
+      const returnDestinationSiteId = await resolveSiteIdByCodeOrName(supabase, body.return_destination_site || body.return_site || body.current_site || body.home_site) || signout?.return_destination_site_id || item?.home_site_id || item?.current_site_id || null;
+      const returnTestStatus = normalizeEquipmentTestStatus(body.return_test_status || body.return_safety_test_status);
+      const hasReturnIssue = !!body.damage_reported || returnTestStatus === 'failed' || returnTestStatus === 'needs_service';
+      const now = new Date().toISOString();
+      const transferStatus = hasReturnIssue ? 'return_issue' : 'returned_pending_review';
+      await supabase.from('equipment_items').update({
+        status: hasReturnIssue ? 'maintenance' : 'pending_return_review',
+        current_job_id:null,
+        assigned_supervisor_profile_id:null,
+        current_site_id: returnDestinationSiteId,
+        target_site_id:null,
+        condition_status: body.return_condition ?? null,
+        last_return_test_status: returnTestStatus,
+        last_transfer_status: transferStatus,
+        last_transfer_notes: body.return_test_notes || body.return_notes || body.damage_notes || null,
+        defect_status: hasReturnIssue ? 'open' : (body.defect_status || 'clear'),
+        defect_notes: hasReturnIssue ? (body.damage_notes || body.return_test_notes || body.return_notes || null) : null,
+        is_locked_out: hasReturnIssue,
+        locked_out_at: hasReturnIssue ? now : null,
+        locked_out_by_profile_id: hasReturnIssue ? actorProfile.id : null,
+        updated_at: now
+      }).eq('id', equipmentId);
+      if (signout?.id) await supabase.from('equipment_signouts').update({
+        returned_at: now,
+        return_destination_site_id: returnDestinationSiteId,
+        return_worker_signature_name: body.worker_signature_name ?? null,
+        return_supervisor_signature_name: body.supervisor_signature_name ?? null,
+        return_admin_signature_name: body.admin_signature_name ?? null,
+        return_condition: body.return_condition ?? null,
+        return_notes: body.return_notes ?? null,
+        return_test_status: returnTestStatus,
+        return_test_notes: body.return_test_notes ?? null,
+        damage_reported: !!body.damage_reported,
+        damage_notes: body.damage_notes ?? null,
+        verification_status: transferStatus,
+      }).eq('id', signout.id);
+      await insertEquipmentTransferEvent(supabase, { equipment_item_id: equipmentId, signout_id: signout?.id || null, job_id: signout?.job_id || null, event_type: hasReturnIssue ? 'return_issue' : 'return_received', from_site_id: signout?.intended_site_id || item?.current_site_id || null, to_site_id: returnDestinationSiteId, test_status: returnTestStatus, condition_status: body.return_condition ?? null, verified_by_profile_id: actorProfile.id, verification_notes: body.return_test_notes || body.return_notes || body.damage_notes || null, event_payload: { equipment_code: body.equipment_code, damage_reported: !!body.damage_reported, verification_status: transferStatus } });
+      await insertNotification(supabase, { notification_type: hasReturnIssue ? 'equipment_return_exception' : 'equipment_return', target_table:'equipment_items', target_id:equipmentId, recipient_role:'admin', title:`Equipment returned${hasReturnIssue ? ' with issue' : ''}: ${body.equipment_code}`, body: JSON.stringify({ equipment_code: body.equipment_code, verification_status: transferStatus }), created_by_profile_id: actorProfile.id, email_subject: `YWI HSE equipment return: ${body.equipment_code}`, payload: { equipment_code: body.equipment_code, damage_reported: !!body.damage_reported, damage_notes: body.damage_notes ?? null, signout_id: signout?.id || null, return_test_status: returnTestStatus, verification_status: transferStatus } });
+      return Response.json({ ok:true, signout_id: signout?.id || null, verification_status: transferStatus }, { headers:corsHeaders });
+    }
+
+    if (body.entity === 'equipment' && body.action === 'verify_return_complete') {
+      const equipmentId = await resolveEquipmentIdByCode(supabase, body.equipment_code);
+      if (!equipmentId) return Response.json({ ok:false, error:'Equipment required' }, { status:400, headers:corsHeaders });
+      const { data: item } = await supabase.from('equipment_items').select('*').eq('id', equipmentId).maybeSingle();
+      const { data: signout } = await supabase.from('equipment_signouts').select('*').eq('equipment_item_id', equipmentId).not('returned_at', 'is', null).order('returned_at', { ascending:false }).limit(1).maybeSingle();
+      if (!signout?.id) return Response.json({ ok:false, error:'No returned checkout was found for final return verification.' }, { status:404, headers:corsHeaders });
+      const returnTestStatus = normalizeEquipmentTestStatus(body.return_test_status || signout.return_test_status || item?.last_return_test_status);
+      const returnOk = isPassingEquipmentTest(returnTestStatus) && !signout.damage_reported && String(body.return_condition || signout.return_condition || '').toLowerCase() !== 'damaged';
+      const verificationStatus = returnOk ? 'return_verified' : 'return_issue';
+      const now = new Date().toISOString();
+      const { data, error } = await supabase.from('equipment_signouts').update({
+        return_verified_at: now,
+        return_verified_by_profile_id: actorProfile.id,
+        return_test_status: returnTestStatus,
+        return_test_notes: body.return_test_notes || signout.return_test_notes || null,
+        verification_status: verificationStatus,
+      }).eq('id', signout.id).select('*').single();
+      if (error) throw error;
+      await supabase.from('equipment_items').update({
+        status: returnOk ? 'available' : 'maintenance',
+        last_return_verified_at: now,
+        last_return_verified_by_profile_id: actorProfile.id,
+        last_return_test_status: returnTestStatus,
+        last_transfer_status: verificationStatus,
+        last_transfer_notes: body.return_test_notes || body.return_notes || null,
+        defect_status: returnOk ? 'clear' : 'open',
+        defect_notes: returnOk ? null : (body.return_test_notes || body.return_notes || signout.damage_notes || null),
+        is_locked_out: returnOk ? false : true,
+        locked_out_at: returnOk ? null : now,
+        locked_out_by_profile_id: returnOk ? null : actorProfile.id,
+        updated_at: now,
+      }).eq('id', equipmentId);
+      await insertEquipmentTransferEvent(supabase, { equipment_item_id: equipmentId, signout_id: signout.id, job_id: signout.job_id, event_type: returnOk ? 'return_verified' : 'return_issue', from_site_id: signout.intended_site_id || null, to_site_id: signout.return_destination_site_id || item?.current_site_id || null, test_status: returnTestStatus, condition_status: body.return_condition || signout.return_condition || null, verified_by_profile_id: actorProfile.id, verification_notes: body.return_test_notes || body.return_notes || null, event_payload: { equipment_code: body.equipment_code, verification_status: verificationStatus } });
+      await insertNotification(supabase, { notification_type:'equipment_return_verified', target_table:'equipment_signouts', target_id:signout.id, recipient_role:'admin', title:`Equipment return ${returnOk ? 'verified' : 'issue'}: ${body.equipment_code}`, body: JSON.stringify({ equipment_code: body.equipment_code, return_test_status: returnTestStatus, verification_status: verificationStatus }), created_by_profile_id: actorProfile.id, email_subject: `YWI HSE equipment return verification: ${body.equipment_code}`, payload: { equipment_code: body.equipment_code, signout_id: signout.id, return_test_status: returnTestStatus, verification_status: verificationStatus } });
+      return Response.json({ ok:true, record:data, signout_id: signout.id, verification_status: verificationStatus }, { headers:corsHeaders });
     }
 
     return Response.json({ ok:false, error:'Unsupported entity/action' }, { status:400, headers:corsHeaders });

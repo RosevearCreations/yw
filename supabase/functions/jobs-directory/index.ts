@@ -62,7 +62,7 @@ serve(async (req) => {
   const { data: requirements } = await supabase.from('job_equipment_requirements').select('*').order('job_id');
   const { data: signouts } = await supabase.from('equipment_signouts').select('*, equipment_items(equipment_code,equipment_name), jobs(job_code,job_name)').order('checked_out_at', { ascending:false });
   const { data: pools } = await supabase.from('v_equipment_pool_availability').select('*').order('equipment_pool_key');
-  const { data: notifications } = await supabase.from('v_admin_notifications').select('*').in('notification_type', ['equipment_reservation_conflict','job_approval_requested','equipment_checkout','equipment_return','equipment_inspection','equipment_maintenance','equipment_lockout','equipment_lockout_cleared','account_identity_change_requested']).order('created_at', { ascending:false }).limit(150);
+  const { data: notifications } = await supabase.from('v_admin_notifications').select('*').in('notification_type', ['equipment_reservation_conflict','job_approval_requested','equipment_checkout','equipment_arrival_verification','equipment_return','equipment_return_verified','equipment_return_exception','equipment_inspection','equipment_maintenance','equipment_lockout','equipment_lockout_cleared','account_identity_change_requested']).order('created_at', { ascending:false }).limit(150);
   const { data: servicePricingTemplates } = await supabase.from('service_pricing_templates').select('*').eq('is_active', true).order('template_name');
   const { data: taxCodes } = await supabase.from('tax_codes').select('*').eq('is_active', true).order('code');
   const { data: businessTaxSettings } = await supabase.from('business_tax_settings').select('*').order('profile_name');
@@ -111,6 +111,9 @@ serve(async (req) => {
   const jobReassignments = await safeSelect(supabase, 'v_job_reassignment_directory', '*', (query) => query.order('started_at', { ascending:false }).limit(1000));
   const jobFinancialEvents = await safeSelect(supabase, 'v_job_financial_event_directory', '*', (query) => query.order('event_date', { ascending:false }).limit(2000));
   const jobFinancialRollups = await safeSelect(supabase, 'v_job_financial_rollups', '*', (query) => query.order('job_id', { ascending:true }).limit(2000));
+  const equipmentTransferVerifications = await safeSelect(supabase, 'v_equipment_transfer_verification_directory', '*', (query) => query.order('created_at', { ascending:false }).limit(1000));
+  const equipmentReturnExceptions = await safeSelect(supabase, 'v_equipment_return_exception_directory', '*', (query) => query.order('checked_out_at', { ascending:false }).limit(500));
+  const operationalDepthGates = await safeSelect(supabase, 'v_app_operational_depth_gates', '*', (query) => query.order('sort_order', { ascending:true }).limit(200));
   const { data: inspections } = await supabase.from('v_equipment_inspection_history').select('*').order('inspected_at', { ascending:false }).limit(200);
   const { data: maintenance } = await supabase.from('v_equipment_maintenance_history').select('*').order('performed_at', { ascending:false }).limit(200);
   const { data: evidenceAssetsRaw } = await supabase.from('equipment_evidence_assets').select('*').order('created_at', { ascending:false }).limit(1000);
@@ -194,6 +197,9 @@ serve(async (req) => {
     equipment: equipment || [],
     requirements: requirements || [],
     signouts: signoutRows,
+    equipment_transfer_verifications: equipmentTransferVerifications || [],
+    equipment_return_exceptions: equipmentReturnExceptions || [],
+    operational_depth_gates: operationalDepthGates || [],
     pools: pools || [],
     notifications: notifications || [],
     inspections: inspections || [],
