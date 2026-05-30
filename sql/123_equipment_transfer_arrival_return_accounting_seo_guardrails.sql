@@ -1,6 +1,8 @@
 -- Schema 123: Equipment transfer verification, return signoff depth, accounting/SEO guardrails.
 -- This pass tightens the end-to-end equipment withdrawal -> site arrival -> return workflow
 -- and records the rollout in readiness tables so Admin can see what still needs testing.
+-- Repaired: adds compatibility date columns before v_equipment_directory is recreated
+-- so databases that currently use last_service_at / next_service_due_at do not fail.
 
 begin;
 
@@ -18,6 +20,25 @@ alter table public.app_schema_versions add column if not exists migration_key te
 alter table public.app_schema_versions add column if not exists release_label text;
 
 alter table if exists public.equipment_items
+  add column if not exists current_job_id bigint references public.jobs(id) on delete set null,
+  add column if not exists assigned_supervisor_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists equipment_pool_key text,
+  add column if not exists asset_tag text,
+  add column if not exists manufacturer text,
+  add column if not exists model_number text,
+  add column if not exists purchase_year integer,
+  add column if not exists purchase_date date,
+  add column if not exists purchase_price numeric(12,2),
+  add column if not exists condition_status text,
+  add column if not exists image_url text,
+  add column if not exists comments text,
+  add column if not exists service_interval_days integer,
+  add column if not exists last_service_date date,
+  add column if not exists next_service_due_date date,
+  add column if not exists next_inspection_due_date date,
+  add column if not exists defect_status text default 'clear',
+  add column if not exists defect_notes text,
+  add column if not exists is_locked_out boolean not null default false,
   add column if not exists current_site_id uuid references public.sites(id) on delete set null,
   add column if not exists target_site_id uuid references public.sites(id) on delete set null,
   add column if not exists last_transfer_status text not null default 'ready',
@@ -29,7 +50,58 @@ alter table if exists public.equipment_items
   add column if not exists last_return_verified_by_profile_id uuid references public.profiles(id) on delete set null,
   add column if not exists last_return_test_status text;
 
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'equipment_items'
+      and column_name = 'last_service_at'
+  ) then
+    execute '
+      update public.equipment_items
+      set last_service_date = coalesce(last_service_date, last_service_at::date)
+      where last_service_date is null
+        and last_service_at is not null
+    ';
+  end if;
+
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'equipment_items'
+      and column_name = 'next_service_due_at'
+  ) then
+    execute '
+      update public.equipment_items
+      set next_service_due_date = coalesce(next_service_due_date, next_service_due_at::date)
+      where next_service_due_date is null
+        and next_service_due_at is not null
+    ';
+  end if;
+
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'equipment_items'
+      and column_name = 'next_inspection_due_at'
+  ) then
+    execute '
+      update public.equipment_items
+      set next_inspection_due_date = coalesce(next_inspection_due_date, next_inspection_due_at::date)
+      where next_inspection_due_date is null
+        and next_inspection_due_at is not null
+    ';
+  end if;
+end $$;
+
 alter table if exists public.equipment_signouts
+  add column if not exists return_notes text,
+  add column if not exists damage_reported boolean not null default false,
+  add column if not exists damage_notes text,
   add column if not exists intended_site_id uuid references public.sites(id) on delete set null,
   add column if not exists checkout_to_site_id uuid references public.sites(id) on delete set null,
   add column if not exists checkout_safety_test_status text not null default 'not_recorded',
