@@ -106,6 +106,13 @@ serve(async (req) => {
   const salesTaxReview = await safeSelect(supabase, 'v_sales_tax_filing_review_directory', '*', (query) => query.order('filing_period_end', { ascending:false }).limit(500));
   const payrollRemittanceReview = await safeSelect(supabase, 'v_payroll_remittance_review_directory', '*', (query) => query.order('remittance_period_end', { ascending:false }).limit(500));
   const bankReconciliationMatchScored = await safeSelect(supabase, 'v_bank_reconciliation_match_scored_directory', '*', (query) => query.order('match_score', { ascending:false }).limit(1000));
+  const jobCostDepth = await safeSelect(supabase, 'v_job_cost_depth_directory', '*', (query) => query.order('job_id', { ascending:false }).limit(2000));
+  const paymentApplicationWorkbench = await safeSelect(supabase, 'v_payment_application_workbench_directory', '*', (query) => query.order('application_date', { ascending:false }).limit(1000));
+  const bankReconciliationReviewWorkbench = await safeSelect(supabase, 'v_bank_reconciliation_review_workbench', '*', (query) => query.order('item_date', { ascending:false }).limit(1000));
+  const remittanceFilingReviewWorkbench = await safeSelect(supabase, 'v_remittance_filing_review_workbench', '*', (query) => query.order('period_end', { ascending:false }).limit(1000));
+  const monthEndCloseWorkbench = await safeSelect(supabase, 'v_month_end_close_workbench', '*', (query) => query.order('period_end', { ascending:false }).limit(500));
+  const equipmentAccountability = await safeSelect(supabase, 'v_equipment_accountability_workbench', '*', (query) => query.order('equipment_code', { ascending:true }).limit(1000));
+  const equipmentServiceTasks = await safeSelect(supabase, 'v_equipment_service_task_directory', '*', (query) => query.order('created_at', { ascending:false }).limit(1000));
   const jobSessions = await safeSelect(supabase, 'v_job_session_directory', '*', (query) => query.order('started_at', { ascending:false }).limit(2000));
   const jobCrewHours = await safeSelect(supabase, 'v_job_crew_hours_directory', '*', (query) => query.order('created_at', { ascending:false }).limit(3000));
   const jobReassignments = await safeSelect(supabase, 'v_job_reassignment_directory', '*', (query) => query.order('started_at', { ascending:false }).limit(1000));
@@ -240,6 +247,20 @@ serve(async (req) => {
     invoice_posting_automation: invoicePostingAutomation || [],
     journal_posting_automation: journalPostingAutomation || [],
     accountant_handoff_bundles: accountantBundles || [],
+    accountant_packages: accountantPackages || [],
+    ar_payment_applications: arPaymentApplications || [],
+    ap_payment_applications: apPaymentApplications || [],
+    journal_generated_lines: journalGeneratedLines || [],
+    sales_tax_review: salesTaxReview || [],
+    payroll_remittance_review: payrollRemittanceReview || [],
+    bank_reconciliation_match_scored: bankReconciliationMatchScored || [],
+    job_cost_depth: jobCostDepth || [],
+    payment_application_workbench: paymentApplicationWorkbench || [],
+    bank_reconciliation_review_workbench: bankReconciliationReviewWorkbench || [],
+    remittance_filing_review_workbench: remittanceFilingReviewWorkbench || [],
+    month_end_close_workbench: monthEndCloseWorkbench || [],
+    equipment_accountability: equipmentAccountability || [],
+    equipment_service_tasks: equipmentServiceTasks || [],
     evidence_assets: evidenceAssets
   }, { headers: corsHeaders });
 });

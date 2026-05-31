@@ -315,6 +315,51 @@ function isPassingEquipmentTest(value?: string | null) {
   return clean === 'passed' || clean === 'not_required';
 }
 
+async function insertEquipmentServiceTask(supabase: any, payload: any) {
+  try {
+    const row = {
+      equipment_item_id: payload.equipment_item_id,
+      source_signout_id: payload.source_signout_id || null,
+      source_event_id: payload.source_event_id || null,
+      job_id: payload.job_id || null,
+      task_type: payload.task_type || 'return_test_followup',
+      task_status: payload.task_status || 'open',
+      priority: payload.priority || 'high',
+      failure_reason: payload.failure_reason || null,
+      estimated_cost: payload.estimated_cost || 0,
+      actual_cost: payload.actual_cost || 0,
+      assigned_to_profile_id: payload.assigned_to_profile_id || null,
+      due_at: payload.due_at || null,
+      notes: payload.notes || null,
+      created_by_profile_id: payload.created_by_profile_id || null,
+    };
+    await supabase.from('equipment_service_tasks').insert(row);
+  } catch {
+    // Optional schema 124 table. Do not block checkout/return if it has not been deployed yet.
+  }
+}
+
+function normalizeAccessoryStatus(value?: string | null) {
+  const clean = String(value || 'not_recorded').trim();
+  if (['complete','missing','damaged','not_required'].includes(clean)) return clean;
+  return 'not_recorded';
+}
+
+function normalizeJsonArray(value: any) {
+  if (Array.isArray(value)) return value;
+  if (!value) return [];
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return value.split(/[
+,]/).map((item) => item.trim()).filter(Boolean).map((item) => ({ item, checked: false }));
+    }
+  }
+  return [];
+}
+
 async function insertNotification(supabase: any, row: any) {
   const payload = row?.payload || {};
   const insertRow = {
@@ -718,6 +763,13 @@ serve(async (req) => {
         unit_cost: unitCost,
         unit_price: unitPrice,
         is_billable: body.is_billable === true,
+        cost_category: body.cost_category || null,
+        billable_charge_status: body.billable_charge_status || (body.is_billable === true ? 'pending' : 'not_billable'),
+        source_equipment_item_id: body.source_equipment_item_id || await resolveEquipmentIdByCode(supabase, body.equipment_code || null),
+        source_signout_id: body.source_signout_id || null,
+        accounting_period_close_id: body.accounting_period_close_id || null,
+        posting_status: body.posting_status || 'draft',
+        profitability_notes: body.profitability_notes ?? null,
         vendor_id: body.vendor_id || null,
         tax_code_id: body.tax_code_id || null,
         gl_account_id: body.gl_account_id || null,
@@ -841,6 +893,10 @@ serve(async (req) => {
         defect_status: body.defect_status ?? 'clear',
         defect_notes: body.defect_notes ?? null,
         is_locked_out: body.is_locked_out ?? false,
+        qr_code_value: body.qr_code_value ?? body.qr_code ?? null,
+        barcode_value: body.barcode_value ?? body.barcode ?? null,
+        verifier_role_required: body.verifier_role_required ?? 'supervisor',
+        accessory_checklist_required: body.accessory_checklist_required === true,
         locked_out_at: body.is_locked_out ? new Date().toISOString() : null,
         locked_out_by_profile_id: body.is_locked_out ? actorProfile.id : null,
         last_transfer_status: transferStatus,
@@ -892,6 +948,9 @@ serve(async (req) => {
         checkout_safety_test_status: checkoutTestStatus,
         checkout_test_notes: body.checkout_test_notes ?? null,
         transport_handoff_notes: body.transport_handoff_notes ?? null,
+        checkout_accessory_checklist: normalizeJsonArray(body.checkout_accessory_checklist || body.accessory_checklist),
+        checkout_accessory_status: normalizeAccessoryStatus(body.checkout_accessory_status),
+        accessory_missing_notes: body.accessory_missing_notes ?? null,
         verification_status: 'in_transit'
       }).select('*').single();
       if (error) throw error;
@@ -916,6 +975,9 @@ serve(async (req) => {
         arrived_at_site_by_profile_id: actorProfile.id,
         arrival_condition: body.arrival_condition ?? null,
         arrival_test_status: arrivalTestStatus,
+        arrival_accessory_checklist: normalizeJsonArray(body.arrival_accessory_checklist || body.accessory_checklist),
+        arrival_accessory_status: normalizeAccessoryStatus(body.arrival_accessory_status),
+        accessory_missing_notes: body.accessory_missing_notes || signout.accessory_missing_notes || null,
         arrival_verification_notes: body.arrival_verification_notes || body.notes || null,
         verification_status: verificationStatus,
       }).eq('id', signout.id).select('*').single();
@@ -936,6 +998,7 @@ serve(async (req) => {
         updated_at: now,
       }).eq('id', equipmentId);
       await insertEquipmentTransferEvent(supabase, { equipment_item_id: equipmentId, signout_id: signout.id, job_id: signout.job_id, event_type: arrivalOk ? 'site_arrival_verified' : 'site_arrival_issue', from_site_id: signout.checkout_to_site_id || null, to_site_id: arrivalSiteId, test_status: arrivalTestStatus, condition_status: body.arrival_condition ?? null, verified_by_profile_id: actorProfile.id, verification_notes: body.arrival_verification_notes || body.notes || null, event_payload: { equipment_code: body.equipment_code, verification_status: verificationStatus } });
+      if (!arrivalOk) await insertEquipmentServiceTask(supabase, { equipment_item_id: equipmentId, source_signout_id: signout.id, job_id: signout.job_id, task_type:'arrival_test_followup', priority:'high', failure_reason: body.arrival_verification_notes || body.notes || `Arrival test ${arrivalTestStatus}`, estimated_cost: Number(body.estimated_service_cost || 0), notes: body.arrival_verification_notes || body.notes || null, created_by_profile_id: actorProfile.id });
       await insertNotification(supabase, { notification_type:'equipment_arrival_verification', target_table:'equipment_signouts', target_id:signout.id, recipient_role:'admin', title:`Equipment arrival ${arrivalOk ? 'verified' : 'issue'}: ${body.equipment_code}`, body: JSON.stringify({ equipment_code: body.equipment_code, arrival_test_status: arrivalTestStatus, verification_status: verificationStatus }), created_by_profile_id: actorProfile.id, email_subject: `YWI HSE equipment arrival: ${body.equipment_code}`, payload: { equipment_code: body.equipment_code, signout_id: signout.id, arrival_site_id: arrivalSiteId, arrival_test_status: arrivalTestStatus, verification_status: verificationStatus } });
       return Response.json({ ok:true, record:data, signout_id: signout.id }, { headers:corsHeaders });
     }
@@ -1052,11 +1115,15 @@ serve(async (req) => {
         return_notes: body.return_notes ?? null,
         return_test_status: returnTestStatus,
         return_test_notes: body.return_test_notes ?? null,
+        return_accessory_checklist: normalizeJsonArray(body.return_accessory_checklist || body.accessory_checklist),
+        return_accessory_status: normalizeAccessoryStatus(body.return_accessory_status),
+        accessory_missing_notes: body.accessory_missing_notes || signout.accessory_missing_notes || null,
         damage_reported: !!body.damage_reported,
         damage_notes: body.damage_notes ?? null,
         verification_status: transferStatus,
       }).eq('id', signout.id);
       await insertEquipmentTransferEvent(supabase, { equipment_item_id: equipmentId, signout_id: signout?.id || null, job_id: signout?.job_id || null, event_type: hasReturnIssue ? 'return_issue' : 'return_received', from_site_id: signout?.intended_site_id || item?.current_site_id || null, to_site_id: returnDestinationSiteId, test_status: returnTestStatus, condition_status: body.return_condition ?? null, verified_by_profile_id: actorProfile.id, verification_notes: body.return_test_notes || body.return_notes || body.damage_notes || null, event_payload: { equipment_code: body.equipment_code, damage_reported: !!body.damage_reported, verification_status: transferStatus } });
+      if (hasReturnIssue) await insertEquipmentServiceTask(supabase, { equipment_item_id: equipmentId, source_signout_id: signout?.id || null, job_id: signout?.job_id || null, task_type: body.damage_reported ? 'repair' : 'return_test_followup', priority:'high', failure_reason: body.damage_notes || body.return_test_notes || `Return test ${returnTestStatus}`, estimated_cost: Number(body.estimated_service_cost || 0), notes: body.return_notes || body.return_test_notes || body.damage_notes || null, created_by_profile_id: actorProfile.id });
       await insertNotification(supabase, { notification_type: hasReturnIssue ? 'equipment_return_exception' : 'equipment_return', target_table:'equipment_items', target_id:equipmentId, recipient_role:'admin', title:`Equipment returned${hasReturnIssue ? ' with issue' : ''}: ${body.equipment_code}`, body: JSON.stringify({ equipment_code: body.equipment_code, verification_status: transferStatus }), created_by_profile_id: actorProfile.id, email_subject: `YWI HSE equipment return: ${body.equipment_code}`, payload: { equipment_code: body.equipment_code, damage_reported: !!body.damage_reported, damage_notes: body.damage_notes ?? null, signout_id: signout?.id || null, return_test_status: returnTestStatus, verification_status: transferStatus } });
       return Response.json({ ok:true, signout_id: signout?.id || null, verification_status: transferStatus }, { headers:corsHeaders });
     }
@@ -1094,6 +1161,7 @@ serve(async (req) => {
         updated_at: now,
       }).eq('id', equipmentId);
       await insertEquipmentTransferEvent(supabase, { equipment_item_id: equipmentId, signout_id: signout.id, job_id: signout.job_id, event_type: returnOk ? 'return_verified' : 'return_issue', from_site_id: signout.intended_site_id || null, to_site_id: signout.return_destination_site_id || item?.current_site_id || null, test_status: returnTestStatus, condition_status: body.return_condition || signout.return_condition || null, verified_by_profile_id: actorProfile.id, verification_notes: body.return_test_notes || body.return_notes || null, event_payload: { equipment_code: body.equipment_code, verification_status: verificationStatus } });
+      if (!returnOk) await insertEquipmentServiceTask(supabase, { equipment_item_id: equipmentId, source_signout_id: signout.id, job_id: signout.job_id, task_type:'return_test_followup', priority:'high', failure_reason: body.return_test_notes || body.return_notes || signout.damage_notes || `Return verification ${returnTestStatus}`, estimated_cost: Number(body.estimated_service_cost || 0), notes: body.return_test_notes || body.return_notes || signout.damage_notes || null, created_by_profile_id: actorProfile.id });
       await insertNotification(supabase, { notification_type:'equipment_return_verified', target_table:'equipment_signouts', target_id:signout.id, recipient_role:'admin', title:`Equipment return ${returnOk ? 'verified' : 'issue'}: ${body.equipment_code}`, body: JSON.stringify({ equipment_code: body.equipment_code, return_test_status: returnTestStatus, verification_status: verificationStatus }), created_by_profile_id: actorProfile.id, email_subject: `YWI HSE equipment return verification: ${body.equipment_code}`, payload: { equipment_code: body.equipment_code, signout_id: signout.id, return_test_status: returnTestStatus, verification_status: verificationStatus } });
       return Response.json({ ok:true, record:data, signout_id: signout.id, verification_status: verificationStatus }, { headers:corsHeaders });
     }

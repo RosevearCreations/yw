@@ -5550,6 +5550,200 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
       const result = await runServiceExecutionScheduler(supabase, actorId, agreement.id);
       return Response.json({ ok:true, record: agreement, scheduler_run: result.run, created_count: result.createdCount, invoice_candidate_count: result.invoiceCandidateCount, skipped_count: result.skippedCount }, { headers:corsHeaders });
     }
+
+
+    if (entity === 'payment_application') {
+      const ledgerSide = String(body.ledger_side || body.side || 'ar').toLowerCase() === 'ap' ? 'ap' : 'ar';
+      const table = ledgerSide === 'ap' ? 'ap_payment_applications' : 'ar_payment_applications';
+      const targetField = ledgerSide === 'ap' ? 'bill_id' : 'invoice_id';
+      const patch: Record<string, unknown> = {
+        payment_id: asNullableText(body.payment_id),
+        [targetField]: asNullableText(body.target_id || body[targetField]),
+        applied_amount: asNumber(body.applied_amount, 0),
+        credit_amount: asNumber(body.credit_amount, 0),
+        discount_amount: asNumber(body.discount_amount, 0),
+        writeoff_amount: asNumber(body.writeoff_amount, 0),
+        overpayment_amount: asNumber(body.overpayment_amount, 0),
+        application_date: asNullableDate(body.application_date) || new Date().toISOString().slice(0, 10),
+        application_type: body.application_type || (ledgerSide === 'ap' ? 'bill_payment' : 'invoice_payment'),
+        application_status: body.application_status || 'applied',
+        review_status: body.review_status || (action === 'approve' ? 'approved' : 'review'),
+        reviewed_by_profile_id: action === 'approve' || action === 'review' ? actorId : asNullableText(body.reviewed_by_profile_id),
+        reviewed_at: action === 'approve' || action === 'review' ? new Date().toISOString() : asNullableDateTime(body.reviewed_at),
+        source_reconciliation_item_id: asNullableText(body.source_reconciliation_item_id),
+        application_payload: body.application_payload || {},
+        notes: body.notes ?? null,
+        created_by_profile_id: actorId,
+        updated_at: new Date().toISOString(),
+      };
+      if (action === 'create') {
+        if (!patch.payment_id || !patch[targetField]) return Response.json({ ok:false, error:'payment_id and target_id are required' }, { status:400, headers:corsHeaders });
+        const { data, error } = await supabase.from(table).insert({ ...patch, created_at: new Date().toISOString() }).select('*').single();
+        if (error) throw error;
+        await recordSiteActivity(supabase, { event_type:'payment_application_created', entity_type:table, entity_id:data.id, severity:'info', title:'Payment application created', summary:`${ledgerSide.toUpperCase()} payment application was created.`, created_by_profile_id: actorId });
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (['update','review','approve','reverse'].includes(action)) {
+        if (!body.item_id) return Response.json({ ok:false, error:'item_id is required' }, { status:400, headers:corsHeaders });
+        if (action === 'review' || action === 'approve' || action === 'reverse') {
+          delete patch.payment_id;
+          delete patch[targetField];
+          delete patch.applied_amount;
+          delete patch.credit_amount;
+          delete patch.discount_amount;
+          delete patch.writeoff_amount;
+          delete patch.overpayment_amount;
+          delete patch.application_date;
+          delete patch.application_type;
+          delete patch.source_reconciliation_item_id;
+          delete patch.application_payload;
+          delete patch.created_by_profile_id;
+          if (action === 'approve') patch.review_status = 'approved';
+        }
+        if (action === 'reverse') {
+          patch.application_status = 'reversed';
+          patch.review_status = 'reversed';
+        }
+        const { data, error } = await supabase.from(table).update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        await recordSiteActivity(supabase, { event_type:'payment_application_reviewed', entity_type:table, entity_id:data.id, severity:'info', title:'Payment application updated', summary:`${ledgerSide.toUpperCase()} payment application ${action}.`, created_by_profile_id: actorId });
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+    }
+
+    if (entity === 'bank_reconciliation_item') {
+      if (!body.item_id) return Response.json({ ok:false, error:'item_id is required' }, { status:400, headers:corsHeaders });
+      const patch: Record<string, unknown> = {
+        suggested_match_source_table: body.suggested_match_source_table ?? null,
+        suggested_match_source_id: body.suggested_match_source_id ?? null,
+        suggested_match_score: asNullableNumber(body.suggested_match_score),
+        suggested_match_reason: body.suggested_match_reason ?? null,
+        manual_review_status: body.manual_review_status || (action === 'approve_match' ? 'approved' : action === 'undo_match' ? 'undo' : 'manual_match'),
+        match_status: body.match_status || (action === 'approve_match' ? 'matched' : action === 'undo_match' ? 'unmatched' : 'partial'),
+        clearing_status: body.clearing_status || (action === 'approve_match' ? 'cleared' : undefined),
+        reviewed_by_profile_id: actorId,
+        reviewed_at: new Date().toISOString(),
+        review_notes: body.review_notes ?? body.notes ?? null,
+        updated_at: new Date().toISOString(),
+      };
+      if (!patch.clearing_status) delete patch.clearing_status;
+      if (body.suggested_match_source_table === undefined) delete patch.suggested_match_source_table;
+      if (body.suggested_match_source_id === undefined) delete patch.suggested_match_source_id;
+      if (body.suggested_match_score === undefined) delete patch.suggested_match_score;
+      if (body.suggested_match_reason === undefined) delete patch.suggested_match_reason;
+      const { data, error } = await supabase.from('bank_reconciliation_items').update(patch).eq('id', body.item_id).select('*').single();
+      if (error) throw error;
+      await recordSiteActivity(supabase, { event_type:'bank_reconciliation_item_reviewed', entity_type:'bank_reconciliation_item', entity_id:data.id, severity: action === 'approve_match' ? 'success' : 'info', title:'Bank reconciliation item reviewed', summary:`Reconciliation item marked ${patch.manual_review_status}.`, created_by_profile_id: actorId });
+      return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+    }
+
+    if (entity === 'remittance_filing_review') {
+      const reviewKind = String(body.review_kind || 'sales_tax').toLowerCase();
+      const isPayroll = reviewKind === 'payroll' || reviewKind === 'payroll_remittance';
+      const table = isPayroll ? 'payroll_remittance_runs' : 'sales_tax_filings';
+      if (!body.item_id) return Response.json({ ok:false, error:'item_id is required' }, { status:400, headers:corsHeaders });
+      const statusField = isPayroll ? 'remittance_status' : 'filing_status';
+      const stepField = isPayroll ? 'remittance_review_step' : 'filing_review_step';
+      const patch: Record<string, unknown> = {
+        review_status: body.review_status || (action === 'signoff' ? 'approved' : 'reviewed'),
+        [stepField]: body.review_step || (action === 'signoff' ? 'approved' : 'adjustment_review'),
+        source_totals_jsonb: body.source_totals_jsonb || undefined,
+        adjustment_notes: body.adjustment_notes ?? undefined,
+        review_notes: body.review_notes ?? body.notes ?? null,
+        reviewed_by_profile_id: actorId,
+        reviewed_at: new Date().toISOString(),
+        export_proof_url: body.export_proof_url ?? null,
+        filed_reference: body.filed_reference ?? body.reference_number ?? null,
+        payment_reference: body.payment_reference ?? null,
+        updated_at: new Date().toISOString(),
+      };
+      if (action === 'signoff' || action === 'filed' || action === 'remitted') {
+        patch.signed_off_by_profile_id = actorId;
+        patch.signed_off_at = new Date().toISOString();
+      }
+      if (action === 'filed') {
+        patch[statusField] = isPayroll ? 'remitted' : 'filed';
+        patch[stepField] = isPayroll ? 'remitted' : 'filed';
+        if (!isPayroll) patch.filed_at = new Date().toISOString();
+        if (isPayroll) patch.remitted_at = new Date().toISOString();
+      }
+      if (action === 'paid') {
+        patch[statusField] = isPayroll ? 'remitted' : 'paid';
+        patch[stepField] = 'paid';
+        if (!isPayroll) patch.paid_at = new Date().toISOString();
+      }
+      Object.keys(patch).forEach((key) => { if (patch[key] === undefined) delete patch[key]; });
+      const { data, error } = await supabase.from(table).update(patch).eq('id', body.item_id).select('*').single();
+      if (error) throw error;
+      await recordSiteActivity(supabase, { event_type:'remittance_filing_reviewed', entity_type:table, entity_id:data.id, severity:'success', title:'Remittance/filing reviewed', summary:`${reviewKind} row updated with ${action}.`, created_by_profile_id: actorId });
+      return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+    }
+
+    if (entity === 'accounting_period_close') {
+      if (!body.item_id) return Response.json({ ok:false, error:'item_id is required' }, { status:400, headers:corsHeaders });
+      const nowIso = new Date().toISOString();
+      const patch: Record<string, unknown> = {
+        close_notes: body.close_notes ?? body.notes ?? null,
+        close_checklist: body.close_checklist || {},
+        close_package_manifest: body.close_package_manifest || {},
+        accountant_package_export_id: asNullableText(body.accountant_package_export_id),
+        updated_at: nowIso,
+      };
+      if (action === 'soft_lock' || action === 'lock') {
+        patch.period_lock_status = action === 'lock' ? 'locked' : 'soft_locked';
+        patch.ar_locked = true;
+        patch.ap_locked = true;
+        patch.gl_locked = action === 'lock';
+        patch.payroll_locked = true;
+        patch.tax_locked = true;
+        patch.locked_by_profile_id = actorId;
+        patch.locked_at = nowIso;
+        patch.close_status = action === 'lock' ? 'closed' : 'in_review';
+        if (action === 'lock') {
+          patch.closed_by_profile_id = actorId;
+          patch.closed_at = nowIso;
+        }
+      }
+      if (action === 'reopen') {
+        patch.period_lock_status = 'reopened';
+        patch.close_status = 'reopened';
+        patch.ar_locked = false;
+        patch.ap_locked = false;
+        patch.gl_locked = false;
+        patch.payroll_locked = false;
+        patch.tax_locked = false;
+        patch.reopened_by_profile_id = actorId;
+        patch.reopened_at = nowIso;
+        patch.reopen_reason = body.reopen_reason || body.notes || 'Reopened from Admin.';
+      }
+      const { data, error } = await supabase.from('accounting_period_closes').update(patch).eq('id', body.item_id).select('*').single();
+      if (error) throw error;
+      await recordSiteActivity(supabase, { event_type:'accounting_period_close_updated', entity_type:'accounting_period_close', entity_id:data.id, severity: action === 'lock' ? 'success' : 'info', title:'Accounting period close updated', summary:`Period ${data.period_code || data.id} ${action}.`, created_by_profile_id: actorId });
+      return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+    }
+
+    if (entity === 'accountant_handoff_export' && ['prepare_package','review_package','finalize_package','deliver_package'].includes(action)) {
+      if (!body.item_id) return Response.json({ ok:false, error:'item_id is required' }, { status:400, headers:corsHeaders });
+      const nowIso = new Date().toISOString();
+      const patch: Record<string, unknown> = {
+        package_status: action === 'deliver_package' ? 'delivered' : action === 'finalize_package' ? 'finalized' : action === 'review_package' ? 'reviewed' : 'prepared',
+        package_manifest: body.package_manifest || {},
+        exported_file_manifest: Array.isArray(body.exported_file_manifest) ? body.exported_file_manifest : [],
+        package_delivery_reference: body.package_delivery_reference ?? null,
+        source_period_close_id: asNullableText(body.source_period_close_id),
+        reviewed_by_profile_id: action === 'review_package' || action === 'finalize_package' || action === 'deliver_package' ? actorId : asNullableText(body.reviewed_by_profile_id),
+        reviewed_at: action === 'review_package' || action === 'finalize_package' || action === 'deliver_package' ? nowIso : asNullableDateTime(body.reviewed_at),
+        finalized_by_profile_id: action === 'finalize_package' || action === 'deliver_package' ? actorId : asNullableText(body.finalized_by_profile_id),
+        finalised_at: action === 'finalize_package' || action === 'deliver_package' ? nowIso : asNullableDateTime(body.finalised_at),
+        delivered_by_profile_id: action === 'deliver_package' ? actorId : asNullableText(body.delivered_by_profile_id),
+        delivered_at: action === 'deliver_package' ? nowIso : asNullableDateTime(body.delivered_at),
+        updated_at: nowIso,
+      };
+      const { data, error } = await supabase.from('accountant_handoff_exports').update(patch).eq('id', body.item_id).select('*').single();
+      if (error) throw error;
+      await recordSiteActivity(supabase, { event_type:'accountant_package_updated', entity_type:'accountant_handoff_export', entity_id:data.id, severity:'success', title:'Accountant package updated', summary:`Accountant package ${action}.`, created_by_profile_id: actorId });
+      return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+    }
     return Response.json({ ok: false, error: 'Unsupported entity/action' }, { status: 400, headers: corsHeaders });
   } catch (error) {
     return Response.json({ ok: false, error: String(error) }, { status: 500, headers: corsHeaders });
