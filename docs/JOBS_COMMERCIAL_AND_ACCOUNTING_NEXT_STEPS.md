@@ -18,3 +18,5 @@ Last refreshed: **2026-05-29a**
 Equipment return issues now create clearer exception status. The next accounting pass should convert those exceptions into repair/service cost rows and job profitability impacts.
 
 <!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->
+
+<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->

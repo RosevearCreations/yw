@@ -1,30 +1,31 @@
 # Testing Checklist
 
-Last refreshed: **2026-05-29a**
+Last refreshed: **2026-05-30a**
 
-## Required local checks
+## Smoke checks run in this pass
 
 - `node --check js/jobs-ui.js`
-- `node --check app.js js/api.js js/admin-ui.js js/mobile-menu.js js/mobile-today.js js/mobile-form-helper.js`
-- CSS brace-balance check on `style.css`
-- Public H1 count check for `index.html`
+- `node --check app.js`
+- `node --check js/api.js`
+- `node --check js/admin-ui.js`
+- `node --check js/mobile-menu.js`
+- `node --check js/mobile-today.js`
+- `node --check js/mobile-form-helper.js`
+- CSS brace-balance check
+- public H1 count check
 - `node scripts/repo-smoke-check.mjs`
 
-## Required live equipment test
+## Live tests still required
 
-1. Apply schema 123 and redeploy Edge Functions.
-2. Save an equipment item with Home Site, Current Site, and Destination Site.
-3. Check the item out to a job and confirm checkout test/status saves.
-4. Use Verify Arrival / Site Test and confirm transfer history updates.
-5. Return the item and confirm it appears as returned pending review or issue.
-6. Use Mark Return Verified and confirm it clears from exceptions when tests pass.
-7. Repeat with damage reported or failed test and confirm lockout/exception behavior.
+1. Apply schema 124 in Supabase.
+2. Deploy `jobs-directory`, `jobs-manage`, and `admin-manage`.
+3. Hard-refresh browser/service worker after the `2026-05-30a` cache marker deploys.
+4. Load Jobs and confirm Accounting Depth Workbench tables render.
+5. Create/review a payment application row.
+6. Review a bank reconciliation item.
+7. Sign off one HST/GST or payroll remittance row.
+8. Soft-lock and reopen a month-end period row.
+9. Save equipment with QR/barcode/accessory checklist fields.
+10. Check out equipment, verify arrival, return equipment, and confirm failed tests create service-task rows.
 
-## Required public/app shell checks
-
-- One H1 only on exposed/public pages.
-- Title and meta description remain clear.
-- Cache marker shows **2026-05-29a** in `index.html` and `server-worker.js`.
-- Phone-width forms and Equipment panel remain usable without horizontal page drift outside intended tables.
-
-<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->
+<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->

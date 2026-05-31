@@ -13,3 +13,5 @@ Current major docs:
 - `SEO_PUBLIC_PAGE_RULES.md`
 
 <!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->
+
+<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->

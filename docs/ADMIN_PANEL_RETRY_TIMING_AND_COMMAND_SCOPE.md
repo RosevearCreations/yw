@@ -19,3 +19,5 @@ Admin had grown large enough that one live load could fail or time out and force
 Wire frontend panel failure events into `admin_panel_load_diagnostics` so repeated production failures are visible in the database, not only in the current browser session.
 
 <!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->
+
+<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->

@@ -1,19 +1,21 @@
 # Deployment Guide
 
-Last refreshed: **2026-05-29a**
+Last refreshed: **2026-05-30a**
 
-## Deploy order for this build
+## Current deploy order
 
-1. Apply SQL migrations through `sql/123_equipment_transfer_arrival_return_accounting_seo_guardrails.sql`.
-2. Deploy `supabase/functions/jobs-directory`.
-3. Deploy `supabase/functions/jobs-manage`.
-4. Deploy upload functions if their live versions are older than this repo.
-5. Upload/deploy the static files with cache marker **2026-05-29a**.
-6. Clear/unregister the old service worker on test devices, then reload.
-7. Run the repo smoke check and live test equipment Save → Check Out → Verify Arrival → Return → Mark Return Verified.
+1. Apply database migrations through `sql/124_accounting_cost_payment_reconciliation_remittance_equipment_depth.sql`.
+2. Confirm `sql/000_full_schema_reference.sql` matches the live schema version target.
+3. Deploy Supabase Edge Functions:
+   - `jobs-directory`
+   - `jobs-manage`
+   - `admin-manage`
+4. Deploy static assets with the `2026-05-30a` cache marker.
+5. Hard-refresh or clear the service worker cache on test browsers.
+6. Run the Testing Checklist live-test items.
 
-## Rollback note
+## Important warning
 
-If schema 123 is not applied, the new Equipment UI will still load, but arrival/return verification writes will fail because the expected columns/views will be missing. Apply the schema before relying on the new equipment workflow.
+Do not skip the Edge Function deploy after schema 124. The UI now requests accounting depth rows, payment review actions, reconciliation review actions, remittance signoff actions, month-end close actions, QR/barcode equipment fields, accessory checklist fields, and service-task rows.
 
-<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->
+<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->

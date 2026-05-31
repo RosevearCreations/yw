@@ -17,3 +17,5 @@ Last refreshed: **2026-05-29a**
 The smoke script currently checks the app shell H1 and cache markers. A later pass should add public-route checks for sitemap, robots, title, H1, meta description, alt text, structured data, and local wording.
 
 <!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->
+
+<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->

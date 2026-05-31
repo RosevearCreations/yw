@@ -1,17 +1,29 @@
 # Database Structure
 
-Last refreshed: **2026-05-29a**
+Last refreshed: **2026-05-30a**
 
-Current schema marker: **123**
+Canonical schema reference: `sql/000_full_schema_reference.sql` through **schema 124**.
 
-Schema 123 adds equipment-transfer and return-verification depth:
+Latest migration: `sql/124_accounting_cost_payment_reconciliation_remittance_equipment_depth.sql`.
 
-- `equipment_items.current_site_id`, `target_site_id`, transfer status/notes, arrival verification, and return verification fields.
-- `equipment_signouts.intended_site_id`, checkout-to-site, checkout test, arrival test, return test, final return verification, and verification status fields.
-- `equipment_transfer_verification_events` to keep an audit trail for checkout release, site arrival, return receipt, return verification, and return issues.
-- `app_operational_depth_gates` to keep equipment, accounting, and SEO sanity gaps visible in the app.
-- `v_equipment_directory`, `v_equipment_transfer_verification_directory`, `v_equipment_return_exception_directory`, `v_app_operational_depth_gates`, and `v_schema_drift_status` refreshed through expected schema **123**.
+Schema 124 adds or extends these areas:
 
-The canonical schema reference is `sql/000_full_schema_reference.sql`; apply migrations through `sql/123_equipment_transfer_arrival_return_accounting_seo_guardrails.sql` before deploying this app build.
+- `job_financial_events` for cost category, billable-charge status, linked equipment/signout, close period, posting status, and profitability notes.
+- AR/AP payment application tables for credits, discounts, write-offs, overpayments, review status, reviewer, source reconciliation item, and payload metadata.
+- `bank_reconciliation_items` for raw CSV/import context, suggested match, match score, manual review, reviewer, undo link, and notes.
+- `sales_tax_filings` and `payroll_remittance_runs` for source totals, proof URL, signoff, filed/remitted references, and review steps.
+- `accounting_period_closes` for AR/AP/GL/payroll/tax lock state, close checklist, package manifest, close signoff, and reopen reason.
+- `accountant_handoff_exports` for package source period, exported file manifest, finalization, delivery reference, and delivery status.
+- `equipment_items`, `equipment_signouts`, `equipment_accessory_checklists`, and `equipment_service_tasks` for QR/barcode tracking, accessory checks, verifier role, and failed-test follow-up.
 
-<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->
+New schema 124 views include:
+
+- `v_job_cost_depth_directory`
+- `v_payment_application_workbench_directory`
+- `v_bank_reconciliation_review_workbench`
+- `v_remittance_filing_review_workbench`
+- `v_month_end_close_workbench`
+- `v_equipment_accountability_workbench`
+- `v_equipment_service_task_directory`
+
+<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->

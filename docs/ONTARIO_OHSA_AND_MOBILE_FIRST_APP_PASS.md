@@ -27,3 +27,5 @@ Ontario uses the Occupational Health and Safety Act (OHSA), not the U.S. workpla
 The next pass added the mobile Today dashboard, quick-action queue badges, and PWA install helper while keeping Ontario OHSA / workplace safety wording in visible app copy.
 
 <!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->
+
+<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->

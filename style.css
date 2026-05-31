@@ -2185,3 +2185,38 @@ button[aria-disabled="true"]:hover {
     min-height: 44px;
   }
 }
+
+/* 2026-05-30a: accounting depth and equipment accountability tables */
+.accounting-depth-grid,
+.equipment-accountability-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+#job_cost_depth_table td,
+#job_payment_application_table td,
+#job_bank_reconciliation_table td,
+#job_remittance_filing_table td,
+#job_month_end_close_table td,
+#eq_accountability_table td,
+#eq_service_task_table td {
+  vertical-align: top;
+}
+
+#eq_accessory_checklist,
+#eq_accessory_missing_notes {
+  min-height: 76px;
+}
+
+@media (max-width: 720px) {
+  #job_cost_depth_table,
+  #job_payment_application_table,
+  #job_bank_reconciliation_table,
+  #job_remittance_filing_table,
+  #job_month_end_close_table,
+  #eq_accountability_table,
+  #eq_service_task_table {
+    min-width: 760px;
+  }
+}

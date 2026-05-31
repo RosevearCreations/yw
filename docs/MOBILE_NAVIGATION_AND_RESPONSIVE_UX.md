@@ -30,3 +30,5 @@ This pass adds responsive Staff Directory list controls so the Admin app is not 
 _Reviewed in the 2026-05-17a pass for schema 112 documentation consistency._
 
 <!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->
+
+<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->

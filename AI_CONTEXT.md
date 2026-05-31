@@ -1,11 +1,14 @@
 # AI Context
 
-Last refreshed: **2026-05-29a**
+Last refreshed: **2026-05-30a**
 
-- Latest build/cache marker: **2026-05-29a**
-- Latest schema marker: **123**
-- Current app: YWI mobile-first Ontario OHSA/workplace-safety app with Admin, Jobs, equipment, accounting, and field forms.
-- This pass tightened equipment withdrawal, destination, arrival verification, return receipt, final return verification, return exceptions, and operational-depth visibility.
-- Next strongest pass: live schema 123 test, permission tightening for equipment verification, mobile equipment photo quality/compression, and deeper accounting cost/payment/reconciliation close workflow.
+The current YWI/HSE build is **2026-05-30a / schema 124**.
 
-<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->
+Recent context:
+
+- Schema 123 was repaired for equipment transfer/arrival/return verification and remains part of the build.
+- Schema 124 adds accounting depth and equipment accountability.
+- Main new UI areas are Accounting Depth Workbench, equipment QR/barcode fields, accessory checklist fields, Equipment Accountability Workbench, and Equipment Service Tasks.
+- Live test should apply schema 124 and redeploy `jobs-directory`, `jobs-manage`, and `admin-manage`.
+
+<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->

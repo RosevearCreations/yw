@@ -33,3 +33,5 @@ Browsers do not allow JavaScript to restore file input values. Draft text/select
 Schema **122** adds quality-gate metadata only. It does not alter live submission tables.
 
 <!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->
+
+<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->

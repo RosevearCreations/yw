@@ -19,3 +19,5 @@ Most usage is expected to happen from a phone. The app should open to a short ac
 Build mobile steppers, draft/resume chips, and photo quality checks for field forms.
 
 <!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->
+
+<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->

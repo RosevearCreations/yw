@@ -84,7 +84,14 @@
       returnPhotoFiles: [],
       transferVerifications: [],
       returnExceptions: [],
-      operationalDepthGates: []
+      operationalDepthGates: [],
+      jobCostDepth: [],
+      paymentApplicationWorkbench: [],
+      bankReconciliationReview: [],
+      remittanceFilingReview: [],
+      monthEndCloseWorkbench: [],
+      equipmentAccountability: [],
+      equipmentServiceTasks: []
     };
 
     function ensureLayout() {
@@ -201,6 +208,10 @@
             <label>Assigned Supervisor<input id="eq_assigned_supervisor" type="text" /></label>
             <label>Serial<input id="eq_serial" type="text" /></label>
             <label>Asset Tag<input id="eq_asset_tag" type="text" /></label>
+            <label>QR Code / Scan Value<input id="eq_qr_code_value" type="text" placeholder="QR or NFC value" /></label>
+            <label>Barcode<input id="eq_barcode_value" type="text" placeholder="Barcode / label value" /></label>
+            <label>Verifier Role<select id="eq_verifier_role_required"><option value="site_leader">Site Leader</option><option value="supervisor" selected>Supervisor</option><option value="job_admin">Job Admin</option><option value="admin">Admin</option></select></label>
+            <label style="display:flex;align-items:center;gap:8px;margin-top:26px;"><input id="eq_accessory_checklist_required" type="checkbox" /> Accessory checklist required</label>
             <label>Manufacturer<input id="eq_manufacturer" type="text" /></label>
             <label>Model<input id="eq_model" type="text" /></label>
             <label>Year<input id="eq_year" type="number" min="1900" max="2100" /></label>
@@ -241,6 +252,18 @@
             <label style="display:block;margin-top:12px;">Checkout / Transport Notes
               <textarea id="eq_checkout_test_notes" rows="2" placeholder="Pre-use test, accessories released, transport handoff, safety check notes."></textarea>
             </label>
+            <div class="equipment-verification-panel" style="margin-top:12px;">
+              <strong>Accessory Checklist</strong>
+              <p class="section-subtitle">Use one line per accessory, battery, charger, guard, key, case, or consumable kit.</p>
+              <div class="grid" style="margin-top:8px;">
+                <label>Checkout Accessories<select id="eq_checkout_accessory_status"><option value="not_recorded">Not recorded</option><option value="complete">Complete</option><option value="missing">Missing</option><option value="damaged">Damaged</option><option value="not_required">Not required</option></select></label>
+                <label>Arrival Accessories<select id="eq_arrival_accessory_status"><option value="not_recorded">Not recorded</option><option value="complete">Complete</option><option value="missing">Missing</option><option value="damaged">Damaged</option><option value="not_required">Not required</option></select></label>
+                <label>Return Accessories<select id="eq_return_accessory_status"><option value="not_recorded">Not recorded</option><option value="complete">Complete</option><option value="missing">Missing</option><option value="damaged">Damaged</option><option value="not_required">Not required</option></select></label>
+                <label>Estimated Service Cost<input id="eq_estimated_service_cost" type="number" min="0" step="0.01" placeholder="0.00" /></label>
+              </div>
+              <label style="display:block;margin-top:8px;">Accessory Checklist<textarea id="eq_accessory_checklist" rows="3" placeholder="Battery x2&#10;Charger&#10;Guard&#10;Case"></textarea></label>
+              <label style="display:block;margin-top:8px;">Missing / Damaged Accessory Notes<textarea id="eq_accessory_missing_notes" rows="2" placeholder="List anything missing, damaged, or not tested."></textarea></label>
+            </div>
             <label style="display:block;margin-top:12px;">Return Test Notes
               <textarea id="eq_return_test_notes" rows="2" placeholder="Post-return test, cleaning, charging, damage review, lockout notes."></textarea>
             </label>
@@ -316,6 +339,26 @@
             <div class="table-scroll">
               <table id="eq_depth_gate_table">
                 <thead><tr><th>Area</th><th>Gate</th><th>Status</th><th>Owner</th><th>Test</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="admin-panel-block" style="margin-top:16px;">
+            <h3 style="margin-top:0;">Equipment Accountability Workbench</h3>
+            <p class="section-subtitle">QR/barcode values, verifier role, accessory checklist requirement, open service tasks, and lockout status.</p>
+            <div class="table-scroll">
+              <table id="eq_accountability_table">
+                <thead><tr><th>Equipment</th><th>Scan Codes</th><th>Verifier</th><th>Checklist</th><th>Open Tasks</th><th>Site</th><th>Status</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="admin-panel-block" style="margin-top:16px;">
+            <h3 style="margin-top:0;">Equipment Service Tasks</h3>
+            <p class="section-subtitle">Failed arrival/return tests and missing accessories create service-task rows for follow-up.</p>
+            <div class="table-scroll">
+              <table id="eq_service_task_table">
+                <thead><tr><th>Equipment</th><th>Task</th><th>Status</th><th>Priority</th><th>Job</th><th>Cost</th><th>Notes</th></tr></thead>
                 <tbody></tbody>
               </table>
             </div>
@@ -587,6 +630,48 @@
             <tbody></tbody>
           </table>
         </div>
+        <div class="section-heading" style="margin-top:18px;">
+          <div>
+            <h3 style="margin:0;">Accounting Depth Workbench</h3>
+            <p class="section-subtitle">Review cost buckets, payment applications, reconciliation, remittance/filing signoff, and month-end lock/package status.</p>
+          </div>
+          <div class="admin-heading-actions">
+            <button id="job_review_payment_application" class="secondary" type="button">Review Payment Application</button>
+            <button id="job_review_reconciliation" class="secondary" type="button">Review Bank Match</button>
+            <button id="job_signoff_remittance" class="secondary" type="button">Signoff Remittance/Filing</button>
+            <button id="job_lock_period" class="secondary" type="button">Lock / Reopen Period</button>
+          </div>
+        </div>
+        <div class="table-scroll" style="margin-top:12px;">
+          <table id="job_cost_depth_table">
+            <thead><tr><th>Job</th><th>Known Revenue</th><th>Known Cost</th><th>Profit</th><th>Equipment</th><th>Fuel/Disposal</th><th>Material/Subcontract</th><th>Events</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="table-scroll" style="margin-top:12px;">
+          <table id="job_payment_application_table">
+            <thead><tr><th>Side</th><th>Payment</th><th>Party</th><th>Target</th><th>Applied</th><th>Adjustments</th><th>Status</th><th>Review</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="table-scroll" style="margin-top:12px;">
+          <table id="job_bank_reconciliation_table">
+            <thead><tr><th>Session</th><th>Date</th><th>Description</th><th>Amount</th><th>Score</th><th>Match</th><th>Review</th><th>Notes</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="table-scroll" style="margin-top:12px;">
+          <table id="job_remittance_filing_table">
+            <thead><tr><th>Kind</th><th>Code</th><th>Period</th><th>Due</th><th>Net</th><th>Status</th><th>Signoff</th><th>Proof</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="table-scroll" style="margin-top:12px;">
+          <table id="job_month_end_close_table">
+            <thead><tr><th>Period</th><th>Range</th><th>Status</th><th>Locks</th><th>Package</th><th>Closed</th><th>Reopen</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
         <div class="table-scroll" style="margin-top:12px;">
           <table id="job_quote_package_table">
             <thead><tr><th>Estimate</th><th>Package</th><th>Tax Profile</th><th>Status</th><th>Sent</th><th>Accepted</th></tr></thead>
@@ -829,6 +914,15 @@
         jobCompletionReviewBody: $('#job_completion_review_table tbody'),
         jobCompletionReadinessBody: $('#job_completion_readiness_table tbody'),
         jobAccountingQueueBody: $('#job_accounting_queue_table tbody'),
+        jobCostDepthBody: $('#job_cost_depth_table tbody'),
+        jobPaymentApplicationBody: $('#job_payment_application_table tbody'),
+        jobBankReconciliationBody: $('#job_bank_reconciliation_table tbody'),
+        jobRemittanceFilingBody: $('#job_remittance_filing_table tbody'),
+        jobMonthEndCloseBody: $('#job_month_end_close_table tbody'),
+        jobReviewPaymentApplication: $('#job_review_payment_application'),
+        jobReviewReconciliation: $('#job_review_reconciliation'),
+        jobSignoffRemittance: $('#job_signoff_remittance'),
+        jobLockPeriod: $('#job_lock_period'),
         jobQuotePackageBody: $('#job_quote_package_table tbody'),
         jobQuoteEngagementBody: $('#job_quote_engagement_table tbody'),
         jobQuoteOutputBody: $('#job_quote_output_table tbody'),
@@ -859,6 +953,10 @@
         eqSerial: $('#eq_serial'),
         eqPoolKey: $('#eq_pool_key'),
         eqAssetTag: $('#eq_asset_tag'),
+        eqQrCodeValue: $('#eq_qr_code_value'),
+        eqBarcodeValue: $('#eq_barcode_value'),
+        eqVerifierRoleRequired: $('#eq_verifier_role_required'),
+        eqAccessoryChecklistRequired: $('#eq_accessory_checklist_required'),
         eqManufacturer: $('#eq_manufacturer'),
         eqModel: $('#eq_model'),
         eqYear: $('#eq_year'),
@@ -888,6 +986,12 @@
         eqCheckoutCondition: $('#eq_checkout_condition'),
         eqCheckoutTestStatus: $('#eq_checkout_test_status'),
         eqCheckoutTestNotes: $('#eq_checkout_test_notes'),
+        eqAccessoryChecklist: $('#eq_accessory_checklist'),
+        eqCheckoutAccessoryStatus: $('#eq_checkout_accessory_status'),
+        eqArrivalAccessoryStatus: $('#eq_arrival_accessory_status'),
+        eqReturnAccessoryStatus: $('#eq_return_accessory_status'),
+        eqAccessoryMissingNotes: $('#eq_accessory_missing_notes'),
+        eqEstimatedServiceCost: $('#eq_estimated_service_cost'),
         eqReturnCondition: $('#eq_return_condition'),
         eqReturnTestStatus: $('#eq_return_test_status'),
         eqReturnTestNotes: $('#eq_return_test_notes'),
@@ -919,6 +1023,8 @@
         eqExceptionBody: $('#eq_exception_table tbody'),
         eqExceptionSummary: $('#eq_exception_summary'),
         eqDepthGateBody: $('#eq_depth_gate_table tbody'),
+        eqAccountabilityBody: $('#eq_accountability_table tbody'),
+        eqServiceTaskBody: $('#eq_service_task_table tbody'),
         eqTransferBody: $('#eq_transfer_table tbody'),
         eqGallery: $('#eq_gallery'),
         eqGallerySummary: $('#eq_gallery_summary'),
@@ -953,6 +1059,12 @@
 
     function collectSignaturePayload() {
       return {};
+    }
+
+    function readAccessoryChecklist() {
+      const e = els();
+      const text = e.eqAccessoryChecklist?.value || '';
+      return String(text).split(/[\r\n,]+/).map((item) => item.trim()).filter(Boolean).map((item) => ({ item, checked: true }));
     }
 
     function dataUrlToFile(dataUrl, fileName) {
@@ -1268,6 +1380,10 @@
         assigned_supervisor_name: e.eqAssignedSupervisor?.value || '',
         serial_number: e.eqSerial?.value || '',
         asset_tag: e.eqAssetTag?.value || '',
+        qr_code_value: e.eqQrCodeValue?.value || '',
+        barcode_value: e.eqBarcodeValue?.value || '',
+        verifier_role_required: e.eqVerifierRoleRequired?.value || '',
+        accessory_checklist_required: !!e.eqAccessoryChecklistRequired?.checked,
         manufacturer: e.eqManufacturer?.value || '',
         model_number: e.eqModel?.value || '',
         purchase_year: e.eqYear?.value || '',
@@ -1291,6 +1407,12 @@
         checkout_condition: e.eqCheckoutCondition?.value || '',
         checkout_safety_test_status: e.eqCheckoutTestStatus?.value || 'not_recorded',
         checkout_test_notes: e.eqCheckoutTestNotes?.value || '',
+        accessory_checklist: e.eqAccessoryChecklist?.value || '',
+        checkout_accessory_status: e.eqCheckoutAccessoryStatus?.value || 'not_recorded',
+        arrival_accessory_status: e.eqArrivalAccessoryStatus?.value || 'not_recorded',
+        return_accessory_status: e.eqReturnAccessoryStatus?.value || 'not_recorded',
+        accessory_missing_notes: e.eqAccessoryMissingNotes?.value || '',
+        estimated_service_cost: e.eqEstimatedServiceCost?.value || '',
         return_condition: e.eqReturnCondition?.value || '',
         return_test_status: e.eqReturnTestStatus?.value || 'not_recorded',
         return_test_notes: e.eqReturnTestNotes?.value || '',
@@ -1366,6 +1488,10 @@
         e.eqAssignedSupervisor.value = eqDraft.assigned_supervisor_name || '';
         e.eqSerial.value = eqDraft.serial_number || '';
         e.eqAssetTag.value = eqDraft.asset_tag || '';
+        if (e.eqQrCodeValue) e.eqQrCodeValue.value = eqDraft.qr_code_value || '';
+        if (e.eqBarcodeValue) e.eqBarcodeValue.value = eqDraft.barcode_value || '';
+        if (e.eqVerifierRoleRequired) e.eqVerifierRoleRequired.value = eqDraft.verifier_role_required || '';
+        if (e.eqAccessoryChecklistRequired) e.eqAccessoryChecklistRequired.checked = !!eqDraft.accessory_checklist_required;
         e.eqManufacturer.value = eqDraft.manufacturer || '';
         e.eqModel.value = eqDraft.model_number || '';
         e.eqYear.value = eqDraft.purchase_year || '';
@@ -1389,6 +1515,12 @@
         e.eqCheckoutCondition.value = eqDraft.checkout_condition || '';
         if (e.eqCheckoutTestStatus) e.eqCheckoutTestStatus.value = eqDraft.checkout_safety_test_status || 'not_recorded';
         if (e.eqCheckoutTestNotes) e.eqCheckoutTestNotes.value = eqDraft.checkout_test_notes || '';
+        if (e.eqAccessoryChecklist) e.eqAccessoryChecklist.value = eqDraft.accessory_checklist || '';
+        if (e.eqCheckoutAccessoryStatus) e.eqCheckoutAccessoryStatus.value = eqDraft.checkout_accessory_status || 'not_recorded';
+        if (e.eqArrivalAccessoryStatus) e.eqArrivalAccessoryStatus.value = eqDraft.arrival_accessory_status || 'not_recorded';
+        if (e.eqReturnAccessoryStatus) e.eqReturnAccessoryStatus.value = eqDraft.return_accessory_status || 'not_recorded';
+        if (e.eqAccessoryMissingNotes) e.eqAccessoryMissingNotes.value = eqDraft.accessory_missing_notes || '';
+        if (e.eqEstimatedServiceCost) e.eqEstimatedServiceCost.value = eqDraft.estimated_service_cost || '';
         e.eqReturnCondition.value = eqDraft.return_condition || '';
         if (e.eqReturnTestStatus) e.eqReturnTestStatus.value = eqDraft.return_test_status || 'not_recorded';
         if (e.eqReturnTestNotes) e.eqReturnTestNotes.value = eqDraft.return_test_notes || '';
@@ -1440,13 +1572,17 @@
     function clearEquipmentForm() {
       const e = els();
       state.editingEquipmentCode = '';
-      [e.eqCode, e.eqName, e.eqCategory, e.eqStatus, e.eqCurrentSite, e.eqTargetSite, e.eqCurrentJobCode, e.eqAssignedSupervisor, e.eqSerial, e.eqPoolKey, e.eqAssetTag, e.eqManufacturer, e.eqModel, e.eqYear, e.eqPurchaseDate, e.eqPurchasePrice, e.eqCondition, e.eqImageUrl, e.eqComments, e.eqWorkerSignature, e.eqSupervisorSignature, e.eqAdminSignature, e.eqCheckoutCondition, e.eqCheckoutTestStatus, e.eqCheckoutTestNotes, e.eqReturnCondition, e.eqReturnTestStatus, e.eqReturnTestNotes, e.eqArrivalCondition, e.eqArrivalTestStatus, e.eqArrivalNotes, e.eqDamageNotes].forEach((el) => { if (el) el.value = ''; });
+      [e.eqCode, e.eqName, e.eqCategory, e.eqStatus, e.eqCurrentSite, e.eqTargetSite, e.eqCurrentJobCode, e.eqAssignedSupervisor, e.eqSerial, e.eqPoolKey, e.eqAssetTag, e.eqQrCodeValue, e.eqBarcodeValue, e.eqVerifierRoleRequired, e.eqManufacturer, e.eqModel, e.eqYear, e.eqPurchaseDate, e.eqPurchasePrice, e.eqCondition, e.eqImageUrl, e.eqComments, e.eqWorkerSignature, e.eqSupervisorSignature, e.eqAdminSignature, e.eqCheckoutCondition, e.eqCheckoutTestStatus, e.eqCheckoutTestNotes, e.eqAccessoryChecklist, e.eqAccessoryMissingNotes, e.eqEstimatedServiceCost, e.eqReturnCondition, e.eqReturnTestStatus, e.eqReturnTestNotes, e.eqArrivalCondition, e.eqArrivalTestStatus, e.eqArrivalNotes, e.eqDamageNotes].forEach((el) => { if (el) el.value = ''; });
       if (e.eqStatus) e.eqStatus.value = 'available';
       if (e.eqCondition) e.eqCondition.value = 'ready';
       if (e.eqHomeSite) e.eqHomeSite.value = '';
       if (e.eqCurrentSite) e.eqCurrentSite.value = '';
       if (e.eqTargetSite) e.eqTargetSite.value = '';
       if (e.eqCheckoutTestStatus) e.eqCheckoutTestStatus.value = 'not_recorded';
+      if (e.eqCheckoutAccessoryStatus) e.eqCheckoutAccessoryStatus.value = 'not_recorded';
+      if (e.eqArrivalAccessoryStatus) e.eqArrivalAccessoryStatus.value = 'not_recorded';
+      if (e.eqReturnAccessoryStatus) e.eqReturnAccessoryStatus.value = 'not_recorded';
+      if (e.eqAccessoryChecklistRequired) e.eqAccessoryChecklistRequired.checked = false;
       if (e.eqReturnTestStatus) e.eqReturnTestStatus.value = 'not_recorded';
       if (e.eqArrivalTestStatus) e.eqArrivalTestStatus.value = 'not_recorded';
       if (e.eqDamageReported) e.eqDamageReported.checked = false;
@@ -1557,6 +1693,10 @@
       e.eqSerial.value = row.serial_number || '';
       e.eqPoolKey.value = row.equipment_pool_key || '';
       e.eqAssetTag.value = row.asset_tag || '';
+      if (e.eqQrCodeValue) e.eqQrCodeValue.value = row.qr_code_value || row.asset_tag || '';
+      if (e.eqBarcodeValue) e.eqBarcodeValue.value = row.barcode_value || row.serial_number || '';
+      if (e.eqVerifierRoleRequired) e.eqVerifierRoleRequired.value = row.verifier_role_required || '';
+      if (e.eqAccessoryChecklistRequired) e.eqAccessoryChecklistRequired.checked = !!row.accessory_checklist_required;
       e.eqManufacturer.value = row.manufacturer || '';
       e.eqModel.value = row.model_number || '';
       e.eqYear.value = row.purchase_year || '';
@@ -1601,6 +1741,8 @@
       const sessions = (state.jobSessions || []).filter((row) => Number(row.job_id || 0) === activeJobId);
       const hours = (state.jobCrewHours || []).filter((row) => Number(row.job_id || 0) === activeJobId);
       const reassignments = (state.jobReassignments || []).filter((row) => Number(row.source_job_id || 0) === activeJobId || Number(row.target_job_id || 0) === activeJobId);
+      const financialEvents = (state.jobFinancialEvents || []).filter((row) => Number(row.job_id || 0) === activeJobId);
+      const financialRollup = (state.jobFinancialRollups || []).find((row) => Number(row.job_id || 0) === activeJobId) || {};
       if (!activeJobId) {
         e.jobSessionBody.innerHTML = '<tr><td colspan="7" class="muted">Load a job to track sessions.</td></tr>';
         e.jobCrewHoursBody.innerHTML = '<tr><td colspan="8" class="muted">Load a job to log crew hours.</td></tr>';
@@ -1650,10 +1792,164 @@
       return { activeJobId, jobRow, workOrders, estimates, completionReviews, accountingQueue, invoiceCandidates, journalCandidates };
     }
 
+
+    function renderAccountingDepthTables(activeJobId = Number(state.selectedJobId || state.editingJobId || 0)) {
+      const e = els();
+      const jobCostRows = (state.jobCostDepth || []).filter((row) => !activeJobId || Number(row.job_id || 0) === Number(activeJobId)).slice(0, 80);
+      const paymentRows = (state.paymentApplicationWorkbench || []).slice(0, 80);
+      const reconciliationRows = (state.bankReconciliationReview || []).slice(0, 80);
+      const remittanceRows = (state.remittanceFilingReview || []).slice(0, 80);
+      const closeRows = (state.monthEndCloseWorkbench || []).slice(0, 80);
+      if (e.jobCostDepthBody) {
+        e.jobCostDepthBody.innerHTML = jobCostRows.length ? jobCostRows.map((row) => `
+          <tr>
+            <td>${escHtml(row.job_code || row.job_name || row.job_id || '')}</td>
+            <td>$${Number(row.known_revenue_total || 0).toFixed(2)}</td>
+            <td>$${Number(row.known_cost_total || 0).toFixed(2)}</td>
+            <td>$${Number(row.known_profit_total || 0).toFixed(2)}</td>
+            <td>$${Number(row.equipment_cost_total || 0).toFixed(2)}</td>
+            <td>$${Number(row.fuel_disposal_cost_total || 0).toFixed(2)}</td>
+            <td>$${Number(row.material_subcontract_cost_total || 0).toFixed(2)}</td>
+            <td>${Number(row.financial_event_count || 0)}</td>
+          </tr>`).join('') : '<tr><td colspan="8" class="muted">No job cost depth rows loaded yet.</td></tr>';
+      }
+      if (e.jobPaymentApplicationBody) {
+        e.jobPaymentApplicationBody.innerHTML = paymentRows.length ? paymentRows.map((row) => `
+          <tr>
+            <td>${escHtml(row.ledger_side || '')}</td>
+            <td>${escHtml(row.payment_number || '')}</td>
+            <td>${escHtml(row.party_name || '')}</td>
+            <td>${escHtml(row.target_number || '')}</td>
+            <td>$${Number(row.applied_amount || 0).toFixed(2)}</td>
+            <td>Credit $${Number(row.credit_amount || 0).toFixed(2)} • Discount $${Number(row.discount_amount || 0).toFixed(2)} • Write-off $${Number(row.writeoff_amount || 0).toFixed(2)}</td>
+            <td>${escHtml(row.application_status || '')}</td>
+            <td>${escHtml(row.review_status || '')}</td>
+          </tr>`).join('') : '<tr><td colspan="8" class="muted">No payment applications loaded yet.</td></tr>';
+      }
+      if (e.jobBankReconciliationBody) {
+        e.jobBankReconciliationBody.innerHTML = reconciliationRows.length ? reconciliationRows.map((row) => `
+          <tr>
+            <td>${escHtml(row.session_code || row.reconciliation_session_id || '')}</td>
+            <td>${escHtml(row.item_date || row.transaction_date || '')}</td>
+            <td>${escHtml(row.item_description || row.raw_description || '')}</td>
+            <td>$${Number(row.amount || 0).toFixed(2)}</td>
+            <td>${Number(row.suggested_match_score || 0).toFixed(2)}</td>
+            <td>${escHtml([row.suggested_match_source_table, row.suggested_match_source_id].filter(Boolean).join(':'))}</td>
+            <td>${escHtml(row.manual_review_status || '')}</td>
+            <td>${escHtml(row.review_notes || row.suggested_match_reason || '')}</td>
+          </tr>`).join('') : '<tr><td colspan="8" class="muted">No bank reconciliation review rows loaded yet.</td></tr>';
+      }
+      if (e.jobRemittanceFilingBody) {
+        e.jobRemittanceFilingBody.innerHTML = remittanceRows.length ? remittanceRows.map((row) => `
+          <tr>
+            <td>${escHtml(row.review_kind || '')}</td>
+            <td>${escHtml(row.record_code || '')}</td>
+            <td>${escHtml([row.period_start, row.period_end].filter(Boolean).join(' → '))}</td>
+            <td>${escHtml(row.due_date || '')}</td>
+            <td>$${Number(row.net_remittance_total || 0).toFixed(2)}</td>
+            <td>${escHtml(row.status || '')}</td>
+            <td>${escHtml(row.signed_off_at ? 'signed_off' : (row.review_status || ''))}</td>
+            <td>${escHtml(row.export_proof_url || '')}</td>
+          </tr>`).join('') : '<tr><td colspan="8" class="muted">No HST/GST or payroll remittance review rows loaded yet.</td></tr>';
+      }
+      if (e.jobMonthEndCloseBody) {
+        e.jobMonthEndCloseBody.innerHTML = closeRows.length ? closeRows.map((row) => `
+          <tr>
+            <td>${escHtml(row.period_code || '')}</td>
+            <td>${escHtml(row.period_start || '')} → ${escHtml(row.period_end || '')}</td>
+            <td>${escHtml(row.close_status || '')}</td>
+            <td>${escHtml(row.period_lock_status || 'open')} / ${row.gl_locked ? 'GL locked' : 'GL open'}</td>
+            <td>${escHtml(row.accountant_package_status || '')}</td>
+            <td>${escHtml(row.closed_at || '')}</td>
+            <td>${escHtml(row.reopened_at || '')}</td>
+          </tr>`).join('') : '<tr><td colspan="7" class="muted">No month-end close rows loaded yet.</td></tr>';
+      }
+    }
+
+    function renderEquipmentAccountabilityDepth() {
+      const e = els();
+      const accountabilityRows = (state.equipmentAccountability || []).slice(0, 80);
+      const serviceRows = (state.equipmentServiceTasks || []).slice(0, 80);
+      if (e.eqAccountabilityBody) {
+        e.eqAccountabilityBody.innerHTML = accountabilityRows.length ? accountabilityRows.map((row) => `
+          <tr>
+            <td>${escHtml(row.equipment_code || '')}<br><span class="muted">${escHtml(row.equipment_name || '')}</span></td>
+            <td>${escHtml(row.qr_code_value || '')}<br><span class="muted">${escHtml(row.barcode_value || '')}</span></td>
+            <td>${escHtml(row.verifier_role_required || '')}</td>
+            <td>${row.accessory_checklist_required ? 'Required' : 'Optional'}<br><span class="muted">${Number(row.active_checklist_count || 0)} checklist item(s)</span></td>
+            <td>${Number(row.open_service_task_count || 0)}</td>
+            <td>${escHtml(row.current_site_code || row.current_site_name || '')}</td>
+            <td>${escHtml(row.status || '')}${row.is_locked_out ? ' • Locked' : ''}</td>
+          </tr>`).join('') : '<tr><td colspan="7" class="muted">No equipment accountability rows loaded yet. Apply schema 124.</td></tr>';
+      }
+      if (e.eqServiceTaskBody) {
+        e.eqServiceTaskBody.innerHTML = serviceRows.length ? serviceRows.map((row) => `
+          <tr>
+            <td>${escHtml(row.equipment_code || '')}</td>
+            <td>${escHtml(row.task_type || '')}</td>
+            <td>${escHtml(row.task_status || '')}</td>
+            <td>${escHtml(row.priority || '')}</td>
+            <td>${escHtml(row.job_code || '')}</td>
+            <td>$${Number(row.estimated_cost || row.actual_cost || 0).toFixed(2)}</td>
+            <td>${escHtml(row.task_notes || '')}</td>
+          </tr>`).join('') : '<tr><td colspan="7" class="muted">No equipment service tasks loaded yet.</td></tr>';
+      }
+    }
+
+    async function reviewFirstPaymentApplication() {
+      const e = els();
+      const row = (state.paymentApplicationWorkbench || []).find((item) => !['approved','reversed'].includes(String(item.review_status || ''))) || (state.paymentApplicationWorkbench || [])[0];
+      if (!row?.id) return setNotice(e.jobCommercialSummary, 'No payment application row is available to review.', true);
+      const review_status = window.prompt('Payment review status (reviewed, approved, exception, reversed):', row.review_status === 'reviewed' ? 'approved' : 'reviewed') || 'reviewed';
+      const notes = window.prompt('Payment application review notes:', row.review_notes || '') || '';
+      const resp = await api.manageAdminEntity({ entity: 'payment_application', action: review_status === 'approved' ? 'approve' : (review_status === 'reversed' ? 'reverse' : 'review'), ledger_side: row.ledger_side || 'ar', item_id: row.id, review_status, notes });
+      if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'Payment application review failed.', true);
+      setNotice(e.jobCommercialSummary, 'Payment application review saved.');
+      await loadData();
+    }
+
+    async function reviewFirstReconciliationItem() {
+      const e = els();
+      const row = (state.bankReconciliationReview || []).find((item) => String(item.manual_review_status || '') !== 'approved') || (state.bankReconciliationReview || [])[0];
+      if (!row?.id) return setNotice(e.jobCommercialSummary, 'No bank reconciliation row is available to review.', true);
+      const manual_review_status = window.prompt('Reconciliation review status (pending, review, approved, rejected, undo_requested):', row.manual_review_status || 'approved') || 'approved';
+      const manual_review_notes = window.prompt('Reconciliation review notes:', row.review_notes || row.suggested_match_reason || '') || '';
+      const action = manual_review_status === 'approved' ? 'approve_match' : manual_review_status === 'undo_requested' ? 'undo_match' : 'review';
+      const resp = await api.manageAdminEntity({ entity: 'bank_reconciliation_item', action, item_id: row.id, manual_review_status, manual_review_notes });
+      if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'Reconciliation review failed.', true);
+      setNotice(e.jobCommercialSummary, 'Bank reconciliation review saved.');
+      await loadData();
+    }
+
+    async function signoffFirstRemittanceRow() {
+      const e = els();
+      const row = (state.remittanceFilingReview || []).find((item) => !item.signed_off_at) || (state.remittanceFilingReview || [])[0];
+      if (!row?.id) return setNotice(e.jobCommercialSummary, 'No HST/GST or payroll remittance row is available to sign off.', true);
+      const filing_status = window.prompt('Review step/status (reviewed, signed_off, filed, remitted, paid):', row.signed_off_at ? 'filed' : 'signed_off') || 'signed_off';
+      const notes = window.prompt('Filing/remittance notes:', row.adjustment_notes || '') || '';
+      const resp = await api.manageAdminEntity({ entity: 'remittance_filing_review', action: 'signoff', review_kind: row.review_kind, item_id: row.id, filing_status, notes });
+      if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'Filing/remittance signoff failed.', true);
+      setNotice(e.jobCommercialSummary, 'Filing/remittance signoff saved.');
+      await loadData();
+    }
+
+    async function lockOrReopenFirstAccountingPeriod() {
+      const e = els();
+      const row = (state.monthEndCloseWorkbench || [])[0];
+      if (!row?.id) return setNotice(e.jobCommercialSummary, 'No accounting period close row is available.', true);
+      const action = window.prompt('Period action (soft_lock, lock, reopen):', row.is_hard_locked ? 'reopen' : 'soft_lock') || 'soft_lock';
+      const notes = window.prompt('Period close/reopen notes:', row.reopen_reason || '') || '';
+      const resp = await api.manageAdminEntity({ entity: 'accounting_period_close', action, item_id: row.id, notes });
+      if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'Month-end close action failed.', true);
+      setNotice(e.jobCommercialSummary, 'Month-end close action saved.');
+      await loadData();
+    }
+
     function renderCommercialWorkflow() {
       const e = els();
       if (!e.jobEstimateBody || !e.jobWorkOrderBody || !e.jobCompletionReviewBody || !e.jobAccountingQueueBody) return;
       const { activeJobId, jobRow, workOrders, estimates, completionReviews, accountingQueue } = getSelectedCommercialContext();
+      renderAccountingDepthTables(activeJobId);
       const quotePackages = (state.quotePackages || []).filter((row) => estimates.some((est) => String(est.id || '') === String(row.estimate_id || '')));
       const releaseReviews = (state.workOrderReleaseReviews || []).filter((row) => workOrders.some((wo) => String(wo.id || '') === String(row.work_order_id || '')));
       const quoteEngagement = (state.quotePackageEngagement || []).filter((row) => estimates.some((est) => String(est.id || '') === String(row.estimate_id || '')));
@@ -1713,7 +2009,7 @@
       e.jobReleaseReviewBody.innerHTML = releaseReviews.length ? releaseReviews.map((row) => `<tr><td>${escHtml(row.work_order_number || '')}</td><td>${escHtml(row.release_status || '')}</td><td>${escHtml(row.threshold_status || '')}</td><td>${Number(row.discount_percent || 0).toFixed(2)}</td><td>${Number(row.margin_percent || 0).toFixed(2)}</td><td>${escHtml(row.required_signoff_role || '')}</td></tr>`).join('') : '<tr><td colspan="6" class="muted">No release review yet.</td></tr>';
       e.jobThresholdEvalBody.innerHTML = thresholdEvaluations.length ? thresholdEvaluations.map((row) => `<tr><td>${escHtml(row.threshold_name || '')}</td><td>${escHtml(row.evaluated_status || '')}</td><td>${Number(row.discount_percent || 0).toFixed(2)}</td><td>${Number(row.margin_percent || 0).toFixed(2)}</td><td>$${Number(row.total_amount || 0).toFixed(2)}</td><td>${escHtml(row.evaluation_message || '')}</td></tr>`).join('') : '<tr><td colspan="6" class="muted">No threshold evaluations yet.</td></tr>';
       e.jobCloseoutItemBody.innerHTML = closeoutItems.length ? closeoutItems.map((row) => `<tr><td>${escHtml(row.label || '')}</td><td>${escHtml(row.item_type || '')}</td><td>${escHtml(row.item_status || '')}</td><td>${row.required_item ? 'Yes' : 'No'}</td><td>${escHtml(row.due_at || '')}</td><td>${escHtml(row.completed_at || row.completed_by_name || '')}</td></tr>`).join('') : '<tr><td colspan="6" class="muted">No closeout items yet.</td></tr>';
-      e.jobSignoffStepBody.innerHTML = signoffSteps.length ? signoffSteps.map((row) => `<tr><td>${escHtml(row.signoff_kind || '')}</td><td>${escHtml(row.signoff_status || '')}</td><td>${escHtml(row.required_role || '')}</td><td>${escHtml(row.signoff_display_name || '')}</td><td>${escHtml(row.signed_at || '')}</td><td>${escHtml(row.signoff_notes || '')}</td></tr>`).join('') : '<tr><td colspan="6" class="muted">No completion signoff steps yet.</td></tr>';
+      e.jobSignoffStepBody.innerHTML = signoffSteps.length ? signoffSteps.map((row) => `<tr><td>${escHtml(row.signoff_kind || '')}</td><td>${escHtml(row.signed_off_at ? 'signed_off' : (row.review_status || ''))}</td><td>${escHtml(row.required_role || '')}</td><td>${escHtml(row.signoff_display_name || '')}</td><td>${escHtml(row.signed_at || '')}</td><td>${escHtml(row.signoff_notes || '')}</td></tr>`).join('') : '<tr><td colspan="6" class="muted">No completion signoff steps yet.</td></tr>';
       e.jobCloseoutEvidenceBody.innerHTML = closeoutEvidence.length ? closeoutEvidence.map((row) => `<tr><td>${escHtml(row.label || row.resolved_file_name || '')}</td><td>${escHtml(row.asset_kind || '')}</td><td>${escHtml(row.notes || row.resolved_caption || '')}</td><td>${escHtml(row.source_table || row.resolved_asset_url || row.asset_url || '')}</td><td>${escHtml(row.created_at || '')}</td></tr>`).join('') : '<tr><td colspan="5" class="muted">No closeout evidence linked yet.</td></tr>';
       e.jobInvoiceCandidateBody.innerHTML = invoiceCandidates.length ? invoiceCandidates.map((row) => `<tr><td>${escHtml(row.candidate_number || '')}</td><td>${escHtml(row.candidate_status || '')}</td><td>${escHtml(row.tax_profile_name || row.legal_entity_type || '')}</td><td>$${Number(row.total_amount || 0).toFixed(2)}</td><td>${escHtml(row.client_name || '')}</td></tr>`).join('') : '<tr><td colspan="5" class="muted">No invoice candidates yet.</td></tr>';
       e.jobJournalCandidateBody.innerHTML = journalCandidates.length ? journalCandidates.map((row) => `<tr><td>${escHtml(row.job_code || '')}</td><td>${escHtml(row.candidate_status || '')}</td><td>${escHtml(row.tax_profile_name || row.legal_entity_type || '')}</td><td>${escHtml(row.journal_memo || '')}</td></tr>`).join('') : '<tr><td colspan="4" class="muted">No journal candidates yet.</td></tr>';
@@ -2042,7 +2338,7 @@
     async function signSelectedCompletionStep() {
       const e = els();
       const ctx = getSelectedCommercialContext();
-      const step = (state.completionSignoffSteps || []).find((row) => ctx.completionReviews.some((cr) => String(cr.id || '') === String(row.completion_review_id || '')) && String(row.signoff_status || '') !== 'signed');
+      const step = (state.completionSignoffSteps || []).find((row) => ctx.completionReviews.some((cr) => String(cr.id || '') === String(row.completion_review_id || '')) && String(row.signed_off_at ? 'signed_off' : (row.review_status || '')) !== 'signed');
       if (!step?.id) return setNotice(e.jobCommercialSummary, 'No pending signoff step was found for this completion review.', true);
       const signoff_name = window.prompt('Signoff name:', step.signoff_display_name || '') || '';
       const signoff_notes = window.prompt('Signoff notes:', step.signoff_notes || '') || '';
@@ -2205,6 +2501,7 @@
           e.eqMaintenanceBody.appendChild(tr);
         });
       }
+      renderEquipmentAccountabilityDepth();
     }
 
 
@@ -2354,6 +2651,13 @@
         state.transferVerifications = Array.isArray(resp?.equipment_transfer_verifications) ? resp.equipment_transfer_verifications : [];
         state.returnExceptions = Array.isArray(resp?.equipment_return_exceptions) ? resp.equipment_return_exceptions : [];
         state.operationalDepthGates = Array.isArray(resp?.operational_depth_gates) ? resp.operational_depth_gates : [];
+        state.jobCostDepth = Array.isArray(resp?.job_cost_depth) ? resp.job_cost_depth : [];
+        state.paymentApplicationWorkbench = Array.isArray(resp?.payment_application_workbench) ? resp.payment_application_workbench : [];
+        state.bankReconciliationReview = Array.isArray(resp?.bank_reconciliation_review_workbench) ? resp.bank_reconciliation_review_workbench : [];
+        state.remittanceFilingReview = Array.isArray(resp?.remittance_filing_review_workbench) ? resp.remittance_filing_review_workbench : [];
+        state.monthEndCloseWorkbench = Array.isArray(resp?.month_end_close_workbench) ? resp.month_end_close_workbench : [];
+        state.equipmentAccountability = Array.isArray(resp?.equipment_accountability) ? resp.equipment_accountability : [];
+        state.equipmentServiceTasks = Array.isArray(resp?.equipment_service_tasks) ? resp.equipment_service_tasks : [];
         fillSiteSelect(e.jobSiteName);
         fillSiteSelect(e.eqHomeSite);
         fillSiteSelect(e.eqCurrentSite);
@@ -2429,13 +2733,16 @@
         const activeJob = jobRow || (state.jobs || []).find((row) => Number(row.id) === Number(state.selectedJobId || state.editingJobId || 0));
         if (!activeJob?.id) throw new Error('Load a job before recording a cost or revenue event.');
         const event_date = window.prompt('Event date (YYYY-MM-DD):', new Date().toISOString().slice(0, 10)) || '';
-        const event_type = window.prompt('Event type (material, equipment_repair, delay, fuel, travel, subcontract, disposal, permit, revenue_adjustment, discount_adjustment, other):', 'material') || 'other';
+        const event_type = window.prompt('Event type (material, equipment_repair, equipment_usage, equipment_replacement, delay, fuel, travel, subcontract, disposal, permit, revenue_adjustment, discount_adjustment, writeoff_adjustment, other):', 'material') || 'other';
+        const cost_category = window.prompt('Cost category (repair, delay, usage, replacement, fuel, disposal, material, subcontract, labor, other):', event_type === 'equipment_repair' ? 'repair' : event_type === 'equipment_usage' ? 'usage' : event_type === 'equipment_replacement' ? 'replacement' : event_type) || 'other';
         const cost_amount = window.prompt('Cost amount:', '0') || '0';
         const revenue_amount = window.prompt('Revenue amount:', '0') || '0';
         const is_billable = window.confirm('Is this event billable to the client?');
+        const billable_charge_status = is_billable ? (window.prompt('Billable status (pending, approved, invoiced, waived):', 'pending') || 'pending') : 'not_billable';
+        const equipment_code = window.prompt('Related equipment code (optional):', '') || '';
         const reference_number = window.prompt('Reference / receipt / invoice number:', '') || '';
         const notes = window.prompt('Notes:', '') || '';
-        const resp = await api.manageJobsEntity({ entity: 'job_financial_event', action: 'create', job_id: activeJob.id, event_date, event_type, cost_amount: Number(cost_amount || 0), revenue_amount: Number(revenue_amount || 0), is_billable, reference_number, notes });
+        const resp = await api.manageJobsEntity({ entity: 'job_financial_event', action: 'create', job_id: activeJob.id, event_date, event_type, cost_category, cost_amount: Number(cost_amount || 0), revenue_amount: Number(revenue_amount || 0), is_billable, billable_charge_status, equipment_code, reference_number, notes });
         if (!resp?.ok) throw new Error(resp?.error || 'Financial event save failed.');
         await loadData();
       } catch (err) {
@@ -2562,6 +2869,10 @@
           serial_number: e.eqSerial?.value?.trim?.() || '',
           equipment_pool_key: e.eqPoolKey?.value?.trim?.() || '',
           asset_tag: e.eqAssetTag?.value?.trim?.() || '',
+          qr_code_value: e.eqQrCodeValue?.value?.trim?.() || '',
+          barcode_value: e.eqBarcodeValue?.value?.trim?.() || '',
+          verifier_role_required: e.eqVerifierRoleRequired?.value?.trim?.() || '',
+          accessory_checklist_required: !!e.eqAccessoryChecklistRequired?.checked,
           manufacturer: e.eqManufacturer?.value?.trim?.() || '',
           model_number: e.eqModel?.value?.trim?.() || '',
           purchase_year: e.eqYear?.value ? Number(e.eqYear.value) : null,
@@ -2606,6 +2917,9 @@
           checkout_condition: e.eqCheckoutCondition?.value?.trim?.() || '',
           checkout_safety_test_status: e.eqCheckoutTestStatus?.value || 'not_recorded',
           checkout_test_notes: e.eqCheckoutTestNotes?.value?.trim?.() || '',
+          checkout_accessory_checklist: readAccessoryChecklist(),
+          checkout_accessory_status: e.eqCheckoutAccessoryStatus?.value || 'not_recorded',
+          accessory_missing_notes: e.eqAccessoryMissingNotes?.value?.trim?.() || '',
           transport_handoff_notes: e.eqCheckoutTestNotes?.value?.trim?.() || '',
           notes: e.eqNotes?.value?.trim?.() || '',
           ...collectSignaturePayload()
@@ -2631,6 +2945,9 @@
           arrival_site: e.eqTargetSite?.value?.trim?.() || e.eqCurrentSite?.value?.trim?.() || e.eqHomeSite?.value?.trim?.() || '',
           arrival_condition: e.eqArrivalCondition?.value?.trim?.() || e.eqCondition?.value?.trim?.() || '',
           arrival_test_status: e.eqArrivalTestStatus?.value || 'not_recorded',
+          arrival_accessory_checklist: readAccessoryChecklist(),
+          arrival_accessory_status: e.eqArrivalAccessoryStatus?.value || 'not_recorded',
+          accessory_missing_notes: e.eqAccessoryMissingNotes?.value?.trim?.() || '',
           arrival_verification_notes: e.eqArrivalNotes?.value?.trim?.() || '',
           notes: e.eqArrivalNotes?.value?.trim?.() || ''
         });
@@ -2656,6 +2973,10 @@
           return_condition: e.eqReturnCondition?.value?.trim?.() || '',
           return_test_status: e.eqReturnTestStatus?.value || 'not_recorded',
           return_test_notes: e.eqReturnTestNotes?.value?.trim?.() || '',
+          return_accessory_checklist: readAccessoryChecklist(),
+          return_accessory_status: e.eqReturnAccessoryStatus?.value || 'not_recorded',
+          accessory_missing_notes: e.eqAccessoryMissingNotes?.value?.trim?.() || '',
+          estimated_service_cost: e.eqEstimatedServiceCost?.value ? Number(e.eqEstimatedServiceCost.value) : null,
           return_notes: e.eqNotes?.value?.trim?.() || '',
           damage_reported: !!e.eqDamageReported?.checked,
           damage_notes: e.eqDamageNotes?.value?.trim?.() || '',
@@ -2682,6 +3003,7 @@
           equipment_code: e.eqCode?.value?.trim?.() || '',
           return_test_status: e.eqReturnTestStatus?.value || 'not_recorded',
           return_test_notes: e.eqReturnTestNotes?.value?.trim?.() || e.eqDamageNotes?.value?.trim?.() || '',
+          estimated_service_cost: e.eqEstimatedServiceCost?.value ? Number(e.eqEstimatedServiceCost.value) : null,
           return_condition: e.eqReturnCondition?.value?.trim?.() || ''
         });
         if (!resp?.ok) throw new Error(resp?.error || 'Return verification failed');
@@ -2982,6 +3304,22 @@
       if (e.jobExportAccountantHandoff && e.jobExportAccountantHandoff.dataset.bound !== '1') {
         e.jobExportAccountantHandoff.dataset.bound = '1';
         e.jobExportAccountantHandoff.addEventListener('click', () => exportSelectedAccountantHandoff());
+      }
+      if (e.jobReviewPaymentApplication && e.jobReviewPaymentApplication.dataset.bound !== '1') {
+        e.jobReviewPaymentApplication.dataset.bound = '1';
+        e.jobReviewPaymentApplication.addEventListener('click', () => reviewFirstPaymentApplication());
+      }
+      if (e.jobReviewReconciliation && e.jobReviewReconciliation.dataset.bound !== '1') {
+        e.jobReviewReconciliation.dataset.bound = '1';
+        e.jobReviewReconciliation.addEventListener('click', () => reviewFirstReconciliationItem());
+      }
+      if (e.jobSignoffRemittance && e.jobSignoffRemittance.dataset.bound !== '1') {
+        e.jobSignoffRemittance.dataset.bound = '1';
+        e.jobSignoffRemittance.addEventListener('click', () => signoffFirstRemittanceRow());
+      }
+      if (e.jobLockPeriod && e.jobLockPeriod.dataset.bound !== '1') {
+        e.jobLockPeriod.dataset.bound = '1';
+        e.jobLockPeriod.addEventListener('click', () => lockOrReopenFirstAccountingPeriod());
       }
 
       if (e.jobFinancialBody && e.jobFinancialBody.dataset.bound !== '1') {

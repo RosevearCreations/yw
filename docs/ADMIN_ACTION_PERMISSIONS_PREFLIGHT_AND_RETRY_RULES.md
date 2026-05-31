@@ -41,3 +41,5 @@ Currently guarded buttons include:
 The next pass should add edit/signoff controls so operators can maintain these rows without writing SQL.
 
 <!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->
+
+<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->

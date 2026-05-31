@@ -1,27 +1,13 @@
 # Project State
 
-Last refreshed: **2026-05-29a**
+Last refreshed: **2026-05-30a**
 
-- Repo build marker: **2026-05-29a**
-- Current schema marker: **123**
-- Current focus: equipment withdrawal, arrival verification, return testing, final return verification, exception visibility, and accounting/SEO depth tracking.
+Current build marker: **2026-05-30a / schema 124**.
 
-## What changed this pass
+The current pass advances the YWI/HSE app from equipment transfer verification into deeper accounting and equipment accountability. Schema 124 adds job-cost depth, payment application review, bank reconciliation review, HST/GST and payroll remittance review, month-end close controls, accountant export package metadata, equipment QR/barcode fields, accessory checklists, and automatic service-task creation from failed equipment arrival/return tests.
 
-- Equipment can now track Home Site, Current Site, and Destination Site.
-- Checkout records intended destination and checkout safety test details.
-- Arrival verification records condition, test status, verifier, notes, and transfer event.
-- Return receipt now separates “returned pending review” from final “return verified.”
-- Damage or failed/needs-service return tests create return exception status and lockout/service attention.
-- Jobs directory returns transfer history, return exceptions, and operational-depth gates for the UI.
-- Smoke checks now expect schema 123 and current `2026-05-29a` cache assets.
+The repaired schema 123 equipment-transfer migration remains in place. Schema 124 builds on it instead of replacing it.
 
-## Live deployment notes
+Important live-test items: apply schema 124 in Supabase, redeploy `jobs-directory`, `jobs-manage`, and `admin-manage`, hard-refresh the browser/service worker, then test Jobs, Equipment, Accounting Depth Workbench, and equipment return/signoff flows with real rows.
 
-1. Apply schema 123.
-2. Redeploy `jobs-directory` and `jobs-manage`.
-3. Clear browser/service-worker cache.
-4. Test an equipment item through Save → Check Out → Verify Arrival / Site Test → Return → Mark Return Verified.
-5. Confirm exception/history/depth-gate rows display in the Equipment panel.
-
-<!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->
+<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->
