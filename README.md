@@ -1,15 +1,12 @@
-# YWI / HSE App
+# YWI HSE App
 
-Current build: **2026-05-30a / schema 124**.
+Current build: **2026-06-01a**  
+Current schema: **125**
 
-This build focuses on accounting depth and equipment accountability. It keeps the schema 123 equipment transfer/arrival/return workflow and adds deeper job-cost, payment application, reconciliation, HST/GST/payroll remittance, month-end close, accountant export, QR/barcode equipment, accessory checklist, and equipment service-task support.
+This build repairs the `jobs-manage` Edge Function bundle failure, adds TypeScript parse checks to the smoke script, improves deployment/SEO/fallback guardrails, and keeps the accounting/equipment depth work from schema 124.
 
-Start with:
+## Most important deploy note
 
-- `DEVELOPMENT_ROADMAP.md` for completed and next steps.
-- `KNOWN_ISSUES_AND_GAPS.md` for current risks.
-- `DATABASE_STRUCTURE.md` for schema 124 notes.
-- `TESTING_CHECKLIST.md` for deploy and live-test items.
-- `docs/ACCOUNTING_DEPTH_AND_EQUIPMENT_ACCOUNTABILITY_SCHEMA124.md` for this pass.
+Apply schema 125, then redeploy `jobs-manage` and `jobs-directory`. Clear the old service worker so the **2026-06-01a** assets load.
 
-<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->
+<!-- 2026-06-01a pass: schema 125 deployment bundle parse repair, SEO/local checks, fallback guardrails, jobs-manage fix, jobs-directory attachment dedupe, cache marker, and roadmap refresh. -->

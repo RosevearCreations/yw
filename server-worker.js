@@ -5,7 +5,7 @@
 
 'use strict';
 
-const CACHE_NAME = 'ywi-shell-v2026-05-30a';
+const CACHE_NAME = 'ywi-shell-v2026-06-01a';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -43,9 +43,26 @@ const APP_SHELL = [
   '/js/forms-drill.js'
 ];
 
+async function cacheAppShellWithFallback() {
+  const cache = await caches.open(CACHE_NAME);
+  const attempts = await Promise.allSettled(
+    APP_SHELL.map(async (assetUrl) => {
+      try {
+        const response = await fetch(assetUrl, { cache: 'reload' });
+        if (response && response.ok) {
+          await cache.put(assetUrl, response.clone());
+        }
+      } catch (error) {
+        // Keep installing the repaired worker even when one optional/static asset is stale.
+      }
+    })
+  );
+  return attempts;
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting())
+    cacheAppShellWithFallback().then(() => self.skipWaiting())
   );
 });
 

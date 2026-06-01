@@ -1,6 +1,6 @@
 # Production Readiness Checklist
 
-Last refreshed: **2026-05-29a**
+Last refreshed: **2026-06-01a**
 
 ## Schema 123 readiness
 
@@ -27,4 +27,4 @@ Last refreshed: **2026-05-29a**
 
 <!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->
 
-<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->
+<!-- 2026-06-01a pass: schema 125 deployment bundle parse repair, SEO/local checks, fallback guardrails, jobs-manage fix, jobs-directory attachment dedupe, cache marker, and roadmap refresh. -->

@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-06-01a
+
+- Repaired `supabase/functions/jobs-manage/index.ts` so `normalizeJsonArray` uses an escaped newline regexp and Supabase bundling does not fail with an unterminated regexp literal.
+- Added TypeScript parser diagnostics for every Supabase Edge Function to `scripts/repo-smoke-check.mjs`.
+- Added schema **125** for deployment bundle checks, public SEO/local wording checks, and runtime fallback checks.
+- Added `v_app_deployment_bundle_checks`, `v_app_public_seo_checks`, and `v_app_runtime_fallback_checks`.
+- Updated `v_schema_drift_status` to expect schema 125.
+- Fixed duplicate job comment attachment rows in `jobs-directory`.
+- Improved the service worker install path with per-asset cache fallback.
+- Updated cache marker to **2026-06-01a** and refreshed active Markdown.
+
 ## 2026-05-30a
 
 - Added schema **124** for accounting cost depth, payment application review, reconciliation review, HST/GST and payroll remittance review, month-end close controls, accountant package depth, and equipment accountability.
@@ -18,4 +29,4 @@
 - Updated `jobs-directory` to return equipment transfer history, return exceptions, and operational-depth gates.
 - Updated canonical schema reference, smoke checks, CSS, cache marker, and active Markdown.
 
-<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->
+<!-- 2026-06-01a pass: schema 125 deployment bundle parse repair, SEO/local checks, fallback guardrails, jobs-manage fix, jobs-directory attachment dedupe, cache marker, and roadmap refresh. -->

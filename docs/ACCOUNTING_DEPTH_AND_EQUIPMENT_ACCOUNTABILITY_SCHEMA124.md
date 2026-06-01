@@ -1,6 +1,6 @@
 # Accounting Depth and Equipment Accountability — Schema 124
 
-Last refreshed: **2026-05-30a**
+Last refreshed: **2026-06-01a**
 
 ## Purpose
 
@@ -54,4 +54,4 @@ The Jobs UI now includes:
 
 The next pass should add per-row review buttons, real payment-application editor screens, bank CSV preview, camera scan lookup, verifier-role enforcement, service-task assignment/completion, and accountant export package generation from live close data.
 
-<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->
+<!-- 2026-06-01a pass: schema 125 deployment bundle parse repair, SEO/local checks, fallback guardrails, jobs-manage fix, jobs-directory attachment dedupe, cache marker, and roadmap refresh. -->

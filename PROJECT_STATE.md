@@ -1,13 +1,35 @@
 # Project State
 
-Last refreshed: **2026-05-30a**
+Last refreshed: **2026-06-01a**
 
-Current build marker: **2026-05-30a / schema 124**.
+## Current build
 
-The current pass advances the YWI/HSE app from equipment transfer verification into deeper accounting and equipment accountability. Schema 124 adds job-cost depth, payment application review, bank reconciliation review, HST/GST and payroll remittance review, month-end close controls, accountant export package metadata, equipment QR/barcode fields, accessory checklists, and automatic service-task creation from failed equipment arrival/return tests.
+- Build label: **2026-06-01a**
+- Current schema: **125**
+- Current focus: deployment bundle parse repair, SEO/local wording guardrails, runtime fallback guardrails, and cleanup after the `jobs-manage` Supabase bundle failure.
 
-The repaired schema 123 equipment-transfer migration remains in place. Schema 124 builds on it instead of replacing it.
+## What changed most recently
 
-Important live-test items: apply schema 124 in Supabase, redeploy `jobs-directory`, `jobs-manage`, and `admin-manage`, hard-refresh the browser/service worker, then test Jobs, Equipment, Accounting Depth Workbench, and equipment return/signoff flows with real rows.
+- `jobs-manage` was repaired so the accessory-list fallback parser no longer contains a literal newline inside a regexp.
+- Edge Function TypeScript parse checks were added to the smoke script.
+- `jobs-directory` was repaired so job comment attachments are not duplicated.
+- Service worker install fallback was improved.
+- Schema 125 added DB-visible deployment, SEO, and fallback checks.
 
-<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->
+## Deploy order
+
+1. Apply schema 125.
+2. Deploy `jobs-manage`.
+3. Deploy `jobs-directory`.
+4. Deploy other changed functions if needed.
+5. Hard-refresh or clear the old service worker.
+
+## Main remaining depth areas
+
+- Payment application editor.
+- Bank CSV import preview and reconciliation scoring.
+- HST/GST and payroll source-total drilldowns.
+- Month-end close wizard and accountant package builder.
+- Equipment QR/barcode scan, accessory templates, verifier-role enforcement, and service-task completion.
+
+<!-- 2026-06-01a pass: schema 125 deployment bundle parse repair, SEO/local checks, fallback guardrails, jobs-manage fix, jobs-directory attachment dedupe, cache marker, and roadmap refresh. -->

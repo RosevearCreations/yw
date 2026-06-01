@@ -1,5 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const ts = require('typescript/lib/typescript.js');
 
 const root = process.cwd();
 const results = [];
@@ -94,6 +97,7 @@ const requiredFiles = [
   'sql/122_mobile_form_stepper_draft_resume_guardrails.sql',
   'sql/123_equipment_transfer_arrival_return_accounting_seo_guardrails.sql',
   'sql/124_accounting_cost_payment_reconciliation_remittance_equipment_depth.sql',
+  'sql/125_deployment_bundle_parse_seo_fallback_guardrails.sql',
   'js/hse-ops-ui.js',
   'supabase/functions/jobs-directory/index.ts',
   'supabase/functions/jobs-manage/index.ts',
@@ -150,7 +154,31 @@ addCheck('account-has-conflict-review', accountUi.includes('Conflict Review'), '
 addCheck('account-has-support-export', accountUi.includes('Export Support Snapshot'), 'account-ui.js should render the support snapshot export button.');
 
 const schema = read('sql/000_full_schema_reference.sql');
-addCheck('schema-header-current', /124_accounting_cost_payment_reconciliation_remittance_equipment_depth/i.test(schema), 'Schema snapshot should reflect the latest 124 pass.');
+addCheck('schema-header-current', /125_deployment_bundle_parse_seo_fallback_guardrails/i.test(schema), 'Schema snapshot should reflect the latest 125 pass.');
+
+
+const edgeFunctionFiles = fs.readdirSync(path.join(root, 'supabase/functions'))
+  .map((dir) => `supabase/functions/${dir}/index.ts`)
+  .filter((relPath) => fileExists(relPath))
+  .sort();
+const edgeParseFailures = [];
+for (const relPath of edgeFunctionFiles) {
+  const source = read(relPath);
+  const parsed = ts.transpileModule(source, {
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
+    reportDiagnostics: true
+  });
+  const diagnostics = (parsed.diagnostics || []).filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error);
+  if (diagnostics.length) {
+    edgeParseFailures.push(`${relPath}: ${diagnostics.map((diagnostic) => `${diagnostic.code} ${ts.flattenDiagnosticMessageText(diagnostic.messageText, ' ')}`).join('; ')}`);
+  }
+}
+addCheck('edge-functions-typescript-parse', edgeParseFailures.length === 0, edgeParseFailures.length ? edgeParseFailures.join(' | ') : `${edgeFunctionFiles.length} Edge Function file(s) parse with TypeScript.`);
+const jobsManageTs = read('supabase/functions/jobs-manage/index.ts');
+addCheck('jobs-manage-normalize-json-array-regex-escaped', jobsManageTs.includes('split(/[\\n,]/)'), 'jobs-manage normalizeJsonArray should use an escaped newline regexp that bundles on Supabase.');
+addCheck('jobs-manage-no-literal-newline-regex-split', !/split\(\/\[[\r\n]/.test(jobsManageTs), 'jobs-manage should not contain a literal newline inside a regexp character class.');
+const jobsDirectoryTs = read('supabase/functions/jobs-directory/index.ts');
+addCheck('jobs-directory-no-duplicate-comment-attachment-push', !/list\.push\(row\);\s*list\.push\(row\);/.test(jobsDirectoryTs), 'jobs-directory should not push each comment attachment twice.');
 
 const schedulerRun = read('supabase/functions/service-execution-scheduler-run/index.ts');
 addCheck('scheduler-run-advances-next-run', schedulerRun.includes('next_run_at: computeNextRunAt'), 'Scheduler Edge Function should advance next_run_at after successful runs.');
@@ -160,6 +188,8 @@ addCheck('schema-has-123-equipment-transfer-marker', schema.includes('123_equipm
 addCheck('schema-has-equipment-transfer-events', schema.includes('equipment_transfer_verification_events') && schema.includes('v_equipment_return_exception_directory') && schema.includes('v_app_operational_depth_gates'), 'Canonical schema should include equipment transfer events, exception view, and operational depth gates.');
 addCheck('schema-has-124-accounting-equipment-depth-marker', schema.includes('124_accounting_cost_payment_reconciliation_remittance_equipment_depth'), 'Canonical schema should include schema 124 accounting/equipment depth marker.');
 addCheck('schema-has-124-depth-views', schema.includes('v_job_cost_depth_directory') && schema.includes('v_payment_application_workbench_directory') && schema.includes('v_bank_reconciliation_review_workbench') && schema.includes('v_equipment_accountability_workbench'), 'Canonical schema should include schema 124 accounting and equipment accountability views.');
+addCheck('schema-has-125-deployment-guardrail-marker', schema.includes('125_deployment_bundle_parse_seo_fallback_guardrails'), 'Canonical schema should include schema 125 deployment bundle/SEO/fallback marker.');
+addCheck('schema-has-125-deployment-guardrail-views', schema.includes('v_app_deployment_bundle_checks') && schema.includes('v_app_public_seo_checks') && schema.includes('v_app_runtime_fallback_checks'), 'Canonical schema should include schema 125 deployment, SEO, and runtime fallback views.');
 addCheck('jobs-ui-has-accounting-depth-workbench', read('js/jobs-ui.js').includes('Accounting Depth Workbench') && read('js/jobs-ui.js').includes('jobPaymentApplicationBody') && read('js/jobs-ui.js').includes('reviewFirstPaymentApplication'), 'Jobs UI should expose accounting depth workbench review controls.');
 addCheck('jobs-ui-has-accessory-scan-workflow', read('js/jobs-ui.js').includes('eq_qr_code_value') && read('js/jobs-ui.js').includes('eq_accessory_checklist') && read('js/jobs-ui.js').includes('readAccessoryChecklist'), 'Jobs UI should expose QR/barcode and accessory checklist controls.');
 addCheck('jobs-ui-has-arrival-return-actions', read('js/jobs-ui.js').includes('Verify Arrival / Site Test') && read('js/jobs-ui.js').includes('Mark Return Verified'), 'Jobs UI should expose clear arrival and return verification actions.');
@@ -232,7 +262,7 @@ addCheck('admin-saved-filter-replays-staff-filters', adminUi.includes('people_se
 addCheck('admin-manage-saves-filters', read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_saved_filter'"), 'admin-manage should support saved filter write actions.');
 addCheck('admin-manage-close-step-actions', read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_close_workflow_step'"), 'admin-manage should support guided close step actions.');
 addCheck('admin-manage-evidence-actions', read('supabase/functions/admin-manage/index.ts').includes("entity === 'admin_evidence_action'"), 'admin-manage should support evidence action queue writes.');
-addCheck('active-docs-archived-snapshot', fileExists('archive/markdown-current-snapshot-2026-05-30a/README.md'), 'Archive snapshot should preserve the previous root README for the current pass.');
+addCheck('active-docs-archived-snapshot', fileExists('archive/markdown-current-snapshot-2026-06-01a/README.md'), 'Archive snapshot should preserve the previous root README for the current pass.');
 addCheck('retired-markdown-not-in-root', !fileExists('AI_START_PROMPT.md') && !fileExists('PROJECT_BRAIN.md') && !fileExists('REPO_BASE.md') && !fileExists('RUNBOOK_AUTH_BOOTSTRAP.md'), 'Retired root Markdown should be moved out of the active root.');
 addCheck('no-test-write-files', !fileExists('test_write.txt') && !fileExists('test_write2_OLD.txt') && !fileExists('test_write3.txt') && !fileExists('test_write_OLD.txt'), 'Temporary test_write files should not exist in the active root.');
 addCheck('verifydb-retired-from-active-sql', !fileExists('sql/VerifyDB_24_04_2026.sql'), 'Old VerifyDB helper should stay archived, not active in sql/.');
@@ -248,7 +278,7 @@ addCheck('edge-has-panel-fast-paths', read('supabase/functions/admin-directory/i
 addCheck('schema-has-114-staged-admin-load-marker', schema.includes('114_staged_admin_load_and_cache_fallback_guardrails'), 'Canonical schema should include schema 114 staged Admin load marker.');
 addCheck('admin-loads-staged-scopes-first', adminUi.includes('getRegisteredInitialAdminScopes') && adminUi.includes("let stagedScopes = ['command_center']") && adminUi.includes("scope: 'all',") && adminUi.includes('timeoutMs: 90000'), 'Admin initial load should try staged panel scopes before the heavy all-scope emergency fallback.');
 addCheck('admin-summary-reports-staged-warnings', adminUi.includes('state.adminLoadWarnings') && adminUi.includes('Some panels need retry'), 'Admin UI should report staged panel retry warnings instead of immediately showing only cached data.');
-addCheck('cache-version-2026-05-30a', read('server-worker.js').includes('2026-05-30a') && read('index.html').includes('2026-05-30a'), 'Index and service worker should use the 2026-05-30a asset/cache version.');
+addCheck('cache-version-2026-06-01a', read('server-worker.js').includes('2026-06-01a') && read('index.html').includes('2026-06-01a'), 'Index and service worker should use the 2026-06-01a asset/cache version.');
 
 addCheck('schema-has-115-panel-retry-marker', schema.includes('115_admin_panel_retry_timing_and_command_scope'), 'Canonical schema should include schema 115 panel retry/timing marker.');
 addCheck('admin-has-command-center-fast-path-stage', adminUi.includes("'command_center'") && adminUi.includes('Retry Command Center') && adminUi.includes('recordAdminScopeTiming'), 'Admin UI should load a command_center scope and show retry/timing state.');
@@ -292,7 +322,7 @@ addCheck('admin-renders-action-permission-table', adminUi.includes('ad_action_pe
 addCheck('admin-renders-schema-preflight-table', adminUi.includes('ad_schema_preflight_table') && adminUi.includes('adminSchemaPreflightChecks'), 'Admin UI should render schema preflight rows in Production Readiness.');
 addCheck('admin-renders-panel-retry-policy-table', adminUi.includes('ad_panel_retry_policy_table') && adminUi.includes('adminPanelRetryPolicy'), 'Admin UI should render panel retry/backoff policy rows.');
 addCheck('edge-loads-admin-action-permission-registry', read('supabase/functions/admin-directory/index.ts').includes('v_admin_action_permission_registry') && read('supabase/functions/admin-directory/index.ts').includes('actor_role'), 'admin-directory should return action permission registry rows and actor_role for role-aware disabled states.');
-addCheck('cache-version-2026-05-30a-latest', read('server-worker.js').includes('2026-05-30a') && read('index.html').includes('2026-05-30a'), 'Index and service worker should use the 2026-05-30a asset/cache version.');
+addCheck('cache-version-2026-06-01a-latest', read('server-worker.js').includes('2026-06-01a') && read('index.html').includes('2026-06-01a'), 'Index and service worker should use the 2026-06-01a asset/cache version.');
 
 
 addCheck('schema-has-120-ontario-mobile-marker', schema.includes('120_ontario_ohsa_mobile_first_app_guardrails'), 'Canonical schema should include schema 120 Ontario OHSA/mobile-first marker.');
@@ -322,7 +352,8 @@ addCheck('mobile-today-script-loaded', indexHtml.includes('/js/mobile-today.js')
 addCheck('mobile-quick-nav-six-actions', indexHtml.includes('data-mobile-quick="today"') && indexHtml.includes('data-mobile-quick="hseops"') && indexHtml.includes('data-mobile-quick="admin"'), 'Mobile quick nav should include Today, Safety, and Admin actions.');
 addCheck('mobile-quick-badges-present', indexHtml.includes('data-mobile-badge="today"') && read('js/mobile-menu.js').includes('syncBadges') && read('js/outbox.js').includes('notifyQueueChanged'), 'Mobile quick nav badges should be wired to outbox/action queue changes.');
 addCheck('style-has-mobile-today-cards', read('style.css').includes('.mobile-today-grid') && read('style.css').includes('.mobile-install-card') && read('style.css').includes('.mobile-quick-badge'), 'style.css should include mobile Today cards, PWA install card, and quick badge rules.');
-addCheck('service-worker-caches-mobile-today', read('server-worker.js').includes('/js/mobile-today.js') && read('server-worker.js').includes('2026-05-30a'), 'Service worker should cache js/mobile-today.js with the latest cache version.');
+addCheck('service-worker-caches-mobile-today', read('server-worker.js').includes('/js/mobile-today.js') && read('server-worker.js').includes('2026-06-01a'), 'Service worker should cache js/mobile-today.js with the latest cache version.');
+addCheck('service-worker-install-fallback', read('server-worker.js').includes('cacheAppShellWithFallback') && read('server-worker.js').includes('Promise.allSettled'), 'Service worker should install with per-asset cache fallback.');
 addCheck('edge-loads-mobile-today-views', read('supabase/functions/admin-directory/index.ts').includes('v_mobile_today_action_registry') && read('supabase/functions/admin-directory/index.ts').includes('v_mobile_pwa_install_quality_gates'), 'admin-directory should return mobile Today/PWA quality gate views.');
 addCheck('active-docs-archived-snapshot-2026-05-29a', fileExists('archive/markdown-current-snapshot-2026-05-29a/README.md'), 'Archive snapshot should preserve the previous root README for the 2026-05-29a pass.');
 
@@ -331,7 +362,7 @@ addCheck('schema-has-122-mobile-form-stepper-marker', schema.includes('122_mobil
 addCheck('schema-has-mobile-form-stepper-registry', schema.includes('v_mobile_form_stepper_registry') && schema.includes('mobile_form_stepper_registry'), 'Canonical schema should include mobile form stepper registry and view.');
 addCheck('schema-has-mobile-form-quality-gates', schema.includes('v_mobile_form_quality_gates') && schema.includes('mobile_form_quality_gates'), 'Canonical schema should include mobile form quality gates and view.');
 addCheck('mobile-form-helper-loaded', indexHtml.includes('/js/mobile-form-helper.js') && fileExists('js/mobile-form-helper.js'), 'index.html should load js/mobile-form-helper.js.');
-addCheck('mobile-form-helper-cached', read('server-worker.js').includes('/js/mobile-form-helper.js') && read('server-worker.js').includes('2026-05-30a'), 'Service worker should cache js/mobile-form-helper.js with the latest cache version.');
+addCheck('mobile-form-helper-cached', read('server-worker.js').includes('/js/mobile-form-helper.js') && read('server-worker.js').includes('2026-06-01a'), 'Service worker should cache js/mobile-form-helper.js with the latest cache version.');
 addCheck('mobile-form-helper-has-draft-controls', read('js/mobile-form-helper.js').includes('Save Draft') && read('js/mobile-form-helper.js').includes('Resume Draft') && read('js/mobile-form-helper.js').includes('DRAFT_PREFIX'), 'Mobile form helper should provide local draft save/resume controls.');
 addCheck('mobile-today-counts-form-drafts', read('js/mobile-today.js').includes('countDraftForms') && read('js/mobile-today.js').includes('Resume Saved Drafts'), 'Mobile Today dashboard should count and link saved local form drafts.');
 addCheck('mobile-menu-counts-drafts-in-badges', read('js/mobile-menu.js').includes('draftCount') && read('js/mobile-menu.js').includes('ywi:mobile-drafts-updated'), 'Mobile quick badges should include saved local draft counts.');

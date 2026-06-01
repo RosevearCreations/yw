@@ -1,14 +1,14 @@
 # AI Context
 
-Last refreshed: **2026-05-30a**
+Last refreshed: **2026-06-01a**
 
-The current YWI/HSE build is **2026-05-30a / schema 124**.
+The current YWI/HSE build is **2026-06-01a / schema 125**.
 
-Recent context:
+## Current priorities
 
-- Schema 123 was repaired for equipment transfer/arrival/return verification and remains part of the build.
-- Schema 124 adds accounting depth and equipment accountability.
-- Main new UI areas are Accounting Depth Workbench, equipment QR/barcode fields, accessory checklist fields, Equipment Accountability Workbench, and Equipment Service Tasks.
-- Live test should apply schema 124 and redeploy `jobs-directory`, `jobs-manage`, and `admin-manage`.
+- Schema 125 repairs and documents deployment bundle parse guardrails after the `jobs-manage` regexp failure.
+- Schema 124 accounting depth and equipment accountability remain active foundations.
+- Continue using `DEVELOPMENT_ROADMAP.md` and `KNOWN_ISSUES_AND_GAPS.md` for the next 20 steps.
+- Live test should apply schema 125 and redeploy `jobs-manage` and `jobs-directory`.
 
-<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->
+<!-- 2026-06-01a pass: schema 125 deployment bundle parse repair, SEO/local checks, fallback guardrails, jobs-manage fix, jobs-directory attachment dedupe, cache marker, and roadmap refresh. -->

@@ -1,22 +1,38 @@
 # Database Structure
 
-Last refreshed: **2026-05-30a**
+Last refreshed: **2026-06-01a**
 
-Canonical schema reference: `sql/000_full_schema_reference.sql` through **schema 124**.
+## Current schema marker
 
-Latest migration: `sql/124_accounting_cost_payment_reconciliation_remittance_equipment_depth.sql`.
+The active schema reference is aligned through:
 
-Schema 124 adds or extends these areas:
+- `sql/125_deployment_bundle_parse_seo_fallback_guardrails.sql`
 
-- `job_financial_events` for cost category, billable-charge status, linked equipment/signout, close period, posting status, and profitability notes.
-- AR/AP payment application tables for credits, discounts, write-offs, overpayments, review status, reviewer, source reconciliation item, and payload metadata.
-- `bank_reconciliation_items` for raw CSV/import context, suggested match, match score, manual review, reviewer, undo link, and notes.
-- `sales_tax_filings` and `payroll_remittance_runs` for source totals, proof URL, signoff, filed/remitted references, and review steps.
-- `accounting_period_closes` for AR/AP/GL/payroll/tax lock state, close checklist, package manifest, close signoff, and reopen reason.
-- `accountant_handoff_exports` for package source period, exported file manifest, finalization, delivery reference, and delivery status.
-- `equipment_items`, `equipment_signouts`, `equipment_accessory_checklists`, and `equipment_service_tasks` for QR/barcode tracking, accessory checks, verifier role, and failed-test follow-up.
+`v_schema_drift_status` now expects schema **125**.
 
-New schema 124 views include:
+## Latest schema 125 additions
+
+New deployment/quality guardrail tables:
+
+- `app_deployment_bundle_checks`
+- `app_public_seo_checks`
+- `app_runtime_fallback_checks`
+
+New views:
+
+- `v_app_deployment_bundle_checks`
+- `v_app_public_seo_checks`
+- `v_app_runtime_fallback_checks`
+
+Updated:
+
+- `app_operational_depth_gates` receives deployment bundle, regex repair, SEO/local wording, and runtime fallback rows.
+- `app_schema_versions` receives schema version 125 marker.
+- `v_schema_drift_status` expects schema 125.
+
+## Previous schema 124 depth still active
+
+Schema 124 remains the accounting/equipment-accountability foundation:
 
 - `v_job_cost_depth_directory`
 - `v_payment_application_workbench_directory`
@@ -26,4 +42,8 @@ New schema 124 views include:
 - `v_equipment_accountability_workbench`
 - `v_equipment_service_task_directory`
 
-<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->
+## Deployment note
+
+Apply migrations in order. For this build, schema **125** should be applied after schema **124**, then redeploy `jobs-manage` and `jobs-directory`.
+
+<!-- 2026-06-01a pass: schema 125 deployment bundle parse repair, SEO/local checks, fallback guardrails, jobs-manage fix, jobs-directory attachment dedupe, cache marker, and roadmap refresh. -->

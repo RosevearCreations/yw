@@ -1,6 +1,6 @@
 # Admin Directory Pagination and Saved Views
 
-Last refreshed: **2026-05-20b**
+Last refreshed: **2026-06-01a**
 
 ## Purpose
 
@@ -49,4 +49,4 @@ _Reviewed in the 2026-05-17a pass for schema 112 documentation consistency._
 
 <!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->
 
-<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->
+<!-- 2026-06-01a pass: schema 125 deployment bundle parse repair, SEO/local checks, fallback guardrails, jobs-manage fix, jobs-directory attachment dedupe, cache marker, and roadmap refresh. -->

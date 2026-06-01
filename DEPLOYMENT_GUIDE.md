@@ -1,21 +1,33 @@
 # Deployment Guide
 
-Last refreshed: **2026-05-30a**
+Last refreshed: **2026-06-01a**
 
-## Current deploy order
+## Current deploy target
 
-1. Apply database migrations through `sql/124_accounting_cost_payment_reconciliation_remittance_equipment_depth.sql`.
-2. Confirm `sql/000_full_schema_reference.sql` matches the live schema version target.
-3. Deploy Supabase Edge Functions:
-   - `jobs-directory`
-   - `jobs-manage`
-   - `admin-manage`
-4. Deploy static assets with the `2026-05-30a` cache marker.
-5. Hard-refresh or clear the service worker cache on test browsers.
-6. Run the Testing Checklist live-test items.
+- Build: **2026-06-01a**
+- Schema: **125**
 
-## Important warning
+## Deploy order
 
-Do not skip the Edge Function deploy after schema 124. The UI now requests accounting depth rows, payment review actions, reconciliation review actions, remittance signoff actions, month-end close actions, QR/barcode equipment fields, accessory checklist fields, and service-task rows.
+1. Apply SQL migrations through `sql/125_deployment_bundle_parse_seo_fallback_guardrails.sql`.
+2. Confirm `v_schema_drift_status` expects and reports schema 125.
+3. Deploy `jobs-manage`.
+4. Deploy `jobs-directory`.
+5. Deploy any other changed functions normally.
+6. Publish static files.
+7. Hard-refresh or clear the browser service worker so **2026-06-01a** files load.
 
-<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->
+## Why `jobs-manage` should be deployed first
+
+The previous deploy failed because `jobs-manage` had an unterminated regexp literal. This build repairs that specific file and adds smoke checks to catch similar TypeScript parse issues before deploy.
+
+## Post-deploy verification
+
+- `jobs-manage` bundles successfully.
+- Jobs page loads.
+- Equipment page loads.
+- Equipment checkout/arrival/return forms still submit.
+- Accounting Depth tables still load with fallback empty states.
+- No duplicate comment attachments appear on job comments.
+
+<!-- 2026-06-01a pass: schema 125 deployment bundle parse repair, SEO/local checks, fallback guardrails, jobs-manage fix, jobs-directory attachment dedupe, cache marker, and roadmap refresh. -->

@@ -1,22 +1,20 @@
 # New Chat Status
 
-Last refreshed: **2026-05-30a**
+Last refreshed: **2026-06-01a**
 
-Use the latest zip/build as **2026-05-30a / schema 124**.
+We are working on the YWI/HSE app build. The current packaged build is schema **125**.
 
-Recent work completed:
+## Latest pass summary
 
-- Schema 123 repaired and retained for equipment transfer/arrival/return verification.
-- Schema 124 added for accounting cost depth, payment application review, reconciliation review, remittance review, month-end close, accountant package metadata, QR/barcode equipment tracking, accessory checklists, and equipment service tasks.
-- Jobs UI now includes Accounting Depth Workbench and equipment accountability/service-task tables.
-- `jobs-directory`, `jobs-manage`, and `admin-manage` were updated for the new rows/actions.
+- Repaired `jobs-manage` Edge Function bundling issue from an unterminated regexp literal.
+- Added Edge Function TypeScript parse checks to the smoke script.
+- Fixed duplicate comment attachment rows in `jobs-directory`.
+- Added schema 125 deployment bundle, public SEO/local wording, and runtime fallback guardrails.
+- Updated cache marker to **2026-06-01a**.
+- Updated active Markdown and canonical schema reference.
 
-Next best work:
+## Next work to continue
 
-1. Live-test schema 124 on Supabase.
-2. Add per-row Accounting Depth Workbench buttons.
-3. Add full payment application editor.
-4. Add bank CSV preview and match scoring.
-5. Add QR/barcode camera scan lookup and verifier-role enforcement.
+Use `DEVELOPMENT_ROADMAP.md` and `KNOWN_ISSUES_AND_GAPS.md`. The next priority is to live-test schema 125 and redeploy `jobs-manage`, then continue with payment application, reconciliation, remittance, month-end close, and equipment scan/signoff depth.
 
-<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->
+<!-- 2026-06-01a pass: schema 125 deployment bundle parse repair, SEO/local checks, fallback guardrails, jobs-manage fix, jobs-directory attachment dedupe, cache marker, and roadmap refresh. -->

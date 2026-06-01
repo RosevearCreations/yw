@@ -1,6 +1,6 @@
 # Ontario OHSA and Mobile-First App Pass
 
-Last refreshed: **2026-05-29a**
+Last refreshed: **2026-06-01a**
 
 ## What changed
 
@@ -28,4 +28,4 @@ The next pass added the mobile Today dashboard, quick-action queue badges, and P
 
 <!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->
 
-<!-- 2026-05-30a pass: schema 124 accounting depth, equipment accountability, SEO/H1/CSS/smoke, and roadmap refresh. -->
+<!-- 2026-06-01a pass: schema 125 deployment bundle parse repair, SEO/local checks, fallback guardrails, jobs-manage fix, jobs-directory attachment dedupe, cache marker, and roadmap refresh. -->
