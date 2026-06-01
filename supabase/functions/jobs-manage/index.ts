@@ -353,8 +353,7 @@ function normalizeJsonArray(value: any) {
       const parsed = JSON.parse(value);
       return Array.isArray(parsed) ? parsed : [];
     } catch {
-      return value.split(/[
-,]/).map((item) => item.trim()).filter(Boolean).map((item) => ({ item, checked: false }));
+      return value.split(/[\n,]/).map((item) => item.trim()).filter(Boolean).map((item) => ({ item, checked: false }));
     }
   }
   return [];
