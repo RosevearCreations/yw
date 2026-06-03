@@ -1,6 +1,6 @@
 # Admin Panel Retry, Timing, and Command Scope
 
-Last refreshed: **2026-06-01a**
+Last refreshed: **2026-06-02a**
 
 ## Purpose
 
@@ -20,4 +20,6 @@ Wire frontend panel failure events into `admin_panel_load_diagnostics` so repeat
 
 <!-- 2026-05-29a pass: Schema 123 equipment verification, accounting-depth, SEO/H1, CSS, fallback, and roadmap sanity refresh. -->
 
-<!-- 2026-06-01a pass: schema 125 deployment bundle parse repair, SEO/local checks, fallback guardrails, jobs-manage fix, jobs-directory attachment dedupe, cache marker, and roadmap refresh. -->
+<!-- 2026-06-02a pass: schema 126 roadmap depth, data migration candidates, SEO/CSS/fallback guardrails, Admin readiness visibility, archive hygiene, cache marker, and Markdown refresh. -->
+
+<!-- 2026-06-02a pass: schema 126 roadmap depth, data migration candidates, SEO/CSS/fallback guardrails, Admin readiness visibility, archive hygiene, cache marker, and Markdown refresh. -->

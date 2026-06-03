@@ -174,6 +174,13 @@
       adminSchemaPreflightChecks: [],
       adminDeploymentChecklist: [],
       adminFunctionReadinessChecks: [],
+      appDeploymentBundleChecks: [],
+      appPublicSeoChecks: [],
+      appRuntimeFallbackChecks: [],
+      appRoadmapActionSteps: [],
+      appDepthReviewQueue: [],
+      appDataMigrationCandidates: [],
+      appSchemaDocumentationSyncChecks: [],
       actorRole: '',
       actorProfileId: '',
       directoryPagination: {
@@ -482,6 +489,48 @@
           <div class="table-scroll" style="margin-top:12px;">
             <table id="ad_function_readiness_table">
               <thead><tr><th>Function</th><th>Scope / Use</th><th>Status</th><th>Last Checked</th><th>Signoff</th><th>Deploy Hint</th><th>Failure Hint</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_build_guardrail_table">
+              <thead><tr><th>Area</th><th>Build / Bundle Check</th><th>Status</th><th>Command / Route</th><th>Risk if Missed</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_public_seo_guardrail_table">
+              <thead><tr><th>Area</th><th>SEO / Local Check</th><th>Status</th><th>Local Wording Hint</th><th>Risk if Missed</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_runtime_fallback_table">
+              <thead><tr><th>Surface</th><th>Fallback Check</th><th>Status</th><th>Fallback Hint</th><th>Risk if Missed</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_roadmap_action_table">
+              <thead><tr><th>Batch</th><th>#</th><th>Area</th><th>Step</th><th>Status</th><th>Acceptance Check</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_depth_review_table">
+              <thead><tr><th>Area</th><th>Depth Gap</th><th>Status</th><th>Recommended Depth</th><th>Accounting / Cost Impact</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_data_migration_table">
+              <thead><tr><th>Area</th><th>Source</th><th>Target</th><th>Risk</th><th>Status</th><th>Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_schema_doc_sync_table">
+              <thead><tr><th>Area</th><th>Sync Check</th><th>Status</th><th>File</th><th>Risk if Missed</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -1255,6 +1304,13 @@
         deploymentChecklistBody: document.querySelector('#ad_deployment_checklist_table tbody'),
         panelRetryPolicyBody: document.querySelector('#ad_panel_retry_policy_table tbody'),
         functionReadinessBody: document.querySelector('#ad_function_readiness_table tbody'),
+        buildGuardrailBody: document.querySelector('#ad_build_guardrail_table tbody'),
+        publicSeoGuardrailBody: document.querySelector('#ad_public_seo_guardrail_table tbody'),
+        runtimeFallbackBody: document.querySelector('#ad_runtime_fallback_table tbody'),
+        roadmapActionBody: document.querySelector('#ad_roadmap_action_table tbody'),
+        depthReviewBody: document.querySelector('#ad_depth_review_table tbody'),
+        dataMigrationBody: document.querySelector('#ad_data_migration_table tbody'),
+        schemaDocSyncBody: document.querySelector('#ad_schema_doc_sync_table tbody'),
         seoSmokeBody: document.querySelector('#ad_seo_smoke_table tbody'),
         bankCsvImportBody: document.querySelector('#ad_bank_csv_import_table tbody'),
         backupRehearsalBody: document.querySelector('#ad_backup_rehearsal_table tbody'),
@@ -1537,6 +1593,13 @@
       if (Array.isArray(resp.admin_schema_preflight_checks)) state.adminSchemaPreflightChecks = resp.admin_schema_preflight_checks;
       if (Array.isArray(resp.admin_deployment_checklist)) state.adminDeploymentChecklist = resp.admin_deployment_checklist;
       if (Array.isArray(resp.admin_function_readiness_checks)) state.adminFunctionReadinessChecks = resp.admin_function_readiness_checks;
+      if (Array.isArray(resp.app_deployment_bundle_checks)) state.appDeploymentBundleChecks = resp.app_deployment_bundle_checks;
+      if (Array.isArray(resp.app_public_seo_checks)) state.appPublicSeoChecks = resp.app_public_seo_checks;
+      if (Array.isArray(resp.app_runtime_fallback_checks)) state.appRuntimeFallbackChecks = resp.app_runtime_fallback_checks;
+      if (Array.isArray(resp.app_roadmap_action_steps)) state.appRoadmapActionSteps = resp.app_roadmap_action_steps;
+      if (Array.isArray(resp.app_depth_review_queue)) state.appDepthReviewQueue = resp.app_depth_review_queue;
+      if (Array.isArray(resp.app_data_migration_candidates)) state.appDataMigrationCandidates = resp.app_data_migration_candidates;
+      if (Array.isArray(resp.app_schema_documentation_sync_checks)) state.appSchemaDocumentationSyncChecks = resp.app_schema_documentation_sync_checks;
       state.counts = {
         users: state.directoryPagination.people?.total || state.users.length,
         sites: Array.isArray(state.sites) ? state.sites.length : 0,
@@ -2614,6 +2677,13 @@
         state.adminSchemaPreflightChecks = Array.isArray(resp?.admin_schema_preflight_checks) ? resp.admin_schema_preflight_checks : state.adminSchemaPreflightChecks;
         state.adminDeploymentChecklist = Array.isArray(resp?.admin_deployment_checklist) ? resp.admin_deployment_checklist : state.adminDeploymentChecklist;
         state.adminFunctionReadinessChecks = Array.isArray(resp?.admin_function_readiness_checks) ? resp.admin_function_readiness_checks : state.adminFunctionReadinessChecks;
+        state.appDeploymentBundleChecks = Array.isArray(resp?.app_deployment_bundle_checks) ? resp.app_deployment_bundle_checks : state.appDeploymentBundleChecks;
+        state.appPublicSeoChecks = Array.isArray(resp?.app_public_seo_checks) ? resp.app_public_seo_checks : state.appPublicSeoChecks;
+        state.appRuntimeFallbackChecks = Array.isArray(resp?.app_runtime_fallback_checks) ? resp.app_runtime_fallback_checks : state.appRuntimeFallbackChecks;
+        state.appRoadmapActionSteps = Array.isArray(resp?.app_roadmap_action_steps) ? resp.app_roadmap_action_steps : state.appRoadmapActionSteps;
+        state.appDepthReviewQueue = Array.isArray(resp?.app_depth_review_queue) ? resp.app_depth_review_queue : state.appDepthReviewQueue;
+        state.appDataMigrationCandidates = Array.isArray(resp?.app_data_migration_candidates) ? resp.app_data_migration_candidates : state.appDataMigrationCandidates;
+        state.appSchemaDocumentationSyncChecks = Array.isArray(resp?.app_schema_documentation_sync_checks) ? resp.app_schema_documentation_sync_checks : state.appSchemaDocumentationSyncChecks;
         state.hsePacketActionItems = Array.isArray(resp?.hse_packet_action_items) ? resp.hse_packet_action_items : [];
         state.hseDashboardSummary = Array.isArray(resp?.hse_dashboard_summary) ? resp.hse_dashboard_summary : [];
         state.accountingReviewSummary = Array.isArray(resp?.accounting_review_summary) ? resp.accounting_review_summary : [];
@@ -4835,7 +4905,14 @@
           evidenceManagerDirectory: Array.isArray(payload?.evidence_manager_directory) ? payload.evidence_manager_directory : state.evidenceManagerDirectory,
           hsePacketActionItems: Array.isArray(payload?.hse_packet_action_items) ? payload.hse_packet_action_items : state.hsePacketActionItems,
           hseDashboardSummary: Array.isArray(payload?.hse_dashboard_summary) ? payload.hse_dashboard_summary : state.hseDashboardSummary,
-          accountingReviewSummary: Array.isArray(payload?.accounting_review_summary) ? payload.accounting_review_summary : state.accountingReviewSummary
+          accountingReviewSummary: Array.isArray(payload?.accounting_review_summary) ? payload.accounting_review_summary : state.accountingReviewSummary,
+          appDeploymentBundleChecks: Array.isArray(payload?.app_deployment_bundle_checks) ? payload.app_deployment_bundle_checks : state.appDeploymentBundleChecks,
+          appPublicSeoChecks: Array.isArray(payload?.app_public_seo_checks) ? payload.app_public_seo_checks : state.appPublicSeoChecks,
+          appRuntimeFallbackChecks: Array.isArray(payload?.app_runtime_fallback_checks) ? payload.app_runtime_fallback_checks : state.appRuntimeFallbackChecks,
+          appRoadmapActionSteps: Array.isArray(payload?.app_roadmap_action_steps) ? payload.app_roadmap_action_steps : state.appRoadmapActionSteps,
+          appDepthReviewQueue: Array.isArray(payload?.app_depth_review_queue) ? payload.app_depth_review_queue : state.appDepthReviewQueue,
+          appDataMigrationCandidates: Array.isArray(payload?.app_data_migration_candidates) ? payload.app_data_migration_candidates : state.appDataMigrationCandidates,
+          appSchemaDocumentationSyncChecks: Array.isArray(payload?.app_schema_documentation_sync_checks) ? payload.app_schema_documentation_sync_checks : state.appSchemaDocumentationSyncChecks
         };
         const e = els();
         if (e.staffPosition) {
@@ -5289,7 +5366,10 @@
           ['Today Actions', (state.mobileTodayActionRegistry || []).length, 'Role-aware mobile Today dashboard action registry.'],
           ['PWA Gates', (state.mobilePwaInstallQualityGates || []).length, 'Install helper and offline badge checks for phone users.'],
           ['Mobile Forms', (state.mobileFormStepperRegistry || []).length, 'Phone steppers, draft resume chips, and form quality gates.'],
-          ['Ontario Wording', wordingGates.length, 'Jurisdiction wording guardrails for Ontario OHSA copy.']
+          ['Ontario Wording', wordingGates.length, 'Jurisdiction wording guardrails for Ontario OHSA copy.'],
+          ['Build Guardrails', (state.appDeploymentBundleChecks || []).length, 'Bundle parse, cache, and deploy-readiness checks.'],
+          ['Roadmap Rows', (state.appRoadmapActionSteps || []).length, 'Completed 20 plus next 20 planned steps.'],
+          ['Depth Reviews', (state.appDepthReviewQueue || []).length, 'Accounting, equipment, SEO, mobile, CSS, and fallback depth gaps.']
         ].map(([label, value, help]) => `<div class="admin-health-card"><span>${escHtml(label)}</span><strong>${escHtml(String(value))}</strong><small>${escHtml(help)}</small></div>`).join('');
       }
       if (e.schemaPreflightBody) {
@@ -5388,6 +5468,92 @@
             <td class="admin-table-note">${escHtml(row.failure_hint || '')}</td>
           </tr>
         `).join('') || '<tr><td colspan="7" class="muted">No function readiness rows loaded yet. Apply schema 118.</td></tr>';
+      }
+      if (e.buildGuardrailBody) {
+        const rows = Array.isArray(state.appDeploymentBundleChecks) ? state.appDeploymentBundleChecks : [];
+        e.buildGuardrailBody.innerHTML = rows.slice(0, 80).map((row) => `
+          <tr>
+            <td>${escHtml(row.check_area || '')}</td>
+            <td><strong>${escHtml(row.check_title || '')}</strong><div class="muted">${escHtml(row.function_name || row.file_path || '')}</div></td>
+            <td>${renderStatusPill(row.current_status || 'review', /pass|ready|ok/i.test(String(row.current_status || '')) ? 'ok' : (/fail|blocked|missing/i.test(String(row.current_status || '')) ? 'error' : 'warning'))}</td>
+            <td class="admin-table-note">${escHtml(row.test_command || row.route_hint || '')}</td>
+            <td class="admin-table-note">${escHtml(row.failure_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No build guardrail rows loaded yet. Apply schema 125.</td></tr>';
+      }
+      if (e.publicSeoGuardrailBody) {
+        const rows = Array.isArray(state.appPublicSeoChecks) ? state.appPublicSeoChecks : [];
+        e.publicSeoGuardrailBody.innerHTML = rows.slice(0, 80).map((row) => `
+          <tr>
+            <td>${escHtml(row.check_area || 'seo')}</td>
+            <td><strong>${escHtml(row.check_title || '')}</strong><div class="muted">${escHtml(row.route_hint || '')}</div></td>
+            <td>${renderStatusPill(row.current_status || 'review', /pass|ready|ok/i.test(String(row.current_status || '')) ? 'ok' : (/fail|blocked|missing/i.test(String(row.current_status || '')) ? 'error' : 'warning'))}</td>
+            <td class="admin-table-note">${escHtml(row.local_wording_hint || '')}</td>
+            <td class="admin-table-note">${escHtml(row.failure_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No SEO guardrail rows loaded yet. Apply schema 125.</td></tr>';
+      }
+      if (e.runtimeFallbackBody) {
+        const rows = Array.isArray(state.appRuntimeFallbackChecks) ? state.appRuntimeFallbackChecks : [];
+        e.runtimeFallbackBody.innerHTML = rows.slice(0, 80).map((row) => `
+          <tr>
+            <td>${escHtml(row.surface_hint || row.check_area || '')}</td>
+            <td><strong>${escHtml(row.check_title || '')}</strong></td>
+            <td>${renderStatusPill(row.current_status || 'review', /pass|ready|ok/i.test(String(row.current_status || '')) ? 'ok' : (/fail|blocked|missing/i.test(String(row.current_status || '')) ? 'error' : 'warning'))}</td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+            <td class="admin-table-note">${escHtml(row.failure_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No runtime fallback rows loaded yet. Apply schema 125.</td></tr>';
+      }
+      if (e.roadmapActionBody) {
+        const rows = Array.isArray(state.appRoadmapActionSteps) ? state.appRoadmapActionSteps : [];
+        e.roadmapActionBody.innerHTML = rows.slice(0, 160).map((row) => `
+          <tr>
+            <td>${escHtml(row.step_batch || '')}</td>
+            <td>${escHtml(String(row.step_number ?? ''))}</td>
+            <td>${escHtml(row.step_area || '')}</td>
+            <td><strong>${escHtml(row.step_title || '')}</strong><div class="muted">${escHtml(row.route_hint || row.source_doc || '')}</div></td>
+            <td>${renderStatusPill(row.step_status || 'planned', /complete|pass|done/i.test(String(row.step_status || '')) ? 'ok' : (/blocked|fail/i.test(String(row.step_status || '')) ? 'error' : 'warning'))}</td>
+            <td class="admin-table-note">${escHtml(row.acceptance_check || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="6" class="muted">No roadmap action rows loaded yet. Apply schema 126.</td></tr>';
+      }
+      if (e.depthReviewBody) {
+        const rows = Array.isArray(state.appDepthReviewQueue) ? state.appDepthReviewQueue : [];
+        e.depthReviewBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.review_area || '')}</td>
+            <td><strong>${escHtml(row.review_title || '')}</strong><div class="muted">${escHtml(row.current_depth || '')}</div></td>
+            <td>${renderStatusPill(row.review_status || 'review', /pass|ready|ok/i.test(String(row.review_status || '')) ? 'ok' : (/blocked|fail/i.test(String(row.review_status || '')) ? 'error' : 'warning'))}</td>
+            <td class="admin-table-note">${escHtml(row.recommended_depth || '')}</td>
+            <td class="admin-table-note">${escHtml(row.accounting_impact || row.cost_linkage_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No application depth review rows loaded yet. Apply schema 126.</td></tr>';
+      }
+      if (e.dataMigrationBody) {
+        const rows = Array.isArray(state.appDataMigrationCandidates) ? state.appDataMigrationCandidates : [];
+        e.dataMigrationBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.data_area || '')}</td>
+            <td class="admin-table-note">${escHtml(row.source_location || '')}</td>
+            <td class="admin-table-note">${escHtml(row.recommended_target || '')}</td>
+            <td>${renderStatusPill(row.duplication_risk || 'review', /low/i.test(String(row.duplication_risk || '')) ? 'ok' : (/high/i.test(String(row.duplication_risk || '')) ? 'error' : 'warning'))}</td>
+            <td>${renderStatusPill(row.migration_status || 'review', /complete|in_progress|done/i.test(String(row.migration_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.fallback_plan || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="6" class="muted">No data migration candidate rows loaded yet. Apply schema 126.</td></tr>';
+      }
+      if (e.schemaDocSyncBody) {
+        const rows = Array.isArray(state.appSchemaDocumentationSyncChecks) ? state.appSchemaDocumentationSyncChecks : [];
+        e.schemaDocSyncBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.check_area || '')}</td>
+            <td><strong>${escHtml(row.check_title || '')}</strong></td>
+            <td>${renderStatusPill(row.current_status || 'review', /pass|ready|ok/i.test(String(row.current_status || '')) ? 'ok' : (/fail|blocked|missing/i.test(String(row.current_status || '')) ? 'error' : 'warning'))}</td>
+            <td class="admin-table-note">${escHtml(row.file_path || row.test_command || '')}</td>
+            <td class="admin-table-note">${escHtml(row.failure_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No schema/documentation sync rows loaded yet. Apply schema 126.</td></tr>';
       }
       applyAdminActionDisabledStates();
       if (e.seoSmokeBody) {

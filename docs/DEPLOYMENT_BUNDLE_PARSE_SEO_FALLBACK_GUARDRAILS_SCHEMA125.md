@@ -1,6 +1,6 @@
 # Schema 125: Deployment Bundle Parse, SEO, and Fallback Guardrails
 
-Last refreshed: **2026-06-01a**
+Last refreshed: **2026-06-02a**
 
 ## Why this pass exists
 
@@ -15,7 +15,7 @@ Schema 125 makes that class of problem visible and repeatable through smoke chec
 - Added a smoke check that specifically blocks literal-newline regexp split patterns in `jobs-manage`.
 - Fixed `jobs-directory` so job comment attachments are not pushed twice into the same attachment list.
 - Updated the service worker to cache shell assets one by one with `Promise.allSettled`, so one stale or missing asset does not block the repaired worker from installing.
-- Updated the cache marker to **2026-06-01a**.
+- Updated the cache marker to **2026-06-02a**.
 
 ## Schema 125 tables/views
 
@@ -42,7 +42,7 @@ Updated:
 2. Deploy `jobs-manage` first because it was the function with the parse failure.
 3. Deploy `jobs-directory` next because it includes the attachment dedupe fix.
 4. Deploy any other Edge Functions normally.
-5. Hard-refresh the browser or clear the old service worker so **2026-06-01a** assets load.
+5. Hard-refresh the browser or clear the old service worker so **2026-06-02a** assets load.
 6. Run the Admin/Jobs screens and confirm equipment/accounting tables still load.
 
 ## Next depth targets
@@ -52,4 +52,6 @@ Updated:
 - Add public SEO smoke checks for sitemap, robots, title, meta description, one-H1, local wording, and image alt text.
 - Add a browser-side fallback banner when the app is running cached JS against a newer database schema.
 
-<!-- 2026-06-01a pass: schema 125 deployment bundle parse repair, SEO/local checks, fallback guardrails, jobs-manage fix, jobs-directory attachment dedupe, cache marker, and roadmap refresh. -->
+<!-- 2026-06-02a pass: schema 126 roadmap depth, data migration candidates, SEO/CSS/fallback guardrails, Admin readiness visibility, archive hygiene, cache marker, and Markdown refresh. -->
+
+<!-- 2026-06-02a pass: schema 126 roadmap depth, data migration candidates, SEO/CSS/fallback guardrails, Admin readiness visibility, archive hygiene, cache marker, and Markdown refresh. -->

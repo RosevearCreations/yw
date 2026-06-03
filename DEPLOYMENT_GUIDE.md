@@ -1,33 +1,32 @@
 # Deployment Guide
 
-Last refreshed: **2026-06-01a**
+Last refreshed: **2026-06-02a**
 
-## Current deploy target
+## Current build
 
-- Build: **2026-06-01a**
-- Schema: **125**
+- Build: **2026-06-02a**
+- Schema: **126**
 
 ## Deploy order
 
-1. Apply SQL migrations through `sql/125_deployment_bundle_parse_seo_fallback_guardrails.sql`.
-2. Confirm `v_schema_drift_status` expects and reports schema 125.
-3. Deploy `jobs-manage`.
-4. Deploy `jobs-directory`.
-5. Deploy any other changed functions normally.
-6. Publish static files.
-7. Hard-refresh or clear the browser service worker so **2026-06-01a** files load.
+1. Apply SQL migrations through `sql/126_roadmap_depth_data_migration_seo_css_fallback_guardrails.sql`.
+2. Confirm `v_schema_drift_status` expects and reports schema **126**.
+3. Redeploy `admin-directory` so the new Admin readiness views load.
+4. Redeploy `jobs-manage` and `jobs-directory` if the live functions are not already on the repaired schema 126/126 code.
+5. Redeploy any other changed Edge Functions if your deployment workflow packages all functions together.
+6. Hard-refresh or clear the browser service worker so **2026-06-02a** assets load.
+7. Open Admin → Production Readiness and confirm build guardrails, SEO guardrails, fallback checks, roadmap rows, depth rows, migration rows, and schema/doc sync rows load.
 
-## Why `jobs-manage` should be deployed first
+## Local/smoke checks before packaging
 
-The previous deploy failed because `jobs-manage` had an unterminated regexp literal. This build repairs that specific file and adds smoke checks to catch similar TypeScript parse issues before deploy.
+- `node --check js/admin-ui.js`
+- `node --check js/jobs-ui.js`
+- `node --check app.js`
+- `node --check server-worker.js`
+- `node scripts/repo-smoke-check.mjs`
 
-## Post-deploy verification
+## If you cannot run Node locally
 
-- `jobs-manage` bundles successfully.
-- Jobs page loads.
-- Equipment page loads.
-- Equipment checkout/arrival/return forms still submit.
-- Accounting Depth tables still load with fallback empty states.
-- No duplicate comment attachments appear on job comments.
+Use the Admin readiness tables after deploy as the live checklist, and deploy one changed function at a time so failures are easier to isolate.
 
-<!-- 2026-06-01a pass: schema 125 deployment bundle parse repair, SEO/local checks, fallback guardrails, jobs-manage fix, jobs-directory attachment dedupe, cache marker, and roadmap refresh. -->
+<!-- 2026-06-02a pass: schema 126 roadmap depth, data migration candidates, SEO/CSS/fallback guardrails, Admin readiness visibility, archive hygiene, cache marker, and Markdown refresh. -->

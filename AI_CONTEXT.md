@@ -1,14 +1,20 @@
 # AI Context
 
-Last refreshed: **2026-06-01a**
+Last refreshed: **2026-06-02a**
 
-The current YWI/HSE build is **2026-06-01a / schema 125**.
+The current YWI/HSE build is **2026-06-02a / schema 126**.
 
-## Current priorities
+Continue from:
 
-- Schema 125 repairs and documents deployment bundle parse guardrails after the `jobs-manage` regexp failure.
-- Schema 124 accounting depth and equipment accountability remain active foundations.
-- Continue using `DEVELOPMENT_ROADMAP.md` and `KNOWN_ISSUES_AND_GAPS.md` for the next 20 steps.
-- Live test should apply schema 125 and redeploy `jobs-manage` and `jobs-directory`.
+- `DEVELOPMENT_ROADMAP.md`
+- `KNOWN_ISSUES_AND_GAPS.md`
+- `DATABASE_STRUCTURE.md`
+- `docs/ROADMAP_DEPTH_DATA_MIGRATION_SEO_CSS_FALLBACK_SCHEMA126.md`
 
-<!-- 2026-06-01a pass: schema 125 deployment bundle parse repair, SEO/local checks, fallback guardrails, jobs-manage fix, jobs-directory attachment dedupe, cache marker, and roadmap refresh. -->
+Key current focus:
+
+- Apply schema 126.
+- Redeploy `admin-directory` so Admin readiness shows schema 126/126 guardrails.
+- Continue payment application, reconciliation, remittance, month-end close, accountant export, and equipment QR/accessory/verifier/service-task depth.
+
+<!-- 2026-06-02a pass: schema 126 roadmap depth, data migration candidates, SEO/CSS/fallback guardrails, Admin readiness visibility, archive hygiene, cache marker, and Markdown refresh. -->

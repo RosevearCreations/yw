@@ -1,49 +1,38 @@
 # Database Structure
 
-Last refreshed: **2026-06-01a**
+Last refreshed: **2026-06-02a**
 
-## Current schema marker
+Current schema marker: **126**
 
-The active schema reference is aligned through:
+## Latest migration
 
-- `sql/125_deployment_bundle_parse_seo_fallback_guardrails.sql`
+- `sql/126_roadmap_depth_data_migration_seo_css_fallback_guardrails.sql`
 
-`v_schema_drift_status` now expects schema **125**.
+## Latest schema 126 additions
 
-## Latest schema 125 additions
+- `app_roadmap_action_steps`
+- `v_app_roadmap_action_steps`
+- `app_depth_review_queue`
+- `v_app_depth_review_queue`
+- `app_data_migration_candidates`
+- `v_app_data_migration_candidates`
+- `app_schema_documentation_sync_checks`
+- `v_app_schema_documentation_sync_checks`
 
-New deployment/quality guardrail tables:
-
-- `app_deployment_bundle_checks`
-- `app_public_seo_checks`
-- `app_runtime_fallback_checks`
-
-New views:
+## Schema 126 guardrails now visible in Admin
 
 - `v_app_deployment_bundle_checks`
 - `v_app_public_seo_checks`
 - `v_app_runtime_fallback_checks`
 
-Updated:
+## Drift marker
 
-- `app_operational_depth_gates` receives deployment bundle, regex repair, SEO/local wording, and runtime fallback rows.
-- `app_schema_versions` receives schema version 125 marker.
-- `v_schema_drift_status` expects schema 125.
+`v_schema_drift_status` now expects schema **126** and reports `behind` until the live Supabase database has applied migrations through schema 126.
 
-## Previous schema 124 depth still active
+## Current source-of-truth direction
 
-Schema 124 remains the accounting/equipment-accountability foundation:
+- Keep offline-first drafts and outbox entries local-first, then sync conflict summaries to DB.
+- Move shared/reviewable workflow state into DB when it affects accounting, equipment accountability, SEO publishing, deployment readiness, or operator signoff.
+- Preserve generated/static fallbacks where public pages or offline mobile workflows must continue without a live DB connection.
 
-- `v_job_cost_depth_directory`
-- `v_payment_application_workbench_directory`
-- `v_bank_reconciliation_review_workbench`
-- `v_remittance_filing_review_workbench`
-- `v_month_end_close_workbench`
-- `v_equipment_accountability_workbench`
-- `v_equipment_service_task_directory`
-
-## Deployment note
-
-Apply migrations in order. For this build, schema **125** should be applied after schema **124**, then redeploy `jobs-manage` and `jobs-directory`.
-
-<!-- 2026-06-01a pass: schema 125 deployment bundle parse repair, SEO/local checks, fallback guardrails, jobs-manage fix, jobs-directory attachment dedupe, cache marker, and roadmap refresh. -->
+<!-- 2026-06-02a pass: schema 126 roadmap depth, data migration candidates, SEO/CSS/fallback guardrails, Admin readiness visibility, archive hygiene, cache marker, and Markdown refresh. -->
