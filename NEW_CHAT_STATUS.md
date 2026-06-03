@@ -1,20 +1,15 @@
 # New Chat Status
 
-Last refreshed: **2026-06-02a**
+Last refreshed: **2026-06-02b**
 
-The current build is **2026-06-02a / schema 126**.
+Continue from **schema 127**.
 
-Most recent work:
+Latest build work:
 
-- Added schema 126 roadmap/depth/data-migration/schema-documentation sync guardrails.
-- Updated Admin readiness UI to show schema 126/126 guardrails.
-- Updated `admin-directory` to load the new guardrail views.
-- Updated smoke checks for schema 126, cache marker 2026-06-02a, archive snapshots, CSS brace balance, and no root test files.
-- Retired temporary `test_write` files.
-- Updated active Markdown files and cache markers.
+- Added `127_public_route_seo_internal_link_css_mobile_guardrails.sql`.
+- Updated `000_full_schema_reference.sql` through 127.
+- Added Admin readiness visibility for route SEO, internal links, CSS tokens, mobile actions, and release manifest checks.
+- Added manual scan/enter fallback for equipment QR/barcode fields.
+- Updated Markdown, smoke checks, cache marker, and archive hygiene.
 
-Next priority:
-
-Use `DEVELOPMENT_ROADMAP.md` and `KNOWN_ISSUES_AND_GAPS.md`. The next strongest build pass is full payment application UI, bank CSV preview/reconciliation review, HST/GST and payroll remittance review, month-end close lock/reopen/export packaging, and equipment QR/accessory/verifier/service-task depth.
-
-<!-- 2026-06-02a pass: schema 126 roadmap depth, data migration candidates, SEO/CSS/fallback guardrails, Admin readiness visibility, archive hygiene, cache marker, and Markdown refresh. -->
+Next strongest pass: payment application UI/actions, bank CSV preview, reconciliation manual match/undo, remittance proof, month-end lock/reopen, real camera scan, accessory templates, verifier-role enforcement, and generated release manifests.

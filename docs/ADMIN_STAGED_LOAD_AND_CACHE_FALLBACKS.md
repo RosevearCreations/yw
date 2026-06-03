@@ -1,6 +1,6 @@
 # Admin Staged Load and Cache Fallbacks
 
-Last refreshed: **2026-06-02a**
+Last refreshed: **2026-06-02b**
 
 ## Current behavior
 
@@ -35,3 +35,4 @@ Persist failed panel load events into `admin_panel_load_diagnostics` through a w
 <!-- 2026-06-02a pass: schema 126 roadmap depth, data migration candidates, SEO/CSS/fallback guardrails, Admin readiness visibility, archive hygiene, cache marker, and Markdown refresh. -->
 
 <!-- 2026-06-02a pass: schema 126 roadmap depth, data migration candidates, SEO/CSS/fallback guardrails, Admin readiness visibility, archive hygiene, cache marker, and Markdown refresh. -->
+<!-- 2026-06-02b pass: schema 127 public route SEO registry, internal links, CSS token inventory, mobile field actions, release manifest checks, Admin readiness visibility, scan fallback, archive hygiene, cache marker, and Markdown refresh. -->

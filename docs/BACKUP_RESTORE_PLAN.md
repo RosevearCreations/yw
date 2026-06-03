@@ -1,6 +1,6 @@
 # Backup and Restore Plan
 
-Last refreshed: **2026-06-02a**
+Last refreshed: **2026-06-02b**
 
 Next production-readiness step: automate or document a repeatable backup/restore rehearsal for Supabase database, storage/media, Edge Function configuration notes, and accountant export packages.
 
@@ -24,3 +24,4 @@ _Reviewed in the 2026-05-17a pass for schema 112 documentation consistency._
 <!-- 2026-06-02a pass: schema 126 roadmap depth, data migration candidates, SEO/CSS/fallback guardrails, Admin readiness visibility, archive hygiene, cache marker, and Markdown refresh. -->
 
 <!-- 2026-06-02a pass: schema 126 roadmap depth, data migration candidates, SEO/CSS/fallback guardrails, Admin readiness visibility, archive hygiene, cache marker, and Markdown refresh. -->
+<!-- 2026-06-02b pass: schema 127 public route SEO registry, internal links, CSS token inventory, mobile field actions, release manifest checks, Admin readiness visibility, scan fallback, archive hygiene, cache marker, and Markdown refresh. -->

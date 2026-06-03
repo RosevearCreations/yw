@@ -1,32 +1,17 @@
 # Deployment Guide
 
-Last refreshed: **2026-06-02a**
-
-## Current build
-
-- Build: **2026-06-02a**
-- Schema: **126**
+Last refreshed: **2026-06-02b**
 
 ## Deploy order
 
-1. Apply SQL migrations through `sql/126_roadmap_depth_data_migration_seo_css_fallback_guardrails.sql`.
-2. Confirm `v_schema_drift_status` expects and reports schema **126**.
-3. Redeploy `admin-directory` so the new Admin readiness views load.
-4. Redeploy `jobs-manage` and `jobs-directory` if the live functions are not already on the repaired schema 126/126 code.
-5. Redeploy any other changed Edge Functions if your deployment workflow packages all functions together.
-6. Hard-refresh or clear the browser service worker so **2026-06-02a** assets load.
-7. Open Admin → Production Readiness and confirm build guardrails, SEO guardrails, fallback checks, roadmap rows, depth rows, migration rows, and schema/doc sync rows load.
+1. Apply SQL migrations through **127**.
+2. Deploy `admin-directory`.
+3. Deploy `jobs-manage` and `jobs-directory` if the live functions are behind this zip.
+4. Run `node scripts/repo-smoke-check.mjs` when local/online tooling is available.
+5. Hard-refresh the app or clear the old service worker so **2026-06-02b** assets load.
 
-## Local/smoke checks before packaging
+## Important checks
 
-- `node --check js/admin-ui.js`
-- `node --check js/jobs-ui.js`
-- `node --check app.js`
-- `node --check server-worker.js`
-- `node scripts/repo-smoke-check.mjs`
-
-## If you cannot run Node locally
-
-Use the Admin readiness tables after deploy as the live checklist, and deploy one changed function at a time so failures are easier to isolate.
-
-<!-- 2026-06-02a pass: schema 126 roadmap depth, data migration candidates, SEO/CSS/fallback guardrails, Admin readiness visibility, archive hygiene, cache marker, and Markdown refresh. -->
+- Confirm `v_schema_drift_status` expects **127**.
+- Confirm Admin Production Readiness shows route SEO, internal-link, CSS token, mobile action, and release manifest tables.
+- Confirm the Equipment page shows the manual **Scan / Enter Code** fallback button.

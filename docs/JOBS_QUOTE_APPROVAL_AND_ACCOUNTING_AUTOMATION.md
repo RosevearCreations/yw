@@ -85,7 +85,7 @@ Schema **109** added production-readiness foundations: admin list pagination set
 - Added compact expandable Admin section navigation for small screens.
 - Added schema 110 frontend quality gates and updated active Markdown/schema references.
 
-_Last refreshed: **2026-06-02a**_
+_Last refreshed: **2026-06-02b**_
 
 _Reviewed in the 2026-05-17a pass for schema 112 documentation consistency._
 
@@ -94,3 +94,4 @@ _Reviewed in the 2026-05-17a pass for schema 112 documentation consistency._
 <!-- 2026-06-02a pass: schema 126 roadmap depth, data migration candidates, SEO/CSS/fallback guardrails, Admin readiness visibility, archive hygiene, cache marker, and Markdown refresh. -->
 
 <!-- 2026-06-02a pass: schema 126 roadmap depth, data migration candidates, SEO/CSS/fallback guardrails, Admin readiness visibility, archive hygiene, cache marker, and Markdown refresh. -->
+<!-- 2026-06-02b pass: schema 127 public route SEO registry, internal links, CSS token inventory, mobile field actions, release manifest checks, Admin readiness visibility, scan fallback, archive hygiene, cache marker, and Markdown refresh. -->

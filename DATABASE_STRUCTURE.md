@@ -1,38 +1,17 @@
 # Database Structure
 
-Last refreshed: **2026-06-02a**
+Last refreshed: **2026-06-02b**
 
-Current schema marker: **126**
+Current schema marker: **127**.
 
-## Latest migration
+Latest migration: `sql/127_public_route_seo_internal_link_css_mobile_guardrails.sql`.
 
-- `sql/126_roadmap_depth_data_migration_seo_css_fallback_guardrails.sql`
+Schema 127 adds:
 
-## Latest schema 126 additions
+- `app_public_route_seo_registry` / `v_app_public_route_seo_registry`
+- `app_internal_link_suggestion_queue` / `v_app_internal_link_suggestion_queue`
+- `app_css_component_token_inventory` / `v_app_css_component_token_inventory`
+- `app_mobile_field_action_queue` / `v_app_mobile_field_action_queue`
+- `app_release_manifest_checks` / `v_app_release_manifest_checks`
 
-- `app_roadmap_action_steps`
-- `v_app_roadmap_action_steps`
-- `app_depth_review_queue`
-- `v_app_depth_review_queue`
-- `app_data_migration_candidates`
-- `v_app_data_migration_candidates`
-- `app_schema_documentation_sync_checks`
-- `v_app_schema_documentation_sync_checks`
-
-## Schema 126 guardrails now visible in Admin
-
-- `v_app_deployment_bundle_checks`
-- `v_app_public_seo_checks`
-- `v_app_runtime_fallback_checks`
-
-## Drift marker
-
-`v_schema_drift_status` now expects schema **126** and reports `behind` until the live Supabase database has applied migrations through schema 126.
-
-## Current source-of-truth direction
-
-- Keep offline-first drafts and outbox entries local-first, then sync conflict summaries to DB.
-- Move shared/reviewable workflow state into DB when it affects accounting, equipment accountability, SEO publishing, deployment readiness, or operator signoff.
-- Preserve generated/static fallbacks where public pages or offline mobile workflows must continue without a live DB connection.
-
-<!-- 2026-06-02a pass: schema 126 roadmap depth, data migration candidates, SEO/CSS/fallback guardrails, Admin readiness visibility, archive hygiene, cache marker, and Markdown refresh. -->
+`v_schema_drift_status` now expects schema **127**. Apply schemas in order and redeploy Admin/Jobs Edge Functions after schema 127 is applied.

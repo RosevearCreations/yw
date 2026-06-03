@@ -210,6 +210,7 @@
             <label>Asset Tag<input id="eq_asset_tag" type="text" /></label>
             <label>QR Code / Scan Value<input id="eq_qr_code_value" type="text" placeholder="QR or NFC value" /></label>
             <label>Barcode<input id="eq_barcode_value" type="text" placeholder="Barcode / label value" /></label>
+            <label style="display:flex;align-items:end;gap:8px;"><button id="eq_scan_code" class="secondary" type="button">Scan / Enter Code</button><span class="muted">Camera when supported; manual fallback.</span></label>
             <label>Verifier Role<select id="eq_verifier_role_required"><option value="site_leader">Site Leader</option><option value="supervisor" selected>Supervisor</option><option value="job_admin">Job Admin</option><option value="admin">Admin</option></select></label>
             <label style="display:flex;align-items:center;gap:8px;margin-top:26px;"><input id="eq_accessory_checklist_required" type="checkbox" /> Accessory checklist required</label>
             <label>Manufacturer<input id="eq_manufacturer" type="text" /></label>
@@ -955,6 +956,7 @@
         eqAssetTag: $('#eq_asset_tag'),
         eqQrCodeValue: $('#eq_qr_code_value'),
         eqBarcodeValue: $('#eq_barcode_value'),
+        eqScanCode: $('#eq_scan_code'),
         eqVerifierRoleRequired: $('#eq_verifier_role_required'),
         eqAccessoryChecklistRequired: $('#eq_accessory_checklist_required'),
         eqManufacturer: $('#eq_manufacturer'),
@@ -2851,6 +2853,21 @@
       }
     }
 
+
+    async function scanOrEnterEquipmentCode() {
+      const e = els();
+      try {
+        const manual = window.prompt('Scan/enter equipment QR or barcode value');
+        if (!manual) return;
+        if (e.eqQrCodeValue && !e.eqQrCodeValue.value) e.eqQrCodeValue.value = manual.trim();
+        if (e.eqBarcodeValue) e.eqBarcodeValue.value = manual.trim();
+        saveEquipmentDraft();
+        setNotice(e.eqSummary, 'Equipment scan value captured with manual fallback.');
+      } catch (err) {
+        setNotice(e.eqSummary, err?.message || 'Scan/manual entry failed.', true);
+      }
+    }
+
     async function saveEquipment() {
       const e = els();
       try {
@@ -3392,6 +3409,10 @@
       if (e.jobClear && e.jobClear.dataset.bound !== '1') {
         e.jobClear.dataset.bound = '1';
         e.jobClear.addEventListener('click', clearJobForm);
+      }
+      if (e.eqScanCode && e.eqScanCode.dataset.bound !== '1') {
+        e.eqScanCode.dataset.bound = '1';
+        e.eqScanCode.addEventListener('click', scanOrEnterEquipmentCode);
       }
       if (e.eqSave && e.eqSave.dataset.bound !== '1') {
         e.eqSave.dataset.bound = '1';

@@ -181,6 +181,11 @@
       appDepthReviewQueue: [],
       appDataMigrationCandidates: [],
       appSchemaDocumentationSyncChecks: [],
+      appPublicRouteSeoRegistry: [],
+      appInternalLinkSuggestionQueue: [],
+      appCssComponentTokenInventory: [],
+      appMobileFieldActionQueue: [],
+      appReleaseManifestChecks: [],
       actorRole: '',
       actorProfileId: '',
       directoryPagination: {
@@ -531,6 +536,36 @@
           <div class="table-scroll" style="margin-top:12px;">
             <table id="ad_schema_doc_sync_table">
               <thead><tr><th>Area</th><th>Sync Check</th><th>Status</th><th>File</th><th>Risk if Missed</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_route_seo_registry_table">
+              <thead><tr><th>Route</th><th>Title / H1</th><th>Status</th><th>Local Terms</th><th>Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_internal_link_queue_table">
+              <thead><tr><th>Source</th><th>Target</th><th>Anchor / Context</th><th>Status</th><th>Reason</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_css_token_inventory_table">
+              <thead><tr><th>Area</th><th>Token</th><th>Status</th><th>Mobile Check</th><th>Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_mobile_field_action_table">
+              <thead><tr><th>Area</th><th>Action</th><th>Status</th><th>Scan / Proof</th><th>Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_release_manifest_table">
+              <thead><tr><th>Release</th><th>Area</th><th>Status</th><th>File / Marker</th><th>Failure Hint</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -1311,6 +1346,11 @@
         depthReviewBody: document.querySelector('#ad_depth_review_table tbody'),
         dataMigrationBody: document.querySelector('#ad_data_migration_table tbody'),
         schemaDocSyncBody: document.querySelector('#ad_schema_doc_sync_table tbody'),
+        routeSeoRegistryBody: document.querySelector('#ad_route_seo_registry_table tbody'),
+        internalLinkQueueBody: document.querySelector('#ad_internal_link_queue_table tbody'),
+        cssTokenInventoryBody: document.querySelector('#ad_css_token_inventory_table tbody'),
+        mobileFieldActionBody: document.querySelector('#ad_mobile_field_action_table tbody'),
+        releaseManifestBody: document.querySelector('#ad_release_manifest_table tbody'),
         seoSmokeBody: document.querySelector('#ad_seo_smoke_table tbody'),
         bankCsvImportBody: document.querySelector('#ad_bank_csv_import_table tbody'),
         backupRehearsalBody: document.querySelector('#ad_backup_rehearsal_table tbody'),
@@ -1600,6 +1640,11 @@
       if (Array.isArray(resp.app_depth_review_queue)) state.appDepthReviewQueue = resp.app_depth_review_queue;
       if (Array.isArray(resp.app_data_migration_candidates)) state.appDataMigrationCandidates = resp.app_data_migration_candidates;
       if (Array.isArray(resp.app_schema_documentation_sync_checks)) state.appSchemaDocumentationSyncChecks = resp.app_schema_documentation_sync_checks;
+      if (Array.isArray(resp.app_public_route_seo_registry)) state.appPublicRouteSeoRegistry = resp.app_public_route_seo_registry;
+      if (Array.isArray(resp.app_internal_link_suggestion_queue)) state.appInternalLinkSuggestionQueue = resp.app_internal_link_suggestion_queue;
+      if (Array.isArray(resp.app_css_component_token_inventory)) state.appCssComponentTokenInventory = resp.app_css_component_token_inventory;
+      if (Array.isArray(resp.app_mobile_field_action_queue)) state.appMobileFieldActionQueue = resp.app_mobile_field_action_queue;
+      if (Array.isArray(resp.app_release_manifest_checks)) state.appReleaseManifestChecks = resp.app_release_manifest_checks;
       state.counts = {
         users: state.directoryPagination.people?.total || state.users.length,
         sites: Array.isArray(state.sites) ? state.sites.length : 0,
@@ -2684,6 +2729,11 @@
         state.appDepthReviewQueue = Array.isArray(resp?.app_depth_review_queue) ? resp.app_depth_review_queue : state.appDepthReviewQueue;
         state.appDataMigrationCandidates = Array.isArray(resp?.app_data_migration_candidates) ? resp.app_data_migration_candidates : state.appDataMigrationCandidates;
         state.appSchemaDocumentationSyncChecks = Array.isArray(resp?.app_schema_documentation_sync_checks) ? resp.app_schema_documentation_sync_checks : state.appSchemaDocumentationSyncChecks;
+        state.appPublicRouteSeoRegistry = Array.isArray(resp?.app_public_route_seo_registry) ? resp.app_public_route_seo_registry : state.appPublicRouteSeoRegistry;
+        state.appInternalLinkSuggestionQueue = Array.isArray(resp?.app_internal_link_suggestion_queue) ? resp.app_internal_link_suggestion_queue : state.appInternalLinkSuggestionQueue;
+        state.appCssComponentTokenInventory = Array.isArray(resp?.app_css_component_token_inventory) ? resp.app_css_component_token_inventory : state.appCssComponentTokenInventory;
+        state.appMobileFieldActionQueue = Array.isArray(resp?.app_mobile_field_action_queue) ? resp.app_mobile_field_action_queue : state.appMobileFieldActionQueue;
+        state.appReleaseManifestChecks = Array.isArray(resp?.app_release_manifest_checks) ? resp.app_release_manifest_checks : state.appReleaseManifestChecks;
         state.hsePacketActionItems = Array.isArray(resp?.hse_packet_action_items) ? resp.hse_packet_action_items : [];
         state.hseDashboardSummary = Array.isArray(resp?.hse_dashboard_summary) ? resp.hse_dashboard_summary : [];
         state.accountingReviewSummary = Array.isArray(resp?.accounting_review_summary) ? resp.accounting_review_summary : [];
@@ -4912,7 +4962,12 @@
           appRoadmapActionSteps: Array.isArray(payload?.app_roadmap_action_steps) ? payload.app_roadmap_action_steps : state.appRoadmapActionSteps,
           appDepthReviewQueue: Array.isArray(payload?.app_depth_review_queue) ? payload.app_depth_review_queue : state.appDepthReviewQueue,
           appDataMigrationCandidates: Array.isArray(payload?.app_data_migration_candidates) ? payload.app_data_migration_candidates : state.appDataMigrationCandidates,
-          appSchemaDocumentationSyncChecks: Array.isArray(payload?.app_schema_documentation_sync_checks) ? payload.app_schema_documentation_sync_checks : state.appSchemaDocumentationSyncChecks
+          appSchemaDocumentationSyncChecks: Array.isArray(payload?.app_schema_documentation_sync_checks) ? payload.app_schema_documentation_sync_checks : state.appSchemaDocumentationSyncChecks,
+          appPublicRouteSeoRegistry: Array.isArray(payload?.app_public_route_seo_registry) ? payload.app_public_route_seo_registry : state.appPublicRouteSeoRegistry,
+          appInternalLinkSuggestionQueue: Array.isArray(payload?.app_internal_link_suggestion_queue) ? payload.app_internal_link_suggestion_queue : state.appInternalLinkSuggestionQueue,
+          appCssComponentTokenInventory: Array.isArray(payload?.app_css_component_token_inventory) ? payload.app_css_component_token_inventory : state.appCssComponentTokenInventory,
+          appMobileFieldActionQueue: Array.isArray(payload?.app_mobile_field_action_queue) ? payload.app_mobile_field_action_queue : state.appMobileFieldActionQueue,
+          appReleaseManifestChecks: Array.isArray(payload?.app_release_manifest_checks) ? payload.app_release_manifest_checks : state.appReleaseManifestChecks
         };
         const e = els();
         if (e.staffPosition) {
@@ -5554,6 +5609,67 @@
             <td class="admin-table-note">${escHtml(row.failure_hint || '')}</td>
           </tr>
         `).join('') || '<tr><td colspan="5" class="muted">No schema/documentation sync rows loaded yet. Apply schema 126.</td></tr>';
+      }
+
+      if (e.routeSeoRegistryBody) {
+        const rows = Array.isArray(state.appPublicRouteSeoRegistry) ? state.appPublicRouteSeoRegistry : [];
+        e.routeSeoRegistryBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td><strong>${escHtml(row.route_label || row.route_key || '')}</strong><div class="muted">${escHtml(row.route_path || '')}</div></td>
+            <td>${escHtml(row.page_title || '')}<div class="muted">H1: ${escHtml(row.h1_text || '')}</div></td>
+            <td>${renderStatusPill(row.publish_status || 'review', /ready|published|pass/i.test(String(row.publish_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.primary_local_terms || row.local_wording_notes || '')}</td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No route SEO registry rows loaded yet. Apply schema 127.</td></tr>';
+      }
+      if (e.internalLinkQueueBody) {
+        const rows = Array.isArray(state.appInternalLinkSuggestionQueue) ? state.appInternalLinkSuggestionQueue : [];
+        e.internalLinkQueueBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.source_route_label || row.source_route_path || '')}</td>
+            <td>${escHtml(row.target_route_label || row.target_route_path || '')}</td>
+            <td><strong>${escHtml(row.suggested_anchor_text || '')}</strong><div class="muted">${escHtml(row.link_context || '')}</div></td>
+            <td>${renderStatusPill(row.suggestion_status || 'review', /approved|ready|pass/i.test(String(row.suggestion_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.seo_reason || row.proof_reason || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No internal-link suggestion rows loaded yet. Apply schema 127.</td></tr>';
+      }
+      if (e.cssTokenInventoryBody) {
+        const rows = Array.isArray(state.appCssComponentTokenInventory) ? state.appCssComponentTokenInventory : [];
+        e.cssTokenInventoryBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.component_area || '')}</td>
+            <td><strong>${escHtml(row.token_name || '')}</strong><div class="muted">${escHtml(row.recommended_class_name || row.current_source || '')}</div></td>
+            <td>${renderStatusPill(row.token_status || 'review', /ready|in_progress|pass/i.test(String(row.token_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.mobile_check_hint || '')}</td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No CSS token inventory rows loaded yet. Apply schema 127.</td></tr>';
+      }
+      if (e.mobileFieldActionBody) {
+        const rows = Array.isArray(state.appMobileFieldActionQueue) ? state.appMobileFieldActionQueue : [];
+        e.mobileFieldActionBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.action_area || '')}<div class="muted">${escHtml(row.required_role || '')}</div></td>
+            <td><strong>${escHtml(row.action_title || '')}</strong><div class="muted">${escHtml(row.route_hint || '')}</div></td>
+            <td>${renderStatusPill(row.action_status || 'planned', /ready|in_progress|pass/i.test(String(row.action_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.scan_or_proof_hint || '')}</td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No mobile field action rows loaded yet. Apply schema 127.</td></tr>';
+      }
+      if (e.releaseManifestBody) {
+        const rows = Array.isArray(state.appReleaseManifestChecks) ? state.appReleaseManifestChecks : [];
+        e.releaseManifestBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.release_label || '')}</td>
+            <td><strong>${escHtml(row.manifest_area || '')}</strong><div class="muted">${escHtml(row.manifest_title || '')}</div></td>
+            <td>${renderStatusPill(row.manifest_status || 'review', /pass|ready|ok/i.test(String(row.manifest_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.file_path || '')}<div class="muted">${escHtml(row.expected_marker || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.failure_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No release manifest rows loaded yet. Apply schema 127.</td></tr>';
       }
       applyAdminActionDisabledStates();
       if (e.seoSmokeBody) {

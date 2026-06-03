@@ -1,6 +1,6 @@
 # Admin Split Scopes and Confirmation Guardrails
 
-Last refreshed: **2026-06-02a**
+Last refreshed: **2026-06-02b**
 
 ## What changed
 
@@ -37,3 +37,4 @@ The frontend now asks before status-changing actions such as job complete/cancel
 <!-- 2026-06-02a pass: schema 126 roadmap depth, data migration candidates, SEO/CSS/fallback guardrails, Admin readiness visibility, archive hygiene, cache marker, and Markdown refresh. -->
 
 <!-- 2026-06-02a pass: schema 126 roadmap depth, data migration candidates, SEO/CSS/fallback guardrails, Admin readiness visibility, archive hygiene, cache marker, and Markdown refresh. -->
+<!-- 2026-06-02b pass: schema 127 public route SEO registry, internal links, CSS token inventory, mobile field actions, release manifest checks, Admin readiness visibility, scan fallback, archive hygiene, cache marker, and Markdown refresh. -->
