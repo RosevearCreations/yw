@@ -1,6 +1,6 @@
 # New Chat Status
 
-Last refreshed: **2026-06-02b**
+Last refreshed: **2026-06-03a**
 
 Continue from **schema 127**.
 
@@ -13,3 +13,10 @@ Latest build work:
 - Updated Markdown, smoke checks, cache marker, and archive hygiene.
 
 Next strongest pass: payment application UI/actions, bank CSV preview, reconciliation manual match/undo, remittance proof, month-end lock/reopen, real camera scan, accessory templates, verifier-role enforcement, and generated release manifests.
+
+## 2026-06-03a / Schema 128 update
+
+- Added schema 128 execution queues for payment application, accounting close controls, equipment accountability, public SEO publication, and fallback observability.
+- Updated Admin readiness to show the new queues.
+- Updated cache marker to 2026-06-03a and refreshed active Markdown.
+- Archived prior Markdown and retired uploaded test_write files.

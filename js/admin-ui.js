@@ -186,6 +186,11 @@
       appCssComponentTokenInventory: [],
       appMobileFieldActionQueue: [],
       appReleaseManifestChecks: [],
+      appPaymentApplicationActionRegistry: [],
+      appAccountingCloseControlQueue: [],
+      appEquipmentAccountabilityActionQueue: [],
+      appPublicSeoPublicationQueue: [],
+      appFallbackObservabilityMatrix: [],
       actorRole: '',
       actorProfileId: '',
       directoryPagination: {
@@ -566,6 +571,36 @@
           <div class="table-scroll" style="margin-top:12px;">
             <table id="ad_release_manifest_table">
               <thead><tr><th>Release</th><th>Area</th><th>Status</th><th>File / Marker</th><th>Failure Hint</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_payment_action_registry_table">
+              <thead><tr><th>Area</th><th>Payment Action</th><th>Status</th><th>Accounting Effect</th><th>Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_accounting_close_control_table">
+              <thead><tr><th>Close Area</th><th>Control</th><th>Status</th><th>Proof / Lock</th><th>Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_equipment_accountability_action_table">
+              <thead><tr><th>Area</th><th>Equipment Action</th><th>Status</th><th>Enforcement / Service Task</th><th>Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_public_seo_publication_table">
+              <thead><tr><th>Area</th><th>Publication Gate</th><th>Status</th><th>Smoke / Local Proof</th><th>Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_fallback_observability_table">
+              <thead><tr><th>Surface</th><th>Failure Mode</th><th>Status</th><th>User Message / Retry</th><th>Owner</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -1351,6 +1386,11 @@
         cssTokenInventoryBody: document.querySelector('#ad_css_token_inventory_table tbody'),
         mobileFieldActionBody: document.querySelector('#ad_mobile_field_action_table tbody'),
         releaseManifestBody: document.querySelector('#ad_release_manifest_table tbody'),
+        paymentActionRegistryBody: document.querySelector('#ad_payment_action_registry_table tbody'),
+        accountingCloseControlBody: document.querySelector('#ad_accounting_close_control_table tbody'),
+        equipmentAccountabilityActionBody: document.querySelector('#ad_equipment_accountability_action_table tbody'),
+        publicSeoPublicationBody: document.querySelector('#ad_public_seo_publication_table tbody'),
+        fallbackObservabilityBody: document.querySelector('#ad_fallback_observability_table tbody'),
         seoSmokeBody: document.querySelector('#ad_seo_smoke_table tbody'),
         bankCsvImportBody: document.querySelector('#ad_bank_csv_import_table tbody'),
         backupRehearsalBody: document.querySelector('#ad_backup_rehearsal_table tbody'),
@@ -1645,6 +1685,11 @@
       if (Array.isArray(resp.app_css_component_token_inventory)) state.appCssComponentTokenInventory = resp.app_css_component_token_inventory;
       if (Array.isArray(resp.app_mobile_field_action_queue)) state.appMobileFieldActionQueue = resp.app_mobile_field_action_queue;
       if (Array.isArray(resp.app_release_manifest_checks)) state.appReleaseManifestChecks = resp.app_release_manifest_checks;
+      if (Array.isArray(resp.app_payment_application_action_registry)) state.appPaymentApplicationActionRegistry = resp.app_payment_application_action_registry;
+      if (Array.isArray(resp.app_accounting_close_control_queue)) state.appAccountingCloseControlQueue = resp.app_accounting_close_control_queue;
+      if (Array.isArray(resp.app_equipment_accountability_action_queue)) state.appEquipmentAccountabilityActionQueue = resp.app_equipment_accountability_action_queue;
+      if (Array.isArray(resp.app_public_seo_publication_queue)) state.appPublicSeoPublicationQueue = resp.app_public_seo_publication_queue;
+      if (Array.isArray(resp.app_fallback_observability_matrix)) state.appFallbackObservabilityMatrix = resp.app_fallback_observability_matrix;
       state.counts = {
         users: state.directoryPagination.people?.total || state.users.length,
         sites: Array.isArray(state.sites) ? state.sites.length : 0,
@@ -2734,6 +2779,11 @@
         state.appCssComponentTokenInventory = Array.isArray(resp?.app_css_component_token_inventory) ? resp.app_css_component_token_inventory : state.appCssComponentTokenInventory;
         state.appMobileFieldActionQueue = Array.isArray(resp?.app_mobile_field_action_queue) ? resp.app_mobile_field_action_queue : state.appMobileFieldActionQueue;
         state.appReleaseManifestChecks = Array.isArray(resp?.app_release_manifest_checks) ? resp.app_release_manifest_checks : state.appReleaseManifestChecks;
+        state.appPaymentApplicationActionRegistry = Array.isArray(resp?.app_payment_application_action_registry) ? resp.app_payment_application_action_registry : state.appPaymentApplicationActionRegistry;
+        state.appAccountingCloseControlQueue = Array.isArray(resp?.app_accounting_close_control_queue) ? resp.app_accounting_close_control_queue : state.appAccountingCloseControlQueue;
+        state.appEquipmentAccountabilityActionQueue = Array.isArray(resp?.app_equipment_accountability_action_queue) ? resp.app_equipment_accountability_action_queue : state.appEquipmentAccountabilityActionQueue;
+        state.appPublicSeoPublicationQueue = Array.isArray(resp?.app_public_seo_publication_queue) ? resp.app_public_seo_publication_queue : state.appPublicSeoPublicationQueue;
+        state.appFallbackObservabilityMatrix = Array.isArray(resp?.app_fallback_observability_matrix) ? resp.app_fallback_observability_matrix : state.appFallbackObservabilityMatrix;
         state.hsePacketActionItems = Array.isArray(resp?.hse_packet_action_items) ? resp.hse_packet_action_items : [];
         state.hseDashboardSummary = Array.isArray(resp?.hse_dashboard_summary) ? resp.hse_dashboard_summary : [];
         state.accountingReviewSummary = Array.isArray(resp?.accounting_review_summary) ? resp.accounting_review_summary : [];
@@ -4590,6 +4640,66 @@
           </div></td>
         </tr>`;
       }).join('') || '<tr><td colspan="6" class="muted">No jobs loaded for this filter/page.</td></tr>';
+      if (e.paymentActionRegistryBody) {
+        const rows = Array.isArray(state.appPaymentApplicationActionRegistry) ? state.appPaymentApplicationActionRegistry : [];
+        e.paymentActionRegistryBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.action_area || '')}<div class="muted">${escHtml(row.required_role || '')}</div></td>
+            <td><strong>${escHtml(row.action_title || '')}</strong><div class="muted">${escHtml(row.source_table_hint || '')}</div></td>
+            <td>${renderStatusPill(row.workflow_status || 'planned', /ready|done|in_progress|pass/i.test(String(row.workflow_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.accounting_effect || '')}</td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No payment application action rows loaded yet. Apply schema 128.</td></tr>';
+      }
+      if (e.accountingCloseControlBody) {
+        const rows = Array.isArray(state.appAccountingCloseControlQueue) ? state.appAccountingCloseControlQueue : [];
+        e.accountingCloseControlBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.close_area || '')}</td>
+            <td><strong>${escHtml(row.control_title || '')}</strong><div class="muted">${escHtml(row.source_totals_hint || '')}</div></td>
+            <td>${renderStatusPill(row.control_status || 'planned', /ready|done|in_progress|pass/i.test(String(row.control_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.proof_hint || '')}<div class="muted">${escHtml(row.lock_behavior || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No accounting close control rows loaded yet. Apply schema 128.</td></tr>';
+      }
+      if (e.equipmentAccountabilityActionBody) {
+        const rows = Array.isArray(state.appEquipmentAccountabilityActionQueue) ? state.appEquipmentAccountabilityActionQueue : [];
+        e.equipmentAccountabilityActionBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.equipment_area || '')}<div class="muted">${escHtml(row.required_role || '')}</div></td>
+            <td><strong>${escHtml(row.action_title || '')}</strong><div class="muted">Scan: ${escHtml(row.scanner_status || '')}</div></td>
+            <td>${renderStatusPill(row.action_status || 'planned', /ready|done|in_progress|pass/i.test(String(row.action_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.server_enforcement_status || '')}<div class="muted">${escHtml(row.service_task_behavior || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No equipment accountability rows loaded yet. Apply schema 128.</td></tr>';
+      }
+      if (e.publicSeoPublicationBody) {
+        const rows = Array.isArray(state.appPublicSeoPublicationQueue) ? state.appPublicSeoPublicationQueue : [];
+        e.publicSeoPublicationBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.publish_area || '')}<div class="muted">${escHtml(row.route_key || '')}</div></td>
+            <td><strong>${escHtml(row.publish_title || '')}</strong><div class="muted">${escHtml(row.required_evidence || '')}</div></td>
+            <td>${renderStatusPill(row.publish_status || 'planned', /ready|done|in_progress|pass/i.test(String(row.publish_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.smoke_test_hint || '')}<div class="muted">${escHtml(row.local_wording_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No public SEO publication rows loaded yet. Apply schema 128.</td></tr>';
+      }
+      if (e.fallbackObservabilityBody) {
+        const rows = Array.isArray(state.appFallbackObservabilityMatrix) ? state.appFallbackObservabilityMatrix : [];
+        e.fallbackObservabilityBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.app_surface || '')}</td>
+            <td><strong>${escHtml(row.failure_mode || '')}</strong><div class="muted">${escHtml(row.telemetry_hint || '')}</div></td>
+            <td>${renderStatusPill(row.fallback_status || 'review', /covered|ready|done|pass/i.test(String(row.fallback_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.user_message_hint || '')}<div class="muted">${escHtml(row.retry_policy_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.owner_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No fallback observability rows loaded yet. Apply schema 128.</td></tr>';
+      }
       applyAdminActionDisabledStates();
     }
 
@@ -4967,7 +5077,12 @@
           appInternalLinkSuggestionQueue: Array.isArray(payload?.app_internal_link_suggestion_queue) ? payload.app_internal_link_suggestion_queue : state.appInternalLinkSuggestionQueue,
           appCssComponentTokenInventory: Array.isArray(payload?.app_css_component_token_inventory) ? payload.app_css_component_token_inventory : state.appCssComponentTokenInventory,
           appMobileFieldActionQueue: Array.isArray(payload?.app_mobile_field_action_queue) ? payload.app_mobile_field_action_queue : state.appMobileFieldActionQueue,
-          appReleaseManifestChecks: Array.isArray(payload?.app_release_manifest_checks) ? payload.app_release_manifest_checks : state.appReleaseManifestChecks
+          appReleaseManifestChecks: Array.isArray(payload?.app_release_manifest_checks) ? payload.app_release_manifest_checks : state.appReleaseManifestChecks,
+          appPaymentApplicationActionRegistry: Array.isArray(payload?.app_payment_application_action_registry) ? payload.app_payment_application_action_registry : state.appPaymentApplicationActionRegistry,
+          appAccountingCloseControlQueue: Array.isArray(payload?.app_accounting_close_control_queue) ? payload.app_accounting_close_control_queue : state.appAccountingCloseControlQueue,
+          appEquipmentAccountabilityActionQueue: Array.isArray(payload?.app_equipment_accountability_action_queue) ? payload.app_equipment_accountability_action_queue : state.appEquipmentAccountabilityActionQueue,
+          appPublicSeoPublicationQueue: Array.isArray(payload?.app_public_seo_publication_queue) ? payload.app_public_seo_publication_queue : state.appPublicSeoPublicationQueue,
+          appFallbackObservabilityMatrix: Array.isArray(payload?.app_fallback_observability_matrix) ? payload.app_fallback_observability_matrix : state.appFallbackObservabilityMatrix
         };
         const e = els();
         if (e.staffPosition) {
@@ -5670,6 +5785,66 @@
             <td class="admin-table-note">${escHtml(row.failure_hint || '')}</td>
           </tr>
         `).join('') || '<tr><td colspan="5" class="muted">No release manifest rows loaded yet. Apply schema 127.</td></tr>';
+      }
+      if (e.paymentActionRegistryBody) {
+        const rows = Array.isArray(state.appPaymentApplicationActionRegistry) ? state.appPaymentApplicationActionRegistry : [];
+        e.paymentActionRegistryBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.action_area || '')}<div class="muted">${escHtml(row.required_role || '')}</div></td>
+            <td><strong>${escHtml(row.action_title || '')}</strong><div class="muted">${escHtml(row.source_table_hint || '')}</div></td>
+            <td>${renderStatusPill(row.workflow_status || 'planned', /ready|done|in_progress|pass/i.test(String(row.workflow_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.accounting_effect || '')}</td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No payment application action rows loaded yet. Apply schema 128.</td></tr>';
+      }
+      if (e.accountingCloseControlBody) {
+        const rows = Array.isArray(state.appAccountingCloseControlQueue) ? state.appAccountingCloseControlQueue : [];
+        e.accountingCloseControlBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.close_area || '')}</td>
+            <td><strong>${escHtml(row.control_title || '')}</strong><div class="muted">${escHtml(row.source_totals_hint || '')}</div></td>
+            <td>${renderStatusPill(row.control_status || 'planned', /ready|done|in_progress|pass/i.test(String(row.control_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.proof_hint || '')}<div class="muted">${escHtml(row.lock_behavior || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No accounting close control rows loaded yet. Apply schema 128.</td></tr>';
+      }
+      if (e.equipmentAccountabilityActionBody) {
+        const rows = Array.isArray(state.appEquipmentAccountabilityActionQueue) ? state.appEquipmentAccountabilityActionQueue : [];
+        e.equipmentAccountabilityActionBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.equipment_area || '')}<div class="muted">${escHtml(row.required_role || '')}</div></td>
+            <td><strong>${escHtml(row.action_title || '')}</strong><div class="muted">Scan: ${escHtml(row.scanner_status || '')}</div></td>
+            <td>${renderStatusPill(row.action_status || 'planned', /ready|done|in_progress|pass/i.test(String(row.action_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.server_enforcement_status || '')}<div class="muted">${escHtml(row.service_task_behavior || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No equipment accountability rows loaded yet. Apply schema 128.</td></tr>';
+      }
+      if (e.publicSeoPublicationBody) {
+        const rows = Array.isArray(state.appPublicSeoPublicationQueue) ? state.appPublicSeoPublicationQueue : [];
+        e.publicSeoPublicationBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.publish_area || '')}<div class="muted">${escHtml(row.route_key || '')}</div></td>
+            <td><strong>${escHtml(row.publish_title || '')}</strong><div class="muted">${escHtml(row.required_evidence || '')}</div></td>
+            <td>${renderStatusPill(row.publish_status || 'planned', /ready|done|in_progress|pass/i.test(String(row.publish_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.smoke_test_hint || '')}<div class="muted">${escHtml(row.local_wording_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No public SEO publication rows loaded yet. Apply schema 128.</td></tr>';
+      }
+      if (e.fallbackObservabilityBody) {
+        const rows = Array.isArray(state.appFallbackObservabilityMatrix) ? state.appFallbackObservabilityMatrix : [];
+        e.fallbackObservabilityBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.app_surface || '')}</td>
+            <td><strong>${escHtml(row.failure_mode || '')}</strong><div class="muted">${escHtml(row.telemetry_hint || '')}</div></td>
+            <td>${renderStatusPill(row.fallback_status || 'review', /covered|ready|done|pass/i.test(String(row.fallback_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.user_message_hint || '')}<div class="muted">${escHtml(row.retry_policy_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.owner_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No fallback observability rows loaded yet. Apply schema 128.</td></tr>';
       }
       applyAdminActionDisabledStates();
       if (e.seoSmokeBody) {
