@@ -1,28 +1,21 @@
 # Database Structure
 
-Last refreshed: **2026-06-03a**
+Last refreshed: **2026-06-04b**
 
-Current schema marker: **127**.
+Current schema marker: **130**.
 
-Latest migration: `sql/127_public_route_seo_internal_link_css_mobile_guardrails.sql`.
+Latest migration: `sql/130_payment_reconciliation_equipment_scan_local_seo_execution_playbooks.sql`.
 
-Schema 127 adds:
+Schema 130 adds:
 
-- `app_public_route_seo_registry` / `v_app_public_route_seo_registry`
-- `app_internal_link_suggestion_queue` / `v_app_internal_link_suggestion_queue`
-- `app_css_component_token_inventory` / `v_app_css_component_token_inventory`
-- `app_mobile_field_action_queue` / `v_app_mobile_field_action_queue`
-- `app_release_manifest_checks` / `v_app_release_manifest_checks`
+- `app_payment_execution_queue` / `v_app_payment_execution_queue`
+- `app_bank_reconciliation_execution_queue` / `v_app_bank_reconciliation_execution_queue`
+- `app_equipment_scan_template_registry` / `v_app_equipment_scan_template_registry`
+- `app_local_seo_execution_queue` / `v_app_local_seo_execution_queue`
+- `app_fallback_drill_queue` / `v_app_fallback_drill_queue`
 
-`v_schema_drift_status` now expects schema **127**. Apply schemas in order and redeploy Admin/Jobs Edge Functions after schema 127 is applied.
+`v_schema_drift_status` now expects schema **130**. Apply migrations in order and redeploy `admin-directory` after schema 130 is applied.
 
-## 2026-06-03a / Schema 128 update
+## Important compatibility note
 
-- Added schema 128 execution queues for payment application, accounting close controls, equipment accountability, public SEO publication, and fallback observability.
-- Updated Admin readiness to show the new queues.
-- Updated cache marker to 2026-06-03a and refreshed active Markdown.
-- Archived prior Markdown and retired uploaded test_write files.
-
-## Schema 129 update - 2026-06-04a
-
-Schema 129 adds compatibility checks, accounting evidence package queues, equipment return-to-service rules, public asset smoke checks, and error recovery playbooks. The canonical full schema now includes the repaired schema 128 roadmap insert using `source_doc`, `route_hint`, and `implementation_notes`.
+The repaired schema 128 roadmap insert uses `source_doc`, `route_hint`, and `implementation_notes`. Do not reintroduce the legacy `source_document`, `target_route_hint`, or `completion_note` names in schema 128 or the canonical full schema.

@@ -1,22 +1,27 @@
 # System Architecture
 
-Last refreshed: **2026-06-03a**
+Last refreshed: **2026-06-04b**
 
-The app uses a static/PWA frontend, Supabase database, and Supabase Edge Functions. Schema 127 adds Admin-visible guardrails for public route SEO, internal links, CSS token drift, mobile field actions, and release manifests.
+## Current shape
 
-Key Edge Functions touched by this pass:
+- Static app shell: `index.html`, `style.css`, `app.js`, and `js/*`.
+- Service worker: `server-worker.js` with cache marker **2026-06-04b**.
+- Supabase Edge Functions: Admin/Jobs/Upload/Reporting functions under `supabase/functions`.
+- Database migrations: `sql/001...` through `sql/130_payment_reconciliation_equipment_scan_local_seo_execution_playbooks.sql`.
+- Canonical schema reference: `sql/000_full_schema_reference.sql`.
 
-- `admin-directory` loads schema 127 readiness views.
-- `jobs-manage` remains the equipment/job write surface.
-- `jobs-directory` remains the job/equipment/accounting read surface.
+## Schema 130 additions
 
-## 2026-06-03a / Schema 128 update
+- Payment execution queue.
+- Bank reconciliation execution queue.
+- Equipment scan/template registry.
+- Local SEO execution queue.
+- Fallback drill queue.
 
-- Added schema 128 execution queues for payment application, accounting close controls, equipment accountability, public SEO publication, and fallback observability.
-- Updated Admin readiness to show the new queues.
-- Updated cache marker to 2026-06-03a and refreshed active Markdown.
-- Archived prior Markdown and retired uploaded test_write files.
+## Guardrails
 
-## Architecture update - schema 129
-
-Schema 129 adds a DB-visible recovery and readiness layer above deployment/schema compatibility, accounting evidence packaging, equipment return-to-service enforcement targets, public asset smoke checks, and operator playbooks.
+- One H1 per exposed public page.
+- CSS brace balance check.
+- Edge Function TypeScript parse checks.
+- Cache marker alignment.
+- Repaired schema 128 roadmap columns must remain `source_doc`, `route_hint`, and `implementation_notes`.

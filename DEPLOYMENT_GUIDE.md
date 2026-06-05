@@ -1,28 +1,19 @@
 # Deployment Guide
 
-Last refreshed: **2026-06-03a**
+Last refreshed: **2026-06-04b**
 
 ## Deploy order
 
-1. Apply SQL migrations through **127**.
-2. Deploy `admin-directory`.
-3. Deploy `jobs-manage` and `jobs-directory` if the live functions are behind this zip.
-4. Run `node scripts/repo-smoke-check.mjs` when local/online tooling is available.
-5. Hard-refresh the app or clear the old service worker so **2026-06-03a** assets load.
+1. Confirm the repaired schema **128** has applied successfully.
+2. Apply schema **129** if not already applied.
+3. Apply schema **130**.
+4. Redeploy `admin-directory`.
+5. Deploy `jobs-manage` and `jobs-directory` if the live functions are behind this zip.
+6. Run `node scripts/repo-smoke-check.mjs` when local/online tooling is available.
+7. Hard-refresh the app or clear the old service worker so **2026-06-04b** assets load.
 
 ## Important checks
 
-- Confirm `v_schema_drift_status` expects **127**.
-- Confirm Admin Production Readiness shows route SEO, internal-link, CSS token, mobile action, and release manifest tables.
-- Confirm the Equipment page shows the manual **Scan / Enter Code** fallback button.
-
-## 2026-06-03a / Schema 128 update
-
-- Added schema 128 execution queues for payment application, accounting close controls, equipment accountability, public SEO publication, and fallback observability.
-- Updated Admin readiness to show the new queues.
-- Updated cache marker to 2026-06-03a and refreshed active Markdown.
-- Archived prior Markdown and retired uploaded test_write files.
-
-## 2026-06-04a deployment note
-
-Apply the repaired schema 128 first if it has not successfully run, then apply schema 129. Redeploy `admin-directory`, then hard-refresh or clear the service worker so the 2026-06-04a static assets load. Run `node scripts/repo-smoke-check.mjs` before deploying Edge Functions.
+- Confirm `v_schema_drift_status` expects **130**.
+- Confirm Admin Production Readiness shows schema 130 execution queues.
+- Confirm CSS/H1 checks pass before public deployment.

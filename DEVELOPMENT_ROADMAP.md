@@ -1,72 +1,53 @@
 # Development Roadmap
 
-Last refreshed: **2026-06-04a**
+Last refreshed: **2026-06-04b**
 
 ## Completed in this pass
 
-1. Repaired the canonical `sql/000_full_schema_reference.sql` copy of schema 128 so it no longer inserts into missing roadmap columns.
-2. Confirmed standalone `sql/128_accounting_equipment_seo_fallback_execution_depth.sql` uses `source_doc`, `route_hint`, and `implementation_notes`.
-3. Added schema **129**: `129_schema_compatibility_accounting_equipment_seo_fallback_playbooks.sql`.
-4. Updated `v_schema_drift_status` to expect schema **129**.
-5. Added schema migration compatibility checks for roadmap column naming.
-6. Added accounting evidence package queues for payment application, reconciliation, remittance, and month-end close proof packages.
-7. Added equipment return-to-service rule queues for failed arrival tests, failed return tests, missing accessories, and manual scan audit.
-8. Added public asset smoke-check rows for single H1, cache marker, sitemap/robots, and broken asset checks.
-9. Added error recovery playbook rows for schema column errors, Edge Function parse failures, optional-view gaps, and offline conflicts.
-10. Updated `admin-directory` so Admin can load schema 129 readiness views.
-11. Updated `admin-ui` with schema 129 readiness tables.
-12. Updated `scripts/repo-smoke-check.mjs` to catch the schema 128 legacy roadmap insert pattern.
-13. Updated cache/version marker to **2026-06-04a** in `index.html` and `server-worker.js`.
-14. Archived active root Markdown into `archive/markdown-current-snapshot-2026-06-03a/`.
-15. Preserved required legacy archive snapshots for smoke compatibility.
-16. Retired old root helper Markdown into `archive/retired-root-markdown-2026-06-04a/`.
-17. Retired uploaded `test_write` files into `archive/retired-test-files-2026-06-04a/`.
-18. Added `docs/SCHEMA_COMPATIBILITY_ACCOUNTING_EQUIPMENT_SEO_FALLBACK_SCHEMA129.md`.
-19. Verified one public H1 in `index.html`.
-20. Verified CSS and JavaScript smoke checks after the schema 129 pass.
+1. Added schema 130 execution playbooks
+2. Added payment execution queue
+3. Added reconciliation execution queue
+4. Added equipment scan/template execution queue
+5. Added local SEO execution queue
+6. Added fallback drill queue
+7. Loaded schema 130 views in admin-directory
+8. Rendered schema 130 tables in Admin UI
+9. Updated active Markdown files to schema 130
+10. Added schema 130 documentation
+11. Updated canonical full schema through schema 130
+12. Updated smoke checks for schema 130
+13. Updated static/cache marker to 2026-06-04b
+14. Verified one public H1 remains in index
+15. Verified CSS brace balance
+16. Verified Edge Function TypeScript parse checks
+17. Restored 2026-05-29a Markdown archive snapshot
+18. Retired active test_write files
+19. Replaced completed/next 20 Markdown lists
+20. Updated Known Issues and Gaps
 
 ## Next 20 steps
 
-1. Build the working payment application screen for apply, reverse, approve, discounts, write-offs, overpayments, refunds, and reversals.
-2. Add payment proof package generation from the schema 129 accounting evidence package queue.
-3. Add bank CSV import preview with header validation, duplicate detection, rejected rows, bad dates, and amount-sign review.
-4. Add reconciliation match, split match, unmatch/undo, reviewer notes, and final reviewer signoff.
-5. Add match confidence scoring and reviewer override reasons.
-6. Finish HST/GST filing source totals, adjustments, uploaded proof, filed/remitted dates, and lock status.
-7. Finish payroll remittance review with source pay runs, deductions, employer costs, proof, payment date, and close-period link.
-8. Finish month-end close lock/reopen controls and posting blocks for closed periods.
-9. Generate accountant export packages with manifest, CSV/JSON summaries, proof list, delivery status, and resend history.
-10. Replace manual equipment scan fallback with real camera/BarcodeDetector scanning where supported.
-11. Record manual scan fallback reason, actor, and timestamp.
-12. Create reusable DB accessory checklist templates per equipment category or pool.
-13. Enforce verifier roles server-side for final return verification, defect clearing, and return-to-service.
-14. Convert failed arrival/return tests into assigned service work orders with due date, cost, evidence, and completion proof.
-15. Block equipment availability until return-to-service proof is complete.
-16. Add detailed job cost rollup cards for repair, delay, equipment usage, replacement, fuel, disposal, materials, and subcontractors.
-17. Generate sitemap and robots files from approved public route SEO registry rows.
-18. Add broken-link, broken-asset, structured-data, and image-alt smoke checks.
-19. Improve offline conflict language with Retry, Keep Local, Discard Local, and Sync Status choices.
-20. Convert repeated inline Admin styles into reusable component/token classes.
+1. Build real payment application form and buttons
+2. Create payment proof package generator
+3. Build bank CSV preview importer
+4. Build reconciliation match/split/undo/signoff UI
+5. Add match confidence scoring
+6. Build HST/GST review package screen
+7. Build payroll remittance review screen
+8. Build month-end close lock/reopen controls
+9. Generate accountant export package files
+10. Implement camera BarcodeDetector scan
+11. Add accessory template DB tables
+12. Enforce verifier roles server-side
+13. Turn failed tests into assignable service work orders
+14. Add return-to-service proof upload
+15. Generate sitemap.xml and robots.txt
+16. Add broken-link and broken-asset smoke checks
+17. Add JSON-LD validation queue
+18. Add image alt/local proof scoring
+19. Add offline conflict resolution UI
+20. Add fallback drill run history
 
-## Following 20 steps after that
+## Direction
 
-1. Add compact mobile cards for schema 129 readiness queues.
-2. Add action buttons to payment application registry rows.
-3. Add import-row detail drawers to bank CSV preview.
-4. Add HST/GST filing package download.
-5. Add payroll remittance package download.
-6. Add closed-period warning banners across Jobs and Accounting.
-7. Add QR label export for equipment assets.
-8. Add accessory missing/damaged cost rollups into job profitability.
-9. Add service-task closeout proof uploads.
-10. Add automatic release manifest Markdown/JSON generation.
-11. Add local SEO page approval workflow.
-12. Add route-level proof requirements before public publish.
-13. Add image-alt scoring to Admin media review.
-14. Add stale service-worker warning inside Admin readiness.
-15. Add deploy checklist grouping by schema/function/static assets.
-16. Add Edge Function deploy dry-run notes to the runbook.
-17. Add user-friendly Supabase SQL error playbooks.
-18. Add database rollback notes per schema version.
-19. Add recurring cleanup for archived helper files.
-20. Add final production-readiness export report.
+Keep every pass tied to working deployment guardrails: update SQL migrations, `sql/000_full_schema_reference.sql`, active Markdown, cache markers, Admin readiness views, CSS/H1 checks, and smoke checks together. Continue moving repeated JSON/checklist-style data into DB-backed registries when the data needs Admin visibility, sorting, review status, or future workflow actions.

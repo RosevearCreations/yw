@@ -1,29 +1,16 @@
 # Changelog
 
+## 2026-06-04b / Schema 130
+
+- Added schema 130 payment execution, bank reconciliation execution, equipment scan/template, local SEO execution, and fallback drill queues.
+- Updated Admin readiness and `admin-directory` to load schema 130 views.
+- Updated `sql/000_full_schema_reference.sql` through schema 130 and moved schema drift to expected schema 130.
+- Restored the missing 2026-05-29a archive snapshot required by legacy smoke checks.
+- Updated cache marker to 2026-06-04b, refreshed active Markdown, and retired active `test_write` files.
+
 ## 2026-06-04a / Schema 129
 
 - Repaired the canonical full schema copy of schema 128 so it no longer references missing `app_roadmap_action_steps.source_document`, `target_route_hint`, or `completion_note` columns.
 - Added schema 129 compatibility checks, accounting evidence package queue, equipment return-to-service rules, public asset smoke checks, and error recovery playbooks.
 - Updated Admin readiness and `admin-directory` to load schema 129 views.
 - Updated cache marker to 2026-06-04a and refreshed active Markdown.
-- Archived active Markdown and retired uploaded `test_write` files.
-
-
-## 2026-06-03a / schema 127
-
-- Added schema 127 public route SEO, internal link, CSS token, mobile field action, and release manifest guardrails.
-- Updated canonical schema reference through 127.
-- Added Admin readiness tables for route SEO registry, internal-link queue, CSS token inventory, mobile field actions, and release manifest checks.
-- Added manual equipment scan/enter fallback in Jobs/Equipment UI.
-- Archived stale root Markdown/test files and refreshed smoke checks/cache marker.
-
-## 2026-06-02a / schema 126
-
-- Added roadmap/depth/data-migration/schema-doc sync guardrails.
-
-## 2026-06-03a / Schema 128 update
-
-- Added schema 128 execution queues for payment application, accounting close controls, equipment accountability, public SEO publication, and fallback observability.
-- Updated Admin readiness to show the new queues.
-- Updated cache marker to 2026-06-03a and refreshed active Markdown.
-- Archived prior Markdown and retired uploaded test_write files.
