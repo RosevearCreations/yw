@@ -20,3 +20,7 @@ Next strongest pass: payment application UI/actions, bank CSV preview, reconcili
 - Updated Admin readiness to show the new queues.
 - Updated cache marker to 2026-06-03a and refreshed active Markdown.
 - Archived prior Markdown and retired uploaded test_write files.
+
+## New chat status - 2026-06-04a
+
+Latest build target is schema 129. The immediate prior issue was a schema 128 roadmap-column mismatch in the canonical full schema. It is repaired in this pass and guarded by smoke checks.

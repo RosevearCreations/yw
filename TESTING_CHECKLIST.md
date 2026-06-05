@@ -28,3 +28,11 @@ Manual checks:
 - Updated Admin readiness to show the new queues.
 - Updated cache marker to 2026-06-03a and refreshed active Markdown.
 - Archived prior Markdown and retired uploaded test_write files.
+
+## Schema 129 testing checklist
+
+- Run `node scripts/repo-smoke-check.mjs`.
+- Confirm schema 128 and full schema do not contain the old roadmap insert pattern.
+- Apply schema 129 after repaired schema 128.
+- Redeploy `admin-directory`.
+- Confirm Admin readiness shows schema compatibility and error recovery playbook rows.

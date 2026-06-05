@@ -12,3 +12,7 @@ Current focus remains accounting depth, equipment accountability, mobile-first p
 - Updated Admin readiness to show the new queues.
 - Updated cache marker to 2026-06-03a and refreshed active Markdown.
 - Archived prior Markdown and retired uploaded test_write files.
+
+## Current state - 2026-06-04a / schema 129
+
+The build now carries schema 129 and the canonical schema 128 repair. Admin readiness can load schema compatibility, accounting evidence package, equipment return-to-service, public asset smoke, and error recovery playbook rows.

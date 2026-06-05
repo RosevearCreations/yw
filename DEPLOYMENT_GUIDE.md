@@ -22,3 +22,7 @@ Last refreshed: **2026-06-03a**
 - Updated Admin readiness to show the new queues.
 - Updated cache marker to 2026-06-03a and refreshed active Markdown.
 - Archived prior Markdown and retired uploaded test_write files.
+
+## 2026-06-04a deployment note
+
+Apply the repaired schema 128 first if it has not successfully run, then apply schema 129. Redeploy `admin-directory`, then hard-refresh or clear the service worker so the 2026-06-04a static assets load. Run `node scripts/repo-smoke-check.mjs` before deploying Edge Functions.

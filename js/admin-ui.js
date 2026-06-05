@@ -191,6 +191,11 @@
       appEquipmentAccountabilityActionQueue: [],
       appPublicSeoPublicationQueue: [],
       appFallbackObservabilityMatrix: [],
+      appSchemaMigrationCompatibilityChecks: [],
+      appAccountingEvidencePackageQueue: [],
+      appEquipmentReturnToServiceRules: [],
+      appPublicAssetSmokeChecks: [],
+      appErrorRecoveryPlaybook: [],
       actorRole: '',
       actorProfileId: '',
       directoryPagination: {
@@ -1391,6 +1396,11 @@
         equipmentAccountabilityActionBody: document.querySelector('#ad_equipment_accountability_action_table tbody'),
         publicSeoPublicationBody: document.querySelector('#ad_public_seo_publication_table tbody'),
         fallbackObservabilityBody: document.querySelector('#ad_fallback_observability_table tbody'),
+        schemaCompatibilityBody: document.querySelector('#ad_schema_compatibility_table tbody'),
+        accountingEvidencePackageBody: document.querySelector('#ad_accounting_evidence_package_table tbody'),
+        equipmentReturnRulesBody: document.querySelector('#ad_equipment_return_rules_table tbody'),
+        publicAssetSmokeBody: document.querySelector('#ad_public_asset_smoke_table tbody'),
+        errorRecoveryPlaybookBody: document.querySelector('#ad_error_recovery_playbook_table tbody'),
         seoSmokeBody: document.querySelector('#ad_seo_smoke_table tbody'),
         bankCsvImportBody: document.querySelector('#ad_bank_csv_import_table tbody'),
         backupRehearsalBody: document.querySelector('#ad_backup_rehearsal_table tbody'),
@@ -1690,6 +1700,11 @@
       if (Array.isArray(resp.app_equipment_accountability_action_queue)) state.appEquipmentAccountabilityActionQueue = resp.app_equipment_accountability_action_queue;
       if (Array.isArray(resp.app_public_seo_publication_queue)) state.appPublicSeoPublicationQueue = resp.app_public_seo_publication_queue;
       if (Array.isArray(resp.app_fallback_observability_matrix)) state.appFallbackObservabilityMatrix = resp.app_fallback_observability_matrix;
+      if (Array.isArray(resp.app_schema_migration_compatibility_checks)) state.appSchemaMigrationCompatibilityChecks = resp.app_schema_migration_compatibility_checks;
+      if (Array.isArray(resp.app_accounting_evidence_package_queue)) state.appAccountingEvidencePackageQueue = resp.app_accounting_evidence_package_queue;
+      if (Array.isArray(resp.app_equipment_return_to_service_rules)) state.appEquipmentReturnToServiceRules = resp.app_equipment_return_to_service_rules;
+      if (Array.isArray(resp.app_public_asset_smoke_checks)) state.appPublicAssetSmokeChecks = resp.app_public_asset_smoke_checks;
+      if (Array.isArray(resp.app_error_recovery_playbook)) state.appErrorRecoveryPlaybook = resp.app_error_recovery_playbook;
       state.counts = {
         users: state.directoryPagination.people?.total || state.users.length,
         sites: Array.isArray(state.sites) ? state.sites.length : 0,
@@ -4700,6 +4715,66 @@
           </tr>
         `).join('') || '<tr><td colspan="5" class="muted">No fallback observability rows loaded yet. Apply schema 128.</td></tr>';
       }
+      if (e.schemaCompatibilityBody) {
+        const rows = Array.isArray(state.appSchemaMigrationCompatibilityChecks) ? state.appSchemaMigrationCompatibilityChecks : [];
+        e.schemaCompatibilityBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.schema_file || '')}<div class="muted">${escHtml(row.compatibility_area || '')}</div></td>
+            <td><strong>${escHtml(row.check_title || '')}</strong><div class="muted">${escHtml(row.repair_hint || '')}</div></td>
+            <td>${renderStatusPill(row.check_status || 'review', /pass|covered|ready|done/i.test(String(row.check_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.legacy_column || '')} → ${escHtml(row.expected_column || '')}</td>
+            <td class="admin-table-note">${escHtml(row.smoke_test_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No schema compatibility rows loaded yet. Apply schema 129.</td></tr>';
+      }
+      if (e.accountingEvidencePackageBody) {
+        const rows = Array.isArray(state.appAccountingEvidencePackageQueue) ? state.appAccountingEvidencePackageQueue : [];
+        e.accountingEvidencePackageBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.package_area || '')}<div class="muted">${escHtml(row.reviewer_role_hint || '')}</div></td>
+            <td><strong>${escHtml(row.package_title || '')}</strong><div class="muted">${escHtml(row.source_rows_hint || '')}</div></td>
+            <td>${renderStatusPill(row.package_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.package_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.required_proof_hint || '')}<div class="muted">${escHtml(row.export_format_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No accounting evidence package rows loaded yet. Apply schema 129.</td></tr>';
+      }
+      if (e.equipmentReturnRulesBody) {
+        const rows = Array.isArray(state.appEquipmentReturnToServiceRules) ? state.appEquipmentReturnToServiceRules : [];
+        e.equipmentReturnRulesBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.equipment_area || '')}<div class="muted">${escHtml(row.required_role || '')}</div></td>
+            <td><strong>${escHtml(row.rule_title || '')}</strong><div class="muted">${escHtml(row.source_event_hint || '')}</div></td>
+            <td>${renderStatusPill(row.rule_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.rule_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.proof_required_hint || '')}<div class="muted">${escHtml(row.block_behavior || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No equipment return-to-service rows loaded yet. Apply schema 129.</td></tr>';
+      }
+      if (e.publicAssetSmokeBody) {
+        const rows = Array.isArray(state.appPublicAssetSmokeChecks) ? state.appPublicAssetSmokeChecks : [];
+        e.publicAssetSmokeBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.asset_area || '')}</td>
+            <td><strong>${escHtml(row.asset_title || '')}</strong><div class="muted">${escHtml(row.source_registry_hint || '')}</div></td>
+            <td>${renderStatusPill(row.check_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.check_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.file_path || '')}<div class="muted">${escHtml(row.local_seo_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.failure_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No public asset smoke rows loaded yet. Apply schema 129.</td></tr>';
+      }
+      if (e.errorRecoveryPlaybookBody) {
+        const rows = Array.isArray(state.appErrorRecoveryPlaybook) ? state.appErrorRecoveryPlaybook : [];
+        e.errorRecoveryPlaybookBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.app_area || '')}</td>
+            <td><strong>${escHtml(row.error_signature || '')}</strong><div class="muted">${escHtml(row.operator_message || '')}</div></td>
+            <td>${renderStatusPill(row.playbook_status || 'review', /covered|pass|ready|done/i.test(String(row.playbook_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.recovery_steps || '')}<div class="muted">${escHtml(row.prevention_check || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.owner_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No error recovery playbook rows loaded yet. Apply schema 129.</td></tr>';
+      }
       applyAdminActionDisabledStates();
     }
 
@@ -5082,7 +5157,12 @@
           appAccountingCloseControlQueue: Array.isArray(payload?.app_accounting_close_control_queue) ? payload.app_accounting_close_control_queue : state.appAccountingCloseControlQueue,
           appEquipmentAccountabilityActionQueue: Array.isArray(payload?.app_equipment_accountability_action_queue) ? payload.app_equipment_accountability_action_queue : state.appEquipmentAccountabilityActionQueue,
           appPublicSeoPublicationQueue: Array.isArray(payload?.app_public_seo_publication_queue) ? payload.app_public_seo_publication_queue : state.appPublicSeoPublicationQueue,
-          appFallbackObservabilityMatrix: Array.isArray(payload?.app_fallback_observability_matrix) ? payload.app_fallback_observability_matrix : state.appFallbackObservabilityMatrix
+          appFallbackObservabilityMatrix: Array.isArray(payload?.app_fallback_observability_matrix) ? payload.app_fallback_observability_matrix : state.appFallbackObservabilityMatrix,
+          appSchemaMigrationCompatibilityChecks: Array.isArray(payload?.app_schema_migration_compatibility_checks) ? payload.app_schema_migration_compatibility_checks : state.appSchemaMigrationCompatibilityChecks,
+          appAccountingEvidencePackageQueue: Array.isArray(payload?.app_accounting_evidence_package_queue) ? payload.app_accounting_evidence_package_queue : state.appAccountingEvidencePackageQueue,
+          appEquipmentReturnToServiceRules: Array.isArray(payload?.app_equipment_return_to_service_rules) ? payload.app_equipment_return_to_service_rules : state.appEquipmentReturnToServiceRules,
+          appPublicAssetSmokeChecks: Array.isArray(payload?.app_public_asset_smoke_checks) ? payload.app_public_asset_smoke_checks : state.appPublicAssetSmokeChecks,
+          appErrorRecoveryPlaybook: Array.isArray(payload?.app_error_recovery_playbook) ? payload.app_error_recovery_playbook : state.appErrorRecoveryPlaybook
         };
         const e = els();
         if (e.staffPosition) {
@@ -5845,6 +5925,66 @@
             <td class="admin-table-note">${escHtml(row.owner_hint || '')}</td>
           </tr>
         `).join('') || '<tr><td colspan="5" class="muted">No fallback observability rows loaded yet. Apply schema 128.</td></tr>';
+      }
+      if (e.schemaCompatibilityBody) {
+        const rows = Array.isArray(state.appSchemaMigrationCompatibilityChecks) ? state.appSchemaMigrationCompatibilityChecks : [];
+        e.schemaCompatibilityBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.schema_file || '')}<div class="muted">${escHtml(row.compatibility_area || '')}</div></td>
+            <td><strong>${escHtml(row.check_title || '')}</strong><div class="muted">${escHtml(row.repair_hint || '')}</div></td>
+            <td>${renderStatusPill(row.check_status || 'review', /pass|covered|ready|done/i.test(String(row.check_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.legacy_column || '')} → ${escHtml(row.expected_column || '')}</td>
+            <td class="admin-table-note">${escHtml(row.smoke_test_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No schema compatibility rows loaded yet. Apply schema 129.</td></tr>';
+      }
+      if (e.accountingEvidencePackageBody) {
+        const rows = Array.isArray(state.appAccountingEvidencePackageQueue) ? state.appAccountingEvidencePackageQueue : [];
+        e.accountingEvidencePackageBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.package_area || '')}<div class="muted">${escHtml(row.reviewer_role_hint || '')}</div></td>
+            <td><strong>${escHtml(row.package_title || '')}</strong><div class="muted">${escHtml(row.source_rows_hint || '')}</div></td>
+            <td>${renderStatusPill(row.package_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.package_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.required_proof_hint || '')}<div class="muted">${escHtml(row.export_format_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No accounting evidence package rows loaded yet. Apply schema 129.</td></tr>';
+      }
+      if (e.equipmentReturnRulesBody) {
+        const rows = Array.isArray(state.appEquipmentReturnToServiceRules) ? state.appEquipmentReturnToServiceRules : [];
+        e.equipmentReturnRulesBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.equipment_area || '')}<div class="muted">${escHtml(row.required_role || '')}</div></td>
+            <td><strong>${escHtml(row.rule_title || '')}</strong><div class="muted">${escHtml(row.source_event_hint || '')}</div></td>
+            <td>${renderStatusPill(row.rule_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.rule_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.proof_required_hint || '')}<div class="muted">${escHtml(row.block_behavior || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No equipment return-to-service rows loaded yet. Apply schema 129.</td></tr>';
+      }
+      if (e.publicAssetSmokeBody) {
+        const rows = Array.isArray(state.appPublicAssetSmokeChecks) ? state.appPublicAssetSmokeChecks : [];
+        e.publicAssetSmokeBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.asset_area || '')}</td>
+            <td><strong>${escHtml(row.asset_title || '')}</strong><div class="muted">${escHtml(row.source_registry_hint || '')}</div></td>
+            <td>${renderStatusPill(row.check_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.check_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.file_path || '')}<div class="muted">${escHtml(row.local_seo_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.failure_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No public asset smoke rows loaded yet. Apply schema 129.</td></tr>';
+      }
+      if (e.errorRecoveryPlaybookBody) {
+        const rows = Array.isArray(state.appErrorRecoveryPlaybook) ? state.appErrorRecoveryPlaybook : [];
+        e.errorRecoveryPlaybookBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.app_area || '')}</td>
+            <td><strong>${escHtml(row.error_signature || '')}</strong><div class="muted">${escHtml(row.operator_message || '')}</div></td>
+            <td>${renderStatusPill(row.playbook_status || 'review', /covered|pass|ready|done/i.test(String(row.playbook_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.recovery_steps || '')}<div class="muted">${escHtml(row.prevention_check || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.owner_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No error recovery playbook rows loaded yet. Apply schema 129.</td></tr>';
       }
       applyAdminActionDisabledStates();
       if (e.seoSmokeBody) {

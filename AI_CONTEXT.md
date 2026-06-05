@@ -10,3 +10,7 @@ Use schema 127 as the current baseline. Keep Markdown, schema files, cache marke
 - Updated Admin readiness to show the new queues.
 - Updated cache marker to 2026-06-03a and refreshed active Markdown.
 - Archived prior Markdown and retired uploaded test_write files.
+
+## 2026-06-04a context
+
+Continue from schema 129. The key repair was syncing the standalone schema 128 file and `000_full_schema_reference.sql` around the `app_roadmap_action_steps` columns. Future passes should preserve that compatibility guard.

@@ -22,3 +22,7 @@ Schema 127 adds:
 - Updated Admin readiness to show the new queues.
 - Updated cache marker to 2026-06-03a and refreshed active Markdown.
 - Archived prior Markdown and retired uploaded test_write files.
+
+## Schema 129 update - 2026-06-04a
+
+Schema 129 adds compatibility checks, accounting evidence package queues, equipment return-to-service rules, public asset smoke checks, and error recovery playbooks. The canonical full schema now includes the repaired schema 128 roadmap insert using `source_doc`, `route_hint`, and `implementation_notes`.

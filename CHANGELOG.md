@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-06-04a / Schema 129
+
+- Repaired the canonical full schema copy of schema 128 so it no longer references missing `app_roadmap_action_steps.source_document`, `target_route_hint`, or `completion_note` columns.
+- Added schema 129 compatibility checks, accounting evidence package queue, equipment return-to-service rules, public asset smoke checks, and error recovery playbooks.
+- Updated Admin readiness and `admin-directory` to load schema 129 views.
+- Updated cache marker to 2026-06-04a and refreshed active Markdown.
+- Archived active Markdown and retired uploaded `test_write` files.
+
+
 ## 2026-06-03a / schema 127
 
 - Added schema 127 public route SEO, internal link, CSS token, mobile field action, and release manifest guardrails.

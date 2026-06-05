@@ -16,3 +16,7 @@ Key Edge Functions touched by this pass:
 - Updated Admin readiness to show the new queues.
 - Updated cache marker to 2026-06-03a and refreshed active Markdown.
 - Archived prior Markdown and retired uploaded test_write files.
+
+## Architecture update - schema 129
+
+Schema 129 adds a DB-visible recovery and readiness layer above deployment/schema compatibility, accounting evidence packaging, equipment return-to-service enforcement targets, public asset smoke checks, and operator playbooks.
