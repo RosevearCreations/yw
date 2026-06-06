@@ -221,6 +221,12 @@
       appEquipmentScanRolloutQueue: [],
       appLocalSeoContentDepthQueue: [],
       appRuntimeErrorMessageCatalog: [],
+      appReleaseValidationQueue: [],
+      appPaymentReconciliationExecutionQueue: [],
+      appEquipmentMobileScanValidationQueue: [],
+      appLocalSeoReleaseValidationQueue: [],
+      appRuntimeFallbackMessageQueue: [],
+      appJsonDbMigrationExecutionQueue: [],
       actorRole: '',
       actorProfileId: '',
       directoryPagination: {
@@ -751,6 +757,42 @@
           <div class="table-scroll" style="margin-top:12px;">
             <table id="ad_runtime_error_message_catalog_table">
               <thead><tr><th>Surface</th><th>Error Message</th><th>Status</th><th>User / Operator / Telemetry</th><th>Retry / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_release_validation_table">
+              <thead><tr><th>Area</th><th>Release Validation</th><th>Status</th><th>Evidence / Preflight</th><th>Failure / Owner</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_payment_reconciliation_execution_table">
+              <thead><tr><th>Area</th><th>Execution Control</th><th>Status</th><th>Validate / Post / Approve</th><th>Rollback / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_equipment_mobile_scan_validation_table">
+              <thead><tr><th>Area</th><th>Equipment Validation</th><th>Status</th><th>Scan / Accessories / Verifier</th><th>Service / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_local_seo_release_validation_table">
+              <thead><tr><th>Route</th><th>SEO Validation</th><th>Status</th><th>Phrase / H1 / Schema</th><th>Links / Proof</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_runtime_fallback_message_table">
+              <thead><tr><th>Surface</th><th>Fallback Message</th><th>Status</th><th>Trigger / User / Operator</th><th>Recovery / Telemetry</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_json_db_migration_execution_table">
+              <thead><tr><th>Data Area</th><th>Migration Candidate</th><th>Status</th><th>Current / Target / Risk</th><th>Execution / Fallback</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -1571,6 +1613,12 @@
         equipmentScanRolloutBody: document.querySelector('#ad_equipment_scan_rollout_table tbody'),
         localSeoContentDepthBody: document.querySelector('#ad_local_seo_content_depth_table tbody'),
         runtimeErrorMessageCatalogBody: document.querySelector('#ad_runtime_error_message_catalog_table tbody'),
+        releaseValidationBody: document.querySelector('#ad_release_validation_table tbody'),
+        paymentReconciliationExecutionBody: document.querySelector('#ad_payment_reconciliation_execution_table tbody'),
+        equipmentMobileScanValidationBody: document.querySelector('#ad_equipment_mobile_scan_validation_table tbody'),
+        localSeoReleaseValidationBody: document.querySelector('#ad_local_seo_release_validation_table tbody'),
+        runtimeFallbackMessageBody: document.querySelector('#ad_runtime_fallback_message_table tbody'),
+        jsonDbMigrationExecutionBody: document.querySelector('#ad_json_db_migration_execution_table tbody'),
         seoSmokeBody: document.querySelector('#ad_seo_smoke_table tbody'),
         bankCsvImportBody: document.querySelector('#ad_bank_csv_import_table tbody'),
         backupRehearsalBody: document.querySelector('#ad_backup_rehearsal_table tbody'),
@@ -1900,6 +1948,12 @@
       if (Array.isArray(resp.app_equipment_scan_rollout_queue)) state.appEquipmentScanRolloutQueue = resp.app_equipment_scan_rollout_queue;
       if (Array.isArray(resp.app_local_seo_content_depth_queue)) state.appLocalSeoContentDepthQueue = resp.app_local_seo_content_depth_queue;
       if (Array.isArray(resp.app_runtime_error_message_catalog)) state.appRuntimeErrorMessageCatalog = resp.app_runtime_error_message_catalog;
+      if (Array.isArray(resp.app_release_validation_queue)) state.appReleaseValidationQueue = resp.app_release_validation_queue;
+      if (Array.isArray(resp.app_payment_reconciliation_execution_queue)) state.appPaymentReconciliationExecutionQueue = resp.app_payment_reconciliation_execution_queue;
+      if (Array.isArray(resp.app_equipment_mobile_scan_validation_queue)) state.appEquipmentMobileScanValidationQueue = resp.app_equipment_mobile_scan_validation_queue;
+      if (Array.isArray(resp.app_local_seo_release_validation_queue)) state.appLocalSeoReleaseValidationQueue = resp.app_local_seo_release_validation_queue;
+      if (Array.isArray(resp.app_runtime_fallback_message_queue)) state.appRuntimeFallbackMessageQueue = resp.app_runtime_fallback_message_queue;
+      if (Array.isArray(resp.app_json_db_migration_execution_queue)) state.appJsonDbMigrationExecutionQueue = resp.app_json_db_migration_execution_queue;
       state.counts = {
         users: state.directoryPagination.people?.total || state.users.length,
         sites: Array.isArray(state.sites) ? state.sites.length : 0,
@@ -5683,7 +5737,13 @@
           appReconciliationExceptionResolutionQueue: Array.isArray(payload?.app_reconciliation_exception_resolution_queue) ? payload.app_reconciliation_exception_resolution_queue : state.appReconciliationExceptionResolutionQueue,
           appEquipmentScanRolloutQueue: Array.isArray(payload?.app_equipment_scan_rollout_queue) ? payload.app_equipment_scan_rollout_queue : state.appEquipmentScanRolloutQueue,
           appLocalSeoContentDepthQueue: Array.isArray(payload?.app_local_seo_content_depth_queue) ? payload.app_local_seo_content_depth_queue : state.appLocalSeoContentDepthQueue,
-          appRuntimeErrorMessageCatalog: Array.isArray(payload?.app_runtime_error_message_catalog) ? payload.app_runtime_error_message_catalog : state.appRuntimeErrorMessageCatalog
+          appRuntimeErrorMessageCatalog: Array.isArray(payload?.app_runtime_error_message_catalog) ? payload.app_runtime_error_message_catalog : state.appRuntimeErrorMessageCatalog,
+          appReleaseValidationQueue: Array.isArray(payload?.app_release_validation_queue) ? payload.app_release_validation_queue : state.appReleaseValidationQueue,
+          appPaymentReconciliationExecutionQueue: Array.isArray(payload?.app_payment_reconciliation_execution_queue) ? payload.app_payment_reconciliation_execution_queue : state.appPaymentReconciliationExecutionQueue,
+          appEquipmentMobileScanValidationQueue: Array.isArray(payload?.app_equipment_mobile_scan_validation_queue) ? payload.app_equipment_mobile_scan_validation_queue : state.appEquipmentMobileScanValidationQueue,
+          appLocalSeoReleaseValidationQueue: Array.isArray(payload?.app_local_seo_release_validation_queue) ? payload.app_local_seo_release_validation_queue : state.appLocalSeoReleaseValidationQueue,
+          appRuntimeFallbackMessageQueue: Array.isArray(payload?.app_runtime_fallback_message_queue) ? payload.app_runtime_fallback_message_queue : state.appRuntimeFallbackMessageQueue,
+          appJsonDbMigrationExecutionQueue: Array.isArray(payload?.app_json_db_migration_execution_queue) ? payload.app_json_db_migration_execution_queue : state.appJsonDbMigrationExecutionQueue
         };
         const e = els();
         if (e.staffPosition) {
@@ -6749,6 +6809,79 @@
         `).join('') || '<tr><td colspan="5" class="muted">No runtime message catalog rows loaded yet. Apply schema 134.</td></tr>';
       }
       applyAdminActionDisabledStates();
+
+      if (e.releaseValidationBody) {
+        const rows = Array.isArray(state.appReleaseValidationQueue) ? state.appReleaseValidationQueue : [];
+        e.releaseValidationBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.validation_area || '')}<div class="muted">${escHtml(row.owner_hint || '')}</div></td>
+            <td><strong>${escHtml(row.validation_title || '')}</strong></td>
+            <td>${renderStatusPill(row.validation_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.validation_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.required_evidence || '')}<div class="muted">${escHtml(row.preflight_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.failure_response_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No release validation rows loaded yet. Apply schema 135.</td></tr>';
+      }
+      if (e.paymentReconciliationExecutionBody) {
+        const rows = Array.isArray(state.appPaymentReconciliationExecutionQueue) ? state.appPaymentReconciliationExecutionQueue : [];
+        e.paymentReconciliationExecutionBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.execution_area || '')}</td>
+            <td><strong>${escHtml(row.execution_title || '')}</strong></td>
+            <td>${renderStatusPill(row.execution_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.execution_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.input_validation_hint || '')}<div class="muted">${escHtml(row.posting_or_match_hint || '')}</div><div class="muted">${escHtml(row.approval_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.rollback_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No payment/reconciliation execution rows loaded yet. Apply schema 135.</td></tr>';
+      }
+      if (e.equipmentMobileScanValidationBody) {
+        const rows = Array.isArray(state.appEquipmentMobileScanValidationQueue) ? state.appEquipmentMobileScanValidationQueue : [];
+        e.equipmentMobileScanValidationBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.equipment_area || '')}</td>
+            <td><strong>${escHtml(row.validation_title || '')}</strong></td>
+            <td>${renderStatusPill(row.validation_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.validation_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.scan_hint || '')}<div class="muted">${escHtml(row.accessory_hint || '')}</div><div class="muted">${escHtml(row.verifier_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.service_task_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No equipment mobile scan validation rows loaded yet. Apply schema 135.</td></tr>';
+      }
+      if (e.localSeoReleaseValidationBody) {
+        const rows = Array.isArray(state.appLocalSeoReleaseValidationQueue) ? state.appLocalSeoReleaseValidationQueue : [];
+        e.localSeoReleaseValidationBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.route_key || '')}<div class="muted">${escHtml(row.seo_area || '')}</div></td>
+            <td><strong>${escHtml(row.seo_title || '')}</strong></td>
+            <td>${renderStatusPill(row.seo_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.seo_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.phrase_hint || '')}<div class="muted">${escHtml(row.one_h1_hint || '')}</div><div class="muted">${escHtml(row.structured_data_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.internal_link_hint || '')}<div class="muted">${escHtml(row.proof_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No local SEO release validation rows loaded yet. Apply schema 135.</td></tr>';
+      }
+      if (e.runtimeFallbackMessageBody) {
+        const rows = Array.isArray(state.appRuntimeFallbackMessageQueue) ? state.appRuntimeFallbackMessageQueue : [];
+        e.runtimeFallbackMessageBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.app_surface || '')}</td>
+            <td><strong>${escHtml(row.message_title || '')}</strong></td>
+            <td>${renderStatusPill(row.message_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.message_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.trigger_hint || '')}<div class="muted">${escHtml(row.user_copy_hint || '')}</div><div class="muted">${escHtml(row.operator_copy_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.recovery_hint || '')}<div class="muted">${escHtml(row.telemetry_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No runtime fallback message rows loaded yet. Apply schema 135.</td></tr>';
+      }
+      if (e.jsonDbMigrationExecutionBody) {
+        const rows = Array.isArray(state.appJsonDbMigrationExecutionQueue) ? state.appJsonDbMigrationExecutionQueue : [];
+        e.jsonDbMigrationExecutionBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.data_area || '')}</td>
+            <td><strong>${escHtml(row.migration_title || '')}</strong></td>
+            <td>${renderStatusPill(row.migration_status || 'review', /pass|covered|ready|done|completed|in_progress/i.test(String(row.migration_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.current_source_hint || '')}<div class="muted">${escHtml(row.target_source_hint || '')}</div><div class="muted">${escHtml(row.duplication_risk_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.execution_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No JSON/DB migration execution rows loaded yet. Apply schema 135.</td></tr>';
+      }
       if (e.seoSmokeBody) {
         const seoRows = Array.isArray(state.publicSeoSmokeCheck) ? state.publicSeoSmokeCheck : [];
         e.seoSmokeBody.innerHTML = seoRows.slice(0, 80).map((row) => `
