@@ -1,23 +1,24 @@
 # Known Issues and Gaps
 
-Build: **2026-06-05c**  
-Schema: **133**
+Build: **2026-06-06a**  
+Schema: **134**
 
 ## Still needs depth
 
-1. Payment write-path queues are visible, but real payment application tables and write actions still need implementation.
-2. Payment reversal, credit, refund, write-off, and overpayment proof workflows still need posting logic.
-3. Bank CSV preview/import staging still needs a real upload and rejected-row review screen.
-4. Reconciliation scoring rows are planned, but match/split/undo/signoff UI still needs to be built.
-5. Equipment accessory templates are queued, but real DB template tables and editor screens still need implementation.
-6. Camera QR/barcode scanning still needs BarcodeDetector support with manual fallback and mismatch handling.
-7. Return-to-service still needs stronger server-side verifier role and proof enforcement.
-8. Equipment service costs still need automatic job profitability rollup.
-9. Sitemap and robots exist as static baseline assets, but generation should move to approved DB route rows.
-10. JSON-LD, image-alt, broken-link, local-proof, mobile-overflow, and component-drift smoke checks still need deeper implementation.
-11. Mobile offline conflict resolution is queued, but forms still need retry/keep-local/discard choices.
-12. Runtime fallback telemetry and drill result storage still need write screens.
-13. HST/GST, payroll remittance, month-end close, and accountant export still need end-to-end proof and lock/reopen controls.
+1. Payment adjustment queues are visible, but real payment application tables and write actions still need implementation.
+2. Payment reversal, credit, refund, write-off, and overpayment proof workflows still need posting logic and GL mapping.
+3. Closed-period payment/reversal blocking is queued, but not yet enforced by Edge write actions.
+4. Bank CSV preview/import staging still needs real upload handling and rejected-row review.
+5. Reconciliation duplicate, split, and no-match exception queues are visible, but match/split/undo/signoff UI still needs to be built.
+6. Equipment scan rollout is queued, but real BarcodeDetector/camera scanning still needs implementation.
+7. Equipment accessory templates are queued, but DB template tables and editor screens still need implementation.
+8. Return-to-service still needs stronger server-side verifier role, proof, and service-task closeout enforcement.
+9. Equipment service costs still need automatic job profitability rollup.
+10. Sitemap and robots exist as static baseline assets, but generation should move to approved DB route rows.
+11. JSON-LD, image-alt, broken-link, local-proof, mobile-overflow, and component-drift smoke checks still need deeper implementation.
+12. Mobile offline conflict resolution is queued, but forms still need retry/keep-local/reload-server/discard choices.
+13. Runtime fallback telemetry and drill-result storage still need write screens.
+14. HST/GST, payroll remittance, month-end close, and accountant export still need end-to-end proof and lock/reopen controls.
 
 ## Recently repaired
 
@@ -25,8 +26,9 @@ Schema: **133**
 - Canonical full schema carries the repaired schema 128 path.
 - Missing archive snapshot folders are restored so smoke checks do not fail on legacy hygiene checks.
 - Active `test_write` files are retired into archive.
-- Schema 133 now exposes payment write path, reconciliation scoring, equipment accessory templates, SEO generation, and offline conflict handling through Admin readiness queues.
+- Schema 134 now exposes payment adjustment workflows, reconciliation exception resolution, equipment scan rollout, local SEO content depth, and runtime error-message catalog rows through Admin readiness.
+- Admin readiness HTML around the SEO smoke / bank CSV table boundary was corrected to reduce layout drift.
 
 ## Next focus
 
-The next strongest pass is to turn schema 133 queues into real write paths: payment application tables/actions, reconciliation CSV staging and scoring, equipment accessory templates, camera scan fallback, generated SEO assets, and mobile offline conflict choices.
+The next strongest pass is to turn schema 134 queues into real write paths: payment application/reversal actions, reconciliation CSV staging and exception resolution, equipment accessory templates, camera scan fallback, generated SEO assets, runtime telemetry, and mobile offline conflict choices.
