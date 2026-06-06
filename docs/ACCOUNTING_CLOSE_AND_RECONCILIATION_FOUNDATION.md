@@ -91,6 +91,6 @@ _Reviewed in the 2026-05-17a pass for schema 112 documentation consistency._
 <!-- 2026-06-02b pass: schema 127 public route SEO registry, internal links, CSS token inventory, mobile field actions, release manifest checks, Admin readiness visibility, scan fallback, archive hygiene, cache marker, and Markdown refresh. -->
 
 
-## Schema 133 pass marker
+## Schema 134 pass marker
 
-Reviewed during build **2026-06-05c / schema 133**. Keep this document aligned with the active roadmap and known gaps.
+Reviewed during build **2026-06-06a / schema 134**. Keep this document aligned with the active roadmap and known gaps.

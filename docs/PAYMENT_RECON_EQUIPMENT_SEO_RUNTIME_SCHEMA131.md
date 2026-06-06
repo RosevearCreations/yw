@@ -22,6 +22,6 @@ These queues keep the next implementation work visible in Admin readiness while 
 Start with payment apply/reverse/adjust actions, then reconciliation CSV preview, equipment service closeout, sitemap/robots generation, and runtime recovery telemetry cards.
 
 
-## Schema 133 pass marker
+## Schema 134 pass marker
 
-Reviewed during build **2026-06-05c / schema 133**. Keep this document aligned with the active roadmap and known gaps.
+Reviewed during build **2026-06-06a / schema 134**. Keep this document aligned with the active roadmap and known gaps.

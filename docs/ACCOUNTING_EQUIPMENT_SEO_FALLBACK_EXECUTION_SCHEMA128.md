@@ -32,6 +32,6 @@ Apply schema **128**, then redeploy `admin-directory`. Redeploy `jobs-manage` an
 The rows added in schema 128 are readiness/execution queues. The next pass should turn the highest-value rows into working UI actions, starting with payment application and bank CSV preview.
 
 
-## Schema 133 pass marker
+## Schema 134 pass marker
 
-Reviewed during build **2026-06-05c / schema 133**. Keep this document aligned with the active roadmap and known gaps.
+Reviewed during build **2026-06-06a / schema 134**. Keep this document aligned with the active roadmap and known gaps.

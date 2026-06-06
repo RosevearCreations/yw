@@ -17,6 +17,6 @@ Schema 130 adds DB-visible execution queues so the next pass can move from plann
 The pass keeps the roadmap, known issues, canonical schema, smoke checks, cache marker, and Admin readiness views in sync while staging the next implementation layer for payment application, reconciliation, equipment scanning/accessory templates, local SEO publishing, and fallback drills.
 
 
-## Schema 133 pass marker
+## Schema 134 pass marker
 
-Reviewed during build **2026-06-05c / schema 133**. Keep this document aligned with the active roadmap and known gaps.
+Reviewed during build **2026-06-06a / schema 134**. Keep this document aligned with the active roadmap and known gaps.

@@ -216,6 +216,11 @@
       appEquipmentAccessoryTemplateQueue: [],
       appLocalSeoGenerationQueue: [],
       appMobileOfflineConflictResolutionQueue: [],
+      appPaymentAdjustmentWorkflowQueue: [],
+      appReconciliationExceptionResolutionQueue: [],
+      appEquipmentScanRolloutQueue: [],
+      appLocalSeoContentDepthQueue: [],
+      appRuntimeErrorMessageCatalog: [],
       actorRole: '',
       actorProfileId: '',
       directoryPagination: {
@@ -716,6 +721,36 @@
           <div class="table-scroll" style="margin-top:12px;">
             <table id="ad_mobile_offline_conflict_resolution_table">
               <thead><tr><th>Form Area</th><th>Conflict Control</th><th>Status</th><th>Detect / Choice / Retry</th><th>Data Safety / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_payment_adjustment_workflow_table">
+              <thead><tr><th>Area</th><th>Adjustment Workflow</th><th>Status</th><th>Validation / Posting / Reversal</th><th>Evidence / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_reconciliation_exception_resolution_table">
+              <thead><tr><th>Area</th><th>Exception Rule</th><th>Status</th><th>Score / Review / Block</th><th>Undo / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_equipment_scan_rollout_table">
+              <thead><tr><th>Area</th><th>Scan Rollout</th><th>Status</th><th>Device / Manual / Accessories</th><th>Verifier / Service Task</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_local_seo_content_depth_table">
+              <thead><tr><th>Route</th><th>Content Depth</th><th>Status</th><th>Phrase / Proof / Links</th><th>Gate / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_runtime_error_message_catalog_table">
+              <thead><tr><th>Surface</th><th>Error Message</th><th>Status</th><th>User / Operator / Telemetry</th><th>Retry / Fallback</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -1531,6 +1566,11 @@
         equipmentAccessoryTemplateBody: document.querySelector('#ad_equipment_accessory_template_table tbody'),
         localSeoGenerationBody: document.querySelector('#ad_local_seo_generation_table tbody'),
         mobileOfflineConflictResolutionBody: document.querySelector('#ad_mobile_offline_conflict_resolution_table tbody'),
+        paymentAdjustmentWorkflowBody: document.querySelector('#ad_payment_adjustment_workflow_table tbody'),
+        reconciliationExceptionResolutionBody: document.querySelector('#ad_reconciliation_exception_resolution_table tbody'),
+        equipmentScanRolloutBody: document.querySelector('#ad_equipment_scan_rollout_table tbody'),
+        localSeoContentDepthBody: document.querySelector('#ad_local_seo_content_depth_table tbody'),
+        runtimeErrorMessageCatalogBody: document.querySelector('#ad_runtime_error_message_catalog_table tbody'),
         seoSmokeBody: document.querySelector('#ad_seo_smoke_table tbody'),
         bankCsvImportBody: document.querySelector('#ad_bank_csv_import_table tbody'),
         backupRehearsalBody: document.querySelector('#ad_backup_rehearsal_table tbody'),
@@ -1855,6 +1895,11 @@
       if (Array.isArray(resp.app_equipment_accessory_template_queue)) state.appEquipmentAccessoryTemplateQueue = resp.app_equipment_accessory_template_queue;
       if (Array.isArray(resp.app_local_seo_generation_queue)) state.appLocalSeoGenerationQueue = resp.app_local_seo_generation_queue;
       if (Array.isArray(resp.app_mobile_offline_conflict_resolution_queue)) state.appMobileOfflineConflictResolutionQueue = resp.app_mobile_offline_conflict_resolution_queue;
+      if (Array.isArray(resp.app_payment_adjustment_workflow_queue)) state.appPaymentAdjustmentWorkflowQueue = resp.app_payment_adjustment_workflow_queue;
+      if (Array.isArray(resp.app_reconciliation_exception_resolution_queue)) state.appReconciliationExceptionResolutionQueue = resp.app_reconciliation_exception_resolution_queue;
+      if (Array.isArray(resp.app_equipment_scan_rollout_queue)) state.appEquipmentScanRolloutQueue = resp.app_equipment_scan_rollout_queue;
+      if (Array.isArray(resp.app_local_seo_content_depth_queue)) state.appLocalSeoContentDepthQueue = resp.app_local_seo_content_depth_queue;
+      if (Array.isArray(resp.app_runtime_error_message_catalog)) state.appRuntimeErrorMessageCatalog = resp.app_runtime_error_message_catalog;
       state.counts = {
         users: state.directoryPagination.people?.total || state.users.length,
         sites: Array.isArray(state.sites) ? state.sites.length : 0,
@@ -5166,6 +5211,66 @@
           </tr>
         `).join('') || '<tr><td colspan="5" class="muted">No mobile offline conflict rows loaded yet. Apply schema 133.</td></tr>';
       }
+      if (e.paymentAdjustmentWorkflowBody) {
+        const rows = Array.isArray(state.appPaymentAdjustmentWorkflowQueue) ? state.appPaymentAdjustmentWorkflowQueue : [];
+        e.paymentAdjustmentWorkflowBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.workflow_area || '')}<div class="muted">${escHtml(row.required_role || '')}</div></td>
+            <td><strong>${escHtml(row.workflow_title || '')}</strong></td>
+            <td>${renderStatusPill(row.workflow_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.workflow_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.validation_hint || '')}<div class="muted">${escHtml(row.posting_hint || '')}</div><div class="muted">${escHtml(row.reversal_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.evidence_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No payment adjustment workflow rows loaded yet. Apply schema 134.</td></tr>';
+      }
+      if (e.reconciliationExceptionResolutionBody) {
+        const rows = Array.isArray(state.appReconciliationExceptionResolutionQueue) ? state.appReconciliationExceptionResolutionQueue : [];
+        e.reconciliationExceptionResolutionBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.exception_area || '')}</td>
+            <td><strong>${escHtml(row.exception_title || '')}</strong></td>
+            <td>${renderStatusPill(row.exception_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.exception_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.match_score_hint || '')}<div class="muted">${escHtml(row.human_review_hint || '')}</div><div class="muted">${escHtml(row.posting_block_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.undo_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No reconciliation exception rows loaded yet. Apply schema 134.</td></tr>';
+      }
+      if (e.equipmentScanRolloutBody) {
+        const rows = Array.isArray(state.appEquipmentScanRolloutQueue) ? state.appEquipmentScanRolloutQueue : [];
+        e.equipmentScanRolloutBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.rollout_area || '')}</td>
+            <td><strong>${escHtml(row.rollout_title || '')}</strong></td>
+            <td>${renderStatusPill(row.rollout_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.rollout_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.device_requirement_hint || '')}<div class="muted">${escHtml(row.manual_fallback_hint || '')}</div><div class="muted">${escHtml(row.accessory_template_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.verifier_role_hint || '')}<div class="muted">${escHtml(row.service_task_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No equipment scan rollout rows loaded yet. Apply schema 134.</td></tr>';
+      }
+      if (e.localSeoContentDepthBody) {
+        const rows = Array.isArray(state.appLocalSeoContentDepthQueue) ? state.appLocalSeoContentDepthQueue : [];
+        e.localSeoContentDepthBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.route_key || '')}<div class="muted">${escHtml(row.content_area || '')}</div></td>
+            <td><strong>${escHtml(row.content_title || '')}</strong></td>
+            <td>${renderStatusPill(row.content_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.content_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.primary_local_phrase || '')}<div class="muted">${escHtml(row.proof_requirement_hint || '')}</div><div class="muted">${escHtml(row.internal_link_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.publication_gate_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No local SEO content depth rows loaded yet. Apply schema 134.</td></tr>';
+      }
+      if (e.runtimeErrorMessageCatalogBody) {
+        const rows = Array.isArray(state.appRuntimeErrorMessageCatalog) ? state.appRuntimeErrorMessageCatalog : [];
+        e.runtimeErrorMessageCatalogBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.app_surface || '')}</td>
+            <td><strong>${escHtml(row.error_title || '')}</strong></td>
+            <td>${renderStatusPill(row.error_status || 'review', /pass|covered|ready|done|in_progress/i.test(String(row.error_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.user_message || '')}<div class="muted">${escHtml(row.operator_hint || '')}</div><div class="muted">${escHtml(row.telemetry_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.retry_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No runtime message catalog rows loaded yet. Apply schema 134.</td></tr>';
+      }
       applyAdminActionDisabledStates();
     }
 
@@ -5573,7 +5678,12 @@
           appReconciliationScoringRuleQueue: Array.isArray(payload?.app_reconciliation_scoring_rule_queue) ? payload.app_reconciliation_scoring_rule_queue : state.appReconciliationScoringRuleQueue,
           appEquipmentAccessoryTemplateQueue: Array.isArray(payload?.app_equipment_accessory_template_queue) ? payload.app_equipment_accessory_template_queue : state.appEquipmentAccessoryTemplateQueue,
           appLocalSeoGenerationQueue: Array.isArray(payload?.app_local_seo_generation_queue) ? payload.app_local_seo_generation_queue : state.appLocalSeoGenerationQueue,
-          appMobileOfflineConflictResolutionQueue: Array.isArray(payload?.app_mobile_offline_conflict_resolution_queue) ? payload.app_mobile_offline_conflict_resolution_queue : state.appMobileOfflineConflictResolutionQueue
+          appMobileOfflineConflictResolutionQueue: Array.isArray(payload?.app_mobile_offline_conflict_resolution_queue) ? payload.app_mobile_offline_conflict_resolution_queue : state.appMobileOfflineConflictResolutionQueue,
+          appPaymentAdjustmentWorkflowQueue: Array.isArray(payload?.app_payment_adjustment_workflow_queue) ? payload.app_payment_adjustment_workflow_queue : state.appPaymentAdjustmentWorkflowQueue,
+          appReconciliationExceptionResolutionQueue: Array.isArray(payload?.app_reconciliation_exception_resolution_queue) ? payload.app_reconciliation_exception_resolution_queue : state.appReconciliationExceptionResolutionQueue,
+          appEquipmentScanRolloutQueue: Array.isArray(payload?.app_equipment_scan_rollout_queue) ? payload.app_equipment_scan_rollout_queue : state.appEquipmentScanRolloutQueue,
+          appLocalSeoContentDepthQueue: Array.isArray(payload?.app_local_seo_content_depth_queue) ? payload.app_local_seo_content_depth_queue : state.appLocalSeoContentDepthQueue,
+          appRuntimeErrorMessageCatalog: Array.isArray(payload?.app_runtime_error_message_catalog) ? payload.app_runtime_error_message_catalog : state.appRuntimeErrorMessageCatalog
         };
         const e = els();
         if (e.staffPosition) {
@@ -6577,6 +6687,66 @@
             <td class="admin-table-note">${escHtml(row.data_safety_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
           </tr>
         `).join('') || '<tr><td colspan="5" class="muted">No mobile offline conflict rows loaded yet. Apply schema 133.</td></tr>';
+      }
+      if (e.paymentAdjustmentWorkflowBody) {
+        const rows = Array.isArray(state.appPaymentAdjustmentWorkflowQueue) ? state.appPaymentAdjustmentWorkflowQueue : [];
+        e.paymentAdjustmentWorkflowBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.workflow_area || '')}<div class="muted">${escHtml(row.required_role || '')}</div></td>
+            <td><strong>${escHtml(row.workflow_title || '')}</strong></td>
+            <td>${renderStatusPill(row.workflow_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.workflow_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.validation_hint || '')}<div class="muted">${escHtml(row.posting_hint || '')}</div><div class="muted">${escHtml(row.reversal_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.evidence_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No payment adjustment workflow rows loaded yet. Apply schema 134.</td></tr>';
+      }
+      if (e.reconciliationExceptionResolutionBody) {
+        const rows = Array.isArray(state.appReconciliationExceptionResolutionQueue) ? state.appReconciliationExceptionResolutionQueue : [];
+        e.reconciliationExceptionResolutionBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.exception_area || '')}</td>
+            <td><strong>${escHtml(row.exception_title || '')}</strong></td>
+            <td>${renderStatusPill(row.exception_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.exception_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.match_score_hint || '')}<div class="muted">${escHtml(row.human_review_hint || '')}</div><div class="muted">${escHtml(row.posting_block_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.undo_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No reconciliation exception rows loaded yet. Apply schema 134.</td></tr>';
+      }
+      if (e.equipmentScanRolloutBody) {
+        const rows = Array.isArray(state.appEquipmentScanRolloutQueue) ? state.appEquipmentScanRolloutQueue : [];
+        e.equipmentScanRolloutBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.rollout_area || '')}</td>
+            <td><strong>${escHtml(row.rollout_title || '')}</strong></td>
+            <td>${renderStatusPill(row.rollout_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.rollout_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.device_requirement_hint || '')}<div class="muted">${escHtml(row.manual_fallback_hint || '')}</div><div class="muted">${escHtml(row.accessory_template_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.verifier_role_hint || '')}<div class="muted">${escHtml(row.service_task_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No equipment scan rollout rows loaded yet. Apply schema 134.</td></tr>';
+      }
+      if (e.localSeoContentDepthBody) {
+        const rows = Array.isArray(state.appLocalSeoContentDepthQueue) ? state.appLocalSeoContentDepthQueue : [];
+        e.localSeoContentDepthBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.route_key || '')}<div class="muted">${escHtml(row.content_area || '')}</div></td>
+            <td><strong>${escHtml(row.content_title || '')}</strong></td>
+            <td>${renderStatusPill(row.content_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.content_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.primary_local_phrase || '')}<div class="muted">${escHtml(row.proof_requirement_hint || '')}</div><div class="muted">${escHtml(row.internal_link_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.publication_gate_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No local SEO content depth rows loaded yet. Apply schema 134.</td></tr>';
+      }
+      if (e.runtimeErrorMessageCatalogBody) {
+        const rows = Array.isArray(state.appRuntimeErrorMessageCatalog) ? state.appRuntimeErrorMessageCatalog : [];
+        e.runtimeErrorMessageCatalogBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.app_surface || '')}</td>
+            <td><strong>${escHtml(row.error_title || '')}</strong></td>
+            <td>${renderStatusPill(row.error_status || 'review', /pass|covered|ready|done|in_progress/i.test(String(row.error_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.user_message || '')}<div class="muted">${escHtml(row.operator_hint || '')}</div><div class="muted">${escHtml(row.telemetry_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.retry_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No runtime message catalog rows loaded yet. Apply schema 134.</td></tr>';
       }
       applyAdminActionDisabledStates();
       if (e.seoSmokeBody) {

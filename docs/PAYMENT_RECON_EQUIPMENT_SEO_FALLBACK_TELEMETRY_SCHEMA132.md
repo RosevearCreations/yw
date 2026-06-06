@@ -21,6 +21,6 @@ The app now has clearer operator queues for the next real UI work: payment posti
 Build the actual write paths for payment application and reconciliation staging, then add camera scan support and DB-backed accessory templates for equipment movement.
 
 
-## Schema 133 pass marker
+## Schema 134 pass marker
 
-Reviewed during build **2026-06-05c / schema 133**. Keep this document aligned with the active roadmap and known gaps.
+Reviewed during build **2026-06-06a / schema 134**. Keep this document aligned with the active roadmap and known gaps.
