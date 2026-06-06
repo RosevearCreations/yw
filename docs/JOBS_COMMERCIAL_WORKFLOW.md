@@ -27,3 +27,8 @@ _Reviewed in the 2026-05-17a pass for schema 112 documentation consistency._
 
 <!-- 2026-06-02a pass: schema 126 roadmap depth, data migration candidates, SEO/CSS/fallback guardrails, Admin readiness visibility, archive hygiene, cache marker, and Markdown refresh. -->
 <!-- 2026-06-02b pass: schema 127 public route SEO registry, internal links, CSS token inventory, mobile field actions, release manifest checks, Admin readiness visibility, scan fallback, archive hygiene, cache marker, and Markdown refresh. -->
+
+
+## Schema 133 pass marker
+
+Reviewed during build **2026-06-05c / schema 133**. Keep this document aligned with the active roadmap and known gaps.

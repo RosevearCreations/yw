@@ -43,3 +43,8 @@ node scripts/repo-smoke-check.mjs
 ```
 
 The smoke script now verifies that schema 128 and the canonical full schema do not contain the bad legacy roadmap insert/update pattern.
+
+
+## Schema 133 pass marker
+
+Reviewed during build **2026-06-05c / schema 133**. Keep this document aligned with the active roadmap and known gaps.

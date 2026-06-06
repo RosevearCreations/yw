@@ -22,3 +22,8 @@ Current major docs:
 <!-- 2026-06-05a pass: schema 131 payment UI validation, reconciliation import validation, equipment service closeout, SEO asset publication, runtime recovery telemetry, Admin readiness visibility, cache marker, archive hygiene, and Markdown refresh. -->
 
 - `PAYMENT_RECON_EQUIPMENT_SEO_FALLBACK_TELEMETRY_SCHEMA132.md` – schema 132 queues for payment proof, reconciliation matching, equipment scan verification, local SEO assets, and fallback drill history.
+
+
+## Schema 133 pass marker
+
+Reviewed during build **2026-06-05c / schema 133**. Keep this document aligned with the active roadmap and known gaps.

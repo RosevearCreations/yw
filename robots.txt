@@ -1,4 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /admin
+Disallow: /account
+Disallow: /internal
+
 Sitemap: https://yardweasels.ca/sitemap.xml

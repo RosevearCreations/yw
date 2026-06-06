@@ -1,17 +1,11 @@
 # Changelog
 
-## 2026-06-05a - Schema 131
+## 2026-06-05c / Schema 133
 
-- Added schema 131 payment/reconciliation/equipment/SEO/runtime execution controls.
-- Updated canonical full schema reference and schema drift marker to 131.
-- Added Admin readiness loading/rendering for schema 131 queues.
-- Updated cache marker to 2026-06-05a.
-- Restored missing archive snapshots and retired active test files.
-
-## 2026-06-05b – Schema 132
-
-- Added `sql/132_payment_recon_equipment_seo_fallback_telemetry_drill_history.sql`.
-- Added Admin-visible payment posting proof, reconciliation match workbench, equipment scan verification, local SEO asset smoke, and fallback drill-history queues.
-- Added baseline `sitemap.xml` and `robots.txt` files for SEO asset execution.
-- Updated `admin-directory`, `admin-ui`, smoke checks, cache markers, schema reference, and active Markdown.
-- Retired root `test_write` files into archive and preserved current Markdown snapshot.
+- Added schema 133 payment/reconciliation/equipment/SEO/offline execution-control migration.
+- Updated canonical full schema reference.
+- Added Admin readiness loading and rendering for schema 133 queues.
+- Updated sitemap.xml and robots.txt baseline assets.
+- Updated cache marker to `2026-06-05c`.
+- Updated smoke checks and active Markdown.
+- Retired active test_write files into archive.
