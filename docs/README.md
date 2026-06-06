@@ -27,3 +27,7 @@ Current major docs:
 ## Schema 134 pass marker
 
 Reviewed during build **2026-06-06a / schema 134**. Keep this document aligned with the active roadmap and known gaps.
+
+## 2026-06-06b Schema 135 documentation note
+
+Added `RELEASE_VALIDATION_PAYMENT_RECON_EQUIPMENT_SEO_DATA_MIGRATION_SCHEMA135.md` for the release-validation, payment/reconciliation, equipment scan, local SEO, fallback message, and JSON/DB migration control pass.
