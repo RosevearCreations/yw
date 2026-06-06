@@ -201,6 +201,11 @@
       appEquipmentScanTemplateRegistry: [],
       appLocalSeoExecutionQueue: [],
       appFallbackDrillQueue: [],
+      appPaymentApplicationUiQueue: [],
+      appReconciliationImportValidationQueue: [],
+      appEquipmentServiceCloseoutQueue: [],
+      appSeoAssetPublicationQueue: [],
+      appRuntimeRecoveryTelemetryQueue: [],
       actorRole: '',
       actorProfileId: '',
       directoryPagination: {
@@ -611,6 +616,36 @@
           <div class="table-scroll" style="margin-top:12px;">
             <table id="ad_fallback_observability_table">
               <thead><tr><th>Surface</th><th>Failure Mode</th><th>Status</th><th>User Message / Retry</th><th>Owner</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_payment_application_ui_queue_table">
+              <thead><tr><th>Area</th><th>Payment UI Control</th><th>Status</th><th>Validation / Posting</th><th>Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_reconciliation_import_validation_table">
+              <thead><tr><th>Area</th><th>Import Check</th><th>Status</th><th>CSV / Match Rules</th><th>Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_equipment_service_closeout_table">
+              <thead><tr><th>Area</th><th>Closeout Control</th><th>Status</th><th>Proof / Cost / Return</th><th>Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_seo_asset_publication_table">
+              <thead><tr><th>Area</th><th>Asset Gate</th><th>Status</th><th>File / Local / Validation</th><th>Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_runtime_recovery_telemetry_table">
+              <thead><tr><th>Surface</th><th>Recovery Signal</th><th>Status</th><th>Signal / Message / Retry</th><th>Owner</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -1411,6 +1446,11 @@
         equipmentScanTemplateBody: document.querySelector('#ad_equipment_scan_template_table tbody'),
         localSeoExecutionBody: document.querySelector('#ad_local_seo_execution_table tbody'),
         fallbackDrillBody: document.querySelector('#ad_fallback_drill_table tbody'),
+        paymentApplicationUiQueueBody: document.querySelector('#ad_payment_application_ui_queue_table tbody'),
+        reconciliationImportValidationBody: document.querySelector('#ad_reconciliation_import_validation_table tbody'),
+        equipmentServiceCloseoutBody: document.querySelector('#ad_equipment_service_closeout_table tbody'),
+        seoAssetPublicationBody: document.querySelector('#ad_seo_asset_publication_table tbody'),
+        runtimeRecoveryTelemetryBody: document.querySelector('#ad_runtime_recovery_telemetry_table tbody'),
         seoSmokeBody: document.querySelector('#ad_seo_smoke_table tbody'),
         bankCsvImportBody: document.querySelector('#ad_bank_csv_import_table tbody'),
         backupRehearsalBody: document.querySelector('#ad_backup_rehearsal_table tbody'),
@@ -1720,6 +1760,11 @@
       if (Array.isArray(resp.app_equipment_scan_template_registry)) state.appEquipmentScanTemplateRegistry = resp.app_equipment_scan_template_registry;
       if (Array.isArray(resp.app_local_seo_execution_queue)) state.appLocalSeoExecutionQueue = resp.app_local_seo_execution_queue;
       if (Array.isArray(resp.app_fallback_drill_queue)) state.appFallbackDrillQueue = resp.app_fallback_drill_queue;
+      if (Array.isArray(resp.app_payment_application_ui_queue)) state.appPaymentApplicationUiQueue = resp.app_payment_application_ui_queue;
+      if (Array.isArray(resp.app_reconciliation_import_validation_queue)) state.appReconciliationImportValidationQueue = resp.app_reconciliation_import_validation_queue;
+      if (Array.isArray(resp.app_equipment_service_closeout_queue)) state.appEquipmentServiceCloseoutQueue = resp.app_equipment_service_closeout_queue;
+      if (Array.isArray(resp.app_seo_asset_publication_queue)) state.appSeoAssetPublicationQueue = resp.app_seo_asset_publication_queue;
+      if (Array.isArray(resp.app_runtime_recovery_telemetry_queue)) state.appRuntimeRecoveryTelemetryQueue = resp.app_runtime_recovery_telemetry_queue;
       state.counts = {
         users: state.directoryPagination.people?.total || state.users.length,
         sites: Array.isArray(state.sites) ? state.sites.length : 0,
@@ -4850,6 +4895,66 @@
           </tr>
         `).join('') || '<tr><td colspan="5" class="muted">No fallback drill rows loaded yet. Apply schema 130.</td></tr>';
       }
+      if (e.paymentApplicationUiQueueBody) {
+        const rows = Array.isArray(state.appPaymentApplicationUiQueue) ? state.appPaymentApplicationUiQueue : [];
+        e.paymentApplicationUiQueueBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.control_area || '')}<div class="muted">${escHtml(row.required_role || '')}</div></td>
+            <td><strong>${escHtml(row.control_title || '')}</strong><div class="muted">${escHtml(row.route_hint || '')}</div></td>
+            <td>${renderStatusPill(row.control_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.control_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.validation_hint || '')}<div class="muted">${escHtml(row.posting_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No payment UI control rows loaded yet. Apply schema 131.</td></tr>';
+      }
+      if (e.reconciliationImportValidationBody) {
+        const rows = Array.isArray(state.appReconciliationImportValidationQueue) ? state.appReconciliationImportValidationQueue : [];
+        e.reconciliationImportValidationBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.import_area || '')}</td>
+            <td><strong>${escHtml(row.check_title || '')}</strong><div class="muted">${escHtml(row.reviewer_hint || '')}</div></td>
+            <td>${renderStatusPill(row.check_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.check_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.csv_rule_hint || '')}<div class="muted">${escHtml(row.match_rule_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No reconciliation import validation rows loaded yet. Apply schema 131.</td></tr>';
+      }
+      if (e.equipmentServiceCloseoutBody) {
+        const rows = Array.isArray(state.appEquipmentServiceCloseoutQueue) ? state.appEquipmentServiceCloseoutQueue : [];
+        e.equipmentServiceCloseoutBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.equipment_area || '')}<div class="muted">${escHtml(row.required_role || '')}</div></td>
+            <td><strong>${escHtml(row.closeout_title || '')}</strong></td>
+            <td>${renderStatusPill(row.closeout_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.closeout_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.proof_hint || '')}<div class="muted">${escHtml(row.cost_capture_hint || '')}</div><div class="muted">${escHtml(row.return_to_service_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No equipment service closeout rows loaded yet. Apply schema 131.</td></tr>';
+      }
+      if (e.seoAssetPublicationBody) {
+        const rows = Array.isArray(state.appSeoAssetPublicationQueue) ? state.appSeoAssetPublicationQueue : [];
+        e.seoAssetPublicationBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.seo_area || '')}<div class="muted">${escHtml(row.route_key || '')}</div></td>
+            <td><strong>${escHtml(row.asset_title || '')}</strong></td>
+            <td>${renderStatusPill(row.asset_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.asset_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.file_path_hint || '')}<div class="muted">${escHtml(row.local_search_hint || '')}</div><div class="muted">${escHtml(row.validation_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No SEO asset publication rows loaded yet. Apply schema 131.</td></tr>';
+      }
+      if (e.runtimeRecoveryTelemetryBody) {
+        const rows = Array.isArray(state.appRuntimeRecoveryTelemetryQueue) ? state.appRuntimeRecoveryTelemetryQueue : [];
+        e.runtimeRecoveryTelemetryBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.app_surface || '')}</td>
+            <td><strong>${escHtml(row.recovery_title || '')}</strong></td>
+            <td>${renderStatusPill(row.recovery_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.recovery_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.signal_hint || '')}<div class="muted">${escHtml(row.operator_message_hint || '')}</div><div class="muted">${escHtml(row.retry_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.owner_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No runtime recovery telemetry rows loaded yet. Apply schema 131.</td></tr>';
+      }
       applyAdminActionDisabledStates();
     }
 
@@ -5242,7 +5347,12 @@
           appBankReconciliationExecutionQueue: Array.isArray(payload?.app_bank_reconciliation_execution_queue) ? payload.app_bank_reconciliation_execution_queue : state.appBankReconciliationExecutionQueue,
           appEquipmentScanTemplateRegistry: Array.isArray(payload?.app_equipment_scan_template_registry) ? payload.app_equipment_scan_template_registry : state.appEquipmentScanTemplateRegistry,
           appLocalSeoExecutionQueue: Array.isArray(payload?.app_local_seo_execution_queue) ? payload.app_local_seo_execution_queue : state.appLocalSeoExecutionQueue,
-          appFallbackDrillQueue: Array.isArray(payload?.app_fallback_drill_queue) ? payload.app_fallback_drill_queue : state.appFallbackDrillQueue
+          appFallbackDrillQueue: Array.isArray(payload?.app_fallback_drill_queue) ? payload.app_fallback_drill_queue : state.appFallbackDrillQueue,
+          appPaymentApplicationUiQueue: Array.isArray(payload?.app_payment_application_ui_queue) ? payload.app_payment_application_ui_queue : state.appPaymentApplicationUiQueue,
+          appReconciliationImportValidationQueue: Array.isArray(payload?.app_reconciliation_import_validation_queue) ? payload.app_reconciliation_import_validation_queue : state.appReconciliationImportValidationQueue,
+          appEquipmentServiceCloseoutQueue: Array.isArray(payload?.app_equipment_service_closeout_queue) ? payload.app_equipment_service_closeout_queue : state.appEquipmentServiceCloseoutQueue,
+          appSeoAssetPublicationQueue: Array.isArray(payload?.app_seo_asset_publication_queue) ? payload.app_seo_asset_publication_queue : state.appSeoAssetPublicationQueue,
+          appRuntimeRecoveryTelemetryQueue: Array.isArray(payload?.app_runtime_recovery_telemetry_queue) ? payload.app_runtime_recovery_telemetry_queue : state.appRuntimeRecoveryTelemetryQueue
         };
         const e = els();
         if (e.staffPosition) {
@@ -6125,6 +6235,66 @@
             <td class="admin-table-note">${escHtml(row.owner_hint || '')}<div class="muted">${escHtml(row.recovery_hint || '')}</div></td>
           </tr>
         `).join('') || '<tr><td colspan="5" class="muted">No fallback drill rows loaded yet. Apply schema 130.</td></tr>';
+      }
+      if (e.paymentApplicationUiQueueBody) {
+        const rows = Array.isArray(state.appPaymentApplicationUiQueue) ? state.appPaymentApplicationUiQueue : [];
+        e.paymentApplicationUiQueueBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.control_area || '')}<div class="muted">${escHtml(row.required_role || '')}</div></td>
+            <td><strong>${escHtml(row.control_title || '')}</strong><div class="muted">${escHtml(row.route_hint || '')}</div></td>
+            <td>${renderStatusPill(row.control_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.control_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.validation_hint || '')}<div class="muted">${escHtml(row.posting_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No payment UI control rows loaded yet. Apply schema 131.</td></tr>';
+      }
+      if (e.reconciliationImportValidationBody) {
+        const rows = Array.isArray(state.appReconciliationImportValidationQueue) ? state.appReconciliationImportValidationQueue : [];
+        e.reconciliationImportValidationBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.import_area || '')}</td>
+            <td><strong>${escHtml(row.check_title || '')}</strong><div class="muted">${escHtml(row.reviewer_hint || '')}</div></td>
+            <td>${renderStatusPill(row.check_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.check_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.csv_rule_hint || '')}<div class="muted">${escHtml(row.match_rule_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No reconciliation import validation rows loaded yet. Apply schema 131.</td></tr>';
+      }
+      if (e.equipmentServiceCloseoutBody) {
+        const rows = Array.isArray(state.appEquipmentServiceCloseoutQueue) ? state.appEquipmentServiceCloseoutQueue : [];
+        e.equipmentServiceCloseoutBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.equipment_area || '')}<div class="muted">${escHtml(row.required_role || '')}</div></td>
+            <td><strong>${escHtml(row.closeout_title || '')}</strong></td>
+            <td>${renderStatusPill(row.closeout_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.closeout_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.proof_hint || '')}<div class="muted">${escHtml(row.cost_capture_hint || '')}</div><div class="muted">${escHtml(row.return_to_service_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No equipment service closeout rows loaded yet. Apply schema 131.</td></tr>';
+      }
+      if (e.seoAssetPublicationBody) {
+        const rows = Array.isArray(state.appSeoAssetPublicationQueue) ? state.appSeoAssetPublicationQueue : [];
+        e.seoAssetPublicationBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.seo_area || '')}<div class="muted">${escHtml(row.route_key || '')}</div></td>
+            <td><strong>${escHtml(row.asset_title || '')}</strong></td>
+            <td>${renderStatusPill(row.asset_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.asset_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.file_path_hint || '')}<div class="muted">${escHtml(row.local_search_hint || '')}</div><div class="muted">${escHtml(row.validation_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No SEO asset publication rows loaded yet. Apply schema 131.</td></tr>';
+      }
+      if (e.runtimeRecoveryTelemetryBody) {
+        const rows = Array.isArray(state.appRuntimeRecoveryTelemetryQueue) ? state.appRuntimeRecoveryTelemetryQueue : [];
+        e.runtimeRecoveryTelemetryBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.app_surface || '')}</td>
+            <td><strong>${escHtml(row.recovery_title || '')}</strong></td>
+            <td>${renderStatusPill(row.recovery_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.recovery_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.signal_hint || '')}<div class="muted">${escHtml(row.operator_message_hint || '')}</div><div class="muted">${escHtml(row.retry_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.owner_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No runtime recovery telemetry rows loaded yet. Apply schema 131.</td></tr>';
       }
       applyAdminActionDisabledStates();
       if (e.seoSmokeBody) {

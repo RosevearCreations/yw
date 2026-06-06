@@ -1,8 +1,7 @@
 # YWI Main
 
-Build marker: **2026-06-04b**  
-Schema marker: **130**
+Current build: **2026-06-05a**  
+Current schema: **131**
 
-This build includes schema 130 execution queues for payment application, bank reconciliation, equipment scan/template work, local SEO publication, and fallback drills.
+This build adds Admin-visible execution-control queues for payment application, reconciliation import validation, equipment service closeout, SEO asset publication, and runtime recovery telemetry.
 
-Run `node scripts/repo-smoke-check.mjs` before deployment.

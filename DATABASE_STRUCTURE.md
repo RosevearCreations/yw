@@ -1,21 +1,6 @@
 # Database Structure
 
-Last refreshed: **2026-06-04b**
+Latest schema: **131**
 
-Current schema marker: **130**.
+Schema 131 adds DB-visible execution-control queues for payment application UI validation, reconciliation import validation, equipment service closeout, SEO asset publication, and runtime recovery telemetry. The canonical schema drift view now expects schema 131.
 
-Latest migration: `sql/130_payment_reconciliation_equipment_scan_local_seo_execution_playbooks.sql`.
-
-Schema 130 adds:
-
-- `app_payment_execution_queue` / `v_app_payment_execution_queue`
-- `app_bank_reconciliation_execution_queue` / `v_app_bank_reconciliation_execution_queue`
-- `app_equipment_scan_template_registry` / `v_app_equipment_scan_template_registry`
-- `app_local_seo_execution_queue` / `v_app_local_seo_execution_queue`
-- `app_fallback_drill_queue` / `v_app_fallback_drill_queue`
-
-`v_schema_drift_status` now expects schema **130**. Apply migrations in order and redeploy `admin-directory` after schema 130 is applied.
-
-## Important compatibility note
-
-The repaired schema 128 roadmap insert uses `source_doc`, `route_hint`, and `implementation_notes`. Do not reintroduce the legacy `source_document`, `target_route_hint`, or `completion_note` names in schema 128 or the canonical full schema.

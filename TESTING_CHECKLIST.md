@@ -1,29 +1,15 @@
 # Testing Checklist
 
-Last refreshed: **2026-06-04b**
+Build: **2026-06-05a**  
+Schema: **131**
 
-Run before packaging/deploying:
+- Apply schema 131.
+- Redeploy `admin-directory`.
+- Redeploy `jobs-manage` and `jobs-directory` if live versions are behind.
+- Hard-refresh or clear the service worker so `2026-06-05a` assets load.
+- Confirm one H1 on public shell.
+- Confirm CSS brace balance remains zero.
+- Run `node scripts/repo-smoke-check.mjs`.
+- Confirm Admin readiness can load schema 131 tables.
+- Confirm missing optional views show empty-state fallback instead of breaking the page.
 
-- `node --check app.js`
-- `node --check js/api.js`
-- `node --check js/admin-ui.js`
-- `node --check js/jobs-ui.js`
-- `node --check js/mobile-menu.js`
-- `node --check js/mobile-today.js`
-- `node --check js/mobile-form-helper.js`
-- `node --check server-worker.js`
-- `node scripts/repo-smoke-check.mjs`
-
-Manual checks:
-
-- One H1 in `index.html`.
-- CSS brace balance passes.
-- Admin Production Readiness loads schema 130 payment/reconciliation/equipment/SEO/fallback drill tables.
-- Service worker cache marker is **2026-06-04b**.
-- No active root `test_write` files remain.
-
-## Schema 130 testing
-
-- Confirm `v_schema_drift_status` expects schema 130.
-- Confirm `admin-directory` returns `v_app_payment_execution_queue` and `v_app_fallback_drill_queue`.
-- Confirm Admin UI contains `ad_payment_execution_queue_table` and fallback drill table markup.
