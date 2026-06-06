@@ -206,6 +206,11 @@
       appEquipmentServiceCloseoutQueue: [],
       appSeoAssetPublicationQueue: [],
       appRuntimeRecoveryTelemetryQueue: [],
+      appPaymentPostingProofQueue: [],
+      appReconciliationMatchWorkbenchQueue: [],
+      appEquipmentScanVerificationQueue: [],
+      appLocalSeoAssetSmokeQueue: [],
+      appRuntimeFallbackDrillHistoryQueue: [],
       actorRole: '',
       actorProfileId: '',
       directoryPagination: {
@@ -646,6 +651,36 @@
           <div class="table-scroll" style="margin-top:12px;">
             <table id="ad_runtime_recovery_telemetry_table">
               <thead><tr><th>Surface</th><th>Recovery Signal</th><th>Status</th><th>Signal / Message / Retry</th><th>Owner</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_payment_posting_proof_table">
+              <thead><tr><th>Area</th><th>Proof Control</th><th>Status</th><th>Source / Proof / Block</th><th>Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_reconciliation_match_workbench_table">
+              <thead><tr><th>Area</th><th>Workbench Control</th><th>Status</th><th>Import / Score / Review</th><th>Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_equipment_scan_verification_table">
+              <thead><tr><th>Area</th><th>Verification Control</th><th>Status</th><th>Scan / Role / Evidence</th><th>Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_local_seo_asset_smoke_table">
+              <thead><tr><th>Area</th><th>SEO Asset Check</th><th>Status</th><th>Asset / Local / Validation</th><th>Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_runtime_fallback_drill_history_table">
+              <thead><tr><th>Surface</th><th>Fallback Drill</th><th>Status</th><th>Trigger / Expected / Evidence</th><th>Fallback</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -1451,6 +1486,11 @@
         equipmentServiceCloseoutBody: document.querySelector('#ad_equipment_service_closeout_table tbody'),
         seoAssetPublicationBody: document.querySelector('#ad_seo_asset_publication_table tbody'),
         runtimeRecoveryTelemetryBody: document.querySelector('#ad_runtime_recovery_telemetry_table tbody'),
+        paymentPostingProofBody: document.querySelector('#ad_payment_posting_proof_table tbody'),
+        reconciliationMatchWorkbenchBody: document.querySelector('#ad_reconciliation_match_workbench_table tbody'),
+        equipmentScanVerificationBody: document.querySelector('#ad_equipment_scan_verification_table tbody'),
+        localSeoAssetSmokeBody: document.querySelector('#ad_local_seo_asset_smoke_table tbody'),
+        runtimeFallbackDrillHistoryBody: document.querySelector('#ad_runtime_fallback_drill_history_table tbody'),
         seoSmokeBody: document.querySelector('#ad_seo_smoke_table tbody'),
         bankCsvImportBody: document.querySelector('#ad_bank_csv_import_table tbody'),
         backupRehearsalBody: document.querySelector('#ad_backup_rehearsal_table tbody'),
@@ -1765,6 +1805,11 @@
       if (Array.isArray(resp.app_equipment_service_closeout_queue)) state.appEquipmentServiceCloseoutQueue = resp.app_equipment_service_closeout_queue;
       if (Array.isArray(resp.app_seo_asset_publication_queue)) state.appSeoAssetPublicationQueue = resp.app_seo_asset_publication_queue;
       if (Array.isArray(resp.app_runtime_recovery_telemetry_queue)) state.appRuntimeRecoveryTelemetryQueue = resp.app_runtime_recovery_telemetry_queue;
+      if (Array.isArray(resp.app_payment_posting_proof_queue)) state.appPaymentPostingProofQueue = resp.app_payment_posting_proof_queue;
+      if (Array.isArray(resp.app_reconciliation_match_workbench_queue)) state.appReconciliationMatchWorkbenchQueue = resp.app_reconciliation_match_workbench_queue;
+      if (Array.isArray(resp.app_equipment_scan_verification_queue)) state.appEquipmentScanVerificationQueue = resp.app_equipment_scan_verification_queue;
+      if (Array.isArray(resp.app_local_seo_asset_smoke_queue)) state.appLocalSeoAssetSmokeQueue = resp.app_local_seo_asset_smoke_queue;
+      if (Array.isArray(resp.app_runtime_fallback_drill_history_queue)) state.appRuntimeFallbackDrillHistoryQueue = resp.app_runtime_fallback_drill_history_queue;
       state.counts = {
         users: state.directoryPagination.people?.total || state.users.length,
         sites: Array.isArray(state.sites) ? state.sites.length : 0,
@@ -4955,6 +5000,66 @@
           </tr>
         `).join('') || '<tr><td colspan="5" class="muted">No runtime recovery telemetry rows loaded yet. Apply schema 131.</td></tr>';
       }
+      if (e.paymentPostingProofBody) {
+        const rows = Array.isArray(state.appPaymentPostingProofQueue) ? state.appPaymentPostingProofQueue : [];
+        e.paymentPostingProofBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.proof_area || '')}<div class="muted">${escHtml(row.required_role || '')}</div></td>
+            <td><strong>${escHtml(row.proof_title || '')}</strong></td>
+            <td>${renderStatusPill(row.proof_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.proof_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.source_row_hint || '')}<div class="muted">${escHtml(row.proof_requirement || '')}</div><div class="muted">${escHtml(row.posting_block_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No payment posting proof rows loaded yet. Apply schema 132.</td></tr>';
+      }
+      if (e.reconciliationMatchWorkbenchBody) {
+        const rows = Array.isArray(state.appReconciliationMatchWorkbenchQueue) ? state.appReconciliationMatchWorkbenchQueue : [];
+        e.reconciliationMatchWorkbenchBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.match_area || '')}</td>
+            <td><strong>${escHtml(row.workbench_title || '')}</strong></td>
+            <td>${renderStatusPill(row.workbench_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.workbench_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.import_rule_hint || '')}<div class="muted">${escHtml(row.match_score_hint || '')}</div><div class="muted">${escHtml(row.manual_review_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No reconciliation match workbench rows loaded yet. Apply schema 132.</td></tr>';
+      }
+      if (e.equipmentScanVerificationBody) {
+        const rows = Array.isArray(state.appEquipmentScanVerificationQueue) ? state.appEquipmentScanVerificationQueue : [];
+        e.equipmentScanVerificationBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.equipment_area || '')}</td>
+            <td><strong>${escHtml(row.verification_title || '')}</strong></td>
+            <td>${renderStatusPill(row.verification_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.verification_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.scan_path_hint || '')}<div class="muted">${escHtml(row.role_gate_hint || '')}</div><div class="muted">${escHtml(row.evidence_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No equipment scan verification rows loaded yet. Apply schema 132.</td></tr>';
+      }
+      if (e.localSeoAssetSmokeBody) {
+        const rows = Array.isArray(state.appLocalSeoAssetSmokeQueue) ? state.appLocalSeoAssetSmokeQueue : [];
+        e.localSeoAssetSmokeBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.seo_area || '')}</td>
+            <td><strong>${escHtml(row.smoke_title || '')}</strong></td>
+            <td>${renderStatusPill(row.smoke_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.smoke_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.asset_path_hint || '')}<div class="muted">${escHtml(row.local_relevance_hint || '')}</div><div class="muted">${escHtml(row.validation_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No local SEO asset smoke rows loaded yet. Apply schema 132.</td></tr>';
+      }
+      if (e.runtimeFallbackDrillHistoryBody) {
+        const rows = Array.isArray(state.appRuntimeFallbackDrillHistoryQueue) ? state.appRuntimeFallbackDrillHistoryQueue : [];
+        e.runtimeFallbackDrillHistoryBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.app_surface || '')}</td>
+            <td><strong>${escHtml(row.drill_title || '')}</strong></td>
+            <td>${renderStatusPill(row.drill_status || 'planned', /pass|covered|ready|done|in_progress/i.test(String(row.drill_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.trigger_hint || '')}<div class="muted">${escHtml(row.expected_result_hint || '')}</div><div class="muted">${escHtml(row.evidence_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No runtime fallback drill history rows loaded yet. Apply schema 132.</td></tr>';
+      }
       applyAdminActionDisabledStates();
     }
 
@@ -5352,7 +5457,12 @@
           appReconciliationImportValidationQueue: Array.isArray(payload?.app_reconciliation_import_validation_queue) ? payload.app_reconciliation_import_validation_queue : state.appReconciliationImportValidationQueue,
           appEquipmentServiceCloseoutQueue: Array.isArray(payload?.app_equipment_service_closeout_queue) ? payload.app_equipment_service_closeout_queue : state.appEquipmentServiceCloseoutQueue,
           appSeoAssetPublicationQueue: Array.isArray(payload?.app_seo_asset_publication_queue) ? payload.app_seo_asset_publication_queue : state.appSeoAssetPublicationQueue,
-          appRuntimeRecoveryTelemetryQueue: Array.isArray(payload?.app_runtime_recovery_telemetry_queue) ? payload.app_runtime_recovery_telemetry_queue : state.appRuntimeRecoveryTelemetryQueue
+          appRuntimeRecoveryTelemetryQueue: Array.isArray(payload?.app_runtime_recovery_telemetry_queue) ? payload.app_runtime_recovery_telemetry_queue : state.appRuntimeRecoveryTelemetryQueue,
+          appPaymentPostingProofQueue: Array.isArray(payload?.app_payment_posting_proof_queue) ? payload.app_payment_posting_proof_queue : state.appPaymentPostingProofQueue,
+          appReconciliationMatchWorkbenchQueue: Array.isArray(payload?.app_reconciliation_match_workbench_queue) ? payload.app_reconciliation_match_workbench_queue : state.appReconciliationMatchWorkbenchQueue,
+          appEquipmentScanVerificationQueue: Array.isArray(payload?.app_equipment_scan_verification_queue) ? payload.app_equipment_scan_verification_queue : state.appEquipmentScanVerificationQueue,
+          appLocalSeoAssetSmokeQueue: Array.isArray(payload?.app_local_seo_asset_smoke_queue) ? payload.app_local_seo_asset_smoke_queue : state.appLocalSeoAssetSmokeQueue,
+          appRuntimeFallbackDrillHistoryQueue: Array.isArray(payload?.app_runtime_fallback_drill_history_queue) ? payload.app_runtime_fallback_drill_history_queue : state.appRuntimeFallbackDrillHistoryQueue
         };
         const e = els();
         if (e.staffPosition) {
