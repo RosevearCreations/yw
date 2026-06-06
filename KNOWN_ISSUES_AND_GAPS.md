@@ -26,3 +26,11 @@ Schema: **131**
 ## Next focus
 
 The next strongest pass is to turn schema 131 queues into real Admin/mobile actions, starting with payment application, reconciliation import preview, equipment service closeout, and technical SEO file generation.
+
+## Schema 132 Remaining Gaps
+
+- Payment proof queues are visible, but real payment apply/reverse/refund/write-off actions still need write paths.
+- Reconciliation match workbench rows are visible, but CSV upload, score calculation, split/undo, and signoff screens still need implementation.
+- Equipment scan verification rows are visible, but real camera scanning and DB accessory templates still need implementation.
+- `sitemap.xml` and `robots.txt` now exist as a baseline, but sitemap generation should move to approved route data.
+- Fallback drill-history rows are visible, but pass/fail drill result storage is not yet implemented.

@@ -52,3 +52,49 @@ Schema: **131**
 ## Direction
 
 Keep every pass tied to working deployment guardrails: update SQL migrations, `sql/000_full_schema_reference.sql`, active Markdown, cache markers, Admin readiness views, CSS/H1 checks, and smoke checks together. Continue moving repeated JSON/checklist-style data into DB-backed registries when the data needs Admin visibility, sorting, review status, or future workflow actions.
+
+## Build 2026-06-05b / Schema 132 – Completed 20-Step Pass
+
+1. Added schema 132 migration.
+2. Updated full schema reference.
+3. Added payment posting proof queue.
+4. Added reconciliation match workbench queue.
+5. Added equipment scan verification queue.
+6. Added local SEO asset smoke queue.
+7. Added runtime fallback drill-history queue.
+8. Added roadmap rows for completed work and next 20.
+9. Added `sitemap.xml`.
+10. Added `robots.txt`.
+11. Updated Admin directory view loading.
+12. Updated Admin readiness rendering.
+13. Updated cache marker to 2026-06-05b.
+14. Updated smoke checks for schema 132.
+15. Verified one public H1 rule remains active.
+16. Verified CSS brace balance.
+17. Retired root test files.
+18. Archived active Markdown snapshot.
+19. Added schema 132 documentation.
+20. Kept roadmap/issues/schema docs synchronized.
+
+## Next 20 Steps After Schema 132
+
+1. Build payment application write tables and staged apply/reverse actions.
+2. Build refund/credit/write-off/overpayment proof workflow.
+3. Build bank CSV upload preview and accepted/rejected staging.
+4. Build reconciliation match score rows.
+5. Build manual match, split, undo, and reviewer signoff screen.
+6. Block month-end close when unreconciled rows remain.
+7. Add camera QR/barcode scanning helper.
+8. Store scanned/manual source on equipment events.
+9. Add DB-backed accessory templates by equipment pool.
+10. Compare accessory templates at return.
+11. Enforce return-to-service proof server-side.
+12. Roll equipment service costs into job profitability.
+13. Generate sitemap from approved route registry.
+14. Add JSON-LD validation smoke check.
+15. Add image-alt and local proof smoke checks.
+16. Add mobile overflow/component drift smoke checks.
+17. Create fallback drill run-history write UI.
+18. Store runtime fallback telemetry signals.
+19. Promote repeated static JSON config into DB registries.
+20. Keep docs, schema, cache, and smoke checks synchronized each pass.

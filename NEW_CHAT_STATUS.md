@@ -4,3 +4,6 @@ Continue from **build 2026-06-05a / schema 131**. The most recent pass added sch
 
 Next work should turn schema 131 queue rows into real UI/action workflows.
 
+## Latest Build Context
+
+Latest build: **2026-06-05b / schema 132**. Continue from payment posting proof, reconciliation matching, equipment scan verification, generated SEO assets, and fallback drill-history implementation.
