@@ -55,3 +55,55 @@ Next 20 recommended steps:
 19. Continue reviewing JSON-vs-DB duplication and migrate high-risk duplicated data to one source of truth.
 20. Add mobile offline conflict UI for keep local, use server, or review before sync.
 
+---
+
+## Build 2026-06-06c / Schema 136 Update
+
+This pass adds schema 136 and keeps the active Markdown, schema reference, Admin readiness UI, public SEO guardrails, CSS sanity checks, and fallback checks aligned.
+
+### Completed 20 for this pass
+
+1. Added schema 136 migration for release cutover controls.
+2. Added payment exception decision queue.
+3. Added equipment return-to-service gate queue.
+4. Added local search evidence queue.
+5. Added CSS drift watchlist.
+6. Added runtime fallback test plan.
+7. Added JSON/DB source-of-truth queue.
+8. Updated the canonical full schema reference to schema 136.
+9. Updated schema drift expectations to 136.
+10. Added Admin Directory loading for new schema 136 views.
+11. Added Admin Production Readiness tables for schema 136 rows.
+12. Updated cache/version marker to 2026-06-06c.
+13. Preserved sitemap.xml and robots.txt local SEO assets.
+14. Verified the public shell remains one H1.
+15. Verified CSS brace balance remains clean.
+16. Restored required archive snapshots for smoke continuity.
+17. Archived current root Markdown snapshot.
+18. Retired root test_write files into archive.
+19. Updated smoke checks for schema 136 readiness.
+20. Added this schema 136 note across the active Markdown set.
+
+### Next 20 steps to move toward
+
+1. Build real payment apply and reverse buttons with staged posting rows.
+2. Add overpayment decision handling: hold credit, refund, or apply to invoice.
+3. Add write-off workflow with threshold approval and tax-impact review.
+4. Add refund workflow with original-payment link and proof upload.
+5. Build bank CSV preview with header, date, duplicate, and amount-sign checks.
+6. Add reconciliation candidate scoring and reviewer decision notes.
+7. Add reconciliation split-match and undo workflow.
+8. Add close-period lock/reopen enforcement to payment and reconciliation writes.
+9. Add equipment accessory template editor by equipment pool/category.
+10. Enforce equipment return-to-service server-side before status returns to available.
+11. Link equipment repair/replacement costs to job profitability rows.
+12. Add camera BarcodeDetector scan with manual fallback tracking.
+13. Generate sitemap.xml and robots.txt from approved DB route evidence.
+14. Add broken-link, missing-image, and JSON-LD smoke checks to the release script.
+15. Add local proof requirements before publishing new town/service pages.
+16. Move runtime fallback copy into a reviewed DB/admin catalog.
+17. Add fallback drill execution history for missing views, stale cache, offline conflicts, and unsupported scanner.
+18. Add CSS visual regression notes for Admin tables, mobile quick nav, and mobile forms.
+19. Move repeated JSON/static route data toward DB-owned source-of-truth rows where it reduces duplication.
+20. Package accountant-ready exports that include payment, reconciliation, remittance, close, and proof metadata.
+
