@@ -227,6 +227,13 @@
       appLocalSeoReleaseValidationQueue: [],
       appRuntimeFallbackMessageQueue: [],
       appJsonDbMigrationExecutionQueue: [],
+      appReleaseCutoverChecklist: [],
+      appPaymentExceptionDecisionQueue: [],
+      appEquipmentReturnToServiceGateQueue: [],
+      appLocalSearchEvidenceQueue: [],
+      appCssDriftWatchlist: [],
+      appRuntimeFallbackTestPlan: [],
+      appJsonDbSourceOfTruthQueue: [],
       actorRole: '',
       actorProfileId: '',
       directoryPagination: {
@@ -793,6 +800,49 @@
           <div class="table-scroll" style="margin-top:12px;">
             <table id="ad_json_db_migration_execution_table">
               <thead><tr><th>Data Area</th><th>Migration Candidate</th><th>Status</th><th>Current / Target / Risk</th><th>Execution / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_release_cutover_checklist_table">
+              <thead><tr><th>Area</th><th>Cutover Control</th><th>Status</th><th>Preflight / Deploy</th><th>Rollback / Owner</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_payment_exception_decision_table">
+              <thead><tr><th>Area</th><th>Payment Exception</th><th>Status</th><th>Validation / Posting / Approval</th><th>Rollback / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_equipment_return_to_service_gate_table">
+              <thead><tr><th>Area</th><th>Return-to-Service Gate</th><th>Status</th><th>Scan / Accessory / Verifier</th><th>Service / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_local_search_evidence_table">
+              <thead><tr><th>Route</th><th>Local Search Evidence</th><th>Status</th><th>Phrase / Proof / Link</th><th>Publication / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_css_drift_watchlist_table">
+              <thead><tr><th>Area</th><th>CSS Watch</th><th>Status</th><th>Token / Selector / Risk</th><th>Test / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_runtime_fallback_test_plan_table">
+              <thead><tr><th>Surface</th><th>Fallback Test</th><th>Status</th><th>Failure / Copy / Telemetry</th><th>Retry / Owner</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_json_db_source_of_truth_table">
+              <thead><tr><th>Data Area</th><th>Source-of-Truth Decision</th><th>Status</th><th>Current / Target / Rule</th><th>Validation / Fallback</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -1619,6 +1669,13 @@
         localSeoReleaseValidationBody: document.querySelector('#ad_local_seo_release_validation_table tbody'),
         runtimeFallbackMessageBody: document.querySelector('#ad_runtime_fallback_message_table tbody'),
         jsonDbMigrationExecutionBody: document.querySelector('#ad_json_db_migration_execution_table tbody'),
+        releaseCutoverChecklistBody: document.querySelector('#ad_release_cutover_checklist_table tbody'),
+        paymentExceptionDecisionBody: document.querySelector('#ad_payment_exception_decision_table tbody'),
+        equipmentReturnToServiceGateBody: document.querySelector('#ad_equipment_return_to_service_gate_table tbody'),
+        localSearchEvidenceBody: document.querySelector('#ad_local_search_evidence_table tbody'),
+        cssDriftWatchlistBody: document.querySelector('#ad_css_drift_watchlist_table tbody'),
+        runtimeFallbackTestPlanBody: document.querySelector('#ad_runtime_fallback_test_plan_table tbody'),
+        jsonDbSourceOfTruthBody: document.querySelector('#ad_json_db_source_of_truth_table tbody'),
         seoSmokeBody: document.querySelector('#ad_seo_smoke_table tbody'),
         bankCsvImportBody: document.querySelector('#ad_bank_csv_import_table tbody'),
         backupRehearsalBody: document.querySelector('#ad_backup_rehearsal_table tbody'),
@@ -1954,6 +2011,14 @@
       if (Array.isArray(resp.app_local_seo_release_validation_queue)) state.appLocalSeoReleaseValidationQueue = resp.app_local_seo_release_validation_queue;
       if (Array.isArray(resp.app_runtime_fallback_message_queue)) state.appRuntimeFallbackMessageQueue = resp.app_runtime_fallback_message_queue;
       if (Array.isArray(resp.app_json_db_migration_execution_queue)) state.appJsonDbMigrationExecutionQueue = resp.app_json_db_migration_execution_queue;
+      if (Array.isArray(resp.app_release_cutover_checklist)) state.appReleaseCutoverChecklist = resp.app_release_cutover_checklist;
+      if (Array.isArray(resp.app_payment_exception_decision_queue)) state.appPaymentExceptionDecisionQueue = resp.app_payment_exception_decision_queue;
+      if (Array.isArray(resp.app_equipment_return_to_service_gate_queue)) state.appEquipmentReturnToServiceGateQueue = resp.app_equipment_return_to_service_gate_queue;
+      if (Array.isArray(resp.app_local_search_evidence_queue)) state.appLocalSearchEvidenceQueue = resp.app_local_search_evidence_queue;
+      if (Array.isArray(resp.app_css_drift_watchlist)) state.appCssDriftWatchlist = resp.app_css_drift_watchlist;
+      if (Array.isArray(resp.app_runtime_fallback_test_plan)) state.appRuntimeFallbackTestPlan = resp.app_runtime_fallback_test_plan;
+      if (Array.isArray(resp.app_json_db_source_of_truth_queue)) state.appJsonDbSourceOfTruthQueue = resp.app_json_db_source_of_truth_queue;
+
       state.counts = {
         users: state.directoryPagination.people?.total || state.users.length,
         sites: Array.isArray(state.sites) ? state.sites.length : 0,
@@ -5743,7 +5808,15 @@
           appEquipmentMobileScanValidationQueue: Array.isArray(payload?.app_equipment_mobile_scan_validation_queue) ? payload.app_equipment_mobile_scan_validation_queue : state.appEquipmentMobileScanValidationQueue,
           appLocalSeoReleaseValidationQueue: Array.isArray(payload?.app_local_seo_release_validation_queue) ? payload.app_local_seo_release_validation_queue : state.appLocalSeoReleaseValidationQueue,
           appRuntimeFallbackMessageQueue: Array.isArray(payload?.app_runtime_fallback_message_queue) ? payload.app_runtime_fallback_message_queue : state.appRuntimeFallbackMessageQueue,
-          appJsonDbMigrationExecutionQueue: Array.isArray(payload?.app_json_db_migration_execution_queue) ? payload.app_json_db_migration_execution_queue : state.appJsonDbMigrationExecutionQueue
+          appJsonDbMigrationExecutionQueue: Array.isArray(payload?.app_json_db_migration_execution_queue) ? payload.app_json_db_migration_execution_queue : state.appJsonDbMigrationExecutionQueue,
+          appReleaseCutoverChecklist: Array.isArray(payload?.app_release_cutover_checklist) ? payload.app_release_cutover_checklist : state.appReleaseCutoverChecklist,
+          appPaymentExceptionDecisionQueue: Array.isArray(payload?.app_payment_exception_decision_queue) ? payload.app_payment_exception_decision_queue : state.appPaymentExceptionDecisionQueue,
+          appEquipmentReturnToServiceGateQueue: Array.isArray(payload?.app_equipment_return_to_service_gate_queue) ? payload.app_equipment_return_to_service_gate_queue : state.appEquipmentReturnToServiceGateQueue,
+          appLocalSearchEvidenceQueue: Array.isArray(payload?.app_local_search_evidence_queue) ? payload.app_local_search_evidence_queue : state.appLocalSearchEvidenceQueue,
+          appCssDriftWatchlist: Array.isArray(payload?.app_css_drift_watchlist) ? payload.app_css_drift_watchlist : state.appCssDriftWatchlist,
+          appRuntimeFallbackTestPlan: Array.isArray(payload?.app_runtime_fallback_test_plan) ? payload.app_runtime_fallback_test_plan : state.appRuntimeFallbackTestPlan,
+          appJsonDbSourceOfTruthQueue: Array.isArray(payload?.app_json_db_source_of_truth_queue) ? payload.app_json_db_source_of_truth_queue : state.appJsonDbSourceOfTruthQueue
+
         };
         const e = els();
         if (e.staffPosition) {
@@ -6881,6 +6954,91 @@
             <td class="admin-table-note">${escHtml(row.execution_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
           </tr>
         `).join('') || '<tr><td colspan="5" class="muted">No JSON/DB migration execution rows loaded yet. Apply schema 135.</td></tr>';
+      }
+
+      if (e.releaseCutoverChecklistBody) {
+        const rows = Array.isArray(state.appReleaseCutoverChecklist) ? state.appReleaseCutoverChecklist : [];
+        e.releaseCutoverChecklistBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.cutover_area || '')}<div class="muted">${escHtml(row.route_hint || '')}</div></td>
+            <td><strong>${escHtml(row.cutover_title || '')}</strong></td>
+            <td>${renderStatusPill(row.cutover_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.cutover_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.preflight_hint || '')}<div class="muted">${escHtml(row.deploy_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.rollback_hint || '')}<div class="muted">${escHtml(row.owner_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No release cutover rows loaded yet. Apply schema 136.</td></tr>';
+      }
+      if (e.paymentExceptionDecisionBody) {
+        const rows = Array.isArray(state.appPaymentExceptionDecisionQueue) ? state.appPaymentExceptionDecisionQueue : [];
+        e.paymentExceptionDecisionBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.exception_area || '')}</td>
+            <td><strong>${escHtml(row.decision_title || '')}</strong></td>
+            <td>${renderStatusPill(row.decision_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.decision_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.validation_hint || '')}<div class="muted">${escHtml(row.posting_hint || '')}</div><div class="muted">${escHtml(row.approval_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.rollback_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No payment exception decision rows loaded yet. Apply schema 136.</td></tr>';
+      }
+      if (e.equipmentReturnToServiceGateBody) {
+        const rows = Array.isArray(state.appEquipmentReturnToServiceGateQueue) ? state.appEquipmentReturnToServiceGateQueue : [];
+        e.equipmentReturnToServiceGateBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.gate_area || '')}</td>
+            <td><strong>${escHtml(row.gate_title || '')}</strong></td>
+            <td>${renderStatusPill(row.gate_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.gate_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.scan_requirement_hint || '')}<div class="muted">${escHtml(row.accessory_requirement_hint || '')}</div><div class="muted">${escHtml(row.verifier_requirement_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.service_task_requirement_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No equipment return-to-service gate rows loaded yet. Apply schema 136.</td></tr>';
+      }
+      if (e.localSearchEvidenceBody) {
+        const rows = Array.isArray(state.appLocalSearchEvidenceQueue) ? state.appLocalSearchEvidenceQueue : [];
+        e.localSearchEvidenceBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.route_key || '')}<div class="muted">${escHtml(row.evidence_area || '')}</div></td>
+            <td><strong>${escHtml(row.evidence_title || '')}</strong></td>
+            <td>${renderStatusPill(row.evidence_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.evidence_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.phrase_hint || '')}<div class="muted">${escHtml(row.proof_hint || '')}</div><div class="muted">${escHtml(row.internal_link_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.publication_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No local search evidence rows loaded yet. Apply schema 136.</td></tr>';
+      }
+      if (e.cssDriftWatchlistBody) {
+        const rows = Array.isArray(state.appCssDriftWatchlist) ? state.appCssDriftWatchlist : [];
+        e.cssDriftWatchlistBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.component_area || '')}</td>
+            <td><strong>${escHtml(row.component_title || '')}</strong></td>
+            <td>${renderStatusPill(row.watch_status || 'review', /pass|covered|ready|done|completed|in_progress/i.test(String(row.watch_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.token_hint || '')}<div class="muted">${escHtml(row.selector_hint || '')}</div><div class="muted">${escHtml(row.drift_risk_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.test_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No CSS drift watchlist rows loaded yet. Apply schema 136.</td></tr>';
+      }
+      if (e.runtimeFallbackTestPlanBody) {
+        const rows = Array.isArray(state.appRuntimeFallbackTestPlan) ? state.appRuntimeFallbackTestPlan : [];
+        e.runtimeFallbackTestPlanBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.app_surface || '')}</td>
+            <td><strong>${escHtml(row.test_title || '')}</strong></td>
+            <td>${renderStatusPill(row.test_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.test_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.failure_mode || '')}<div class="muted">${escHtml(row.user_copy_hint || '')}</div><div class="muted">${escHtml(row.telemetry_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.retry_hint || '')}<div class="muted">${escHtml(row.owner_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No runtime fallback test rows loaded yet. Apply schema 136.</td></tr>';
+      }
+      if (e.jsonDbSourceOfTruthBody) {
+        const rows = Array.isArray(state.appJsonDbSourceOfTruthQueue) ? state.appJsonDbSourceOfTruthQueue : [];
+        e.jsonDbSourceOfTruthBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.data_area || '')}</td>
+            <td><strong>${escHtml(row.source_title || '')}</strong></td>
+            <td>${renderStatusPill(row.source_status || 'review', /pass|covered|ready|done|completed|in_progress/i.test(String(row.source_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.current_source_hint || '')}<div class="muted">${escHtml(row.target_source_hint || '')}</div><div class="muted">${escHtml(row.migration_rule_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.validation_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No JSON/DB source-of-truth rows loaded yet. Apply schema 136.</td></tr>';
       }
       if (e.seoSmokeBody) {
         const seoRows = Array.isArray(state.publicSeoSmokeCheck) ? state.publicSeoSmokeCheck : [];
