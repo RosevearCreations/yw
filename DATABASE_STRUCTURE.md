@@ -205,3 +205,48 @@ Next 20 steps:
 19. Add release cutover checklist steps for Supabase schema, functions, cache clear, and smoke evidence.
 20. Keep documenting every pass in active Markdown and the full schema reference.
 
+## Build 2026-06-07b / Schema 139 Update
+
+Completed 20-step pass:
+1. Added schema 139 accounting cutover trial-balance queue.
+2. Added equipment QR/barcode scan asset rollout queue.
+3. Added local SEO prominence publication queue.
+4. Added CSS/mobile release guard queue.
+5. Added runtime support playbook queue.
+6. Added data-source migration lock queue.
+7. Updated canonical full schema through schema 139.
+8. Updated Admin directory schema 139 view loading.
+9. Updated Admin readiness UI schema 139 rendering.
+10. Updated smoke checks for schema 139.
+11. Updated cache marker to 2026-06-07b.
+12. Preserved sitemap and robots assets.
+13. Confirmed one-H1 public page smoke check remains active.
+14. Confirmed CSS brace-balance smoke check remains active.
+15. Retired active root test_write files.
+16. Retired helper Markdown from active root into archive.
+17. Preserved Markdown archive snapshots.
+18. Kept schema 128 roadmap-column compatibility repair.
+19. Added documentation for schema 139.
+20. Refreshed this Markdown file with completed and next-step actions.
+
+Next 20-step direction:
+1. Build real payment apply/reverse/adjust/refund write actions.
+2. Add bank CSV preview and rejected-row screen.
+3. Add reconciliation match/split/undo/signoff screen.
+4. Add HST/GST proof upload and remittance signoff.
+5. Add payroll remittance proof and close-period linkage.
+6. Add accountant export package manifest download.
+7. Add equipment camera scanning with manual fallback.
+8. Add reusable equipment accessory checklist templates.
+9. Add role-gated return-to-service closeout.
+10. Link equipment service costs to job profitability.
+11. Add route approval before sitemap publication.
+12. Add broken-link and broken-asset checks.
+13. Add public image-alt scoring and proof review.
+14. Add CSS/mobile visual regression notes for admin tables.
+15. Add offline conflict resolution for field/mobile forms.
+16. Add runtime support messages directly in failed panels.
+17. Decide JSON vs DB source-of-truth for duplicated datasets.
+18. Add migration compatibility dry-run checks.
+19. Add release cutover signoff workflow.
+20. Add post-deploy service-worker and Edge Function log verification.
