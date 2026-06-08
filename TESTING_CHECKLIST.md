@@ -166,3 +166,51 @@ Next 20 steps to move toward:
 19. Add release cutover proof attachments.
 20. Add final live deployment proof checklist.
 
+## Build 2026-06-07a / Schema 138 Update
+
+Completed this pass:
+
+1. Added schema 138 release readiness signoff queues.
+2. Added accounting exception closure tracking for unapplied cash, low-confidence reconciliation rows, and remittance proof gaps.
+3. Added equipment service verification tracking for scan gates, accessory kit closeout, and failed-test cost links.
+4. Added local SEO refresh tracking for homepage wording, service proof depth, sitemap/robots freshness, and internal-link discipline.
+5. Added CSS/mobile regression tracking for Admin readiness tables, equipment action buttons, and offline/runtime banners.
+6. Added runtime observability release tracking for optional-view fallbacks, stale service worker cache recovery, and offline draft conflicts.
+7. Updated Admin directory to load schema 138 views with safe optional fallbacks.
+8. Updated Admin UI readiness tables to display the schema 138 queues.
+9. Updated full schema reference to expect schema 138.
+10. Updated smoke checks to verify schema 138, sitemap freshness, and cache marker 2026-06-07a.
+11. Updated sitemap lastmod to 2026-06-07 and preserved robots.txt.
+12. Preserved the one-H1 public-page rule.
+13. Preserved CSS brace-balance validation.
+14. Retired root helper Markdown into archive.
+15. Retired root test_write files into archive.
+16. Created a Markdown snapshot for the previous build.
+17. Kept the schema 128 roadmap-column repair in the canonical full-schema path.
+18. Kept service worker cache marker aligned with index.html.
+19. Kept Admin fallback guidance visible when optional schema views are not deployed yet.
+20. Updated active Markdown so the release state, roadmap, issues, testing, deployment, and database notes agree.
+
+Next 20 steps:
+
+1. Turn payment exception closure rows into working Admin buttons.
+2. Add apply/reverse/refund/write-off server actions with reviewer notes and period-lock checks.
+3. Add bank CSV preview upload with rejected-row reasons before staging.
+4. Add reconciliation scoring thresholds and manual match/split/undo screens.
+5. Add month-end close proof package generation with export manifest.
+6. Add HST/GST filing proof upload and filed/remitted date controls.
+7. Add payroll remittance proof upload and close-period lock checks.
+8. Add equipment return-to-service server enforcement for verifier role and proof completion.
+9. Add camera QR/barcode scanning where the browser supports it.
+10. Add reusable equipment accessory kit templates in the database.
+11. Add automatic job financial event candidates from failed equipment tests and service tasks.
+12. Add local SEO proof blocks from approved jobs/media without creating thin location pages.
+13. Add broken-link and image-alt smoke checks for every approved public route.
+14. Add structured-data review checks that match visible page content.
+15. Convert dense Admin readiness tables to mobile card layouts where tables are too wide.
+16. Add offline draft conflict UI choices: Retry, Keep Local, and Discard Local.
+17. Add runtime observability counters for optional-view fallback, stale cache, and failed sync.
+18. Finish JSON/DB source-of-truth decisions for duplicated reference data.
+19. Add release cutover checklist steps for Supabase schema, functions, cache clear, and smoke evidence.
+20. Keep documenting every pass in active Markdown and the full schema reference.
+
