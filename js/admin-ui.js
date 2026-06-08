@@ -234,6 +234,12 @@
       appCssDriftWatchlist: [],
       appRuntimeFallbackTestPlan: [],
       appJsonDbSourceOfTruthQueue: [],
+      appPaymentReconciliationCutoverDrillQueue: [],
+      appEquipmentServiceCostRecoveryQueue: [],
+      appLocalSeoProminenceActionQueue: [],
+      appCssAccessibilityFallbackQueue: [],
+      appDataMigrationValidationQueue: [],
+      appRuntimeReleaseMessageQueue: [],
       actorRole: '',
       actorProfileId: '',
       directoryPagination: {
@@ -843,6 +849,43 @@
           <div class="table-scroll" style="margin-top:12px;">
             <table id="ad_json_db_source_of_truth_table">
               <thead><tr><th>Data Area</th><th>Source-of-Truth Decision</th><th>Status</th><th>Current / Target / Rule</th><th>Validation / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_payment_reconciliation_cutover_drill_table">
+              <thead><tr><th>Area</th><th>Cutover Drill</th><th>Status</th><th>Validate / Post / Signoff</th><th>Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_equipment_service_cost_recovery_table">
+              <thead><tr><th>Area</th><th>Cost Recovery</th><th>Status</th><th>Source Cost / Job Link</th><th>Approval / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_local_seo_prominence_action_table">
+              <thead><tr><th>Route</th><th>SEO Prominence Action</th><th>Status</th><th>Wording / Proof / Links</th><th>Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_css_accessibility_fallback_table">
+              <thead><tr><th>Area</th><th>CSS / Accessibility Check</th><th>Status</th><th>Accessibility / Selector</th><th>Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_data_migration_validation_table">
+              <thead><tr><th>Data Area</th><th>Migration Validation</th><th>Status</th><th>Current / Target / Validation</th><th>Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_runtime_release_message_table">
+              <thead><tr><th>Surface</th><th>Release Message</th><th>Status</th><th>Failure / User / Operator</th><th>Retry / Fallback</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -1676,6 +1719,12 @@
         cssDriftWatchlistBody: document.querySelector('#ad_css_drift_watchlist_table tbody'),
         runtimeFallbackTestPlanBody: document.querySelector('#ad_runtime_fallback_test_plan_table tbody'),
         jsonDbSourceOfTruthBody: document.querySelector('#ad_json_db_source_of_truth_table tbody'),
+        paymentReconciliationCutoverDrillBody: document.querySelector('#ad_payment_reconciliation_cutover_drill_table tbody'),
+        equipmentServiceCostRecoveryBody: document.querySelector('#ad_equipment_service_cost_recovery_table tbody'),
+        localSeoProminenceActionBody: document.querySelector('#ad_local_seo_prominence_action_table tbody'),
+        cssAccessibilityFallbackBody: document.querySelector('#ad_css_accessibility_fallback_table tbody'),
+        dataMigrationValidationBody: document.querySelector('#ad_data_migration_validation_table tbody'),
+        runtimeReleaseMessageBody: document.querySelector('#ad_runtime_release_message_table tbody'),
         seoSmokeBody: document.querySelector('#ad_seo_smoke_table tbody'),
         bankCsvImportBody: document.querySelector('#ad_bank_csv_import_table tbody'),
         backupRehearsalBody: document.querySelector('#ad_backup_rehearsal_table tbody'),
@@ -5815,7 +5864,13 @@
           appLocalSearchEvidenceQueue: Array.isArray(payload?.app_local_search_evidence_queue) ? payload.app_local_search_evidence_queue : state.appLocalSearchEvidenceQueue,
           appCssDriftWatchlist: Array.isArray(payload?.app_css_drift_watchlist) ? payload.app_css_drift_watchlist : state.appCssDriftWatchlist,
           appRuntimeFallbackTestPlan: Array.isArray(payload?.app_runtime_fallback_test_plan) ? payload.app_runtime_fallback_test_plan : state.appRuntimeFallbackTestPlan,
-          appJsonDbSourceOfTruthQueue: Array.isArray(payload?.app_json_db_source_of_truth_queue) ? payload.app_json_db_source_of_truth_queue : state.appJsonDbSourceOfTruthQueue
+          appJsonDbSourceOfTruthQueue: Array.isArray(payload?.app_json_db_source_of_truth_queue) ? payload.app_json_db_source_of_truth_queue : state.appJsonDbSourceOfTruthQueue,
+          appPaymentReconciliationCutoverDrillQueue: Array.isArray(payload?.app_payment_reconciliation_cutover_drill_queue) ? payload.app_payment_reconciliation_cutover_drill_queue : state.appPaymentReconciliationCutoverDrillQueue,
+          appEquipmentServiceCostRecoveryQueue: Array.isArray(payload?.app_equipment_service_cost_recovery_queue) ? payload.app_equipment_service_cost_recovery_queue : state.appEquipmentServiceCostRecoveryQueue,
+          appLocalSeoProminenceActionQueue: Array.isArray(payload?.app_local_seo_prominence_action_queue) ? payload.app_local_seo_prominence_action_queue : state.appLocalSeoProminenceActionQueue,
+          appCssAccessibilityFallbackQueue: Array.isArray(payload?.app_css_accessibility_fallback_queue) ? payload.app_css_accessibility_fallback_queue : state.appCssAccessibilityFallbackQueue,
+          appDataMigrationValidationQueue: Array.isArray(payload?.app_data_migration_validation_queue) ? payload.app_data_migration_validation_queue : state.appDataMigrationValidationQueue,
+          appRuntimeReleaseMessageQueue: Array.isArray(payload?.app_runtime_release_message_queue) ? payload.app_runtime_release_message_queue : state.appRuntimeReleaseMessageQueue
 
         };
         const e = els();
@@ -7040,6 +7095,80 @@
           </tr>
         `).join('') || '<tr><td colspan="5" class="muted">No JSON/DB source-of-truth rows loaded yet. Apply schema 136.</td></tr>';
       }
+
+      if (e.paymentReconciliationCutoverDrillBody) {
+        const rows = Array.isArray(state.appPaymentReconciliationCutoverDrillQueue) ? state.appPaymentReconciliationCutoverDrillQueue : [];
+        e.paymentReconciliationCutoverDrillBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.drill_area || '')}</td>
+            <td><strong>${escHtml(row.drill_title || '')}</strong></td>
+            <td>${renderStatusPill(row.drill_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.drill_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.validation_hint || '')}<div class="muted">${escHtml(row.posting_hint || '')}</div><div class="muted">${escHtml(row.signoff_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No payment/reconciliation cutover drill rows loaded yet. Apply schema 137.</td></tr>';
+      }
+      if (e.equipmentServiceCostRecoveryBody) {
+        const rows = Array.isArray(state.appEquipmentServiceCostRecoveryQueue) ? state.appEquipmentServiceCostRecoveryQueue : [];
+        e.equipmentServiceCostRecoveryBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.recovery_area || '')}</td>
+            <td><strong>${escHtml(row.recovery_title || '')}</strong></td>
+            <td>${renderStatusPill(row.recovery_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.recovery_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.source_cost_hint || '')}<div class="muted">${escHtml(row.job_link_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.approval_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No equipment service cost recovery rows loaded yet. Apply schema 137.</td></tr>';
+      }
+      if (e.localSeoProminenceActionBody) {
+        const rows = Array.isArray(state.appLocalSeoProminenceActionQueue) ? state.appLocalSeoProminenceActionQueue : [];
+        e.localSeoProminenceActionBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.route_key || '')}<div class="muted">${escHtml(row.action_area || '')}</div></td>
+            <td><strong>${escHtml(row.action_title || '')}</strong></td>
+            <td>${renderStatusPill(row.action_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.action_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.prominent_wording_hint || '')}<div class="muted">${escHtml(row.proof_hint || '')}</div><div class="muted">${escHtml(row.internal_link_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No local SEO prominence rows loaded yet. Apply schema 137.</td></tr>';
+      }
+      if (e.cssAccessibilityFallbackBody) {
+        const rows = Array.isArray(state.appCssAccessibilityFallbackQueue) ? state.appCssAccessibilityFallbackQueue : [];
+        e.cssAccessibilityFallbackBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.component_area || '')}</td>
+            <td><strong>${escHtml(row.check_title || '')}</strong></td>
+            <td>${renderStatusPill(row.check_status || 'review', /pass|covered|ready|done|completed|in_progress/i.test(String(row.check_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.accessibility_hint || '')}<div class="muted">${escHtml(row.selector_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No CSS accessibility fallback rows loaded yet. Apply schema 137.</td></tr>';
+      }
+      if (e.dataMigrationValidationBody) {
+        const rows = Array.isArray(state.appDataMigrationValidationQueue) ? state.appDataMigrationValidationQueue : [];
+        e.dataMigrationValidationBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.data_area || '')}</td>
+            <td><strong>${escHtml(row.validation_title || '')}</strong></td>
+            <td>${renderStatusPill(row.validation_status || 'review', /pass|covered|ready|done|completed|in_progress/i.test(String(row.validation_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.current_source_hint || '')}<div class="muted">${escHtml(row.target_source_hint || '')}</div><div class="muted">${escHtml(row.validation_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No data migration validation rows loaded yet. Apply schema 137.</td></tr>';
+      }
+      if (e.runtimeReleaseMessageBody) {
+        const rows = Array.isArray(state.appRuntimeReleaseMessageQueue) ? state.appRuntimeReleaseMessageQueue : [];
+        e.runtimeReleaseMessageBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.app_surface || '')}</td>
+            <td><strong>${escHtml(row.message_title || '')}</strong></td>
+            <td>${renderStatusPill(row.message_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.message_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.failure_hint || '')}<div class="muted">${escHtml(row.user_message_hint || '')}</div><div class="muted">${escHtml(row.operator_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.retry_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No runtime release message rows loaded yet. Apply schema 137.</td></tr>';
+      }
+
       if (e.seoSmokeBody) {
         const seoRows = Array.isArray(state.publicSeoSmokeCheck) ? state.publicSeoSmokeCheck : [];
         e.seoSmokeBody.innerHTML = seoRows.slice(0, 80).map((row) => `
