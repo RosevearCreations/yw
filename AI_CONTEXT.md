@@ -107,3 +107,53 @@ This pass adds schema 136 and keeps the active Markdown, schema reference, Admin
 19. Move repeated JSON/static route data toward DB-owned source-of-truth rows where it reduces duplication.
 20. Package accountant-ready exports that include payment, reconciliation, remittance, close, and proof metadata.
 
+## Build 2026-06-06d / Schema 137 Update
+
+This pass adds schema 137 and keeps the active Markdown, full schema reference, Admin readiness UI, public SEO guardrails, one-H1 rule, CSS sanity checks, data migration notes, and fallback checks aligned.
+
+Completed 20 steps this pass:
+
+1. Added schema 137 migration for release depth controls.
+2. Added payment/reconciliation cutover drill queue.
+3. Added equipment service cost recovery queue.
+4. Added local SEO prominence action queue.
+5. Added CSS accessibility fallback queue.
+6. Added data migration validation queue.
+7. Added runtime release message queue.
+8. Updated the canonical full schema reference to schema 137.
+9. Added Admin Directory loading for schema 137 views.
+10. Added Admin Production Readiness tables for schema 137 rows.
+11. Updated cache/version marker to 2026-06-06d.
+12. Restored required Markdown archive snapshots.
+13. Retired active root test_write files.
+14. Retired helper Markdown from the active root.
+15. Preserved sitemap.xml and robots.txt.
+16. Preserved the one-H1 public page rule.
+17. Preserved CSS brace-balance checks.
+18. Preserved Edge Function parse checks.
+19. Added smoke checks for schema 137 readiness.
+20. Added this schema 137 note across the active Markdown set.
+
+Next 20 steps to move toward:
+
+1. Build live payment apply/reverse/credit/refund/write-off buttons.
+2. Build bank CSV preview and import staging UI.
+3. Build reconciliation scoring, manual match, split match, undo, and signoff screens.
+4. Build month-end close lock/reopen controls.
+5. Build accountant export manifest packaging.
+6. Add equipment accessory templates as DB-managed records.
+7. Add real camera QR/barcode scan support with manual fallback.
+8. Require return-to-service proof before locked-out equipment becomes available.
+9. Link failed-test service tasks to job financial cost rows.
+10. Add local proof blocks for approved services and service areas.
+11. Generate sitemap.xml and robots.txt from approved DB route rows.
+12. Add broken-link, broken-asset, image-alt, and JSON-LD smoke checks.
+13. Add mobile offline conflict resolution choices.
+14. Add runtime fallback telemetry and drill history.
+15. Use the runtime message catalog in visible UI errors.
+16. Add CSS contrast and touch-target validation.
+17. Convert high-duplication JSON sources to DB-backed registries.
+18. Add data migration export/import proof checks.
+19. Add release cutover proof attachments.
+20. Add final live deployment proof checklist.
+
