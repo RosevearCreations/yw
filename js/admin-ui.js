@@ -246,6 +246,12 @@
       appLocalSeoRefreshQueue: [],
       appCssMobileRegressionQueue: [],
       appRuntimeObservabilityReleaseQueue: [],
+      appAccountingCutoverTrialBalanceQueue: [],
+      appEquipmentScanAssetRolloutQueue: [],
+      appLocalSeoProminencePublicationQueue: [],
+      appCssMobileReleaseGuardQueue: [],
+      appRuntimeSupportPlaybookQueue: [],
+      appDataSourceMigrationLockQueue: [],
       actorRole: '',
       actorProfileId: '',
       directoryPagination: {
@@ -928,6 +934,42 @@
           <div class="table-scroll" style="margin-top:12px;">
             <table id="ad_runtime_observability_release_table">
               <thead><tr><th>Surface</th><th>Observability</th><th>Status</th><th>Signal / Message</th><th>Operator / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_accounting_cutover_trial_balance_table">
+              <thead><tr><th>Area</th><th>Cutover Trial Balance</th><th>Status</th><th>Source / Exception</th><th>Lock / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_equipment_scan_asset_rollout_table">
+              <thead><tr><th>Area</th><th>Scan Asset Rollout</th><th>Status</th><th>Asset / Scan Test</th><th>Verifier / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_local_seo_prominence_publication_table">
+              <thead><tr><th>Route</th><th>SEO Prominence Publication</th><th>Status</th><th>Prominence / Evidence / Links</th><th>Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_css_mobile_release_guard_table">
+              <thead><tr><th>Area</th><th>CSS/Mobile Release Guard</th><th>Status</th><th>Selector / Mobile / Accessibility</th><th>Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_runtime_support_playbook_table">
+              <thead><tr><th>Surface</th><th>Support Playbook</th><th>Status</th><th>Detection / User Message</th><th>Support / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_data_source_migration_lock_table">
+              <thead><tr><th>Data Area</th><th>Migration Lock</th><th>Status</th><th>Current / Target</th><th>Validation / Fallback</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -1773,6 +1815,12 @@
         localSeoRefreshBody: document.querySelector('#ad_local_seo_refresh_table tbody'),
         cssMobileRegressionBody: document.querySelector('#ad_css_mobile_regression_table tbody'),
         runtimeObservabilityReleaseBody: document.querySelector('#ad_runtime_observability_release_table tbody'),
+        accountingCutoverTrialBalanceBody: document.querySelector('#ad_accounting_cutover_trial_balance_table tbody'),
+        equipmentScanAssetRolloutBody: document.querySelector('#ad_equipment_scan_asset_rollout_table tbody'),
+        localSeoProminencePublicationBody: document.querySelector('#ad_local_seo_prominence_publication_table tbody'),
+        cssMobileReleaseGuardBody: document.querySelector('#ad_css_mobile_release_guard_table tbody'),
+        runtimeSupportPlaybookBody: document.querySelector('#ad_runtime_support_playbook_table tbody'),
+        dataSourceMigrationLockBody: document.querySelector('#ad_data_source_migration_lock_table tbody'),
         seoSmokeBody: document.querySelector('#ad_seo_smoke_table tbody'),
         bankCsvImportBody: document.querySelector('#ad_bank_csv_import_table tbody'),
         backupRehearsalBody: document.querySelector('#ad_backup_rehearsal_table tbody'),
@@ -5925,6 +5973,12 @@
           appLocalSeoRefreshQueue: Array.isArray(payload?.app_local_seo_refresh_queue) ? payload.app_local_seo_refresh_queue : state.appLocalSeoRefreshQueue,
           appCssMobileRegressionQueue: Array.isArray(payload?.app_css_mobile_regression_queue) ? payload.app_css_mobile_regression_queue : state.appCssMobileRegressionQueue,
           appRuntimeObservabilityReleaseQueue: Array.isArray(payload?.app_runtime_observability_release_queue) ? payload.app_runtime_observability_release_queue : state.appRuntimeObservabilityReleaseQueue
+,          appAccountingCutoverTrialBalanceQueue: Array.isArray(payload?.app_accounting_cutover_trial_balance_queue) ? payload.app_accounting_cutover_trial_balance_queue : state.appAccountingCutoverTrialBalanceQueue,
+          appEquipmentScanAssetRolloutQueue: Array.isArray(payload?.app_equipment_scan_asset_rollout_queue) ? payload.app_equipment_scan_asset_rollout_queue : state.appEquipmentScanAssetRolloutQueue,
+          appLocalSeoProminencePublicationQueue: Array.isArray(payload?.app_local_seo_prominence_publication_queue) ? payload.app_local_seo_prominence_publication_queue : state.appLocalSeoProminencePublicationQueue,
+          appCssMobileReleaseGuardQueue: Array.isArray(payload?.app_css_mobile_release_guard_queue) ? payload.app_css_mobile_release_guard_queue : state.appCssMobileReleaseGuardQueue,
+          appRuntimeSupportPlaybookQueue: Array.isArray(payload?.app_runtime_support_playbook_queue) ? payload.app_runtime_support_playbook_queue : state.appRuntimeSupportPlaybookQueue,
+          appDataSourceMigrationLockQueue: Array.isArray(payload?.app_data_source_migration_lock_queue) ? payload.app_data_source_migration_lock_queue : state.appDataSourceMigrationLockQueue
 
         };
         const e = els();
@@ -7294,6 +7348,79 @@
             <td class="admin-table-note">${escHtml(row.operator_action_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
           </tr>
         `).join('') || '<tr><td colspan="5" class="muted">No runtime observability release rows loaded yet. Apply schema 138.</td></tr>';
+      }
+
+      if (e.accountingCutoverTrialBalanceBody) {
+        const rows = Array.isArray(state.appAccountingCutoverTrialBalanceQueue) ? state.appAccountingCutoverTrialBalanceQueue : [];
+        e.accountingCutoverTrialBalanceBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.cutover_area || '')}</td>
+            <td><strong>${escHtml(row.cutover_title || '')}</strong></td>
+            <td>${renderStatusPill(row.cutover_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.cutover_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.source_balance_hint || '')}<div class="muted">${escHtml(row.exception_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.posting_lock_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No accounting cutover trial-balance rows loaded yet. Apply schema 139.</td></tr>';
+      }
+      if (e.equipmentScanAssetRolloutBody) {
+        const rows = Array.isArray(state.appEquipmentScanAssetRolloutQueue) ? state.appEquipmentScanAssetRolloutQueue : [];
+        e.equipmentScanAssetRolloutBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.rollout_area || '')}</td>
+            <td><strong>${escHtml(row.rollout_title || '')}</strong></td>
+            <td>${renderStatusPill(row.rollout_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.rollout_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.asset_tag_hint || '')}<div class="muted">${escHtml(row.scan_test_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.verifier_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No equipment scan asset rollout rows loaded yet. Apply schema 139.</td></tr>';
+      }
+      if (e.localSeoProminencePublicationBody) {
+        const rows = Array.isArray(state.appLocalSeoProminencePublicationQueue) ? state.appLocalSeoProminencePublicationQueue : [];
+        e.localSeoProminencePublicationBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.route_key || '')}<div class="muted">${escHtml(row.publication_area || '')}</div></td>
+            <td><strong>${escHtml(row.publication_title || '')}</strong></td>
+            <td>${renderStatusPill(row.publication_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.publication_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.prominence_hint || '')}<div class="muted">${escHtml(row.evidence_hint || '')}</div><div class="muted">${escHtml(row.internal_link_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No local SEO prominence publication rows loaded yet. Apply schema 139.</td></tr>';
+      }
+      if (e.cssMobileReleaseGuardBody) {
+        const rows = Array.isArray(state.appCssMobileReleaseGuardQueue) ? state.appCssMobileReleaseGuardQueue : [];
+        e.cssMobileReleaseGuardBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.guard_area || '')}</td>
+            <td><strong>${escHtml(row.guard_title || '')}</strong></td>
+            <td>${renderStatusPill(row.guard_status || 'review', /pass|covered|ready|done|completed|in_progress/i.test(String(row.guard_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.selector_hint || '')}<div class="muted">${escHtml(row.mobile_test_hint || '')}</div><div class="muted">${escHtml(row.accessibility_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No CSS/mobile release guard rows loaded yet. Apply schema 139.</td></tr>';
+      }
+      if (e.runtimeSupportPlaybookBody) {
+        const rows = Array.isArray(state.appRuntimeSupportPlaybookQueue) ? state.appRuntimeSupportPlaybookQueue : [];
+        e.runtimeSupportPlaybookBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.app_surface || '')}</td>
+            <td><strong>${escHtml(row.playbook_title || '')}</strong></td>
+            <td>${renderStatusPill(row.playbook_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.playbook_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.detection_hint || '')}<div class="muted">${escHtml(row.user_message_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.support_action_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No runtime support playbook rows loaded yet. Apply schema 139.</td></tr>';
+      }
+      if (e.dataSourceMigrationLockBody) {
+        const rows = Array.isArray(state.appDataSourceMigrationLockQueue) ? state.appDataSourceMigrationLockQueue : [];
+        e.dataSourceMigrationLockBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.data_area || '')}</td>
+            <td><strong>${escHtml(row.lock_title || '')}</strong></td>
+            <td>${renderStatusPill(row.lock_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.lock_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.current_source_hint || '')}<div class="muted">${escHtml(row.target_source_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.validation_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No data source migration lock rows loaded yet. Apply schema 139.</td></tr>';
       }
 
       if (e.seoSmokeBody) {

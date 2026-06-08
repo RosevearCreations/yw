@@ -306,7 +306,7 @@ addCheck('edge-has-panel-fast-paths', read('supabase/functions/admin-directory/i
 addCheck('schema-has-114-staged-admin-load-marker', schema.includes('114_staged_admin_load_and_cache_fallback_guardrails'), 'Canonical schema should include schema 114 staged Admin load marker.');
 addCheck('admin-loads-staged-scopes-first', adminUi.includes('getRegisteredInitialAdminScopes') && adminUi.includes("let stagedScopes = ['command_center']") && adminUi.includes("scope: 'all',") && adminUi.includes('timeoutMs: 90000'), 'Admin initial load should try staged panel scopes before the heavy all-scope emergency fallback.');
 addCheck('admin-summary-reports-staged-warnings', adminUi.includes('state.adminLoadWarnings') && adminUi.includes('Some panels need retry'), 'Admin UI should report staged panel retry warnings instead of immediately showing only cached data.');
-addCheck('cache-version-2026-06-07a', read('server-worker.js').includes('2026-06-07a') && read('index.html').includes('2026-06-07a'), 'Index and service worker should use the 2026-06-07a asset/cache version.');
+addCheck('cache-version-2026-06-07b', read('server-worker.js').includes('2026-06-07b') && read('index.html').includes('2026-06-07b'), 'Index and service worker should use the 2026-06-07b asset/cache version.');
 
 addCheck('schema-has-115-panel-retry-marker', schema.includes('115_admin_panel_retry_timing_and_command_scope'), 'Canonical schema should include schema 115 panel retry/timing marker.');
 addCheck('admin-has-command-center-fast-path-stage', adminUi.includes("'command_center'") && adminUi.includes('Retry Command Center') && adminUi.includes('recordAdminScopeTiming'), 'Admin UI should load a command_center scope and show retry/timing state.');
@@ -350,7 +350,7 @@ addCheck('admin-renders-action-permission-table', adminUi.includes('ad_action_pe
 addCheck('admin-renders-schema-preflight-table', adminUi.includes('ad_schema_preflight_table') && adminUi.includes('adminSchemaPreflightChecks'), 'Admin UI should render schema preflight rows in Production Readiness.');
 addCheck('admin-renders-panel-retry-policy-table', adminUi.includes('ad_panel_retry_policy_table') && adminUi.includes('adminPanelRetryPolicy'), 'Admin UI should render panel retry/backoff policy rows.');
 addCheck('edge-loads-admin-action-permission-registry', read('supabase/functions/admin-directory/index.ts').includes('v_admin_action_permission_registry') && read('supabase/functions/admin-directory/index.ts').includes('actor_role'), 'admin-directory should return action permission registry rows and actor_role for role-aware disabled states.');
-addCheck('cache-version-2026-06-07a-latest', read('server-worker.js').includes('2026-06-07a') && read('index.html').includes('2026-06-07a'), 'Index and service worker should use the 2026-06-07a asset/cache version.');
+addCheck('cache-version-2026-06-07b-latest', read('server-worker.js').includes('2026-06-07b') && read('index.html').includes('2026-06-07b'), 'Index and service worker should use the 2026-06-07b asset/cache version.');
 
 
 addCheck('schema-has-120-ontario-mobile-marker', schema.includes('120_ontario_ohsa_mobile_first_app_guardrails'), 'Canonical schema should include schema 120 Ontario OHSA/mobile-first marker.');
@@ -380,7 +380,7 @@ addCheck('mobile-today-script-loaded', indexHtml.includes('/js/mobile-today.js')
 addCheck('mobile-quick-nav-six-actions', indexHtml.includes('data-mobile-quick="today"') && indexHtml.includes('data-mobile-quick="hseops"') && indexHtml.includes('data-mobile-quick="admin"'), 'Mobile quick nav should include Today, Safety, and Admin actions.');
 addCheck('mobile-quick-badges-present', indexHtml.includes('data-mobile-badge="today"') && read('js/mobile-menu.js').includes('syncBadges') && read('js/outbox.js').includes('notifyQueueChanged'), 'Mobile quick nav badges should be wired to outbox/action queue changes.');
 addCheck('style-has-mobile-today-cards', read('style.css').includes('.mobile-today-grid') && read('style.css').includes('.mobile-install-card') && read('style.css').includes('.mobile-quick-badge'), 'style.css should include mobile Today cards, PWA install card, and quick badge rules.');
-addCheck('service-worker-caches-mobile-today', read('server-worker.js').includes('/js/mobile-today.js') && read('server-worker.js').includes('2026-06-07a'), 'Service worker should cache js/mobile-today.js with the latest cache version.');
+addCheck('service-worker-caches-mobile-today', read('server-worker.js').includes('/js/mobile-today.js') && read('server-worker.js').includes('2026-06-07b'), 'Service worker should cache js/mobile-today.js with the latest cache version.');
 addCheck('service-worker-install-fallback', read('server-worker.js').includes('cacheAppShellWithFallback') && read('server-worker.js').includes('Promise.allSettled'), 'Service worker should install with per-asset cache fallback.');
 addCheck('edge-loads-mobile-today-views', read('supabase/functions/admin-directory/index.ts').includes('v_mobile_today_action_registry') && read('supabase/functions/admin-directory/index.ts').includes('v_mobile_pwa_install_quality_gates'), 'admin-directory should return mobile Today/PWA quality gate views.');
 addCheck('active-docs-archived-snapshot-2026-05-29a', fileExists('archive/markdown-current-snapshot-2026-05-29a/README.md'), 'Archive snapshot should preserve the previous root README for the 2026-05-29a pass.');
@@ -390,7 +390,7 @@ addCheck('schema-has-122-mobile-form-stepper-marker', schema.includes('122_mobil
 addCheck('schema-has-mobile-form-stepper-registry', schema.includes('v_mobile_form_stepper_registry') && schema.includes('mobile_form_stepper_registry'), 'Canonical schema should include mobile form stepper registry and view.');
 addCheck('schema-has-mobile-form-quality-gates', schema.includes('v_mobile_form_quality_gates') && schema.includes('mobile_form_quality_gates'), 'Canonical schema should include mobile form quality gates and view.');
 addCheck('mobile-form-helper-loaded', indexHtml.includes('/js/mobile-form-helper.js') && fileExists('js/mobile-form-helper.js'), 'index.html should load js/mobile-form-helper.js.');
-addCheck('mobile-form-helper-cached', read('server-worker.js').includes('/js/mobile-form-helper.js') && read('server-worker.js').includes('2026-06-07a'), 'Service worker should cache js/mobile-form-helper.js with the latest cache version.');
+addCheck('mobile-form-helper-cached', read('server-worker.js').includes('/js/mobile-form-helper.js') && read('server-worker.js').includes('2026-06-07b'), 'Service worker should cache js/mobile-form-helper.js with the latest cache version.');
 addCheck('mobile-form-helper-has-draft-controls', read('js/mobile-form-helper.js').includes('Save Draft') && read('js/mobile-form-helper.js').includes('Resume Draft') && read('js/mobile-form-helper.js').includes('DRAFT_PREFIX'), 'Mobile form helper should provide local draft save/resume controls.');
 addCheck('mobile-today-counts-form-drafts', read('js/mobile-today.js').includes('countDraftForms') && read('js/mobile-today.js').includes('Resume Saved Drafts'), 'Mobile Today dashboard should count and link saved local form drafts.');
 addCheck('mobile-menu-counts-drafts-in-badges', read('js/mobile-menu.js').includes('draftCount') && read('js/mobile-menu.js').includes('ywi:mobile-drafts-updated'), 'Mobile quick badges should include saved local draft counts.');
@@ -405,20 +405,20 @@ addCheck('canonical-schema-roadmap-columns-compatible', !schema.includes('insert
 addCheck('schema-drift-expects-129', schema.includes('129::int as expected_schema_version') && schema.includes('Apply migrations through schema 129'), 'Canonical schema drift view should expect schema 129.');
 addCheck('edge-loads-schema-129-readiness-views', read('supabase/functions/admin-directory/index.ts').includes('v_app_schema_migration_compatibility_checks') && read('supabase/functions/admin-directory/index.ts').includes('v_app_error_recovery_playbook'), 'admin-directory should return schema 129 readiness/playbook rows.');
 addCheck('admin-renders-schema-129-readiness-tables', read('js/admin-ui.js').includes('ad_schema_compatibility_table') && read('js/admin-ui.js').includes('appErrorRecoveryPlaybook'), 'Admin UI should render schema 129 compatibility and recovery playbook tables.');
-addCheck('cache-version-2026-06-07a-latest', read('server-worker.js').includes('2026-06-07a') && read('index.html').includes('2026-06-07a'), 'Index and service worker should use the 2026-06-07a asset/cache version.');
+addCheck('cache-version-2026-06-07b-latest', read('server-worker.js').includes('2026-06-07b') && read('index.html').includes('2026-06-07b'), 'Index and service worker should use the 2026-06-07b asset/cache version.');
 
 
 addCheck('schema-has-130-execution-playbook-marker', schema.includes('130_payment_reconciliation_equipment_scan_local_seo_execution_playbooks'), 'Canonical schema should include schema 130 execution playbook marker.');
 addCheck('schema-drift-expects-130', schema.includes('130::int as expected_schema_version') && schema.includes('Apply migrations through schema 130'), 'Canonical schema drift view should expect schema 130.');
 addCheck('edge-loads-schema-130-readiness-views', read('supabase/functions/admin-directory/index.ts').includes('v_app_payment_execution_queue') && read('supabase/functions/admin-directory/index.ts').includes('v_app_fallback_drill_queue'), 'admin-directory should return schema 130 execution queue rows.');
 addCheck('admin-renders-schema-130-readiness-tables', read('js/admin-ui.js').includes('ad_payment_execution_queue_table') && read('js/admin-ui.js').includes('appFallbackDrillQueue'), 'Admin UI should render schema 130 execution/fallback drill tables.');
-addCheck('cache-version-2026-06-07a-latest', read('server-worker.js').includes('2026-06-07a') && read('index.html').includes('2026-06-07a'), 'Index and service worker should use the 2026-06-07a asset/cache version.');
+addCheck('cache-version-2026-06-07b-latest', read('server-worker.js').includes('2026-06-07b') && read('index.html').includes('2026-06-07b'), 'Index and service worker should use the 2026-06-07b asset/cache version.');
 
 addCheck('schema-has-131-execution-control-marker', schema.includes('131_payment_recon_equipment_seo_runtime_execution_controls'), 'Canonical schema should include schema 131 payment/reconciliation/equipment/SEO/runtime execution controls marker.');
 addCheck('schema-drift-expects-131', /131::int as expected_schema_version/.test(schema) && schema.includes('Apply migrations through schema 131'), 'Canonical schema drift view should expect schema 131.');
 addCheck('edge-loads-schema-131-readiness-views', read('supabase/functions/admin-directory/index.ts').includes('v_app_payment_application_ui_queue') && read('supabase/functions/admin-directory/index.ts').includes('v_app_runtime_recovery_telemetry_queue'), 'admin-directory should return schema 131 execution-control rows.');
 addCheck('admin-renders-schema-131-readiness-tables', read('js/admin-ui.js').includes('ad_payment_application_ui_queue_table') && read('js/admin-ui.js').includes('appRuntimeRecoveryTelemetryQueue'), 'Admin UI should render schema 131 payment UI/reconciliation/equipment/SEO/runtime tables.');
-addCheck('cache-version-2026-06-07a-latest', read('server-worker.js').includes('2026-06-07a') && read('index.html').includes('2026-06-07a'), 'Index and service worker should use the 2026-06-07a asset/cache version.');
+addCheck('cache-version-2026-06-07b-latest', read('server-worker.js').includes('2026-06-07b') && read('index.html').includes('2026-06-07b'), 'Index and service worker should use the 2026-06-07b asset/cache version.');
 
 
 
@@ -427,7 +427,7 @@ addCheck('schema-drift-expects-132', /132::int as expected_schema_version/.test(
 addCheck('edge-loads-schema-132-readiness-views', read('supabase/functions/admin-directory/index.ts').includes('v_app_payment_posting_proof_queue') && read('supabase/functions/admin-directory/index.ts').includes('v_app_runtime_fallback_drill_history_queue'), 'admin-directory should return schema 132 proof/matching/scan/SEO/fallback drill rows.');
 addCheck('admin-renders-schema-132-readiness-tables', read('js/admin-ui.js').includes('ad_payment_posting_proof_table') && read('js/admin-ui.js').includes('appRuntimeFallbackDrillHistoryQueue'), 'Admin UI should render schema 132 proof/matching/scan/SEO/fallback drill tables.');
 addCheck('seo-assets-present-schema-132', read('sitemap.xml').includes('<urlset') && read('robots.txt').includes('Sitemap:'), 'sitemap.xml and robots.txt should exist for schema 132 SEO asset execution.');
-addCheck('cache-version-2026-06-07a-latest', read('server-worker.js').includes('2026-06-07a') && read('index.html').includes('2026-06-07a'), 'Index and service worker should use the 2026-06-07a asset/cache version.');
+addCheck('cache-version-2026-06-07b-latest', read('server-worker.js').includes('2026-06-07b') && read('index.html').includes('2026-06-07b'), 'Index and service worker should use the 2026-06-07b asset/cache version.');
 
 addCheck('schema-has-133-offline-execution-marker', schema.includes('133_payment_recon_equipment_seo_offline_execution_controls'), 'Canonical schema should include schema 134 payment/recon/equipment/SEO/offline marker.');
 addCheck('schema-drift-expects-133', /133::int as expected_schema_version/.test(schema) && schema.includes('Apply migrations through schema 134'), 'Canonical schema drift view should expect schema 134.');
@@ -441,7 +441,7 @@ addCheck('schema-drift-expects-134', /134::int as expected_schema_version/.test(
 addCheck('edge-loads-schema-134-readiness-views', read('supabase/functions/admin-directory/index.ts').includes('v_app_payment_adjustment_workflow_queue') && read('supabase/functions/admin-directory/index.ts').includes('v_app_runtime_error_message_catalog'), 'admin-directory should return schema 134 readiness rows.');
 addCheck('admin-renders-schema-134-readiness-tables', read('js/admin-ui.js').includes('ad_payment_adjustment_workflow_table') && read('js/admin-ui.js').includes('appRuntimeErrorMessageCatalog'), 'Admin UI should render schema 134 payment/recon/equipment/SEO/runtime message tables.');
 addCheck('seo-assets-fresh-schema-134', read('sitemap.xml').includes('<lastmod>2026-06-07</lastmod>') && read('robots.txt').includes('Sitemap:'), 'sitemap.xml and robots.txt should remain present and fresh for schema 134 SEO execution.');
-addCheck('cache-version-2026-06-07a-latest', read('server-worker.js').includes('2026-06-07a') && read('index.html').includes('2026-06-07a'), 'Index and service worker should use the 2026-06-07a asset/cache version.');
+addCheck('cache-version-2026-06-07b-latest', read('server-worker.js').includes('2026-06-07b') && read('index.html').includes('2026-06-07b'), 'Index and service worker should use the 2026-06-07b asset/cache version.');
 
 
 // Schema 135 release validation, payment/reconciliation, equipment scan, local SEO, runtime fallback, and JSON/DB migration controls.
@@ -450,7 +450,7 @@ addCheck('schema-drift-expects-135', /135::int as expected_schema_version/.test(
 addCheck('edge-loads-schema-135-readiness-views', read('supabase/functions/admin-directory/index.ts').includes('v_app_release_validation_queue') && read('supabase/functions/admin-directory/index.ts').includes('v_app_json_db_migration_execution_queue'), 'admin-directory should return schema 135 validation and JSON/DB migration rows.');
 addCheck('admin-renders-schema-135-readiness-tables', read('js/admin-ui.js').includes('ad_release_validation_table') && read('js/admin-ui.js').includes('appJsonDbMigrationExecutionQueue'), 'Admin UI should render schema 135 release validation/payment/recon/equipment/SEO/fallback/data migration tables.');
 addCheck('seo-assets-fresh-schema-135', read('sitemap.xml').includes('<lastmod>2026-06-07</lastmod>') && read('robots.txt').includes('Sitemap:'), 'sitemap.xml and robots.txt should remain present and fresh for schema 135 SEO execution.');
-addCheck('cache-version-2026-06-07a-latest', read('server-worker.js').includes('2026-06-07a') && read('index.html').includes('2026-06-07a'), 'Index and service worker should use the 2026-06-07a asset/cache version.');
+addCheck('cache-version-2026-06-07b-latest', read('server-worker.js').includes('2026-06-07b') && read('index.html').includes('2026-06-07b'), 'Index and service worker should use the 2026-06-07b asset/cache version.');
 
 
 // Schema 136 release cutover, payment exceptions, equipment service gates, local SEO evidence, CSS drift, runtime fallback, and JSON/DB source-of-truth controls.
@@ -459,7 +459,7 @@ addCheck('schema-drift-expects-136', /136::int as expected_schema_version/.test(
 addCheck('edge-loads-schema-136-readiness-views', read('supabase/functions/admin-directory/index.ts').includes('v_app_release_cutover_checklist') && read('supabase/functions/admin-directory/index.ts').includes('v_app_json_db_source_of_truth_queue'), 'admin-directory should return schema 136 cutover/source-of-truth rows.');
 addCheck('admin-renders-schema-136-readiness-tables', read('js/admin-ui.js').includes('ad_release_cutover_checklist_table') && read('js/admin-ui.js').includes('appJsonDbSourceOfTruthQueue'), 'Admin UI should render schema 136 cutover/payment/equipment/SEO/CSS/runtime/source-of-truth tables.');
 addCheck('seo-assets-fresh-schema-136', read('sitemap.xml').includes('<lastmod>2026-06-07</lastmod>') && read('robots.txt').includes('Sitemap:'), 'sitemap.xml and robots.txt should remain present and fresh for schema 136 SEO execution.');
-addCheck('cache-version-2026-06-07a-latest', read('server-worker.js').includes('2026-06-07a') && read('index.html').includes('2026-06-07a'), 'Index and service worker should use the 2026-06-07a asset/cache version.');
+addCheck('cache-version-2026-06-07b-latest', read('server-worker.js').includes('2026-06-07b') && read('index.html').includes('2026-06-07b'), 'Index and service worker should use the 2026-06-07b asset/cache version.');
 
 
 
@@ -468,7 +468,7 @@ addCheck('schema-has-137-release-depth-marker', schema.includes('137_release_dep
 addCheck('schema-drift-expects-137', /137::int as expected_schema_version/.test(schema) && schema.includes('Apply migrations through schema 137'), 'Canonical schema drift view should expect schema 137.');
 addCheck('edge-loads-schema-137-readiness-views', read('supabase/functions/admin-directory/index.ts').includes('v_app_payment_reconciliation_cutover_drill_queue') && read('supabase/functions/admin-directory/index.ts').includes('v_app_runtime_release_message_queue'), 'admin-directory should return schema 137 release depth rows.');
 addCheck('admin-renders-schema-137-readiness-tables', read('js/admin-ui.js').includes('ad_payment_reconciliation_cutover_drill_table') && read('js/admin-ui.js').includes('appRuntimeReleaseMessageQueue'), 'Admin UI should render schema 137 release depth tables.');
-addCheck('cache-version-2026-06-07a-latest', read('server-worker.js').includes('2026-06-07a') && read('index.html').includes('2026-06-07a'), 'Index and service worker should use the 2026-06-07a asset/cache version.');
+addCheck('cache-version-2026-06-07b-latest', read('server-worker.js').includes('2026-06-07b') && read('index.html').includes('2026-06-07b'), 'Index and service worker should use the 2026-06-07b asset/cache version.');
 
 
 // Schema 138 release readiness, accounting exception closure, equipment service verification, local SEO refresh, CSS/mobile regression, and runtime observability controls.
@@ -477,7 +477,16 @@ addCheck('schema-drift-expects-138', /138::int as expected_schema_version/.test(
 addCheck('edge-loads-schema-138-readiness-views', read('supabase/functions/admin-directory/index.ts').includes('v_app_release_readiness_signoff_queue') && read('supabase/functions/admin-directory/index.ts').includes('v_app_runtime_observability_release_queue'), 'admin-directory should return schema 138 release readiness rows.');
 addCheck('admin-renders-schema-138-readiness-tables', read('js/admin-ui.js').includes('ad_release_readiness_signoff_table') && read('js/admin-ui.js').includes('appRuntimeObservabilityReleaseQueue'), 'Admin UI should render schema 138 release readiness tables.');
 addCheck('seo-assets-fresh-schema-138', read('sitemap.xml').includes('<lastmod>2026-06-07</lastmod>') && read('robots.txt').includes('Sitemap:'), 'sitemap.xml and robots.txt should remain present and fresh for schema 138 SEO execution.');
-addCheck('cache-version-2026-06-07a-latest', read('server-worker.js').includes('2026-06-07a') && read('index.html').includes('2026-06-07a'), 'Index and service worker should use the 2026-06-07a asset/cache version.');
+addCheck('cache-version-2026-06-07b-latest', read('server-worker.js').includes('2026-06-07b') && read('index.html').includes('2026-06-07b'), 'Index and service worker should use the 2026-06-07b asset/cache version.');
+
+
+// Schema 139 finalization controls for accounting cutover, equipment scan rollout, local SEO prominence, CSS/mobile release guard, runtime support playbooks, and data-source migration locks.
+addCheck('schema-has-139-finalization-marker', schema.includes('139_accounting_cutover_equipment_scan_seo_css_runtime_finalization_controls'), 'Canonical schema should include schema 139 accounting/equipment/SEO/CSS/runtime/data finalization marker.');
+addCheck('schema-drift-expects-139', /139::int as expected_schema_version/.test(schema) && schema.includes('Apply migrations through schema 139'), 'Canonical schema drift view should expect schema 139.');
+addCheck('edge-loads-schema-139-readiness-views', read('supabase/functions/admin-directory/index.ts').includes('v_app_accounting_cutover_trial_balance_queue') && read('supabase/functions/admin-directory/index.ts').includes('v_app_data_source_migration_lock_queue'), 'admin-directory should return schema 139 finalization rows.');
+addCheck('admin-renders-schema-139-readiness-tables', read('js/admin-ui.js').includes('ad_accounting_cutover_trial_balance_table') && read('js/admin-ui.js').includes('appDataSourceMigrationLockQueue'), 'Admin UI should render schema 139 finalization tables.');
+addCheck('seo-assets-fresh-schema-139', read('sitemap.xml').includes('<lastmod>2026-06-07</lastmod>') && read('robots.txt').includes('Sitemap:'), 'sitemap.xml and robots.txt should remain present and fresh for schema 139 SEO execution.');
+addCheck('cache-version-2026-06-07b-latest', read('server-worker.js').includes('2026-06-07b') && read('index.html').includes('2026-06-07b'), 'Index and service worker should use the 2026-06-07b asset/cache version.');
 
 if (failed) {
   console.error(JSON.stringify({ ok: false, checks: results }, null, 2));
