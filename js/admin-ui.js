@@ -240,6 +240,12 @@
       appCssAccessibilityFallbackQueue: [],
       appDataMigrationValidationQueue: [],
       appRuntimeReleaseMessageQueue: [],
+      appReleaseReadinessSignoffQueue: [],
+      appAccountingExceptionClosureQueue: [],
+      appEquipmentServiceVerificationQueue: [],
+      appLocalSeoRefreshQueue: [],
+      appCssMobileRegressionQueue: [],
+      appRuntimeObservabilityReleaseQueue: [],
       actorRole: '',
       actorProfileId: '',
       directoryPagination: {
@@ -886,6 +892,42 @@
           <div class="table-scroll" style="margin-top:12px;">
             <table id="ad_runtime_release_message_table">
               <thead><tr><th>Surface</th><th>Release Message</th><th>Status</th><th>Failure / User / Operator</th><th>Retry / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_release_readiness_signoff_table">
+              <thead><tr><th>Area</th><th>Release Signoff</th><th>Status</th><th>Evidence / Verifier</th><th>Block / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_accounting_exception_closure_table">
+              <thead><tr><th>Area</th><th>Accounting Exception</th><th>Status</th><th>Source / Decision</th><th>Posting / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_equipment_service_verification_table">
+              <thead><tr><th>Area</th><th>Equipment Verification</th><th>Status</th><th>Scan / Proof</th><th>Role / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_local_seo_refresh_table">
+              <thead><tr><th>Route</th><th>SEO Refresh</th><th>Status</th><th>Keywords / Proof / Links</th><th>Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_css_mobile_regression_table">
+              <thead><tr><th>Area</th><th>CSS/Mobile Regression</th><th>Status</th><th>Breakpoint / Selector</th><th>Test / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_runtime_observability_release_table">
+              <thead><tr><th>Surface</th><th>Observability</th><th>Status</th><th>Signal / Message</th><th>Operator / Fallback</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -1725,6 +1767,12 @@
         cssAccessibilityFallbackBody: document.querySelector('#ad_css_accessibility_fallback_table tbody'),
         dataMigrationValidationBody: document.querySelector('#ad_data_migration_validation_table tbody'),
         runtimeReleaseMessageBody: document.querySelector('#ad_runtime_release_message_table tbody'),
+        releaseReadinessSignoffBody: document.querySelector('#ad_release_readiness_signoff_table tbody'),
+        accountingExceptionClosureBody: document.querySelector('#ad_accounting_exception_closure_table tbody'),
+        equipmentServiceVerificationBody: document.querySelector('#ad_equipment_service_verification_table tbody'),
+        localSeoRefreshBody: document.querySelector('#ad_local_seo_refresh_table tbody'),
+        cssMobileRegressionBody: document.querySelector('#ad_css_mobile_regression_table tbody'),
+        runtimeObservabilityReleaseBody: document.querySelector('#ad_runtime_observability_release_table tbody'),
         seoSmokeBody: document.querySelector('#ad_seo_smoke_table tbody'),
         bankCsvImportBody: document.querySelector('#ad_bank_csv_import_table tbody'),
         backupRehearsalBody: document.querySelector('#ad_backup_rehearsal_table tbody'),
@@ -5870,7 +5918,13 @@
           appLocalSeoProminenceActionQueue: Array.isArray(payload?.app_local_seo_prominence_action_queue) ? payload.app_local_seo_prominence_action_queue : state.appLocalSeoProminenceActionQueue,
           appCssAccessibilityFallbackQueue: Array.isArray(payload?.app_css_accessibility_fallback_queue) ? payload.app_css_accessibility_fallback_queue : state.appCssAccessibilityFallbackQueue,
           appDataMigrationValidationQueue: Array.isArray(payload?.app_data_migration_validation_queue) ? payload.app_data_migration_validation_queue : state.appDataMigrationValidationQueue,
-          appRuntimeReleaseMessageQueue: Array.isArray(payload?.app_runtime_release_message_queue) ? payload.app_runtime_release_message_queue : state.appRuntimeReleaseMessageQueue
+          appRuntimeReleaseMessageQueue: Array.isArray(payload?.app_runtime_release_message_queue) ? payload.app_runtime_release_message_queue : state.appRuntimeReleaseMessageQueue,
+          appReleaseReadinessSignoffQueue: Array.isArray(payload?.app_release_readiness_signoff_queue) ? payload.app_release_readiness_signoff_queue : state.appReleaseReadinessSignoffQueue,
+          appAccountingExceptionClosureQueue: Array.isArray(payload?.app_accounting_exception_closure_queue) ? payload.app_accounting_exception_closure_queue : state.appAccountingExceptionClosureQueue,
+          appEquipmentServiceVerificationQueue: Array.isArray(payload?.app_equipment_service_verification_queue) ? payload.app_equipment_service_verification_queue : state.appEquipmentServiceVerificationQueue,
+          appLocalSeoRefreshQueue: Array.isArray(payload?.app_local_seo_refresh_queue) ? payload.app_local_seo_refresh_queue : state.appLocalSeoRefreshQueue,
+          appCssMobileRegressionQueue: Array.isArray(payload?.app_css_mobile_regression_queue) ? payload.app_css_mobile_regression_queue : state.appCssMobileRegressionQueue,
+          appRuntimeObservabilityReleaseQueue: Array.isArray(payload?.app_runtime_observability_release_queue) ? payload.app_runtime_observability_release_queue : state.appRuntimeObservabilityReleaseQueue
 
         };
         const e = els();
@@ -7167,6 +7221,79 @@
             <td class="admin-table-note">${escHtml(row.retry_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
           </tr>
         `).join('') || '<tr><td colspan="5" class="muted">No runtime release message rows loaded yet. Apply schema 137.</td></tr>';
+      }
+
+      if (e.releaseReadinessSignoffBody) {
+        const rows = Array.isArray(state.appReleaseReadinessSignoffQueue) ? state.appReleaseReadinessSignoffQueue : [];
+        e.releaseReadinessSignoffBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.signoff_area || '')}</td>
+            <td><strong>${escHtml(row.signoff_title || '')}</strong></td>
+            <td>${renderStatusPill(row.signoff_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.signoff_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.evidence_hint || '')}<div class="muted">${escHtml(row.verifier_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.release_block_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No release readiness signoff rows loaded yet. Apply schema 138.</td></tr>';
+      }
+      if (e.accountingExceptionClosureBody) {
+        const rows = Array.isArray(state.appAccountingExceptionClosureQueue) ? state.appAccountingExceptionClosureQueue : [];
+        e.accountingExceptionClosureBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.exception_area || '')}</td>
+            <td><strong>${escHtml(row.exception_title || '')}</strong></td>
+            <td>${renderStatusPill(row.closure_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.closure_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.source_rows_hint || '')}<div class="muted">${escHtml(row.decision_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.posting_or_lock_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No accounting exception closure rows loaded yet. Apply schema 138.</td></tr>';
+      }
+      if (e.equipmentServiceVerificationBody) {
+        const rows = Array.isArray(state.appEquipmentServiceVerificationQueue) ? state.appEquipmentServiceVerificationQueue : [];
+        e.equipmentServiceVerificationBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.equipment_area || '')}</td>
+            <td><strong>${escHtml(row.verification_title || '')}</strong></td>
+            <td>${renderStatusPill(row.verification_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.verification_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.scan_or_asset_hint || '')}<div class="muted">${escHtml(row.service_proof_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.role_gate_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No equipment service verification rows loaded yet. Apply schema 138.</td></tr>';
+      }
+      if (e.localSeoRefreshBody) {
+        const rows = Array.isArray(state.appLocalSeoRefreshQueue) ? state.appLocalSeoRefreshQueue : [];
+        e.localSeoRefreshBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.route_key || '')}<div class="muted">${escHtml(row.refresh_area || '')}</div></td>
+            <td><strong>${escHtml(row.refresh_title || '')}</strong></td>
+            <td>${renderStatusPill(row.refresh_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.refresh_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.keyword_hint || '')}<div class="muted">${escHtml(row.proof_hint || '')}</div><div class="muted">${escHtml(row.internal_link_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No local SEO refresh rows loaded yet. Apply schema 138.</td></tr>';
+      }
+      if (e.cssMobileRegressionBody) {
+        const rows = Array.isArray(state.appCssMobileRegressionQueue) ? state.appCssMobileRegressionQueue : [];
+        e.cssMobileRegressionBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.component_area || '')}</td>
+            <td><strong>${escHtml(row.regression_title || '')}</strong></td>
+            <td>${renderStatusPill(row.regression_status || 'review', /pass|covered|ready|done|completed|in_progress/i.test(String(row.regression_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.breakpoint_hint || '')}<div class="muted">${escHtml(row.selector_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.test_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No CSS/mobile regression rows loaded yet. Apply schema 138.</td></tr>';
+      }
+      if (e.runtimeObservabilityReleaseBody) {
+        const rows = Array.isArray(state.appRuntimeObservabilityReleaseQueue) ? state.appRuntimeObservabilityReleaseQueue : [];
+        e.runtimeObservabilityReleaseBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.app_surface || '')}</td>
+            <td><strong>${escHtml(row.observability_title || '')}</strong></td>
+            <td>${renderStatusPill(row.observability_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.observability_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.signal_hint || '')}<div class="muted">${escHtml(row.user_message_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.operator_action_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No runtime observability release rows loaded yet. Apply schema 138.</td></tr>';
       }
 
       if (e.seoSmokeBody) {
