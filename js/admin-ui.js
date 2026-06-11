@@ -258,6 +258,11 @@
       appEquipmentChainOfCustodyQueue: [],
       appLocalSeoConversionQueue: [],
       appRuntimeFallbackEscalationQueue: [],
+      appReleaseHandoffQueue: [],
+      appPaymentPostingProofQueue: [],
+      appEquipmentCustodyEvidenceQueue: [],
+      appSeoConversionEvidenceQueue: [],
+      appRuntimeFallbackEventLogQueue: [],
       actorRole: '',
       actorProfileId: '',
       directoryPagination: {
@@ -1833,6 +1838,11 @@
         equipmentChainOfCustodyBody: document.querySelector('#ad_equipment_chain_of_custody_table tbody'),
         localSeoConversionBody: document.querySelector('#ad_local_seo_conversion_table tbody'),
         runtimeFallbackEscalationBody: document.querySelector('#ad_runtime_fallback_escalation_table tbody'),
+        releaseHandoffBody: document.querySelector('#ad_release_handoff_table tbody'),
+        paymentPostingProof2Body: document.querySelector('#ad_payment_posting_proof_schema141_table tbody'),
+        equipmentCustodyEvidenceBody: document.querySelector('#ad_equipment_custody_evidence_table tbody'),
+        seoConversionEvidenceBody: document.querySelector('#ad_seo_conversion_evidence_table tbody'),
+        runtimeFallbackEventLogBody: document.querySelector('#ad_runtime_fallback_event_log_table tbody'),
         seoSmokeBody: document.querySelector('#ad_seo_smoke_table tbody'),
         bankCsvImportBody: document.querySelector('#ad_bank_csv_import_table tbody'),
         backupRehearsalBody: document.querySelector('#ad_backup_rehearsal_table tbody'),
@@ -5996,7 +6006,12 @@
           appReconciliationExceptionWorkflowQueue: Array.isArray(payload?.app_reconciliation_exception_workflow_queue) ? payload.app_reconciliation_exception_workflow_queue : state.appReconciliationExceptionWorkflowQueue,
           appEquipmentChainOfCustodyQueue: Array.isArray(payload?.app_equipment_chain_of_custody_queue) ? payload.app_equipment_chain_of_custody_queue : state.appEquipmentChainOfCustodyQueue,
           appLocalSeoConversionQueue: Array.isArray(payload?.app_local_seo_conversion_queue) ? payload.app_local_seo_conversion_queue : state.appLocalSeoConversionQueue,
-          appRuntimeFallbackEscalationQueue: Array.isArray(payload?.app_runtime_fallback_escalation_queue) ? payload.app_runtime_fallback_escalation_queue : state.appRuntimeFallbackEscalationQueue
+          appRuntimeFallbackEscalationQueue: Array.isArray(payload?.app_runtime_fallback_escalation_queue) ? payload.app_runtime_fallback_escalation_queue : state.appRuntimeFallbackEscalationQueue,
+          appReleaseHandoffQueue: Array.isArray(payload?.app_release_handoff_queue) ? payload.app_release_handoff_queue : state.appReleaseHandoffQueue,
+          appPaymentPostingProofQueue: Array.isArray(payload?.app_payment_posting_proof_queue) ? payload.app_payment_posting_proof_queue : state.appPaymentPostingProofQueue,
+          appEquipmentCustodyEvidenceQueue: Array.isArray(payload?.app_equipment_custody_evidence_queue) ? payload.app_equipment_custody_evidence_queue : state.appEquipmentCustodyEvidenceQueue,
+          appSeoConversionEvidenceQueue: Array.isArray(payload?.app_seo_conversion_evidence_queue) ? payload.app_seo_conversion_evidence_queue : state.appSeoConversionEvidenceQueue,
+          appRuntimeFallbackEventLogQueue: Array.isArray(payload?.app_runtime_fallback_event_log_queue) ? payload.app_runtime_fallback_event_log_queue : state.appRuntimeFallbackEventLogQueue,
 
         };
         const e = els();
@@ -7512,6 +7527,68 @@
             <td class="admin-table-note">${escHtml(row.escalation_action_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
           </tr>
         `).join('') || '<tr><td colspan="5" class="muted">No runtime fallback escalation rows loaded yet. Apply schema 140.</td></tr>';
+      }
+
+
+      if (e.releaseHandoffBody) {
+        const rows = Array.isArray(state.appReleaseHandoffQueue) ? state.appReleaseHandoffQueue : [];
+        e.releaseHandoffBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.handoff_area || '')}</td>
+            <td><strong>${escHtml(row.handoff_title || '')}</strong></td>
+            <td>${renderStatusPill(row.handoff_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.handoff_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.release_evidence_hint || '')}<div class="muted">${escHtml(row.deploy_action_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.rollback_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No release handoff rows loaded yet. Apply schema 141.</td></tr>';
+      }
+      if (e.paymentPostingProof2Body) {
+        const rows = Array.isArray(state.appPaymentPostingProofQueue) ? state.appPaymentPostingProofQueue : [];
+        e.paymentPostingProof2Body.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.payment_area || '')}</td>
+            <td><strong>${escHtml(row.proof_title || '')}</strong></td>
+            <td>${renderStatusPill(row.proof_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.proof_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.source_rows_hint || '')}<div class="muted">${escHtml(row.proof_required_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.posting_or_close_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No payment posting proof rows loaded yet. Apply schema 141.</td></tr>';
+      }
+      if (e.equipmentCustodyEvidenceBody) {
+        const rows = Array.isArray(state.appEquipmentCustodyEvidenceQueue) ? state.appEquipmentCustodyEvidenceQueue : [];
+        e.equipmentCustodyEvidenceBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.custody_area || '')}</td>
+            <td><strong>${escHtml(row.evidence_title || '')}</strong></td>
+            <td>${renderStatusPill(row.evidence_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.evidence_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.required_scan_or_signature || '')}<div class="muted">${escHtml(row.required_photo_or_note || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.accounting_or_service_link || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No equipment custody evidence rows loaded yet. Apply schema 141.</td></tr>';
+      }
+      if (e.seoConversionEvidenceBody) {
+        const rows = Array.isArray(state.appSeoConversionEvidenceQueue) ? state.appSeoConversionEvidenceQueue : [];
+        e.seoConversionEvidenceBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.route_key || '')}<div class="muted">${escHtml(row.evidence_area || '')}</div></td>
+            <td><strong>${escHtml(row.evidence_title || '')}</strong></td>
+            <td>${renderStatusPill(row.evidence_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.evidence_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.search_phrase_hint || '')}<div class="muted">${escHtml(row.page_evidence_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.conversion_path_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No SEO conversion evidence rows loaded yet. Apply schema 141.</td></tr>';
+      }
+      if (e.runtimeFallbackEventLogBody) {
+        const rows = Array.isArray(state.appRuntimeFallbackEventLogQueue) ? state.appRuntimeFallbackEventLogQueue : [];
+        e.runtimeFallbackEventLogBody.innerHTML = rows.slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row.app_surface || '')}</td>
+            <td><strong>${escHtml(row.event_title || '')}</strong></td>
+            <td>${renderStatusPill(row.event_status || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row.event_status || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row.detection_hint || '')}<div class="muted">${escHtml(row.log_payload_hint || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.owner_action_hint || '')}<div class="muted">${escHtml(row.fallback_hint || '')}</div></td>
+          </tr>
+        `).join('') || '<tr><td colspan="5" class="muted">No runtime fallback event log rows loaded yet. Apply schema 141.</td></tr>';
       }
 
       if (e.seoSmokeBody) {
