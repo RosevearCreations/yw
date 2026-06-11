@@ -256,3 +256,35 @@ Next 20-step direction:
 18. Add migration compatibility dry-run checks.
 19. Add release cutover signoff workflow.
 20. Add post-deploy service-worker and Edge Function log verification.
+
+## Build 2026-06-09b / Schema 141
+
+Completed this pass:
+1. Repaired the canonical full schema reference for the schema 140 `app_local_seo_conversion_queue` VALUES-list mismatch.
+2. Added `sql/141_release_handoff_payment_proof_equipment_custody_seo_runtime_logging_controls.sql`.
+3. Added Admin-visible queues for release handoff, payment posting proof, equipment custody evidence, SEO conversion evidence, and runtime fallback event logging.
+4. Updated Admin directory/UI references, cache markers, sitemap freshness, smoke checks, and archive hygiene.
+5. Archived retired helper Markdown and root `test_write` files.
+
+Next 20 focus:
+1. Turn release handoff queue rows into a deploy checklist with copyable schema/function order.
+2. Build payment posting proof upload/reason controls.
+3. Build equipment custody evidence timeline and cost recovery decision actions.
+4. Add local SEO conversion evidence checks to the smoke script.
+5. Create persistent fallback event logging from UI and Edge Function failures.
+6. Add proof attachment storage rules for payment/reconciliation closeout.
+7. Add split-match reconciliation UI with undo history.
+8. Add accessory replacement cost workflow tied to job profitability.
+9. Add service-area route proof gating before sitemap/internal-link publication.
+10. Add scanner-supported and manual-code equipment handoff testing.
+11. Add close-period blocker export for unresolved payment/reconciliation rows.
+12. Add runtime fallback counts to Admin readiness cards.
+13. Add mobile offline conflict review queue actions.
+14. Add CSS/mobile regression snapshots for Admin readiness sections.
+15. Add broken-link and CTA target smoke checks.
+16. Add accountant export proof manifest preview.
+17. Add role enforcement for equipment lockout override.
+18. Add payment/refund/write-off approval reason templates.
+19. Add DB/source-of-truth lock checks for migrated JSON data.
+20. Add a release-final sanity summary generator.
+
