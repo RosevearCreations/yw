@@ -20703,10 +20703,104 @@ grant select on public.v_schema_drift_status to authenticated;
 
 commit;
 
--- Schema 140: Release exit criteria, payment closeout, reconciliation exception workflow, equipment chain-of-custody, local SEO conversion, and fallback escalation controls.
+-- Schema 140: Release exit criteria, payment closeout, reconciliation exception workflow,
+-- equipment chain-of-custody, local SEO conversion, and fallback escalation controls.
 -- Build 2026-06-09a.
+-- Repaired: all VALUES lists now match their explicit insert column lists.
 
-begin;
+create table if not exists public.app_schema_versions (
+  schema_version integer primary key,
+  schema_name text,
+  description text,
+  status text not null default 'applied',
+  applied_at timestamptz not null default now(),
+  applied_by text,
+  notes text
+);
+
+alter table public.app_schema_versions
+  add column if not exists migration_key text;
+
+alter table public.app_schema_versions
+  add column if not exists release_label text;
+
+create table if not exists public.app_roadmap_action_steps (
+  step_key text primary key,
+  step_batch text not null,
+  step_number integer not null,
+  step_area text not null,
+  step_title text not null,
+  step_status text not null default 'planned',
+  priority text not null default 'medium',
+  source_doc text,
+  route_hint text,
+  implementation_notes text,
+  acceptance_check text,
+  risk_if_skipped text,
+  sort_order integer not null default 100,
+  metadata jsonb not null default '{}'::jsonb,
+  checked_at timestamptz,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.app_roadmap_action_steps
+  add column if not exists step_batch text;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists step_number integer;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists step_area text;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists step_title text;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists step_status text not null default 'planned';
+
+alter table public.app_roadmap_action_steps
+  add column if not exists priority text not null default 'medium';
+
+alter table public.app_roadmap_action_steps
+  add column if not exists source_doc text;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists route_hint text;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists implementation_notes text;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists acceptance_check text;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists risk_if_skipped text;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists sort_order integer not null default 100;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists metadata jsonb not null default '{}'::jsonb;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists checked_at timestamptz;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists updated_at timestamptz not null default now();
+
+alter table public.app_roadmap_action_steps
+  drop constraint if exists app_roadmap_action_steps_step_batch_check;
+
+alter table public.app_roadmap_action_steps
+  add constraint app_roadmap_action_steps_step_batch_check
+  check (step_batch in ('completed_this_pass', 'next_20'));
+
+alter table public.app_roadmap_action_steps
+  drop constraint if exists app_roadmap_action_steps_step_status_check;
+
+alter table public.app_roadmap_action_steps
+  add constraint app_roadmap_action_steps_step_status_check
+  check (step_status in ('completed', 'in_progress', 'planned', 'blocked', 'review'));
 
 create table if not exists public.app_release_exit_criteria_queue (
   criteria_key text primary key,
@@ -20799,84 +20893,732 @@ create table if not exists public.app_runtime_fallback_escalation_queue (
   updated_at timestamptz not null default now()
 );
 
-insert into public.app_release_exit_criteria_queue (criteria_key, criteria_area, criteria_title, criteria_status, evidence_hint, blocker_hint, owner_hint, fallback_hint, sort_order, metadata, checked_at) values
-('schema_140_exit_check','schema','Schema 140 applied and canonical full schema matches standalone migration','planned','Compare sql/140 file, sql/000_full_schema_reference.sql, v_schema_drift_status, and app_schema_versions row.','Block release if schema drift still expects an older version or full schema references retired columns.','Admin / developer','Apply standalone migrations first and use full schema only after smoke passes.',10,'{"build":"2026-06-09a","schema":140}'::jsonb,now()),
-('edge_function_exit_check','edge_functions','admin-directory plus jobs functions deploy cleanly after schema 140','planned','Supabase deploy logs show parse-clean bundles and optional DB view fallback works.','Block release if admin-directory 500s or jobs-manage/jobs-directory bundle errors return.','Admin','Keep previous function deployed and show empty optional tables until redeployed.',20,'{"build":"2026-06-09a","schema":140}'::jsonb,now()),
-('docs_seo_css_exit_check','docs_seo_css','Markdown, sitemap, robots, cache marker, one-H1, and CSS brace checks are current','in_progress','Active Markdown includes completed 20 and next 20; smoke confirms H1, sitemap, robots, CSS, and cache markers.','Block release if root helper docs/test files return or sitemap/cache marker is stale.','Admin / content','Use archive snapshots and NEW_CHAT_STATUS.md as recovery handoff.',30,'{"build":"2026-06-09a","schema":140}'::jsonb,now())
-on conflict (criteria_key) do update set criteria_area=excluded.criteria_area, criteria_title=excluded.criteria_title, criteria_status=excluded.criteria_status, evidence_hint=excluded.evidence_hint, blocker_hint=excluded.blocker_hint, owner_hint=excluded.owner_hint, fallback_hint=excluded.fallback_hint, sort_order=excluded.sort_order, metadata=excluded.metadata, checked_at=excluded.checked_at, updated_at=now();
+insert into public.app_release_exit_criteria_queue (
+  criteria_key,
+  criteria_area,
+  criteria_title,
+  criteria_status,
+  evidence_hint,
+  blocker_hint,
+  owner_hint,
+  fallback_hint,
+  sort_order,
+  metadata,
+  checked_at
+)
+values
+  (
+    'schema_140_exit_check',
+    'schema',
+    'Schema 140 applied and canonical full schema matches standalone migration',
+    'planned',
+    'Compare sql/140 file, sql/000_full_schema_reference.sql, v_schema_drift_status, and app_schema_versions row.',
+    'Block release if schema drift still expects an older version or full schema references retired columns.',
+    'Admin / developer',
+    'Apply standalone migrations first and use full schema only after smoke passes.',
+    10,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  ),
+  (
+    'edge_function_exit_check',
+    'edge_functions',
+    'admin-directory plus jobs functions deploy cleanly after schema 140',
+    'planned',
+    'Supabase deploy logs show parse-clean bundles and optional DB view fallback works.',
+    'Block release if admin-directory 500s or jobs-manage/jobs-directory bundle errors return.',
+    'Admin',
+    'Keep previous function deployed and show empty optional tables until redeployed.',
+    20,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  ),
+  (
+    'docs_seo_css_exit_check',
+    'docs_seo_css',
+    'Markdown, sitemap, robots, cache marker, one-H1, and CSS brace checks are current',
+    'in_progress',
+    'Active Markdown includes completed 20 and next 20; smoke confirms H1, sitemap, robots, CSS, and cache markers.',
+    'Block release if root helper docs/test files return or sitemap/cache marker is stale.',
+    'Admin / content',
+    'Use archive snapshots and NEW_CHAT_STATUS.md as recovery handoff.',
+    30,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  )
+on conflict (criteria_key) do update set
+  criteria_area = excluded.criteria_area,
+  criteria_title = excluded.criteria_title,
+  criteria_status = excluded.criteria_status,
+  evidence_hint = excluded.evidence_hint,
+  blocker_hint = excluded.blocker_hint,
+  owner_hint = excluded.owner_hint,
+  fallback_hint = excluded.fallback_hint,
+  sort_order = excluded.sort_order,
+  metadata = excluded.metadata,
+  checked_at = excluded.checked_at,
+  updated_at = now();
 
-insert into public.app_payment_closeout_action_queue (closeout_key, payment_area, closeout_title, closeout_status, source_rows_hint, decision_hint, posting_hint, fallback_hint, sort_order, metadata, checked_at) values
-('unapplied_cash_closeout','unapplied_cash','Close or document every unapplied cash row before month-end lock','planned','Payment applications, deposits, invoice balances, credits, refunds, write-offs, and overpayments.','Apply, hold, refund, reverse, write off, or export with reviewer reason.','Approved decisions post to journal/payment application candidates and lock after close.','Leave in exception queue and include accountant export if not resolved.',10,'{"build":"2026-06-09a","schema":140}'::jsonb,now()),
-('refund_writeoff_approval','adjustments','Require approval trail for refunds, write-offs, discounts, and credit decisions','planned','Adjustment rows, customer account, invoice, payment source, and proof attachment.','Reviewer confirms reason, amount, tax handling, and close-period status.','Post only after approval; keep reversal row if changed later.','Hold adjustment in draft/review state until evidence is present.',20,'{"build":"2026-06-09a","schema":140}'::jsonb,now()),
-('payment_export_reconciliation','accountant_export','Tie payment closeout decisions into the accountant export manifest','planned','Closed payment actions, unresolved exceptions, proof files, and export package.','Reviewer confirms package includes applied/unapplied cash, exceptions, and proof notes.','Export manifest becomes close-period evidence.','Generate CSV/JSON summary if final export packaging is incomplete.',30,'{"build":"2026-06-09a","schema":140}'::jsonb,now())
-on conflict (closeout_key) do update set payment_area=excluded.payment_area, closeout_title=excluded.closeout_title, closeout_status=excluded.closeout_status, source_rows_hint=excluded.source_rows_hint, decision_hint=excluded.decision_hint, posting_hint=excluded.posting_hint, fallback_hint=excluded.fallback_hint, sort_order=excluded.sort_order, metadata=excluded.metadata, checked_at=excluded.checked_at, updated_at=now();
+insert into public.app_payment_closeout_action_queue (
+  closeout_key,
+  payment_area,
+  closeout_title,
+  closeout_status,
+  source_rows_hint,
+  decision_hint,
+  posting_hint,
+  fallback_hint,
+  sort_order,
+  metadata,
+  checked_at
+)
+values
+  (
+    'unapplied_cash_closeout',
+    'unapplied_cash',
+    'Close or document every unapplied cash row before month-end lock',
+    'planned',
+    'Payment applications, deposits, invoice balances, credits, refunds, write-offs, and overpayments.',
+    'Apply, hold, refund, reverse, write off, or export with reviewer reason.',
+    'Approved decisions post to journal/payment application candidates and lock after close.',
+    'Leave in exception queue and include accountant export if not resolved.',
+    10,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  ),
+  (
+    'refund_writeoff_approval',
+    'adjustments',
+    'Require approval trail for refunds, write-offs, discounts, and credit decisions',
+    'planned',
+    'Adjustment rows, customer account, invoice, payment source, and proof attachment.',
+    'Reviewer confirms reason, amount, tax handling, and close-period status.',
+    'Post only after approval; keep reversal row if changed later.',
+    'Hold adjustment in draft/review state until evidence is present.',
+    20,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  ),
+  (
+    'payment_export_reconciliation',
+    'accountant_export',
+    'Tie payment closeout decisions into the accountant export manifest',
+    'planned',
+    'Closed payment actions, unresolved exceptions, proof files, and export package.',
+    'Reviewer confirms package includes applied/unapplied cash, exceptions, and proof notes.',
+    'Export manifest becomes close-period evidence.',
+    'Generate CSV/JSON summary if final export packaging is incomplete.',
+    30,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  )
+on conflict (closeout_key) do update set
+  payment_area = excluded.payment_area,
+  closeout_title = excluded.closeout_title,
+  closeout_status = excluded.closeout_status,
+  source_rows_hint = excluded.source_rows_hint,
+  decision_hint = excluded.decision_hint,
+  posting_hint = excluded.posting_hint,
+  fallback_hint = excluded.fallback_hint,
+  sort_order = excluded.sort_order,
+  metadata = excluded.metadata,
+  checked_at = excluded.checked_at,
+  updated_at = now();
 
-insert into public.app_reconciliation_exception_workflow_queue (workflow_key, reconciliation_area, workflow_title, workflow_status, exception_hint, reviewer_action_hint, undo_or_lock_hint, fallback_hint, sort_order, metadata, checked_at) values
-('low_confidence_match_queue','match_scoring','Review low-confidence bank matches with reason and proof','planned','Bank CSV staging row, possible invoice/payment/journal matches, score, and duplicate flags.','Reviewer accepts, rejects, splits, or leaves unmatched with a note.','Accepted matches lock after close; rejected matches return to open pool.','Manual bank spreadsheet review remains fallback.',10,'{"build":"2026-06-09a","schema":140}'::jsonb,now()),
-('split_match_exception_queue','split_matching','Handle split deposits and partial payments without losing audit trail','planned','One bank row mapped to multiple invoices/payments/adjustments or one payment split across bank rows.','Reviewer records split amounts and proof references.','Undo keeps split history and restores original open balance.','Export split details for accountant review if UI is not complete.',20,'{"build":"2026-06-09a","schema":140}'::jsonb,now()),
-('unmatched_close_exception_queue','unmatched_close','Carry unresolved bank exceptions into close package with owner and due date','planned','Unmatched bank rows, duplicate rows, bad date/amount rows, and stale open exceptions.','Owner assigns due date, materiality, and next action.','Close can proceed only with reviewed exception note or approved blocker override.','Attach unresolved CSV to accountant package.',30,'{"build":"2026-06-09a","schema":140}'::jsonb,now())
-on conflict (workflow_key) do update set reconciliation_area=excluded.reconciliation_area, workflow_title=excluded.workflow_title, workflow_status=excluded.workflow_status, exception_hint=excluded.exception_hint, reviewer_action_hint=excluded.reviewer_action_hint, undo_or_lock_hint=excluded.undo_or_lock_hint, fallback_hint=excluded.fallback_hint, sort_order=excluded.sort_order, metadata=excluded.metadata, checked_at=excluded.checked_at, updated_at=now();
+insert into public.app_reconciliation_exception_workflow_queue (
+  workflow_key,
+  reconciliation_area,
+  workflow_title,
+  workflow_status,
+  exception_hint,
+  reviewer_action_hint,
+  undo_or_lock_hint,
+  fallback_hint,
+  sort_order,
+  metadata,
+  checked_at
+)
+values
+  (
+    'low_confidence_match_queue',
+    'match_scoring',
+    'Review low-confidence bank matches with reason and proof',
+    'planned',
+    'Bank CSV staging row, possible invoice/payment/journal matches, score, and duplicate flags.',
+    'Reviewer accepts, rejects, splits, or leaves unmatched with a note.',
+    'Accepted matches lock after close; rejected matches return to open pool.',
+    'Manual bank spreadsheet review remains fallback.',
+    10,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  ),
+  (
+    'split_match_exception_queue',
+    'split_matching',
+    'Handle split deposits and partial payments without losing audit trail',
+    'planned',
+    'One bank row mapped to multiple invoices/payments/adjustments or one payment split across bank rows.',
+    'Reviewer records split amounts and proof references.',
+    'Undo keeps split history and restores original open balance.',
+    'Export split details for accountant review if UI is not complete.',
+    20,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  ),
+  (
+    'unmatched_close_exception_queue',
+    'unmatched_close',
+    'Carry unresolved bank exceptions into close package with owner and due date',
+    'planned',
+    'Unmatched bank rows, duplicate rows, bad date/amount rows, and stale open exceptions.',
+    'Owner assigns due date, materiality, and next action.',
+    'Close can proceed only with reviewed exception note or approved blocker override.',
+    'Attach unresolved CSV to accountant package.',
+    30,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  )
+on conflict (workflow_key) do update set
+  reconciliation_area = excluded.reconciliation_area,
+  workflow_title = excluded.workflow_title,
+  workflow_status = excluded.workflow_status,
+  exception_hint = excluded.exception_hint,
+  reviewer_action_hint = excluded.reviewer_action_hint,
+  undo_or_lock_hint = excluded.undo_or_lock_hint,
+  fallback_hint = excluded.fallback_hint,
+  sort_order = excluded.sort_order,
+  metadata = excluded.metadata,
+  checked_at = excluded.checked_at,
+  updated_at = now();
 
-insert into public.app_equipment_chain_of_custody_queue (custody_key, custody_area, custody_title, custody_status, scan_or_signature_hint, verification_hint, cost_or_service_hint, fallback_hint, sort_order, metadata, checked_at) values
-('checkout_arrival_return_chain','chain_of_custody','Tie checkout, arrival, return, and return-to-service into one custody trail','in_progress','Equipment code/QR/barcode, worker/supervisor/admin signatures, site, job, and timestamps.','Each handoff confirms equipment identity, condition, accessories, and test result.','Failed tests open service task and possible recoverable cost review.','Manual equipment code entry and notes remain fallback.',10,'{"build":"2026-06-09a","schema":140}'::jsonb,now()),
-('accessory_cost_recovery','accessory_costs','Turn missing/damaged accessory exceptions into cost recovery or write-off review','planned','Accessory checklist rows, missing/damaged notes, replacement cost, job/customer/internal decision.','Supervisor signs exception; admin/accounting decides billable/internal/write-off/warranty.','Decision links to job profitability and accountant export.','Keep exception visible until cost decision is recorded.',20,'{"build":"2026-06-09a","schema":140}'::jsonb,now()),
-('return_to_service_override','lockout_override','Require admin override reason when locked-out equipment is returned to service without normal proof','planned','Open service task, lockout reason, proof gap, verifier role, override reason, and evidence.','Admin signs override and records risk/mitigation.','Override creates audit row and leaves follow-up service task if proof remains missing.','Keep equipment locked out if override is not approved.',30,'{"build":"2026-06-09a","schema":140}'::jsonb,now())
-on conflict (custody_key) do update set custody_area=excluded.custody_area, custody_title=excluded.custody_title, custody_status=excluded.custody_status, scan_or_signature_hint=excluded.scan_or_signature_hint, verification_hint=excluded.verification_hint, cost_or_service_hint=excluded.cost_or_service_hint, fallback_hint=excluded.fallback_hint, sort_order=excluded.sort_order, metadata=excluded.metadata, checked_at=excluded.checked_at, updated_at=now();
+insert into public.app_equipment_chain_of_custody_queue (
+  custody_key,
+  custody_area,
+  custody_title,
+  custody_status,
+  scan_or_signature_hint,
+  verification_hint,
+  cost_or_service_hint,
+  fallback_hint,
+  sort_order,
+  metadata,
+  checked_at
+)
+values
+  (
+    'checkout_arrival_return_chain',
+    'chain_of_custody',
+    'Tie checkout, arrival, return, and return-to-service into one custody trail',
+    'in_progress',
+    'Equipment code/QR/barcode, worker/supervisor/admin signatures, site, job, and timestamps.',
+    'Each handoff confirms equipment identity, condition, accessories, and test result.',
+    'Failed tests open service task and possible recoverable cost review.',
+    'Manual equipment code entry and notes remain fallback.',
+    10,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  ),
+  (
+    'accessory_cost_recovery',
+    'accessory_costs',
+    'Turn missing/damaged accessory exceptions into cost recovery or write-off review',
+    'planned',
+    'Accessory checklist rows, missing/damaged notes, replacement cost, job/customer/internal decision.',
+    'Supervisor signs exception; admin/accounting decides billable/internal/write-off/warranty.',
+    'Decision links to job profitability and accountant export.',
+    'Keep exception visible until cost decision is recorded.',
+    20,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  ),
+  (
+    'return_to_service_override',
+    'lockout_override',
+    'Require admin override reason when locked-out equipment is returned to service without normal proof',
+    'planned',
+    'Open service task, lockout reason, proof gap, verifier role, override reason, and evidence.',
+    'Admin signs override and records risk/mitigation.',
+    'Override creates audit row and leaves follow-up service task if proof remains missing.',
+    'Keep equipment locked out if override is not approved.',
+    30,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  )
+on conflict (custody_key) do update set
+  custody_area = excluded.custody_area,
+  custody_title = excluded.custody_title,
+  custody_status = excluded.custody_status,
+  scan_or_signature_hint = excluded.scan_or_signature_hint,
+  verification_hint = excluded.verification_hint,
+  cost_or_service_hint = excluded.cost_or_service_hint,
+  fallback_hint = excluded.fallback_hint,
+  sort_order = excluded.sort_order,
+  metadata = excluded.metadata,
+  checked_at = excluded.checked_at,
+  updated_at = now();
 
-insert into public.app_local_seo_conversion_queue (conversion_key, route_key, conversion_area, conversion_title, conversion_status, search_term_hint, conversion_hint, proof_or_link_hint, fallback_hint, sort_order, metadata, checked_at) values
-('homepage_booking_cta_seo','home','homepage','Connect local service wording to a clear booking/contact action','in_progress','Use clear service and location terms in title, main heading, intro, and CTA anchor text.','CTA should lead to the most useful booking/contact path and not hide behind admin-only routes.','Proof block or service summary supports the local wording.','Keep generic CTA if public service routing is incomplete.',10,'{"build":"2026-06-09a","schema":140}'::jsonb,now()),
-('service_area_internal_links','service_area','Add helpful internal links from approved local/service sections','planned','Use true service-area terms and avoid unsupported location pages.','Links should help users choose service, proof, pricing/quote, or contact paths.','Only approved sitemap routes should be linked from public copy.','Hold links in draft if proof or route is weak.',20,'{"build":"2026-06-09a","schema":140}'::jsonb,now()),
-('seo_conversion_smoke','technical_seo','Smoke-test sitemap, robots, title/H1, meta, internal links, and conversion targets together','planned','Sitemap/robots, one-H1, title/meta, local terms, image alt, and CTA anchors.','Release check confirms public search wording and user action path are not disconnected.','Broken links or unsupported routes stay unpublished.','Static homepage remains fallback until route proof matures.',30,'{"build":"2026-06-09a","schema":140}'::jsonb,now())
-on conflict (conversion_key) do update set route_key=excluded.route_key, conversion_area=excluded.conversion_area, conversion_title=excluded.conversion_title, conversion_status=excluded.conversion_status, search_term_hint=excluded.search_term_hint, conversion_hint=excluded.conversion_hint, proof_or_link_hint=excluded.proof_or_link_hint, fallback_hint=excluded.fallback_hint, sort_order=excluded.sort_order, metadata=excluded.metadata, checked_at=excluded.checked_at, updated_at=now();
+insert into public.app_local_seo_conversion_queue (
+  conversion_key,
+  route_key,
+  conversion_area,
+  conversion_title,
+  conversion_status,
+  search_term_hint,
+  conversion_hint,
+  proof_or_link_hint,
+  fallback_hint,
+  sort_order,
+  metadata,
+  checked_at
+)
+values
+  (
+    'homepage_booking_cta_seo',
+    'home',
+    'homepage',
+    'Connect local service wording to a clear booking/contact action',
+    'in_progress',
+    'Use clear service and location terms in title, main heading, intro, and CTA anchor text.',
+    'CTA should lead to the most useful booking/contact path and not hide behind admin-only routes.',
+    'Proof block or service summary supports the local wording.',
+    'Keep generic CTA if public service routing is incomplete.',
+    10,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  ),
+  (
+    'service_area_internal_links',
+    'service_area',
+    'internal_links',
+    'Add helpful internal links from approved local/service sections',
+    'planned',
+    'Use true service-area terms and avoid unsupported location pages.',
+    'Links should help users choose service, proof, pricing/quote, or contact paths.',
+    'Only approved sitemap routes should be linked from public copy.',
+    'Hold links in draft if proof or route is weak.',
+    20,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  ),
+  (
+    'seo_conversion_smoke',
+    'home_shell',
+    'technical_seo',
+    'Smoke-test sitemap, robots, title/H1, meta, internal links, and conversion targets together',
+    'planned',
+    'Sitemap/robots, one-H1, title/meta, local terms, image alt, and CTA anchors.',
+    'Release check confirms public search wording and user action path are not disconnected.',
+    'Broken links or unsupported routes stay unpublished.',
+    'Static homepage remains fallback until route proof matures.',
+    30,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  )
+on conflict (conversion_key) do update set
+  route_key = excluded.route_key,
+  conversion_area = excluded.conversion_area,
+  conversion_title = excluded.conversion_title,
+  conversion_status = excluded.conversion_status,
+  search_term_hint = excluded.search_term_hint,
+  conversion_hint = excluded.conversion_hint,
+  proof_or_link_hint = excluded.proof_or_link_hint,
+  fallback_hint = excluded.fallback_hint,
+  sort_order = excluded.sort_order,
+  metadata = excluded.metadata,
+  checked_at = excluded.checked_at,
+  updated_at = now();
 
-insert into public.app_runtime_fallback_escalation_queue (escalation_key, app_surface, escalation_title, escalation_status, detection_hint, user_message_hint, escalation_action_hint, fallback_hint, sort_order, metadata, checked_at) values
-('schema_view_missing_escalation','Admin readiness','Escalate repeated optional-view missing errors after schema deploy','covered','safeList missing-view errors continue after schema drift says current.','Show Apply schema/redeploy function message and name the missing view if known.','Redeploy admin-directory and compare full schema to standalone migration.','Keep empty tables and previous cached data where safe.',10,'{"build":"2026-06-09a","schema":140}'::jsonb,now()),
-('payment_posting_blocked_escalation','Accounting workbench','Escalate payment/reconciliation rows blocked by proof or close-period lock','planned','Posting attempt fails because proof, approval, or period-open check is missing.','Explain missing blocker and leave action in review queue.','Admin/accountant attaches proof, reopens period with reason, or exports blocker.','Do not auto-retry accounting blockers.',20,'{"build":"2026-06-09a","schema":140}'::jsonb,now()),
-('offline_draft_conflict_escalation','Mobile/offline forms','Escalate offline draft conflicts without discarding local work','review','Local draft conflicts with changed server row or failed network retry.','Offer Retry sync, Keep local copy, or Discard local after confirmation.','Supervisor reviews unresolved conflict queue before closeout.','Keep local draft until server acknowledges success.',30,'{"build":"2026-06-09a","schema":140}'::jsonb,now())
-on conflict (escalation_key) do update set app_surface=excluded.app_surface, escalation_title=excluded.escalation_title, escalation_status=excluded.escalation_status, detection_hint=excluded.detection_hint, user_message_hint=excluded.user_message_hint, escalation_action_hint=excluded.escalation_action_hint, fallback_hint=excluded.fallback_hint, sort_order=excluded.sort_order, metadata=excluded.metadata, checked_at=excluded.checked_at, updated_at=now();
+insert into public.app_runtime_fallback_escalation_queue (
+  escalation_key,
+  app_surface,
+  escalation_title,
+  escalation_status,
+  detection_hint,
+  user_message_hint,
+  escalation_action_hint,
+  fallback_hint,
+  sort_order,
+  metadata,
+  checked_at
+)
+values
+  (
+    'schema_view_missing_escalation',
+    'Admin readiness',
+    'Escalate repeated optional-view missing errors after schema deploy',
+    'covered',
+    'safeList missing-view errors continue after schema drift says current.',
+    'Show Apply schema/redeploy function message and name the missing view if known.',
+    'Redeploy admin-directory and compare full schema to standalone migration.',
+    'Keep empty tables and previous cached data where safe.',
+    10,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  ),
+  (
+    'payment_posting_blocked_escalation',
+    'Accounting workbench',
+    'Escalate payment/reconciliation rows blocked by proof or close-period lock',
+    'planned',
+    'Posting attempt fails because proof, approval, or period-open check is missing.',
+    'Explain missing blocker and leave action in review queue.',
+    'Admin/accountant attaches proof, reopens period with reason, or exports blocker.',
+    'Do not auto-retry accounting blockers.',
+    20,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  ),
+  (
+    'offline_draft_conflict_escalation',
+    'Mobile/offline forms',
+    'Escalate offline draft conflicts without discarding local work',
+    'review',
+    'Local draft conflicts with changed server row or failed network retry.',
+    'Offer Retry sync, Keep local copy, or Discard local after confirmation.',
+    'Supervisor reviews unresolved conflict queue before closeout.',
+    'Keep local draft until server acknowledges success.',
+    30,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  )
+on conflict (escalation_key) do update set
+  app_surface = excluded.app_surface,
+  escalation_title = excluded.escalation_title,
+  escalation_status = excluded.escalation_status,
+  detection_hint = excluded.detection_hint,
+  user_message_hint = excluded.user_message_hint,
+  escalation_action_hint = excluded.escalation_action_hint,
+  fallback_hint = excluded.fallback_hint,
+  sort_order = excluded.sort_order,
+  metadata = excluded.metadata,
+  checked_at = excluded.checked_at,
+  updated_at = now();
 
-insert into public.app_roadmap_action_steps (step_key, step_batch, step_number, step_area, step_title, step_status, priority, source_doc, route_hint, acceptance_check, implementation_notes, risk_if_skipped, sort_order, metadata, checked_at) values
-('schema140_done_01','completed_this_pass',1,'schema','Added schema 140 release-exit/control queues','completed','high','DEVELOPMENT_ROADMAP.md','#admin','Migration and full schema include schema 140.','Admin readiness can track release exit, payment closeout, reconciliation exceptions, equipment custody, SEO conversion, and fallback escalation.','Roadmap stays outside Admin readiness.',1,'{"build":"2026-06-09a","schema":140}'::jsonb,now()),
-('schema140_done_02','completed_this_pass',2,'cleanup','Archived retired root Markdown and test_write files','completed','high','KNOWN_ISSUES_AND_GAPS.md','archive','Smoke root hygiene checks pass.','Active root stays clean and deployment bundle remains smaller.','Temporary files keep breaking smoke.',2,'{"build":"2026-06-09a","schema":140}'::jsonb,now()),
-('schema140_done_03','completed_this_pass',3,'seo','Updated sitemap/cache marker and maintained one-H1 guardrail','completed','high','DEVELOPMENT_ROADMAP.md','/','Smoke checks confirm sitemap/robots/cache/H1 still pass.','Local SEO release checks stay aligned with public shell.','Stale assets may hide current copy or route changes.',3,'{"build":"2026-06-09a","schema":140}'::jsonb,now()),
-('schema140_next_01','next_20',1,'accounting','Turn payment closeout queue rows into real Admin actions','planned','high','DEVELOPMENT_ROADMAP.md','#admin','Apply/reverse/refund/write-off buttons update DB rows with approval reason.','Payment closeout becomes operational instead of queue-only.','Cash application remains manual.',101,'{"build":"2026-06-09a","schema":140}'::jsonb,now()),
-('schema140_next_02','next_20',2,'reconciliation','Build split-match and unmatched exception UI with undo history','planned','high','DEVELOPMENT_ROADMAP.md','#admin','Reviewer can split, undo, note, and export exceptions.','Bank reconciliation depth improves.','Unmatched rows stay spreadsheet-only.',102,'{"build":"2026-06-09a","schema":140}'::jsonb,now()),
-('schema140_next_03','next_20',3,'equipment','Add chain-of-custody timeline and accessory cost recovery actions','planned','high','DEVELOPMENT_ROADMAP.md','#jobs','Equipment timeline shows checkout/arrival/return/service/cost rows.','Return accountability becomes easier to audit.','Missing accessories remain notes-only.',103,'{"build":"2026-06-09a","schema":140}'::jsonb,now()),
-('schema140_next_04','next_20',4,'seo','Connect local SEO route proof to public conversion CTA checks','planned','medium','DEVELOPMENT_ROADMAP.md','/','Public links/CTA/sitemap/title/meta/local proof are checked together.','SEO work helps users act, not just find the site.','Search visibility and conversion stay disconnected.',104,'{"build":"2026-06-09a","schema":140}'::jsonb,now()),
-('schema140_next_05','next_20',5,'runtime','Add fallback escalation event logging from UI and Edge Functions','planned','medium','KNOWN_ISSUES_AND_GAPS.md','#admin','Fallback events can be reviewed and counted.','Repeated deployment/schema/offline failures become visible.','Failures remain anecdotal.',105,'{"build":"2026-06-09a","schema":140}'::jsonb,now())
-on conflict (step_key) do update set step_batch=excluded.step_batch, step_number=excluded.step_number, step_area=excluded.step_area, step_title=excluded.step_title, step_status=excluded.step_status, priority=excluded.priority, source_doc=excluded.source_doc, route_hint=excluded.route_hint, acceptance_check=excluded.acceptance_check, implementation_notes=excluded.implementation_notes, risk_if_skipped=excluded.risk_if_skipped, sort_order=excluded.sort_order, metadata=excluded.metadata, checked_at=excluded.checked_at, updated_at=now();
+insert into public.app_roadmap_action_steps (
+  step_key,
+  step_batch,
+  step_number,
+  step_area,
+  step_title,
+  step_status,
+  priority,
+  source_doc,
+  route_hint,
+  acceptance_check,
+  implementation_notes,
+  risk_if_skipped,
+  sort_order,
+  metadata,
+  checked_at
+)
+values
+  (
+    'schema140_done_01',
+    'completed_this_pass',
+    1,
+    'schema',
+    'Added schema 140 release-exit/control queues',
+    'completed',
+    'high',
+    'DEVELOPMENT_ROADMAP.md',
+    '#admin',
+    'Migration and full schema include schema 140.',
+    'Admin readiness can track release exit, payment closeout, reconciliation exceptions, equipment custody, SEO conversion, and fallback escalation.',
+    'Roadmap stays outside Admin readiness.',
+    1,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  ),
+  (
+    'schema140_done_02',
+    'completed_this_pass',
+    2,
+    'cleanup',
+    'Archived retired root Markdown and test_write files',
+    'completed',
+    'high',
+    'KNOWN_ISSUES_AND_GAPS.md',
+    'archive',
+    'Smoke root hygiene checks pass.',
+    'Active root stays clean and deployment bundle remains smaller.',
+    'Temporary files keep breaking smoke.',
+    2,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  ),
+  (
+    'schema140_done_03',
+    'completed_this_pass',
+    3,
+    'seo',
+    'Updated sitemap/cache marker and maintained one-H1 guardrail',
+    'completed',
+    'high',
+    'DEVELOPMENT_ROADMAP.md',
+    '/',
+    'Smoke checks confirm sitemap/robots/cache/H1 still pass.',
+    'Local SEO release checks stay aligned with public shell.',
+    'Stale assets may hide current copy or route changes.',
+    3,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  ),
+  (
+    'schema140_next_01',
+    'next_20',
+    1,
+    'accounting',
+    'Turn payment closeout queue rows into real Admin actions',
+    'planned',
+    'high',
+    'DEVELOPMENT_ROADMAP.md',
+    '#admin',
+    'Apply/reverse/refund/write-off buttons update DB rows with approval reason.',
+    'Payment closeout becomes operational instead of queue-only.',
+    'Cash application remains manual.',
+    101,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  ),
+  (
+    'schema140_next_02',
+    'next_20',
+    2,
+    'reconciliation',
+    'Build split-match and unmatched exception UI with undo history',
+    'planned',
+    'high',
+    'DEVELOPMENT_ROADMAP.md',
+    '#admin',
+    'Reviewer can split, undo, note, and export exceptions.',
+    'Bank reconciliation depth improves.',
+    'Unmatched rows stay spreadsheet-only.',
+    102,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  ),
+  (
+    'schema140_next_03',
+    'next_20',
+    3,
+    'equipment',
+    'Add chain-of-custody timeline and accessory cost recovery actions',
+    'planned',
+    'high',
+    'DEVELOPMENT_ROADMAP.md',
+    '#jobs',
+    'Equipment timeline shows checkout/arrival/return/service/cost rows.',
+    'Return accountability becomes easier to audit.',
+    'Missing accessories remain notes-only.',
+    103,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  ),
+  (
+    'schema140_next_04',
+    'next_20',
+    4,
+    'seo',
+    'Connect local SEO route proof to public conversion CTA checks',
+    'planned',
+    'medium',
+    'DEVELOPMENT_ROADMAP.md',
+    '/',
+    'Public links/CTA/sitemap/title/meta/local proof are checked together.',
+    'SEO work helps users act, not just find the site.',
+    'Search visibility and conversion stay disconnected.',
+    104,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  ),
+  (
+    'schema140_next_05',
+    'next_20',
+    5,
+    'runtime',
+    'Add fallback escalation event logging from UI and Edge Functions',
+    'planned',
+    'medium',
+    'KNOWN_ISSUES_AND_GAPS.md',
+    '#admin',
+    'Fallback events can be reviewed and counted.',
+    'Repeated deployment/schema/offline failures become visible.',
+    'Failures remain anecdotal.',
+    105,
+    '{"build":"2026-06-09a","schema":140}'::jsonb,
+    now()
+  )
+on conflict (step_key) do update set
+  step_batch = excluded.step_batch,
+  step_number = excluded.step_number,
+  step_area = excluded.step_area,
+  step_title = excluded.step_title,
+  step_status = excluded.step_status,
+  priority = excluded.priority,
+  source_doc = excluded.source_doc,
+  route_hint = excluded.route_hint,
+  acceptance_check = excluded.acceptance_check,
+  implementation_notes = excluded.implementation_notes,
+  risk_if_skipped = excluded.risk_if_skipped,
+  sort_order = excluded.sort_order,
+  metadata = excluded.metadata,
+  checked_at = excluded.checked_at,
+  updated_at = now();
 
 drop view if exists public.v_app_release_exit_criteria_queue;
-create view public.v_app_release_exit_criteria_queue as select criteria_key, criteria_area, criteria_title, criteria_status, evidence_hint, blocker_hint, owner_hint, fallback_hint, sort_order, checked_at, updated_at from public.app_release_exit_criteria_queue order by sort_order, criteria_key;
+
+create view public.v_app_release_exit_criteria_queue as
+select
+  criteria_key,
+  criteria_area,
+  criteria_title,
+  criteria_status,
+  evidence_hint,
+  blocker_hint,
+  owner_hint,
+  fallback_hint,
+  sort_order,
+  checked_at,
+  updated_at
+from public.app_release_exit_criteria_queue
+order by sort_order, criteria_key;
 
 drop view if exists public.v_app_payment_closeout_action_queue;
-create view public.v_app_payment_closeout_action_queue as select closeout_key, payment_area, closeout_title, closeout_status, source_rows_hint, decision_hint, posting_hint, fallback_hint, sort_order, checked_at, updated_at from public.app_payment_closeout_action_queue order by sort_order, closeout_key;
+
+create view public.v_app_payment_closeout_action_queue as
+select
+  closeout_key,
+  payment_area,
+  closeout_title,
+  closeout_status,
+  source_rows_hint,
+  decision_hint,
+  posting_hint,
+  fallback_hint,
+  sort_order,
+  checked_at,
+  updated_at
+from public.app_payment_closeout_action_queue
+order by sort_order, closeout_key;
 
 drop view if exists public.v_app_reconciliation_exception_workflow_queue;
-create view public.v_app_reconciliation_exception_workflow_queue as select workflow_key, reconciliation_area, workflow_title, workflow_status, exception_hint, reviewer_action_hint, undo_or_lock_hint, fallback_hint, sort_order, checked_at, updated_at from public.app_reconciliation_exception_workflow_queue order by sort_order, workflow_key;
+
+create view public.v_app_reconciliation_exception_workflow_queue as
+select
+  workflow_key,
+  reconciliation_area,
+  workflow_title,
+  workflow_status,
+  exception_hint,
+  reviewer_action_hint,
+  undo_or_lock_hint,
+  fallback_hint,
+  sort_order,
+  checked_at,
+  updated_at
+from public.app_reconciliation_exception_workflow_queue
+order by sort_order, workflow_key;
 
 drop view if exists public.v_app_equipment_chain_of_custody_queue;
-create view public.v_app_equipment_chain_of_custody_queue as select custody_key, custody_area, custody_title, custody_status, scan_or_signature_hint, verification_hint, cost_or_service_hint, fallback_hint, sort_order, checked_at, updated_at from public.app_equipment_chain_of_custody_queue order by sort_order, custody_key;
+
+create view public.v_app_equipment_chain_of_custody_queue as
+select
+  custody_key,
+  custody_area,
+  custody_title,
+  custody_status,
+  scan_or_signature_hint,
+  verification_hint,
+  cost_or_service_hint,
+  fallback_hint,
+  sort_order,
+  checked_at,
+  updated_at
+from public.app_equipment_chain_of_custody_queue
+order by sort_order, custody_key;
 
 drop view if exists public.v_app_local_seo_conversion_queue;
-create view public.v_app_local_seo_conversion_queue as select conversion_key, route_key, conversion_area, conversion_title, conversion_status, search_term_hint, conversion_hint, proof_or_link_hint, fallback_hint, sort_order, checked_at, updated_at from public.app_local_seo_conversion_queue order by sort_order, conversion_key;
+
+create view public.v_app_local_seo_conversion_queue as
+select
+  conversion_key,
+  route_key,
+  conversion_area,
+  conversion_title,
+  conversion_status,
+  search_term_hint,
+  conversion_hint,
+  proof_or_link_hint,
+  fallback_hint,
+  sort_order,
+  checked_at,
+  updated_at
+from public.app_local_seo_conversion_queue
+order by sort_order, conversion_key;
 
 drop view if exists public.v_app_runtime_fallback_escalation_queue;
-create view public.v_app_runtime_fallback_escalation_queue as select escalation_key, app_surface, escalation_title, escalation_status, detection_hint, user_message_hint, escalation_action_hint, fallback_hint, sort_order, checked_at, updated_at from public.app_runtime_fallback_escalation_queue order by sort_order, escalation_key;
+
+create view public.v_app_runtime_fallback_escalation_queue as
+select
+  escalation_key,
+  app_surface,
+  escalation_title,
+  escalation_status,
+  detection_hint,
+  user_message_hint,
+  escalation_action_hint,
+  fallback_hint,
+  sort_order,
+  checked_at,
+  updated_at
+from public.app_runtime_fallback_escalation_queue
+order by sort_order, escalation_key;
 
 drop view if exists public.v_schema_drift_status;
+
 create view public.v_schema_drift_status as
 select
   140::int as expected_schema_version,
   coalesce(max(schema_version) filter (where status = 'applied'), 0)::int as latest_applied_schema_version,
-  case when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 140 then 'current' else 'behind' end as drift_status,
-  case when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 140 then 'Live database is at or ahead of the repo schema marker.' else 'Live database is behind the deployed app. Apply migrations through schema 140.' end as message,
+  case
+    when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 140
+      then 'current'
+    else 'behind'
+  end as drift_status,
+  case
+    when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 140
+      then 'Live database is at or ahead of the repo schema marker.'
+    else 'Live database is behind the deployed app. Apply migrations through schema 140.'
+  end as message,
   now() as checked_at
 from public.app_schema_versions;
 
-insert into public.app_schema_versions (schema_version, migration_key, schema_name, release_label, description, status, notes)
-values (140, '140_release_exit_payment_closeout_recon_equipment_seo_runtime_controls', '140_release_exit_payment_closeout_recon_equipment_seo_runtime_controls.sql', '2026-06-09a', 'Adds Admin-visible release exit criteria, payment closeout actions, reconciliation exception workflow, equipment chain-of-custody, local SEO conversion checks, and runtime fallback escalation queues.', 'applied', 'This pass keeps schema, Markdown, SEO assets, CSS/H1 checks, fallback escalation, and smoke checks aligned through schema 140.')
-on conflict (schema_version) do update set migration_key=excluded.migration_key, schema_name=excluded.schema_name, release_label=excluded.release_label, description=excluded.description, status=excluded.status, notes=excluded.notes, applied_at=now();
+insert into public.app_schema_versions (
+  schema_version,
+  migration_key,
+  schema_name,
+  release_label,
+  description,
+  status,
+  notes
+)
+values (
+  140,
+  '140_release_exit_payment_closeout_recon_equipment_seo_runtime_controls',
+  '140_release_exit_payment_closeout_recon_equipment_seo_runtime_controls.sql',
+  '2026-06-09a',
+  'Adds Admin-visible release exit criteria, payment closeout actions, reconciliation exception workflow, equipment chain-of-custody, local SEO conversion checks, and runtime fallback escalation queues.',
+  'applied',
+  'This pass keeps schema, Markdown, SEO assets, CSS/H1 checks, fallback escalation, and smoke checks aligned through schema 140.'
+)
+on conflict (schema_version) do update set
+  migration_key = excluded.migration_key,
+  schema_name = excluded.schema_name,
+  release_label = excluded.release_label,
+  description = excluded.description,
+  status = excluded.status,
+  notes = excluded.notes,
+  applied_at = now();
 
 grant select on public.app_release_exit_criteria_queue to authenticated;
 grant select on public.app_payment_closeout_action_queue to authenticated;
@@ -20884,12 +21626,219 @@ grant select on public.app_reconciliation_exception_workflow_queue to authentica
 grant select on public.app_equipment_chain_of_custody_queue to authenticated;
 grant select on public.app_local_seo_conversion_queue to authenticated;
 grant select on public.app_runtime_fallback_escalation_queue to authenticated;
+
 grant select on public.v_app_release_exit_criteria_queue to authenticated;
 grant select on public.v_app_payment_closeout_action_queue to authenticated;
 grant select on public.v_app_reconciliation_exception_workflow_queue to authenticated;
 grant select on public.v_app_equipment_chain_of_custody_queue to authenticated;
 grant select on public.v_app_local_seo_conversion_queue to authenticated;
 grant select on public.v_app_runtime_fallback_escalation_queue to authenticated;
+grant select on public.v_schema_drift_status to authenticated;
+
+
+-- Schema 141: Release handoff, payment posting proof, equipment custody evidence, SEO conversion evidence, and runtime fallback logging controls.
+create table if not exists public.app_schema_versions (
+  schema_version integer primary key,
+  schema_name text,
+  description text,
+  status text not null default 'applied',
+  applied_at timestamptz not null default now(),
+  applied_by text,
+  notes text
+);
+
+alter table public.app_schema_versions add column if not exists migration_key text;
+alter table public.app_schema_versions add column if not exists release_label text;
+
+create table if not exists public.app_roadmap_action_steps (
+  step_key text primary key,
+  step_batch text not null,
+  step_number integer not null,
+  step_area text not null,
+  step_title text not null,
+  step_status text not null default 'planned',
+  priority text not null default 'medium',
+  source_doc text,
+  route_hint text,
+  implementation_notes text,
+  acceptance_check text,
+  risk_if_skipped text,
+  sort_order integer not null default 100,
+  metadata jsonb not null default '{}'::jsonb,
+  checked_at timestamptz,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.app_roadmap_action_steps add column if not exists source_doc text;
+alter table public.app_roadmap_action_steps add column if not exists route_hint text;
+alter table public.app_roadmap_action_steps add column if not exists implementation_notes text;
+alter table public.app_roadmap_action_steps add column if not exists acceptance_check text;
+alter table public.app_roadmap_action_steps add column if not exists risk_if_skipped text;
+alter table public.app_roadmap_action_steps add column if not exists metadata jsonb not null default '{}'::jsonb;
+alter table public.app_roadmap_action_steps add column if not exists checked_at timestamptz;
+alter table public.app_roadmap_action_steps add column if not exists updated_at timestamptz not null default now();
+
+alter table public.app_roadmap_action_steps drop constraint if exists app_roadmap_action_steps_step_batch_check;
+alter table public.app_roadmap_action_steps add constraint app_roadmap_action_steps_step_batch_check check (step_batch in ('completed_this_pass','next_20'));
+alter table public.app_roadmap_action_steps drop constraint if exists app_roadmap_action_steps_step_status_check;
+alter table public.app_roadmap_action_steps add constraint app_roadmap_action_steps_step_status_check check (step_status in ('completed','in_progress','planned','blocked','review'));
+
+create table if not exists public.app_release_handoff_queue (
+  handoff_key text primary key,
+  handoff_area text not null,
+  handoff_title text not null,
+  handoff_status text not null default 'planned',
+  release_evidence_hint text,
+  deploy_action_hint text,
+  rollback_hint text,
+  fallback_hint text,
+  sort_order integer not null default 100,
+  metadata jsonb not null default '{}'::jsonb,
+  checked_at timestamptz,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.app_payment_posting_proof_queue (
+  proof_key text primary key,
+  payment_area text not null,
+  proof_title text not null,
+  proof_status text not null default 'planned',
+  source_rows_hint text,
+  proof_required_hint text,
+  posting_or_close_hint text,
+  fallback_hint text,
+  sort_order integer not null default 100,
+  metadata jsonb not null default '{}'::jsonb,
+  checked_at timestamptz,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.app_equipment_custody_evidence_queue (
+  evidence_key text primary key,
+  custody_area text not null,
+  evidence_title text not null,
+  evidence_status text not null default 'planned',
+  required_scan_or_signature text,
+  required_photo_or_note text,
+  accounting_or_service_link text,
+  fallback_hint text,
+  sort_order integer not null default 100,
+  metadata jsonb not null default '{}'::jsonb,
+  checked_at timestamptz,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.app_seo_conversion_evidence_queue (
+  evidence_key text primary key,
+  route_key text,
+  evidence_area text not null,
+  evidence_title text not null,
+  evidence_status text not null default 'planned',
+  search_phrase_hint text,
+  page_evidence_hint text,
+  conversion_path_hint text,
+  fallback_hint text,
+  sort_order integer not null default 100,
+  metadata jsonb not null default '{}'::jsonb,
+  checked_at timestamptz,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.app_runtime_fallback_event_log_queue (
+  event_key text primary key,
+  app_surface text not null,
+  event_title text not null,
+  event_status text not null default 'planned',
+  detection_hint text,
+  log_payload_hint text,
+  owner_action_hint text,
+  fallback_hint text,
+  sort_order integer not null default 100,
+  metadata jsonb not null default '{}'::jsonb,
+  checked_at timestamptz,
+  updated_at timestamptz not null default now()
+);
+
+insert into public.app_release_handoff_queue (handoff_key,handoff_area,handoff_title,handoff_status,release_evidence_hint,deploy_action_hint,rollback_hint,fallback_hint,sort_order,metadata,checked_at) values
+('schema_140_full_reference_repair','schema','Canonical full schema carries the repaired schema 140 insert','completed','sql/000_full_schema_reference.sql uses the same 12-column app_local_seo_conversion_queue insert shape as the standalone schema 140 file.','Run schema 140 only if live database did not already apply the repaired file, then apply schema 141.','Use standalone schema files before full-schema restore if a compact insert regresses.','Keep a verified code block repair in NEW_CHAT_STATUS.md for handoff.',10,'{"build":"2026-06-09b","schema":141}'::jsonb,now()),
+('release_handoff_bundle','release','Create deploy handoff showing schema order, function redeploys, cache marker, and smoke result','in_progress','Schema 141 migration, admin-directory update, docs, sitemap/robots, cache marker, and smoke output.','Apply schema 141, redeploy admin-directory, then redeploy jobs functions only if live versions are behind.','Rollback by restoring previous zip and leaving DB at latest applied schema; views are additive.','Use cached Admin empty-table fallback if optional views are not live yet.',20,'{"build":"2026-06-09b","schema":141}'::jsonb,now()),
+('markdown_schema_sync_handoff','docs','Markdown and schema notes describe the next 20 steps after schema 141','completed','Development Roadmap, Known Issues and Gaps, changelog, database notes, project state, and new schema doc are updated.','Use NEW_CHAT_STATUS.md as the next-chat handoff.','Return to schema 140 bundle only if schema 141 cannot be deployed.','Archive snapshots preserve previous root docs.',30,'{"build":"2026-06-09b","schema":141}'::jsonb,now())
+on conflict (handoff_key) do update set handoff_area=excluded.handoff_area,handoff_title=excluded.handoff_title,handoff_status=excluded.handoff_status,release_evidence_hint=excluded.release_evidence_hint,deploy_action_hint=excluded.deploy_action_hint,rollback_hint=excluded.rollback_hint,fallback_hint=excluded.fallback_hint,sort_order=excluded.sort_order,metadata=excluded.metadata,checked_at=excluded.checked_at,updated_at=now();
+
+insert into public.app_payment_posting_proof_queue (proof_key,payment_area,proof_title,proof_status,source_rows_hint,proof_required_hint,posting_or_close_hint,fallback_hint,sort_order,metadata,checked_at) values
+('cash_application_proof','payment_application','Require proof before posting applied cash, refunds, write-offs, or overpayments','planned','Payment closeout queue, invoice balance, bank match, adjustment reason, and reviewer profile.','Attach receipt/bank row/reference plus approval reason and tax handling where applicable.','Post or close only after proof and reviewer approval are present.','Leave row in exception queue and include it in accountant export.',10,'{"build":"2026-06-09b","schema":141}'::jsonb,now()),
+('reconciliation_exception_proof','reconciliation','Require proof notes for low-confidence, split, duplicate, and unmatched bank decisions','planned','Bank staging rows, match score, accepted/rejected candidates, split rows, and undo history.','Reviewer note explains decision and source evidence.','Accepted rows lock after close; unresolved rows move to export package.','Manual CSV review remains fallback until full posting UI exists.',20,'{"build":"2026-06-09b","schema":141}'::jsonb,now()),
+('close_period_payment_block','month_end_close','Block close if material payment exceptions lack proof or export owner','planned','Open payment/reconciliation exceptions, materiality, due date, owner, and package inclusion.','Each exception needs reviewer signoff or approved blocker override.','Close package records unresolved items and handoff owner.','Keep close in review status until approved.',30,'{"build":"2026-06-09b","schema":141}'::jsonb,now())
+on conflict (proof_key) do update set payment_area=excluded.payment_area,proof_title=excluded.proof_title,proof_status=excluded.proof_status,source_rows_hint=excluded.source_rows_hint,proof_required_hint=excluded.proof_required_hint,posting_or_close_hint=excluded.posting_or_close_hint,fallback_hint=excluded.fallback_hint,sort_order=excluded.sort_order,metadata=excluded.metadata,checked_at=excluded.checked_at,updated_at=now();
+
+insert into public.app_equipment_custody_evidence_queue (evidence_key,custody_area,evidence_title,evidence_status,required_scan_or_signature,required_photo_or_note,accounting_or_service_link,fallback_hint,sort_order,metadata,checked_at) values
+('checkout_site_arrival_return_evidence','chain_of_custody','Require scan/signature evidence across checkout, site arrival, return, and return-to-service','in_progress','QR/barcode/manual code plus worker/supervisor/admin signature names and timestamps.','Condition, accessory checklist, and notes/photo reference when damaged/missing.','Failed test creates service task and cost recovery/write-off review if needed.','Manual entry remains fallback when scanner is unavailable.',10,'{"build":"2026-06-09b","schema":141}'::jsonb,now()),
+('accessory_replacement_cost_evidence','accessory_costs','Tie missing/damaged accessory proof to replacement cost or write-off decision','planned','Accessory checklist status, missing/damaged item, replacement cost, owner, and decision.','Photo/note or supervisor signoff explains the exception.','Billable/internal/warranty/write-off decision flows to job profitability/accountant export.','Keep exception visible until a cost decision exists.',20,'{"build":"2026-06-09b","schema":141}'::jsonb,now()),
+('equipment_override_evidence','lockout_override','Require evidence and reason before overriding equipment lockout','planned','Open lockout/service task, verifier role, override reason, and admin profile.','Proof gap and mitigation note are required if normal service proof is missing.','Override remains auditable and can still create follow-up service task.','Keep equipment locked out when evidence is weak.',30,'{"build":"2026-06-09b","schema":141}'::jsonb,now())
+on conflict (evidence_key) do update set custody_area=excluded.custody_area,evidence_title=excluded.evidence_title,evidence_status=excluded.evidence_status,required_scan_or_signature=excluded.required_scan_or_signature,required_photo_or_note=excluded.required_photo_or_note,accounting_or_service_link=excluded.accounting_or_service_link,fallback_hint=excluded.fallback_hint,sort_order=excluded.sort_order,metadata=excluded.metadata,checked_at=excluded.checked_at,updated_at=now();
+
+insert into public.app_seo_conversion_evidence_queue (evidence_key,route_key,evidence_area,evidence_title,evidence_status,search_phrase_hint,page_evidence_hint,conversion_path_hint,fallback_hint,sort_order,metadata,checked_at) values
+('local_home_conversion_path','home','home_page','Home page local wording connects to contact/quote path','in_progress','Primary service, location/service area, and plain user search terms in title/H1/body.','One H1, meta description, sitemap/robots, image alt, and honest local proof block.','CTA goes to contact/quote/booking path without dead internal links.','Keep static homepage as fallback until service pages mature.',10,'{"build":"2026-06-09b","schema":141}'::jsonb,now()),
+('service_area_route_proof','service_area','Approved service-area route proof before internal linking','planned','Only real served areas and services should appear in route/title/internal links.','Route has proof, title/meta, one clear H1, and no unsupported locality claims.','Internal links help users compare proof, pricing/quote, or contact actions.','Hold location pages in draft if proof is weak.',20,'{"build":"2026-06-09b","schema":141}'::jsonb,now()),
+('seo_conversion_release_smoke','technical_seo','Smoke-test local SEO wording and conversion links together','planned','Sitemap, robots, title/H1/meta, local terms, image alt, link targets, and CTA anchors.','Smoke check catches missing assets, stale cache marker, unsupported routes, and dead links.','Release cannot treat SEO as passing when the user action path is broken.','Keep unpublished routes out of sitemap.',30,'{"build":"2026-06-09b","schema":141}'::jsonb,now())
+on conflict (evidence_key) do update set route_key=excluded.route_key,evidence_area=excluded.evidence_area,evidence_title=excluded.evidence_title,evidence_status=excluded.evidence_status,search_phrase_hint=excluded.search_phrase_hint,page_evidence_hint=excluded.page_evidence_hint,conversion_path_hint=excluded.conversion_path_hint,fallback_hint=excluded.fallback_hint,sort_order=excluded.sort_order,metadata=excluded.metadata,checked_at=excluded.checked_at,updated_at=now();
+
+insert into public.app_runtime_fallback_event_log_queue (event_key,app_surface,event_title,event_status,detection_hint,log_payload_hint,owner_action_hint,fallback_hint,sort_order,metadata,checked_at) values
+('optional_view_missing_log','admin_directory','Log optional-view missing fallback with view name and schema marker','planned','safeList catches missing relation/view after partial schema deploy.','view name, scope, schema drift status, cache marker, and actor role.','Redeploy function or apply missing schema; count repeated misses.','Show empty table with apply schema message.',10,'{"build":"2026-06-09b","schema":141}'::jsonb,now()),
+('accounting_blocked_log','accounting','Log blocked accounting actions with proof/lock reason','planned','Payment or reconciliation action cannot post due to missing proof, approval, or close lock.','action key, blocker, source rows, reviewer, close period, and suggested next action.','Admin/accountant attaches proof, approves blocker, or exports exception.','Do not auto-retry blocked accounting actions.',20,'{"build":"2026-06-09b","schema":141}'::jsonb,now()),
+('offline_conflict_log','mobile_offline','Log offline draft conflicts without discarding local work','review','Local draft conflicts with changed server row or failed sync retry.','draft key, entity, local timestamp, server timestamp, and selected resolution.','Supervisor chooses retry, keep local, or discard after confirmation.','Keep local draft until acknowledged.',30,'{"build":"2026-06-09b","schema":141}'::jsonb,now())
+on conflict (event_key) do update set app_surface=excluded.app_surface,event_title=excluded.event_title,event_status=excluded.event_status,detection_hint=excluded.detection_hint,log_payload_hint=excluded.log_payload_hint,owner_action_hint=excluded.owner_action_hint,fallback_hint=excluded.fallback_hint,sort_order=excluded.sort_order,metadata=excluded.metadata,checked_at=excluded.checked_at,updated_at=now();
+
+insert into public.app_roadmap_action_steps (step_key,step_batch,step_number,step_area,step_title,step_status,priority,source_doc,route_hint,acceptance_check,implementation_notes,risk_if_skipped,sort_order,metadata,checked_at) values
+('schema141_done_01','completed_this_pass',1,'schema','Added schema 141 release handoff and evidence queues','completed','high','DEVELOPMENT_ROADMAP.md','#admin','Migration and full schema include schema 141.','Release handoff, payment proof, equipment custody evidence, SEO conversion evidence, and fallback event logging are visible in Admin readiness.','Release proof remains scattered across Markdown.',1,'{"build":"2026-06-09b","schema":141}'::jsonb,now()),
+('schema141_done_02','completed_this_pass',2,'schema','Repaired schema 140 block inside canonical full schema reference','completed','high','KNOWN_ISSUES_AND_GAPS.md','sql/000_full_schema_reference.sql','Full schema app_local_seo_conversion_queue values match the explicit column list.','Full-schema deploy no longer repeats the schema 140 VALUES-list mismatch.','The same schema 140 error returns during full schema deploy.',2,'{"build":"2026-06-09b","schema":141}'::jsonb,now()),
+('schema141_done_03','completed_this_pass',3,'cleanup','Archived retired helper Markdown and root test files','completed','high','TESTING_CHECKLIST.md','archive','Smoke root hygiene checks pass.','Temporary files and retired helper docs stay out of the active deployment root.','Smoke fails before feature checks.',3,'{"build":"2026-06-09b","schema":141}'::jsonb,now()),
+('schema141_next_01','next_20',1,'admin','Turn release handoff queue into a deploy checklist with copyable order','planned','high','DEVELOPMENT_ROADMAP.md','#admin','Admin shows schema order, function deploy order, cache clear, and smoke status in one checklist.','Release handoff becomes operational.','Deploy notes remain manual.',101,'{"build":"2026-06-09b","schema":141}'::jsonb,now()),
+('schema141_next_02','next_20',2,'accounting','Build payment posting proof upload/reason controls','planned','high','DEVELOPMENT_ROADMAP.md','#admin','Payment closeout actions require proof, reviewer, and reason before posting.','Accounting close gains audit depth.','Cash decisions remain notes-only.',102,'{"build":"2026-06-09b","schema":141}'::jsonb,now()),
+('schema141_next_03','next_20',3,'equipment','Build equipment custody evidence timeline and cost recovery decision actions','planned','high','DEVELOPMENT_ROADMAP.md','#jobs','Timeline displays checkout/arrival/return/service/cost proof with action buttons.','Equipment accountability and job profitability connect.','Damage/missing accessories stay hard to audit.',103,'{"build":"2026-06-09b","schema":141}'::jsonb,now()),
+('schema141_next_04','next_20',4,'seo','Add local SEO conversion evidence checks to smoke script','planned','medium','TESTING_CHECKLIST.md','/','Smoke checks sitemap/robots/H1/meta/local wording/internal links/CTA targets together.','Search visibility and conversion path stay connected.','Public pages may rank but not convert.',104,'{"build":"2026-06-09b","schema":141}'::jsonb,now()),
+('schema141_next_05','next_20',5,'runtime','Create fallback event log table from UI and Edge Function failures','planned','medium','KNOWN_ISSUES_AND_GAPS.md','#admin','Runtime fallback events persist with surface, payload, owner, and action.','Repeated problems become measurable.','Fallback issues stay anecdotal.',105,'{"build":"2026-06-09b","schema":141}'::jsonb,now())
+on conflict (step_key) do update set step_batch=excluded.step_batch,step_number=excluded.step_number,step_area=excluded.step_area,step_title=excluded.step_title,step_status=excluded.step_status,priority=excluded.priority,source_doc=excluded.source_doc,route_hint=excluded.route_hint,acceptance_check=excluded.acceptance_check,implementation_notes=excluded.implementation_notes,risk_if_skipped=excluded.risk_if_skipped,sort_order=excluded.sort_order,metadata=excluded.metadata,checked_at=excluded.checked_at,updated_at=now();
+
+drop view if exists public.v_app_release_handoff_queue;
+create view public.v_app_release_handoff_queue as select handoff_key,handoff_area,handoff_title,handoff_status,release_evidence_hint,deploy_action_hint,rollback_hint,fallback_hint,sort_order,checked_at,updated_at from public.app_release_handoff_queue order by sort_order,handoff_key;
+
+drop view if exists public.v_app_payment_posting_proof_queue;
+create view public.v_app_payment_posting_proof_queue as select proof_key,payment_area,proof_title,proof_status,source_rows_hint,proof_required_hint,posting_or_close_hint,fallback_hint,sort_order,checked_at,updated_at from public.app_payment_posting_proof_queue order by sort_order,proof_key;
+
+drop view if exists public.v_app_equipment_custody_evidence_queue;
+create view public.v_app_equipment_custody_evidence_queue as select evidence_key,custody_area,evidence_title,evidence_status,required_scan_or_signature,required_photo_or_note,accounting_or_service_link,fallback_hint,sort_order,checked_at,updated_at from public.app_equipment_custody_evidence_queue order by sort_order,evidence_key;
+
+drop view if exists public.v_app_seo_conversion_evidence_queue;
+create view public.v_app_seo_conversion_evidence_queue as select evidence_key,route_key,evidence_area,evidence_title,evidence_status,search_phrase_hint,page_evidence_hint,conversion_path_hint,fallback_hint,sort_order,checked_at,updated_at from public.app_seo_conversion_evidence_queue order by sort_order,evidence_key;
+
+drop view if exists public.v_app_runtime_fallback_event_log_queue;
+create view public.v_app_runtime_fallback_event_log_queue as select event_key,app_surface,event_title,event_status,detection_hint,log_payload_hint,owner_action_hint,fallback_hint,sort_order,checked_at,updated_at from public.app_runtime_fallback_event_log_queue order by sort_order,event_key;
+
+drop view if exists public.v_schema_drift_status;
+create view public.v_schema_drift_status as
+select
+  141::int as expected_schema_version,
+  coalesce(max(schema_version) filter (where status = 'applied'), 0)::int as latest_applied_schema_version,
+  case when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 141 then 'current' else 'behind' end as drift_status,
+  case when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 141 then 'Live database is at or ahead of the repo schema marker.' else 'Live database is behind the deployed app. Apply migrations through schema 141.' end as message,
+  now() as checked_at
+from public.app_schema_versions;
+
+insert into public.app_schema_versions (schema_version,migration_key,schema_name,release_label,description,status,notes)
+values (141,'141_release_handoff_payment_proof_equipment_custody_seo_runtime_logging_controls','141_release_handoff_payment_proof_equipment_custody_seo_runtime_logging_controls.sql','2026-06-09b','Adds release handoff, payment posting proof, equipment custody evidence, SEO conversion evidence, and runtime fallback event-log readiness queues.','applied','Also keeps the schema 140 canonical full schema repair visible so full-schema deploys do not reintroduce the VALUES-list mismatch.')
+on conflict (schema_version) do update set migration_key=excluded.migration_key,schema_name=excluded.schema_name,release_label=excluded.release_label,description=excluded.description,status=excluded.status,notes=excluded.notes,applied_at=now();
+
+grant select on public.app_release_handoff_queue to authenticated;
+grant select on public.app_payment_posting_proof_queue to authenticated;
+grant select on public.app_equipment_custody_evidence_queue to authenticated;
+grant select on public.app_seo_conversion_evidence_queue to authenticated;
+grant select on public.app_runtime_fallback_event_log_queue to authenticated;
+grant select on public.v_app_release_handoff_queue to authenticated;
+grant select on public.v_app_payment_posting_proof_queue to authenticated;
+grant select on public.v_app_equipment_custody_evidence_queue to authenticated;
+grant select on public.v_app_seo_conversion_evidence_queue to authenticated;
+grant select on public.v_app_runtime_fallback_event_log_queue to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
