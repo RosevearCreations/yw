@@ -202,3 +202,8 @@ Next 20 steps:
 19. Add release cutover checklist steps for Supabase schema, functions, cache clear, and smoke evidence.
 20. Keep documenting every pass in active Markdown and the full schema reference.
 
+---
+
+## Build 2026-06-11a / Schema 142 sync note
+
+This Markdown file was reviewed during the schema 142 pass. The active build is **2026-06-11a / schema 142**. Keep Markdown, schema files, Admin readiness views, SEO/H1 checks, CSS drift checks, runtime fallback notes, and JSON/DB source-of-truth decisions aligned during the next pass.

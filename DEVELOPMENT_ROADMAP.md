@@ -299,10 +299,10 @@ Next 20-step direction:
 19. Add release cutover signoff workflow.
 20. Add post-deploy service-worker and Edge Function log verification.
 
-## Build 2026-06-09b / Schema 141
+## Build 2026-06-11a / schema 142
 
 Completed this pass:
-1. Repaired the canonical full schema reference for the schema 140 `app_local_seo_conversion_queue` VALUES-list mismatch.
+1. Repaired the canonical full schema reference for the schema 142 `app_local_seo_conversion_queue` VALUES-list mismatch.
 2. Added `sql/141_release_handoff_payment_proof_equipment_custody_seo_runtime_logging_controls.sql`.
 3. Added Admin-visible queues for release handoff, payment posting proof, equipment custody evidence, SEO conversion evidence, and runtime fallback event logging.
 4. Updated Admin directory/UI references, cache markers, sitemap freshness, smoke checks, and archive hygiene.
@@ -330,3 +330,56 @@ Next 20 focus:
 19. Add DB/source-of-truth lock checks for migrated JSON data.
 20. Add a release-final sanity summary generator.
 
+## Build 2026-06-11a / Schema 142 completed pass
+
+Completed this pass:
+
+1. Repaired the canonical `sql/000_full_schema_reference.sql` schema 142 block using the verified standalone schema 142 migration.
+2. Added `sql/142_schema_deploy_repair_payment_recon_equipment_seo_runtime_source_migration_controls.sql`.
+3. Added Admin-visible schema deploy repair queue.
+4. Added Admin-visible payment/reconciliation proof closeout queue.
+5. Added Admin-visible equipment return exception action queue.
+6. Added Admin-visible local-search prominence evidence queue.
+7. Added Admin-visible runtime fallback observability queue.
+8. Added Admin-visible JSON/DB source migration queue.
+9. Updated `admin-directory` to load schema 142 views in command-center and health scopes.
+10. Updated Admin UI state, payload mapping, table bindings, and rendering placeholders for schema 142 queues.
+11. Updated smoke checks so schema 142 and schema 142 checks run before the script exits.
+12. Updated cache markers to `2026-06-11a`.
+13. Updated sitemap lastmod to `2026-06-11`.
+14. Preserved one-H1 public page rule.
+15. Preserved CSS drift/brace-balance validation.
+16. Archived root helper Markdown files out of the active deployment root.
+17. Archived root `test_write` files out of the active deployment root.
+18. Added schema 142 documentation.
+19. Updated active Markdown build/schema markers.
+20. Packaged a fresh schema 142 release zip after smoke and syntax checks.
+
+Next 20 steps:
+
+1. Add real Admin action buttons for schema deploy repair checklist rows.
+2. Add proof upload/reason fields to payment/reconciliation closeout actions.
+3. Add split/reject/accept/undo write actions for reconciliation exceptions.
+4. Add equipment return exception actions that create service/cost/write-off decisions.
+5. Add mobile camera scan fallback for equipment return exception verification.
+6. Add DB-backed equipment accessory template editor.
+7. Generate sitemap/internal-link candidates from approved route registry rows.
+8. Add local-search conversion dead-link checks for CTA targets.
+9. Add image alt/local proof smoke checks for public pages.
+10. Persist runtime fallback observability events from UI errors.
+11. Persist runtime fallback observability events from Edge Function safeList fallbacks.
+12. Add offline conflict queue review actions for mobile drafts.
+13. Connect payment proof closeout to accountant export packaging.
+14. Connect equipment exception costs to job profitability.
+15. Add HST/GST review status to accounting closeout readiness.
+16. Add payroll/remittance proof queues into the same release checklist.
+17. Add month-end lock/reopen controls with audit reason.
+18. Create generated release handoff view for deploy order and rollback notes.
+19. Move repeated fallback copy toward the DB message catalog.
+20. Continue reducing JSON/static duplication where DB registries are more reliable.
+
+---
+
+## Build 2026-06-11a / Schema 142 sync note
+
+This Markdown file was reviewed during the schema 142 pass. The active build is **2026-06-11a / schema 142**. Keep Markdown, schema files, Admin readiness views, SEO/H1 checks, CSS drift checks, runtime fallback notes, and JSON/DB source-of-truth decisions aligned during the next pass.

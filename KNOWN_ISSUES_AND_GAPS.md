@@ -287,10 +287,10 @@ Next 20-step direction:
 19. Add release cutover signoff workflow.
 20. Add post-deploy service-worker and Edge Function log verification.
 
-## Build 2026-06-09b / Schema 141
+## Build 2026-06-11a / schema 142
 
 Completed this pass:
-1. Repaired the canonical full schema reference for the schema 140 `app_local_seo_conversion_queue` VALUES-list mismatch.
+1. Repaired the canonical full schema reference for the schema 142 `app_local_seo_conversion_queue` VALUES-list mismatch.
 2. Added `sql/141_release_handoff_payment_proof_equipment_custody_seo_runtime_logging_controls.sql`.
 3. Added Admin-visible queues for release handoff, payment posting proof, equipment custody evidence, SEO conversion evidence, and runtime fallback event logging.
 4. Updated Admin directory/UI references, cache markers, sitemap freshness, smoke checks, and archive hygiene.
@@ -318,3 +318,27 @@ Next 20 focus:
 19. Add DB/source-of-truth lock checks for migrated JSON data.
 20. Add a release-final sanity summary generator.
 
+## Build 2026-06-11a / Schema 142 known issues and gaps
+
+Resolved or reduced this pass:
+
+- The canonical full schema no longer carries the broken schema 142 compact inserts.
+- schema 142 proof-area/payment-area compatibility is preserved.
+- schema 142 SEO conversion evidence row lengths are preserved.
+- Smoke checks now include the latest schema checks before final exit.
+- Root helper Markdown and `test_write` files are archived outside the active root.
+
+Still outstanding:
+
+- Schema 142 queues are readiness/action queues; they still need real write actions.
+- Payment/reconciliation proof closeout is not yet posting real accounting entries.
+- Equipment return exceptions are not yet creating service/cost/write-off records automatically.
+- Local-search prominence evidence is not yet generated from DB-approved route rows.
+- Runtime fallback observability is not yet persisted from every UI/Edge fallback path.
+- JSON/DB migration candidates still need final source-of-truth decisions and migration scripts.
+
+---
+
+## Build 2026-06-11a / Schema 142 sync note
+
+This Markdown file was reviewed during the schema 142 pass. The active build is **2026-06-11a / schema 142**. Keep Markdown, schema files, Admin readiness views, SEO/H1 checks, CSS drift checks, runtime fallback notes, and JSON/DB source-of-truth decisions aligned during the next pass.

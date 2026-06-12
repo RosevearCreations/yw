@@ -250,10 +250,10 @@ Next 20-step direction:
 19. Add release cutover signoff workflow.
 20. Add post-deploy service-worker and Edge Function log verification.
 
-## Build 2026-06-09b / Schema 141
+## Build 2026-06-11a / schema 142
 
 Completed this pass:
-1. Repaired the canonical full schema reference for the schema 140 `app_local_seo_conversion_queue` VALUES-list mismatch.
+1. Repaired the canonical full schema reference for the schema 142 `app_local_seo_conversion_queue` VALUES-list mismatch.
 2. Added `sql/141_release_handoff_payment_proof_equipment_custody_seo_runtime_logging_controls.sql`.
 3. Added Admin-visible queues for release handoff, payment posting proof, equipment custody evidence, SEO conversion evidence, and runtime fallback event logging.
 4. Updated Admin directory/UI references, cache markers, sitemap freshness, smoke checks, and archive hygiene.
@@ -281,3 +281,12 @@ Next 20 focus:
 19. Add DB/source-of-truth lock checks for migrated JSON data.
 20. Add a release-final sanity summary generator.
 
+## Latest handoff: 2026-06-11a / Schema 142
+
+Use `/mnt/data/yw-main-2026-06-11a-schema142.zip` as the latest packaged build. Apply repaired schema 142 if needed, then schema 142. Redeploy `admin-directory`, and redeploy jobs functions only if live versions are behind. Cache marker is `2026-06-11a`.
+
+---
+
+## Build 2026-06-11a / Schema 142 sync note
+
+This Markdown file was reviewed during the schema 142 pass. The active build is **2026-06-11a / schema 142**. Keep Markdown, schema files, Admin readiness views, SEO/H1 checks, CSS drift checks, runtime fallback notes, and JSON/DB source-of-truth decisions aligned during the next pass.

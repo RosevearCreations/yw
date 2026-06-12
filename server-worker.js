@@ -5,7 +5,7 @@
 
 'use strict';
 
-const CACHE_NAME = 'ywi-shell-v2026-06-09b';
+const CACHE_NAME = 'ywi-shell-v2026-06-11a';
 const APP_SHELL = [
   '/',
   '/index.html',
