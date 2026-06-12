@@ -263,6 +263,12 @@
       appEquipmentCustodyEvidenceQueue: [],
       appSeoConversionEvidenceQueue: [],
       appRuntimeFallbackEventLogQueue: [],
+      appSchemaDeployRepairQueue: [],
+      appPaymentReconciliationProofCloseoutQueue: [],
+      appEquipmentReturnExceptionActionQueue: [],
+      appLocalSearchProminenceEvidenceQueue: [],
+      appRuntimeFallbackObservabilityQueue: [],
+      appJsonDbSourceMigrationQueue: [],
       actorRole: '',
       actorProfileId: '',
       directoryPagination: {
@@ -1843,6 +1849,12 @@
         equipmentCustodyEvidenceBody: document.querySelector('#ad_equipment_custody_evidence_table tbody'),
         seoConversionEvidenceBody: document.querySelector('#ad_seo_conversion_evidence_table tbody'),
         runtimeFallbackEventLogBody: document.querySelector('#ad_runtime_fallback_event_log_table tbody'),
+        schemaDeployRepairBody: document.querySelector('#ad_schema_deploy_repair_table tbody'),
+        paymentReconciliationProofCloseoutBody: document.querySelector('#ad_payment_reconciliation_proof_closeout_table tbody'),
+        equipmentReturnExceptionActionBody: document.querySelector('#ad_equipment_return_exception_action_table tbody'),
+        localSearchProminenceEvidenceBody: document.querySelector('#ad_local_search_prominence_evidence_table tbody'),
+        runtimeFallbackObservabilityBody: document.querySelector('#ad_runtime_fallback_observability_table tbody'),
+        jsonDbSourceMigrationBody: document.querySelector('#ad_json_db_source_migration_table tbody'),
         seoSmokeBody: document.querySelector('#ad_seo_smoke_table tbody'),
         bankCsvImportBody: document.querySelector('#ad_bank_csv_import_table tbody'),
         backupRehearsalBody: document.querySelector('#ad_backup_rehearsal_table tbody'),
@@ -6012,6 +6024,12 @@
           appEquipmentCustodyEvidenceQueue: Array.isArray(payload?.app_equipment_custody_evidence_queue) ? payload.app_equipment_custody_evidence_queue : state.appEquipmentCustodyEvidenceQueue,
           appSeoConversionEvidenceQueue: Array.isArray(payload?.app_seo_conversion_evidence_queue) ? payload.app_seo_conversion_evidence_queue : state.appSeoConversionEvidenceQueue,
           appRuntimeFallbackEventLogQueue: Array.isArray(payload?.app_runtime_fallback_event_log_queue) ? payload.app_runtime_fallback_event_log_queue : state.appRuntimeFallbackEventLogQueue,
+          appSchemaDeployRepairQueue: Array.isArray(payload?.app_schema_deploy_repair_queue) ? payload.app_schema_deploy_repair_queue : state.appSchemaDeployRepairQueue,
+          appPaymentReconciliationProofCloseoutQueue: Array.isArray(payload?.app_payment_reconciliation_proof_closeout_queue) ? payload.app_payment_reconciliation_proof_closeout_queue : state.appPaymentReconciliationProofCloseoutQueue,
+          appEquipmentReturnExceptionActionQueue: Array.isArray(payload?.app_equipment_return_exception_action_queue) ? payload.app_equipment_return_exception_action_queue : state.appEquipmentReturnExceptionActionQueue,
+          appLocalSearchProminenceEvidenceQueue: Array.isArray(payload?.app_local_search_prominence_evidence_queue) ? payload.app_local_search_prominence_evidence_queue : state.appLocalSearchProminenceEvidenceQueue,
+          appRuntimeFallbackObservabilityQueue: Array.isArray(payload?.app_runtime_fallback_observability_queue) ? payload.app_runtime_fallback_observability_queue : state.appRuntimeFallbackObservabilityQueue,
+          appJsonDbSourceMigrationQueue: Array.isArray(payload?.app_json_db_source_migration_queue) ? payload.app_json_db_source_migration_queue : state.appJsonDbSourceMigrationQueue,
 
         };
         const e = els();
@@ -7590,6 +7608,25 @@
           </tr>
         `).join('') || '<tr><td colspan="5" class="muted">No runtime fallback event log rows loaded yet. Apply schema 141.</td></tr>';
       }
+
+      const renderSchema142Rows = (body, rows, emptyText, cols) => {
+        if (!body) return;
+        body.innerHTML = (Array.isArray(rows) ? rows : []).slice(0, 100).map((row) => `
+          <tr>
+            <td>${escHtml(row[cols.area] || '')}${cols.subArea ? `<div class="muted">${escHtml(row[cols.subArea] || '')}</div>` : ''}</td>
+            <td><strong>${escHtml(row[cols.title] || '')}</strong></td>
+            <td>${renderStatusPill(row[cols.status] || 'planned', /pass|covered|ready|done|completed|in_progress/i.test(String(row[cols.status] || '')) ? 'ok' : 'warning')}</td>
+            <td class="admin-table-note">${escHtml(row[cols.primary] || '')}<div class="muted">${escHtml(row[cols.secondary] || '')}</div></td>
+            <td class="admin-table-note">${escHtml(row.fallback_hint || '')}</td>
+          </tr>
+        `).join('') || `<tr><td colspan="5" class="muted">${escHtml(emptyText)}</td></tr>`;
+      };
+      renderSchema142Rows(e.schemaDeployRepairBody, state.appSchemaDeployRepairQueue, 'No schema 142 repair rows loaded yet. Apply schema 142.', { area: 'repair_area', title: 'repair_title', status: 'repair_status', primary: 'repair_action_hint', secondary: 'verification_hint' });
+      renderSchema142Rows(e.paymentReconciliationProofCloseoutBody, state.appPaymentReconciliationProofCloseoutQueue, 'No schema 142 payment/reconciliation proof closeout rows loaded yet. Apply schema 142.', { area: 'closeout_area', title: 'closeout_title', status: 'closeout_status', primary: 'approval_hint', secondary: 'posting_or_export_hint' });
+      renderSchema142Rows(e.equipmentReturnExceptionActionBody, state.appEquipmentReturnExceptionActionQueue, 'No schema 142 equipment return exception rows loaded yet. Apply schema 142.', { area: 'exception_area', title: 'action_title', status: 'action_status', primary: 'decision_hint', secondary: 'service_or_cost_hint' });
+      renderSchema142Rows(e.localSearchProminenceEvidenceBody, state.appLocalSearchProminenceEvidenceQueue, 'No schema 142 local-search prominence evidence rows loaded yet. Apply schema 142.', { area: 'prominence_area', subArea: 'route_key', title: 'evidence_title', status: 'evidence_status', primary: 'page_signal_hint', secondary: 'conversion_signal_hint' });
+      renderSchema142Rows(e.runtimeFallbackObservabilityBody, state.appRuntimeFallbackObservabilityQueue, 'No schema 142 runtime fallback observability rows loaded yet. Apply schema 142.', { area: 'app_surface', title: 'observability_title', status: 'observability_status', primary: 'logging_hint', secondary: 'review_hint' });
+      renderSchema142Rows(e.jsonDbSourceMigrationBody, state.appJsonDbSourceMigrationQueue, 'No schema 142 JSON/DB source migration rows loaded yet. Apply schema 142.', { area: 'source_area', title: 'migration_title', status: 'migration_status', primary: 'target_source_hint', secondary: 'validation_hint' });
 
       if (e.seoSmokeBody) {
         const seoRows = Array.isArray(state.publicSeoSmokeCheck) ? state.publicSeoSmokeCheck : [];
