@@ -290,3 +290,12 @@ Use `/mnt/data/yw-main-2026-06-11a-schema142.zip` as the latest packaged build. 
 ## Build 2026-06-11a / Schema 142 sync note
 
 This Markdown file was reviewed during the schema 142 pass. The active build is **2026-06-11a / schema 142**. Keep Markdown, schema files, Admin readiness views, SEO/H1 checks, CSS drift checks, runtime fallback notes, and JSON/DB source-of-truth decisions aligned during the next pass.
+
+
+## Latest handoff: 2026-06-12a / Schema 143
+
+Use `/mnt/data/yw-main-2026-06-12a-schema143.zip` as the latest packaged build. Apply repaired schema 141 if needed, then schema 142 if not already applied, then schema 143. Redeploy `admin-directory`, and redeploy jobs functions only if live versions are behind. Cache marker is `2026-06-12a`.
+
+## Build 2026-06-12a / Schema 143 sync note
+
+This Markdown file was reviewed during the schema 143 pass. The active build is **2026-06-12a / schema 143**. Keep Markdown, schema files, Admin readiness views, desktop/mobile parity, visual enrichment, SEO/H1 checks, CSS drift checks, runtime fallback notes, and JSON/DB source-of-truth decisions aligned during the next pass.

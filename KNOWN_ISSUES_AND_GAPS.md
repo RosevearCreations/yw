@@ -342,3 +342,41 @@ Still outstanding:
 ## Build 2026-06-11a / Schema 142 sync note
 
 This Markdown file was reviewed during the schema 142 pass. The active build is **2026-06-11a / schema 142**. Keep Markdown, schema files, Admin readiness views, SEO/H1 checks, CSS drift checks, runtime fallback notes, and JSON/DB source-of-truth decisions aligned during the next pass.
+
+
+## Build 2026-06-12a / Schema 143 known issues and gaps
+
+- Schema 143 queues are readiness/control rows; several still need write actions in Admin.
+- Visual asset registry is planned but not yet a full upload/review/publish workflow.
+- Public shell now communicates desktop/mobile readiness, but deeper service-area landing pages still need proof-backed content before sitemap publication.
+- Generated sitemap/robots from DB route rows is still outstanding.
+- Payment/reconciliation proof actions, split/undo workflows, and accountant export packaging still need execution depth.
+- Equipment custody evidence still needs a full timeline UI, scan proof, accessory cost recovery, and job profitability links.
+- Runtime fallback observability still needs persistent event logging from UI and Edge Functions.
+
+## Next 20 steps after Schema 143
+
+1. Build editable Admin actions for desktop/mobile parity rows.
+2. Add a DB-backed visual asset registry with alt text, proof, compression, and publication status.
+3. Add thumbnail/proof review for approved service, equipment, crew, and safety images.
+4. Generate sitemap and robots candidates from approved DB route rows.
+5. Generate internal-link candidates from approved service-area and proof rows.
+6. Add smoke checks for title/meta/H1/local phrase/CTA target alignment per public route.
+7. Add image size, alt text, and consent/proof checks before public image publication.
+8. Add reduced-motion checks for any future visual effects.
+9. Add mobile-first cards for offline conflict choices: retry, keep local, or discard after confirmation.
+10. Add desktop/Admin deploy checklist controls for schema order, function redeploy, and cache clear.
+11. Convert payment posting proof queues into real upload/reason/signoff controls.
+12. Convert reconciliation exception queues into split/undo/export actions.
+13. Convert equipment custody evidence rows into a timeline with scan/signature/photo proof.
+14. Add equipment accessory replacement-cost recovery and write-off decisions.
+15. Add job profitability links for equipment damage, accessory loss, and service tasks.
+16. Persist runtime fallback events from UI and Edge Function failures.
+17. Add fallback event rollups by surface, owner, and repeated blocker.
+18. Move repeated visual, SEO, and surface-parity config from Markdown/static files toward DB registries.
+19. Add an accountant export proof manifest for unresolved payment/reconciliation/equipment exceptions.
+20. Continue one-H1, CSS brace, sitemap/robots, cache marker, and Edge Function parse checks every pass.
+
+## Build 2026-06-12a / Schema 143 sync note
+
+This Markdown file was reviewed during the schema 143 pass. The active build is **2026-06-12a / schema 143**. Keep Markdown, schema files, Admin readiness views, desktop/mobile parity, visual enrichment, SEO/H1 checks, CSS drift checks, runtime fallback notes, and JSON/DB source-of-truth decisions aligned during the next pass.

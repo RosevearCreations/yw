@@ -207,3 +207,31 @@ Next 20 steps:
 ## Build 2026-06-11a / Schema 142 sync note
 
 This Markdown file was reviewed during the schema 142 pass. The active build is **2026-06-11a / schema 142**. Keep Markdown, schema files, Admin readiness views, SEO/H1 checks, CSS drift checks, runtime fallback notes, and JSON/DB source-of-truth decisions aligned during the next pass.
+
+
+## Build 2026-06-12a / Schema 143 completed pass
+
+1. Added `sql/143_desktop_mobile_visual_enrichment_seo_css_runtime_data_source_controls.sql`.
+2. Appended schema 143 to `sql/000_full_schema_reference.sql`.
+3. Added desktop/mobile surface parity queues and views.
+4. Added professional visual enrichment queues and views.
+5. Added local-search content-depth queues and views.
+6. Added CSS/motion/image guard queues and views.
+7. Added schema deploy validation queues and views.
+8. Added JSON/DB source-consolidation decision queues and views.
+9. Updated `admin-directory` to load schema 143 views in command-center and health scopes.
+10. Updated Admin UI state, payload mapping, table bindings, and readiness rendering for schema 143 queues.
+11. Added Admin table markup for schema 143 desktop/mobile, visual, SEO, CSS, deploy, and source-consolidation rows.
+12. Added a public desktop/mobile readiness visual strip without adding another H1.
+13. Added responsive visual-polish CSS for the readiness strip.
+14. Updated cache markers to `2026-06-12a`.
+15. Updated `sitemap.xml` lastmod to `2026-06-12`.
+16. Preserved `robots.txt` sitemap reference.
+17. Preserved repaired schema 141/142 compatibility in the full schema path.
+18. Archived retired helper Markdown out of the active root.
+19. Archived temporary `test_write` files out of the active root.
+20. Updated roadmap, known issues, deployment, testing, database, project-state, README, and handoff Markdown for schema 143.
+
+## Build 2026-06-12a / Schema 143 sync note
+
+This Markdown file was reviewed during the schema 143 pass. The active build is **2026-06-12a / schema 143**. Keep Markdown, schema files, Admin readiness views, desktop/mobile parity, visual enrichment, SEO/H1 checks, CSS drift checks, runtime fallback notes, and JSON/DB source-of-truth decisions aligned during the next pass.

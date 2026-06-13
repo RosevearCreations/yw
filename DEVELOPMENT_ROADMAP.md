@@ -383,3 +383,54 @@ Next 20 steps:
 ## Build 2026-06-11a / Schema 142 sync note
 
 This Markdown file was reviewed during the schema 142 pass. The active build is **2026-06-11a / schema 142**. Keep Markdown, schema files, Admin readiness views, SEO/H1 checks, CSS drift checks, runtime fallback notes, and JSON/DB source-of-truth decisions aligned during the next pass.
+
+
+## Build 2026-06-12a / Schema 143 completed pass
+
+1. Added `sql/143_desktop_mobile_visual_enrichment_seo_css_runtime_data_source_controls.sql`.
+2. Appended schema 143 to `sql/000_full_schema_reference.sql`.
+3. Added desktop/mobile surface parity queues and views.
+4. Added professional visual enrichment queues and views.
+5. Added local-search content-depth queues and views.
+6. Added CSS/motion/image guard queues and views.
+7. Added schema deploy validation queues and views.
+8. Added JSON/DB source-consolidation decision queues and views.
+9. Updated `admin-directory` to load schema 143 views in command-center and health scopes.
+10. Updated Admin UI state, payload mapping, table bindings, and readiness rendering for schema 143 queues.
+11. Added Admin table markup for schema 143 desktop/mobile, visual, SEO, CSS, deploy, and source-consolidation rows.
+12. Added a public desktop/mobile readiness visual strip without adding another H1.
+13. Added responsive visual-polish CSS for the readiness strip.
+14. Updated cache markers to `2026-06-12a`.
+15. Updated `sitemap.xml` lastmod to `2026-06-12`.
+16. Preserved `robots.txt` sitemap reference.
+17. Preserved repaired schema 141/142 compatibility in the full schema path.
+18. Archived retired helper Markdown out of the active root.
+19. Archived temporary `test_write` files out of the active root.
+20. Updated roadmap, known issues, deployment, testing, database, project-state, README, and handoff Markdown for schema 143.
+
+## Next 20 steps after Schema 143
+
+1. Build editable Admin actions for desktop/mobile parity rows.
+2. Add a DB-backed visual asset registry with alt text, proof, compression, and publication status.
+3. Add thumbnail/proof review for approved service, equipment, crew, and safety images.
+4. Generate sitemap and robots candidates from approved DB route rows.
+5. Generate internal-link candidates from approved service-area and proof rows.
+6. Add smoke checks for title/meta/H1/local phrase/CTA target alignment per public route.
+7. Add image size, alt text, and consent/proof checks before public image publication.
+8. Add reduced-motion checks for any future visual effects.
+9. Add mobile-first cards for offline conflict choices: retry, keep local, or discard after confirmation.
+10. Add desktop/Admin deploy checklist controls for schema order, function redeploy, and cache clear.
+11. Convert payment posting proof queues into real upload/reason/signoff controls.
+12. Convert reconciliation exception queues into split/undo/export actions.
+13. Convert equipment custody evidence rows into a timeline with scan/signature/photo proof.
+14. Add equipment accessory replacement-cost recovery and write-off decisions.
+15. Add job profitability links for equipment damage, accessory loss, and service tasks.
+16. Persist runtime fallback events from UI and Edge Function failures.
+17. Add fallback event rollups by surface, owner, and repeated blocker.
+18. Move repeated visual, SEO, and surface-parity config from Markdown/static files toward DB registries.
+19. Add an accountant export proof manifest for unresolved payment/reconciliation/equipment exceptions.
+20. Continue one-H1, CSS brace, sitemap/robots, cache marker, and Edge Function parse checks every pass.
+
+## Build 2026-06-12a / Schema 143 sync note
+
+This Markdown file was reviewed during the schema 143 pass. The active build is **2026-06-12a / schema 143**. Keep Markdown, schema files, Admin readiness views, desktop/mobile parity, visual enrichment, SEO/H1 checks, CSS drift checks, runtime fallback notes, and JSON/DB source-of-truth decisions aligned during the next pass.
