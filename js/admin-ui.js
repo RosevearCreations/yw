@@ -269,6 +269,12 @@
       appLocalSearchProminenceEvidenceQueue: [],
       appRuntimeFallbackObservabilityQueue: [],
       appJsonDbSourceMigrationQueue: [],
+      appDesktopMobileSurfaceParityQueue: [],
+      appVisualProfessionalEnrichmentQueue: [],
+      appLocalSearchContentDepthQueue: [],
+      appCssMotionImageGuardQueue: [],
+      appSchemaDeployValidationQueue: [],
+      appSourceConsolidationDecisionQueue: [],
       actorRole: '',
       actorProfileId: '',
       directoryPagination: {
@@ -987,6 +993,42 @@
           <div class="table-scroll" style="margin-top:12px;">
             <table id="ad_data_source_migration_lock_table">
               <thead><tr><th>Data Area</th><th>Migration Lock</th><th>Status</th><th>Current / Target</th><th>Validation / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_desktop_mobile_surface_parity_table">
+              <thead><tr><th>Surface</th><th>Desktop/Mobile Parity</th><th>Status</th><th>Desktop / Mobile</th><th>Validation / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_visual_professional_enrichment_table">
+              <thead><tr><th>Area</th><th>Visual Enrichment</th><th>Status</th><th>Asset / Professionalism</th><th>Accessibility / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_local_search_content_depth_schema143_table">
+              <thead><tr><th>Route</th><th>Content Depth</th><th>Status</th><th>Phrase / Proof</th><th>Internal Link / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_css_motion_image_guard_table">
+              <thead><tr><th>Area</th><th>CSS/Motion/Image Guard</th><th>Status</th><th>Selector / Effect</th><th>Test / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_schema_deploy_validation_table">
+              <thead><tr><th>Area</th><th>Schema Deploy Validation</th><th>Status</th><th>Schema / Deploy</th><th>Verification / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_source_consolidation_decision_table">
+              <thead><tr><th>Data Area</th><th>Source Consolidation</th><th>Status</th><th>Current / Preferred</th><th>Validation / Fallback</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -1855,6 +1897,12 @@
         localSearchProminenceEvidenceBody: document.querySelector('#ad_local_search_prominence_evidence_table tbody'),
         runtimeFallbackObservabilityBody: document.querySelector('#ad_runtime_fallback_observability_table tbody'),
         jsonDbSourceMigrationBody: document.querySelector('#ad_json_db_source_migration_table tbody'),
+        desktopMobileSurfaceParityBody: document.querySelector('#ad_desktop_mobile_surface_parity_table tbody'),
+        visualProfessionalEnrichmentBody: document.querySelector('#ad_visual_professional_enrichment_table tbody'),
+        localSearchContentDepthSchema143Body: document.querySelector('#ad_local_search_content_depth_schema143_table tbody'),
+        cssMotionImageGuardBody: document.querySelector('#ad_css_motion_image_guard_table tbody'),
+        schemaDeployValidationBody: document.querySelector('#ad_schema_deploy_validation_table tbody'),
+        sourceConsolidationDecisionBody: document.querySelector('#ad_source_consolidation_decision_table tbody'),
         seoSmokeBody: document.querySelector('#ad_seo_smoke_table tbody'),
         bankCsvImportBody: document.querySelector('#ad_bank_csv_import_table tbody'),
         backupRehearsalBody: document.querySelector('#ad_backup_rehearsal_table tbody'),
@@ -6030,6 +6078,12 @@
           appLocalSearchProminenceEvidenceQueue: Array.isArray(payload?.app_local_search_prominence_evidence_queue) ? payload.app_local_search_prominence_evidence_queue : state.appLocalSearchProminenceEvidenceQueue,
           appRuntimeFallbackObservabilityQueue: Array.isArray(payload?.app_runtime_fallback_observability_queue) ? payload.app_runtime_fallback_observability_queue : state.appRuntimeFallbackObservabilityQueue,
           appJsonDbSourceMigrationQueue: Array.isArray(payload?.app_json_db_source_migration_queue) ? payload.app_json_db_source_migration_queue : state.appJsonDbSourceMigrationQueue,
+          appDesktopMobileSurfaceParityQueue: Array.isArray(payload?.app_desktop_mobile_surface_parity_queue) ? payload.app_desktop_mobile_surface_parity_queue : state.appDesktopMobileSurfaceParityQueue,
+          appVisualProfessionalEnrichmentQueue: Array.isArray(payload?.app_visual_professional_enrichment_queue) ? payload.app_visual_professional_enrichment_queue : state.appVisualProfessionalEnrichmentQueue,
+          appLocalSearchContentDepthQueue: Array.isArray(payload?.app_local_search_content_depth_queue) ? payload.app_local_search_content_depth_queue : state.appLocalSearchContentDepthQueue,
+          appCssMotionImageGuardQueue: Array.isArray(payload?.app_css_motion_image_guard_queue) ? payload.app_css_motion_image_guard_queue : state.appCssMotionImageGuardQueue,
+          appSchemaDeployValidationQueue: Array.isArray(payload?.app_schema_deploy_validation_queue) ? payload.app_schema_deploy_validation_queue : state.appSchemaDeployValidationQueue,
+          appSourceConsolidationDecisionQueue: Array.isArray(payload?.app_source_consolidation_decision_queue) ? payload.app_source_consolidation_decision_queue : state.appSourceConsolidationDecisionQueue
 
         };
         const e = els();
@@ -7627,6 +7681,12 @@
       renderSchema142Rows(e.localSearchProminenceEvidenceBody, state.appLocalSearchProminenceEvidenceQueue, 'No schema 142 local-search prominence evidence rows loaded yet. Apply schema 142.', { area: 'prominence_area', subArea: 'route_key', title: 'evidence_title', status: 'evidence_status', primary: 'page_signal_hint', secondary: 'conversion_signal_hint' });
       renderSchema142Rows(e.runtimeFallbackObservabilityBody, state.appRuntimeFallbackObservabilityQueue, 'No schema 142 runtime fallback observability rows loaded yet. Apply schema 142.', { area: 'app_surface', title: 'observability_title', status: 'observability_status', primary: 'logging_hint', secondary: 'review_hint' });
       renderSchema142Rows(e.jsonDbSourceMigrationBody, state.appJsonDbSourceMigrationQueue, 'No schema 142 JSON/DB source migration rows loaded yet. Apply schema 142.', { area: 'source_area', title: 'migration_title', status: 'migration_status', primary: 'target_source_hint', secondary: 'validation_hint' });
+      renderSchema142Rows(e.desktopMobileSurfaceParityBody, state.appDesktopMobileSurfaceParityQueue, 'No schema 143 desktop/mobile parity rows loaded yet. Apply schema 143.', { area: 'surface_area', title: 'parity_title', status: 'parity_status', primary: 'desktop_hint', secondary: 'mobile_hint' });
+      renderSchema142Rows(e.visualProfessionalEnrichmentBody, state.appVisualProfessionalEnrichmentQueue, 'No schema 143 visual enrichment rows loaded yet. Apply schema 143.', { area: 'enrichment_area', title: 'enrichment_title', status: 'enrichment_status', primary: 'asset_or_effect_hint', secondary: 'professionalism_hint' });
+      renderSchema142Rows(e.localSearchContentDepthSchema143Body, state.appLocalSearchContentDepthQueue, 'No schema 143 local-search content depth rows loaded yet. Apply schema 143.', { area: 'depth_area', subArea: 'route_key', title: 'depth_title', status: 'depth_status', primary: 'phrase_hint', secondary: 'proof_hint' });
+      renderSchema142Rows(e.cssMotionImageGuardBody, state.appCssMotionImageGuardQueue, 'No schema 143 CSS/motion/image guard rows loaded yet. Apply schema 143.', { area: 'guard_area', title: 'guard_title', status: 'guard_status', primary: 'selector_or_asset_hint', secondary: 'motion_or_image_hint' });
+      renderSchema142Rows(e.schemaDeployValidationBody, state.appSchemaDeployValidationQueue, 'No schema 143 schema deploy validation rows loaded yet. Apply schema 143.', { area: 'validation_area', title: 'validation_title', status: 'validation_status', primary: 'schema_hint', secondary: 'deploy_hint' });
+      renderSchema142Rows(e.sourceConsolidationDecisionBody, state.appSourceConsolidationDecisionQueue, 'No schema 143 source consolidation rows loaded yet. Apply schema 143.', { area: 'source_area', title: 'decision_title', status: 'decision_status', primary: 'current_source_hint', secondary: 'preferred_source_hint' });
 
       if (e.seoSmokeBody) {
         const seoRows = Array.isArray(state.publicSeoSmokeCheck) ? state.publicSeoSmokeCheck : [];
