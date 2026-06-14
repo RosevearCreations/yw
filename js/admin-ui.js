@@ -281,6 +281,12 @@
       appCssVisualRegressionQueue: [],
       appRuntimeFallbackDrillQueue: [],
       appDbSourceRegistryCandidateQueue: [],
+      appSanityCheckSnapshotQueue: [],
+      appValueAddedModificationQueue: [],
+      appDesktopMobileValueGapQueue: [],
+      appVisualProfessionalBacklogQueue: [],
+      appLocalSearchValueQueue: [],
+      appSourceOfTruthMigrationValueQueue: [],
       actorRole: '',
       actorProfileId: '',
       directoryPagination: {
@@ -1951,6 +1957,12 @@
         cssVisualRegressionBody: document.querySelector('#ad_css_visual_regression_table tbody'),
         runtimeFallbackDrillBody: document.querySelector('#ad_runtime_fallback_drill_table tbody'),
         dbSourceRegistryCandidateBody: document.querySelector('#ad_db_source_registry_candidate_table tbody'),
+        sanityCheckSnapshotBody: document.querySelector('#ad_sanity_check_snapshot_table tbody'),
+        valueAddedModificationBody: document.querySelector('#ad_value_added_modification_table tbody'),
+        desktopMobileValueGapBody: document.querySelector('#ad_desktop_mobile_value_gap_table tbody'),
+        visualProfessionalBacklogBody: document.querySelector('#ad_visual_professional_backlog_table tbody'),
+        localSearchValueBody: document.querySelector('#ad_local_search_value_table tbody'),
+        sourceOfTruthMigrationValueBody: document.querySelector('#ad_source_of_truth_migration_value_table tbody'),
         seoSmokeBody: document.querySelector('#ad_seo_smoke_table tbody'),
         bankCsvImportBody: document.querySelector('#ad_bank_csv_import_table tbody'),
         backupRehearsalBody: document.querySelector('#ad_backup_rehearsal_table tbody'),
@@ -6137,7 +6149,13 @@
           appLocalSeoTrustSignalQueue: Array.isArray(payload?.app_local_seo_trust_signal_queue) ? payload.app_local_seo_trust_signal_queue : state.appLocalSeoTrustSignalQueue,
           appCssVisualRegressionQueue: Array.isArray(payload?.app_css_visual_regression_queue) ? payload.app_css_visual_regression_queue : state.appCssVisualRegressionQueue,
           appRuntimeFallbackDrillQueue: Array.isArray(payload?.app_runtime_fallback_drill_queue) ? payload.app_runtime_fallback_drill_queue : state.appRuntimeFallbackDrillQueue,
-          appDbSourceRegistryCandidateQueue: Array.isArray(payload?.app_db_source_registry_candidate_queue) ? payload.app_db_source_registry_candidate_queue : state.appDbSourceRegistryCandidateQueue
+          appDbSourceRegistryCandidateQueue: Array.isArray(payload?.app_db_source_registry_candidate_queue) ? payload.app_db_source_registry_candidate_queue : state.appDbSourceRegistryCandidateQueue,
+          appSanityCheckSnapshotQueue: Array.isArray(payload?.app_sanity_check_snapshot_queue) ? payload.app_sanity_check_snapshot_queue : state.appSanityCheckSnapshotQueue,
+          appValueAddedModificationQueue: Array.isArray(payload?.app_value_added_modification_queue) ? payload.app_value_added_modification_queue : state.appValueAddedModificationQueue,
+          appDesktopMobileValueGapQueue: Array.isArray(payload?.app_desktop_mobile_value_gap_queue) ? payload.app_desktop_mobile_value_gap_queue : state.appDesktopMobileValueGapQueue,
+          appVisualProfessionalBacklogQueue: Array.isArray(payload?.app_visual_professional_backlog_queue) ? payload.app_visual_professional_backlog_queue : state.appVisualProfessionalBacklogQueue,
+          appLocalSearchValueQueue: Array.isArray(payload?.app_local_search_value_queue) ? payload.app_local_search_value_queue : state.appLocalSearchValueQueue,
+          appSourceOfTruthMigrationValueQueue: Array.isArray(payload?.app_source_of_truth_migration_value_queue) ? payload.app_source_of_truth_migration_value_queue : state.appSourceOfTruthMigrationValueQueue
 
         };
         const e = els();
@@ -7747,6 +7765,12 @@
       renderSchema142Rows(e.cssVisualRegressionBody, state.appCssVisualRegressionQueue, 'No schema 144 CSS visual regression rows loaded yet. Apply schema 144.', { area: 'regression_area', title: 'regression_title', status: 'regression_status', primary: 'selector_hint', secondary: 'visual_test_hint' });
       renderSchema142Rows(e.runtimeFallbackDrillBody, state.appRuntimeFallbackDrillQueue, 'No schema 144 runtime fallback drill rows loaded yet. Apply schema 144.', { area: 'app_surface', title: 'drill_title', status: 'drill_status', primary: 'trigger_hint', secondary: 'user_message_hint' });
       renderSchema142Rows(e.dbSourceRegistryCandidateBody, state.appDbSourceRegistryCandidateQueue, 'No schema 144 DB source registry candidate rows loaded yet. Apply schema 144.', { area: 'source_area', title: 'candidate_title', status: 'candidate_status', primary: 'current_source_hint', secondary: 'db_registry_hint' });
+      renderSchema142Rows(e.sanityCheckSnapshotBody, state.appSanityCheckSnapshotQueue, 'No schema 145 sanity snapshot rows loaded yet. Apply schema 145.', { area: 'snapshot_area', title: 'snapshot_title', status: 'snapshot_status', primary: 'current_state_hint', secondary: 'value_added_hint' });
+      renderSchema142Rows(e.valueAddedModificationBody, state.appValueAddedModificationQueue, 'No schema 145 value-added modification rows loaded yet. Apply schema 145.', { area: 'value_area', title: 'modification_title', status: 'modification_status', primary: 'customer_value_hint', secondary: 'operator_value_hint' });
+      renderSchema142Rows(e.desktopMobileValueGapBody, state.appDesktopMobileValueGapQueue, 'No schema 145 desktop/mobile value-gap rows loaded yet. Apply schema 145.', { area: 'surface_area', title: 'gap_title', status: 'gap_status', primary: 'desktop_hint', secondary: 'mobile_hint' });
+      renderSchema142Rows(e.visualProfessionalBacklogBody, state.appVisualProfessionalBacklogQueue, 'No schema 145 visual professional backlog rows loaded yet. Apply schema 145.', { area: 'visual_area', title: 'backlog_title', status: 'backlog_status', primary: 'visual_effect_hint', secondary: 'image_or_asset_hint' });
+      renderSchema142Rows(e.localSearchValueBody, state.appLocalSearchValueQueue, 'No schema 145 local-search value rows loaded yet. Apply schema 145.', { area: 'search_area', subArea: 'route_key', title: 'search_title', status: 'search_status', primary: 'phrase_hint', secondary: 'proof_hint' });
+      renderSchema142Rows(e.sourceOfTruthMigrationValueBody, state.appSourceOfTruthMigrationValueQueue, 'No schema 145 source-of-truth migration value rows loaded yet. Apply schema 145.', { area: 'source_area', title: 'source_title', status: 'source_status', primary: 'current_source_hint', secondary: 'target_source_hint' });
 
       if (e.seoSmokeBody) {
         const seoRows = Array.isArray(state.publicSeoSmokeCheck) ? state.publicSeoSmokeCheck : [];
