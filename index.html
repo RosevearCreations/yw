@@ -13,12 +13,12 @@
   <meta name="theme-color" content="#0f172a" />
   <meta name="color-scheme" content="dark light" />
 
-  <link rel="manifest" href="/manifest.json?v=2026-06-13a" />
-  <link rel="icon" href="/icons/icon-192.png?v=2026-06-13a" sizes="192x192" />
-  <link rel="stylesheet" href="/style.css?v=2026-06-13a" />
+  <link rel="manifest" href="/manifest.json?v=2026-06-13b" />
+  <link rel="icon" href="/icons/icon-192.png?v=2026-06-13b" sizes="192x192" />
+  <link rel="stylesheet" href="/style.css?v=2026-06-13b" />
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/js/app-config.js?v=2026-06-13a"></script>
+  <script src="/js/app-config.js?v=2026-06-13b"></script>
 
   <style>
     #authLoading {
@@ -104,7 +104,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-06-13a');
+          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-06-13b');
           if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
           }
@@ -195,6 +195,57 @@
         <span><strong>Operational value</strong><small>Payment closeout, reconciliation, equipment custody, and job proof should move from queues into action buttons.</small></span>
         <span><strong>Search value</strong><small>Local pages should publish only when proof, title, one H1, internal links, and conversion paths are ready.</small></span>
         <span><strong>Professional polish</strong><small>Approved visuals, subtle motion, and responsive scorecards can sharpen the brand without slowing the app.</small></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="surface-execution-strip" aria-label="Highest-value execution priorities">
+    <div class="surface-execution-card">
+      <span class="surface-execution-eyebrow">Highest-value execution layer</span>
+      <div class="surface-execution-grid">
+        <span><strong>Payment + bank control</strong><small>Apply, reverse, refund, write off, overpayment, CSV preview, rejected rows, and reconciliation signoff.</small></span>
+        <span><strong>Equipment + mobile proof</strong><small>QR/barcode scan, manual fallback, custody timeline, offline conflict cards, and return-to-service evidence.</small></span>
+        <span><strong>Growth + polish</strong><small>Visual approval registry, public route registry, quote/contact intake, scorecards, and progress rails.</small></span>
+      </div>
+    </div>
+  </section>
+
+  <section id="quote-intake" class="public-intake-strip" aria-label="Quote and contact intake preview">
+    <div class="public-intake-card">
+      <div class="public-intake-copy">
+        <span class="surface-execution-eyebrow">Quote / contact intake</span>
+        <h2>Request a Southern Ontario safety, job, or equipment workflow follow-up</h2>
+        <p>This public intake shell is ready for the next Edge submit path. It keeps the page at one H1 while giving visitors a clear desktop and mobile conversion action.</p>
+      </div>
+      <form class="public-intake-form" aria-label="Quote and contact intake form preview">
+        <label>Name<input type="text" name="name" placeholder="Your name" autocomplete="name" /></label>
+        <label>Contact<input type="text" name="contact" placeholder="Email or phone" autocomplete="email" /></label>
+        <label>Service type
+          <select name="service_type">
+            <option value="">Choose one</option>
+            <option>OHSA safety app setup</option>
+            <option>Job / equipment workflow</option>
+            <option>Quote or service request</option>
+            <option>General question</option>
+          </select>
+        </label>
+        <label>Location / service area<input type="text" name="location" placeholder="Town, city, or site area" /></label>
+        <label>Message<textarea name="message" rows="3" placeholder="What do you need help with?"></textarea></label>
+        <div class="public-intake-actions">
+          <button class="primary" type="button">Preview intake only</button>
+          <small>Live submission will be connected to the next Edge write path with spam/privacy checks.</small>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section class="mobile-conflict-preview-strip" aria-label="Mobile offline conflict card preview">
+    <div class="mobile-conflict-preview-card">
+      <span class="surface-execution-eyebrow">Mobile fallback preview</span>
+      <div class="mobile-conflict-grid">
+        <span><strong>Retry sync</strong><small>Use when the local draft is still valid and network is back.</small></span>
+        <span><strong>Keep local copy</strong><small>Protect field notes, photos, and signatures until the server accepts them.</small></span>
+        <span><strong>Review conflict</strong><small>Compare server and local versions before replacing or saving as new.</small></span>
       </div>
     </div>
   </section>
@@ -417,32 +468,32 @@
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
 
   <!-- Correct module order -->
-  <script src="/js/router.js?v=2026-06-13a"></script>
-  <script src="/js/mobile-menu.js?v=2026-06-13a"></script>
-  <script src="/js/mobile-today.js?v=2026-06-13a"></script>
-  <script src="/js/mobile-form-helper.js?v=2026-06-13a"></script>
-  <script src="/js/bootstrap.js?v=2026-06-13a"></script>
-  <script src="/js/auth.js?v=2026-06-13a"></script>
-  <script src="/js/security.js?v=2026-06-13a"></script>
-  <script src="/js/api.js?v=2026-06-13a"></script>
-  <script src="/js/outbox.js?v=2026-06-13a"></script>
-  <script src="/js/admin-actions.js?v=2026-06-13a"></script>
-  <script src="/js/ui-auth.js?v=2026-06-13a"></script>
-  <script src="/js/account-ui.js?v=2026-06-13a"></script>
-  <script src="/js/profile-ui.js?v=2026-06-13a"></script>
-  <script src="/js/reference-data.js?v=2026-06-13a"></script>
-  <script src="/js/admin-ui.js?v=2026-06-13a"></script>
-  <script src="/js/hse-ops-ui.js?v=2026-06-13a"></script>
-  <script src="/js/logbook-ui.js?v=2026-06-13a"></script>
-  <script src="/js/reports-ui.js?v=2026-06-13a"></script>
-  <script src="/js/jobs-ui.js?v=2026-06-13a"></script>
-  <script src="/js/forms-toolbox.js?v=2026-06-13a"></script>
-  <script src="/js/forms-ppe.js?v=2026-06-13a"></script>
-  <script src="/js/forms-firstaid.js?v=2026-06-13a"></script>
-  <script src="/js/forms-incident.js?v=2026-06-13a"></script>
-  <script src="/js/forms-inspection.js?v=2026-06-13a"></script>
-  <script src="/js/forms-drill.js?v=2026-06-13a"></script>
-  <script src="/app.js?v=2026-06-13a" defer></script>
+  <script src="/js/router.js?v=2026-06-13b"></script>
+  <script src="/js/mobile-menu.js?v=2026-06-13b"></script>
+  <script src="/js/mobile-today.js?v=2026-06-13b"></script>
+  <script src="/js/mobile-form-helper.js?v=2026-06-13b"></script>
+  <script src="/js/bootstrap.js?v=2026-06-13b"></script>
+  <script src="/js/auth.js?v=2026-06-13b"></script>
+  <script src="/js/security.js?v=2026-06-13b"></script>
+  <script src="/js/api.js?v=2026-06-13b"></script>
+  <script src="/js/outbox.js?v=2026-06-13b"></script>
+  <script src="/js/admin-actions.js?v=2026-06-13b"></script>
+  <script src="/js/ui-auth.js?v=2026-06-13b"></script>
+  <script src="/js/account-ui.js?v=2026-06-13b"></script>
+  <script src="/js/profile-ui.js?v=2026-06-13b"></script>
+  <script src="/js/reference-data.js?v=2026-06-13b"></script>
+  <script src="/js/admin-ui.js?v=2026-06-13b"></script>
+  <script src="/js/hse-ops-ui.js?v=2026-06-13b"></script>
+  <script src="/js/logbook-ui.js?v=2026-06-13b"></script>
+  <script src="/js/reports-ui.js?v=2026-06-13b"></script>
+  <script src="/js/jobs-ui.js?v=2026-06-13b"></script>
+  <script src="/js/forms-toolbox.js?v=2026-06-13b"></script>
+  <script src="/js/forms-ppe.js?v=2026-06-13b"></script>
+  <script src="/js/forms-firstaid.js?v=2026-06-13b"></script>
+  <script src="/js/forms-incident.js?v=2026-06-13b"></script>
+  <script src="/js/forms-inspection.js?v=2026-06-13b"></script>
+  <script src="/js/forms-drill.js?v=2026-06-13b"></script>
+  <script src="/app.js?v=2026-06-13b" defer></script>
 
   <script>
     document.addEventListener('ywi:auth-changed', (e) => {

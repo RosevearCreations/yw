@@ -400,3 +400,11 @@ Next 20 recommended steps:
 18. Add reduced-motion-safe micro-interactions for cards, buttons, status pills, and Admin scorecards.
 19. Move repeated route/visual/checklist config out of static files and into DB registries where it controls publishing.
 20. Package accountant export with payment applications, reconciliations, unresolved exceptions, HST/GST, payroll proof, and close/reopen audit trail.
+
+## Build 2026-06-13b / Schema 146 — Highest-value execution layer
+
+Implemented the next value-added layer from the sanity check: payment action workbench, bank CSV import preview, reconciliation match/split/undo/signoff scaffolding, equipment QR/barcode custody workbench, visual asset approval registry, public route registry, quote/contact intake shell, mobile offline conflict cards, and Admin scorecard/progress rails.
+
+SEO/H1/CSS guardrails remain active: one public H1, sitemap/robots freshness, cache marker `2026-06-13b`, and CSS brace balance checks. The public shell gained quote/contact intake and mobile conflict preview sections without adding extra H1 headings.
+
+Next priority: connect payment actions and quote/contact intake to real Edge write actions, then build bank CSV preview and reconciliation match buttons.

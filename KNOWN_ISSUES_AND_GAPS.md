@@ -1,7 +1,7 @@
 # Known Issues and Gaps
 
-Build: **2026-06-13a**  
-Schema: **145**
+Build: **2026-06-13b**  
+Schema: **146**
 
 ## Still needs depth
 
@@ -45,3 +45,15 @@ Schema: **145**
 18. Add reduced-motion-safe micro-interactions for cards, buttons, status pills, and Admin scorecards.
 19. Move repeated route/visual/checklist config out of static files and into DB registries where it controls publishing.
 20. Package accountant export with payment applications, reconciliations, unresolved exceptions, HST/GST, payroll proof, and close/reopen audit trail.
+
+## Build 2026-06-13b / Schema 146 — Highest-value execution layer
+
+Implemented the next value-added layer from the sanity check: payment action workbench, bank CSV import preview, reconciliation match/split/undo/signoff scaffolding, equipment QR/barcode custody workbench, visual asset approval registry, public route registry, quote/contact intake shell, mobile offline conflict cards, and Admin scorecard/progress rails.
+
+SEO/H1/CSS guardrails remain active: one public H1, sitemap/robots freshness, cache marker `2026-06-13b`, and CSS brace balance checks. The public shell gained quote/contact intake and mobile conflict preview sections without adding extra H1 headings.
+
+Next priority: connect payment actions and quote/contact intake to real Edge write actions, then build bank CSV preview and reconciliation match buttons.
+
+## Schema 146 remaining high-value gaps
+
+Payment/reconciliation now has DB-backed workbench scaffolding, but it still needs real Edge write actions, approval enforcement, immutable audit events, and close-period locking. Bank CSV handling now has preview/reject/staging design, but it still needs the actual parser and upload UI. Equipment custody now has scan/timeline requirements, but it still needs browser camera scanning and live timeline rendering. Public growth now has route and visual registries, but real galleries and sitemap growth should wait until approvals, alt text, proof, compression, and conversion paths are in place. Quote/contact intake is visible on the public website, but live submission is intentionally not connected until spam/privacy and Edge write controls are added.
