@@ -275,6 +275,12 @@
       appCssMotionImageGuardQueue: [],
       appSchemaDeployValidationQueue: [],
       appSourceConsolidationDecisionQueue: [],
+      appVisualAssetPublicationQueue: [],
+      appDesktopMobileReleasePolishQueue: [],
+      appLocalSeoTrustSignalQueue: [],
+      appCssVisualRegressionQueue: [],
+      appRuntimeFallbackDrillQueue: [],
+      appDbSourceRegistryCandidateQueue: [],
       actorRole: '',
       actorProfileId: '',
       directoryPagination: {
@@ -1029,6 +1035,42 @@
           <div class="table-scroll" style="margin-top:12px;">
             <table id="ad_source_consolidation_decision_table">
               <thead><tr><th>Data Area</th><th>Source Consolidation</th><th>Status</th><th>Current / Preferred</th><th>Validation / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_visual_asset_publication_table">
+              <thead><tr><th>Area</th><th>Visual Asset</th><th>Status</th><th>Source / Alt Text</th><th>Performance / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_desktop_mobile_release_polish_table">
+              <thead><tr><th>Surface</th><th>Release Polish</th><th>Status</th><th>Desktop / Mobile</th><th>Visual / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_local_seo_trust_signal_table">
+              <thead><tr><th>Route</th><th>Trust Signal</th><th>Status</th><th>Search / Proof</th><th>Internal Link / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_css_visual_regression_table">
+              <thead><tr><th>Area</th><th>Visual Regression</th><th>Status</th><th>Selector / Visual Test</th><th>Accessibility / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_runtime_fallback_drill_table">
+              <thead><tr><th>Surface</th><th>Fallback Drill</th><th>Status</th><th>Trigger / User Message</th><th>Operator / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_db_source_registry_candidate_table">
+              <thead><tr><th>Data Area</th><th>DB Registry Candidate</th><th>Status</th><th>Current / DB Registry</th><th>Validation / Fallback</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -1903,6 +1945,12 @@
         cssMotionImageGuardBody: document.querySelector('#ad_css_motion_image_guard_table tbody'),
         schemaDeployValidationBody: document.querySelector('#ad_schema_deploy_validation_table tbody'),
         sourceConsolidationDecisionBody: document.querySelector('#ad_source_consolidation_decision_table tbody'),
+        visualAssetPublicationBody: document.querySelector('#ad_visual_asset_publication_table tbody'),
+        desktopMobileReleasePolishBody: document.querySelector('#ad_desktop_mobile_release_polish_table tbody'),
+        localSeoTrustSignalBody: document.querySelector('#ad_local_seo_trust_signal_table tbody'),
+        cssVisualRegressionBody: document.querySelector('#ad_css_visual_regression_table tbody'),
+        runtimeFallbackDrillBody: document.querySelector('#ad_runtime_fallback_drill_table tbody'),
+        dbSourceRegistryCandidateBody: document.querySelector('#ad_db_source_registry_candidate_table tbody'),
         seoSmokeBody: document.querySelector('#ad_seo_smoke_table tbody'),
         bankCsvImportBody: document.querySelector('#ad_bank_csv_import_table tbody'),
         backupRehearsalBody: document.querySelector('#ad_backup_rehearsal_table tbody'),
@@ -6083,7 +6131,13 @@
           appLocalSearchContentDepthQueue: Array.isArray(payload?.app_local_search_content_depth_queue) ? payload.app_local_search_content_depth_queue : state.appLocalSearchContentDepthQueue,
           appCssMotionImageGuardQueue: Array.isArray(payload?.app_css_motion_image_guard_queue) ? payload.app_css_motion_image_guard_queue : state.appCssMotionImageGuardQueue,
           appSchemaDeployValidationQueue: Array.isArray(payload?.app_schema_deploy_validation_queue) ? payload.app_schema_deploy_validation_queue : state.appSchemaDeployValidationQueue,
-          appSourceConsolidationDecisionQueue: Array.isArray(payload?.app_source_consolidation_decision_queue) ? payload.app_source_consolidation_decision_queue : state.appSourceConsolidationDecisionQueue
+          appSourceConsolidationDecisionQueue: Array.isArray(payload?.app_source_consolidation_decision_queue) ? payload.app_source_consolidation_decision_queue : state.appSourceConsolidationDecisionQueue,
+          appVisualAssetPublicationQueue: Array.isArray(payload?.app_visual_asset_publication_queue) ? payload.app_visual_asset_publication_queue : state.appVisualAssetPublicationQueue,
+          appDesktopMobileReleasePolishQueue: Array.isArray(payload?.app_desktop_mobile_release_polish_queue) ? payload.app_desktop_mobile_release_polish_queue : state.appDesktopMobileReleasePolishQueue,
+          appLocalSeoTrustSignalQueue: Array.isArray(payload?.app_local_seo_trust_signal_queue) ? payload.app_local_seo_trust_signal_queue : state.appLocalSeoTrustSignalQueue,
+          appCssVisualRegressionQueue: Array.isArray(payload?.app_css_visual_regression_queue) ? payload.app_css_visual_regression_queue : state.appCssVisualRegressionQueue,
+          appRuntimeFallbackDrillQueue: Array.isArray(payload?.app_runtime_fallback_drill_queue) ? payload.app_runtime_fallback_drill_queue : state.appRuntimeFallbackDrillQueue,
+          appDbSourceRegistryCandidateQueue: Array.isArray(payload?.app_db_source_registry_candidate_queue) ? payload.app_db_source_registry_candidate_queue : state.appDbSourceRegistryCandidateQueue
 
         };
         const e = els();
@@ -7687,6 +7741,12 @@
       renderSchema142Rows(e.cssMotionImageGuardBody, state.appCssMotionImageGuardQueue, 'No schema 143 CSS/motion/image guard rows loaded yet. Apply schema 143.', { area: 'guard_area', title: 'guard_title', status: 'guard_status', primary: 'selector_or_asset_hint', secondary: 'motion_or_image_hint' });
       renderSchema142Rows(e.schemaDeployValidationBody, state.appSchemaDeployValidationQueue, 'No schema 143 schema deploy validation rows loaded yet. Apply schema 143.', { area: 'validation_area', title: 'validation_title', status: 'validation_status', primary: 'schema_hint', secondary: 'deploy_hint' });
       renderSchema142Rows(e.sourceConsolidationDecisionBody, state.appSourceConsolidationDecisionQueue, 'No schema 143 source consolidation rows loaded yet. Apply schema 143.', { area: 'source_area', title: 'decision_title', status: 'decision_status', primary: 'current_source_hint', secondary: 'preferred_source_hint' });
+      renderSchema142Rows(e.visualAssetPublicationBody, state.appVisualAssetPublicationQueue, 'No schema 144 visual asset publication rows loaded yet. Apply schema 144.', { area: 'asset_area', title: 'asset_title', status: 'asset_status', primary: 'source_hint', secondary: 'alt_text_hint' });
+      renderSchema142Rows(e.desktopMobileReleasePolishBody, state.appDesktopMobileReleasePolishQueue, 'No schema 144 desktop/mobile release polish rows loaded yet. Apply schema 144.', { area: 'surface_area', title: 'polish_title', status: 'polish_status', primary: 'desktop_hint', secondary: 'mobile_hint' });
+      renderSchema142Rows(e.localSeoTrustSignalBody, state.appLocalSeoTrustSignalQueue, 'No schema 144 local SEO trust signal rows loaded yet. Apply schema 144.', { area: 'trust_area', subArea: 'route_key', title: 'trust_title', status: 'trust_status', primary: 'search_phrase_hint', secondary: 'proof_hint' });
+      renderSchema142Rows(e.cssVisualRegressionBody, state.appCssVisualRegressionQueue, 'No schema 144 CSS visual regression rows loaded yet. Apply schema 144.', { area: 'regression_area', title: 'regression_title', status: 'regression_status', primary: 'selector_hint', secondary: 'visual_test_hint' });
+      renderSchema142Rows(e.runtimeFallbackDrillBody, state.appRuntimeFallbackDrillQueue, 'No schema 144 runtime fallback drill rows loaded yet. Apply schema 144.', { area: 'app_surface', title: 'drill_title', status: 'drill_status', primary: 'trigger_hint', secondary: 'user_message_hint' });
+      renderSchema142Rows(e.dbSourceRegistryCandidateBody, state.appDbSourceRegistryCandidateQueue, 'No schema 144 DB source registry candidate rows loaded yet. Apply schema 144.', { area: 'source_area', title: 'candidate_title', status: 'candidate_status', primary: 'current_source_hint', secondary: 'db_registry_hint' });
 
       if (e.seoSmokeBody) {
         const seoRows = Array.isArray(state.publicSeoSmokeCheck) ? state.publicSeoSmokeCheck : [];
