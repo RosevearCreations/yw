@@ -2300,3 +2300,71 @@ button[aria-disabled="true"]:hover {
     padding: 14px;
   }
 }
+
+.surface-proof-strip {
+  margin: 18px auto 0;
+  max-width: 1180px;
+  padding: 0 18px;
+}
+
+.surface-proof-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 22px;
+  padding: 18px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(42, 132, 103, 0.14));
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.18);
+}
+
+.surface-proof-card::after {
+  content: "";
+  position: absolute;
+  inset: auto -15% -35% 45%;
+  height: 150px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.20), transparent 65%);
+  pointer-events: none;
+}
+
+.surface-proof-eyebrow {
+  display: inline-flex;
+  margin-bottom: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  opacity: 0.78;
+}
+
+.surface-proof-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.surface-proof-grid span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  border-radius: 16px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.surface-proof-grid strong {
+  font-size: 0.95rem;
+}
+
+.surface-proof-grid small {
+  line-height: 1.35;
+  opacity: 0.82;
+}
+
+@media (max-width: 760px) {
+  .surface-proof-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .surface-proof-card {
+    padding: 16px;
+  }
+}
