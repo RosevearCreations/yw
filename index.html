@@ -13,12 +13,12 @@
   <meta name="theme-color" content="#0f172a" />
   <meta name="color-scheme" content="dark light" />
 
-  <link rel="manifest" href="/manifest.json?v=2026-06-12b" />
-  <link rel="icon" href="/icons/icon-192.png?v=2026-06-12b" sizes="192x192" />
-  <link rel="stylesheet" href="/style.css?v=2026-06-12b" />
+  <link rel="manifest" href="/manifest.json?v=2026-06-13a" />
+  <link rel="icon" href="/icons/icon-192.png?v=2026-06-13a" sizes="192x192" />
+  <link rel="stylesheet" href="/style.css?v=2026-06-13a" />
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/js/app-config.js?v=2026-06-12b"></script>
+  <script src="/js/app-config.js?v=2026-06-13a"></script>
 
   <style>
     #authLoading {
@@ -104,7 +104,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-06-12b');
+          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-06-13a');
           if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
           }
@@ -186,6 +186,18 @@
     </div>
   </section>
 
+
+
+  <section class="surface-value-strip" aria-label="Application value map and next improvements">
+    <div class="surface-value-card">
+      <span class="surface-value-eyebrow">Sanity check value map</span>
+      <div class="surface-value-grid">
+        <span><strong>Operational value</strong><small>Payment closeout, reconciliation, equipment custody, and job proof should move from queues into action buttons.</small></span>
+        <span><strong>Search value</strong><small>Local pages should publish only when proof, title, one H1, internal links, and conversion paths are ready.</small></span>
+        <span><strong>Professional polish</strong><small>Approved visuals, subtle motion, and responsive scorecards can sharpen the brand without slowing the app.</small></span>
+      </div>
+    </div>
+  </section>
 
   <section id="authLoading" class="container is-visible" aria-live="polite" aria-busy="true">
     <div class="auth-loading-card">
@@ -405,32 +417,32 @@
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
 
   <!-- Correct module order -->
-  <script src="/js/router.js?v=2026-06-12b"></script>
-  <script src="/js/mobile-menu.js?v=2026-06-12b"></script>
-  <script src="/js/mobile-today.js?v=2026-06-12b"></script>
-  <script src="/js/mobile-form-helper.js?v=2026-06-12b"></script>
-  <script src="/js/bootstrap.js?v=2026-06-12b"></script>
-  <script src="/js/auth.js?v=2026-06-12b"></script>
-  <script src="/js/security.js?v=2026-06-12b"></script>
-  <script src="/js/api.js?v=2026-06-12b"></script>
-  <script src="/js/outbox.js?v=2026-06-12b"></script>
-  <script src="/js/admin-actions.js?v=2026-06-12b"></script>
-  <script src="/js/ui-auth.js?v=2026-06-12b"></script>
-  <script src="/js/account-ui.js?v=2026-06-12b"></script>
-  <script src="/js/profile-ui.js?v=2026-06-12b"></script>
-  <script src="/js/reference-data.js?v=2026-06-12b"></script>
-  <script src="/js/admin-ui.js?v=2026-06-12b"></script>
-  <script src="/js/hse-ops-ui.js?v=2026-06-12b"></script>
-  <script src="/js/logbook-ui.js?v=2026-06-12b"></script>
-  <script src="/js/reports-ui.js?v=2026-06-12b"></script>
-  <script src="/js/jobs-ui.js?v=2026-06-12b"></script>
-  <script src="/js/forms-toolbox.js?v=2026-06-12b"></script>
-  <script src="/js/forms-ppe.js?v=2026-06-12b"></script>
-  <script src="/js/forms-firstaid.js?v=2026-06-12b"></script>
-  <script src="/js/forms-incident.js?v=2026-06-12b"></script>
-  <script src="/js/forms-inspection.js?v=2026-06-12b"></script>
-  <script src="/js/forms-drill.js?v=2026-06-12b"></script>
-  <script src="/app.js?v=2026-06-12b" defer></script>
+  <script src="/js/router.js?v=2026-06-13a"></script>
+  <script src="/js/mobile-menu.js?v=2026-06-13a"></script>
+  <script src="/js/mobile-today.js?v=2026-06-13a"></script>
+  <script src="/js/mobile-form-helper.js?v=2026-06-13a"></script>
+  <script src="/js/bootstrap.js?v=2026-06-13a"></script>
+  <script src="/js/auth.js?v=2026-06-13a"></script>
+  <script src="/js/security.js?v=2026-06-13a"></script>
+  <script src="/js/api.js?v=2026-06-13a"></script>
+  <script src="/js/outbox.js?v=2026-06-13a"></script>
+  <script src="/js/admin-actions.js?v=2026-06-13a"></script>
+  <script src="/js/ui-auth.js?v=2026-06-13a"></script>
+  <script src="/js/account-ui.js?v=2026-06-13a"></script>
+  <script src="/js/profile-ui.js?v=2026-06-13a"></script>
+  <script src="/js/reference-data.js?v=2026-06-13a"></script>
+  <script src="/js/admin-ui.js?v=2026-06-13a"></script>
+  <script src="/js/hse-ops-ui.js?v=2026-06-13a"></script>
+  <script src="/js/logbook-ui.js?v=2026-06-13a"></script>
+  <script src="/js/reports-ui.js?v=2026-06-13a"></script>
+  <script src="/js/jobs-ui.js?v=2026-06-13a"></script>
+  <script src="/js/forms-toolbox.js?v=2026-06-13a"></script>
+  <script src="/js/forms-ppe.js?v=2026-06-13a"></script>
+  <script src="/js/forms-firstaid.js?v=2026-06-13a"></script>
+  <script src="/js/forms-incident.js?v=2026-06-13a"></script>
+  <script src="/js/forms-inspection.js?v=2026-06-13a"></script>
+  <script src="/js/forms-drill.js?v=2026-06-13a"></script>
+  <script src="/app.js?v=2026-06-13a" defer></script>
 
   <script>
     document.addEventListener('ywi:auth-changed', (e) => {

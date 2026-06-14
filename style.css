@@ -2368,3 +2368,79 @@ button[aria-disabled="true"]:hover {
     padding: 16px;
   }
 }
+
+
+/* 2026-06-13a: sanity-check value map polish */
+.surface-value-strip {
+  margin: 18px auto 0;
+  max-width: 1180px;
+  padding: 0 18px;
+}
+
+.surface-value-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(125, 211, 252, 0.18);
+  border-radius: 22px;
+  padding: 18px;
+  background:
+    linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(15, 23, 42, 0.72)),
+    radial-gradient(circle at 12% 0%, rgba(45, 212, 191, 0.20), transparent 34%);
+  box-shadow: 0 22px 48px rgba(2, 6, 23, 0.20);
+}
+
+.surface-value-card::before {
+  content: "";
+  position: absolute;
+  inset: -55% -8% auto auto;
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.14), transparent 64%);
+  pointer-events: none;
+}
+
+.surface-value-eyebrow {
+  display: inline-flex;
+  margin-bottom: 12px;
+  color: #bae6fd;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.surface-value-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.surface-value-grid span {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  border: 1px solid rgba(226, 232, 240, 0.12);
+  border-radius: 16px;
+  padding: 14px;
+  background: rgba(15, 23, 42, 0.44);
+}
+
+.surface-value-grid strong {
+  color: #f8fafc;
+}
+
+.surface-value-grid small {
+  color: var(--text-soft);
+  line-height: 1.35;
+}
+
+@media (max-width: 760px) {
+  .surface-value-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .surface-value-card {
+    padding: 16px;
+  }
+}
