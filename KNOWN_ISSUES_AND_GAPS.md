@@ -57,3 +57,7 @@ Next priority: connect payment actions and quote/contact intake to real Edge wri
 ## Schema 146 remaining high-value gaps
 
 Payment/reconciliation now has DB-backed workbench scaffolding, but it still needs real Edge write actions, approval enforcement, immutable audit events, and close-period locking. Bank CSV handling now has preview/reject/staging design, but it still needs the actual parser and upload UI. Equipment custody now has scan/timeline requirements, but it still needs browser camera scanning and live timeline rendering. Public growth now has route and visual registries, but real galleries and sitemap growth should wait until approvals, alt text, proof, compression, and conversion paths are in place. Quote/contact intake is visible on the public website, but live submission is intentionally not connected until spam/privacy and Edge write controls are added.
+
+## Schema 147 sanity gaps — 2026-06-14a
+
+The app now has stronger visual placeholders and compact handoff docs, but the highest value remains turning scaffolding into real actions. Outstanding gaps: quote/contact submit is still not a real write path; payment actions are still not live buttons; bank CSV preview and reconciliation match/split/undo/signoff need execution screens; equipment scan and custody timeline need camera/manual fallback; visual placeholders need an approval registry before real images replace them; public routes must stay draft until proof, title/meta, one H1, internal links, CTA, and visual fallback are complete.

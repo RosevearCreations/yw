@@ -106,3 +106,49 @@ Next priority: connect payment actions and quote/contact intake to real Edge wri
 18. Add Admin control-center scorecards above raw readiness tables.
 19. Convert scorecard rails into drilldown links.
 20. Add visual regression screenshots or CSS token tests for public polish.
+
+## Schema 147 completed 20 — 2026-06-14a
+
+1. Archived retired helper Markdown from the root.
+2. Archived root `test_write` temporary files.
+3. Created `docs/ACTIVE_PROJECT_HANDBOOK.md`.
+4. Created `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
+5. Added schema 147 Markdown consolidation registry.
+6. Added schema 147 visual placeholder registry.
+7. Added schema 147 competitive SEO enhancement queue.
+8. Added schema 147 desktop/mobile polish queue.
+9. Added schema 147 next-step sanity queue.
+10. Added responsive public graphic-placeholder wall.
+11. Added app-section visual placeholders for safety, jobs, equipment, and Admin areas.
+12. Kept visual enrichment CSS-only to avoid broken/unapproved images.
+13. Updated public cache marker to `2026-06-14a`.
+14. Updated sitemap lastmod to 2026-06-14.
+15. Preserved one-H1 public page discipline.
+16. Preserved mobile quick navigation and desktop Admin shell.
+17. Added Admin/API visibility hooks for schema 147 registries.
+18. Updated docs README to point to the two main handoff files.
+19. Added schema 147 doc.
+20. Ran smoke and syntax checks after the pass.
+
+## Next 20 after schema 147
+
+1. Build real quote/contact submit Edge Function and DB write path.
+2. Build payment application action write path with approval and reversal rules.
+3. Build bank CSV preview screen with upload validation and rejected-row table.
+4. Build reconciliation candidate matching, split, undo, and signoff actions.
+5. Build equipment QR/barcode scan capture with manual fallback.
+6. Build equipment custody timeline UI from checkout to return-to-service.
+7. Create visual asset approval screen before adding real images.
+8. Create public route approval screen before publishing more sitemap pages.
+9. Add Admin scorecard/progress rail summary above readiness tables.
+10. Add persistent runtime fallback event logging.
+11. Add mobile offline conflict resolution storage and cards.
+12. Add route-specific SEO smoke checks for title, meta, H1, internal link, CTA, and proof.
+13. Add image placeholder-to-approved-image replacement workflow.
+14. Add CSS overlap/visual regression smoke checks for the new placeholder sections.
+15. Add accountant export packaging for unresolved payment/reconciliation exceptions.
+16. Add month-end close lock/reopen proof controls.
+17. Add HST/GST review and remittance proof screens.
+18. Add payroll remittance proof/signoff screens.
+19. Migrate remaining repeated JSON/catalog configuration into DB-backed registries.
+20. Convert more passive schema queues into real Admin buttons with rollback/fallback.

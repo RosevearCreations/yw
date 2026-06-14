@@ -2566,3 +2566,141 @@ button[aria-disabled="true"]:hover {
   }
 }
 
+
+
+/* Schema 147 visual graphic placeholders and desktop/mobile polish */
+.graphic-placeholder-wall {
+  max-width: 1100px;
+  margin: 16px auto 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) repeat(3, minmax(0, 0.75fr));
+  gap: 14px;
+  padding: 0 12px;
+}
+
+.graphic-placeholder-card,
+.section-graphic-placeholder {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(56, 189, 248, 0.18), transparent 30%),
+    linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.74));
+  box-shadow: 0 18px 44px rgba(2, 6, 23, 0.24);
+}
+
+.graphic-placeholder-card {
+  min-height: 168px;
+  padding: 18px;
+  display: grid;
+  align-content: end;
+  gap: 8px;
+}
+
+.graphic-placeholder-card::before,
+.section-graphic-placeholder::before {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border: 1px dashed rgba(226, 232, 240, 0.24);
+  border-radius: 16px;
+  pointer-events: none;
+}
+
+.graphic-placeholder-card::after,
+.section-graphic-placeholder::after {
+  content: "";
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  right: -36px;
+  top: -36px;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.12);
+  pointer-events: none;
+}
+
+.graphic-placeholder-hero {
+  min-height: 210px;
+}
+
+.graphic-placeholder-badge {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 1;
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: rgba(14, 165, 233, 0.16);
+  color: #bae6fd;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.graphic-placeholder-icon {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  color: rgba(186, 230, 253, 0.86);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.graphic-placeholder-card strong,
+.section-graphic-placeholder strong {
+  color: #f8fafc;
+  z-index: 1;
+}
+
+.graphic-placeholder-card small,
+.section-graphic-placeholder small {
+  color: rgba(226, 232, 240, 0.78);
+  line-height: 1.45;
+  z-index: 1;
+}
+
+.section-graphic-placeholder {
+  margin-top: 14px;
+  min-height: 132px;
+  padding: 18px;
+  display: grid;
+  align-content: end;
+  gap: 6px;
+}
+
+.section-graphic-placeholder span {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  width: 38px;
+  height: 38px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 14px;
+  background: rgba(14, 165, 233, 0.14);
+  color: #e0f2fe;
+  font-weight: 900;
+}
+
+@media (max-width: 980px) {
+  .graphic-placeholder-wall {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .graphic-placeholder-wall {
+    grid-template-columns: 1fr;
+    padding: 0 10px;
+  }
+  .graphic-placeholder-card,
+  .graphic-placeholder-hero,
+  .section-graphic-placeholder {
+    min-height: 124px;
+  }
+}

@@ -428,3 +428,7 @@ Implemented the next value-added layer from the sanity check: payment action wor
 SEO/H1/CSS guardrails remain active: one public H1, sitemap/robots freshness, cache marker `2026-06-13b`, and CSS brace balance checks. The public shell gained quote/contact intake and mobile conflict preview sections without adding extra H1 headings.
 
 Next priority: connect payment actions and quote/contact intake to real Edge write actions, then build bank CSV preview and reconciliation match buttons.
+
+## Schema 147 additions
+
+Added Markdown consolidation, visual placeholder, competitive SEO, desktop/mobile polish, and next-step sanity registries. Canonical schema drift now expects schema 147.

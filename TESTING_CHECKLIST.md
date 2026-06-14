@@ -442,3 +442,7 @@ Implemented the next value-added layer from the sanity check: payment action wor
 SEO/H1/CSS guardrails remain active: one public H1, sitemap/robots freshness, cache marker `2026-06-13b`, and CSS brace balance checks. The public shell gained quote/contact intake and mobile conflict preview sections without adding extra H1 headings.
 
 Next priority: connect payment actions and quote/contact intake to real Edge write actions, then build bank CSV preview and reconciliation match buttons.
+
+## Schema 147 smoke focus
+
+Verify one H1, CSS brace balance, cache marker `2026-06-14a`, sitemap lastmod 2026-06-14, visual placeholder wall, section placeholders, schema 147 canonical marker, and two main handoff docs.

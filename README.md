@@ -427,3 +427,7 @@ Implemented the next value-added layer from the sanity check: payment action wor
 SEO/H1/CSS guardrails remain active: one public H1, sitemap/robots freshness, cache marker `2026-06-13b`, and CSS brace balance checks. The public shell gained quote/contact intake and mobile conflict preview sections without adding extra H1 headings.
 
 Next priority: connect payment actions and quote/contact intake to real Edge write actions, then build bank CSV preview and reconciliation match buttons.
+
+## Build 2026-06-14a / schema 147
+
+This pass consolidates project handoff around `docs/ACTIVE_PROJECT_HANDBOOK.md` and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`, adds application-wide CSS-only visual placeholders, preserves one-H1 SEO discipline, and keeps mobile/desktop support explicit.

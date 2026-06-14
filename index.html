@@ -13,12 +13,12 @@
   <meta name="theme-color" content="#0f172a" />
   <meta name="color-scheme" content="dark light" />
 
-  <link rel="manifest" href="/manifest.json?v=2026-06-13b" />
-  <link rel="icon" href="/icons/icon-192.png?v=2026-06-13b" sizes="192x192" />
-  <link rel="stylesheet" href="/style.css?v=2026-06-13b" />
+  <link rel="manifest" href="/manifest.json?v=2026-06-14a" />
+  <link rel="icon" href="/icons/icon-192.png?v=2026-06-14a" sizes="192x192" />
+  <link rel="stylesheet" href="/style.css?v=2026-06-14a" />
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/js/app-config.js?v=2026-06-13b"></script>
+  <script src="/js/app-config.js?v=2026-06-14a"></script>
 
   <style>
     #authLoading {
@@ -104,7 +104,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-06-13b');
+          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-06-14a');
           if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
           }
@@ -164,6 +164,30 @@
   </header>
 
   <div id="offlineBanner" class="notice" style="display:none;max-width:1100px;margin:14px auto 0;">You are offline or disconnected from the server. Some forms may still open, but sign-in, sync, uploads, and live data actions will not work until the connection returns.</div>
+
+
+  <section class="graphic-placeholder-wall" aria-label="Visual graphic placeholders for application enrichment">
+    <div class="graphic-placeholder-card graphic-placeholder-hero">
+      <span class="graphic-placeholder-badge">Image placeholder</span>
+      <strong>Hero operations visual</strong>
+      <small>Future approved image: crew, jobsite, equipment, or clean dashboard screenshot with descriptive alt text.</small>
+    </div>
+    <div class="graphic-placeholder-card">
+      <span class="graphic-placeholder-icon" aria-hidden="true">▣</span>
+      <strong>Desktop control center</strong>
+      <small>Placeholder for Admin scorecard/progress rail screenshot once approved.</small>
+    </div>
+    <div class="graphic-placeholder-card">
+      <span class="graphic-placeholder-icon" aria-hidden="true">◎</span>
+      <strong>Mobile field workflow</strong>
+      <small>Placeholder for phone-first Today, scan, incident, or offline conflict image.</small>
+    </div>
+    <div class="graphic-placeholder-card">
+      <span class="graphic-placeholder-icon" aria-hidden="true">◇</span>
+      <strong>Proof and trust strip</strong>
+      <small>Placeholder for service-area proof, safe-work evidence, before/after visuals, or testimonial block.</small>
+    </div>
+  </section>
 
   <section class="surface-readiness-strip" aria-label="Desktop website and mobile field app readiness">
     <div class="surface-readiness-card">
@@ -427,11 +451,11 @@
       <div id="mobileTodayGrid" class="mobile-today-grid" aria-live="polite"></div>
       <div id="mobileInstallCard" class="mobile-install-card" hidden></div>
     </section>
-    <section id="toolbox" class="card"><h2>Toolbox Talk</h2></section>
-    <section id="ppe" class="card"><h2>PPE Check</h2></section>
-    <section id="firstaid" class="card"><h2>First Aid Kit</h2></section>
-    <section id="incident" class="card"><h2>Incident / Near Miss</h2></section>
-    <section id="inspect" class="card"><h2>Site Inspection</h2></section>
+    <section id="toolbox" class="card"><h2>Toolbox Talk</h2><div class="section-graphic-placeholder"><span aria-hidden="true">▣</span><strong>Toolbox visual placeholder</strong><small>Future image: crew huddle, topic card, or approved safety illustration.</small></div></section>
+    <section id="ppe" class="card"><h2>PPE Check</h2><div class="section-graphic-placeholder"><span aria-hidden="true">◎</span><strong>PPE proof placeholder</strong><small>Future image: PPE checklist, approved gear photo, or mobile capture example.</small></div></section>
+    <section id="firstaid" class="card"><h2>First Aid Kit</h2><div class="section-graphic-placeholder"><span aria-hidden="true">✚</span><strong>First aid visual placeholder</strong><small>Future image: kit inventory, inspection proof, or stocked station photo.</small></div></section>
+    <section id="incident" class="card"><h2>Incident / Near Miss</h2><div class="section-graphic-placeholder"><span aria-hidden="true">!</span><strong>Incident evidence placeholder</strong><small>Future image: incident flow, photo proof card, or corrective-action timeline.</small></div></section>
+    <section id="inspect" class="card"><h2>Site Inspection</h2><div class="section-graphic-placeholder"><span aria-hidden="true">◇</span><strong>Inspection visual placeholder</strong><small>Future image: site checklist, route map, or hazard-control photo proof.</small></div></section>
     <section id="drill" class="card"><h2>Emergency Drill</h2></section>
     <section id="log" class="card"><h2>Logbook</h2></section>
     <section id="reports" class="card"><h2>Historical Reports</h2></section>
@@ -446,10 +470,10 @@
       <div class="notice" id="meFallbackNotice" style="margin-top:12px;">Loading profile screen…</div>
     </section>
     <section id="crew" class="card"><h2>Crew</h2></section>
-    <section id="jobs" class="card"><h2>Jobs</h2></section>
-    <section id="equipment" class="card"><h2>Equipment</h2></section>
+    <section id="jobs" class="card"><h2>Jobs</h2><div class="section-graphic-placeholder"><span aria-hidden="true">▤</span><strong>Job workflow placeholder</strong><small>Future image: route board, quote card, work order, or before/after proof.</small></div></section>
+    <section id="equipment" class="card"><h2>Equipment</h2><div class="section-graphic-placeholder"><span aria-hidden="true">⌁</span><strong>Equipment scan placeholder</strong><small>Future image: QR/barcode scan, custody timeline, or return-to-service checklist.</small></div></section>
     <section id="settings" class="card"><h2>Settings</h2></section>
-    <section id="admin" class="card"><h2>Admin</h2></section>
+    <section id="admin" class="card"><h2>Admin</h2><div class="section-graphic-placeholder"><span aria-hidden="true">▥</span><strong>Admin control center placeholder</strong><small>Future image: scorecards, progress rails, release readiness, and issue heat map.</small></div></section>
   </main>
 
   <nav id="mobileQuickNav" class="mobile-quick-nav" aria-label="Mobile quick actions">
@@ -468,32 +492,32 @@
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
 
   <!-- Correct module order -->
-  <script src="/js/router.js?v=2026-06-13b"></script>
-  <script src="/js/mobile-menu.js?v=2026-06-13b"></script>
-  <script src="/js/mobile-today.js?v=2026-06-13b"></script>
-  <script src="/js/mobile-form-helper.js?v=2026-06-13b"></script>
-  <script src="/js/bootstrap.js?v=2026-06-13b"></script>
-  <script src="/js/auth.js?v=2026-06-13b"></script>
-  <script src="/js/security.js?v=2026-06-13b"></script>
-  <script src="/js/api.js?v=2026-06-13b"></script>
-  <script src="/js/outbox.js?v=2026-06-13b"></script>
-  <script src="/js/admin-actions.js?v=2026-06-13b"></script>
-  <script src="/js/ui-auth.js?v=2026-06-13b"></script>
-  <script src="/js/account-ui.js?v=2026-06-13b"></script>
-  <script src="/js/profile-ui.js?v=2026-06-13b"></script>
-  <script src="/js/reference-data.js?v=2026-06-13b"></script>
-  <script src="/js/admin-ui.js?v=2026-06-13b"></script>
-  <script src="/js/hse-ops-ui.js?v=2026-06-13b"></script>
-  <script src="/js/logbook-ui.js?v=2026-06-13b"></script>
-  <script src="/js/reports-ui.js?v=2026-06-13b"></script>
-  <script src="/js/jobs-ui.js?v=2026-06-13b"></script>
-  <script src="/js/forms-toolbox.js?v=2026-06-13b"></script>
-  <script src="/js/forms-ppe.js?v=2026-06-13b"></script>
-  <script src="/js/forms-firstaid.js?v=2026-06-13b"></script>
-  <script src="/js/forms-incident.js?v=2026-06-13b"></script>
-  <script src="/js/forms-inspection.js?v=2026-06-13b"></script>
-  <script src="/js/forms-drill.js?v=2026-06-13b"></script>
-  <script src="/app.js?v=2026-06-13b" defer></script>
+  <script src="/js/router.js?v=2026-06-14a"></script>
+  <script src="/js/mobile-menu.js?v=2026-06-14a"></script>
+  <script src="/js/mobile-today.js?v=2026-06-14a"></script>
+  <script src="/js/mobile-form-helper.js?v=2026-06-14a"></script>
+  <script src="/js/bootstrap.js?v=2026-06-14a"></script>
+  <script src="/js/auth.js?v=2026-06-14a"></script>
+  <script src="/js/security.js?v=2026-06-14a"></script>
+  <script src="/js/api.js?v=2026-06-14a"></script>
+  <script src="/js/outbox.js?v=2026-06-14a"></script>
+  <script src="/js/admin-actions.js?v=2026-06-14a"></script>
+  <script src="/js/ui-auth.js?v=2026-06-14a"></script>
+  <script src="/js/account-ui.js?v=2026-06-14a"></script>
+  <script src="/js/profile-ui.js?v=2026-06-14a"></script>
+  <script src="/js/reference-data.js?v=2026-06-14a"></script>
+  <script src="/js/admin-ui.js?v=2026-06-14a"></script>
+  <script src="/js/hse-ops-ui.js?v=2026-06-14a"></script>
+  <script src="/js/logbook-ui.js?v=2026-06-14a"></script>
+  <script src="/js/reports-ui.js?v=2026-06-14a"></script>
+  <script src="/js/jobs-ui.js?v=2026-06-14a"></script>
+  <script src="/js/forms-toolbox.js?v=2026-06-14a"></script>
+  <script src="/js/forms-ppe.js?v=2026-06-14a"></script>
+  <script src="/js/forms-firstaid.js?v=2026-06-14a"></script>
+  <script src="/js/forms-incident.js?v=2026-06-14a"></script>
+  <script src="/js/forms-inspection.js?v=2026-06-14a"></script>
+  <script src="/js/forms-drill.js?v=2026-06-14a"></script>
+  <script src="/app.js?v=2026-06-14a" defer></script>
 
   <script>
     document.addEventListener('ywi:auth-changed', (e) => {
