@@ -33,3 +33,13 @@ Reviewed during build **2026-06-06a / schema 134**. Keep this document aligned w
 Added `RELEASE_VALIDATION_PAYMENT_RECON_EQUIPMENT_SEO_DATA_MIGRATION_SCHEMA135.md` for the release-validation, payment/reconciliation, equipment scan, local SEO, fallback message, and JSON/DB migration control pass.
 
 - [Schema 145 sanity check and value-added breakdown](SCHEMA_145_SANITY_CHECK_VALUE_ADDED_BREAKDOWN.md)
+
+
+## Current main handoff docs (2026-06-14a)
+
+Read these first before older detailed docs:
+
+1. `ACTIVE_PROJECT_HANDBOOK.md`
+2. `NEXT_STEPS_AND_SANITY_CHECK.md`
+
+Older Markdown remains historical/reference material and should be archived gradually only after these two files stay complete.

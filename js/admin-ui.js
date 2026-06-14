@@ -296,6 +296,11 @@
       appQuoteContactIntakeRegistry: [],
       appMobileOfflineConflictCardQueue: [],
       appAdminScorecardProgressRailQueue: [],
+      appMarkdownConsolidationRegistry: [],
+      appVisualPlaceholderRegistry: [],
+      appCompetitiveSeoEnhancementQueue: [],
+      appDesktopMobilePolishQueue: [],
+      appNextStepSanityQueue: [],
       actorRole: '',
       actorProfileId: '',
       directoryPagination: {
@@ -1086,6 +1091,36 @@
           <div class="table-scroll" style="margin-top:12px;">
             <table id="ad_db_source_registry_candidate_table">
               <thead><tr><th>Data Area</th><th>DB Registry Candidate</th><th>Status</th><th>Current / DB Registry</th><th>Validation / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_markdown_consolidation_registry_table">
+              <thead><tr><th>Area</th><th>Markdown Consolidation</th><th>Status</th><th>Canonical / AI Handoff</th><th>Archive / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_visual_placeholder_registry_table">
+              <thead><tr><th>Surface</th><th>Visual Placeholder</th><th>Status</th><th>Image Role / Alt Text</th><th>Placement / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_competitive_seo_enhancement_table">
+              <thead><tr><th>SEO Area</th><th>Competitive Enhancement</th><th>Status</th><th>Benchmark / Route</th><th>Conversion / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_desktop_mobile_polish_table">
+              <thead><tr><th>Surface</th><th>Desktop/Mobile Polish</th><th>Status</th><th>Desktop / Mobile</th><th>CSS Guard / Fallback</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="table-scroll" style="margin-top:12px;">
+            <table id="ad_next_step_sanity_table">
+              <thead><tr><th>Area</th><th>Next-Step Sanity</th><th>Status</th><th>Current / Next Action</th><th>Value / Fallback</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -1981,6 +2016,11 @@
         quoteContactIntakeRegistryBody: document.querySelector('#ad_quote_contact_intake_registry_table tbody'),
         mobileOfflineConflictCardBody: document.querySelector('#ad_mobile_offline_conflict_card_table tbody'),
         adminScorecardProgressRailBody: document.querySelector('#ad_admin_scorecard_progress_rail_table tbody'),
+        markdownConsolidationRegistryBody: document.querySelector('#ad_markdown_consolidation_registry_table tbody'),
+        visualPlaceholderRegistryBody: document.querySelector('#ad_visual_placeholder_registry_table tbody'),
+        competitiveSeoEnhancementBody: document.querySelector('#ad_competitive_seo_enhancement_table tbody'),
+        desktopMobilePolishBody: document.querySelector('#ad_desktop_mobile_polish_table tbody'),
+        nextStepSanityBody: document.querySelector('#ad_next_step_sanity_table tbody'),
         seoSmokeBody: document.querySelector('#ad_seo_smoke_table tbody'),
         bankCsvImportBody: document.querySelector('#ad_bank_csv_import_table tbody'),
         backupRehearsalBody: document.querySelector('#ad_backup_rehearsal_table tbody'),
@@ -6183,7 +6223,12 @@
           appPublicRoutePublicationRegistry: Array.isArray(payload?.app_public_route_publication_registry) ? payload.app_public_route_publication_registry : state.appPublicRoutePublicationRegistry,
           appQuoteContactIntakeRegistry: Array.isArray(payload?.app_quote_contact_intake_registry) ? payload.app_quote_contact_intake_registry : state.appQuoteContactIntakeRegistry,
           appMobileOfflineConflictCardQueue: Array.isArray(payload?.app_mobile_offline_conflict_card_queue) ? payload.app_mobile_offline_conflict_card_queue : state.appMobileOfflineConflictCardQueue,
-          appAdminScorecardProgressRailQueue: Array.isArray(payload?.app_admin_scorecard_progress_rail_queue) ? payload.app_admin_scorecard_progress_rail_queue : state.appAdminScorecardProgressRailQueue
+          appAdminScorecardProgressRailQueue: Array.isArray(payload?.app_admin_scorecard_progress_rail_queue) ? payload.app_admin_scorecard_progress_rail_queue : state.appAdminScorecardProgressRailQueue,
+          appMarkdownConsolidationRegistry: Array.isArray(payload?.app_markdown_consolidation_registry) ? payload.app_markdown_consolidation_registry : state.appMarkdownConsolidationRegistry,
+          appVisualPlaceholderRegistry: Array.isArray(payload?.app_visual_placeholder_registry) ? payload.app_visual_placeholder_registry : state.appVisualPlaceholderRegistry,
+          appCompetitiveSeoEnhancementQueue: Array.isArray(payload?.app_competitive_seo_enhancement_queue) ? payload.app_competitive_seo_enhancement_queue : state.appCompetitiveSeoEnhancementQueue,
+          appDesktopMobilePolishQueue: Array.isArray(payload?.app_desktop_mobile_polish_queue) ? payload.app_desktop_mobile_polish_queue : state.appDesktopMobilePolishQueue,
+          appNextStepSanityQueue: Array.isArray(payload?.app_next_step_sanity_queue) ? payload.app_next_step_sanity_queue : state.appNextStepSanityQueue
 
         };
         const e = els();
@@ -7809,6 +7854,11 @@
       renderSchema142Rows(e.quoteContactIntakeRegistryBody, state.appQuoteContactIntakeRegistry, 'No schema 146 quote/contact intake rows loaded yet. Apply schema 146.', { area: 'intake_area', title: 'intake_title', status: 'intake_status', primary: 'public_form_hint', secondary: 'routing_hint' });
       renderSchema142Rows(e.mobileOfflineConflictCardBody, state.appMobileOfflineConflictCardQueue, 'No schema 146 mobile offline conflict card rows loaded yet. Apply schema 146.', { area: 'conflict_area', title: 'conflict_title', status: 'conflict_status', primary: 'detection_hint', secondary: 'resolution_hint' });
       renderSchema142Rows(e.adminScorecardProgressRailBody, state.appAdminScorecardProgressRailQueue, 'No schema 146 Admin scorecard/progress rail rows loaded yet. Apply schema 146.', { area: 'scorecard_area', title: 'scorecard_title', status: 'scorecard_status', primary: 'metric_hint', secondary: 'progress_hint' });
+      renderSchema142Rows(e.markdownConsolidationRegistryBody, state.appMarkdownConsolidationRegistry, 'No schema 147 Markdown consolidation rows loaded yet. Apply schema 147.', { area: 'doc_area', title: 'registry_title', status: 'registry_status', primary: 'canonical_doc_hint', secondary: 'ai_handoff_hint' });
+      renderSchema142Rows(e.visualPlaceholderRegistryBody, state.appVisualPlaceholderRegistry, 'No schema 147 visual placeholder rows loaded yet. Apply schema 147.', { area: 'surface_area', title: 'placeholder_title', status: 'placeholder_status', primary: 'image_role_hint', secondary: 'alt_text_hint' });
+      renderSchema142Rows(e.competitiveSeoEnhancementBody, state.appCompetitiveSeoEnhancementQueue, 'No schema 147 competitive SEO rows loaded yet. Apply schema 147.', { area: 'seo_area', title: 'enhancement_title', status: 'enhancement_status', primary: 'benchmark_hint', secondary: 'conversion_hint' });
+      renderSchema142Rows(e.desktopMobilePolishBody, state.appDesktopMobilePolishQueue, 'No schema 147 desktop/mobile polish rows loaded yet. Apply schema 147.', { area: 'surface_area', title: 'polish_title', status: 'polish_status', primary: 'desktop_hint', secondary: 'mobile_hint' });
+      renderSchema142Rows(e.nextStepSanityBody, state.appNextStepSanityQueue, 'No schema 147 next-step sanity rows loaded yet. Apply schema 147.', { area: 'sanity_area', title: 'sanity_title', status: 'sanity_status', primary: 'next_action_hint', secondary: 'value_hint' });
 
       if (e.seoSmokeBody) {
         const seoRows = Array.isArray(state.publicSeoSmokeCheck) ? state.publicSeoSmokeCheck : [];
