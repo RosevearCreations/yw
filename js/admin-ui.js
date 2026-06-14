@@ -287,6 +287,15 @@
       appVisualProfessionalBacklogQueue: [],
       appLocalSearchValueQueue: [],
       appSourceOfTruthMigrationValueQueue: [],
+      appPaymentActionWorkbenchQueue: [],
+      appBankCsvImportPreviewQueue: [],
+      appReconciliationMatchActionQueue: [],
+      appEquipmentScanCustodyWorkbenchQueue: [],
+      appVisualAssetApprovalRegistry: [],
+      appPublicRoutePublicationRegistry: [],
+      appQuoteContactIntakeRegistry: [],
+      appMobileOfflineConflictCardQueue: [],
+      appAdminScorecardProgressRailQueue: [],
       actorRole: '',
       actorProfileId: '',
       directoryPagination: {
@@ -1963,6 +1972,15 @@
         visualProfessionalBacklogBody: document.querySelector('#ad_visual_professional_backlog_table tbody'),
         localSearchValueBody: document.querySelector('#ad_local_search_value_table tbody'),
         sourceOfTruthMigrationValueBody: document.querySelector('#ad_source_of_truth_migration_value_table tbody'),
+        paymentActionWorkbenchBody: document.querySelector('#ad_payment_action_workbench_table tbody'),
+        bankCsvImportPreviewQueueBody: document.querySelector('#ad_bank_csv_import_preview_queue_table tbody'),
+        reconciliationMatchActionBody: document.querySelector('#ad_reconciliation_match_action_table tbody'),
+        equipmentScanCustodyWorkbenchBody: document.querySelector('#ad_equipment_scan_custody_workbench_table tbody'),
+        visualAssetApprovalRegistryBody: document.querySelector('#ad_visual_asset_approval_registry_table tbody'),
+        publicRoutePublicationRegistryBody: document.querySelector('#ad_public_route_publication_registry_table tbody'),
+        quoteContactIntakeRegistryBody: document.querySelector('#ad_quote_contact_intake_registry_table tbody'),
+        mobileOfflineConflictCardBody: document.querySelector('#ad_mobile_offline_conflict_card_table tbody'),
+        adminScorecardProgressRailBody: document.querySelector('#ad_admin_scorecard_progress_rail_table tbody'),
         seoSmokeBody: document.querySelector('#ad_seo_smoke_table tbody'),
         bankCsvImportBody: document.querySelector('#ad_bank_csv_import_table tbody'),
         backupRehearsalBody: document.querySelector('#ad_backup_rehearsal_table tbody'),
@@ -6155,7 +6173,17 @@
           appDesktopMobileValueGapQueue: Array.isArray(payload?.app_desktop_mobile_value_gap_queue) ? payload.app_desktop_mobile_value_gap_queue : state.appDesktopMobileValueGapQueue,
           appVisualProfessionalBacklogQueue: Array.isArray(payload?.app_visual_professional_backlog_queue) ? payload.app_visual_professional_backlog_queue : state.appVisualProfessionalBacklogQueue,
           appLocalSearchValueQueue: Array.isArray(payload?.app_local_search_value_queue) ? payload.app_local_search_value_queue : state.appLocalSearchValueQueue,
-          appSourceOfTruthMigrationValueQueue: Array.isArray(payload?.app_source_of_truth_migration_value_queue) ? payload.app_source_of_truth_migration_value_queue : state.appSourceOfTruthMigrationValueQueue
+          appSourceOfTruthMigrationValueQueue: Array.isArray(payload?.app_source_of_truth_migration_value_queue) ? payload.app_source_of_truth_migration_value_queue : state.appSourceOfTruthMigrationValueQueue,
+
+          appPaymentActionWorkbenchQueue: Array.isArray(payload?.app_payment_action_workbench_queue) ? payload.app_payment_action_workbench_queue : state.appPaymentActionWorkbenchQueue,
+          appBankCsvImportPreviewQueue: Array.isArray(payload?.app_bank_csv_import_preview_queue) ? payload.app_bank_csv_import_preview_queue : state.appBankCsvImportPreviewQueue,
+          appReconciliationMatchActionQueue: Array.isArray(payload?.app_reconciliation_match_action_queue) ? payload.app_reconciliation_match_action_queue : state.appReconciliationMatchActionQueue,
+          appEquipmentScanCustodyWorkbenchQueue: Array.isArray(payload?.app_equipment_scan_custody_workbench_queue) ? payload.app_equipment_scan_custody_workbench_queue : state.appEquipmentScanCustodyWorkbenchQueue,
+          appVisualAssetApprovalRegistry: Array.isArray(payload?.app_visual_asset_approval_registry) ? payload.app_visual_asset_approval_registry : state.appVisualAssetApprovalRegistry,
+          appPublicRoutePublicationRegistry: Array.isArray(payload?.app_public_route_publication_registry) ? payload.app_public_route_publication_registry : state.appPublicRoutePublicationRegistry,
+          appQuoteContactIntakeRegistry: Array.isArray(payload?.app_quote_contact_intake_registry) ? payload.app_quote_contact_intake_registry : state.appQuoteContactIntakeRegistry,
+          appMobileOfflineConflictCardQueue: Array.isArray(payload?.app_mobile_offline_conflict_card_queue) ? payload.app_mobile_offline_conflict_card_queue : state.appMobileOfflineConflictCardQueue,
+          appAdminScorecardProgressRailQueue: Array.isArray(payload?.app_admin_scorecard_progress_rail_queue) ? payload.app_admin_scorecard_progress_rail_queue : state.appAdminScorecardProgressRailQueue
 
         };
         const e = els();
@@ -7771,6 +7799,16 @@
       renderSchema142Rows(e.visualProfessionalBacklogBody, state.appVisualProfessionalBacklogQueue, 'No schema 145 visual professional backlog rows loaded yet. Apply schema 145.', { area: 'visual_area', title: 'backlog_title', status: 'backlog_status', primary: 'visual_effect_hint', secondary: 'image_or_asset_hint' });
       renderSchema142Rows(e.localSearchValueBody, state.appLocalSearchValueQueue, 'No schema 145 local-search value rows loaded yet. Apply schema 145.', { area: 'search_area', subArea: 'route_key', title: 'search_title', status: 'search_status', primary: 'phrase_hint', secondary: 'proof_hint' });
       renderSchema142Rows(e.sourceOfTruthMigrationValueBody, state.appSourceOfTruthMigrationValueQueue, 'No schema 145 source-of-truth migration value rows loaded yet. Apply schema 145.', { area: 'source_area', title: 'source_title', status: 'source_status', primary: 'current_source_hint', secondary: 'target_source_hint' });
+
+      renderSchema142Rows(e.paymentActionWorkbenchBody, state.appPaymentActionWorkbenchQueue, 'No schema 146 payment action workbench rows loaded yet. Apply schema 146.', { area: 'action_area', title: 'action_title', status: 'action_status', primary: 'required_fields_hint', secondary: 'posting_hint' });
+      renderSchema142Rows(e.bankCsvImportPreviewQueueBody, state.appBankCsvImportPreviewQueue, 'No schema 146 bank CSV preview rows loaded yet. Apply schema 146.', { area: 'import_area', title: 'preview_title', status: 'preview_status', primary: 'header_validation_hint', secondary: 'rejected_row_hint' });
+      renderSchema142Rows(e.reconciliationMatchActionBody, state.appReconciliationMatchActionQueue, 'No schema 146 reconciliation action rows loaded yet. Apply schema 146.', { area: 'match_area', title: 'match_title', status: 'match_status', primary: 'scoring_hint', secondary: 'split_hint' });
+      renderSchema142Rows(e.equipmentScanCustodyWorkbenchBody, state.appEquipmentScanCustodyWorkbenchQueue, 'No schema 146 equipment scan custody rows loaded yet. Apply schema 146.', { area: 'custody_area', title: 'custody_title', status: 'custody_status', primary: 'scan_mode_hint', secondary: 'timeline_hint' });
+      renderSchema142Rows(e.visualAssetApprovalRegistryBody, state.appVisualAssetApprovalRegistry, 'No schema 146 visual asset approval rows loaded yet. Apply schema 146.', { area: 'asset_area', title: 'asset_title', status: 'asset_status', primary: 'consent_hint', secondary: 'alt_text_hint' });
+      renderSchema142Rows(e.publicRoutePublicationRegistryBody, state.appPublicRoutePublicationRegistry, 'No schema 146 public route registry rows loaded yet. Apply schema 146.', { area: 'route_path', title: 'route_title', status: 'route_status', primary: 'local_phrase_hint', secondary: 'conversion_hint' });
+      renderSchema142Rows(e.quoteContactIntakeRegistryBody, state.appQuoteContactIntakeRegistry, 'No schema 146 quote/contact intake rows loaded yet. Apply schema 146.', { area: 'intake_area', title: 'intake_title', status: 'intake_status', primary: 'public_form_hint', secondary: 'routing_hint' });
+      renderSchema142Rows(e.mobileOfflineConflictCardBody, state.appMobileOfflineConflictCardQueue, 'No schema 146 mobile offline conflict card rows loaded yet. Apply schema 146.', { area: 'conflict_area', title: 'conflict_title', status: 'conflict_status', primary: 'detection_hint', secondary: 'resolution_hint' });
+      renderSchema142Rows(e.adminScorecardProgressRailBody, state.appAdminScorecardProgressRailQueue, 'No schema 146 Admin scorecard/progress rail rows loaded yet. Apply schema 146.', { area: 'scorecard_area', title: 'scorecard_title', status: 'scorecard_status', primary: 'metric_hint', secondary: 'progress_hint' });
 
       if (e.seoSmokeBody) {
         const seoRows = Array.isArray(state.publicSeoSmokeCheck) ? state.publicSeoSmokeCheck : [];
