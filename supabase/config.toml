@@ -9,3 +9,18 @@ verify_jwt = false
 
 [functions.report-subscription-delivery-run]
 verify_jwt = false
+
+[functions.customer-portal]
+verify_jwt = false
+
+[functions.public-content]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.upload-public-asset]
+verify_jwt = true
+
+[functions.operations-manage]
+verify_jwt = true
