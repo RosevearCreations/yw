@@ -301,6 +301,18 @@
       appCompetitiveSeoEnhancementQueue: [],
       appDesktopMobilePolishQueue: [],
       appNextStepSanityQueue: [],
+
+      quoteContactRequests: [],
+      paymentActionRequests: [],
+      bankCsvImportPreviews: [],
+      bankCsvImportPreviewRows: [],
+      reconciliationActionRequests: [],
+      equipmentScanEvents: [],
+      equipmentCustodyTimelineEvents: [],
+      visualAssetApprovalItems: [],
+      publicRouteApprovalItems: [],
+      mobileOfflineConflictCards: [],
+      adminScorecardProgressRails: [],
       actorRole: '',
       actorProfileId: '',
       directoryPagination: {
@@ -6228,7 +6240,18 @@
           appVisualPlaceholderRegistry: Array.isArray(payload?.app_visual_placeholder_registry) ? payload.app_visual_placeholder_registry : state.appVisualPlaceholderRegistry,
           appCompetitiveSeoEnhancementQueue: Array.isArray(payload?.app_competitive_seo_enhancement_queue) ? payload.app_competitive_seo_enhancement_queue : state.appCompetitiveSeoEnhancementQueue,
           appDesktopMobilePolishQueue: Array.isArray(payload?.app_desktop_mobile_polish_queue) ? payload.app_desktop_mobile_polish_queue : state.appDesktopMobilePolishQueue,
-          appNextStepSanityQueue: Array.isArray(payload?.app_next_step_sanity_queue) ? payload.app_next_step_sanity_queue : state.appNextStepSanityQueue
+          appNextStepSanityQueue: Array.isArray(payload?.app_next_step_sanity_queue) ? payload.app_next_step_sanity_queue : state.appNextStepSanityQueue,
+          quoteContactRequests: Array.isArray(payload?.quote_contact_requests) ? payload.quote_contact_requests : state.quoteContactRequests,
+          paymentActionRequests: Array.isArray(payload?.payment_action_requests) ? payload.payment_action_requests : state.paymentActionRequests,
+          bankCsvImportPreviews: Array.isArray(payload?.bank_csv_import_previews) ? payload.bank_csv_import_previews : state.bankCsvImportPreviews,
+          bankCsvImportPreviewRows: Array.isArray(payload?.bank_csv_import_preview_rows) ? payload.bank_csv_import_preview_rows : state.bankCsvImportPreviewRows,
+          reconciliationActionRequests: Array.isArray(payload?.reconciliation_action_requests) ? payload.reconciliation_action_requests : state.reconciliationActionRequests,
+          equipmentScanEvents: Array.isArray(payload?.equipment_scan_events) ? payload.equipment_scan_events : state.equipmentScanEvents,
+          equipmentCustodyTimelineEvents: Array.isArray(payload?.equipment_custody_timeline_events) ? payload.equipment_custody_timeline_events : state.equipmentCustodyTimelineEvents,
+          visualAssetApprovalItems: Array.isArray(payload?.visual_asset_approval_items) ? payload.visual_asset_approval_items : state.visualAssetApprovalItems,
+          publicRouteApprovalItems: Array.isArray(payload?.public_route_approval_items) ? payload.public_route_approval_items : state.publicRouteApprovalItems,
+          mobileOfflineConflictCards: Array.isArray(payload?.mobile_offline_conflict_cards) ? payload.mobile_offline_conflict_cards : state.mobileOfflineConflictCards,
+          adminScorecardProgressRails: Array.isArray(payload?.admin_scorecard_progress_rails) ? payload.admin_scorecard_progress_rails : state.adminScorecardProgressRails
 
         };
         const e = els();

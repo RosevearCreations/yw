@@ -644,6 +644,56 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
   }
 
 
+
+
+  async function submitQuoteContact(payload = {}) {
+    return jsonFetch('quote-contact-submit', {
+      method: 'POST',
+      body: payload,
+      requireAuth: false,
+      timeoutMs: 15000
+    });
+  }
+
+  async function manageOperations(payload = {}) {
+    return jsonFetch('operations-manage', {
+      method: 'POST',
+      body: payload,
+      requireAuth: true,
+      timeoutMs: 20000
+    });
+  }
+
+  function parseCsvLine(line = '') {
+    const out = [];
+    let value = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i += 1) {
+      const ch = line[i];
+      const next = line[i + 1];
+      if (ch === '"' && inQuotes && next === '"') { value += '"'; i += 1; continue; }
+      if (ch === '"') { inQuotes = !inQuotes; continue; }
+      if (ch === ',' && !inQuotes) { out.push(value.trim()); value = ''; continue; }
+      value += ch;
+    }
+    out.push(value.trim());
+    return out;
+  }
+
+  function parseBankCsvPreviewText(text = '', maxRows = 500) {
+    const lines = String(text || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+    if (!lines.length) return { headers: [], rows: [], errors: ['CSV file is empty.'] };
+    const headers = parseCsvLine(lines[0]);
+    const rows = lines.slice(1, maxRows + 1).map((line) => {
+      const values = parseCsvLine(line);
+      return headers.reduce((row, header, index) => {
+        row[header || `Column ${index + 1}`] = values[index] || '';
+        return row;
+      }, {});
+    });
+    return { headers, rows, errors: rows.length ? [] : ['CSV has headers but no transaction rows.'] };
+  }
+
   async function sendToFunction(fnName, payload, requireAuth = true) {
     return jsonFetch(fnName, {
       method: 'POST',
@@ -968,6 +1018,9 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
     escHtml,
     jsonFetch,
     sendToFunction,
+    submitQuoteContact,
+    manageOperations,
+    parseBankCsvPreviewText,
     uploadEquipmentEvidence,
     uploadImagesForSubmission,
     uploadEquipmentEvidenceBatch,
