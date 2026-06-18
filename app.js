@@ -195,6 +195,51 @@ async function timedRun(scope, fn) {
   }
 }
 
+
+
+function bindPublicQuoteContactForm() {
+  const form = document.getElementById('publicQuoteContactForm');
+  if (!form || form.dataset.bound === '1') return;
+  form.dataset.bound = '1';
+  const status = document.getElementById('publicQuoteContactStatus');
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const apiClient = api();
+    if (!apiClient?.submitQuoteContact) {
+      if (status) status.textContent = 'Quote/contact intake is not loaded yet. Refresh and try again.';
+      return;
+    }
+    const fd = new FormData(form);
+    const payload = {
+      name: fd.get('name') || '',
+      contact: fd.get('contact') || '',
+      service_type: fd.get('service_type') || '',
+      location: fd.get('location') || '',
+      message: fd.get('message') || '',
+      privacy_consent: fd.get('privacy_consent') === 'on',
+      page_path: `${location.pathname}${location.hash}`,
+      referrer: document.referrer || ''
+    };
+    if (!payload.name || !payload.contact) {
+      if (status) status.textContent = 'Please add your name and email or phone.';
+      return;
+    }
+    try {
+      if (status) status.textContent = 'Sending request...';
+      const resp = await apiClient.submitQuoteContact(payload);
+      if (!resp?.ok) throw new Error(resp?.error || 'Quote/contact request failed.');
+      form.reset();
+      const consent = form.querySelector('[name="privacy_consent"]');
+      if (consent) consent.checked = true;
+      if (status) status.textContent = resp.message || 'Thanks — your request was received.';
+      apiClient.trackTrafficEvent?.({ event_name: 'quote_contact_submit', route_name: 'public', details: { request_id: resp.request_id || null } }, false).catch(() => {});
+    } catch (err) {
+      if (status) status.textContent = err?.message || 'Request failed. Please try again.';
+      pushDiagnostic('quote-contact', err?.message || 'Quote/contact intake failed.', ['The Edge Function may need deployment or the schema 148 table may not be applied.']);
+    }
+  });
+}
+
 function bindDiagnosticsEvents() {
   if (diagnostics.bound) return;
   diagnostics.bound = true;
@@ -521,6 +566,7 @@ function initAdminActions() {
 
 async function initializeAppShell() {
   bindDiagnosticsEvents();
+  bindPublicQuoteContactForm();
   window.YWIAppDiagnostics = {
     getItems: () => diagnostics.items.slice(),
     clear: () => {

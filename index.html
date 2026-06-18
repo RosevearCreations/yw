@@ -13,12 +13,12 @@
   <meta name="theme-color" content="#0f172a" />
   <meta name="color-scheme" content="dark light" />
 
-  <link rel="manifest" href="/manifest.json?v=2026-06-14a" />
-  <link rel="icon" href="/icons/icon-192.png?v=2026-06-14a" sizes="192x192" />
-  <link rel="stylesheet" href="/style.css?v=2026-06-14a" />
+  <link rel="manifest" href="/manifest.json?v=2026-06-14b" />
+  <link rel="icon" href="/icons/icon-192.png?v=2026-06-14b" sizes="192x192" />
+  <link rel="stylesheet" href="/style.css?v=2026-06-14b" />
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/js/app-config.js?v=2026-06-14a"></script>
+  <script src="/js/app-config.js?v=2026-06-14b"></script>
 
   <style>
     #authLoading {
@@ -104,7 +104,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-06-14a');
+          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-06-14b');
           if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
           }
@@ -241,9 +241,9 @@
         <h2>Request a Southern Ontario safety, job, or equipment workflow follow-up</h2>
         <p>This public intake shell is ready for the next Edge submit path. It keeps the page at one H1 while giving visitors a clear desktop and mobile conversion action.</p>
       </div>
-      <form class="public-intake-form" aria-label="Quote and contact intake form preview">
-        <label>Name<input type="text" name="name" placeholder="Your name" autocomplete="name" /></label>
-        <label>Contact<input type="text" name="contact" placeholder="Email or phone" autocomplete="email" /></label>
+      <form id="publicQuoteContactForm" class="public-intake-form" aria-label="Quote and contact intake form">
+        <label>Name<input type="text" name="name" placeholder="Your name" autocomplete="name" required /></label>
+        <label>Contact<input type="text" name="contact" placeholder="Email or phone" autocomplete="email" required /></label>
         <label>Service type
           <select name="service_type">
             <option value="">Choose one</option>
@@ -255,9 +255,10 @@
         </label>
         <label>Location / service area<input type="text" name="location" placeholder="Town, city, or site area" /></label>
         <label>Message<textarea name="message" rows="3" placeholder="What do you need help with?"></textarea></label>
+        <label class="public-intake-consent"><input type="checkbox" name="privacy_consent" checked /> I agree to be contacted about this request.</label>
         <div class="public-intake-actions">
-          <button class="primary" type="button">Preview intake only</button>
-          <small>Live submission will be connected to the next Edge write path with spam/privacy checks.</small>
+          <button class="primary" type="submit">Send request</button>
+          <small id="publicQuoteContactStatus" aria-live="polite">Live submission writes to the quote/contact intake table with spam/privacy checks.</small>
         </div>
       </form>
     </div>
@@ -270,6 +271,28 @@
         <span><strong>Retry sync</strong><small>Use when the local draft is still valid and network is back.</small></span>
         <span><strong>Keep local copy</strong><small>Protect field notes, photos, and signatures until the server accepts them.</small></span>
         <span><strong>Review conflict</strong><small>Compare server and local versions before replacing or saving as new.</small></span>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="write-action-proof-strip" aria-label="Real write action proof layer">
+    <div class="write-action-proof-card">
+      <div class="write-action-proof-copy">
+        <span class="surface-execution-eyebrow">Schema 148 live action layer</span>
+        <h2>Moving from planning queues to real operational writes</h2>
+        <p>Quote/contact intake now has a public submit path, while payment, bank CSV, reconciliation, equipment custody, route approval, visual approval, offline conflicts, and scorecards have DB-backed write targets.</p>
+        <div class="write-action-pill-grid">
+          <span><strong>Public conversion</strong><small>Quote/contact requests write to a trackable table.</small></span>
+          <span><strong>Admin execution</strong><small>Payment, bank, and reconciliation requests now have write targets.</small></span>
+          <span><strong>Field accountability</strong><small>Equipment scan and custody events can be captured with manual fallback.</small></span>
+          <span><strong>SEO publishing control</strong><small>Routes and visuals are approved before sitemap expansion.</small></span>
+        </div>
+      </div>
+      <div class="write-action-proof-visual" aria-label="Graphic placeholders for live work streams">
+        <span><strong>Quote card placeholder</strong><small>Future visual: contact request flowing into Admin follow-up.</small></span>
+        <span><strong>Bank preview placeholder</strong><small>Future visual: CSV rows accepted, rejected, duplicate flagged.</small></span>
+        <span><strong>Equipment custody placeholder</strong><small>Future visual: scan → checkout → arrival → return → service.</small></span>
       </div>
     </div>
   </section>
@@ -492,32 +515,32 @@
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
 
   <!-- Correct module order -->
-  <script src="/js/router.js?v=2026-06-14a"></script>
-  <script src="/js/mobile-menu.js?v=2026-06-14a"></script>
-  <script src="/js/mobile-today.js?v=2026-06-14a"></script>
-  <script src="/js/mobile-form-helper.js?v=2026-06-14a"></script>
-  <script src="/js/bootstrap.js?v=2026-06-14a"></script>
-  <script src="/js/auth.js?v=2026-06-14a"></script>
-  <script src="/js/security.js?v=2026-06-14a"></script>
-  <script src="/js/api.js?v=2026-06-14a"></script>
-  <script src="/js/outbox.js?v=2026-06-14a"></script>
-  <script src="/js/admin-actions.js?v=2026-06-14a"></script>
-  <script src="/js/ui-auth.js?v=2026-06-14a"></script>
-  <script src="/js/account-ui.js?v=2026-06-14a"></script>
-  <script src="/js/profile-ui.js?v=2026-06-14a"></script>
-  <script src="/js/reference-data.js?v=2026-06-14a"></script>
-  <script src="/js/admin-ui.js?v=2026-06-14a"></script>
-  <script src="/js/hse-ops-ui.js?v=2026-06-14a"></script>
-  <script src="/js/logbook-ui.js?v=2026-06-14a"></script>
-  <script src="/js/reports-ui.js?v=2026-06-14a"></script>
-  <script src="/js/jobs-ui.js?v=2026-06-14a"></script>
-  <script src="/js/forms-toolbox.js?v=2026-06-14a"></script>
-  <script src="/js/forms-ppe.js?v=2026-06-14a"></script>
-  <script src="/js/forms-firstaid.js?v=2026-06-14a"></script>
-  <script src="/js/forms-incident.js?v=2026-06-14a"></script>
-  <script src="/js/forms-inspection.js?v=2026-06-14a"></script>
-  <script src="/js/forms-drill.js?v=2026-06-14a"></script>
-  <script src="/app.js?v=2026-06-14a" defer></script>
+  <script src="/js/router.js?v=2026-06-14b"></script>
+  <script src="/js/mobile-menu.js?v=2026-06-14b"></script>
+  <script src="/js/mobile-today.js?v=2026-06-14b"></script>
+  <script src="/js/mobile-form-helper.js?v=2026-06-14b"></script>
+  <script src="/js/bootstrap.js?v=2026-06-14b"></script>
+  <script src="/js/auth.js?v=2026-06-14b"></script>
+  <script src="/js/security.js?v=2026-06-14b"></script>
+  <script src="/js/api.js?v=2026-06-14b"></script>
+  <script src="/js/outbox.js?v=2026-06-14b"></script>
+  <script src="/js/admin-actions.js?v=2026-06-14b"></script>
+  <script src="/js/ui-auth.js?v=2026-06-14b"></script>
+  <script src="/js/account-ui.js?v=2026-06-14b"></script>
+  <script src="/js/profile-ui.js?v=2026-06-14b"></script>
+  <script src="/js/reference-data.js?v=2026-06-14b"></script>
+  <script src="/js/admin-ui.js?v=2026-06-14b"></script>
+  <script src="/js/hse-ops-ui.js?v=2026-06-14b"></script>
+  <script src="/js/logbook-ui.js?v=2026-06-14b"></script>
+  <script src="/js/reports-ui.js?v=2026-06-14b"></script>
+  <script src="/js/jobs-ui.js?v=2026-06-14b"></script>
+  <script src="/js/forms-toolbox.js?v=2026-06-14b"></script>
+  <script src="/js/forms-ppe.js?v=2026-06-14b"></script>
+  <script src="/js/forms-firstaid.js?v=2026-06-14b"></script>
+  <script src="/js/forms-incident.js?v=2026-06-14b"></script>
+  <script src="/js/forms-inspection.js?v=2026-06-14b"></script>
+  <script src="/js/forms-drill.js?v=2026-06-14b"></script>
+  <script src="/app.js?v=2026-06-14b" defer></script>
 
   <script>
     document.addEventListener('ywi:auth-changed', (e) => {
