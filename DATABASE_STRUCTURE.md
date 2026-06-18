@@ -1,9 +1,15 @@
 # Database Structure
 
-Current build: **2026-06-13a**  
-Current schema: **145**
+Current build: **2026-06-17a**  
+Current schema: **149**
 
-Schema 134 adds DB-visible queues for payment write paths, reconciliation scoring rules, equipment accessory templates, local SEO generation, and mobile offline conflict resolution. The canonical schema remains `sql/000_full_schema_reference.sql`, and the latest standalone migration is `sql/133_payment_recon_equipment_seo_offline_execution_controls.sql`.
+Primary working docs: `docs/ACTIVE_PROJECT_HANDBOOK.md` and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
+
+## 2026-06-17a — Schema 149 Operations Cockpit
+
+This pass converts schema 148 write targets into responsive desktop/mobile Admin forms with role checks, idempotency, approval controls, audit logging, local retry fallback, QR/barcode/manual scanning, quote duplicate suppression, and route/asset readiness validation. The public shell remains at one H1 and no unapproved public route was added.
+
+Schema 149 adds operational audit events, idempotency and decision fields, quote follow-up controls, bank confirmation, visual/route readiness views, and cockpit scorecards. The canonical schema remains `sql/000_full_schema_reference.sql`; the latest standalone migration is `sql/149_operations_cockpit_write_controls_and_competitive_workflow_depth.sql`.
 
 ## 2026-06-06b Schema 135 update
 

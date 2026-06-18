@@ -1,5 +1,14 @@
 # Changelog
 
+Current build: **2026-06-17a**  
+Current schema: **149**
+
+Primary working docs: `docs/ACTIVE_PROJECT_HANDBOOK.md` and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
+
+## 2026-06-17a — Schema 149 Operations Cockpit
+
+This pass converts schema 148 write targets into responsive desktop/mobile Admin forms with role checks, idempotency, approval controls, audit logging, local retry fallback, QR/barcode/manual scanning, quote duplicate suppression, and route/asset readiness validation. The public shell remains at one H1 and no unapproved public route was added.
+
 ## 2026-06-06a / Schema 134
 
 - Added schema 134 payment adjustment, reconciliation exception, equipment scan rollout, local SEO content depth, and runtime error-message migration.

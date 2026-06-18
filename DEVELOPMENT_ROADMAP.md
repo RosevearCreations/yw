@@ -1,7 +1,59 @@
 # Development Roadmap
 
-Build: **2026-06-13b**  
-Schema: **146**
+Build: **2026-06-17a**  
+Schema: **149**
+
+## Completed this pass — 20
+
+1. Archived retired helper Markdown from the active root.
+2. Archived temporary `test_write` files.
+3. Added schema 149 and appended it to the canonical full schema.
+4. Added persistent operation write-audit events.
+5. Added quote/contact duplicate suppression and follow-up targeting.
+6. Added payment idempotency, proof, decision, and period-lock controls.
+7. Added bank CSV header/date/amount validation and confirmation.
+8. Added reconciliation idempotency, split, undo, signoff, and reject controls.
+9. Added equipment scan idempotency and custody write controls.
+10. Added visual asset approval/readiness controls.
+11. Added public route SEO readiness controls.
+12. Added Admin Operations Cockpit scorecard views.
+13. Added role enforcement and write auditing in `operations-manage`.
+14. Added payment approve/reject/post/cancel API actions.
+15. Added bank preview confirmation API action.
+16. Added visual/route approval decision logic.
+17. Added offline-conflict resolution actions.
+18. Added responsive desktop/mobile Operations Cockpit forms.
+19. Added BarcodeDetector scanning, manual fallback, and local retry storage.
+20. Updated Markdown, cache marker, sitemap, Admin loading, CSS, and smoke checks.
+
+## Next 20 steps
+
+1. Add live queue tables and action buttons beneath each cockpit form.
+2. Add quote owner assignment, follow-up events, and email alerts.
+3. Add proof attachment uploads for payments/reconciliation.
+4. Post approved payment actions into real AR/AP and journals.
+5. Promote confirmed bank rows into reconciliation workbench tables.
+6. Add explainable match-scoring suggestions.
+7. Validate split actions balance to the source amount.
+8. Resolve scan codes to equipment master records.
+9. Add accessory templates and stage-specific checklists.
+10. Create service work orders/cost recovery from failed returns.
+11. Add image upload, dimensions, compression, and thumbnails.
+12. Replace placeholders only with approved assets.
+13. Generate public pages from approved route data.
+14. Generate sitemap entries from publication-ready routes.
+15. Add customer portal for requests, quotes, jobs, invoices, and receipts.
+16. Add online quote acceptance and deposits.
+17. Add drag/drop dispatch and crew notifications.
+18. Add live estimate-vs-actual job costing.
+19. Add offline conflict merge and supervisor history.
+20. Add end-to-end tests for all new write flows.
+
+## Historical roadmap
+
+## 2026-06-17a — Schema 149 Operations Cockpit
+
+This pass converts schema 148 write targets into responsive desktop/mobile Admin forms with role checks, idempotency, approval controls, audit logging, local retry fallback, QR/barcode/manual scanning, quote duplicate suppression, and route/asset readiness validation. The public shell remains at one H1 and no unapproved public route was added.
 
 ## Completed this pass
 
@@ -204,3 +256,4 @@ Next highest-value actions:
 18. Add sitemap generation from approved public routes only.
 19. Add persistent runtime fallback events for failed write actions.
 20. Add smoke checks for each new Edge Function deployment.
+

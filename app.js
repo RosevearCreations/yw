@@ -235,7 +235,7 @@ function bindPublicQuoteContactForm() {
       apiClient.trackTrafficEvent?.({ event_name: 'quote_contact_submit', route_name: 'public', details: { request_id: resp.request_id || null } }, false).catch(() => {});
     } catch (err) {
       if (status) status.textContent = err?.message || 'Request failed. Please try again.';
-      pushDiagnostic('quote-contact', err?.message || 'Quote/contact intake failed.', ['The Edge Function may need deployment or the schema 148 table may not be applied.']);
+      pushDiagnostic('quote-contact', err?.message || 'Quote/contact intake failed.', ['The Edge Function may need deployment or the schema 149 migration may not be applied.']);
     }
   });
 }

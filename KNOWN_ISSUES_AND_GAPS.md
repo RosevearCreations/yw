@@ -1,7 +1,30 @@
 # Known Issues and Gaps
 
-Build: **2026-06-13b**  
-Schema: **146**
+Build: **2026-06-17a**  
+Schema: **149**
+
+## Current gaps
+
+1. The cockpit submits actions, but it does not yet render live work queues with row-level decision buttons.
+2. Approved payment actions still need real AR/AP application and journal posting.
+3. Confirmed bank CSV rows still need promotion into the reconciliation workbench.
+4. Reconciliation match suggestions and exact split balancing are still outstanding.
+5. Equipment scans still need equipment-master resolution, accessory templates, service work orders, and cost recovery.
+6. Visual asset approval still needs upload/storage/compression automation.
+7. Public route approval still needs page and sitemap generation.
+8. Quote/contact requests need owner assignment, alerts, and follow-up history.
+9. Offline conflict resolution needs full outbox merge/history integration.
+10. Customer self-service, scheduling/dispatch, and live job costing remain major competitive value additions.
+
+## Next focus
+
+Use the Next 20 list in `DEVELOPMENT_ROADMAP.md` and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`. Prioritize end-to-end completion over adding more readiness-only rows.
+
+## Historical issues and gaps
+
+## 2026-06-17a — Schema 149 Operations Cockpit
+
+This pass converts schema 148 write targets into responsive desktop/mobile Admin forms with role checks, idempotency, approval controls, audit logging, local retry fallback, QR/barcode/manual scanning, quote duplicate suppression, and route/asset readiness validation. The public shell remains at one H1 and no unapproved public route was added.
 
 ## Still needs depth
 
@@ -113,3 +136,4 @@ Next highest-value actions:
 18. Add sitemap generation from approved public routes only.
 19. Add persistent runtime fallback events for failed write actions.
 20. Add smoke checks for each new Edge Function deployment.
+

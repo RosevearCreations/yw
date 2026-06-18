@@ -1,6 +1,15 @@
 # System Architecture
 
-Build **2026-06-06a / schema 134** uses static frontend assets, Supabase Edge Functions, and SQL-backed Admin readiness queues. Schema 134 adds execution-control queues for payment write paths, reconciliation scoring, equipment accessory templates, local SEO generation, and mobile offline conflict resolution.
+Current build: **2026-06-17a**  
+Current schema: **149**
+
+Primary working docs: `docs/ACTIVE_PROJECT_HANDBOOK.md` and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
+
+## 2026-06-17a — Schema 149 Operations Cockpit
+
+This pass converts schema 148 write targets into responsive desktop/mobile Admin forms with role checks, idempotency, approval controls, audit logging, local retry fallback, QR/barcode/manual scanning, quote duplicate suppression, and route/asset readiness validation. The public shell remains at one H1 and no unapproved public route was added.
+
+The architecture uses a static/PWA frontend, Supabase Edge Functions, PostgreSQL migrations/views, and role-aware Admin/mobile modules. Schema 149 adds a responsive Operations Cockpit, hardened write APIs, persistent audit events, local retry fallback, and publication-readiness views.
 
 ## 2026-06-06b Schema 135 update
 

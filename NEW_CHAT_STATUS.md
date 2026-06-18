@@ -1,8 +1,15 @@
 # New Chat Status
 
-Continue from build **2026-06-13a / schema 145**.
+Current build: **2026-06-17a**  
+Current schema: **149**
 
-The latest zip contains schema 134, updated Admin readiness queues, updated active Markdown, updated cache markers, static sitemap/robots assets, and smoke checks expecting schema 134. Next work should turn the new queues into real payment, reconciliation, equipment, SEO, and offline-conflict write flows.
+Primary working docs: `docs/ACTIVE_PROJECT_HANDBOOK.md` and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
+
+## 2026-06-17a — Schema 149 Operations Cockpit
+
+This pass converts schema 148 write targets into responsive desktop/mobile Admin forms with role checks, idempotency, approval controls, audit logging, local retry fallback, QR/barcode/manual scanning, quote duplicate suppression, and route/asset readiness validation. The public shell remains at one H1 and no unapproved public route was added.
+
+The latest zip contains schema 149, the responsive Operations Cockpit, hardened write Edge Functions, updated active Markdown, current cache/sitemap markers, and smoke checks expecting schema 149. Next work should complete posting, queue decisions, customer follow-up, route generation, and field equipment depth.
 
 ## 2026-06-06b Schema 135 update
 

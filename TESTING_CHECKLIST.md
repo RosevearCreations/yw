@@ -1,18 +1,26 @@
 # Testing Checklist
 
-Build: **2026-06-13b**  
-Schema: **146**
+Current build: **2026-06-17a**  
+Current schema: **149**
+
+Primary working docs: `docs/ACTIVE_PROJECT_HANDBOOK.md` and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
+
+## 2026-06-17a — Schema 149 Operations Cockpit
+
+This pass converts schema 148 write targets into responsive desktop/mobile Admin forms with role checks, idempotency, approval controls, audit logging, local retry fallback, QR/barcode/manual scanning, quote duplicate suppression, and route/asset readiness validation. The public shell remains at one H1 and no unapproved public route was added.
 
 ## Required checks
 
 - Run `node scripts/repo-smoke-check.mjs`.
-- Confirm one public H1 in `index.html`.
+- Confirm exactly one public H1 in `index.html`.
 - Confirm CSS brace balance in `style.css`.
-- Confirm Edge Function TypeScript parse checks pass.
-- Confirm schema 144 migration and full schema reference are present.
-- Confirm Admin directory loads schema 144 views with safe fallbacks.
-- Confirm Admin UI contains schema 144 readiness tables.
-- Confirm sitemap.xml and robots.txt are present.
+- Confirm JavaScript and Edge Function TypeScript parse checks pass.
+- Confirm schema 149 standalone migration and full schema reference are present.
+- Confirm Admin directory loads schema 149 workbench/readiness views with safe fallbacks.
+- Confirm the Operations Cockpit loads on desktop and stacks cleanly on mobile.
+- Test payment validation, bank CSV accepted/rejected rows, reconciliation actions, manual equipment scan, camera fallback, visual readiness, and route readiness.
+- Confirm failed Operations Cockpit actions create a local retry copy.
+- Confirm sitemap.xml, robots.txt, and cache marker `2026-06-17a` are current.
 
 ## 2026-06-06b Schema 135 update
 

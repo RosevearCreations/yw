@@ -1,8 +1,15 @@
 # YWI Main
 
-Latest build: **2026-06-13a / schema 145**.
+Current build: **2026-06-17a**  
+Current schema: **149**
 
-This build updates Admin-visible production-readiness queues, SQL schema references, Markdown documentation, sitemap/robots baseline assets, cache markers, and smoke checks.
+Primary working docs: `docs/ACTIVE_PROJECT_HANDBOOK.md` and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
+
+## 2026-06-17a — Schema 149 Operations Cockpit
+
+This pass converts schema 148 write targets into responsive desktop/mobile Admin forms with role checks, idempotency, approval controls, audit logging, local retry fallback, QR/barcode/manual scanning, quote duplicate suppression, and route/asset readiness validation. The public shell remains at one H1 and no unapproved public route was added.
+
+This build adds usable desktop/mobile Admin write forms for payment, bank CSV, reconciliation, equipment custody, visual approvals, and public route approvals, plus audit/idempotency/fallback controls.
 
 ## 2026-06-06b Schema 135 update
 

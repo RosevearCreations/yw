@@ -1,9 +1,15 @@
 # Project State
 
-Build: **2026-06-13b**  
-Schema: **146**
+Current build: **2026-06-17a**  
+Current schema: **149**
 
-The app is continuing toward production-readiness by moving repeated roadmap/checklist items into DB-visible Admin queues. The newest pass adds payment write path, reconciliation scoring, equipment accessory template, local SEO generation, and mobile offline conflict-resolution queues.
+Primary working docs: `docs/ACTIVE_PROJECT_HANDBOOK.md` and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
+
+## 2026-06-17a — Schema 149 Operations Cockpit
+
+This pass converts schema 148 write targets into responsive desktop/mobile Admin forms with role checks, idempotency, approval controls, audit logging, local retry fallback, QR/barcode/manual scanning, quote duplicate suppression, and route/asset readiness validation. The public shell remains at one H1 and no unapproved public route was added.
+
+The app now has usable operational write forms rather than only readiness queues. Schema 149 connects the desktop/mobile Admin cockpit to payment, bank, reconciliation, equipment, visual, route, and conflict actions with audit and retry controls.
 
 ## 2026-06-06b Schema 135 update
 

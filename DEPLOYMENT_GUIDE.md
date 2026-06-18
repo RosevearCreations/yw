@@ -1,15 +1,24 @@
 # Deployment Guide
 
-Current build: **2026-06-13a**  
-Current schema: **145**
+Current build: **2026-06-17a**  
+Current schema: **149**
+
+Primary working docs: `docs/ACTIVE_PROJECT_HANDBOOK.md` and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
+
+## 2026-06-17a — Schema 149 Operations Cockpit
+
+This pass converts schema 148 write targets into responsive desktop/mobile Admin forms with role checks, idempotency, approval controls, audit logging, local retry fallback, QR/barcode/manual scanning, quote duplicate suppression, and route/asset readiness validation. The public shell remains at one H1 and no unapproved public route was added.
 
 ## Deploy order
 
-1. Apply SQL migrations through schema 144.
-2. Redeploy `admin-directory`.
-3. Redeploy `jobs-manage` and `jobs-directory` if the live functions are behind the packaged build.
-4. Hard-refresh or clear the old service worker so `2026-06-06a` assets load.
-5. Run the smoke check script before treating the upload as production-ready.
+1. Apply SQL migrations through schema 149.
+2. Deploy `operations-manage`.
+3. Deploy `quote-contact-submit`.
+4. Redeploy `admin-directory`.
+5. Redeploy `jobs-manage` and `jobs-directory` only if live versions are behind.
+6. Hard-refresh or clear the old service worker so `2026-06-17a` assets load.
+7. Test one successful and one validation-failure action in each Operations Cockpit panel.
+8. Run `node scripts/repo-smoke-check.mjs` before treating the upload as production-ready.
 
 ## 2026-06-06b Schema 135 update
 

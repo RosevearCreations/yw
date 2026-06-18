@@ -1,7 +1,13 @@
 # AI Context
 
-Current build: **2026-06-13a**  
-Current schema: **145**
+Current build: **2026-06-17a**  
+Current schema: **149**
+
+Primary working docs: `docs/ACTIVE_PROJECT_HANDBOOK.md` and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
+
+## 2026-06-17a — Schema 149 Operations Cockpit
+
+This pass converts schema 148 write targets into responsive desktop/mobile Admin forms with role checks, idempotency, approval controls, audit logging, local retry fallback, QR/barcode/manual scanning, quote duplicate suppression, and route/asset readiness validation. The public shell remains at one H1 and no unapproved public route was added.
 
 Use `DEVELOPMENT_ROADMAP.md` and `KNOWN_ISSUES_AND_GAPS.md` as the active source for the next 20 steps. Every future pass must update Markdown, standalone SQL, full schema reference, cache markers, SEO/H1/CSS/smoke checks, and Admin readiness surfaces together.
 
