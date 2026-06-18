@@ -409,6 +409,13 @@ serve(async (req) => {
     commandCenter.public_route_approval_items = await safeList(supabase, 'v_public_route_approval_items', '*', 'created_at', 80, false);
     commandCenter.mobile_offline_conflict_cards = await safeList(supabase, 'v_mobile_offline_conflict_cards', '*', 'created_at', 80, false);
     commandCenter.admin_scorecard_progress_rails = await safeList(supabase, 'v_admin_scorecard_progress_rails', '*', 'sort_order', 80, true);
+    commandCenter.operation_write_audit_events = await safeList(supabase, 'v_operation_write_audit_events', '*', 'created_at', 100, false);
+    commandCenter.quote_contact_followup_queue = await safeList(supabase, 'v_quote_contact_followup_queue', '*', 'followup_due_at', 100, true);
+    commandCenter.payment_action_workbench = await safeList(supabase, 'v_payment_action_workbench', '*', 'created_at', 100, false);
+    commandCenter.bank_csv_import_workbench = await safeList(supabase, 'v_bank_csv_import_workbench', '*', 'created_at', 100, false);
+    commandCenter.visual_asset_publication_readiness = await safeList(supabase, 'v_visual_asset_publication_readiness', '*', 'updated_at', 100, false);
+    commandCenter.public_route_publication_readiness = await safeList(supabase, 'v_public_route_publication_readiness', '*', 'updated_at', 100, false);
+    commandCenter.admin_operations_cockpit_scorecards = await safeList(supabase, 'v_admin_operations_cockpit_scorecards', '*', 'metric_key', 50, true);
 
     commandCenter.mobile_today_action_registry = await safeList(supabase, 'v_mobile_today_action_registry', '*', 'priority_rank', 80, true);
     commandCenter.mobile_pwa_install_quality_gates = await safeList(supabase, 'v_mobile_pwa_install_quality_gates', '*', 'sort_order', 40, true);
@@ -575,6 +582,13 @@ serve(async (req) => {
     health.public_route_approval_items = await safeList(supabase, 'v_public_route_approval_items', '*', 'created_at', 80, false);
     health.mobile_offline_conflict_cards = await safeList(supabase, 'v_mobile_offline_conflict_cards', '*', 'created_at', 80, false);
     health.admin_scorecard_progress_rails = await safeList(supabase, 'v_admin_scorecard_progress_rails', '*', 'sort_order', 80, true);
+    health.operation_write_audit_events = await safeList(supabase, 'v_operation_write_audit_events', '*', 'created_at', 100, false);
+    health.quote_contact_followup_queue = await safeList(supabase, 'v_quote_contact_followup_queue', '*', 'followup_due_at', 100, true);
+    health.payment_action_workbench = await safeList(supabase, 'v_payment_action_workbench', '*', 'created_at', 100, false);
+    health.bank_csv_import_workbench = await safeList(supabase, 'v_bank_csv_import_workbench', '*', 'created_at', 100, false);
+    health.visual_asset_publication_readiness = await safeList(supabase, 'v_visual_asset_publication_readiness', '*', 'updated_at', 100, false);
+    health.public_route_publication_readiness = await safeList(supabase, 'v_public_route_publication_readiness', '*', 'updated_at', 100, false);
+    health.admin_operations_cockpit_scorecards = await safeList(supabase, 'v_admin_operations_cockpit_scorecards', '*', 'metric_key', 50, true);
 
     health.mobile_today_action_registry = await safeList(supabase, 'v_mobile_today_action_registry', '*', 'priority_rank', 80, true);
     health.mobile_pwa_install_quality_gates = await safeList(supabase, 'v_mobile_pwa_install_quality_gates', '*', 'sort_order', 40, true);

@@ -313,6 +313,13 @@
       publicRouteApprovalItems: [],
       mobileOfflineConflictCards: [],
       adminScorecardProgressRails: [],
+      operationWriteAuditEvents: [],
+      quoteContactFollowupQueue: [],
+      paymentActionWorkbench: [],
+      bankCsvImportWorkbench: [],
+      visualAssetPublicationReadiness: [],
+      publicRoutePublicationReadiness: [],
+      adminOperationsCockpitScorecards: [],
       actorRole: '',
       actorProfileId: '',
       directoryPagination: {
@@ -6251,7 +6258,14 @@
           visualAssetApprovalItems: Array.isArray(payload?.visual_asset_approval_items) ? payload.visual_asset_approval_items : state.visualAssetApprovalItems,
           publicRouteApprovalItems: Array.isArray(payload?.public_route_approval_items) ? payload.public_route_approval_items : state.publicRouteApprovalItems,
           mobileOfflineConflictCards: Array.isArray(payload?.mobile_offline_conflict_cards) ? payload.mobile_offline_conflict_cards : state.mobileOfflineConflictCards,
-          adminScorecardProgressRails: Array.isArray(payload?.admin_scorecard_progress_rails) ? payload.admin_scorecard_progress_rails : state.adminScorecardProgressRails
+          adminScorecardProgressRails: Array.isArray(payload?.admin_scorecard_progress_rails) ? payload.admin_scorecard_progress_rails : state.adminScorecardProgressRails,
+          operationWriteAuditEvents: Array.isArray(payload?.operation_write_audit_events) ? payload.operation_write_audit_events : state.operationWriteAuditEvents,
+          quoteContactFollowupQueue: Array.isArray(payload?.quote_contact_followup_queue) ? payload.quote_contact_followup_queue : state.quoteContactFollowupQueue,
+          paymentActionWorkbench: Array.isArray(payload?.payment_action_workbench) ? payload.payment_action_workbench : state.paymentActionWorkbench,
+          bankCsvImportWorkbench: Array.isArray(payload?.bank_csv_import_workbench) ? payload.bank_csv_import_workbench : state.bankCsvImportWorkbench,
+          visualAssetPublicationReadiness: Array.isArray(payload?.visual_asset_publication_readiness) ? payload.visual_asset_publication_readiness : state.visualAssetPublicationReadiness,
+          publicRoutePublicationReadiness: Array.isArray(payload?.public_route_publication_readiness) ? payload.public_route_publication_readiness : state.publicRoutePublicationReadiness,
+          adminOperationsCockpitScorecards: Array.isArray(payload?.admin_operations_cockpit_scorecards) ? payload.admin_operations_cockpit_scorecards : state.adminOperationsCockpitScorecards
 
         };
         const e = els();
