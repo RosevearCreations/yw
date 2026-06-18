@@ -1,75 +1,39 @@
-# Active Project Handbook — build 2026-06-14a / schema 147
+# Active Project Handbook — build 2026-06-17a / schema 149
 
-This is the compact source-of-truth file to read first in a new chat or by another AI. Historical detail remains in the other Markdown files, but this file and `docs/NEXT_STEPS_AND_SANITY_CHECK.md` are the two main working references.
+This is the primary project source of truth. A new AI/chat should read this file first, then `NEXT_STEPS_AND_SANITY_CHECK.md`. Older Markdown is retained as reference/history, not as the current task list.
 
-## Current application position
+## Product position
 
-YWI is now a desktop website/Admin app plus a mobile field app for Southern Ontario safety, job, equipment, reporting, and business-operations workflows. The app has public SEO shell content, mobile quick actions, Admin readiness views, schema tracking through schema 147, PWA/offline direction, payment/reconciliation planning, equipment custody planning, public route planning, quote/contact intake scaffolding, and visual-placeholder support.
+YWI is a combined desktop Admin website and mobile field application for a Southern Ontario landscaping/service business. It covers public lead intake, customers/sites, estimates, jobs, crews, safety/HSE, equipment custody, reporting, accounting close, reconciliation, payroll/tax evidence, offline behavior, and release/schema health.
 
-## SEO and competitive direction
+## Current implementation
 
-Current guidance remains: use the words customers search for in visible titles, headings, internal links, and helpful body copy; keep one clear H1 per exposed public page; do not publish unsupported location/service pages; connect every public SEO route to proof and a conversion action. Google Search Central states title links can draw from the `<title>` element and page headings, and its title-link troubleshooting warns against multiple prominent headings confusing the main page title. Google Business Profile guidance continues to describe local ranking around relevance, distance, and prominence.
+- Public quote/contact requests write through an Edge Function, suppress near-duplicate requests, and receive a follow-up target.
+- Admin Operations Cockpit provides usable forms for payment actions, bank CSV preview, reconciliation actions, equipment scans/custody, visual assets, and public routes.
+- Payment actions support request, approval, rejection, posting, cancellation, proof requirements, idempotency, and accounting-period confirmation.
+- Bank CSV preview validates headers/dates/amounts, identifies duplicate/rejected rows, and supports confirmation.
+- Equipment capture supports browser QR/barcode scanning where available plus manual-code fallback everywhere.
+- Visual assets and public routes stay gated until approval/readiness requirements are met.
+- Failed Operations Cockpit writes save a local retry copy instead of silently losing work.
+- Desktop emphasizes Admin, accounting, route/asset approval, reporting, and scorecards. Mobile emphasizes Today actions, field forms, scanning, custody, and fallback.
 
-## Desktop/mobile direction
+## SEO rules
 
-Desktop should prioritize Admin dashboards, scorecards, payment/reconciliation, bank CSV review, equipment custody review, route publication, visual approvals, and reports. Mobile should prioritize Today actions, incident/PPE/inspection/drill capture, QR/barcode equipment scans, offline conflict cards, quick quote/contact intake, and field-friendly manual fallbacks.
+- Keep exactly one H1 on every exposed public page.
+- Use clear service and location wording in the title, H1, introduction, internal links, and CTA without unsupported locality claims.
+- Publish service/location routes only after title, H1, meta, local proof, CTA, visual fallback, and sitemap checks pass.
+- Keep crawlable internal links descriptive and useful.
+- Do not promise first-page ranking; improve relevance, proof, conversion, reviews/prominence, and technical quality each pass.
 
-## Visual direction
+## Competitive direction
 
-Schema 147 adds CSS-only graphic placeholders throughout the public shell and key app sections. Real images should only be added after they pass the visual asset approval registry: source, consent/proof, compression, alt text, route placement, fallback copy, and mobile/desktop visual check.
+Current official product positioning reviewed for Jobber, LMN/Granum, and Aspire confirms that competitive landscape software combines lead capture, quoting, scheduling, mobile crew work, customer communication, invoicing/payments, and job costing. YWI should continue toward that integrated lifecycle while retaining its stronger safety, equipment, closeout, and offline evidence controls.
 
-## Markdown consolidation rule
+## Markdown policy
 
-Use this file for current state. Use `docs/NEXT_STEPS_AND_SANITY_CHECK.md` for immediate next actions. Keep `DEVELOPMENT_ROADMAP.md`, `KNOWN_ISSUES_AND_GAPS.md`, `PROJECT_STATE.md`, `AI_CONTEXT.md`, and `NEW_CHAT_STATUS.md` synchronized as handoff files. Retire temporary root helper Markdown into archive instead of deleting historical context.
+Primary working files:
 
----
+1. `docs/ACTIVE_PROJECT_HANDBOOK.md`
+2. `docs/NEXT_STEPS_AND_SANITY_CHECK.md`
 
-## 2026-06-14b — Schema 148 Real Write-Action Layer
-
-This pass shifts the app from readiness-only queues into real operational write paths.
-
-Completed:
-
-1. Added `sql/148_real_write_actions_quote_payment_bank_recon_equipment_assets_routes_mobile_scorecards.sql`.
-2. Appended schema 148 to `sql/000_full_schema_reference.sql` and updated schema drift to expect 148.
-3. Added public `quote_contact_requests` and `quote_contact_request_events` tables.
-4. Added `quote-contact-submit` Edge Function with validation, spam scoring, and DB insert.
-5. Converted the public quote/contact form from preview-only to live submit.
-6. Added `YWIAPI.submitQuoteContact()`.
-7. Added `operations-manage` Edge Function for authenticated write actions.
-8. Added payment action request write target for apply/reverse/refund/write-off/overpayment workflows.
-9. Added bank CSV preview tables for accepted/rejected/duplicate row review.
-10. Added bank CSV preview parser helper in `js/api.js`.
-11. Added reconciliation match/split/undo/signoff request table.
-12. Added equipment manual/QR/barcode scan event table.
-13. Added equipment custody timeline table from checkout/site/return/service stages.
-14. Added visual asset approval item table before real galleries/images.
-15. Added public route approval table before sitemap expansion.
-16. Added mobile offline conflict card table.
-17. Added Admin scorecard progress rail table.
-18. Added Admin-readable views for schema 148 operational rows.
-19. Added schema 148 safe-list loading in `admin-directory`.
-20. Added `Schema 148 live action layer` public visual section with responsive CSS.
-
-Next highest-value actions:
-
-1. Add Admin UI button/form for payment action requests.
-2. Add Admin UI bank CSV upload and preview screen.
-3. Add accepted/rejected/duplicate row preview with import confirmation.
-4. Add reconciliation match/split/undo/signoff UI connected to `operations-manage`.
-5. Add mobile manual equipment scan card connected to `operations-manage`.
-6. Add QR/barcode camera scan where browser support is available.
-7. Add equipment custody timeline display on job/equipment pages.
-8. Add visual asset approval screen with alt text, consent, compression, and route assignment.
-9. Add public route approval screen with title/H1/meta/proof/CTA checks.
-10. Add Admin scorecard dashboard cards using `v_admin_scorecard_progress_rails`.
-11. Add email notification for new quote/contact request.
-12. Add duplicate quote/contact suppression and follow-up owner assignment.
-13. Add payment proof attachment references.
-14. Add month-end lock checks before payment posting.
-15. Add bank CSV import confirmation that promotes preview rows to reconciliation workbench.
-16. Add accountant export inclusion for unresolved payment/reconciliation exceptions.
-17. Add visual placeholder replacement only after asset approval.
-18. Add sitemap generation from approved public routes only.
-19. Add persistent runtime fallback events for failed write actions.
-20. Add smoke checks for each new Edge Function deployment.
+Core reference files remain in the repository root for architecture, deployment, database, testing, changelog, AI handoff, and history. Temporary/helper Markdown belongs under `archive/`.
