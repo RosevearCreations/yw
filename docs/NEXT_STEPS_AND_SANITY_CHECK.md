@@ -1,92 +1,53 @@
-# Next Steps and Sanity Check — build 2026-06-17b / schema 150
-
-## Overall finding
-
-The requested highest-value implementation layer is now present in the repository. The application has moved beyond request-only forms into live work queues and linked operational records. The next release should focus on controlled deployment, live data mapping, transaction hardening, and end-to-end evidence—not another broad expansion of tables.
+# Next Steps and Sanity Check — build 2026-06-18a / schema 151
 
 ## Completed in this pass
 
-1. Added live queues below every Operations Cockpit area with row-level approval, rejection, posting, promotion, matching, service, recovery, publication, assignment, scheduling, deposit, and job-cost actions.
-2. Linked approved payment requests to real AR/AP applications and balanced journal entries with proof, period-lock, bank, control-account, idempotency, posting-claim, deposit-release, refund-limit, and reversal guards.
-3. Promoted accepted bank CSV rows into real statement, import, session, and reconciliation-item records.
-4. Added explainable reconciliation scoring and exact cent-level split validation.
-5. Resolved scan codes against real equipment records with manual and camera fallback.
-6. Created service tasks, lockouts, and cost-recovery actions from failed equipment returns.
-7. Added browser image optimization, thumbnail creation, server dimension/size/checksum validation, storage, approval, and controlled placeholder replacement.
-8. Added approved public route records, publication gates, public content API, static HTML generation, Service JSON-LD, and sitemap generation.
-9. Added quote owner assignment, due alerts, event history, Admin notification records, and optional Resend email delivery.
-10. Added a token customer portal with single-claim quote acceptance, deterministic work-order linkage, server-calculated exact deposits, reusable Stripe Checkout, paid-only webhook validation, dispatch visibility, follow-up requests, and live job-cost snapshots.
-11. Added responsive queue, portal, and public route CSS for desktop, tablet, phone, and reduced-motion users.
-12. Updated cache/build markers to `2026-06-17b` and rebuilt the canonical schema as 121 ordered migrations from 030 through 150.
-13. Consolidated active project documentation to this file and the handbook; older Markdown is archived.
-14. Passed the repository smoke suite, JavaScript/TypeScript syntax checks, schema field audit, approved-route generation test, one-H1 check, sitemap check, and reserved-path rejection test.
+1. Added schema `151_transactional_rpc_accounting_reconciliation_quote_tests.sql`.
+2. Converted approved payment posting to `ywi_rpc_post_payment_action`.
+3. Converted confirmed bank CSV promotion to `ywi_rpc_promote_bank_csv_import`.
+4. Converted reconciliation match/split/undo/signoff/reject writes to `ywi_rpc_apply_reconciliation_action`.
+5. Converted quote acceptance/work-order conversion to `ywi_rpc_accept_quote_package`.
+6. Converted customer deposit preparation and checkout attachment to `ywi_rpc_prepare_deposit_request` and `ywi_rpc_attach_deposit_checkout`.
+7. Converted Stripe deposit paid/processing/failed/expired handling to `ywi_rpc_record_portal_deposit_paid` and `ywi_rpc_mark_deposit_checkout_status`.
+8. Added role/rank helpers, exact-cent helpers, accounting-period lock checks, balanced-journal checks, explicit RPC grants, and a deployable permission matrix.
+9. Added `scripts/operations-rpc-integration-test.mjs` for static RPC wiring checks and optional staging permission-matrix checks.
+10. Updated build/cache markers to `2026-06-18a` and schema markers to `151`.
+11. Rebuilt `sql/000_full_schema_reference.sql` as the ordered canonical schema from migration 030 through 151.
+12. Retired superseded Markdown into `archive/retired-markdown-2026-06-18a/` and removed temporary write-test files from the active root.
 
-## Sanity matrix
+## Sanity check result
 
-| Area | Repository status | Live-release gate |
-|---|---|---|
-| Schema 150 | Implemented and merged into full reference | Apply to staging/live and verify drift view |
-| Cockpit queues | Implemented | Confirm roles and real queue data |
-| AR/AP + journals | Implemented with safeguards | Map accounts; test success, lock, duplicate, reversal |
-| Bank promotion | Implemented | Test at least two real bank CSV formats |
-| Reconciliation scoring/splits | Implemented | Confirm sign conventions and cent balance |
-| Equipment scan/service/recovery | Implemented | Test real codes, accessories, photos, failed return |
-| Image pipeline | Implemented | Confirm bucket policies and mobile upload limits |
-| Public route publication | Implemented | Approve proof/visual, run generator, inspect output |
-| Quote assignment/alerts | Implemented | Configure Resend or accept in-app-only alerts |
-| Customer portal | Implemented with single acceptance claim and reusable exact-balance checkout | Test token lifecycle, duplicate clicks, and privacy behaviour |
-| Stripe deposits | Paid-only webhook with exact session/amount/currency checks | Configure test keys/webhook; never use live first |
-| Dispatch/job cost | Implemented | Map jobs/work orders/cost sources and compare totals |
-| Mobile/desktop CSS | Implemented | Device/browser visual regression pass |
-| SEO | Guardrails and generator implemented | Internal links, Search Console, real proof, performance |
-| Documentation | Two active detailed files | Keep archived files inactive |
+The repository now uses transactional PostgreSQL RPCs for the highest-risk multi-row write paths. Edge Functions still provide request validation and user-friendly errors, but the database now owns the atomic transaction boundary for accounting, reconciliation, bank promotion, quote conversion, and deposit recording.
 
 ## Release blockers
 
-These are deployment blockers, not new product ideas:
+These still need staging/live verification before production use:
 
-1. Apply schema 150 to a staging database and resolve any live-schema naming differences.
-2. Deploy the five changed/new Edge Functions with correct JWT settings.
-3. Confirm the `public-assets` bucket and object policies.
-4. Configure Stripe test secrets, webhook endpoint, and success/cancel URLs.
-5. Confirm chart-of-account mappings and at least one open bank account.
-6. Verify an open and a locked accounting period.
-7. Test one AR payment, one AP payment, one reversal/refund/write-off path, and one duplicate idempotency attempt.
-8. Test a clean bank CSV, rejected rows, duplicate rows, one exact match, and one split match.
-9. Test a real equipment code, unknown code, failed return, service task, lockout, and cost recovery.
-10. Upload one real consent-cleared image from a phone, approve it, assign it to a route, publish the route, and generate the static page/sitemap.
-11. Accept one quote through the portal, create a Stripe test deposit, confirm the webhook, schedule dispatch, and refresh job cost.
-12. Run browser checks at approximately 360px, 768px, 1024px, and wide desktop widths.
+1. Apply schema 151 to a staging Supabase database.
+2. Deploy the updated `operations-manage`, `customer-portal`, and `stripe-webhook` Edge Functions.
+3. Run `node scripts/operations-rpc-integration-test.mjs` with staging credentials.
+4. Seed or use staging records for AR invoices/payments, AP bills/payments, bank CSV rows, reconciliation items, quote packages, and Stripe test Checkout sessions.
+5. Confirm low-rank users cannot execute protected operations through the app or direct RPC calls.
+6. Confirm all failed RPC cases roll back cleanly: locked period, missing proof, bad split total, wrong deposit amount, wrong Stripe currency, duplicate acceptance, duplicate deposit recognition, and repeated reversal.
+7. Perform real phone/tablet/desktop browser inspection; static CSS checks are not a substitute for a rendered staging pass.
 
-## Highest-value work after staging proves schema 150
+## Highest-value next work
 
-1. Replace sequential accounting/reconciliation posting writes with transactional PostgreSQL RPC functions so a failure rolls back the whole operation.
-2. Add automated integration tests against a disposable Supabase project for the ten workflows listed above.
-3. Add permission/RLS tests for worker, supervisor, HSE, Job Admin, and Admin roles.
-4. Connect dispatch changes and quote follow-up alerts to the existing notification delivery worker, including customer/staff preferences and retry/dead-letter handling.
-5. Add real-time Supabase subscriptions or a safe polling interval so queue cards update across multiple Admin sessions without manual refresh.
-6. Add upload progress, cancellation, resumable retry, and weak-connection recovery for large field evidence, while keeping public images within the current optimized limits.
-7. Add immutable posting batches and a formal correction/reversal workflow rather than editing posted accounting records.
-8. Reconcile job-cost source mappings against payroll/time, material issues, equipment usage, subcontract bills, and approved change orders.
-9. Generate an internal-link block from approved route relationships so every important published route is crawlable from another page.
-10. Replace the most visible placeholders with approved real crew, equipment, process, and completed-work photography.
+1. Build seeded staging fixtures for the RPC integration suite so AR, AP, bank, reconciliation, quote, and deposit flows can run end-to-end without hand-created records.
+2. Add role-permission UI badges beside each cockpit button so users know why a button is disabled before clicking.
+3. Add a reconciliation review screen that shows the RPC’s exact split math and match explanation in plain language.
+4. Add Stripe test-mode health cards showing webhook secret status, last received event, and last failed validation reason.
+5. Add accountant export packaging after the RPC layer is proven with staging data.
+6. Replace the most visible placeholders with approved real workshop, vehicle, product, and before/after photos.
+7. Connect Search Console exports and Google Business Profile observations so route-page decisions use real search data.
 
-## SEO sanity check
+## Packaging notes
 
-The new route layer follows current Google guidance by using descriptive titles/meta, one visible H1, relevant approved images with alt text/dimensions, visible content-backed structured data, crawlable CTAs, and an approved-only sitemap. A sitemap helps discovery but does not guarantee crawling, indexing, or ranking. Real local proof and internal links remain essential.
+Run before packaging:
 
-Before publishing each route, verify:
+```bash
+node scripts/operations-rpc-integration-test.mjs
+node scripts/repo-smoke-check.mjs
+```
 
-- the service and location are genuinely offered;
-- the page has unique useful information, not only swapped place names;
-- the title/H1/meta read naturally;
-- the image is relevant, approved, compressed, and consent-cleared;
-- the page links to a real conversion path;
-- the route is linked from another useful public page;
-- the canonical URL is correct;
-- the generated HTML contains one H1 and valid JSON-LD;
-- Search Console URL Inspection and Rich Results Test show no blocking issues.
-
-## Recommended release decision
-
-Use this build for a staging deployment. Do not post real accounting transactions or accept live deposits until the schema, account mappings, Stripe webhook, storage policies, and rollback tests pass. Do not bulk-publish location pages until each has real local proof, an approved visual, and an internal-link path.
+A pass without Supabase credentials confirms static wiring and migration readiness. A pass with staging credentials additionally confirms the deployed schema 151 permission matrix is readable.
