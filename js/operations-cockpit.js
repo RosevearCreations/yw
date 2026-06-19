@@ -1,11 +1,11 @@
-/* Operations Cockpit - schema 150
+/* Operations Cockpit - schema 151
    Live Admin work queues, row-level approvals/posting, bank promotion,
    exact reconciliation, equipment resolution, public media upload, route
    publication, quote follow-up, dispatch, deposits, and job-cost refresh. */
 'use strict';
 
 (function () {
-  const BUILD = '2026-06-17b';
+  const BUILD = '2026-06-18a';
   const RETRY_KEY = 'ywi_operations_cockpit_retry_v2';
   const DRAFT_KEY = 'ywi_operations_cockpit_draft_v2';
   let cameraStream = null;
@@ -102,7 +102,7 @@
     const wrap = byId('oc_scorecards');
     if (!wrap) return;
     const rails = queues.rails || [];
-    wrap.innerHTML = rails.length ? rails.map((rail) => `<article><span>${esc(rail.rail_title)}</span><strong>${Number(rail.progress_percent || 0)}%</strong><progress max="100" value="${Number(rail.progress_percent || 0)}"></progress><small>${esc(short(rail.next_action_hint, 120))}</small></article>`).join('') : emptyQueue('Progress data unavailable', 'Apply schema 150 and refresh.');
+    wrap.innerHTML = rails.length ? rails.map((rail) => `<article><span>${esc(rail.rail_title)}</span><strong>${Number(rail.progress_percent || 0)}%</strong><progress max="100" value="${Number(rail.progress_percent || 0)}"></progress><small>${esc(short(rail.next_action_hint, 120))}</small></article>`).join('') : emptyQueue('Progress data unavailable', 'Apply schema 151 and refresh.');
   }
 
   function renderPaymentQueue() {
@@ -313,7 +313,7 @@
   function panelHtml() {
     const todayValue = new Date().toISOString().slice(0,10);
     return `<section id="operationsCockpit" class="operations-cockpit admin-panel-block" data-admin-panel-title="Operations Cockpit" aria-labelledby="oc_title">
-      <div class="section-heading operations-cockpit-heading"><div><span class="operations-kicker">Schema 150 end-to-end actions</span><h3 id="oc_title">Operations Cockpit</h3><p class="section-subtitle">Approve, post, reconcile, resolve, publish, schedule, and review the same records from desktop or mobile. Failed writes keep one local retry copy.</p></div><div class="section-graphic-placeholder operations-graphic"><span aria-hidden="true">⌁</span><strong>Live workflow control</strong><small>Replace with an approved dashboard/workshop photograph after consent and image review.</small></div></div>
+      <div class="section-heading operations-cockpit-heading"><div><span class="operations-kicker">Schema 151 end-to-end actions</span><h3 id="oc_title">Operations Cockpit</h3><p class="section-subtitle">Approve, post, reconcile, resolve, publish, schedule, and review the same records from desktop or mobile. Failed writes keep one local retry copy.</p></div><div class="section-graphic-placeholder operations-graphic"><span aria-hidden="true">⌁</span><strong>Live workflow control</strong><small>Replace with an approved dashboard/workshop photograph after consent and image review.</small></div></div>
       <div id="oc_status" class="operations-status" hidden aria-live="polite"></div>
       <div id="oc_retry_wrap" class="operations-retry" hidden><span id="oc_retry_text"></span><button id="oc_retry_btn" type="button">Retry saved action</button><button id="oc_retry_clear" class="secondary" type="button">Discard retry</button></div>
       <div class="operations-toolbar"><button id="oc_refresh" type="button">Refresh all live queues</button><span>Build ${BUILD}</span></div>

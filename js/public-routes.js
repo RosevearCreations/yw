@@ -1,4 +1,4 @@
-/* Approved public route renderer - build 2026-06-17b / schema 150
+/* Approved public route renderer - build 2026-06-18a / schema 151
    Runtime fallback for approved route records. Static generation remains the
    preferred deployment path for crawler-ready HTML and sitemap output. */
 'use strict';

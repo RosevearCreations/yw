@@ -19,7 +19,7 @@ const root = process.cwd();
 const endpoint = String(process.env.PUBLIC_CONTENT_ENDPOINT || '').replace(/\/$/, '');
 const anonKey = String(process.env.SUPABASE_ANON_KEY || '');
 const siteUrl = String(process.env.PUBLIC_SITE_URL || 'https://yardweasels.ca').replace(/\/$/, '');
-const build = '2026-06-17b';
+const build = '2026-06-18a';
 if (!endpoint) {
   console.error('Missing PUBLIC_CONTENT_ENDPOINT. No route files were changed.');
   process.exit(2);
