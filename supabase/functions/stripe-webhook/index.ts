@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const BUILD='2026-06-17b';
-const SCHEMA=150;
+const BUILD='2026-06-18a';
+const SCHEMA=151;
 const jsonHeaders={ 'Content-Type':'application/json' };
 const clean=(v:unknown,max=1000)=>String(v ?? '').trim().slice(0,max);
 const money=(v:unknown)=>{const n=Number(v);return Number.isFinite(n)?Number(n.toFixed(2)):0;};
@@ -62,31 +62,24 @@ serve(async(req)=>{
     const paymentSucceeded=event.type==='checkout.session.async_payment_succeeded' || (event.type==='checkout.session.completed' && session.payment_status==='paid');
     if(paymentSucceeded){
       const paidAmount=money(Number(session.amount_total||0)/100);
-      const claimed=await supabase.from('customer_deposit_requests').update({ deposit_status:'paid', paid_amount:paidAmount, paid_at:nowIso(), payment_reference:session.payment_intent||session.id, checkout_session_id:session.id, metadata:{...(deposit.metadata||{}),stripe_event_id:event.id,payment_status:session.payment_status}, updated_at:nowIso() }).eq('id',deposit.id).neq('deposit_status','paid').select('*').maybeSingle();
-      if(claimed.error) throw claimed.error;
-      if(claimed.data){
-        await supabase.from('estimate_quote_packages').update({deposit_status:'paid',updated_at:nowIso()}).eq('id',deposit.quote_package_id);
-        let arPaymentId=null;
-        if(deposit.client_id){
-          const paymentNumber=`DEP-${String(session.id).slice(-18)}`.slice(0,80);
-          const {data:payment,error:paymentError}=await supabase.from('ar_payments').upsert({ payment_number:paymentNumber, client_id:deposit.client_id, payment_date:new Date().toISOString().slice(0,10), payment_method:'stripe', reference_number:String(session.payment_intent||session.id), amount:paidAmount, unapplied_amount:paidAmount, application_status:'unapplied', notes:`Customer portal deposit for quote package ${deposit.quote_package_id}.`, updated_at:nowIso() },{onConflict:'payment_number'}).select('*').single();
-          if(paymentError) throw paymentError;
-          arPaymentId=payment.id;
-          const actionKey=`stripe_deposit_${deposit.id}`;
-          const action=await supabase.from('payment_action_requests').upsert({ action_key:actionKey, idempotency_key:actionKey, action_type:'overpayment_credit', action_status:'submitted', ledger_side:'ar', customer_or_vendor_name:session.customer_details?.name||session.customer_email||'Portal customer', payment_reference:payment.payment_number, amount:paidAmount, currency_code:clean(session.currency||deposit.currency_code||'CAD',8).toUpperCase(), reason:'Record customer portal deposit as unapplied customer credit.', proof_required:true, proof_reference:String(session.payment_intent||session.id), ar_payment_id:payment.id, posting_status:'not_posted', rollback_hint:'Refund through Stripe, then post an approved reversal/refund action.', metadata:{build:BUILD,schema:SCHEMA,stripe_event_id:event.id,deposit_request_id:deposit.id}, updated_at:nowIso() },{onConflict:'action_key'});
-          if(action.error) throw action.error;
-        }
-        await supabase.from('customer_portal_events').insert({ quote_package_id:deposit.quote_package_id, estimate_id:deposit.estimate_id, event_type:'deposit_paid', event_payload:{deposit_request_id:deposit.id,stripe_event_id:event.id,checkout_session_id:session.id,ar_payment_id:arPaymentId,paid_amount:paidAmount} });
-      }
+      const recorded=await supabase.rpc('ywi_rpc_record_portal_deposit_paid',{
+        p_deposit_request_id:deposit.id,
+        p_checkout_session_id:session.id,
+        p_payment_reference:String(session.payment_intent||session.id),
+        p_paid_amount:paidAmount,
+        p_currency_code:clean(session.currency||deposit.currency_code||'CAD',8).toUpperCase(),
+        p_event_payload:{ stripe_event_id:event.id, payment_status:session.payment_status, event_type:event.type, build:BUILD, schema:SCHEMA }
+      });
+      if(recorded.error) throw recorded.error;
     }else if(event.type==='checkout.session.completed'){
-      await supabase.from('customer_deposit_requests').update({deposit_status:'processing',checkout_session_id:session.id,metadata:{...(deposit.metadata||{}),stripe_event_id:event.id,payment_status:session.payment_status},updated_at:nowIso()}).eq('id',deposit.id).neq('deposit_status','paid');
-      await supabase.from('estimate_quote_packages').update({deposit_status:'processing',updated_at:nowIso()}).eq('id',deposit.quote_package_id).neq('deposit_status','paid');
+      const marked=await supabase.rpc('ywi_rpc_mark_deposit_checkout_status',{ p_deposit_request_id:deposit.id, p_deposit_status:'processing', p_checkout_session_id:session.id, p_event_payload:{ stripe_event_id:event.id, payment_status:session.payment_status, event_type:event.type, build:BUILD, schema:SCHEMA } });
+      if(marked.error) throw marked.error;
     }else if(event.type==='checkout.session.async_payment_failed'){
-      await supabase.from('customer_deposit_requests').update({deposit_status:'failed',metadata:{...(deposit.metadata||{}),stripe_event_id:event.id,payment_status:session.payment_status},updated_at:nowIso()}).eq('id',deposit.id).neq('deposit_status','paid');
-      await supabase.from('customer_portal_events').insert({quote_package_id:deposit.quote_package_id,estimate_id:deposit.estimate_id,event_type:'deposit_payment_failed',event_status:'failed',event_payload:{deposit_request_id:deposit.id,stripe_event_id:event.id}});
+      const marked=await supabase.rpc('ywi_rpc_mark_deposit_checkout_status',{ p_deposit_request_id:deposit.id, p_deposit_status:'failed', p_checkout_session_id:session.id, p_event_payload:{ stripe_event_id:event.id, payment_status:session.payment_status, event_type:event.type, build:BUILD, schema:SCHEMA } });
+      if(marked.error) throw marked.error;
     }else if(event.type==='checkout.session.expired'){
-      await supabase.from('customer_deposit_requests').update({deposit_status:'expired',metadata:{...(deposit.metadata||{}),stripe_event_id:event.id},updated_at:nowIso()}).eq('id',deposit.id).neq('deposit_status','paid');
-      await supabase.from('customer_portal_events').insert({quote_package_id:deposit.quote_package_id,estimate_id:deposit.estimate_id,event_type:'deposit_checkout_expired',event_status:'expired',event_payload:{deposit_request_id:deposit.id,stripe_event_id:event.id}});
+      const marked=await supabase.rpc('ywi_rpc_mark_deposit_checkout_status',{ p_deposit_request_id:deposit.id, p_deposit_status:'expired', p_checkout_session_id:session.id, p_event_payload:{ stripe_event_id:event.id, event_type:event.type, build:BUILD, schema:SCHEMA } });
+      if(marked.error) throw marked.error;
     }
     return new Response(JSON.stringify({ok:true,received:true}),{headers:jsonHeaders});
   }catch(error){

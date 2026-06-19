@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const BUILD = '2026-06-17b';
-const SCHEMA = 150;
+const BUILD = '2026-06-18a';
+const SCHEMA = 151;
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-idempotency-key',
@@ -166,6 +166,13 @@ async function sendEmailIfConfigured(notification: Record<string, unknown>) {
   if (!response.ok) throw new Error(`Resend email failed: ${await response.text()}`);
   return { attempted: true };
 }
+
+async function callRpc(supabase: any, name: string, args: Record<string, unknown>) {
+  const { data, error } = await supabase.rpc(name, args);
+  if (error) throw error;
+  return data || {};
+}
+
 async function createAdminNotification(supabase: any, payload: Record<string, unknown>) {
   try {
     const row = {
@@ -705,9 +712,10 @@ serve(async (req) => {
       const { data: existing, error: readError } = await supabase.from('payment_action_requests').select('*').eq('id', requestId).single();
       if (readError) throw readError;
       if (decision === 'post') {
-        const posted = await postPaymentAction(supabase, existing, profile);
-        await audit(supabase, { operation_action: action, operation_status: 'posted', entity_type: 'payment_action_request', entity_id: requestId, actor_profile_id: profile.id, request_payload: safeRequest(body), response_payload: { gl_batch_id: posted.gl_batch_id } });
-        return Response.json({ ok: true, record: posted }, { headers: corsHeaders });
+        const postedResult = await callRpc(supabase, 'ywi_rpc_post_payment_action', { p_request_id: requestId, p_actor_profile_id: profile.id });
+        const posted = postedResult.record || postedResult;
+        await audit(supabase, { operation_action: action, operation_status: 'posted', entity_type: 'payment_action_request', entity_id: requestId, actor_profile_id: profile.id, request_payload: safeRequest(body), response_payload: { rpc: 'ywi_rpc_post_payment_action', gl_batch_id: posted?.gl_batch_id, result: postedResult } });
+        return Response.json({ ok: true, record: posted, rpc: postedResult }, { headers: corsHeaders });
       }
       const note = clean(body.decision_note, 1000);
       if ((decision === 'reject' || decision === 'cancel') && note.length < 5) throw new HttpError(400, 'Add a decision note.');
@@ -757,6 +765,15 @@ serve(async (req) => {
       requireRank(profile, 45, action);
       const importId = clean(body.import_id, 80);
       if (!isUuid(importId)) throw new HttpError(400, 'Valid import_id is required.');
+      const promotedResult = await callRpc(supabase, 'ywi_rpc_promote_bank_csv_import', {
+        p_import_id: importId,
+        p_actor_profile_id: profile.id,
+        p_bank_account_id: isUuid(body.bank_account_id) ? body.bank_account_id : null,
+        p_closing_balance: body.closing_balance === undefined ? null : money(body.closing_balance),
+        p_confirmation_note: clean(body.confirmation_note, 1000) || null
+      });
+      await audit(supabase, { operation_action: action, operation_status: 'promoted', entity_type: 'bank_csv_import_preview', entity_id: importId, actor_profile_id: profile.id, request_payload: safeRequest(body), response_payload: { rpc: 'ywi_rpc_promote_bank_csv_import', result: promotedResult } });
+      return Response.json({ ok: true, record: promotedResult.record || promotedResult, rpc: promotedResult, promoted: true }, { headers: corsHeaders });
       const { data: preview, error: previewError } = await supabase.from('bank_csv_import_previews').select('*').eq('id', importId).single();
       if (previewError) throw previewError;
       if (preview.promoted_at && preview.reconciliation_session_id) return Response.json({ ok: true, record: preview, promoted: true }, { headers: corsHeaders });
@@ -816,81 +833,16 @@ serve(async (req) => {
       requireRank(profile, 45, action);
       const actionType = clean(body.action_type || 'match', 50);
       if (!['match','split','undo','signoff','reject'].includes(actionType)) throw new HttpError(400, 'Unsupported reconciliation action.');
-      const key = idempotencyKey(req, body, 'recon');
-      const item = await resolveReconItem(supabase, clean(body.bank_row_id, 80));
-      if (!item && actionType !== 'undo') throw new HttpError(404, 'Use a promoted reconciliation item or bank preview row ID.');
-      const splitRows = arrayValue(body.split_rows).map((row) => objectValue(row));
+      const bankRowId = clean(body.reconciliation_item_id || body.bank_row_id, 80);
+      const splitRows = arrayValue(body.split_rows || body.split_json).map((row) => objectValue(row));
+      if (actionType !== 'undo' && !isUuid(bankRowId)) throw new HttpError(400, 'A promoted reconciliation item ID is required.');
       if (actionType === 'split' && splitRows.length < 2) throw new HttpError(400, 'Split actions require at least two allocations.');
-      const sourceAmount = Math.abs(money(item?.amount));
-      const allocations: any[] = [];
-      let target: any = null;
-      let explanation: any = {};
-      if (actionType === 'match') {
-        target = await targetByReference(supabase, clean(body.target_reference, 180));
-        if (!target) throw new HttpError(404, 'Target reference was not found in AR, AP, or GL.');
-        explanation = scoreTarget(item, target);
-        if (cents(explanation.target_amount) !== cents(sourceAmount)) throw new HttpError(409, 'Exact match is blocked because the target and bank amounts differ.', explanation);
-        allocations.push({ target, amount: sourceAmount, explanation });
-      }
-      if (actionType === 'split') {
-        for (const row of splitRows) {
-          const reference = clean(row.reference || row.target_reference, 180);
-          const amount = money(row.amount);
-          if (!reference || amount <= 0) throw new HttpError(400, 'Every split allocation needs a reference and positive amount.');
-          const resolved = await targetByReference(supabase, reference);
-          if (!resolved) throw new HttpError(404, `Split target ${reference} was not found.`);
-          allocations.push({ target: resolved, amount, explanation: scoreTarget({ ...item, amount }, resolved) });
-        }
-        const splitTotalCents = allocations.reduce((sum, allocation) => sum + cents(allocation.amount), 0);
-        if (splitTotalCents !== cents(sourceAmount)) throw new HttpError(409, 'Split allocations must equal the bank row exactly to the cent.', { bank_amount: sourceAmount, split_total: splitTotalCents / 100, difference: (splitTotalCents - cents(sourceAmount)) / 100 });
-        explanation = { score: Math.round(allocations.reduce((sum, a) => sum + a.explanation.score, 0) / allocations.length), components: allocations.map((a) => ({ reference: a.target.reference, amount: a.amount, score: a.explanation.score })), summary: 'Weighted score across exact-balanced split allocations.' };
-      }
-      if (actionType === 'undo') {
-        const priorId = clean(body.undo_of_action_id || body.target_reference, 80);
-        if (!isUuid(priorId)) throw new HttpError(400, 'Undo requires the prior reconciliation action ID.');
-        const { data: prior, error: priorError } = await supabase.from('reconciliation_action_requests').select('*').eq('id', priorId).single();
-        if (priorError) throw priorError;
-        await supabase.from('reconciliation_match_allocations').update({ allocation_status: 'reversed', reversed_at: nowIso(), reversed_by_profile_id: profile.id }).eq('action_request_id', prior.id).eq('allocation_status', 'active');
-        if (prior.reconciliation_item_id) await supabase.from('bank_reconciliation_items').update({ match_status: 'unmatched', clearing_status: 'open', updated_at: nowIso() }).eq('id', prior.reconciliation_item_id);
-        const { data, error } = await supabase.from('reconciliation_action_requests').insert({ action_type: 'undo', action_status: 'processed', undo_of_action_id: prior.id, reconciliation_item_id: prior.reconciliation_item_id, bank_row_id: prior.bank_row_id, requested_by_profile_id: profile.id, processed_by_profile_id: profile.id, processed_at: nowIso(), decision_note: clean(body.signoff_note, 1000) || `Reversed ${prior.id}`, metadata: { build: BUILD, schema: SCHEMA, idempotency_key: key } }).select('*').single();
-        if (error) throw error;
-        return Response.json({ ok: true, record: data }, { headers: corsHeaders });
-      }
-      if (actionType === 'signoff') {
-        if (!item) throw new HttpError(404, 'Reconciliation item not found.');
-        const { data: open } = await supabase.from('bank_reconciliation_items').select('id').eq('reconciliation_session_id', item.reconciliation_session_id).eq('clearing_status', 'open').neq('match_status', 'matched');
-        if (open?.length) throw new HttpError(409, `${open.length} unmatched or exception row(s) remain; session sign-off is blocked.`);
-        await supabase.from('bank_reconciliation_sessions').update({ reconciliation_status: 'balanced', difference_amount: 0, reviewed_by_profile_id: profile.id, reviewed_at: nowIso(), notes: clean(body.signoff_note, 1000) || 'Balanced and signed off.', updated_at: nowIso() }).eq('id', item.reconciliation_session_id);
-      }
-      const actionStatus = actionType === 'reject' ? 'rejected' : 'processed';
-      const splitTotal = actionType === 'split' ? allocations.reduce((sum, allocation) => sum + money(allocation.amount), 0) : actionType === 'match' ? sourceAmount : 0;
-      const { data: requestRow, error: requestError } = await supabase.from('reconciliation_action_requests').insert({
-        action_type: actionType, action_status: actionStatus, import_id: isUuid(body.import_id) ? body.import_id : null,
-        bank_row_id: isUuid(body.bank_row_id) ? body.bank_row_id : null, reconciliation_item_id: item?.id || null,
-        target_reference: clean(body.target_reference, 180) || null, split_json: splitRows, match_score: explanation.score || null,
-        match_explanation: explanation, source_amount: sourceAmount || null, split_total: splitTotal || null,
-        balance_difference: Number((splitTotal - sourceAmount).toFixed(2)), signoff_note: clean(body.signoff_note, 1000) || null,
-        decision_note: clean(body.signoff_note, 1000) || null, requested_by_profile_id: profile.id, processed_by_profile_id: profile.id,
-        processed_at: nowIso(), signed_off_by_profile_id: actionType === 'signoff' ? profile.id : null,
-        signed_off_at: actionType === 'signoff' ? nowIso() : null,
-        metadata: { build: BUILD, schema: SCHEMA, idempotency_key: key }, updated_at: nowIso()
-      }).select('*').single();
-      if (requestError) throw requestError;
-      if (allocations.length) {
-        const rows = allocations.map((allocation) => ({
-          action_request_id: requestRow.id, reconciliation_item_id: item.id, target_type: allocation.target.type,
-          target_id: String(allocation.target.row.id), target_reference: allocation.target.reference,
-          allocated_amount: money(allocation.amount), match_score: allocation.explanation.score,
-          match_explanation: allocation.explanation, allocation_status: 'active', created_by_profile_id: profile.id
-        }));
-        const { error } = await supabase.from('reconciliation_match_allocations').insert(rows);
-        if (error) throw error;
-        await supabase.from('bank_reconciliation_items').update({ match_status: 'matched', clearing_status: 'cleared', difference_reason: null, notes: `${actionType} processed by ${profile.full_name || profile.email || profile.id}`, updated_at: nowIso() }).eq('id', item.id);
-      } else if (actionType === 'reject' && item) {
-        await supabase.from('bank_reconciliation_items').update({ match_status: 'exception', difference_reason: clean(body.signoff_note, 1000) || 'Rejected during reconciliation review.', updated_at: nowIso() }).eq('id', item.id);
-      }
-      await audit(supabase, { operation_action: action, operation_status: actionStatus, entity_type: 'reconciliation_action_request', entity_id: requestRow.id, actor_profile_id: profile.id, request_payload: safeRequest(body), response_payload: { score: explanation.score || null, allocations: allocations.length } });
-      return Response.json({ ok: true, record: requestRow, match_explanation: explanation }, { headers: corsHeaders });
+      const reconResult = await callRpc(supabase, 'ywi_rpc_apply_reconciliation_action', {
+        p_payload: { ...safeRequest(body), action_type: actionType, bank_row_id: bankRowId, reconciliation_item_id: bankRowId, split_rows: splitRows },
+        p_actor_profile_id: profile.id
+      });
+      await audit(supabase, { operation_action: action, operation_status: actionType, entity_type: 'reconciliation_action_request', entity_id: reconResult?.record?.id, actor_profile_id: profile.id, request_payload: safeRequest(body), response_payload: { rpc: 'ywi_rpc_apply_reconciliation_action', result: reconResult } });
+      return Response.json({ ok: true, record: reconResult.record || reconResult, rpc: reconResult, match_explanation: reconResult?.record?.match_explanation || {} }, { headers: corsHeaders });
     }
 
     if (action === 'equipment_scan_event') {

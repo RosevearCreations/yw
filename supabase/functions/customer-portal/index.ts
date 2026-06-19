@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const BUILD = '2026-06-17b';
-const SCHEMA = 150;
+const BUILD = '2026-06-18a';
+const SCHEMA = 151;
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -41,6 +41,13 @@ function publicPackage(row:any) {
     deposit:row.latest_deposit_request_id ? { id:row.latest_deposit_request_id, status:row.latest_deposit_status, requested_amount:money(row.latest_deposit_amount), paid_amount:money(row.latest_paid_amount), receipt_url:row.receipt_url } : null
   };
 }
+
+async function callRpc(supabase:any, name:string, args:Record<string,unknown>) {
+  const { data, error } = await supabase.rpc(name, args);
+  if (error) throw error;
+  return data || {};
+}
+
 async function stripeCheckout(secret:string, payload:Record<string,string>, idempotencyKey:string) {
   const response=await fetch('https://api.stripe.com/v1/checkout/sessions', { method:'POST', headers:{ Authorization:`Bearer ${secret}`, 'Content-Type':'application/x-www-form-urlencoded', 'Idempotency-Key':idempotencyKey }, body:new URLSearchParams(payload) });
   const text=await response.text();
@@ -89,72 +96,39 @@ serve(async (req) => {
       const email=clean(body.customer_email,260).toLowerCase();
       if (name.length < 2 || !validEmail(email)) throw new HttpError(400, 'Customer name and valid email are required.');
       if (body.accept_terms !== true) throw new HttpError(409, 'Quote terms must be accepted.');
-      if (pkg.valid_until && new Date(`${pkg.valid_until}T23:59:59Z`) < new Date()) throw new HttpError(409, 'This quote has expired and needs review.');
-      const timestamp=nowIso();
-      const { data:claimed, error:packageError }=await supabase.from('estimate_quote_packages').update({
-        package_status:'accepted', send_status:'accepted', accepted_at:timestamp, accepted_by_name:name, accepted_by_email:email,
-        acceptance_notes:clean(body.acceptance_notes,1000) || null, last_client_action:'accepted', last_client_action_at:timestamp,
-        portal_terms_version:clean(body.terms_version || '2026-06-17',80), portal_acceptance_ip_hash:ipHash,
-        last_client_ip:ipHash, last_client_user_agent:userAgent, updated_at:timestamp
-      }).eq('id',pkg.quote_package_id).is('accepted_at',null).select('id').maybeSingle();
-      if (packageError) throw packageError;
-      if (!claimed) {
-        const refreshed=await packageByToken(supabase,token);
-        return Response.json({ ok:true, already_accepted:true, portal:publicPackage(refreshed) }, { headers:corsHeaders });
-      }
-      const stableNumber=`WO-${clean(pkg.estimate_number,60).replace(/[^A-Za-z0-9-]/g,'-')}`.slice(0,80);
-      let workOrder:any=pkg.work_order_id ? await existingWorkOrder(supabase,pkg.estimate_id,stableNumber) : null;
-      if (!workOrder) workOrder=await existingWorkOrder(supabase,pkg.estimate_id,stableNumber);
-      if (!workOrder) {
-        const inserted=await supabase.from('work_orders').insert({
-          work_order_number:stableNumber, estimate_id:pkg.estimate_id, client_id:pkg.client_id, work_type:'service', status:'draft',
-          customer_notes:`Quote accepted through customer portal by ${name} (${email}).`, subtotal:money(pkg.subtotal), tax_total:money(pkg.tax_total), total_amount:money(pkg.total_amount)
-        }).select('*').single();
-        if (inserted.error) {
-          workOrder=await existingWorkOrder(supabase,pkg.estimate_id,stableNumber);
-          if (!workOrder) throw inserted.error;
-        } else workOrder=inserted.data;
-      }
-      const { error:estimateError }=await supabase.from('estimates').update({ status:'accepted', approved_at:timestamp, converted_work_order_id:workOrder.id, converted_at:timestamp, updated_at:timestamp }).eq('id',pkg.estimate_id);
-      if (estimateError) throw estimateError;
-      await supabase.from('quote_package_client_events').insert({ quote_package_id:pkg.quote_package_id, event_action:'accepted', event_email:email, event_name:name, event_ip:ipHash, user_agent:userAgent, notes:clean(body.acceptance_notes,1000) || null });
-      await supabase.from('customer_portal_events').insert({ quote_package_id:pkg.quote_package_id, estimate_id:pkg.estimate_id, work_order_id:workOrder.id, event_type:'quote_accepted', customer_name:name, customer_email:email, event_payload:{ terms_version:clean(body.terms_version || '2026-06-17',80), ip_hash:ipHash, build:BUILD, schema:SCHEMA } });
+      const acceptedResult=await callRpc(supabase,'ywi_rpc_accept_quote_package',{
+        p_quote_package_id:pkg.quote_package_id,
+        p_customer_name:name,
+        p_customer_email:email,
+        p_accept_terms:body.accept_terms === true,
+        p_terms_version:clean(body.terms_version || '2026-06-18',80),
+        p_acceptance_notes:clean(body.acceptance_notes,1000) || null,
+        p_ip_hash:ipHash,
+        p_user_agent:userAgent
+      });
       const refreshed=await packageByToken(supabase,token);
-      return Response.json({ ok:true, accepted:true, work_order:workOrder, portal:publicPackage(refreshed) }, { headers:corsHeaders });
+      return Response.json({ ok:true, accepted:!acceptedResult.already_accepted, already_accepted:!!acceptedResult.already_accepted, work_order:{ id:acceptedResult.work_order_id, number:acceptedResult.work_order_number }, portal:publicPackage(refreshed), rpc:acceptedResult }, { headers:corsHeaders });
     }
 
     if (action === 'create_deposit_checkout') {
       if (!pkg.accepted_at) throw new HttpError(409, 'Accept the quote before paying a deposit.');
-      const required=money(pkg.deposit_required_amount);
-      if (required <= 0) throw new HttpError(409, 'This quote does not have a deposit amount configured.');
-      if (required > money(pkg.total_amount)) throw new HttpError(409, 'The configured deposit exceeds the quote total and must be corrected by staff.');
-      const { data:allDeposits, error:depositListError }=await supabase.from('customer_deposit_requests').select('*').eq('quote_package_id',pkg.quote_package_id).order('created_at',{ascending:false});
-      if (depositListError) throw depositListError;
-      const paidCents=(allDeposits || []).filter((row:any)=>row.deposit_status==='paid').reduce((sum:number,row:any)=>sum+cents(row.paid_amount),0);
-      const remainingCents=Math.max(0,cents(required)-paidCents);
-      if (remainingCents === 0) return Response.json({ ok:true, already_paid:true, portal:publicPackage(pkg) }, { headers:corsHeaders });
-      const amount=remainingCents/100;
-      const now=Date.now();
-      const reusable=(allDeposits || []).find((row:any)=>['requested','checkout_created'].includes(row.deposit_status) && cents(row.requested_amount)===remainingCents && (!row.expires_at || new Date(row.expires_at).getTime()>now));
-      if (reusable?.deposit_status==='checkout_created' && reusable.checkout_url) return Response.json({ ok:true, reused:true, checkout_url:reusable.checkout_url, deposit:reusable }, { headers:corsHeaders });
       const defaultCurrency=clean(Deno.env.get('DEFAULT_CURRENCY') || 'CAD',3).toUpperCase();
       const currency=validCurrency(defaultCurrency) ? defaultCurrency : 'CAD';
-      let deposit=reusable || null;
-      if (!deposit) {
-        const created=await supabase.from('customer_deposit_requests').insert({
-          quote_package_id:pkg.quote_package_id, estimate_id:pkg.estimate_id, client_id:pkg.client_id,
-          requested_amount:amount, currency_code:currency, deposit_status:'requested', checkout_provider:'stripe',
-          expires_at:new Date(now+24*60*60*1000).toISOString(), metadata:{ build:BUILD, schema:SCHEMA, portal_token_suffix:token.slice(-6), exact_required_balance:true }
-        }).select('*').single();
-        if (created.error) throw created.error;
-        deposit=created.data;
-      }
+      const prepared=await callRpc(supabase,'ywi_rpc_prepare_deposit_request',{
+        p_quote_package_id:pkg.quote_package_id,
+        p_currency_code:currency,
+        p_token_suffix:token.slice(-6)
+      });
+      if (prepared.already_paid) return Response.json({ ok:true, already_paid:true, portal:publicPackage(pkg), rpc:prepared }, { headers:corsHeaders });
+      const deposit=prepared.deposit;
+      if (deposit?.deposit_status === 'checkout_created' && deposit.checkout_url) return Response.json({ ok:true, reused:true, checkout_url:deposit.checkout_url, deposit, rpc:prepared }, { headers:corsHeaders });
       const stripeKey=clean(Deno.env.get('STRIPE_SECRET_KEY'),500);
       const siteUrl=publicSiteUrl(Deno.env.get('PUBLIC_SITE_URL') || Deno.env.get('SITE_URL'));
       if (!stripeKey || !siteUrl) {
-        await supabase.from('customer_portal_events').insert({ quote_package_id:pkg.quote_package_id, estimate_id:pkg.estimate_id, work_order_id:pkg.work_order_id || null, event_type:'deposit_checkout_setup_required', event_status:'pending', event_payload:{ deposit_request_id:deposit.id } });
-        return Response.json({ ok:true, setup_required:true, message:'Deposit request saved. Configure STRIPE_SECRET_KEY and PUBLIC_SITE_URL to create hosted checkout.', deposit }, { headers:corsHeaders });
+        await supabase.rpc('ywi_rpc_mark_deposit_checkout_status', { p_deposit_request_id:deposit.id, p_deposit_status:'checkout_created', p_checkout_session_id:null, p_event_payload:{ setup_required:true, build:BUILD, schema:SCHEMA } });
+        return Response.json({ ok:true, setup_required:true, message:'Deposit request saved. Configure STRIPE_SECRET_KEY and PUBLIC_SITE_URL to create hosted checkout.', deposit, rpc:prepared }, { headers:corsHeaders });
       }
+      const remainingCents=Number(prepared.remaining_cents || cents(deposit.requested_amount));
       const session=await stripeCheckout(stripeKey, {
         mode:'payment', success_url:`${siteUrl}/?portal=${encodeURIComponent(token)}&deposit=success`, cancel_url:`${siteUrl}/?portal=${encodeURIComponent(token)}&deposit=cancelled`,
         'line_items[0][price_data][currency]':currency.toLowerCase(), 'line_items[0][price_data][product_data][name]':`Deposit for ${pkg.estimate_number}`,
@@ -163,12 +137,13 @@ serve(async (req) => {
         'metadata[deposit_request_id]':deposit.id, 'metadata[quote_package_id]':pkg.quote_package_id,
         'metadata[estimate_id]':pkg.estimate_id, 'metadata[requested_amount_cents]':String(remainingCents)
       }, `deposit-checkout-${deposit.id}`);
-      const updatedResult=await supabase.from('customer_deposit_requests').update({ deposit_status:'checkout_created', checkout_session_id:session.id, checkout_url:session.url, updated_at:nowIso() }).eq('id',deposit.id).eq('deposit_status','requested').select('*').maybeSingle();
-      if (updatedResult.error) throw updatedResult.error;
-      const updated=updatedResult.data || deposit;
-      await supabase.from('estimate_quote_packages').update({ deposit_status:'checkout_created', updated_at:nowIso() }).eq('id',pkg.quote_package_id);
-      await supabase.from('customer_portal_events').insert({ quote_package_id:pkg.quote_package_id, estimate_id:pkg.estimate_id, work_order_id:pkg.work_order_id || null, event_type:'deposit_checkout_created', event_payload:{ deposit_request_id:deposit.id, checkout_session_id:session.id, requested_amount:amount } });
-      return Response.json({ ok:true, checkout_url:session.url, deposit:updated }, { headers:corsHeaders });
+      const attached=await callRpc(supabase,'ywi_rpc_attach_deposit_checkout',{
+        p_deposit_request_id:deposit.id,
+        p_checkout_session_id:session.id,
+        p_checkout_url:session.url,
+        p_provider_payload:{ mode:session.mode, payment_status:session.payment_status, amount_total:session.amount_total, currency:session.currency }
+      });
+      return Response.json({ ok:true, checkout_url:session.url, deposit:attached.deposit || deposit, rpc:{ prepared, attached } }, { headers:corsHeaders });
     }
 
     if (action === 'request_service') {
