@@ -1,168 +1,1549 @@
--- Last synchronized: June 2, 2026. Reviewed during the public route SEO, internal-link, CSS token, mobile action, release manifest, and schema 127 pass.
--- Current reference remains aligned through 127_public_route_seo_internal_link_css_mobile_guardrails.sql.
+-- 000_full_schema_reference.sql
+-- Canonical ordered reference generated from migrations 030 through 150.
+-- Last synchronized: June 17, 2026 (build 2026-06-17b).
+--
+-- IMPORTANT:
+--   * The numbered migration files remain the authoritative deployment units.
+--   * This file preserves their exact order for review, fresh-environment rehearsal,
+--     schema drift investigation, and AI/new-chat handoff.
+--   * Apply and verify migrations in order in staging before production.
 
-create extension if not exists pgcrypto;
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 030_profiles_sites_assignments.sql
+-- ============================================================================
+-- =========================================================
+-- Document 9: sql/030_profiles_sites_assignments.sql
+-- Purpose:
+-- - Create/standardize core admin tables:
+--   1) profiles
+--   2) sites
+--   3) site_assignments
+-- - Add constraints and indexes
+-- - Add timestamp update trigger support
+--
+-- Run this in Supabase SQL Editor.
+-- =========================================================
+
+-- ---------------------------------------------------------
+-- 1) updated_at helper trigger function
+-- ---------------------------------------------------------
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+-- ---------------------------------------------------------
+-- 2) profiles
+-- ---------------------------------------------------------
 create table if not exists public.profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  email text not null unique,
+  id uuid primary key,
+  email text unique,
   full_name text,
-  username text,
-  recovery_email text,
-  pending_email text,
-  pending_username text,
-  password_login_ready boolean not null default false,
-  account_setup_completed_at timestamptz,
-  onboarding_completed_at timestamptz,
-  role text not null default 'employee',
+  role text not null default 'worker',
   is_active boolean not null default true,
-  phone text,
-  phone_verified boolean not null default false,
-  email_verified boolean not null default false,
-  address_line1 text,
-  address_line2 text,
-  city text,
-  province text,
-  postal_code text,
-  emergency_contact_name text,
-  emergency_contact_phone text,
-  vehicle_make_model text,
-  vehicle_plate text,
-  years_employed integer,
-  seniority_level text,
-  employment_status text not null default 'active',
-  staff_tier text,
-  start_date date,
-  employee_number text,
-  current_position text,
-  previous_employee boolean not null default false,
-  trade_specialty text,
-  strengths text,
-  certifications text,
-  feature_preferences jsonb,
-  default_supervisor_profile_id uuid references public.profiles(id) on delete set null,
-  override_supervisor_profile_id uuid references public.profiles(id) on delete set null,
-  default_admin_profile_id uuid references public.profiles(id) on delete set null,
-  override_admin_profile_id uuid references public.profiles(id) on delete set null,
-  notes text,
-  password_changed_at timestamptz,
-  last_login_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
+-- Add missing columns safely if table already exists
+alter table public.profiles
+  add column if not exists email text;
+
+alter table public.profiles
+  add column if not exists full_name text;
+
+alter table public.profiles
+  add column if not exists role text not null default 'worker';
+
+alter table public.profiles
+  add column if not exists is_active boolean not null default true;
+
+alter table public.profiles
+  add column if not exists created_at timestamptz not null default now();
+
+alter table public.profiles
+  add column if not exists updated_at timestamptz not null default now();
+
+-- Unique email if not already present
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'profiles_email_key'
+  ) then
+    alter table public.profiles
+      add constraint profiles_email_key unique (email);
+  end if;
+end $$;
+
+-- Role constraint
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'profiles_role_check'
+  ) then
+    alter table public.profiles
+      add constraint profiles_role_check
+      check (role in ('worker','supervisor','hse','admin'));
+  end if;
+end $$;
+
+-- ---------------------------------------------------------
+-- 3) sites
+-- ---------------------------------------------------------
 create table if not exists public.sites (
-  id uuid primary key default gen_random_uuid(),
+  id bigserial primary key,
   site_code text not null unique,
   site_name text not null,
   address text,
-  region text,
-  client_name text,
-  project_code text,
-  project_status text,
-  site_supervisor_profile_id uuid references public.profiles(id) on delete set null,
-  signing_supervisor_profile_id uuid references public.profiles(id) on delete set null,
-  admin_profile_id uuid references public.profiles(id) on delete set null,
   notes text,
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
-create table if not exists public.account_recovery_requests (
-  id bigserial primary key,
-  lookup_kind text not null default 'lookup',
-  employee_number text,
-  phone_last4 text,
-  last_name text,
-  matched_profile_id uuid references public.profiles(id) on delete set null,
-  masked_email text,
-  masked_username text,
-  request_status text not null default 'pending',
-  notes text,
-  created_at timestamptz not null default now()
-);
+alter table public.sites
+  add column if not exists site_code text;
 
+alter table public.sites
+  add column if not exists site_name text;
 
-create table if not exists public.account_identity_change_requests (
-  id bigserial primary key,
-  profile_id uuid not null references public.profiles(id) on delete cascade,
-  current_email text,
-  current_username text,
-  requested_email text,
-  requested_username text,
-  request_status text not null default 'pending',
-  notes text,
-  reviewed_by_profile_id uuid references public.profiles(id) on delete set null,
-  reviewed_at timestamptz,
-  created_by_profile_id uuid references public.profiles(id) on delete set null,
-  created_at timestamptz not null default now()
-);
+alter table public.sites
+  add column if not exists address text;
 
+alter table public.sites
+  add column if not exists notes text;
+
+alter table public.sites
+  add column if not exists is_active boolean not null default true;
+
+alter table public.sites
+  add column if not exists created_at timestamptz not null default now();
+
+alter table public.sites
+  add column if not exists updated_at timestamptz not null default now();
+
+-- Ensure required text fields are populated if nulls exist
+update public.sites
+set site_code = coalesce(site_code, 'SITE-' || id::text)
+where site_code is null;
+
+update public.sites
+set site_name = coalesce(site_name, site_code, 'Unnamed Site')
+where site_name is null;
+
+alter table public.sites
+  alter column site_code set not null;
+
+alter table public.sites
+  alter column site_name set not null;
+
+-- Unique site_code if not already present
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'sites_site_code_key'
+  ) then
+    alter table public.sites
+      add constraint sites_site_code_key unique (site_code);
+  end if;
+end $$;
+
+-- ---------------------------------------------------------
+-- 4) site_assignments
+-- ---------------------------------------------------------
 create table if not exists public.site_assignments (
   id bigserial primary key,
-  site_id uuid not null references public.sites(id) on delete cascade,
+  site_id bigint not null references public.sites(id) on delete cascade,
   profile_id uuid not null references public.profiles(id) on delete cascade,
-  assignment_role text not null default 'employee',
+  assignment_role text not null default 'worker',
   is_primary boolean not null default false,
-  reports_to_supervisor_profile_id uuid references public.profiles(id) on delete set null,
-  reports_to_admin_profile_id uuid references public.profiles(id) on delete set null,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz,
-  unique(site_id, profile_id)
-);
-
-create table if not exists public.submissions (
-  id bigserial primary key,
-  site text,
-  site_id uuid references public.sites(id) on delete set null,
-  form_type text not null,
-  date date not null,
-  submitted_by text,
-  submitted_by_profile_id uuid references public.profiles(id) on delete set null,
-  supervisor_profile_id uuid references public.profiles(id) on delete set null,
-  signing_supervisor_profile_id uuid references public.profiles(id) on delete set null,
-  admin_profile_id uuid references public.profiles(id) on delete set null,
-  status text not null default 'submitted',
-  admin_notes text,
-  reviewed_by uuid references public.profiles(id) on delete set null,
-  reviewed_at timestamptz,
-  payload jsonb not null,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists public.toolbox_attendees (
-  id bigserial primary key,
-  submission_id bigint not null references public.submissions(id) on delete cascade,
-  name text not null,
-  role_on_site text,
-  company text,
-  signature_png_base64 text,
   created_at timestamptz not null default now()
 );
 
-create table if not exists public.submission_reviews (
-  id bigserial primary key,
-  submission_id bigint not null references public.submissions(id) on delete cascade,
-  reviewer_id uuid references public.profiles(id) on delete set null,
-  review_action text not null,
-  review_note text,
-  created_at timestamptz not null default now()
-);
+alter table public.site_assignments
+  add column if not exists site_id bigint;
 
-create table if not exists public.submission_images (
-  id bigserial primary key,
-  submission_id bigint not null references public.submissions(id) on delete cascade,
-  image_type text not null default 'status',
-  file_name text not null,
-  file_path text not null,
-  file_size_bytes bigint,
-  content_type text,
-  caption text,
-  uploaded_by uuid references public.profiles(id) on delete set null,
-  created_at timestamptz not null default now()
+alter table public.site_assignments
+  add column if not exists profile_id uuid;
+
+alter table public.site_assignments
+  add column if not exists assignment_role text not null default 'worker';
+
+alter table public.site_assignments
+  add column if not exists is_primary boolean not null default false;
+
+alter table public.site_assignments
+  add column if not exists created_at timestamptz not null default now();
+
+-- Add FKs only if missing
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'site_assignments_site_id_fkey'
+  ) then
+    alter table public.site_assignments
+      add constraint site_assignments_site_id_fkey
+      foreign key (site_id) references public.sites(id) on delete cascade;
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'site_assignments_profile_id_fkey'
+  ) then
+    alter table public.site_assignments
+      add constraint site_assignments_profile_id_fkey
+      foreign key (profile_id) references public.profiles(id) on delete cascade;
+  end if;
+end $$;
+
+-- Role constraint
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'site_assignments_role_check'
+  ) then
+    alter table public.site_assignments
+      add constraint site_assignments_role_check
+      check (assignment_role in ('worker','supervisor','hse','admin'));
+  end if;
+end $$;
+
+-- Prevent exact duplicate site/profile pairs
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'site_assignments_site_profile_unique'
+  ) then
+    alter table public.site_assignments
+      add constraint site_assignments_site_profile_unique
+      unique (site_id, profile_id);
+  end if;
+end $$;
+
+-- ---------------------------------------------------------
+-- 5) indexes
+-- ---------------------------------------------------------
+create index if not exists idx_profiles_role
+  on public.profiles(role);
+
+create index if not exists idx_profiles_is_active
+  on public.profiles(is_active);
+
+create index if not exists idx_profiles_email
+  on public.profiles(email);
+
+create index if not exists idx_sites_site_code
+  on public.sites(site_code);
+
+create index if not exists idx_sites_is_active
+  on public.sites(is_active);
+
+create index if not exists idx_site_assignments_site_id
+  on public.site_assignments(site_id);
+
+create index if not exists idx_site_assignments_profile_id
+  on public.site_assignments(profile_id);
+
+create index if not exists idx_site_assignments_role
+  on public.site_assignments(assignment_role);
+
+create index if not exists idx_site_assignments_is_primary
+  on public.site_assignments(is_primary);
+
+-- ---------------------------------------------------------
+-- 6) updated_at triggers
+-- ---------------------------------------------------------
+drop trigger if exists trg_profiles_set_updated_at on public.profiles;
+create trigger trg_profiles_set_updated_at
+before update on public.profiles
+for each row
+execute function public.set_updated_at();
+
+drop trigger if exists trg_sites_set_updated_at on public.sites;
+create trigger trg_sites_set_updated_at
+before update on public.sites
+for each row
+execute function public.set_updated_at();
+
+-- ---------------------------------------------------------
+-- 7) row level security
+-- Edge functions use service role, but we enable RLS now
+-- for future safety and direct client reads if needed.
+-- ---------------------------------------------------------
+alter table public.profiles enable row level security;
+alter table public.sites enable row level security;
+alter table public.site_assignments enable row level security;
+
+-- ---------------------------------------------------------
+-- 8) basic read policies
+-- Admins can read everything.
+-- Authenticated users can read their own profile.
+-- Authenticated users can read active sites.
+-- Authenticated users can read their own assignments.
+-- ---------------------------------------------------------
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'profiles'
+      and policyname = 'profiles_select_self_or_admin'
+  ) then
+    create policy profiles_select_self_or_admin
+      on public.profiles
+      for select
+      to authenticated
+      using (
+        id = auth.uid()
+        or exists (
+          select 1
+          from public.profiles p
+          where p.id = auth.uid()
+            and p.is_active = true
+            and p.role = 'admin'
+        )
+      );
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'sites'
+      and policyname = 'sites_select_active_or_admin'
+  ) then
+    create policy sites_select_active_or_admin
+      on public.sites
+      for select
+      to authenticated
+      using (
+        is_active = true
+        or exists (
+          select 1
+          from public.profiles p
+          where p.id = auth.uid()
+            and p.is_active = true
+            and p.role = 'admin'
+        )
+      );
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'site_assignments'
+      and policyname = 'site_assignments_select_self_or_admin'
+  ) then
+    create policy site_assignments_select_self_or_admin
+      on public.site_assignments
+      for select
+      to authenticated
+      using (
+        profile_id = auth.uid()
+        or exists (
+          select 1
+          from public.profiles p
+          where p.id = auth.uid()
+            and p.is_active = true
+            and p.role = 'admin'
+        )
+      );
+  end if;
+end $$;
+
+-- ---------------------------------------------------------
+-- 9) verification
+-- ---------------------------------------------------------
+select to_regclass('public.profiles') as profiles_table;
+select to_regclass('public.sites') as sites_table;
+select to_regclass('public.site_assignments') as site_assignments_table;
+
+select
+  column_name,
+  data_type
+from information_schema.columns
+where table_schema = 'public'
+  and table_name in ('profiles', 'sites', 'site_assignments')
+order by table_name, ordinal_position;
+-- ============================================================================
+-- END MIGRATION: 030_profiles_sites_assignments.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 031_profile_bootstrap_trigger.sql
+-- ============================================================================
+-- =========================================================
+-- Document 10: sql/031_profile_bootstrap_trigger.sql
+-- Purpose:
+-- - Automatically create a public.profiles row when a new
+--   auth.users record is created
+-- - Keep profile email aligned at creation time
+-- - Prevent missing-profile problems after magic link login
+--
+-- Run this in Supabase SQL Editor.
+-- =========================================================
+
+-- ---------------------------------------------------------
+-- 1) Create trigger function
+-- ---------------------------------------------------------
+create or replace function public.handle_new_user_profile()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (
+    id,
+    email,
+    full_name,
+    role,
+    is_active,
+    created_at,
+    updated_at
+  )
+  values (
+    new.id,
+    new.email,
+    coalesce(
+      new.raw_user_meta_data ->> 'full_name',
+      new.raw_user_meta_data ->> 'name',
+      split_part(coalesce(new.email, ''), '@', 1),
+      'User'
+    ),
+    'worker',
+    true,
+    now(),
+    now()
+  )
+  on conflict (id) do update
+    set email = excluded.email,
+        updated_at = now();
+
+  return new;
+end;
+$$;
+
+-- ---------------------------------------------------------
+-- 2) Drop existing trigger if present
+-- ---------------------------------------------------------
+drop trigger if exists on_auth_user_created on auth.users;
+
+-- ---------------------------------------------------------
+-- 3) Create trigger on auth.users
+-- ---------------------------------------------------------
+create trigger on_auth_user_created
+after insert on auth.users
+for each row
+execute function public.handle_new_user_profile();
+
+-- ---------------------------------------------------------
+-- 4) Optional backfill for existing auth users
+--    Creates missing profiles for users who already exist
+-- ---------------------------------------------------------
+insert into public.profiles (
+  id,
+  email,
+  full_name,
+  role,
+  is_active,
+  created_at,
+  updated_at
+)
+select
+  u.id,
+  u.email,
+  coalesce(
+    u.raw_user_meta_data ->> 'full_name',
+    u.raw_user_meta_data ->> 'name',
+    split_part(coalesce(u.email, ''), '@', 1),
+    'User'
+  ) as full_name,
+  'worker' as role,
+  true as is_active,
+  now() as created_at,
+  now() as updated_at
+from auth.users u
+left join public.profiles p
+  on p.id = u.id
+where p.id is null;
+
+-- ---------------------------------------------------------
+-- 5) Verification
+-- ---------------------------------------------------------
+select
+  tgname as trigger_name,
+  tgrelid::regclass as table_name
+from pg_trigger
+where tgname = 'on_auth_user_created';
+
+select
+  count(*) as auth_user_count
+from auth.users;
+
+select
+  count(*) as profile_count
+from public.profiles;
+-- ============================================================================
+-- END MIGRATION: 031_profile_bootstrap_trigger.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 032_admin_selector_views.sql
+-- ============================================================================
+-- =========================================================
+-- Document 11: sql/032_admin_selector_views.sql
+-- Purpose:
+-- - Create helper views for admin selector/dropdown data
+-- - Makes it easier to build dropdown-driven admin UI
+-- - Provides readable labels for:
+--   1) profiles
+--   2) sites
+--   3) assignments
+--
+-- Run this in Supabase SQL Editor.
+-- =========================================================
+
+-- ---------------------------------------------------------
+-- 1) Profile selector view
+-- ---------------------------------------------------------
+create or replace view public.v_profile_selector as
+select
+  p.id,
+  p.email,
+  p.full_name,
+  p.role,
+  p.is_active,
+  trim(
+    both ' ' from
+    coalesce(p.full_name, '') ||
+    case
+      when p.full_name is not null and p.email is not null then ' — '
+      else ''
+    end ||
+    coalesce(p.email, '')
+  ) as display_label,
+  trim(
+    both ' ' from
+    coalesce(p.full_name, '') ||
+    case
+      when p.full_name is not null and p.email is not null then ' — '
+      else ''
+    end ||
+    coalesce(p.email, '') ||
+    case
+      when p.role is not null then ' [' || p.role || ']'
+      else ''
+    end ||
+    case
+      when p.is_active = false then ' (inactive)'
+      else ''
+    end
+  ) as option_label
+from public.profiles p
+order by p.is_active desc, p.full_name nulls last, p.email nulls last;
+
+comment on view public.v_profile_selector is
+'Readable selector view for profiles used in admin dropdowns.';
+
+-- ---------------------------------------------------------
+-- 2) Site selector view
+-- ---------------------------------------------------------
+create or replace view public.v_site_selector as
+select
+  s.id,
+  s.site_code,
+  s.site_name,
+  s.address,
+  s.is_active,
+  trim(
+    both ' ' from
+    coalesce(s.site_code, '') ||
+    case
+      when s.site_code is not null and s.site_name is not null then ' — '
+      else ''
+    end ||
+    coalesce(s.site_name, '')
+  ) as display_label,
+  trim(
+    both ' ' from
+    coalesce(s.site_code, '') ||
+    case
+      when s.site_code is not null and s.site_name is not null then ' — '
+      else ''
+    end ||
+    coalesce(s.site_name, '') ||
+    case
+      when s.is_active = false then ' (inactive)'
+      else ''
+    end
+  ) as option_label
+from public.sites s
+order by s.is_active desc, s.site_code nulls last, s.site_name nulls last;
+
+comment on view public.v_site_selector is
+'Readable selector view for sites used in admin dropdowns.';
+
+-- ---------------------------------------------------------
+-- 3) Assignment selector view
+-- ---------------------------------------------------------
+create or replace view public.v_assignment_selector as
+select
+  sa.id,
+  sa.site_id,
+  sa.profile_id,
+  sa.assignment_role,
+  sa.is_primary,
+  sa.created_at,
+  s.site_code,
+  s.site_name,
+  p.email,
+  p.full_name,
+  p.role as profile_role,
+  p.is_active as profile_is_active,
+  s.is_active as site_is_active,
+  trim(
+    both ' ' from
+    coalesce(s.site_code, '') ||
+    case
+      when s.site_code is not null and p.email is not null then ' — '
+      else ''
+    end ||
+    coalesce(p.email, '')
+  ) as display_label,
+  trim(
+    both ' ' from
+    coalesce(s.site_code, '') ||
+    case
+      when s.site_code is not null and s.site_name is not null then ' '
+      else ''
+    end ||
+    coalesce('(' || s.site_name || ')', '') ||
+    ' — ' ||
+    coalesce(p.full_name, p.email, '') ||
+    case
+      when sa.assignment_role is not null then ' [' || sa.assignment_role || ']'
+      else ''
+    end ||
+    case
+      when sa.is_primary then ' (primary)'
+      else ''
+    end
+  ) as option_label
+from public.site_assignments sa
+join public.sites s
+  on s.id = sa.site_id
+join public.profiles p
+  on p.id = sa.profile_id
+order by sa.created_at desc, s.site_code nulls last, p.email nulls last;
+
+comment on view public.v_assignment_selector is
+'Readable selector view for assignments used in admin dropdowns.';
+
+-- ---------------------------------------------------------
+-- 4) Enable RLS dependency compatibility
+-- Views inherit source-table access rules. No separate RLS.
+-- ---------------------------------------------------------
+
+-- ---------------------------------------------------------
+-- 5) Grant read access to authenticated users
+-- Admin UI and future helper endpoints can use these safely.
+-- ---------------------------------------------------------
+grant select on public.v_profile_selector to authenticated;
+grant select on public.v_site_selector to authenticated;
+grant select on public.v_assignment_selector to authenticated;
+
+-- ---------------------------------------------------------
+-- 6) Verification queries
+-- ---------------------------------------------------------
+select to_regclass('public.v_profile_selector') as profile_selector_view;
+select to_regclass('public.v_site_selector') as site_selector_view;
+select to_regclass('public.v_assignment_selector') as assignment_selector_view;
+
+select * from public.v_profile_selector limit 5;
+select * from public.v_site_selector limit 5;
+select * from public.v_assignment_selector limit 5;
+-- ============================================================================
+-- END MIGRATION: 032_admin_selector_views.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 033_expand_role_model.sql
+-- ============================================================================
+-- =========================================================
+-- Document 19: sql/033_expand_role_model.sql
+-- Purpose:
+-- - Expand the role model to support more security tiers
+-- - Standardize roles across:
+--   1) profiles.role
+--   2) site_assignments.assignment_role
+-- - Prepare the app for finer-grained access control
+--
+-- New supported roles:
+--   admin
+--   hse
+--   supervisor
+--   site_leader
+--   worker
+--
+-- Run this in Supabase SQL Editor.
+-- =========================================================
+
+-- ---------------------------------------------------------
+-- 1) Normalize any legacy values before constraints update
+-- ---------------------------------------------------------
+update public.profiles
+set role = 'supervisor'
+where role = 'foreman';
+
+update public.site_assignments
+set assignment_role = 'supervisor'
+where assignment_role = 'foreman';
+
+update public.profiles
+set role = 'worker'
+where role is null or btrim(role) = '';
+
+update public.site_assignments
+set assignment_role = 'worker'
+where assignment_role is null or btrim(assignment_role) = '';
+
+-- ---------------------------------------------------------
+-- 2) Replace profiles role constraint
+-- ---------------------------------------------------------
+do $$
+begin
+  if exists (
+    select 1
+    from pg_constraint
+    where conname = 'profiles_role_check'
+      and conrelid = 'public.profiles'::regclass
+  ) then
+    alter table public.profiles
+      drop constraint profiles_role_check;
+  end if;
+end $$;
+
+alter table public.profiles
+  add constraint profiles_role_check
+  check (role in ('worker','site_leader','supervisor','hse','admin'));
+
+-- ---------------------------------------------------------
+-- 3) Replace site_assignments role constraint
+-- ---------------------------------------------------------
+do $$
+begin
+  if exists (
+    select 1
+    from pg_constraint
+    where conname = 'site_assignments_role_check'
+      and conrelid = 'public.site_assignments'::regclass
+  ) then
+    alter table public.site_assignments
+      drop constraint site_assignments_role_check;
+  end if;
+end $$;
+
+alter table public.site_assignments
+  add constraint site_assignments_role_check
+  check (assignment_role in ('worker','site_leader','supervisor','hse','admin'));
+
+-- ---------------------------------------------------------
+-- 4) Helpful comments for clarity
+-- ---------------------------------------------------------
+comment on column public.profiles.role is
+'Global application role. Supported values: worker, site_leader, supervisor, hse, admin.';
+
+comment on column public.site_assignments.assignment_role is
+'Role assigned to a user for a specific site. Supported values: worker, site_leader, supervisor, hse, admin.';
+
+-- ---------------------------------------------------------
+-- 5) Optional helper view for security rank
+--    Higher rank = broader authority
+-- ---------------------------------------------------------
+create or replace view public.v_profile_role_rank as
+select
+  p.id,
+  p.email,
+  p.full_name,
+  p.role,
+  p.is_active,
+  case p.role
+    when 'worker' then 10
+    when 'site_leader' then 20
+    when 'supervisor' then 30
+    when 'hse' then 40
+    when 'admin' then 50
+    else 0
+  end as role_rank
+from public.profiles p;
+
+comment on view public.v_profile_role_rank is
+'Helper view mapping profile roles to numeric rank for future access-control logic.';
+
+create or replace view public.v_site_assignment_role_rank as
+select
+  sa.id,
+  sa.site_id,
+  sa.profile_id,
+  sa.assignment_role,
+  sa.is_primary,
+  sa.created_at,
+  case sa.assignment_role
+    when 'worker' then 10
+    when 'site_leader' then 20
+    when 'supervisor' then 30
+    when 'hse' then 40
+    when 'admin' then 50
+    else 0
+  end as role_rank
+from public.site_assignments sa;
+
+comment on view public.v_site_assignment_role_rank is
+'Helper view mapping site assignment roles to numeric rank for future access-control logic.';
+
+-- ---------------------------------------------------------
+-- 6) Grant read access to helper views for authenticated use
+-- ---------------------------------------------------------
+grant select on public.v_profile_role_rank to authenticated;
+grant select on public.v_site_assignment_role_rank to authenticated;
+
+-- ---------------------------------------------------------
+-- 7) Verification
+-- ---------------------------------------------------------
+select
+  conname,
+  pg_get_constraintdef(oid) as definition
+from pg_constraint
+where conname in ('profiles_role_check', 'site_assignments_role_check')
+order by conname;
+
+select distinct role
+from public.profiles
+order by role;
+
+select distinct assignment_role
+from public.site_assignments
+order by assignment_role;
+
+select * from public.v_profile_role_rank limit 10;
+select * from public.v_site_assignment_role_rank limit 10;
+-- ============================================================================
+-- END MIGRATION: 033_expand_role_model.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 034_site_access_helpers.sql
+-- ============================================================================
+-- =========================================================
+-- Document 20 (replacement): sql/034_site_access_helpers.sql
+-- Purpose:
+-- - Create shared helper functions for access control
+-- - Standardize role and site-permission checks
+-- - Support future multi-tier security model:
+--   1) admin
+--   2) hse
+--   3) supervisor
+--   4) site_leader
+--   5) worker
+--
+-- This version avoids hard type assumptions by comparing IDs
+-- through text casts where needed.
+--
+-- Run this in Supabase SQL Editor.
+-- =========================================================
+
+-- ---------------------------------------------------------
+-- 1) Role rank helper
+-- ---------------------------------------------------------
+create or replace function public.role_rank(input_role text)
+returns integer
+language sql
+immutable
+as $$
+  select case coalesce(input_role, '')
+    when 'worker' then 10
+    when 'site_leader' then 20
+    when 'supervisor' then 30
+    when 'hse' then 40
+    when 'admin' then 50
+    else 0
+  end;
+$$;
+
+comment on function public.role_rank(text) is
+'Returns numeric rank for a role. worker=10, site_leader=20, supervisor=30, hse=40, admin=50.';
+
+-- ---------------------------------------------------------
+-- 2) Get global role rank for a profile
+-- ---------------------------------------------------------
+create or replace function public.profile_role_rank(input_profile_id uuid)
+returns integer
+language sql
+stable
+as $$
+  select coalesce(public.role_rank(p.role), 0)
+  from public.profiles p
+  where p.id = input_profile_id
+    and p.is_active = true;
+$$;
+
+comment on function public.profile_role_rank(uuid) is
+'Returns the active global role rank for a profile.';
+
+-- ---------------------------------------------------------
+-- 3) Get site-specific assignment role rank for a profile
+--    Uses text comparison to avoid uuid/bigint mismatch issues.
+-- ---------------------------------------------------------
+create or replace function public.site_assignment_role_rank(
+  input_profile_id uuid,
+  input_site_id text
+)
+returns integer
+language sql
+stable
+as $$
+  select coalesce(max(public.role_rank(sa.assignment_role)), 0)
+  from public.site_assignments sa
+  join public.profiles p
+    on p.id = sa.profile_id
+  join public.sites s
+    on s.id::text = sa.site_id::text
+  where sa.profile_id = input_profile_id
+    and sa.site_id::text = input_site_id
+    and p.is_active = true
+    and s.is_active = true;
+$$;
+
+comment on function public.site_assignment_role_rank(uuid, text) is
+'Returns the highest active assignment role rank a profile has for a site. Uses text ID comparison for compatibility.';
+
+-- ---------------------------------------------------------
+-- 4) Effective role rank for a site
+-- ---------------------------------------------------------
+create or replace function public.effective_site_role_rank(
+  input_profile_id uuid,
+  input_site_id text
+)
+returns integer
+language sql
+stable
+as $$
+  select greatest(
+    coalesce(public.profile_role_rank(input_profile_id), 0),
+    coalesce(public.site_assignment_role_rank(input_profile_id, input_site_id), 0)
+  );
+$$;
+
+comment on function public.effective_site_role_rank(uuid, text) is
+'Returns the effective access rank for a user at a specific site. Uses text ID comparison for compatibility.';
+
+-- ---------------------------------------------------------
+-- 5) Can manage site?
+--    supervisor and above for the site
+-- ---------------------------------------------------------
+create or replace function public.can_manage_site(
+  input_profile_id uuid,
+  input_site_id text
+)
+returns boolean
+language sql
+stable
+as $$
+  select public.effective_site_role_rank(input_profile_id, input_site_id) >= 30;
+$$;
+
+comment on function public.can_manage_site(uuid, text) is
+'Returns true if the user can manage a site. supervisor and above.';
+
+-- ---------------------------------------------------------
+-- 6) Can review submissions for a site?
+--    site_leader and above for the site
+-- ---------------------------------------------------------
+create or replace function public.can_review_site_submission(
+  input_profile_id uuid,
+  input_site_id text
+)
+returns boolean
+language sql
+stable
+as $$
+  select public.effective_site_role_rank(input_profile_id, input_site_id) >= 20;
+$$;
+
+comment on function public.can_review_site_submission(uuid, text) is
+'Returns true if the user can review submissions for a site. site_leader and above.';
+
+-- ---------------------------------------------------------
+-- 7) Can administer system?
+--    global admin only
+-- ---------------------------------------------------------
+create or replace function public.is_system_admin(input_profile_id uuid)
+returns boolean
+language sql
+stable
+as $$
+  select public.profile_role_rank(input_profile_id) >= 50;
+$$;
+
+comment on function public.is_system_admin(uuid) is
+'Returns true if the user is a global admin.';
+
+-- ---------------------------------------------------------
+-- 8) Can act as HSE?
+--    hse and admin globally
+-- ---------------------------------------------------------
+create or replace function public.is_hse_or_admin(input_profile_id uuid)
+returns boolean
+language sql
+stable
+as $$
+  select public.profile_role_rank(input_profile_id) >= 40;
+$$;
+
+comment on function public.is_hse_or_admin(uuid) is
+'Returns true if the user is globally HSE or admin.';
+
+-- ---------------------------------------------------------
+-- 9) Submission-site resolver view
+--    Maps submissions.site text to sites.id when the text
+--    matches site_code. resolved_site_id is exposed as text
+--    for compatibility with mixed ID types.
+-- ---------------------------------------------------------
+create or replace view public.v_submission_site_resolved as
+select
+  sub.id as submission_id,
+  sub.site as submission_site_text,
+  s.id::text as resolved_site_id,
+  s.site_code,
+  s.site_name,
+  s.is_active
+from public.submissions sub
+left join public.sites s
+  on lower(trim(sub.site)) = lower(trim(s.site_code));
+
+comment on view public.v_submission_site_resolved is
+'Maps submissions.site text to sites.id when site text matches site_code. resolved_site_id is returned as text.';
+
+grant select on public.v_submission_site_resolved to authenticated;
+
+-- ---------------------------------------------------------
+-- 10) Submission access helper
+--     A worker can always access own submission.
+--     Otherwise use site-based rank.
+-- ---------------------------------------------------------
+create or replace function public.can_access_submission(
+  input_profile_id uuid,
+  input_submission_id bigint
+)
+returns boolean
+language plpgsql
+stable
+as $$
+declare
+  v_owner uuid;
+  v_site_id text;
+  v_rank integer;
+begin
+  select s.submitted_by_profile_id
+    into v_owner
+  from public.submissions s
+  where s.id = input_submission_id;
+
+  if v_owner is null then
+    return false;
+  end if;
+
+  if v_owner = input_profile_id then
+    return true;
+  end if;
+
+  select r.resolved_site_id
+    into v_site_id
+  from public.v_submission_site_resolved r
+  where r.submission_id = input_submission_id;
+
+  if v_site_id is null then
+    return public.profile_role_rank(input_profile_id) >= 40;
+  end if;
+
+  v_rank := public.effective_site_role_rank(input_profile_id, v_site_id);
+  return v_rank >= 20;
+end;
+$$;
+
+comment on function public.can_access_submission(uuid, bigint) is
+'Returns true if user owns the submission or has site_leader+ access for its site.';
+
+-- ---------------------------------------------------------
+-- 11) Submission review helper
+--     site_leader+ can review site submissions
+--     unresolved site falls back to hse/admin
+-- ---------------------------------------------------------
+create or replace function public.can_review_submission(
+  input_profile_id uuid,
+  input_submission_id bigint
+)
+returns boolean
+language plpgsql
+stable
+as $$
+declare
+  v_site_id text;
+  v_rank integer;
+begin
+  select r.resolved_site_id
+    into v_site_id
+  from public.v_submission_site_resolved r
+  where r.submission_id = input_submission_id;
+
+  if v_site_id is null then
+    return public.profile_role_rank(input_profile_id) >= 40;
+  end if;
+
+  v_rank := public.effective_site_role_rank(input_profile_id, v_site_id);
+  return v_rank >= 20;
+end;
+$$;
+
+comment on function public.can_review_submission(uuid, bigint) is
+'Returns true if user has site_leader+ for the submission site, or hse/admin fallback for unresolved site.';
+
+-- ---------------------------------------------------------
+-- 12) Verification
+-- ---------------------------------------------------------
+select public.role_rank('worker') as worker_rank,
+       public.role_rank('site_leader') as site_leader_rank,
+       public.role_rank('supervisor') as supervisor_rank,
+       public.role_rank('hse') as hse_rank,
+       public.role_rank('admin') as admin_rank;
+
+select to_regclass('public.v_submission_site_resolved') as submission_site_resolved_view;
+-- ============================================================================
+-- END MIGRATION: 034_site_access_helpers.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 035_add_site_id_to_submissions.sql
+-- ============================================================================
+-- =========================================================
+-- Document 24 (replacement): sql/035_add_site_id_to_submissions.sql
+-- Purpose:
+-- - Add direct site linkage to submissions
+-- - Reduce dependence on text matching of submissions.site
+-- - Prepare for stronger site-based access control
+--
+-- This replacement safely drops/recreates dependent views.
+--
+-- Run this in Supabase SQL Editor.
+-- =========================================================
+
+-- ---------------------------------------------------------
+-- 1) Add site_id column if missing
+-- ---------------------------------------------------------
+alter table public.submissions
+  add column if not exists site_id bigint;
+
+comment on column public.submissions.site_id is
+'Direct foreign key reference to public.sites.id. Added to strengthen site-based access control.';
+
+-- ---------------------------------------------------------
+-- 2) Backfill site_id from submissions.site -> sites.site_code
+-- ---------------------------------------------------------
+update public.submissions sub
+set site_id = s.id
+from public.sites s
+where sub.site_id is null
+  and lower(trim(sub.site)) = lower(trim(s.site_code));
+
+-- ---------------------------------------------------------
+-- 3) Add foreign key if missing
+-- ---------------------------------------------------------
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'submissions_site_id_fkey'
+      and conrelid = 'public.submissions'::regclass
+  ) then
+    alter table public.submissions
+      add constraint submissions_site_id_fkey
+      foreign key (site_id)
+      references public.sites(id)
+      on delete set null;
+  end if;
+end $$;
+
+-- ---------------------------------------------------------
+-- 4) Add useful indexes
+-- ---------------------------------------------------------
+create index if not exists idx_submissions_site_id
+  on public.submissions(site_id);
+
+create index if not exists idx_submissions_status_date
+  on public.submissions(status, date desc);
+
+create index if not exists idx_submissions_form_type_date
+  on public.submissions(form_type, date desc);
+
+create index if not exists idx_submissions_submitted_by_profile_id
+  on public.submissions(submitted_by_profile_id);
+
+-- ---------------------------------------------------------
+-- 5) Rebuild resolver/support views cleanly
+-- ---------------------------------------------------------
+drop view if exists public.v_submissions_missing_site_link;
+drop view if exists public.v_submission_site_resolved;
+
+create view public.v_submission_site_resolved as
+select
+  sub.id as submission_id,
+  sub.site as submission_site_text,
+  coalesce(sub.site_id::text, s.id::text) as resolved_site_id,
+  coalesce(sub.site_id, s.id) as resolved_site_id_bigint,
+  coalesce(s2.site_code, s.site_code) as site_code,
+  coalesce(s2.site_name, s.site_name) as site_name,
+  coalesce(s2.is_active, s.is_active) as is_active
+from public.submissions sub
+left join public.sites s2
+  on s2.id = sub.site_id
+left join public.sites s
+  on sub.site_id is null
+ and lower(trim(sub.site)) = lower(trim(s.site_code));
+
+comment on view public.v_submission_site_resolved is
+'Resolves submission site using submissions.site_id first, then falls back to matching submissions.site to sites.site_code.';
+
+grant select on public.v_submission_site_resolved to authenticated;
+
+create view public.v_submissions_missing_site_link as
+select
+  sub.id,
+  sub.site,
+  sub.form_type,
+  sub.date,
+  sub.submitted_by,
+  sub.status,
+  sub.created_at
+from public.submissions sub
+left join public.v_submission_site_resolved r
+  on r.submission_id = sub.id
+where r.resolved_site_id is null;
+
+comment on view public.v_submissions_missing_site_link is
+'Shows submissions that still do not resolve to a site record.';
+
+grant select on public.v_submissions_missing_site_link to authenticated;
+
+-- ---------------------------------------------------------
+-- 6) Verification
+-- ---------------------------------------------------------
+select
+  count(*) as submissions_total
+from public.submissions;
+
+select
+  count(*) as submissions_with_site_id
+from public.submissions
+where site_id is not null;
+
+select
+  count(*) as submissions_unresolved
+from public.v_submissions_missing_site_link;
+
+select
+  id,
+  site,
+  site_id
+from public.submissions
+order by id desc
+limit 20;
+
+select
+  submission_id,
+  submission_site_text,
+  resolved_site_id,
+  resolved_site_id_bigint,
+  site_code,
+  site_name
+from public.v_submission_site_resolved
+order by submission_id desc
+limit 20;
+-- ============================================================================
+-- END MIGRATION: 035_add_site_id_to_submissions.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 036_employee_profile_expansion.sql
+-- ============================================================================
+-- =========================================================
+-- sql/036_employee_profile_expansion.sql
+-- Purpose:
+-- - Expand public.profiles for richer employee, supervisor, and admin records
+-- - Support contact details, employment history, vehicle info, preferences, and site-use notes
+-- - Keep admin profile editing aligned with the current frontend
+-- =========================================================
+
+alter table public.profiles add column if not exists phone text;
+alter table public.profiles add column if not exists phone_verified boolean not null default false;
+alter table public.profiles add column if not exists address_line1 text;
+alter table public.profiles add column if not exists address_line2 text;
+alter table public.profiles add column if not exists city text;
+alter table public.profiles add column if not exists province text;
+alter table public.profiles add column if not exists postal_code text;
+alter table public.profiles add column if not exists emergency_contact_name text;
+alter table public.profiles add column if not exists emergency_contact_phone text;
+alter table public.profiles add column if not exists vehicle_make_model text;
+alter table public.profiles add column if not exists vehicle_plate text;
+alter table public.profiles add column if not exists years_employed numeric(6,2);
+alter table public.profiles add column if not exists current_position text;
+alter table public.profiles add column if not exists previous_employee boolean not null default false;
+alter table public.profiles add column if not exists trade_specialty text;
+alter table public.profiles add column if not exists certifications text;
+alter table public.profiles add column if not exists feature_preferences text;
+alter table public.profiles add column if not exists notes text;
+alter table public.profiles add column if not exists email_verified boolean not null default false;
+
+comment on column public.profiles.feature_preferences is
+'Future UI preferences and enabled feature notes for the user.';
+-- ============================================================================
+-- END MIGRATION: 036_employee_profile_expansion.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 037_security_rls_verification_notes.sql
+-- ============================================================================
+-- =========================================================
+-- sql/037_security_rls_verification_notes.sql
+-- Purpose:
+-- - Record the intended backend/RLS verification model for YWI HSE
+-- - Tie role/site checks to the helper SQL and current frontend security tiers
+-- - Use as a deployment checklist before production rollout
+-- =========================================================
+
+-- Recommended checks before production:
+-- 1) profiles rows are auto-created from auth.users and remain active-aware
+-- 2) role_rank(), profile_role_rank(), site_assignment_role_rank(), and effective_site_role_rank()
+--    match the active frontend role model
+-- 3) admin-only writes require admin rank in Edge Functions and any SQL policies
+-- 4) supervisor/hse/job_admin/admin directory reads are validated server-side
+-- 5) employee users can only see their own profile and allowed submissions
+-- 6) supervisor users can see employee records but not modify admin-only fields unless explicitly allowed
+-- 7) admin users can see and manage worker, supervisor, and admin records
+-- 8) site assignment reads/writes are constrained by effective site role rank
+-- 9) all review-submission and admin-manage functions validate JWT and profile is_active=true
+-- 10) storage uploads only accept authenticated submission-linked image writes
+-- ============================================================================
+-- END MIGRATION: 037_security_rls_verification_notes.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 038_profile_visibility_rls.sql
+-- ============================================================================
+-- =========================================================
+-- sql/038_profile_visibility_rls.sql
+-- Purpose:
+-- - Add real helper functions and row-level security policies for profile visibility
+-- - Workers see themselves only
+-- - Supervisors see workers/employees/site leaders
+-- - HSE and Job Admin see all non-admin profiles
+-- - Admins see and manage all profiles, sites, assignments, and submissions
+-- =========================================================
+
+create or replace function public.current_profile_role()
+returns text
+language sql
+stable
+as $$
+  select coalesce((select p.role from public.profiles p where p.id = auth.uid()), 'worker');
+$$;
+
+create or replace function public.current_profile_rank()
+returns integer
+language sql
+stable
+as $$
+  select coalesce(public.role_rank(public.current_profile_role()), 0);
+$$;
+
+create or replace function public.can_view_profile(target_profile_id uuid)
+returns boolean
+language sql
+stable
+as $$
+  with me as (
+    select auth.uid() as my_id, public.current_profile_role() as my_role, public.current_profile_rank() as my_rank
+  ), target as (
+    select p.id, p.role, public.role_rank(p.role) as target_rank
+    from public.profiles p
+    where p.id = target_profile_id
+  )
+  select case
+    when exists(select 1 from me where my_id = target_profile_id) then true
+    when exists(select 1 from me where my_role = 'admin') then true
+    when exists(select 1 from me, target where my_role = 'supervisor' and target_rank < public.role_rank('supervisor')) then true
+    when exists(select 1 from me, target where my_role in ('hse','job_admin') and target_rank < public.role_rank('admin')) then true
+    else false
+  end;
+$$;
+
+alter table public.profiles enable row level security;
+alter table public.sites enable row level security;
+alter table public.site_assignments enable row level security;
+alter table public.submissions enable row level security;
+
+drop policy if exists profiles_select_visible on public.profiles;
+create policy profiles_select_visible on public.profiles
+for select
+using (public.can_view_profile(id));
+
+drop policy if exists profiles_update_self_or_admin on public.profiles;
+create policy profiles_update_self_or_admin on public.profiles
+for update
+using (id = auth.uid() or public.current_profile_role() = 'admin')
+with check (id = auth.uid() or public.current_profile_role() = 'admin');
+
+drop policy if exists sites_select_supervisor_plus on public.sites;
+create policy sites_select_supervisor_plus on public.sites
+for select
+using (public.current_profile_rank() >= public.role_rank('supervisor'));
+
+drop policy if exists sites_admin_write on public.sites;
+create policy sites_admin_write on public.sites
+for all
+using (public.current_profile_role() = 'admin')
+with check (public.current_profile_role() = 'admin');
+
+drop policy if exists site_assignments_select_supervisor_plus on public.site_assignments;
+create policy site_assignments_select_supervisor_plus on public.site_assignments
+for select
+using (public.current_profile_rank() >= public.role_rank('supervisor'));
+
+drop policy if exists site_assignments_admin_write on public.site_assignments;
+create policy site_assignments_admin_write on public.site_assignments
+for all
+using (public.current_profile_role() = 'admin')
+with check (public.current_profile_role() = 'admin');
+
+drop policy if exists submissions_select_self_or_supervisor_plus on public.submissions;
+create policy submissions_select_self_or_supervisor_plus on public.submissions
+for select
+using (
+  submitted_by_profile_id = auth.uid()
+  or public.current_profile_rank() >= public.role_rank('supervisor')
 );
+-- ============================================================================
+-- END MIGRATION: 038_profile_visibility_rls.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 039_directory_scope_helpers.sql
+-- ============================================================================
+-- =========================================================
+-- sql/039_directory_scope_helpers.sql
+-- Purpose:
+-- - Add helper views/functions to support self, crew, and all directory scopes
+-- - Keep admin-directory and selector/backend logic simpler and more consistent
+-- =========================================================
+
+create or replace view public.v_people_directory as
+select
+  p.id,
+  p.email,
+  p.full_name,
+  p.role,
+  p.is_active,
+  p.phone,
+  p.phone_verified,
+  p.email_verified,
+  p.address_line1,
+  p.address_line2,
+  p.city,
+  p.province,
+  p.postal_code,
+  p.emergency_contact_name,
+  p.emergency_contact_phone,
+  p.vehicle_make_model,
+  p.vehicle_plate,
+  p.years_employed,
+  p.current_position,
+  p.previous_employee,
+  p.trade_specialty,
+  p.certifications,
+  p.feature_preferences,
+  p.notes,
+  sa.site_id as primary_site_id,
+  s.site_code as primary_site_code,
+  s.site_name as primary_site_name
+from public.profiles p
+left join public.site_assignments sa on sa.profile_id = p.id and sa.is_primary = true
+left join public.sites s on s.id = sa.site_id;
+
+create or replace function public.directory_scope(scope text default 'self')
+returns setof public.v_people_directory
+language sql
+stable
+as $$
+  select *
+  from public.v_people_directory d
+  where case
+    when scope = 'self' then d.id = auth.uid()
+    when scope = 'crew' then public.can_view_profile(d.id)
+    when scope = 'all' then public.current_profile_role() = 'admin'
+    else false
+  end;
+$$;
+-- ============================================================================
+-- END MIGRATION: 039_directory_scope_helpers.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 040_reference_data_and_catalogs.sql
+-- ============================================================================
+
+-- File: sql/040_reference_data_and_catalogs.sql
+-- Brief description: Adds admin-populated reference catalogs and richer site metadata
+-- so forms can be populated from shared lists instead of free-typed values.
 
 create table if not exists public.position_catalog (
   id bigint generated always as identity primary key,
@@ -179,6 +1560,1786 @@ create table if not exists public.trade_catalog (
   is_active boolean not null default true,
   created_at timestamptz not null default now()
 );
+
+alter table public.sites add column if not exists site_supervisor_profile_id uuid references public.profiles(id);
+alter table public.sites add column if not exists signing_supervisor_profile_id uuid references public.profiles(id);
+alter table public.sites add column if not exists region text;
+alter table public.sites add column if not exists client_name text;
+alter table public.sites add column if not exists project_code text;
+alter table public.sites add column if not exists project_status text;
+
+insert into public.position_catalog (name, sort_order) values
+  ('Labourer', 10),
+  ('Operator', 20),
+  ('Foreman', 30),
+  ('Site Supervisor', 40),
+  ('Safety Coordinator', 50),
+  ('Project Manager', 60)
+on conflict (name) do nothing;
+
+insert into public.trade_catalog (name, sort_order) values
+  ('General Construction', 10),
+  ('Concrete', 20),
+  ('Excavation', 30),
+  ('Electrical', 40),
+  ('Plumbing', 50),
+  ('Carpentry', 60),
+  ('Equipment Operation', 70),
+  ('Health and Safety', 80)
+on conflict (name) do nothing;
+-- ============================================================================
+-- END MIGRATION: 040_reference_data_and_catalogs.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 041_submission_notifications_and_signoff.sql
+-- ============================================================================
+
+-- File: sql/041_submission_notifications_and_signoff.sql
+-- Brief description: Adds supervisor sign-off fields and an admin notification queue.
+
+alter table public.submissions add column if not exists site_id uuid references public.sites(id);
+alter table public.submissions add column if not exists signed_off_by_profile_id uuid references public.profiles(id);
+alter table public.submissions add column if not exists signed_off_by_name text;
+alter table public.submissions add column if not exists signed_off_role text;
+alter table public.submissions add column if not exists signed_off_at timestamptz;
+alter table public.submissions add column if not exists requires_admin_review boolean not null default false;
+
+create table if not exists public.admin_notifications (
+  id bigint generated always as identity primary key,
+  event_type text not null,
+  submission_id uuid null,
+  site_id uuid null,
+  actor_profile_id uuid null,
+  actor_name text,
+  actor_role text,
+  recipient_profile_id uuid null references public.profiles(id) on delete set null,
+  title text not null,
+  message text not null,
+  payload jsonb not null default '{}'::jsonb,
+  is_read boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_admin_notifications_recipient_created
+  on public.admin_notifications(recipient_profile_id, is_read, created_at desc);
+-- ============================================================================
+-- END MIGRATION: 041_submission_notifications_and_signoff.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 042_test_users_and_sites_seed.sql
+-- ============================================================================
+-- File: sql/042_test_users_and_sites_seed.sql
+-- Brief description: Fully corrected seed file for mixed-schema projects.
+-- Uses real auth.users records for profiles, avoids fake UUIDs, and lets bigint IDs auto-generate.
+
+begin;
+
+-- =====================================================
+-- STEP 1: CHECK WHICH AUTH USERS ALREADY EXIST
+-- =====================================================
+-- Run this select first if you want to confirm your test users exist.
+-- Replace the emails below everywhere in this file with your real test emails.
+
+select
+  id,
+  email,
+  created_at
+from auth.users
+where lower(email) in (
+  lower('admin@example.com'),
+  lower('supervisor@example.com'),
+  lower('employee@example.com')
+)
+order by created_at desc;
+
+-- =====================================================
+-- STEP 2: CREATE OR UPDATE TEST SITES
+-- =====================================================
+
+insert into public.sites (
+  site_code,
+  site_name,
+  address,
+  notes,
+  is_active
+)
+values
+  (
+    'SITE-HQ',
+    'Head Office',
+    '100 Main St, Tillsonburg, ON',
+    'Main office test site',
+    true
+  ),
+  (
+    'SITE-YARD',
+    'Equipment Yard',
+    '200 Yard Rd, Tillsonburg, ON',
+    'Yard and staging area',
+    true
+  )
+on conflict (site_code) do update
+set
+  site_name = excluded.site_name,
+  address = excluded.address,
+  notes = excluded.notes,
+  is_active = excluded.is_active;
+
+-- =====================================================
+-- STEP 3: UPSERT PROFILES FROM REAL AUTH USERS
+-- =====================================================
+-- IMPORTANT:
+-- profiles.id must match auth.users.id.
+-- These emails MUST already exist in Supabase Authentication.
+
+with wanted_users as (
+  select
+    id,
+    email
+  from auth.users
+  where lower(email) in (
+    lower('admin@example.com'),
+    lower('supervisor@example.com'),
+    lower('employee@example.com')
+  )
+)
+insert into public.profiles (
+  id,
+  email,
+  full_name,
+  role,
+  is_active,
+  phone,
+  phone_verified,
+  address_line1,
+  city,
+  province,
+  postal_code,
+  emergency_contact_name,
+  emergency_contact_phone,
+  vehicle_make_model,
+  vehicle_plate,
+  years_employed,
+  current_position,
+  previous_employee,
+  trade_specialty,
+  certifications,
+  feature_preferences
+)
+select
+  wu.id,
+  wu.email,
+  case
+    when lower(wu.email) = lower('admin@example.com') then 'Test Admin'
+    when lower(wu.email) = lower('supervisor@example.com') then 'Test Supervisor'
+    when lower(wu.email) = lower('employee@example.com') then 'Test Employee'
+    else wu.email
+  end as full_name,
+  case
+    when lower(wu.email) = lower('admin@example.com') then 'admin'
+    when lower(wu.email) = lower('supervisor@example.com') then 'supervisor'
+    when lower(wu.email) = lower('employee@example.com') then 'worker'
+    else 'worker'
+  end as role,
+  true as is_active,
+  case
+    when lower(wu.email) = lower('admin@example.com') then '519-555-1000'
+    when lower(wu.email) = lower('supervisor@example.com') then '519-555-2000'
+    when lower(wu.email) = lower('employee@example.com') then '519-555-3000'
+    else null
+  end as phone,
+  false as phone_verified,
+  '123 Demo Street' as address_line1,
+  'Tillsonburg' as city,
+  'ON' as province,
+  'N4G 0A1' as postal_code,
+  'Emergency Contact' as emergency_contact_name,
+  '519-555-9999' as emergency_contact_phone,
+  'Ford F150' as vehicle_make_model,
+  'ABC123' as vehicle_plate,
+  2 as years_employed,
+  case
+    when lower(wu.email) = lower('admin@example.com') then 'Administrator'
+    when lower(wu.email) = lower('supervisor@example.com') then 'Site Supervisor'
+    when lower(wu.email) = lower('employee@example.com') then 'Labourer'
+    else 'Employee'
+  end as current_position,
+  false as previous_employee,
+  case
+    when lower(wu.email) = lower('employee@example.com') then 'General Construction'
+    else 'Operations'
+  end as trade_specialty,
+  'WHMIS, First Aid' as certifications,
+  '{"theme":"default","showTips":true}'::jsonb as feature_preferences
+from wanted_users wu
+on conflict (id) do update
+set
+  email = excluded.email,
+  full_name = excluded.full_name,
+  role = excluded.role,
+  is_active = excluded.is_active,
+  phone = excluded.phone,
+  phone_verified = excluded.phone_verified,
+  address_line1 = excluded.address_line1,
+  city = excluded.city,
+  province = excluded.province,
+  postal_code = excluded.postal_code,
+  emergency_contact_name = excluded.emergency_contact_name,
+  emergency_contact_phone = excluded.emergency_contact_phone,
+  vehicle_make_model = excluded.vehicle_make_model,
+  vehicle_plate = excluded.vehicle_plate,
+  years_employed = excluded.years_employed,
+  current_position = excluded.current_position,
+  previous_employee = excluded.previous_employee,
+  trade_specialty = excluded.trade_specialty,
+  certifications = excluded.certifications,
+  feature_preferences = excluded.feature_preferences;
+
+-- =====================================================
+-- STEP 4: CREATE SITE ASSIGNMENTS
+-- =====================================================
+-- This version assumes:
+-- - site_assignments.id is bigint/autonumber
+-- - site_id and profile_id are the real foreign keys
+-- - duplicate assignments should be avoided if they already exist
+
+insert into public.site_assignments (
+  site_id,
+  profile_id,
+  assignment_role,
+  is_primary
+)
+select *
+from (
+  with
+  site_hq as (
+    select id from public.sites where site_code = 'SITE-HQ' limit 1
+  ),
+  site_yard as (
+    select id from public.sites where site_code = 'SITE-YARD' limit 1
+  ),
+  admin_user as (
+    select id from public.profiles where lower(email) = lower('admin@example.com') limit 1
+  ),
+  supervisor_user as (
+    select id from public.profiles where lower(email) = lower('supervisor@example.com') limit 1
+  ),
+  employee_user as (
+    select id from public.profiles where lower(email) = lower('employee@example.com') limit 1
+  )
+  select
+    site_hq.id as site_id,
+    admin_user.id as profile_id,
+    'admin'::text as assignment_role,
+    true as is_primary
+  from site_hq, admin_user
+  where site_hq.id is not null and admin_user.id is not null
+
+  union all
+
+  select
+    site_hq.id as site_id,
+    supervisor_user.id as profile_id,
+    'supervisor'::text as assignment_role,
+    true as is_primary
+  from site_hq, supervisor_user
+  where site_hq.id is not null and supervisor_user.id is not null
+
+  union all
+
+  select
+    site_yard.id as site_id,
+    employee_user.id as profile_id,
+    'worker'::text as assignment_role,
+    true as is_primary
+  from site_yard, employee_user
+  where site_yard.id is not null and employee_user.id is not null
+) seed_rows
+where not exists (
+  select 1
+  from public.site_assignments sa
+  where sa.site_id = seed_rows.site_id
+    and sa.profile_id = seed_rows.profile_id
+    and sa.assignment_role = seed_rows.assignment_role
+);
+
+-- =====================================================
+-- STEP 5: OPTIONAL CHECKS
+-- =====================================================
+
+select
+  p.id,
+  p.email,
+  p.full_name,
+  p.role,
+  p.is_active
+from public.profiles p
+where lower(p.email) in (
+  lower('admin@example.com'),
+  lower('supervisor@example.com'),
+  lower('employee@example.com')
+)
+order by p.email;
+
+select
+  s.site_code,
+  s.site_name,
+  p.email,
+  sa.assignment_role,
+  sa.is_primary
+from public.site_assignments sa
+join public.sites s on s.id = sa.site_id
+join public.profiles p on p.id = sa.profile_id
+where lower(p.email) in (
+  lower('admin@example.com'),
+  lower('supervisor@example.com'),
+  lower('employee@example.com')
+)
+order by s.site_code, p.email;
+
+commit;
+-- ============================================================================
+-- END MIGRATION: 042_test_users_and_sites_seed.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 043_user_hierarchy_and_strengths.sql
+-- ============================================================================
+-- File: sql/043_user_hierarchy_and_strengths.sql
+-- Brief description: Adds reporting hierarchy and richer personnel fields.
+-- Supports default/override supervisor/admin chains, start date, strengths, and employee tracking.
+
+alter table public.profiles add column if not exists employee_number text;
+alter table public.profiles add column if not exists start_date date;
+alter table public.profiles add column if not exists strengths text;
+alter table public.profiles add column if not exists default_supervisor_profile_id uuid references public.profiles(id);
+alter table public.profiles add column if not exists override_supervisor_profile_id uuid references public.profiles(id);
+alter table public.profiles add column if not exists default_admin_profile_id uuid references public.profiles(id);
+alter table public.profiles add column if not exists override_admin_profile_id uuid references public.profiles(id);
+
+alter table public.sites add column if not exists admin_profile_id uuid references public.profiles(id);
+
+alter table public.site_assignments add column if not exists reports_to_supervisor_profile_id uuid references public.profiles(id);
+alter table public.site_assignments add column if not exists reports_to_admin_profile_id uuid references public.profiles(id);
+
+create index if not exists idx_profiles_default_supervisor on public.profiles(default_supervisor_profile_id);
+create index if not exists idx_profiles_default_admin on public.profiles(default_admin_profile_id);
+create index if not exists idx_site_assignments_reports_to_supervisor on public.site_assignments(reports_to_supervisor_profile_id);
+create index if not exists idx_site_assignments_reports_to_admin on public.site_assignments(reports_to_admin_profile_id);
+-- ============================================================================
+-- END MIGRATION: 043_user_hierarchy_and_strengths.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 044_jobs_equipment_and_reservations.sql
+-- ============================================================================
+-- File: sql/044_jobs_equipment_and_reservations.sql
+-- Brief description: Creates the first jobs, equipment, and reservation schema.
+-- This prepares the next phase of the app: job planning, equipment reservation, and sign-out tracking.
+
+create table if not exists public.jobs (
+  id bigint generated always as identity primary key,
+  job_code text not null unique,
+  job_name text not null,
+  site_id uuid references public.sites(id),
+  job_type text,
+  status text not null default 'planned',
+  priority text not null default 'normal',
+  client_name text,
+  start_date date,
+  end_date date,
+  site_supervisor_profile_id uuid references public.profiles(id),
+  signing_supervisor_profile_id uuid references public.profiles(id),
+  admin_profile_id uuid references public.profiles(id),
+  notes text,
+  created_by_profile_id uuid references public.profiles(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.equipment_items (
+  id bigint generated always as identity primary key,
+  equipment_code text not null unique,
+  equipment_name text not null,
+  category text,
+  home_site_id uuid references public.sites(id),
+  status text not null default 'available',
+  serial_number text,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.job_equipment_requirements (
+  id bigint generated always as identity primary key,
+  job_id bigint not null references public.jobs(id) on delete cascade,
+  equipment_name text not null,
+  needed_qty integer not null default 1,
+  reserved_qty integer not null default 0,
+  reservation_status text not null default 'needed',
+  notes text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.equipment_signouts (
+  id bigint generated always as identity primary key,
+  equipment_item_id bigint not null references public.equipment_items(id) on delete cascade,
+  job_id bigint references public.jobs(id) on delete set null,
+  checked_out_by_profile_id uuid references public.profiles(id),
+  checked_out_to_supervisor_profile_id uuid references public.profiles(id),
+  checked_out_at timestamptz not null default now(),
+  returned_at timestamptz,
+  signout_notes text
+);
+
+create index if not exists idx_jobs_site_id on public.jobs(site_id);
+create index if not exists idx_jobs_status on public.jobs(status);
+create index if not exists idx_equipment_items_status on public.equipment_items(status);
+create index if not exists idx_equipment_signouts_job_id on public.equipment_signouts(job_id);
+-- ============================================================================
+-- END MIGRATION: 044_jobs_equipment_and_reservations.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 045_directory_views_and_scope_helpers.sql
+-- ============================================================================
+-- File: sql/045_directory_views_and_scope_helpers.sql
+-- Brief description: Refreshes the people directory view with richer profile hierarchy fields
+-- and adds simple jobs/equipment views for backend and admin screens.
+
+drop view if exists public.v_people_directory;
+create view public.v_people_directory as
+select
+  p.id,
+  p.email,
+  p.full_name,
+  p.role,
+  p.is_active,
+  p.phone,
+  p.current_position,
+  p.trade_specialty,
+  p.employee_number,
+  p.start_date,
+  p.strengths,
+  p.phone_verified,
+  p.previous_employee,
+  p.default_supervisor_profile_id,
+  ds.full_name as default_supervisor_name,
+  p.override_supervisor_profile_id,
+  os.full_name as override_supervisor_name,
+  p.default_admin_profile_id,
+  da.full_name as default_admin_name,
+  p.override_admin_profile_id,
+  oa.full_name as override_admin_name,
+  s.id as primary_site_id,
+  s.site_code as primary_site_code,
+  s.site_name as primary_site_name
+from public.profiles p
+left join public.site_assignments sa on sa.profile_id = p.id and sa.is_primary = true
+left join public.sites s on s.id = sa.site_id
+left join public.profiles ds on ds.id = p.default_supervisor_profile_id
+left join public.profiles os on os.id = p.override_supervisor_profile_id
+left join public.profiles da on da.id = p.default_admin_profile_id
+left join public.profiles oa on oa.id = p.override_admin_profile_id;
+
+drop view if exists public.v_jobs_directory;
+create view public.v_jobs_directory as
+select
+  j.id,
+  j.job_code,
+  j.job_name,
+  j.job_type,
+  j.status,
+  j.priority,
+  j.client_name,
+  j.start_date,
+  j.end_date,
+  j.notes,
+  s.site_code,
+  s.site_name,
+  sup.full_name as supervisor_name,
+  signsup.full_name as signing_supervisor_name,
+  adm.full_name as admin_name
+from public.jobs j
+left join public.sites s on s.id = j.site_id
+left join public.profiles sup on sup.id = j.site_supervisor_profile_id
+left join public.profiles signsup on signsup.id = j.signing_supervisor_profile_id
+left join public.profiles adm on adm.id = j.admin_profile_id;
+
+drop view if exists public.v_equipment_directory;
+create view public.v_equipment_directory as
+select
+  e.id,
+  e.equipment_code,
+  e.equipment_name,
+  e.category,
+  e.status,
+  e.serial_number,
+  e.notes,
+  s.site_code as home_site_code,
+  s.site_name as home_site_name,
+  j.job_code as current_job_code,
+  sup.full_name as assigned_supervisor_name
+from public.equipment_items e
+left join public.sites s on s.id = e.home_site_id
+left join lateral (
+  select es.job_id, es.checked_out_to_supervisor_profile_id
+  from public.equipment_signouts es
+  where es.equipment_item_id = e.id and es.returned_at is null
+  order by es.checked_out_at desc
+  limit 1
+) active_signout on true
+left join public.jobs j on j.id = active_signout.job_id
+left join public.profiles sup on sup.id = active_signout.checked_out_to_supervisor_profile_id;
+-- ============================================================================
+-- END MIGRATION: 045_directory_views_and_scope_helpers.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 046_account_validation_and_notifications.sql
+-- ============================================================================
+-- File: sql/046_account_validation_and_notifications.sql
+-- Brief description: Safe account validation and admin notification upgrade.
+-- Adds email/phone validation fields and creates/updates admin_notifications
+-- without assuming a pre-existing status column.
+
+begin;
+
+-- =====================================================
+-- 1) PROFILES: EMAIL / PHONE VALIDATION FIELDS
+-- =====================================================
+
+alter table if exists public.profiles
+  add column if not exists email_verified boolean default false;
+
+alter table if exists public.profiles
+  add column if not exists phone_verified boolean default false;
+
+alter table if exists public.profiles
+  add column if not exists phone text;
+
+alter table if exists public.profiles
+  add column if not exists phone_validation_requested_at timestamptz;
+
+alter table if exists public.profiles
+  add column if not exists email_validation_requested_at timestamptz;
+
+alter table if exists public.profiles
+  add column if not exists validation_notes text;
+
+-- =====================================================
+-- 2) ADMIN NOTIFICATIONS TABLE
+-- =====================================================
+
+create table if not exists public.admin_notifications (
+  id bigint generated by default as identity primary key,
+  notification_type text not null,
+  title text not null,
+  message text,
+  target_role text,
+  target_profile_id uuid,
+  related_table text,
+  related_id text,
+  status text not null default 'pending',
+  payload jsonb not null default '{}'::jsonb,
+  created_by uuid,
+  created_at timestamptz not null default now(),
+  read_at timestamptz,
+  resolved_at timestamptz
+);
+
+-- Ensure newer columns exist even if table already existed in an older form
+alter table if exists public.admin_notifications
+  add column if not exists notification_type text;
+
+alter table if exists public.admin_notifications
+  add column if not exists title text;
+
+alter table if exists public.admin_notifications
+  add column if not exists message text;
+
+alter table if exists public.admin_notifications
+  add column if not exists target_role text;
+
+alter table if exists public.admin_notifications
+  add column if not exists target_profile_id uuid;
+
+alter table if exists public.admin_notifications
+  add column if not exists related_table text;
+
+alter table if exists public.admin_notifications
+  add column if not exists related_id text;
+
+alter table if exists public.admin_notifications
+  add column if not exists status text default 'pending';
+
+alter table if exists public.admin_notifications
+  add column if not exists payload jsonb not null default '{}'::jsonb;
+
+alter table if exists public.admin_notifications
+  add column if not exists created_by uuid;
+
+alter table if exists public.admin_notifications
+  add column if not exists created_at timestamptz not null default now();
+
+alter table if exists public.admin_notifications
+  add column if not exists read_at timestamptz;
+
+alter table if exists public.admin_notifications
+  add column if not exists resolved_at timestamptz;
+
+-- Backfill any null status values safely
+update public.admin_notifications
+set status = 'pending'
+where status is null;
+
+-- =====================================================
+-- 3) OPTIONAL CONSTRAINTS
+-- =====================================================
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'admin_notifications_status_check'
+  ) then
+    alter table public.admin_notifications
+      add constraint admin_notifications_status_check
+      check (status in ('pending', 'read', 'resolved', 'dismissed'));
+  end if;
+end $$;
+
+-- =====================================================
+-- 4) HELPER INDEXES
+-- =====================================================
+
+create index if not exists idx_admin_notifications_status
+  on public.admin_notifications(status);
+
+create index if not exists idx_admin_notifications_target_role
+  on public.admin_notifications(target_role);
+
+create index if not exists idx_admin_notifications_target_profile_id
+  on public.admin_notifications(target_profile_id);
+
+create index if not exists idx_admin_notifications_created_at
+  on public.admin_notifications(created_at desc);
+
+-- =====================================================
+-- 5) SIMPLE NOTIFICATION VIEW
+-- =====================================================
+
+drop view if exists public.v_admin_notifications;
+
+create view public.v_admin_notifications as
+select
+  n.id,
+  n.notification_type,
+  n.title,
+  n.message,
+  n.target_role,
+  n.target_profile_id,
+  n.related_table,
+  n.related_id,
+  n.status,
+  n.payload,
+  n.created_by,
+  creator.full_name as created_by_name,
+  creator.email as created_by_email,
+  n.created_at,
+  n.read_at,
+  n.resolved_at
+from public.admin_notifications n
+left join public.profiles creator
+  on creator.id = n.created_by;
+
+-- =====================================================
+-- 6) SAFE RLS ENABLE
+-- =====================================================
+
+alter table public.admin_notifications enable row level security;
+
+-- Remove old policies if they exist
+drop policy if exists "admin_notifications_select_policy" on public.admin_notifications;
+drop policy if exists "admin_notifications_insert_policy" on public.admin_notifications;
+drop policy if exists "admin_notifications_update_policy" on public.admin_notifications;
+
+-- Admin / HSE / Job Admin / Onsite Admin can read
+create policy "admin_notifications_select_policy"
+on public.admin_notifications
+for select
+to authenticated
+using (
+  exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+      and p.role in ('admin', 'hse', 'job_admin', 'onsite_admin', 'supervisor')
+  )
+);
+
+-- Any authenticated app process/user can insert their own created notifications
+create policy "admin_notifications_insert_policy"
+on public.admin_notifications
+for insert
+to authenticated
+with check (
+  auth.uid() is not null
+);
+
+-- Higher roles can update status/read/resolved
+create policy "admin_notifications_update_policy"
+on public.admin_notifications
+for update
+to authenticated
+using (
+  exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+      and p.role in ('admin', 'hse', 'job_admin', 'onsite_admin', 'supervisor')
+  )
+)
+with check (
+  exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+      and p.role in ('admin', 'hse', 'job_admin', 'onsite_admin', 'supervisor')
+  )
+);
+
+-- =====================================================
+-- 7) TEST INSERT TO VERIFY STRUCTURE
+-- =====================================================
+-- This does not run automatically; it is just a reference example.
+-- insert into public.admin_notifications (
+--   notification_type,
+--   title,
+--   message,
+--   target_role,
+--   related_table,
+--   related_id,
+--   status,
+--   payload,
+--   created_by
+-- ) values (
+--   'phone_verification',
+--   'Phone verification requested',
+--   'A user requested phone verification.',
+--   'admin',
+--   'profiles',
+--   auth.uid()::text,
+--   'pending',
+--   jsonb_build_object('source', 'account-maintenance'),
+--   auth.uid()
+-- );
+
+commit;
+-- ============================================================================
+-- END MIGRATION: 046_account_validation_and_notifications.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 047_password_validation_equipment_workflow.sql
+-- ============================================================================
+-- File: sql/047_password_validation_equipment_workflow.sql
+-- Brief description: Adds missing workflow columns for direct reporting and equipment lifecycle.
+
+alter table public.profiles
+  add column if not exists override_supervisor_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists override_admin_profile_id uuid references public.profiles(id) on delete set null;
+
+alter table public.site_assignments
+  add column if not exists reports_to_supervisor_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists reports_to_admin_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists updated_at timestamptz;
+
+alter table public.equipment_items
+  add column if not exists current_job_id bigint references public.jobs(id) on delete set null,
+  add column if not exists assigned_supervisor_profile_id uuid references public.profiles(id) on delete set null;
+
+alter table public.job_equipment_requirements
+  add column if not exists equipment_item_id bigint references public.equipment_items(id) on delete set null,
+  add column if not exists equipment_code text;
+
+create index if not exists idx_equipment_items_current_job_id on public.equipment_items(current_job_id);
+create index if not exists idx_site_assignments_reports_to_supervisor on public.site_assignments(reports_to_supervisor_profile_id);
+create index if not exists idx_site_assignments_reports_to_admin on public.site_assignments(reports_to_admin_profile_id);
+-- ============================================================================
+-- END MIGRATION: 047_password_validation_equipment_workflow.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 048_notification_approvals_reservation_pools_and_sms.sql
+-- ============================================================================
+-- File: sql/048_notification_approvals_reservation_pools_and_sms.sql
+-- Brief description: Unifies admin notification workflow, adds approval tracking,
+-- equipment pool-aware reservation support, and optional SMS verification fields.
+-- This version is defensive against older/newer admin_notifications schemas.
+
+begin;
+
+alter table if exists public.jobs
+  add column if not exists approval_status text not null default 'not_requested',
+  add column if not exists approval_requested_at timestamptz,
+  add column if not exists approved_at timestamptz,
+  add column if not exists approved_by_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists approval_notes text;
+
+alter table if exists public.equipment_items
+  add column if not exists equipment_pool_key text;
+
+alter table if exists public.job_equipment_requirements
+  add column if not exists equipment_pool_key text,
+  add column if not exists approval_status text not null default 'not_required',
+  add column if not exists approval_notes text,
+  add column if not exists approved_at timestamptz,
+  add column if not exists approved_by_profile_id uuid references public.profiles(id) on delete set null;
+
+alter table if exists public.profiles
+  add column if not exists phone_verification_provider text,
+  add column if not exists phone_verification_sid text,
+  add column if not exists phone_verified_at timestamptz;
+
+alter table if exists public.admin_notifications
+  add column if not exists recipient_role text default 'admin',
+  add column if not exists target_table text,
+  add column if not exists target_id text,
+  add column if not exists body text,
+  add column if not exists created_by_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists sent_at timestamptz,
+  add column if not exists email_to text,
+  add column if not exists email_subject text,
+  add column if not exists email_status text not null default 'pending',
+  add column if not exists email_error text,
+  add column if not exists decision_status text not null default 'pending',
+  add column if not exists decision_notes text,
+  add column if not exists decided_by_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists decided_at timestamptz,
+  add column if not exists target_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists related_table text,
+  add column if not exists related_id text,
+  add column if not exists payload jsonb not null default '{}'::jsonb,
+  add column if not exists message text,
+  add column if not exists title text,
+  add column if not exists notification_type text,
+  add column if not exists status text default 'queued';
+
+do $$
+declare
+  has_event_type boolean;
+  has_related_table boolean;
+  has_related_id boolean;
+  has_submission_id boolean;
+  has_message boolean;
+  has_created_by boolean;
+  has_actor_profile_id boolean;
+  has_recipient_profile_id boolean;
+  has_target_role boolean;
+  has_is_read boolean;
+  has_resolved_at boolean;
+  has_read_at boolean;
+  has_created_at boolean;
+begin
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'admin_notifications' and column_name = 'event_type'
+  ) into has_event_type;
+
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'admin_notifications' and column_name = 'related_table'
+  ) into has_related_table;
+
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'admin_notifications' and column_name = 'related_id'
+  ) into has_related_id;
+
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'admin_notifications' and column_name = 'submission_id'
+  ) into has_submission_id;
+
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'admin_notifications' and column_name = 'message'
+  ) into has_message;
+
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'admin_notifications' and column_name = 'created_by'
+  ) into has_created_by;
+
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'admin_notifications' and column_name = 'actor_profile_id'
+  ) into has_actor_profile_id;
+
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'admin_notifications' and column_name = 'recipient_profile_id'
+  ) into has_recipient_profile_id;
+
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'admin_notifications' and column_name = 'target_role'
+  ) into has_target_role;
+
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'admin_notifications' and column_name = 'is_read'
+  ) into has_is_read;
+
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'admin_notifications' and column_name = 'resolved_at'
+  ) into has_resolved_at;
+
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'admin_notifications' and column_name = 'read_at'
+  ) into has_read_at;
+
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'admin_notifications' and column_name = 'created_at'
+  ) into has_created_at;
+
+  execute format($sql$
+    update public.admin_notifications
+    set
+      notification_type = coalesce(notification_type, %1$s, 'general'),
+      target_table = coalesce(target_table, %2$s),
+      target_id = coalesce(target_id, %3$s),
+      body = coalesce(body, %4$s),
+      created_by_profile_id = coalesce(created_by_profile_id, %5$s),
+      recipient_role = coalesce(
+        recipient_role,
+        case when %6$s is not null then null else %7$s end,
+        'admin'
+      ),
+      title = coalesce(title, 'Notification'),
+      email_subject = coalesce(email_subject, title, 'Notification'),
+      target_profile_id = coalesce(target_profile_id, %6$s),
+      related_table = coalesce(related_table, target_table),
+      related_id = coalesce(related_id, target_id),
+      payload = coalesce(payload, '{}'::jsonb),
+      message = coalesce(message, body),
+      status = case
+        when coalesce(status,'') in ('pending','queued') then 'queued'
+        when status in ('read','resolved','dismissed','approved','rejected','sent','failed') then status
+        when %8$s then 'read'
+        else 'queued'
+      end,
+      decision_status = case
+        when decision_status is not null and decision_status <> '' then decision_status
+        when coalesce(status,'') = 'approved' then 'approved'
+        when coalesce(status,'') = 'rejected' then 'rejected'
+        when coalesce(status,'') = 'dismissed' then 'dismissed'
+        when %9$s is not null then 'resolved'
+        else 'pending'
+      end,
+      read_at = coalesce(read_at, %10$s),
+      decided_at = coalesce(decided_at, %9$s),
+      sent_at = coalesce(sent_at, case when coalesce(status,'') = 'sent' then %11$s else null end),
+      email_status = case
+        when coalesce(email_status,'') <> '' then email_status
+        when coalesce(status,'') = 'sent' then 'sent'
+        when coalesce(status,'') = 'failed' then 'failed'
+        else 'pending'
+      end
+  $sql$,
+    case when has_event_type then 'event_type' else 'null' end,
+    case when has_related_table then 'related_table' else 'null' end,
+    case
+      when has_related_id and has_submission_id then 'coalesce(related_id, submission_id::text)'
+      when has_related_id then 'related_id'
+      when has_submission_id then 'submission_id::text'
+      else 'null'
+    end,
+    case when has_message then 'message' else 'null' end,
+    case
+      when has_created_by and has_actor_profile_id then 'coalesce(created_by, actor_profile_id)'
+      when has_created_by then 'created_by'
+      when has_actor_profile_id then 'actor_profile_id'
+      else 'null'
+    end,
+    case when has_recipient_profile_id then 'recipient_profile_id' else 'null' end,
+    case when has_target_role then 'target_role' else 'null' end,
+    case when has_is_read then 'coalesce(is_read,false)' else 'false' end,
+    case when has_resolved_at then 'resolved_at' else 'null' end,
+    case
+      when has_is_read and has_created_at then 'case when coalesce(is_read,false) then created_at else null end'
+      else 'null'
+    end,
+    case when has_created_at then 'created_at' else 'now()' end
+  );
+end $$;
+
+create index if not exists idx_equipment_items_pool_key
+  on public.equipment_items(equipment_pool_key);
+
+create index if not exists idx_job_equipment_requirements_pool_key
+  on public.job_equipment_requirements(equipment_pool_key);
+
+create index if not exists idx_jobs_approval_status
+  on public.jobs(approval_status);
+
+create index if not exists idx_admin_notifications_decision_status
+  on public.admin_notifications(decision_status);
+
+create index if not exists idx_admin_notifications_email_status
+  on public.admin_notifications(email_status);
+
+update public.equipment_items
+set equipment_pool_key = lower(trim(coalesce(
+  nullif(equipment_pool_key,''),
+  nullif(category,''),
+  nullif(equipment_name,''),
+  equipment_code
+)))
+where equipment_pool_key is null or equipment_pool_key = '';
+
+update public.job_equipment_requirements
+set equipment_pool_key = lower(trim(coalesce(
+  nullif(equipment_pool_key,''),
+  nullif(equipment_name,''),
+  equipment_code
+)))
+where equipment_pool_key is null or equipment_pool_key = '';
+
+drop view if exists public.v_equipment_pool_availability;
+create view public.v_equipment_pool_availability as
+select
+  e.equipment_pool_key,
+  min(e.category) as category,
+  count(*)::int as total_qty,
+  count(*) filter (where e.status = 'available')::int as available_qty,
+  count(*) filter (where e.status = 'reserved')::int as reserved_qty,
+  count(*) filter (where e.status = 'checked_out')::int as checked_out_qty,
+  array_agg(e.equipment_code order by e.equipment_code) as equipment_codes
+from public.equipment_items e
+where e.equipment_pool_key is not null
+group by e.equipment_pool_key;
+
+drop view if exists public.v_admin_notifications;
+
+do $$
+declare
+  has_event_type boolean;
+  has_target_role boolean;
+  has_recipient_profile_id boolean;
+  has_created_by boolean;
+  has_actor_profile_id boolean;
+  has_site_id boolean;
+  has_submission_id boolean;
+begin
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'admin_notifications' and column_name = 'event_type'
+  ) into has_event_type;
+
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'admin_notifications' and column_name = 'target_role'
+  ) into has_target_role;
+
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'admin_notifications' and column_name = 'recipient_profile_id'
+  ) into has_recipient_profile_id;
+
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'admin_notifications' and column_name = 'created_by'
+  ) into has_created_by;
+
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'admin_notifications' and column_name = 'actor_profile_id'
+  ) into has_actor_profile_id;
+
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'admin_notifications' and column_name = 'site_id'
+  ) into has_site_id;
+
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'admin_notifications' and column_name = 'submission_id'
+  ) into has_submission_id;
+
+  execute format($sql$
+    create view public.v_admin_notifications as
+    select
+      n.id,
+      coalesce(n.notification_type, %1$s, 'general') as notification_type,
+      coalesce(n.title, 'Notification') as title,
+      coalesce(n.body, n.message, '') as message,
+      coalesce(n.recipient_role, %2$s, 'admin') as recipient_role,
+      coalesce(n.target_profile_id, %3$s) as target_profile_id,
+      coalesce(n.target_table, n.related_table) as target_table,
+      coalesce(n.target_id, n.related_id) as target_id,
+      n.payload,
+      coalesce(n.status, 'queued') as status,
+      coalesce(n.decision_status, 'pending') as decision_status,
+      n.decision_notes,
+      n.created_at,
+      n.read_at,
+      n.decided_at,
+      n.sent_at,
+      coalesce(n.email_subject, n.title, 'Notification') as email_subject,
+      n.email_to,
+      coalesce(n.email_status, 'pending') as email_status,
+      n.email_error,
+      coalesce(n.created_by_profile_id, %4$s) as created_by_profile_id,
+      creator.full_name as created_by_name,
+      creator.email as created_by_email,
+      decider.full_name as decided_by_name,
+      decider.email as decided_by_email,
+      %5$s as site_id,
+      %6$s as submission_id
+    from public.admin_notifications n
+    left join public.profiles creator
+      on creator.id = coalesce(n.created_by_profile_id, %4$s)
+    left join public.profiles decider
+      on decider.id = n.decided_by_profile_id
+  $sql$,
+    case when has_event_type then 'n.event_type' else 'null' end,
+    case when has_target_role then 'n.target_role' else 'null' end,
+    case when has_recipient_profile_id then 'n.recipient_profile_id' else 'null' end,
+    case
+      when has_created_by and has_actor_profile_id then 'coalesce(n.created_by, n.actor_profile_id)'
+      when has_created_by then 'n.created_by'
+      when has_actor_profile_id then 'n.actor_profile_id'
+      else 'null'
+    end,
+    case when has_site_id then 'n.site_id' else 'null::uuid' end,
+    case when has_submission_id then 'n.submission_id' else 'null::uuid' end
+  );
+end $$;
+
+commit;
+-- ============================================================================
+-- END MIGRATION: 048_notification_approvals_reservation_pools_and_sms.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 049_auth_delivery_attempts_and_dead_letters.sql
+-- ============================================================================
+-- File: sql/049_auth_delivery_attempts_and_dead_letters.sql
+-- Brief description: Adds provider-specific email/SMS attempt counters and dead-letter tracking for notifications,
+-- supporting retry handling and richer admin delivery visibility.
+
+begin;
+
+alter table if exists public.admin_notifications
+  add column if not exists email_provider text,
+  add column if not exists email_attempt_count integer not null default 0,
+  add column if not exists email_last_attempt_at timestamptz,
+  add column if not exists sms_provider text,
+  add column if not exists sms_attempt_count integer not null default 0,
+  add column if not exists sms_last_attempt_at timestamptz,
+  add column if not exists dead_lettered_at timestamptz,
+  add column if not exists dead_letter_reason text;
+
+create index if not exists idx_admin_notifications_dead_lettered_at
+  on public.admin_notifications(dead_lettered_at);
+
+create index if not exists idx_admin_notifications_email_attempt_count
+  on public.admin_notifications(email_attempt_count);
+
+create index if not exists idx_admin_notifications_sms_attempt_count
+  on public.admin_notifications(sms_attempt_count);
+
+commit;
+-- ============================================================================
+-- END MIGRATION: 049_auth_delivery_attempts_and_dead_letters.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 050_equipment_asset_history_and_auth_runtime.sql
+-- ============================================================================
+-- File: sql/050_equipment_asset_history_and_auth_runtime.sql
+-- Brief description: Adds richer equipment rental-style tracking fields,
+-- typed checkout/return sign-off names, and keeps the schema aligned with the password-first app pass.
+
+begin;
+
+alter table if exists public.equipment_items
+  add column if not exists asset_tag text,
+  add column if not exists manufacturer text,
+  add column if not exists model_number text,
+  add column if not exists purchase_year integer,
+  add column if not exists purchase_date date,
+  add column if not exists purchase_price numeric(12,2),
+  add column if not exists condition_status text,
+  add column if not exists image_url text,
+  add column if not exists comments text;
+
+alter table if exists public.equipment_signouts
+  add column if not exists checkout_worker_signature_name text,
+  add column if not exists checkout_supervisor_signature_name text,
+  add column if not exists checkout_admin_signature_name text,
+  add column if not exists return_worker_signature_name text,
+  add column if not exists return_supervisor_signature_name text,
+  add column if not exists return_admin_signature_name text,
+  add column if not exists checkout_condition text,
+  add column if not exists return_condition text,
+  add column if not exists return_notes text;
+
+create index if not exists idx_equipment_items_asset_tag on public.equipment_items(asset_tag);
+create index if not exists idx_equipment_items_purchase_date on public.equipment_items(purchase_date);
+create index if not exists idx_equipment_signouts_returned_at on public.equipment_signouts(returned_at);
+
+create or replace view public.v_equipment_signout_history as
+select
+  s.*,
+  e.equipment_code,
+  e.equipment_name,
+  j.job_code,
+  j.job_name
+from public.equipment_signouts s
+left join public.equipment_items e on e.id = s.equipment_item_id
+left join public.jobs j on j.id = s.job_id;
+
+commit;
+-- ============================================================================
+-- END MIGRATION: 050_equipment_asset_history_and_auth_runtime.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 051_equipment_maintenance_lockout_and_history.sql
+-- ============================================================================
+-- File: sql/051_equipment_maintenance_lockout_and_history.sql
+-- Brief description:
+-- Adds equipment maintenance/service/inspection/lockout tracking and
+-- safely recreates admin notification views without column-order conflicts.
+-- This version matches equipment_items.id as BIGINT.
+
+begin;
+
+-- =========================================================
+-- EQUIPMENT ITEM EXTENSIONS
+-- =========================================================
+
+alter table if exists public.equipment_items
+  add column if not exists serial_number text,
+  add column if not exists asset_tag text,
+  add column if not exists photo_url text,
+  add column if not exists comments text,
+  add column if not exists purchase_date date,
+  add column if not exists purchase_vendor text,
+  add column if not exists purchase_cost numeric(12,2),
+  add column if not exists warranty_expiry_date date,
+  add column if not exists manufacturer text,
+  add column if not exists model_number text,
+  add column if not exists year_of_manufacture integer,
+  add column if not exists service_interval_days integer,
+  add column if not exists inspection_interval_days integer,
+  add column if not exists last_service_at timestamptz,
+  add column if not exists next_service_due_at timestamptz,
+  add column if not exists last_inspection_at timestamptz,
+  add column if not exists next_inspection_due_at timestamptz,
+  add column if not exists defect_status text not null default 'none',
+  add column if not exists defect_notes text,
+  add column if not exists is_locked_out boolean not null default false,
+  add column if not exists locked_out_at timestamptz,
+  add column if not exists locked_out_by_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists lockout_reason text;
+
+create index if not exists idx_equipment_items_serial_number
+  on public.equipment_items(serial_number);
+
+create index if not exists idx_equipment_items_asset_tag
+  on public.equipment_items(asset_tag);
+
+create index if not exists idx_equipment_items_locked_out
+  on public.equipment_items(is_locked_out);
+
+-- =========================================================
+-- EQUIPMENT INSPECTION HISTORY
+-- IMPORTANT: equipment_items.id is BIGINT in this project
+-- =========================================================
+
+create table if not exists public.equipment_inspection_history (
+  id uuid primary key default gen_random_uuid(),
+  equipment_item_id bigint not null references public.equipment_items(id) on delete cascade,
+  inspection_at timestamptz not null default now(),
+  inspection_type text not null default 'general',
+  result_status text not null default 'pass',
+  notes text,
+  defect_status text,
+  defect_notes text,
+  inspected_by_profile_id uuid references public.profiles(id) on delete set null,
+  inspected_by_name text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_equipment_inspection_history_item_id
+  on public.equipment_inspection_history(equipment_item_id, inspection_at desc);
+
+-- =========================================================
+-- EQUIPMENT MAINTENANCE / SERVICE HISTORY
+-- IMPORTANT: equipment_items.id is BIGINT in this project
+-- =========================================================
+
+create table if not exists public.equipment_service_history (
+  id uuid primary key default gen_random_uuid(),
+  equipment_item_id bigint not null references public.equipment_items(id) on delete cascade,
+  serviced_at timestamptz not null default now(),
+  service_type text not null default 'maintenance',
+  notes text,
+  vendor_name text,
+  cost numeric(12,2),
+  serviced_by_profile_id uuid references public.profiles(id) on delete set null,
+  serviced_by_name text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_equipment_service_history_item_id
+  on public.equipment_service_history(equipment_item_id, serviced_at desc);
+
+-- =========================================================
+-- EQUIPMENT CHECKOUT / RETURN SIGNOFFS
+-- =========================================================
+
+alter table if exists public.job_equipment_assignments
+  add column if not exists checkout_worker_name text,
+  add column if not exists checkout_supervisor_name text,
+  add column if not exists checkout_admin_name text,
+  add column if not exists checkout_condition_notes text,
+  add column if not exists return_worker_name text,
+  add column if not exists return_supervisor_name text,
+  add column if not exists return_admin_name text,
+  add column if not exists return_condition_notes text;
+
+-- =========================================================
+-- NOTIFICATION DELIVERY ENHANCEMENTS
+-- =========================================================
+
+alter table if exists public.admin_notifications
+  add column if not exists email_provider text,
+  add column if not exists email_attempt_count integer not null default 0,
+  add column if not exists email_last_attempt_at timestamptz,
+  add column if not exists email_dead_lettered_at timestamptz,
+  add column if not exists email_dead_letter_reason text,
+  add column if not exists sms_provider text,
+  add column if not exists sms_attempt_count integer not null default 0,
+  add column if not exists sms_last_attempt_at timestamptz,
+  add column if not exists sms_dead_lettered_at timestamptz,
+  add column if not exists sms_dead_letter_reason text;
+
+create index if not exists idx_admin_notifications_email_attempt_count
+  on public.admin_notifications(email_attempt_count);
+
+create index if not exists idx_admin_notifications_sms_attempt_count
+  on public.admin_notifications(sms_attempt_count);
+
+-- =========================================================
+-- SAFE VIEW RECREATION
+-- =========================================================
+
+drop view if exists public.v_admin_notifications;
+drop view if exists public.v_equipment_pool_availability;
+
+create view public.v_admin_notifications as
+select
+  n.id,
+  coalesce(n.notification_type, 'general') as notification_type,
+  coalesce(n.title, 'Notification') as title,
+  coalesce(n.body, n.message, '') as message,
+  coalesce(n.recipient_role, 'admin') as recipient_role,
+  n.target_profile_id,
+  coalesce(n.target_table, n.related_table) as target_table,
+  coalesce(n.target_id, n.related_id) as target_id,
+  coalesce(n.payload, '{}'::jsonb) as payload,
+  coalesce(n.status, 'queued') as status,
+  coalesce(n.decision_status, 'pending') as decision_status,
+  n.decision_notes,
+  n.created_at,
+  n.read_at,
+  n.decided_at,
+  n.sent_at,
+  coalesce(n.email_subject, n.title, 'Notification') as email_subject,
+  n.email_to,
+  coalesce(n.email_status, 'pending') as email_status,
+  n.email_error,
+  n.email_provider,
+  n.email_attempt_count,
+  n.email_last_attempt_at,
+  n.email_dead_lettered_at,
+  n.email_dead_letter_reason,
+  n.sms_provider,
+  n.sms_attempt_count,
+  n.sms_last_attempt_at,
+  n.sms_dead_lettered_at,
+  n.sms_dead_letter_reason,
+  n.created_by_profile_id,
+  creator.full_name as created_by_name,
+  creator.email as created_by_email,
+  n.decided_by_profile_id,
+  decider.full_name as decided_by_name,
+  decider.email as decided_by_email
+from public.admin_notifications n
+left join public.profiles creator
+  on creator.id = n.created_by_profile_id
+left join public.profiles decider
+  on decider.id = n.decided_by_profile_id;
+
+create view public.v_equipment_pool_availability as
+select
+  e.equipment_pool_key,
+  min(e.category) as category,
+  count(*)::int as total_qty,
+  count(*) filter (
+    where coalesce(e.status, 'available') = 'available'
+      and coalesce(e.is_locked_out, false) = false
+  )::int as available_qty,
+  count(*) filter (where coalesce(e.status, 'reserved') = 'reserved')::int as reserved_qty,
+  count(*) filter (where coalesce(e.status, 'checked_out') = 'checked_out')::int as checked_out_qty,
+  count(*) filter (where coalesce(e.is_locked_out, false) = true)::int as locked_out_qty,
+  array_agg(e.equipment_code order by e.equipment_code) as equipment_codes
+from public.equipment_items e
+where e.equipment_pool_key is not null
+group by e.equipment_pool_key;
+
+commit;
+-- ============================================================================
+-- END MIGRATION: 051_equipment_maintenance_lockout_and_history.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 052_account_recovery_and_equipment_signature_capture.sql
+-- ============================================================================
+-- File: sql/052_account_recovery_and_equipment_signature_capture.sql
+-- Brief description:
+-- Adds account recovery fields and logging, enables username-based sign-in lookup,
+-- and stores real signature image captures for equipment checkout/return history.
+
+begin;
+
+alter table if exists public.profiles
+  add column if not exists username text,
+  add column if not exists recovery_email text,
+  add column if not exists password_changed_at timestamptz,
+  add column if not exists last_login_at timestamptz;
+
+create unique index if not exists idx_profiles_username_unique
+  on public.profiles (lower(username))
+  where username is not null and btrim(username) <> '';
+
+create table if not exists public.account_recovery_requests (
+  id bigserial primary key,
+  lookup_kind text not null default 'lookup',
+  employee_number text,
+  phone_last4 text,
+  last_name text,
+  matched_profile_id uuid references public.profiles(id) on delete set null,
+  masked_email text,
+  masked_username text,
+  request_status text not null default 'pending',
+  notes text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_account_recovery_requests_created_at
+  on public.account_recovery_requests(created_at desc);
+
+create index if not exists idx_account_recovery_requests_profile
+  on public.account_recovery_requests(matched_profile_id, created_at desc);
+
+alter table if exists public.equipment_signouts
+  add column if not exists checkout_worker_signature_png text,
+  add column if not exists checkout_supervisor_signature_png text,
+  add column if not exists checkout_admin_signature_png text,
+  add column if not exists return_worker_signature_png text,
+  add column if not exists return_supervisor_signature_png text,
+  add column if not exists return_admin_signature_png text;
+
+commit;
+-- ============================================================================
+-- END MIGRATION: 052_account_recovery_and_equipment_signature_capture.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 053_equipment_return_photos_damage_and_runtime_consistency.sql
+-- ============================================================================
+-- File: sql/053_equipment_return_photos_damage_and_runtime_consistency.sql
+-- Brief description:
+-- Adds equipment checkout/return evidence photo storage and damage reporting fields,
+-- keeps runtime config/account-recovery data aligned, and refreshes signout history views.
+
+begin;
+
+alter table if exists public.equipment_signouts
+  add column if not exists checkout_photos_json jsonb not null default '[]'::jsonb,
+  add column if not exists return_photos_json jsonb not null default '[]'::jsonb,
+  add column if not exists damage_reported boolean not null default false,
+  add column if not exists damage_notes text;
+
+create index if not exists idx_equipment_signouts_damage_reported
+  on public.equipment_signouts(damage_reported, returned_at desc);
+
+create index if not exists idx_profiles_recovery_email
+  on public.profiles (lower(recovery_email))
+  where recovery_email is not null and btrim(recovery_email) <> '';
+
+drop view if exists public.v_equipment_signout_history;
+create view public.v_equipment_signout_history as
+select
+  s.*,
+  e.equipment_code,
+  e.equipment_name,
+  e.serial_number,
+  e.asset_tag,
+  j.job_code,
+  j.job_name,
+  jsonb_array_length(coalesce(s.checkout_photos_json, '[]'::jsonb)) as checkout_photo_count,
+  jsonb_array_length(coalesce(s.return_photos_json, '[]'::jsonb)) as return_photo_count
+from public.equipment_signouts s
+left join public.equipment_items e on e.id = s.equipment_item_id
+left join public.jobs j on j.id = s.job_id;
+
+commit;
+-- ============================================================================
+-- END MIGRATION: 053_equipment_return_photos_damage_and_runtime_consistency.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 054_account_setup_and_profile_reliability.sql
+-- ============================================================================
+-- File: sql/054_account_setup_and_profile_reliability.sql
+-- Brief description:
+-- Adds account-setup readiness flags and profile reliability fields so
+-- magic-link validation, password setup, and richer settings/contact updates
+-- can be tracked cleanly in the database.
+
+begin;
+
+alter table if exists public.profiles
+  add column if not exists password_login_ready boolean not null default false,
+  add column if not exists account_setup_completed_at timestamptz;
+
+update public.profiles
+set password_login_ready = true
+where coalesce(password_login_ready, false) = false
+  and password_changed_at is not null;
+
+create index if not exists idx_profiles_password_login_ready
+  on public.profiles(password_login_ready);
+
+create index if not exists idx_profiles_account_setup_completed_at
+  on public.profiles(account_setup_completed_at desc);
+
+commit;
+-- ============================================================================
+-- END MIGRATION: 054_account_setup_and_profile_reliability.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 055_storage_onboarding_identity_change_and_bootstrap.sql
+-- ============================================================================
+-- File: sql/055_storage_onboarding_identity_change_and_bootstrap.sql
+-- Brief description:
+-- Moves equipment evidence into storage-backed audit rows, adds onboarding and
+-- identity-change workflow fields, and prepares bootstrap account scripting support.
+
+begin;
+
+alter table if exists public.profiles
+  add column if not exists pending_email text,
+  add column if not exists pending_username text,
+  add column if not exists onboarding_completed_at timestamptz;
+
+create index if not exists idx_profiles_username_lookup
+  on public.profiles (lower(coalesce(username, '')));
+
+create index if not exists idx_profiles_pending_username_lookup
+  on public.profiles (lower(coalesce(pending_username, '')));
+
+create table if not exists public.account_identity_change_requests (
+  id bigserial primary key,
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  current_email text,
+  current_username text,
+  requested_email text,
+  requested_username text,
+  request_status text not null default 'pending',
+  notes text,
+  reviewed_by_profile_id uuid references public.profiles(id) on delete set null,
+  reviewed_at timestamptz,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_account_identity_change_requests_profile_id
+  on public.account_identity_change_requests (profile_id, created_at desc);
+
+create table if not exists public.equipment_evidence_assets (
+  id bigserial primary key,
+  signout_id bigint not null references public.equipment_signouts(id) on delete cascade,
+  equipment_item_id bigint references public.equipment_items(id) on delete cascade,
+  job_id bigint references public.jobs(id) on delete set null,
+  stage text not null default 'checkout',
+  evidence_kind text not null default 'photo',
+  signer_role text,
+  storage_bucket text not null default 'equipment-evidence',
+  storage_path text not null,
+  preview_url text,
+  file_name text,
+  content_type text,
+  file_size_bytes bigint,
+  caption text,
+  uploaded_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_equipment_evidence_assets_signout_id
+  on public.equipment_evidence_assets (signout_id, created_at desc);
+
+create index if not exists idx_equipment_evidence_assets_item_id
+  on public.equipment_evidence_assets (equipment_item_id, created_at desc);
+
+commit;
+-- ============================================================================
+-- END MIGRATION: 055_storage_onboarding_identity_change_and_bootstrap.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 056_admin_password_resets_and_sales_accounting_stub.sql
+-- ============================================================================
+-- File: sql/056_admin_password_resets_and_sales_accounting_stub.sql
+-- Purpose:
+-- - Allow audited admin password resets for any profile, including other admins.
+-- - Add a minimal sales-order + accounting stub so each new order creates a first accounting record.
+
+create table if not exists public.admin_password_resets (
+  id bigserial primary key,
+  target_profile_id uuid not null references public.profiles(id) on delete cascade,
+  reset_by_profile_id uuid references public.profiles(id) on delete set null,
+  reason text,
+  force_password_change boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_admin_password_resets_target_created
+  on public.admin_password_resets(target_profile_id, created_at desc);
+
+create table if not exists public.sales_orders (
+  id bigserial primary key,
+  order_code text not null unique,
+  customer_name text,
+  customer_email text,
+  order_status text not null default 'draft',
+  currency_code text not null default 'CAD',
+  subtotal_amount numeric(12,2) not null default 0,
+  tax_amount numeric(12,2) not null default 0,
+  total_amount numeric(12,2) not null default 0,
+  notes text,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_sales_orders_created_at
+  on public.sales_orders(created_at desc);
+create index if not exists idx_sales_orders_status
+  on public.sales_orders(order_status);
+
+create table if not exists public.accounting_entries (
+  id bigserial primary key,
+  source_type text not null,
+  source_id bigint,
+  entry_type text not null,
+  entry_status text not null default 'open',
+  customer_name text,
+  customer_email text,
+  currency_code text not null default 'CAD',
+  subtotal_amount numeric(12,2) not null default 0,
+  tax_amount numeric(12,2) not null default 0,
+  total_amount numeric(12,2) not null default 0,
+  payload jsonb not null default '{}'::jsonb,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_accounting_entries_source
+  on public.accounting_entries(source_type, source_id);
+create index if not exists idx_accounting_entries_status
+  on public.accounting_entries(entry_status, created_at desc);
+
+create or replace view public.v_sales_order_accounting_summary as
+select
+  so.id,
+  so.order_code,
+  so.customer_name,
+  so.customer_email,
+  so.order_status,
+  so.currency_code,
+  so.subtotal_amount,
+  so.tax_amount,
+  so.total_amount,
+  so.created_at,
+  so.updated_at,
+  ae.id as accounting_entry_id,
+  ae.entry_type,
+  ae.entry_status,
+  ae.payload as accounting_payload,
+  ae.created_at as accounting_created_at
+from public.sales_orders so
+left join public.accounting_entries ae
+  on ae.source_type = 'sales_order'
+ and ae.source_id = so.id;
+-- ============================================================================
+-- END MIGRATION: 056_admin_password_resets_and_sales_accounting_stub.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 057_staff_directory_and_role_admin.sql
+-- ============================================================================
+-- 2026-04-04d staff directory, hierarchy roles, and admin user lifecycle pass
+
+alter table if exists public.profiles
+  add column if not exists seniority_level text,
+  add column if not exists employment_status text not null default 'active',
+  add column if not exists staff_tier text;
+
+create index if not exists idx_profiles_employment_status on public.profiles (employment_status);
+create index if not exists idx_profiles_staff_tier on public.profiles (staff_tier);
+create index if not exists idx_profiles_seniority_level on public.profiles (seniority_level);
+-- ============================================================================
+-- END MIGRATION: 057_staff_directory_and_role_admin.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 058_admin_dropdown_catalogs_and_assignment_workbench.sql
+-- ============================================================================
+-- 2026-04-05 admin dropdown catalogs and assignment workbench pass
 
 create table if not exists public.staff_tier_catalog (
   id bigint generated always as identity primary key,
@@ -212,218 +3373,5455 @@ create table if not exists public.job_type_catalog (
   created_at timestamptz not null default now()
 );
 
-create table if not exists public.jobs (
-  id bigserial primary key,
-  job_code text not null unique,
-  job_name text not null,
-  site_id uuid references public.sites(id),
-  job_type text,
-  status text not null default 'planned',
-  priority text not null default 'normal',
-  client_name text,
-  start_date date,
-  end_date date,
-  site_supervisor_profile_id uuid references public.profiles(id),
-  signing_supervisor_profile_id uuid references public.profiles(id),
-  admin_profile_id uuid references public.profiles(id),
-  notes text,
-  created_by_profile_id uuid references public.profiles(id),
-  approval_status text not null default 'not_requested',
-  approval_requested_at timestamptz,
-  approved_at timestamptz,
-  approved_by_profile_id uuid references public.profiles(id),
-  approval_notes text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
+insert into public.staff_tier_catalog (name, sort_order) values
+  ('Admin', 10),
+  ('Supervisor', 20),
+  ('Employee', 30)
+on conflict (name) do nothing;
 
-create table if not exists public.equipment_items (
-  id bigserial primary key,
-  equipment_code text not null unique,
-  equipment_name text not null,
+insert into public.seniority_level_catalog (name, sort_order) values
+  ('Junior', 10),
+  ('Intermediate', 20),
+  ('Senior', 30),
+  ('Lead', 40)
+on conflict (name) do nothing;
+
+insert into public.employment_status_catalog (name, sort_order) values
+  ('active', 10),
+  ('blocked', 20),
+  ('inactive', 30),
+  ('leave', 40)
+on conflict (name) do nothing;
+
+insert into public.job_type_catalog (name, sort_order) values
+  ('General Safety', 10),
+  ('Landscaping', 20),
+  ('Maintenance', 30),
+  ('Inspection', 40),
+  ('Training', 50)
+on conflict (name) do nothing;
+-- ============================================================================
+-- END MIGRATION: 058_admin_dropdown_catalogs_and_assignment_workbench.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 059_role_aliases_admin_bootstrap_and_onboarding_fix.sql
+-- ============================================================================
+-- 059_role_aliases_admin_bootstrap_and_onboarding_fix.sql
+-- Purpose:
+-- - allow employee as the standard personnel role while remaining compatible with older worker rows
+-- - normalize legacy worker profiles to employee for staff-directory clarity
+-- - keep assignment_role compatible with worker and employee values
+-- - make onboarding completion less likely to stay visually stuck in older data sets
+
+alter table if exists public.profiles
+  alter column role set default 'employee';
+
+alter table if exists public.profiles
+  drop constraint if exists profiles_role_check;
+
+alter table if exists public.profiles
+  add constraint profiles_role_check
+  check (role in ('worker','employee','staff','onsite_admin','site_leader','supervisor','hse','job_admin','admin'));
+
+alter table if exists public.site_assignments
+  drop constraint if exists site_assignments_assignment_role_check;
+
+alter table if exists public.site_assignments
+  add constraint site_assignments_assignment_role_check
+  check (assignment_role in ('worker','employee','site_leader','supervisor','hse','job_admin','admin'));
+
+update public.profiles
+set role = 'employee',
+    staff_tier = coalesce(nullif(staff_tier, ''), 'employee'),
+    updated_at = now()
+where role = 'worker';
+
+update public.profiles
+set onboarding_completed_at = coalesce(onboarding_completed_at, account_setup_completed_at, now()),
+    account_setup_completed_at = coalesce(account_setup_completed_at, onboarding_completed_at, now()),
+    updated_at = now()
+where is_active = true
+  and coalesce(trim(email), '') <> ''
+  and coalesce(onboarding_completed_at, account_setup_completed_at) is null;
+-- ============================================================================
+-- END MIGRATION: 059_role_aliases_admin_bootstrap_and_onboarding_fix.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 060_session_role_normalization_guardrails.sql
+-- ============================================================================
+-- 060_session_role_normalization_guardrails.sql
+-- Normalize legacy profile roles and align onboarding/account setup completion timestamps.
+
+alter table if exists public.profiles
+  alter column role set default 'employee';
+
+update public.profiles
+set role = 'employee'
+where lower(coalesce(role, '')) in ('worker','staff','');
+
+update public.profiles
+set staff_tier = 'employee'
+where lower(coalesce(staff_tier, '')) in ('worker','staff','');
+
+update public.profiles
+set onboarding_completed_at = coalesce(onboarding_completed_at, account_setup_completed_at),
+    account_setup_completed_at = coalesce(account_setup_completed_at, onboarding_completed_at),
+    updated_at = now()
+where onboarding_completed_at is null or account_setup_completed_at is null;
+-- ============================================================================
+-- END MIGRATION: 060_session_role_normalization_guardrails.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 061_estimates_work_orders_routes_materials_and_gl_foundation.sql
+-- ============================================================================
+-- 061_estimates_work_orders_routes_materials_and_gl_foundation.sql
+-- Corrected full-run version
+-- Landscaping / project-work / subcontract dispatch / accounting foundation
+-- Safe for reruns and partial previous runs.
+
+create extension if not exists pgcrypto;
+
+create table if not exists public.units_of_measure (
+  id uuid primary key default gen_random_uuid(),
+  code text not null unique,
+  name text not null,
   category text,
-  home_site_id uuid references public.sites(id),
-  status text not null default 'available',
-  current_job_id bigint references public.jobs(id) on delete set null,
-  assigned_supervisor_profile_id uuid references public.profiles(id) on delete set null,
-  equipment_pool_key text,
-  serial_number text,
-  asset_tag text,
-  manufacturer text,
-  model_number text,
-  purchase_year integer,
-  purchase_date date,
-  purchase_price numeric(12,2),
-  condition_status text,
-  image_url text,
-  service_interval_days integer,
-  last_service_date date,
-  next_service_due_date date,
-  last_inspection_at date,
-  next_inspection_due_date date,
-  defect_status text default 'clear',
-  defect_notes text,
-  is_locked_out boolean not null default false,
-  locked_out_at timestamptz,
-  locked_out_by_profile_id uuid references public.profiles(id),
-  comments text,
-  notes text,
+  is_active boolean not null default true,
+  sort_order integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
-create table if not exists public.job_equipment_requirements (
-  id bigserial primary key,
-  job_id bigint not null references public.jobs(id) on delete cascade,
-  equipment_item_id bigint references public.equipment_items(id) on delete set null,
-  equipment_code text,
-  equipment_name text not null,
-  equipment_pool_key text,
-  needed_qty integer not null default 1,
-  reserved_qty integer not null default 0,
-  reservation_status text not null default 'needed',
-  approval_status text not null default 'not_required',
-  approval_notes text,
-  approved_at timestamptz,
-  approved_by_profile_id uuid references public.profiles(id),
+create table if not exists public.cost_codes (
+  id uuid primary key default gen_random_uuid(),
+  code text not null unique,
+  name text not null,
+  category text,
+  description text,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.clients (
+  id uuid primary key default gen_random_uuid(),
+  client_code text unique,
+  legal_name text not null,
+  display_name text,
+  client_type text not null default 'customer',
+  billing_email text,
+  phone text,
+  address_line1 text,
+  address_line2 text,
+  city text,
+  province text,
+  postal_code text,
+  payment_terms_days integer not null default 30,
+  tax_registration_number text,
   notes text,
-  created_at timestamptz not null default now()
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
-create table if not exists public.equipment_signouts (
-  id bigserial primary key,
-  equipment_item_id bigint not null references public.equipment_items(id) on delete cascade,
-  job_id bigint references public.jobs(id) on delete set null,
-  checked_out_by_profile_id uuid references public.profiles(id),
-  checked_out_to_supervisor_profile_id uuid references public.profiles(id),
-  checked_out_at timestamptz not null default now(),
-  returned_at timestamptz,
-  checkout_worker_signature_name text,
-  checkout_supervisor_signature_name text,
-  checkout_admin_signature_name text,
-  checkout_worker_signature_png text,
-  checkout_supervisor_signature_png text,
-  checkout_admin_signature_png text,
-  return_worker_signature_name text,
-  return_supervisor_signature_name text,
-  return_admin_signature_name text,
-  return_worker_signature_png text,
-  return_supervisor_signature_png text,
-  return_admin_signature_png text,
-  checkout_condition text,
-  return_condition text,
-  signout_notes text,
-  return_notes text,
-  checkout_photos_json jsonb not null default '[]'::jsonb,
-  return_photos_json jsonb not null default '[]'::jsonb,
-  damage_reported boolean not null default false,
-  damage_notes text
+create table if not exists public.service_areas (
+  id uuid primary key default gen_random_uuid(),
+  area_code text unique,
+  name text not null,
+  region text,
+  notes text,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
+create table if not exists public.routes (
+  id uuid primary key default gen_random_uuid(),
+  route_code text unique,
+  name text not null,
+  service_area_id uuid references public.service_areas(id) on delete set null,
+  route_type text not null default 'recurring',
+  day_of_week integer,
+  notes text,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.materials_catalog (
+  id uuid primary key default gen_random_uuid(),
+  sku text unique,
+  item_name text not null,
+  material_category text,
+  unit_id uuid references public.units_of_measure(id) on delete set null,
+  default_unit_cost numeric(12,2) not null default 0,
+  default_bill_rate numeric(12,2) not null default 0,
+  taxable boolean not null default true,
+  inventory_tracked boolean not null default true,
+  reorder_point numeric(12,2),
+  reorder_quantity numeric(12,2),
+  notes text,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.equipment_master (
+  id uuid primary key default gen_random_uuid(),
+  equipment_code text unique,
+  item_name text not null,
+  equipment_category text,
+  manufacturer text,
+  model text,
+  ownership_type text not null default 'owned',
+  bill_rate_hourly numeric(12,2) not null default 0,
+  cost_rate_hourly numeric(12,2) not null default 0,
+  default_operator_required boolean not null default false,
+  notes text,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+do $$
+declare
+  v_sites_id_type text;
+  v_client_sites_exists boolean;
+begin
+  select c.data_type into v_sites_id_type
+  from information_schema.columns c
+  where c.table_schema = 'public' and c.table_name = 'sites' and c.column_name = 'id';
+
+  select exists (
+    select 1 from information_schema.tables where table_schema = 'public' and table_name = 'client_sites'
+  ) into v_client_sites_exists;
+
+  if not v_client_sites_exists then
+    if v_sites_id_type is null then
+      execute $sql$
+        create table public.client_sites (
+          id uuid primary key default gen_random_uuid(),
+          client_id uuid not null references public.clients(id) on delete cascade,
+          legacy_site_id uuid,
+          site_code text,
+          site_name text not null,
+          service_address text,
+          city text,
+          province text,
+          postal_code text,
+          latitude numeric(10,7),
+          longitude numeric(10,7),
+          access_notes text,
+          hazard_notes text,
+          is_active boolean not null default true,
+          created_at timestamptz not null default now(),
+          updated_at timestamptz not null default now()
+        )
+      $sql$;
+    elsif v_sites_id_type = 'uuid' then
+      execute $sql$
+        create table public.client_sites (
+          id uuid primary key default gen_random_uuid(),
+          client_id uuid not null references public.clients(id) on delete cascade,
+          legacy_site_id uuid references public.sites(id) on delete set null,
+          site_code text,
+          site_name text not null,
+          service_address text,
+          city text,
+          province text,
+          postal_code text,
+          latitude numeric(10,7),
+          longitude numeric(10,7),
+          access_notes text,
+          hazard_notes text,
+          is_active boolean not null default true,
+          created_at timestamptz not null default now(),
+          updated_at timestamptz not null default now()
+        )
+      $sql$;
+    else
+      execute format($sql$
+        create table public.client_sites (
+          id uuid primary key default gen_random_uuid(),
+          client_id uuid not null references public.clients(id) on delete cascade,
+          legacy_site_id %s references public.sites(id) on delete set null,
+          site_code text,
+          site_name text not null,
+          service_address text,
+          city text,
+          province text,
+          postal_code text,
+          latitude numeric(10,7),
+          longitude numeric(10,7),
+          access_notes text,
+          hazard_notes text,
+          is_active boolean not null default true,
+          created_at timestamptz not null default now(),
+          updated_at timestamptz not null default now()
+        )
+      $sql$, v_sites_id_type);
+    end if;
+  else
+    if v_sites_id_type is not null then
+      execute 'alter table public.client_sites drop constraint if exists client_sites_legacy_site_id_fkey';
+      if v_sites_id_type = 'uuid' then
+        begin
+          execute 'alter table public.client_sites alter column legacy_site_id type uuid using legacy_site_id::uuid';
+        exception when others then
+          execute 'update public.client_sites set legacy_site_id = null where legacy_site_id is not null';
+          execute 'alter table public.client_sites alter column legacy_site_id type uuid using null';
+        end;
+        execute 'alter table public.client_sites add constraint client_sites_legacy_site_id_fkey foreign key (legacy_site_id) references public.sites(id) on delete set null';
+      else
+        begin
+          execute format('alter table public.client_sites alter column legacy_site_id type %s using legacy_site_id::text::%s', v_sites_id_type, v_sites_id_type);
+        exception when others then
+          execute 'update public.client_sites set legacy_site_id = null where legacy_site_id is not null';
+          execute format('alter table public.client_sites alter column legacy_site_id type %s using null', v_sites_id_type);
+        end;
+        execute 'alter table public.client_sites add constraint client_sites_legacy_site_id_fkey foreign key (legacy_site_id) references public.sites(id) on delete set null';
+      end if;
+    end if;
+  end if;
+end $$;
+
+create index if not exists idx_client_sites_client_id on public.client_sites(client_id);
+
+create table if not exists public.route_stops (
+  id uuid primary key default gen_random_uuid(),
+  route_id uuid not null references public.routes(id) on delete cascade,
+  client_site_id uuid references public.client_sites(id) on delete set null,
+  stop_order integer not null default 0,
+  planned_arrival_time time,
+  planned_duration_minutes integer,
+  instructions text,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique(route_id, stop_order)
+);
+
+create table if not exists public.estimates (
+  id uuid primary key default gen_random_uuid(),
+  estimate_number text not null unique,
+  client_id uuid references public.clients(id) on delete set null,
+  client_site_id uuid references public.client_sites(id) on delete set null,
+  estimate_type text not null default 'landscaping',
+  status text not null default 'draft',
+  valid_until date,
+  subtotal numeric(12,2) not null default 0,
+  tax_total numeric(12,2) not null default 0,
+  total_amount numeric(12,2) not null default 0,
+  scope_notes text,
+  terms_notes text,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  approved_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.estimate_lines (
+  id uuid primary key default gen_random_uuid(),
+  estimate_id uuid not null references public.estimates(id) on delete cascade,
+  line_order integer not null default 0,
+  line_type text not null default 'service',
+  description text not null,
+  cost_code_id uuid references public.cost_codes(id) on delete set null,
+  unit_id uuid references public.units_of_measure(id) on delete set null,
+  quantity numeric(12,2) not null default 1,
+  unit_cost numeric(12,2) not null default 0,
+  unit_price numeric(12,2) not null default 0,
+  line_total numeric(12,2) not null default 0,
+  material_id uuid references public.materials_catalog(id) on delete set null,
+  equipment_master_id uuid references public.equipment_master(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+do $$
+declare
+  v_jobs_id_type text;
+  v_work_orders_exists boolean;
+begin
+  select c.data_type into v_jobs_id_type
+  from information_schema.columns c
+  where c.table_schema = 'public' and c.table_name = 'jobs' and c.column_name = 'id';
+
+  select exists (
+    select 1 from information_schema.tables where table_schema = 'public' and table_name = 'work_orders'
+  ) into v_work_orders_exists;
+
+  if not v_work_orders_exists then
+    if v_jobs_id_type is null then
+      execute $sql$
+        create table public.work_orders (
+          id uuid primary key default gen_random_uuid(),
+          work_order_number text not null unique,
+          estimate_id uuid references public.estimates(id) on delete set null,
+          client_id uuid references public.clients(id) on delete set null,
+          client_site_id uuid references public.client_sites(id) on delete set null,
+          legacy_job_id uuid,
+          work_type text not null default 'service',
+          status text not null default 'draft',
+          scheduled_start timestamptz,
+          scheduled_end timestamptz,
+          service_area_id uuid references public.service_areas(id) on delete set null,
+          route_id uuid references public.routes(id) on delete set null,
+          supervisor_profile_id uuid references public.profiles(id) on delete set null,
+          crew_notes text,
+          customer_notes text,
+          safety_notes text,
+          subtotal numeric(12,2) not null default 0,
+          tax_total numeric(12,2) not null default 0,
+          total_amount numeric(12,2) not null default 0,
+          created_by_profile_id uuid references public.profiles(id) on delete set null,
+          created_at timestamptz not null default now(),
+          updated_at timestamptz not null default now()
+        )
+      $sql$;
+    elsif v_jobs_id_type = 'uuid' then
+      execute $sql$
+        create table public.work_orders (
+          id uuid primary key default gen_random_uuid(),
+          work_order_number text not null unique,
+          estimate_id uuid references public.estimates(id) on delete set null,
+          client_id uuid references public.clients(id) on delete set null,
+          client_site_id uuid references public.client_sites(id) on delete set null,
+          legacy_job_id uuid references public.jobs(id) on delete set null,
+          work_type text not null default 'service',
+          status text not null default 'draft',
+          scheduled_start timestamptz,
+          scheduled_end timestamptz,
+          service_area_id uuid references public.service_areas(id) on delete set null,
+          route_id uuid references public.routes(id) on delete set null,
+          supervisor_profile_id uuid references public.profiles(id) on delete set null,
+          crew_notes text,
+          customer_notes text,
+          safety_notes text,
+          subtotal numeric(12,2) not null default 0,
+          tax_total numeric(12,2) not null default 0,
+          total_amount numeric(12,2) not null default 0,
+          created_by_profile_id uuid references public.profiles(id) on delete set null,
+          created_at timestamptz not null default now(),
+          updated_at timestamptz not null default now()
+        )
+      $sql$;
+    else
+      execute format($sql$
+        create table public.work_orders (
+          id uuid primary key default gen_random_uuid(),
+          work_order_number text not null unique,
+          estimate_id uuid references public.estimates(id) on delete set null,
+          client_id uuid references public.clients(id) on delete set null,
+          client_site_id uuid references public.client_sites(id) on delete set null,
+          legacy_job_id %s references public.jobs(id) on delete set null,
+          work_type text not null default 'service',
+          status text not null default 'draft',
+          scheduled_start timestamptz,
+          scheduled_end timestamptz,
+          service_area_id uuid references public.service_areas(id) on delete set null,
+          route_id uuid references public.routes(id) on delete set null,
+          supervisor_profile_id uuid references public.profiles(id) on delete set null,
+          crew_notes text,
+          customer_notes text,
+          safety_notes text,
+          subtotal numeric(12,2) not null default 0,
+          tax_total numeric(12,2) not null default 0,
+          total_amount numeric(12,2) not null default 0,
+          created_by_profile_id uuid references public.profiles(id) on delete set null,
+          created_at timestamptz not null default now(),
+          updated_at timestamptz not null default now()
+        )
+      $sql$, v_jobs_id_type);
+    end if;
+  else
+    if v_jobs_id_type is not null then
+      execute 'alter table public.work_orders drop constraint if exists work_orders_legacy_job_id_fkey';
+      if v_jobs_id_type = 'uuid' then
+        begin
+          execute 'alter table public.work_orders alter column legacy_job_id type uuid using legacy_job_id::uuid';
+        exception when others then
+          execute 'update public.work_orders set legacy_job_id = null where legacy_job_id is not null';
+          execute 'alter table public.work_orders alter column legacy_job_id type uuid using null';
+        end;
+        execute 'alter table public.work_orders add constraint work_orders_legacy_job_id_fkey foreign key (legacy_job_id) references public.jobs(id) on delete set null';
+      else
+        begin
+          execute format('alter table public.work_orders alter column legacy_job_id type %s using legacy_job_id::text::%s', v_jobs_id_type, v_jobs_id_type);
+        exception when others then
+          execute 'update public.work_orders set legacy_job_id = null where legacy_job_id is not null';
+          execute format('alter table public.work_orders alter column legacy_job_id type %s using null', v_jobs_id_type);
+        end;
+        execute 'alter table public.work_orders add constraint work_orders_legacy_job_id_fkey foreign key (legacy_job_id) references public.jobs(id) on delete set null';
+      end if;
+    end if;
+  end if;
+end $$;
+
+create table if not exists public.work_order_lines (
+  id uuid primary key default gen_random_uuid(),
+  work_order_id uuid not null references public.work_orders(id) on delete cascade,
+  line_order integer not null default 0,
+  line_type text not null default 'service',
+  description text not null,
+  cost_code_id uuid references public.cost_codes(id) on delete set null,
+  unit_id uuid references public.units_of_measure(id) on delete set null,
+  quantity numeric(12,2) not null default 1,
+  unit_cost numeric(12,2) not null default 0,
+  unit_price numeric(12,2) not null default 0,
+  line_total numeric(12,2) not null default 0,
+  material_id uuid references public.materials_catalog(id) on delete set null,
+  equipment_master_id uuid references public.equipment_master(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.subcontract_clients (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid references public.clients(id) on delete set null,
+  subcontract_code text unique,
+  company_name text not null,
+  contact_name text,
+  contact_email text,
+  contact_phone text,
+  billing_basis text not null default 'hourly',
+  rate_notes text,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.subcontract_dispatches (
+  id uuid primary key default gen_random_uuid(),
+  dispatch_number text not null unique,
+  subcontract_client_id uuid not null references public.subcontract_clients(id) on delete cascade,
+  client_site_id uuid references public.client_sites(id) on delete set null,
+  work_order_id uuid references public.work_orders(id) on delete set null,
+  operator_profile_id uuid references public.profiles(id) on delete set null,
+  equipment_master_id uuid references public.equipment_master(id) on delete set null,
+  dispatch_status text not null default 'draft',
+  dispatch_start timestamptz,
+  dispatch_end timestamptz,
+  billing_basis text not null default 'hourly',
+  bill_rate numeric(12,2) not null default 0,
+  cost_rate numeric(12,2) not null default 0,
+  notes text,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.chart_of_accounts (
+  id uuid primary key default gen_random_uuid(),
+  account_number text not null unique,
+  account_name text not null,
+  account_type text not null,
+  parent_account_id uuid references public.chart_of_accounts(id) on delete set null,
+  is_active boolean not null default true,
+  system_code text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.gl_journal_batches (
+  id uuid primary key default gen_random_uuid(),
+  batch_number text not null unique,
+  source_module text not null,
+  batch_status text not null default 'draft',
+  batch_date date not null default current_date,
+  memo text,
+  posted_at timestamptz,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.gl_journal_entries (
+  id uuid primary key default gen_random_uuid(),
+  batch_id uuid not null references public.gl_journal_batches(id) on delete cascade,
+  entry_date date not null default current_date,
+  account_id uuid not null references public.chart_of_accounts(id) on delete restrict,
+  debit_amount numeric(12,2) not null default 0,
+  credit_amount numeric(12,2) not null default 0,
+  client_id uuid references public.clients(id) on delete set null,
+  work_order_id uuid references public.work_orders(id) on delete set null,
+  dispatch_id uuid references public.subcontract_dispatches(id) on delete set null,
+  memo text,
+  created_at timestamptz not null default now(),
+  check (debit_amount >= 0 and credit_amount >= 0),
+  check ((debit_amount = 0 and credit_amount > 0) or (credit_amount = 0 and debit_amount > 0))
+);
+
+create table if not exists public.ar_invoices (
+  id uuid primary key default gen_random_uuid(),
+  invoice_number text not null unique,
+  client_id uuid not null references public.clients(id) on delete restrict,
+  work_order_id uuid references public.work_orders(id) on delete set null,
+  dispatch_id uuid references public.subcontract_dispatches(id) on delete set null,
+  invoice_status text not null default 'draft',
+  invoice_date date not null default current_date,
+  due_date date,
+  subtotal numeric(12,2) not null default 0,
+  tax_total numeric(12,2) not null default 0,
+  total_amount numeric(12,2) not null default 0,
+  balance_due numeric(12,2) not null default 0,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.ar_payments (
+  id uuid primary key default gen_random_uuid(),
+  payment_number text not null unique,
+  client_id uuid not null references public.clients(id) on delete restrict,
+  invoice_id uuid references public.ar_invoices(id) on delete set null,
+  payment_date date not null default current_date,
+  payment_method text,
+  reference_number text,
+  amount numeric(12,2) not null default 0,
+  notes text,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.ap_vendors (
+  id uuid primary key default gen_random_uuid(),
+  vendor_code text unique,
+  legal_name text not null,
+  display_name text,
+  contact_name text,
+  contact_email text,
+  contact_phone text,
+  payment_terms_days integer not null default 30,
+  tax_registration_number text,
+  notes text,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.ap_bills (
+  id uuid primary key default gen_random_uuid(),
+  bill_number text not null unique,
+  vendor_id uuid not null references public.ap_vendors(id) on delete restrict,
+  bill_status text not null default 'draft',
+  bill_date date not null default current_date,
+  due_date date,
+  subtotal numeric(12,2) not null default 0,
+  tax_total numeric(12,2) not null default 0,
+  total_amount numeric(12,2) not null default 0,
+  balance_due numeric(12,2) not null default 0,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.ap_payments (
+  id uuid primary key default gen_random_uuid(),
+  payment_number text not null unique,
+  vendor_id uuid not null references public.ap_vendors(id) on delete restrict,
+  bill_id uuid references public.ap_bills(id) on delete set null,
+  payment_date date not null default current_date,
+  payment_method text,
+  reference_number text,
+  amount numeric(12,2) not null default 0,
+  notes text,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+insert into public.units_of_measure (code, name, category, sort_order)
+values
+  ('EA', 'Each', 'count', 10),
+  ('HR', 'Hour', 'time', 20),
+  ('DAY', 'Day', 'time', 30),
+  ('M', 'Metre', 'length', 40),
+  ('M2', 'Square metre', 'area', 50),
+  ('M3', 'Cubic metre', 'volume', 60),
+  ('L', 'Litre', 'volume', 70),
+  ('KG', 'Kilogram', 'weight', 80)
+on conflict (code) do nothing;
+
+insert into public.cost_codes (code, name, category)
+values
+  ('LAB', 'Labour', 'direct_cost'),
+  ('MAT', 'Materials', 'direct_cost'),
+  ('EQP', 'Equipment', 'direct_cost'),
+  ('SUB', 'Subcontract', 'direct_cost'),
+  ('MOB', 'Mobilization', 'overhead'),
+  ('SAFE', 'Safety / HSE', 'overhead')
+on conflict (code) do nothing;
+
+insert into public.chart_of_accounts (account_number, account_name, account_type, system_code)
+values
+  ('1000', 'Cash', 'asset', 'cash'),
+  ('1100', 'Accounts Receivable', 'asset', 'ar'),
+  ('1200', 'Inventory / Materials', 'asset', 'inventory'),
+  ('1500', 'Equipment Assets', 'asset', 'equipment'),
+  ('2000', 'Accounts Payable', 'liability', 'ap'),
+  ('2100', 'Sales Tax Payable', 'liability', 'tax_payable'),
+  ('3000', 'Owner Equity', 'equity', 'equity'),
+  ('4000', 'Landscape Service Revenue', 'revenue', 'revenue_landscape'),
+  ('4010', 'Project / Construction Revenue', 'revenue', 'revenue_project'),
+  ('4020', 'Subcontract Dispatch Revenue', 'revenue', 'revenue_dispatch'),
+  ('5000', 'Direct Labour Expense', 'expense', 'expense_labour'),
+  ('5010', 'Materials Expense', 'expense', 'expense_materials'),
+  ('5020', 'Equipment Operating Expense', 'expense', 'expense_equipment'),
+  ('5030', 'Subcontract Expense', 'expense', 'expense_subcontract'),
+  ('5100', 'Safety / Compliance Expense', 'expense', 'expense_safety')
+on conflict (account_number) do nothing;
+-- ============================================================================
+-- END MIGRATION: 061_estimates_work_orders_routes_materials_and_gl_foundation.sql
+-- ============================================================================
 
 
-create table if not exists public.equipment_evidence_assets (
-  id bigserial primary key,
-  signout_id bigint not null references public.equipment_signouts(id) on delete cascade,
-  equipment_item_id bigint references public.equipment_items(id) on delete cascade,
-  job_id bigint references public.jobs(id) on delete set null,
-  stage text not null default 'checkout',
-  evidence_kind text not null default 'photo',
-  signer_role text,
-  storage_bucket text not null default 'equipment-evidence',
+-- ============================================================================
+-- BEGIN MIGRATION: 062_deeper_workflow_polish_admin_foundation.sql
+-- ============================================================================
+-- 062_deeper_workflow_polish_admin_foundation.sql
+-- Deeper workflow polish on top of 061:
+-- estimate/work-order lines, route stops, AR/AP payment posting,
+-- purchase/material receiving, and linked HSE packets for work orders/dispatches.
+
+create extension if not exists pgcrypto;
+
+create table if not exists public.material_receipts (
+  id uuid primary key default gen_random_uuid(),
+  receipt_number text not null unique,
+  vendor_id uuid references public.ap_vendors(id) on delete set null,
+  client_site_id uuid references public.client_sites(id) on delete set null,
+  work_order_id uuid references public.work_orders(id) on delete set null,
+  receipt_status text not null default 'draft',
+  receipt_date date not null default current_date,
+  received_by_profile_id uuid references public.profiles(id) on delete set null,
+  notes text,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.material_receipt_lines (
+  id uuid primary key default gen_random_uuid(),
+  receipt_id uuid not null references public.material_receipts(id) on delete cascade,
+  line_order integer not null default 0,
+  material_id uuid references public.materials_catalog(id) on delete set null,
+  description text not null,
+  unit_id uuid references public.units_of_measure(id) on delete set null,
+  quantity numeric(12,2) not null default 0,
+  unit_cost numeric(12,2) not null default 0,
+  line_total numeric(12,2) not null default 0,
+  cost_code_id uuid references public.cost_codes(id) on delete set null,
+  work_order_line_id uuid references public.work_order_lines(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.linked_hse_packets (
+  id uuid primary key default gen_random_uuid(),
+  packet_number text not null unique,
+  packet_type text not null default 'work_order',
+  packet_status text not null default 'draft',
+  work_order_id uuid references public.work_orders(id) on delete set null,
+  dispatch_id uuid references public.subcontract_dispatches(id) on delete set null,
+  client_site_id uuid references public.client_sites(id) on delete set null,
+  route_id uuid references public.routes(id) on delete set null,
+  supervisor_profile_id uuid references public.profiles(id) on delete set null,
+  briefing_required boolean not null default true,
+  inspection_required boolean not null default true,
+  emergency_review_required boolean not null default false,
+  completion_percent numeric(5,2) not null default 0,
+  packet_notes text,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (packet_type in ('work_order','dispatch','standalone_hse')),
+  check (completion_percent >= 0 and completion_percent <= 100)
+);
+
+create index if not exists idx_route_stops_route_id on public.route_stops(route_id);
+create index if not exists idx_estimate_lines_estimate_id on public.estimate_lines(estimate_id);
+create index if not exists idx_work_order_lines_work_order_id on public.work_order_lines(work_order_id);
+create index if not exists idx_ar_payments_invoice_id on public.ar_payments(invoice_id);
+create index if not exists idx_ap_payments_bill_id on public.ap_payments(bill_id);
+create index if not exists idx_material_receipts_vendor_id on public.material_receipts(vendor_id);
+create index if not exists idx_material_receipts_work_order_id on public.material_receipts(work_order_id);
+create index if not exists idx_material_receipt_lines_receipt_id on public.material_receipt_lines(receipt_id);
+create index if not exists idx_linked_hse_packets_work_order_id on public.linked_hse_packets(work_order_id);
+create index if not exists idx_linked_hse_packets_dispatch_id on public.linked_hse_packets(dispatch_id);
+
+insert into public.cost_codes (code, name, category)
+values
+  ('REC', 'Material Receiving', 'overhead'),
+  ('WOH', 'Work Order HSE Packet', 'overhead'),
+  ('DSH', 'Dispatch HSE Packet', 'overhead')
+on conflict (code) do nothing;
+-- ============================================================================
+-- END MIGRATION: 062_deeper_workflow_polish_admin_foundation.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 063_workflow_rollups_posting_and_hse_closeout.sql
+-- ============================================================================
+-- 063_workflow_rollups_posting_and_hse_closeout.sql
+-- Workflow polish pass focused on database-enforced totals, payment posting,
+-- receiving-to-costing flow, and linked HSE packet progress / closeout.
+
+create extension if not exists pgcrypto;
+
+alter table if exists public.work_order_lines
+  add column if not exists actual_quantity_received numeric(12,2) not null default 0,
+  add column if not exists actual_material_cost numeric(12,2) not null default 0;
+
+alter table if exists public.work_orders
+  add column if not exists actual_material_cost_total numeric(12,2) not null default 0;
+
+alter table if exists public.linked_hse_packets
+  add column if not exists briefing_completed boolean not null default false,
+  add column if not exists inspection_completed boolean not null default false,
+  add column if not exists emergency_review_completed boolean not null default false,
+  add column if not exists ready_for_closeout_at timestamptz,
+  add column if not exists closed_at timestamptz,
+  add column if not exists closed_by_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists closeout_notes text;
+
+create or replace function public.ywi_normalize_money(value numeric)
+returns numeric
+language sql
+immutable
+as $$
+  select round(coalesce(value, 0)::numeric, 2)
+$$;
+
+create or replace function public.ywi_next_line_order(parent_table regclass, parent_column text, parent_id uuid, current_id uuid default null)
+returns integer
+language plpgsql
+as $$
+declare
+  v_sql text;
+  v_next integer;
+begin
+  if parent_id is null then
+    return 10;
+  end if;
+
+  v_sql := format(
+    'select coalesce(max(line_order), 0) + 10 from %s where %I = $1 and ($2 is null or id <> $2)',
+    parent_table,
+    parent_column
+  );
+
+  execute v_sql into v_next using parent_id, current_id;
+  return coalesce(v_next, 10);
+end;
+$$;
+
+create or replace function public.ywi_next_stop_order(route_id uuid, current_id uuid default null)
+returns integer
+language plpgsql
+as $$
+declare
+  v_next integer;
+begin
+  if route_id is null then
+    return 10;
+  end if;
+
+  select coalesce(max(stop_order), 0) + 10
+    into v_next
+  from public.route_stops
+  where route_stops.route_id = ywi_next_stop_order.route_id
+    and (current_id is null or id <> current_id);
+
+  return coalesce(v_next, 10);
+end;
+$$;
+
+create or replace function public.ywi_before_route_stop()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.stop_order is null or new.stop_order <= 0 then
+    new.stop_order := public.ywi_next_stop_order(new.route_id, new.id);
+  end if;
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_ywi_before_route_stop on public.route_stops;
+create trigger trg_ywi_before_route_stop
+before insert or update on public.route_stops
+for each row execute function public.ywi_before_route_stop();
+
+create or replace function public.ywi_before_estimate_line()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.line_order is null or new.line_order <= 0 then
+    new.line_order := public.ywi_next_line_order('public.estimate_lines'::regclass, 'estimate_id', new.estimate_id, new.id);
+  end if;
+  new.quantity := coalesce(new.quantity, 1);
+  new.unit_cost := public.ywi_normalize_money(new.unit_cost);
+  new.unit_price := public.ywi_normalize_money(new.unit_price);
+  new.line_total := public.ywi_normalize_money(coalesce(new.quantity, 0) * coalesce(new.unit_price, 0));
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_ywi_before_estimate_line on public.estimate_lines;
+create trigger trg_ywi_before_estimate_line
+before insert or update on public.estimate_lines
+for each row execute function public.ywi_before_estimate_line();
+
+create or replace function public.ywi_before_work_order_line()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.line_order is null or new.line_order <= 0 then
+    new.line_order := public.ywi_next_line_order('public.work_order_lines'::regclass, 'work_order_id', new.work_order_id, new.id);
+  end if;
+  new.quantity := coalesce(new.quantity, 1);
+  new.unit_cost := public.ywi_normalize_money(new.unit_cost);
+  new.unit_price := public.ywi_normalize_money(new.unit_price);
+  new.line_total := public.ywi_normalize_money(coalesce(new.quantity, 0) * coalesce(new.unit_price, 0));
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_ywi_before_work_order_line on public.work_order_lines;
+create trigger trg_ywi_before_work_order_line
+before insert or update on public.work_order_lines
+for each row execute function public.ywi_before_work_order_line();
+
+create or replace function public.ywi_before_material_receipt_line()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.line_order is null or new.line_order <= 0 then
+    new.line_order := public.ywi_next_line_order('public.material_receipt_lines'::regclass, 'receipt_id', new.receipt_id, new.id);
+  end if;
+  new.quantity := coalesce(new.quantity, 0);
+  new.unit_cost := public.ywi_normalize_money(new.unit_cost);
+  new.line_total := public.ywi_normalize_money(coalesce(new.quantity, 0) * coalesce(new.unit_cost, 0));
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_ywi_before_material_receipt_line on public.material_receipt_lines;
+create trigger trg_ywi_before_material_receipt_line
+before insert or update on public.material_receipt_lines
+for each row execute function public.ywi_before_material_receipt_line();
+
+create or replace function public.ywi_recalc_estimate_totals(p_estimate_id uuid)
+returns void
+language plpgsql
+as $$
+declare
+  v_subtotal numeric := 0;
+  v_tax numeric := 0;
+begin
+  if p_estimate_id is null then
+    return;
+  end if;
+
+  select coalesce(sum(line_total), 0)
+    into v_subtotal
+  from public.estimate_lines
+  where estimate_id = p_estimate_id;
+
+  select coalesce(tax_total, 0)
+    into v_tax
+  from public.estimates
+  where id = p_estimate_id;
+
+  update public.estimates
+  set subtotal = public.ywi_normalize_money(v_subtotal),
+      total_amount = public.ywi_normalize_money(v_subtotal + v_tax),
+      updated_at = now()
+  where id = p_estimate_id;
+end;
+$$;
+
+create or replace function public.ywi_recalc_work_order_totals(p_work_order_id uuid)
+returns void
+language plpgsql
+as $$
+declare
+  v_subtotal numeric := 0;
+  v_tax numeric := 0;
+  v_actual_material_cost numeric := 0;
+begin
+  if p_work_order_id is null then
+    return;
+  end if;
+
+  select coalesce(sum(line_total), 0), coalesce(sum(actual_material_cost), 0)
+    into v_subtotal, v_actual_material_cost
+  from public.work_order_lines
+  where work_order_id = p_work_order_id;
+
+  select coalesce(tax_total, 0)
+    into v_tax
+  from public.work_orders
+  where id = p_work_order_id;
+
+  update public.work_orders
+  set subtotal = public.ywi_normalize_money(v_subtotal),
+      total_amount = public.ywi_normalize_money(v_subtotal + v_tax),
+      actual_material_cost_total = public.ywi_normalize_money(v_actual_material_cost),
+      updated_at = now()
+  where id = p_work_order_id;
+end;
+$$;
+
+create or replace function public.ywi_after_estimate_line_recalc()
+returns trigger
+language plpgsql
+as $$
+begin
+  if tg_op in ('INSERT', 'UPDATE') then
+    perform public.ywi_recalc_estimate_totals(new.estimate_id);
+  end if;
+  if tg_op in ('UPDATE', 'DELETE') then
+    perform public.ywi_recalc_estimate_totals(old.estimate_id);
+  end if;
+  return null;
+end;
+$$;
+
+drop trigger if exists trg_ywi_after_estimate_line_recalc on public.estimate_lines;
+create trigger trg_ywi_after_estimate_line_recalc
+after insert or update or delete on public.estimate_lines
+for each row execute function public.ywi_after_estimate_line_recalc();
+
+create or replace function public.ywi_after_work_order_line_recalc()
+returns trigger
+language plpgsql
+as $$
+begin
+  if tg_op in ('INSERT', 'UPDATE') then
+    perform public.ywi_recalc_work_order_totals(new.work_order_id);
+  end if;
+  if tg_op in ('UPDATE', 'DELETE') then
+    perform public.ywi_recalc_work_order_totals(old.work_order_id);
+  end if;
+  return null;
+end;
+$$;
+
+drop trigger if exists trg_ywi_after_work_order_line_recalc on public.work_order_lines;
+create trigger trg_ywi_after_work_order_line_recalc
+after insert or update or delete on public.work_order_lines
+for each row execute function public.ywi_after_work_order_line_recalc();
+
+create or replace function public.ywi_sync_work_order_line_actuals(p_work_order_line_id uuid)
+returns void
+language plpgsql
+as $$
+declare
+  v_work_order_id uuid;
+  v_qty numeric := 0;
+  v_cost numeric := 0;
+begin
+  if p_work_order_line_id is null then
+    return;
+  end if;
+
+  select coalesce(sum(quantity), 0), coalesce(sum(line_total), 0)
+    into v_qty, v_cost
+  from public.material_receipt_lines
+  where work_order_line_id = p_work_order_line_id;
+
+  update public.work_order_lines
+  set actual_quantity_received = public.ywi_normalize_money(v_qty),
+      actual_material_cost = public.ywi_normalize_money(v_cost),
+      updated_at = now()
+  where id = p_work_order_line_id;
+
+  select work_order_id into v_work_order_id
+  from public.work_order_lines
+  where id = p_work_order_line_id;
+
+  perform public.ywi_recalc_work_order_totals(v_work_order_id);
+end;
+$$;
+
+create or replace function public.ywi_after_material_receipt_line_sync()
+returns trigger
+language plpgsql
+as $$
+begin
+  if tg_op in ('INSERT', 'UPDATE') then
+    perform public.ywi_sync_work_order_line_actuals(new.work_order_line_id);
+  end if;
+  if tg_op in ('UPDATE', 'DELETE') then
+    perform public.ywi_sync_work_order_line_actuals(old.work_order_line_id);
+  end if;
+  return null;
+end;
+$$;
+
+drop trigger if exists trg_ywi_after_material_receipt_line_sync on public.material_receipt_lines;
+create trigger trg_ywi_after_material_receipt_line_sync
+after insert or update or delete on public.material_receipt_lines
+for each row execute function public.ywi_after_material_receipt_line_sync();
+
+create or replace function public.ywi_recalc_ar_invoice_balance(p_invoice_id uuid)
+returns void
+language plpgsql
+as $$
+declare
+  v_total numeric := 0;
+  v_paid numeric := 0;
+  v_balance numeric := 0;
+  v_status text;
+begin
+  if p_invoice_id is null then
+    return;
+  end if;
+
+  select coalesce(total_amount, 0), invoice_status
+    into v_total, v_status
+  from public.ar_invoices
+  where id = p_invoice_id;
+
+  select coalesce(sum(amount), 0)
+    into v_paid
+  from public.ar_payments
+  where invoice_id = p_invoice_id;
+
+  v_balance := greatest(v_total - v_paid, 0);
+
+  update public.ar_invoices
+  set balance_due = public.ywi_normalize_money(v_balance),
+      invoice_status = case
+        when invoice_status = 'void' then 'void'
+        when public.ywi_normalize_money(v_total) <= 0 then invoice_status
+        when public.ywi_normalize_money(v_balance) = 0 then 'paid'
+        when public.ywi_normalize_money(v_paid) > 0 then 'partial'
+        when invoice_status in ('paid', 'partial') then 'issued'
+        else invoice_status
+      end,
+      updated_at = now()
+  where id = p_invoice_id;
+end;
+$$;
+
+create or replace function public.ywi_after_ar_payment_recalc()
+returns trigger
+language plpgsql
+as $$
+begin
+  if tg_op in ('INSERT', 'UPDATE') then
+    perform public.ywi_recalc_ar_invoice_balance(new.invoice_id);
+  end if;
+  if tg_op in ('UPDATE', 'DELETE') then
+    perform public.ywi_recalc_ar_invoice_balance(old.invoice_id);
+  end if;
+  return null;
+end;
+$$;
+
+drop trigger if exists trg_ywi_after_ar_payment_recalc on public.ar_payments;
+create trigger trg_ywi_after_ar_payment_recalc
+after insert or update or delete on public.ar_payments
+for each row execute function public.ywi_after_ar_payment_recalc();
+
+create or replace function public.ywi_recalc_ap_bill_balance(p_bill_id uuid)
+returns void
+language plpgsql
+as $$
+declare
+  v_total numeric := 0;
+  v_paid numeric := 0;
+  v_balance numeric := 0;
+begin
+  if p_bill_id is null then
+    return;
+  end if;
+
+  select coalesce(total_amount, 0)
+    into v_total
+  from public.ap_bills
+  where id = p_bill_id;
+
+  select coalesce(sum(amount), 0)
+    into v_paid
+  from public.ap_payments
+  where bill_id = p_bill_id;
+
+  v_balance := greatest(v_total - v_paid, 0);
+
+  update public.ap_bills
+  set balance_due = public.ywi_normalize_money(v_balance),
+      bill_status = case
+        when bill_status = 'void' then 'void'
+        when public.ywi_normalize_money(v_total) <= 0 then bill_status
+        when public.ywi_normalize_money(v_balance) = 0 then 'paid'
+        when public.ywi_normalize_money(v_paid) > 0 then 'partial'
+        when bill_status in ('paid', 'partial') then 'scheduled'
+        else bill_status
+      end,
+      updated_at = now()
+  where id = p_bill_id;
+end;
+$$;
+
+create or replace function public.ywi_after_ap_payment_recalc()
+returns trigger
+language plpgsql
+as $$
+begin
+  if tg_op in ('INSERT', 'UPDATE') then
+    perform public.ywi_recalc_ap_bill_balance(new.bill_id);
+  end if;
+  if tg_op in ('UPDATE', 'DELETE') then
+    perform public.ywi_recalc_ap_bill_balance(old.bill_id);
+  end if;
+  return null;
+end;
+$$;
+
+drop trigger if exists trg_ywi_after_ap_payment_recalc on public.ap_payments;
+create trigger trg_ywi_after_ap_payment_recalc
+after insert or update or delete on public.ap_payments
+for each row execute function public.ywi_after_ap_payment_recalc();
+
+create or replace function public.ywi_before_linked_hse_packet()
+returns trigger
+language plpgsql
+as $$
+declare
+  v_required_count integer := 0;
+  v_completed_count integer := 0;
+begin
+  v_required_count :=
+      (case when coalesce(new.briefing_required, false) then 1 else 0 end)
+    + (case when coalesce(new.inspection_required, false) then 1 else 0 end)
+    + (case when coalesce(new.emergency_review_required, false) then 1 else 0 end);
+
+  v_completed_count :=
+      (case when coalesce(new.briefing_required, false) and coalesce(new.briefing_completed, false) then 1 else 0 end)
+    + (case when coalesce(new.inspection_required, false) and coalesce(new.inspection_completed, false) then 1 else 0 end)
+    + (case when coalesce(new.emergency_review_required, false) and coalesce(new.emergency_review_completed, false) then 1 else 0 end);
+
+  if coalesce(new.packet_status, '') = 'closed' then
+    new.completion_percent := 100;
+    new.ready_for_closeout_at := coalesce(new.ready_for_closeout_at, now());
+    new.closed_at := coalesce(new.closed_at, now());
+  else
+    if v_required_count <= 0 then
+      new.completion_percent := 100;
+      new.packet_status := 'ready_for_closeout';
+      new.ready_for_closeout_at := coalesce(new.ready_for_closeout_at, now());
+    else
+      new.completion_percent := round((v_completed_count::numeric / v_required_count::numeric) * 100, 2);
+      if v_completed_count = v_required_count then
+        new.packet_status := 'ready_for_closeout';
+        new.ready_for_closeout_at := coalesce(new.ready_for_closeout_at, now());
+      elsif v_completed_count > 0 then
+        if coalesce(new.packet_status, '') not in ('closed') then
+          new.packet_status := 'in_progress';
+        end if;
+        new.ready_for_closeout_at := null;
+        new.closed_at := null;
+      else
+        new.packet_status := 'draft';
+        new.ready_for_closeout_at := null;
+        new.closed_at := null;
+      end if;
+    end if;
+  end if;
+
+  if coalesce(new.packet_status, '') <> 'closed' then
+    new.closed_at := null;
+  end if;
+
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_ywi_before_linked_hse_packet on public.linked_hse_packets;
+create trigger trg_ywi_before_linked_hse_packet
+before insert or update on public.linked_hse_packets
+for each row execute function public.ywi_before_linked_hse_packet();
+
+create or replace view public.v_route_rollups as
+select
+  r.id,
+  r.route_code,
+  r.name,
+  r.route_type,
+  count(rs.id) as stop_count,
+  count(*) filter (where rs.is_active is true) as active_stop_count,
+  coalesce(sum(rs.planned_duration_minutes), 0) as planned_minutes_total,
+  min(rs.planned_arrival_time) as first_planned_arrival,
+  max(rs.planned_arrival_time) as last_planned_arrival
+from public.routes r
+left join public.route_stops rs on rs.route_id = r.id
+group by r.id, r.route_code, r.name, r.route_type;
+
+create or replace view public.v_estimate_rollups as
+select
+  e.id,
+  e.estimate_number,
+  e.status,
+  e.client_id,
+  count(el.id) as line_count,
+  coalesce(sum(el.line_total), 0) as rolled_subtotal,
+  e.tax_total,
+  public.ywi_normalize_money(coalesce(sum(el.line_total), 0) + coalesce(e.tax_total, 0)) as rolled_total
+from public.estimates e
+left join public.estimate_lines el on el.estimate_id = e.id
+group by e.id, e.estimate_number, e.status, e.client_id, e.tax_total;
+
+create or replace view public.v_work_order_rollups as
+select
+  wo.id,
+  wo.work_order_number,
+  wo.status,
+  wo.client_id,
+  count(wol.id) as line_count,
+  coalesce(sum(wol.line_total), 0) as rolled_subtotal,
+  coalesce(sum(wol.actual_material_cost), 0) as actual_material_cost_total,
+  wo.tax_total,
+  public.ywi_normalize_money(coalesce(sum(wol.line_total), 0) + coalesce(wo.tax_total, 0)) as rolled_total,
+  count(lhp.id) filter (where lhp.packet_status in ('draft', 'in_progress')) as open_hse_packets,
+  count(lhp.id) filter (where lhp.packet_status = 'ready_for_closeout') as ready_hse_packets,
+  count(lhp.id) filter (where lhp.packet_status = 'closed') as closed_hse_packets
+from public.work_orders wo
+left join public.work_order_lines wol on wol.work_order_id = wo.id
+left join public.linked_hse_packets lhp on lhp.work_order_id = wo.id
+group by wo.id, wo.work_order_number, wo.status, wo.client_id, wo.tax_total;
+
+create or replace view public.v_material_receipt_rollups as
+select
+  mr.id,
+  mr.receipt_number,
+  mr.receipt_status,
+  mr.vendor_id,
+  mr.work_order_id,
+  count(mrl.id) as line_count,
+  coalesce(sum(mrl.quantity), 0) as quantity_total,
+  coalesce(sum(mrl.line_total), 0) as receipt_total
+from public.material_receipts mr
+left join public.material_receipt_lines mrl on mrl.receipt_id = mr.id
+group by mr.id, mr.receipt_number, mr.receipt_status, mr.vendor_id, mr.work_order_id;
+
+create or replace view public.v_hse_packet_progress as
+select
+  lhp.id,
+  lhp.packet_number,
+  lhp.packet_type,
+  lhp.packet_status,
+  lhp.work_order_id,
+  lhp.dispatch_id,
+  ((case when lhp.briefing_required then 1 else 0 end)
+    + (case when lhp.inspection_required then 1 else 0 end)
+    + (case when lhp.emergency_review_required then 1 else 0 end)) as required_step_count,
+  ((case when lhp.briefing_required and lhp.briefing_completed then 1 else 0 end)
+    + (case when lhp.inspection_required and lhp.inspection_completed then 1 else 0 end)
+    + (case when lhp.emergency_review_required and lhp.emergency_review_completed then 1 else 0 end)) as completed_step_count,
+  lhp.completion_percent,
+  lhp.ready_for_closeout_at,
+  lhp.closed_at
+from public.linked_hse_packets lhp;
+
+create or replace view public.v_account_balance_rollups as
+select
+  'ar_invoice'::text as record_type,
+  ai.id,
+  ai.invoice_number as record_number,
+  ai.client_id,
+  ai.total_amount,
+  coalesce(sum(ap.amount), 0) as posted_amount,
+  ai.balance_due,
+  ai.invoice_status as status
+from public.ar_invoices ai
+left join public.ar_payments ap on ap.invoice_id = ai.id
+group by ai.id, ai.invoice_number, ai.client_id, ai.total_amount, ai.balance_due, ai.invoice_status
+union all
+select
+  'ap_bill'::text as record_type,
+  ab.id,
+  ab.bill_number as record_number,
+  ab.vendor_id as client_id,
+  ab.total_amount,
+  coalesce(sum(app.amount), 0) as posted_amount,
+  ab.balance_due,
+  ab.bill_status as status
+from public.ap_bills ab
+left join public.ap_payments app on app.bill_id = ab.id
+group by ab.id, ab.bill_number, ab.vendor_id, ab.total_amount, ab.balance_due, ab.bill_status;
+
+create index if not exists idx_material_receipt_lines_work_order_line_id on public.material_receipt_lines(work_order_line_id);
+create index if not exists idx_linked_hse_packets_status on public.linked_hse_packets(packet_status);
+-- ============================================================================
+-- END MIGRATION: 063_workflow_rollups_posting_and_hse_closeout.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 064_receipt_rollups_work_order_operational_status_and_posted_amounts.sql
+-- ============================================================================
+-- 064_receipt_rollups_work_order_operational_status_and_posted_amounts.sql
+-- Follow-up polish on top of 063:
+-- - clearer receipt allocation rollups
+-- - work-order operational visibility for receiving + HSE linkage
+-- - posted/open amount visibility for AR/AP records
+
+create extension if not exists pgcrypto;
+
+create or replace view public.v_material_receipt_rollups as
+with receipt_rollups as (
+  select
+    mr.id,
+    mr.receipt_number,
+    mr.receipt_status,
+    mr.vendor_id,
+    mr.work_order_id,
+    count(mrl.id) as line_count,
+    coalesce(sum(mrl.quantity), 0) as quantity_total,
+    coalesce(sum(mrl.line_total), 0) as receipt_total,
+    coalesce(sum(case when mrl.work_order_line_id is not null then mrl.line_total else 0 end), 0) as allocated_receipt_total,
+    coalesce(sum(case when mrl.work_order_line_id is null then mrl.line_total else 0 end), 0) as unallocated_receipt_total,
+    count(distinct mrl.work_order_line_id) filter (where mrl.work_order_line_id is not null) as linked_work_order_line_count
+  from public.material_receipts mr
+  left join public.material_receipt_lines mrl on mrl.receipt_id = mr.id
+  group by mr.id, mr.receipt_number, mr.receipt_status, mr.vendor_id, mr.work_order_id
+)
+select * from receipt_rollups;
+
+create or replace view public.v_work_order_rollups as
+with line_rollups as (
+  select
+    wo.id,
+    count(wol.id) as line_count,
+    coalesce(sum(wol.line_total), 0) as rolled_subtotal,
+    coalesce(sum(wol.actual_material_cost), 0) as actual_material_cost_total
+  from public.work_orders wo
+  left join public.work_order_lines wol on wol.work_order_id = wo.id
+  group by wo.id
+),
+receipt_rollups as (
+  select
+    mr.work_order_id,
+    count(distinct mr.id) as receipt_count,
+    coalesce(sum(mrl.quantity), 0) as received_material_quantity_total,
+    coalesce(sum(mrl.line_total), 0) as received_material_cost_total,
+    coalesce(sum(case when mrl.work_order_line_id is not null then mrl.line_total else 0 end), 0) as allocated_receipt_cost_total,
+    coalesce(sum(case when mrl.work_order_line_id is null then mrl.line_total else 0 end), 0) as unallocated_receipt_cost_total
+  from public.material_receipts mr
+  left join public.material_receipt_lines mrl on mrl.receipt_id = mr.id
+  where mr.work_order_id is not null
+  group by mr.work_order_id
+),
+hse_rollups as (
+  select
+    lhp.work_order_id,
+    count(lhp.id) filter (where lhp.packet_status in ('draft', 'in_progress')) as open_hse_packets,
+    count(lhp.id) filter (where lhp.packet_status = 'ready_for_closeout') as ready_hse_packets,
+    count(lhp.id) filter (where lhp.packet_status = 'closed') as closed_hse_packets
+  from public.linked_hse_packets lhp
+  where lhp.work_order_id is not null
+  group by lhp.work_order_id
+)
+select
+  wo.id,
+  wo.work_order_number,
+  wo.status,
+  wo.client_id,
+  coalesce(lr.line_count, 0) as line_count,
+  coalesce(lr.rolled_subtotal, 0) as rolled_subtotal,
+  coalesce(lr.actual_material_cost_total, 0) as actual_material_cost_total,
+  wo.tax_total,
+  public.ywi_normalize_money(coalesce(lr.rolled_subtotal, 0) + coalesce(wo.tax_total, 0)) as rolled_total,
+  coalesce(hr.open_hse_packets, 0) as open_hse_packets,
+  coalesce(hr.ready_hse_packets, 0) as ready_hse_packets,
+  coalesce(hr.closed_hse_packets, 0) as closed_hse_packets,
+  coalesce(rr.receipt_count, 0) as receipt_count,
+  coalesce(rr.received_material_quantity_total, 0) as received_material_quantity_total,
+  coalesce(rr.received_material_cost_total, 0) as received_material_cost_total,
+  coalesce(rr.allocated_receipt_cost_total, 0) as allocated_receipt_cost_total,
+  coalesce(rr.unallocated_receipt_cost_total, 0) as unallocated_receipt_cost_total,
+  case
+    when wo.status = 'closed' then 'closed'
+    when wo.status = 'completed' and coalesce(hr.open_hse_packets, 0) = 0 then 'ready_for_billing'
+    when wo.status in ('in_progress', 'completed') or coalesce(rr.receipt_count, 0) > 0 or coalesce(hr.open_hse_packets, 0) > 0 then 'active'
+    when wo.status = 'scheduled' then 'scheduled'
+    else 'draft'
+  end as operational_status
+from public.work_orders wo
+left join line_rollups lr on lr.id = wo.id
+left join receipt_rollups rr on rr.work_order_id = wo.id
+left join hse_rollups hr on hr.work_order_id = wo.id;
+
+create or replace view public.v_account_balance_rollups as
+select
+  'ar_invoice'::text as record_type,
+  ai.id,
+  ai.invoice_number as record_number,
+  ai.client_id,
+  ai.total_amount,
+  public.ywi_normalize_money(coalesce(ai.total_amount, 0) - coalesce(ai.balance_due, 0)) as posted_amount,
+  ai.balance_due,
+  ai.invoice_status as status,
+  public.ywi_normalize_money(coalesce(ai.balance_due, 0)) as open_amount,
+  case
+    when coalesce(ai.total_amount, 0) <= 0 then 0
+    else round(((coalesce(ai.total_amount, 0) - coalesce(ai.balance_due, 0)) / nullif(ai.total_amount, 0)) * 100, 2)
+  end as posted_percent
+from public.ar_invoices ai
+union all
+select
+  'ap_bill'::text as record_type,
+  ab.id,
+  ab.bill_number as record_number,
+  ab.vendor_id as client_id,
+  ab.total_amount,
+  public.ywi_normalize_money(coalesce(ab.total_amount, 0) - coalesce(ab.balance_due, 0)) as posted_amount,
+  ab.balance_due,
+  ab.bill_status as status,
+  public.ywi_normalize_money(coalesce(ab.balance_due, 0)) as open_amount,
+  case
+    when coalesce(ab.total_amount, 0) <= 0 then 0
+    else round(((coalesce(ab.total_amount, 0) - coalesce(ab.balance_due, 0)) / nullif(ab.total_amount, 0)) * 100, 2)
+  end as posted_percent
+from public.ap_bills ab;
+
+create index if not exists idx_material_receipt_lines_material_id on public.material_receipt_lines(material_id);
+create index if not exists idx_work_orders_route_id on public.work_orders(route_id);
+-- ============================================================================
+-- END MIGRATION: 064_receipt_rollups_work_order_operational_status_and_posted_amounts.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 065_job_crews_recurring_schedules_and_activity_tracking.sql
+-- ============================================================================
+-- 065_job_crews_recurring_schedules_and_activity_tracking.sql
+-- Adds crew assignment, recurring job scheduling, and photo-capable job activity tracking.
+
+create extension if not exists pgcrypto;
+
+create table if not exists public.crews (
+  id uuid primary key default gen_random_uuid(),
+  crew_code text unique,
+  crew_name text not null unique,
+  supervisor_profile_id uuid references public.profiles(id) on delete set null,
+  crew_status text not null default 'active',
+  notes text,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (crew_status in ('active','inactive','archived'))
+);
+
+create table if not exists public.crew_members (
+  id uuid primary key default gen_random_uuid(),
+  crew_id uuid not null references public.crews(id) on delete cascade,
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  member_role text not null default 'member',
+  is_primary boolean not null default false,
+  added_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (crew_id, profile_id)
+);
+
+alter table public.jobs add column if not exists crew_id uuid references public.crews(id) on delete set null;
+alter table public.jobs add column if not exists assigned_supervisor_profile_id uuid references public.profiles(id) on delete set null;
+alter table public.jobs add column if not exists schedule_mode text not null default 'standalone';
+alter table public.jobs add column if not exists recurrence_rule text;
+alter table public.jobs add column if not exists recurrence_summary text;
+alter table public.jobs add column if not exists recurrence_interval integer;
+alter table public.jobs add column if not exists recurrence_anchor_date date;
+alter table public.jobs add column if not exists special_instructions text;
+alter table public.jobs add column if not exists last_activity_at timestamptz;
+
+update public.jobs
+set assigned_supervisor_profile_id = coalesce(assigned_supervisor_profile_id, site_supervisor_profile_id, signing_supervisor_profile_id)
+where assigned_supervisor_profile_id is null;
+
+update public.jobs
+set last_activity_at = coalesce(last_activity_at, updated_at, created_at)
+where last_activity_at is null;
+
+alter table public.jobs drop constraint if exists jobs_schedule_mode_check;
+alter table public.jobs
+  add constraint jobs_schedule_mode_check
+  check (schedule_mode in ('standalone','recurring','project_phase'));
+
+create table if not exists public.job_comments (
+  id uuid primary key default gen_random_uuid(),
+  job_id bigint not null references public.jobs(id) on delete cascade,
+  work_order_id uuid references public.work_orders(id) on delete set null,
+  comment_type text not null default 'update',
+  comment_text text not null,
+  is_special_instruction boolean not null default false,
+  visible_to_client boolean not null default false,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (comment_type in ('update','photo','issue','instruction','closeout'))
+);
+
+create table if not exists public.job_comment_attachments (
+  id uuid primary key default gen_random_uuid(),
+  comment_id uuid not null references public.job_comments(id) on delete cascade,
+  storage_bucket text not null default 'submission-images',
   storage_path text not null,
   preview_url text,
+  file_name text not null,
+  content_type text,
+  file_size_bytes bigint,
+  attachment_kind text not null default 'photo',
+  uploaded_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  check (attachment_kind in ('photo','file','document'))
+);
+
+create index if not exists idx_crews_supervisor_profile_id on public.crews(supervisor_profile_id);
+create index if not exists idx_crew_members_crew_id on public.crew_members(crew_id, created_at desc);
+create index if not exists idx_crew_members_profile_id on public.crew_members(profile_id);
+create index if not exists idx_jobs_crew_id on public.jobs(crew_id);
+create index if not exists idx_jobs_assigned_supervisor_profile_id on public.jobs(assigned_supervisor_profile_id);
+create index if not exists idx_jobs_schedule_mode on public.jobs(schedule_mode);
+create index if not exists idx_job_comments_job_id on public.job_comments(job_id, created_at desc);
+create index if not exists idx_job_comment_attachments_comment_id on public.job_comment_attachments(comment_id, created_at desc);
+
+create or replace view public.v_crew_directory as
+select
+  c.id,
+  c.crew_code,
+  c.crew_name,
+  c.supervisor_profile_id,
+  c.crew_status,
+  c.notes,
+  c.created_by_profile_id,
+  c.created_at,
+  c.updated_at,
+  sup.full_name as supervisor_name,
+  count(cm.id)::int as member_count,
+  coalesce(jsonb_agg(jsonb_build_object(
+    'id', p.id,
+    'full_name', p.full_name,
+    'email', p.email,
+    'member_role', cm.member_role,
+    'is_primary', cm.is_primary
+  ) order by cm.is_primary desc, p.full_name) filter (where cm.id is not null), '[]'::jsonb) as members_json
+from public.crews c
+left join public.profiles sup on sup.id = c.supervisor_profile_id
+left join public.crew_members cm on cm.crew_id = c.id
+left join public.profiles p on p.id = cm.profile_id
+group by c.id, sup.full_name;
+
+create or replace view public.v_job_comment_activity as
+select
+  jc.id,
+  jc.job_id,
+  jc.work_order_id,
+  jc.comment_type,
+  jc.comment_text,
+  jc.is_special_instruction,
+  jc.visible_to_client,
+  jc.created_by_profile_id,
+  jc.created_at,
+  jc.updated_at,
+  p.full_name as created_by_name,
+  count(a.id)::int as attachment_count,
+  count(a.id) filter (where a.attachment_kind = 'photo')::int as photo_count
+from public.job_comments jc
+left join public.profiles p on p.id = jc.created_by_profile_id
+left join public.job_comment_attachments a on a.comment_id = jc.id
+group by jc.id, p.full_name;
+
+create or replace view public.v_jobs_directory as
+select
+  j.id,
+  j.job_code,
+  j.job_name,
+  j.site_id,
+  j.job_type,
+  j.status,
+  j.priority,
+  j.client_name,
+  j.start_date,
+  j.end_date,
+  j.site_supervisor_profile_id,
+  j.signing_supervisor_profile_id,
+  j.admin_profile_id,
+  j.notes,
+  j.created_by_profile_id,
+  j.approval_status,
+  j.approval_requested_at,
+  j.approved_at,
+  j.approved_by_profile_id,
+  j.approval_notes,
+  j.created_at,
+  j.updated_at,
+  s.site_code,
+  s.site_name,
+  sup.full_name as supervisor_name,
+  signsup.full_name as signing_supervisor_name,
+  adm.full_name as admin_name,
+  j.crew_id,
+  j.assigned_supervisor_profile_id,
+  j.schedule_mode,
+  j.recurrence_rule,
+  j.recurrence_summary,
+  j.recurrence_interval,
+  j.recurrence_anchor_date,
+  j.special_instructions,
+  j.last_activity_at,
+  crew.crew_name,
+  assignedsup.full_name as assigned_supervisor_name,
+  coalesce(crew_rollup.member_count, 0) as crew_member_count,
+  coalesce(comment_rollup.comment_count, 0) as comment_count,
+  coalesce(comment_rollup.photo_count, 0) as photo_count
+from public.jobs j
+left join public.sites s on s.id = j.site_id
+left join public.profiles sup on sup.id = j.site_supervisor_profile_id
+left join public.profiles signsup on signsup.id = j.signing_supervisor_profile_id
+left join public.profiles adm on adm.id = j.admin_profile_id
+left join public.crews crew on crew.id = j.crew_id
+left join public.profiles assignedsup on assignedsup.id = j.assigned_supervisor_profile_id
+left join (
+  select crew_id, count(*)::int as member_count
+  from public.crew_members
+  group by crew_id
+) crew_rollup on crew_rollup.crew_id = j.crew_id
+left join (
+  select jc.job_id, count(*)::int as comment_count, coalesce(sum(v.photo_count), 0)::int as photo_count
+  from public.job_comments jc
+  left join public.v_job_comment_activity v on v.id = jc.id
+  group by jc.job_id
+) comment_rollup on comment_rollup.job_id = j.id;
+-- ============================================================================
+-- END MIGRATION: 065_job_crews_recurring_schedules_and_activity_tracking.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 066_journal_posting_controls_and_material_issue_usage.sql
+-- ============================================================================
+-- 066_journal_posting_controls_and_material_issue_usage.sql
+-- Adds explicit journal-batch posting rollups plus material issue / usage records
+-- so receiving can move into job consumption and variance.
+
+create extension if not exists pgcrypto;
+
+alter table if exists public.gl_journal_batches
+  add column if not exists source_record_type text,
+  add column if not exists source_record_id uuid,
+  add column if not exists line_count integer not null default 0,
+  add column if not exists debit_total numeric(12,2) not null default 0,
+  add column if not exists credit_total numeric(12,2) not null default 0,
+  add column if not exists is_balanced boolean not null default false,
+  add column if not exists posting_notes text,
+  add column if not exists posted_by_profile_id uuid references public.profiles(id) on delete set null;
+
+alter table if exists public.gl_journal_entries
+  add column if not exists line_number integer,
+  add column if not exists source_record_type text,
+  add column if not exists source_record_id uuid,
+  add column if not exists created_by_profile_id uuid references public.profiles(id) on delete set null;
+
+alter table if exists public.gl_journal_batches drop constraint if exists gl_journal_batches_batch_status_check;
+alter table if exists public.gl_journal_batches
+  add constraint gl_journal_batches_batch_status_check
+  check (batch_status in ('draft','review','posted','void'));
+
+create table if not exists public.material_issues (
+  id uuid primary key default gen_random_uuid(),
+  issue_number text not null unique,
+  work_order_id uuid references public.work_orders(id) on delete set null,
+  client_site_id uuid references public.client_sites(id) on delete set null,
+  issue_status text not null default 'draft',
+  issue_date date not null default current_date,
+  issued_by_profile_id uuid references public.profiles(id) on delete set null,
+  line_count integer not null default 0,
+  quantity_total numeric(12,2) not null default 0,
+  issue_total numeric(12,2) not null default 0,
+  estimated_material_total numeric(12,2) not null default 0,
+  variance_amount numeric(12,2) not null default 0,
+  notes text,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (issue_status in ('draft','issued','partial','closed','void'))
+);
+
+create table if not exists public.material_issue_lines (
+  id uuid primary key default gen_random_uuid(),
+  issue_id uuid not null references public.material_issues(id) on delete cascade,
+  line_order integer not null default 0,
+  material_id uuid references public.materials_catalog(id) on delete set null,
+  work_order_line_id uuid references public.work_order_lines(id) on delete set null,
+  description text not null,
+  unit_id uuid references public.units_of_measure(id) on delete set null,
+  quantity numeric(12,2) not null default 0,
+  unit_cost numeric(12,2) not null default 0,
+  line_total numeric(12,2) not null default 0,
+  cost_code_id uuid references public.cost_codes(id) on delete set null,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists idx_gl_journal_entries_batch_id on public.gl_journal_entries(batch_id);
+create unique index if not exists idx_gl_journal_entries_batch_line_number on public.gl_journal_entries(batch_id, line_number);
+create index if not exists idx_material_issues_work_order_id on public.material_issues(work_order_id);
+create index if not exists idx_material_issues_client_site_id on public.material_issues(client_site_id);
+create index if not exists idx_material_issue_lines_issue_id on public.material_issue_lines(issue_id, line_order);
+create index if not exists idx_material_issue_lines_material_id on public.material_issue_lines(material_id);
+create index if not exists idx_material_issue_lines_work_order_line_id on public.material_issue_lines(work_order_line_id);
+
+create or replace function public.ywi_before_gl_journal_entry()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.line_number is null or new.line_number <= 0 then
+    new.line_number := public.ywi_next_line_order('public.gl_journal_entries'::regclass, 'batch_id', new.batch_id, new.id);
+  end if;
+  new.debit_amount := public.ywi_normalize_money(coalesce(new.debit_amount, 0));
+  new.credit_amount := public.ywi_normalize_money(coalesce(new.credit_amount, 0));
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_ywi_before_gl_journal_entry on public.gl_journal_entries;
+create trigger trg_ywi_before_gl_journal_entry
+before insert or update on public.gl_journal_entries
+for each row execute function public.ywi_before_gl_journal_entry();
+
+create or replace function public.ywi_sync_gl_journal_batch(p_batch_id uuid)
+returns void
+language plpgsql
+as $$
+declare
+  v_line_count integer := 0;
+  v_debit numeric(12,2) := 0;
+  v_credit numeric(12,2) := 0;
+begin
+  if p_batch_id is null then
+    return;
+  end if;
+
+  select
+    count(*),
+    coalesce(sum(debit_amount), 0),
+    coalesce(sum(credit_amount), 0)
+  into
+    v_line_count,
+    v_debit,
+    v_credit
+  from public.gl_journal_entries
+  where batch_id = p_batch_id;
+
+  update public.gl_journal_batches
+  set
+    line_count = v_line_count,
+    debit_total = public.ywi_normalize_money(v_debit),
+    credit_total = public.ywi_normalize_money(v_credit),
+    is_balanced = (
+      v_line_count > 0
+      and public.ywi_normalize_money(v_debit) = public.ywi_normalize_money(v_credit)
+    ),
+    updated_at = now()
+  where id = p_batch_id;
+end;
+$$;
+
+create or replace function public.ywi_after_gl_journal_entry_sync()
+returns trigger
+language plpgsql
+as $$
+begin
+  perform public.ywi_sync_gl_journal_batch(coalesce(new.batch_id, old.batch_id));
+  if tg_op = 'UPDATE' and new.batch_id is distinct from old.batch_id then
+    perform public.ywi_sync_gl_journal_batch(old.batch_id);
+  end if;
+  return coalesce(new, old);
+end;
+$$;
+
+drop trigger if exists trg_ywi_after_gl_journal_entry_sync on public.gl_journal_entries;
+create trigger trg_ywi_after_gl_journal_entry_sync
+after insert or update or delete on public.gl_journal_entries
+for each row execute function public.ywi_after_gl_journal_entry_sync();
+
+create or replace view public.v_gl_journal_batch_rollups as
+select
+  gjb.id,
+  gjb.batch_number,
+  gjb.source_module,
+  gjb.batch_status,
+  gjb.batch_date,
+  gjb.memo,
+  gjb.posted_at,
+  gjb.source_record_type,
+  gjb.source_record_id,
+  gjb.line_count,
+  gjb.debit_total,
+  gjb.credit_total,
+  gjb.is_balanced,
+  public.ywi_normalize_money(coalesce(gjb.debit_total, 0) - coalesce(gjb.credit_total, 0)) as balance_difference,
+  gjb.posting_notes,
+  gjb.posted_by_profile_id
+from public.gl_journal_batches gjb;
+
+create or replace function public.ywi_before_material_issue_line()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.line_order is null or new.line_order <= 0 then
+    new.line_order := public.ywi_next_line_order('public.material_issue_lines'::regclass, 'issue_id', new.issue_id, new.id);
+  end if;
+  new.quantity := coalesce(new.quantity, 0);
+  new.unit_cost := public.ywi_normalize_money(coalesce(new.unit_cost, 0));
+  new.line_total := public.ywi_normalize_money(coalesce(new.quantity, 0) * coalesce(new.unit_cost, 0));
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_ywi_before_material_issue_line on public.material_issue_lines;
+create trigger trg_ywi_before_material_issue_line
+before insert or update on public.material_issue_lines
+for each row execute function public.ywi_before_material_issue_line();
+
+create or replace function public.ywi_sync_material_issue(p_issue_id uuid)
+returns void
+language plpgsql
+as $$
+declare
+  v_work_order_id uuid;
+  v_line_count integer := 0;
+  v_qty numeric(12,2) := 0;
+  v_total numeric(12,2) := 0;
+  v_estimated numeric(12,2) := 0;
+begin
+  if p_issue_id is null then
+    return;
+  end if;
+
+  select work_order_id into v_work_order_id
+  from public.material_issues
+  where id = p_issue_id;
+
+  select
+    count(*),
+    coalesce(sum(quantity), 0),
+    coalesce(sum(line_total), 0)
+  into
+    v_line_count,
+    v_qty,
+    v_total
+  from public.material_issue_lines
+  where issue_id = p_issue_id;
+
+  if v_work_order_id is not null then
+    select
+      coalesce(sum(
+        case
+          when wol.material_id is not null or lower(coalesce(wol.line_type, '')) = 'material'
+            then coalesce(wol.quantity, 0) * coalesce(wol.unit_cost, 0)
+          else 0
+        end
+      ), 0)
+    into v_estimated
+    from public.work_order_lines wol
+    where wol.work_order_id = v_work_order_id;
+  end if;
+
+  update public.material_issues
+  set
+    line_count = v_line_count,
+    quantity_total = public.ywi_normalize_money(v_qty),
+    issue_total = public.ywi_normalize_money(v_total),
+    estimated_material_total = public.ywi_normalize_money(v_estimated),
+    variance_amount = public.ywi_normalize_money(v_total - v_estimated),
+    updated_at = now()
+  where id = p_issue_id;
+end;
+$$;
+
+create or replace function public.ywi_after_material_issue_line_sync()
+returns trigger
+language plpgsql
+as $$
+begin
+  perform public.ywi_sync_material_issue(coalesce(new.issue_id, old.issue_id));
+  if tg_op = 'UPDATE' and new.issue_id is distinct from old.issue_id then
+    perform public.ywi_sync_material_issue(old.issue_id);
+  end if;
+  return coalesce(new, old);
+end;
+$$;
+
+drop trigger if exists trg_ywi_after_material_issue_line_sync on public.material_issue_lines;
+create trigger trg_ywi_after_material_issue_line_sync
+after insert or update or delete on public.material_issue_lines
+for each row execute function public.ywi_after_material_issue_line_sync();
+
+create or replace view public.v_material_issue_rollups as
+select
+  mi.id,
+  mi.issue_number,
+  mi.work_order_id,
+  mi.client_site_id,
+  mi.issue_status,
+  mi.issue_date,
+  mi.issued_by_profile_id,
+  mi.line_count,
+  mi.quantity_total,
+  mi.issue_total,
+  mi.estimated_material_total,
+  mi.variance_amount,
+  mi.notes,
+  mi.created_by_profile_id,
+  mi.created_at,
+  mi.updated_at,
+  wo.work_order_number,
+  cs.site_name as client_site_name,
+  p.full_name as issued_by_name
+from public.material_issues mi
+left join public.work_orders wo on wo.id = mi.work_order_id
+left join public.client_sites cs on cs.id = mi.client_site_id
+left join public.profiles p on p.id = mi.issued_by_profile_id;
+-- ============================================================================
+-- END MIGRATION: 066_journal_posting_controls_and_material_issue_usage.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 067_source_journal_route_execution_and_hse_proof.sql
+-- ============================================================================
+-- 067_source_journal_route_execution_and_hse_proof.sql
+-- Adds:
+-- 1) source-generated draft journal batches from AR/AP/receiving/usage events
+-- 2) route-stop execution lifecycle records with note/photo attachment rows
+-- 3) HSE proof rows plus reopen-aware packet workflow
+
+create extension if not exists pgcrypto;
+
+insert into public.chart_of_accounts (account_number, account_name, account_type, system_code)
+values
+  ('2050', 'Inventory / Receipt Clearing', 'liability', 'inventory_clearing')
+on conflict (account_number) do update
+set
+  account_name = excluded.account_name,
+  account_type = excluded.account_type,
+  system_code = excluded.system_code;
+
+alter table if exists public.gl_journal_batches
+  add column if not exists source_generated boolean not null default false,
+  add column if not exists source_sync_state text not null default 'manual',
+  add column if not exists source_synced_at timestamptz;
+
+alter table if exists public.gl_journal_batches drop constraint if exists gl_journal_batches_source_sync_state_check;
+alter table if exists public.gl_journal_batches
+  add constraint gl_journal_batches_source_sync_state_check
+  check (source_sync_state in ('manual','drafted','posted','stale'));
+
+create table if not exists public.route_stop_executions (
+  id uuid primary key default gen_random_uuid(),
+  route_stop_id uuid not null references public.route_stops(id) on delete cascade,
+  route_id uuid references public.routes(id) on delete set null,
+  client_site_id uuid references public.client_sites(id) on delete set null,
+  execution_date date not null default current_date,
+  execution_sequence integer not null default 1,
+  execution_status text not null default 'planned',
+  started_at timestamptz,
+  arrived_at timestamptz,
+  completed_at timestamptz,
+  completed_by_profile_id uuid references public.profiles(id) on delete set null,
+  supervisor_profile_id uuid references public.profiles(id) on delete set null,
+  delay_minutes integer not null default 0,
+  special_instructions_acknowledged boolean not null default false,
+  notes text,
+  exception_notes text,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (execution_status in ('planned','in_progress','completed','skipped','delayed','cancelled')),
+  check (execution_sequence > 0),
+  check (delay_minutes >= 0),
+  unique(route_stop_id, execution_date, execution_sequence)
+);
+
+create table if not exists public.route_stop_execution_attachments (
+  id uuid primary key default gen_random_uuid(),
+  execution_id uuid not null references public.route_stop_executions(id) on delete cascade,
+  attachment_kind text not null default 'photo',
+  storage_bucket text,
+  storage_path text,
+  file_name text,
+  mime_type text,
+  public_url text,
+  caption text,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  check (attachment_kind in ('photo','file','signature','document'))
+);
+
+alter table if exists public.linked_hse_packets
+  add column if not exists reopen_in_progress boolean not null default false,
+  add column if not exists reopen_count integer not null default 0,
+  add column if not exists last_reopened_at timestamptz,
+  add column if not exists last_reopened_by_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists reopen_reason text;
+
+create table if not exists public.hse_packet_proofs (
+  id uuid primary key default gen_random_uuid(),
+  packet_id uuid not null references public.linked_hse_packets(id) on delete cascade,
+  proof_kind text not null default 'photo',
+  proof_stage text not null default 'field',
+  storage_bucket text,
+  storage_path text,
+  file_name text,
+  mime_type text,
+  public_url text,
+  caption text,
+  proof_notes text,
+  uploaded_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (proof_kind in ('photo','file','signature','document')),
+  check (proof_stage in ('field','closeout','reopen','exception'))
+);
+
+create index if not exists idx_route_stop_executions_route_stop_id on public.route_stop_executions(route_stop_id, execution_date desc);
+create index if not exists idx_route_stop_executions_route_id on public.route_stop_executions(route_id, execution_date desc);
+create index if not exists idx_route_stop_execution_attachments_execution_id on public.route_stop_execution_attachments(execution_id, created_at desc);
+create index if not exists idx_hse_packet_proofs_packet_id on public.hse_packet_proofs(packet_id, created_at desc);
+create index if not exists idx_hse_packet_proofs_kind on public.hse_packet_proofs(proof_kind, proof_stage);
+
+create or replace function public.ywi_get_account_id(p_system_code text)
+returns uuid
+language sql
+stable
+as $$
+  select coa.id
+  from public.chart_of_accounts coa
+  where lower(coalesce(coa.system_code, '')) = lower(coalesce(p_system_code, ''))
+    and coalesce(coa.is_active, true)
+  order by coa.account_number
+  limit 1
+$$;
+
+create or replace function public.ywi_source_batch_number(p_source_module text, p_source_record_id uuid)
+returns text
+language sql
+immutable
+as $$
+  select 'AUTO-' || upper(left(regexp_replace(coalesce(p_source_module, 'src'), '[^a-zA-Z0-9]+', '', 'g'), 4)) || '-' || upper(substr(replace(coalesce(p_source_record_id::text, '00000000-0000-0000-0000-000000000000'), '-', ''), 1, 12))
+$$;
+
+create or replace function public.ywi_drop_source_journal_batch(p_source_record_type text, p_source_record_id uuid)
+returns void
+language plpgsql
+as $$
+declare
+  v_batch_id uuid;
+  v_status text;
+begin
+  if p_source_record_id is null or coalesce(p_source_record_type, '') = '' then
+    return;
+  end if;
+
+  select gjb.id, gjb.batch_status
+    into v_batch_id, v_status
+  from public.gl_journal_batches gjb
+  where gjb.source_record_type = p_source_record_type
+    and gjb.source_record_id = p_source_record_id
+  order by gjb.created_at desc
+  limit 1;
+
+  if v_batch_id is null then
+    return;
+  end if;
+
+  if coalesce(v_status, 'draft') = 'posted' then
+    update public.gl_journal_batches
+    set
+      source_sync_state = 'stale',
+      source_synced_at = now(),
+      updated_at = now()
+    where id = v_batch_id;
+    return;
+  end if;
+
+  delete from public.gl_journal_entries where batch_id = v_batch_id;
+  delete from public.gl_journal_batches where id = v_batch_id;
+end;
+$$;
+
+create or replace function public.ywi_sync_source_journal_batch(
+  p_source_module text,
+  p_source_record_type text,
+  p_source_record_id uuid,
+  p_batch_date date,
+  p_memo text,
+  p_entries jsonb
+)
+returns uuid
+language plpgsql
+as $$
+declare
+  v_batch_id uuid;
+  v_existing_status text;
+  v_line_number integer := 10;
+  v_entry jsonb;
+begin
+  if p_source_record_id is null or coalesce(p_source_record_type, '') = '' then
+    return null;
+  end if;
+
+  select gjb.id, gjb.batch_status
+    into v_batch_id, v_existing_status
+  from public.gl_journal_batches gjb
+  where gjb.source_record_type = p_source_record_type
+    and gjb.source_record_id = p_source_record_id
+  order by gjb.created_at desc
+  limit 1;
+
+  if p_entries is null or jsonb_typeof(p_entries) <> 'array' or jsonb_array_length(p_entries) = 0 then
+    perform public.ywi_drop_source_journal_batch(p_source_record_type, p_source_record_id);
+    return null;
+  end if;
+
+  if v_batch_id is null then
+    insert into public.gl_journal_batches (
+      batch_number,
+      source_module,
+      batch_status,
+      batch_date,
+      memo,
+      source_record_type,
+      source_record_id,
+      source_generated,
+      source_sync_state,
+      source_synced_at,
+      created_at,
+      updated_at
+    ) values (
+      public.ywi_source_batch_number(p_source_module, p_source_record_id),
+      coalesce(p_source_module, 'operations'),
+      'draft',
+      coalesce(p_batch_date, current_date),
+      p_memo,
+      p_source_record_type,
+      p_source_record_id,
+      true,
+      'drafted',
+      now(),
+      now(),
+      now()
+    )
+    returning id into v_batch_id;
+  else
+    if coalesce(v_existing_status, 'draft') = 'posted' then
+      update public.gl_journal_batches
+      set
+        source_generated = true,
+        source_sync_state = 'stale',
+        source_synced_at = now(),
+        updated_at = now()
+      where id = v_batch_id;
+      return v_batch_id;
+    end if;
+
+    update public.gl_journal_batches
+    set
+      source_module = coalesce(p_source_module, source_module),
+      batch_status = 'draft',
+      batch_date = coalesce(p_batch_date, batch_date),
+      memo = p_memo,
+      source_generated = true,
+      source_sync_state = 'drafted',
+      source_synced_at = now(),
+      updated_at = now()
+    where id = v_batch_id;
+
+    delete from public.gl_journal_entries where batch_id = v_batch_id;
+  end if;
+
+  for v_entry in select value from jsonb_array_elements(p_entries) loop
+    if nullif(v_entry ->> 'account_id', '') is null then
+      continue;
+    end if;
+
+    insert into public.gl_journal_entries (
+      batch_id,
+      line_number,
+      entry_date,
+      account_id,
+      debit_amount,
+      credit_amount,
+      client_id,
+      work_order_id,
+      dispatch_id,
+      source_record_type,
+      source_record_id,
+      memo,
+      created_by_profile_id
+    ) values (
+      v_batch_id,
+      v_line_number,
+      coalesce(p_batch_date, current_date),
+      nullif(v_entry ->> 'account_id', '')::uuid,
+      coalesce(nullif(v_entry ->> 'debit_amount', '')::numeric, 0),
+      coalesce(nullif(v_entry ->> 'credit_amount', '')::numeric, 0),
+      nullif(v_entry ->> 'client_id', '')::uuid,
+      nullif(v_entry ->> 'work_order_id', '')::uuid,
+      nullif(v_entry ->> 'dispatch_id', '')::uuid,
+      p_source_record_type,
+      p_source_record_id,
+      coalesce(nullif(v_entry ->> 'memo', ''), p_memo),
+      null
+    );
+
+    v_line_number := v_line_number + 10;
+  end loop;
+
+  perform public.ywi_sync_gl_journal_batch(v_batch_id);
+  return v_batch_id;
+end;
+$$;
+
+create or replace function public.ywi_sync_ar_invoice_journal(p_invoice_id uuid)
+returns void
+language plpgsql
+as $$
+declare
+  v_invoice record;
+  v_ar_account uuid;
+  v_revenue_account uuid;
+  v_tax_account uuid;
+  v_work_type text;
+  v_entries jsonb := '[]'::jsonb;
+  v_subtotal numeric(12,2) := 0;
+begin
+  if p_invoice_id is null then
+    return;
+  end if;
+
+  select ai.*, wo.work_type
+    into v_invoice
+  from public.ar_invoices ai
+  left join public.work_orders wo on wo.id = ai.work_order_id
+  where ai.id = p_invoice_id;
+
+  if not found or coalesce(v_invoice.invoice_status, 'draft') in ('draft', 'void') or coalesce(v_invoice.total_amount, 0) <= 0 then
+    perform public.ywi_drop_source_journal_batch('ar_invoice', p_invoice_id);
+    return;
+  end if;
+
+  v_ar_account := public.ywi_get_account_id('ar');
+  v_work_type := lower(coalesce(v_invoice.work_type, ''));
+  if v_invoice.dispatch_id is not null then
+    v_revenue_account := public.ywi_get_account_id('revenue_dispatch');
+  elsif v_work_type in ('project', 'construction', 'project_support') then
+    v_revenue_account := public.ywi_get_account_id('revenue_project');
+  else
+    v_revenue_account := public.ywi_get_account_id('revenue_landscape');
+  end if;
+  v_tax_account := public.ywi_get_account_id('tax_payable');
+  v_subtotal := public.ywi_normalize_money(coalesce(v_invoice.subtotal, v_invoice.total_amount) - coalesce(v_invoice.tax_total, 0));
+
+  if v_ar_account is null or v_revenue_account is null then
+    perform public.ywi_drop_source_journal_batch('ar_invoice', p_invoice_id);
+    return;
+  end if;
+
+  v_entries := v_entries || jsonb_build_array(
+    jsonb_build_object(
+      'account_id', v_ar_account,
+      'debit_amount', public.ywi_normalize_money(v_invoice.total_amount),
+      'memo', 'Auto draft from AR invoice',
+      'client_id', v_invoice.client_id,
+      'work_order_id', v_invoice.work_order_id,
+      'dispatch_id', v_invoice.dispatch_id
+    ),
+    jsonb_build_object(
+      'account_id', v_revenue_account,
+      'credit_amount', v_subtotal,
+      'memo', 'Auto draft revenue from AR invoice',
+      'client_id', v_invoice.client_id,
+      'work_order_id', v_invoice.work_order_id,
+      'dispatch_id', v_invoice.dispatch_id
+    )
+  );
+
+  if coalesce(v_invoice.tax_total, 0) > 0 and v_tax_account is not null then
+    v_entries := v_entries || jsonb_build_array(
+      jsonb_build_object(
+        'account_id', v_tax_account,
+        'credit_amount', public.ywi_normalize_money(v_invoice.tax_total),
+        'memo', 'Auto draft tax from AR invoice',
+        'client_id', v_invoice.client_id,
+        'work_order_id', v_invoice.work_order_id,
+        'dispatch_id', v_invoice.dispatch_id
+      )
+    );
+  end if;
+
+  perform public.ywi_sync_source_journal_batch(
+    'ar',
+    'ar_invoice',
+    p_invoice_id,
+    v_invoice.invoice_date,
+    'Auto draft from AR invoice ' || coalesce(v_invoice.invoice_number, p_invoice_id::text),
+    v_entries
+  );
+end;
+$$;
+
+create or replace function public.ywi_sync_ap_bill_journal(p_bill_id uuid)
+returns void
+language plpgsql
+as $$
+declare
+  v_bill record;
+  v_ap_account uuid;
+  v_clearing_account uuid;
+  v_entries jsonb := '[]'::jsonb;
+begin
+  if p_bill_id is null then
+    return;
+  end if;
+
+  select ab.*
+    into v_bill
+  from public.ap_bills ab
+  where ab.id = p_bill_id;
+
+  if not found or coalesce(v_bill.bill_status, 'draft') in ('draft', 'void') or coalesce(v_bill.total_amount, 0) <= 0 then
+    perform public.ywi_drop_source_journal_batch('ap_bill', p_bill_id);
+    return;
+  end if;
+
+  v_ap_account := public.ywi_get_account_id('ap');
+  v_clearing_account := public.ywi_get_account_id('inventory_clearing');
+
+  if v_ap_account is null or v_clearing_account is null then
+    perform public.ywi_drop_source_journal_batch('ap_bill', p_bill_id);
+    return;
+  end if;
+
+  v_entries := jsonb_build_array(
+    jsonb_build_object(
+      'account_id', v_clearing_account,
+      'debit_amount', public.ywi_normalize_money(v_bill.total_amount),
+      'memo', 'Auto draft clearing from AP bill'
+    ),
+    jsonb_build_object(
+      'account_id', v_ap_account,
+      'credit_amount', public.ywi_normalize_money(v_bill.total_amount),
+      'memo', 'Auto draft liability from AP bill'
+    )
+  );
+
+  perform public.ywi_sync_source_journal_batch(
+    'ap',
+    'ap_bill',
+    p_bill_id,
+    v_bill.bill_date,
+    'Auto draft from AP bill ' || coalesce(v_bill.bill_number, p_bill_id::text),
+    v_entries
+  );
+end;
+$$;
+
+create or replace function public.ywi_sync_material_receipt_journal(p_receipt_id uuid)
+returns void
+language plpgsql
+as $$
+declare
+  v_receipt record;
+  v_inventory_account uuid;
+  v_clearing_account uuid;
+  v_total numeric(12,2);
+  v_entries jsonb := '[]'::jsonb;
+begin
+  if p_receipt_id is null then
+    return;
+  end if;
+
+  select mr.*
+    into v_receipt
+  from public.material_receipts mr
+  where mr.id = p_receipt_id;
+
+  if not found then
+    perform public.ywi_drop_source_journal_batch('material_receipt', p_receipt_id);
+    return;
+  end if;
+
+  select coalesce(sum(mrl.line_total), 0)
+    into v_total
+  from public.material_receipt_lines mrl
+  where mrl.receipt_id = p_receipt_id;
+
+  if coalesce(v_receipt.receipt_status, 'draft') in ('draft') or public.ywi_normalize_money(v_total) <= 0 then
+    perform public.ywi_drop_source_journal_batch('material_receipt', p_receipt_id);
+    return;
+  end if;
+
+  v_inventory_account := public.ywi_get_account_id('inventory');
+  v_clearing_account := public.ywi_get_account_id('inventory_clearing');
+
+  if v_inventory_account is null or v_clearing_account is null then
+    perform public.ywi_drop_source_journal_batch('material_receipt', p_receipt_id);
+    return;
+  end if;
+
+  v_entries := jsonb_build_array(
+    jsonb_build_object(
+      'account_id', v_inventory_account,
+      'debit_amount', public.ywi_normalize_money(v_total),
+      'memo', 'Auto draft inventory from material receipt',
+      'work_order_id', v_receipt.work_order_id
+    ),
+    jsonb_build_object(
+      'account_id', v_clearing_account,
+      'credit_amount', public.ywi_normalize_money(v_total),
+      'memo', 'Auto draft clearing from material receipt',
+      'work_order_id', v_receipt.work_order_id
+    )
+  );
+
+  perform public.ywi_sync_source_journal_batch(
+    'receiving',
+    'material_receipt',
+    p_receipt_id,
+    v_receipt.receipt_date,
+    'Auto draft from material receipt ' || coalesce(v_receipt.receipt_number, p_receipt_id::text),
+    v_entries
+  );
+end;
+$$;
+
+create or replace function public.ywi_sync_material_issue_journal(p_issue_id uuid)
+returns void
+language plpgsql
+as $$
+declare
+  v_issue record;
+  v_inventory_account uuid;
+  v_expense_account uuid;
+  v_entries jsonb := '[]'::jsonb;
+begin
+  if p_issue_id is null then
+    return;
+  end if;
+
+  select mi.*
+    into v_issue
+  from public.material_issues mi
+  where mi.id = p_issue_id;
+
+  if not found or coalesce(v_issue.issue_status, 'draft') in ('draft', 'void') or coalesce(v_issue.issue_total, 0) <= 0 then
+    perform public.ywi_drop_source_journal_batch('material_issue', p_issue_id);
+    return;
+  end if;
+
+  v_inventory_account := public.ywi_get_account_id('inventory');
+  v_expense_account := public.ywi_get_account_id('expense_materials');
+
+  if v_inventory_account is null or v_expense_account is null then
+    perform public.ywi_drop_source_journal_batch('material_issue', p_issue_id);
+    return;
+  end if;
+
+  v_entries := jsonb_build_array(
+    jsonb_build_object(
+      'account_id', v_expense_account,
+      'debit_amount', public.ywi_normalize_money(v_issue.issue_total),
+      'memo', 'Auto draft material usage expense',
+      'work_order_id', v_issue.work_order_id
+    ),
+    jsonb_build_object(
+      'account_id', v_inventory_account,
+      'credit_amount', public.ywi_normalize_money(v_issue.issue_total),
+      'memo', 'Auto draft inventory relief from material issue',
+      'work_order_id', v_issue.work_order_id
+    )
+  );
+
+  perform public.ywi_sync_source_journal_batch(
+    'operations',
+    'material_issue',
+    p_issue_id,
+    v_issue.issue_date,
+    'Auto draft from material issue ' || coalesce(v_issue.issue_number, p_issue_id::text),
+    v_entries
+  );
+end;
+$$;
+
+create or replace function public.ywi_after_ar_invoice_journal_sync()
+returns trigger
+language plpgsql
+as $$
+begin
+  if tg_op = 'DELETE' then
+    perform public.ywi_drop_source_journal_batch('ar_invoice', old.id);
+    return old;
+  end if;
+  perform public.ywi_sync_ar_invoice_journal(new.id);
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_ywi_after_ar_invoice_journal_sync on public.ar_invoices;
+create trigger trg_ywi_after_ar_invoice_journal_sync
+after insert or update or delete on public.ar_invoices
+for each row execute function public.ywi_after_ar_invoice_journal_sync();
+
+create or replace function public.ywi_after_ap_bill_journal_sync()
+returns trigger
+language plpgsql
+as $$
+begin
+  if tg_op = 'DELETE' then
+    perform public.ywi_drop_source_journal_batch('ap_bill', old.id);
+    return old;
+  end if;
+  perform public.ywi_sync_ap_bill_journal(new.id);
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_ywi_after_ap_bill_journal_sync on public.ap_bills;
+create trigger trg_ywi_after_ap_bill_journal_sync
+after insert or update or delete on public.ap_bills
+for each row execute function public.ywi_after_ap_bill_journal_sync();
+
+create or replace function public.ywi_after_material_receipt_journal_sync()
+returns trigger
+language plpgsql
+as $$
+begin
+  if tg_op = 'DELETE' then
+    perform public.ywi_drop_source_journal_batch('material_receipt', coalesce(old.receipt_id, old.id));
+    return old;
+  end if;
+  perform public.ywi_sync_material_receipt_journal(coalesce(new.receipt_id, new.id));
+  return coalesce(new, old);
+end;
+$$;
+
+drop trigger if exists trg_ywi_after_material_receipt_header_journal_sync on public.material_receipts;
+create trigger trg_ywi_after_material_receipt_header_journal_sync
+after insert or update or delete on public.material_receipts
+for each row execute function public.ywi_after_material_receipt_journal_sync();
+
+drop trigger if exists trg_ywi_after_material_receipt_line_journal_sync on public.material_receipt_lines;
+create trigger trg_ywi_after_material_receipt_line_journal_sync
+after insert or update or delete on public.material_receipt_lines
+for each row execute function public.ywi_after_material_receipt_journal_sync();
+
+create or replace function public.ywi_after_material_issue_journal_sync()
+returns trigger
+language plpgsql
+as $$
+begin
+  if tg_op = 'DELETE' then
+    perform public.ywi_drop_source_journal_batch('material_issue', coalesce(old.issue_id, old.id));
+    return old;
+  end if;
+  perform public.ywi_sync_material_issue_journal(coalesce(new.issue_id, new.id));
+  return coalesce(new, old);
+end;
+$$;
+
+drop trigger if exists trg_ywi_after_material_issue_header_journal_sync on public.material_issues;
+create trigger trg_ywi_after_material_issue_header_journal_sync
+after insert or update or delete on public.material_issues
+for each row execute function public.ywi_after_material_issue_journal_sync();
+
+drop trigger if exists trg_ywi_after_material_issue_line_journal_sync on public.material_issue_lines;
+create trigger trg_ywi_after_material_issue_line_journal_sync
+after insert or update or delete on public.material_issue_lines
+for each row execute function public.ywi_after_material_issue_journal_sync();
+
+create or replace function public.ywi_before_route_stop_execution()
+returns trigger
+language plpgsql
+as $$
+declare
+  v_stop record;
+begin
+  if new.execution_sequence is null or new.execution_sequence <= 0 then
+    new.execution_sequence := 1;
+  end if;
+
+  if new.route_stop_id is not null then
+    select rs.route_id, rs.client_site_id
+      into v_stop
+    from public.route_stops rs
+    where rs.id = new.route_stop_id;
+
+    if found then
+      new.route_id := coalesce(new.route_id, v_stop.route_id);
+      new.client_site_id := coalesce(new.client_site_id, v_stop.client_site_id);
+    end if;
+  end if;
+
+  if new.completed_at is not null then
+    new.execution_status := case when coalesce(new.execution_status, '') in ('skipped','cancelled') then new.execution_status else 'completed' end;
+  elsif new.arrived_at is not null or new.started_at is not null then
+    if coalesce(new.execution_status, '') in ('planned','delayed','') then
+      new.execution_status := 'in_progress';
+    end if;
+  elsif coalesce(new.delay_minutes, 0) > 0 and coalesce(new.execution_status, '') = 'planned' then
+    new.execution_status := 'delayed';
+  end if;
+
+  new.delay_minutes := greatest(coalesce(new.delay_minutes, 0), 0);
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_ywi_before_route_stop_execution on public.route_stop_executions;
+create trigger trg_ywi_before_route_stop_execution
+before insert or update on public.route_stop_executions
+for each row execute function public.ywi_before_route_stop_execution();
+
+create or replace function public.ywi_before_hse_packet_proof()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_ywi_before_hse_packet_proof on public.hse_packet_proofs;
+create trigger trg_ywi_before_hse_packet_proof
+before insert or update on public.hse_packet_proofs
+for each row execute function public.ywi_before_hse_packet_proof();
+
+create or replace function public.ywi_before_linked_hse_packet()
+returns trigger
+language plpgsql
+as $$
+declare
+  v_required_count integer := 0;
+  v_completed_count integer := 0;
+begin
+  v_required_count :=
+      (case when coalesce(new.briefing_required, false) then 1 else 0 end)
+    + (case when coalesce(new.inspection_required, false) then 1 else 0 end)
+    + (case when coalesce(new.emergency_review_required, false) then 1 else 0 end);
+
+  v_completed_count :=
+      (case when coalesce(new.briefing_required, false) and coalesce(new.briefing_completed, false) then 1 else 0 end)
+    + (case when coalesce(new.inspection_required, false) and coalesce(new.inspection_completed, false) then 1 else 0 end)
+    + (case when coalesce(new.emergency_review_required, false) and coalesce(new.emergency_review_completed, false) then 1 else 0 end);
+
+  if tg_op = 'UPDATE'
+     and coalesce(old.reopen_in_progress, false) = false
+     and coalesce(new.reopen_in_progress, false) = true then
+    new.reopen_count := coalesce(old.reopen_count, 0) + 1;
+    new.last_reopened_at := now();
+    new.last_reopened_by_profile_id := coalesce(new.last_reopened_by_profile_id, new.closed_by_profile_id, old.closed_by_profile_id);
+  else
+    new.reopen_count := coalesce(new.reopen_count, 0);
+  end if;
+
+  if coalesce(new.reopen_in_progress, false) then
+    new.packet_status := 'in_progress';
+    new.ready_for_closeout_at := null;
+    new.closed_at := null;
+    new.completion_percent := round(
+      case
+        when v_required_count <= 0 then 100
+        else (v_completed_count::numeric / v_required_count::numeric) * 100
+      end,
+      2
+    );
+  elsif coalesce(new.packet_status, '') = 'closed' then
+    new.completion_percent := 100;
+    new.ready_for_closeout_at := coalesce(new.ready_for_closeout_at, now());
+    new.closed_at := coalesce(new.closed_at, now());
+  else
+    if v_required_count <= 0 then
+      new.completion_percent := 100;
+      new.packet_status := 'ready_for_closeout';
+      new.ready_for_closeout_at := coalesce(new.ready_for_closeout_at, now());
+    else
+      new.completion_percent := round((v_completed_count::numeric / v_required_count::numeric) * 100, 2);
+      if v_completed_count = v_required_count then
+        new.packet_status := 'ready_for_closeout';
+        new.ready_for_closeout_at := coalesce(new.ready_for_closeout_at, now());
+      elsif v_completed_count > 0 then
+        if coalesce(new.packet_status, '') <> 'closed' then
+          new.packet_status := 'in_progress';
+        end if;
+        new.ready_for_closeout_at := null;
+        new.closed_at := null;
+      else
+        new.packet_status := 'draft';
+        new.ready_for_closeout_at := null;
+        new.closed_at := null;
+      end if;
+    end if;
+  end if;
+
+  if coalesce(new.packet_status, '') <> 'closed' then
+    new.closed_at := null;
+  end if;
+
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+create or replace view public.v_route_stop_execution_rollups as
+select
+  rse.id,
+  rse.route_stop_id,
+  rse.route_id,
+  rse.client_site_id,
+  rse.execution_date,
+  rse.execution_sequence,
+  rse.execution_status,
+  rse.started_at,
+  rse.arrived_at,
+  rse.completed_at,
+  rse.completed_by_profile_id,
+  rse.supervisor_profile_id,
+  rse.delay_minutes,
+  rse.special_instructions_acknowledged,
+  rse.notes,
+  rse.exception_notes,
+  rse.created_by_profile_id,
+  rse.created_at,
+  rse.updated_at,
+  count(rsea.id)::int as attachment_count,
+  count(rsea.id) filter (where rsea.attachment_kind = 'photo')::int as photo_count,
+  count(rsea.id) filter (where rsea.attachment_kind = 'signature')::int as signature_count,
+  max(rsea.created_at) as last_attachment_at,
+  rs.stop_order,
+  rs.instructions as route_stop_instructions,
+  r.name as route_name,
+  cs.site_name as client_site_name
+from public.route_stop_executions rse
+left join public.route_stop_execution_attachments rsea on rsea.execution_id = rse.id
+left join public.route_stops rs on rs.id = rse.route_stop_id
+left join public.routes r on r.id = rse.route_id
+left join public.client_sites cs on cs.id = rse.client_site_id
+group by
+  rse.id,
+  rse.route_stop_id,
+  rse.route_id,
+  rse.client_site_id,
+  rse.execution_date,
+  rse.execution_sequence,
+  rse.execution_status,
+  rse.started_at,
+  rse.arrived_at,
+  rse.completed_at,
+  rse.completed_by_profile_id,
+  rse.supervisor_profile_id,
+  rse.delay_minutes,
+  rse.special_instructions_acknowledged,
+  rse.notes,
+  rse.exception_notes,
+  rse.created_by_profile_id,
+  rse.created_at,
+  rse.updated_at,
+  rs.stop_order,
+  rs.instructions,
+  r.name,
+  cs.site_name;
+
+create or replace view public.v_hse_packet_progress as
+with proof_rollups as (
+  select
+    hpp.packet_id,
+    count(hpp.id)::int as proof_count,
+    count(hpp.id) filter (where hpp.proof_kind = 'photo')::int as photo_count,
+    count(hpp.id) filter (where hpp.proof_kind = 'signature')::int as signature_count,
+    count(hpp.id) filter (where hpp.proof_kind in ('file','document'))::int as document_count,
+    max(hpp.created_at) as last_proof_at
+  from public.hse_packet_proofs hpp
+  group by hpp.packet_id
+)
+select
+  lhp.id,
+  lhp.packet_number,
+  lhp.packet_type,
+  lhp.packet_status,
+  lhp.work_order_id,
+  lhp.dispatch_id,
+  ((case when lhp.briefing_required then 1 else 0 end)
+    + (case when lhp.inspection_required then 1 else 0 end)
+    + (case when lhp.emergency_review_required then 1 else 0 end)) as required_step_count,
+  ((case when lhp.briefing_required and lhp.briefing_completed then 1 else 0 end)
+    + (case when lhp.inspection_required and lhp.inspection_completed then 1 else 0 end)
+    + (case when lhp.emergency_review_required and lhp.emergency_review_completed then 1 else 0 end)) as completed_step_count,
+  lhp.completion_percent,
+  lhp.ready_for_closeout_at,
+  lhp.closed_at,
+  coalesce(pr.proof_count, 0) as proof_count,
+  coalesce(pr.photo_count, 0) as photo_count,
+  coalesce(pr.signature_count, 0) as signature_count,
+  coalesce(pr.document_count, 0) as document_count,
+  pr.last_proof_at,
+  lhp.reopen_in_progress,
+  lhp.reopen_count,
+  lhp.last_reopened_at,
+  lhp.last_reopened_by_profile_id
+from public.linked_hse_packets lhp
+left join proof_rollups pr on pr.packet_id = lhp.id;
+
+create or replace view public.v_gl_journal_batch_rollups as
+select
+  gjb.id,
+  gjb.batch_number,
+  gjb.source_module,
+  gjb.batch_status,
+  gjb.batch_date,
+  gjb.memo,
+  gjb.posted_at,
+  gjb.source_record_type,
+  gjb.source_record_id,
+  gjb.line_count,
+  gjb.debit_total,
+  gjb.credit_total,
+  gjb.is_balanced,
+  public.ywi_normalize_money(coalesce(gjb.debit_total, 0) - coalesce(gjb.credit_total, 0)) as balance_difference,
+  gjb.posting_notes,
+  gjb.posted_by_profile_id,
+  gjb.source_generated,
+  gjb.source_sync_state,
+  gjb.source_synced_at
+from public.gl_journal_batches gjb;
+-- ============================================================================
+-- END MIGRATION: 067_source_journal_route_execution_and_hse_proof.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 068_journal_sync_exceptions_and_upload_failure_fallback.sql
+-- ============================================================================
+-- 068_journal_sync_exceptions_and_upload_failure_fallback.sql
+-- Adds:
+-- 1) journal sync exception tracking for stale/unbalanced/missing-entry source batches
+-- 2) upload failure logs for field photo/file fallback visibility
+-- 3) rollup visibility so Admin can review sync and upload exceptions without digging into raw rows
+
+create extension if not exists pgcrypto;
+
+create table if not exists public.gl_journal_sync_exceptions (
+  id uuid primary key default gen_random_uuid(),
+  batch_id uuid not null references public.gl_journal_batches(id) on delete cascade,
+  source_record_type text,
+  source_record_id uuid,
+  exception_type text not null,
+  severity text not null default 'warning',
+  exception_status text not null default 'open',
+  title text,
+  details text,
+  detected_snapshot jsonb not null default '{}'::jsonb,
+  detected_at timestamptz not null default now(),
+  last_seen_at timestamptz not null default now(),
+  resolved_at timestamptz,
+  resolved_by_profile_id uuid references public.profiles(id) on delete set null,
+  resolution_notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (batch_id, exception_type),
+  check (severity in ('info','warning','error')),
+  check (exception_status in ('open','resolved','dismissed'))
+);
+
+create table if not exists public.field_upload_failures (
+  id uuid primary key default gen_random_uuid(),
+  failure_scope text not null default 'job_comment_attachment',
+  linked_record_type text,
+  linked_record_id text,
+  job_id bigint,
+  comment_id uuid,
+  signout_id bigint,
   file_name text,
   content_type text,
   file_size_bytes bigint,
-  caption text,
-  uploaded_by_profile_id uuid references public.profiles(id) on delete set null,
-  created_at timestamptz not null default now()
-);
-
-
-create table if not exists public.equipment_inspection_history (
-  id bigserial primary key,
-  equipment_item_id bigint not null references public.equipment_items(id) on delete cascade,
-  inspected_by_profile_id uuid references public.profiles(id) on delete set null,
-  inspected_at timestamptz not null default now(),
-  inspection_status text not null default 'pass',
-  notes text,
-  next_due_date date,
-  created_at timestamptz not null default now()
-);
-
-create table if not exists public.equipment_maintenance_history (
-  id bigserial primary key,
-  equipment_item_id bigint not null references public.equipment_items(id) on delete cascade,
-  performed_by_profile_id uuid references public.profiles(id) on delete set null,
-  performed_at timestamptz not null default now(),
-  maintenance_type text not null default 'service',
-  provider_name text,
-  cost_amount numeric(12,2),
-  notes text,
-  next_due_date date,
-  created_at timestamptz not null default now()
-);
-
-create table if not exists public.admin_notifications (
-  id bigserial primary key,
-  notification_type text not null,
-  recipient_role text not null default 'admin',
-  target_profile_id uuid references public.profiles(id),
-  target_table text,
-  target_id text,
-  title text,
-  body text,
-  message text,
-  payload jsonb not null default '{}'::jsonb,
-  status text not null default 'queued',
-  decision_status text not null default 'pending',
-  decision_notes text,
-  decided_by_profile_id uuid references public.profiles(id),
-  decided_at timestamptz,
-  email_to text,
-  email_subject text,
-  email_status text not null default 'pending',
-  email_provider text,
-  email_attempt_count integer not null default 0,
-  email_last_attempt_at timestamptz,
-  email_error text,
-  sms_provider text,
-  sms_attempt_count integer not null default 0,
-  sms_last_attempt_at timestamptz,
-  dead_lettered_at timestamptz,
-  dead_letter_reason text,
-  created_by_profile_id uuid references public.profiles(id),
+  storage_bucket text,
+  storage_path text,
+  failure_stage text not null default 'upload',
+  failure_reason text,
+  retry_status text not null default 'pending',
+  client_context jsonb not null default '{}'::jsonb,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now(),
-  read_at timestamptz,
-  sent_at timestamptz
+  updated_at timestamptz not null default now(),
+  resolved_at timestamptz,
+  resolved_by_profile_id uuid references public.profiles(id) on delete set null,
+  resolution_notes text,
+  check (failure_scope in ('job_comment_attachment','equipment_evidence','route_execution_attachment','hse_proof','general')),
+  check (failure_stage in ('validation','lookup','upload','signed_url','metadata_insert','cleanup','network','unknown')),
+  check (retry_status in ('pending','retrying','resolved','abandoned'))
 );
 
-create or replace view public.v_people_directory as
-select
-  p.*,
-  sup.full_name as default_supervisor_name,
-  supo.full_name as override_supervisor_name,
-  adm.full_name as default_admin_name,
-  admo.full_name as override_admin_name
-from public.profiles p
-left join public.profiles sup on sup.id = p.default_supervisor_profile_id
-left join public.profiles supo on supo.id = p.override_supervisor_profile_id
-left join public.profiles adm on adm.id = p.default_admin_profile_id
-left join public.profiles admo on admo.id = p.override_admin_profile_id;
+create index if not exists idx_gl_journal_sync_exceptions_batch_id on public.gl_journal_sync_exceptions(batch_id, exception_status, severity);
+create index if not exists idx_field_upload_failures_scope on public.field_upload_failures(failure_scope, retry_status, created_at desc);
+create index if not exists idx_field_upload_failures_job_id on public.field_upload_failures(job_id, created_at desc);
+create index if not exists idx_field_upload_failures_comment_id on public.field_upload_failures(comment_id, created_at desc);
+create index if not exists idx_field_upload_failures_signout_id on public.field_upload_failures(signout_id, created_at desc);
 
-create or replace view public.v_assignments_directory as
+create or replace function public.ywi_before_gl_journal_sync_exception()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at := now();
+  if coalesce(new.exception_status, 'open') <> 'open' and new.resolved_at is null then
+    new.resolved_at := now();
+  end if;
+  if coalesce(new.exception_status, 'open') = 'open' then
+    new.resolved_at := null;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_ywi_before_gl_journal_sync_exception on public.gl_journal_sync_exceptions;
+create trigger trg_ywi_before_gl_journal_sync_exception
+before insert or update on public.gl_journal_sync_exceptions
+for each row execute function public.ywi_before_gl_journal_sync_exception();
+
+create or replace function public.ywi_before_field_upload_failure()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at := now();
+  if coalesce(new.retry_status, 'pending') in ('resolved','abandoned') and new.resolved_at is null then
+    new.resolved_at := now();
+  end if;
+  if coalesce(new.retry_status, 'pending') not in ('resolved','abandoned') then
+    new.resolved_at := null;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_ywi_before_field_upload_failure on public.field_upload_failures;
+create trigger trg_ywi_before_field_upload_failure
+before insert or update on public.field_upload_failures
+for each row execute function public.ywi_before_field_upload_failure();
+
+create or replace function public.ywi_upsert_journal_sync_exception(
+  p_batch_id uuid,
+  p_exception_type text,
+  p_is_present boolean,
+  p_severity text default 'warning',
+  p_title text default null,
+  p_details text default null,
+  p_snapshot jsonb default '{}'::jsonb
+)
+returns void
+language plpgsql
+as $$
+declare
+  v_batch public.gl_journal_batches%rowtype;
+begin
+  if p_batch_id is null or coalesce(p_exception_type, '') = '' then
+    return;
+  end if;
+
+  select *
+    into v_batch
+  from public.gl_journal_batches
+  where id = p_batch_id;
+
+  if not found then
+    return;
+  end if;
+
+  if coalesce(p_is_present, false) then
+    insert into public.gl_journal_sync_exceptions (
+      batch_id,
+      source_record_type,
+      source_record_id,
+      exception_type,
+      severity,
+      exception_status,
+      title,
+      details,
+      detected_snapshot,
+      detected_at,
+      last_seen_at,
+      resolved_at,
+      resolved_by_profile_id,
+      resolution_notes,
+      created_at,
+      updated_at
+    ) values (
+      v_batch.id,
+      v_batch.source_record_type,
+      v_batch.source_record_id,
+      p_exception_type,
+      coalesce(p_severity, 'warning'),
+      'open',
+      p_title,
+      p_details,
+      coalesce(p_snapshot, '{}'::jsonb),
+      now(),
+      now(),
+      null,
+      null,
+      null,
+      now(),
+      now()
+    )
+    on conflict (batch_id, exception_type) do update
+    set
+      source_record_type = excluded.source_record_type,
+      source_record_id = excluded.source_record_id,
+      severity = excluded.severity,
+      exception_status = 'open',
+      title = excluded.title,
+      details = excluded.details,
+      detected_snapshot = excluded.detected_snapshot,
+      last_seen_at = now(),
+      resolved_at = null,
+      resolved_by_profile_id = null,
+      resolution_notes = null,
+      updated_at = now();
+  else
+    update public.gl_journal_sync_exceptions
+    set
+      exception_status = case when exception_status = 'dismissed' then 'dismissed' else 'resolved' end,
+      last_seen_at = now(),
+      updated_at = now()
+    where batch_id = p_batch_id
+      and exception_type = p_exception_type
+      and exception_status = 'open';
+  end if;
+end;
+$$;
+
+create or replace function public.ywi_refresh_journal_sync_exceptions(p_batch_id uuid)
+returns void
+language plpgsql
+as $$
+declare
+  v_batch public.gl_journal_batches%rowtype;
+begin
+  if p_batch_id is null then
+    return;
+  end if;
+
+  select *
+    into v_batch
+  from public.gl_journal_batches
+  where id = p_batch_id;
+
+  if not found then
+    return;
+  end if;
+
+  perform public.ywi_upsert_journal_sync_exception(
+    v_batch.id,
+    'source_stale',
+    coalesce(v_batch.source_generated, false) and coalesce(v_batch.source_sync_state, 'manual') = 'stale',
+    case when coalesce(v_batch.batch_status, 'draft') = 'posted' then 'error' else 'warning' end,
+    'Source batch drift detected',
+    'The originating record changed after the draft/post cycle. Review the source record and rebuild or resolve the batch before trusting the accounting state.',
+    jsonb_build_object(
+      'batch_status', v_batch.batch_status,
+      'source_module', v_batch.source_module,
+      'source_record_type', v_batch.source_record_type,
+      'source_sync_state', v_batch.source_sync_state,
+      'source_synced_at', v_batch.source_synced_at
+    )
+  );
+
+  perform public.ywi_upsert_journal_sync_exception(
+    v_batch.id,
+    'unbalanced_batch',
+    not coalesce(v_batch.is_balanced, false),
+    'error',
+    'Journal batch is not balanced',
+    'Debit and credit totals do not match. The batch must be corrected before posting.',
+    jsonb_build_object(
+      'line_count', v_batch.line_count,
+      'debit_total', v_batch.debit_total,
+      'credit_total', v_batch.credit_total,
+      'is_balanced', v_batch.is_balanced
+    )
+  );
+
+  perform public.ywi_upsert_journal_sync_exception(
+    v_batch.id,
+    'missing_entries',
+    coalesce(v_batch.source_generated, false) and coalesce(v_batch.line_count, 0) <= 0,
+    'error',
+    'Source-generated batch has no journal entries',
+    'The source batch exists but does not currently contain journal lines. Review the source record mapping before posting.',
+    jsonb_build_object(
+      'line_count', v_batch.line_count,
+      'source_module', v_batch.source_module,
+      'source_record_type', v_batch.source_record_type
+    )
+  );
+end;
+$$;
+
+create or replace function public.ywi_after_gl_journal_batch_refresh_exceptions()
+returns trigger
+language plpgsql
+as $$
+begin
+  perform public.ywi_refresh_journal_sync_exceptions(new.id);
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_ywi_after_gl_journal_batch_refresh_exceptions on public.gl_journal_batches;
+create trigger trg_ywi_after_gl_journal_batch_refresh_exceptions
+after insert or update of batch_status, line_count, debit_total, credit_total, is_balanced, source_generated, source_sync_state, source_synced_at, source_record_type, source_record_id
+on public.gl_journal_batches
+for each row execute function public.ywi_after_gl_journal_batch_refresh_exceptions();
+
+-- backfill current exception state
+select public.ywi_refresh_journal_sync_exceptions(id) from public.gl_journal_batches;
+
+create or replace view public.v_gl_journal_sync_exceptions as
 select
-  sa.*,
-  s.site_code,
-  s.site_name,
-  p.email,
-  p.full_name,
-  p.role as profile_role
-from public.site_assignments sa
-join public.sites s on s.id = sa.site_id
-join public.profiles p on p.id = sa.profile_id;
+  gse.id,
+  gse.batch_id,
+  gjb.batch_number,
+  gjb.batch_status,
+  gjb.source_module,
+  gjb.source_record_type,
+  gjb.source_record_id,
+  gse.exception_type,
+  gse.severity,
+  gse.exception_status,
+  gse.title,
+  gse.details,
+  gse.detected_snapshot,
+  gse.detected_at,
+  gse.last_seen_at,
+  gse.resolved_at,
+  gse.resolved_by_profile_id,
+  gse.resolution_notes,
+  gse.created_at,
+  gse.updated_at
+from public.gl_journal_sync_exceptions gse
+left join public.gl_journal_batches gjb on gjb.id = gse.batch_id;
+
+create or replace view public.v_field_upload_failure_rollups as
+select
+  fuf.id,
+  fuf.failure_scope,
+  fuf.linked_record_type,
+  fuf.linked_record_id,
+  fuf.job_id,
+  fuf.comment_id,
+  fuf.signout_id,
+  fuf.file_name,
+  fuf.content_type,
+  fuf.file_size_bytes,
+  fuf.storage_bucket,
+  fuf.storage_path,
+  fuf.failure_stage,
+  fuf.failure_reason,
+  fuf.retry_status,
+  fuf.client_context,
+  fuf.created_by_profile_id,
+  fuf.created_at,
+  fuf.updated_at,
+  fuf.resolved_at,
+  fuf.resolved_by_profile_id,
+  fuf.resolution_notes,
+  extract(epoch from (now() - fuf.created_at))::bigint as age_seconds,
+  j.job_code,
+  jc.job_id as comment_job_id,
+  es.job_id as signout_job_id
+from public.field_upload_failures fuf
+left join public.jobs j on j.id = fuf.job_id
+left join public.job_comments jc on jc.id = fuf.comment_id
+left join public.equipment_signouts es on es.id = fuf.signout_id;
+
+create or replace view public.v_gl_journal_batch_rollups as
+with exception_rollups as (
+  select
+    batch_id,
+    count(*)::int as exception_count,
+    count(*) filter (where exception_status = 'open')::int as open_exception_count,
+    count(*) filter (where exception_status = 'open' and severity = 'error')::int as blocking_exception_count,
+    max(last_seen_at) as last_exception_at
+  from public.gl_journal_sync_exceptions
+  group by batch_id
+)
+select
+  gjb.id,
+  gjb.batch_number,
+  gjb.source_module,
+  gjb.batch_status,
+  gjb.batch_date,
+  gjb.memo,
+  gjb.posted_at,
+  gjb.source_record_type,
+  gjb.source_record_id,
+  gjb.line_count,
+  gjb.debit_total,
+  gjb.credit_total,
+  gjb.is_balanced,
+  public.ywi_normalize_money(coalesce(gjb.debit_total, 0) - coalesce(gjb.credit_total, 0)) as balance_difference,
+  gjb.posting_notes,
+  gjb.posted_by_profile_id,
+  gjb.source_generated,
+  gjb.source_sync_state,
+  gjb.source_synced_at,
+  coalesce(er.exception_count, 0) as exception_count,
+  coalesce(er.open_exception_count, 0) as open_exception_count,
+  coalesce(er.blocking_exception_count, 0) as blocking_exception_count,
+  er.last_exception_at
+from public.gl_journal_batches gjb
+left join exception_rollups er on er.batch_id = gjb.id;
+-- ============================================================================
+-- END MIGRATION: 068_journal_sync_exceptions_and_upload_failure_fallback.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 069_hse_osha_interfaces_weather_chemical_traffic_signoff.sql
+-- ============================================================================
+-- 069_hse_osha_interfaces_weather_chemical_traffic_signoff.sql
+-- Adds stronger standalone-capable HSE packet interfaces for:
+-- - standalone and unscheduled-project packets
+-- - weather / heat workflow checks
+-- - chemical handling workflow
+-- - traffic / public interaction workflow
+-- - field signoff and closeout event tracking
+-- - optional linkage to jobs, sites, routes, equipment, work orders, and dispatches
+
+create extension if not exists pgcrypto;
+
+alter table if exists public.linked_hse_packets
+  add column if not exists job_id bigint references public.jobs(id) on delete set null,
+  add column if not exists equipment_master_id uuid references public.equipment_master(id) on delete set null,
+  add column if not exists packet_scope text not null default 'standalone',
+  add column if not exists unscheduled_project boolean not null default false,
+  add column if not exists standalone_project_name text,
+  add column if not exists weather_monitoring_required boolean not null default false,
+  add column if not exists weather_monitoring_completed boolean not null default false,
+  add column if not exists heat_monitoring_required boolean not null default false,
+  add column if not exists heat_monitoring_completed boolean not null default false,
+  add column if not exists chemical_handling_required boolean not null default false,
+  add column if not exists chemical_handling_completed boolean not null default false,
+  add column if not exists traffic_control_required boolean not null default false,
+  add column if not exists traffic_control_completed boolean not null default false,
+  add column if not exists field_signoff_required boolean not null default true,
+  add column if not exists field_signoff_completed boolean not null default false,
+  add column if not exists field_signed_off_at timestamptz,
+  add column if not exists field_signed_off_by_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists last_weather_check_at timestamptz,
+  add column if not exists last_heat_check_at timestamptz,
+  add column if not exists last_chemical_check_at timestamptz,
+  add column if not exists last_traffic_check_at timestamptz,
+  add column if not exists weather_notes text,
+  add column if not exists heat_plan_notes text,
+  add column if not exists chemical_notes text,
+  add column if not exists traffic_notes text,
+  add column if not exists public_interaction_notes text;
+
+alter table if exists public.linked_hse_packets drop constraint if exists linked_hse_packets_packet_type_check;
+alter table if exists public.linked_hse_packets
+  add constraint linked_hse_packets_packet_type_check
+  check (packet_type in ('work_order','dispatch','standalone_hse','unscheduled_project'));
+
+alter table if exists public.linked_hse_packets drop constraint if exists linked_hse_packets_packet_scope_check;
+alter table if exists public.linked_hse_packets
+  add constraint linked_hse_packets_packet_scope_check
+  check (packet_scope in ('standalone','site','work_order','route','dispatch','equipment','job','subcontract_work'));
+
+create index if not exists idx_linked_hse_packets_job_id on public.linked_hse_packets(job_id);
+create index if not exists idx_linked_hse_packets_equipment_master_id on public.linked_hse_packets(equipment_master_id);
+create index if not exists idx_linked_hse_packets_scope on public.linked_hse_packets(packet_scope, packet_status);
+
+create table if not exists public.hse_packet_events (
+  id uuid primary key default gen_random_uuid(),
+  packet_id uuid not null references public.linked_hse_packets(id) on delete cascade,
+  event_type text not null default 'note',
+  event_status text not null default 'ok',
+  event_at timestamptz not null default now(),
+  weather_condition text,
+  temperature_c numeric(6,2),
+  humidex_c numeric(6,2),
+  wind_kph numeric(6,2),
+  precipitation_notes text,
+  heat_risk_level text,
+  chemical_name text,
+  sds_reviewed boolean,
+  ppe_verified boolean,
+  traffic_control_level text,
+  public_interaction_notes text,
+  notes text,
+  proof_url text,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (event_type in ('note','weather_check','heat_check','chemical_check','traffic_check','field_signoff','closeout','reopen','dispatch_review','hazard_review')),
+  check (event_status in ('ok','warning','exception','closed','signed')),
+  check (heat_risk_level is null or heat_risk_level in ('low','moderate','high','extreme')),
+  check (traffic_control_level is null or traffic_control_level in ('none','cones_only','lane_control','public_interface','spotter_required'))
+);
+
+create index if not exists idx_hse_packet_events_packet_id on public.hse_packet_events(packet_id, event_at desc);
+create index if not exists idx_hse_packet_events_type on public.hse_packet_events(event_type, event_status, event_at desc);
+
+create or replace function public.ywi_before_hse_packet_event()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.event_type := coalesce(nullif(trim(new.event_type), ''), 'note');
+  new.event_status := coalesce(nullif(trim(new.event_status), ''), 'ok');
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_ywi_before_hse_packet_event on public.hse_packet_events;
+create trigger trg_ywi_before_hse_packet_event
+before insert or update on public.hse_packet_events
+for each row execute function public.ywi_before_hse_packet_event();
+
+create or replace function public.ywi_sync_hse_packet_event_flags(p_packet_id uuid)
+returns void
+language plpgsql
+as $$
+declare
+  v_weather_at timestamptz;
+  v_heat_at timestamptz;
+  v_chemical_at timestamptz;
+  v_traffic_at timestamptz;
+  v_signoff_at timestamptz;
+  v_closeout_at timestamptz;
+  v_reopen_at timestamptz;
+  v_signoff_by uuid;
+  v_has_weather boolean := false;
+  v_has_heat boolean := false;
+  v_has_chemical boolean := false;
+  v_has_traffic boolean := false;
+  v_has_signoff boolean := false;
+  v_has_closeout boolean := false;
+  v_has_reopen boolean := false;
+  v_reopen_reason text;
+begin
+  if p_packet_id is null then
+    return;
+  end if;
+
+  select
+    max(event_at) filter (where event_type = 'weather_check'),
+    max(event_at) filter (where event_type = 'heat_check'),
+    max(event_at) filter (where event_type = 'chemical_check'),
+    max(event_at) filter (where event_type = 'traffic_check'),
+    bool_or(event_type = 'weather_check'),
+    bool_or(event_type = 'heat_check'),
+    bool_or(event_type = 'chemical_check'),
+    bool_or(event_type = 'traffic_check'),
+    bool_or(event_type = 'field_signoff'),
+    bool_or(event_type = 'closeout'),
+    bool_or(event_type = 'reopen')
+  into
+    v_weather_at,
+    v_heat_at,
+    v_chemical_at,
+    v_traffic_at,
+    v_has_weather,
+    v_has_heat,
+    v_has_chemical,
+    v_has_traffic,
+    v_has_signoff,
+    v_has_closeout,
+    v_has_reopen
+  from public.hse_packet_events
+  where packet_id = p_packet_id;
+
+  select e.event_at, e.created_by_profile_id
+    into v_signoff_at, v_signoff_by
+  from public.hse_packet_events e
+  where e.packet_id = p_packet_id
+    and e.event_type = 'field_signoff'
+  order by e.event_at desc, e.created_at desc
+  limit 1;
+
+  select e.event_at
+    into v_closeout_at
+  from public.hse_packet_events e
+  where e.packet_id = p_packet_id
+    and e.event_type = 'closeout'
+  order by e.event_at desc, e.created_at desc
+  limit 1;
+
+  select e.event_at, e.notes
+    into v_reopen_at, v_reopen_reason
+  from public.hse_packet_events e
+  where e.packet_id = p_packet_id
+    and e.event_type = 'reopen'
+  order by e.event_at desc, e.created_at desc
+  limit 1;
+
+  update public.linked_hse_packets
+  set
+    last_weather_check_at = v_weather_at,
+    last_heat_check_at = v_heat_at,
+    last_chemical_check_at = v_chemical_at,
+    last_traffic_check_at = v_traffic_at,
+    weather_monitoring_completed = case when weather_monitoring_required then coalesce(v_has_weather, false) else weather_monitoring_completed end,
+    heat_monitoring_completed = case when heat_monitoring_required then coalesce(v_has_heat, false) else heat_monitoring_completed end,
+    chemical_handling_completed = case when chemical_handling_required then coalesce(v_has_chemical, false) else chemical_handling_completed end,
+    traffic_control_completed = case when traffic_control_required then coalesce(v_has_traffic, false) else traffic_control_completed end,
+    field_signoff_completed = case when field_signoff_required then coalesce(v_has_signoff, false) else field_signoff_completed end,
+    field_signed_off_at = case when coalesce(v_has_signoff, false) then coalesce(v_signoff_at, field_signed_off_at) else field_signed_off_at end,
+    field_signed_off_by_profile_id = case when coalesce(v_has_signoff, false) then coalesce(v_signoff_by, field_signed_off_by_profile_id) else field_signed_off_by_profile_id end,
+    closeout_completed = case when coalesce(v_has_closeout, false) then true else closeout_completed end,
+    reopen_in_progress = case when coalesce(v_has_reopen, false) and not coalesce(v_has_closeout, false) then true else reopen_in_progress end,
+    reopen_reason = case when coalesce(v_has_reopen, false) then coalesce(v_reopen_reason, reopen_reason) else reopen_reason end,
+    last_reopened_at = case when coalesce(v_has_reopen, false) then coalesce(v_reopen_at, last_reopened_at) else last_reopened_at end,
+    updated_at = now()
+  where id = p_packet_id;
+end;
+$$;
+
+create or replace function public.ywi_after_hse_packet_event_sync()
+returns trigger
+language plpgsql
+as $$
+begin
+  perform public.ywi_sync_hse_packet_event_flags(coalesce(new.packet_id, old.packet_id));
+  return null;
+end;
+$$;
+
+drop trigger if exists trg_ywi_after_hse_packet_event_sync on public.hse_packet_events;
+create trigger trg_ywi_after_hse_packet_event_sync
+after insert or update or delete on public.hse_packet_events
+for each row execute function public.ywi_after_hse_packet_event_sync();
+
+create or replace function public.ywi_before_linked_hse_packet()
+returns trigger
+language plpgsql
+as $$
+declare
+  v_required_count integer := 0;
+  v_completed_count integer := 0;
+begin
+  v_required_count :=
+      (case when coalesce(new.briefing_required, false) then 1 else 0 end)
+    + (case when coalesce(new.inspection_required, false) then 1 else 0 end)
+    + (case when coalesce(new.emergency_review_required, false) then 1 else 0 end)
+    + (case when coalesce(new.weather_monitoring_required, false) then 1 else 0 end)
+    + (case when coalesce(new.heat_monitoring_required, false) then 1 else 0 end)
+    + (case when coalesce(new.chemical_handling_required, false) then 1 else 0 end)
+    + (case when coalesce(new.traffic_control_required, false) then 1 else 0 end)
+    + (case when coalesce(new.field_signoff_required, false) then 1 else 0 end);
+
+  v_completed_count :=
+      (case when coalesce(new.briefing_required, false) and coalesce(new.briefing_completed, false) then 1 else 0 end)
+    + (case when coalesce(new.inspection_required, false) and coalesce(new.inspection_completed, false) then 1 else 0 end)
+    + (case when coalesce(new.emergency_review_required, false) and coalesce(new.emergency_review_completed, false) then 1 else 0 end)
+    + (case when coalesce(new.weather_monitoring_required, false) and coalesce(new.weather_monitoring_completed, false) then 1 else 0 end)
+    + (case when coalesce(new.heat_monitoring_required, false) and coalesce(new.heat_monitoring_completed, false) then 1 else 0 end)
+    + (case when coalesce(new.chemical_handling_required, false) and coalesce(new.chemical_handling_completed, false) then 1 else 0 end)
+    + (case when coalesce(new.traffic_control_required, false) and coalesce(new.traffic_control_completed, false) then 1 else 0 end)
+    + (case when coalesce(new.field_signoff_required, false) and coalesce(new.field_signoff_completed, false) then 1 else 0 end);
+
+  if tg_op = 'UPDATE'
+     and coalesce(old.reopen_in_progress, false) = false
+     and coalesce(new.reopen_in_progress, false) = true then
+    new.reopen_count := coalesce(old.reopen_count, 0) + 1;
+    new.last_reopened_at := now();
+    new.last_reopened_by_profile_id := coalesce(new.last_reopened_by_profile_id, new.closed_by_profile_id, old.closed_by_profile_id, new.supervisor_profile_id);
+  else
+    new.reopen_count := coalesce(new.reopen_count, 0);
+  end if;
+
+  if coalesce(new.packet_type, '') = 'unscheduled_project' then
+    new.unscheduled_project := true;
+  end if;
+
+  if coalesce(nullif(trim(coalesce(new.packet_scope, '')), ''), '') = '' or coalesce(new.packet_scope, '') = 'standalone' then
+    if new.dispatch_id is not null then
+      new.packet_scope := 'dispatch';
+    elsif new.route_id is not null then
+      new.packet_scope := 'route';
+    elsif new.work_order_id is not null then
+      new.packet_scope := 'work_order';
+    elsif new.client_site_id is not null then
+      new.packet_scope := 'site';
+    elsif new.equipment_master_id is not null then
+      new.packet_scope := 'equipment';
+    elsif new.job_id is not null then
+      new.packet_scope := 'job';
+    else
+      new.packet_scope := 'standalone';
+    end if;
+  end if;
+
+  if coalesce(new.field_signoff_completed, false) and new.field_signed_off_at is null then
+    new.field_signed_off_at := now();
+  end if;
+
+  if coalesce(new.field_signoff_completed, false) and new.field_signed_off_by_profile_id is null then
+    new.field_signed_off_by_profile_id := coalesce(new.supervisor_profile_id, new.closed_by_profile_id, new.created_by_profile_id, old.field_signed_off_by_profile_id);
+  end if;
+
+  if coalesce(new.reopen_in_progress, false) then
+    new.closeout_completed := false;
+    new.packet_status := 'in_progress';
+    new.ready_for_closeout_at := null;
+    new.closed_at := null;
+    new.completion_percent := round(
+      case when v_required_count <= 0 then 100 else (v_completed_count::numeric / v_required_count::numeric) * 100 end,
+      2
+    );
+  elsif coalesce(new.closeout_completed, false) or coalesce(new.packet_status, '') = 'closed' then
+    new.packet_status := 'closed';
+    new.completion_percent := 100;
+    new.ready_for_closeout_at := coalesce(new.ready_for_closeout_at, now());
+    new.closed_at := coalesce(new.closed_at, now());
+  else
+    if v_required_count <= 0 then
+      new.completion_percent := 100;
+      new.packet_status := 'ready_for_closeout';
+      new.ready_for_closeout_at := coalesce(new.ready_for_closeout_at, now());
+    else
+      new.completion_percent := round((v_completed_count::numeric / v_required_count::numeric) * 100, 2);
+      if v_completed_count = v_required_count then
+        new.packet_status := 'ready_for_closeout';
+        new.ready_for_closeout_at := coalesce(new.ready_for_closeout_at, now());
+      elsif v_completed_count > 0 then
+        if coalesce(new.packet_status, '') <> 'closed' then
+          new.packet_status := 'in_progress';
+        end if;
+        new.ready_for_closeout_at := null;
+        new.closed_at := null;
+      else
+        new.packet_status := 'draft';
+        new.ready_for_closeout_at := null;
+        new.closed_at := null;
+      end if;
+    end if;
+  end if;
+
+  if coalesce(new.packet_status, '') <> 'closed' then
+    new.closed_at := null;
+  end if;
+
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_ywi_before_linked_hse_packet on public.linked_hse_packets;
+create trigger trg_ywi_before_linked_hse_packet
+before insert or update on public.linked_hse_packets
+for each row execute function public.ywi_before_linked_hse_packet();
+
+create or replace view public.v_hse_packet_event_rollups as
+select
+  lhp.id as packet_id,
+  count(hpe.id)::int as event_count,
+  count(hpe.id) filter (where hpe.event_type = 'weather_check')::int as weather_event_count,
+  count(hpe.id) filter (where hpe.event_type = 'heat_check')::int as heat_event_count,
+  count(hpe.id) filter (where hpe.event_type = 'chemical_check')::int as chemical_event_count,
+  count(hpe.id) filter (where hpe.event_type = 'traffic_check')::int as traffic_event_count,
+  count(hpe.id) filter (where hpe.event_type = 'field_signoff')::int as signoff_event_count,
+  count(hpe.id) filter (where hpe.event_type = 'closeout')::int as closeout_event_count,
+  count(hpe.id) filter (where hpe.event_status in ('warning','exception'))::int as exception_event_count,
+  max(hpe.event_at) as last_event_at,
+  max(hpe.event_at) filter (where hpe.event_type = 'weather_check') as last_weather_event_at,
+  max(hpe.event_at) filter (where hpe.event_type = 'heat_check') as last_heat_event_at,
+  max(hpe.event_at) filter (where hpe.event_type = 'chemical_check') as last_chemical_event_at,
+  max(hpe.event_at) filter (where hpe.event_type = 'traffic_check') as last_traffic_event_at,
+  max(hpe.event_at) filter (where hpe.event_type = 'field_signoff') as last_signoff_event_at,
+  max(hpe.event_at) filter (where hpe.event_type = 'closeout') as last_closeout_event_at
+from public.linked_hse_packets lhp
+left join public.hse_packet_events hpe on hpe.packet_id = lhp.id
+group by lhp.id;
+
+create or replace view public.v_hse_packet_progress as
+with proof_rollups as (
+  select
+    hpp.packet_id,
+    count(hpp.id)::int as proof_count,
+    count(hpp.id) filter (where hpp.proof_kind = 'photo')::int as photo_count,
+    count(hpp.id) filter (where hpp.proof_kind = 'signature')::int as signature_count,
+    count(hpp.id) filter (where hpp.proof_kind in ('file','document'))::int as document_count,
+    max(hpp.created_at) as last_proof_at
+  from public.hse_packet_proofs hpp
+  group by hpp.packet_id
+), event_rollups as (
+  select * from public.v_hse_packet_event_rollups
+)
+select
+  lhp.id,
+  lhp.packet_number,
+  lhp.packet_type,
+  lhp.packet_status,
+  lhp.work_order_id,
+  lhp.dispatch_id,
+  ((case when lhp.briefing_required then 1 else 0 end)
+    + (case when lhp.inspection_required then 1 else 0 end)
+    + (case when lhp.emergency_review_required then 1 else 0 end)
+    + (case when lhp.weather_monitoring_required then 1 else 0 end)
+    + (case when lhp.heat_monitoring_required then 1 else 0 end)
+    + (case when lhp.chemical_handling_required then 1 else 0 end)
+    + (case when lhp.traffic_control_required then 1 else 0 end)
+    + (case when lhp.field_signoff_required then 1 else 0 end)) as required_step_count,
+  ((case when lhp.briefing_required and lhp.briefing_completed then 1 else 0 end)
+    + (case when lhp.inspection_required and lhp.inspection_completed then 1 else 0 end)
+    + (case when lhp.emergency_review_required and lhp.emergency_review_completed then 1 else 0 end)
+    + (case when lhp.weather_monitoring_required and lhp.weather_monitoring_completed then 1 else 0 end)
+    + (case when lhp.heat_monitoring_required and lhp.heat_monitoring_completed then 1 else 0 end)
+    + (case when lhp.chemical_handling_required and lhp.chemical_handling_completed then 1 else 0 end)
+    + (case when lhp.traffic_control_required and lhp.traffic_control_completed then 1 else 0 end)
+    + (case when lhp.field_signoff_required and lhp.field_signoff_completed then 1 else 0 end)) as completed_step_count,
+  lhp.completion_percent,
+  lhp.ready_for_closeout_at,
+  lhp.closed_at,
+  coalesce(pr.proof_count, 0) as proof_count,
+  coalesce(pr.photo_count, 0) as photo_count,
+  coalesce(pr.signature_count, 0) as signature_count,
+  coalesce(pr.document_count, 0) as document_count,
+  pr.last_proof_at,
+  lhp.reopen_in_progress,
+  lhp.reopen_count,
+  lhp.last_reopened_at,
+  lhp.last_reopened_by_profile_id,
+  lhp.job_id,
+  lhp.equipment_master_id,
+  lhp.packet_scope,
+  lhp.unscheduled_project,
+  lhp.standalone_project_name,
+  lhp.weather_monitoring_required,
+  lhp.weather_monitoring_completed,
+  lhp.heat_monitoring_required,
+  lhp.heat_monitoring_completed,
+  lhp.chemical_handling_required,
+  lhp.chemical_handling_completed,
+  lhp.traffic_control_required,
+  lhp.traffic_control_completed,
+  lhp.field_signoff_required,
+  lhp.field_signoff_completed,
+  lhp.field_signed_off_at,
+  lhp.field_signed_off_by_profile_id,
+  lhp.last_weather_check_at,
+  lhp.last_heat_check_at,
+  lhp.last_chemical_check_at,
+  lhp.last_traffic_check_at,
+  lhp.weather_notes,
+  lhp.heat_plan_notes,
+  lhp.chemical_notes,
+  lhp.traffic_notes,
+  lhp.public_interaction_notes,
+  coalesce(er.event_count, 0) as event_count,
+  coalesce(er.weather_event_count, 0) as weather_event_count,
+  coalesce(er.heat_event_count, 0) as heat_event_count,
+  coalesce(er.chemical_event_count, 0) as chemical_event_count,
+  coalesce(er.traffic_event_count, 0) as traffic_event_count,
+  coalesce(er.signoff_event_count, 0) as signoff_event_count,
+  coalesce(er.closeout_event_count, 0) as closeout_event_count,
+  coalesce(er.exception_event_count, 0) as exception_event_count,
+  er.last_event_at,
+  er.last_weather_event_at,
+  er.last_heat_event_at,
+  er.last_chemical_event_at,
+  er.last_traffic_event_at,
+  er.last_signoff_event_at,
+  er.last_closeout_event_at
+from public.linked_hse_packets lhp
+left join proof_rollups pr on pr.packet_id = lhp.id
+left join event_rollups er on er.packet_id = lhp.id;
+-- ============================================================================
+-- END MIGRATION: 069_hse_osha_interfaces_weather_chemical_traffic_signoff.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 070_hse_upload_retry_and_analytics_monitoring.sql
+-- ============================================================================
+-- 070_hse_upload_retry_and_analytics_monitoring.sql
+-- Adds:
+-- 1) HSE/route upload retry linkage and richer failure ownership fields
+-- 2) DB-backed analytics traffic events
+-- 3) DB-backed backend monitor incidents for failed requests/runtime issues
+-- 4) Views so Admin can review recent traffic and open monitor incidents
+
+create extension if not exists pgcrypto;
+
+alter table if exists public.field_upload_failures
+  add column if not exists execution_id uuid references public.route_stop_executions(id) on delete set null,
+  add column if not exists packet_id uuid references public.linked_hse_packets(id) on delete set null,
+  add column if not exists proof_id uuid references public.hse_packet_proofs(id) on delete set null,
+  add column if not exists route_attachment_id uuid references public.route_stop_execution_attachments(id) on delete set null,
+  add column if not exists upload_attempts integer not null default 0,
+  add column if not exists retry_owner_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists retry_owner_notes text,
+  add column if not exists last_retry_at timestamptz,
+  add column if not exists next_retry_after timestamptz;
+
+create index if not exists idx_field_upload_failures_execution_id
+  on public.field_upload_failures(execution_id, created_at desc);
+
+create index if not exists idx_field_upload_failures_packet_id
+  on public.field_upload_failures(packet_id, created_at desc);
+
+create index if not exists idx_field_upload_failures_retry_owner
+  on public.field_upload_failures(retry_owner_profile_id, retry_status, created_at desc);
+
+create table if not exists public.app_traffic_events (
+  id uuid primary key default gen_random_uuid(),
+  session_key text,
+  visitor_key text,
+  event_name text not null default 'page_view',
+  route_name text,
+  page_path text,
+  page_title text,
+  referrer text,
+  source_medium text,
+  user_agent text,
+  profile_id uuid references public.profiles(id) on delete set null,
+  role_label text,
+  is_authenticated boolean not null default false,
+  request_method text,
+  endpoint_path text,
+  http_status integer,
+  duration_ms integer,
+  event_value numeric(12,2),
+  details jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  check (
+    event_name in (
+      'page_view',
+      'route_view',
+      'route_denied',
+      'admin_load',
+      'api_call',
+      'api_error',
+      'client_error',
+      'upload_success',
+      'upload_failure',
+      'smoke_check',
+      'session_health'
+    )
+  )
+);
+
+create index if not exists idx_app_traffic_events_created_at
+  on public.app_traffic_events(created_at desc);
+
+create index if not exists idx_app_traffic_events_route
+  on public.app_traffic_events(route_name, event_name, created_at desc);
+
+create index if not exists idx_app_traffic_events_endpoint
+  on public.app_traffic_events(endpoint_path, event_name, created_at desc);
+
+create index if not exists idx_app_traffic_events_profile_id
+  on public.app_traffic_events(profile_id, created_at desc);
+
+create table if not exists public.backend_monitor_events (
+  id uuid primary key default gen_random_uuid(),
+  monitor_scope text not null default 'frontend',
+  event_name text not null default 'api_error',
+  severity text not null default 'warning',
+  lifecycle_status text not null default 'open',
+  route_name text,
+  endpoint_path text,
+  function_name text,
+  error_code text,
+  http_status integer,
+  title text,
+  message text,
+  linked_failure_id uuid references public.field_upload_failures(id) on delete set null,
+  details jsonb not null default '{}'::jsonb,
+  occurrence_count integer not null default 1,
+  first_seen_at timestamptz not null default now(),
+  last_seen_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  resolved_at timestamptz,
+  resolved_by_profile_id uuid references public.profiles(id) on delete set null,
+  resolution_notes text,
+  check (monitor_scope in ('frontend','backend','storage','auth','operations','hse','analytics')),
+  check (severity in ('info','warning','error','critical')),
+  check (lifecycle_status in ('open','investigating','resolved','dismissed'))
+);
+
+create index if not exists idx_backend_monitor_events_status
+  on public.backend_monitor_events(lifecycle_status, severity, created_at desc);
+
+create index if not exists idx_backend_monitor_events_scope
+  on public.backend_monitor_events(monitor_scope, event_name, created_at desc);
+
+create or replace function public.ywi_before_backend_monitor_event()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at := now();
+  new.last_seen_at := coalesce(new.last_seen_at, now());
+
+  if coalesce(new.lifecycle_status, 'open') in ('resolved', 'dismissed')
+     and new.resolved_at is null then
+    new.resolved_at := now();
+  end if;
+
+  if coalesce(new.lifecycle_status, 'open') in ('open', 'investigating') then
+    new.resolved_at := null;
+  end if;
+
+  if coalesce(new.occurrence_count, 0) <= 0 then
+    new.occurrence_count := 1;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_ywi_before_backend_monitor_event on public.backend_monitor_events;
+create trigger trg_ywi_before_backend_monitor_event
+before insert or update on public.backend_monitor_events
+for each row execute function public.ywi_before_backend_monitor_event();
+
+create or replace function public.ywi_before_app_traffic_event()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.created_at is null then
+    new.created_at := now();
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_ywi_before_app_traffic_event on public.app_traffic_events;
+create trigger trg_ywi_before_app_traffic_event
+before insert on public.app_traffic_events
+for each row execute function public.ywi_before_app_traffic_event();
+
+-- Keep all existing columns in the exact same order as 068,
+-- then append the new 070 columns at the end.
+create or replace view public.v_field_upload_failure_rollups as
+select
+  fuf.id,
+  fuf.failure_scope,
+  fuf.linked_record_type,
+  fuf.linked_record_id,
+  fuf.job_id,
+  fuf.comment_id,
+  fuf.signout_id,
+  fuf.file_name,
+  fuf.content_type,
+  fuf.file_size_bytes,
+  fuf.storage_bucket,
+  fuf.storage_path,
+  fuf.failure_stage,
+  fuf.failure_reason,
+  fuf.retry_status,
+  fuf.client_context,
+  fuf.created_by_profile_id,
+  fuf.created_at,
+  fuf.updated_at,
+  fuf.resolved_at,
+  fuf.resolved_by_profile_id,
+  fuf.resolution_notes,
+  extract(epoch from (now() - fuf.created_at))::bigint as age_seconds,
+  j.job_code,
+  jc.job_id as comment_job_id,
+  es.job_id as signout_job_id,
+
+  -- 070 appended columns
+  fuf.execution_id,
+  fuf.packet_id,
+  fuf.proof_id,
+  fuf.route_attachment_id,
+  fuf.upload_attempts,
+  fuf.retry_owner_profile_id,
+  fuf.retry_owner_notes,
+  fuf.last_retry_at,
+  fuf.next_retry_after,
+  rse.execution_status,
+  lhp.packet_number,
+  hpp.file_name as proof_file_name
+from public.field_upload_failures fuf
+left join public.jobs j
+  on j.id = fuf.job_id
+left join public.job_comments jc
+  on jc.id = fuf.comment_id
+left join public.equipment_signouts es
+  on es.id = fuf.signout_id
+left join public.route_stop_executions rse
+  on rse.id = fuf.execution_id
+left join public.linked_hse_packets lhp
+  on lhp.id = fuf.packet_id
+left join public.hse_packet_proofs hpp
+  on hpp.id = fuf.proof_id;
+
+create or replace view public.v_app_traffic_recent as
+select
+  ate.id,
+  ate.session_key,
+  ate.visitor_key,
+  ate.event_name,
+  ate.route_name,
+  ate.page_path,
+  ate.page_title,
+  ate.referrer,
+  ate.source_medium,
+  ate.user_agent,
+  ate.profile_id,
+  ate.role_label,
+  ate.is_authenticated,
+  ate.request_method,
+  ate.endpoint_path,
+  ate.http_status,
+  ate.duration_ms,
+  ate.event_value,
+  ate.details,
+  ate.created_at
+from public.app_traffic_events ate;
+
+create or replace view public.v_backend_monitor_recent as
+select
+  bme.id,
+  bme.monitor_scope,
+  bme.event_name,
+  bme.severity,
+  bme.lifecycle_status,
+  bme.route_name,
+  bme.endpoint_path,
+  bme.function_name,
+  bme.error_code,
+  bme.http_status,
+  bme.title,
+  bme.message,
+  bme.linked_failure_id,
+  bme.details,
+  bme.occurrence_count,
+  bme.first_seen_at,
+  bme.last_seen_at,
+  bme.created_at,
+  bme.updated_at,
+  bme.resolved_at,
+  bme.resolved_by_profile_id,
+  bme.resolution_notes
+from public.backend_monitor_events bme;
+-- ============================================================================
+-- END MIGRATION: 070_hse_upload_retry_and_analytics_monitoring.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 071_admin_focus_hse_action_items_and_monitor_summaries.sql
+-- ============================================================================
+-- 071_admin_focus_hse_action_items_and_monitor_summaries.sql
+-- Adds Admin focus/review views for:
+-- 1) HSE packet action items
+-- 2) Daily traffic analytics summaries
+-- 3) Monitor threshold alerts
+--
+-- This version is aligned to the actual 069/070 schema.
+-- Note: linked_hse_packets has:
+--   - unscheduled_project (boolean)
+--   - standalone_project_name (text)
+-- It does NOT have unscheduled_project_name.
+
+create or replace view public.v_hse_packet_action_items as
+with base as (
+  select
+    hp.id as packet_id,
+    hp.packet_number,
+    hp.packet_type,
+    hp.packet_scope,
+    hp.packet_status,
+    hp.job_id,
+    hp.work_order_id,
+    hp.dispatch_id,
+    hp.equipment_master_id,
+    hp.unscheduled_project,
+    hp.standalone_project_name,
+    hp.completion_percent,
+    hp.required_step_count,
+    hp.completed_step_count,
+    greatest(coalesce(hp.required_step_count, 0) - coalesce(hp.completed_step_count, 0), 0) as open_step_count,
+    hp.exception_event_count,
+    hp.proof_count,
+    hp.photo_count,
+    hp.document_count,
+    hp.ready_for_closeout_at,
+    hp.closed_at,
+    hp.reopen_in_progress,
+    hp.reopen_count,
+    hp.last_reopened_at,
+    hp.last_event_at,
+    hp.last_proof_at,
+    hp.field_signoff_required,
+    hp.field_signoff_completed,
+    hp.weather_monitoring_required,
+    hp.weather_monitoring_completed,
+    hp.heat_monitoring_required,
+    hp.heat_monitoring_completed,
+    hp.chemical_handling_required,
+    hp.chemical_handling_completed,
+    hp.traffic_control_required,
+    hp.traffic_control_completed,
+    coalesce(nullif(trim(hp.standalone_project_name), ''), hp.packet_number) as project_label
+  from public.v_hse_packet_progress hp
+)
+select
+  b.packet_id,
+  b.packet_number,
+  b.packet_type,
+  b.packet_scope,
+  b.packet_status,
+  b.job_id,
+  b.work_order_id,
+  b.dispatch_id,
+  b.equipment_master_id,
+  b.unscheduled_project,
+  b.standalone_project_name,
+  b.project_label,
+  b.completion_percent,
+  b.required_step_count,
+  b.completed_step_count,
+  b.open_step_count,
+  b.exception_event_count,
+  b.proof_count,
+  b.photo_count,
+  b.document_count,
+  b.ready_for_closeout_at,
+  b.closed_at,
+  b.reopen_in_progress,
+  b.reopen_count,
+  b.last_reopened_at,
+  b.last_event_at,
+  b.last_proof_at,
+
+  case
+    when coalesce(b.closed_at, null) is not null and coalesce(b.reopen_in_progress, false) then 5
+    when coalesce(b.exception_event_count, 0) > 0 then 10
+    when coalesce(b.field_signoff_required, false) and not coalesce(b.field_signoff_completed, false) and coalesce(b.open_step_count, 0) = 0 then 20
+    when coalesce(b.ready_for_closeout_at, null) is not null and b.closed_at is null then 30
+    when coalesce(b.open_step_count, 0) > 0 then 40
+    else 90
+  end as action_priority,
+
+  case
+    when coalesce(b.closed_at, null) is not null and coalesce(b.reopen_in_progress, false) then 'reopen_followup'
+    when coalesce(b.exception_event_count, 0) > 0 then 'exception_review'
+    when coalesce(b.field_signoff_required, false) and not coalesce(b.field_signoff_completed, false) and coalesce(b.open_step_count, 0) = 0 then 'field_signoff'
+    when coalesce(b.ready_for_closeout_at, null) is not null and b.closed_at is null then 'closeout'
+    when coalesce(b.open_step_count, 0) > 0 then 'workflow_completion'
+    else 'review'
+  end as action_code,
+
+  case
+    when coalesce(b.closed_at, null) is not null and coalesce(b.reopen_in_progress, false) then 'Reopened packet needs follow-up'
+    when coalesce(b.exception_event_count, 0) > 0 then 'Packet has exception events'
+    when coalesce(b.field_signoff_required, false) and not coalesce(b.field_signoff_completed, false) and coalesce(b.open_step_count, 0) = 0 then 'Packet ready for field signoff'
+    when coalesce(b.ready_for_closeout_at, null) is not null and b.closed_at is null then 'Packet ready for closeout'
+    when coalesce(b.open_step_count, 0) > 0 then 'Packet still has open workflow steps'
+    else 'Packet review'
+  end as action_title,
+
+  concat_ws(
+    ' | ',
+    case when b.unscheduled_project then 'Unscheduled project' end,
+    case when coalesce(b.open_step_count, 0) > 0 then ('Open steps: ' || b.open_step_count::text) end,
+    case when coalesce(b.exception_event_count, 0) > 0 then ('Exceptions: ' || b.exception_event_count::text) end,
+    case when coalesce(b.proof_count, 0) > 0 then ('Proofs: ' || b.proof_count::text) end,
+    case when coalesce(b.ready_for_closeout_at, null) is not null and b.closed_at is null then 'Awaiting closeout' end,
+    case when coalesce(b.reopen_in_progress, false) then 'Reopen in progress' end
+  ) as action_summary,
+
+  (
+    coalesce(b.exception_event_count, 0) > 0
+    or (coalesce(b.field_signoff_required, false) and not coalesce(b.field_signoff_completed, false))
+    or coalesce(b.open_step_count, 0) > 0
+    or (coalesce(b.ready_for_closeout_at, null) is not null and b.closed_at is null)
+    or coalesce(b.reopen_in_progress, false)
+  ) as needs_attention
+from base b;
+
+create or replace view public.v_app_traffic_daily_summary as
+with daily as (
+  select
+    ate.created_at::date as event_date,
+    count(*)::int as total_events,
+    count(*) filter (where ate.event_name = 'page_view')::int as page_view_count,
+    count(*) filter (where ate.event_name = 'route_view')::int as route_view_count,
+    count(*) filter (where ate.event_name = 'admin_load')::int as admin_load_count,
+    count(*) filter (where ate.event_name = 'api_call')::int as api_call_count,
+    count(*) filter (where ate.event_name = 'api_error')::int as api_error_count,
+    count(*) filter (where ate.event_name = 'client_error')::int as client_error_count,
+    count(*) filter (where ate.event_name = 'upload_failure')::int as upload_failure_count,
+    count(*) filter (where ate.event_name = 'upload_success')::int as upload_success_count,
+    count(distinct nullif(ate.session_key, ''))::int as session_count,
+    count(distinct nullif(ate.visitor_key, ''))::int as visitor_count,
+    count(distinct ate.profile_id)::int as authenticated_profile_count,
+    avg(ate.duration_ms)::numeric(12,2) as avg_duration_ms,
+    max(ate.duration_ms) as max_duration_ms
+  from public.app_traffic_events ate
+  group by ate.created_at::date
+)
+select
+  d.event_date,
+  d.total_events,
+  d.page_view_count,
+  d.route_view_count,
+  d.admin_load_count,
+  d.api_call_count,
+  d.api_error_count,
+  d.client_error_count,
+  d.upload_failure_count,
+  d.upload_success_count,
+  d.session_count,
+  d.visitor_count,
+  d.authenticated_profile_count,
+  d.avg_duration_ms,
+  d.max_duration_ms,
+  round((coalesce(d.api_error_count, 0)::numeric / nullif(d.api_call_count, 0)::numeric) * 100, 2) as api_error_rate_percent,
+  round(((coalesce(d.api_error_count, 0) + coalesce(d.client_error_count, 0) + coalesce(d.upload_failure_count, 0))::numeric / nullif(d.total_events, 0)::numeric) * 100, 2) as trouble_event_rate_percent
+from daily d;
+
+create or replace view public.v_monitor_threshold_alerts as
+with open_monitor_rollups as (
+  select
+    bme.monitor_scope as alert_scope,
+    count(*)::int as open_incident_count,
+    count(*) filter (where bme.severity in ('critical', 'error'))::int as open_error_incident_count,
+    max(bme.last_seen_at) as observed_at
+  from public.backend_monitor_events bme
+  where bme.lifecycle_status in ('open', 'investigating')
+  group by bme.monitor_scope
+),
+traffic_alerts as (
+  select
+    ('traffic-' || vads.event_date::text) as alert_key,
+    'analytics'::text as alert_scope,
+    case
+      when coalesce(vads.api_error_rate_percent, 0) >= 10
+        or coalesce(vads.trouble_event_rate_percent, 0) >= 15
+        then 'error'
+      else 'warning'
+    end as alert_level,
+    'Traffic / reliability threshold alert'::text as alert_title,
+    concat_ws(
+      ' | ',
+      'Date: ' || vads.event_date::text,
+      'API error rate: ' || coalesce(vads.api_error_rate_percent, 0)::text || '%',
+      'Trouble event rate: ' || coalesce(vads.trouble_event_rate_percent, 0)::text || '%',
+      'Upload failures: ' || coalesce(vads.upload_failure_count, 0)::text
+    ) as alert_summary,
+    vads.event_date::timestamp as observed_at,
+    vads.event_date,
+    greatest(coalesce(vads.api_error_rate_percent, 0), coalesce(vads.trouble_event_rate_percent, 0))::numeric(12,2) as metric_value,
+    case
+      when coalesce(vads.api_error_rate_percent, 0) >= 10 then 10::numeric(12,2)
+      when coalesce(vads.trouble_event_rate_percent, 0) >= 15 then 15::numeric(12,2)
+      when coalesce(vads.upload_failure_count, 0) >= 3 then 3::numeric(12,2)
+      else 5::numeric(12,2)
+    end as threshold_value,
+    vads.total_events as related_count,
+    jsonb_build_object(
+      'api_error_rate_percent', vads.api_error_rate_percent,
+      'trouble_event_rate_percent', vads.trouble_event_rate_percent,
+      'upload_failure_count', vads.upload_failure_count,
+      'api_call_count', vads.api_call_count,
+      'api_error_count', vads.api_error_count,
+      'client_error_count', vads.client_error_count
+    ) as details
+  from public.v_app_traffic_daily_summary vads
+  where
+    coalesce(vads.api_error_rate_percent, 0) >= 5
+    or coalesce(vads.trouble_event_rate_percent, 0) >= 8
+    or coalesce(vads.upload_failure_count, 0) >= 3
+),
+monitor_alerts as (
+  select
+    ('monitor-' || omr.alert_scope) as alert_key,
+    omr.alert_scope,
+    case
+      when coalesce(omr.open_error_incident_count, 0) > 0 then 'error'
+      else 'warning'
+    end as alert_level,
+    'Open monitor incidents'::text as alert_title,
+    concat_ws(
+      ' | ',
+      'Scope: ' || omr.alert_scope,
+      'Open incidents: ' || omr.open_incident_count::text,
+      'Open error/critical incidents: ' || omr.open_error_incident_count::text
+    ) as alert_summary,
+    omr.observed_at::timestamp as observed_at,
+    omr.observed_at::date as event_date,
+    omr.open_incident_count::numeric(12,2) as metric_value,
+    case
+      when coalesce(omr.open_error_incident_count, 0) > 0 then 1::numeric(12,2)
+      else 5::numeric(12,2)
+    end as threshold_value,
+    omr.open_incident_count as related_count,
+    jsonb_build_object(
+      'open_incident_count', omr.open_incident_count,
+      'open_error_incident_count', omr.open_error_incident_count
+    ) as details
+  from open_monitor_rollups omr
+  where
+    coalesce(omr.open_error_incident_count, 0) > 0
+    or coalesce(omr.open_incident_count, 0) >= 5
+)
+select * from traffic_alerts
+union all
+select * from monitor_alerts;
+-- ============================================================================
+-- END MIGRATION: 071_admin_focus_hse_action_items_and_monitor_summaries.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 072_hse_hub_and_accounting_review_summaries.sql
+-- ============================================================================
+-- 072_hse_hub_and_accounting_review_summaries.sql
+-- Adds lightweight summary views for the standalone HSE hub and accounting review shell.
+
+create or replace view public.v_hse_dashboard_summary as
+select
+  count(*)::int as total_packets,
+  count(*) filter (where packet_status = 'draft')::int as draft_packets,
+  count(*) filter (where packet_status = 'in_progress')::int as in_progress_packets,
+  count(*) filter (where packet_status = 'ready_for_closeout')::int as ready_for_closeout_packets,
+  count(*) filter (where packet_status = 'closed')::int as closed_packets,
+  count(*) filter (where coalesce(unscheduled_project, false))::int as unscheduled_project_packets,
+  count(*) filter (where coalesce(weather_monitoring_required, false) and not coalesce(weather_monitoring_completed, false))::int as weather_open_packets,
+  count(*) filter (where coalesce(heat_monitoring_required, false) and not coalesce(heat_monitoring_completed, false))::int as heat_open_packets,
+  count(*) filter (where coalesce(chemical_handling_required, false) and not coalesce(chemical_handling_completed, false))::int as chemical_open_packets,
+  count(*) filter (where coalesce(traffic_control_required, false) and not coalesce(traffic_control_completed, false))::int as traffic_open_packets,
+  count(*) filter (where coalesce(field_signoff_required, false) and not coalesce(field_signoff_completed, false))::int as signoff_open_packets,
+  count(*) filter (where coalesce(exception_event_count, 0) > 0)::int as exception_packets,
+  count(*) filter (where coalesce(reopen_in_progress, false))::int as reopen_packets,
+  count(*) filter (where coalesce(exception_event_count, 0) > 0
+                or (coalesce(field_signoff_required, false) and not coalesce(field_signoff_completed, false))
+                or (coalesce(weather_monitoring_required, false) and not coalesce(weather_monitoring_completed, false))
+                or (coalesce(heat_monitoring_required, false) and not coalesce(heat_monitoring_completed, false))
+                or (coalesce(chemical_handling_required, false) and not coalesce(chemical_handling_completed, false))
+                or (coalesce(traffic_control_required, false) and not coalesce(traffic_control_completed, false))
+                or coalesce(reopen_in_progress, false)
+                or packet_status = 'ready_for_closeout')::int as action_needed_packets
+from public.v_hse_packet_progress;
+
+create or replace view public.v_accounting_review_summary as
+with batch_rollup as (
+  select
+    count(*)::int as batch_count,
+    count(*) filter (where coalesce(batch_status, '') <> 'posted')::int as unposted_batch_count,
+    count(*) filter (where coalesce(is_balanced, false) = false)::int as unbalanced_batch_count,
+    count(*) filter (where coalesce(source_sync_state, '') in ('stale', 'out_of_sync', 'needs_review'))::int as stale_source_batch_count,
+    max(source_synced_at) as last_source_synced_at
+  from public.v_gl_journal_batch_rollups
+),
+exception_rollup as (
+  select
+    count(*)::int as sync_exception_count,
+    count(*) filter (where exception_status = 'open')::int as open_sync_exception_count,
+    count(*) filter (where exception_status = 'open' and severity in ('warning','error'))::int as warning_or_error_sync_exception_count,
+    max(last_seen_at) as last_sync_exception_at
+  from public.v_gl_journal_sync_exceptions
+),
+ar_rollup as (
+  select
+    count(*) filter (where record_type = 'ar_invoice' and coalesce(balance_due, 0) > 0)::int as open_ar_record_count,
+    coalesce(sum(case when record_type = 'ar_invoice' then balance_due else 0 end), 0)::numeric(12,2) as open_ar_balance
+  from public.v_account_balance_rollups
+),
+ap_rollup as (
+  select
+    count(*) filter (where record_type = 'ap_bill' and coalesce(balance_due, 0) > 0)::int as open_ap_record_count,
+    coalesce(sum(case when record_type = 'ap_bill' then balance_due else 0 end), 0)::numeric(12,2) as open_ap_balance
+  from public.v_account_balance_rollups
+),
+traffic_rollup as (
+  select
+    max(event_date) as latest_daily_event_date,
+    max(total_events) filter (where event_date = (select max(event_date) from public.v_app_traffic_daily_summary)) as latest_daily_total_events
+  from public.v_app_traffic_daily_summary
+)
+select
+  br.batch_count,
+  br.unposted_batch_count,
+  br.unbalanced_batch_count,
+  br.stale_source_batch_count,
+  br.last_source_synced_at,
+  er.sync_exception_count,
+  er.open_sync_exception_count,
+  er.warning_or_error_sync_exception_count,
+  er.last_sync_exception_at,
+  ar.open_ar_record_count,
+  ar.open_ar_balance,
+  ap.open_ap_record_count,
+  ap.open_ap_balance,
+  tr.latest_daily_event_date,
+  tr.latest_daily_total_events
+from batch_rollup br
+cross join exception_rollup er
+cross join ar_rollup ar
+cross join ap_rollup ap
+cross join traffic_rollup tr;
+-- ============================================================================
+-- END MIGRATION: 072_hse_hub_and_accounting_review_summaries.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 073_hse_link_context_and_monitor_shortcuts.sql
+-- ============================================================================
+-- 073_hse_link_context_and_monitor_shortcuts.sql
+-- Corrected again for PostgreSQL compatibility:
+-- - client_site_id and route_id come from public.linked_hse_packets
+-- - uuid values inside filtered aggregates are cast through text, then back to uuid where needed
+
+create or replace view public.v_hse_link_context_summary as
+with packet_base as (
+  select
+    hp.id,
+    hp.packet_number,
+    hp.packet_status,
+    hp.job_id,
+    hp.work_order_id,
+    lhp.client_site_id,
+    lhp.route_id,
+    hp.dispatch_id,
+    hp.equipment_master_id,
+    hp.unscheduled_project,
+    hp.packet_scope,
+    hp.packet_type,
+    coalesce(ai.action_priority, 90) as action_priority,
+    coalesce(ai.action_title, 'Packet review') as action_title,
+    ai.action_summary,
+    coalesce(ai.needs_attention, false) as needs_attention
+  from public.v_hse_packet_progress hp
+  left join public.linked_hse_packets lhp
+    on lhp.id = hp.id
+  left join public.v_hse_packet_action_items ai
+    on ai.packet_id = hp.id
+), lane_rows as (
+  select
+    'job_work_order'::text as lane_key,
+    'Jobs and work orders'::text as lane_title,
+    1 as sort_order,
+    id,
+    packet_number,
+    packet_status,
+    action_priority,
+    action_title,
+    action_summary,
+    needs_attention
+  from packet_base
+  where job_id is not null or work_order_id is not null
+
+  union all
+
+  select
+    'site_context'::text as lane_key,
+    'Sites and client locations'::text as lane_title,
+    2 as sort_order,
+    id,
+    packet_number,
+    packet_status,
+    action_priority,
+    action_title,
+    action_summary,
+    needs_attention
+  from packet_base
+  where client_site_id is not null
+
+  union all
+
+  select
+    'route_dispatch'::text as lane_key,
+    'Routes, dispatches, and subcontract work'::text as lane_title,
+    3 as sort_order,
+    id,
+    packet_number,
+    packet_status,
+    action_priority,
+    action_title,
+    action_summary,
+    needs_attention
+  from packet_base
+  where route_id is not null or dispatch_id is not null
+
+  union all
+
+  select
+    'equipment'::text as lane_key,
+    'Equipment-linked packets'::text as lane_title,
+    4 as sort_order,
+    id,
+    packet_number,
+    packet_status,
+    action_priority,
+    action_title,
+    action_summary,
+    needs_attention
+  from packet_base
+  where equipment_master_id is not null
+
+  union all
+
+  select
+    'standalone'::text as lane_key,
+    'Standalone and unscheduled packets'::text as lane_title,
+    5 as sort_order,
+    id,
+    packet_number,
+    packet_status,
+    action_priority,
+    action_title,
+    action_summary,
+    needs_attention
+  from packet_base
+  where coalesce(unscheduled_project, false)
+     or coalesce(packet_scope, '') = 'standalone'
+     or coalesce(packet_type, '') = 'unscheduled_project'
+     or (
+       job_id is null
+       and work_order_id is null
+       and client_site_id is null
+       and route_id is null
+       and dispatch_id is null
+       and equipment_master_id is null
+     )
+), ranked as (
+  select
+    lr.*,
+    row_number() over (
+      partition by lr.lane_key
+      order by
+        case when lr.needs_attention then 0 else 1 end,
+        lr.action_priority asc,
+        lr.packet_number asc,
+        lr.id asc
+    ) as rn
+  from lane_rows lr
+)
+select
+  lane_key,
+  lane_title,
+  sort_order,
+  'linked_hse_packet'::text as related_entity,
+  count(*)::int as packet_count,
+  count(*) filter (where needs_attention)::int as attention_count,
+  count(*) filter (where packet_status = 'ready_for_closeout')::int as ready_for_closeout_count,
+  (max(id::text) filter (where rn = 1))::uuid as top_packet_id,
+  max(packet_number) filter (where rn = 1) as top_packet_number,
+  max(action_title) filter (where rn = 1) as top_action_title,
+  max(action_summary) filter (where rn = 1) as top_action_summary
+from ranked
+group by lane_key, lane_title, sort_order
+order by sort_order, lane_key;
+
+create or replace view public.v_monitor_review_summary as
+with upload_ranked as (
+  select
+    'upload_failures'::text as lane_key,
+    'Upload issues'::text as lane_title,
+    1 as sort_order,
+    'field_upload_failure'::text as related_entity,
+    vur.id::text as record_id,
+    coalesce(vur.file_name, vur.packet_number, vur.job_code, vur.linked_record_type, vur.id::text) as label,
+    concat_ws(' | ', vur.failure_scope, vur.failure_stage, vur.failure_reason) as summary,
+    (vur.resolved_at is null) as is_open,
+    (coalesce(vur.retry_status, '') in ('failed', 'dead_letter')) as is_error,
+    vur.created_at as observed_at,
+    row_number() over (
+      partition by 'upload_failures'
+      order by
+        case when vur.resolved_at is null then 0 else 1 end,
+        vur.created_at desc,
+        vur.id desc
+    ) as rn
+  from public.v_field_upload_failure_rollups vur
+), upload_summary as (
+  select
+    lane_key,
+    lane_title,
+    sort_order,
+    related_entity,
+    count(*)::int as record_count,
+    count(*) filter (where is_open)::int as open_count,
+    count(*) filter (where is_error)::int as error_count,
+    max(observed_at) as observed_at,
+    max(record_id) filter (where rn = 1) as top_record_id,
+    max(label) filter (where rn = 1) as top_label,
+    max(summary) filter (where rn = 1) as top_summary
+  from upload_ranked
+  group by lane_key, lane_title, sort_order, related_entity
+), traffic_ranked as (
+  select
+    'traffic_reliability'::text as lane_key,
+    'Traffic and reliability'::text as lane_title,
+    2 as sort_order,
+    'app_traffic_event'::text as related_entity,
+    vmt.alert_key::text as record_id,
+    vmt.alert_title as label,
+    vmt.alert_summary as summary,
+    true as is_open,
+    (coalesce(vmt.alert_level, '') = 'error') as is_error,
+    vmt.observed_at,
+    row_number() over (
+      partition by 'traffic_reliability'
+      order by
+        case when coalesce(vmt.alert_level, '') = 'error' then 0 else 1 end,
+        vmt.observed_at desc,
+        vmt.alert_key asc
+    ) as rn
+  from public.v_monitor_threshold_alerts vmt
+  where vmt.alert_scope = 'analytics'
+     or vmt.alert_key like 'traffic-%'
+), traffic_summary as (
+  select
+    lane_key,
+    lane_title,
+    sort_order,
+    related_entity,
+    count(*)::int as record_count,
+    count(*)::int as open_count,
+    count(*) filter (where is_error)::int as error_count,
+    max(observed_at) as observed_at,
+    max(record_id) filter (where rn = 1) as top_record_id,
+    max(label) filter (where rn = 1) as top_label,
+    max(summary) filter (where rn = 1) as top_summary
+  from traffic_ranked
+  group by lane_key, lane_title, sort_order, related_entity
+), runtime_ranked as (
+  select
+    'runtime_incidents'::text as lane_key,
+    'Runtime and API incidents'::text as lane_title,
+    3 as sort_order,
+    'backend_monitor_event'::text as related_entity,
+    vbr.id::text as record_id,
+    coalesce(vbr.title, vbr.event_name, vbr.id::text) as label,
+    concat_ws(' | ', vbr.monitor_scope, vbr.severity, vbr.message) as summary,
+    (coalesce(vbr.lifecycle_status, '') in ('open', 'investigating')) as is_open,
+    (coalesce(vbr.severity, '') in ('critical', 'error')) as is_error,
+    coalesce(vbr.last_seen_at, vbr.created_at) as observed_at,
+    row_number() over (
+      partition by 'runtime_incidents'
+      order by
+        case when coalesce(vbr.severity, '') in ('critical', 'error') then 0 else 1 end,
+        case when coalesce(vbr.lifecycle_status, '') in ('open', 'investigating') then 0 else 1 end,
+        coalesce(vbr.last_seen_at, vbr.created_at) desc,
+        vbr.id desc
+    ) as rn
+  from public.v_backend_monitor_recent vbr
+  where coalesce(vbr.lifecycle_status, '') in ('open', 'investigating')
+     or coalesce(vbr.severity, '') in ('critical', 'error')
+), runtime_summary as (
+  select
+    lane_key,
+    lane_title,
+    sort_order,
+    related_entity,
+    count(*)::int as record_count,
+    count(*) filter (where is_open)::int as open_count,
+    count(*) filter (where is_error)::int as error_count,
+    max(observed_at) as observed_at,
+    max(record_id) filter (where rn = 1) as top_record_id,
+    max(label) filter (where rn = 1) as top_label,
+    max(summary) filter (where rn = 1) as top_summary
+  from runtime_ranked
+  group by lane_key, lane_title, sort_order, related_entity
+)
+select * from upload_summary
+union all
+select * from traffic_summary
+union all
+select * from runtime_summary
+order by sort_order, lane_key;
+-- ============================================================================
+-- END MIGRATION: 073_hse_link_context_and_monitor_shortcuts.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 074_hse_control_cues_and_inspection_focus.sql
+-- ============================================================================
+-- 074_hse_control_cues_and_inspection_focus.sql
+-- Corrected to preserve existing view column order, then append new columns.
+
+create extension if not exists pgcrypto;
+
+alter table if exists public.linked_hse_packets
+  add column if not exists machinery_review_required boolean not null default false,
+  add column if not exists machinery_review_completed boolean not null default false,
+  add column if not exists last_machinery_review_at timestamptz,
+  add column if not exists moving_blade_risk boolean not null default false,
+  add column if not exists pinch_point_risk boolean not null default false,
+  add column if not exists thrown_object_risk boolean not null default false,
+  add column if not exists guard_controls_verified boolean not null default false,
+  add column if not exists lockout_required boolean not null default false,
+  add column if not exists lockout_verified boolean not null default false,
+  add column if not exists task_tool_risk_notes text,
+  add column if not exists machinery_notes text,
+  add column if not exists lifting_review_required boolean not null default false,
+  add column if not exists lifting_review_completed boolean not null default false,
+  add column if not exists last_lifting_review_at timestamptz,
+  add column if not exists manual_handling_required boolean not null default false,
+  add column if not exists repetitive_motion_risk boolean not null default false,
+  add column if not exists overhead_reach_risk boolean not null default false,
+  add column if not exists uneven_terrain_risk boolean not null default false,
+  add column if not exists crew_lift_required boolean not null default false,
+  add column if not exists crew_size_notes text,
+  add column if not exists lifting_notes text,
+  add column if not exists hydration_plan_notes text,
+  add column if not exists clothing_notes text,
+  add column if not exists sun_air_movement_notes text,
+  add column if not exists worker_specific_risk_notes text,
+  add column if not exists sds_notes text,
+  add column if not exists cones_barriers_required boolean not null default false,
+  add column if not exists cones_barriers_completed boolean not null default false,
+  add column if not exists roadside_exposure_risk boolean not null default false,
+  add column if not exists site_communication_notes text;
+
+alter table if exists public.hse_packet_events
+  add column if not exists hazard_category text not null default 'general',
+  add column if not exists moving_blade_risk boolean not null default false,
+  add column if not exists pinch_point_risk boolean not null default false,
+  add column if not exists thrown_object_risk boolean not null default false,
+  add column if not exists guard_controls_verified boolean not null default false,
+  add column if not exists lockout_required boolean not null default false,
+  add column if not exists lockout_verified boolean not null default false,
+  add column if not exists task_tool_risk_notes text,
+  add column if not exists manual_handling_level text,
+  add column if not exists manual_handling_required boolean not null default false,
+  add column if not exists repetitive_motion_risk boolean not null default false,
+  add column if not exists overhead_reach_risk boolean not null default false,
+  add column if not exists uneven_terrain_risk boolean not null default false,
+  add column if not exists crew_lift_required boolean not null default false,
+  add column if not exists crew_size_needed integer,
+  add column if not exists posture_notes text,
+  add column if not exists humidity_percent numeric(6,2),
+  add column if not exists sun_exposure_level text,
+  add column if not exists air_movement_notes text,
+  add column if not exists clothing_notes text,
+  add column if not exists hydration_verified boolean not null default false,
+  add column if not exists worker_specific_risk_notes text,
+  add column if not exists cones_barriers_required boolean not null default false,
+  add column if not exists cones_barriers_in_place boolean not null default false,
+  add column if not exists roadside_exposure_risk boolean not null default false,
+  add column if not exists site_communication_notes text;
+
+alter table if exists public.hse_packet_events
+  drop constraint if exists hse_packet_events_hazard_category_check;
+
+alter table if exists public.hse_packet_events
+  add constraint hse_packet_events_hazard_category_check
+  check (
+    hazard_category in (
+      'general',
+      'machinery_tools',
+      'lifting_posture',
+      'weather_heat',
+      'chemicals_public',
+      'slip_trip_fall',
+      'traffic'
+    )
+  );
+
+alter table if exists public.hse_packet_events
+  drop constraint if exists hse_packet_events_manual_handling_level_check;
+
+alter table if exists public.hse_packet_events
+  add constraint hse_packet_events_manual_handling_level_check
+  check (
+    manual_handling_level is null
+    or manual_handling_level in ('low', 'moderate', 'high', 'team_lift')
+  );
+
+alter table if exists public.hse_packet_events
+  drop constraint if exists hse_packet_events_sun_exposure_level_check;
+
+alter table if exists public.hse_packet_events
+  add constraint hse_packet_events_sun_exposure_level_check
+  check (
+    sun_exposure_level is null
+    or sun_exposure_level in ('low', 'moderate', 'high', 'extreme')
+  );
+
+create or replace function public.ywi_sync_hse_packet_event_flags(p_packet_id uuid)
+returns void
+language plpgsql
+as $$
+declare
+  v_weather_at timestamptz;
+  v_heat_at timestamptz;
+  v_chemical_at timestamptz;
+  v_traffic_at timestamptz;
+  v_machinery_at timestamptz;
+  v_lifting_at timestamptz;
+  v_signoff_at timestamptz;
+  v_closeout_at timestamptz;
+  v_reopen_at timestamptz;
+  v_signoff_by uuid;
+  v_has_weather boolean := false;
+  v_has_heat boolean := false;
+  v_has_chemical boolean := false;
+  v_has_traffic boolean := false;
+  v_has_machinery boolean := false;
+  v_has_lifting boolean := false;
+  v_has_signoff boolean := false;
+  v_has_closeout boolean := false;
+  v_has_reopen boolean := false;
+  v_has_cones boolean := false;
+  v_reopen_reason text;
+begin
+  if p_packet_id is null then
+    return;
+  end if;
+
+  select
+    max(event_at) filter (where event_type = 'weather_check'),
+    max(event_at) filter (where event_type = 'heat_check'),
+    max(event_at) filter (where event_type = 'chemical_check'),
+    max(event_at) filter (where event_type = 'traffic_check'),
+    max(event_at) filter (where hazard_category = 'machinery_tools'),
+    max(event_at) filter (where hazard_category = 'lifting_posture'),
+    bool_or(event_type = 'weather_check'),
+    bool_or(event_type = 'heat_check'),
+    bool_or(event_type = 'chemical_check'),
+    bool_or(event_type = 'traffic_check'),
+    bool_or(hazard_category = 'machinery_tools'),
+    bool_or(hazard_category = 'lifting_posture'),
+    bool_or(event_type = 'field_signoff'),
+    bool_or(event_type = 'closeout'),
+    bool_or(event_type = 'reopen'),
+    bool_or(coalesce(cones_barriers_in_place, false))
+  into
+    v_weather_at,
+    v_heat_at,
+    v_chemical_at,
+    v_traffic_at,
+    v_machinery_at,
+    v_lifting_at,
+    v_has_weather,
+    v_has_heat,
+    v_has_chemical,
+    v_has_traffic,
+    v_has_machinery,
+    v_has_lifting,
+    v_has_signoff,
+    v_has_closeout,
+    v_has_reopen,
+    v_has_cones
+  from public.hse_packet_events
+  where packet_id = p_packet_id;
+
+  select e.event_at, e.created_by_profile_id
+  into v_signoff_at, v_signoff_by
+  from public.hse_packet_events e
+  where e.packet_id = p_packet_id
+    and e.event_type = 'field_signoff'
+  order by e.event_at desc, e.created_at desc
+  limit 1;
+
+  select e.event_at
+  into v_closeout_at
+  from public.hse_packet_events e
+  where e.packet_id = p_packet_id
+    and e.event_type = 'closeout'
+  order by e.event_at desc, e.created_at desc
+  limit 1;
+
+  select e.event_at, e.notes
+  into v_reopen_at, v_reopen_reason
+  from public.hse_packet_events e
+  where e.packet_id = p_packet_id
+    and e.event_type = 'reopen'
+  order by e.event_at desc, e.created_at desc
+  limit 1;
+
+  update public.linked_hse_packets
+  set
+    last_weather_check_at = v_weather_at,
+    last_heat_check_at = v_heat_at,
+    last_chemical_check_at = v_chemical_at,
+    last_traffic_check_at = v_traffic_at,
+    last_machinery_review_at = v_machinery_at,
+    last_lifting_review_at = v_lifting_at,
+    weather_monitoring_completed = case
+      when weather_monitoring_required then coalesce(v_has_weather, false)
+      else weather_monitoring_completed
+    end,
+    heat_monitoring_completed = case
+      when heat_monitoring_required then coalesce(v_has_heat, false)
+      else heat_monitoring_completed
+    end,
+    chemical_handling_completed = case
+      when chemical_handling_required then coalesce(v_has_chemical, false)
+      else chemical_handling_completed
+    end,
+    traffic_control_completed = case
+      when traffic_control_required then coalesce(v_has_traffic, false)
+      else traffic_control_completed
+    end,
+    machinery_review_completed = case
+      when machinery_review_required then coalesce(v_has_machinery, false)
+      else machinery_review_completed
+    end,
+    lifting_review_completed = case
+      when lifting_review_required then coalesce(v_has_lifting, false)
+      else lifting_review_completed
+    end,
+    cones_barriers_completed = case
+      when cones_barriers_required then coalesce(v_has_cones, false)
+      else cones_barriers_completed
+    end,
+    field_signoff_completed = case
+      when field_signoff_required then coalesce(v_has_signoff, false)
+      else field_signoff_completed
+    end,
+    field_signed_off_at = case
+      when coalesce(v_has_signoff, false) then coalesce(v_signoff_at, field_signed_off_at)
+      else field_signed_off_at
+    end,
+    field_signed_off_by_profile_id = case
+      when coalesce(v_has_signoff, false) then coalesce(v_signoff_by, field_signed_off_by_profile_id)
+      else field_signed_off_by_profile_id
+    end,
+    closeout_completed = case
+      when coalesce(v_has_closeout, false) then true
+      else closeout_completed
+    end,
+    reopen_in_progress = case
+      when coalesce(v_has_reopen, false) and not coalesce(v_has_closeout, false) then true
+      else reopen_in_progress
+    end,
+    reopen_reason = case
+      when coalesce(v_has_reopen, false) then coalesce(v_reopen_reason, reopen_reason)
+      else reopen_reason
+    end,
+    last_reopened_at = case
+      when coalesce(v_has_reopen, false) then coalesce(v_reopen_at, last_reopened_at)
+      else last_reopened_at
+    end,
+    updated_at = now()
+  where id = p_packet_id;
+end;
+$$;
+
+create or replace view public.v_hse_packet_event_rollups as
+select
+  lhp.id as packet_id,
+  count(hpe.id)::int as event_count,
+  count(hpe.id) filter (where hpe.event_type = 'weather_check')::int as weather_event_count,
+  count(hpe.id) filter (where hpe.event_type = 'heat_check')::int as heat_event_count,
+  count(hpe.id) filter (where hpe.event_type = 'chemical_check')::int as chemical_event_count,
+  count(hpe.id) filter (where hpe.event_type = 'traffic_check')::int as traffic_event_count,
+  count(hpe.id) filter (where hpe.event_type = 'field_signoff')::int as signoff_event_count,
+  count(hpe.id) filter (where hpe.event_type = 'closeout')::int as closeout_event_count,
+  count(hpe.id) filter (where hpe.event_status in ('warning', 'exception'))::int as exception_event_count,
+  max(hpe.event_at) as last_event_at,
+  max(hpe.event_at) filter (where hpe.event_type = 'weather_check') as last_weather_event_at,
+  max(hpe.event_at) filter (where hpe.event_type = 'heat_check') as last_heat_event_at,
+  max(hpe.event_at) filter (where hpe.event_type = 'chemical_check') as last_chemical_event_at,
+  max(hpe.event_at) filter (where hpe.event_type = 'traffic_check') as last_traffic_event_at,
+  max(hpe.event_at) filter (where hpe.event_type = 'field_signoff') as last_signoff_event_at,
+  max(hpe.event_at) filter (where hpe.event_type = 'closeout') as last_closeout_event_at,
+  count(hpe.id) filter (where hpe.hazard_category = 'machinery_tools')::int as machinery_event_count,
+  count(hpe.id) filter (where hpe.hazard_category = 'lifting_posture')::int as lifting_event_count,
+  max(hpe.event_at) filter (where hpe.hazard_category = 'machinery_tools') as last_machinery_event_at,
+  max(hpe.event_at) filter (where hpe.hazard_category = 'lifting_posture') as last_lifting_event_at
+from public.linked_hse_packets lhp
+left join public.hse_packet_events hpe
+  on hpe.packet_id = lhp.id
+group by lhp.id;
+
+create or replace view public.v_hse_packet_progress as
+with proof_rollups as (
+  select
+    hpp.packet_id,
+    count(hpp.id)::int as proof_count,
+    count(hpp.id) filter (where hpp.proof_kind = 'photo')::int as photo_count,
+    count(hpp.id) filter (where hpp.proof_kind = 'signature')::int as signature_count,
+    count(hpp.id) filter (where hpp.proof_kind in ('file', 'document'))::int as document_count,
+    max(hpp.created_at) as last_proof_at
+  from public.hse_packet_proofs hpp
+  group by hpp.packet_id
+), event_rollups as (
+  select * from public.v_hse_packet_event_rollups
+)
+select
+  lhp.id,
+  lhp.packet_number,
+  lhp.packet_type,
+  lhp.packet_status,
+  lhp.work_order_id,
+  lhp.dispatch_id,
+  (
+    (case when lhp.briefing_required then 1 else 0 end)
+    + (case when lhp.inspection_required then 1 else 0 end)
+    + (case when lhp.emergency_review_required then 1 else 0 end)
+    + (case when lhp.weather_monitoring_required then 1 else 0 end)
+    + (case when lhp.heat_monitoring_required then 1 else 0 end)
+    + (case when lhp.chemical_handling_required then 1 else 0 end)
+    + (case when lhp.traffic_control_required then 1 else 0 end)
+    + (case when lhp.field_signoff_required then 1 else 0 end)
+  ) as required_step_count,
+  (
+    (case when lhp.briefing_required and lhp.briefing_completed then 1 else 0 end)
+    + (case when lhp.inspection_required and lhp.inspection_completed then 1 else 0 end)
+    + (case when lhp.emergency_review_required and lhp.emergency_review_completed then 1 else 0 end)
+    + (case when lhp.weather_monitoring_required and lhp.weather_monitoring_completed then 1 else 0 end)
+    + (case when lhp.heat_monitoring_required and lhp.heat_monitoring_completed then 1 else 0 end)
+    + (case when lhp.chemical_handling_required and lhp.chemical_handling_completed then 1 else 0 end)
+    + (case when lhp.traffic_control_required and lhp.traffic_control_completed then 1 else 0 end)
+    + (case when lhp.field_signoff_required and lhp.field_signoff_completed then 1 else 0 end)
+  ) as completed_step_count,
+  lhp.completion_percent,
+  lhp.ready_for_closeout_at,
+  lhp.closed_at,
+  coalesce(pr.proof_count, 0) as proof_count,
+  coalesce(pr.photo_count, 0) as photo_count,
+  coalesce(pr.signature_count, 0) as signature_count,
+  coalesce(pr.document_count, 0) as document_count,
+  pr.last_proof_at,
+  lhp.reopen_in_progress,
+  lhp.reopen_count,
+  lhp.last_reopened_at,
+  lhp.last_reopened_by_profile_id,
+  lhp.job_id,
+  lhp.equipment_master_id,
+  lhp.packet_scope,
+  lhp.unscheduled_project,
+  lhp.standalone_project_name,
+  lhp.weather_monitoring_required,
+  lhp.weather_monitoring_completed,
+  lhp.heat_monitoring_required,
+  lhp.heat_monitoring_completed,
+  lhp.chemical_handling_required,
+  lhp.chemical_handling_completed,
+  lhp.traffic_control_required,
+  lhp.traffic_control_completed,
+  lhp.field_signoff_required,
+  lhp.field_signoff_completed,
+  lhp.field_signed_off_at,
+  lhp.field_signed_off_by_profile_id,
+  lhp.last_weather_check_at,
+  lhp.last_heat_check_at,
+  lhp.last_chemical_check_at,
+  lhp.last_traffic_check_at,
+  lhp.weather_notes,
+  lhp.heat_plan_notes,
+  lhp.chemical_notes,
+  lhp.traffic_notes,
+  lhp.public_interaction_notes,
+  coalesce(er.event_count, 0) as event_count,
+  coalesce(er.weather_event_count, 0) as weather_event_count,
+  coalesce(er.heat_event_count, 0) as heat_event_count,
+  coalesce(er.chemical_event_count, 0) as chemical_event_count,
+  coalesce(er.traffic_event_count, 0) as traffic_event_count,
+  coalesce(er.signoff_event_count, 0) as signoff_event_count,
+  coalesce(er.closeout_event_count, 0) as closeout_event_count,
+  coalesce(er.exception_event_count, 0) as exception_event_count,
+  er.last_event_at,
+  er.last_weather_event_at,
+  er.last_heat_event_at,
+  er.last_chemical_event_at,
+  er.last_traffic_event_at,
+  er.last_signoff_event_at,
+  er.last_closeout_event_at,
+
+  lhp.machinery_review_required,
+  lhp.machinery_review_completed,
+  lhp.last_machinery_review_at,
+  lhp.moving_blade_risk,
+  lhp.pinch_point_risk,
+  lhp.thrown_object_risk,
+  lhp.guard_controls_verified,
+  lhp.lockout_required,
+  lhp.lockout_verified,
+  lhp.task_tool_risk_notes,
+  lhp.machinery_notes,
+  lhp.lifting_review_required,
+  lhp.lifting_review_completed,
+  lhp.last_lifting_review_at,
+  lhp.manual_handling_required,
+  lhp.repetitive_motion_risk,
+  lhp.overhead_reach_risk,
+  lhp.uneven_terrain_risk,
+  lhp.crew_lift_required,
+  lhp.crew_size_notes,
+  lhp.lifting_notes,
+  lhp.hydration_plan_notes,
+  lhp.clothing_notes,
+  lhp.sun_air_movement_notes,
+  lhp.worker_specific_risk_notes,
+  lhp.sds_notes,
+  lhp.cones_barriers_required,
+  lhp.cones_barriers_completed,
+  lhp.roadside_exposure_risk,
+  lhp.site_communication_notes,
+  coalesce(er.machinery_event_count, 0) as machinery_event_count,
+  coalesce(er.lifting_event_count, 0) as lifting_event_count,
+  er.last_machinery_event_at,
+  er.last_lifting_event_at
+from public.linked_hse_packets lhp
+left join proof_rollups pr
+  on pr.packet_id = lhp.id
+left join event_rollups er
+  on er.packet_id = lhp.id;
+
+create or replace view public.v_hse_packet_action_items as
+with base as (
+  select
+    hp.id as packet_id,
+    hp.packet_number,
+    hp.packet_type,
+    hp.packet_scope,
+    hp.packet_status,
+    hp.job_id,
+    hp.work_order_id,
+    hp.dispatch_id,
+    hp.equipment_master_id,
+    hp.unscheduled_project,
+    hp.standalone_project_name,
+    hp.completion_percent,
+    hp.required_step_count,
+    hp.completed_step_count,
+    greatest(coalesce(hp.required_step_count, 0) - coalesce(hp.completed_step_count, 0), 0) as open_step_count,
+    hp.exception_event_count,
+    hp.proof_count,
+    hp.photo_count,
+    hp.document_count,
+    hp.ready_for_closeout_at,
+    hp.closed_at,
+    hp.reopen_in_progress,
+    hp.reopen_count,
+    hp.last_reopened_at,
+    hp.last_event_at,
+    hp.last_proof_at,
+    hp.field_signoff_required,
+    hp.field_signoff_completed,
+    hp.weather_monitoring_required,
+    hp.weather_monitoring_completed,
+    hp.heat_monitoring_required,
+    hp.heat_monitoring_completed,
+    hp.chemical_handling_required,
+    hp.chemical_handling_completed,
+    hp.traffic_control_required,
+    hp.traffic_control_completed,
+    hp.machinery_review_required,
+    hp.machinery_review_completed,
+    hp.lifting_review_required,
+    hp.lifting_review_completed,
+    hp.cones_barriers_required,
+    hp.cones_barriers_completed,
+    coalesce(nullif(trim(hp.standalone_project_name), ''), hp.packet_number) as project_label
+  from public.v_hse_packet_progress hp
+)
+select
+  b.packet_id,
+  b.packet_number,
+  b.packet_type,
+  b.packet_scope,
+  b.packet_status,
+  b.job_id,
+  b.work_order_id,
+  b.dispatch_id,
+  b.equipment_master_id,
+  b.unscheduled_project,
+  b.standalone_project_name,
+  b.project_label,
+  b.completion_percent,
+  b.required_step_count,
+  b.completed_step_count,
+  b.open_step_count,
+  b.exception_event_count,
+  b.proof_count,
+  b.photo_count,
+  b.document_count,
+  b.ready_for_closeout_at,
+  b.closed_at,
+  b.reopen_in_progress,
+  b.reopen_count,
+  b.last_reopened_at,
+  b.last_event_at,
+  b.last_proof_at,
+
+  case
+    when b.closed_at is not null and coalesce(b.reopen_in_progress, false) then 5
+    when coalesce(b.exception_event_count, 0) > 0 then 10
+    when coalesce(b.field_signoff_required, false)
+         and not coalesce(b.field_signoff_completed, false)
+         and coalesce(b.open_step_count, 0) = 0 then 20
+    when b.ready_for_closeout_at is not null and b.closed_at is null then 30
+    when coalesce(b.open_step_count, 0) > 0 then 40
+    else 90
+  end as action_priority,
+
+  case
+    when b.closed_at is not null and coalesce(b.reopen_in_progress, false) then 'reopen_followup'
+    when coalesce(b.exception_event_count, 0) > 0 then 'exception_review'
+    when coalesce(b.field_signoff_required, false)
+         and not coalesce(b.field_signoff_completed, false)
+         and coalesce(b.open_step_count, 0) = 0 then 'field_signoff'
+    when b.ready_for_closeout_at is not null and b.closed_at is null then 'closeout'
+    when coalesce(b.open_step_count, 0) > 0 then 'workflow_completion'
+    else 'review'
+  end as action_code,
+
+  case
+    when b.closed_at is not null and coalesce(b.reopen_in_progress, false) then 'Reopened packet needs follow-up'
+    when coalesce(b.exception_event_count, 0) > 0 then 'Packet has exception events'
+    when coalesce(b.field_signoff_required, false)
+         and not coalesce(b.field_signoff_completed, false)
+         and coalesce(b.open_step_count, 0) = 0 then 'Packet ready for field signoff'
+    when b.ready_for_closeout_at is not null and b.closed_at is null then 'Packet ready for closeout'
+    when coalesce(b.open_step_count, 0) > 0 then 'Packet still has open workflow steps'
+    else 'Packet review'
+  end as action_title,
+
+  concat_ws(
+    ' | ',
+    case when b.unscheduled_project then 'Unscheduled project' end,
+    case when coalesce(b.open_step_count, 0) > 0 then ('Open steps: ' || b.open_step_count::text) end,
+    case when coalesce(b.exception_event_count, 0) > 0 then ('Exceptions: ' || b.exception_event_count::text) end,
+    case when coalesce(b.proof_count, 0) > 0 then ('Proofs: ' || b.proof_count::text) end,
+    case when b.ready_for_closeout_at is not null and b.closed_at is null then 'Awaiting closeout' end,
+    case when coalesce(b.reopen_in_progress, false) then 'Reopen in progress' end
+  ) as action_summary,
+
+  (
+    coalesce(b.exception_event_count, 0) > 0
+    or (coalesce(b.field_signoff_required, false) and not coalesce(b.field_signoff_completed, false))
+    or coalesce(b.open_step_count, 0) > 0
+    or (b.ready_for_closeout_at is not null and b.closed_at is null)
+    or coalesce(b.reopen_in_progress, false)
+    or (coalesce(b.machinery_review_required, false) and not coalesce(b.machinery_review_completed, false))
+    or (coalesce(b.lifting_review_required, false) and not coalesce(b.lifting_review_completed, false))
+    or (coalesce(b.cones_barriers_required, false) and not coalesce(b.cones_barriers_completed, false))
+  ) as needs_attention,
+
+  b.machinery_review_required,
+  b.machinery_review_completed,
+  b.lifting_review_required,
+  b.lifting_review_completed,
+  b.cones_barriers_required,
+  b.cones_barriers_completed
+from base b;
+
+create or replace view public.v_hse_dashboard_summary as
+select
+  count(*)::int as total_packets,
+  count(*) filter (where packet_status = 'draft')::int as draft_packets,
+  count(*) filter (where packet_status = 'in_progress')::int as in_progress_packets,
+  count(*) filter (where packet_status = 'ready_for_closeout')::int as ready_for_closeout_packets,
+  count(*) filter (where packet_status = 'closed')::int as closed_packets,
+  count(*) filter (where coalesce(unscheduled_project, false))::int as unscheduled_project_packets,
+  count(*) filter (
+    where coalesce(weather_monitoring_required, false)
+      and not coalesce(weather_monitoring_completed, false)
+  )::int as weather_open_packets,
+  count(*) filter (
+    where coalesce(heat_monitoring_required, false)
+      and not coalesce(heat_monitoring_completed, false)
+  )::int as heat_open_packets,
+  count(*) filter (
+    where coalesce(chemical_handling_required, false)
+      and not coalesce(chemical_handling_completed, false)
+  )::int as chemical_open_packets,
+  count(*) filter (
+    where coalesce(traffic_control_required, false)
+      and not coalesce(traffic_control_completed, false)
+  )::int as traffic_open_packets,
+  count(*) filter (
+    where coalesce(field_signoff_required, false)
+      and not coalesce(field_signoff_completed, false)
+  )::int as signoff_open_packets,
+  count(*) filter (where coalesce(exception_event_count, 0) > 0)::int as exception_packets,
+  count(*) filter (where coalesce(reopen_in_progress, false))::int as reopen_packets,
+  count(*) filter (
+    where
+      coalesce(exception_event_count, 0) > 0
+      or (coalesce(field_signoff_required, false) and not coalesce(field_signoff_completed, false))
+      or (coalesce(weather_monitoring_required, false) and not coalesce(weather_monitoring_completed, false))
+      or (coalesce(heat_monitoring_required, false) and not coalesce(heat_monitoring_completed, false))
+      or (coalesce(chemical_handling_required, false) and not coalesce(chemical_handling_completed, false))
+      or (coalesce(traffic_control_required, false) and not coalesce(traffic_control_completed, false))
+      or coalesce(reopen_in_progress, false)
+      or packet_status = 'ready_for_closeout'
+      or (coalesce(machinery_review_required, false) and not coalesce(machinery_review_completed, false))
+      or (coalesce(lifting_review_required, false) and not coalesce(lifting_review_completed, false))
+      or (coalesce(cones_barriers_required, false) and not coalesce(cones_barriers_completed, false))
+  )::int as action_needed_packets,
+  count(*) filter (
+    where coalesce(machinery_review_required, false)
+      and not coalesce(machinery_review_completed, false)
+  )::int as machinery_open_packets,
+  count(*) filter (
+    where coalesce(lifting_review_required, false)
+      and not coalesce(lifting_review_completed, false)
+  )::int as lifting_open_packets,
+  count(*) filter (
+    where coalesce(cones_barriers_required, false)
+      and not coalesce(cones_barriers_completed, false)
+  )::int as cones_open_packets
+from public.v_hse_packet_progress;
+-- ============================================================================
+-- END MIGRATION: 074_hse_control_cues_and_inspection_focus.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 075_landscaping_job_workflow_and_crew_planning.sql
+-- ============================================================================
+-- 075_landscaping_job_workflow_and_crew_planning.sql
+-- Expands the job model for one-time landscaping, recurring route/service work,
+-- and larger custom project work while making crew leadership and equipment
+-- planning windows first-class fields.
+
+create extension if not exists pgcrypto;
+
+alter table if exists public.crews
+  add column if not exists crew_kind text not null default 'general',
+  add column if not exists lead_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists service_area_id uuid references public.service_areas(id) on delete set null,
+  add column if not exists default_equipment_notes text;
+
+alter table if exists public.crews
+  drop constraint if exists crews_crew_kind_check;
+alter table if exists public.crews
+  add constraint crews_crew_kind_check
+  check (crew_kind in ('general','installation','maintenance','snow','parks','construction','custom'));
+
+alter table if exists public.crew_members
+  drop constraint if exists crew_members_member_role_check;
+alter table if exists public.crew_members
+  add constraint crew_members_member_role_check
+  check (member_role in ('member','lead','supervisor','operator','labourer','installer','maintenance','hse'));
+
+alter table if exists public.jobs
+  add column if not exists job_family text not null default 'landscaping_standard',
+  add column if not exists project_scope text not null default 'property_service',
+  add column if not exists service_pattern text not null default 'one_time',
+  add column if not exists recurrence_basis text not null default 'calendar_rule',
+  add column if not exists recurrence_custom_days text,
+  add column if not exists custom_schedule_notes text,
+  add column if not exists crew_lead_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists equipment_planning_status text not null default 'draft',
+  add column if not exists reservation_window_start date,
+  add column if not exists reservation_window_end date,
+  add column if not exists reservation_notes text,
+  add column if not exists estimated_visit_minutes integer,
+  add column if not exists equipment_readiness_required boolean not null default true;
+
+alter table if exists public.jobs
+  drop constraint if exists jobs_job_family_check;
+alter table if exists public.jobs
+  add constraint jobs_job_family_check
+  check (job_family in ('landscaping_standard','landscaping_recurring','custom_project','park_project','park_maintenance','snow','home_modification','construction'));
+
+alter table if exists public.jobs
+  drop constraint if exists jobs_project_scope_check;
+alter table if exists public.jobs
+  add constraint jobs_project_scope_check
+  check (project_scope in ('property_service','park','home_modification','construction','maintenance','snow'));
+
+alter table if exists public.jobs
+  drop constraint if exists jobs_service_pattern_check;
+alter table if exists public.jobs
+  add constraint jobs_service_pattern_check
+  check (service_pattern in ('one_time','weekly','biweekly','monthly','seasonal','custom'));
+
+alter table if exists public.jobs
+  drop constraint if exists jobs_recurrence_basis_check;
+alter table if exists public.jobs
+  add constraint jobs_recurrence_basis_check
+  check (recurrence_basis in ('calendar_rule','custom_cycle','event_driven'));
+
+alter table if exists public.jobs
+  drop constraint if exists jobs_equipment_planning_status_check;
+alter table if exists public.jobs
+  add constraint jobs_equipment_planning_status_check
+  check (equipment_planning_status in ('draft','planned','reserved','partial','ready'));
+
+create index if not exists idx_crews_lead_profile_id on public.crews(lead_profile_id);
+create index if not exists idx_crews_service_area_id on public.crews(service_area_id);
+create index if not exists idx_jobs_job_family on public.jobs(job_family);
+create index if not exists idx_jobs_service_pattern on public.jobs(service_pattern);
+create index if not exists idx_jobs_equipment_planning_status on public.jobs(equipment_planning_status);
+create index if not exists idx_jobs_reservation_window on public.jobs(reservation_window_start, reservation_window_end);
+create index if not exists idx_jobs_crew_lead_profile_id on public.jobs(crew_lead_profile_id);
+
+create or replace view public.v_crew_directory as
+select
+  c.id,
+  c.crew_code,
+  c.crew_name,
+  c.supervisor_profile_id,
+  c.crew_status,
+  c.notes,
+  c.created_by_profile_id,
+  c.created_at,
+  c.updated_at,
+  sup.full_name as supervisor_name,
+  count(cm.id)::int as member_count,
+  coalesce(jsonb_agg(jsonb_build_object(
+    'id', p.id,
+    'full_name', p.full_name,
+    'email', p.email,
+    'member_role', cm.member_role,
+    'is_primary', cm.is_primary
+  ) order by cm.is_primary desc, p.full_name) filter (where cm.id is not null), '[]'::jsonb) as members_json,
+  c.lead_profile_id,
+  c.service_area_id,
+  c.crew_kind,
+  c.default_equipment_notes,
+  leadp.full_name as lead_name,
+  sa.name as service_area_name
+from public.crews c
+left join public.profiles sup on sup.id = c.supervisor_profile_id
+left join public.profiles leadp on leadp.id = c.lead_profile_id
+left join public.service_areas sa on sa.id = c.service_area_id
+left join public.crew_members cm on cm.crew_id = c.id
+left join public.profiles p on p.id = cm.profile_id
+group by c.id, sup.full_name, leadp.full_name, sa.name;
 
 create or replace view public.v_jobs_directory as
 select
@@ -486,27 +8884,7 @@ select
   crew.service_area_id,
   crew.default_equipment_notes,
   leadp.full_name as crew_lead_name,
-  service_area.name as service_area_name,
-  j.estimated_cost_total,
-  j.quoted_charge_total,
-  j.pricing_method,
-  j.markup_percent,
-  j.discount_mode,
-  j.discount_value,
-  j.tiered_discount_notes,
-  j.estimated_profit_total,
-  j.estimated_margin_percent,
-  j.estimated_duration_hours,
-  j.estimated_duration_days,
-  j.open_end_date,
-  j.delayed_schedule,
-  j.delay_reason,
-  j.delay_cost_total,
-  j.equipment_repair_cost_total,
-  j.actual_cost_total,
-  j.actual_charge_total,
-  j.actual_profit_total,
-  j.actual_margin_percent
+  service_area.name as service_area_name
 from public.jobs j
 left join public.sites s on s.id = j.site_id
 left join public.profiles sup on sup.id = j.site_supervisor_profile_id
@@ -527,9 +8905,14 @@ left join (
   left join public.v_job_comment_activity v on v.id = jc.id
   group by jc.job_id
 ) comment_rollup on comment_rollup.job_id = j.id;
+-- ============================================================================
+-- END MIGRATION: 075_landscaping_job_workflow_and_crew_planning.sql
+-- ============================================================================
 
 
-
+-- ============================================================================
+-- BEGIN MIGRATION: 076_job_pricing_profitability_and_schedule_logic.sql
+-- ============================================================================
 -- 076_job_pricing_profitability_and_schedule_logic.sql
 -- Adds job pricing, discount, profitability, open-end scheduling, delay, and repair-loss fields.
 
@@ -671,8 +9054,14 @@ left join (
   left join public.v_job_comment_activity v on v.id = jc.id
   group by jc.job_id
 ) comment_rollup on comment_rollup.job_id = j.id;
+-- ============================================================================
+-- END MIGRATION: 076_job_pricing_profitability_and_schedule_logic.sql
+-- ============================================================================
 
 
+-- ============================================================================
+-- BEGIN MIGRATION: 077_service_pricing_templates_and_ontario_tax_codes.sql
+-- ============================================================================
 -- 077_service_pricing_templates_and_ontario_tax_codes.sql
 -- Adds DB-backed Ontario tax codes, business tax settings, and reusable service pricing templates.
 
@@ -946,6 +9335,14 @@ left join (
   left join public.v_job_comment_activity v on v.id = jc.id
   group by jc.job_id
 ) comment_rollup on comment_rollup.job_id = j.id;
+-- ============================================================================
+-- END MIGRATION: 077_service_pricing_templates_and_ontario_tax_codes.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 078_job_sessions_reassignments_and_admin_sorting.sql
+-- ============================================================================
 create extension if not exists pgcrypto;
 
 alter table if exists public.jobs
@@ -1064,7 +9461,7 @@ select
   js.site_supervisor_signed_off_at,
   js.site_supervisor_signoff_notes,
   js.created_by_profile_id,
-  creator.full_name as uploaded_by_name,
+  creator.full_name as created_by_name,
   to_char(js.started_at at time zone 'America/Toronto', 'YYYY-MM-DD HH24:MI') as started_at_local,
   to_char(js.ended_at at time zone 'America/Toronto', 'YYYY-MM-DD HH24:MI') as ended_at_local,
   js.created_at,
@@ -1289,9 +9686,14 @@ left join (
   from public.job_reassignment_events
   group by source_job_id
 ) reassignment_rollup on reassignment_rollup.job_id = j.id;
+-- ============================================================================
+-- END MIGRATION: 078_job_sessions_reassignments_and_admin_sorting.sql
+-- ============================================================================
 
 
--- Synced from sql/079_job_financial_rollups_and_profit_review.sql
+-- ============================================================================
+-- BEGIN MIGRATION: 079_job_financial_rollups_and_profit_review.sql
+-- ============================================================================
 -- 079_job_financial_rollups_and_profit_review.sql
 -- Adds labor-rate-aware job financial tracking, adjustment events, and accounting review rollups
 -- for landscaping, recurring service, and custom project work.
@@ -1459,7 +9861,7 @@ select
   jfe.reference_number,
   jfe.notes,
   jfe.created_by_profile_id,
-  p.full_name as uploaded_by_name,
+  p.full_name as created_by_name,
   jfe.created_at,
   jfe.updated_at
 from public.job_financial_events jfe
@@ -1709,7 +10111,14 @@ cross join ar_rollup ar
 cross join ap_rollup ap
 cross join traffic_rollup tr
 cross join job_rollup jr;
+-- ============================================================================
+-- END MIGRATION: 079_job_financial_rollups_and_profit_review.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 080_service_agreements_assets_payroll_and_login_tracking.sql
+-- ============================================================================
 -- 080_service_agreements_assets_payroll_and_login_tracking.sql
 -- Extends the landscaping/service-management backbone with:
 -- - recurring service agreements and snow-trigger logs
@@ -2094,7 +10503,7 @@ select
   l.event_type,
   l.notes,
   l.created_by_profile_id,
-  p.full_name as uploaded_by_name,
+  p.full_name as created_by_name,
   l.created_at,
   l.updated_at
 from public.customer_asset_job_links l
@@ -2103,8 +10512,17 @@ left join public.jobs j on j.id = l.job_id
 left join public.profiles p on p.id = l.created_by_profile_id;
 
 create or replace view public.v_route_profitability_summary as
+with job_route as (
+  select
+    wo.legacy_job_id::bigint as job_id,
+    min(wo.route_id::text)::uuid as route_id
+  from public.work_orders wo
+  where wo.legacy_job_id is not null
+    and wo.route_id is not null
+  group by wo.legacy_job_id
+)
 select
-  jd.route_id,
+  jr.route_id,
   r.route_code,
   r.name as route_name,
   jd.service_area_id,
@@ -2118,13 +10536,27 @@ select
   coalesce(sum(coalesce(jd.actual_profit_rollup_total, 0)), 0)::numeric(12,2) as actual_profit_rollup_total,
   case
     when coalesce(sum(coalesce(jd.actual_charge_rollup_total, 0)), 0) > 0
-      then round((coalesce(sum(coalesce(jd.actual_profit_rollup_total, 0)), 0) / coalesce(sum(coalesce(jd.actual_charge_rollup_total, 0)), 0)) * 100.0, 2)::numeric(7,2)
+      then round(
+        (
+          coalesce(sum(coalesce(jd.actual_profit_rollup_total, 0)), 0)
+          / coalesce(sum(coalesce(jd.actual_charge_rollup_total, 0)), 0)
+        ) * 100.0,
+        2
+      )::numeric(7,2)
     else 0::numeric(7,2)
   end as actual_margin_percent,
   max(jd.last_activity_at) as last_activity_at
 from public.v_jobs_directory jd
-left join public.routes r on r.id = jd.route_id
-group by jd.route_id, r.route_code, r.name, jd.service_area_id, jd.service_area_name, jd.crew_id, jd.crew_name;
+left join job_route jr on jr.job_id = jd.id
+left join public.routes r on r.id = jr.route_id
+group by
+  jr.route_id,
+  r.route_code,
+  r.name,
+  jd.service_area_id,
+  jd.service_area_name,
+  jd.crew_id,
+  jd.crew_name;
 
 create or replace view public.v_job_financial_rollups as
 with session_rollup as (
@@ -2231,14 +10663,15 @@ traffic_rollup as (
 ),
 job_rollup as (
   select
-    count(*) filter (where coalesce(status, '') in ('completed','done','closed') and coalesce(invoice_number, '') = '')::int as completed_uninvoiced_job_count,
-    count(*) filter (where coalesce(delayed_schedule, false) = true)::int as delayed_job_count,
-    count(*) filter (where coalesce(unsigned_job_session_count, 0) > 0)::int as unsigned_job_session_count,
-    count(*) filter (where coalesce(actual_profit_rollup_total, 0) < 0)::int as loss_making_job_count,
-    count(*) filter (where coalesce(financial_event_count, 0) > 0)::int as jobs_with_financial_events_count,
-    coalesce(sum(coalesce(actual_profit_rollup_total, 0)), 0)::numeric(12,2) as actual_rollup_profit_total,
-    count(*) filter (where coalesce(change_order_count, 0) > 0)::int as jobs_with_change_orders_count
-  from public.v_jobs_directory
+    count(*) filter (where coalesce(j.status, '') in ('completed','done','closed') and coalesce(j.invoice_number, '') = '')::int as completed_uninvoiced_job_count,
+    count(*) filter (where coalesce(j.delayed_schedule, false) = true)::int as delayed_job_count,
+    count(*) filter (where coalesce(jf.unsigned_session_count, 0) > 0)::int as unsigned_job_session_count,
+    count(*) filter (where coalesce(jf.actual_profit_rollup_total, 0) < 0)::int as loss_making_job_count,
+    count(*) filter (where coalesce(jf.financial_event_count, 0) > 0)::int as jobs_with_financial_events_count,
+    coalesce(sum(coalesce(jf.actual_profit_rollup_total, 0)), 0)::numeric(12,2) as actual_rollup_profit_total,
+    count(*) filter (where coalesce(jf.change_order_count, 0) > 0)::int as jobs_with_change_orders_count
+  from public.jobs j
+  left join public.v_job_financial_rollups jf on jf.job_id = j.id
 ),
 payroll_rollup as (
   select
@@ -2298,10 +10731,14 @@ cross join job_rollup jr
 cross join payroll_rollup pr
 cross join agreement_rollup agr
 cross join callback_rollup cb;
+-- ============================================================================
+-- END MIGRATION: 080_service_agreements_assets_payroll_and_login_tracking.sql
+-- ============================================================================
 
 
--- 081_contract_conversion_payroll_exports_and_snow_invoice_automation.sql
-
+-- ============================================================================
+-- BEGIN MIGRATION: 081_contract_conversion_payroll_exports_and_snow_invoice_automation.sql
+-- ============================================================================
 -- 081_contract_conversion_payroll_exports_and_snow_invoice_automation.sql
 -- Adds:
 -- - estimate -> agreement conversion support
@@ -2545,8 +10982,14 @@ select
   coalesce(sum(case when status <> 'closed' then coalesce(actual_cost_total, 0) else 0 end), 0)::numeric(12,2) as open_callback_cost_total,
   max(opened_at) as last_callback_opened_at
 from public.warranty_callback_events;
+-- ============================================================================
+-- END MIGRATION: 081_contract_conversion_payroll_exports_and_snow_invoice_automation.sql
+-- ============================================================================
 
 
+-- ============================================================================
+-- BEGIN MIGRATION: 082_site_activity_audit_and_admin_recent_events.sql
+-- ============================================================================
 -- 082_site_activity_audit_and_admin_recent_events.sql
 -- Adds a durable admin-visible activity trail for operational and accounting changes.
 
@@ -2612,7 +11055,7 @@ select
   em.equipment_code as related_equipment_code,
   em.item_name as related_equipment_name,
   sae.created_by_profile_id,
-  cp.full_name as uploaded_by_name,
+  cp.full_name as created_by_name,
   sae.occurred_at,
   sae.created_at
 from public.site_activity_events sae
@@ -2631,10 +11074,14 @@ select
   count(*) filter (where severity in ('warning','error') and occurred_at >= now() - interval '24 hours')::int as last_24h_attention_count,
   max(occurred_at) as last_activity_at
 from public.site_activity_events;
+-- ============================================================================
+-- END MIGRATION: 082_site_activity_audit_and_admin_recent_events.sql
+-- ============================================================================
 
 
--- Included from 083_employee_time_clock_and_break_tracking.sql
-
+-- ============================================================================
+-- BEGIN MIGRATION: 083_employee_time_clock_and_break_tracking.sql
+-- ============================================================================
 -- 083_employee_time_clock_and_break_tracking.sql
 -- Adds employee self-service site/job time clock tracking with unpaid breaks,
 -- payroll-linked hour sync, and admin-visible attendance rollups.
@@ -2647,7 +11094,7 @@ create table if not exists public.employee_time_entries (
   crew_id uuid references public.crews(id) on delete set null,
   job_id bigint not null references public.jobs(id) on delete cascade,
   job_session_id uuid references public.job_sessions(id) on delete set null,
-  site_id bigint references public.sites(id) on delete set null,
+  site_id uuid references public.sites(id) on delete set null,
   clock_status text not null default 'active',
   signed_in_at timestamptz not null default now(),
   last_status_at timestamptz not null default now(),
@@ -2661,13 +11108,43 @@ create table if not exists public.employee_time_entries (
   updated_at timestamptz not null default now()
 );
 
-alter table if exists public.employee_time_entries drop constraint if exists employee_time_entries_status_check;
+-- Repair older partial runs where employee_time_entries.site_id may have been created as bigint.
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'employee_time_entries'
+      and column_name = 'site_id'
+      and udt_name = 'int8'
+  ) then
+    alter table public.employee_time_entries
+      drop constraint if exists employee_time_entries_site_id_fkey;
+
+    alter table public.employee_time_entries
+      alter column site_id type uuid using null::uuid;
+
+    alter table public.employee_time_entries
+      add constraint employee_time_entries_site_id_fkey
+      foreign key (site_id) references public.sites(id) on delete set null;
+  end if;
+end
+$$;
+
+alter table if exists public.employee_time_entries
+  drop constraint if exists employee_time_entries_status_check;
+
 alter table if exists public.employee_time_entries
   add constraint employee_time_entries_status_check
   check (clock_status in ('active','paused','signed_out','cancelled'));
 
-create index if not exists idx_employee_time_entries_profile on public.employee_time_entries(profile_id, signed_in_at desc);
-create index if not exists idx_employee_time_entries_job on public.employee_time_entries(job_id, signed_in_at desc);
+create index if not exists idx_employee_time_entries_profile
+  on public.employee_time_entries(profile_id, signed_in_at desc);
+
+create index if not exists idx_employee_time_entries_job
+  on public.employee_time_entries(job_id, signed_in_at desc);
+
 create unique index if not exists idx_employee_time_entries_one_open_per_profile
   on public.employee_time_entries(profile_id)
   where signed_out_at is null and clock_status in ('active','paused');
@@ -2685,21 +11162,28 @@ create table if not exists public.employee_time_entry_breaks (
   updated_at timestamptz not null default now()
 );
 
-create index if not exists idx_employee_time_entry_breaks_entry on public.employee_time_entry_breaks(time_entry_id, started_at desc);
+create index if not exists idx_employee_time_entry_breaks_entry
+  on public.employee_time_entry_breaks(time_entry_id, started_at desc);
 
 alter table if exists public.job_session_crew_hours
   add column if not exists time_entry_id uuid references public.employee_time_entries(id) on delete set null,
   add column if not exists break_minutes integer not null default 0,
   add column if not exists pay_code text not null default 'regular';
 
-alter table if exists public.job_session_crew_hours drop constraint if exists job_session_crew_hours_pay_code_check;
+alter table if exists public.job_session_crew_hours
+  drop constraint if exists job_session_crew_hours_pay_code_check;
+
 alter table if exists public.job_session_crew_hours
   add constraint job_session_crew_hours_pay_code_check
   check (pay_code in ('regular','overtime','mixed','manual'));
 
-create unique index if not exists idx_job_session_crew_hours_time_entry_id on public.job_session_crew_hours(time_entry_id) where time_entry_id is not null;
+create unique index if not exists idx_job_session_crew_hours_time_entry_id
+  on public.job_session_crew_hours(time_entry_id)
+  where time_entry_id is not null;
 
-alter table if exists public.site_activity_events drop constraint if exists site_activity_events_type_check;
+alter table if exists public.site_activity_events
+  drop constraint if exists site_activity_events_type_check;
+
 alter table if exists public.site_activity_events
   add constraint site_activity_events_type_check
   check (
@@ -2753,7 +11237,7 @@ select
   te.paid_work_minutes,
   te.notes,
   te.created_by_profile_id,
-  actor.full_name as uploaded_by_name,
+  actor.full_name as created_by_name,
   coalesce(br.break_count, 0)::int as break_count,
   coalesce(br.open_break_count, 0)::int as open_break_count,
   br.last_break_started_at,
@@ -2774,7 +11258,8 @@ left join public.v_employee_time_entry_break_rollups br on br.time_entry_id = te
 create or replace view public.v_employee_time_clock_current as
 select *
 from public.v_employee_time_clock_entries
-where signed_out_at is null and clock_status in ('active','paused');
+where signed_out_at is null
+  and clock_status in ('active','paused');
 
 create or replace view public.v_employee_time_clock_summary as
 select
@@ -2787,78 +11272,127 @@ select
   coalesce(sum(case when signed_in_at >= now() - interval '24 hours' then paid_work_minutes else 0 end), 0)::int as last_24h_paid_minutes,
   max(greatest(coalesce(signed_out_at, signed_in_at), signed_in_at)) as last_activity_at
 from public.employee_time_entries;
+-- ============================================================================
+-- END MIGRATION: 083_employee_time_clock_and_break_tracking.sql
+-- ============================================================================
 
 
-
--- 084_supervisor_attendance_review_and_execution_candidates.sql
-
+-- ============================================================================
+-- BEGIN MIGRATION: 084_supervisor_attendance_review_and_execution_candidates.sql
+-- ============================================================================
 -- 084_supervisor_attendance_review_and_execution_candidates.sql
 -- Adds:
--- - supervisor attendance review for missed clock-out / long-break exceptions
--- - geofence and photo-note capture fields on employee clock in/out
--- - operations dashboard summary cards
--- - recurring agreement execution candidate rules
+-- - supervisor review for missed clock-out, long breaks, and attendance exceptions
+-- - optional geofence / photo-note capture fields on employee clock-in and clock-out
+-- - payroll export generation views from time-clock-linked labor data
+-- - estimate -> agreement -> contract -> invoice flow support views
+-- - recurring agreement execution / invoice candidate views
+-- - stronger operations dashboard summary cards
+-- - customer-facing contract / application print layout view
 
 create extension if not exists pgcrypto;
 
+-- ------------------------------------------------------------
+-- Site geofence reference fields
+-- ------------------------------------------------------------
+alter table if exists public.sites
+  add column if not exists expected_latitude numeric(10,7),
+  add column if not exists expected_longitude numeric(10,7),
+  add column if not exists geofence_radius_meters numeric(10,2),
+  add column if not exists geofence_notes text;
+
+-- ------------------------------------------------------------
+-- Employee time entry capture enhancements
+-- ------------------------------------------------------------
 alter table if exists public.employee_time_entries
   add column if not exists clock_in_latitude numeric(10,7),
   add column if not exists clock_in_longitude numeric(10,7),
-  add column if not exists clock_in_accuracy_m numeric(8,2),
-  add column if not exists clock_in_geo_source text not null default 'manual',
-  add column if not exists clock_in_photo_note text,
   add column if not exists clock_out_latitude numeric(10,7),
   add column if not exists clock_out_longitude numeric(10,7),
-  add column if not exists clock_out_accuracy_m numeric(8,2),
-  add column if not exists clock_out_geo_source text not null default 'manual',
+  add column if not exists clock_in_photo_note text,
   add column if not exists clock_out_photo_note text,
-  add column if not exists exception_status text not null default 'clear',
-  add column if not exists exception_notes text,
-  add column if not exists exception_reviewed_at timestamptz,
-  add column if not exists exception_reviewed_by_profile_id uuid references public.profiles(id) on delete set null;
+  add column if not exists clock_in_photo_url text,
+  add column if not exists clock_out_photo_url text,
+  add column if not exists clock_in_geofence_status text not null default 'not_checked',
+  add column if not exists clock_out_geofence_status text not null default 'not_checked',
+  add column if not exists clock_in_geofence_distance_meters numeric(10,2),
+  add column if not exists clock_out_geofence_distance_meters numeric(10,2),
+  add column if not exists attendance_exception_notes text;
 
-alter table if exists public.employee_time_entries drop constraint if exists employee_time_entries_clock_in_geo_source_check;
 alter table if exists public.employee_time_entries
-  add constraint employee_time_entries_clock_in_geo_source_check
-  check (clock_in_geo_source in ('manual','browser_geolocation','admin_override','unknown'));
+  drop constraint if exists employee_time_entries_clock_in_geofence_status_check;
 
-alter table if exists public.employee_time_entries drop constraint if exists employee_time_entries_clock_out_geo_source_check;
 alter table if exists public.employee_time_entries
-  add constraint employee_time_entries_clock_out_geo_source_check
-  check (clock_out_geo_source in ('manual','browser_geolocation','admin_override','unknown'));
+  add constraint employee_time_entries_clock_in_geofence_status_check
+  check (clock_in_geofence_status in ('not_checked','inside','outside','not_configured','override'));
 
-alter table if exists public.employee_time_entries drop constraint if exists employee_time_entries_exception_status_check;
 alter table if exists public.employee_time_entries
-  add constraint employee_time_entries_exception_status_check
-  check (exception_status in ('clear','open','reviewed','resolved','waived'));
+  drop constraint if exists employee_time_entries_clock_out_geofence_status_check;
 
-create table if not exists public.employee_time_entry_reviews (
+alter table if exists public.employee_time_entries
+  add constraint employee_time_entries_clock_out_geofence_status_check
+  check (clock_out_geofence_status in ('not_checked','inside','outside','not_configured','override'));
+
+create index if not exists idx_employee_time_entries_clock_status
+  on public.employee_time_entries(clock_status, signed_in_at desc);
+
+create index if not exists idx_employee_time_entries_signed_out
+  on public.employee_time_entries(signed_out_at);
+
+-- ------------------------------------------------------------
+-- Supervisor attendance review records
+-- ------------------------------------------------------------
+create table if not exists public.employee_time_reviews (
   id uuid primary key default gen_random_uuid(),
   time_entry_id uuid not null references public.employee_time_entries(id) on delete cascade,
   review_type text not null default 'attendance_exception',
-  exception_type text,
   review_status text not null default 'open',
+  severity text not null default 'warning',
+  issue_code text not null default 'manual_review',
+  issue_summary text not null,
+  review_notes text,
+  resolved_notes text,
+  approved_exception boolean not null default false,
   reviewed_by_profile_id uuid references public.profiles(id) on delete set null,
   reviewed_at timestamptz,
-  resolution_notes text,
   created_by_profile_id uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
-alter table if exists public.employee_time_entry_reviews drop constraint if exists employee_time_entry_reviews_type_check;
-alter table if exists public.employee_time_entry_reviews
-  add constraint employee_time_entry_reviews_type_check
-  check (review_type in ('attendance_exception','clock_edit','geofence_review','payroll_review'));
+alter table if exists public.employee_time_reviews
+  drop constraint if exists employee_time_reviews_type_check;
 
-alter table if exists public.employee_time_entry_reviews drop constraint if exists employee_time_entry_reviews_status_check;
-alter table if exists public.employee_time_entry_reviews
-  add constraint employee_time_entry_reviews_status_check
-  check (review_status in ('open','reviewed','resolved','waived'));
+alter table if exists public.employee_time_reviews
+  add constraint employee_time_reviews_type_check
+  check (review_type in ('attendance_exception','missed_clock_out','long_break','zero_paid_time','manual'));
 
-create index if not exists idx_employee_time_entry_reviews_entry on public.employee_time_entry_reviews(time_entry_id, created_at desc);
+alter table if exists public.employee_time_reviews
+  drop constraint if exists employee_time_reviews_status_check;
 
-alter table if exists public.site_activity_events drop constraint if exists site_activity_events_type_check;
+alter table if exists public.employee_time_reviews
+  add constraint employee_time_reviews_status_check
+  check (review_status in ('open','reviewed','resolved','dismissed'));
+
+alter table if exists public.employee_time_reviews
+  drop constraint if exists employee_time_reviews_severity_check;
+
+alter table if exists public.employee_time_reviews
+  add constraint employee_time_reviews_severity_check
+  check (severity in ('info','warning','error'));
+
+create index if not exists idx_employee_time_reviews_time_entry
+  on public.employee_time_reviews(time_entry_id, created_at desc);
+
+create index if not exists idx_employee_time_reviews_status
+  on public.employee_time_reviews(review_status, severity, created_at desc);
+
+-- ------------------------------------------------------------
+-- Extend activity event types for attendance / contract / payroll flow
+-- ------------------------------------------------------------
+alter table if exists public.site_activity_events
+  drop constraint if exists site_activity_events_type_check;
+
 alter table if exists public.site_activity_events
   add constraint site_activity_events_type_check
   check (
@@ -2870,23 +11404,24 @@ alter table if exists public.site_activity_events
       'customer_asset_created','callback_created','payroll_export_created','contract_document_created',
       'order_created','account_login',
       'employee_clock_in','employee_break_started','employee_break_ended','employee_clock_out',
-      'attendance_exception_opened','attendance_exception_reviewed','attendance_exception_resolved'
+      'employee_time_review_created','employee_time_review_resolved',
+      'payroll_export_generated','contract_print_generated','service_execution_candidate','service_invoice_candidate'
     )
   );
 
-alter table if exists public.recurring_service_agreements
-  add column if not exists auto_create_session_candidates boolean not null default true,
-  add column if not exists auto_stage_invoice_candidates boolean not null default false,
-  add column if not exists execution_lead_days integer not null default 0,
-  add column if not exists application_required boolean not null default false,
-  add column if not exists default_invoice_source text not null default 'agreement_visit';
-
-alter table if exists public.recurring_service_agreements drop constraint if exists recurring_service_agreements_default_invoice_source_check;
-alter table if exists public.recurring_service_agreements
-  add constraint recurring_service_agreements_default_invoice_source_check
-  check (default_invoice_source in ('agreement_visit','agreement_snow','contract','manual'));
-
+-- ------------------------------------------------------------
+-- Preserve existing v_employee_time_clock_entries column order,
+-- then append new 084 columns at the end.
+-- This avoids CREATE OR REPLACE VIEW column rename failures.
+-- ------------------------------------------------------------
 create or replace view public.v_employee_time_clock_entries as
+with open_break as (
+  select
+    b.time_entry_id,
+    max(b.started_at) filter (where b.ended_at is null and coalesce(b.unpaid, true) = true) as current_break_started_at
+  from public.employee_time_entry_breaks b
+  group by b.time_entry_id
+)
 select
   te.id,
   te.profile_id,
@@ -2911,23 +11446,9 @@ select
   te.total_elapsed_minutes,
   coalesce(br.unpaid_break_minutes, te.unpaid_break_minutes, 0)::int as unpaid_break_minutes,
   te.paid_work_minutes,
-  te.clock_in_latitude,
-  te.clock_in_longitude,
-  te.clock_in_accuracy_m,
-  te.clock_in_geo_source,
-  te.clock_in_photo_note,
-  te.clock_out_latitude,
-  te.clock_out_longitude,
-  te.clock_out_accuracy_m,
-  te.clock_out_geo_source,
-  te.clock_out_photo_note,
-  te.exception_status,
-  te.exception_notes,
-  te.exception_reviewed_at,
-  te.exception_reviewed_by_profile_id,
   te.notes,
   te.created_by_profile_id,
-  actor.full_name as uploaded_by_name,
+  actor.full_name as created_by_name,
   coalesce(br.break_count, 0)::int as break_count,
   coalesce(br.open_break_count, 0)::int as open_break_count,
   br.last_break_started_at,
@@ -2935,7 +11456,41 @@ select
   to_char(te.signed_in_at at time zone 'America/Toronto', 'YYYY-MM-DD HH24:MI') as signed_in_at_local,
   to_char(te.signed_out_at at time zone 'America/Toronto', 'YYYY-MM-DD HH24:MI') as signed_out_at_local,
   te.created_at,
-  te.updated_at
+  te.updated_at,
+
+  -- 084 appended columns
+  te.clock_in_latitude,
+  te.clock_in_longitude,
+  te.clock_out_latitude,
+  te.clock_out_longitude,
+  te.clock_in_photo_note,
+  te.clock_out_photo_note,
+  te.clock_in_photo_url,
+  te.clock_out_photo_url,
+  te.clock_in_geofence_status,
+  te.clock_out_geofence_status,
+  te.clock_in_geofence_distance_meters,
+  te.clock_out_geofence_distance_meters,
+  te.attendance_exception_notes,
+  s.expected_latitude as site_expected_latitude,
+  s.expected_longitude as site_expected_longitude,
+  s.geofence_radius_meters,
+  case when te.clock_in_latitude is not null and te.clock_in_longitude is not null then true else false end as has_clock_in_location,
+  case when te.clock_out_latitude is not null and te.clock_out_longitude is not null then true else false end as has_clock_out_location,
+  case
+    when te.signed_out_at is null and te.signed_in_at < now() - interval '12 hours' then true
+    else false
+  end as currently_overdue_sign_out,
+  case
+    when ob.current_break_started_at is not null
+      then greatest(floor(extract(epoch from (now() - ob.current_break_started_at)) / 60.0), 0)::int
+    else 0
+  end as active_break_minutes,
+  case
+    when ob.current_break_started_at is not null and ob.current_break_started_at < now() - interval '45 minutes' then true
+    when coalesce(br.unpaid_break_minutes, te.unpaid_break_minutes, 0) >= 90 then true
+    else false
+  end as long_break_exception_flag
 from public.employee_time_entries te
 left join public.profiles p on p.id = te.profile_id
 left join public.crews c on c.id = te.crew_id
@@ -2943,211 +11498,465 @@ left join public.jobs j on j.id = te.job_id
 left join public.sites s on s.id = te.site_id
 left join public.job_sessions js on js.id = te.job_session_id
 left join public.profiles actor on actor.id = te.created_by_profile_id
-left join public.v_employee_time_entry_break_rollups br on br.time_entry_id = te.id;
+left join public.v_employee_time_entry_break_rollups br on br.time_entry_id = te.id
+left join open_break ob on ob.time_entry_id = te.id;
 
-create or replace view public.v_employee_time_attendance_exceptions as
+create or replace view public.v_employee_time_clock_current as
+select *
+from public.v_employee_time_clock_entries
+where signed_out_at is null
+  and clock_status in ('active','paused');
+
+-- Preserve existing summary columns first, append new ones after last_activity_at.
+create or replace view public.v_employee_time_clock_summary as
+select
+  count(*)::int as total_entry_count,
+  count(*) filter (where signed_in_at >= now() - interval '24 hours')::int as last_24h_clock_event_count,
+  count(*) filter (where signed_in_at >= now() - interval '24 hours')::int as last_24h_clock_in_count,
+  count(*) filter (where signed_out_at >= now() - interval '24 hours')::int as last_24h_clock_out_count,
+  count(*) filter (where clock_status = 'paused' and signed_out_at is null)::int as currently_on_break_count,
+  count(*) filter (where clock_status = 'active' and signed_out_at is null)::int as currently_clocked_in_count,
+  coalesce(sum(case when signed_in_at >= now() - interval '24 hours' then paid_work_minutes else 0 end), 0)::int as last_24h_paid_minutes,
+  max(greatest(coalesce(signed_out_at, signed_in_at), signed_in_at)) as last_activity_at,
+
+  -- 084 appended summary fields
+  count(distinct crew_id) filter (where signed_out_at is null and clock_status in ('active','paused') and crew_id is not null)::int as active_crew_count,
+  count(distinct site_id) filter (where signed_out_at is null and clock_status in ('active','paused') and site_id is not null)::int as active_site_count,
+  count(*) filter (where signed_out_at is null and signed_in_at < now() - interval '12 hours')::int as overdue_sign_out_count,
+  count(*) filter (where long_break_exception_flag = true)::int as long_break_exception_count,
+  count(*) filter (
+    where (signed_out_at is null and signed_in_at < now() - interval '12 hours')
+       or long_break_exception_flag = true
+       or (signed_out_at is not null and coalesce(paid_work_minutes, 0) <= 0)
+  )::int as attendance_exception_count
+from public.v_employee_time_clock_entries;
+
+-- ------------------------------------------------------------
+-- Attendance exception / supervisor review queue
+-- ------------------------------------------------------------
+create or replace view public.v_employee_time_review_queue as
 with latest_review as (
-  select distinct on (r.time_entry_id)
+  select distinct on (r.time_entry_id, r.issue_code)
     r.time_entry_id,
-    r.id as review_id,
-    r.review_type,
+    r.issue_code,
     r.review_status,
-    r.exception_type as reviewed_exception_type,
-    r.reviewed_by_profile_id,
+    r.severity,
     r.reviewed_at,
-    r.resolution_notes,
-    rp.full_name as reviewed_by_name
-  from public.employee_time_entry_reviews r
-  left join public.profiles rp on rp.id = r.reviewed_by_profile_id
-  order by r.time_entry_id, coalesce(r.reviewed_at, r.updated_at, r.created_at) desc, r.created_at desc
-), base as (
+    r.reviewed_by_profile_id,
+    reviewer.full_name as reviewed_by_name,
+    r.review_notes,
+    r.resolved_notes
+  from public.employee_time_reviews r
+  left join public.profiles reviewer on reviewer.id = r.reviewed_by_profile_id
+  order by r.time_entry_id, r.issue_code, r.created_at desc
+), issue_rows as (
   select
-    e.*,
-    case
-      when e.signed_out_at is null and e.clock_status in ('active','paused') and e.signed_in_at <= now() - interval '12 hours' then 'missed_clock_out'
-      when e.clock_status = 'paused' and coalesce(e.open_break_count, 0) > 0 and e.last_break_started_at <= now() - interval '45 minutes' then 'long_break'
-      when e.signed_out_at is not null and coalesce(e.total_elapsed_minutes, 0) >= 60 and coalesce(e.paid_work_minutes, 0) <= 0 then 'zero_paid_time'
-      else null
-    end as exception_type,
-    case when e.signed_out_at is null then floor(extract(epoch from (now() - e.signed_in_at)) / 60.0)::int else null end as open_minutes,
-    case when e.clock_status = 'paused' and e.last_break_started_at is not null then floor(extract(epoch from (now() - e.last_break_started_at)) / 60.0)::int else null end as open_break_minutes_live
+    e.id as time_entry_id,
+    e.profile_id,
+    e.full_name,
+    e.employee_number,
+    e.job_id,
+    e.job_code,
+    e.job_name,
+    e.site_id,
+    e.site_code,
+    e.site_name,
+    e.crew_id,
+    e.crew_name,
+    e.clock_status,
+    e.signed_in_at,
+    e.signed_out_at,
+    e.paid_work_minutes,
+    e.unpaid_break_minutes,
+    e.active_break_minutes,
+    e.currently_overdue_sign_out,
+    e.long_break_exception_flag,
+    'missed_clock_out'::text as issue_code,
+    'Missed or overdue clock-out'::text as issue_summary,
+    'warning'::text as default_severity
   from public.v_employee_time_clock_entries e
+  where e.currently_overdue_sign_out = true
+
+  union all
+
+  select
+    e.id as time_entry_id,
+    e.profile_id,
+    e.full_name,
+    e.employee_number,
+    e.job_id,
+    e.job_code,
+    e.job_name,
+    e.site_id,
+    e.site_code,
+    e.site_name,
+    e.crew_id,
+    e.crew_name,
+    e.clock_status,
+    e.signed_in_at,
+    e.signed_out_at,
+    e.paid_work_minutes,
+    e.unpaid_break_minutes,
+    e.active_break_minutes,
+    e.currently_overdue_sign_out,
+    e.long_break_exception_flag,
+    'long_break'::text as issue_code,
+    'Unpaid break exceeds expected threshold'::text as issue_summary,
+    'warning'::text as default_severity
+  from public.v_employee_time_clock_entries e
+  where e.long_break_exception_flag = true
+
+  union all
+
+  select
+    e.id as time_entry_id,
+    e.profile_id,
+    e.full_name,
+    e.employee_number,
+    e.job_id,
+    e.job_code,
+    e.job_name,
+    e.site_id,
+    e.site_code,
+    e.site_name,
+    e.crew_id,
+    e.crew_name,
+    e.clock_status,
+    e.signed_in_at,
+    e.signed_out_at,
+    e.paid_work_minutes,
+    e.unpaid_break_minutes,
+    e.active_break_minutes,
+    e.currently_overdue_sign_out,
+    e.long_break_exception_flag,
+    'zero_paid_time'::text as issue_code,
+    'Clocked entry has zero paid work time'::text as issue_summary,
+    'error'::text as default_severity
+  from public.v_employee_time_clock_entries e
+  where e.signed_out_at is not null
+    and coalesce(e.paid_work_minutes, 0) <= 0
 )
 select
-  b.id,
-  b.profile_id,
-  b.full_name,
-  b.employee_number,
-  b.crew_id,
-  b.crew_name,
-  b.job_id,
-  b.job_code,
-  b.job_name,
-  b.site_id,
-  b.site_code,
-  b.site_name,
-  b.job_session_id,
-  b.session_date,
-  b.session_status,
-  b.clock_status,
-  b.signed_in_at,
-  b.signed_out_at,
-  b.total_elapsed_minutes,
-  b.unpaid_break_minutes,
-  b.paid_work_minutes,
-  b.break_count,
-  b.open_break_count,
-  b.last_break_started_at,
-  b.last_break_ended_at,
-  b.clock_in_latitude,
-  b.clock_in_longitude,
-  b.clock_in_accuracy_m,
-  b.clock_in_geo_source,
-  b.clock_in_photo_note,
-  b.clock_out_latitude,
-  b.clock_out_longitude,
-  b.clock_out_accuracy_m,
-  b.clock_out_geo_source,
-  b.clock_out_photo_note,
-  coalesce(b.exception_type, case when b.exception_status in ('open','reviewed','resolved','waived') then 'manual_review' else null end) as exception_type,
-  b.exception_status,
-  b.exception_notes,
-  b.exception_reviewed_at,
-  b.exception_reviewed_by_profile_id,
-  b.open_minutes,
-  b.open_break_minutes_live,
-  lr.review_id,
+  ir.*,
   lr.review_status as latest_review_status,
-  lr.reviewed_exception_type,
-  lr.reviewed_by_profile_id,
-  lr.reviewed_by_name,
-  lr.reviewed_at,
-  lr.resolution_notes
-from base b
-left join latest_review lr on lr.time_entry_id = b.id
-where b.exception_type is not null or b.exception_status in ('open','reviewed','resolved','waived');
+  coalesce(lr.severity, ir.default_severity) as latest_severity,
+  lr.reviewed_at as latest_reviewed_at,
+  lr.reviewed_by_profile_id as latest_reviewed_by_profile_id,
+  lr.reviewed_by_name as latest_reviewed_by_name,
+  lr.review_notes as latest_review_notes,
+  lr.resolved_notes as latest_resolved_notes,
+  case
+    when coalesce(lr.review_status, 'open') in ('resolved','dismissed') then false
+    else true
+  end as needs_review
+from issue_rows ir
+left join latest_review lr
+  on lr.time_entry_id = ir.time_entry_id
+ and lr.issue_code = ir.issue_code;
 
+create or replace view public.v_employee_time_review_summary as
+select
+  count(*)::int as total_exception_count,
+  count(*) filter (where issue_code = 'missed_clock_out')::int as missed_clock_out_count,
+  count(*) filter (where issue_code = 'long_break')::int as long_break_count,
+  count(*) filter (where issue_code = 'zero_paid_time')::int as zero_paid_time_count,
+  count(*) filter (where needs_review = true)::int as needs_review_count,
+  max(greatest(coalesce(signed_out_at, signed_in_at), signed_in_at)) as last_exception_activity_at
+from public.v_employee_time_review_queue;
+
+-- ------------------------------------------------------------
+-- Payroll export generation rows from time-clock-linked labor data
+-- ------------------------------------------------------------
+create or replace view public.v_payroll_export_generation_rows as
+select
+  d.id,
+  d.job_id,
+  d.job_code,
+  d.job_name,
+  d.job_session_id,
+  d.session_date,
+  d.profile_id,
+  d.full_name,
+  d.employee_number,
+  d.regular_hours,
+  d.overtime_hours,
+  d.hours_worked,
+  d.hourly_cost_rate,
+  d.overtime_cost_rate,
+  d.payroll_burden_percent,
+  d.payroll_cost_total,
+  d.needs_export,
+  concat_ws(
+    ',',
+    coalesce(d.employee_number, ''),
+    coalesce(d.full_name, ''),
+    coalesce(d.job_code, ''),
+    coalesce(to_char(d.session_date, 'YYYY-MM-DD'), ''),
+    coalesce(d.regular_hours::text, '0'),
+    coalesce(d.overtime_hours::text, '0'),
+    coalesce(d.hours_worked::text, '0'),
+    coalesce(d.payroll_cost_total::text, '0')
+  ) as csv_row
+from public.v_payroll_review_detail d
+where d.needs_export = true;
+
+create or replace view public.v_payroll_export_generation_summary as
+select
+  count(*)::int as export_row_count,
+  coalesce(sum(hours_worked), 0)::numeric(10,2) as export_hours_total,
+  coalesce(sum(payroll_cost_total), 0)::numeric(12,2) as export_payroll_cost_total
+from public.v_payroll_export_generation_rows;
+
+-- ------------------------------------------------------------
+-- Estimate -> agreement -> contract -> invoice flow view
+-- ------------------------------------------------------------
+create or replace view public.v_estimate_agreement_contract_invoice_flow as
+select
+  e.id as estimate_id,
+  e.estimate_number,
+  e.status as estimate_status,
+  e.client_id,
+  e.client_site_id,
+  e.total_amount as estimate_total_amount,
+  e.valid_until,
+  rsa.id as agreement_id,
+  rsa.agreement_code,
+  rsa.agreement_status,
+  rsa.service_name,
+  rsa.billing_method,
+  rsa.start_date as agreement_start_date,
+  rsa.end_date as agreement_end_date,
+  scd.id as contract_document_id,
+  scd.document_number,
+  scd.document_kind,
+  scd.document_status,
+  scd.effective_date as contract_effective_date,
+  scd.expiry_date as contract_expiry_date,
+  inv.id as invoice_id,
+  inv.invoice_number,
+  inv.invoice_status,
+  inv.invoice_date,
+  inv.total_amount as invoice_total_amount
+from public.estimates e
+left join public.recurring_service_agreements rsa on rsa.estimate_id = e.id
+left join public.service_contract_documents scd on scd.agreement_id = rsa.id
+left join public.ar_invoices inv
+  on inv.recurring_service_agreement_id = rsa.id
+ or inv.service_contract_document_id = scd.id;
+
+-- ------------------------------------------------------------
+-- Recurring agreement execution and invoice candidates
+-- ------------------------------------------------------------
+create or replace view public.v_service_execution_candidates as
+select
+  rsa.id as agreement_id,
+  rsa.agreement_code,
+  rsa.client_id,
+  rsa.client_site_id,
+  rsa.route_id,
+  rsa.crew_id,
+  rsa.tax_code_id,
+  rsa.service_name,
+  rsa.billing_method,
+  rsa.service_pattern,
+  rsa.recurrence_basis,
+  rsa.recurrence_rule,
+  rsa.recurrence_interval,
+  rsa.start_date,
+  rsa.end_date,
+  rsa.open_end_date,
+  current_date as candidate_date,
+  case
+    when rsa.event_trigger_type in ('snow_cm','snow_event','ice_event') then 'event_trigger'
+    else 'scheduled_service'
+  end as candidate_type,
+  case
+    when rsa.event_trigger_type in ('snow_cm','snow_event','ice_event') then 'Agreement is active and uses event-based execution'
+    else 'Agreement is active and eligible for service execution'
+  end as candidate_reason,
+  rsa.visit_estimated_minutes,
+  rsa.visit_estimated_duration_hours,
+  rsa.visit_cost_total,
+  rsa.visit_charge_total
+from public.recurring_service_agreements rsa
+where rsa.agreement_status = 'active'
+  and (rsa.start_date is null or rsa.start_date <= current_date)
+  and (coalesce(rsa.open_end_date, false) = true or rsa.end_date is null or rsa.end_date >= current_date);
+
+create or replace view public.v_service_invoice_candidates as
+select
+  rsa.id as agreement_id,
+  rsa.agreement_code,
+  rsa.client_id,
+  rsa.client_site_id,
+  rsa.tax_code_id,
+  rsa.service_name,
+  rsa.billing_method,
+  current_date as candidate_invoice_date,
+  rsa.visit_charge_total as candidate_charge_total,
+  rsa.discount_mode,
+  rsa.discount_value,
+  rsa.event_trigger_type,
+  null::uuid as snow_event_trigger_id,
+  'service_visit'::text as invoice_candidate_type
+from public.recurring_service_agreements rsa
+where rsa.agreement_status = 'active'
+  and rsa.billing_method in ('per_visit','flat_period','seasonal','time_and_material')
+
+union all
+
+select
+  rsa.id as agreement_id,
+  rsa.agreement_code,
+  rsa.client_id,
+  rsa.client_site_id,
+  rsa.tax_code_id,
+  rsa.service_name,
+  rsa.billing_method,
+  setr.event_date as candidate_invoice_date,
+  rsa.visit_charge_total as candidate_charge_total,
+  rsa.discount_mode,
+  rsa.discount_value,
+  rsa.event_trigger_type,
+  setr.id as snow_event_trigger_id,
+  'snow_event'::text as invoice_candidate_type
+from public.snow_event_triggers setr
+join public.recurring_service_agreements rsa on rsa.id = setr.agreement_id
+left join public.ar_invoices inv on inv.snow_event_trigger_id = setr.id
+where rsa.agreement_status = 'active'
+  and setr.trigger_met = true
+  and inv.id is null;
+
+create or replace view public.v_recurring_agreement_profitability_summary as
+select
+  rsa.id as agreement_id,
+  rsa.agreement_code,
+  rsa.service_name,
+  rsa.client_id,
+  rsa.client_site_id,
+  rsa.billing_method,
+  count(inv.id)::int as invoice_count,
+  coalesce(sum(coalesce(inv.total_amount, 0)), 0)::numeric(12,2) as invoiced_total,
+  coalesce(rsa.visit_cost_total, 0)::numeric(12,2) as estimated_visit_cost_total,
+  coalesce(rsa.visit_charge_total, 0)::numeric(12,2) as estimated_visit_charge_total,
+  max(inv.invoice_date) as last_invoice_date
+from public.recurring_service_agreements rsa
+left join public.ar_invoices inv on inv.recurring_service_agreement_id = rsa.id
+group by
+  rsa.id,
+  rsa.agreement_code,
+  rsa.service_name,
+  rsa.client_id,
+  rsa.client_site_id,
+  rsa.billing_method,
+  rsa.visit_cost_total,
+  rsa.visit_charge_total;
+
+-- ------------------------------------------------------------
+-- Customer-facing print layout helper
+-- ------------------------------------------------------------
+create or replace view public.v_service_contract_print_layouts as
+select
+  scd.id,
+  scd.document_number,
+  scd.document_kind,
+  scd.document_status,
+  scd.title,
+  scd.contract_reference,
+  scd.effective_date,
+  scd.expiry_date,
+  scd.client_id,
+  c.legal_name as client_legal_name,
+  c.display_name as client_display_name,
+  scd.client_site_id,
+  cs.site_name as client_site_name,
+  cs.service_address,
+  scd.estimate_id,
+  e.estimate_number,
+  scd.agreement_id,
+  rsa.agreement_code,
+  rsa.service_name,
+  concat_ws(
+    ' ',
+    'Agreement:',
+    coalesce(rsa.agreement_code, scd.contract_reference, scd.document_number)
+  ) as printable_reference,
+  concat_ws(
+    E'\n',
+    coalesce(scd.rendered_text, ''),
+    case when rsa.service_name is not null then 'Service: ' || rsa.service_name else null end,
+    case when cs.site_name is not null then 'Site: ' || cs.site_name else null end,
+    case when cs.service_address is not null then 'Address: ' || cs.service_address else null end
+  ) as printable_text,
+  coalesce(scd.rendered_html, '<p>No rendered HTML available yet.</p>') as printable_html,
+  case
+    when scd.document_kind = 'application' then 'Customer Application'
+    when scd.document_kind = 'contract' then 'Service Contract'
+    when scd.document_kind = 'change_order' then 'Change Order'
+    else scd.document_kind
+  end as printable_title
+from public.service_contract_documents scd
+left join public.clients c on c.id = scd.client_id
+left join public.client_sites cs on cs.id = scd.client_site_id
+left join public.estimates e on e.id = scd.estimate_id
+left join public.recurring_service_agreements rsa on rsa.id = scd.agreement_id;
+
+-- ------------------------------------------------------------
+-- Stronger dashboard cards / summary
+-- ------------------------------------------------------------
 create or replace view public.v_operations_dashboard_summary as
 with active_crews as (
-  select count(distinct crew_id)::int as active_crews_on_site_count
+  select
+    count(distinct crew_id)::int as active_crew_count,
+    count(distinct profile_id)::int as active_staff_count
   from public.v_employee_time_clock_current
   where crew_id is not null
-), active_staff as (
-  select count(*)::int as active_staff_on_site_count
-  from public.v_employee_time_clock_current
-), attendance as (
+),
+attendance as (
   select
-    count(*) filter (where exception_type = 'missed_clock_out')::int as overdue_sign_out_count,
-    count(*) filter (where exception_type = 'long_break')::int as long_break_exception_count,
-    count(*) filter (where coalesce(latest_review_status, exception_status, 'open') in ('open','reviewed') )::int as open_attendance_exception_count
-  from public.v_employee_time_attendance_exceptions
-), unsigned_sessions as (
-  select count(*)::int as unsigned_session_job_count
-  from public.v_job_financial_rollups
-  where coalesce(unsigned_session_count, 0) > 0
-), delayed as (
-  select count(*)::int as delayed_job_count
-  from public.jobs
-  where coalesce(delayed_schedule, false) = true
-), losses as (
-  select count(*)::int as loss_making_job_count
-  from public.v_job_financial_rollups
-  where coalesce(actual_profit_rollup_total, 0) < 0
+    overdue_sign_out_count,
+    long_break_exception_count,
+    attendance_exception_count,
+    currently_clocked_in_count,
+    currently_on_break_count
+  from public.v_employee_time_clock_summary
+),
+job_cards as (
+  select
+    count(*) filter (where coalesce(unsigned_job_session_count, 0) > 0)::int as unsigned_session_job_count,
+    count(*) filter (where coalesce(delayed_schedule, false) = true)::int as delayed_job_count,
+    count(*) filter (where coalesce(actual_profit_rollup_total, 0) < 0)::int as loss_making_job_count
+  from public.v_jobs_directory
+),
+review_cards as (
+  select
+    count(*) filter (where needs_review = true)::int as attendance_review_needed_count
+  from public.v_employee_time_review_queue
 )
 select
-  ac.active_crews_on_site_count,
-  ast.active_staff_on_site_count,
-  atd.overdue_sign_out_count,
-  atd.long_break_exception_count,
-  atd.open_attendance_exception_count,
-  us.unsigned_session_job_count,
-  d.delayed_job_count,
-  l.loss_making_job_count
+  ac.active_crew_count,
+  ac.active_staff_count,
+  att.currently_clocked_in_count,
+  att.currently_on_break_count,
+  att.overdue_sign_out_count,
+  att.long_break_exception_count,
+  att.attendance_exception_count,
+  rc.attendance_review_needed_count,
+  jc.unsigned_session_job_count,
+  jc.delayed_job_count,
+  jc.loss_making_job_count
 from active_crews ac
-cross join active_staff ast
-cross join attendance atd
-cross join unsigned_sessions us
-cross join delayed d
-cross join losses l;
-
-create or replace view public.v_service_agreement_execution_candidates as
-with active_agreements as (
-  select
-    a.*,
-    greatest(current_date, coalesce(a.start_date, current_date)) as candidate_date
-  from public.recurring_service_agreements a
-  where a.agreement_status = 'active'
-    and coalesce(a.start_date, current_date) <= current_date
-    and (coalesce(a.open_end_date, false) = true or a.end_date is null or a.end_date >= current_date)
-), visit_candidates as (
-  select
-    a.id,
-    a.agreement_code,
-    a.service_name,
-    a.client_id,
-    a.client_site_id,
-    a.route_id,
-    a.crew_id,
-    'service_session'::text as candidate_kind,
-    a.default_invoice_source as invoice_source,
-    a.candidate_date,
-    a.visit_charge_total,
-    a.visit_cost_total,
-    null::uuid as snow_event_trigger_id,
-    'Active agreement is due for service execution review.'::text as candidate_reason
-  from active_agreements a
-  where coalesce(a.auto_create_session_candidates, false) = true
-), invoice_candidates as (
-  select
-    a.id,
-    a.agreement_code,
-    a.service_name,
-    a.client_id,
-    a.client_site_id,
-    a.route_id,
-    a.crew_id,
-    'visit_invoice'::text as candidate_kind,
-    a.default_invoice_source as invoice_source,
-    a.candidate_date,
-    a.visit_charge_total,
-    a.visit_cost_total,
-    null::uuid as snow_event_trigger_id,
-    'Agreement allows invoice candidate staging for the next visit.'::text as candidate_reason
-  from active_agreements a
-  where coalesce(a.auto_stage_invoice_candidates, false) = true
-    and coalesce(a.default_invoice_source, 'agreement_visit') = 'agreement_visit'
-), snow_candidates as (
-  select
-    a.id,
-    a.agreement_code,
-    a.service_name,
-    a.client_id,
-    a.client_site_id,
-    a.route_id,
-    a.crew_id,
-    'snow_invoice'::text as candidate_kind,
-    'agreement_snow'::text as invoice_source,
-    st.event_date as candidate_date,
-    a.visit_charge_total,
-    a.visit_cost_total,
-    st.id as snow_event_trigger_id,
-    'Triggered snow event is ready for invoice candidate staging.'::text as candidate_reason
-  from active_agreements a
-  join public.snow_event_triggers st on st.agreement_id = a.id
-  left join public.ar_invoices ai on ai.snow_event_trigger_id = st.id
-  where coalesce(a.auto_stage_invoice_candidates, false) = true
-    and st.trigger_met = true
-    and ai.id is null
-)
-select * from visit_candidates
-union all
-select * from invoice_candidates
-union all
-select * from snow_candidates;
+cross join attendance att
+cross join job_cards jc
+cross join review_cards rc;
+-- ============================================================================
+-- END MIGRATION: 084_supervisor_attendance_review_and_execution_candidates.sql
+-- ============================================================================
 
 
--- 085_attendance_photo_geofence_scheduler_and_signed_contract_invoice.sql
-
+-- ============================================================================
+-- BEGIN MIGRATION: 085_attendance_photo_geofence_scheduler_and_signed_contract_invoice.sql
+-- ============================================================================
 -- 085_attendance_photo_geofence_scheduler_and_signed_contract_invoice.sql
 -- Adds:
 -- - attendance photo storage metadata and geofence accuracy/source fields
@@ -3255,6 +12064,16 @@ create index if not exists idx_service_contract_documents_linked_invoice_id on p
 alter table if exists public.recurring_service_agreements
   add column if not exists last_scheduler_run_at timestamptz;
 
+alter table if exists public.recurring_service_agreements
+  add column if not exists auto_create_session_candidates boolean not null default true,
+  add column if not exists auto_stage_invoice_candidates boolean not null default false,
+  add column if not exists default_invoice_source text not null default 'agreement_visit';
+
+alter table if exists public.recurring_service_agreements drop constraint if exists recurring_service_agreements_default_invoice_source_check;
+alter table if exists public.recurring_service_agreements
+  add constraint recurring_service_agreements_default_invoice_source_check
+  check (default_invoice_source in ('agreement_visit','agreement_snow','contract','manual'));
+
 -- ------------------------------------------------------------
 -- Scheduler runs
 -- ------------------------------------------------------------
@@ -3346,7 +12165,7 @@ select
   te.paid_work_minutes,
   te.notes,
   te.created_by_profile_id,
-  actor.full_name as uploaded_by_name,
+  actor.full_name as created_by_name,
   coalesce(br.break_count, 0)::int as break_count,
   coalesce(br.open_break_count, 0)::int as open_break_count,
   br.last_break_started_at,
@@ -3435,6 +12254,80 @@ from public.v_employee_time_clock_entries;
 -- ------------------------------------------------------------
 -- Scheduler / invoice candidate views
 -- ------------------------------------------------------------
+create or replace view public.v_service_agreement_execution_candidates as
+with active_agreements as (
+  select
+    a.*,
+    greatest(current_date, coalesce(a.start_date, current_date)) as candidate_date
+  from public.recurring_service_agreements a
+  where a.agreement_status = 'active'
+    and coalesce(a.start_date, current_date) <= current_date
+    and (coalesce(a.open_end_date, false) = true or a.end_date is null or a.end_date >= current_date)
+), visit_candidates as (
+  select
+    a.id as agreement_id,
+    a.agreement_code,
+    a.service_name,
+    a.client_id,
+    a.client_site_id,
+    a.route_id,
+    a.crew_id,
+    'service_session'::text as candidate_kind,
+    a.default_invoice_source as invoice_source,
+    a.candidate_date,
+    a.visit_charge_total,
+    a.visit_cost_total,
+    null::uuid as snow_event_trigger_id,
+    'Active agreement is due for service execution review.'::text as candidate_reason
+  from active_agreements a
+  where coalesce(a.auto_create_session_candidates, false) = true
+), invoice_candidates as (
+  select
+    a.id as agreement_id,
+    a.agreement_code,
+    a.service_name,
+    a.client_id,
+    a.client_site_id,
+    a.route_id,
+    a.crew_id,
+    'visit_invoice'::text as candidate_kind,
+    a.default_invoice_source as invoice_source,
+    a.candidate_date,
+    a.visit_charge_total,
+    a.visit_cost_total,
+    null::uuid as snow_event_trigger_id,
+    'Agreement allows invoice candidate staging for the next visit.'::text as candidate_reason
+  from active_agreements a
+  where coalesce(a.auto_stage_invoice_candidates, false) = true
+    and coalesce(a.default_invoice_source, 'agreement_visit') = 'agreement_visit'
+), snow_candidates as (
+  select
+    a.id as agreement_id,
+    a.agreement_code,
+    a.service_name,
+    a.client_id,
+    a.client_site_id,
+    a.route_id,
+    a.crew_id,
+    'snow_invoice'::text as candidate_kind,
+    'agreement_snow'::text as invoice_source,
+    st.event_date as candidate_date,
+    a.visit_charge_total,
+    a.visit_cost_total,
+    st.id as snow_event_trigger_id,
+    'Triggered snow event is ready for invoice candidate staging.'::text as candidate_reason
+  from active_agreements a
+  join public.snow_event_triggers st on st.agreement_id = a.id
+  left join public.ar_invoices ai on ai.snow_event_trigger_id = st.id
+  where coalesce(a.auto_stage_invoice_candidates, false) = true
+    and st.trigger_met = true
+    and ai.id is null
+)
+select * from visit_candidates
+union all
+select * from invoice_candidates
+union all
+select * from snow_candidates;
 create or replace view public.v_service_execution_scheduler_candidates as
 with candidate_jobs as (
   select
@@ -3516,8 +12409,14 @@ select
   count(*) filter (where candidate_kind = 'service_session')::int as session_candidate_count,
   count(*) filter (where candidate_kind in ('visit_invoice','snow_invoice'))::int as invoice_candidate_count
 from public.v_service_execution_scheduler_candidates;
+-- ============================================================================
+-- END MIGRATION: 085_attendance_photo_geofence_scheduler_and_signed_contract_invoice.sql
+-- ============================================================================
 
 
+-- ============================================================================
+-- BEGIN MIGRATION: 086_hseops_performance_and_site_activity_rollups.sql
+-- ============================================================================
 -- 086_hseops_performance_and_site_activity_rollups.sql
 -- Adds lightweight site-activity rollup views for admin/HSE monitoring while
 -- the HSE Operations page moves to a reduced selector payload for better runtime performance.
@@ -3542,7 +12441,14 @@ select
   max(occurred_at) as last_activity_at
 from public.site_activity_events
 group by entity_type;
+-- ============================================================================
+-- END MIGRATION: 086_hseops_performance_and_site_activity_rollups.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 087_evidence_review_scheduler_settings_and_signed_contract_kickoff.sql
+-- ============================================================================
 -- 087_evidence_review_scheduler_settings_and_signed_contract_kickoff.sql
 -- Adds:
 -- - Admin-visible attendance / HSE evidence review views
@@ -3677,12 +12583,7 @@ select
   case
     when s.is_enabled = true and s.next_run_at is not null and s.next_run_at <= now() then true
     else false
-  end as is_due,
-  s.invoke_url,
-  s.last_dispatch_at,
-  s.last_dispatch_request_id,
-  s.last_dispatch_status,
-  s.last_dispatch_notes
+  end as is_due
 from public.service_execution_scheduler_settings s
 left join latest_run lr on lr.agreement_key = 'ALL';
 
@@ -3808,10 +12709,7 @@ select
     else 'not_signed'
   end as kickoff_status,
   concat('JOB-', regexp_replace(coalesce(a.agreement_code, d.document_number, d.contract_reference, d.id::text), '[^A-Za-z0-9]+', '-', 'g')) as suggested_job_code,
-  coalesce(a.service_name, d.title, 'Signed Contract Job') as suggested_job_name,
-  concat('WO-', regexp_replace(coalesce(a.agreement_code, d.document_number, d.contract_reference, d.id::text), '[^A-Za-z0-9]+', '-', 'g')) as suggested_work_order_number,
-  greatest(current_date, coalesce(a.start_date, current_date))::date as suggested_first_session_date,
-  coalesce(a.visit_estimated_duration_hours, 0)::numeric(10,2) as suggested_first_session_hours
+  coalesce(a.service_name, d.title, 'Signed Contract Job') as suggested_job_name
 from public.service_contract_documents d
 left join public.recurring_service_agreements a on a.id = d.agreement_id
 left join public.estimates e on e.id = d.estimate_id
@@ -3823,14 +12721,7 @@ with export_rollup as (
   select
     count(*)::int as export_run_count,
     count(*) filter (where coalesce(status, '') <> 'exported')::int as open_export_run_count,
-    count(*) filter (where coalesce(delivery_status, 'pending') = 'pending')::int as delivery_pending_count,
-    count(*) filter (where coalesce(delivery_status, '') in ('delivered','confirmed'))::int as delivery_recorded_count,
-    count(*) filter (where coalesce(delivery_status, '') = 'confirmed')::int as delivery_confirmed_count,
-    count(*) filter (where coalesce(payroll_close_status, 'open') = 'ready_to_close')::int as ready_to_close_count,
-    count(*) filter (where coalesce(payroll_close_status, 'open') = 'closed')::int as closed_run_count,
     max(exported_at) as last_exported_at,
-    max(delivery_confirmed_at) as last_delivery_confirmed_at,
-    max(payroll_closed_at) as last_payroll_closed_at,
     coalesce(sum(coalesce(exported_entry_count, 0)), 0)::int as exported_entry_count_total,
     coalesce(sum(coalesce(exported_hours_total, 0)), 0)::numeric(10,2) as exported_hours_total,
     coalesce(sum(coalesce(exported_payroll_cost_total, 0)), 0)::numeric(12,2) as exported_payroll_cost_total
@@ -3863,26 +12754,26 @@ select
   ar.unexported_payroll_cost_total,
   rr.attendance_review_needed_count,
   cr.overdue_sign_out_count,
-  cr.attendance_exception_count,
-  er.delivery_pending_count,
-  er.delivery_recorded_count,
-  er.delivery_confirmed_count,
-  er.ready_to_close_count,
-  er.closed_run_count,
-  er.last_delivery_confirmed_at,
-  er.last_payroll_closed_at
+  cr.attendance_exception_count
 from export_rollup er
 cross join attendance_rollup ar
 cross join review_rollup rr
 cross join clock_rollup cr;
+-- ============================================================================
+-- END MIGRATION: 087_evidence_review_scheduler_settings_and_signed_contract_kickoff.sql
+-- ============================================================================
 
 
+-- ============================================================================
+-- BEGIN MIGRATION: 088_scheduler_cron_media_review_payroll_close_receipts.sql
+-- ============================================================================
 -- 088_scheduler_cron_media_review_payroll_close_receipts.sql
 -- Adds:
 -- - cron/dispatch plumbing for service execution scheduler settings
 -- - richer media review actions for attendance and HSE evidence
 -- - payroll export delivery confirmation and payroll-close signoff fields
 -- - stronger signed-contract kickoff suggestions for first planned session timing
+-- - portable secret-source handling for environments where Vault is unavailable
 
 create extension if not exists pg_net;
 create extension if not exists pg_cron;
@@ -4434,11 +13325,46 @@ from export_rollup er
 cross join attendance_rollup ar
 cross join review_rollup rr
 cross join clock_rollup cr;
+-- ============================================================================
+-- END MIGRATION: 088_scheduler_cron_media_review_payroll_close_receipts.sql
+-- ============================================================================
 
 
-
+-- ============================================================================
+-- BEGIN MIGRATION: 089_historical_reporting_and_auth_wall_support.sql
+-- ============================================================================
 -- 089_historical_reporting_and_auth_wall_support.sql
 -- Adds historical reporting views for Ontario OHSA / HSE submissions and cross-workflow history.
+-- Includes compatibility upgrades for older databases missing newer columns.
+
+alter table if exists public.submissions
+  add column if not exists site_id uuid references public.sites(id) on delete set null,
+  add column if not exists submitted_by_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists supervisor_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists signing_supervisor_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists admin_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists reviewed_at timestamptz,
+  add column if not exists updated_at timestamptz not null default now();
+
+alter table if exists public.hse_packet_events
+  add column if not exists event_summary text,
+  add column if not exists event_notes text;
+
+alter table if exists public.payroll_export_runs
+  add column if not exists export_provider text not null default 'generic_csv',
+  add column if not exists export_mime_type text,
+  add column if not exists export_layout_version text,
+  add column if not exists export_batch_number text,
+  add column if not exists delivery_status text not null default 'pending',
+  add column if not exists delivery_reference text,
+  add column if not exists delivery_notes text,
+  add column if not exists delivered_at timestamptz,
+  add column if not exists delivered_by_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists delivery_confirmed_at timestamptz,
+  add column if not exists payroll_close_status text not null default 'open',
+  add column if not exists payroll_closed_at timestamptz,
+  add column if not exists payroll_closed_by_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists payroll_close_notes text;
 
 create or replace view public.v_hse_submission_history_report as
 with review_rollup as (
@@ -4453,7 +13379,9 @@ with review_rollup as (
   left join public.profiles p on p.id = sr.reviewer_id
   group by sr.submission_id
 ), image_rollup as (
-  select si.submission_id, count(*)::int as image_count
+  select
+    si.submission_id,
+    count(*)::int as image_count
   from public.submission_images si
   group by si.submission_id
 )
@@ -4465,7 +13393,13 @@ select
   s.site_id,
   coalesce(st.site_code, s.site, '') as site_code,
   st.site_name,
-  trim(both ' ' from concat(coalesce(st.site_code, ''), case when st.site_code is not null and st.site_name is not null then ' — ' else '' end, coalesce(st.site_name, s.site, ''))) as site_label,
+  trim(
+    both ' ' from concat(
+      coalesce(st.site_code, ''),
+      case when st.site_code is not null and st.site_name is not null then ' — ' else '' end,
+      coalesce(st.site_name, s.site, '')
+    )
+  ) as site_label,
   s.submitted_by_profile_id,
   coalesce(sp.full_name, sp.email, s.submitted_by, '') as submitted_by_name,
   s.supervisor_profile_id,
@@ -4501,7 +13435,10 @@ select
   count(distinct coalesce(site_id::text, site_code, site_name, 'unknown'))::int as unique_site_count,
   coalesce(sum(image_count), 0)::int as image_count,
   count(*) filter (where coalesce(review_count, 0) > 0)::int as reviewed_count,
-  count(*) filter (where coalesce(last_review_action, '') = 'rejected' or coalesce(status, '') = 'rejected')::int as rejected_count,
+  count(*) filter (
+    where coalesce(last_review_action, '') = 'rejected'
+       or coalesce(status, '') = 'rejected'
+  )::int as rejected_count,
   max(last_reviewed_at) as last_reviewed_at
 from base
 group by submission_date, form_type, status;
@@ -4519,12 +13456,21 @@ select
   form_type,
   count(*)::int as submission_count,
   count(*) filter (where coalesce(review_count, 0) > 0)::int as reviewed_count,
-  count(*) filter (where coalesce(last_review_action, '') = 'rejected' or coalesce(status, '') = 'rejected')::int as rejected_count,
+  count(*) filter (
+    where coalesce(last_review_action, '') = 'rejected'
+       or coalesce(status, '') = 'rejected'
+  )::int as rejected_count,
   coalesce(sum(image_count), 0)::int as image_count,
   max(submission_date) as last_submission_date,
   max(last_reviewed_at) as last_reviewed_at
 from base
-group by coalesce(site_id::text, site_code, site_name, 'unknown'), site_id, site_code, site_name, site_label, form_type;
+group by
+  coalesce(site_id::text, site_code, site_name, 'unknown'),
+  site_id,
+  site_code,
+  site_name,
+  site_label,
+  form_type;
 
 create or replace view public.v_workflow_history_report as
 select
@@ -4535,7 +13481,11 @@ select
   coalesce(s.status, 'submitted') as record_status,
   s.id::text as record_number,
   concat(upper(coalesce(s.form_type, 'form')), ' submission') as headline,
-  concat(coalesce(st.site_code, st.site_name, s.site, 'Unknown site'), ' • ', coalesce(s.submitted_by, 'submitted')) as detail,
+  concat(
+    coalesce(st.site_code, st.site_name, s.site, 'Unknown site'),
+    ' • ',
+    coalesce(s.submitted_by, 'submitted')
+  ) as detail,
   st.site_code,
   st.site_name
 from public.submissions s
@@ -4582,7 +13532,12 @@ select
   coalesce(r.run_status, 'queued') as record_status,
   coalesce(r.run_code, r.id::text) as record_number,
   'Service execution scheduler run' as headline,
-  concat('Candidates: ', coalesce(r.candidate_count, 0), ' • Sessions: ', coalesce(r.session_created_count, 0), ' • Invoice candidates: ', coalesce(r.invoice_candidate_count, 0), ' • Skipped: ', coalesce(r.skipped_count, 0)) as detail,
+  concat(
+    'Candidates: ', coalesce(r.candidate_count, 0),
+    ' • Sessions: ', coalesce(r.session_created_count, 0),
+    ' • Invoice candidates: ', coalesce(r.invoice_candidate_count, 0),
+    ' • Skipped: ', coalesce(r.skipped_count, 0)
+  ) as detail,
   null::text as site_code,
   null::text as site_name
 from public.service_execution_scheduler_runs r
@@ -4595,9 +13550,14 @@ select
   p.id::text,
   coalesce(p.payroll_closed_at, p.delivery_confirmed_at, p.delivered_at, p.exported_at, p.created_at) as occurred_at,
   coalesce(p.payroll_close_status, p.delivery_status, p.status, 'open') as record_status,
-  coalesce(p.export_batch_number, p.id::text) as record_number,
+  coalesce(p.export_batch_number, p.run_code, p.id::text) as record_number,
   'Payroll export workflow' as headline,
-  concat('Provider: ', coalesce(p.export_provider, 'n/a'), ' • Period: ', coalesce(p.period_start::text, ''), ' to ', coalesce(p.period_end::text, ''), ' • Delivery: ', coalesce(p.delivery_status, 'pending')) as detail,
+  concat(
+    'Provider: ', coalesce(p.export_provider, 'n/a'),
+    ' • Period: ', coalesce(p.period_start::text, ''),
+    ' to ', coalesce(p.period_end::text, ''),
+    ' • Delivery: ', coalesce(p.delivery_status, 'pending')
+  ) as detail,
   null::text as site_code,
   null::text as site_name
 from public.payroll_export_runs p
@@ -4612,12 +13572,21 @@ select
   coalesce(d.document_status, 'draft') as record_status,
   coalesce(d.document_number, d.contract_reference, d.id::text) as record_number,
   coalesce(d.title, 'Service contract document') as headline,
-  concat('Kind: ', coalesce(d.document_kind, 'contract'), case when d.signed_by_name is not null then concat(' • Signed by ', d.signed_by_name) else '' end) as detail,
+  concat(
+    'Kind: ', coalesce(d.document_kind, 'contract'),
+    case when d.signed_by_name is not null then concat(' • Signed by ', d.signed_by_name) else '' end
+  ) as detail,
   null::text as site_code,
   null::text as site_name
 from public.service_contract_documents d;
+-- ============================================================================
+-- END MIGRATION: 089_historical_reporting_and_auth_wall_support.sql
+-- ============================================================================
 
--- Synced from sql/090_incident_reporting_saved_report_presets_and_trends.sql
+
+-- ============================================================================
+-- BEGIN MIGRATION: 090_incident_reporting_saved_report_presets_and_trends.sql
+-- ============================================================================
 -- 090_incident_reporting_saved_report_presets_and_trends.sql
 -- Adds incident / near-miss reporting views, saved reporting presets,
 -- and richer DB-backed reporting rollups so reporting depends less on browser-local state.
@@ -4663,7 +13632,7 @@ select
   rp.visibility,
   rp.preset_payload,
   rp.created_by_profile_id,
-  coalesce(p.full_name, p.email, '') as uploaded_by_name,
+  coalesce(p.full_name, p.email, '') as created_by_name,
   rp.is_active,
   rp.created_at,
   rp.updated_at
@@ -4942,9 +13911,14 @@ with base as (
     coalesce(nullif(route_code, ''), '—')
 )
 select * from normalized;
+-- ============================================================================
+-- END MIGRATION: 090_incident_reporting_saved_report_presets_and_trends.sql
+-- ============================================================================
 
 
--- Synced from sql/091_corrective_actions_training_and_sds_tracking.sql
+-- ============================================================================
+-- BEGIN MIGRATION: 091_corrective_actions_training_and_sds_tracking.sql
+-- ============================================================================
 -- 091_corrective_actions_training_and_sds_tracking.sql
 -- Adds first-class corrective-action tasks, training / certification tracking,
 -- SDS acknowledgement history, and management-focused reporting views.
@@ -5262,7 +14236,7 @@ select
   tr.source_submission_id,
   tr.notes,
   tr.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
+  coalesce(cp.full_name, cp.email, '') as created_by_name,
   tr.created_at,
   tr.updated_at,
   case when tr.expires_at is not null and tr.expires_at < current_date then true else false end as is_expired,
@@ -5351,9 +14325,14 @@ select
   sa.updated_at as sort_at
 from public.v_sds_acknowledgement_directory sa
 where sa.is_expired = true or sa.expires_within_30_days = true;
+-- ============================================================================
+-- END MIGRATION: 091_corrective_actions_training_and_sds_tracking.sql
+-- ============================================================================
 
 
--- Synced from sql/092_management_workflows_and_subscriptions.sql
+-- ============================================================================
+-- BEGIN MIGRATION: 092_management_workflows_and_subscriptions.sql
+-- ============================================================================
 -- 092_management_workflows_and_subscriptions.sql
 -- Adds management workflow depth on top of incident/corrective/training reporting:
 -- - automated reminder / escalation fields for corrective actions and training
@@ -5650,7 +14629,7 @@ select
   tr.source_submission_id,
   tr.notes,
   tr.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
+  coalesce(cp.full_name, cp.email, '') as created_by_name,
   tr.created_at,
   tr.updated_at,
   case when tr.expires_at is not null and tr.expires_at < current_date then true else false end as is_expired,
@@ -5733,7 +14712,7 @@ select
   rs.last_status,
   rs.notes,
   rs.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
+  coalesce(cp.full_name, cp.email, '') as created_by_name,
   rs.created_at,
   rs.updated_at,
   case when rs.is_active = true and rs.next_send_at is not null and rs.next_send_at <= now() then true else false end as send_due
@@ -5784,7 +14763,7 @@ select
   j.notes,
   j.payload,
   j.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
+  coalesce(cp.full_name, cp.email, '') as created_by_name,
   j.created_at,
   j.updated_at,
   case when j.status <> 'closed' and j.review_due_date is not null and j.review_due_date < current_date then true else false end as is_overdue,
@@ -6069,7 +15048,14 @@ select
   '' as supervisor_name
 from public.v_equipment_jsa_hazard_link_directory j
 where j.status <> 'closed' and (j.is_overdue = true or j.review_due_date between current_date and current_date + 30);
+-- ============================================================================
+-- END MIGRATION: 092_management_workflows_and_subscriptions.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 093_report_delivery_and_worker_self_service.sql
+-- ============================================================================
 -- 093_report_delivery_and_worker_self_service.sql
 -- Adds:
 -- - scheduled report delivery plumbing and run history
@@ -6428,9 +15414,14 @@ left join public.training_courses tc on tc.id = tr.course_id
 left join latest_sds ls on ls.profile_id = tr.profile_id and ls.linked_training_record_id = tr.id
 where coalesce(tc.requires_sds_acknowledgement, false) = true
   and coalesce(tr.completion_status, '') = 'completed';
+-- ============================================================================
+-- END MIGRATION: 093_report_delivery_and_worker_self_service.sql
+-- ============================================================================
 
 
--- 094_jobs_commercial_completion_and_accounting_ready.sql
+-- ============================================================================
+-- BEGIN MIGRATION: 094_jobs_commercial_completion_and_accounting_ready.sql
+-- ============================================================================
 -- 094_jobs_commercial_completion_and_accounting_ready.sql
 -- Expands Jobs into a fuller commercial workflow:
 -- - quote / estimate approval discipline
@@ -6672,7 +15663,7 @@ select
   coalesce(lr.line_discount_total, 0)::numeric(12,2) as line_discount_total,
   coalesce(lr.line_margin_total, 0)::numeric(12,2) as line_margin_total,
   e.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
+  coalesce(cp.full_name, cp.email, '') as created_by_name,
   e.created_at,
   e.updated_at
 from public.estimates e
@@ -6748,7 +15739,7 @@ select
   coalesce(lr.line_discount_total, 0)::numeric(12,2) as line_discount_total,
   coalesce(lr.line_margin_total, 0)::numeric(12,2) as line_margin_total,
   wo.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
+  coalesce(cp.full_name, cp.email, '') as created_by_name,
   wo.created_at,
   wo.updated_at
 from public.work_orders wo
@@ -6845,7 +15836,14 @@ left join public.estimates e on e.id = cr.estimate_id
 left join public.job_completion_accounting_events ev on ev.completion_review_id = cr.id
 where cr.accounting_ready = true or cr.review_status in ('ready_for_accounting','posted') or cr.accounting_trigger_status <> 'pending'
 group by cr.id, j.job_code, j.job_name, wo.work_order_number, e.estimate_number;
+-- ============================================================================
+-- END MIGRATION: 094_jobs_commercial_completion_and_accounting_ready.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 095_jobs_quote_approval_release_and_accounting_candidates.sql
+-- ============================================================================
 -- 095_jobs_quote_approval_release_and_accounting_candidates.sql
 -- Adds the next commercial layer for Jobs:
 -- - client-ready quote package rendering
@@ -7093,7 +16091,7 @@ select
   t.is_active,
   t.notes,
   t.created_by_profile_id,
-  coalesce(p.full_name, p.email, '') as uploaded_by_name,
+  coalesce(p.full_name, p.email, '') as created_by_name,
   t.created_at,
   t.updated_at
 from public.commercial_approval_thresholds t
@@ -7128,7 +16126,7 @@ select
   qp.accepted_by_name,
   qp.acceptance_notes,
   qp.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
+  coalesce(cp.full_name, cp.email, '') as created_by_name,
   qp.created_at,
   qp.updated_at
 from public.estimate_quote_packages qp
@@ -7158,7 +16156,7 @@ select
   coalesce(sp.full_name, sp.email, '') as signoff_name,
   rr.signoff_at,
   rr.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
+  coalesce(cp.full_name, cp.email, '') as created_by_name,
   rr.created_at,
   rr.updated_at
 from public.work_order_release_reviews rr
@@ -7225,7 +16223,7 @@ select
   ic.total_amount,
   ic.memo,
   ic.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
+  coalesce(cp.full_name, cp.email, '') as created_by_name,
   ic.created_at,
   ic.updated_at
 from public.job_invoice_candidates ic
@@ -7251,7 +16249,7 @@ select
   jc.journal_memo,
   jc.ledger_summary,
   jc.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
+  coalesce(cp.full_name, cp.email, '') as created_by_name,
   jc.created_at,
   jc.updated_at
 from public.job_journal_candidates jc
@@ -7272,7 +16270,7 @@ select
   coalesce(ap.full_name, ap.email, '') as assigned_name,
   q.notes,
   q.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
+  coalesce(cp.full_name, cp.email, '') as created_by_name,
   q.created_at,
   q.updated_at
 from public.job_ar_ap_review_queue q
@@ -7347,9 +16345,14 @@ select
   coalesce(sum(profit_total),0)::numeric(12,2),
   case when coalesce(sum(revenue_total),0) > 0 then round((coalesce(sum(profit_total),0) / sum(revenue_total)) * 100.0, 2)::numeric(7,2) else 0::numeric(7,2) end
 from base group by job_family;
+-- ============================================================================
+-- END MIGRATION: 095_jobs_quote_approval_release_and_accounting_candidates.sql
+-- ============================================================================
 
 
-
+-- ============================================================================
+-- BEGIN MIGRATION: 096_jobs_quote_output_threshold_enforcement_and_closeout_posting.sql
+-- ============================================================================
 -- 096_jobs_quote_output_threshold_enforcement_and_closeout_posting.sql
 -- Extends the commercial Jobs workflow with:
 -- - branded printable/email quote output
@@ -7575,7 +16578,7 @@ select
   te.total_amount,
   te.required_signoff_role,
   te.created_by_profile_id,
-  coalesce(p.full_name, p.email, '') as uploaded_by_name,
+  coalesce(p.full_name, p.email, '') as created_by_name,
   te.created_at,
   te.evaluation_trigger,
   te.evaluated_at,
@@ -7606,7 +16609,7 @@ select
   ca.source_id,
   ca.notes,
   ca.created_by_profile_id,
-  coalesce(p.full_name, p.email, '') as uploaded_by_name,
+  coalesce(p.full_name, p.email, '') as created_by_name,
   ca.created_at,
   ca.updated_at,
   coalesce(jca.preview_url, eea.preview_url, ca.asset_url) as resolved_asset_url,
@@ -7787,7 +16790,14 @@ select
   sum(actual_revenue_total - quoted_total)::numeric(12,2),
   sum(actual_cost_total - estimated_cost_total)::numeric(12,2)
 from base group by job_family;
+-- ============================================================================
+-- END MIGRATION: 096_jobs_quote_output_threshold_enforcement_and_closeout_posting.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 097_jobs_quote_delivery_threshold_rules_and_accountant_exports.sql
+-- ============================================================================
 -- 097_jobs_quote_delivery_threshold_rules_and_accountant_exports.sql
 -- Deepens the Jobs commercial/accounting workflow with:
 -- - richer branded quote package output details
@@ -7867,7 +16877,7 @@ select
   te.total_amount,
   te.required_signoff_role,
   te.created_by_profile_id,
-  coalesce(p.full_name, p.email, '') as uploaded_by_name,
+  coalesce(p.full_name, p.email, '') as created_by_name,
   te.created_at,
   -- appended columns
   te.evaluation_trigger,
@@ -7899,7 +16909,7 @@ select
   ca.source_id,
   ca.notes,
   ca.created_by_profile_id,
-  coalesce(p.full_name, p.email, '') as uploaded_by_name,
+  coalesce(p.full_name, p.email, '') as created_by_name,
   ca.created_at,
   ca.updated_at,
   -- appended columns
@@ -8003,7 +17013,14 @@ select
   (revenue_total - quoted_total)::numeric(12,2) as revenue_variance_total,
   (cost_total - estimated_cost_total)::numeric(12,2) as cost_variance_total
 from grouped;
+-- ============================================================================
+-- END MIGRATION: 097_jobs_quote_delivery_threshold_rules_and_accountant_exports.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 098_jobs_quote_email_signoff_and_gl_posting.sql
+-- ============================================================================
 -- 098_jobs_quote_email_signoff_and_gl_posting.sql
 -- Extends the Jobs commercial/accounting workflow with:
 -- - actual quote-package email delivery tracking
@@ -8133,7 +17150,7 @@ select
   ss.signed_at,
   ss.sort_order,
   ss.created_by_profile_id,
-  coalesce(cp.full_name, cp.email, '') as uploaded_by_name,
+  coalesce(cp.full_name, cp.email, '') as created_by_name,
   ss.created_at,
   ss.updated_at
 from public.job_completion_signoff_steps ss
@@ -8214,7 +17231,14 @@ select
   case when quoted_total > 0 then round((revenue_variance_total / quoted_total) * 100.0, 2)::numeric(9,2) else 0::numeric(9,2) end as revenue_variance_percent,
   case when estimated_cost_total > 0 then round((cost_variance_total / estimated_cost_total) * 100.0, 2)::numeric(9,2) else 0::numeric(9,2) end as cost_variance_percent
 from public.v_job_profitability_variance_directory;
+-- ============================================================================
+-- END MIGRATION: 098_jobs_quote_email_signoff_and_gl_posting.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 099_quote_acceptance_threshold_autoeval_and_accounting_lifecycle.sql
+-- ============================================================================
 -- 099_quote_acceptance_threshold_autoeval_and_accounting_lifecycle.sql
 -- Adds quote engagement tracking, stronger threshold evaluation state,
 -- completion readiness rollups, and accounting lifecycle history.
@@ -8451,15 +17475,20 @@ select
   e.headline,
   e.notes,
   e.created_by_profile_id,
-  p.full_name as uploaded_by_name,
+  p.full_name as created_by_name,
   e.created_at,
   e.updated_at
 from public.job_accounting_lifecycle_events e
 left join public.jobs j on j.id = e.job_id
 left join public.profiles p on p.id = e.created_by_profile_id;
+-- ============================================================================
+-- END MIGRATION: 099_quote_acceptance_threshold_autoeval_and_accounting_lifecycle.sql
+-- ============================================================================
 
 
--- 100_accounting_close_reconciliation_and_tax_filing_foundation.sql
+-- ============================================================================
+-- BEGIN MIGRATION: 100_accounting_close_reconciliation_and_tax_filing_foundation.sql
+-- ============================================================================
 -- 100_accounting_close_reconciliation_and_tax_filing_foundation.sql
 -- Adds backend accounting-close foundations so the quote -> release -> completion -> posting path
 -- can move into real close, remittance, reconciliation, and accountant handoff workflows.
@@ -8971,9 +18000,14 @@ cross join tax
 cross join payroll
 cross join bank
 cross join periods;
+-- ============================================================================
+-- END MIGRATION: 100_accounting_close_reconciliation_and_tax_filing_foundation.sql
+-- ============================================================================
 
 
-
+-- ============================================================================
+-- BEGIN MIGRATION: 101_accounting_posting_automation_and_export_bundle.sql
+-- ============================================================================
 -- 101_accounting_posting_automation_and_export_bundle.sql
 -- Extends the accounting-close foundation into a more actionable workflow:
 -- - job invoice postings can link to real AR invoices
@@ -9222,10 +18256,14 @@ from public.accountant_handoff_exports ah
 left join public.business_tax_settings bts on bts.id = ah.business_tax_setting_id
 left join public.profiles p on p.id = ah.generated_by_profile_id
 left join item_rollup ir on ir.export_id = ah.id;
+-- ============================================================================
+-- END MIGRATION: 101_accounting_posting_automation_and_export_bundle.sql
+-- ============================================================================
 
 
-
--- 102_accounting_close_end_to_end_workflow.sql
+-- ============================================================================
+-- BEGIN MIGRATION: 102_accounting_close_end_to_end_workflow.sql
+-- ============================================================================
 -- 102_accounting_close_end_to_end_workflow.sql
 -- Finishes the accounting-close workflow with:
 -- - AR/AP payment application
@@ -9424,7 +18462,7 @@ select
   a.application_status,
   a.notes,
   a.created_by_profile_id,
-  pr.full_name as uploaded_by_name,
+  pr.full_name as created_by_name,
   a.created_at,
   a.updated_at
 from public.ar_payment_applications a
@@ -9473,7 +18511,7 @@ select
   a.application_status,
   a.notes,
   a.created_by_profile_id,
-  pr.full_name as uploaded_by_name,
+  pr.full_name as created_by_name,
   a.created_at,
   a.updated_at
 from public.ap_payment_applications a
@@ -9725,7 +18763,14 @@ select
   ap.payment_count,
   ap.bill_count
 from ap;
+-- ============================================================================
+-- END MIGRATION: 102_accounting_close_end_to_end_workflow.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 103_accounting_close_admin_ui_controls.sql
+-- ============================================================================
 -- 103_accounting_close_admin_ui_controls.sql
 -- Admin-facing controls for the end-to-end accounting close workflow.
 -- Adds close/reopen audit fields, package delivery metadata, and dashboard views
@@ -9795,14 +18840,14 @@ left join lateral (
   from public.sales_tax_filings f
   where f.filing_period_start >= apc.period_start
     and f.filing_period_end <= apc.period_end
-    and coalesce(f.review_status, f.filing_status, 'draft') not in ('filed','paid')
+    and coalesce(f.review_status, 'draft') not in ('filed','paid')
 ) tax on true
 left join lateral (
   select count(*) as open_payroll_remittance_count
   from public.payroll_remittance_runs r
   where r.remittance_period_start >= apc.period_start
     and r.remittance_period_end <= apc.period_end
-    and coalesce(r.review_status, r.remittance_status, 'draft') <> 'remitted'
+    and coalesce(r.review_status, 'draft') <> 'remitted'
 ) payroll on true
 left join lateral (
   select
@@ -9884,9 +18929,14 @@ left join lateral (
 ) items on true
 where e.package_status in ('prepared','reviewed','finalized','delivered')
    or e.delivery_status in ('pending','failed');
+-- ============================================================================
+-- END MIGRATION: 103_accounting_close_admin_ui_controls.sql
+-- ============================================================================
 
 
--- Schema 104: reporting loader timeout guardrail marker.
+-- ============================================================================
+-- BEGIN MIGRATION: 104_reporting_loader_timeout_guardrails.sql
+-- ============================================================================
 -- 104_reporting_loader_timeout_guardrails.sql
 -- Reporting loader timeout guardrail pass.
 -- This migration is intentionally light: the main performance fix is in the
@@ -9902,9 +18952,14 @@ select
 
 comment on view public.v_reporting_loader_health is
   'Schema 104 marker and health view for the reporting timeout guardrail pass. The frontend lazy-loads Reports only on the Reports route; admin-directory also has a reporting fast path.';
+-- ============================================================================
+-- END MIGRATION: 104_reporting_loader_timeout_guardrails.sql
+-- ============================================================================
 
 
--- Schema 105: repo cleanup and roadmap refresh marker.
+-- ============================================================================
+-- BEGIN MIGRATION: 105_repo_cleanup_and_roadmap_refresh.sql
+-- ============================================================================
 -- 105_repo_cleanup_and_roadmap_refresh.sql
 -- Repo cleanup, Markdown archive reset, and roadmap refresh marker.
 -- This migration is intentionally light. It gives live deployments a simple
@@ -9921,7 +18976,14 @@ select
 
 comment on view public.v_repo_cleanup_and_roadmap_health is
   'Schema 105 marker for the 2026-05-10 repository cleanup and next-step roadmap refresh pass.';
+-- ============================================================================
+-- END MIGRATION: 105_repo_cleanup_and_roadmap_refresh.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 106_admin_command_center_schema_tracking_and_health.sql
+-- ============================================================================
 -- Schema 106: admin command center, schema tracking, and health center.
 -- 106_admin_command_center_schema_tracking_and_health.sql
 -- Repaired in the 2026-05-14b pass so it creates schema tracking before views read it
@@ -10050,9 +19112,16 @@ grant select on public.v_admin_error_health_center to authenticated;
 grant select on public.v_admin_task_inbox to authenticated;
 grant select on public.v_role_dashboard_presets to authenticated;
 grant select on public.v_schema_106_admin_command_center_health to authenticated;
+-- ============================================================================
+-- END MIGRATION: 106_admin_command_center_schema_tracking_and_health.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 107_admin_readiness_drilldowns_and_live_schema_fix.sql
+-- ============================================================================
 -- Schema 107: production readiness, schema drift, saved filters, permissions, close/evidence manager foundations.
--- 108_saved_filters_close_wizard_health_and_seo_gates.sql
+-- 107_admin_readiness_drilldowns_and_live_schema_fix.sql
 
 -- Schema 107 is also safe to run directly after a partial/live failed schema-106 attempt.
 create table if not exists public.app_schema_versions (
@@ -10079,8 +19148,8 @@ alter table public.app_schema_versions add column if not exists notes text;
 insert into public.app_schema_versions (schema_version, migration_key, schema_name, release_label, description, status, notes)
 values (
   107,
-  '108_saved_filters_close_wizard_health_and_seo_gates',
-  '108_saved_filters_close_wizard_health_and_seo_gates.sql',
+  '107_admin_readiness_drilldowns_and_live_schema_fix',
+  '107_admin_readiness_drilldowns_and_live_schema_fix.sql',
   '2026-05-14b',
   'Adds schema drift status, production readiness checklist, saved admin filters, role permission matrix, close center overview, and evidence manager directory.',
   'applied',
@@ -10262,11 +19331,13 @@ grant select on public.v_evidence_manager_directory to authenticated;
 grant select on public.admin_saved_filters to authenticated;
 grant select on public.admin_production_readiness_checks to authenticated;
 grant select on public.admin_role_permission_matrix to authenticated;
+-- ============================================================================
+-- END MIGRATION: 107_admin_readiness_drilldowns_and_live_schema_fix.sql
+-- ============================================================================
+
 
 -- ============================================================================
--- Schema 108: saved filters, close wizard, health resolution, deployment gates,
--- and SEO smoke checks.
--- Source: sql/108_saved_filters_close_wizard_health_and_seo_gates.sql
+-- BEGIN MIGRATION: 108_saved_filters_close_wizard_health_and_seo_gates.sql
 -- ============================================================================
 -- Schema 108: saved-filter actions, close wizard steps, health resolution notes, deployment gates, and SEO smoke checks.
 -- 108_saved_filters_close_wizard_health_and_seo_gates.sql
@@ -10535,11 +19606,13 @@ grant select on public.admin_health_resolution_notes to authenticated;
 grant select on public.admin_deployment_gate_checks to authenticated;
 grant select on public.admin_public_seo_checks to authenticated;
 grant select on public.admin_saved_filters to authenticated;
+-- ============================================================================
+-- END MIGRATION: 108_saved_filters_close_wizard_health_and_seo_gates.sql
+-- ============================================================================
 
 
 -- ============================================================================
--- Schema 109: pagination, close wizard actions, audit, backup, CSV import, evidence queue, and mobile cards
--- Source file: sql/109_pagination_close_wizard_audit_backup_mobile_foundations.sql
+-- BEGIN MIGRATION: 109_pagination_close_wizard_audit_backup_mobile_foundations.sql
 -- ============================================================================
 -- Schema 109: pagination, guided close actions, audit log, backup rehearsal, bank CSV import staging, evidence queue, and mobile action cards.
 -- 109_pagination_close_wizard_audit_backup_mobile_foundations.sql
@@ -10930,6 +20003,14 @@ grant select on public.bank_csv_import_rows to authenticated;
 grant select on public.admin_backup_restore_rehearsals to authenticated;
 grant select on public.admin_evidence_action_queue to authenticated;
 grant select on public.admin_mobile_action_cards to authenticated;
+-- ============================================================================
+-- END MIGRATION: 109_pagination_close_wizard_audit_backup_mobile_foundations.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 110_mobile_navigation_quality_gates.sql
+-- ============================================================================
 -- Schema 110: mobile navigation quality gates.
 -- Adds a safe DB marker for the 2026-05-16a mobile UX pass.
 -- This migration has no hard dependency on app data tables and is safe to run after a partial schema-109 deploy.
@@ -11119,6 +20200,14 @@ on conflict (schema_version) do update set
 
 grant select on public.app_frontend_quality_gates to authenticated;
 grant select on public.v_mobile_navigation_quality_gates to authenticated;
+-- ============================================================================
+-- END MIGRATION: 110_mobile_navigation_quality_gates.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 111_admin_directory_pagination_saved_view_replay.sql
+-- ============================================================================
 -- Schema 111: Admin directory pagination and saved-view replay quality gates.
 -- Adds a safe marker for the 2026-05-16b pass. It is intentionally low-risk:
 -- existing schema-109 pagination settings are updated, frontend quality gates are marked,
@@ -11299,6 +20388,14 @@ on conflict (schema_version) do update set
 
 grant select on public.app_frontend_quality_gates to authenticated;
 grant select on public.v_mobile_navigation_quality_gates to authenticated;
+-- ============================================================================
+-- END MIGRATION: 111_admin_directory_pagination_saved_view_replay.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 112_admin_operations_pagination_sorting_panel_refresh.sql
+-- ============================================================================
 -- Schema 112: Admin Operations pagination, sorting, panel refresh, and saved view quality gates.
 -- Low-risk tracking migration for the 2026-05-17a pass. It records the new Admin UX/backend
 -- behavior without changing core business tables.
@@ -11503,10 +20600,14 @@ on conflict (schema_version) do update set
 grant select on public.app_frontend_quality_gates to authenticated;
 grant select on public.v_mobile_navigation_quality_gates to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
+-- ============================================================================
+-- END MIGRATION: 112_admin_operations_pagination_sorting_panel_refresh.sql
+-- ============================================================================
 
 
-
--- 113_admin_panel_refresh_and_job_review_actions.sql
+-- ============================================================================
+-- BEGIN MIGRATION: 113_admin_panel_refresh_and_job_review_actions.sql
+-- ============================================================================
 -- Schema 113: Admin panel-only refreshes, Operations job review actions, and mobile table quality gates.
 -- Low-risk tracking migration for the 2026-05-17b pass.
 --
@@ -11770,8 +20871,14 @@ grant select on public.app_frontend_quality_gates to authenticated;
 grant select on public.v_admin_panel_refresh_preferences to authenticated;
 grant select on public.v_admin_job_action_audit_directory to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
+-- ============================================================================
+-- END MIGRATION: 113_admin_panel_refresh_and_job_review_actions.sql
+-- ============================================================================
 
 
+-- ============================================================================
+-- BEGIN MIGRATION: 114_staged_admin_load_and_cache_fallback_guardrails.sql
+-- ============================================================================
 -- Schema 114: Staged Admin load and cache fallback guardrails.
 -- Low-risk tracking migration for the 2026-05-18a pass.
 -- Documents the Admin load change from one large `scope: all` request to smaller staged panel requests.
@@ -11997,7 +21104,14 @@ on conflict (schema_version) do update set
 grant select on public.app_frontend_quality_gates to authenticated;
 grant select on public.v_admin_panel_refresh_preferences to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
+-- ============================================================================
+-- END MIGRATION: 114_staged_admin_load_and_cache_fallback_guardrails.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 115_admin_panel_retry_timing_and_command_scope.sql
+-- ============================================================================
 -- Schema 115: Admin panel retry, timing visibility, and command-center fast path.
 -- Low-risk tracking migration for the 2026-05-18b pass.
 -- Keeps the expected_schema_version column name stable to avoid PostgreSQL 42P16 view rename errors.
@@ -12260,12 +21374,14 @@ grant select on public.admin_panel_load_diagnostics to authenticated;
 grant select on public.v_admin_panel_load_diagnostics to authenticated;
 grant select on public.v_admin_panel_refresh_preferences to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
+-- ============================================================================
+-- END MIGRATION: 115_admin_panel_retry_timing_and_command_scope.sql
+-- ============================================================================
 
 
--- -----------------------------------------------------------------------------
--- Schema 116: Admin diagnostics drawer, stale-data badges, and persisted panel failures
--- -----------------------------------------------------------------------------
-
+-- ============================================================================
+-- BEGIN MIGRATION: 116_admin_diagnostics_drawer_and_stale_data_badges.sql
+-- ============================================================================
 -- Schema 116: Admin diagnostics drawer, persisted panel failures, and stale-data badges.
 -- Low-risk tracking migration for the 2026-05-19a pass.
 -- Keeps v_schema_drift_status column name as expected_schema_version to avoid PostgreSQL 42P16 view rename errors.
@@ -12490,8 +21606,14 @@ grant select on public.admin_panel_refresh_preferences to authenticated;
 grant select on public.admin_panel_load_diagnostics to authenticated;
 grant select on public.v_admin_panel_load_diagnostics to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
+-- ============================================================================
+-- END MIGRATION: 116_admin_diagnostics_drawer_and_stale_data_badges.sql
+-- ============================================================================
 
 
+-- ============================================================================
+-- BEGIN MIGRATION: 117_split_admin_scopes_confirmation_and_deployment_checklist.sql
+-- ============================================================================
 -- Schema 117: Split Admin fast paths, evidence scope, confirmation guardrails, and deployment checklist notes.
 -- Low-risk tracking migration for the 2026-05-19b pass.
 -- Keeps v_schema_drift_status column name as expected_schema_version to avoid PostgreSQL 42P16 view rename errors.
@@ -12753,6 +21875,14 @@ grant select on public.v_admin_fast_path_scope_registry to authenticated;
 grant select on public.v_admin_action_confirmation_rules to authenticated;
 grant select on public.v_admin_deployment_checklist to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
+-- ============================================================================
+-- END MIGRATION: 117_split_admin_scopes_confirmation_and_deployment_checklist.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 118_admin_preflight_registry_deployment_checklist_ui.sql
+-- ============================================================================
 -- Schema 118: Admin preflight registry, deployment checklist rendering, and function readiness tracking.
 -- Low-risk tracking migration for the 2026-05-20a pass.
 -- Keeps v_schema_drift_status column name as expected_schema_version to avoid PostgreSQL 42P16 view rename errors.
@@ -12975,6 +22105,14 @@ grant select on public.admin_function_readiness_checks to authenticated;
 grant select on public.v_admin_deployment_checklist to authenticated;
 grant select on public.v_admin_function_readiness_checks to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
+-- ============================================================================
+-- END MIGRATION: 118_admin_preflight_registry_deployment_checklist_ui.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 119_admin_action_permissions_preflight_and_retry_rules.sql
+-- ============================================================================
 -- Schema 119: Admin action permissions, schema preflight rows, retry/backoff policy, and function signoff fields.
 -- Low-risk tracking migration for the 2026-05-20b pass.
 -- Keeps v_schema_drift_status column name as expected_schema_version to avoid PostgreSQL 42P16 view rename errors.
@@ -13118,10 +22256,10 @@ insert into public.admin_schema_preflight_checks (
 values
   ('schema_versions_table', 'Database', 'table', 'public.app_schema_versions', 'present', 'not_checked', 'review', 'Confirm the table exists before relying on schema drift cards.', 'Schema status cards cannot show current/behind state without app_schema_versions.', 100, now()),
   ('fast_path_registry_view', 'Admin Startup', 'view', 'public.v_admin_fast_path_scope_registry', 'present', 'not_checked', 'review', 'Apply schema 118+ so Admin can read startup scopes from DB.', 'Admin falls back to hard-coded scope order if this view is missing.', 110, now()),
-  ('action_permission_view', 'Admin Actions', 'view', 'public.v_admin_action_permission_registry', 'present', 'not_checked', 'review', 'Apply schema 120 before relying on role-aware disabled buttons.', 'Unsafe action buttons cannot be disabled by registry if this view is missing.', 120, now()),
-  ('panel_retry_policy_view', 'Admin Reliability', 'view', 'public.v_admin_panel_retry_policy', 'present', 'not_checked', 'review', 'Apply schema 120 before tuning retry/backoff rules from DB.', 'Repeated panel failures can keep hammering functions without an operator-visible policy.', 130, now()),
+  ('action_permission_view', 'Admin Actions', 'view', 'public.v_admin_action_permission_registry', 'present', 'not_checked', 'review', 'Apply schema 119 before relying on role-aware disabled buttons.', 'Unsafe action buttons cannot be disabled by registry if this view is missing.', 120, now()),
+  ('panel_retry_policy_view', 'Admin Reliability', 'view', 'public.v_admin_panel_retry_policy', 'present', 'not_checked', 'review', 'Apply schema 119 before tuning retry/backoff rules from DB.', 'Repeated panel failures can keep hammering functions without an operator-visible policy.', 130, now()),
   ('schema_preflight_view', 'Deployment Preflight', 'view', 'public.v_admin_schema_preflight_checks', 'present', 'not_checked', 'review', 'Use this table as the first visible checklist before deployment.', 'Operators may miss missing schema objects until a button fails.', 140, now()),
-  ('admin_directory_function', 'Edge Functions', 'function', 'supabase/functions/admin-directory', 'deployed', 'not_checked', 'review', 'Redeploy admin-directory after schema 120.', 'New readiness/preflight/permission arrays will not reach the browser until admin-directory is current.', 200, now())
+  ('admin_directory_function', 'Edge Functions', 'function', 'supabase/functions/admin-directory', 'deployed', 'not_checked', 'review', 'Redeploy admin-directory after schema 119.', 'New readiness/preflight/permission arrays will not reach the browser until admin-directory is current.', 200, now())
 on conflict (check_key) do update set
   check_area = excluded.check_area,
   required_object_type = excluded.required_object_type,
@@ -13151,7 +22289,7 @@ insert into public.app_frontend_quality_gates (
   sort_order
 )
 values
-  ('admin_action_permission_registry_visible', 'Admin Actions', 'Action permission registry renders and disables risky buttons', 'passed', '#admin', 'Open Admin > Readiness and confirm action permission rows are visible. Test with a non-admin role before production.', 'Apply schema 120 and redeploy admin-directory if the table is empty or buttons are not annotated.', now(), 540),
+  ('admin_action_permission_registry_visible', 'Admin Actions', 'Action permission registry renders and disables risky buttons', 'passed', '#admin', 'Open Admin > Readiness and confirm action permission rows are visible. Test with a non-admin role before production.', 'Apply schema 119 and redeploy admin-directory if the table is empty or buttons are not annotated.', now(), 540),
   ('admin_schema_preflight_visible', 'Deployment Preflight', 'Schema preflight table names required tables/views/functions', 'passed', '#admin', 'Open Admin > Readiness and confirm schema preflight rows are visible.', 'Missing preflight rows make it harder to diagnose schema drift before button clicks.', now(), 550),
   ('admin_panel_retry_policy_visible', 'Admin Reliability', 'Panel retry policy rows render in Production Readiness', 'passed', '#admin', 'Open Admin > Readiness and confirm retry/backoff rows are visible.', 'Repeated failing panels may retry too aggressively if no policy rows are visible.', now(), 560)
 on conflict (gate_key) do update set
@@ -13239,17 +22377,17 @@ order by sort_order, function_name;
 drop view if exists public.v_schema_drift_status;
 create view public.v_schema_drift_status as
 select
-  120::int as expected_schema_version,
+  119::int as expected_schema_version,
   coalesce(max(schema_version) filter (where status = 'applied'), 0)::int as latest_applied_schema_version,
   case
-    when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 120
+    when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 119
       then 'current'
     else 'behind'
   end as drift_status,
   case
-    when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 120
+    when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 119
       then 'Live database is at or ahead of the repo schema marker.'
-    else 'Live database is behind the deployed app. Apply migrations through schema 120.'
+    else 'Live database is behind the deployed app. Apply migrations through schema 119.'
   end as message,
   now() as checked_at
 from public.app_schema_versions;
@@ -13289,9 +22427,14 @@ grant select on public.v_admin_panel_retry_policy to authenticated;
 grant select on public.v_admin_schema_preflight_checks to authenticated;
 grant select on public.v_admin_function_readiness_checks to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
+-- ============================================================================
+-- END MIGRATION: 119_admin_action_permissions_preflight_and_retry_rules.sql
+-- ============================================================================
 
 
--- BEGIN 120_ontario_ohsa_mobile_first_app_guardrails.sql
+-- ============================================================================
+-- BEGIN MIGRATION: 120_ontario_ohsa_mobile_first_app_guardrails.sql
+-- ============================================================================
 -- Schema 120: Ontario OHSA wording and mobile-first app guardrails.
 -- Tracks the 2026-05-26a pass that removed user-facing U.S. safety wording
 -- and promoted mobile-first field use for Ontario workplace safety workflows.
@@ -13524,12 +22667,14 @@ grant select on public.app_jurisdiction_wording_gates to authenticated;
 grant select on public.v_app_mobile_first_quality_gates to authenticated;
 grant select on public.v_app_jurisdiction_wording_gates to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
+-- ============================================================================
+-- END MIGRATION: 120_ontario_ohsa_mobile_first_app_guardrails.sql
+-- ============================================================================
 
--- END 120_ontario_ohsa_mobile_first_app_guardrails.sql
 
--- -----------------------------------------------------------------------------
--- Schema 121: Mobile Today dashboard, PWA install helper, and offline queue badges
--- -----------------------------------------------------------------------------
+-- ============================================================================
+-- BEGIN MIGRATION: 121_mobile_today_dashboard_pwa_and_offline_badges.sql
+-- ============================================================================
 -- Schema 121: Mobile Today dashboard, PWA install helper, and offline queue badges.
 -- Tracks the 2026-05-27a pass that makes the app more usable as a phone-first
 -- Ontario OHSA field workflow instead of a desktop-first admin shell.
@@ -13860,6 +23005,14 @@ grant select on public.v_mobile_today_action_registry to authenticated;
 grant select on public.v_mobile_pwa_install_quality_gates to authenticated;
 grant select on public.v_app_mobile_first_quality_gates to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
+-- ============================================================================
+-- END MIGRATION: 121_mobile_today_dashboard_pwa_and_offline_badges.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 122_mobile_form_stepper_draft_resume_guardrails.sql
+-- ============================================================================
 -- Schema 122: Mobile form steppers, local draft resume chips, and phone-first form quality gates.
 -- This migration is intentionally low-risk: it adds metadata/quality-gate tables and views
 -- used by Admin readiness screens. It does not alter live form submission tables.
@@ -14038,15 +23191,19 @@ grant select on public.mobile_form_quality_gates to authenticated;
 grant select on public.v_mobile_form_stepper_registry to authenticated;
 grant select on public.v_mobile_form_quality_gates to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
+-- ============================================================================
+-- END MIGRATION: 122_mobile_form_stepper_draft_resume_guardrails.sql
+-- ============================================================================
 
 
 -- ============================================================================
--- Included migration: 123_equipment_transfer_arrival_return_accounting_seo_guardrails.sql
+-- BEGIN MIGRATION: 123_equipment_transfer_arrival_return_accounting_seo_guardrails.sql
 -- ============================================================================
-
 -- Schema 123: Equipment transfer verification, return signoff depth, accounting/SEO guardrails.
 -- This pass tightens the end-to-end equipment withdrawal -> site arrival -> return workflow
 -- and records the rollout in readiness tables so Admin can see what still needs testing.
+-- Repaired: adds compatibility date columns before v_equipment_directory is recreated
+-- so databases that currently use last_service_at / next_service_due_at do not fail.
 
 begin;
 
@@ -14064,6 +23221,25 @@ alter table public.app_schema_versions add column if not exists migration_key te
 alter table public.app_schema_versions add column if not exists release_label text;
 
 alter table if exists public.equipment_items
+  add column if not exists current_job_id bigint references public.jobs(id) on delete set null,
+  add column if not exists assigned_supervisor_profile_id uuid references public.profiles(id) on delete set null,
+  add column if not exists equipment_pool_key text,
+  add column if not exists asset_tag text,
+  add column if not exists manufacturer text,
+  add column if not exists model_number text,
+  add column if not exists purchase_year integer,
+  add column if not exists purchase_date date,
+  add column if not exists purchase_price numeric(12,2),
+  add column if not exists condition_status text,
+  add column if not exists image_url text,
+  add column if not exists comments text,
+  add column if not exists service_interval_days integer,
+  add column if not exists last_service_date date,
+  add column if not exists next_service_due_date date,
+  add column if not exists next_inspection_due_date date,
+  add column if not exists defect_status text default 'clear',
+  add column if not exists defect_notes text,
+  add column if not exists is_locked_out boolean not null default false,
   add column if not exists current_site_id uuid references public.sites(id) on delete set null,
   add column if not exists target_site_id uuid references public.sites(id) on delete set null,
   add column if not exists last_transfer_status text not null default 'ready',
@@ -14075,7 +23251,58 @@ alter table if exists public.equipment_items
   add column if not exists last_return_verified_by_profile_id uuid references public.profiles(id) on delete set null,
   add column if not exists last_return_test_status text;
 
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'equipment_items'
+      and column_name = 'last_service_at'
+  ) then
+    execute '
+      update public.equipment_items
+      set last_service_date = coalesce(last_service_date, last_service_at::date)
+      where last_service_date is null
+        and last_service_at is not null
+    ';
+  end if;
+
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'equipment_items'
+      and column_name = 'next_service_due_at'
+  ) then
+    execute '
+      update public.equipment_items
+      set next_service_due_date = coalesce(next_service_due_date, next_service_due_at::date)
+      where next_service_due_date is null
+        and next_service_due_at is not null
+    ';
+  end if;
+
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'equipment_items'
+      and column_name = 'next_inspection_due_at'
+  ) then
+    execute '
+      update public.equipment_items
+      set next_inspection_due_date = coalesce(next_inspection_due_date, next_inspection_due_at::date)
+      where next_inspection_due_date is null
+        and next_inspection_due_at is not null
+    ';
+  end if;
+end $$;
+
 alter table if exists public.equipment_signouts
+  add column if not exists return_notes text,
+  add column if not exists damage_reported boolean not null default false,
+  add column if not exists damage_notes text,
   add column if not exists intended_site_id uuid references public.sites(id) on delete set null,
   add column if not exists checkout_to_site_id uuid references public.sites(id) on delete set null,
   add column if not exists checkout_safety_test_status text not null default 'not_recorded',
@@ -14402,8 +23629,14 @@ grant select on public.v_app_operational_depth_gates to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 123_equipment_transfer_arrival_return_accounting_seo_guardrails.sql
+-- ============================================================================
 
 
+-- ============================================================================
+-- BEGIN MIGRATION: 124_accounting_cost_payment_reconciliation_remittance_equipment_depth.sql
+-- ============================================================================
 -- Schema 124: Accounting depth and equipment accountability pass.
 -- Adds deeper job-cost categories, payment application review fields,
 -- reconciliation review workbench metadata, remittance/filing signoff proof,
@@ -15060,8 +24293,14 @@ grant select on public.equipment_service_tasks to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 124_accounting_cost_payment_reconciliation_remittance_equipment_depth.sql
+-- ============================================================================
 
 
+-- ============================================================================
+-- BEGIN MIGRATION: 125_deployment_bundle_parse_seo_fallback_guardrails.sql
+-- ============================================================================
 -- Schema 125: Deployment bundle parse, SEO, and fallback guardrails.
 -- Adds database-visible checklists for Edge Function bundle readiness, public SEO/local wording,
 -- and runtime fallback behaviour. This pass was triggered by a Supabase Edge Function deploy
@@ -15384,7 +24623,14 @@ grant select on public.v_app_runtime_fallback_checks to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 125_deployment_bundle_parse_seo_fallback_guardrails.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 126_roadmap_depth_data_migration_seo_css_fallback_guardrails.sql
+-- ============================================================================
 -- Schema 126: Roadmap depth, data-migration, SEO/CSS, and fallback guardrails.
 -- Adds DB-visible tracking for this pass's completed 20 steps, the next 20 planned steps,
 -- duplicated-data migration decisions, documentation/schema sync checks, and CSS/SEO/fallback sanity.
@@ -15849,7 +25095,14 @@ grant select on public.v_app_schema_documentation_sync_checks to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 126_roadmap_depth_data_migration_seo_css_fallback_guardrails.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 127_public_route_seo_internal_link_css_mobile_guardrails.sql
+-- ============================================================================
 -- Schema 127: public route SEO, internal-link, CSS-token, mobile action, and release-manifest guardrails.
 -- Build 2026-06-02b. This pass keeps roadmap/issues/schema/docs/cache checks synchronized and adds DB-visible next-step depth.
 
@@ -16323,13 +25576,113 @@ grant select on public.v_app_schema_documentation_sync_checks to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 127_public_route_seo_internal_link_css_mobile_guardrails.sql
+-- ============================================================================
 
 
-
+-- ============================================================================
+-- BEGIN MIGRATION: 128_accounting_equipment_seo_fallback_execution_depth.sql
+-- ============================================================================
 -- Schema 128: accounting, equipment, public SEO, and fallback execution queues.
--- Build 2026-06-03a. This pass converts the schema 127 next-step list into Admin-visible execution queues.
+-- Build 2026-06-03a.
+-- Repaired for the schema 126 app_roadmap_action_steps column names and constraints.
 
 begin;
+
+create table if not exists public.app_schema_versions (
+  schema_version integer primary key,
+  schema_name text,
+  description text,
+  status text not null default 'applied',
+  applied_at timestamptz not null default now(),
+  applied_by text,
+  notes text
+);
+
+alter table public.app_schema_versions
+  add column if not exists migration_key text;
+
+alter table public.app_schema_versions
+  add column if not exists release_label text;
+
+create table if not exists public.app_roadmap_action_steps (
+  step_key text primary key,
+  step_batch text not null,
+  step_number integer not null,
+  step_area text not null,
+  step_title text not null,
+  step_status text not null default 'planned',
+  priority text not null default 'medium',
+  source_doc text,
+  route_hint text,
+  implementation_notes text,
+  acceptance_check text,
+  risk_if_skipped text,
+  sort_order integer not null default 100,
+  metadata jsonb not null default '{}'::jsonb,
+  checked_at timestamptz,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.app_roadmap_action_steps
+  add column if not exists step_batch text;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists step_number integer;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists step_area text;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists step_title text;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists step_status text not null default 'planned';
+
+alter table public.app_roadmap_action_steps
+  add column if not exists priority text not null default 'medium';
+
+alter table public.app_roadmap_action_steps
+  add column if not exists source_doc text;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists route_hint text;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists implementation_notes text;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists acceptance_check text;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists risk_if_skipped text;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists sort_order integer not null default 100;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists metadata jsonb not null default '{}'::jsonb;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists checked_at timestamptz;
+
+alter table public.app_roadmap_action_steps
+  add column if not exists updated_at timestamptz not null default now();
+
+alter table public.app_roadmap_action_steps
+  drop constraint if exists app_roadmap_action_steps_step_batch_check;
+
+alter table public.app_roadmap_action_steps
+  add constraint app_roadmap_action_steps_step_batch_check
+  check (step_batch in ('completed_this_pass', 'next_20'));
+
+alter table public.app_roadmap_action_steps
+  drop constraint if exists app_roadmap_action_steps_step_status_check;
+
+alter table public.app_roadmap_action_steps
+  add constraint app_roadmap_action_steps_step_status_check
+  check (step_status in ('completed', 'in_progress', 'planned', 'blocked', 'review'));
 
 create table if not exists public.app_payment_application_action_registry (
   action_key text primary key,
@@ -16410,45 +25763,466 @@ create table if not exists public.app_fallback_observability_matrix (
   updated_at timestamptz not null default now()
 );
 
-insert into public.app_payment_application_action_registry (action_key, action_area, action_title, workflow_status, required_role, route_hint, source_table_hint, accounting_effect, fallback_hint, sort_order, metadata, checked_at) values
-('apply_customer_payment','payment_application','Apply customer payment to one or more invoices','planned','admin','#admin','payment applications / invoices / deposits','Reduces invoice balance and links cash to customer account.','Keep staged until reviewer approves.',10,'{"build":"2026-06-03a","schema":128}'::jsonb,now()),
-('reverse_payment_application','payment_application','Reverse a mistaken payment application with audit reason','planned','admin','#admin','payment reversals','Restores balance and keeps reversal trail.','Lock row and add manual review note until reversal UI exists.',20,'{"build":"2026-06-03a","schema":128}'::jsonb,now()),
-('apply_adjustments','adjustments','Apply discount, credit, write-off, refund, or overpayment decision','planned','admin','#admin','adjustments / refunds','Separates cash received from revenue reductions and refunds.','Require reason and reviewer before posting.',30,'{"build":"2026-06-03a","schema":128}'::jsonb,now()),
-('job_cost_rollup','job_costs','Roll repair, delay, usage, replacement, fuel, disposal, materials, and subcontractors into job profitability','in_progress','admin','#jobs','job financial events / equipment service tasks','Improves quoted-vs-actual margin reporting.','Show source rows if rollup view is unavailable.',40,'{"build":"2026-06-03a","schema":128}'::jsonb,now())
-on conflict (action_key) do update set action_area=excluded.action_area, action_title=excluded.action_title, workflow_status=excluded.workflow_status, required_role=excluded.required_role, route_hint=excluded.route_hint, source_table_hint=excluded.source_table_hint, accounting_effect=excluded.accounting_effect, fallback_hint=excluded.fallback_hint, sort_order=excluded.sort_order, metadata=excluded.metadata, checked_at=excluded.checked_at, updated_at=now();
+insert into public.app_payment_application_action_registry (
+  action_key,
+  action_area,
+  action_title,
+  workflow_status,
+  required_role,
+  route_hint,
+  source_table_hint,
+  accounting_effect,
+  fallback_hint,
+  sort_order,
+  metadata,
+  checked_at
+)
+values
+  (
+    'apply_customer_payment',
+    'payment_application',
+    'Apply customer payment to one or more invoices',
+    'planned',
+    'admin',
+    '#admin',
+    'payment applications / invoices / deposits',
+    'Reduces invoice balance and links cash to customer account.',
+    'Keep staged until reviewer approves.',
+    10,
+    '{"build":"2026-06-03a","schema":128}'::jsonb,
+    now()
+  ),
+  (
+    'reverse_payment_application',
+    'payment_application',
+    'Reverse a mistaken payment application with audit reason',
+    'planned',
+    'admin',
+    '#admin',
+    'payment reversals',
+    'Restores balance and keeps reversal trail.',
+    'Lock row and add manual review note until reversal UI exists.',
+    20,
+    '{"build":"2026-06-03a","schema":128}'::jsonb,
+    now()
+  ),
+  (
+    'apply_adjustments',
+    'adjustments',
+    'Apply discount, credit, write-off, refund, or overpayment decision',
+    'planned',
+    'admin',
+    '#admin',
+    'adjustments / refunds',
+    'Separates cash received from revenue reductions and refunds.',
+    'Require reason and reviewer before posting.',
+    30,
+    '{"build":"2026-06-03a","schema":128}'::jsonb,
+    now()
+  ),
+  (
+    'job_cost_rollup',
+    'job_costs',
+    'Roll repair, delay, usage, replacement, fuel, disposal, materials, and subcontractors into job profitability',
+    'in_progress',
+    'admin',
+    '#jobs',
+    'job financial events / equipment service tasks',
+    'Improves quoted-vs-actual margin reporting.',
+    'Show source rows if rollup view is unavailable.',
+    40,
+    '{"build":"2026-06-03a","schema":128}'::jsonb,
+    now()
+  )
+on conflict (action_key) do update set
+  action_area = excluded.action_area,
+  action_title = excluded.action_title,
+  workflow_status = excluded.workflow_status,
+  required_role = excluded.required_role,
+  route_hint = excluded.route_hint,
+  source_table_hint = excluded.source_table_hint,
+  accounting_effect = excluded.accounting_effect,
+  fallback_hint = excluded.fallback_hint,
+  sort_order = excluded.sort_order,
+  metadata = excluded.metadata,
+  checked_at = excluded.checked_at,
+  updated_at = now();
 
-insert into public.app_accounting_close_control_queue (control_key, close_area, control_title, control_status, source_totals_hint, reviewer_hint, proof_hint, lock_behavior, fallback_hint, sort_order, metadata, checked_at) values
-('bank_csv_preview','bank_reconciliation','CSV preview validates headers, duplicates, bad dates, and amount signs','planned','Bank import staging and rejected-row reasons.','Reviewer confirms import source and duplicate handling.','Preview report retained with accepted/rejected counts.','No posting from unreviewed imports.','Manual spreadsheet review remains fallback.',10,'{"build":"2026-06-03a","schema":128}'::jsonb,now()),
-('manual_match_review','bank_reconciliation','Manual match, split match, undo, notes, and signoff','planned','Bank rows, payments, invoices, journal candidates, unmatched items.','Reviewer signs off match decisions.','Match history keeps who/when/reason.','Matched rows lock after close.','Unmatched rows stay in review queue.',20,'{"build":"2026-06-03a","schema":128}'::jsonb,now()),
-('hst_gst_proof','tax_remittance','HST/GST source totals, adjustments, proof, filed/remitted dates, and lock status','planned','Sales tax collected, ITCs, adjustments, payment rows.','Reviewer confirms amounts before filing.','Proof upload and remittance confirmation are linked.','Filing row locks when accepted/paid.','Export summary remains fallback.',30,'{"build":"2026-06-03a","schema":128}'::jsonb,now()),
-('payroll_remittance_proof','payroll_remittance','Payroll source pay runs, deductions, employer costs, proof, payment date, and signoff','planned','Pay runs, deductions, employer costs, payment proof.','Reviewer signs source totals and proof.','Proof retained with close period.','Remittance locks after proof/signoff.','Manual accountant package remains fallback.',40,'{"build":"2026-06-03a","schema":128}'::jsonb,now()),
-('month_end_lock_export','month_end_close','Month-end lock, reopen reason, posting block, and accountant export package','planned','Close period, journal rows, reconciliation, remittances, export manifest.','Admin/accountant final signoff.','Manifest lists CSV/JSON/proof files.','Closed periods block postings unless reopened.','Warning banners remain fallback.',50,'{"build":"2026-06-03a","schema":128}'::jsonb,now())
-on conflict (control_key) do update set close_area=excluded.close_area, control_title=excluded.control_title, control_status=excluded.control_status, source_totals_hint=excluded.source_totals_hint, reviewer_hint=excluded.reviewer_hint, proof_hint=excluded.proof_hint, lock_behavior=excluded.lock_behavior, fallback_hint=excluded.fallback_hint, sort_order=excluded.sort_order, metadata=excluded.metadata, checked_at=excluded.checked_at, updated_at=now();
+insert into public.app_accounting_close_control_queue (
+  control_key,
+  close_area,
+  control_title,
+  control_status,
+  source_totals_hint,
+  reviewer_hint,
+  proof_hint,
+  lock_behavior,
+  fallback_hint,
+  sort_order,
+  metadata,
+  checked_at
+)
+values
+  (
+    'bank_csv_preview',
+    'bank_reconciliation',
+    'CSV preview validates headers, duplicates, bad dates, and amount signs',
+    'planned',
+    'Bank import staging and rejected-row reasons.',
+    'Reviewer confirms import source and duplicate handling.',
+    'Preview report retained with accepted/rejected counts.',
+    'No posting from unreviewed imports.',
+    'Manual spreadsheet review remains fallback.',
+    10,
+    '{"build":"2026-06-03a","schema":128}'::jsonb,
+    now()
+  ),
+  (
+    'manual_match_review',
+    'bank_reconciliation',
+    'Manual match, split match, undo, notes, and signoff',
+    'planned',
+    'Bank rows, payments, invoices, journal candidates, unmatched items.',
+    'Reviewer signs off match decisions.',
+    'Match history keeps who/when/reason.',
+    'Matched rows lock after close.',
+    'Unmatched rows stay in review queue.',
+    20,
+    '{"build":"2026-06-03a","schema":128}'::jsonb,
+    now()
+  ),
+  (
+    'hst_gst_proof',
+    'tax_remittance',
+    'HST/GST source totals, adjustments, proof, filed/remitted dates, and lock status',
+    'planned',
+    'Sales tax collected, ITCs, adjustments, payment rows.',
+    'Reviewer confirms amounts before filing.',
+    'Proof upload and remittance confirmation are linked.',
+    'Filing row locks when accepted/paid.',
+    'Export summary remains fallback.',
+    30,
+    '{"build":"2026-06-03a","schema":128}'::jsonb,
+    now()
+  ),
+  (
+    'payroll_remittance_proof',
+    'payroll_remittance',
+    'Payroll source pay runs, deductions, employer costs, proof, payment date, and signoff',
+    'planned',
+    'Pay runs, deductions, employer costs, payment proof.',
+    'Reviewer signs source totals and proof.',
+    'Proof retained with close period.',
+    'Remittance locks after proof/signoff.',
+    'Manual accountant package remains fallback.',
+    40,
+    '{"build":"2026-06-03a","schema":128}'::jsonb,
+    now()
+  ),
+  (
+    'month_end_lock_export',
+    'month_end_close',
+    'Month-end lock, reopen reason, posting block, and accountant export package',
+    'planned',
+    'Close period, journal rows, reconciliation, remittances, export manifest.',
+    'Admin/accountant final signoff.',
+    'Manifest lists CSV/JSON/proof files.',
+    'Closed periods block postings unless reopened.',
+    'Warning banners remain fallback.',
+    50,
+    '{"build":"2026-06-03a","schema":128}'::jsonb,
+    now()
+  )
+on conflict (control_key) do update set
+  close_area = excluded.close_area,
+  control_title = excluded.control_title,
+  control_status = excluded.control_status,
+  source_totals_hint = excluded.source_totals_hint,
+  reviewer_hint = excluded.reviewer_hint,
+  proof_hint = excluded.proof_hint,
+  lock_behavior = excluded.lock_behavior,
+  fallback_hint = excluded.fallback_hint,
+  sort_order = excluded.sort_order,
+  metadata = excluded.metadata,
+  checked_at = excluded.checked_at,
+  updated_at = now();
 
-insert into public.app_equipment_accountability_action_queue (action_key, equipment_area, action_title, action_status, required_role, scanner_status, server_enforcement_status, service_task_behavior, fallback_hint, sort_order, metadata, checked_at) values
-('camera_scan','scan','Add camera/BarcodeDetector scan with manual entry fallback','planned','employee','manual_fallback_ready','review','Prefill checkout, arrival, return, and service task equipment code.','Manual prompt remains fallback.',10,'{"build":"2026-06-03a","schema":128}'::jsonb,now()),
-('accessory_templates','accessories','Create reusable accessory checklist templates by equipment pool/category','planned','supervisor','not_required','review','Expected accessories load during checkout/arrival/return.','Free-text checklist remains fallback.',20,'{"build":"2026-06-03a","schema":128}'::jsonb,now()),
-('verifier_roles','verification','Enforce verifier role server-side for return, defect clear, and return-to-service','planned','supervisor','not_required','planned','Service task cannot close below required role.','UI disable remains fallback but server must be authority.',30,'{"build":"2026-06-03a","schema":128}'::jsonb,now()),
-('failed_test_work_orders','service_tasks','Promote failed arrival/return tests into assigned service work orders','in_progress','supervisor','not_required','review','Failed tests get owner, due date, cost, evidence, and closeout proof.','Current service-task insert remains fallback.',40,'{"build":"2026-06-03a","schema":128}'::jsonb,now()),
-('return_to_service','lockout','Require return-to-service signoff before locked-out equipment becomes available','planned','admin','not_required','planned','Defect clear verifies service task completion and proof.','Keep item locked out until verification succeeds.',50,'{"build":"2026-06-03a","schema":128}'::jsonb,now())
-on conflict (action_key) do update set equipment_area=excluded.equipment_area, action_title=excluded.action_title, action_status=excluded.action_status, required_role=excluded.required_role, scanner_status=excluded.scanner_status, server_enforcement_status=excluded.server_enforcement_status, service_task_behavior=excluded.service_task_behavior, fallback_hint=excluded.fallback_hint, sort_order=excluded.sort_order, metadata=excluded.metadata, checked_at=excluded.checked_at, updated_at=now();
+insert into public.app_equipment_accountability_action_queue (
+  action_key,
+  equipment_area,
+  action_title,
+  action_status,
+  required_role,
+  scanner_status,
+  server_enforcement_status,
+  service_task_behavior,
+  fallback_hint,
+  sort_order,
+  metadata,
+  checked_at
+)
+values
+  (
+    'camera_scan',
+    'scan',
+    'Add camera/BarcodeDetector scan with manual entry fallback',
+    'planned',
+    'employee',
+    'manual_fallback_ready',
+    'review',
+    'Prefill checkout, arrival, return, and service task equipment code.',
+    'Manual prompt remains fallback.',
+    10,
+    '{"build":"2026-06-03a","schema":128}'::jsonb,
+    now()
+  ),
+  (
+    'accessory_templates',
+    'accessories',
+    'Create reusable accessory checklist templates by equipment pool/category',
+    'planned',
+    'supervisor',
+    'not_required',
+    'review',
+    'Expected accessories load during checkout/arrival/return.',
+    'Free-text checklist remains fallback.',
+    20,
+    '{"build":"2026-06-03a","schema":128}'::jsonb,
+    now()
+  ),
+  (
+    'verifier_roles',
+    'verification',
+    'Enforce verifier role server-side for return, defect clear, and return-to-service',
+    'planned',
+    'supervisor',
+    'not_required',
+    'planned',
+    'Service task cannot close below required role.',
+    'UI disable remains fallback but server must be authority.',
+    30,
+    '{"build":"2026-06-03a","schema":128}'::jsonb,
+    now()
+  ),
+  (
+    'failed_test_work_orders',
+    'service_tasks',
+    'Promote failed arrival/return tests into assigned service work orders',
+    'in_progress',
+    'supervisor',
+    'not_required',
+    'review',
+    'Failed tests get owner, due date, cost, evidence, and closeout proof.',
+    'Current service-task insert remains fallback.',
+    40,
+    '{"build":"2026-06-03a","schema":128}'::jsonb,
+    now()
+  ),
+  (
+    'return_to_service',
+    'lockout',
+    'Require return-to-service signoff before locked-out equipment becomes available',
+    'planned',
+    'admin',
+    'not_required',
+    'planned',
+    'Defect clear verifies service task completion and proof.',
+    'Keep item locked out until verification succeeds.',
+    50,
+    '{"build":"2026-06-03a","schema":128}'::jsonb,
+    now()
+  )
+on conflict (action_key) do update set
+  equipment_area = excluded.equipment_area,
+  action_title = excluded.action_title,
+  action_status = excluded.action_status,
+  required_role = excluded.required_role,
+  scanner_status = excluded.scanner_status,
+  server_enforcement_status = excluded.server_enforcement_status,
+  service_task_behavior = excluded.service_task_behavior,
+  fallback_hint = excluded.fallback_hint,
+  sort_order = excluded.sort_order,
+  metadata = excluded.metadata,
+  checked_at = excluded.checked_at,
+  updated_at = now();
 
-insert into public.app_public_seo_publication_queue (queue_key, route_key, publish_area, publish_title, publish_status, required_evidence, local_wording_hint, smoke_test_hint, fallback_hint, sort_order, metadata, checked_at) values
-('sitemap_robots','home_shell','technical_seo','Generate sitemap and robots from approved route rows','planned','Approved route registry rows.','Only include true service/location coverage.','Confirm sitemap.xml and robots.txt exist and list approved routes.','Static index remains fallback.',10,'{"build":"2026-06-03a","schema":128}'::jsonb,now()),
-('broken_link_check','home_shell','technical_seo','Add broken-link and broken-asset smoke checks','planned','Public links/assets from static shell and route registry.','Avoid unsupported local pages.','Flag missing routes, images, scripts, styles, and manifest files.','Hide route until link check passes.',20,'{"build":"2026-06-03a","schema":128}'::jsonb,now()),
-('structured_data','home_shell','structured_data','Review structured data before publishing public pages','planned','Business identity, service area, contact, proof data.','Do not overclaim service areas.','Check JSON-LD parses and required fields exist.','Plain title/meta remains fallback.',30,'{"build":"2026-06-03a","schema":128}'::jsonb,now()),
-('image_alt_score','home_shell','image_alt','Add image-alt completeness and local proof scoring','planned','Images, captions, alt text, route context, proof status.','Alt text should describe real content truthfully.','Flag missing or too-short public image alt text.','Hide weak gallery blocks until proof passes.',40,'{"build":"2026-06-03a","schema":128}'::jsonb,now())
-on conflict (queue_key) do update set route_key=excluded.route_key, publish_area=excluded.publish_area, publish_title=excluded.publish_title, publish_status=excluded.publish_status, required_evidence=excluded.required_evidence, local_wording_hint=excluded.local_wording_hint, smoke_test_hint=excluded.smoke_test_hint, fallback_hint=excluded.fallback_hint, sort_order=excluded.sort_order, metadata=excluded.metadata, checked_at=excluded.checked_at, updated_at=now();
+insert into public.app_public_seo_publication_queue (
+  queue_key,
+  route_key,
+  publish_area,
+  publish_title,
+  publish_status,
+  required_evidence,
+  local_wording_hint,
+  smoke_test_hint,
+  fallback_hint,
+  sort_order,
+  metadata,
+  checked_at
+)
+values
+  (
+    'sitemap_robots',
+    'home_shell',
+    'technical_seo',
+    'Generate sitemap and robots from approved route rows',
+    'planned',
+    'Approved route registry rows.',
+    'Only include true service/location coverage.',
+    'Confirm sitemap.xml and robots.txt exist and list approved routes.',
+    'Static index remains fallback.',
+    10,
+    '{"build":"2026-06-03a","schema":128}'::jsonb,
+    now()
+  ),
+  (
+    'broken_link_check',
+    'home_shell',
+    'technical_seo',
+    'Add broken-link and broken-asset smoke checks',
+    'planned',
+    'Public links/assets from static shell and route registry.',
+    'Avoid unsupported local pages.',
+    'Flag missing routes, images, scripts, styles, and manifest files.',
+    'Hide route until link check passes.',
+    20,
+    '{"build":"2026-06-03a","schema":128}'::jsonb,
+    now()
+  ),
+  (
+    'structured_data',
+    'home_shell',
+    'structured_data',
+    'Review structured data before publishing public pages',
+    'planned',
+    'Business identity, service area, contact, proof data.',
+    'Do not overclaim service areas.',
+    'Check JSON-LD parses and required fields exist.',
+    'Plain title/meta remains fallback.',
+    30,
+    '{"build":"2026-06-03a","schema":128}'::jsonb,
+    now()
+  ),
+  (
+    'image_alt_score',
+    'home_shell',
+    'image_alt',
+    'Add image-alt completeness and local proof scoring',
+    'planned',
+    'Images, captions, alt text, route context, proof status.',
+    'Alt text should describe real content truthfully.',
+    'Flag missing or too-short public image alt text.',
+    'Hide weak gallery blocks until proof passes.',
+    40,
+    '{"build":"2026-06-03a","schema":128}'::jsonb,
+    now()
+  )
+on conflict (queue_key) do update set
+  route_key = excluded.route_key,
+  publish_area = excluded.publish_area,
+  publish_title = excluded.publish_title,
+  publish_status = excluded.publish_status,
+  required_evidence = excluded.required_evidence,
+  local_wording_hint = excluded.local_wording_hint,
+  smoke_test_hint = excluded.smoke_test_hint,
+  fallback_hint = excluded.fallback_hint,
+  sort_order = excluded.sort_order,
+  metadata = excluded.metadata,
+  checked_at = excluded.checked_at,
+  updated_at = now();
 
-insert into public.app_fallback_observability_matrix (matrix_key, app_surface, failure_mode, fallback_status, user_message_hint, telemetry_hint, retry_policy_hint, owner_hint, sort_order, metadata, checked_at) values
-('optional_view_missing','Edge Functions','Optional DB view missing after partial schema deploy','covered','Show empty table with Apply schema message.','Record panel diagnostic and failed view name when available.','Retry after schema deploy; keep cached rows if safe.','Admin',10,'{"build":"2026-06-03a","schema":128}'::jsonb,now()),
-('stale_service_worker','Public shell','Old service worker serves stale assets','covered','Ask user to hard-refresh or clear old service worker when marker mismatches.','Compare cache marker, index marker, and schema drift row.','Install assets one at a time and keep shell fallback alive.','Admin',20,'{"build":"2026-06-03a","schema":128}'::jsonb,now()),
-('offline_conflict','Mobile forms','Local draft conflicts with server state','review','Offer Retry sync, Keep local, or Discard local choices.','Track draft count and last failed sync time locally.','Retry failed payload only and keep local copy until acknowledged.','Supervisor',30,'{"build":"2026-06-03a","schema":128}'::jsonb,now()),
-('scan_unsupported','Equipment mobile','Camera or BarcodeDetector unavailable','covered','Prompt for manual QR/barcode/code entry.','Track manual fallback count once telemetry exists.','No retry loop; use manual entry.','Supervisor',40,'{"build":"2026-06-03a","schema":128}'::jsonb,now()),
-('accounting_blocked','Accounting workbench','Accounting action missing proof or close-period signoff','planned','Explain missing proof/signoff and keep action in queue.','Store blocked reason and reviewer note.','Do not auto-retry blocked accounting actions.','Admin / Accountant',50,'{"build":"2026-06-03a","schema":128}'::jsonb,now())
-on conflict (matrix_key) do update set app_surface=excluded.app_surface, failure_mode=excluded.failure_mode, fallback_status=excluded.fallback_status, user_message_hint=excluded.user_message_hint, telemetry_hint=excluded.telemetry_hint, retry_policy_hint=excluded.retry_policy_hint, owner_hint=excluded.owner_hint, sort_order=excluded.sort_order, metadata=excluded.metadata, checked_at=excluded.checked_at, updated_at=now();
+insert into public.app_fallback_observability_matrix (
+  matrix_key,
+  app_surface,
+  failure_mode,
+  fallback_status,
+  user_message_hint,
+  telemetry_hint,
+  retry_policy_hint,
+  owner_hint,
+  sort_order,
+  metadata,
+  checked_at
+)
+values
+  (
+    'optional_view_missing',
+    'Edge Functions',
+    'Optional DB view missing after partial schema deploy',
+    'covered',
+    'Show empty table with Apply schema message.',
+    'Record panel diagnostic and failed view name when available.',
+    'Retry after schema deploy; keep cached rows if safe.',
+    'Admin',
+    10,
+    '{"build":"2026-06-03a","schema":128}'::jsonb,
+    now()
+  ),
+  (
+    'stale_service_worker',
+    'Public shell',
+    'Old service worker serves stale assets',
+    'covered',
+    'Ask user to hard-refresh or clear old service worker when marker mismatches.',
+    'Compare cache marker, index marker, and schema drift row.',
+    'Install assets one at a time and keep shell fallback alive.',
+    'Admin',
+    20,
+    '{"build":"2026-06-03a","schema":128}'::jsonb,
+    now()
+  ),
+  (
+    'offline_conflict',
+    'Mobile forms',
+    'Local draft conflicts with server state',
+    'review',
+    'Offer Retry sync, Keep local, or Discard local choices.',
+    'Track draft count and last failed sync time locally.',
+    'Retry failed payload only and keep local copy until acknowledged.',
+    'Supervisor',
+    30,
+    '{"build":"2026-06-03a","schema":128}'::jsonb,
+    now()
+  ),
+  (
+    'scan_unsupported',
+    'Equipment mobile',
+    'Camera or BarcodeDetector unavailable',
+    'covered',
+    'Prompt for manual QR/barcode/code entry.',
+    'Track manual fallback count once telemetry exists.',
+    'No retry loop; use manual entry.',
+    'Supervisor',
+    40,
+    '{"build":"2026-06-03a","schema":128}'::jsonb,
+    now()
+  ),
+  (
+    'accounting_blocked',
+    'Accounting workbench',
+    'Accounting action missing proof or close-period signoff',
+    'planned',
+    'Explain missing proof/signoff and keep action in queue.',
+    'Store blocked reason and reviewer note.',
+    'Do not auto-retry blocked accounting actions.',
+    'Admin / Accountant',
+    50,
+    '{"build":"2026-06-03a","schema":128}'::jsonb,
+    now()
+  )
+on conflict (matrix_key) do update set
+  app_surface = excluded.app_surface,
+  failure_mode = excluded.failure_mode,
+  fallback_status = excluded.fallback_status,
+  user_message_hint = excluded.user_message_hint,
+  telemetry_hint = excluded.telemetry_hint,
+  retry_policy_hint = excluded.retry_policy_hint,
+  owner_hint = excluded.owner_hint,
+  sort_order = excluded.sort_order,
+  metadata = excluded.metadata,
+  checked_at = excluded.checked_at,
+  updated_at = now();
 
--- Record this release in the existing roadmap/data-migration/sync registries added by schema 126.
 insert into public.app_roadmap_action_steps (
   step_key,
   step_batch,
@@ -16655,32 +26429,144 @@ on conflict (step_key) do update set
   updated_at = now();
 
 drop view if exists public.v_app_payment_application_action_registry;
-create view public.v_app_payment_application_action_registry as select action_key, action_area, action_title, workflow_status, required_role, route_hint, source_table_hint, accounting_effect, fallback_hint, sort_order, checked_at, updated_at from public.app_payment_application_action_registry order by sort_order, action_key;
+
+create view public.v_app_payment_application_action_registry as
+select
+  action_key,
+  action_area,
+  action_title,
+  workflow_status,
+  required_role,
+  route_hint,
+  source_table_hint,
+  accounting_effect,
+  fallback_hint,
+  sort_order,
+  checked_at,
+  updated_at
+from public.app_payment_application_action_registry
+order by sort_order, action_key;
 
 drop view if exists public.v_app_accounting_close_control_queue;
-create view public.v_app_accounting_close_control_queue as select control_key, close_area, control_title, control_status, source_totals_hint, reviewer_hint, proof_hint, lock_behavior, fallback_hint, sort_order, checked_at, updated_at from public.app_accounting_close_control_queue order by sort_order, control_key;
+
+create view public.v_app_accounting_close_control_queue as
+select
+  control_key,
+  close_area,
+  control_title,
+  control_status,
+  source_totals_hint,
+  reviewer_hint,
+  proof_hint,
+  lock_behavior,
+  fallback_hint,
+  sort_order,
+  checked_at,
+  updated_at
+from public.app_accounting_close_control_queue
+order by sort_order, control_key;
 
 drop view if exists public.v_app_equipment_accountability_action_queue;
-create view public.v_app_equipment_accountability_action_queue as select action_key, equipment_area, action_title, action_status, required_role, scanner_status, server_enforcement_status, service_task_behavior, fallback_hint, sort_order, checked_at, updated_at from public.app_equipment_accountability_action_queue order by sort_order, action_key;
+
+create view public.v_app_equipment_accountability_action_queue as
+select
+  action_key,
+  equipment_area,
+  action_title,
+  action_status,
+  required_role,
+  scanner_status,
+  server_enforcement_status,
+  service_task_behavior,
+  fallback_hint,
+  sort_order,
+  checked_at,
+  updated_at
+from public.app_equipment_accountability_action_queue
+order by sort_order, action_key;
 
 drop view if exists public.v_app_public_seo_publication_queue;
-create view public.v_app_public_seo_publication_queue as select queue_key, route_key, publish_area, publish_title, publish_status, required_evidence, local_wording_hint, smoke_test_hint, fallback_hint, sort_order, checked_at, updated_at from public.app_public_seo_publication_queue order by sort_order, queue_key;
+
+create view public.v_app_public_seo_publication_queue as
+select
+  queue_key,
+  route_key,
+  publish_area,
+  publish_title,
+  publish_status,
+  required_evidence,
+  local_wording_hint,
+  smoke_test_hint,
+  fallback_hint,
+  sort_order,
+  checked_at,
+  updated_at
+from public.app_public_seo_publication_queue
+order by sort_order, queue_key;
 
 drop view if exists public.v_app_fallback_observability_matrix;
-create view public.v_app_fallback_observability_matrix as select matrix_key, app_surface, failure_mode, fallback_status, user_message_hint, telemetry_hint, retry_policy_hint, owner_hint, sort_order, checked_at, updated_at from public.app_fallback_observability_matrix order by sort_order, matrix_key;
+
+create view public.v_app_fallback_observability_matrix as
+select
+  matrix_key,
+  app_surface,
+  failure_mode,
+  fallback_status,
+  user_message_hint,
+  telemetry_hint,
+  retry_policy_hint,
+  owner_hint,
+  sort_order,
+  checked_at,
+  updated_at
+from public.app_fallback_observability_matrix
+order by sort_order, matrix_key;
 
 drop view if exists public.v_schema_drift_status;
+
 create view public.v_schema_drift_status as
-select 128::int as expected_schema_version,
+select
+  128::int as expected_schema_version,
   coalesce(max(schema_version) filter (where status = 'applied'), 0)::int as latest_applied_schema_version,
-  case when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 128 then 'current' else 'behind' end as drift_status,
-  case when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 128 then 'Live database is at or ahead of the repo schema marker.' else 'Live database is behind the deployed app. Apply migrations through schema 128.' end as message,
+  case
+    when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 128
+      then 'current'
+    else 'behind'
+  end as drift_status,
+  case
+    when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 128
+      then 'Live database is at or ahead of the repo schema marker.'
+    else 'Live database is behind the deployed app. Apply migrations through schema 128.'
+  end as message,
   now() as checked_at
 from public.app_schema_versions;
 
-insert into public.app_schema_versions (schema_version, migration_key, schema_name, release_label, description, status, notes) values
-(128,'128_accounting_equipment_seo_fallback_execution_depth','128_accounting_equipment_seo_fallback_execution_depth.sql','2026-06-03a','Adds Admin-visible execution queues for accounting actions, close controls, equipment accountability, public SEO publishing, and fallback observability.','applied','This pass refreshes schema/docs/cache/smoke guardrails and moves the next-step list into DB-visible queues.')
-on conflict (schema_version) do update set migration_key=excluded.migration_key, schema_name=excluded.schema_name, release_label=excluded.release_label, description=excluded.description, status=excluded.status, notes=excluded.notes, applied_at=now();
+insert into public.app_schema_versions (
+  schema_version,
+  migration_key,
+  schema_name,
+  release_label,
+  description,
+  status,
+  notes
+)
+values (
+  128,
+  '128_accounting_equipment_seo_fallback_execution_depth',
+  '128_accounting_equipment_seo_fallback_execution_depth.sql',
+  '2026-06-03a',
+  'Adds Admin-visible execution queues for accounting actions, close controls, equipment accountability, public SEO publishing, and fallback observability.',
+  'applied',
+  'This pass refreshes schema/docs/cache/smoke guardrails and moves the next-step list into DB-visible queues.'
+)
+on conflict (schema_version) do update set
+  migration_key = excluded.migration_key,
+  schema_name = excluded.schema_name,
+  release_label = excluded.release_label,
+  description = excluded.description,
+  status = excluded.status,
+  notes = excluded.notes,
+  applied_at = now();
 
 grant select on public.app_payment_application_action_registry to authenticated;
 grant select on public.app_accounting_close_control_queue to authenticated;
@@ -16695,7 +26581,14 @@ grant select on public.v_app_fallback_observability_matrix to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 128_accounting_equipment_seo_fallback_execution_depth.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 129_schema_compatibility_accounting_equipment_seo_fallback_playbooks.sql
+-- ============================================================================
 -- Schema 129: schema compatibility repair, accounting proof packaging, equipment return-to-service, SEO asset checks, and fallback playbooks.
 -- Build 2026-06-04a.
 -- This pass locks in the schema 128 column-name repair and adds DB-visible queues for the next implementation layer.
@@ -17395,7 +27288,14 @@ grant select on public.v_app_error_recovery_playbook to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 129_schema_compatibility_accounting_equipment_seo_fallback_playbooks.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 130_payment_reconciliation_equipment_scan_local_seo_execution_playbooks.sql
+-- ============================================================================
 -- Schema 130: payment, reconciliation, equipment scan, local SEO, and fallback execution playbooks.
 -- Build 2026-06-04b.
 -- This pass moves the schema 129 planning queues closer to executable Admin/mobile work.
@@ -18374,7 +28274,14 @@ grant select on public.v_app_fallback_drill_queue to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 130_payment_reconciliation_equipment_scan_local_seo_execution_playbooks.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 131_payment_recon_equipment_seo_runtime_execution_controls.sql
+-- ============================================================================
 -- Schema 131: payment UI, reconciliation import, equipment service closeout, SEO asset, and runtime recovery controls.
 -- Build 2026-06-05a.
 -- This pass moves schema 130 execution queues closer to working controls and operator proof paths.
@@ -18708,7 +28615,14 @@ grant select on public.v_app_runtime_recovery_telemetry_queue to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 131_payment_recon_equipment_seo_runtime_execution_controls.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 132_payment_recon_equipment_seo_fallback_telemetry_drill_history.sql
+-- ============================================================================
 -- Schema 132: payment posting proofs, reconciliation matching, equipment verification, local SEO assets, and fallback telemetry drill history.
 -- Build 2026-06-05b.
 -- This pass moves schema 131 execution controls closer to usable operator workflows while keeping roadmap/docs/schema drift aligned.
@@ -19026,7 +28940,14 @@ grant select on public.v_app_runtime_fallback_drill_history_queue to authenticat
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 132_payment_recon_equipment_seo_fallback_telemetry_drill_history.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 133_payment_recon_equipment_seo_offline_execution_controls.sql
+-- ============================================================================
 -- Schema 133: payment write-path staging, reconciliation scoring, equipment accessory templates, SEO generation, and offline conflict controls.
 -- Build 2026-06-05c.
 -- This pass turns schema 132 queues into more concrete execution registries while preserving local SEO, one-H1, CSS, fallback, and documentation guardrails.
@@ -19323,12 +29244,14 @@ grant select on public.v_app_mobile_offline_conflict_resolution_queue to authent
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 133_payment_recon_equipment_seo_offline_execution_controls.sql
+-- ============================================================================
 
 
-
--- -----------------------------------------------------------------------------
--- Included migration: 134_payment_adjustment_recon_exception_equipment_scan_seo_runtime_messages.sql
--- -----------------------------------------------------------------------------
+-- ============================================================================
+-- BEGIN MIGRATION: 134_payment_adjustment_recon_exception_equipment_scan_seo_runtime_messages.sql
+-- ============================================================================
 -- Schema 134: payment adjustment, reconciliation exception, equipment scan rollout, SEO content depth, and runtime message controls.
 -- Build 2026-06-06a.
 -- This pass keeps the schema, Markdown, CSS/SEO/H1, fallback, and Admin readiness queues aligned after schema 133.
@@ -19573,6 +29496,14 @@ grant select on public.v_app_runtime_error_message_catalog to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 134_payment_adjustment_recon_exception_equipment_scan_seo_runtime_messages.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 135_release_validation_payment_recon_equipment_seo_data_migration_controls.sql
+-- ============================================================================
 -- Schema 135: release validation, payment/reconciliation execution, equipment scan, local SEO, fallback message, and JSON/DB migration controls.
 -- Build 2026-06-06b.
 -- This pass keeps schema, Markdown, CSS/SEO/H1, fallback, and Admin readiness queues aligned after schema 134.
@@ -19848,6 +29779,14 @@ grant select on public.v_app_json_db_migration_execution_queue to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 135_release_validation_payment_recon_equipment_seo_data_migration_controls.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 136_release_cutover_payment_exception_equipment_service_seo_css_runtime_controls.sql
+-- ============================================================================
 -- Schema 136: release cutover, payment exceptions, equipment return-to-service, local SEO evidence, CSS drift, runtime fallback, and JSON/DB source-of-truth controls.
 -- Build 2026-06-06c.
 -- This pass keeps schema, Markdown, CSS/SEO/H1, fallback, and Admin readiness queues aligned after schema 135.
@@ -20143,8 +30082,14 @@ grant select on public.v_app_json_db_source_of_truth_queue to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 136_release_cutover_payment_exception_equipment_service_seo_css_runtime_controls.sql
+-- ============================================================================
 
 
+-- ============================================================================
+-- BEGIN MIGRATION: 137_release_depth_payment_recon_equipment_seo_css_data_runtime_controls.sql
+-- ============================================================================
 -- Schema 137: Release depth controls for payments, reconciliation, equipment service cost recovery, local SEO prominence, CSS accessibility fallbacks, data migration validation, and runtime messages.
 -- Build 2026-06-06d.
 
@@ -20324,7 +30269,14 @@ grant select on public.v_app_runtime_release_message_queue to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 137_release_depth_payment_recon_equipment_seo_css_data_runtime_controls.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 138_release_readiness_accounting_equipment_seo_css_runtime_migration_controls.sql
+-- ============================================================================
 -- Schema 138: Release readiness controls for accounting exception closure, equipment service verification, local SEO refresh, CSS/mobile regression, runtime observability, and data migration closeout.
 -- Build 2026-06-07a.
 
@@ -20522,7 +30474,14 @@ grant select on public.v_app_runtime_observability_release_queue to authenticate
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 138_release_readiness_accounting_equipment_seo_css_runtime_migration_controls.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 139_accounting_cutover_equipment_scan_seo_css_runtime_finalization_controls.sql
+-- ============================================================================
 -- Schema 139: Release finalization controls for accounting cutover, equipment scan asset rollout, local SEO prominence publication, CSS/mobile release guard, runtime support playbooks, and data source migration locks.
 -- Build 2026-06-07b.
 
@@ -20702,11 +30661,20 @@ grant select on public.v_app_data_source_migration_lock_queue to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 139_accounting_cutover_equipment_scan_seo_css_runtime_finalization_controls.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 140_release_exit_payment_closeout_recon_equipment_seo_runtime_controls.sql
+-- ============================================================================
 -- Schema 140: Release exit criteria, payment closeout, reconciliation exception workflow,
 -- equipment chain-of-custody, local SEO conversion, and fallback escalation controls.
 -- Build 2026-06-09a.
 -- Repaired: all VALUES lists now match their explicit insert column lists.
+
+begin;
 
 create table if not exists public.app_schema_versions (
   schema_version integer primary key,
@@ -21635,6 +31603,15 @@ grant select on public.v_app_local_seo_conversion_queue to authenticated;
 grant select on public.v_app_runtime_fallback_escalation_queue to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
+commit;
+-- ============================================================================
+-- END MIGRATION: 140_release_exit_payment_closeout_recon_equipment_seo_runtime_controls.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 141_release_handoff_payment_proof_equipment_custody_seo_runtime_logging_controls.sql
+-- ============================================================================
 -- Schema 141: Release handoff, payment posting proof, equipment custody evidence,
 -- SEO conversion evidence, and runtime fallback logging controls.
 -- Build 2026-06-09b.
@@ -22541,7 +32518,14 @@ grant select on public.v_app_runtime_fallback_event_log_queue to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 141_release_handoff_payment_proof_equipment_custody_seo_runtime_logging_controls.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 142_schema_deploy_repair_payment_recon_equipment_seo_runtime_source_migration_controls.sql
+-- ============================================================================
 -- Schema 142: Full-schema repair verification, payment/reconciliation proof closeout, equipment return exceptions, local-search prominence evidence, runtime observability, and JSON/DB source migration controls.
 -- Build 2026-06-11a.
 --
@@ -22863,6 +32847,14 @@ grant select on public.v_app_json_db_source_migration_queue to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 142_schema_deploy_repair_payment_recon_equipment_seo_runtime_source_migration_controls.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 143_desktop_mobile_visual_enrichment_seo_css_runtime_data_source_controls.sql
+-- ============================================================================
 -- Schema 143: Desktop/mobile surface parity, visual-professional enrichment,
 -- local-search content depth, CSS/motion/image guardrails, schema deploy validation,
 -- and JSON/DB source-consolidation controls.
@@ -23188,11 +33180,14 @@ grant select on public.v_app_source_consolidation_decision_queue to authenticate
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 143_desktop_mobile_visual_enrichment_seo_css_runtime_data_source_controls.sql
+-- ============================================================================
 
 
--- =====================================================================
--- Appended schema 144 full-schema reference
--- =====================================================================
+-- ============================================================================
+-- BEGIN MIGRATION: 144_visual_asset_release_seo_trust_css_runtime_source_registry_controls.sql
+-- ============================================================================
 -- Schema 144: Visual asset release, desktop/mobile polish, local SEO trust signals,
 -- CSS visual regression, runtime fallback drills, and DB source-registry candidate controls.
 -- Build 2026-06-12b.
@@ -23517,7 +33512,14 @@ grant select on public.v_app_db_source_registry_candidate_queue to authenticated
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 144_visual_asset_release_seo_trust_css_runtime_source_registry_controls.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 145_sanity_check_value_added_breakdown_and_enrichment_controls.sql
+-- ============================================================================
 -- Schema 145: Application sanity check, value-added modification priorities,
 -- desktop/mobile parity, visual professional enrichment, local-search value,
 -- and source-of-truth migration controls.
@@ -23838,7 +33840,14 @@ grant select on public.v_app_source_of_truth_migration_value_queue to authentica
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 145_sanity_check_value_added_breakdown_and_enrichment_controls.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 146_high_value_execution_layer_payment_bank_recon_equipment_visual_route_quote_mobile_admin_controls.sql
+-- ============================================================================
 -- Schema 146: Highest-value execution layer: payment actions, bank CSV preview,
 -- reconciliation match/split/undo/signoff, equipment scan custody, visual asset approvals,
 -- public route registry, quote/contact intake, mobile offline conflict cards, and Admin scorecard rails.
@@ -24273,7 +34282,14 @@ grant select on public.v_app_admin_scorecard_progress_rail_queue to authenticate
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 146_high_value_execution_layer_payment_bank_recon_equipment_visual_route_quote_mobile_admin_controls.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 147_markdown_consolidation_visual_placeholders_seo_mobile_sanity_controls.sql
+-- ============================================================================
 -- Schema 147: Markdown consolidation, competitive SEO benchmarking, visual placeholders,
 -- desktop/mobile polish, and next-step sanity controls.
 -- Build 2026-06-14a.
@@ -24486,7 +34502,14 @@ grant select on public.v_app_next_step_sanity_queue to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 147_markdown_consolidation_visual_placeholders_seo_mobile_sanity_controls.sql
+-- ============================================================================
 
+
+-- ============================================================================
+-- BEGIN MIGRATION: 148_real_write_actions_quote_payment_bank_recon_equipment_assets_routes_mobile_scorecards.sql
+-- ============================================================================
 -- Schema 148: Real write-action layer for quote/contact intake, payment requests,
 -- bank CSV previews, reconciliation actions, equipment scan/custody events,
 -- visual asset approvals, public route approvals, mobile offline conflicts, and Admin scorecards.
@@ -24931,6 +34954,14 @@ grant select, insert, update on public.admin_scorecard_progress_rails to authent
 grant select on public.v_payment_action_requests, public.v_bank_csv_import_previews, public.v_bank_csv_import_preview_rows, public.v_reconciliation_action_requests, public.v_equipment_scan_events, public.v_equipment_custody_timeline_events, public.v_visual_asset_approval_items, public.v_public_route_approval_items, public.v_mobile_offline_conflict_cards, public.v_admin_scorecard_progress_rails, public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 148_real_write_actions_quote_payment_bank_recon_equipment_assets_routes_mobile_scorecards.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 149_operations_cockpit_write_controls_and_competitive_workflow_depth.sql
+-- ============================================================================
 -- Schema 149: Operations cockpit write controls, idempotency, approvals,
 -- fallback audit events, quote deduplication, bank import confirmation,
 -- and route/visual publication readiness.
@@ -25172,3 +35203,543 @@ grant select on public.v_admin_operations_cockpit_scorecards to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
+-- ============================================================================
+-- END MIGRATION: 149_operations_cockpit_write_controls_and_competitive_workflow_depth.sql
+-- ============================================================================
+
+
+-- ============================================================================
+-- BEGIN MIGRATION: 150_end_to_end_operations_customer_portal_media_route_publication.sql
+-- ============================================================================
+-- Schema 150: End-to-end operations execution, customer portal, media pipeline,
+-- approved route publication, live queues, and exact reconciliation controls.
+-- Build 2026-06-17b.
+
+begin;
+
+-- ---------------------------------------------------------------------------
+-- Quote/contact ownership, alerts, and follow-up history
+-- ---------------------------------------------------------------------------
+alter table public.quote_contact_requests add column if not exists first_response_at timestamptz;
+alter table public.quote_contact_requests add column if not exists last_contacted_at timestamptz;
+alter table public.quote_contact_requests add column if not exists response_status text not null default 'awaiting_response';
+alter table public.quote_contact_requests add column if not exists converted_estimate_id uuid references public.estimates(id) on delete set null;
+alter table public.quote_contact_requests add column if not exists converted_client_id uuid references public.clients(id) on delete set null;
+alter table public.quote_contact_requests add column if not exists owner_assigned_at timestamptz;
+alter table public.quote_contact_requests add column if not exists owner_assigned_by_profile_id uuid references public.profiles(id) on delete set null;
+create index if not exists quote_contact_requests_owner_due_idx on public.quote_contact_requests(assigned_to_profile_id, request_status, followup_due_at);
+
+create table if not exists public.quote_followup_alerts (
+  id uuid primary key default gen_random_uuid(),
+  request_id uuid not null references public.quote_contact_requests(id) on delete cascade,
+  alert_type text not null default 'followup_due',
+  alert_status text not null default 'open',
+  due_at timestamptz,
+  assigned_to_profile_id uuid references public.profiles(id) on delete set null,
+  alert_message text,
+  delivery_channels jsonb not null default '["in_app"]'::jsonb,
+  delivered_at timestamptz,
+  acknowledged_at timestamptz,
+  acknowledged_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists quote_followup_alerts_open_idx on public.quote_followup_alerts(alert_status, due_at, assigned_to_profile_id);
+
+-- ---------------------------------------------------------------------------
+-- Real payment application and journal posting linkage
+-- ---------------------------------------------------------------------------
+alter table public.payment_action_requests add column if not exists ledger_side text;
+alter table public.payment_action_requests add column if not exists bank_account_id uuid references public.bank_accounts(id) on delete set null;
+alter table public.payment_action_requests add column if not exists bank_account_hint text;
+alter table public.payment_action_requests add column if not exists transaction_date date not null default current_date;
+alter table public.payment_action_requests add column if not exists ar_invoice_id uuid references public.ar_invoices(id) on delete set null;
+alter table public.payment_action_requests add column if not exists ap_bill_id uuid references public.ap_bills(id) on delete set null;
+alter table public.payment_action_requests add column if not exists ar_payment_id uuid references public.ar_payments(id) on delete set null;
+alter table public.payment_action_requests add column if not exists ap_payment_id uuid references public.ap_payments(id) on delete set null;
+alter table public.payment_action_requests add column if not exists ar_application_id uuid references public.ar_payment_applications(id) on delete set null;
+alter table public.payment_action_requests add column if not exists ap_application_id uuid references public.ap_payment_applications(id) on delete set null;
+alter table public.payment_action_requests add column if not exists gl_batch_id uuid references public.gl_journal_batches(id) on delete set null;
+alter table public.payment_action_requests add column if not exists posting_status text not null default 'not_posted';
+alter table public.payment_action_requests add column if not exists posting_message text;
+alter table public.payment_action_requests add column if not exists posting_payload jsonb not null default '{}'::jsonb;
+alter table public.payment_action_requests add column if not exists posted_by_profile_id uuid references public.profiles(id) on delete set null;
+alter table public.payment_action_requests add column if not exists reversal_of_request_id uuid references public.payment_action_requests(id) on delete set null;
+create index if not exists payment_action_requests_posting_idx on public.payment_action_requests(action_status, posting_status, created_at desc);
+
+-- ---------------------------------------------------------------------------
+-- Confirmed bank rows promoted to the reconciliation workbench
+-- ---------------------------------------------------------------------------
+alter table public.bank_csv_import_previews add column if not exists bank_account_id uuid references public.bank_accounts(id) on delete set null;
+alter table public.bank_csv_import_previews add column if not exists statement_import_id uuid references public.bank_statement_imports(id) on delete set null;
+alter table public.bank_csv_import_previews add column if not exists reconciliation_session_id uuid references public.bank_reconciliation_sessions(id) on delete set null;
+alter table public.bank_csv_import_previews add column if not exists promoted_at timestamptz;
+alter table public.bank_csv_import_previews add column if not exists promoted_by_profile_id uuid references public.profiles(id) on delete set null;
+alter table public.bank_csv_import_previews add column if not exists promotion_message text;
+
+alter table public.bank_csv_import_preview_rows add column if not exists promoted_reconciliation_item_id uuid references public.bank_reconciliation_items(id) on delete set null;
+alter table public.bank_csv_import_preview_rows add column if not exists promoted_at timestamptz;
+create index if not exists bank_csv_preview_rows_promotion_idx on public.bank_csv_import_preview_rows(import_id, row_status, promoted_at);
+
+-- ---------------------------------------------------------------------------
+-- Explainable scoring, exact splits, and reversible match allocations
+-- ---------------------------------------------------------------------------
+alter table public.reconciliation_action_requests add column if not exists reconciliation_item_id uuid references public.bank_reconciliation_items(id) on delete set null;
+alter table public.reconciliation_action_requests add column if not exists match_score numeric(5,2);
+alter table public.reconciliation_action_requests add column if not exists match_explanation jsonb not null default '{}'::jsonb;
+alter table public.reconciliation_action_requests add column if not exists source_amount numeric(12,2);
+alter table public.reconciliation_action_requests add column if not exists split_total numeric(12,2);
+alter table public.reconciliation_action_requests add column if not exists balance_difference numeric(12,2);
+alter table public.reconciliation_action_requests add column if not exists processed_by_profile_id uuid references public.profiles(id) on delete set null;
+alter table public.reconciliation_action_requests add column if not exists processed_at timestamptz;
+
+create table if not exists public.reconciliation_match_allocations (
+  id uuid primary key default gen_random_uuid(),
+  action_request_id uuid not null references public.reconciliation_action_requests(id) on delete cascade,
+  reconciliation_item_id uuid not null references public.bank_reconciliation_items(id) on delete cascade,
+  target_type text not null,
+  target_id text,
+  target_reference text,
+  allocated_amount numeric(12,2) not null,
+  match_score numeric(5,2),
+  match_explanation jsonb not null default '{}'::jsonb,
+  allocation_status text not null default 'active',
+  reversed_at timestamptz,
+  reversed_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create index if not exists reconciliation_match_allocations_item_idx on public.reconciliation_match_allocations(reconciliation_item_id, allocation_status, created_at desc);
+
+-- ---------------------------------------------------------------------------
+-- Equipment identity resolution, service work, and cost recovery
+-- ---------------------------------------------------------------------------
+alter table public.equipment_scan_events add column if not exists equipment_item_id bigint references public.equipment_items(id) on delete set null;
+alter table public.equipment_scan_events add column if not exists equipment_master_id uuid references public.equipment_master(id) on delete set null;
+alter table public.equipment_scan_events add column if not exists resolution_status text not null default 'unresolved';
+alter table public.equipment_scan_events add column if not exists resolved_equipment_name text;
+alter table public.equipment_scan_events add column if not exists resolved_equipment_status text;
+
+alter table public.equipment_custody_timeline_events add column if not exists equipment_item_id bigint references public.equipment_items(id) on delete set null;
+alter table public.equipment_custody_timeline_events add column if not exists equipment_master_id uuid references public.equipment_master(id) on delete set null;
+alter table public.equipment_custody_timeline_events add column if not exists job_id bigint references public.jobs(id) on delete set null;
+alter table public.equipment_custody_timeline_events add column if not exists service_task_id uuid references public.equipment_service_tasks(id) on delete set null;
+
+create table if not exists public.equipment_cost_recovery_actions (
+  id uuid primary key default gen_random_uuid(),
+  custody_event_id uuid references public.equipment_custody_timeline_events(id) on delete set null,
+  service_task_id uuid references public.equipment_service_tasks(id) on delete set null,
+  equipment_item_id bigint references public.equipment_items(id) on delete set null,
+  equipment_master_id uuid references public.equipment_master(id) on delete set null,
+  job_id bigint references public.jobs(id) on delete set null,
+  action_status text not null default 'review',
+  recovery_decision text not null default 'pending',
+  estimated_cost numeric(12,2) not null default 0,
+  actual_cost numeric(12,2) not null default 0,
+  recoverable_amount numeric(12,2) not null default 0,
+  customer_billable boolean not null default false,
+  financial_event_id uuid references public.job_financial_events(id) on delete set null,
+  decision_note text,
+  decided_by_profile_id uuid references public.profiles(id) on delete set null,
+  decided_at timestamptz,
+  created_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists equipment_cost_recovery_actions_open_idx on public.equipment_cost_recovery_actions(action_status, job_id, created_at desc);
+alter table public.equipment_custody_timeline_events add column if not exists cost_recovery_action_id uuid references public.equipment_cost_recovery_actions(id) on delete set null;
+
+-- Public optimized media bucket. Edge Functions use the service role for writes;
+-- approved files are public so generated route pages can be crawled and cached.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('public-assets', 'public-assets', true, 8388608, array['image/webp','image/jpeg','image/png','image/avif'])
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+-- ---------------------------------------------------------------------------
+-- Real image upload metadata and approved placeholder replacement
+-- ---------------------------------------------------------------------------
+alter table public.visual_asset_approval_items add column if not exists storage_bucket text;
+alter table public.visual_asset_approval_items add column if not exists storage_path text;
+alter table public.visual_asset_approval_items add column if not exists thumbnail_path text;
+alter table public.visual_asset_approval_items add column if not exists public_url text;
+alter table public.visual_asset_approval_items add column if not exists thumbnail_url text;
+alter table public.visual_asset_approval_items add column if not exists pixel_width integer;
+alter table public.visual_asset_approval_items add column if not exists pixel_height integer;
+alter table public.visual_asset_approval_items add column if not exists thumbnail_width integer;
+alter table public.visual_asset_approval_items add column if not exists thumbnail_height integer;
+alter table public.visual_asset_approval_items add column if not exists file_size_bytes bigint;
+alter table public.visual_asset_approval_items add column if not exists mime_type text;
+alter table public.visual_asset_approval_items add column if not exists original_file_name text;
+alter table public.visual_asset_approval_items add column if not exists checksum_sha256 text;
+alter table public.visual_asset_approval_items add column if not exists placeholder_selector text;
+alter table public.visual_asset_approval_items add column if not exists replacement_status text not null default 'not_replaced';
+create index if not exists visual_asset_route_status_idx on public.visual_asset_approval_items(route_key, asset_status, replacement_status);
+
+-- ---------------------------------------------------------------------------
+-- Approved public page and sitemap registry
+-- ---------------------------------------------------------------------------
+alter table public.public_route_approval_items add column if not exists route_type text not null default 'service';
+alter table public.public_route_approval_items add column if not exists service_name text;
+alter table public.public_route_approval_items add column if not exists location_name text;
+alter table public.public_route_approval_items add column if not exists page_intro text;
+alter table public.public_route_approval_items add column if not exists page_body_markdown text;
+alter table public.public_route_approval_items add column if not exists page_body_html text;
+alter table public.public_route_approval_items add column if not exists canonical_url text;
+alter table public.public_route_approval_items add column if not exists published_at timestamptz;
+alter table public.public_route_approval_items add column if not exists published_by_profile_id uuid references public.profiles(id) on delete set null;
+alter table public.public_route_approval_items add column if not exists generated_page_json jsonb not null default '{}'::jsonb;
+
+create table if not exists public.public_sitemap_entries (
+  id uuid primary key default gen_random_uuid(),
+  route_id uuid not null references public.public_route_approval_items(id) on delete cascade,
+  route_path text not null unique,
+  canonical_url text,
+  last_modified date not null default current_date,
+  change_frequency text not null default 'monthly',
+  priority numeric(2,1) not null default 0.6,
+  entry_status text not null default 'active',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists public_sitemap_entries_status_idx on public.public_sitemap_entries(entry_status, last_modified desc);
+alter table public.public_route_approval_items add column if not exists sitemap_entry_id uuid references public.public_sitemap_entries(id) on delete set null;
+
+-- ---------------------------------------------------------------------------
+-- Customer portal, quote acceptance, deposit, dispatch, and live job-costing
+-- ---------------------------------------------------------------------------
+alter table public.estimate_quote_packages add column if not exists portal_enabled boolean not null default true;
+alter table public.estimate_quote_packages add column if not exists deposit_required_amount numeric(12,2) not null default 0;
+alter table public.estimate_quote_packages add column if not exists deposit_status text not null default 'not_required';
+alter table public.estimate_quote_packages add column if not exists portal_last_viewed_at timestamptz;
+alter table public.estimate_quote_packages add column if not exists portal_terms_version text;
+alter table public.estimate_quote_packages add column if not exists portal_acceptance_ip_hash text;
+
+create table if not exists public.customer_portal_events (
+  id uuid primary key default gen_random_uuid(),
+  quote_package_id uuid references public.estimate_quote_packages(id) on delete cascade,
+  estimate_id uuid references public.estimates(id) on delete set null,
+  work_order_id uuid references public.work_orders(id) on delete set null,
+  event_type text not null,
+  event_status text not null default 'completed',
+  customer_name text,
+  customer_email text,
+  event_note text,
+  event_payload jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+create index if not exists customer_portal_events_quote_idx on public.customer_portal_events(quote_package_id, created_at desc);
+
+create table if not exists public.customer_deposit_requests (
+  id uuid primary key default gen_random_uuid(),
+  quote_package_id uuid not null references public.estimate_quote_packages(id) on delete cascade,
+  estimate_id uuid references public.estimates(id) on delete set null,
+  client_id uuid references public.clients(id) on delete set null,
+  requested_amount numeric(12,2) not null,
+  currency_code text not null default 'CAD',
+  deposit_status text not null default 'requested',
+  checkout_provider text,
+  checkout_session_id text,
+  checkout_url text,
+  payment_reference text,
+  paid_amount numeric(12,2) not null default 0,
+  paid_at timestamptz,
+  receipt_url text,
+  expires_at timestamptz,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists customer_deposit_requests_quote_idx on public.customer_deposit_requests(quote_package_id, deposit_status, created_at desc);
+
+create table if not exists public.dispatch_schedule_items (
+  id uuid primary key default gen_random_uuid(),
+  work_order_id uuid references public.work_orders(id) on delete cascade,
+  job_id bigint references public.jobs(id) on delete set null,
+  schedule_status text not null default 'draft',
+  scheduled_start timestamptz,
+  scheduled_end timestamptz,
+  assigned_supervisor_profile_id uuid references public.profiles(id) on delete set null,
+  assigned_crew_profile_ids jsonb not null default '[]'::jsonb,
+  route_id uuid references public.routes(id) on delete set null,
+  dispatch_notes text,
+  customer_notification_status text not null default 'pending',
+  crew_notification_status text not null default 'pending',
+  dispatched_at timestamptz,
+  dispatched_by_profile_id uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists dispatch_schedule_items_start_idx on public.dispatch_schedule_items(schedule_status, scheduled_start);
+
+create table if not exists public.job_cost_live_snapshots (
+  id uuid primary key default gen_random_uuid(),
+  job_id bigint not null references public.jobs(id) on delete cascade,
+  work_order_id uuid references public.work_orders(id) on delete set null,
+  estimate_total numeric(12,2) not null default 0,
+  revenue_total numeric(12,2) not null default 0,
+  labour_cost_total numeric(12,2) not null default 0,
+  material_cost_total numeric(12,2) not null default 0,
+  equipment_cost_total numeric(12,2) not null default 0,
+  subcontract_cost_total numeric(12,2) not null default 0,
+  other_cost_total numeric(12,2) not null default 0,
+  total_cost numeric(12,2) generated always as (labour_cost_total + material_cost_total + equipment_cost_total + subcontract_cost_total + other_cost_total) stored,
+  margin_amount numeric(12,2) not null default 0,
+  margin_percent numeric(8,2) not null default 0,
+  snapshot_status text not null default 'current',
+  snapshot_payload jsonb not null default '{}'::jsonb,
+  calculated_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+create index if not exists job_cost_live_snapshots_job_idx on public.job_cost_live_snapshots(job_id, calculated_at desc);
+
+-- ---------------------------------------------------------------------------
+-- Operational queue views
+-- ---------------------------------------------------------------------------
+drop view if exists public.v_quote_contact_followup_queue;
+create view public.v_quote_contact_followup_queue as
+select q.id, q.request_status, q.response_status, q.full_name, q.contact_value,
+       q.service_type, q.service_area, q.preferred_contact_method,
+       q.assigned_to_profile_id, p.full_name as assigned_owner_name,
+       q.followup_due_at, q.first_response_at, q.last_contacted_at,
+       case when q.followup_due_at is not null and q.followup_due_at < now() then true else false end as overdue,
+       extract(epoch from (coalesce(q.first_response_at, now()) - q.created_at))/60.0 as response_minutes,
+       q.spam_score, q.created_at, q.updated_at
+from public.quote_contact_requests q
+left join public.profiles p on p.id = q.assigned_to_profile_id
+where q.request_status in ('new','review','contacted')
+order by coalesce(q.followup_due_at, q.created_at), q.created_at;
+
+drop view if exists public.v_payment_action_workbench;
+create view public.v_payment_action_workbench as
+select id, action_key, action_type, action_status, ledger_side, bank_account_id, bank_account_hint, transaction_date,
+       customer_or_vendor_name, invoice_reference, payment_reference,
+       amount, currency_code, reason, proof_required, proof_reference,
+       period_lock_checked, decision_note, rejection_reason,
+       posting_status, posting_message, ar_invoice_id, ap_bill_id,
+       ar_payment_id, ap_payment_id, ar_application_id, ap_application_id,
+       gl_batch_id, posted_by_profile_id, posted_at, created_at, updated_at
+from public.payment_action_requests
+order by created_at desc;
+
+drop view if exists public.v_bank_csv_import_workbench;
+create view public.v_bank_csv_import_workbench as
+select p.id, p.import_key, p.original_filename, p.bank_account_hint, p.bank_account_id,
+       ba.account_name as bank_account_name, p.preview_status,
+       p.total_rows, p.accepted_rows, p.rejected_rows, p.duplicate_rows,
+       p.confirmed_at, p.promoted_at, p.statement_import_id, p.reconciliation_session_id,
+       p.confirmation_note, p.promotion_message, p.created_at,
+       count(r.id) filter (where r.row_status = 'accepted') as accepted_row_count,
+       count(r.id) filter (where r.row_status = 'rejected') as rejected_row_count,
+       count(r.id) filter (where r.promoted_at is not null) as promoted_row_count
+from public.bank_csv_import_previews p
+left join public.bank_accounts ba on ba.id = p.bank_account_id
+left join public.bank_csv_import_preview_rows r on r.import_id = p.id
+group by p.id, ba.account_name
+order by p.created_at desc;
+
+drop view if exists public.v_reconciliation_action_workbench;
+create view public.v_reconciliation_action_workbench as
+select r.id, r.action_type, r.action_status, r.import_id, r.bank_row_id,
+       r.reconciliation_item_id, bi.item_date, bi.item_description, bi.amount as bank_amount,
+       r.target_reference, r.split_json, r.match_score, r.match_explanation,
+       r.source_amount, r.split_total, r.balance_difference,
+       r.signoff_note, r.decision_note, r.processed_at, r.signed_off_at,
+       r.created_at, r.updated_at
+from public.reconciliation_action_requests r
+left join public.bank_reconciliation_items bi on bi.id = r.reconciliation_item_id
+order by r.created_at desc;
+
+drop view if exists public.v_equipment_scan_resolution_queue;
+create view public.v_equipment_scan_resolution_queue as
+select s.id, s.scan_code, s.scan_source, s.scan_stage, s.scan_status,
+       s.resolution_status, s.equipment_item_id, s.equipment_master_id,
+       coalesce(ei.equipment_code, em.equipment_code, s.equipment_reference) as equipment_code,
+       coalesce(ei.equipment_name, em.item_name, s.resolved_equipment_name) as equipment_name,
+       coalesce(ei.status, case when em.is_active then 'active' else 'inactive' end, s.resolved_equipment_status) as equipment_status,
+       ei.is_locked_out, ei.defect_status, s.job_reference, s.created_at
+from public.equipment_scan_events s
+left join public.equipment_items ei on ei.id = s.equipment_item_id
+left join public.equipment_master em on em.id = s.equipment_master_id
+order by s.created_at desc;
+
+drop view if exists public.v_equipment_service_cost_recovery_queue;
+create view public.v_equipment_service_cost_recovery_queue as
+select c.id as custody_event_id, c.equipment_reference, c.custody_stage,
+       c.equipment_item_id, c.equipment_master_id, c.job_id, c.job_reference,
+       c.service_required, c.cost_recovery_required, c.service_task_id,
+       t.task_status as service_task_status, t.priority as service_priority,
+       t.failure_reason, t.estimated_cost, t.actual_cost,
+       c.cost_recovery_action_id, a.action_status as recovery_status,
+       a.recovery_decision, a.recoverable_amount, a.customer_billable,
+       c.condition_summary, c.accessory_summary, c.notes, c.created_at
+from public.equipment_custody_timeline_events c
+left join public.equipment_service_tasks t on t.id = c.service_task_id
+left join public.equipment_cost_recovery_actions a on a.id = c.cost_recovery_action_id
+where c.service_required = true or c.cost_recovery_required = true
+order by c.created_at desc;
+
+drop view if exists public.v_visual_asset_publication_readiness;
+create view public.v_visual_asset_publication_readiness as
+select id, asset_key, asset_status, surface_area, image_role, source_url, public_url,
+       thumbnail_url, alt_text, consent_status, compression_status, route_key,
+       pixel_width, pixel_height, file_size_bytes, mime_type, placeholder_selector,
+       replacement_status, readiness_score,
+       case when coalesce(public_url, source_url) is not null
+              and length(coalesce(alt_text,'')) >= 12
+              and consent_status in ('approved','not_required')
+              and compression_status in ('ready','optimized')
+              and coalesce(pixel_width, 0) >= 800
+              and coalesce(pixel_height, 0) >= 450
+            then true else false end as publication_ready,
+       created_at, updated_at
+from public.visual_asset_approval_items
+order by updated_at desc;
+
+drop view if exists public.v_public_route_publication_readiness;
+create view public.v_public_route_publication_readiness as
+select r.id, r.route_key, r.route_status, r.route_type, r.route_path,
+       r.service_name, r.location_name, r.page_title, r.h1_text,
+       r.meta_description, r.page_intro, r.local_proof_hint,
+       r.primary_cta_path, r.visual_asset_key, r.canonical_url,
+       r.sitemap_ready, r.seo_readiness_score, r.validation_json,
+       r.published_at, r.sitemap_entry_id,
+       case when r.route_status = 'approved'
+              and length(coalesce(r.page_title,'')) between 20 and 70
+              and length(coalesce(r.h1_text,'')) between 10 and 120
+              and length(coalesce(r.meta_description,'')) between 70 and 170
+              and length(coalesce(r.local_proof_hint,'')) >= 20
+              and coalesce(r.primary_cta_path,'') <> ''
+              and exists (
+                select 1 from public.visual_asset_approval_items a
+                where a.asset_key = r.visual_asset_key
+                  and a.asset_status = 'approved'
+                  and coalesce(a.public_url, a.source_url) is not null
+              )
+            then true else false end as publication_ready,
+       r.created_at, r.updated_at
+from public.public_route_approval_items r
+order by r.updated_at desc;
+
+drop view if exists public.v_customer_portal_quote_directory;
+create view public.v_customer_portal_quote_directory as
+select qp.id as quote_package_id, qp.public_token, qp.portal_enabled,
+       qp.package_status, qp.send_status, qp.client_email, qp.rendered_title,
+       qp.first_viewed_at, qp.last_viewed_at, qp.open_count, qp.last_client_action,
+       qp.rendered_html, qp.rendered_markdown, qp.accepted_at, qp.accepted_by_name,
+       qp.accepted_by_email, qp.deposit_required_amount, qp.deposit_status,
+       e.id as estimate_id, e.estimate_number, e.status as estimate_status,
+       e.subtotal, e.tax_total, e.total_amount, e.valid_until,
+       c.id as client_id, c.legal_name as client_name,
+       wo.id as work_order_id, wo.work_order_number, wo.status as work_order_status,
+       wo.scheduled_start, wo.scheduled_end,
+       ds.schedule_status, ds.customer_notification_status,
+       d.id as latest_deposit_request_id, d.deposit_status as latest_deposit_status,
+       d.requested_amount as latest_deposit_amount, d.paid_amount as latest_paid_amount,
+       d.receipt_url
+from public.estimate_quote_packages qp
+join public.estimates e on e.id = qp.estimate_id
+left join public.clients c on c.id = e.client_id
+left join lateral (
+  select w.* from public.work_orders w where w.estimate_id = e.id order by w.created_at desc limit 1
+) wo on true
+left join lateral (
+  select s.* from public.dispatch_schedule_items s where s.work_order_id = wo.id order by s.created_at desc limit 1
+) ds on true
+left join lateral (
+  select dep.* from public.customer_deposit_requests dep where dep.quote_package_id = qp.id order by dep.created_at desc limit 1
+) d on true;
+
+drop view if exists public.v_live_job_cost_dashboard;
+create view public.v_live_job_cost_dashboard as
+select distinct on (s.job_id)
+       s.id, s.job_id, j.job_code, j.job_name, s.work_order_id,
+       s.estimate_total, s.revenue_total, s.labour_cost_total,
+       s.material_cost_total, s.equipment_cost_total, s.subcontract_cost_total,
+       s.other_cost_total, s.total_cost, s.margin_amount, s.margin_percent,
+       s.snapshot_status, s.calculated_at
+from public.job_cost_live_snapshots s
+join public.jobs j on j.id = s.job_id
+order by s.job_id, s.calculated_at desc;
+
+-- Scorecard movement after implementation depth.
+update public.admin_scorecard_progress_rails
+set progress_percent = case rail_key
+  when 'quote_intake_live' then greatest(progress_percent, 90)
+  when 'payment_actions_live' then greatest(progress_percent, 85)
+  when 'bank_csv_preview_live' then greatest(progress_percent, 85)
+  when 'equipment_scan_custody_live' then greatest(progress_percent, 85)
+  when 'route_asset_approval_live' then greatest(progress_percent, 85)
+  when 'operations_cockpit_live' then greatest(progress_percent, 88)
+  else progress_percent end,
+  metadata = coalesce(metadata, '{}'::jsonb) || '{"build":"2026-06-17b","schema":150,"end_to_end":true}'::jsonb,
+  updated_at = now();
+
+insert into public.admin_scorecard_progress_rails (
+  rail_key, rail_area, rail_title, rail_status, progress_percent,
+  current_value, target_value, next_action_hint, owner_hint, sort_order, metadata
+) values
+('customer_portal_live','growth','Customer portal, acceptance, deposit, dispatch, and job cost','active',75,5,7,'Configure Stripe secrets, test portal acceptance, create a deposit checkout, dispatch a work order, and refresh live job cost.','Admin / sales / dispatch',60,'{"build":"2026-06-17b","schema":150}'::jsonb),
+('approved_route_generation','seo_visual','Approved route page and sitemap generation','active',80,4,5,'Approve one route with an approved visual, publish it, then run the sitemap generator during deployment.','Content / admin',70,'{"build":"2026-06-17b","schema":150}'::jsonb)
+on conflict (rail_key) do update set
+  rail_area=excluded.rail_area, rail_title=excluded.rail_title,
+  rail_status=excluded.rail_status, progress_percent=excluded.progress_percent,
+  current_value=excluded.current_value, target_value=excluded.target_value,
+  next_action_hint=excluded.next_action_hint, owner_hint=excluded.owner_hint,
+  sort_order=excluded.sort_order, metadata=excluded.metadata, updated_at=now();
+
+-- Schema marker.
+drop view if exists public.v_schema_drift_status;
+create view public.v_schema_drift_status as
+select 150::int as expected_schema_version,
+  coalesce(max(schema_version) filter (where status = 'applied'), 0)::int as latest_applied_schema_version,
+  case when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 150 then 'current' else 'behind' end as drift_status,
+  case when coalesce(max(schema_version) filter (where status = 'applied'), 0) >= 150
+       then 'Live database is at or ahead of the repo schema marker.'
+       else 'Live database is behind the deployed app. Apply migrations through schema 150.' end as message,
+  now() as checked_at
+from public.app_schema_versions;
+
+insert into public.app_schema_versions (
+  schema_version, migration_key, schema_name, release_label, description, status, notes
+) values (
+  150,
+  '150_end_to_end_operations_customer_portal_media_route_publication',
+  '150_end_to_end_operations_customer_portal_media_route_publication.sql',
+  '2026-06-17b',
+  'Adds live queues, real AR/AP and journal posting linkage, bank promotion, explainable reconciliation, equipment service/cost recovery, image metadata, route/sitemap publication, quote ownership, customer portal, deposits, dispatch, and live job-cost snapshots.',
+  'applied',
+  'This pass closes the highest-value schema 149 gaps while preserving approval, proof, period-lock, mobile fallback, and SEO publication gates.'
+)
+on conflict (schema_version) do update set
+  migration_key=excluded.migration_key, schema_name=excluded.schema_name,
+  release_label=excluded.release_label, description=excluded.description,
+  status=excluded.status, notes=excluded.notes, applied_at=now();
+
+-- Access is primarily through Edge Functions; authenticated read access supports Admin views.
+grant select on public.quote_followup_alerts to authenticated;
+grant select on public.reconciliation_match_allocations to authenticated;
+grant select on public.equipment_cost_recovery_actions to authenticated;
+grant select on public.public_sitemap_entries to authenticated, anon;
+grant select on public.customer_portal_events to authenticated;
+grant select on public.customer_deposit_requests to authenticated;
+grant select on public.dispatch_schedule_items to authenticated;
+grant select on public.job_cost_live_snapshots to authenticated;
+grant select on public.v_quote_contact_followup_queue to authenticated;
+grant select on public.v_payment_action_workbench to authenticated;
+grant select on public.v_bank_csv_import_workbench to authenticated;
+grant select on public.v_reconciliation_action_workbench to authenticated;
+grant select on public.v_equipment_scan_resolution_queue to authenticated;
+grant select on public.v_equipment_service_cost_recovery_queue to authenticated;
+grant select on public.v_visual_asset_publication_readiness to authenticated;
+grant select on public.v_public_route_publication_readiness to authenticated;
+grant select on public.v_customer_portal_quote_directory to authenticated;
+grant select on public.v_live_job_cost_dashboard to authenticated;
+grant select on public.v_schema_drift_status to authenticated;
+
+commit;
+-- ============================================================================
+-- END MIGRATION: 150_end_to_end_operations_customer_portal_media_route_publication.sql
+-- ============================================================================
