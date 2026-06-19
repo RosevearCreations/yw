@@ -660,8 +660,46 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
       method: 'POST',
       body: payload,
       requireAuth: true,
+      timeoutMs: 45000
+    });
+  }
+
+  async function customerPortal(payload = {}) {
+    return jsonFetch('customer-portal', {
+      method: 'POST',
+      body: payload,
+      requireAuth: false,
+      timeoutMs: 30000
+    });
+  }
+
+  async function fetchPublicContent(payload = {}) {
+    return jsonFetch('public-content', {
+      method: 'POST',
+      body: payload,
+      requireAuth: false,
       timeoutMs: 20000
     });
+  }
+
+  async function uploadPublicAsset(formData) {
+    if (!(formData instanceof FormData)) throw new Error('Public asset upload requires FormData.');
+    const token = await getAccessToken();
+    const anonKey = getSupabaseAnonKey();
+    if (!token) throw new Error('Missing authorization header');
+    const response = await fetch(`${getFunctionsBaseUrl()}/upload-public-asset`, {
+      method: 'POST',
+      headers: {
+        ...(anonKey ? { apikey: anonKey } : {}),
+        Authorization: `Bearer ${token}`
+      },
+      body: formData
+    });
+    const rawText = await response.text();
+    let payload = null;
+    try { payload = rawText ? JSON.parse(rawText) : null; } catch { payload = null; }
+    if (!response.ok) throw enrichUploadError(buildError(response.status, rawText, payload));
+    return payload;
   }
 
   function parseCsvLine(line = '') {
@@ -1020,6 +1058,9 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
     sendToFunction,
     submitQuoteContact,
     manageOperations,
+    customerPortal,
+    fetchPublicContent,
+    uploadPublicAsset,
     parseBankCsvPreviewText,
     uploadEquipmentEvidence,
     uploadImagesForSubmission,
