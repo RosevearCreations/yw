@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const BUILD = '2026-06-18a';
-const SCHEMA = 151;
+const BUILD = '2026-06-20a';
+const SCHEMA = 152;
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-idempotency-key',
@@ -632,7 +632,7 @@ async function resolveJob(supabase: any, reference: string) {
   const { data } = await supabase.from('jobs').select('*').eq('job_code', reference).limit(1).maybeSingle();
   return data || null;
 }
-async function queuePayload(supabase: any) {
+async function queuePayload(supabase: any, profile: any) {
   const queueNames: Record<string, string> = {
     quotes: 'v_quote_contact_followup_queue', payments: 'v_payment_action_workbench', bank_imports: 'v_bank_csv_import_workbench',
     reconciliation: 'v_reconciliation_action_workbench', equipment: 'v_equipment_scan_resolution_queue', equipment_service: 'v_equipment_service_cost_recovery_queue',
@@ -642,11 +642,27 @@ async function queuePayload(supabase: any) {
     const rows = await safeSelect(supabase.from(view).select('*').limit(60));
     return [key, rows];
   }));
-  const bankItems = await safeSelect(supabase.from('bank_reconciliation_items').select('id, reconciliation_session_id, item_date, item_description, amount, match_status, clearing_status, difference_reason, notes, created_at').eq('clearing_status', 'open').order('item_date', { ascending: false }).limit(100));
-  const profiles = await safeSelect(supabase.from('profiles').select('id, full_name, email, role').order('full_name').limit(200));
-  const banks = await safeSelect(supabase.from('bank_accounts').select('id, account_name, currency_code, account_mask, is_default, gl_account_id').eq('account_status', 'open').order('is_default', { ascending: false }).order('account_name'));
-  const rails = await safeSelect(supabase.from('admin_scorecard_progress_rails').select('*').eq('rail_status', 'active').order('sort_order'));
-  return { ...Object.fromEntries(entries), bank_items: bankItems, profiles, banks, rails };
+  const [bankItems, profiles, banks, rails, stripeRows, exportRows, testRows, capabilitySnapshot] = await Promise.all([
+    safeSelect(supabase.from('bank_reconciliation_items').select('id, reconciliation_session_id, item_date, item_description, amount, match_status, clearing_status, difference_reason, notes, created_at').eq('clearing_status', 'open').order('item_date', { ascending: false }).limit(100)),
+    safeSelect(supabase.from('profiles').select('id, full_name, email, role').order('full_name').limit(200)),
+    safeSelect(supabase.from('bank_accounts').select('id, account_name, currency_code, account_mask, is_default, gl_account_id').eq('account_status', 'open').order('is_default', { ascending: false }).order('account_name')),
+    safeSelect(supabase.from('admin_scorecard_progress_rails').select('*').eq('rail_status', 'active').order('sort_order')),
+    safeSelect(supabase.from('v_stripe_webhook_health').select('*').limit(1)),
+    safeSelect(supabase.from('v_accountant_export_readiness').select('*').limit(1)),
+    safeSelect(supabase.from('v_operations_staging_test_summary').select('*').limit(6)),
+    callRpc(supabase, 'ywi_get_operations_capabilities', { p_actor_profile_id: profile.id }).catch(() => ({ actor_role: profile?.role || 'unknown', actor_rank: roleRank(profile?.role), actions: {} }))
+  ]);
+  return {
+    ...Object.fromEntries(entries), bank_items: bankItems, profiles, banks, rails,
+    capabilities: capabilitySnapshot,
+    stripe_health: {
+      ...(stripeRows?.[0] || {}),
+      webhook_secret_configured: Boolean(clean(Deno.env.get('STRIPE_WEBHOOK_SECRET'), 8)),
+      api_key_configured: Boolean(clean(Deno.env.get('STRIPE_SECRET_KEY'), 8))
+    },
+    accountant_export: exportRows?.[0] || {},
+    staging_tests: testRows || []
+  };
 }
 
 serve(async (req) => {
@@ -669,7 +685,7 @@ serve(async (req) => {
 
     if (action === 'operations_queue_list') {
       requireRank(profile, 30, action);
-      return Response.json({ ok: true, build: BUILD, schema: SCHEMA, queues: await queuePayload(supabase) }, { headers: corsHeaders });
+      return Response.json({ ok: true, build: BUILD, schema: SCHEMA, queues: await queuePayload(supabase, profile) }, { headers: corsHeaders });
     }
 
     if (action === 'payment_action_request') {
@@ -1113,18 +1129,10 @@ serve(async (req) => {
     }
 
     if (action === 'deposit_status_update') {
+      // Deliberately fail closed: a staff screen must never mark a hosted payment as paid.
+      // Stripe webhook verification owns paid/failed/expired lifecycle updates through schema 151 RPCs.
       requireRank(profile, 45, action);
-      const depositId = clean(body.deposit_id, 80);
-      if (!isUuid(depositId)) throw new HttpError(400, 'Valid deposit_id is required.');
-      const status = clean(body.deposit_status, 40);
-      if (!['requested','checkout_created','paid','failed','expired','refunded'].includes(status)) throw new HttpError(400, 'Unsupported deposit status.');
-      const { data: deposit, error: readError } = await supabase.from('customer_deposit_requests').select('*').eq('id', depositId).single();
-      if (readError) throw readError;
-      const paidAmount = status === 'paid' ? money(body.paid_amount || deposit.requested_amount) : money(deposit.paid_amount);
-      const { data, error } = await supabase.from('customer_deposit_requests').update({ deposit_status: status, paid_amount: paidAmount, paid_at: status === 'paid' ? nowIso() : deposit.paid_at, payment_reference: clean(body.payment_reference, 180) || deposit.payment_reference, receipt_url: clean(body.receipt_url, 600) || deposit.receipt_url, updated_at: nowIso() }).eq('id', depositId).select('*').single();
-      if (error) throw error;
-      await supabase.from('estimate_quote_packages').update({ deposit_status: status, updated_at: nowIso() }).eq('id', deposit.quote_package_id);
-      return Response.json({ ok: true, record: data }, { headers: corsHeaders });
+      throw new HttpError(409, 'Manual deposit-status changes are disabled. Use Stripe test-mode webhooks or the customer portal checkout flow so amount, currency, session, and signature checks remain intact.');
     }
 
     if (action === 'offline_conflict_card' || action === 'offline_conflict_resolve') {

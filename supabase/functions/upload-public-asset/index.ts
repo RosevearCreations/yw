@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const BUILD = '2026-06-18a';
-const SCHEMA = 151;
+const BUILD = '2026-06-20a';
+const SCHEMA = 152;
 const BUCKET = 'public-assets';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

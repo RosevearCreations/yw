@@ -1,13 +1,12 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const BUILD='2026-06-18a';
-const SCHEMA=151;
+const BUILD='2026-06-20a';
+const SCHEMA=152;
 const jsonHeaders={ 'Content-Type':'application/json' };
 const clean=(v:unknown,max=1000)=>String(v ?? '').trim().slice(0,max);
 const money=(v:unknown)=>{const n=Number(v);return Number.isFinite(n)?Number(n.toFixed(2)):0;};
 const cents=(v:unknown)=>Math.round(money(v)*100);
-const nowIso=()=>new Date().toISOString();
 function safeEqual(a:string,b:string){
   if(a.length!==b.length) return false;
   let diff=0; for(let i=0;i<a.length;i+=1) diff|=a.charCodeAt(i)^b.charCodeAt(i); return diff===0;
@@ -36,27 +35,64 @@ function validateSession(deposit:any,session:any){
   const depositCurrency=clean(deposit.currency_code||'CAD',8).toUpperCase();
   if(sessionCurrency && sessionCurrency!==depositCurrency) throw new Error('Stripe currency does not match the deposit request.');
 }
+async function recordDelivery(supabase:any,payload:Record<string,unknown>){
+  if(!supabase) return;
+  try {
+    const eventId=clean(payload.event_id,180)||null;
+    const row={
+      event_id:eventId,
+      event_type:clean(payload.event_type,120)||null,
+      delivery_status:clean(payload.delivery_status||'received',30)||'received',
+      validation_status:clean(payload.validation_status||'pending',30)||'pending',
+      validation_reason:clean(payload.validation_reason,1200)||null,
+      deposit_request_id:clean(payload.deposit_request_id,80)||null,
+      checkout_session_id:clean(payload.checkout_session_id,180)||null,
+      amount_cents:Number.isFinite(Number(payload.amount_cents))?Math.trunc(Number(payload.amount_cents)):null,
+      currency_code:clean(payload.currency_code,8).toUpperCase()||null,
+      processed_at:payload.delivery_status==='processed'?new Date().toISOString():null,
+      metadata:{build:BUILD,schema:SCHEMA,payment_status:clean(payload.payment_status,40)||null}
+    };
+    if(eventId) await supabase.from('stripe_webhook_delivery_events').upsert(row,{onConflict:'event_id'});
+    else await supabase.from('stripe_webhook_delivery_events').insert(row);
+  } catch { /* Observability must never interrupt Stripe acknowledgement. */ }
+}
 
 serve(async(req)=>{
   if(req.method!=='POST') return new Response(JSON.stringify({ok:false,error:'Use POST.'}),{status:405,headers:jsonHeaders});
+  let supabase:any=null;
+  let event:any=null;
+  let session:any={};
+  let depositId='';
   try{
     const url=Deno.env.get('SUPABASE_URL')||Deno.env.get('SB_URL')||'';
     const key=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')||Deno.env.get('SB_SERVICE_ROLE_KEY')||'';
     const secret=Deno.env.get('STRIPE_WEBHOOK_SECRET')||'';
     if(!url||!key||!secret) throw new Error('Stripe webhook is not configured.');
+    supabase=createClient(url,key,{auth:{persistSession:false}});
     const raw=await req.text();
     const signature=req.headers.get('stripe-signature')||'';
-    if(!await verify(raw,signature,secret)) return new Response(JSON.stringify({ok:false,error:'Invalid Stripe signature.'}),{status:400,headers:jsonHeaders});
-    const event=JSON.parse(raw);
+    if(!await verify(raw,signature,secret)){
+      await recordDelivery(supabase,{delivery_status:'failed',validation_status:'failed',validation_reason:'Invalid Stripe signature.'});
+      return new Response(JSON.stringify({ok:false,error:'Invalid Stripe signature.'}),{status:400,headers:jsonHeaders});
+    }
+    event=JSON.parse(raw);
     const supported=new Set(['checkout.session.completed','checkout.session.async_payment_succeeded','checkout.session.async_payment_failed','checkout.session.expired']);
-    if(!supported.has(event.type)) return new Response(JSON.stringify({ok:true,ignored:true,reason:'event_type'}),{headers:jsonHeaders});
-    const session=event?.data?.object||{};
-    const depositId=clean(session?.metadata?.deposit_request_id||session?.client_reference_id,80);
-    if(!depositId) return new Response(JSON.stringify({ok:true,ignored:true,reason:'deposit_id'}),{headers:jsonHeaders});
-    const supabase=createClient(url,key,{auth:{persistSession:false}});
+    if(!supported.has(event.type)){
+      await recordDelivery(supabase,{event_id:event.id,event_type:event.type,delivery_status:'ignored',validation_status:'verified',validation_reason:'Unsupported event type.'});
+      return new Response(JSON.stringify({ok:true,ignored:true,reason:'event_type'}),{headers:jsonHeaders});
+    }
+    session=event?.data?.object||{};
+    depositId=clean(session?.metadata?.deposit_request_id||session?.client_reference_id,80);
+    if(!depositId){
+      await recordDelivery(supabase,{event_id:event.id,event_type:event.type,delivery_status:'ignored',validation_status:'verified',validation_reason:'No deposit request reference on session.',checkout_session_id:session.id,amount_cents:session.amount_total,currency_code:session.currency,payment_status:session.payment_status});
+      return new Response(JSON.stringify({ok:true,ignored:true,reason:'deposit_id'}),{headers:jsonHeaders});
+    }
     const {data:deposit,error:depositError}=await supabase.from('customer_deposit_requests').select('*').eq('id',depositId).maybeSingle();
     if(depositError) throw depositError;
-    if(!deposit) return new Response(JSON.stringify({ok:true,ignored:true,reason:'deposit_not_found'}),{headers:jsonHeaders});
+    if(!deposit){
+      await recordDelivery(supabase,{event_id:event.id,event_type:event.type,delivery_status:'failed',validation_status:'failed',validation_reason:'Deposit request was not found.',deposit_request_id:depositId,checkout_session_id:session.id,amount_cents:session.amount_total,currency_code:session.currency,payment_status:session.payment_status});
+      return new Response(JSON.stringify({ok:true,ignored:true,reason:'deposit_not_found'}),{headers:jsonHeaders});
+    }
     validateSession(deposit,session);
 
     const paymentSucceeded=event.type==='checkout.session.async_payment_succeeded' || (event.type==='checkout.session.completed' && session.payment_status==='paid');
@@ -81,8 +117,11 @@ serve(async(req)=>{
       const marked=await supabase.rpc('ywi_rpc_mark_deposit_checkout_status',{ p_deposit_request_id:deposit.id, p_deposit_status:'expired', p_checkout_session_id:session.id, p_event_payload:{ stripe_event_id:event.id, event_type:event.type, build:BUILD, schema:SCHEMA } });
       if(marked.error) throw marked.error;
     }
+    await recordDelivery(supabase,{event_id:event.id,event_type:event.type,delivery_status:'processed',validation_status:'verified',deposit_request_id:deposit.id,checkout_session_id:session.id,amount_cents:session.amount_total,currency_code:session.currency,payment_status:session.payment_status});
     return new Response(JSON.stringify({ok:true,received:true}),{headers:jsonHeaders});
   }catch(error){
-    return new Response(JSON.stringify({ok:false,error:error instanceof Error?error.message:'Webhook failed.'}),{status:500,headers:jsonHeaders});
+    const message=error instanceof Error?error.message:'Webhook failed.';
+    await recordDelivery(supabase,{event_id:event?.id,event_type:event?.type,delivery_status:'failed',validation_status:'failed',validation_reason:message,deposit_request_id:depositId,checkout_session_id:session?.id,amount_cents:session?.amount_total,currency_code:session?.currency,payment_status:session?.payment_status});
+    return new Response(JSON.stringify({ok:false,error:message}),{status:500,headers:jsonHeaders});
   }
 });
