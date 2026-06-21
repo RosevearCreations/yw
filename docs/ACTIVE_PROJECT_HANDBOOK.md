@@ -1,101 +1,95 @@
-# Active Project Handbook — build 2026-06-18a / schema 151
+# Active Project Handbook — build 2026-06-20a / schema 152
 
-## Current build
+## Current build and purpose
 
-**Repository build:** `2026-06-18a`  
-**Database marker:** schema `151`  
-**Primary product direction:** a mobile-first operations, quoting, customer portal, equipment, media, route-publication, accounting, and reconciliation platform for the service-business workflow we are building.
+**Repository build:** `2026-06-20a`  
+**Database marker:** schema `152`  
+**Core direction:** a mobile-first service-business platform combining public discovery, quoting, customer self-service, field work, equipment care, media, dispatch, job costing, accounting, and reconciliation.
 
-This pass keeps schema 150’s customer portal, media, sitemap, queue, dispatch, and live job-cost foundation, then adds the schema 151 transactional RPC layer. The goal is to stop fragile multi-row business transactions from living only in Edge Function code.
+Schema 151 moved high-risk multi-row business writes into transactional PostgreSQL RPCs and database transactions. Schema 152 turns that foundation into something we can safely prove in staging before treating it as production-ready.
 
-## Active Markdown policy
+## Active-document rule
 
-Only these files are active:
+Only these are active:
 
 - `README.md`
 - `docs/ACTIVE_PROJECT_HANDBOOK.md`
 - `docs/NEXT_STEPS_AND_SANITY_CHECK.md`
 
-All older Markdown is archived under `archive/retired-markdown-2026-06-18a/`. Do not restore archived roadmap files as active files unless deliberately re-opening an old decision.
+All other Markdown is preserved in `archive/retired-markdown-2026-06-20a/` for traceability. Do not reinstate an archived roadmap as current direction without deliberately reviewing it against this handbook.
 
-## Business and competitive direction
+## Product and operational direction
 
-The product should continue moving toward a practical small-service-business system:
+The application should continue toward one connected workflow:
 
-- quote intake, owner assignment, reminders, and follow-up history;
-- customer portal with quote acceptance, deposit flow, service requests, schedule visibility, and receipt/status history;
-- field operations with dispatch, live job cost, evidence/media capture, equipment custody, scan resolution, service tasks, and cost recovery;
-- accounting work queues with AR/AP applications, journals, refunds, reversals, bank imports, and reconciliation;
-- SEO-safe approved public route pages, canonical URLs, sitemap entries, descriptive approved visuals, and one clear H1 per generated page.
+- **Public discovery:** service and location pages generated only from approved route records, with one visible H1, sensible title/meta/canonical data, approved images, alt text, structured data that matches visible content, and sitemap entries.
+- **Leads and quotes:** intake, owner assignment, response alerts, follow-up history, customer acceptance, clear deposit request, and dispatch handoff.
+- **Customer portal:** quote status, acceptance, deposit checkout, work-order/schedule visibility, request history, and receipts/status without exposing staff-only controls.
+- **Field work:** mobile-friendly dispatch, equipment scanning and custody, failed-return service tasks, cost-recovery reviews, approved media capture, and live job-cost snapshots.
+- **Financial controls:** approval queues, real AR/AP applications and balanced journals, period-aware posting, bank CSV review/promotion, explainable reconciliation, close readiness, and accountant-review exports.
 
-The competitive pattern remains: Jobber-style customer self-service and job lifecycle, Aspire-style signed-contract/work-ticket/job-cost visibility, and LMN-style lead follow-up, scheduling, payments, and estimate-vs-actual operational discipline.
+The customer portal remains a protected, customer-facing part of that flow. The practical benchmark remains modern service-business software: customer self-service, prompt follow-up, clear status, dispatch discipline, payments, and estimate-versus-actual job-cost visibility. This build follows those patterns without copying another vendor’s pages or claims.
 
-## Schema 151 transactional RPC layer
+## Schema 151 transaction boundary
 
-This pass adds a transactional PostgreSQL RPC layer for accounting, reconciliation, and quote conversion so multi-row writes succeed or fail as one unit.
+Schema 151 keeps multi-row outcomes atomic through PostgreSQL RPCs:
 
-Schema 151 adds these PostgreSQL RPCs:
+- `ywi_rpc_post_payment_action` — posts an approved payment action with AR/AP application and balanced journal entries.
+- `ywi_rpc_promote_bank_csv_import` — converts accepted preview rows into statement, reconciliation session/items, and source links.
+- `ywi_rpc_apply_reconciliation_action` — handles match, exact split, undo, signoff, and rejection with persisted explanation data.
+- `ywi_rpc_accept_quote_package` — accepts a quote, reuses/creates one work order, updates package/estimate, and records portal activity.
+- `ywi_rpc_prepare_deposit_request` and `ywi_rpc_attach_deposit_checkout` — calculate and attach a deposit checkout without duplicate requests.
+- `ywi_rpc_record_portal_deposit_paid` and `ywi_rpc_mark_deposit_checkout_status` — update provider-controlled payment status safely.
 
-- `ywi_rpc_post_payment_action` — posts approved payment actions to AR/AP applications and balanced GL journals inside one database transaction.
-- `ywi_rpc_promote_bank_csv_import` — promotes accepted CSV preview rows into statement imports, reconciliation sessions, reconciliation items, and preview-row links atomically.
-- `ywi_rpc_apply_reconciliation_action` — records match, split, undo, signoff, and rejection actions with exact-cent split validation and persisted explanations.
-- `ywi_rpc_accept_quote_package` — accepts a portal quote, creates/reuses one work order, updates the estimate/package, and records portal events atomically.
-- `ywi_rpc_prepare_deposit_request` — calculates the exact remaining deposit and creates/reuses one deposit request.
-- `ywi_rpc_attach_deposit_checkout` — attaches a Stripe Checkout session to a deposit and records the portal event.
-- `ywi_rpc_record_portal_deposit_paid` — records paid deposits, creates/updates AR payment credit records, creates the matching payment action, and updates portal/package status atomically.
-- `ywi_rpc_mark_deposit_checkout_status` — records non-paid checkout states without overwriting paid deposits.
+The Edge Functions authenticate, normalize input, do friendly validation, then call these RPCs. The database owns all-or-nothing transaction behavior.
 
-The RPCs use role/rank helpers, accounting-period lock checks, exact-cent money helpers, balanced journal validation, and explicit execute grants. Multi-row failures now raise exceptions so the whole call rolls back instead of leaving half-written workbench data.
+## Schema 152 release-proof layer
 
-## Edge Function responsibilities
+Schema 152 adds:
 
-Edge Functions should now do five things:
+- `ywi_get_operations_capabilities` so the protected cockpit can explain why an action is unavailable while keeping server-side permission checks authoritative.
+- `stripe_webhook_delivery_events` and `v_stripe_webhook_health`, which store safe delivery outcomes and the last validation result without saving raw provider payloads.
+- a fail-closed `deposit_status_update` action: staff cannot manually mark hosted deposits paid; verified Stripe events own that lifecycle.
+- detailed reconciliation review UI for bank amount, score components, split allocations, and exact-cent difference.
+- `operations_staging_test_runs` and `operations_staging_test_results` plus a staging-only test harness.
+- a private `accountant-exports` storage bucket, signed downloads, SHA-256 artifact metadata, formula-safe CSV output, and export-readiness checks.
 
-1. authenticate or validate the public token/webhook signature;
-2. normalize request values and perform friendly front-door validation;
-3. call the appropriate schema 151 RPC for multi-row writes;
-4. write non-blocking audit/notification records where safe;
-5. return a compact response for the cockpit, portal, or webhook.
+## SEO, content, and visual rules
 
-The most important delegated paths are:
+Keep these public-page rules non-negotiable:
 
-- `operations-manage` → payment posting, bank CSV promotion, reconciliation actions;
-- `customer-portal` → quote acceptance, deposit request preparation, checkout attachment;
-- `stripe-webhook` → paid/processing/failed/expired deposit state changes.
-
-## SEO and public-page rules
-
-Public pages should continue to follow these rules:
-
-- exactly one visible H1 per exposed page;
-- clear title/canonical/meta fields;
-- approved route records only;
-- approved visual assets only;
-- descriptive alt text and nearby relevant text for images;
-- structured data that matches visible page content;
-- sitemap entries generated from approved published routes only;
-- no generated route may overwrite reserved application paths such as `/docs`, `/api`, `/js`, `/sql`, `/supabase`, `index.html`, or `sitemap.xml`.
+1. Exactly one visible H1 per exposed page.
+2. Use actual service/location wording people search for in the title, main heading, nearby copy, and internal links, without keyword stuffing.
+3. Publish only approved route records and approved visual assets.
+4. Use descriptive filenames, alt text, captions/nearby supporting text, and image roles; placeholders remain marked as placeholders until approved media replaces them.
+5. Match structured data to visible content.
+6. Generate sitemap entries only for approved/published paths; never allow route records to overwrite `/api`, `/docs`, `/js`, `/sql`, `/supabase`, `index.html`, or `sitemap.xml`.
+7. Keep the public route, mobile portal, and main site functional without reliance on unapproved third-party images.
 
 ## Mobile and desktop rules
 
-The protected cockpit, customer portal, and generated public routes must remain usable on phone and desktop. Keep queue cards readable, avoid overlapping controls, preserve reduced-motion support, and avoid layouts that require horizontal scrolling on narrow screens.
+- The cockpit must remain readable at phone, tablet, and desktop widths.
+- Queue cards, role notices, health cards, and reconciliation math collapse into one column on narrow screens.
+- Avoid clipped controls, hidden focus targets, layout overlap, and mandatory horizontal scrolling.
+- Preserve reduced-motion behavior and local retry/draft handling where already implemented.
 
-## Verification commands
-
-Run these before packaging:
+## Required release commands
 
 ```bash
 node scripts/operations-rpc-integration-test.mjs
+node scripts/operations-rpc-staging-e2e.mjs
 node scripts/repo-smoke-check.mjs
 ```
 
-The RPC integration script runs static checks without credentials. With `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, it also checks the deployed staging permission matrix. Seeded live transaction scenarios still require staging data.
+The second command is read-only/static by default. Its live mode is deliberately locked to an explicitly named staging environment. Detailed test instructions are in `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
 
 ## Deployment order
 
-1. Apply migrations through schema 151.
-2. Deploy updated Edge Functions: `operations-manage`, `customer-portal`, and `stripe-webhook`.
-3. Confirm `v_schema_drift_status.expected_schema_version = 151`.
-4. Confirm `v_operation_rpc_permission_matrix` has the schema 151 test rows.
-5. Run staging tests for AR, AP, write-off, overpayment credit, refund, reversal, bank CSV promotion, reconciliation match/split/undo/signoff, quote acceptance, deposit checkout, and Stripe webhook completion.
-6. Run public route generation and inspect one generated service/location page on phone and desktop.
+1. Back up the staging database and confirm the target is not production.
+2. Apply migrations through schema 152, including `sql/152_staging_proof_permissions_stripe_health_accountant_export.sql`.
+3. Deploy `operations-manage`, `stripe-webhook`, `accountant-export`, `customer-portal`, and the existing upload/public-content functions.
+4. Configure staging-only Stripe keys and webhook secret. Do not reuse live secrets.
+5. Verify `v_schema_drift_status` says expected and latest schema are at least `152`.
+6. Run the static checks, then the live staging harness with test-role credentials.
+7. Exercise the detailed browser tests below, including a phone/tablet/desktop pass.
+8. Review test-run records, webhook health, reconciliation exceptions, and accountant-export readiness before production planning.

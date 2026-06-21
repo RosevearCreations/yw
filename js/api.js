@@ -673,6 +673,15 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
     });
   }
 
+  async function accountantExport(payload = {}) {
+    return jsonFetch('accountant-export', {
+      method: 'POST',
+      body: payload,
+      requireAuth: true,
+      timeoutMs: 60000
+    });
+  }
+
   async function fetchPublicContent(payload = {}) {
     return jsonFetch('public-content', {
       method: 'POST',
@@ -1059,6 +1068,7 @@ async function trackMonitorEvent(payload = {}, requireAuth = false) {
     submitQuoteContact,
     manageOperations,
     customerPortal,
+    accountantExport,
     fetchPublicContent,
     uploadPublicAsset,
     parseBankCsvPreviewText,

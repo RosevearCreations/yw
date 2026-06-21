@@ -1,53 +1,129 @@
-# Next Steps and Sanity Check — build 2026-06-18a / schema 151
+# Next Steps and Sanity Check — build 2026-06-20a / schema 152
 
 ## Completed in this pass
 
-1. Added schema `151_transactional_rpc_accounting_reconciliation_quote_tests.sql`.
-2. Converted approved payment posting to `ywi_rpc_post_payment_action`.
-3. Converted confirmed bank CSV promotion to `ywi_rpc_promote_bank_csv_import`.
-4. Converted reconciliation match/split/undo/signoff/reject writes to `ywi_rpc_apply_reconciliation_action`.
-5. Converted quote acceptance/work-order conversion to `ywi_rpc_accept_quote_package`.
-6. Converted customer deposit preparation and checkout attachment to `ywi_rpc_prepare_deposit_request` and `ywi_rpc_attach_deposit_checkout`.
-7. Converted Stripe deposit paid/processing/failed/expired handling to `ywi_rpc_record_portal_deposit_paid` and `ywi_rpc_mark_deposit_checkout_status`.
-8. Added role/rank helpers, exact-cent helpers, accounting-period lock checks, balanced-journal checks, explicit RPC grants, and a deployable permission matrix.
-9. Added `scripts/operations-rpc-integration-test.mjs` for static RPC wiring checks and optional staging permission-matrix checks.
-10. Updated build/cache markers to `2026-06-18a` and schema markers to `151`.
-11. Rebuilt `sql/000_full_schema_reference.sql` as the ordered canonical schema from migration 030 through 151.
-12. Retired superseded Markdown into `archive/retired-markdown-2026-06-18a/` and removed temporary write-test files from the active root.
+1. Added schema `152_staging_proof_permissions_stripe_health_accountant_export.sql`.
+2. Added server-calculated role capability data for the Operations Cockpit and visible restricted-action labels for queue actions.
+3. Added a plain-language reconciliation review panel: bank amount, score components, allocation list, exact split total, and difference to the cent.
+4. Added Stripe health cards showing configuration presence, recent processed/failed events, and last safe validation message.
+5. Blocked the old manual paid-deposit path. Stripe test checkout and verified webhook events are now the only intended way to change hosted deposit payment status.
+6. Added private accountant-package generation with formula-safe CSV files, ZIP manifest, SHA-256 tracking, short-lived signed download, and readiness status.
+7. Added durable staging test-run/result tables and `scripts/operations-rpc-staging-e2e.mjs`.
+8. Updated the Operations Cockpit, API client, Edge Function configuration, and responsive CSS for phone/tablet/desktop use.
+9. Rebuilt the canonical full schema through migrations `030` to `152`.
+10. Physically moved superseded Markdown into `archive/retired-markdown-2026-06-20a/`; only three Markdown files remain active.
 
-## Sanity check result
+## Sanity-check result
 
-The repository now uses transactional PostgreSQL RPCs for the highest-risk multi-row write paths. Edge Functions still provide request validation and user-friendly errors, but the database now owns the atomic transaction boundary for accounting, reconciliation, bank promotion, quote conversion, and deposit recording.
+The highest-risk multi-row writes remain transactional in schema 151. Schema 152 adds release visibility and testability rather than another isolated feature layer. The payment lifecycle is now more consistent: a browser or admin screen cannot simply claim a hosted payment succeeded; Stripe signature/session/amount/currency validation must pass before a deposit is paid.
 
-## Release blockers
+Static verification can prove source wiring, schema references, syntax, role-gate presence, archive consolidation, and build markers. It cannot prove that a deployed database, storage policy, Stripe webhook endpoint, mobile browser, or user role behaves correctly. Those require the staging steps below.
 
-These still need staging/live verification before production use:
+## Detailed staging test process
 
-1. Apply schema 151 to a staging Supabase database.
-2. Deploy the updated `operations-manage`, `customer-portal`, and `stripe-webhook` Edge Functions.
-3. Run `node scripts/operations-rpc-integration-test.mjs` with staging credentials.
-4. Seed or use staging records for AR invoices/payments, AP bills/payments, bank CSV rows, reconciliation items, quote packages, and Stripe test Checkout sessions.
-5. Confirm low-rank users cannot execute protected operations through the app or direct RPC calls.
-6. Confirm all failed RPC cases roll back cleanly: locked period, missing proof, bad split total, wrong deposit amount, wrong Stripe currency, duplicate acceptance, duplicate deposit recognition, and repeated reversal.
-7. Perform real phone/tablet/desktop browser inspection; static CSS checks are not a substitute for a rendered staging pass.
+### A. Prepare a safe staging target
 
-## Highest-value next work
+1. Create or identify a Supabase project used only for testing. Do **not** run these steps against production.
+2. Back up or snapshot that staging database.
+3. In Supabase SQL Editor or the chosen migration tool, apply migrations in numeric order through schema 152.
+4. Confirm the schema marker:
 
-1. Build seeded staging fixtures for the RPC integration suite so AR, AP, bank, reconciliation, quote, and deposit flows can run end-to-end without hand-created records.
-2. Add role-permission UI badges beside each cockpit button so users know why a button is disabled before clicking.
-3. Add a reconciliation review screen that shows the RPC’s exact split math and match explanation in plain language.
-4. Add Stripe test-mode health cards showing webhook secret status, last received event, and last failed validation reason.
-5. Add accountant export packaging after the RPC layer is proven with staging data.
-6. Replace the most visible placeholders with approved real workshop, vehicle, product, and before/after photos.
-7. Connect Search Console exports and Google Business Profile observations so route-page decisions use real search data.
+```sql
+select * from public.v_schema_drift_status;
+```
 
-## Packaging notes
+Expected: `expected_schema_version = 152`, `latest_applied_schema_version >= 152`, and `drift_status = current`.
 
-Run before packaging:
+5. Deploy these Edge Functions from this build:
+
+```bash
+supabase functions deploy operations-manage
+supabase functions deploy customer-portal
+supabase functions deploy stripe-webhook
+supabase functions deploy accountant-export
+supabase functions deploy upload-public-asset
+supabase functions deploy public-content
+```
+
+6. In the staging project only, set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`, and `STRIPE_WEBHOOK_SECRET`. Use Stripe **test-mode** credentials only.
+7. Add the Stripe staging webhook endpoint for `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, and `checkout.session.expired`.
+
+### B. Create test users and records
+
+1. Create one active `job_admin` or `admin` test account and one active `worker` test account. Do not use personal production accounts.
+2. Create one test customer, AR invoice, AP bill, open bank account, and a small quote package in staging. Label every test record with `STAGING-` so it is easy to identify and remove.
+3. Create a bank CSV preview with at least one accepted row, then promote it to create a reconciliation item.
+4. Record these values in a temporary local note, not source control:
+   - job-admin profile UUID;
+   - job-admin session JWT;
+   - worker session JWT;
+   - a staging reconciliation item UUID.
+5. Use the customer portal to create one test quote acceptance and Stripe test Checkout session. Do not manually mark the deposit paid.
+
+### C. Run automated checks
+
+Run the no-credential checks first:
 
 ```bash
 node scripts/operations-rpc-integration-test.mjs
+node scripts/operations-rpc-staging-e2e.mjs
 node scripts/repo-smoke-check.mjs
 ```
 
-A pass without Supabase credentials confirms static wiring and migration readiness. A pass with staging credentials additionally confirms the deployed schema 151 permission matrix is readable.
+All static checks should pass. The staging harness should say it skipped live calls; that is normal without credentials.
+
+For the live staging run, set environment variables in the same terminal. Replace the placeholder values with staging-only values; do not paste them into a GitHub issue, ZIP, or chat transcript.
+
+```powershell
+$env:YWI_RUN_STAGING_RPC_TESTS = '1'
+$env:YWI_STAGING_LABEL = 'staging'
+$env:YWI_STAGING_CONFIRM = 'I_CONFIRM_STAGING_ONLY'
+$env:SUPABASE_URL = 'https://YOUR-STAGING-PROJECT.supabase.co'
+$env:SUPABASE_SERVICE_ROLE_KEY = 'YOUR-STAGING-SERVICE-ROLE-KEY'
+$env:YWI_STAGING_JOB_ADMIN_PROFILE_ID = 'JOB-ADMIN-PROFILE-UUID'
+$env:YWI_STAGING_JOB_ADMIN_JWT = 'JOB-ADMIN-SESSION-JWT'
+$env:YWI_STAGING_WORKER_JWT = 'WORKER-SESSION-JWT'
+$env:YWI_STAGING_RPC_FIXTURES_JSON = '{"reconciliation_item_id":"RECONCILIATION-ITEM-UUID"}'
+node scripts/operations-rpc-staging-e2e.mjs
+```
+
+Expected live outcome: schema health, permission matrix, capability snapshot, role allow/deny checks, and exact-cent rejection pass. Skipped cases mean a required staging-only input was not provided; they are not failures, but they should be completed before production approval.
+
+### D. Manual browser acceptance test
+
+Use a current browser on phone width, tablet width, and desktop width. Sign in as the job-admin test user.
+
+1. **Role clarity:** Open Operations Cockpit. Verify the role strip identifies the test role and shows permitted/restricted actions. Sign in as worker and confirm restricted actions are blocked by the server, not only visually disabled.
+2. **Payment posting:** Create a small `STAGING-` payment action with a proof reference. Approve it. Post it. Verify one AR/AP application and one balanced journal batch; retry the post and verify it does not create a duplicate batch.
+3. **Bank promotion:** Upload a small test CSV. Preview it, confirm it, and verify a statement import, reconciliation session, and reconciliation items appear.
+4. **Exact split:** Open a reconciliation row. Try a split whose allocations do not equal the bank row exactly; expect rejection. Then use a valid exact-cent split and verify the review card shows zero difference.
+5. **Quote conversion:** From the customer portal, accept a staging quote twice. Verify only one work order is created or reused.
+6. **Stripe deposit:** Complete checkout with a Stripe test card. Verify the webhook health card records a verified processed event and the deposit status updates only after that event. Try no manual paid-status action; it should be unavailable/blocked.
+7. **Accountant package:** Resolve or note any readiness issues. Generate an accountant package as job admin. Verify it downloads through a short-lived link, opens as a ZIP, has the expected CSVs/manifest, and no spreadsheet cell starts as a live formula.
+8. **Visual assets and routes:** Upload one approved staging image. Verify width/height, thumbnail, consent/approval gate, public route readiness, exactly one H1, canonical/meta data, and sitemap entry only after approval.
+9. **Responsive pass:** On a narrow viewport, verify health cards, role notices, queues, math cards, buttons, and forms are readable without overlap or forced horizontal scrolling. Test reduced-motion preference.
+10. **Cleanup:** Delete or archive all `STAGING-` financial, customer, portal, media, and export records according to the staging-retention rule.
+
+## Release blockers
+
+Do not promote to production until all are complete:
+
+- schema 152 is deployed and current in staging;
+- all changed Edge Functions are deployed with staging-only keys;
+- job-admin allowed and worker denied checks pass;
+- failed payment, locked period, duplicate post, invalid exact split, duplicate quote acceptance, wrong Stripe session/amount/currency, and webhook signature failures are verified;
+- Stripe test webhooks show safe health outcomes;
+- accountant export is checked by the intended accountant or bookkeeper for chart-of-accounts and tax-reporting suitability;
+- actual phone/tablet/desktop browser verification is complete;
+- actual approved images replace the most visible placeholders;
+- real Search Console and Google Business Profile data are reviewed before changing public route priorities.
+
+## Highest-value next work
+
+1. Build a disposable full staging fixture creator/cleanup routine for AR, AP, bank, reconciliation, quote, portal, and Stripe test data, so the live harness can cover successful mutations without manual setup.
+2. Add browser-based integration tests in CI against a temporary Supabase test project.
+3. Add row-level storage and database-policy assertions for public assets, accountant ZIPs, portal tokens, and staff roles.
+4. Connect accountant export packaging to a reviewed chart-of-accounts/tax mapping and period close checklist.
+5. Replace approved placeholders with original workshop, vehicle, product, and before/after media, then review alt text and image roles.
+6. Connect Search Console and Google Business Profile observations to the route and content decision queue.
+7. Add verified payment-provider operational alerts for repeated webhook failures or stale test/live delivery health.
