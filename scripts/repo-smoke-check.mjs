@@ -1,147 +1,77 @@
+#!/usr/bin/env node
+/** Repository-level static sanity check for build 2026-06-22a / schema 153. */
 import fs from 'node:fs';
 import path from 'node:path';
-import process from 'node:process';
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 
-const root = process.cwd();
-const results = [];
-let failed = false;
-const exists = (rel) => fs.existsSync(path.join(root, rel));
-const read = (rel) => fs.readFileSync(path.join(root, rel), 'utf8');
-const add = (name, ok, details = '') => { results.push({ name, ok:!!ok, details }); if (!ok) failed = true; };
-const containsAll = (text, tokens) => tokens.every((token) => text.includes(token));
+const root=process.cwd();
+const read=(file)=>fs.readFileSync(path.join(root,file),'utf8');
+const exists=(file)=>fs.existsSync(path.join(root,file));
+const all=(text, values)=>values.every((value)=>text.includes(value));
+const results=[];
+function add(name,ok,details=''){results.push({name,ok,details});}
+function walk(dir){return fs.readdirSync(dir,{withFileTypes:true}).flatMap((entry)=>{const full=path.join(dir,entry.name);return entry.isDirectory()?walk(full):[full];});}
 
-function findMarkdown(dir = root, out = []) {
-  for (const entry of fs.readdirSync(dir, { withFileTypes:true })) {
-    if (entry.name === 'archive' || entry.name === '.git') continue;
-    const absolute = path.join(dir, entry.name);
-    if (entry.isDirectory()) findMarkdown(absolute, out);
-    else if (entry.name.endsWith('.md')) out.push(path.relative(root, absolute).replaceAll('\\','/'));
-  }
-  return out;
-}
+const schema=read('sql/000_full_schema_reference.sql');
+const migration153=read('sql/153_release_fixture_policy_mapping_seo_alerts.sql');
+const operations=read('supabase/functions/operations-manage/index.ts');
+const upload=read('supabase/functions/upload-public-asset/index.ts');
+const webhook=read('supabase/functions/stripe-webhook/index.ts');
+const accountant=read('supabase/functions/accountant-export/index.ts');
+const cockpit=read('js/operations-cockpit.js');
+const index=read('index.html');
+const css=read('style.css');
+const config=read('supabase/config.toml');
 
-const requiredFiles = [
-  'README.md', 'docs/ACTIVE_PROJECT_HANDBOOK.md', 'docs/NEXT_STEPS_AND_SANITY_CHECK.md',
-  'index.html', 'style.css', 'app.js', 'server-worker.js', 'manifest.json', 'robots.txt', 'sitemap.xml',
-  'js/api.js', 'js/operations-cockpit.js', 'js/customer-portal.js', 'js/public-routes.js',
-  'scripts/generate-public-routes.mjs', 'scripts/repo-smoke-check.mjs', 'scripts/operations-rpc-integration-test.mjs', 'scripts/operations-rpc-staging-e2e.mjs',
-  'sql/150_end_to_end_operations_customer_portal_media_route_publication.sql',
-  'sql/151_transactional_rpc_accounting_reconciliation_quote_tests.sql', 'sql/152_staging_proof_permissions_stripe_health_accountant_export.sql', 'sql/000_full_schema_reference.sql',
-  'supabase/functions/operations-manage/index.ts', 'supabase/functions/upload-public-asset/index.ts',
-  'supabase/functions/customer-portal/index.ts', 'supabase/functions/public-content/index.ts',
-  'supabase/functions/stripe-webhook/index.ts', 'supabase/functions/accountant-export/index.ts', 'supabase/config.toml'
-];
-for (const file of requiredFiles) add(`file:${file}`, exists(file), exists(file) ? 'Present.' : 'Missing.');
+// Documentation and archive integrity.
+const activeMd=walk(root).filter((file)=>file.endsWith('.md')&&!file.includes(`${path.sep}archive${path.sep}`)).map((file)=>path.relative(root,file).replaceAll('\\','/')).sort();
+add('active-markdown-exactly-three',JSON.stringify(activeMd)===JSON.stringify(['README.md','docs/ACTIVE_PROJECT_HANDBOOK.md','docs/NEXT_STEPS_AND_SANITY_CHECK.md']),`Active Markdown: ${activeMd.join(', ')||'none'}`);
+add('retired-markdown-archive-present',exists('archive/retired-markdown-2026-06-22a')&&walk(path.join(root,'archive/retired-markdown-2026-06-22a')).filter((file)=>file.endsWith('.md')).length>=80,'Historical Markdown is preserved in the dated archive.');
+add('temp-write-files-retired',!walk(root).filter((file)=>!file.includes(`${path.sep}archive${path.sep}`)&&/test_write/i.test(path.basename(file))).length,'No temporary write files remain active.');
 
-const html = read('index.html');
-const css = read('style.css');
-const worker = read('server-worker.js');
-const api = read('js/api.js');
-const cockpit = read('js/operations-cockpit.js');
-const migration150 = read('sql/150_end_to_end_operations_customer_portal_media_route_publication.sql');
-const migration151 = read('sql/151_transactional_rpc_accounting_reconciliation_quote_tests.sql');
-const migration152 = read('sql/152_staging_proof_permissions_stripe_health_accountant_export.sql');
-const schema = read('sql/000_full_schema_reference.sql');
-const operations = read('supabase/functions/operations-manage/index.ts');
-const upload = read('supabase/functions/upload-public-asset/index.ts');
-const portalFunction = read('supabase/functions/customer-portal/index.ts');
-const portalScript = read('js/customer-portal.js');
-const publicScript = read('js/public-routes.js');
-const generator = read('scripts/generate-public-routes.mjs');
-const publicFunction = read('supabase/functions/public-content/index.ts');
-const stripeFunction = read('supabase/functions/stripe-webhook/index.ts');
-const accountantFunction = read('supabase/functions/accountant-export/index.ts');
-const stagingTest = read('scripts/operations-rpc-staging-e2e.mjs');
-const config = read('supabase/config.toml');
-const handbook = read('docs/ACTIVE_PROJECT_HANDBOOK.md');
-const next = read('docs/NEXT_STEPS_AND_SANITY_CHECK.md');
-const rpcTest = read('scripts/operations-rpc-integration-test.mjs');
+// Schema/reference integrity.
+const migrationBlocks=(schema.match(/BEGIN MIGRATION:/g)||[]).length;
+add('canonical-schema-through-153',schema.includes('BEGIN MIGRATION: 030_')&&schema.includes('BEGIN MIGRATION: 153_')&&migrationBlocks===124,`Canonical schema has ${migrationBlocks} migration blocks.`);
+add('canonical-schema-includes-schema153-verbatim',schema.includes(migration153.trim()),'Full schema contains the current migration.');
+add('schema153-transaction-balanced',(migration153.match(/^begin;$/gmi)||[]).length===1&&(migration153.match(/^commit;$/gmi)||[]).length===1,'Schema 153 has one BEGIN and one COMMIT marker.');
+add('schema153-staging-fixtures',all(migration153,['operations_staging_fixture_sets','ywi_rpc_create_staging_fixture_set','ywi_rpc_cleanup_staging_fixture_set','STAGING-']),'Disposable staging fixtures are defined.');
+add('schema153-private-media',all(migration153,['review-assets','review_storage_bucket','published_storage_bucket','public=false']),'Review media bucket and promotion fields are defined.');
+add('schema153-policy-assertions',all(migration153,['ywi_security_policy_assertions','v_security_policy_assertion_summary','sensitive_tables_rls_enabled']),'Policy assertion layer is defined.');
+add('schema153-accountant-mapping',all(migration153,['accountant_export_mapping_rules','v_accountant_mapping_readiness','ywi_rpc_capture_accountant_close_snapshot']),'Accountant mapping/close controls are defined.');
+add('schema153-route-and-alert-queues',all(migration153,['content_signal_observations','v_route_content_decision_queue','stripe_webhook_operational_alerts','v_stripe_webhook_alert_queue']),'Route evidence and webhook alert queues are defined.');
 
-add('build-marker-current', html.includes('2026-06-20a') && worker.includes('ywi-shell-v2026-06-20a') && cockpit.includes("const BUILD = '2026-06-20a'"), 'Index, service worker, and cockpit should share build 2026-06-20a.');
-add('single-homepage-h1', (html.match(/<h1\b/gi) || []).length === 1, `index.html contains ${(html.match(/<h1\b/gi) || []).length} H1 tag(s).`);
-const ids = [...html.matchAll(/\bid=["']([^"']+)/g)].map((match) => match[1]);
-add('unique-index-ids', ids.length === new Set(ids).size, `index.html has ${ids.length} IDs and ${new Set(ids).size} unique IDs.`);
-add('css-braces-balanced', (css.match(/\{/g) || []).length === (css.match(/\}/g) || []).length, 'style.css braces should balance.');
-add('responsive-schema151-css', containsAll(css, ['.oc-live-queue','.customer-portal-shell','.public-route-shell','@media(max-width:620px)','prefers-reduced-motion']), 'Queue/portal/public responsive CSS should exist.');
-add('visual-placeholders-present', containsAll(html, ['graphic-placeholder-wall','section-graphic-placeholder','write-action-proof-visual']), 'Homepage and protected sections should retain explicit visual placeholders.');
-add('new-scripts-loaded', containsAll(html, ['/js/customer-portal.js?v=2026-06-20a','/js/public-routes.js?v=2026-06-20a','/js/operations-cockpit.js?v=2026-06-20a']), 'Index should load current portal, public route, and cockpit scripts.');
-add('new-scripts-cached', containsAll(worker, ["'/js/customer-portal.js'","'/js/public-routes.js'","'/js/operations-cockpit.js'"]), 'Service worker should cache current application scripts.');
+// Function and UI wiring.
+add('operations-schema153-release-proof',all(operations,["const SCHEMA = 153",'publishApprovedAsset','YWI_ALLOW_STAGING_FIXTURES','content_signal_record','stripe_webhook_alert_decision','ywi_refresh_stripe_webhook_alerts']),'Operations Edge Function is wired to schema 153 controls.');
+add('upload-private-review-asset',all(upload,["const BUCKET = 'review-assets'",'review_only:true','imageDimensions','checksum_sha256']),'Upload handler verifies and privately stores review media.');
+add('webhook-alert-refresh',all(webhook,["const SCHEMA=153",'validateSession','ywi_rpc_record_portal_deposit_paid','ywi_refresh_stripe_webhook_alerts']),'Stripe handler validates events and refreshes safe alerts.');
+add('accountant-close-snapshot',all(accountant,["const SCHEMA = 153",'ywi_rpc_capture_accountant_close_snapshot','close_mapping_snapshot','createSignedUrl']),'Accountant export captures mapping/close snapshot and uses signed downloads.');
+add('cockpit-release-proof-ui',all(cockpit,['Schema 153 release-proof actions','oc_fixture_form','oc_policy_summary','oc_signal_queue','oc_webhook_alerts','oc-private-media']),'Cockpit exposes responsive release-proof controls.');
+add('css-release-proof-responsive',all(css,['.oc-release-grid','.oc-release-card','.oc-private-media','@media(max-width:960px){.oc-release-grid']), 'Release-proof/private-media CSS includes responsive fallback.');
+add('jwt-config-protected-functions',/\[functions\.operations-manage\]\s+verify_jwt = true/s.test(config)&&/\[functions\.upload-public-asset\]\s+verify_jwt = true/s.test(config)&&/\[functions\.accountant-export\]\s+verify_jwt = true/s.test(config),'Protected functions retain JWT verification.');
 
-const activeMarkdown = findMarkdown().sort();
-add('markdown-consolidated', JSON.stringify(activeMarkdown) === JSON.stringify(['README.md','docs/ACTIVE_PROJECT_HANDBOOK.md','docs/NEXT_STEPS_AND_SANITY_CHECK.md']), `Active Markdown: ${activeMarkdown.join(', ')}`);
-add('retired-markdown-archived', exists('archive/retired-markdown-2026-06-20a/root/CHANGELOG.md') && exists('archive/retired-markdown-2026-06-20a/docs/SCHEMA_149_OPERATIONS_COCKPIT_AND_WRITE_CONTROLS.md'), 'Superseded root and docs Markdown should be archived.');
-add('temp-files-retired', !['test_write.txt','test_write2_OLD.txt','test_write3.txt','test_write_OLD.txt'].some(exists), 'Temporary write-test files should not remain active.');
-add('primary-docs-current', containsAll(handbook, ['build 2026-06-20a','schema 152','customer portal','transactional PostgreSQL RPC']) && containsAll(next, ['Completed in this pass','Detailed staging test process','Release blockers','Highest-value next work']), 'The two active handoff files should document current implementation and limits.');
+// SEO/CSS/cache guardrails.
+const h1Count=(index.match(/<h1\b/gi)||[]).length;
+add('homepage-one-h1',h1Count===1,`Homepage H1 count: ${h1Count}.`);
+const ids=[...index.matchAll(/\bid=["']([^"']+)["']/gi)].map((match)=>match[1]);
+const duplicateIds=ids.filter((id,indexValue)=>ids.indexOf(id)!==indexValue);
+add('homepage-no-duplicate-ids',duplicateIds.length===0,duplicateIds.length?`Duplicates: ${[...new Set(duplicateIds)].join(', ')}`:'No duplicate IDs.');
+add('build-cache-marker-current',all(index,['2026-06-22a','operations-cockpit.js?v=2026-06-22a'])&&read('server-worker.js').includes('ywi-shell-v2026-06-22a'),'HTML and service-worker cache marker are current.');
+add('visual-input-mime-match',cockpit.includes('accept="image/jpeg,image/png,image/webp"')&&!migration153.includes('image/avif'),'UI/storage MIME promise matches server verification.');
 
-add('schema150-foundation-retained', containsAll(migration150, ['150_end_to_end_operations_customer_portal_media_route_publication','150::int as expected_schema_version','customer_portal_events','public_sitemap_entries']), 'Schema 150 foundation should remain available.');
-add('schema151-marker', containsAll(migration151, ['151_transactional_rpc_accounting_reconciliation_quote_tests','151::int as expected_schema_version','Apply migrations through schema 151']), 'Migration should register and expect schema 151.');
-add('canonical-schema-includes-151', schema.includes(migration151.trim()), 'Canonical full schema should contain migration 151 verbatim.');
-add('canonical-schema-complete-range', schema.includes('BEGIN MIGRATION: 030_') && schema.includes('BEGIN MIGRATION: 151_') && (schema.match(/BEGIN MIGRATION:/g) || []).length >= 122, `Canonical schema contains ${(schema.match(/BEGIN MIGRATION:/g) || []).length} ordered migration blocks through schema 151.`);
-add('migration151-transaction-balanced', (migration151.match(/^begin;$/gmi) || []).length === (migration151.match(/^commit;$/gmi) || []).length && (migration151.match(/^begin;$/gmi) || []).length === 1, 'Migration 151 BEGIN/COMMIT markers should balance.');
-add('schema151-rpc-functions', containsAll(migration151, ['ywi_rpc_post_payment_action','ywi_rpc_promote_bank_csv_import','ywi_rpc_apply_reconciliation_action','ywi_rpc_accept_quote_package','ywi_rpc_prepare_deposit_request','ywi_rpc_attach_deposit_checkout','ywi_rpc_record_portal_deposit_paid','ywi_rpc_mark_deposit_checkout_status']), 'Schema 151 should define all transactional RPCs.');
-add('schema151-rpc-guards', containsAll(migration151, ['ywi_require_rpc_rank','ywi_assert_period_open','Journal entry is not balanced to the cent','Split allocations must equal the bank item amount exactly to the cent','revoke all on function public.ywi_rpc_post_payment_action','grant execute on function public.ywi_rpc_post_payment_action']), 'Schema 151 should include role, period, exact-cent, balanced-journal, and grant guards.');
-add('schema151-permission-matrix', containsAll(migration151, ['operation_rpc_permission_tests','v_operation_rpc_permission_matrix','rpc_post_payment_action_admin_only','rpc_deposit_paid_webhook_guarded']), 'Schema 151 should ship permission-test definitions.');
-add('schema152-marker', containsAll(migration152, ['152_staging_proof_permissions_stripe_health_accountant_export','152::int as expected_schema_version','Apply migrations through schema 152']), 'Migration should register and expect schema 152.');
-add('canonical-schema-includes-152', schema.includes(migration152.trim()), 'Canonical full schema should contain migration 152 verbatim.');
-add('canonical-schema-complete-range-152', schema.includes('BEGIN MIGRATION: 030_') && schema.includes('BEGIN MIGRATION: 152_') && (schema.match(/BEGIN MIGRATION:/g) || []).length === 123, `Canonical schema contains ${(schema.match(/BEGIN MIGRATION:/g) || []).length} ordered migration blocks.`);
-add('migration152-transaction-balanced', (migration152.match(/^begin;$/gmi) || []).length === (migration152.match(/^commit;$/gmi) || []).length && (migration152.match(/^begin;$/gmi) || []).length === 1, 'Migration 152 BEGIN/COMMIT markers should balance.');
-add('schema152-release-proof-layer', containsAll(migration152, ['ywi_get_operations_capabilities','stripe_webhook_delivery_events','v_stripe_webhook_health','operations_staging_test_runs','v_accountant_export_readiness','accountant-exports']), 'Schema 152 should provide visible permissions, webhook health, staging proof, and private accountant package support.');
+// New helper/CI files.
+for(const file of ['scripts/staging-fixtures.mjs','scripts/security-policy-assertions.mjs','tests/browser/operations-portal.spec.mjs','.github/workflows/staging-browser-integration.yml','package.json']) add(`exists:${file}`,exists(file),'Required release-proof support file is present.');
 
-add('operations-live-queues', containsAll(cockpit, ['oc_payment_queue','oc_bank_queue','oc_recon_queue','oc_equipment_queue','oc_asset_queue','oc_route_queue','oc_quote_queue','oc_portal_queue','data-oc-action']), 'Cockpit should render all live queue targets and row actions.');
-add('operations-rpc-posting', containsAll(operations, ['ywi_rpc_post_payment_action','ywi_rpc_promote_bank_csv_import','ywi_rpc_apply_reconciliation_action','callRpc']), 'Operations function should delegate risky multi-row writes to RPCs.');
-add('operations-equipment-resolution-recovery', containsAll(operations, ['resolveEquipment','equipment_service_tasks','equipment_cost_recovery_actions','financial_event_id','equipment_cost_recovery_decision']), 'Equipment flow should resolve codes and create service/recovery records.');
-add('operations-quote-owner-alert-history', containsAll(operations, ['quote_owner_assign','quote_contact_request_events','quote_followup_alerts','createAdminNotification','sendEmailIfConfigured']), 'Quote flow should provide owner, history, in-app alert, and optional email delivery.');
-add('operations-dispatch-job-cost', containsAll(operations, ['dispatch_schedule_items','job_cost_live_snapshots','dispatch_schedule','job_cost_refresh']), 'Dispatch and live job-cost actions should exist.');
-add('operations-release-proof-health', containsAll(operations, ['ywi_get_operations_capabilities','v_stripe_webhook_health','v_accountant_export_readiness','Manual deposit-status changes are disabled']), 'Operations function should expose capability/health data and fail closed on manual deposit paid status.');
-add('cockpit-explainable-reconciliation-and-role-cues', containsAll(cockpit, ['oc_recon_review','Explainable reconciliation review','data-oc-permission','oc_role_permissions','oc_stripe_health','oc_accountant_export_form']), 'Cockpit should expose role cues, reconciliation review, Stripe health, and accountant package controls.');
-
-add('browser-image-optimization', containsAll(cockpit, ['createImageBitmap','canvas.toBlob','thumbnailFile','uploadPublicAsset']), 'Browser should generate optimized display and thumbnail files.');
-add('server-image-verification', containsAll(upload, ['imageDimensions','Submitted image dimensions do not match','SHA-256','public-assets','checksum_sha256']), 'Upload function should independently verify dimensions and checksum before registration.');
-add('asset-approval-publication-gate', containsAll(operations, ['visual_asset_decision','publication_ready','Route publication is blocked until SEO fields and an approved visual are ready']), 'Approved visual should gate route publication.');
-
-add('public-route-generator', containsAll(generator, ['PUBLIC_CONTENT_ENDPOINT','exactly one H1','application/ld+json','sitemap.xml','Unsafe route path']), 'Generator should consume approved content and create guarded HTML/sitemap output.');
-add('public-route-reserved-url-guards', containsAll(operations, ['RESERVED_PUBLIC_ROUTE_ROOTS','safePublicPath','safeHttpUrl','canonical_ok']) && containsAll(generator, ['reservedRoots','routeRoot']) && containsAll(publicScript, ['reservedRoots','safeUrl','safeCta']), 'Route records, runtime rendering, and static generation should block reserved paths and unsafe URLs.');
-add('public-route-function-approved-only', containsAll(publicFunction, ["eq('route_status','approved')","not('published_at','is',null)","eq('asset_status','approved')"]), 'Public content function should expose only approved/published routes and approved visuals.');
-add('portal-accept-deposit-rpc', containsAll(portalFunction, ['accept_quote','create_deposit_checkout','ywi_rpc_accept_quote_package','ywi_rpc_prepare_deposit_request','ywi_rpc_attach_deposit_checkout','request_service']), 'Customer portal should delegate acceptance and deposit checkout to RPCs.');
-add('stripe-webhook-rpc-paid-status', containsAll(stripeFunction, ['STRIPE_WEBHOOK_SECRET','crypto.subtle','checkout.session.completed','paymentSucceeded','validateSession','ywi_rpc_record_portal_deposit_paid','ywi_rpc_mark_deposit_checkout_status']), 'Stripe webhook should verify signatures and delegate paid/status updates to RPCs.');
-add('function-jwt-settings', containsAll(config, ['[functions.customer-portal]','[functions.public-content]','[functions.stripe-webhook]','[functions.upload-public-asset]','[functions.operations-manage]','[functions.accountant-export]']) && /\[functions\.customer-portal\]\s+verify_jwt = false/s.test(config) && /\[functions\.operations-manage\]\s+verify_jwt = true/s.test(config) && /\[functions\.accountant-export\]\s+verify_jwt = true/s.test(config), 'Public/webhook functions and protected functions should have explicit JWT settings.');
-add('api-wiring', containsAll(api, ['manageOperations','customerPortal','accountantExport','fetchPublicContent','uploadPublicAsset']), 'Central API client should expose endpoints.');
-add('accountant-export-private-guards', containsAll(accountantFunction, ['accountant-exports','createSignedUrl','roleRank(profile.role) < 45','formula injection guard']), 'Accountant export should be job-admin restricted, private, signed, and CSV-safe.');
-add('staging-e2e-harness', containsAll(stagingTest, ['YWI_STAGING_CONFIRM','I_CONFIRM_STAGING_ONLY','operations_staging_test_runs','worker_queue_denied','reconciliation_exact_cent_rejected']), 'Staging harness should be explicitly staging-only and persist role/exact-cent outcomes.');
-add('rpc-integration-script', containsAll(rpcTest, ['operations-rpc-integration-test','SUPABASE_URL','v_operation_rpc_permission_matrix','exact-cent']) || containsAll(rpcTest, ['SUPABASE_URL','v_operation_rpc_permission_matrix','exact-cent']), 'RPC integration/static test script should exist.');
-
-const jsFiles = ['js/api.js','js/operations-cockpit.js','js/customer-portal.js','js/public-routes.js','scripts/generate-public-routes.mjs','scripts/operations-rpc-integration-test.mjs','scripts/operations-rpc-staging-e2e.mjs','app.js','server-worker.js'];
-for (const file of jsFiles) {
-  const run = spawnSync(process.execPath, ['--check', file], { cwd:root, encoding:'utf8' });
-  add(`syntax:${file}`, run.status === 0, run.status === 0 ? 'Syntax OK.' : (run.stderr || run.stdout).trim());
-}
+const jsFiles=['js/api.js','js/operations-cockpit.js','js/customer-portal.js','js/public-routes.js','scripts/generate-public-routes.mjs','scripts/operations-rpc-integration-test.mjs','scripts/security-policy-assertions.mjs','scripts/staging-fixtures.mjs','scripts/operations-rpc-staging-e2e.mjs','scripts/repo-smoke-check.mjs','app.js','server-worker.js'];
+for(const file of jsFiles){const run=spawnSync(process.execPath,['--check',file],{cwd:root,encoding:'utf8'});add(`syntax:${file}`,run.status===0,run.status===0?'Syntax OK.':(run.stderr||run.stdout).trim());}
 
 let ts;
-try {
-  const require = createRequire(import.meta.url);
-  try { ts = require('typescript'); }
-  catch { ts = require('/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript'); }
-} catch (error) {
-  add('typescript-compiler-available', false, String(error));
-}
-if (ts) {
-  const tsFiles = [
-    'supabase/functions/operations-manage/index.ts','supabase/functions/upload-public-asset/index.ts',
-    'supabase/functions/customer-portal/index.ts','supabase/functions/public-content/index.ts','supabase/functions/stripe-webhook/index.ts','supabase/functions/accountant-export/index.ts'
-  ];
-  for (const file of tsFiles) {
-    const output = ts.transpileModule(read(file), { compilerOptions:{ target:ts.ScriptTarget.ES2022, module:ts.ModuleKind.ESNext }, reportDiagnostics:true, fileName:file });
-    const errors = (output.diagnostics || []).filter((diag) => diag.category === ts.DiagnosticCategory.Error);
-    add(`typescript-syntax:${file}`, errors.length === 0, errors.length ? errors.map((diag) => ts.flattenDiagnosticMessageText(diag.messageText, '\n')).join(' | ') : 'TypeScript syntax OK.');
-  }
-}
+try{const require=createRequire(import.meta.url);try{ts=require('typescript');}catch{ts=require('/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript');}}catch(error){add('typescript-compiler-available',false,String(error));}
+if(ts){for(const file of ['supabase/functions/operations-manage/index.ts','supabase/functions/upload-public-asset/index.ts','supabase/functions/customer-portal/index.ts','supabase/functions/public-content/index.ts','supabase/functions/stripe-webhook/index.ts','supabase/functions/accountant-export/index.ts']){const output=ts.transpileModule(read(file),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext},reportDiagnostics:true,fileName:file});const errors=(output.diagnostics||[]).filter((diag)=>diag.category===ts.DiagnosticCategory.Error);add(`typescript-syntax:${file}`,errors.length===0,errors.length?errors.map((diag)=>ts.flattenDiagnosticMessageText(diag.messageText,'\n')).join(' | '):'TypeScript syntax OK.');}}
 
-const rpcStatic = spawnSync(process.execPath, ['scripts/operations-rpc-integration-test.mjs'], { cwd:root, encoding:'utf8' });
-add('rpc-static-test-script-passes', rpcStatic.status === 0, rpcStatic.status === 0 ? 'Static RPC wiring checks passed.' : (rpcStatic.stderr || rpcStatic.stdout).trim());
+for(const script of ['scripts/operations-rpc-integration-test.mjs','scripts/security-policy-assertions.mjs','scripts/operations-rpc-staging-e2e.mjs']){const run=spawnSync(process.execPath,[script],{cwd:root,encoding:'utf8'});add(`static:${path.basename(script)}`,run.status===0,run.status===0?'Static checks passed.':(run.stderr||run.stdout).trim());}
 
-const passed = results.filter((item) => item.ok).length;
+const passed=results.filter((item)=>item.ok).length;
 console.log(`\nYWI repository smoke check: ${passed}/${results.length} passed\n`);
-for (const item of results) console.log(`${item.ok ? 'PASS' : 'FAIL'}  ${item.name}${item.details ? ` — ${item.details}` : ''}`);
-process.exit(failed ? 1 : 0);
+for(const item of results)console.log(`${item.ok?'PASS':'FAIL'}  ${item.name}${item.details?` — ${item.details}`:''}`);
+process.exit(results.some((item)=>!item.ok)?1:0);

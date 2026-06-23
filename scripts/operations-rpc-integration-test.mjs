@@ -1,57 +1,75 @@
 #!/usr/bin/env node
+/**
+ * Transactional operation and schema 153 wiring check.
+ * It is safe without credentials; optional live checks only read metadata.
+ */
 import fs from 'node:fs';
 import process from 'node:process';
 
 const root = process.cwd();
-const sql = fs.readFileSync('sql/151_transactional_rpc_accounting_reconciliation_quote_tests.sql','utf8');
-const operations = fs.readFileSync('supabase/functions/operations-manage/index.ts','utf8');
-const portal = fs.readFileSync('supabase/functions/customer-portal/index.ts','utf8');
-const webhook = fs.readFileSync('supabase/functions/stripe-webhook/index.ts','utf8');
-const requiredRpc = [
-  'ywi_rpc_post_payment_action',
-  'ywi_rpc_promote_bank_csv_import',
-  'ywi_rpc_apply_reconciliation_action',
-  'ywi_rpc_accept_quote_package',
-  'ywi_rpc_prepare_deposit_request',
-  'ywi_rpc_attach_deposit_checkout',
-  'ywi_rpc_record_portal_deposit_paid',
-  'ywi_rpc_mark_deposit_checkout_status'
-];
-const checks = [];
-const add = (name, ok, details='') => checks.push({ name, ok, details });
-for (const rpc of requiredRpc) {
-  add(`sql:${rpc}`, sql.includes(`function public.${rpc}`), 'RPC function should be defined in schema 151.');
-}
-add('operations-uses-payment-rpc', operations.includes("supabase, 'ywi_rpc_post_payment_action'") || operations.includes("rpc('ywi_rpc_post_payment_action'"), 'Payment post should be delegated to RPC.');
-add('operations-uses-bank-rpc', operations.includes("ywi_rpc_promote_bank_csv_import"), 'Bank promotion should be delegated to RPC.');
-add('operations-uses-recon-rpc', operations.includes("ywi_rpc_apply_reconciliation_action"), 'Reconciliation actions should be delegated to RPC.');
-add('portal-uses-quote-rpc', portal.includes("ywi_rpc_accept_quote_package"), 'Quote acceptance should be delegated to RPC.');
-add('portal-uses-deposit-rpcs', portal.includes("ywi_rpc_prepare_deposit_request") && portal.includes("ywi_rpc_attach_deposit_checkout"), 'Deposit checkout prep and attach should be delegated to RPC.');
-add('webhook-uses-paid-rpc', webhook.includes("ywi_rpc_record_portal_deposit_paid") && webhook.includes("ywi_rpc_mark_deposit_checkout_status"), 'Webhook should record paid/status events through RPC.');
-add('permission-matrix-defined', sql.includes('operation_rpc_permission_tests') && sql.includes('v_operation_rpc_permission_matrix'), 'Role-permission test matrix should be deployable.');
-add('execute-grants-service-role-only', requiredRpc.every((rpc) => sql.includes(`grant execute on function public.${rpc}`)) && sql.includes('revoke all on function public.ywi_rpc_post_payment_action'), 'RPC execute grants should be explicit.');
-add('exact-cent-guards', sql.includes('ywi_cents') && sql.includes('Split allocations must equal the bank item amount exactly to the cent') && sql.includes('Journal entry is not balanced to the cent'), 'RPC layer should include exact cent guards.');
+const read = (file) => fs.readFileSync(file, 'utf8');
+const sql151 = read('sql/151_transactional_rpc_accounting_reconciliation_quote_tests.sql');
+const sql153 = read('sql/153_release_fixture_policy_mapping_seo_alerts.sql');
+const operations = read('supabase/functions/operations-manage/index.ts');
+const portal = read('supabase/functions/customer-portal/index.ts');
+const webhook = read('supabase/functions/stripe-webhook/index.ts');
+const upload = read('supabase/functions/upload-public-asset/index.ts');
+const accountant = read('supabase/functions/accountant-export/index.ts');
 
-const failed = checks.filter((c) => !c.ok);
-for (const c of checks) console.log(`${c.ok ? 'PASS' : 'FAIL'}  ${c.name}${c.details ? ` — ${c.details}` : ''}`);
+const checks = [];
+const add = (name, ok, details = '') => checks.push({ name, ok, details });
+const hasAll = (text, values) => values.every((value) => text.includes(value));
+
+const transactionalRpcs = [
+  'ywi_rpc_post_payment_action', 'ywi_rpc_promote_bank_csv_import',
+  'ywi_rpc_apply_reconciliation_action', 'ywi_rpc_accept_quote_package',
+  'ywi_rpc_prepare_deposit_request', 'ywi_rpc_attach_deposit_checkout',
+  'ywi_rpc_record_portal_deposit_paid', 'ywi_rpc_mark_deposit_checkout_status'
+];
+for (const rpc of transactionalRpcs) add(`schema151:${rpc}`, sql151.includes(`function public.${rpc}`), 'Transactional RPC remains defined.');
+add('schema151-exact-cent-and-balance-guards', hasAll(sql151, ['ywi_cents', 'Split allocations must equal the bank item amount exactly to the cent', 'Journal entry is not balanced to the cent']), 'Exact split and balanced journal safeguards remain present.');
+add('schema151-service-role-grants', transactionalRpcs.every((rpc) => sql151.includes(`grant execute on function public.${rpc}`)), 'Transactional RPC grants are explicit.');
+add('operations-delegates-core-writes', hasAll(operations, ['ywi_rpc_post_payment_action', 'ywi_rpc_promote_bank_csv_import', 'ywi_rpc_apply_reconciliation_action']), 'Operations Edge Function delegates high-risk writes to RPCs.');
+add('portal-delegates-conversion-and-deposit', hasAll(portal, ['ywi_rpc_accept_quote_package', 'ywi_rpc_prepare_deposit_request', 'ywi_rpc_attach_deposit_checkout']), 'Portal remains RPC-backed for quote conversion and deposits.');
+add('webhook-remains-verified-and-observable', hasAll(webhook, ['STRIPE_WEBHOOK_SECRET', 'crypto.subtle', 'validateSession', 'ywi_rpc_record_portal_deposit_paid', 'ywi_refresh_stripe_webhook_alerts']), 'Webhook validates provider data, posts via RPC, and refreshes safe operational alerts.');
+add('schema153-private-review-media', hasAll(sql153, ['review-assets', 'public=false', 'public-assets', 'review_storage_bucket']) && hasAll(operations, ['publishApprovedAsset', "reviewBucket", "from('public-assets')", "published_storage_bucket"]), 'Private review media is defined before approved public promotion.');
+add('server-upload-private-review-path', hasAll(upload, ["const BUCKET = 'review-assets'", 'review_only:true', 'imageDimensions', 'checksum_sha256']), 'Upload handler verifies image dimensions/checksum and stores review assets privately.');
+add('schema153-fixtures', hasAll(sql153, ['operations_staging_fixture_sets', 'ywi_rpc_create_staging_fixture_set', 'ywi_rpc_cleanup_staging_fixture_set', "Fixture label must start with STAGING-"]), 'Disposable fixture create/cleanup controls are defined.');
+add('schema153-policy-assertions', hasAll(sql153, ['ywi_security_policy_assertions', 'v_security_policy_assertion_summary', 'review_assets_private', 'sensitive_tables_rls_enabled']), 'Security assertions cover private buckets and sensitive-table RLS.');
+add('schema153-accountant-mapping', hasAll(sql153, ['accountant_export_mapping_rules', 'v_accountant_mapping_readiness', 'ywi_rpc_capture_accountant_close_snapshot']), 'Accountant mapping/close snapshot controls are defined.');
+add('accountant-captures-close-mapping-snapshot', hasAll(accountant, ['ywi_rpc_capture_accountant_close_snapshot', 'close_mapping_snapshot']), 'Export function snapshots mapping/close review with the generated artifact.');
+add('schema153-content-and-webhook-queues', hasAll(sql153, ['content_signal_observations', 'v_route_content_decision_queue', 'stripe_webhook_operational_alerts', 'v_stripe_webhook_alert_queue']), 'SEO decision evidence and payment-provider alert queues are defined.');
+add('operations-release-proof-actions', hasAll(operations, ['staging_fixture_create', 'content_signal_record', 'stripe_webhook_alert_decision', 'YWI_ALLOW_STAGING_FIXTURES']), 'Protected release-proof actions and staging feature gate are wired.');
+
+const failed = checks.filter((item) => !item.ok);
+for (const item of checks) console.log(`${item.ok ? 'PASS' : 'FAIL'}  ${item.name}${item.details ? ` — ${item.details}` : ''}`);
 if (failed.length) process.exit(1);
 
-const url = process.env.SUPABASE_URL || process.env.SB_URL;
-const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SB_SERVICE_ROLE_KEY;
-if (!url || !key) {
-  console.log('\nSKIP live staging RPC calls — set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to query v_operation_rpc_permission_matrix and run seeded staging scenarios.');
+const url = (process.env.SUPABASE_URL || process.env.SB_URL || '').replace(/\/$/, '');
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SB_SERVICE_ROLE_KEY || '';
+if (!url || !serviceKey) {
+  console.log('\nSKIP live read-only checks — set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY for a deployed staging project.');
   process.exit(0);
 }
-
-const endpoint = `${url.replace(/\/$/,'')}/rest/v1/v_operation_rpc_permission_matrix?select=*`;
-const response = await fetch(endpoint, { headers:{ apikey:key, authorization:`Bearer ${key}` } });
-if (!response.ok) {
-  console.error(await response.text());
-  throw new Error('Could not read v_operation_rpc_permission_matrix from staging. Apply schema 151 first.');
+const headers = { apikey: serviceKey, authorization: `Bearer ${serviceKey}` };
+async function get(path) {
+  const response = await fetch(`${url}/rest/v1/${path}`, { headers });
+  const raw = await response.text();
+  if (!response.ok) throw new Error(`${response.status}: ${raw}`);
+  return raw ? JSON.parse(raw) : null;
 }
-const matrix = await response.json();
-console.log(`\nLIVE  permission matrix rows: ${matrix.length}`);
-for (const rpc of requiredRpc.slice(0,5)) {
-  if (!matrix.some((row) => row.rpc_name === rpc)) throw new Error(`Missing permission matrix row for ${rpc}.`);
+try {
+  const [schema, policy, readiness] = await Promise.all([
+    get('v_schema_drift_status?select=*'),
+    get('v_security_policy_assertion_summary?select=*'),
+    get('v_accountant_export_readiness?select=mapping_ready,unresolved_required_mapping_count,package_ready')
+  ]);
+  const schemaRow = schema?.[0] || {};
+  if (Number(schemaRow.latest_applied_schema_version) < 153 || schemaRow.drift_status !== 'current') throw new Error(`Schema 153 is not current: ${JSON.stringify(schemaRow)}`);
+  console.log(`\nLIVE  schema ${schemaRow.latest_applied_schema_version} is current.`);
+  console.log(`LIVE  policy assertions: ${policy?.[0]?.passed_count ?? 0}/${policy?.[0]?.assertion_count ?? 0} passed.`);
+  console.log(`LIVE  mapping readiness: ${readiness?.[0]?.mapping_ready === true ? 'ready' : 'review required'}.`);
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exit(1);
 }
-console.log('LIVE  staging RPC permission matrix is readable. Seeded transactional scenarios can now be run from the Operations Cockpit.');

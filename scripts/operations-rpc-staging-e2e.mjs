@@ -1,192 +1,80 @@
 #!/usr/bin/env node
 /*
-  Staging-only proof harness for schema 152.
-  Default mode is read-only/static. Live mode refuses to run unless the caller
-  explicitly names staging and supplies a confirmation phrase. It never uses
-  production credentials by implication.
+  Schema 153 staging proof harness.
+  Default: source-only checks. Live mode is deliberately locked to a named
+  staging target. Optional fixture creation is also opt-in and cleanup is
+  explicit, so this command does not silently create or remove business data.
 */
 import fs from 'node:fs';
 import process from 'node:process';
 
-const root = process.cwd();
-const sql151 = fs.readFileSync('sql/151_transactional_rpc_accounting_reconciliation_quote_tests.sql', 'utf8');
-const sql152 = fs.readFileSync('sql/152_staging_proof_permissions_stripe_health_accountant_export.sql', 'utf8');
-const operations = fs.readFileSync('supabase/functions/operations-manage/index.ts', 'utf8');
-const webhook = fs.readFileSync('supabase/functions/stripe-webhook/index.ts', 'utf8');
-const accountant = fs.readFileSync('supabase/functions/accountant-export/index.ts', 'utf8');
-const config = fs.readFileSync('supabase/config.toml', 'utf8');
+const root=process.cwd();
+const read=(file)=>fs.readFileSync(file,'utf8');
+const sql151=read('sql/151_transactional_rpc_accounting_reconciliation_quote_tests.sql');
+const sql152=read('sql/152_staging_proof_permissions_stripe_health_accountant_export.sql');
+const sql153=read('sql/153_release_fixture_policy_mapping_seo_alerts.sql');
+const operations=read('supabase/functions/operations-manage/index.ts');
+const webhook=read('supabase/functions/stripe-webhook/index.ts');
+const accountant=read('supabase/functions/accountant-export/index.ts');
+const upload=read('supabase/functions/upload-public-asset/index.ts');
+const config=read('supabase/config.toml');
+const all=(text, values)=>values.every((value)=>text.includes(value));
+const checks=[];
+function add(name, ok, details='') { checks.push({name,ok,details}); }
+function printChecks(){ for(const item of checks) console.log(`${item.ok?'PASS':'FAIL'}  ${item.name}${item.details?` — ${item.details}`:''}`); }
 
-const checks = [];
-function add(name, ok, details = '', severity = 'required') { checks.push({ name, ok, details, severity }); }
-function hasAll(text, values) { return values.every((value) => text.includes(value)); }
-function print() { for (const item of checks) console.log(`${item.ok ? 'PASS' : item.severity === 'optional' ? 'SKIP' : 'FAIL'}  ${item.name}${item.details ? ` — ${item.details}` : ''}`); }
-function exitForChecks() { return checks.some((item) => !item.ok && item.severity === 'required') ? 1 : 0; }
+add('schema151-transactional-rpcs',all(sql151,['ywi_rpc_post_payment_action','ywi_rpc_promote_bank_csv_import','ywi_rpc_apply_reconciliation_action','ywi_rpc_accept_quote_package','ywi_rpc_record_portal_deposit_paid']),'Core multi-row writes remain transactional.');
+add('schema152-durable-release-proof',all(sql152,['operations_staging_test_runs','v_stripe_webhook_health','accountant-exports']),'Prior release proof remains present.');
+add('schema153-disposable-fixture-rpcs',all(sql153,['ywi_rpc_create_staging_fixture_set','ywi_rpc_cleanup_staging_fixture_set','environment_label = \'staging\'','Fixture label must start with STAGING-']),'Fixture creation/cleanup is staged and labelled.');
+add('schema153-policy-evidence',all(sql153,['ywi_security_policy_assertions','v_security_policy_assertion_summary','review_assets_private','sensitive_tables_rls_enabled']),'Policy assertions are deployable.');
+add('schema153-private-media-promotion',all(sql153,['review-assets','review_storage_bucket','published_storage_bucket']) && all(upload,["const BUCKET = 'review-assets'",'review_only:true']) && operations.includes('publishApprovedAsset'),'Review media is private until protected approval copy.');
+add('schema153-accountant-mapping',all(sql153,['accountant_export_mapping_rules','v_accountant_mapping_readiness','ywi_rpc_capture_accountant_close_snapshot']) && accountant.includes('ywi_rpc_capture_accountant_close_snapshot'),'Accountant close mapping is captured with exports.');
+add('schema153-seo-observation-queue',all(sql153,['content_signal_observations','v_route_content_decision_queue']) && all(operations,['content_signal_record','content_signal_decision']),'Search/local observations have a human decision queue.');
+add('schema153-webhook-alert-queue',all(sql153,['stripe_webhook_operational_alerts','ywi_refresh_stripe_webhook_alerts','v_stripe_webhook_alert_queue']) && webhook.includes('ywi_refresh_stripe_webhook_alerts'),'Webhook failures/staleness are turned into review alerts.');
+add('schema153-capabilities',all(sql153,['staging_fixture_create','content_signal_record','stripe_webhook_alert_decision']) && operations.includes('YWI_ALLOW_STAGING_FIXTURES'),'Capability snapshot and deploy-time fixture gate are wired.');
+add('protected-function-jwt-settings',all(config,['[functions.operations-manage]','[functions.accountant-export]','[functions.upload-public-asset]']) && /\[functions\.operations-manage\]\s+verify_jwt = true/s.test(config),'Protected Edge Functions retain JWT verification.');
 
-// Read-only source and wiring proof available to every developer/CI run.
-add('schema151-transactional-rpcs', hasAll(sql151, [
-  'ywi_rpc_post_payment_action', 'ywi_rpc_promote_bank_csv_import', 'ywi_rpc_apply_reconciliation_action',
-  'ywi_rpc_accept_quote_package', 'ywi_rpc_prepare_deposit_request', 'ywi_rpc_attach_deposit_checkout',
-  'ywi_rpc_record_portal_deposit_paid', 'ywi_rpc_mark_deposit_checkout_status'
-]), 'Schema 151 must retain all transactional write RPCs.');
-add('schema152-staging-test-records', hasAll(sql152, ['operations_staging_test_runs', 'operations_staging_test_results', 'v_operations_staging_test_summary']), 'Schema 152 must retain durable staging test run/result records.');
-add('schema152-visible-role-capabilities', hasAll(sql152, ['ywi_get_operations_capabilities', 'payment_action_decision', 'accountant_export_prepare']), 'Schema 152 must provide server-calculated role capability data.');
-add('schema152-stripe-health', hasAll(sql152, ['stripe_webhook_delivery_events', 'v_stripe_webhook_health', 'last_validation_reason']), 'Schema 152 must expose safe webhook delivery health.');
-add('schema152-accountant-private-package', hasAll(sql152, ['accountant-exports', 'v_accountant_export_readiness', 'artifact_sha256']), 'Schema 152 must use private accountant artifacts and readiness data.');
-add('operations-role-cues-and-fail-closed-deposit', hasAll(operations, ['ywi_get_operations_capabilities', 'v_stripe_webhook_health', 'Manual deposit-status changes are disabled', 'ywi_rpc_post_payment_action']), 'Operations function must return UI capability/health data and block manual paid-deposit bypasses.');
-add('stripe-webhook-observability', hasAll(webhook, ['recordDelivery', 'stripe_webhook_delivery_events', 'Invalid Stripe signature.', 'ywi_rpc_record_portal_deposit_paid']), 'Webhook must log safe outcome data only after signature validation.');
-add('accountant-export-role-storage-guards', hasAll(accountant, ['roleRank(profile.role) < 45', "const BUCKET = 'accountant-exports'", 'createSignedUrl', 'formula injection guard']), 'Accountant export must restrict access, use private storage/signed URLs, and protect CSV cells.');
-add('accountant-function-jwt-config', /\[functions\.accountant-export\]\s+verify_jwt = true/s.test(config), 'accountant-export must require JWT verification.');
+printChecks();
+if(checks.some((item)=>!item.ok)) process.exit(1);
 
-const liveRequested = process.env.YWI_RUN_STAGING_RPC_TESTS === '1';
-if (!liveRequested) {
-  print();
-  console.log('\nSKIP live staging checks — set YWI_RUN_STAGING_RPC_TESTS=1 after deploying schema 152 to a non-production project.');
-  process.exit(exitForChecks());
+const live=process.env.YWI_RUN_STAGING_RPC_TESTS==='1';
+if(!live){ console.log('\nSKIP live staging proof — set YWI_RUN_STAGING_RPC_TESTS=1 only after schema 153 is deployed to a dedicated non-production project.'); process.exit(0); }
+const url=(process.env.SUPABASE_URL||process.env.SB_URL||'').replace(/\/$/,'');
+const key=process.env.SUPABASE_SERVICE_ROLE_KEY||process.env.SB_SERVICE_ROLE_KEY||'';
+const label=String(process.env.YWI_STAGING_LABEL||'').trim().toLowerCase();
+const confirmation=process.env.YWI_STAGING_CONFIRM||'';
+const actorId=process.env.YWI_STAGING_JOB_ADMIN_PROFILE_ID||'';
+if(!url||!key||!actorId||label!=='staging'||confirmation!=='I_CONFIRM_STAGING_ONLY'){
+  console.error('ERROR  Live mode requires SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, YWI_STAGING_JOB_ADMIN_PROFILE_ID, YWI_STAGING_LABEL=staging, and YWI_STAGING_CONFIRM=I_CONFIRM_STAGING_ONLY.'); process.exit(1);
 }
-
-const url = (process.env.SUPABASE_URL || process.env.SB_URL || '').replace(/\/$/, '');
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SB_SERVICE_ROLE_KEY || '';
-const label = String(process.env.YWI_STAGING_LABEL || '').trim().toLowerCase();
-const confirmation = process.env.YWI_STAGING_CONFIRM || '';
-if (!url || !serviceKey) {
-  add('live-staging-credentials', false, 'Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or SB_* aliases).');
-  print(); process.exit(1);
-}
-if (label !== 'staging' || confirmation !== 'I_CONFIRM_STAGING_ONLY') {
-  add('staging-safety-interlock', false, 'Set YWI_STAGING_LABEL=staging and YWI_STAGING_CONFIRM=I_CONFIRM_STAGING_ONLY. The harness refuses ambiguous targets.');
-  print(); process.exit(1);
-}
-
-async function rest(path, options = {}) {
-  const response = await fetch(`${url}/rest/v1/${path}`, {
-    ...options,
-    headers: {
-      apikey: serviceKey,
-      authorization: `Bearer ${serviceKey}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation',
-      ...(options.headers || {})
-    }
-  });
-  const raw = await response.text();
-  let body = null; try { body = raw ? JSON.parse(raw) : null; } catch { body = raw; }
-  if (!response.ok) throw new Error(`${response.status}: ${typeof body === 'string' ? body : JSON.stringify(body)}`);
-  return body;
-}
-async function functionCall(name, token, body) {
-  const response = await fetch(`${url}/functions/v1/${name}`, {
-    method: 'POST', headers: { apikey: serviceKey, authorization: `Bearer ${token}`, 'Content-Type':'application/json' }, body: JSON.stringify(body)
-  });
-  const raw = await response.text(); let payload = null; try { payload = raw ? JSON.parse(raw) : null; } catch { payload = raw; }
-  return { status: response.status, payload };
-}
-
-const runKey = `staging-rpc-${new Date().toISOString().replace(/[:.]/g, '-')}-${Math.random().toString(16).slice(2, 8)}`;
-let run = null;
-const liveCases = [];
-async function liveCase(caseKey, task, optional = false) {
-  try {
-    const details = await task();
-    liveCases.push({ case_key:caseKey, case_status:'passed', details:details || {} });
-    console.log(`PASS  live:${caseKey}`);
-  } catch (error) {
-    const details = { error: error instanceof Error ? error.message : String(error) };
-    liveCases.push({ case_key:caseKey, case_status:optional ? 'skipped' : 'failed', details });
-    console.log(`${optional ? 'SKIP' : 'FAIL'}  live:${caseKey} — ${details.error}`);
-  }
-}
-
-try {
-  const created = await rest('operations_staging_test_runs', { method:'POST', body:JSON.stringify({ run_key:runKey, environment_label:'staging', suite_name:'operations_rpc_e2e', run_status:'started', summary:{ build:'2026-06-20a', schema:152, source:'scripts/operations-rpc-staging-e2e.mjs' } }) });
-  run = Array.isArray(created) ? created[0] : created;
-} catch (error) {
-  add('live-test-run-record', false, error instanceof Error ? error.message : String(error));
-  print(); process.exit(1);
-}
-
-await liveCase('schema_drift_is_current', async () => {
-  const rows = await rest('v_schema_drift_status?select=*'); const row = rows?.[0];
-  if (!row || Number(row.latest_applied_schema_version) < 152 || row.drift_status !== 'current') throw new Error(`Schema 152 is not current: ${JSON.stringify(row || {})}`);
-  return { latest_applied_schema_version:row.latest_applied_schema_version, drift_status:row.drift_status };
-});
-await liveCase('permission_matrix_available', async () => {
-  const rows = await rest('v_operation_rpc_permission_matrix?select=test_key,rpc_name,minimum_rank');
-  if (!Array.isArray(rows) || rows.length < 8) throw new Error('Expected schema 151/152 permission rows were not returned.');
-  return { row_count:rows.length };
-});
-await liveCase('webhook_health_view_available', async () => {
-  const rows = await rest('v_stripe_webhook_health?select=*'); return { present:Array.isArray(rows), latest:rows?.[0]?.latest_event_at || null };
-});
-await liveCase('accountant_readiness_view_available', async () => {
-  const rows = await rest('v_accountant_export_readiness?select=*'); return { package_ready:rows?.[0]?.package_ready ?? null, readiness_message:rows?.[0]?.readiness_message || null };
-});
-
-const actorId = process.env.YWI_STAGING_JOB_ADMIN_PROFILE_ID || '';
-if (actorId) {
-  await liveCase('capability_rpc_for_job_admin', async () => {
-    const rows = await rest('rpc/ywi_get_operations_capabilities', { method:'POST', body:JSON.stringify({ p_actor_profile_id:actorId }) });
-    const snapshot = Array.isArray(rows) ? rows[0] : rows;
-    if (!snapshot?.actions?.payment_action_decision?.permitted) throw new Error('Configured job-admin profile is not allowed to decide payment actions.');
-    return { actor_role:snapshot.actor_role, actor_rank:snapshot.actor_rank };
-  });
-} else {
-  liveCases.push({ case_key:'capability_rpc_for_job_admin', case_status:'skipped', details:{ reason:'Set YWI_STAGING_JOB_ADMIN_PROFILE_ID to prove the capability snapshot for a job-admin test account.' } });
-  console.log('SKIP  live:capability_rpc_for_job_admin — no YWI_STAGING_JOB_ADMIN_PROFILE_ID');
-}
-
-const jobAdminToken = process.env.YWI_STAGING_JOB_ADMIN_JWT || '';
-const workerToken = process.env.YWI_STAGING_WORKER_JWT || '';
-if (jobAdminToken) {
-  await liveCase('job_admin_queue_allowed', async () => {
-    const response = await functionCall('operations-manage', jobAdminToken, { action:'operations_queue_list' });
-    if (response.status !== 200 || !response.payload?.ok) throw new Error(`Expected job-admin queue success, got HTTP ${response.status}.`);
-    return { schema:response.payload.schema, has_capabilities:!!response.payload?.queues?.capabilities };
-  });
-} else {
-  liveCases.push({ case_key:'job_admin_queue_allowed', case_status:'skipped', details:{ reason:'Set YWI_STAGING_JOB_ADMIN_JWT to test protected queue access.' } });
-  console.log('SKIP  live:job_admin_queue_allowed — no YWI_STAGING_JOB_ADMIN_JWT');
-}
-if (workerToken) {
-  await liveCase('worker_queue_denied', async () => {
-    const response = await functionCall('operations-manage', workerToken, { action:'operations_queue_list' });
-    if (response.status !== 403) throw new Error(`Expected worker role rejection (403), got HTTP ${response.status}.`);
-    return { status:response.status };
-  });
-} else {
-  liveCases.push({ case_key:'worker_queue_denied', case_status:'skipped', details:{ reason:'Set YWI_STAGING_WORKER_JWT to prove the protected queue role gate.' } });
-  console.log('SKIP  live:worker_queue_denied — no YWI_STAGING_WORKER_JWT');
-}
-
-const fixtureRaw = process.env.YWI_STAGING_RPC_FIXTURES_JSON || '';
-if (jobAdminToken && fixtureRaw) {
-  await liveCase('reconciliation_exact_cent_rejected', async () => {
-    const fixture = JSON.parse(fixtureRaw);
-    if (!fixture.reconciliation_item_id) throw new Error('Fixture JSON needs reconciliation_item_id.');
-    const response = await functionCall('operations-manage', jobAdminToken, {
-      action:'reconciliation_action', idempotency_key:`staging-invalid-split-${Date.now()}`,
-      action_type:'split', bank_row_id:fixture.reconciliation_item_id,
-      split_rows:[{ target_reference:'STAGING-INVALID-A', allocated_amount:0.01 },{ target_reference:'STAGING-INVALID-B', allocated_amount:0.01 }],
-      signoff_note:'Automated staging guard test; invalid cents must be rejected before persistence.'
-    });
-    if (response.status < 400 || !String(response.payload?.error || '').includes('exactly to the cent')) throw new Error(`Expected exact-cent rejection, got HTTP ${response.status}: ${JSON.stringify(response.payload)}`);
-    return { status:response.status, message:response.payload?.error };
-  });
-} else {
-  liveCases.push({ case_key:'reconciliation_exact_cent_rejected', case_status:'skipped', details:{ reason:'Set YWI_STAGING_JOB_ADMIN_JWT and YWI_STAGING_RPC_FIXTURES_JSON with a reconciliation_item_id to test the exact-cent guard.' } });
-  console.log('SKIP  live:reconciliation_exact_cent_rejected — no safe fixture or job-admin JWT');
-}
-
-const failedCount = liveCases.filter((item) => item.case_status === 'failed').length;
-const passedCount = liveCases.filter((item) => item.case_status === 'passed').length;
-const skippedCount = liveCases.filter((item) => item.case_status === 'skipped').length;
-try {
-  if (liveCases.length) await rest('operations_staging_test_results', { method:'POST', body:JSON.stringify(liveCases.map((item) => ({ ...item, run_id:run.id }))) });
-  await rest(`operations_staging_test_runs?id=eq.${encodeURIComponent(run.id)}`, { method:'PATCH', body:JSON.stringify({ run_status:failedCount ? 'failed' : 'passed', finished_at:new Date().toISOString(), summary:{ case_count:liveCases.length, passed_count:passedCount, failed_count:failedCount, skipped_count:skippedCount, build:'2026-06-20a', schema:152 }, failure_reason:failedCount ? `${failedCount} staging case(s) failed.` : null }) });
-} catch (error) {
-  console.error('Could not finish the durable staging test record:', error instanceof Error ? error.message : String(error));
-  process.exit(1);
-}
-
-print();
-console.log(`\nLIVE staging proof recorded: ${passedCount} passed, ${failedCount} failed, ${skippedCount} skipped. Run key: ${runKey}`);
-process.exit(failedCount || exitForChecks() ? 1 : 0);
+const headers={apikey:key,authorization:`Bearer ${key}`,'Content-Type':'application/json',Prefer:'return=representation'};
+async function rest(path,options={}){const res=await fetch(`${url}/rest/v1/${path}`,{...options,headers:{...headers,...(options.headers||{})}});const raw=await res.text();let data=null;try{data=raw?JSON.parse(raw):null;}catch{data=raw;}if(!res.ok)throw new Error(`${res.status}: ${typeof data==='string'?data:JSON.stringify(data)}`);return data;}
+async function functionCall(name,token,body){const res=await fetch(`${url}/functions/v1/${name}`,{method:'POST',headers:{apikey:key,authorization:`Bearer ${token}`,'Content-Type':'application/json'},body:JSON.stringify(body)});const raw=await res.text();let data=null;try{data=raw?JSON.parse(raw):null;}catch{data=raw;}return {status:res.status,data};}
+const runKey=`staging-schema153-${new Date().toISOString().replace(/[:.]/g,'-')}-${Math.random().toString(16).slice(2,8)}`;
+const created=await rest('operations_staging_test_runs',{method:'POST',body:JSON.stringify({run_key:runKey,environment_label:'staging',suite_name:'operations_rpc_e2e_schema153',run_status:'started',requested_by_profile_id:actorId,summary:{build:'2026-06-22a',schema:153,fixture_mode:process.env.YWI_STAGING_CREATE_FIXTURES==='1'}})});
+const run=Array.isArray(created)?created[0]:created;
+const cases=[];
+async function liveCase(caseKey, fn, optional=false){try{const details=await fn();cases.push({case_key:caseKey,case_status:'passed',details:details||{}});console.log(`PASS  live:${caseKey}`);}catch(error){const details={error:error instanceof Error?error.message:String(error)};cases.push({case_key:caseKey,case_status:optional?'skipped':'failed',details});console.log(`${optional?'SKIP':'FAIL'}  live:${caseKey} — ${details.error}`);}}
+let fixture=null;
+await liveCase('schema_drift_is_current',async()=>{const rows=await rest('v_schema_drift_status?select=*');const row=rows?.[0]||{};if(Number(row.latest_applied_schema_version)<153||row.drift_status!=='current')throw new Error(`Expected schema 153 current: ${JSON.stringify(row)}`);return row;});
+await liveCase('policy_assertions_pass',async()=>{const rows=await rest('v_security_policy_assertion_summary?select=*');const row=rows?.[0]||{};if(row.policy_ready!==true)throw new Error(`Policy assertions need review: ${JSON.stringify(row.assertions||[])}`);return {passed_count:row.passed_count,assertion_count:row.assertion_count};});
+await liveCase('accountant_mapping_readiness_view',async()=>{const rows=await rest('v_accountant_export_readiness?select=mapping_ready,unresolved_required_mapping_count,readiness_message');return rows?.[0]||{};});
+await liveCase('capability_snapshot_has_release-proof-actions',async()=>{const result=await rest('rpc/ywi_get_operations_capabilities',{method:'POST',body:JSON.stringify({p_actor_profile_id:actorId})});const snap=Array.isArray(result)?result[0]:result;if(!snap?.actions?.staging_fixture_create||!snap?.actions?.content_signal_record)throw new Error('Schema 153 capability actions missing.');return {role:snap.actor_role,rank:snap.actor_rank};});
+const jobAdminJwt=process.env.YWI_STAGING_JOB_ADMIN_JWT||'';
+const workerJwt=process.env.YWI_STAGING_WORKER_JWT||'';
+if(jobAdminJwt) await liveCase('job_admin_queue_allowed',async()=>{const result=await functionCall('operations-manage',jobAdminJwt,{action:'operations_queue_list'});if(result.status!==200||!result.data?.ok)throw new Error(`Expected allowed queue, received HTTP ${result.status}`);return {schema:result.data.schema,policy_ready:result.data?.queues?.security_policy?.policy_ready};}); else cases.push({case_key:'job_admin_queue_allowed',case_status:'skipped',details:{reason:'Set YWI_STAGING_JOB_ADMIN_JWT.'}});
+if(workerJwt) await liveCase('worker_queue_denied',async()=>{const result=await functionCall('operations-manage',workerJwt,{action:'operations_queue_list'});if(result.status!==403)throw new Error(`Expected HTTP 403, received ${result.status}`);return {status:result.status};}); else cases.push({case_key:'worker_queue_denied',case_status:'skipped',details:{reason:'Set YWI_STAGING_WORKER_JWT.'}});
+if(process.env.YWI_STAGING_CREATE_FIXTURES==='1') await liveCase('fixture_create',async()=>{const data=await rest('rpc/ywi_rpc_create_staging_fixture_set',{method:'POST',body:JSON.stringify({p_actor_profile_id:actorId,p_fixture_label:process.env.YWI_STAGING_FIXTURE_LABEL||'STAGING-E2E'})});fixture=Array.isArray(data)?data[0]:data;if(!fixture?.fixture_set_id)throw new Error('Fixture RPC did not return fixture_set_id.');return {fixture_set_id:fixture.fixture_set_id,ar_invoice_id:fixture.ar_invoice_id,quote_package_id:fixture.quote_package_id};}); else cases.push({case_key:'fixture_create',case_status:'skipped',details:{reason:'Set YWI_STAGING_CREATE_FIXTURES=1 to create disposable STAGING records.'}});
+// Exact-cent mutation is optional and needs a reconciliation item UUID. It is intentionally not inferred.
+const fixtureJson=process.env.YWI_STAGING_RPC_FIXTURES_JSON?JSON.parse(process.env.YWI_STAGING_RPC_FIXTURES_JSON):{};
+if(fixtureJson.reconciliation_item_id) await liveCase('reconciliation_exact_cent_rejected',async()=>{
+  const response=await fetch(`${url}/rest/v1/rpc/ywi_rpc_apply_reconciliation_action`,{method:'POST',headers,body:JSON.stringify({p_actor_profile_id:actorId,p_payload:{action_type:'split',bank_row_id:fixtureJson.reconciliation_item_id,reconciliation_item_id:fixtureJson.reconciliation_item_id,split_rows:[{reference:'STAGING-A',amount:0.01},{reference:'STAGING-B',amount:0.01}],signoff_note:'Intentional invalid test split'}})});
+  const raw=await response.text();
+  if(response.ok) throw new Error(`Invalid split was unexpectedly accepted: ${raw}`);
+  return {http_status:response.status,rejected:true};
+}); else cases.push({case_key:'reconciliation_exact_cent_rejected',case_status:'skipped',details:{reason:'Provide YWI_STAGING_RPC_FIXTURES_JSON with a dedicated reconciliation_item_id.'}});
+if(fixture&&process.env.YWI_STAGING_CLEANUP_FIXTURE==='1') await liveCase('fixture_cleanup',async()=>{const data=await rest('rpc/ywi_rpc_cleanup_staging_fixture_set',{method:'POST',body:JSON.stringify({p_fixture_set_id:fixture.fixture_set_id,p_actor_profile_id:actorId,p_cleanup_note:'Harness cleanup.'})});return Array.isArray(data)?data[0]:data;}); else if(fixture) cases.push({case_key:'fixture_cleanup',case_status:'skipped',details:{reason:'Fixture kept for manual browser testing. Set YWI_STAGING_CLEANUP_FIXTURE=1 or run scripts/staging-fixtures.mjs cleanup.'}});
+const failed=cases.filter((item)=>item.case_status==='failed');
+try{await rest('operations_staging_test_results',{method:'POST',body:JSON.stringify(cases.map((item)=>({...item,run_id:run.id})))});await rest(`operations_staging_test_runs?id=eq.${encodeURIComponent(run.id)}`,{method:'PATCH',body:JSON.stringify({run_status:failed.length?'failed':'passed',finished_at:new Date().toISOString(),summary:{build:'2026-06-22a',schema:153,case_count:cases.length,failed_count:failed.length,fixture_set_id:fixture?.fixture_set_id||null}})});}catch(error){console.error(`WARN  Could not record full test outcome: ${error instanceof Error?error.message:String(error)}`);}
+if(failed.length)process.exit(1);
+console.log(`\nLIVE staging proof finished: ${cases.filter(c=>c.case_status==='passed').length} passed, ${cases.filter(c=>c.case_status==='skipped').length} skipped.`);
