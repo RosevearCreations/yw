@@ -1,6 +1,6 @@
 -- Schema 152: Staging-proof harness, visible action permissions, Stripe health,
 -- reconciliation review detail, and secure accountant export packaging.
--- Build 2026-06-20a.
+-- Build 2026-06-22a.
 
 begin;
 
@@ -247,7 +247,7 @@ set progress_percent = case rail_key
     when 'operations_cockpit_live' then 'Use role badges and Stripe health cards during staging acceptance testing.'
     when 'customer_portal_live' then 'Verify quote acceptance, hosted deposit checkout, webhook health, and customer status updates with Stripe test mode.'
     else next_action_hint end,
-  metadata = coalesce(metadata,'{}'::jsonb) || '{"build":"2026-06-20a","schema":152,"staging_proof":true,"accountant_export":true}'::jsonb,
+  metadata = coalesce(metadata,'{}'::jsonb) || '{"build":"2026-06-22a","schema":152,"staging_proof":true,"accountant_export":true}'::jsonb,
   updated_at = now()
 where rail_key in ('payment_actions_live','bank_csv_preview_live','operations_cockpit_live','customer_portal_live');
 
@@ -269,7 +269,7 @@ insert into public.app_schema_versions (
   152,
   '152_staging_proof_permissions_stripe_health_accountant_export',
   '152_staging_proof_permissions_stripe_health_accountant_export.sql',
-  '2026-06-20a',
+  '2026-06-22a',
   'Adds staging test-run records, visible action capability data, Stripe webhook health, reconciliation-review support, and private accountant export packaging metadata.',
   'applied',
   'This release makes testing repeatable and visible, blocks manual bypass of webhook-controlled deposits, and adds a private accountant export artifact path.'
