@@ -1,6 +1,6 @@
 -- Schema 153: Disposable staging fixtures, policy assertions, private media review,
 -- accountant close mapping, route-signal decisions, and Stripe delivery alerts.
--- Build 2026-06-22a.
+-- Build 2026-06-22b hotfix: preserve existing view-column order on replacement.
 
 begin;
 
@@ -512,6 +512,12 @@ $$;
 
 -- The package readiness view now includes mapping review status. Existing base
 -- accounting/reconciliation blockers from schema 152 remain unchanged.
+--
+-- IMPORTANT COMPATIBILITY RULE: v_accountant_export_readiness existed in schema
+-- 152. PostgreSQL CREATE OR REPLACE VIEW matches existing columns by ordinal
+-- position and will reject a replacement that moves/renames them. Keep the
+-- original schema-152 columns in their existing order, then append schema-153
+-- mapping fields after readiness_message.
 create or replace view public.v_accountant_export_readiness as
 with payments as (
   select count(*) filter (where action_status='approved' and posting_status <> 'posted')::int as approved_payment_actions_pending,
@@ -530,15 +536,30 @@ with payments as (
 ), mappings as (
   select * from public.v_accountant_mapping_readiness
 )
-select p.approved_payment_actions_pending, p.failed_payment_actions, r.open_bank_items, r.unresolved_bank_items,
-  pr.locked_period_count, m.required_mapping_count, m.approved_mapping_count, m.unresolved_required_mapping_count,
-  m.mapping_ready, m.mapping_message, m.unresolved_mappings,
-  l.id as latest_export_id, l.export_status as latest_export_status, l.export_title as latest_export_title,
-  l.generated_at as latest_export_generated_at, l.artifact_storage_path as latest_export_storage_path, l.artifact_expires_at as latest_export_expires_at,
+select
+  -- Schema-152 column order: do not move or rename these first thirteen fields.
+  p.approved_payment_actions_pending,
+  p.failed_payment_actions,
+  r.open_bank_items,
+  r.unresolved_bank_items,
+  pr.locked_period_count,
+  l.id as latest_export_id,
+  l.export_status as latest_export_status,
+  l.export_title as latest_export_title,
+  l.generated_at as latest_export_generated_at,
+  l.artifact_storage_path as latest_export_storage_path,
+  l.artifact_expires_at as latest_export_expires_at,
   case when p.approved_payment_actions_pending=0 and p.failed_payment_actions=0 and r.unresolved_bank_items=0 and m.mapping_ready then true else false end as package_ready,
   case when p.approved_payment_actions_pending=0 and p.failed_payment_actions=0 and r.unresolved_bank_items=0 and m.mapping_ready
        then 'Accounting workbench and required mapping review are ready for accountant package generation.'
-       else 'Resolve payment/reconciliation exceptions and required mapping review before treating the accountant package as final.' end as readiness_message
+       else 'Resolve payment/reconciliation exceptions and required mapping review before treating the accountant package as final.' end as readiness_message,
+  -- Schema-153 additive mapping data. Appended fields are safe for an existing view.
+  m.required_mapping_count,
+  m.approved_mapping_count,
+  m.unresolved_required_mapping_count,
+  m.mapping_ready,
+  m.mapping_message,
+  m.unresolved_mappings
 from payments p cross join reconciliation r cross join periods pr cross join mappings m left join latest l on true;
 
 -- Expand the server-provided capability snapshot for the schema 153 release
