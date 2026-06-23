@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const BUILD = '2026-06-20a';
-const SCHEMA = 152;
+const BUILD = '2026-06-22a';
+const SCHEMA = 153;
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-idempotency-key',
@@ -34,6 +34,7 @@ const nowIso = () => new Date().toISOString();
 const today = () => new Date().toISOString().slice(0, 10);
 const cents = (value: unknown) => Math.round(Math.abs(money(value)) * 100);
 const normalize = (value: unknown) => clean(value, 300).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+const slug = (value: unknown) => clean(value, 180).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'asset';
 const isUuid = (value: unknown) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(clean(value, 80));
 const idempotencyKey = (req: Request, body: Record<string, unknown>, prefix: string) => clean(req.headers.get('x-idempotency-key') || body.idempotency_key, 180) || `${prefix}_${crypto.randomUUID()}`;
 
@@ -214,6 +215,43 @@ async function safeSelect(query: PromiseLike<any>) {
   } catch {
     return [];
   }
+}
+
+// Review uploads are private. Only this protected approval path copies an
+// approved asset to public-assets, which is the only bucket exposed to routes.
+async function publishApprovedAsset(supabase: any, asset: any) {
+  const reviewBucket = clean(asset.review_storage_bucket || asset.storage_bucket || 'review-assets', 120) || 'review-assets';
+  const sourcePath = clean(asset.review_storage_path || asset.storage_path, 500);
+  const thumbPath = clean(asset.review_thumbnail_path || asset.thumbnail_path, 500);
+  if (!sourcePath) throw new HttpError(409, 'This review asset has no private storage path to publish.');
+  const extension = (sourcePath.split('.').pop() || 'jpg').replace(/[^a-z0-9]/gi, '').toLowerCase() || 'jpg';
+  const base = `approved/${slug(asset.route_key || 'general')}/${new Date().toISOString().slice(0,10)}/${crypto.randomUUID()}`;
+  const publicPath = `${base}.${extension}`;
+  const { data: sourceBlob, error: sourceError } = await supabase.storage.from(reviewBucket).download(sourcePath);
+  if (sourceError || !sourceBlob) throw new HttpError(409, 'The private review image is no longer available for publication.');
+  const { error: uploadError } = await supabase.storage.from('public-assets').upload(publicPath, sourceBlob, { contentType: clean(asset.mime_type,120) || 'image/jpeg', cacheControl:'31536000', upsert:false });
+  if (uploadError) throw uploadError;
+  let publicThumbnailPath = '';
+  if (thumbPath) {
+    const { data: thumbBlob, error: thumbError } = await supabase.storage.from(reviewBucket).download(thumbPath);
+    if (thumbError || !thumbBlob) {
+      await supabase.storage.from('public-assets').remove([publicPath]);
+      throw new HttpError(409, 'The private review thumbnail is no longer available for publication.');
+    }
+    const thumbExtension = (thumbPath.split('.').pop() || extension).replace(/[^a-z0-9]/gi, '').toLowerCase() || extension;
+    publicThumbnailPath = `${base}-thumb.${thumbExtension}`;
+    const { error: uploadThumbError } = await supabase.storage.from('public-assets').upload(publicThumbnailPath, thumbBlob, { contentType: clean(asset.mime_type,120) || 'image/jpeg', cacheControl:'31536000', upsert:false });
+    if (uploadThumbError) {
+      await supabase.storage.from('public-assets').remove([publicPath]);
+      throw uploadThumbError;
+    }
+  }
+  return {
+    public_url: supabase.storage.from('public-assets').getPublicUrl(publicPath).data.publicUrl,
+    thumbnail_url: publicThumbnailPath ? supabase.storage.from('public-assets').getPublicUrl(publicThumbnailPath).data.publicUrl : null,
+    published_storage_bucket: 'public-assets', published_storage_path: publicPath,
+    published_thumbnail_path: publicThumbnailPath || null, published_at: nowIso()
+  };
 }
 async function resolveBankAccount(supabase: any, id: unknown, hint: unknown) {
   const bankId = clean(id, 80);
@@ -642,7 +680,7 @@ async function queuePayload(supabase: any, profile: any) {
     const rows = await safeSelect(supabase.from(view).select('*').limit(60));
     return [key, rows];
   }));
-  const [bankItems, profiles, banks, rails, stripeRows, exportRows, testRows, capabilitySnapshot] = await Promise.all([
+  const [bankItems, profiles, banks, rails, stripeRows, exportRows, testRows, policyRows, signalRows, alertRows, capabilitySnapshot] = await Promise.all([
     safeSelect(supabase.from('bank_reconciliation_items').select('id, reconciliation_session_id, item_date, item_description, amount, match_status, clearing_status, difference_reason, notes, created_at').eq('clearing_status', 'open').order('item_date', { ascending: false }).limit(100)),
     safeSelect(supabase.from('profiles').select('id, full_name, email, role').order('full_name').limit(200)),
     safeSelect(supabase.from('bank_accounts').select('id, account_name, currency_code, account_mask, is_default, gl_account_id').eq('account_status', 'open').order('is_default', { ascending: false }).order('account_name')),
@@ -650,6 +688,9 @@ async function queuePayload(supabase: any, profile: any) {
     safeSelect(supabase.from('v_stripe_webhook_health').select('*').limit(1)),
     safeSelect(supabase.from('v_accountant_export_readiness').select('*').limit(1)),
     safeSelect(supabase.from('v_operations_staging_test_summary').select('*').limit(6)),
+    safeSelect(supabase.from('v_security_policy_assertion_summary').select('*').limit(1)),
+    safeSelect(supabase.from('v_route_content_decision_queue').select('*').limit(12)),
+    callRpc(supabase, 'ywi_refresh_stripe_webhook_alerts', {}).catch(() => ({})).then(() => safeSelect(supabase.from('v_stripe_webhook_alert_queue').select('*').limit(12))),
     callRpc(supabase, 'ywi_get_operations_capabilities', { p_actor_profile_id: profile.id }).catch(() => ({ actor_role: profile?.role || 'unknown', actor_rank: roleRank(profile?.role), actions: {} }))
   ]);
   return {
@@ -661,7 +702,10 @@ async function queuePayload(supabase: any, profile: any) {
       api_key_configured: Boolean(clean(Deno.env.get('STRIPE_SECRET_KEY'), 8))
     },
     accountant_export: exportRows?.[0] || {},
-    staging_tests: testRows || []
+    staging_tests: testRows || [],
+    security_policy: policyRows?.[0] || {},
+    content_signals: signalRows || [],
+    webhook_alerts: alertRows || []
   };
 }
 
@@ -962,35 +1006,52 @@ serve(async (req) => {
       if (deciding && !isUuid(assetId)) throw new HttpError(400, 'Valid asset_id is required.');
       const status = clean(body.asset_status || body.decision || 'draft', 80);
       if (!['draft','review','approved','rejected','archived'].includes(status)) throw new HttpError(400, 'Unsupported asset status.');
-      const sourceUrl = clean(body.public_url || body.source_url, 900);
-      const altText = clean(body.alt_text, 280);
-      const consent = clean(body.consent_status || 'not_required', 80);
-      const compression = clean(body.compression_status || 'pending', 80);
-      const width = int(body.pixel_width, 0);
-      const height = int(body.pixel_height, 0);
+      const { data: existing, error: existingError } = deciding
+        ? await supabase.from('visual_asset_approval_items').select('*').eq('id', assetId).single()
+        : { data:null, error:null };
+      if (existingError) throw existingError;
+      const altText = clean(body.alt_text || existing?.alt_text, 280);
+      const consent = clean(body.consent_status || existing?.consent_status || 'not_required', 80);
+      const compression = clean(body.compression_status || existing?.compression_status || 'pending', 80);
+      const width = int(body.pixel_width ?? existing?.pixel_width, 0);
+      const height = int(body.pixel_height ?? existing?.pixel_height, 0);
+      let publication: Record<string, unknown> = {};
+      const suppliedAssetUrl = clean(body.public_url || body.source_url, 900);
+      if (suppliedAssetUrl && !safeHttpUrl(suppliedAssetUrl)) throw new HttpError(400, 'Visual source URLs must use HTTP or HTTPS.');
+      let sourceUrl = safeHttpUrl(suppliedAssetUrl || existing?.public_url || existing?.source_url) || '';
+      if (status === 'approved' && !sourceUrl && existing) {
+        if (!['approved','not_required'].includes(consent) || !['ready','optimized'].includes(compression) || width < 800 || height < 450 || altText.length < 12) {
+          throw new HttpError(409, 'Approved assets require useful alt text, consent, optimized compression, and at least 800×450 dimensions.');
+        }
+        publication = await publishApprovedAsset(supabase, existing);
+        sourceUrl = clean(publication.public_url, 900);
+      }
       const ready = !!sourceUrl && altText.length >= 12 && ['approved','not_required'].includes(consent) && ['ready','optimized'].includes(compression) && width >= 800 && height >= 450;
       if (status === 'approved' && !ready) throw new HttpError(409, 'Approved assets require an uploaded/linked image, useful alt text, consent, optimized compression, and at least 800×450 dimensions.');
       const readiness = [!!sourceUrl, altText.length >= 12, ['approved','not_required'].includes(consent), ['ready','optimized'].includes(compression), width >= 800 && height >= 450].filter(Boolean).length * 20;
       const payload: Record<string, unknown> = {
-        asset_status: status, surface_area: clean(body.surface_area || 'public', 120), image_role: clean(body.image_role || 'placeholder_replacement', 120),
-        source_url: clean(body.source_url, 900) || sourceUrl || null, public_url: clean(body.public_url, 900) || sourceUrl || null,
-        thumbnail_url: clean(body.thumbnail_url, 900) || null, alt_text: altText || null, consent_status: consent, compression_status: compression,
-        route_key: clean(body.route_key, 120) || null, pixel_width: width || null, pixel_height: height || null,
-        thumbnail_width: int(body.thumbnail_width, 0) || null, thumbnail_height: int(body.thumbnail_height, 0) || null,
-        file_size_bytes: int(body.file_size_bytes, 0) || null, mime_type: clean(body.mime_type, 120) || null,
-        original_file_name: clean(body.original_file_name, 260) || null, storage_bucket: clean(body.storage_bucket, 120) || null,
-        storage_path: clean(body.storage_path, 500) || null, thumbnail_path: clean(body.thumbnail_path, 500) || null,
-        checksum_sha256: clean(body.checksum_sha256, 128) || null, placeholder_selector: clean(body.placeholder_selector, 240) || null,
-        replacement_status: clean(body.replacement_status || 'not_replaced', 80), notes: clean(body.notes, 1000) || null,
+        asset_status: status, surface_area: clean(body.surface_area || existing?.surface_area || 'public', 120), image_role: clean(body.image_role || existing?.image_role || 'placeholder_replacement', 120),
+        source_url: sourceUrl || null, public_url: sourceUrl || null,
+        thumbnail_url: clean(body.thumbnail_url || publication.thumbnail_url || existing?.thumbnail_url, 900) || null, alt_text: altText || null, consent_status: consent, compression_status: compression,
+        route_key: clean(body.route_key || existing?.route_key, 120) || null, pixel_width: width || null, pixel_height: height || null,
+        thumbnail_width: int(body.thumbnail_width ?? existing?.thumbnail_width, 0) || null, thumbnail_height: int(body.thumbnail_height ?? existing?.thumbnail_height, 0) || null,
+        file_size_bytes: int(body.file_size_bytes ?? existing?.file_size_bytes, 0) || null, mime_type: clean(body.mime_type || existing?.mime_type, 120) || null,
+        original_file_name: clean(body.original_file_name || existing?.original_file_name, 260) || null, storage_bucket: clean(body.storage_bucket || existing?.storage_bucket, 120) || null,
+        storage_path: clean(body.storage_path || existing?.storage_path, 500) || null, thumbnail_path: clean(body.thumbnail_path || existing?.thumbnail_path, 500) || null,
+        review_storage_bucket: clean(existing?.review_storage_bucket || existing?.storage_bucket,120) || null,
+        review_storage_path: clean(existing?.review_storage_path || existing?.storage_path,500) || null,
+        review_thumbnail_path: clean(existing?.review_thumbnail_path || existing?.thumbnail_path,500) || null,
+        checksum_sha256: clean(body.checksum_sha256 || existing?.checksum_sha256, 128) || null, placeholder_selector: clean(body.placeholder_selector || existing?.placeholder_selector, 240) || null,
+        replacement_status: clean(body.replacement_status || existing?.replacement_status || 'not_replaced', 80), notes: clean(body.notes || existing?.notes, 1000) || null,
         rejection_reason: status === 'rejected' ? clean(body.rejection_reason || body.notes, 1000) || 'Rejected during review.' : null,
-        approved_by_profile_id: status === 'approved' ? profile.id : null, approved_at: status === 'approved' ? nowIso() : null,
-        readiness_score: readiness, metadata: { build: BUILD, schema: SCHEMA, source: 'operations-manage' }, updated_at: nowIso()
+        approved_by_profile_id: status === 'approved' ? profile.id : existing?.approved_by_profile_id || null, approved_at: status === 'approved' ? nowIso() : existing?.approved_at || null,
+        readiness_score: readiness, metadata: { build: BUILD, schema: SCHEMA, source: 'operations-manage', review_asset_promoted: Boolean(publication.public_url) }, updated_at: nowIso(), ...publication
       };
       const query = deciding ? supabase.from('visual_asset_approval_items').update(payload).eq('id', assetId) : supabase.from('visual_asset_approval_items').insert(payload);
       const { data, error } = await query.select('*').single();
       if (error) throw error;
-      await audit(supabase, { operation_action: action, operation_status: status, entity_type: 'visual_asset_approval_item', entity_id: data.id, actor_profile_id: profile.id, request_payload: safeRequest(body), response_payload: { readiness_score: readiness } });
-      return Response.json({ ok: true, record: data }, { headers: corsHeaders });
+      await audit(supabase, { operation_action: action, operation_status: status, entity_type: 'visual_asset_approval_item', entity_id: data.id, actor_profile_id: profile.id, request_payload: safeRequest(body), response_payload: { readiness_score: readiness, promoted_public_copy:Boolean(publication.public_url) } });
+      return Response.json({ ok: true, record: data, publication }, { headers: corsHeaders });
     }
 
     if (action === 'public_route_register' || action === 'public_route_decision' || action === 'public_route_publish') {
@@ -1126,6 +1187,49 @@ serve(async (req) => {
       if (error) throw error;
       await supabase.from('job_cost_live_snapshots').update({ snapshot_status: 'superseded' }).eq('job_id', jobId).neq('id', data.id).eq('snapshot_status', 'current');
       return Response.json({ ok: true, record: data }, { headers: corsHeaders });
+    }
+
+    if (action === 'staging_fixture_create' || action === 'staging_fixture_cleanup') {
+      requireRank(profile, 45, action);
+      if (action === 'staging_fixture_create') {
+        // Never allow disposable fixtures by default. Enable only on a dedicated
+        // staging deployment with YWI_ALLOW_STAGING_FIXTURES=true.
+        if (clean(Deno.env.get('YWI_ALLOW_STAGING_FIXTURES'), 20).toLowerCase() !== 'true') {
+          throw new HttpError(409, 'Staging fixture creation is disabled for this deployment. Enable YWI_ALLOW_STAGING_FIXTURES=true only on a dedicated staging project.');
+        }
+        const label = clean(body.fixture_label || 'STAGING-RPC', 100).toUpperCase();
+        if (!label.startsWith('STAGING-')) throw new HttpError(400, 'Fixture labels must begin with STAGING-.');
+        const result = await callRpc(supabase, 'ywi_rpc_create_staging_fixture_set', { p_actor_profile_id: profile.id, p_fixture_label: label });
+        await audit(supabase, { operation_action: action, operation_status:'created', entity_type:'operations_staging_fixture_set', entity_id:result.fixture_set_id, actor_profile_id:profile.id, request_payload:safeRequest(body), response_payload:result });
+        return Response.json({ ok:true, fixture:result }, { headers:corsHeaders });
+      }
+      const fixtureSetId = clean(body.fixture_set_id, 80);
+      if (!isUuid(fixtureSetId)) throw new HttpError(400, 'Valid fixture_set_id is required.');
+      const result = await callRpc(supabase, 'ywi_rpc_cleanup_staging_fixture_set', { p_fixture_set_id:fixtureSetId, p_actor_profile_id:profile.id, p_cleanup_note:clean(body.cleanup_note,1000) || null });
+      await audit(supabase, { operation_action:action, operation_status:'cleaned', entity_type:'operations_staging_fixture_set', entity_id:fixtureSetId, actor_profile_id:profile.id, request_payload:safeRequest(body), response_payload:result });
+      return Response.json({ ok:true, fixture:result }, { headers:corsHeaders });
+    }
+
+    if (action === 'content_signal_record' || action === 'content_signal_decision') {
+      requireRank(profile, 45, action);
+      if (action === 'content_signal_decision') {
+        const observationId = clean(body.observation_id,80); if (!isUuid(observationId)) throw new HttpError(400,'Valid observation_id is required.');
+        const decision = clean(body.decision_status,40); if (!['review','actioned','no_change','archived'].includes(decision)) throw new HttpError(400,'Unsupported content decision.');
+        const { data,error }=await supabase.from('content_signal_observations').update({ decision_status:decision, decision_note:clean(body.decision_note,1500)||null, decided_by_profile_id:profile.id, decided_at:nowIso(), updated_at:nowIso() }).eq('id',observationId).select('*').single();
+        if(error) throw error; return Response.json({ok:true,record:data},{headers:corsHeaders});
+      }
+      const source=clean(body.source_name,80); if(!['search_console','google_business_profile','manual_analytics'].includes(source)) throw new HttpError(400,'Choose Search Console, Google Business Profile, or manual analytics.');
+      const key=idempotencyKey(req,body,'signal');
+      const { data,error }=await supabase.from('content_signal_observations').upsert({ observation_key:key, source_name:source, route_key:clean(body.route_key,120)||null, observation_date:isoDate(body.observation_date)||today(), period_start:isoDate(body.period_start)||null, period_end:isoDate(body.period_end)||null, impressions:int(body.impressions,0)||null, clicks:int(body.clicks,0)||null, average_position:body.average_position===undefined?null:money(body.average_position), calls:int(body.calls,0)||null, direction_requests:int(body.direction_requests,0)||null, website_visits:int(body.website_visits,0)||null, review_count:int(body.review_count,0)||null, rating:body.rating===undefined?null:money(body.rating), notes:clean(body.notes,1500)||null, evidence_url:safeHttpUrl(body.evidence_url)||null, decision_status:'new', created_by_profile_id:profile.id, updated_at:nowIso() },{onConflict:'observation_key'}).select('*').single();
+      if(error) throw error; return Response.json({ok:true,record:data},{headers:corsHeaders});
+    }
+
+    if (action === 'stripe_webhook_alert_decision') {
+      requireRank(profile,45,action);
+      const alertId=clean(body.alert_id,80); if(!isUuid(alertId)) throw new HttpError(400,'Valid alert_id is required.');
+      const statusValue=clean(body.alert_status,40); if(!['acknowledged','resolved'].includes(statusValue)) throw new HttpError(400,'Unsupported alert decision.');
+      const { data,error }=await supabase.from('stripe_webhook_operational_alerts').update({ alert_status:statusValue, acknowledged_by_profile_id:statusValue==='acknowledged'?profile.id:null, acknowledged_at:statusValue==='acknowledged'?nowIso():null, resolved_by_profile_id:statusValue==='resolved'?profile.id:null, resolved_at:statusValue==='resolved'?nowIso():null, updated_at:nowIso() }).eq('id',alertId).select('*').single();
+      if(error) throw error; return Response.json({ok:true,record:data},{headers:corsHeaders});
     }
 
     if (action === 'deposit_status_update') {

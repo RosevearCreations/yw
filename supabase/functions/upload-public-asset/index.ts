@@ -1,9 +1,10 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const BUILD = '2026-06-20a';
-const SCHEMA = 152;
-const BUCKET = 'public-assets';
+const BUILD = '2026-06-22a';
+const SCHEMA = 153;
+// Review uploads are private until an approved staff decision copies them to public-assets.
+const BUCKET = 'review-assets';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -118,15 +119,15 @@ serve(async (req) => {
       await supabase.storage.from(BUCKET).remove([storagePath]);
       throw thumbError;
     }
-    const publicUrl = supabase.storage.from(BUCKET).getPublicUrl(storagePath).data.publicUrl;
-    const thumbnailUrl = supabase.storage.from(BUCKET).getPublicUrl(thumbnailPath).data.publicUrl;
     const hash = await checksum(file);
     const readiness = consent === 'pending' ? 80 : 100;
     const { data: record, error } = await supabase.from('visual_asset_approval_items').insert({
       asset_status: 'review', surface_area: clean(form.get('surface_area') || 'public', 120), image_role:imageRole,
-      source_url:publicUrl, public_url:publicUrl, thumbnail_url:thumbnailUrl, alt_text:altText,
+      // A review asset has no public URL. operations-manage copies approved files to public-assets.
+      source_url:null, public_url:null, thumbnail_url:null, alt_text:altText,
       consent_status:consent, compression_status:'optimized', route_key:routeKey || null,
       storage_bucket:BUCKET, storage_path:storagePath, thumbnail_path:thumbnailPath,
+      review_storage_bucket:BUCKET, review_storage_path:storagePath, review_thumbnail_path:thumbnailPath,
       pixel_width:width, pixel_height:height, thumbnail_width:thumbWidth, thumbnail_height:thumbHeight,
       file_size_bytes:file.size, mime_type:file.type, original_file_name:clean(form.get('original_file_name') || file.name, 260),
       checksum_sha256:hash, placeholder_selector:clean(form.get('placeholder_selector'), 240) || null,
@@ -137,7 +138,7 @@ serve(async (req) => {
       await supabase.storage.from(BUCKET).remove([storagePath, thumbnailPath]);
       throw error;
     }
-    return Response.json({ ok:true, record, upload:{ public_url:publicUrl, thumbnail_url:thumbnailUrl, width, height, file_size_bytes:file.size } }, { headers:corsHeaders });
+    return Response.json({ ok:true, record, upload:{ review_only:true, width, height, file_size_bytes:file.size, message:'Stored privately for review. Approve the asset to publish a public replacement.' } }, { headers:corsHeaders });
   } catch (error) {
     const status = error instanceof HttpError ? error.status : 500;
     return Response.json({ ok:false, error:error instanceof Error ? error.message : 'Upload failed.' }, { status, headers:corsHeaders });

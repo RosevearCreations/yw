@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const BUILD='2026-06-20a';
-const SCHEMA=152;
+const BUILD='2026-06-22a';
+const SCHEMA=153;
 const jsonHeaders={ 'Content-Type':'application/json' };
 const clean=(v:unknown,max=1000)=>String(v ?? '').trim().slice(0,max);
 const money=(v:unknown)=>{const n=Number(v);return Number.isFinite(n)?Number(n.toFixed(2)):0;};
@@ -54,6 +54,9 @@ async function recordDelivery(supabase:any,payload:Record<string,unknown>){
     };
     if(eventId) await supabase.from('stripe_webhook_delivery_events').upsert(row,{onConflict:'event_id'});
     else await supabase.from('stripe_webhook_delivery_events').insert(row);
+    // Schema 153 converts safe delivery outcomes into a staff-review queue.
+    // Alert refresh is deliberately best-effort so it never delays Stripe's acknowledgement.
+    await supabase.rpc('ywi_refresh_stripe_webhook_alerts', {});
   } catch { /* Observability must never interrupt Stripe acknowledgement. */ }
 }
 

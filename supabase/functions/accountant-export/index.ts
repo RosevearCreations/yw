@@ -2,8 +2,8 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { zipSync, strToU8 } from "npm:fflate@0.8.2";
 
-const BUILD = '2026-06-20a';
-const SCHEMA = 152;
+const BUILD = '2026-06-22a';
+const SCHEMA = 153;
 const BUCKET = 'accountant-exports';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -144,6 +144,17 @@ serve(async (req) => {
       artifact_expires_at:new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), source_schema_version:SCHEMA
     }).select('*').single();
     if (exportError) throw exportError;
+    // Capture the reviewed chart-of-accounts / close-checklist snapshot with the
+    // generated artifact. The RPC is transactional and records the exact mapping
+    // state that the accountant received, without treating it as tax filing advice.
+    const requestedCloseId = /^[0-9a-f-]{36}$/i.test(clean(body.period_close_id, 80)) ? clean(body.period_close_id, 80) : null;
+    const { data: closeSnapshot, error: closeSnapshotError } = await admin.rpc('ywi_rpc_capture_accountant_close_snapshot', {
+      p_export_id: exportRow.id,
+      p_period_close_id: requestedCloseId,
+      p_actor_profile_id: actor.id
+    });
+    if (closeSnapshotError) throw closeSnapshotError;
+    manifest.readiness = { ...(manifest.readiness || {}), close_mapping_snapshot: closeSnapshot || {} };
     const items = [...manifest.files.map((file, index) => ({ export_id:exportRow.id, item_kind:'csv', item_label:file.filename, source_type:'accountant-export', source_id:null, item_order:index + 1, item_payload:file })),
       { export_id:exportRow.id, item_kind:'manifest', item_label:'manifest.json', source_type:'accountant-export', source_id:null, item_order:99, item_payload:{ sha256:hash, size_bytes:archive.byteLength } },
       { export_id:exportRow.id, item_kind:'readme', item_label:'README.txt', source_type:'accountant-export', source_id:null, item_order:100, item_payload:{} }
@@ -153,7 +164,7 @@ serve(async (req) => {
     const { data: signed, error: signedError } = await admin.storage.from(BUCKET).createSignedUrl(storagePath, 900, { download:`${title.replace(/[^a-z0-9-_]+/gi,'-')}.zip` });
     if (signedError || !signed?.signedUrl) throw signedError || new Error('The package was created but a private download link could not be issued.');
 
-    return Response.json({ ok:true, export:exportRow, manifest, download_url:signed.signedUrl, expires_in_seconds:900 }, { headers:corsHeaders });
+    return Response.json({ ok:true, export:exportRow, manifest, close_mapping_snapshot:closeSnapshot || {}, download_url:signed.signedUrl, expires_in_seconds:900 }, { headers:corsHeaders });
   } catch (error) {
     const status = error instanceof HttpError ? error.status : 500;
     const message = error instanceof Error ? error.message : 'Could not generate accountant export.';
