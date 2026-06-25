@@ -2854,3 +2854,255 @@ body.customer-portal-mode>:not(#customerPortalView):not(script):not(style),body.
 .oc-release-grid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:12px;padding:0 14px 14px}.oc-release-card{display:grid;gap:7px;padding:14px;border:1px solid rgba(22,79,59,.17);border-radius:14px;background:linear-gradient(135deg,#fff,#f5faf6)}.oc-release-card>span:first-child{font-size:.76rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#557064}.oc-release-card header{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.oc-release-card p{margin:0;line-height:1.45}.oc-release-card small{line-height:1.42;color:#53665c}.oc-release-card dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0}.oc-release-card dl>div{display:grid;gap:3px;padding:8px;border-radius:9px;background:rgba(255,255,255,.78)}.oc-release-card dt{font-size:.72rem;font-weight:800;color:#5a6e63}.oc-release-card dd{margin:0;overflow-wrap:anywhere}.oc-private-media{display:inline-grid;place-items:center;min-height:72px;padding:8px;border-radius:10px;background:repeating-linear-gradient(135deg,rgba(22,79,59,.08) 0 7px,rgba(194,137,36,.08) 7px 14px);font-size:.76rem;font-weight:800;line-height:1.2;text-align:center;color:#35574a}.oc-asset-preview .oc-private-media{width:100%;min-height:110px}.oc-media-thumb .oc-private-media{height:100%;width:100%}
 @media(max-width:960px){.oc-release-grid{grid-template-columns:1fr}.oc-release-card dl{grid-template-columns:1fr}}
 @media(max-width:620px){.oc-release-grid{padding:0 10px 10px}.oc-release-card{padding:12px}.oc-release-card header{align-items:flex-start;flex-direction:column}.oc-release-card .oc-row-actions{width:100%}}
+
+
+/* Build 2026-06-23a — Operations Cockpit contrast remediation and dark-surface alignment. */
+/* The Cockpit sits inside the dark admin application. Its legacy light cards inherited
+   light global text, which made some labels and queue content unreadable. Keep this
+   section self-contained so every status, queue, form, and placeholder carries an
+   explicit dark-surface foreground/background pairing. */
+.operations-cockpit {
+  --oc-surface: #0c172b;
+  --oc-surface-raised: #12213d;
+  --oc-surface-soft: #172b4d;
+  --oc-surface-quiet: #0f1d36;
+  --oc-border: rgba(147, 197, 253, 0.24);
+  --oc-border-strong: rgba(147, 197, 253, 0.46);
+  --oc-text: #f8fbff;
+  --oc-text-soft: #d3dff2;
+  --oc-text-muted: #b5c4dc;
+  --oc-text-faint: #96aac9;
+  --oc-focus: #93c5fd;
+  --oc-success: #9cf5c8;
+  --oc-warning: #ffe29a;
+  --oc-danger: #ffc3c8;
+  color: var(--oc-text);
+  color-scheme: dark;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 92% 0%, rgba(56, 189, 248, 0.16), transparent 30%),
+    radial-gradient(circle at 7% 5%, rgba(96, 165, 250, 0.14), transparent 28%),
+    linear-gradient(145deg, #0a1427 0%, var(--oc-surface) 48%, #111f3a 100%);
+  border-color: rgba(96, 165, 250, 0.30);
+  box-shadow: 0 20px 48px rgba(2, 6, 23, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.operations-cockpit :is(h3, h4, strong, summary, label, p, dd, li) { color: inherit; }
+.operations-cockpit :is(.section-subtitle, .muted, details > p, small) { color: var(--oc-text-muted); opacity: 1; }
+.operations-cockpit .operations-cockpit-heading { margin-bottom: 14px; }
+.operations-cockpit .operations-cockpit-heading h3 { color: var(--oc-text); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.22); }
+.operations-cockpit .operations-kicker {
+  color: #dbeafe;
+  background: rgba(59, 130, 246, 0.18);
+  border: 1px solid rgba(147, 197, 253, 0.34);
+}
+.operations-cockpit .operations-graphic {
+  border-color: rgba(125, 211, 252, 0.26);
+  background:
+    radial-gradient(circle at 88% 14%, rgba(56, 189, 248, 0.22), transparent 38%),
+    linear-gradient(135deg, rgba(15, 33, 62, 0.98), rgba(25, 52, 94, 0.90));
+}
+.operations-cockpit .operations-status,
+.operations-cockpit .operations-retry {
+  color: var(--oc-text-soft);
+  border-color: var(--oc-border);
+  background: linear-gradient(145deg, rgba(17, 35, 65, 0.96), rgba(11, 24, 45, 0.96));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+.operations-cockpit .operations-status[data-status="ok"] {
+  border-color: rgba(52, 211, 153, 0.42);
+  background: linear-gradient(145deg, rgba(12, 64, 55, 0.88), rgba(12, 43, 52, 0.96));
+  color: #d7ffea;
+}
+.operations-cockpit .operations-status[data-status="error"] {
+  border-color: rgba(248, 113, 113, 0.58);
+  background: linear-gradient(145deg, rgba(93, 31, 43, 0.94), rgba(49, 22, 38, 0.98));
+  color: #ffe0e3;
+}
+.operations-cockpit .operations-scorecards article,
+.operations-cockpit .operations-grid details,
+.operations-cockpit .oc-queue-card,
+.operations-cockpit .oc-release-card,
+.operations-cockpit .oc-health-card,
+.operations-cockpit .oc-export-readiness,
+.operations-cockpit .oc-recon-review-card,
+.operations-cockpit .oc-permission-strip,
+.operations-cockpit .oc-queue-history {
+  color: var(--oc-text);
+  border-color: var(--oc-border);
+  background: linear-gradient(155deg, rgba(22, 43, 77, 0.98), rgba(12, 25, 47, 0.98));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045), 0 12px 26px rgba(2, 6, 23, 0.18);
+}
+.operations-cockpit .operations-grid summary {
+  color: var(--oc-text);
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.18), rgba(30, 64, 175, 0.08));
+  border-bottom: 1px solid rgba(147, 197, 253, 0.16);
+}
+.operations-cockpit .operations-grid summary:hover { background: rgba(59, 130, 246, 0.22); }
+.operations-cockpit .operations-grid details[open] summary { color: #ffffff; }
+.operations-cockpit .operations-form label { color: var(--oc-text-soft); }
+.operations-cockpit .operations-form :is(input, select, textarea),
+.operations-cockpit .oc-inline-controls :is(input, select, textarea) {
+  color: var(--oc-text);
+  background: rgba(5, 14, 30, 0.78);
+  border-color: rgba(147, 197, 253, 0.30);
+  caret-color: #ffffff;
+}
+.operations-cockpit .operations-form :is(input, select, textarea)::placeholder,
+.operations-cockpit .oc-inline-controls :is(input, select, textarea)::placeholder { color: #aabbd6; opacity: 1; }
+.operations-cockpit .operations-form :is(input, select, textarea):focus,
+.operations-cockpit .oc-inline-controls :is(input, select, textarea):focus {
+  border-color: var(--oc-focus);
+  box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.20);
+}
+.operations-cockpit :is(select, option) { color: var(--oc-text); background-color: #0e1c35; }
+.operations-cockpit input[type="file"] { color: var(--oc-text-soft); background: rgba(5, 14, 30, 0.70); border-color: rgba(147, 197, 253, 0.34); }
+.operations-cockpit input[type="checkbox"] { accent-color: #60a5fa; }
+.operations-cockpit button {
+  color: #ffffff;
+  background: linear-gradient(180deg, #3276d4, #1d4f9c);
+  border-color: rgba(147, 197, 253, 0.42);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 3px 9px rgba(2, 6, 23, 0.22);
+}
+.operations-cockpit button.secondary {
+  color: var(--oc-text-soft);
+  background: rgba(148, 163, 184, 0.11);
+  border-color: rgba(191, 219, 254, 0.24);
+}
+.operations-cockpit button:hover:not(:disabled) { background: linear-gradient(180deg, #4188e6, #265fb6); border-color: var(--oc-focus); }
+.operations-cockpit button.secondary:hover:not(:disabled) { color: #ffffff; background: rgba(96, 165, 250, 0.20); }
+.operations-cockpit :is(button, summary, input, select, textarea):focus-visible {
+  outline: 3px solid rgba(147, 197, 253, 0.68);
+  outline-offset: 2px;
+}
+.operations-cockpit .operations-readiness {
+  color: var(--oc-warning);
+  background: rgba(120, 82, 17, 0.34);
+  border: 1px solid rgba(251, 191, 36, 0.42);
+}
+.operations-cockpit .operations-readiness strong,
+.operations-cockpit .operations-readiness span { color: #fff1c2; }
+.operations-cockpit .oc-queue-card > header,
+.operations-cockpit .oc-release-card > header { border-color: rgba(191, 219, 254, 0.16); }
+.operations-cockpit .oc-queue-card dl > div,
+.operations-cockpit .oc-release-card dl > div,
+.operations-cockpit .oc-recon-math > div,
+.operations-cockpit .oc-score-components > div,
+.operations-cockpit .oc-release-card dl > div {
+  color: var(--oc-text);
+  background: rgba(5, 16, 34, 0.42);
+  border-color: rgba(147, 197, 253, 0.13);
+}
+.operations-cockpit .oc-queue-card dt,
+.operations-cockpit .oc-release-card dt,
+.operations-cockpit .oc-recon-math span,
+.operations-cockpit .oc-score-components dt,
+.operations-cockpit .oc-health-card span,
+.operations-cockpit .oc-release-card > span:first-child { color: var(--oc-text-faint); }
+.operations-cockpit .oc-queue-card dd,
+.operations-cockpit .oc-release-card dd,
+.operations-cockpit .oc-health-card strong,
+.operations-cockpit .oc-recon-review-card h4,
+.operations-cockpit .oc-recon-math strong,
+.operations-cockpit .oc-permission-summary strong { color: var(--oc-text); }
+.operations-cockpit .oc-health-card small,
+.operations-cockpit .oc-export-readiness small,
+.operations-cockpit .oc-release-card small,
+.operations-cockpit .oc-recon-review-card > small,
+.operations-cockpit .oc-empty small { color: var(--oc-text-muted); }
+.operations-cockpit .oc-split-review {
+  color: var(--oc-text-soft);
+  background: rgba(5, 16, 34, 0.42);
+  border-color: rgba(147, 197, 253, 0.28);
+}
+.operations-cockpit .oc-export-metrics span,
+.operations-cockpit .oc-staging-test-summary .oc-badge {
+  color: var(--oc-text-soft);
+  background: rgba(96, 165, 250, 0.15);
+  border: 1px solid rgba(147, 197, 253, 0.18);
+}
+.operations-cockpit .oc-badge {
+  color: #eaf2ff;
+  background: #2a3e5e;
+  border: 1px solid rgba(191, 219, 254, 0.18);
+}
+.operations-cockpit .oc-badge-approved,
+.operations-cockpit .oc-badge-posted,
+.operations-cockpit .oc-badge-paid,
+.operations-cockpit .oc-badge-matched,
+.operations-cockpit .oc-badge-complete,
+.operations-cockpit .oc-badge-completed,
+.operations-cockpit .oc-badge-resolved,
+.operations-cockpit .oc-badge-published,
+.operations-cockpit .oc-badge-ready { color: #c7f9dd; background: #123e35; border-color: rgba(52, 211, 153, 0.33); }
+.operations-cockpit .oc-badge-submitted,
+.operations-cockpit .oc-badge-pending,
+.operations-cockpit .oc-badge-review,
+.operations-cockpit .oc-badge-needs-review,
+.operations-cockpit .oc-badge-checkout-created,
+.operations-cockpit .oc-badge-scheduled { color: #ffe5a3; background: #4a3510; border-color: rgba(251, 191, 36, 0.35); }
+.operations-cockpit .oc-badge-rejected,
+.operations-cockpit .oc-badge-failed,
+.operations-cockpit .oc-badge-error,
+.operations-cockpit .oc-badge-locked-out,
+.operations-cockpit .oc-badge-difference { color: #ffd6da; background: #54242b; border-color: rgba(248, 113, 113, 0.38); }
+.operations-cockpit .oc-math-ok { color: var(--oc-success) !important; }
+.operations-cockpit .oc-math-warning { color: var(--oc-warning) !important; }
+.operations-cockpit .oc-empty {
+  color: var(--oc-text-soft);
+  border-color: rgba(147, 197, 253, 0.34);
+  background: rgba(12, 27, 52, 0.72);
+}
+.operations-cockpit .oc-empty span { color: #a7d8ff; }
+.operations-cockpit .oc-empty strong { color: #ffffff; }
+.operations-cockpit .oc-queue-history summary { color: var(--oc-text-soft); }
+.operations-cockpit .oc-private-media {
+  color: #d9ecff;
+  border: 1px dashed rgba(147, 197, 253, 0.42);
+  background: repeating-linear-gradient(135deg, rgba(30, 64, 175, 0.30) 0 8px, rgba(17, 94, 89, 0.28) 8px 16px);
+}
+.operations-cockpit .oc-media-card,
+.operations-cockpit .oc-service-card { color: var(--oc-text); }
+.operations-cockpit .oc-media-body,
+.operations-cockpit .oc-asset-preview { background: rgba(5, 16, 34, 0.36); }
+.operations-cockpit .operations-scorecards article small { color: var(--oc-text-muted); }
+.operations-cockpit .operations-scorecards progress { accent-color: #60a5fa; }
+.operations-cockpit [data-status="error"] a { color: #ffffff; text-decoration: underline; }
+@media (max-width: 620px) {
+  .operations-cockpit { margin-inline: -2px; border-radius: 16px; }
+  .operations-cockpit .operations-cockpit-heading { gap: 14px; }
+  .operations-cockpit .operations-status,
+  .operations-cockpit .operations-retry { margin-inline: 10px; }
+  .operations-cockpit .operations-form { padding-inline: 12px; }
+  .operations-cockpit .operations-scorecards { gap: 8px; padding-inline: 2px; }
+  .operations-cockpit .operations-scorecards article { min-width: 0; }
+  .operations-cockpit .oc-row-actions button { width: 100%; }
+}
+@media (forced-colors: active) {
+  .operations-cockpit,
+  .operations-cockpit .operations-grid details,
+  .operations-cockpit .oc-queue-card,
+  .operations-cockpit .oc-release-card { forced-color-adjust: auto; }
+}
+
+/* Permission chips were previously defined with light-surface colours. Keep them
+   readable when they are rendered inside the Cockpit's dark operational shell. */
+.operations-cockpit .oc-permission {
+  color: #eaf2ff;
+  background: #2a3e5e;
+  border: 1px solid rgba(191, 219, 254, 0.18);
+}
+.operations-cockpit .oc-permission.is-allowed {
+  color: #c7f9dd;
+  background: #123e35;
+  border-color: rgba(52, 211, 153, 0.33);
+}
+.operations-cockpit .oc-permission.is-restricted {
+  color: #ffe5a3;
+  background: #4a3510;
+  border-color: rgba(251, 191, 36, 0.35);
+}
+.operations-cockpit .oc-permission.is-pending {
+  color: #d3dff2;
+  background: #2b3a56;
+  border-color: rgba(147, 197, 253, 0.28);
+}

@@ -1,196 +1,117 @@
-# Next Steps and Sanity Check — build 2026-06-22a / schema 153
+# Next Steps and Sanity Check — build 2026-06-23a / schema 153
 
 ## Completed in this pass
 
-1. Added `sql/153_release_fixture_policy_mapping_seo_alerts.sql`.
-2. Added disposable, tracked `STAGING-` fixture creation/cleanup RPCs for a customer, vendor, AR invoice, AP bill, bank account, quote/portal package, and accepted bank-preview record.
-3. Added deployment-level and command-line staging interlocks so fixture creation is never enabled by default.
-4. Converted fresh image uploads to private `review-assets` storage. A protected approval decision now copies approved originals/thumbnails to the public delivery bucket.
-5. Added independent server-side MIME/dimension/size/checksum verification and removed unsupported AVIF selection from the UI so browser/server claims match.
-6. Added policy assertions for private review media, private accountant ZIPs, RLS coverage, public asset delivery, and non-public portal-RPC execution.
-7. Added accountant mapping rules, mapping readiness, close-checklist snapshots, and export-function snapshot capture.
-8. Added Search Console / Google Business Profile / manual analytics observation records and human content-decision queue.
-9. Added repeated Stripe webhook failure and stale-delivery alert records, refresh logic, and Cockpit acknowledge/resolve actions.
-10. Expanded the Operations Cockpit with release-proof cards, private-media status, staging fixture controls, route-signal decisions, and payment-provider alerts.
-11. Added `scripts/staging-fixtures.mjs`, `scripts/security-policy-assertions.mjs`, revised static/live RPC proof, browser-contract test scaffolding, and a GitHub Actions workflow.
-12. Updated cache build markers to `2026-06-22a` and schema markers to `153`.
-13. Physically consolidated active Markdown to three files; **80** historical Markdown files were moved into `archive/retired-markdown-2026-06-22a/` and four temporary write files were archived.
+1. Physically consolidated the repository to exactly three active Markdown files and preserved historical files under `archive/retired-markdown-2026-06-23a/`.
+2. Moved temporary write/test artifacts out of the active root into `archive/retired-test-files-2026-06-23a/`.
+3. Rebuilt `sql/000_full_schema_reference.sql` from the ordered 030–153 migrations, including the schema 153 accountant-readiness view compatibility fix.
+4. Added the protected `.github/workflows/staging-browser-integration.yml` scaffold. It runs source contracts by default and deployed staging checks only when manually selected in the protected `staging` environment.
+5. Reworked the Operations Cockpit from the legacy light card surface into the application’s dark-navy design system.
+6. Added explicit high-contrast colours for Cockpit text, labels, details summaries, status/retry notices, buttons, form fields, queues, scorecards, private-media placeholders, reconciliation cards, health cards, release-proof cards, and all status badges.
+7. Added visible keyboard focus, dark native control rendering, improved mobile action wrapping, and forced-colors support.
+8. Added `scripts/operations-cockpit-contrast-check.mjs`, which validates the required local styling and colour-pair ratios for normal, supporting, muted, success, warning, and error text.
+9. Updated cache/build markers to `2026-06-23a`. Database schema remains `153`.
 
 ## Current sanity result
 
-The new release closes the next highest-value safety gaps in the roadmap. Accounting/reconciliation/quote writes remain transactional from schema 151; schema 153 makes staging evidence repeatable, makes unapproved media private by design, and captures financial/SEO/payment-provider decisions as reviewable records.
+The exact Cockpit problem reported—text disappearing against a similarly coloured background—was caused by a light Cockpit surface inheriting the dark application’s light foreground. The revised Cockpit now uses a self-contained dark surface and explicit foreground colours, so it no longer depends on inherited text colour or browser-default button/select rendering.
 
-Static verification can prove source wiring, archive state, cache markers, syntax, build/schema references, and policy definitions. It cannot prove a deployed Supabase project, Edge Function secret configuration, storage policy behavior, Stripe endpoint delivery, or a rendered device/browser. Those are staging gates, not assumptions.
+Static checks prove source wiring, colour-token contrast calculations, documentation archive state, full-schema consistency, syntax, cache markers, and release scaffolding. They cannot prove a deployed Supabase project, Edge Function secret configuration, real RLS/storage behavior, Stripe delivery, or browser-specific rendering. Those remain staging checks.
 
-## Detailed staging test process
+## Detailed Operations Cockpit visual test
 
-### 1. Prepare a dedicated non-production project
+Use these steps after deploying the updated static assets to **staging**. Do this before production.
 
-1. Create or select a Supabase project used only for testing. Confirm it is not the live project.
-2. Snapshot/backup the staging database.
-3. Apply migrations in numeric order through `153_release_fixture_policy_mapping_seo_alerts.sql`.
-4. Confirm the marker in Supabase SQL Editor:
+### A. Open the Cockpit as job admin
 
-```sql
-select * from public.v_schema_drift_status;
-```
+1. Sign in with the staging `job_admin` or `admin` account.
+2. Open the **Admin** area and scroll to **Operations Cockpit**.
+3. Confirm the overall Cockpit background is dark navy, visually consistent with the main admin cards.
+4. Confirm the heading, subtitle, Schema badge, graphic-placeholder title, and placeholder help text are clearly readable without selecting text.
+5. Expand every Cockpit section at least once. Check that closed summaries and open summaries both remain readable.
 
-Expected:
+### B. Check the text/background states
 
-- `expected_schema_version = 153`
-- `latest_applied_schema_version >= 153`
-- `drift_status = current`
+1. In **role capability**, confirm allowed/restricted pills show readable light text against dark green/gold/rose backgrounds.
+2. In a normal queue card, verify title, labels, values, status pill, and action buttons are all readable.
+3. Create or use one harmless staging validation failure. Confirm the red error banner has clearly readable text.
+4. Trigger a harmless successful refresh. Confirm the green success banner has clearly readable text.
+5. Open a record needing review. Confirm yellow/gold warning text remains readable.
+6. Check the private-media placeholder. It should say **Private review** clearly and must not look like a broken public image.
 
-5. Deploy the changed functions:
+### C. Check inputs and keyboard focus
 
-```powershell
-supabase functions deploy operations-manage
-supabase functions deploy upload-public-asset
-supabase functions deploy stripe-webhook
-supabase functions deploy accountant-export
-supabase functions deploy customer-portal
-supabase functions deploy public-content
-```
+1. Click each input, select, textarea, upload field, checkbox, and button in the Cockpit.
+2. Confirm text entered into fields is white/light and readable against the dark input background.
+3. Confirm placeholders are visible but visually secondary.
+4. Use the `Tab` key through the Cockpit. Every active control needs a visible blue focus outline.
+5. Open each select menu. Its choices should use dark backgrounds and light text; no white-on-white or black-on-black text should appear.
 
-6. In the **staging project only**, configure:
+### D. Check phone, tablet, and desktop widths
 
-```text
-SUPABASE_URL
-SUPABASE_SERVICE_ROLE_KEY
-STRIPE_SECRET_KEY
-STRIPE_WEBHOOK_SECRET
-YWI_ALLOW_STAGING_FIXTURES=true
-```
+Use browser responsive mode or actual devices:
 
-Do not use live Stripe keys or a production service-role key.
+1. **Phone:** 390 × 844.
+2. **Tablet:** 768 × 1024.
+3. **Desktop:** 1440 × 960.
 
-7. Configure the staging Stripe webhook endpoint for:
+At each size:
 
-```text
-checkout.session.completed
-checkout.session.async_payment_succeeded
-checkout.session.async_payment_failed
-checkout.session.expired
-```
+1. Hard refresh once so build `2026-06-23a` loads rather than a cached CSS file.
+2. Confirm no page-wide horizontal scroll appears.
+3. Confirm queue cards, release-proof cards, status messages, and forms stay readable.
+4. At phone width, confirm Cockpit action buttons stack full width rather than squeezing text together.
+5. Confirm the Operations Cockpit graphic placeholder does not cover text or push controls off-screen.
+6. With operating-system reduced motion enabled, confirm the Cockpit remains usable without motion-dependent cues.
+7. With high-contrast/forced-colours enabled where available, confirm text and focus outlines remain visible.
 
-### 2. Create safe test identities
+### E. Record outcome
 
-1. Create an active staging-only `job_admin` or `admin` user and one active `worker` user.
-2. Record locally, not in Git/GitHub/chat:
-   - job-admin profile UUID;
-   - job-admin session JWT;
-   - worker session JWT.
-3. Use only `STAGING-` labels for manual records. Never run fixtures in production.
+Record a staging result as **pass** only if all text is readable at all three widths, every keyboard focus target is visible, all select/input text is readable, and no unexpected horizontal scrolling occurs. Capture a screenshot for any failing card and note its browser, screen size, and user role.
 
-### 3. Run source/static checks first
+## Existing schema 153 staging gate
 
-From the repository root:
+Before production use, also follow the full schema 153 process:
+
+1. Use a dedicated non-production Supabase project.
+2. Apply migrations through `153_release_fixture_policy_mapping_seo_alerts.sql`.
+3. Confirm `public.v_schema_drift_status` reports version 153 and `current`.
+4. Deploy `operations-manage`, `upload-public-asset`, `stripe-webhook`, `accountant-export`, `customer-portal`, and `public-content`.
+5. Use staging-only Supabase service credentials and Stripe test-mode values. Never put them in Git, browser code, public files, or chat messages.
+6. Run:
 
 ```powershell
 node scripts/operations-rpc-integration-test.mjs
 node scripts/security-policy-assertions.mjs
-node scripts/operations-rpc-staging-e2e.mjs
+node scripts/operations-cockpit-contrast-check.mjs
 node scripts/repo-smoke-check.mjs
 ```
 
-Expected: all source checks pass. The staging harness says live calls were skipped without staging credentials; that is correct.
-
-### 4. Create disposable fixtures in staging
-
-Set these values in the **same PowerShell window**. Replace only the values in quotes:
-
-```powershell
-$env:YWI_STAGING_FIXTURES = '1'
-$env:YWI_STAGING_LABEL = 'staging'
-$env:YWI_STAGING_CONFIRM = 'I_CONFIRM_STAGING_ONLY'
-$env:SUPABASE_URL = 'https://YOUR-STAGING-PROJECT.supabase.co'
-$env:SUPABASE_SERVICE_ROLE_KEY = 'YOUR-STAGING-SERVICE-ROLE-KEY'
-$env:YWI_STAGING_JOB_ADMIN_PROFILE_ID = 'JOB-ADMIN-PROFILE-UUID'
-$env:YWI_STAGING_FIXTURE_LABEL = 'STAGING-RPC'
-node scripts/staging-fixtures.mjs create
-```
-
-The output returns `fixture_set_id`, AR/AP IDs, bank-preview ID, and quote package ID. The portal token is masked unless `YWI_REVEAL_STAGING_TOKENS=1`; only reveal it in a private local staging test session.
-
-### 5. Run the live proof harness
-
-Continue in the same PowerShell window:
-
-```powershell
-$env:YWI_RUN_STAGING_RPC_TESTS = '1'
-$env:YWI_STAGING_JOB_ADMIN_JWT = 'JOB-ADMIN-SESSION-JWT'
-$env:YWI_STAGING_WORKER_JWT = 'WORKER-SESSION-JWT'
-$env:YWI_STAGING_CREATE_FIXTURES = '1'
-$env:YWI_STAGING_CLEANUP_FIXTURE = '0'
-node scripts/operations-rpc-staging-e2e.mjs
-```
-
-Expected checks:
-
-- schema 153 current;
-- policy assertions pass;
-- accountant mapping readiness view reachable;
-- role-capability snapshot includes schema 153 actions;
-- job admin receives Operations Cockpit data;
-- worker receives server-side denial;
-- a disposable fixture set is created.
-
-The exact-split rejection check is optional because it needs a dedicated promoted reconciliation item UUID. Once one exists, set:
-
-```powershell
-$env:YWI_STAGING_RPC_FIXTURES_JSON = '{"reconciliation_item_id":"RECONCILIATION-ITEM-UUID"}'
-node scripts/operations-rpc-staging-e2e.mjs
-```
-
-A deliberately wrong split must be rejected. A successful wrong split is a production blocker.
-
-### 6. Manual browser acceptance test
-
-Use a current browser at phone width, tablet width, and desktop width. Start as staging job admin.
-
-1. **Policy/role evidence** — Operations Cockpit must show the role capability strip and policy evidence. Sign in as worker and confirm server rejection, not just a disabled button.
-2. **Private media** — Upload a JPEG/PNG/WebP. Verify the Cockpit says **Private review**, with no public preview URL. Approve it and verify the file is copied to the public bucket, the asset becomes publication-ready, and only then may it satisfy a route visual gate.
-3. **Payment posting** — Create a small `STAGING-` payment action with proof. Approve/post it. Verify a single application and balanced journal batch. Repost must not duplicate it.
-4. **Bank promotion/reconciliation** — Preview/confirm a staging CSV. Verify import/session/items exist. Try a split that is off by one cent; it must fail. Use a valid exact split and verify zero difference.
-5. **Quote and portal** — Accept a staging quote twice. Verify one work order is reused, not duplicated. Create a test-mode Stripe checkout. Verify payment is recorded only after a verified webhook event.
-6. **Webhook alerts** — Send safe test failure/expiry events as appropriate. Confirm that repeated delivery failures produce an alert and that acknowledge/resolve actions add no paid-status override.
-7. **Accountant package** — Check mapping readiness. Generate a private package. Verify the ZIP opens from a short-lived signed URL, has CSV/manifest/README, records a SHA-256, includes mapping snapshot metadata, and does not contain active spreadsheet formulas from imported data.
-8. **SEO signal decision** — Record one Search Console/GBP/manual observation. Confirm it appears in the decision queue. Mark review/actioned with a human note. Verify it does not auto-publish content.
-9. **Responsive behavior** — Confirm no unexpected horizontal overflow; queue cards, release cards, forms, exact-math cards, and actions remain readable; reduced-motion setting behaves cleanly.
-10. **Public route** — Confirm exactly one H1, proper canonical/meta, original approved image/alt text, and a sitemap entry only after route approval/publish.
-
-### 7. Cleanup staging fixtures
-
-After browser testing, use the **fixture set ID** returned earlier:
-
-```powershell
-$env:YWI_STAGING_FIXTURE_SET_ID = 'FIXTURE-SET-UUID'
-node scripts/staging-fixtures.mjs cleanup
-```
-
-Confirm `cleaned: true`. Do not leave test customer, financial, portal, or bank data in staging without a documented reason.
+7. Run the disposable `STAGING-` fixture flow and the live staging harness only after its explicit staging interlocks are set.
+8. Verify job-admin allow/worker deny, private-media approval, payment posting, bank promotion, one-cent split rejection, quote reuse, verified Stripe webhook payment updates, accountant-package generation, route signal decisioning, and the visual test above.
+9. Clean the tracked fixture set after testing.
 
 ## Release blockers
 
 Do not move toward production until all are true:
 
 - schema 153 is current in a dedicated staging project;
-- all changed functions are deployed;
+- changed functions and static front-end are deployed;
 - staging-only Stripe keys/webhook secret are configured;
-- job-admin allow and worker deny tests pass;
+- server-side job-admin allow and worker deny tests pass;
 - storage/policy assertion summary passes;
-- private review media cannot be fetched publicly before approval;
-- duplicate posts, locked periods, invalid exact splits, duplicate quote acceptance, wrong Stripe session/amount/currency, and invalid webhook signatures are verified to fail safely;
-- accountant or bookkeeper approves chart-of-accounts/tax mapping before reliance on export data;
-- actual phone/tablet/desktop browser checks are completed;
-- original approved vehicle/workshop/before-after media replaces visible placeholders;
-- Search Console and Google Business Profile data are reviewed by a person before route-priority changes.
+- unapproved review media cannot be fetched publicly;
+- duplicate posts, locked periods, invalid exact splits, duplicate quote acceptance, wrong Stripe session/amount/currency, and invalid webhook signatures fail safely;
+- accountant/bookkeeper approves chart-of-accounts/tax mapping before use of export data;
+- the Cockpit contrast test passes at phone/tablet/desktop widths;
+- original approved vehicle/workshop/before-after media replaces visible placeholders before public launch;
+- Search Console and Google Business Profile evidence is reviewed by a person before route-priority changes.
 
-## Highest-value next work after staging proof
+## Highest-value next work
 
-1. Run schema 153 in staging and fix every real migration/RLS/storage discrepancy found there.
-2. Add CI secrets only in a protected staging environment and enable the optional deployed-staging workflow after one manual proof run succeeds.
-3. Add actual original media and consent records to replace the highest-value visual placeholders.
-4. Have the accountant/bookkeeper approve required mapping rules and define the exact month-end close checklist.
-5. Connect real Search Console/GBP exports or a controlled manual import process; do not store third-party credentials in app tables.
-6. Add a deliberate release dashboard showing schema status, last backup, RLS assertion status, Stripe endpoint health, and latest staging proof result.
+1. Deploy the corrected static build and schema 153 to staging, then complete the recorded browser and policy proof.
+2. Resolve every live RLS/storage/migration discrepancy found during staging; do not paper over it in client code.
+3. Replace the most valuable public placeholders with original, consent-approved before/after/service media, complete descriptive alt text, and publish only approved route records.
+4. Have the accountant/bookkeeper approve mapping rules and define the exact month-end close checklist.
+5. Load real Search Console/GBP observations by controlled manual import or review process; avoid storing third-party credentials in app tables.
+6. After staging proof, add a concise release dashboard for schema status, last backup, RLS assertion status, Stripe endpoint health, latest staging proof, and outstanding visual/SEO content approvals.
