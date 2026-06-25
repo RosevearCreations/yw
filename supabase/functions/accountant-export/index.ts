@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { zipSync, strToU8 } from "npm:fflate@0.8.2";
 
-const BUILD = '2026-06-22a';
+const BUILD = '2026-06-23a';
 const SCHEMA = 153;
 const BUCKET = 'accountant-exports';
 const corsHeaders = {

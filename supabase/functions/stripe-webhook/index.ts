@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const BUILD='2026-06-22a';
+const BUILD='2026-06-23a';
 const SCHEMA=153;
 const jsonHeaders={ 'Content-Type':'application/json' };
 const clean=(v:unknown,max=1000)=>String(v ?? '').trim().slice(0,max);
