@@ -39,6 +39,8 @@ test('Operations Cockpit has readable dark contrast when a protected staging adm
   await page.goto(process.env.YWI_E2E_ADMIN_URL, { waitUntil: 'domcontentloaded' });
   const cockpit = page.locator('#operationsCockpit');
   await expect(cockpit).toBeVisible();
+  const releaseDashboard = page.locator('#oc_release_dashboard');
+  await expect(releaseDashboard).toBeVisible();
   const styles = await cockpit.evaluate((element) => {
     const style = getComputedStyle(element);
     const heading = element.querySelector('h3, h4, summary, strong');

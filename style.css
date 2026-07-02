@@ -3106,3 +3106,22 @@ body.customer-portal-mode>:not(#customerPortalView):not(script):not(style),body.
   background: #2b3a56;
   border-color: rgba(147, 197, 253, 0.28);
 }
+
+/* Build 2026-06-30a — release evidence dashboard. */
+/* Schema 154: human-reviewed release readiness dashboard. These cards show
+   evidence only; their visual state must never imply an automated deployment. */
+.operations-cockpit .oc-release-dashboard { margin: 0 14px 14px; }
+.operations-cockpit .oc-release-dashboard-card { display:grid; gap:14px; padding:16px; border:1px solid rgba(147,197,253,.28); border-radius:16px; background:linear-gradient(135deg,rgba(14,36,70,.94),rgba(11,24,49,.96)); box-shadow:0 12px 24px rgba(0,0,0,.18); }
+.operations-cockpit .oc-release-dashboard-card > header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.operations-cockpit .oc-release-dashboard-card h4 { margin:2px 0 5px; color:var(--oc-text); font-size:1.05rem; }
+.operations-cockpit .oc-release-dashboard-card p { margin:0; color:var(--oc-text-muted); line-height:1.45; }
+.operations-cockpit .oc-release-dashboard-card footer { display:grid; gap:5px; padding-top:10px; border-top:1px solid rgba(191,219,254,.14); color:var(--oc-text-muted); }
+.operations-cockpit .oc-release-gates { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.operations-cockpit .oc-release-gate { display:grid; gap:5px; min-width:0; padding:11px; border:1px solid rgba(191,219,254,.18); border-radius:12px; background:rgba(5,16,34,.42); }
+.operations-cockpit .oc-release-gate.is-clear { border-color:rgba(52,211,153,.35); background:rgba(9,56,53,.44); }
+.operations-cockpit .oc-release-gate.is-review { border-color:rgba(251,191,36,.32); background:rgba(72,48,12,.36); }
+.operations-cockpit .oc-release-gate span { color:var(--oc-text-faint); font-size:.72rem; font-weight:850; letter-spacing:.04em; text-transform:uppercase; }
+.operations-cockpit .oc-release-gate strong { overflow-wrap:anywhere; }
+.operations-cockpit .oc-release-gate small { color:var(--oc-text-muted); line-height:1.38; }
+@media(max-width:960px){.operations-cockpit .oc-release-gates{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:620px){.operations-cockpit .oc-release-dashboard{margin:0 10px 10px}.operations-cockpit .oc-release-dashboard-card{padding:13px}.operations-cockpit .oc-release-dashboard-card>header{flex-direction:column}.operations-cockpit .oc-release-gates{grid-template-columns:1fr}.operations-cockpit .oc-release-dashboard-card footer{font-size:.82rem;}}

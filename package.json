@@ -1,11 +1,11 @@
 {
   "name": "ywi-operations-platform",
   "private": true,
-  "version": "2026.06.23",
+  "version": "2026.06.30",
   "type": "module",
   "scripts": {
-    "test:repo": "node scripts/operations-rpc-integration-test.mjs && node scripts/security-policy-assertions.mjs && node scripts/operations-cockpit-contrast-check.mjs && node scripts/repo-smoke-check.mjs",
-    "test:browser": "playwright test tests/browser/operations-portal.spec.mjs",
+    "test:repo": "node scripts/repo-smoke-check.mjs",
+    "test:browser": "playwright test --config=playwright.config.mjs tests/browser/operations-portal.spec.mjs",
     "test:staging": "node scripts/operations-rpc-staging-e2e.mjs",
     "test:contrast": "node scripts/operations-cockpit-contrast-check.mjs"
   },

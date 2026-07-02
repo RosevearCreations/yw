@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const BUILD = '2026-06-23a';
-const SCHEMA = 153;
+const BUILD = '2026-06-30a';
+const SCHEMA = 154;
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-idempotency-key',
@@ -680,7 +680,7 @@ async function queuePayload(supabase: any, profile: any) {
     const rows = await safeSelect(supabase.from(view).select('*').limit(60));
     return [key, rows];
   }));
-  const [bankItems, profiles, banks, rails, stripeRows, exportRows, testRows, policyRows, signalRows, alertRows, capabilitySnapshot] = await Promise.all([
+  const [bankItems, profiles, banks, rails, stripeRows, exportRows, testRows, policyRows, signalRows, alertRows, releaseRows, capabilitySnapshot] = await Promise.all([
     safeSelect(supabase.from('bank_reconciliation_items').select('id, reconciliation_session_id, item_date, item_description, amount, match_status, clearing_status, difference_reason, notes, created_at').eq('clearing_status', 'open').order('item_date', { ascending: false }).limit(100)),
     safeSelect(supabase.from('profiles').select('id, full_name, email, role').order('full_name').limit(200)),
     safeSelect(supabase.from('bank_accounts').select('id, account_name, currency_code, account_mask, is_default, gl_account_id').eq('account_status', 'open').order('is_default', { ascending: false }).order('account_name')),
@@ -691,6 +691,7 @@ async function queuePayload(supabase: any, profile: any) {
     safeSelect(supabase.from('v_security_policy_assertion_summary').select('*').limit(1)),
     safeSelect(supabase.from('v_route_content_decision_queue').select('*').limit(12)),
     callRpc(supabase, 'ywi_refresh_stripe_webhook_alerts', {}).catch(() => ({})).then(() => safeSelect(supabase.from('v_stripe_webhook_alert_queue').select('*').limit(12))),
+    safeSelect(supabase.from('v_release_readiness_dashboard').select('*').limit(1)),
     callRpc(supabase, 'ywi_get_operations_capabilities', { p_actor_profile_id: profile.id }).catch(() => ({ actor_role: profile?.role || 'unknown', actor_rank: roleRank(profile?.role), actions: {} }))
   ]);
   return {
@@ -705,7 +706,8 @@ async function queuePayload(supabase: any, profile: any) {
     staging_tests: testRows || [],
     security_policy: policyRows?.[0] || {},
     content_signals: signalRows || [],
-    webhook_alerts: alertRows || []
+    webhook_alerts: alertRows || [],
+    release_dashboard: releaseRows?.[0] || {}
   };
 }
 
@@ -1230,6 +1232,29 @@ serve(async (req) => {
       const statusValue=clean(body.alert_status,40); if(!['acknowledged','resolved'].includes(statusValue)) throw new HttpError(400,'Unsupported alert decision.');
       const { data,error }=await supabase.from('stripe_webhook_operational_alerts').update({ alert_status:statusValue, acknowledged_by_profile_id:statusValue==='acknowledged'?profile.id:null, acknowledged_at:statusValue==='acknowledged'?nowIso():null, resolved_by_profile_id:statusValue==='resolved'?profile.id:null, resolved_at:statusValue==='resolved'?nowIso():null, updated_at:nowIso() }).eq('id',alertId).select('*').single();
       if(error) throw error; return Response.json({ok:true,record:data},{headers:corsHeaders});
+    }
+
+    if (action === 'release_readiness_capture') {
+      requireRank(profile, 45, action);
+      const reviewScope = clean(body.review_scope || 'staging', 40).toLowerCase();
+      const confirmationPhrase = clean(body.confirmation_phrase, 80);
+      const reviewerNote = clean(body.reviewer_note, 2000) || null;
+      const result = await callRpc(supabase, 'ywi_rpc_capture_release_readiness_snapshot', {
+        p_actor_profile_id: profile.id,
+        p_review_scope: reviewScope,
+        p_reviewer_note: reviewerNote,
+        p_confirmation_phrase: confirmationPhrase
+      });
+      await audit(supabase, {
+        operation_action: action,
+        operation_status: 'captured',
+        entity_type: 'release_readiness_review_snapshot',
+        entity_id: result?.snapshot_id,
+        actor_profile_id: profile.id,
+        request_payload: safeRequest(body),
+        response_payload: result
+      });
+      return Response.json({ ok:true, snapshot:result }, { headers:corsHeaders });
     }
 
     if (action === 'deposit_status_update') {
