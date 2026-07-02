@@ -13,7 +13,9 @@ const required=[
   '.operations-cockpit .oc-permission.is-restricted',
   '.operations-cockpit .operations-form :is(input, select, textarea)',
   'outline: 3px solid rgba(147, 197, 253, 0.68)',
-  '@media (forced-colors: active)'
+  '@media (forced-colors: active)',
+  '.operations-cockpit .oc-release-dashboard-card',
+  '.operations-cockpit .oc-release-gates'
 ];
 const hexToRgb=(hex)=>{const clean=hex.replace('#','');return [0,2,4].map((i)=>parseInt(clean.slice(i,i+2),16)/255);};
 const linear=(value)=>value<=0.04045?value/12.92:((value+0.055)/1.055)**2.4;

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Transactional operation and schema 153 wiring check.
+ * Transactional operation and schema 154 wiring check.
  * It is safe without credentials; optional live checks only read metadata.
  */
 import fs from 'node:fs';
@@ -10,6 +10,7 @@ const root = process.cwd();
 const read = (file) => fs.readFileSync(file, 'utf8');
 const sql151 = read('sql/151_transactional_rpc_accounting_reconciliation_quote_tests.sql');
 const sql153 = read('sql/153_release_fixture_policy_mapping_seo_alerts.sql');
+const sql154 = read('sql/154_release_readiness_dashboard_and_evidence_snapshots.sql');
 const operations = read('supabase/functions/operations-manage/index.ts');
 const portal = read('supabase/functions/customer-portal/index.ts');
 const webhook = read('supabase/functions/stripe-webhook/index.ts');
@@ -40,6 +41,8 @@ add('schema153-accountant-mapping', hasAll(sql153, ['accountant_export_mapping_r
 add('accountant-captures-close-mapping-snapshot', hasAll(accountant, ['ywi_rpc_capture_accountant_close_snapshot', 'close_mapping_snapshot']), 'Export function snapshots mapping/close review with the generated artifact.');
 add('schema153-content-and-webhook-queues', hasAll(sql153, ['content_signal_observations', 'v_route_content_decision_queue', 'stripe_webhook_operational_alerts', 'v_stripe_webhook_alert_queue']), 'SEO decision evidence and payment-provider alert queues are defined.');
 add('operations-release-proof-actions', hasAll(operations, ['staging_fixture_create', 'content_signal_record', 'stripe_webhook_alert_decision', 'YWI_ALLOW_STAGING_FIXTURES']), 'Protected release-proof actions and staging feature gate are wired.');
+add('schema154-release-dashboard', hasAll(sql154, ['v_release_readiness_dashboard', 'release_readiness_review_snapshots', 'ywi_rpc_capture_release_readiness_snapshot', 'REVIEW ONLY']), 'Release review is evidence-only and snapshot-backed.');
+add('operations-schema154-dashboard-wiring', hasAll(operations, ['v_release_readiness_dashboard', 'release_readiness_capture', 'ywi_rpc_capture_release_readiness_snapshot']) && (operations.match(/body = await req\.json\(\)\.catch\(\(\) => \(\{\}\)\);/g) || []).length === 1, 'Operations queue loads the dashboard and reads the request payload once.');
 
 const failed = checks.filter((item) => !item.ok);
 for (const item of checks) console.log(`${item.ok ? 'PASS' : 'FAIL'}  ${item.name}${item.details ? ` — ${item.details}` : ''}`);
@@ -59,16 +62,18 @@ async function get(path) {
   return raw ? JSON.parse(raw) : null;
 }
 try {
-  const [schema, policy, readiness] = await Promise.all([
+  const [schema, policy, readiness, releaseDashboard] = await Promise.all([
     get('v_schema_drift_status?select=*'),
     get('v_security_policy_assertion_summary?select=*'),
-    get('v_accountant_export_readiness?select=mapping_ready,unresolved_required_mapping_count,package_ready')
+    get('v_accountant_export_readiness?select=mapping_ready,unresolved_required_mapping_count,package_ready'),
+    get('v_release_readiness_dashboard?select=staging_evidence_status,public_content_status,policy_ready')
   ]);
   const schemaRow = schema?.[0] || {};
-  if (Number(schemaRow.latest_applied_schema_version) < 153 || schemaRow.drift_status !== 'current') throw new Error(`Schema 153 is not current: ${JSON.stringify(schemaRow)}`);
+  if (Number(schemaRow.latest_applied_schema_version) < 154 || schemaRow.drift_status !== 'current') throw new Error(`Schema 154 is not current: ${JSON.stringify(schemaRow)}`);
   console.log(`\nLIVE  schema ${schemaRow.latest_applied_schema_version} is current.`);
   console.log(`LIVE  policy assertions: ${policy?.[0]?.passed_count ?? 0}/${policy?.[0]?.assertion_count ?? 0} passed.`);
   console.log(`LIVE  mapping readiness: ${readiness?.[0]?.mapping_ready === true ? 'ready' : 'review required'}.`);
+  console.log(`LIVE  release evidence: ${releaseDashboard?.[0]?.staging_evidence_status || 'not available'}.`);
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
   process.exit(1);
