@@ -1,196 +1,228 @@
-# Next Steps and Sanity Check — build 2026-06-30a / schema 154
+# Next Steps and Sanity Check
 
-## Completed in this pass
+**Build:** `2026-07-05a`  
+**Schema:** `155`  
+**Purpose:** exact staging and acceptance process for the current build.
 
-1. Added schema 154: a human-reviewed release-readiness dashboard and captured evidence snapshots.
-2. Combined the existing schema, security policy, staging test, backup/restore rehearsal, Stripe webhook, accountant-readiness, public-route/media, and SEO-signal checks into one Cockpit surface.
-3. Added a protected snapshot flow that requires a job-admin role and the exact confirmation phrase `REVIEW ONLY`.
-4. Kept snapshots evidence-only. They cannot deploy code, publish routes, charge customers, change payment state, or override failed checks.
-5. Added responsive dashboard cards for phone, tablet, and desktop layouts using the existing accessible dark Cockpit visual system.
-6. Added static checks for dashboard wiring, role protection, evidence-only language, mobile CSS, security policy coverage, and single request-body consumption in `operations-manage`.
-7. Rebuilt the canonical schema reference through migrations 030–154.
-8. Physically consolidated the repository to three active Markdown files and archived all historical Markdown material under `archive/retired-markdown-2026-06-30a/`.
+## 1. Completed in this build
 
-## Current sanity result
+- Added schema 155 live job updates with staff-only/customer-visible separation.
+- Added a portal timeline that returns only published customer-visible updates and approved public media.
+- Added supervisor-only customer publication and retraction safeguards.
+- Added a staff Cockpit form and live update history queue.
+- Added portal visual placeholders and responsive styles for empty and populated update states.
+- Preserved accounting, reconciliation, quote/deposit, Stripe, media-approval, route, release-evidence, and policy safeguards from schemas 150–154.
+- Rebuilt the canonical schema reference through migrations 030–155.
+- Physically reduced active documentation to three files; archived 80 older Markdown files under `archive/retired-markdown-2026-07-05a/`.
 
-The source package is internally checked. The release dashboard is useful only after schema 154 and the updated application are deployed to a dedicated staging environment. It reports evidence; it does not replace a human decision or make the application live.
+## 2. Source checks to run before staging
 
-## Required staging test process
-
-These steps are required because this workspace does not have your staging Supabase or Stripe test credentials.
-
-### A. Prepare a dedicated staging target
-
-1. In Supabase, create or select a project that is clearly non-production.
-2. Confirm that its project name and any environment labels visibly say `staging`.
-3. Do **not** point the staging app at live customer, live Stripe, or production storage data.
-4. Take a database backup/export according to your normal process before applying a new migration.
-5. Confirm the current staging project has migrations through schema 153 before proceeding; schema 154 is the next migration to apply.
-
-### B. Apply schema 154
-
-1. Open **Supabase Dashboard → SQL Editor** for the staging project.
-2. Open `sql/154_release_readiness_dashboard_and_evidence_snapshots.sql` from this build.
-3. Paste the entire file into a new SQL query.
-4. Run the query once.
-5. Run this verification query:
-
-```sql
-select * from public.v_schema_drift_status;
-```
-
-Expected result:
-
-- `expected_schema_version` is `154`.
-- `latest_applied_schema_version` is `154` or higher.
-- `drift_status` is `current`.
-
-6. Then run:
-
-```sql
-select
-  staging_evidence_status,
-  public_content_status,
-  policy_ready,
-  backup_rehearsal_status,
-  latest_staging_run_status,
-  critical_webhook_alert_count
-from public.v_release_readiness_dashboard;
-```
-
-Expected result: one row. Some values may correctly say `review required` or `not recorded` until the real staging proof is completed.
-
-### C. Deploy the updated code to staging
-
-Deploy these changed areas together so the front end, protected function, and schema agree:
-
-- static `index.html`, `style.css`, `server-worker.js`, and `js/operations-cockpit.js`;
-- `supabase/functions/operations-manage`;
-- `supabase/functions/upload-public-asset`;
-- `supabase/functions/stripe-webhook`;
-- `supabase/functions/accountant-export`;
-- `supabase/functions/customer-portal`;
-- `supabase/functions/public-content`.
-
-Use the same secret names already documented for staging. Keep service-role keys, Stripe secrets, and Resend keys in protected environment variables only. Never paste them into browser JavaScript, Git, a public route, or this document.
-
-### D. Run source checks locally or in CI
-
-From the extracted project folder, run:
+From the extracted project folder:
 
 ```powershell
 npm ci
 npm run test:repo
 npm run test:staging
+npm run test:contrast
+node scripts/live-work-updates-check.mjs
 ```
 
-Without staging credentials, `npm run test:staging` performs source checks and reports that live checks were skipped. That is expected.
+Expected behavior without staging credentials:
 
+- repository/static checks pass;
+- the staging harness reports that live database checks were skipped;
+- no business records are created;
+- no deployment occurs.
 
-### D.1 Optional GitHub Actions checks
+## 3. Apply schema 155 in a dedicated staging database
 
-The included `.github/workflows/staging-browser-integration.yml` runs repository checks and a public-shell browser contract on pull requests. Its guarded staging job runs only when manually requested and when the GitHub `staging` environment provides the dedicated staging secrets. Keep those secrets in GitHub Environment secrets, not in repository files.
+Do not run this in production first.
 
-### E. Run the guarded live staging harness
+1. In Supabase, choose a project whose name clearly identifies it as staging.
+2. Confirm schema 154 is already applied:
 
-Only in a dedicated staging PowerShell session, set the values below for that session. Replace the placeholder values; do not commit them anywhere.
-
-```powershell
-$env:YWI_RUN_STAGING_RPC_TESTS = '1'
-$env:YWI_STAGING_LABEL = 'staging'
-$env:YWI_STAGING_CONFIRM = 'I_CONFIRM_STAGING_ONLY'
-$env:SUPABASE_URL = 'https://YOUR-STAGING-PROJECT.supabase.co'
-$env:SUPABASE_SERVICE_ROLE_KEY = 'YOUR_STAGING_SERVICE_ROLE_KEY'
-$env:YWI_STAGING_JOB_ADMIN_PROFILE_ID = 'YOUR_STAGING_JOB_ADMIN_PROFILE_UUID'
+```sql
+select * from public.v_schema_drift_status;
 ```
 
-Optional, only when you want the harness to create clearly labelled disposable records:
+Before schema 155, the expected marker is 154/current.
 
-```powershell
-$env:YWI_STAGING_CREATE_FIXTURES = '1'
-$env:YWI_STAGING_FIXTURE_LABEL = 'STAGING-E2E'
-$env:YWI_STAGING_CLEANUP_FIXTURE = '1'
-```
-
-Then run:
-
-```powershell
-npm run test:staging
-```
-
-The harness should confirm schema 154, policy assertions, accountant mapping view availability, release dashboard availability, capability snapshot, job-admin allow/worker deny when test JWTs are supplied, and optional disposable fixture creation/cleanup.
-
-### F. Browser acceptance test: Operations Cockpit
-
-1. Open the deployed staging site in a private/incognito browser window.
-2. Sign in as a job-admin test user.
-3. Open **Admin → Operations Cockpit**.
-4. Confirm the new **Release readiness dashboard** appears below payment/accountant health cards.
-5. Verify that each category has readable text and an understandable state:
-   - Schema
-   - Policy
-   - Staging tests
-   - Recovery proof
-   - Webhook health
-   - Public content
-6. Confirm a yellow/review card does not look like a failure to deploy. It means evidence is incomplete or needs human review.
-7. At phone width around **390px**, confirm cards stack one per row and there is no horizontal scrolling.
-8. At tablet width around **768px**, confirm the cards fit in two columns without overlapping.
-9. At desktop width around **1440px**, confirm the cards use three columns and controls remain readable.
-10. Use the keyboard `Tab` key to move through dashboard and form controls. Focus must remain visible.
-
-### G. Capture a release-evidence snapshot
-
-This confirms the dashboard’s audit behavior; it does not release anything.
-
-1. In **Release proof**, find **Capture evidence snapshot**.
-2. Choose `Staging evidence` unless you are doing a human production-candidate review after all staging proof is complete.
-3. Write a short note such as: `Reviewed schema, policy, backup rehearsal, staging run, payment health, and content approvals on YYYY-MM-DD.`
-4. Type exactly:
+3. Take or verify your non-production backup/export procedure.
+4. In **Supabase Dashboard → SQL Editor**, open:
 
 ```text
-REVIEW ONLY
+sql/155_live_job_updates_customer_timeline_and_visibility.sql
 ```
 
-5. Select **Capture evidence snapshot**.
-6. Confirm the status message says that a snapshot was captured and that no deployment was performed.
-7. Refresh the Cockpit. The dashboard footer should show the latest snapshot time and scope.
-8. Test the negative path: enter any different confirmation text. The action must be rejected and no snapshot should be created.
+5. Paste the entire file into a new query and run it once.
+6. Verify the migration:
 
-### H. Required workflow checks before production
+```sql
+select * from public.v_schema_drift_status;
 
-- **Permissions:** a job-admin can load the Cockpit; a worker receives a denial for job-admin operations.
-- **Policy:** `v_security_policy_assertion_summary` reports all required assertions as passed.
-- **Media:** upload a test image; confirm it remains in private review storage until approval; confirm only approved copies resolve in public delivery storage.
-- **Accounting:** submit/approve/post one disposable payment action and confirm the balanced journal/application records appear once only.
-- **Reconciliation:** confirm a bank CSV, test a valid exact-cent match, then test a deliberately invalid one-cent split and confirm it is rejected.
-- **Quotes/deposits:** accept a disposable quote, confirm only one work order is created, and test Stripe in test mode. Verify the webhook—not a browser button—marks the deposit paid.
-- **Accountant package:** generate one private package in staging, confirm the signed download expires, and have the accountant/bookkeeper review mapping assumptions before relying on it.
-- **SEO/public content:** create one approved route with real useful copy and approved image; verify one H1, canonical URL, sitemap entry, visible content matching structured data, and no staff controls on its public URL.
-- **Recovery:** record a successful non-production backup/restore rehearsal, including evidence and next action.
+select
+  assertion_key,
+  assertion_status,
+  details
+from public.ywi_security_policy_assertions()
+order by assertion_key;
 
-## Release blockers
+select public.ywi_get_operations_capabilities('YOUR_STAGING_JOB_ADMIN_PROFILE_UUID');
+```
 
-Do not move toward production until all are true:
+Confirm the returned JSON contains the live-update capability entries below.
 
-- schema 154 is current in dedicated staging;
-- protected functions and static build are deployed together;
-- job-admin allow and worker deny checks pass;
-- private review media cannot be fetched publicly;
-- Stripe test webhook processing is verified and no critical webhook alert remains unresolved;
-- payment, bank, reconciliation, quote, and deposit safety checks fail closed when given invalid input;
-- a successful backup/restore rehearsal is recorded;
-- accountant/bookkeeper approves chart-of-accounts, tax, and export mapping rules;
-- the dashboard’s staging evidence is complete enough for human review;
-- original consent-approved public work/service images replace visible placeholders;
-- human review has considered Search Console/GBP observations before altering route priorities;
-- the Cockpit and customer/public pages have been inspected at phone, tablet, and desktop widths.
+Confirm the JSON contains:
 
-## Highest-value next work
+- `work_order_live_update` with minimum role `site_leader`;
+- `work_order_live_update_retract` with minimum role `supervisor`.
 
-1. Deploy schema 154 and this static/function build to staging, then run the evidence and browser process above.
-2. Resolve every live RLS, storage, migration, function, payment-webhook, or browser discrepancy found in staging before adding more features.
-3. Replace the highest-value public placeholders with original approved before/after/service images, descriptive alt text, and clear local proof.
-4. Have the accountant/bookkeeper finalize mapping rules and the exact month-end close/review checklist.
-5. Add controlled manual import/review of real Search Console and Google Business Profile observations; keep third-party credentials outside application tables.
-6. After successful staging proof, carry forward only the next bottleneck revealed by real usage—typically customer scheduling/dispatch polish, visual approval throughput, or reporting—not another speculative feature set.
+7. Confirm the new objects exist:
+
+```sql
+select to_regclass('public.work_order_live_updates') as updates_table,
+       to_regclass('public.work_order_live_update_media') as update_media_table,
+       to_regclass('public.v_customer_portal_live_updates') as portal_view,
+       to_regclass('public.v_work_order_live_update_queue') as staff_queue;
+```
+
+Expected: all four cells contain their public object name rather than `NULL`.
+
+## 4. Deploy matching application files together
+
+Deploy the schema and these code/static changes as one staging release:
+
+- `index.html`
+- `style.css`
+- `server-worker.js`
+- `js/operations-cockpit.js`
+- `js/customer-portal.js`
+- `js/public-routes.js`
+- `scripts/generate-public-routes.mjs`
+- `supabase/functions/operations-manage/index.ts`
+- `supabase/functions/customer-portal/index.ts`
+- `sql/155_live_job_updates_customer_timeline_and_visibility.sql`
+
+Do not put Supabase service-role keys, Stripe secrets, portal tokens, or mail-provider credentials in browser JavaScript, Git, public route content, screenshots, or chat messages.
+
+## 5. Prepare a safe test work order
+
+Use a clearly labelled staging record, never a real customer or live work order.
+
+1. Create/accept a staging quote using the existing fixture flow or current customer portal test flow.
+2. Confirm it creates a work order.
+3. In the Operations Cockpit queue, note the work order number and verify it starts with a staging/testing identifier or is otherwise unmistakably non-production.
+4. Upload a small original test image through the normal review-media workflow.
+5. Leave one image **pending review** and approve/promote a second image through the authorized media approval flow. Do not hand-copy files into the public bucket.
+
+## 6. Role and visibility acceptance test
+
+### A. Site leader: staff-only allowed
+
+1. Sign in as a staging **site leader**.
+2. Open **Admin → Operations Cockpit → Live job updates**.
+3. Choose the safe test work order.
+4. Choose **Staff only**.
+5. Enter title: `STAGING: crew arrival note`.
+6. Enter a message that would be useful internally, such as equipment or access preparation information.
+7. Save the update.
+8. Expected result: it appears in the Cockpit live update history with `Staff only` visibility.
+9. Open the matching customer portal link in a private/incognito browser. Expected result: this update does **not** appear.
+
+### B. Site leader: customer publication denied
+
+1. Still signed in as the site leader, choose **Customer visible (supervisor)**.
+2. Use title: `STAGING: customer-visible progress attempt`.
+3. Submit.
+4. Expected result: the application rejects the action with a permission message. No customer update is created.
+
+### C. Supervisor: customer publication allowed
+
+1. Sign in as a staging **supervisor**.
+2. Open the same work order.
+3. Choose **Customer visible (supervisor)**.
+4. Choose type **Arrival** or **Progress**.
+5. Use title: `STAGING: crew has arrived`.
+6. Use a customer-safe message. Do not include access codes, names of staff members, internal costing, private equipment issues, or security details.
+7. Set progress to `20` or another reasonable number.
+8. Select only the **approved public** test image.
+9. Optionally check the notification-request box. This should only queue the request; it does not prove that email/text delivery is configured.
+10. Save.
+11. Expected result: the Cockpit lists it as `Customer visible` and shows the approved media count.
+
+### D. Customer portal: only safe content appears
+
+1. Open the matching secure customer portal URL in a private/incognito browser.
+2. Refresh the page.
+3. Expected result: the **Live service updates** section shows the supervisor update with time, progress, customer-safe message, and approved image.
+4. Confirm the staff-only update is absent.
+5. Confirm no author profile ID, internal cost, private storage path, retraction reason, internal note, or pending-review image is visible in the browser page.
+6. View page source/devtools network response only if you are comfortable doing so. The `live_updates` payload must not contain staff-only rows.
+
+### E. Pending-review image cannot be used for customer display
+
+1. As supervisor, attempt to choose the pending-review image for a customer-visible update.
+2. The Cockpit selector should not offer it.
+3. If a direct test payload is used, the server must reject it because it lacks approved status/public delivery URL.
+4. Confirm the pending-review image remains outside public storage until the normal approval/promotion process completes.
+
+### F. Retraction is auditable and removes portal output
+
+1. As supervisor, choose **Retract** on the customer-visible staging update.
+2. Enter reason: `STAGING retraction test`.
+3. Expected result: the update remains in Cockpit history as retracted, with no delete action.
+4. Refresh the customer portal.
+5. Expected result: the retracted update no longer appears.
+6. Confirm the staff-only update is still not visible.
+
+## 7. Mobile and desktop test
+
+Test both an empty portal and a portal containing one customer-visible update.
+
+1. Open the staging Operations Cockpit as a supervisor.
+2. At about **390px** browser width, verify:
+   - live update form fields stack cleanly;
+   - select boxes and Save button remain within the viewport;
+   - history cards have no clipped text or horizontal page scroll;
+   - dark Cockpit text and state badges remain readable.
+3. At about **768px**, verify form fields and update cards do not overlap.
+4. At about **1440px**, verify the Cockpit fits naturally with the existing dashboard/queue layout.
+5. Open the customer portal at the same three widths and verify:
+   - empty placeholder is readable and does not look like completed work;
+   - timeline marker, timestamp, progress bar, and approved images scale without overlap;
+   - image links work and remain inside their cards;
+   - keyboard `Tab` focus stays visible.
+
+## 8. SEO sanity check
+
+Schema 155 should not create public SEO pages from job updates.
+
+Confirm:
+
+- customer portal URLs are not added to the sitemap;
+- live update messages do not appear in generated public route pages;
+- approved public route generation remains a separate human-reviewed process;
+- public route pages still have one H1, canonical URL, useful local copy, and approved imagery;
+- any before/after or service image used publicly has consent and truthful descriptive alt text.
+
+## 9. Release blockers
+
+Do not move this build to production until all are true:
+
+- schema 155 is current in dedicated staging;
+- customer/staff visibility tests pass;
+- site-leader denial and supervisor allow checks pass;
+- pending media cannot reach the portal or public bucket;
+- customer-visible updates show only approved media;
+- retracted updates disappear from portal output but remain auditable;
+- existing payment, quote, reconciliation, media, accountant, Stripe-webhook, RLS, backup/restore, and release-evidence checks still pass;
+- Cockpit and portal have been inspected at phone, tablet, and desktop widths;
+- an authorized human has reviewed the release dashboard evidence.
+
+## 10. Highest-value next work after staging proof
+
+1. Run schema 155 and this live-update workflow in staging; fix any real RLS/storage/permission differences before more feature work.
+2. Connect customer-notification delivery only after consent, provider configuration, retry handling, and test delivery evidence exist.
+3. Replace the most valuable public placeholders with original approved service, crew, equipment, and completed-work images.
+4. Use real customer/service activity to polish dispatch timing, job-cost capture, and quote follow-up rather than adding speculative modules.
+5. Review real Search Console and Google Business Profile observations manually before changing public route priorities or copy.
