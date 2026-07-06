@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Transactional operation and schema 154 wiring check.
+ * Transactional operation and schema 155 wiring check.
  * It is safe without credentials; optional live checks only read metadata.
  */
 import fs from 'node:fs';
@@ -11,6 +11,7 @@ const read = (file) => fs.readFileSync(file, 'utf8');
 const sql151 = read('sql/151_transactional_rpc_accounting_reconciliation_quote_tests.sql');
 const sql153 = read('sql/153_release_fixture_policy_mapping_seo_alerts.sql');
 const sql154 = read('sql/154_release_readiness_dashboard_and_evidence_snapshots.sql');
+const sql155 = read('sql/155_live_job_updates_customer_timeline_and_visibility.sql');
 const operations = read('supabase/functions/operations-manage/index.ts');
 const portal = read('supabase/functions/customer-portal/index.ts');
 const webhook = read('supabase/functions/stripe-webhook/index.ts');
@@ -43,6 +44,10 @@ add('schema153-content-and-webhook-queues', hasAll(sql153, ['content_signal_obse
 add('operations-release-proof-actions', hasAll(operations, ['staging_fixture_create', 'content_signal_record', 'stripe_webhook_alert_decision', 'YWI_ALLOW_STAGING_FIXTURES']), 'Protected release-proof actions and staging feature gate are wired.');
 add('schema154-release-dashboard', hasAll(sql154, ['v_release_readiness_dashboard', 'release_readiness_review_snapshots', 'ywi_rpc_capture_release_readiness_snapshot', 'REVIEW ONLY']), 'Release review is evidence-only and snapshot-backed.');
 add('operations-schema154-dashboard-wiring', hasAll(operations, ['v_release_readiness_dashboard', 'release_readiness_capture', 'ywi_rpc_capture_release_readiness_snapshot']) && (operations.match(/body = await req\.json\(\)\.catch\(\(\) => \(\{\}\)\);/g) || []).length === 1, 'Operations queue loads the dashboard and reads the request payload once.');
+add('schema155-live-work-update-rpcs', hasAll(sql155, ['ywi_rpc_create_work_order_live_update', 'ywi_rpc_retract_work_order_live_update', 'v_customer_portal_live_updates', 'v_work_order_live_update_queue']), 'Live job updates are token-portal-safe and RPC-backed.');
+add('schema155-customer-media-and-role-guards', hasAll(sql155, ['Customer-visible updates may attach only approved assets with a public delivery URL.', 'Customer-visible updates require supervisor or higher.', 'Only a supervisor or higher may retract a live work update.']), 'Customer-visible updates require approved media and supervisor review.');
+add('operations-schema155-live-update-wiring', hasAll(operations, ['const SCHEMA = 155', 'work_order_live_update_create', 'work_order_live_update_retract', 'ywi_rpc_create_work_order_live_update', 'v_work_order_live_update_queue']), 'Operations Edge Function uses live-update RPCs and queue.');
+add('portal-schema155-live-update-filter', hasAll(portal, ['const SCHEMA = 155', 'portalLiveUpdates', 'v_customer_portal_live_updates', 'live_updates: liveUpdates']), 'Portal is limited to the portal-safe update view.');
 
 const failed = checks.filter((item) => !item.ok);
 for (const item of checks) console.log(`${item.ok ? 'PASS' : 'FAIL'}  ${item.name}${item.details ? ` — ${item.details}` : ''}`);
@@ -69,7 +74,7 @@ try {
     get('v_release_readiness_dashboard?select=staging_evidence_status,public_content_status,policy_ready')
   ]);
   const schemaRow = schema?.[0] || {};
-  if (Number(schemaRow.latest_applied_schema_version) < 154 || schemaRow.drift_status !== 'current') throw new Error(`Schema 154 is not current: ${JSON.stringify(schemaRow)}`);
+  if (Number(schemaRow.latest_applied_schema_version) < 155 || schemaRow.drift_status !== 'current') throw new Error(`Schema 155 is not current: ${JSON.stringify(schemaRow)}`);
   console.log(`\nLIVE  schema ${schemaRow.latest_applied_schema_version} is current.`);
   console.log(`LIVE  policy assertions: ${policy?.[0]?.passed_count ?? 0}/${policy?.[0]?.assertion_count ?? 0} passed.`);
   console.log(`LIVE  mapping readiness: ${readiness?.[0]?.mapping_ready === true ? 'ready' : 'review required'}.`);

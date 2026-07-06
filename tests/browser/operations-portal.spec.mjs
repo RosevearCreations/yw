@@ -29,6 +29,11 @@ test('customer portal contract stays isolated when a staging portal URL is suppl
   test.skip(!process.env.YWI_E2E_PORTAL_URL, 'Set YWI_E2E_PORTAL_URL only with a disposable STAGING portal token.');
   await page.goto(process.env.YWI_E2E_PORTAL_URL, { waitUntil: 'domcontentloaded' });
   await expect(page.locator('#operationsCockpit')).toHaveCount(0);
+  await expect(page.locator('.customer-portal-updates')).toBeVisible();
+  if (process.env.YWI_E2E_PORTAL_EXPECT_LIVE_UPDATE === '1') {
+    await expect(page.locator('.customer-portal-update').first()).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('.customer-portal-updates')).toContainText(/Live service updates/i);
+  }
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   expect(overflow).toBeFalsy();
 });

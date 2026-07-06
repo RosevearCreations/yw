@@ -3107,8 +3107,8 @@ body.customer-portal-mode>:not(#customerPortalView):not(script):not(style),body.
   border-color: rgba(147, 197, 253, 0.28);
 }
 
-/* Build 2026-06-30a — release evidence dashboard. */
-/* Schema 154: human-reviewed release readiness dashboard. These cards show
+/* Build 2026-07-05a — release evidence dashboard retained through schema 155. */
+/* Schema 154 foundation, retained in schema 155: human-reviewed release readiness dashboard. These cards show
    evidence only; their visual state must never imply an automated deployment. */
 .operations-cockpit .oc-release-dashboard { margin: 0 14px 14px; }
 .operations-cockpit .oc-release-dashboard-card { display:grid; gap:14px; padding:16px; border:1px solid rgba(147,197,253,.28); border-radius:16px; background:linear-gradient(135deg,rgba(14,36,70,.94),rgba(11,24,49,.96)); box-shadow:0 12px 24px rgba(0,0,0,.18); }
@@ -3125,3 +3125,62 @@ body.customer-portal-mode>:not(#customerPortalView):not(script):not(style),body.
 .operations-cockpit .oc-release-gate small { color:var(--oc-text-muted); line-height:1.38; }
 @media(max-width:960px){.operations-cockpit .oc-release-gates{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:620px){.operations-cockpit .oc-release-dashboard{margin:0 10px 10px}.operations-cockpit .oc-release-dashboard-card{padding:13px}.operations-cockpit .oc-release-dashboard-card>header{flex-direction:column}.operations-cockpit .oc-release-gates{grid-template-columns:1fr}.operations-cockpit .oc-release-dashboard-card footer{font-size:.82rem;}}
+
+
+/* Build 2026-07-05a — schema 155 live work updates.
+   Customer portal remains a light, readable customer surface while the Operations
+   Cockpit retains its dark internal application contrast. */
+.customer-portal-updates{margin:16px 0;padding:clamp(18px,3vw,28px);border:1px solid rgba(15,71,55,.14);border-radius:18px;background:#fff;box-shadow:0 10px 26px rgba(17,50,40,.06)}
+.customer-portal-updates>header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;padding-bottom:16px;border-bottom:1px solid rgba(15,71,55,.12)}
+.customer-portal-updates h2{margin:.25rem 0 0;color:#173f32;font-size:clamp(1.2rem,2.4vw,1.6rem)}
+.customer-portal-updates>header small{max-width:310px;color:#60716b;line-height:1.45;font-weight:650}
+.customer-portal-updates ol{display:grid;gap:16px;margin:18px 0 0;padding:0;list-style:none}
+.customer-portal-update{display:grid;grid-template-columns:30px minmax(0,1fr);gap:12px;position:relative}
+.customer-portal-update:not(:last-child)::before{content:"";position:absolute;left:14px;top:30px;bottom:-20px;width:2px;background:#d8e9e1}
+.customer-portal-update-marker{display:grid;place-items:center;width:30px;height:30px;border:2px solid #b9d9c9;border-radius:50%;background:#ecf8f1;color:#1b6f4a;font-size:.7rem;z-index:1}
+.customer-portal-update-arrival .customer-portal-update-marker{border-color:#82c4a2;background:#e4f6eb;color:#166241}
+.customer-portal-update-progress .customer-portal-update-marker{border-color:#87b6d9;background:#e9f4fc;color:#205f8e}
+.customer-portal-update-delay .customer-portal-update-marker{border-color:#e0bd64;background:#fff6dc;color:#78530b}
+.customer-portal-update-completion .customer-portal-update-marker{border-color:#5fb68b;background:#dcf5e7;color:#0c633c}
+.customer-portal-update article{min-width:0;padding:15px 16px;border:1px solid #d8e7df;border-radius:14px;background:#fbfefc}
+.customer-portal-update article>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.customer-portal-update article>header span{display:block;color:#5d7068;font-size:.76rem;font-weight:850;letter-spacing:.05em;text-transform:uppercase}
+.customer-portal-update h3{margin:3px 0 0;color:#173f32;font-size:1.03rem}
+.customer-portal-update time{flex:0 0 auto;color:#60716b;font-size:.83rem;font-weight:700;text-align:right}
+.customer-portal-update p{margin:11px 0 0;color:#2d4b3d;line-height:1.56}
+.customer-portal-update-progress{display:grid;gap:7px;margin-top:14px;padding:10px 12px;border-radius:10px;background:#eff8f3}
+.customer-portal-update-progress>div{display:flex;justify-content:space-between;gap:10px;color:#3f5e50;font-size:.86rem;font-weight:800}
+.customer-portal-update-progress progress{width:100%;height:10px;accent-color:#22764f}
+.customer-portal-update-media-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px;margin-top:14px}
+.customer-portal-update-media{display:block;overflow:hidden;border:1px solid #cce0d5;border-radius:10px;background:#edf4f0}
+.customer-portal-update-media:focus-visible{outline:3px solid #2070ad;outline-offset:3px}
+.customer-portal-update-media img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
+.customer-portal-updates-empty>header{border-bottom:0;padding-bottom:0}
+.customer-portal-update-placeholder{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:13px;margin-top:14px;padding:16px;border:1px dashed #97bca9;border-radius:13px;background:#f5fbf7;color:#3d5b4c}
+.customer-portal-update-placeholder span{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:#e0f2e8;color:#197047;font-size:1.2rem}
+.customer-portal-update-placeholder p{margin:0;line-height:1.5}
+
+.operations-cockpit .oc-live-update-card{border-color:rgba(125,211,252,.22);background:linear-gradient(145deg,rgba(12,27,50,.98),rgba(13,37,57,.95))}
+.operations-cockpit .oc-live-update-card header>div{display:grid;gap:3px;min-width:0}
+.operations-cockpit .oc-live-update-card header small{color:var(--oc-text-muted);font-weight:700}
+.operations-cockpit .oc-live-update-message{margin:12px 0 0;padding:10px 12px;border-left:3px solid rgba(125,211,252,.72);border-radius:0 9px 9px 0;background:rgba(15,47,76,.54);color:var(--oc-text-muted);line-height:1.45}
+.operations-cockpit [data-oc-live-update-assets]{min-height:7.25rem;background:rgba(5,16,34,.78);color:var(--oc-text)}
+.operations-cockpit [data-oc-live-update-assets] option{padding:.35rem .45rem;background:#0d2943;color:var(--oc-text)}
+.operations-cockpit #oc_live_update_asset_help{display:block;margin-top:5px;color:var(--oc-text-muted);line-height:1.4}
+.operations-cockpit #oc_live_update_form [name="visibility"]{font-weight:800}
+
+@media(max-width:620px){
+  .customer-portal-updates{padding:16px}
+  .customer-portal-updates>header,.customer-portal-update article>header{flex-direction:column}
+  .customer-portal-update time{text-align:left}
+  .customer-portal-update{grid-template-columns:24px minmax(0,1fr);gap:9px}
+  .customer-portal-update-marker{width:24px;height:24px;font-size:.58rem}
+  .customer-portal-update:not(:last-child)::before{left:11px;top:24px}
+  .customer-portal-update article{padding:13px}
+  .customer-portal-update-media-grid{grid-template-columns:1fr 1fr}
+}
+@media(forced-colors:active){
+  .customer-portal-update article,.customer-portal-updates,.customer-portal-update-placeholder{border:1px solid CanvasText;background:Canvas;color:CanvasText}
+  .customer-portal-update-marker{border:1px solid CanvasText;background:Canvas;color:CanvasText}
+  .customer-portal-update-media:focus-visible{outline:2px solid Highlight}
+}
