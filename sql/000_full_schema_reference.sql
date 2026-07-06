@@ -1,9 +1,9 @@
--- Canonical YWI schema reference.
--- Generated from ordered migrations 030 through 154.
--- Do not apply this file as a substitute for individual migrations to an existing database.
--- Use it as a complete handoff/reference for a clean review environment.
+-- Yard Weasels Inc. canonical schema reference
+-- Generated from ordered migrations 030 through 155.
+-- Build 2026-07-05a.
+-- Reference/audit file: apply ordered migrations to a real target unless your deployment process explicitly supports this combined reference.
 
--- ==== BEGIN MIGRATION: 030_profiles_sites_assignments.sql ====
+-- BEGIN MIGRATION: 030_profiles_sites_assignments
 -- =========================================================
 -- Document 9: sql/030_profiles_sites_assignments.sql
 -- Purpose:
@@ -385,9 +385,9 @@ from information_schema.columns
 where table_schema = 'public'
   and table_name in ('profiles', 'sites', 'site_assignments')
 order by table_name, ordinal_position;
--- ==== END MIGRATION: 030_profiles_sites_assignments.sql ====
+-- END MIGRATION: 030_profiles_sites_assignments
 
--- ==== BEGIN MIGRATION: 031_profile_bootstrap_trigger.sql ====
+-- BEGIN MIGRATION: 031_profile_bootstrap_trigger
 -- =========================================================
 -- Document 10: sql/031_profile_bootstrap_trigger.sql
 -- Purpose:
@@ -500,9 +500,9 @@ from auth.users;
 select
   count(*) as profile_count
 from public.profiles;
--- ==== END MIGRATION: 031_profile_bootstrap_trigger.sql ====
+-- END MIGRATION: 031_profile_bootstrap_trigger
 
--- ==== BEGIN MIGRATION: 032_admin_selector_views.sql ====
+-- BEGIN MIGRATION: 032_admin_selector_views
 -- =========================================================
 -- Document 11: sql/032_admin_selector_views.sql
 -- Purpose:
@@ -675,9 +675,9 @@ select to_regclass('public.v_assignment_selector') as assignment_selector_view;
 select * from public.v_profile_selector limit 5;
 select * from public.v_site_selector limit 5;
 select * from public.v_assignment_selector limit 5;
--- ==== END MIGRATION: 032_admin_selector_views.sql ====
+-- END MIGRATION: 032_admin_selector_views
 
--- ==== BEGIN MIGRATION: 033_expand_role_model.sql ====
+-- BEGIN MIGRATION: 033_expand_role_model
 -- =========================================================
 -- Document 19: sql/033_expand_role_model.sql
 -- Purpose:
@@ -836,9 +836,9 @@ order by assignment_role;
 
 select * from public.v_profile_role_rank limit 10;
 select * from public.v_site_assignment_role_rank limit 10;
--- ==== END MIGRATION: 033_expand_role_model.sql ====
+-- END MIGRATION: 033_expand_role_model
 
--- ==== BEGIN MIGRATION: 034_site_access_helpers.sql ====
+-- BEGIN MIGRATION: 034_site_access_helpers
 -- =========================================================
 -- Document 20 (replacement): sql/034_site_access_helpers.sql
 -- Purpose:
@@ -1123,9 +1123,9 @@ select public.role_rank('worker') as worker_rank,
        public.role_rank('admin') as admin_rank;
 
 select to_regclass('public.v_submission_site_resolved') as submission_site_resolved_view;
--- ==== END MIGRATION: 034_site_access_helpers.sql ====
+-- END MIGRATION: 034_site_access_helpers
 
--- ==== BEGIN MIGRATION: 035_add_site_id_to_submissions.sql ====
+-- BEGIN MIGRATION: 035_add_site_id_to_submissions
 -- =========================================================
 -- Document 24 (replacement): sql/035_add_site_id_to_submissions.sql
 -- Purpose:
@@ -1270,9 +1270,9 @@ select
 from public.v_submission_site_resolved
 order by submission_id desc
 limit 20;
--- ==== END MIGRATION: 035_add_site_id_to_submissions.sql ====
+-- END MIGRATION: 035_add_site_id_to_submissions
 
--- ==== BEGIN MIGRATION: 036_employee_profile_expansion.sql ====
+-- BEGIN MIGRATION: 036_employee_profile_expansion
 -- =========================================================
 -- sql/036_employee_profile_expansion.sql
 -- Purpose:
@@ -1303,9 +1303,9 @@ alter table public.profiles add column if not exists email_verified boolean not 
 
 comment on column public.profiles.feature_preferences is
 'Future UI preferences and enabled feature notes for the user.';
--- ==== END MIGRATION: 036_employee_profile_expansion.sql ====
+-- END MIGRATION: 036_employee_profile_expansion
 
--- ==== BEGIN MIGRATION: 037_security_rls_verification_notes.sql ====
+-- BEGIN MIGRATION: 037_security_rls_verification_notes
 -- =========================================================
 -- sql/037_security_rls_verification_notes.sql
 -- Purpose:
@@ -1326,9 +1326,9 @@ comment on column public.profiles.feature_preferences is
 -- 8) site assignment reads/writes are constrained by effective site role rank
 -- 9) all review-submission and admin-manage functions validate JWT and profile is_active=true
 -- 10) storage uploads only accept authenticated submission-linked image writes
--- ==== END MIGRATION: 037_security_rls_verification_notes.sql ====
+-- END MIGRATION: 037_security_rls_verification_notes
 
--- ==== BEGIN MIGRATION: 038_profile_visibility_rls.sql ====
+-- BEGIN MIGRATION: 038_profile_visibility_rls
 -- =========================================================
 -- sql/038_profile_visibility_rls.sql
 -- Purpose:
@@ -1421,9 +1421,9 @@ using (
   submitted_by_profile_id = auth.uid()
   or public.current_profile_rank() >= public.role_rank('supervisor')
 );
--- ==== END MIGRATION: 038_profile_visibility_rls.sql ====
+-- END MIGRATION: 038_profile_visibility_rls
 
--- ==== BEGIN MIGRATION: 039_directory_scope_helpers.sql ====
+-- BEGIN MIGRATION: 039_directory_scope_helpers
 -- =========================================================
 -- sql/039_directory_scope_helpers.sql
 -- Purpose:
@@ -1478,9 +1478,9 @@ as $$
     else false
   end;
 $$;
--- ==== END MIGRATION: 039_directory_scope_helpers.sql ====
+-- END MIGRATION: 039_directory_scope_helpers
 
--- ==== BEGIN MIGRATION: 040_reference_data_and_catalogs.sql ====
+-- BEGIN MIGRATION: 040_reference_data_and_catalogs
 
 -- File: sql/040_reference_data_and_catalogs.sql
 -- Brief description: Adds admin-populated reference catalogs and richer site metadata
@@ -1528,9 +1528,9 @@ insert into public.trade_catalog (name, sort_order) values
   ('Equipment Operation', 70),
   ('Health and Safety', 80)
 on conflict (name) do nothing;
--- ==== END MIGRATION: 040_reference_data_and_catalogs.sql ====
+-- END MIGRATION: 040_reference_data_and_catalogs
 
--- ==== BEGIN MIGRATION: 041_submission_notifications_and_signoff.sql ====
+-- BEGIN MIGRATION: 041_submission_notifications_and_signoff
 
 -- File: sql/041_submission_notifications_and_signoff.sql
 -- Brief description: Adds supervisor sign-off fields and an admin notification queue.
@@ -1560,9 +1560,9 @@ create table if not exists public.admin_notifications (
 
 create index if not exists idx_admin_notifications_recipient_created
   on public.admin_notifications(recipient_profile_id, is_read, created_at desc);
--- ==== END MIGRATION: 041_submission_notifications_and_signoff.sql ====
+-- END MIGRATION: 041_submission_notifications_and_signoff
 
--- ==== BEGIN MIGRATION: 042_test_users_and_sites_seed.sql ====
+-- BEGIN MIGRATION: 042_test_users_and_sites_seed
 -- File: sql/042_test_users_and_sites_seed.sql
 -- Brief description: Fully corrected seed file for mixed-schema projects.
 -- Uses real auth.users records for profiles, avoids fake UUIDs, and lets bigint IDs auto-generate.
@@ -1833,9 +1833,9 @@ where lower(p.email) in (
 order by s.site_code, p.email;
 
 commit;
--- ==== END MIGRATION: 042_test_users_and_sites_seed.sql ====
+-- END MIGRATION: 042_test_users_and_sites_seed
 
--- ==== BEGIN MIGRATION: 043_user_hierarchy_and_strengths.sql ====
+-- BEGIN MIGRATION: 043_user_hierarchy_and_strengths
 -- File: sql/043_user_hierarchy_and_strengths.sql
 -- Brief description: Adds reporting hierarchy and richer personnel fields.
 -- Supports default/override supervisor/admin chains, start date, strengths, and employee tracking.
@@ -1857,9 +1857,9 @@ create index if not exists idx_profiles_default_supervisor on public.profiles(de
 create index if not exists idx_profiles_default_admin on public.profiles(default_admin_profile_id);
 create index if not exists idx_site_assignments_reports_to_supervisor on public.site_assignments(reports_to_supervisor_profile_id);
 create index if not exists idx_site_assignments_reports_to_admin on public.site_assignments(reports_to_admin_profile_id);
--- ==== END MIGRATION: 043_user_hierarchy_and_strengths.sql ====
+-- END MIGRATION: 043_user_hierarchy_and_strengths
 
--- ==== BEGIN MIGRATION: 044_jobs_equipment_and_reservations.sql ====
+-- BEGIN MIGRATION: 044_jobs_equipment_and_reservations
 -- File: sql/044_jobs_equipment_and_reservations.sql
 -- Brief description: Creates the first jobs, equipment, and reservation schema.
 -- This prepares the next phase of the app: job planning, equipment reservation, and sign-out tracking.
@@ -1923,9 +1923,9 @@ create index if not exists idx_jobs_site_id on public.jobs(site_id);
 create index if not exists idx_jobs_status on public.jobs(status);
 create index if not exists idx_equipment_items_status on public.equipment_items(status);
 create index if not exists idx_equipment_signouts_job_id on public.equipment_signouts(job_id);
--- ==== END MIGRATION: 044_jobs_equipment_and_reservations.sql ====
+-- END MIGRATION: 044_jobs_equipment_and_reservations
 
--- ==== BEGIN MIGRATION: 045_directory_views_and_scope_helpers.sql ====
+-- BEGIN MIGRATION: 045_directory_views_and_scope_helpers
 -- File: sql/045_directory_views_and_scope_helpers.sql
 -- Brief description: Refreshes the people directory view with richer profile hierarchy fields
 -- and adds simple jobs/equipment views for backend and admin screens.
@@ -2014,9 +2014,9 @@ left join lateral (
 ) active_signout on true
 left join public.jobs j on j.id = active_signout.job_id
 left join public.profiles sup on sup.id = active_signout.checked_out_to_supervisor_profile_id;
--- ==== END MIGRATION: 045_directory_views_and_scope_helpers.sql ====
+-- END MIGRATION: 045_directory_views_and_scope_helpers
 
--- ==== BEGIN MIGRATION: 046_account_validation_and_notifications.sql ====
+-- BEGIN MIGRATION: 046_account_validation_and_notifications
 -- File: sql/046_account_validation_and_notifications.sql
 -- Brief description: Safe account validation and admin notification upgrade.
 -- Adds email/phone validation fields and creates/updates admin_notifications
@@ -2256,9 +2256,9 @@ with check (
 -- );
 
 commit;
--- ==== END MIGRATION: 046_account_validation_and_notifications.sql ====
+-- END MIGRATION: 046_account_validation_and_notifications
 
--- ==== BEGIN MIGRATION: 047_password_validation_equipment_workflow.sql ====
+-- BEGIN MIGRATION: 047_password_validation_equipment_workflow
 -- File: sql/047_password_validation_equipment_workflow.sql
 -- Brief description: Adds missing workflow columns for direct reporting and equipment lifecycle.
 
@@ -2282,9 +2282,9 @@ alter table public.job_equipment_requirements
 create index if not exists idx_equipment_items_current_job_id on public.equipment_items(current_job_id);
 create index if not exists idx_site_assignments_reports_to_supervisor on public.site_assignments(reports_to_supervisor_profile_id);
 create index if not exists idx_site_assignments_reports_to_admin on public.site_assignments(reports_to_admin_profile_id);
--- ==== END MIGRATION: 047_password_validation_equipment_workflow.sql ====
+-- END MIGRATION: 047_password_validation_equipment_workflow
 
--- ==== BEGIN MIGRATION: 048_notification_approvals_reservation_pools_and_sms.sql ====
+-- BEGIN MIGRATION: 048_notification_approvals_reservation_pools_and_sms
 -- File: sql/048_notification_approvals_reservation_pools_and_sms.sql
 -- Brief description: Unifies admin notification workflow, adds approval tracking,
 -- equipment pool-aware reservation support, and optional SMS verification fields.
@@ -2634,9 +2634,9 @@ begin
 end $$;
 
 commit;
--- ==== END MIGRATION: 048_notification_approvals_reservation_pools_and_sms.sql ====
+-- END MIGRATION: 048_notification_approvals_reservation_pools_and_sms
 
--- ==== BEGIN MIGRATION: 049_auth_delivery_attempts_and_dead_letters.sql ====
+-- BEGIN MIGRATION: 049_auth_delivery_attempts_and_dead_letters
 -- File: sql/049_auth_delivery_attempts_and_dead_letters.sql
 -- Brief description: Adds provider-specific email/SMS attempt counters and dead-letter tracking for notifications,
 -- supporting retry handling and richer admin delivery visibility.
@@ -2663,9 +2663,9 @@ create index if not exists idx_admin_notifications_sms_attempt_count
   on public.admin_notifications(sms_attempt_count);
 
 commit;
--- ==== END MIGRATION: 049_auth_delivery_attempts_and_dead_letters.sql ====
+-- END MIGRATION: 049_auth_delivery_attempts_and_dead_letters
 
--- ==== BEGIN MIGRATION: 050_equipment_asset_history_and_auth_runtime.sql ====
+-- BEGIN MIGRATION: 050_equipment_asset_history_and_auth_runtime
 -- File: sql/050_equipment_asset_history_and_auth_runtime.sql
 -- Brief description: Adds richer equipment rental-style tracking fields,
 -- typed checkout/return sign-off names, and keeps the schema aligned with the password-first app pass.
@@ -2710,9 +2710,9 @@ left join public.equipment_items e on e.id = s.equipment_item_id
 left join public.jobs j on j.id = s.job_id;
 
 commit;
--- ==== END MIGRATION: 050_equipment_asset_history_and_auth_runtime.sql ====
+-- END MIGRATION: 050_equipment_asset_history_and_auth_runtime
 
--- ==== BEGIN MIGRATION: 051_equipment_maintenance_lockout_and_history.sql ====
+-- BEGIN MIGRATION: 051_equipment_maintenance_lockout_and_history
 -- File: sql/051_equipment_maintenance_lockout_and_history.sql
 -- Brief description:
 -- Adds equipment maintenance/service/inspection/lockout tracking and
@@ -2907,9 +2907,9 @@ where e.equipment_pool_key is not null
 group by e.equipment_pool_key;
 
 commit;
--- ==== END MIGRATION: 051_equipment_maintenance_lockout_and_history.sql ====
+-- END MIGRATION: 051_equipment_maintenance_lockout_and_history
 
--- ==== BEGIN MIGRATION: 052_account_recovery_and_equipment_signature_capture.sql ====
+-- BEGIN MIGRATION: 052_account_recovery_and_equipment_signature_capture
 -- File: sql/052_account_recovery_and_equipment_signature_capture.sql
 -- Brief description:
 -- Adds account recovery fields and logging, enables username-based sign-in lookup,
@@ -2956,9 +2956,9 @@ alter table if exists public.equipment_signouts
   add column if not exists return_admin_signature_png text;
 
 commit;
--- ==== END MIGRATION: 052_account_recovery_and_equipment_signature_capture.sql ====
+-- END MIGRATION: 052_account_recovery_and_equipment_signature_capture
 
--- ==== BEGIN MIGRATION: 053_equipment_return_photos_damage_and_runtime_consistency.sql ====
+-- BEGIN MIGRATION: 053_equipment_return_photos_damage_and_runtime_consistency
 -- File: sql/053_equipment_return_photos_damage_and_runtime_consistency.sql
 -- Brief description:
 -- Adds equipment checkout/return evidence photo storage and damage reporting fields,
@@ -2996,9 +2996,9 @@ left join public.equipment_items e on e.id = s.equipment_item_id
 left join public.jobs j on j.id = s.job_id;
 
 commit;
--- ==== END MIGRATION: 053_equipment_return_photos_damage_and_runtime_consistency.sql ====
+-- END MIGRATION: 053_equipment_return_photos_damage_and_runtime_consistency
 
--- ==== BEGIN MIGRATION: 054_account_setup_and_profile_reliability.sql ====
+-- BEGIN MIGRATION: 054_account_setup_and_profile_reliability
 -- File: sql/054_account_setup_and_profile_reliability.sql
 -- Brief description:
 -- Adds account-setup readiness flags and profile reliability fields so
@@ -3023,9 +3023,9 @@ create index if not exists idx_profiles_account_setup_completed_at
   on public.profiles(account_setup_completed_at desc);
 
 commit;
--- ==== END MIGRATION: 054_account_setup_and_profile_reliability.sql ====
+-- END MIGRATION: 054_account_setup_and_profile_reliability
 
--- ==== BEGIN MIGRATION: 055_storage_onboarding_identity_change_and_bootstrap.sql ====
+-- BEGIN MIGRATION: 055_storage_onboarding_identity_change_and_bootstrap
 -- File: sql/055_storage_onboarding_identity_change_and_bootstrap.sql
 -- Brief description:
 -- Moves equipment evidence into storage-backed audit rows, adds onboarding and
@@ -3088,9 +3088,9 @@ create index if not exists idx_equipment_evidence_assets_item_id
   on public.equipment_evidence_assets (equipment_item_id, created_at desc);
 
 commit;
--- ==== END MIGRATION: 055_storage_onboarding_identity_change_and_bootstrap.sql ====
+-- END MIGRATION: 055_storage_onboarding_identity_change_and_bootstrap
 
--- ==== BEGIN MIGRATION: 056_admin_password_resets_and_sales_accounting_stub.sql ====
+-- BEGIN MIGRATION: 056_admin_password_resets_and_sales_accounting_stub
 -- File: sql/056_admin_password_resets_and_sales_accounting_stub.sql
 -- Purpose:
 -- - Allow audited admin password resets for any profile, including other admins.
@@ -3174,9 +3174,9 @@ from public.sales_orders so
 left join public.accounting_entries ae
   on ae.source_type = 'sales_order'
  and ae.source_id = so.id;
--- ==== END MIGRATION: 056_admin_password_resets_and_sales_accounting_stub.sql ====
+-- END MIGRATION: 056_admin_password_resets_and_sales_accounting_stub
 
--- ==== BEGIN MIGRATION: 057_staff_directory_and_role_admin.sql ====
+-- BEGIN MIGRATION: 057_staff_directory_and_role_admin
 -- 2026-04-04d staff directory, hierarchy roles, and admin user lifecycle pass
 
 alter table if exists public.profiles
@@ -3187,9 +3187,9 @@ alter table if exists public.profiles
 create index if not exists idx_profiles_employment_status on public.profiles (employment_status);
 create index if not exists idx_profiles_staff_tier on public.profiles (staff_tier);
 create index if not exists idx_profiles_seniority_level on public.profiles (seniority_level);
--- ==== END MIGRATION: 057_staff_directory_and_role_admin.sql ====
+-- END MIGRATION: 057_staff_directory_and_role_admin
 
--- ==== BEGIN MIGRATION: 058_admin_dropdown_catalogs_and_assignment_workbench.sql ====
+-- BEGIN MIGRATION: 058_admin_dropdown_catalogs_and_assignment_workbench
 -- 2026-04-05 admin dropdown catalogs and assignment workbench pass
 
 create table if not exists public.staff_tier_catalog (
@@ -3251,9 +3251,9 @@ insert into public.job_type_catalog (name, sort_order) values
   ('Inspection', 40),
   ('Training', 50)
 on conflict (name) do nothing;
--- ==== END MIGRATION: 058_admin_dropdown_catalogs_and_assignment_workbench.sql ====
+-- END MIGRATION: 058_admin_dropdown_catalogs_and_assignment_workbench
 
--- ==== BEGIN MIGRATION: 059_role_aliases_admin_bootstrap_and_onboarding_fix.sql ====
+-- BEGIN MIGRATION: 059_role_aliases_admin_bootstrap_and_onboarding_fix
 -- 059_role_aliases_admin_bootstrap_and_onboarding_fix.sql
 -- Purpose:
 -- - allow employee as the standard personnel role while remaining compatible with older worker rows
@@ -3291,9 +3291,9 @@ set onboarding_completed_at = coalesce(onboarding_completed_at, account_setup_co
 where is_active = true
   and coalesce(trim(email), '') <> ''
   and coalesce(onboarding_completed_at, account_setup_completed_at) is null;
--- ==== END MIGRATION: 059_role_aliases_admin_bootstrap_and_onboarding_fix.sql ====
+-- END MIGRATION: 059_role_aliases_admin_bootstrap_and_onboarding_fix
 
--- ==== BEGIN MIGRATION: 060_session_role_normalization_guardrails.sql ====
+-- BEGIN MIGRATION: 060_session_role_normalization_guardrails
 -- 060_session_role_normalization_guardrails.sql
 -- Normalize legacy profile roles and align onboarding/account setup completion timestamps.
 
@@ -3313,9 +3313,9 @@ set onboarding_completed_at = coalesce(onboarding_completed_at, account_setup_co
     account_setup_completed_at = coalesce(account_setup_completed_at, onboarding_completed_at),
     updated_at = now()
 where onboarding_completed_at is null or account_setup_completed_at is null;
--- ==== END MIGRATION: 060_session_role_normalization_guardrails.sql ====
+-- END MIGRATION: 060_session_role_normalization_guardrails
 
--- ==== BEGIN MIGRATION: 061_estimates_work_orders_routes_materials_and_gl_foundation.sql ====
+-- BEGIN MIGRATION: 061_estimates_work_orders_routes_materials_and_gl_foundation
 -- 061_estimates_work_orders_routes_materials_and_gl_foundation.sql
 -- Corrected full-run version
 -- Landscaping / project-work / subcontract dispatch / accounting foundation
@@ -3914,9 +3914,9 @@ values
   ('5030', 'Subcontract Expense', 'expense', 'expense_subcontract'),
   ('5100', 'Safety / Compliance Expense', 'expense', 'expense_safety')
 on conflict (account_number) do nothing;
--- ==== END MIGRATION: 061_estimates_work_orders_routes_materials_and_gl_foundation.sql ====
+-- END MIGRATION: 061_estimates_work_orders_routes_materials_and_gl_foundation
 
--- ==== BEGIN MIGRATION: 062_deeper_workflow_polish_admin_foundation.sql ====
+-- BEGIN MIGRATION: 062_deeper_workflow_polish_admin_foundation
 -- 062_deeper_workflow_polish_admin_foundation.sql
 -- Deeper workflow polish on top of 061:
 -- estimate/work-order lines, route stops, AR/AP payment posting,
@@ -3994,9 +3994,9 @@ values
   ('WOH', 'Work Order HSE Packet', 'overhead'),
   ('DSH', 'Dispatch HSE Packet', 'overhead')
 on conflict (code) do nothing;
--- ==== END MIGRATION: 062_deeper_workflow_polish_admin_foundation.sql ====
+-- END MIGRATION: 062_deeper_workflow_polish_admin_foundation
 
--- ==== BEGIN MIGRATION: 063_workflow_rollups_posting_and_hse_closeout.sql ====
+-- BEGIN MIGRATION: 063_workflow_rollups_posting_and_hse_closeout
 -- 063_workflow_rollups_posting_and_hse_closeout.sql
 -- Workflow polish pass focused on database-enforced totals, payment posting,
 -- receiving-to-costing flow, and linked HSE packet progress / closeout.
@@ -4599,9 +4599,9 @@ group by ab.id, ab.bill_number, ab.vendor_id, ab.total_amount, ab.balance_due, a
 
 create index if not exists idx_material_receipt_lines_work_order_line_id on public.material_receipt_lines(work_order_line_id);
 create index if not exists idx_linked_hse_packets_status on public.linked_hse_packets(packet_status);
--- ==== END MIGRATION: 063_workflow_rollups_posting_and_hse_closeout.sql ====
+-- END MIGRATION: 063_workflow_rollups_posting_and_hse_closeout
 
--- ==== BEGIN MIGRATION: 064_receipt_rollups_work_order_operational_status_and_posted_amounts.sql ====
+-- BEGIN MIGRATION: 064_receipt_rollups_work_order_operational_status_and_posted_amounts
 -- 064_receipt_rollups_work_order_operational_status_and_posted_amounts.sql
 -- Follow-up polish on top of 063:
 -- - clearer receipt allocation rollups
@@ -4729,9 +4729,9 @@ from public.ap_bills ab;
 
 create index if not exists idx_material_receipt_lines_material_id on public.material_receipt_lines(material_id);
 create index if not exists idx_work_orders_route_id on public.work_orders(route_id);
--- ==== END MIGRATION: 064_receipt_rollups_work_order_operational_status_and_posted_amounts.sql ====
+-- END MIGRATION: 064_receipt_rollups_work_order_operational_status_and_posted_amounts
 
--- ==== BEGIN MIGRATION: 065_job_crews_recurring_schedules_and_activity_tracking.sql ====
+-- BEGIN MIGRATION: 065_job_crews_recurring_schedules_and_activity_tracking
 -- 065_job_crews_recurring_schedules_and_activity_tracking.sql
 -- Adds crew assignment, recurring job scheduling, and photo-capable job activity tracking.
 
@@ -4930,9 +4930,9 @@ left join (
   left join public.v_job_comment_activity v on v.id = jc.id
   group by jc.job_id
 ) comment_rollup on comment_rollup.job_id = j.id;
--- ==== END MIGRATION: 065_job_crews_recurring_schedules_and_activity_tracking.sql ====
+-- END MIGRATION: 065_job_crews_recurring_schedules_and_activity_tracking
 
--- ==== BEGIN MIGRATION: 066_journal_posting_controls_and_material_issue_usage.sql ====
+-- BEGIN MIGRATION: 066_journal_posting_controls_and_material_issue_usage
 -- 066_journal_posting_controls_and_material_issue_usage.sql
 -- Adds explicit journal-batch posting rollups plus material issue / usage records
 -- so receiving can move into job consumption and variance.
@@ -5220,9 +5220,9 @@ from public.material_issues mi
 left join public.work_orders wo on wo.id = mi.work_order_id
 left join public.client_sites cs on cs.id = mi.client_site_id
 left join public.profiles p on p.id = mi.issued_by_profile_id;
--- ==== END MIGRATION: 066_journal_posting_controls_and_material_issue_usage.sql ====
+-- END MIGRATION: 066_journal_posting_controls_and_material_issue_usage
 
--- ==== BEGIN MIGRATION: 067_source_journal_route_execution_and_hse_proof.sql ====
+-- BEGIN MIGRATION: 067_source_journal_route_execution_and_hse_proof
 -- 067_source_journal_route_execution_and_hse_proof.sql
 -- Adds:
 -- 1) source-generated draft journal batches from AR/AP/receiving/usage events
@@ -6129,9 +6129,9 @@ select
   gjb.source_sync_state,
   gjb.source_synced_at
 from public.gl_journal_batches gjb;
--- ==== END MIGRATION: 067_source_journal_route_execution_and_hse_proof.sql ====
+-- END MIGRATION: 067_source_journal_route_execution_and_hse_proof
 
--- ==== BEGIN MIGRATION: 068_journal_sync_exceptions_and_upload_failure_fallback.sql ====
+-- BEGIN MIGRATION: 068_journal_sync_exceptions_and_upload_failure_fallback
 -- 068_journal_sync_exceptions_and_upload_failure_fallback.sql
 -- Adds:
 -- 1) journal sync exception tracking for stale/unbalanced/missing-entry source batches
@@ -6511,9 +6511,9 @@ select
   er.last_exception_at
 from public.gl_journal_batches gjb
 left join exception_rollups er on er.batch_id = gjb.id;
--- ==== END MIGRATION: 068_journal_sync_exceptions_and_upload_failure_fallback.sql ====
+-- END MIGRATION: 068_journal_sync_exceptions_and_upload_failure_fallback
 
--- ==== BEGIN MIGRATION: 069_hse_osha_interfaces_weather_chemical_traffic_signoff.sql ====
+-- BEGIN MIGRATION: 069_hse_osha_interfaces_weather_chemical_traffic_signoff
 -- 069_hse_osha_interfaces_weather_chemical_traffic_signoff.sql
 -- Adds stronger standalone-capable HSE packet interfaces for:
 -- - standalone and unscheduled-project packets
@@ -6964,9 +6964,9 @@ select
 from public.linked_hse_packets lhp
 left join proof_rollups pr on pr.packet_id = lhp.id
 left join event_rollups er on er.packet_id = lhp.id;
--- ==== END MIGRATION: 069_hse_osha_interfaces_weather_chemical_traffic_signoff.sql ====
+-- END MIGRATION: 069_hse_osha_interfaces_weather_chemical_traffic_signoff
 
--- ==== BEGIN MIGRATION: 070_hse_upload_retry_and_analytics_monitoring.sql ====
+-- BEGIN MIGRATION: 070_hse_upload_retry_and_analytics_monitoring
 -- 070_hse_upload_retry_and_analytics_monitoring.sql
 -- Adds:
 -- 1) HSE/route upload retry linkage and richer failure ownership fields
@@ -7234,9 +7234,9 @@ select
   bme.resolved_by_profile_id,
   bme.resolution_notes
 from public.backend_monitor_events bme;
--- ==== END MIGRATION: 070_hse_upload_retry_and_analytics_monitoring.sql ====
+-- END MIGRATION: 070_hse_upload_retry_and_analytics_monitoring
 
--- ==== BEGIN MIGRATION: 071_admin_focus_hse_action_items_and_monitor_summaries.sql ====
+-- BEGIN MIGRATION: 071_admin_focus_hse_action_items_and_monitor_summaries
 -- 071_admin_focus_hse_action_items_and_monitor_summaries.sql
 -- Adds Admin focus/review views for:
 -- 1) HSE packet action items
@@ -7495,9 +7495,9 @@ monitor_alerts as (
 select * from traffic_alerts
 union all
 select * from monitor_alerts;
--- ==== END MIGRATION: 071_admin_focus_hse_action_items_and_monitor_summaries.sql ====
+-- END MIGRATION: 071_admin_focus_hse_action_items_and_monitor_summaries
 
--- ==== BEGIN MIGRATION: 072_hse_hub_and_accounting_review_summaries.sql ====
+-- BEGIN MIGRATION: 072_hse_hub_and_accounting_review_summaries
 -- 072_hse_hub_and_accounting_review_summaries.sql
 -- Adds lightweight summary views for the standalone HSE hub and accounting review shell.
 
@@ -7583,9 +7583,9 @@ cross join exception_rollup er
 cross join ar_rollup ar
 cross join ap_rollup ap
 cross join traffic_rollup tr;
--- ==== END MIGRATION: 072_hse_hub_and_accounting_review_summaries.sql ====
+-- END MIGRATION: 072_hse_hub_and_accounting_review_summaries
 
--- ==== BEGIN MIGRATION: 073_hse_link_context_and_monitor_shortcuts.sql ====
+-- BEGIN MIGRATION: 073_hse_link_context_and_monitor_shortcuts
 -- 073_hse_link_context_and_monitor_shortcuts.sql
 -- Corrected again for PostgreSQL compatibility:
 -- - client_site_id and route_id come from public.linked_hse_packets
@@ -7850,9 +7850,9 @@ select * from traffic_summary
 union all
 select * from runtime_summary
 order by sort_order, lane_key;
--- ==== END MIGRATION: 073_hse_link_context_and_monitor_shortcuts.sql ====
+-- END MIGRATION: 073_hse_link_context_and_monitor_shortcuts
 
--- ==== BEGIN MIGRATION: 074_hse_control_cues_and_inspection_focus.sql ====
+-- BEGIN MIGRATION: 074_hse_control_cues_and_inspection_focus
 -- 074_hse_control_cues_and_inspection_focus.sql
 -- Corrected to preserve existing view column order, then append new columns.
 
@@ -8474,9 +8474,9 @@ select
       and not coalesce(cones_barriers_completed, false)
   )::int as cones_open_packets
 from public.v_hse_packet_progress;
--- ==== END MIGRATION: 074_hse_control_cues_and_inspection_focus.sql ====
+-- END MIGRATION: 074_hse_control_cues_and_inspection_focus
 
--- ==== BEGIN MIGRATION: 075_landscaping_job_workflow_and_crew_planning.sql ====
+-- BEGIN MIGRATION: 075_landscaping_job_workflow_and_crew_planning
 -- 075_landscaping_job_workflow_and_crew_planning.sql
 -- Expands the job model for one-time landscaping, recurring route/service work,
 -- and larger custom project work while making crew leadership and equipment
@@ -8671,9 +8671,9 @@ left join (
   left join public.v_job_comment_activity v on v.id = jc.id
   group by jc.job_id
 ) comment_rollup on comment_rollup.job_id = j.id;
--- ==== END MIGRATION: 075_landscaping_job_workflow_and_crew_planning.sql ====
+-- END MIGRATION: 075_landscaping_job_workflow_and_crew_planning
 
--- ==== BEGIN MIGRATION: 076_job_pricing_profitability_and_schedule_logic.sql ====
+-- BEGIN MIGRATION: 076_job_pricing_profitability_and_schedule_logic
 -- 076_job_pricing_profitability_and_schedule_logic.sql
 -- Adds job pricing, discount, profitability, open-end scheduling, delay, and repair-loss fields.
 
@@ -8815,9 +8815,9 @@ left join (
   left join public.v_job_comment_activity v on v.id = jc.id
   group by jc.job_id
 ) comment_rollup on comment_rollup.job_id = j.id;
--- ==== END MIGRATION: 076_job_pricing_profitability_and_schedule_logic.sql ====
+-- END MIGRATION: 076_job_pricing_profitability_and_schedule_logic
 
--- ==== BEGIN MIGRATION: 077_service_pricing_templates_and_ontario_tax_codes.sql ====
+-- BEGIN MIGRATION: 077_service_pricing_templates_and_ontario_tax_codes
 -- 077_service_pricing_templates_and_ontario_tax_codes.sql
 -- Adds DB-backed Ontario tax codes, business tax settings, and reusable service pricing templates.
 
@@ -9091,9 +9091,9 @@ left join (
   left join public.v_job_comment_activity v on v.id = jc.id
   group by jc.job_id
 ) comment_rollup on comment_rollup.job_id = j.id;
--- ==== END MIGRATION: 077_service_pricing_templates_and_ontario_tax_codes.sql ====
+-- END MIGRATION: 077_service_pricing_templates_and_ontario_tax_codes
 
--- ==== BEGIN MIGRATION: 078_job_sessions_reassignments_and_admin_sorting.sql ====
+-- BEGIN MIGRATION: 078_job_sessions_reassignments_and_admin_sorting
 create extension if not exists pgcrypto;
 
 alter table if exists public.jobs
@@ -9437,9 +9437,9 @@ left join (
   from public.job_reassignment_events
   group by source_job_id
 ) reassignment_rollup on reassignment_rollup.job_id = j.id;
--- ==== END MIGRATION: 078_job_sessions_reassignments_and_admin_sorting.sql ====
+-- END MIGRATION: 078_job_sessions_reassignments_and_admin_sorting
 
--- ==== BEGIN MIGRATION: 079_job_financial_rollups_and_profit_review.sql ====
+-- BEGIN MIGRATION: 079_job_financial_rollups_and_profit_review
 -- 079_job_financial_rollups_and_profit_review.sql
 -- Adds labor-rate-aware job financial tracking, adjustment events, and accounting review rollups
 -- for landscaping, recurring service, and custom project work.
@@ -9857,9 +9857,9 @@ cross join ar_rollup ar
 cross join ap_rollup ap
 cross join traffic_rollup tr
 cross join job_rollup jr;
--- ==== END MIGRATION: 079_job_financial_rollups_and_profit_review.sql ====
+-- END MIGRATION: 079_job_financial_rollups_and_profit_review
 
--- ==== BEGIN MIGRATION: 080_service_agreements_assets_payroll_and_login_tracking.sql ====
+-- BEGIN MIGRATION: 080_service_agreements_assets_payroll_and_login_tracking
 -- 080_service_agreements_assets_payroll_and_login_tracking.sql
 -- Extends the landscaping/service-management backbone with:
 -- - recurring service agreements and snow-trigger logs
@@ -10472,9 +10472,9 @@ cross join job_rollup jr
 cross join payroll_rollup pr
 cross join agreement_rollup agr
 cross join callback_rollup cb;
--- ==== END MIGRATION: 080_service_agreements_assets_payroll_and_login_tracking.sql ====
+-- END MIGRATION: 080_service_agreements_assets_payroll_and_login_tracking
 
--- ==== BEGIN MIGRATION: 081_contract_conversion_payroll_exports_and_snow_invoice_automation.sql ====
+-- BEGIN MIGRATION: 081_contract_conversion_payroll_exports_and_snow_invoice_automation
 -- 081_contract_conversion_payroll_exports_and_snow_invoice_automation.sql
 -- Adds:
 -- - estimate -> agreement conversion support
@@ -10718,9 +10718,9 @@ select
   coalesce(sum(case when status <> 'closed' then coalesce(actual_cost_total, 0) else 0 end), 0)::numeric(12,2) as open_callback_cost_total,
   max(opened_at) as last_callback_opened_at
 from public.warranty_callback_events;
--- ==== END MIGRATION: 081_contract_conversion_payroll_exports_and_snow_invoice_automation.sql ====
+-- END MIGRATION: 081_contract_conversion_payroll_exports_and_snow_invoice_automation
 
--- ==== BEGIN MIGRATION: 082_site_activity_audit_and_admin_recent_events.sql ====
+-- BEGIN MIGRATION: 082_site_activity_audit_and_admin_recent_events
 -- 082_site_activity_audit_and_admin_recent_events.sql
 -- Adds a durable admin-visible activity trail for operational and accounting changes.
 
@@ -10805,9 +10805,9 @@ select
   count(*) filter (where severity in ('warning','error') and occurred_at >= now() - interval '24 hours')::int as last_24h_attention_count,
   max(occurred_at) as last_activity_at
 from public.site_activity_events;
--- ==== END MIGRATION: 082_site_activity_audit_and_admin_recent_events.sql ====
+-- END MIGRATION: 082_site_activity_audit_and_admin_recent_events
 
--- ==== BEGIN MIGRATION: 083_employee_time_clock_and_break_tracking.sql ====
+-- BEGIN MIGRATION: 083_employee_time_clock_and_break_tracking
 -- 083_employee_time_clock_and_break_tracking.sql
 -- Adds employee self-service site/job time clock tracking with unpaid breaks,
 -- payroll-linked hour sync, and admin-visible attendance rollups.
@@ -10998,9 +10998,9 @@ select
   coalesce(sum(case when signed_in_at >= now() - interval '24 hours' then paid_work_minutes else 0 end), 0)::int as last_24h_paid_minutes,
   max(greatest(coalesce(signed_out_at, signed_in_at), signed_in_at)) as last_activity_at
 from public.employee_time_entries;
--- ==== END MIGRATION: 083_employee_time_clock_and_break_tracking.sql ====
+-- END MIGRATION: 083_employee_time_clock_and_break_tracking
 
--- ==== BEGIN MIGRATION: 084_supervisor_attendance_review_and_execution_candidates.sql ====
+-- BEGIN MIGRATION: 084_supervisor_attendance_review_and_execution_candidates
 -- 084_supervisor_attendance_review_and_execution_candidates.sql
 -- Adds:
 -- - supervisor review for missed clock-out, long breaks, and attendance exceptions
@@ -11670,9 +11670,9 @@ from active_crews ac
 cross join attendance att
 cross join job_cards jc
 cross join review_cards rc;
--- ==== END MIGRATION: 084_supervisor_attendance_review_and_execution_candidates.sql ====
+-- END MIGRATION: 084_supervisor_attendance_review_and_execution_candidates
 
--- ==== BEGIN MIGRATION: 085_attendance_photo_geofence_scheduler_and_signed_contract_invoice.sql ====
+-- BEGIN MIGRATION: 085_attendance_photo_geofence_scheduler_and_signed_contract_invoice
 -- 085_attendance_photo_geofence_scheduler_and_signed_contract_invoice.sql
 -- Adds:
 -- - attendance photo storage metadata and geofence accuracy/source fields
@@ -12125,9 +12125,9 @@ select
   count(*) filter (where candidate_kind = 'service_session')::int as session_candidate_count,
   count(*) filter (where candidate_kind in ('visit_invoice','snow_invoice'))::int as invoice_candidate_count
 from public.v_service_execution_scheduler_candidates;
--- ==== END MIGRATION: 085_attendance_photo_geofence_scheduler_and_signed_contract_invoice.sql ====
+-- END MIGRATION: 085_attendance_photo_geofence_scheduler_and_signed_contract_invoice
 
--- ==== BEGIN MIGRATION: 086_hseops_performance_and_site_activity_rollups.sql ====
+-- BEGIN MIGRATION: 086_hseops_performance_and_site_activity_rollups
 -- 086_hseops_performance_and_site_activity_rollups.sql
 -- Adds lightweight site-activity rollup views for admin/HSE monitoring while
 -- the HSE Operations page moves to a reduced selector payload for better runtime performance.
@@ -12152,9 +12152,9 @@ select
   max(occurred_at) as last_activity_at
 from public.site_activity_events
 group by entity_type;
--- ==== END MIGRATION: 086_hseops_performance_and_site_activity_rollups.sql ====
+-- END MIGRATION: 086_hseops_performance_and_site_activity_rollups
 
--- ==== BEGIN MIGRATION: 087_evidence_review_scheduler_settings_and_signed_contract_kickoff.sql ====
+-- BEGIN MIGRATION: 087_evidence_review_scheduler_settings_and_signed_contract_kickoff
 -- 087_evidence_review_scheduler_settings_and_signed_contract_kickoff.sql
 -- Adds:
 -- - Admin-visible attendance / HSE evidence review views
@@ -12465,9 +12465,9 @@ from export_rollup er
 cross join attendance_rollup ar
 cross join review_rollup rr
 cross join clock_rollup cr;
--- ==== END MIGRATION: 087_evidence_review_scheduler_settings_and_signed_contract_kickoff.sql ====
+-- END MIGRATION: 087_evidence_review_scheduler_settings_and_signed_contract_kickoff
 
--- ==== BEGIN MIGRATION: 088_scheduler_cron_media_review_payroll_close_receipts.sql ====
+-- BEGIN MIGRATION: 088_scheduler_cron_media_review_payroll_close_receipts
 -- 088_scheduler_cron_media_review_payroll_close_receipts.sql
 -- Adds:
 -- - cron/dispatch plumbing for service execution scheduler settings
@@ -13026,9 +13026,9 @@ from export_rollup er
 cross join attendance_rollup ar
 cross join review_rollup rr
 cross join clock_rollup cr;
--- ==== END MIGRATION: 088_scheduler_cron_media_review_payroll_close_receipts.sql ====
+-- END MIGRATION: 088_scheduler_cron_media_review_payroll_close_receipts
 
--- ==== BEGIN MIGRATION: 089_historical_reporting_and_auth_wall_support.sql ====
+-- BEGIN MIGRATION: 089_historical_reporting_and_auth_wall_support
 -- 089_historical_reporting_and_auth_wall_support.sql
 -- Adds historical reporting views for Ontario OHSA / HSE submissions and cross-workflow history.
 -- Includes compatibility upgrades for older databases missing newer columns.
@@ -13275,9 +13275,9 @@ select
   null::text as site_code,
   null::text as site_name
 from public.service_contract_documents d;
--- ==== END MIGRATION: 089_historical_reporting_and_auth_wall_support.sql ====
+-- END MIGRATION: 089_historical_reporting_and_auth_wall_support
 
--- ==== BEGIN MIGRATION: 090_incident_reporting_saved_report_presets_and_trends.sql ====
+-- BEGIN MIGRATION: 090_incident_reporting_saved_report_presets_and_trends
 -- 090_incident_reporting_saved_report_presets_and_trends.sql
 -- Adds incident / near-miss reporting views, saved reporting presets,
 -- and richer DB-backed reporting rollups so reporting depends less on browser-local state.
@@ -13602,9 +13602,9 @@ with base as (
     coalesce(nullif(route_code, ''), '—')
 )
 select * from normalized;
--- ==== END MIGRATION: 090_incident_reporting_saved_report_presets_and_trends.sql ====
+-- END MIGRATION: 090_incident_reporting_saved_report_presets_and_trends
 
--- ==== BEGIN MIGRATION: 091_corrective_actions_training_and_sds_tracking.sql ====
+-- BEGIN MIGRATION: 091_corrective_actions_training_and_sds_tracking
 -- 091_corrective_actions_training_and_sds_tracking.sql
 -- Adds first-class corrective-action tasks, training / certification tracking,
 -- SDS acknowledgement history, and management-focused reporting views.
@@ -14011,9 +14011,9 @@ select
   sa.updated_at as sort_at
 from public.v_sds_acknowledgement_directory sa
 where sa.is_expired = true or sa.expires_within_30_days = true;
--- ==== END MIGRATION: 091_corrective_actions_training_and_sds_tracking.sql ====
+-- END MIGRATION: 091_corrective_actions_training_and_sds_tracking
 
--- ==== BEGIN MIGRATION: 092_management_workflows_and_subscriptions.sql ====
+-- BEGIN MIGRATION: 092_management_workflows_and_subscriptions
 -- 092_management_workflows_and_subscriptions.sql
 -- Adds management workflow depth on top of incident/corrective/training reporting:
 -- - automated reminder / escalation fields for corrective actions and training
@@ -14729,9 +14729,9 @@ select
   '' as supervisor_name
 from public.v_equipment_jsa_hazard_link_directory j
 where j.status <> 'closed' and (j.is_overdue = true or j.review_due_date between current_date and current_date + 30);
--- ==== END MIGRATION: 092_management_workflows_and_subscriptions.sql ====
+-- END MIGRATION: 092_management_workflows_and_subscriptions
 
--- ==== BEGIN MIGRATION: 093_report_delivery_and_worker_self_service.sql ====
+-- BEGIN MIGRATION: 093_report_delivery_and_worker_self_service
 -- 093_report_delivery_and_worker_self_service.sql
 -- Adds:
 -- - scheduled report delivery plumbing and run history
@@ -15090,9 +15090,9 @@ left join public.training_courses tc on tc.id = tr.course_id
 left join latest_sds ls on ls.profile_id = tr.profile_id and ls.linked_training_record_id = tr.id
 where coalesce(tc.requires_sds_acknowledgement, false) = true
   and coalesce(tr.completion_status, '') = 'completed';
--- ==== END MIGRATION: 093_report_delivery_and_worker_self_service.sql ====
+-- END MIGRATION: 093_report_delivery_and_worker_self_service
 
--- ==== BEGIN MIGRATION: 094_jobs_commercial_completion_and_accounting_ready.sql ====
+-- BEGIN MIGRATION: 094_jobs_commercial_completion_and_accounting_ready
 -- 094_jobs_commercial_completion_and_accounting_ready.sql
 -- Expands Jobs into a fuller commercial workflow:
 -- - quote / estimate approval discipline
@@ -15507,9 +15507,9 @@ left join public.estimates e on e.id = cr.estimate_id
 left join public.job_completion_accounting_events ev on ev.completion_review_id = cr.id
 where cr.accounting_ready = true or cr.review_status in ('ready_for_accounting','posted') or cr.accounting_trigger_status <> 'pending'
 group by cr.id, j.job_code, j.job_name, wo.work_order_number, e.estimate_number;
--- ==== END MIGRATION: 094_jobs_commercial_completion_and_accounting_ready.sql ====
+-- END MIGRATION: 094_jobs_commercial_completion_and_accounting_ready
 
--- ==== BEGIN MIGRATION: 095_jobs_quote_approval_release_and_accounting_candidates.sql ====
+-- BEGIN MIGRATION: 095_jobs_quote_approval_release_and_accounting_candidates
 -- 095_jobs_quote_approval_release_and_accounting_candidates.sql
 -- Adds the next commercial layer for Jobs:
 -- - client-ready quote package rendering
@@ -16011,9 +16011,9 @@ select
   coalesce(sum(profit_total),0)::numeric(12,2),
   case when coalesce(sum(revenue_total),0) > 0 then round((coalesce(sum(profit_total),0) / sum(revenue_total)) * 100.0, 2)::numeric(7,2) else 0::numeric(7,2) end
 from base group by job_family;
--- ==== END MIGRATION: 095_jobs_quote_approval_release_and_accounting_candidates.sql ====
+-- END MIGRATION: 095_jobs_quote_approval_release_and_accounting_candidates
 
--- ==== BEGIN MIGRATION: 096_jobs_quote_output_threshold_enforcement_and_closeout_posting.sql ====
+-- BEGIN MIGRATION: 096_jobs_quote_output_threshold_enforcement_and_closeout_posting
 -- 096_jobs_quote_output_threshold_enforcement_and_closeout_posting.sql
 -- Extends the commercial Jobs workflow with:
 -- - branded printable/email quote output
@@ -16451,9 +16451,9 @@ select
   sum(actual_revenue_total - quoted_total)::numeric(12,2),
   sum(actual_cost_total - estimated_cost_total)::numeric(12,2)
 from base group by job_family;
--- ==== END MIGRATION: 096_jobs_quote_output_threshold_enforcement_and_closeout_posting.sql ====
+-- END MIGRATION: 096_jobs_quote_output_threshold_enforcement_and_closeout_posting
 
--- ==== BEGIN MIGRATION: 097_jobs_quote_delivery_threshold_rules_and_accountant_exports.sql ====
+-- BEGIN MIGRATION: 097_jobs_quote_delivery_threshold_rules_and_accountant_exports
 -- 097_jobs_quote_delivery_threshold_rules_and_accountant_exports.sql
 -- Deepens the Jobs commercial/accounting workflow with:
 -- - richer branded quote package output details
@@ -16669,9 +16669,9 @@ select
   (revenue_total - quoted_total)::numeric(12,2) as revenue_variance_total,
   (cost_total - estimated_cost_total)::numeric(12,2) as cost_variance_total
 from grouped;
--- ==== END MIGRATION: 097_jobs_quote_delivery_threshold_rules_and_accountant_exports.sql ====
+-- END MIGRATION: 097_jobs_quote_delivery_threshold_rules_and_accountant_exports
 
--- ==== BEGIN MIGRATION: 098_jobs_quote_email_signoff_and_gl_posting.sql ====
+-- BEGIN MIGRATION: 098_jobs_quote_email_signoff_and_gl_posting
 -- 098_jobs_quote_email_signoff_and_gl_posting.sql
 -- Extends the Jobs commercial/accounting workflow with:
 -- - actual quote-package email delivery tracking
@@ -16882,9 +16882,9 @@ select
   case when quoted_total > 0 then round((revenue_variance_total / quoted_total) * 100.0, 2)::numeric(9,2) else 0::numeric(9,2) end as revenue_variance_percent,
   case when estimated_cost_total > 0 then round((cost_variance_total / estimated_cost_total) * 100.0, 2)::numeric(9,2) else 0::numeric(9,2) end as cost_variance_percent
 from public.v_job_profitability_variance_directory;
--- ==== END MIGRATION: 098_jobs_quote_email_signoff_and_gl_posting.sql ====
+-- END MIGRATION: 098_jobs_quote_email_signoff_and_gl_posting
 
--- ==== BEGIN MIGRATION: 099_quote_acceptance_threshold_autoeval_and_accounting_lifecycle.sql ====
+-- BEGIN MIGRATION: 099_quote_acceptance_threshold_autoeval_and_accounting_lifecycle
 -- 099_quote_acceptance_threshold_autoeval_and_accounting_lifecycle.sql
 -- Adds quote engagement tracking, stronger threshold evaluation state,
 -- completion readiness rollups, and accounting lifecycle history.
@@ -17127,9 +17127,9 @@ select
 from public.job_accounting_lifecycle_events e
 left join public.jobs j on j.id = e.job_id
 left join public.profiles p on p.id = e.created_by_profile_id;
--- ==== END MIGRATION: 099_quote_acceptance_threshold_autoeval_and_accounting_lifecycle.sql ====
+-- END MIGRATION: 099_quote_acceptance_threshold_autoeval_and_accounting_lifecycle
 
--- ==== BEGIN MIGRATION: 100_accounting_close_reconciliation_and_tax_filing_foundation.sql ====
+-- BEGIN MIGRATION: 100_accounting_close_reconciliation_and_tax_filing_foundation
 -- 100_accounting_close_reconciliation_and_tax_filing_foundation.sql
 -- Adds backend accounting-close foundations so the quote -> release -> completion -> posting path
 -- can move into real close, remittance, reconciliation, and accountant handoff workflows.
@@ -17641,9 +17641,9 @@ cross join tax
 cross join payroll
 cross join bank
 cross join periods;
--- ==== END MIGRATION: 100_accounting_close_reconciliation_and_tax_filing_foundation.sql ====
+-- END MIGRATION: 100_accounting_close_reconciliation_and_tax_filing_foundation
 
--- ==== BEGIN MIGRATION: 101_accounting_posting_automation_and_export_bundle.sql ====
+-- BEGIN MIGRATION: 101_accounting_posting_automation_and_export_bundle
 -- 101_accounting_posting_automation_and_export_bundle.sql
 -- Extends the accounting-close foundation into a more actionable workflow:
 -- - job invoice postings can link to real AR invoices
@@ -17892,9 +17892,9 @@ from public.accountant_handoff_exports ah
 left join public.business_tax_settings bts on bts.id = ah.business_tax_setting_id
 left join public.profiles p on p.id = ah.generated_by_profile_id
 left join item_rollup ir on ir.export_id = ah.id;
--- ==== END MIGRATION: 101_accounting_posting_automation_and_export_bundle.sql ====
+-- END MIGRATION: 101_accounting_posting_automation_and_export_bundle
 
--- ==== BEGIN MIGRATION: 102_accounting_close_end_to_end_workflow.sql ====
+-- BEGIN MIGRATION: 102_accounting_close_end_to_end_workflow
 -- 102_accounting_close_end_to_end_workflow.sql
 -- Finishes the accounting-close workflow with:
 -- - AR/AP payment application
@@ -18394,9 +18394,9 @@ select
   ap.payment_count,
   ap.bill_count
 from ap;
--- ==== END MIGRATION: 102_accounting_close_end_to_end_workflow.sql ====
+-- END MIGRATION: 102_accounting_close_end_to_end_workflow
 
--- ==== BEGIN MIGRATION: 103_accounting_close_admin_ui_controls.sql ====
+-- BEGIN MIGRATION: 103_accounting_close_admin_ui_controls
 -- 103_accounting_close_admin_ui_controls.sql
 -- Admin-facing controls for the end-to-end accounting close workflow.
 -- Adds close/reopen audit fields, package delivery metadata, and dashboard views
@@ -18555,9 +18555,9 @@ left join lateral (
 ) items on true
 where e.package_status in ('prepared','reviewed','finalized','delivered')
    or e.delivery_status in ('pending','failed');
--- ==== END MIGRATION: 103_accounting_close_admin_ui_controls.sql ====
+-- END MIGRATION: 103_accounting_close_admin_ui_controls
 
--- ==== BEGIN MIGRATION: 104_reporting_loader_timeout_guardrails.sql ====
+-- BEGIN MIGRATION: 104_reporting_loader_timeout_guardrails
 -- 104_reporting_loader_timeout_guardrails.sql
 -- Reporting loader timeout guardrail pass.
 -- This migration is intentionally light: the main performance fix is in the
@@ -18573,9 +18573,9 @@ select
 
 comment on view public.v_reporting_loader_health is
   'Schema 104 marker and health view for the reporting timeout guardrail pass. The frontend lazy-loads Reports only on the Reports route; admin-directory also has a reporting fast path.';
--- ==== END MIGRATION: 104_reporting_loader_timeout_guardrails.sql ====
+-- END MIGRATION: 104_reporting_loader_timeout_guardrails
 
--- ==== BEGIN MIGRATION: 105_repo_cleanup_and_roadmap_refresh.sql ====
+-- BEGIN MIGRATION: 105_repo_cleanup_and_roadmap_refresh
 -- 105_repo_cleanup_and_roadmap_refresh.sql
 -- Repo cleanup, Markdown archive reset, and roadmap refresh marker.
 -- This migration is intentionally light. It gives live deployments a simple
@@ -18592,9 +18592,9 @@ select
 
 comment on view public.v_repo_cleanup_and_roadmap_health is
   'Schema 105 marker for the 2026-05-10 repository cleanup and next-step roadmap refresh pass.';
--- ==== END MIGRATION: 105_repo_cleanup_and_roadmap_refresh.sql ====
+-- END MIGRATION: 105_repo_cleanup_and_roadmap_refresh
 
--- ==== BEGIN MIGRATION: 106_admin_command_center_schema_tracking_and_health.sql ====
+-- BEGIN MIGRATION: 106_admin_command_center_schema_tracking_and_health
 -- Schema 106: admin command center, schema tracking, and health center.
 -- 106_admin_command_center_schema_tracking_and_health.sql
 -- Repaired in the 2026-05-14b pass so it creates schema tracking before views read it
@@ -18723,9 +18723,9 @@ grant select on public.v_admin_error_health_center to authenticated;
 grant select on public.v_admin_task_inbox to authenticated;
 grant select on public.v_role_dashboard_presets to authenticated;
 grant select on public.v_schema_106_admin_command_center_health to authenticated;
--- ==== END MIGRATION: 106_admin_command_center_schema_tracking_and_health.sql ====
+-- END MIGRATION: 106_admin_command_center_schema_tracking_and_health
 
--- ==== BEGIN MIGRATION: 107_admin_readiness_drilldowns_and_live_schema_fix.sql ====
+-- BEGIN MIGRATION: 107_admin_readiness_drilldowns_and_live_schema_fix
 -- Schema 107: production readiness, schema drift, saved filters, permissions, close/evidence manager foundations.
 -- 107_admin_readiness_drilldowns_and_live_schema_fix.sql
 
@@ -18937,9 +18937,9 @@ grant select on public.v_evidence_manager_directory to authenticated;
 grant select on public.admin_saved_filters to authenticated;
 grant select on public.admin_production_readiness_checks to authenticated;
 grant select on public.admin_role_permission_matrix to authenticated;
--- ==== END MIGRATION: 107_admin_readiness_drilldowns_and_live_schema_fix.sql ====
+-- END MIGRATION: 107_admin_readiness_drilldowns_and_live_schema_fix
 
--- ==== BEGIN MIGRATION: 108_saved_filters_close_wizard_health_and_seo_gates.sql ====
+-- BEGIN MIGRATION: 108_saved_filters_close_wizard_health_and_seo_gates
 -- Schema 108: saved-filter actions, close wizard steps, health resolution notes, deployment gates, and SEO smoke checks.
 -- 108_saved_filters_close_wizard_health_and_seo_gates.sql
 
@@ -19207,9 +19207,9 @@ grant select on public.admin_health_resolution_notes to authenticated;
 grant select on public.admin_deployment_gate_checks to authenticated;
 grant select on public.admin_public_seo_checks to authenticated;
 grant select on public.admin_saved_filters to authenticated;
--- ==== END MIGRATION: 108_saved_filters_close_wizard_health_and_seo_gates.sql ====
+-- END MIGRATION: 108_saved_filters_close_wizard_health_and_seo_gates
 
--- ==== BEGIN MIGRATION: 109_pagination_close_wizard_audit_backup_mobile_foundations.sql ====
+-- BEGIN MIGRATION: 109_pagination_close_wizard_audit_backup_mobile_foundations
 -- Schema 109: pagination, guided close actions, audit log, backup rehearsal, bank CSV import staging, evidence queue, and mobile action cards.
 -- 109_pagination_close_wizard_audit_backup_mobile_foundations.sql
 
@@ -19599,9 +19599,9 @@ grant select on public.bank_csv_import_rows to authenticated;
 grant select on public.admin_backup_restore_rehearsals to authenticated;
 grant select on public.admin_evidence_action_queue to authenticated;
 grant select on public.admin_mobile_action_cards to authenticated;
--- ==== END MIGRATION: 109_pagination_close_wizard_audit_backup_mobile_foundations.sql ====
+-- END MIGRATION: 109_pagination_close_wizard_audit_backup_mobile_foundations
 
--- ==== BEGIN MIGRATION: 110_mobile_navigation_quality_gates.sql ====
+-- BEGIN MIGRATION: 110_mobile_navigation_quality_gates
 -- Schema 110: mobile navigation quality gates.
 -- Adds a safe DB marker for the 2026-05-16a mobile UX pass.
 -- This migration has no hard dependency on app data tables and is safe to run after a partial schema-109 deploy.
@@ -19791,9 +19791,9 @@ on conflict (schema_version) do update set
 
 grant select on public.app_frontend_quality_gates to authenticated;
 grant select on public.v_mobile_navigation_quality_gates to authenticated;
--- ==== END MIGRATION: 110_mobile_navigation_quality_gates.sql ====
+-- END MIGRATION: 110_mobile_navigation_quality_gates
 
--- ==== BEGIN MIGRATION: 111_admin_directory_pagination_saved_view_replay.sql ====
+-- BEGIN MIGRATION: 111_admin_directory_pagination_saved_view_replay
 -- Schema 111: Admin directory pagination and saved-view replay quality gates.
 -- Adds a safe marker for the 2026-05-16b pass. It is intentionally low-risk:
 -- existing schema-109 pagination settings are updated, frontend quality gates are marked,
@@ -19974,9 +19974,9 @@ on conflict (schema_version) do update set
 
 grant select on public.app_frontend_quality_gates to authenticated;
 grant select on public.v_mobile_navigation_quality_gates to authenticated;
--- ==== END MIGRATION: 111_admin_directory_pagination_saved_view_replay.sql ====
+-- END MIGRATION: 111_admin_directory_pagination_saved_view_replay
 
--- ==== BEGIN MIGRATION: 112_admin_operations_pagination_sorting_panel_refresh.sql ====
+-- BEGIN MIGRATION: 112_admin_operations_pagination_sorting_panel_refresh
 -- Schema 112: Admin Operations pagination, sorting, panel refresh, and saved view quality gates.
 -- Low-risk tracking migration for the 2026-05-17a pass. It records the new Admin UX/backend
 -- behavior without changing core business tables.
@@ -20181,9 +20181,9 @@ on conflict (schema_version) do update set
 grant select on public.app_frontend_quality_gates to authenticated;
 grant select on public.v_mobile_navigation_quality_gates to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
--- ==== END MIGRATION: 112_admin_operations_pagination_sorting_panel_refresh.sql ====
+-- END MIGRATION: 112_admin_operations_pagination_sorting_panel_refresh
 
--- ==== BEGIN MIGRATION: 113_admin_panel_refresh_and_job_review_actions.sql ====
+-- BEGIN MIGRATION: 113_admin_panel_refresh_and_job_review_actions
 -- Schema 113: Admin panel-only refreshes, Operations job review actions, and mobile table quality gates.
 -- Low-risk tracking migration for the 2026-05-17b pass.
 --
@@ -20447,9 +20447,9 @@ grant select on public.app_frontend_quality_gates to authenticated;
 grant select on public.v_admin_panel_refresh_preferences to authenticated;
 grant select on public.v_admin_job_action_audit_directory to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
--- ==== END MIGRATION: 113_admin_panel_refresh_and_job_review_actions.sql ====
+-- END MIGRATION: 113_admin_panel_refresh_and_job_review_actions
 
--- ==== BEGIN MIGRATION: 114_staged_admin_load_and_cache_fallback_guardrails.sql ====
+-- BEGIN MIGRATION: 114_staged_admin_load_and_cache_fallback_guardrails
 -- Schema 114: Staged Admin load and cache fallback guardrails.
 -- Low-risk tracking migration for the 2026-05-18a pass.
 -- Documents the Admin load change from one large `scope: all` request to smaller staged panel requests.
@@ -20675,9 +20675,9 @@ on conflict (schema_version) do update set
 grant select on public.app_frontend_quality_gates to authenticated;
 grant select on public.v_admin_panel_refresh_preferences to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
--- ==== END MIGRATION: 114_staged_admin_load_and_cache_fallback_guardrails.sql ====
+-- END MIGRATION: 114_staged_admin_load_and_cache_fallback_guardrails
 
--- ==== BEGIN MIGRATION: 115_admin_panel_retry_timing_and_command_scope.sql ====
+-- BEGIN MIGRATION: 115_admin_panel_retry_timing_and_command_scope
 -- Schema 115: Admin panel retry, timing visibility, and command-center fast path.
 -- Low-risk tracking migration for the 2026-05-18b pass.
 -- Keeps the expected_schema_version column name stable to avoid PostgreSQL 42P16 view rename errors.
@@ -20940,9 +20940,9 @@ grant select on public.admin_panel_load_diagnostics to authenticated;
 grant select on public.v_admin_panel_load_diagnostics to authenticated;
 grant select on public.v_admin_panel_refresh_preferences to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
--- ==== END MIGRATION: 115_admin_panel_retry_timing_and_command_scope.sql ====
+-- END MIGRATION: 115_admin_panel_retry_timing_and_command_scope
 
--- ==== BEGIN MIGRATION: 116_admin_diagnostics_drawer_and_stale_data_badges.sql ====
+-- BEGIN MIGRATION: 116_admin_diagnostics_drawer_and_stale_data_badges
 -- Schema 116: Admin diagnostics drawer, persisted panel failures, and stale-data badges.
 -- Low-risk tracking migration for the 2026-05-19a pass.
 -- Keeps v_schema_drift_status column name as expected_schema_version to avoid PostgreSQL 42P16 view rename errors.
@@ -21167,9 +21167,9 @@ grant select on public.admin_panel_refresh_preferences to authenticated;
 grant select on public.admin_panel_load_diagnostics to authenticated;
 grant select on public.v_admin_panel_load_diagnostics to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
--- ==== END MIGRATION: 116_admin_diagnostics_drawer_and_stale_data_badges.sql ====
+-- END MIGRATION: 116_admin_diagnostics_drawer_and_stale_data_badges
 
--- ==== BEGIN MIGRATION: 117_split_admin_scopes_confirmation_and_deployment_checklist.sql ====
+-- BEGIN MIGRATION: 117_split_admin_scopes_confirmation_and_deployment_checklist
 -- Schema 117: Split Admin fast paths, evidence scope, confirmation guardrails, and deployment checklist notes.
 -- Low-risk tracking migration for the 2026-05-19b pass.
 -- Keeps v_schema_drift_status column name as expected_schema_version to avoid PostgreSQL 42P16 view rename errors.
@@ -21431,9 +21431,9 @@ grant select on public.v_admin_fast_path_scope_registry to authenticated;
 grant select on public.v_admin_action_confirmation_rules to authenticated;
 grant select on public.v_admin_deployment_checklist to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
--- ==== END MIGRATION: 117_split_admin_scopes_confirmation_and_deployment_checklist.sql ====
+-- END MIGRATION: 117_split_admin_scopes_confirmation_and_deployment_checklist
 
--- ==== BEGIN MIGRATION: 118_admin_preflight_registry_deployment_checklist_ui.sql ====
+-- BEGIN MIGRATION: 118_admin_preflight_registry_deployment_checklist_ui
 -- Schema 118: Admin preflight registry, deployment checklist rendering, and function readiness tracking.
 -- Low-risk tracking migration for the 2026-05-20a pass.
 -- Keeps v_schema_drift_status column name as expected_schema_version to avoid PostgreSQL 42P16 view rename errors.
@@ -21656,9 +21656,9 @@ grant select on public.admin_function_readiness_checks to authenticated;
 grant select on public.v_admin_deployment_checklist to authenticated;
 grant select on public.v_admin_function_readiness_checks to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
--- ==== END MIGRATION: 118_admin_preflight_registry_deployment_checklist_ui.sql ====
+-- END MIGRATION: 118_admin_preflight_registry_deployment_checklist_ui
 
--- ==== BEGIN MIGRATION: 119_admin_action_permissions_preflight_and_retry_rules.sql ====
+-- BEGIN MIGRATION: 119_admin_action_permissions_preflight_and_retry_rules
 -- Schema 119: Admin action permissions, schema preflight rows, retry/backoff policy, and function signoff fields.
 -- Low-risk tracking migration for the 2026-05-20b pass.
 -- Keeps v_schema_drift_status column name as expected_schema_version to avoid PostgreSQL 42P16 view rename errors.
@@ -21973,9 +21973,9 @@ grant select on public.v_admin_panel_retry_policy to authenticated;
 grant select on public.v_admin_schema_preflight_checks to authenticated;
 grant select on public.v_admin_function_readiness_checks to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
--- ==== END MIGRATION: 119_admin_action_permissions_preflight_and_retry_rules.sql ====
+-- END MIGRATION: 119_admin_action_permissions_preflight_and_retry_rules
 
--- ==== BEGIN MIGRATION: 120_ontario_ohsa_mobile_first_app_guardrails.sql ====
+-- BEGIN MIGRATION: 120_ontario_ohsa_mobile_first_app_guardrails
 -- Schema 120: Ontario OHSA wording and mobile-first app guardrails.
 -- Tracks the 2026-05-26a pass that removed user-facing U.S. safety wording
 -- and promoted mobile-first field use for Ontario workplace safety workflows.
@@ -22208,9 +22208,9 @@ grant select on public.app_jurisdiction_wording_gates to authenticated;
 grant select on public.v_app_mobile_first_quality_gates to authenticated;
 grant select on public.v_app_jurisdiction_wording_gates to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
--- ==== END MIGRATION: 120_ontario_ohsa_mobile_first_app_guardrails.sql ====
+-- END MIGRATION: 120_ontario_ohsa_mobile_first_app_guardrails
 
--- ==== BEGIN MIGRATION: 121_mobile_today_dashboard_pwa_and_offline_badges.sql ====
+-- BEGIN MIGRATION: 121_mobile_today_dashboard_pwa_and_offline_badges
 -- Schema 121: Mobile Today dashboard, PWA install helper, and offline queue badges.
 -- Tracks the 2026-05-27a pass that makes the app more usable as a phone-first
 -- Ontario OHSA field workflow instead of a desktop-first admin shell.
@@ -22541,9 +22541,9 @@ grant select on public.v_mobile_today_action_registry to authenticated;
 grant select on public.v_mobile_pwa_install_quality_gates to authenticated;
 grant select on public.v_app_mobile_first_quality_gates to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
--- ==== END MIGRATION: 121_mobile_today_dashboard_pwa_and_offline_badges.sql ====
+-- END MIGRATION: 121_mobile_today_dashboard_pwa_and_offline_badges
 
--- ==== BEGIN MIGRATION: 122_mobile_form_stepper_draft_resume_guardrails.sql ====
+-- BEGIN MIGRATION: 122_mobile_form_stepper_draft_resume_guardrails
 -- Schema 122: Mobile form steppers, local draft resume chips, and phone-first form quality gates.
 -- This migration is intentionally low-risk: it adds metadata/quality-gate tables and views
 -- used by Admin readiness screens. It does not alter live form submission tables.
@@ -22722,9 +22722,9 @@ grant select on public.mobile_form_quality_gates to authenticated;
 grant select on public.v_mobile_form_stepper_registry to authenticated;
 grant select on public.v_mobile_form_quality_gates to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
--- ==== END MIGRATION: 122_mobile_form_stepper_draft_resume_guardrails.sql ====
+-- END MIGRATION: 122_mobile_form_stepper_draft_resume_guardrails
 
--- ==== BEGIN MIGRATION: 123_equipment_transfer_arrival_return_accounting_seo_guardrails.sql ====
+-- BEGIN MIGRATION: 123_equipment_transfer_arrival_return_accounting_seo_guardrails
 -- Schema 123: Equipment transfer verification, return signoff depth, accounting/SEO guardrails.
 -- This pass tightens the end-to-end equipment withdrawal -> site arrival -> return workflow
 -- and records the rollout in readiness tables so Admin can see what still needs testing.
@@ -23155,9 +23155,9 @@ grant select on public.v_app_operational_depth_gates to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 123_equipment_transfer_arrival_return_accounting_seo_guardrails.sql ====
+-- END MIGRATION: 123_equipment_transfer_arrival_return_accounting_seo_guardrails
 
--- ==== BEGIN MIGRATION: 124_accounting_cost_payment_reconciliation_remittance_equipment_depth.sql ====
+-- BEGIN MIGRATION: 124_accounting_cost_payment_reconciliation_remittance_equipment_depth
 -- Schema 124: Accounting depth and equipment accountability pass.
 -- Adds deeper job-cost categories, payment application review fields,
 -- reconciliation review workbench metadata, remittance/filing signoff proof,
@@ -23814,9 +23814,9 @@ grant select on public.equipment_service_tasks to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 124_accounting_cost_payment_reconciliation_remittance_equipment_depth.sql ====
+-- END MIGRATION: 124_accounting_cost_payment_reconciliation_remittance_equipment_depth
 
--- ==== BEGIN MIGRATION: 125_deployment_bundle_parse_seo_fallback_guardrails.sql ====
+-- BEGIN MIGRATION: 125_deployment_bundle_parse_seo_fallback_guardrails
 -- Schema 125: Deployment bundle parse, SEO, and fallback guardrails.
 -- Adds database-visible checklists for Edge Function bundle readiness, public SEO/local wording,
 -- and runtime fallback behaviour. This pass was triggered by a Supabase Edge Function deploy
@@ -24139,9 +24139,9 @@ grant select on public.v_app_runtime_fallback_checks to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 125_deployment_bundle_parse_seo_fallback_guardrails.sql ====
+-- END MIGRATION: 125_deployment_bundle_parse_seo_fallback_guardrails
 
--- ==== BEGIN MIGRATION: 126_roadmap_depth_data_migration_seo_css_fallback_guardrails.sql ====
+-- BEGIN MIGRATION: 126_roadmap_depth_data_migration_seo_css_fallback_guardrails
 -- Schema 126: Roadmap depth, data-migration, SEO/CSS, and fallback guardrails.
 -- Adds DB-visible tracking for this pass's completed 20 steps, the next 20 planned steps,
 -- duplicated-data migration decisions, documentation/schema sync checks, and CSS/SEO/fallback sanity.
@@ -24606,9 +24606,9 @@ grant select on public.v_app_schema_documentation_sync_checks to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 126_roadmap_depth_data_migration_seo_css_fallback_guardrails.sql ====
+-- END MIGRATION: 126_roadmap_depth_data_migration_seo_css_fallback_guardrails
 
--- ==== BEGIN MIGRATION: 127_public_route_seo_internal_link_css_mobile_guardrails.sql ====
+-- BEGIN MIGRATION: 127_public_route_seo_internal_link_css_mobile_guardrails
 -- Schema 127: public route SEO, internal-link, CSS-token, mobile action, and release-manifest guardrails.
 -- Build 2026-06-02b. This pass keeps roadmap/issues/schema/docs/cache checks synchronized and adds DB-visible next-step depth.
 
@@ -25082,9 +25082,9 @@ grant select on public.v_app_schema_documentation_sync_checks to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 127_public_route_seo_internal_link_css_mobile_guardrails.sql ====
+-- END MIGRATION: 127_public_route_seo_internal_link_css_mobile_guardrails
 
--- ==== BEGIN MIGRATION: 128_accounting_equipment_seo_fallback_execution_depth.sql ====
+-- BEGIN MIGRATION: 128_accounting_equipment_seo_fallback_execution_depth
 -- Schema 128: accounting, equipment, public SEO, and fallback execution queues.
 -- Build 2026-06-03a.
 -- Repaired for the schema 126 app_roadmap_action_steps column names and constraints.
@@ -26082,9 +26082,9 @@ grant select on public.v_app_fallback_observability_matrix to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 128_accounting_equipment_seo_fallback_execution_depth.sql ====
+-- END MIGRATION: 128_accounting_equipment_seo_fallback_execution_depth
 
--- ==== BEGIN MIGRATION: 129_schema_compatibility_accounting_equipment_seo_fallback_playbooks.sql ====
+-- BEGIN MIGRATION: 129_schema_compatibility_accounting_equipment_seo_fallback_playbooks
 -- Schema 129: schema compatibility repair, accounting proof packaging, equipment return-to-service, SEO asset checks, and fallback playbooks.
 -- Build 2026-06-04a.
 -- This pass locks in the schema 128 column-name repair and adds DB-visible queues for the next implementation layer.
@@ -26784,9 +26784,9 @@ grant select on public.v_app_error_recovery_playbook to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 129_schema_compatibility_accounting_equipment_seo_fallback_playbooks.sql ====
+-- END MIGRATION: 129_schema_compatibility_accounting_equipment_seo_fallback_playbooks
 
--- ==== BEGIN MIGRATION: 130_payment_reconciliation_equipment_scan_local_seo_execution_playbooks.sql ====
+-- BEGIN MIGRATION: 130_payment_reconciliation_equipment_scan_local_seo_execution_playbooks
 -- Schema 130: payment, reconciliation, equipment scan, local SEO, and fallback execution playbooks.
 -- Build 2026-06-04b.
 -- This pass moves the schema 129 planning queues closer to executable Admin/mobile work.
@@ -27765,9 +27765,9 @@ grant select on public.v_app_fallback_drill_queue to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 130_payment_reconciliation_equipment_scan_local_seo_execution_playbooks.sql ====
+-- END MIGRATION: 130_payment_reconciliation_equipment_scan_local_seo_execution_playbooks
 
--- ==== BEGIN MIGRATION: 131_payment_recon_equipment_seo_runtime_execution_controls.sql ====
+-- BEGIN MIGRATION: 131_payment_recon_equipment_seo_runtime_execution_controls
 -- Schema 131: payment UI, reconciliation import, equipment service closeout, SEO asset, and runtime recovery controls.
 -- Build 2026-06-05a.
 -- This pass moves schema 130 execution queues closer to working controls and operator proof paths.
@@ -28101,9 +28101,9 @@ grant select on public.v_app_runtime_recovery_telemetry_queue to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 131_payment_recon_equipment_seo_runtime_execution_controls.sql ====
+-- END MIGRATION: 131_payment_recon_equipment_seo_runtime_execution_controls
 
--- ==== BEGIN MIGRATION: 132_payment_recon_equipment_seo_fallback_telemetry_drill_history.sql ====
+-- BEGIN MIGRATION: 132_payment_recon_equipment_seo_fallback_telemetry_drill_history
 -- Schema 132: payment posting proofs, reconciliation matching, equipment verification, local SEO assets, and fallback telemetry drill history.
 -- Build 2026-06-05b.
 -- This pass moves schema 131 execution controls closer to usable operator workflows while keeping roadmap/docs/schema drift aligned.
@@ -28421,9 +28421,9 @@ grant select on public.v_app_runtime_fallback_drill_history_queue to authenticat
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 132_payment_recon_equipment_seo_fallback_telemetry_drill_history.sql ====
+-- END MIGRATION: 132_payment_recon_equipment_seo_fallback_telemetry_drill_history
 
--- ==== BEGIN MIGRATION: 133_payment_recon_equipment_seo_offline_execution_controls.sql ====
+-- BEGIN MIGRATION: 133_payment_recon_equipment_seo_offline_execution_controls
 -- Schema 133: payment write-path staging, reconciliation scoring, equipment accessory templates, SEO generation, and offline conflict controls.
 -- Build 2026-06-05c.
 -- This pass turns schema 132 queues into more concrete execution registries while preserving local SEO, one-H1, CSS, fallback, and documentation guardrails.
@@ -28720,9 +28720,9 @@ grant select on public.v_app_mobile_offline_conflict_resolution_queue to authent
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 133_payment_recon_equipment_seo_offline_execution_controls.sql ====
+-- END MIGRATION: 133_payment_recon_equipment_seo_offline_execution_controls
 
--- ==== BEGIN MIGRATION: 134_payment_adjustment_recon_exception_equipment_scan_seo_runtime_messages.sql ====
+-- BEGIN MIGRATION: 134_payment_adjustment_recon_exception_equipment_scan_seo_runtime_messages
 -- Schema 134: payment adjustment, reconciliation exception, equipment scan rollout, SEO content depth, and runtime message controls.
 -- Build 2026-06-06a.
 -- This pass keeps the schema, Markdown, CSS/SEO/H1, fallback, and Admin readiness queues aligned after schema 133.
@@ -28967,9 +28967,9 @@ grant select on public.v_app_runtime_error_message_catalog to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 134_payment_adjustment_recon_exception_equipment_scan_seo_runtime_messages.sql ====
+-- END MIGRATION: 134_payment_adjustment_recon_exception_equipment_scan_seo_runtime_messages
 
--- ==== BEGIN MIGRATION: 135_release_validation_payment_recon_equipment_seo_data_migration_controls.sql ====
+-- BEGIN MIGRATION: 135_release_validation_payment_recon_equipment_seo_data_migration_controls
 -- Schema 135: release validation, payment/reconciliation execution, equipment scan, local SEO, fallback message, and JSON/DB migration controls.
 -- Build 2026-06-06b.
 -- This pass keeps schema, Markdown, CSS/SEO/H1, fallback, and Admin readiness queues aligned after schema 134.
@@ -29245,9 +29245,9 @@ grant select on public.v_app_json_db_migration_execution_queue to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 135_release_validation_payment_recon_equipment_seo_data_migration_controls.sql ====
+-- END MIGRATION: 135_release_validation_payment_recon_equipment_seo_data_migration_controls
 
--- ==== BEGIN MIGRATION: 136_release_cutover_payment_exception_equipment_service_seo_css_runtime_controls.sql ====
+-- BEGIN MIGRATION: 136_release_cutover_payment_exception_equipment_service_seo_css_runtime_controls
 -- Schema 136: release cutover, payment exceptions, equipment return-to-service, local SEO evidence, CSS drift, runtime fallback, and JSON/DB source-of-truth controls.
 -- Build 2026-06-06c.
 -- This pass keeps schema, Markdown, CSS/SEO/H1, fallback, and Admin readiness queues aligned after schema 135.
@@ -29543,9 +29543,9 @@ grant select on public.v_app_json_db_source_of_truth_queue to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 136_release_cutover_payment_exception_equipment_service_seo_css_runtime_controls.sql ====
+-- END MIGRATION: 136_release_cutover_payment_exception_equipment_service_seo_css_runtime_controls
 
--- ==== BEGIN MIGRATION: 137_release_depth_payment_recon_equipment_seo_css_data_runtime_controls.sql ====
+-- BEGIN MIGRATION: 137_release_depth_payment_recon_equipment_seo_css_data_runtime_controls
 -- Schema 137: Release depth controls for payments, reconciliation, equipment service cost recovery, local SEO prominence, CSS accessibility fallbacks, data migration validation, and runtime messages.
 -- Build 2026-06-06d.
 
@@ -29725,9 +29725,9 @@ grant select on public.v_app_runtime_release_message_queue to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 137_release_depth_payment_recon_equipment_seo_css_data_runtime_controls.sql ====
+-- END MIGRATION: 137_release_depth_payment_recon_equipment_seo_css_data_runtime_controls
 
--- ==== BEGIN MIGRATION: 138_release_readiness_accounting_equipment_seo_css_runtime_migration_controls.sql ====
+-- BEGIN MIGRATION: 138_release_readiness_accounting_equipment_seo_css_runtime_migration_controls
 -- Schema 138: Release readiness controls for accounting exception closure, equipment service verification, local SEO refresh, CSS/mobile regression, runtime observability, and data migration closeout.
 -- Build 2026-06-07a.
 
@@ -29925,9 +29925,9 @@ grant select on public.v_app_runtime_observability_release_queue to authenticate
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 138_release_readiness_accounting_equipment_seo_css_runtime_migration_controls.sql ====
+-- END MIGRATION: 138_release_readiness_accounting_equipment_seo_css_runtime_migration_controls
 
--- ==== BEGIN MIGRATION: 139_accounting_cutover_equipment_scan_seo_css_runtime_finalization_controls.sql ====
+-- BEGIN MIGRATION: 139_accounting_cutover_equipment_scan_seo_css_runtime_finalization_controls
 -- Schema 139: Release finalization controls for accounting cutover, equipment scan asset rollout, local SEO prominence publication, CSS/mobile release guard, runtime support playbooks, and data source migration locks.
 -- Build 2026-06-07b.
 
@@ -30107,9 +30107,9 @@ grant select on public.v_app_data_source_migration_lock_queue to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 139_accounting_cutover_equipment_scan_seo_css_runtime_finalization_controls.sql ====
+-- END MIGRATION: 139_accounting_cutover_equipment_scan_seo_css_runtime_finalization_controls
 
--- ==== BEGIN MIGRATION: 140_release_exit_payment_closeout_recon_equipment_seo_runtime_controls.sql ====
+-- BEGIN MIGRATION: 140_release_exit_payment_closeout_recon_equipment_seo_runtime_controls
 -- Schema 140: Release exit criteria, payment closeout, reconciliation exception workflow,
 -- equipment chain-of-custody, local SEO conversion, and fallback escalation controls.
 -- Build 2026-06-09a.
@@ -31045,9 +31045,9 @@ grant select on public.v_app_runtime_fallback_escalation_queue to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 140_release_exit_payment_closeout_recon_equipment_seo_runtime_controls.sql ====
+-- END MIGRATION: 140_release_exit_payment_closeout_recon_equipment_seo_runtime_controls
 
--- ==== BEGIN MIGRATION: 141_release_handoff_payment_proof_equipment_custody_seo_runtime_logging_controls.sql ====
+-- BEGIN MIGRATION: 141_release_handoff_payment_proof_equipment_custody_seo_runtime_logging_controls
 -- Schema 141: Release handoff, payment posting proof, equipment custody evidence,
 -- SEO conversion evidence, and runtime fallback logging controls.
 -- Build 2026-06-09b.
@@ -31954,9 +31954,9 @@ grant select on public.v_app_runtime_fallback_event_log_queue to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 141_release_handoff_payment_proof_equipment_custody_seo_runtime_logging_controls.sql ====
+-- END MIGRATION: 141_release_handoff_payment_proof_equipment_custody_seo_runtime_logging_controls
 
--- ==== BEGIN MIGRATION: 142_schema_deploy_repair_payment_recon_equipment_seo_runtime_source_migration_controls.sql ====
+-- BEGIN MIGRATION: 142_schema_deploy_repair_payment_recon_equipment_seo_runtime_source_migration_controls
 -- Schema 142: Full-schema repair verification, payment/reconciliation proof closeout, equipment return exceptions, local-search prominence evidence, runtime observability, and JSON/DB source migration controls.
 -- Build 2026-06-11a.
 --
@@ -32278,9 +32278,9 @@ grant select on public.v_app_json_db_source_migration_queue to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 142_schema_deploy_repair_payment_recon_equipment_seo_runtime_source_migration_controls.sql ====
+-- END MIGRATION: 142_schema_deploy_repair_payment_recon_equipment_seo_runtime_source_migration_controls
 
--- ==== BEGIN MIGRATION: 143_desktop_mobile_visual_enrichment_seo_css_runtime_data_source_controls.sql ====
+-- BEGIN MIGRATION: 143_desktop_mobile_visual_enrichment_seo_css_runtime_data_source_controls
 -- Schema 143: Desktop/mobile surface parity, visual-professional enrichment,
 -- local-search content depth, CSS/motion/image guardrails, schema deploy validation,
 -- and JSON/DB source-consolidation controls.
@@ -32606,9 +32606,9 @@ grant select on public.v_app_source_consolidation_decision_queue to authenticate
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 143_desktop_mobile_visual_enrichment_seo_css_runtime_data_source_controls.sql ====
+-- END MIGRATION: 143_desktop_mobile_visual_enrichment_seo_css_runtime_data_source_controls
 
--- ==== BEGIN MIGRATION: 144_visual_asset_release_seo_trust_css_runtime_source_registry_controls.sql ====
+-- BEGIN MIGRATION: 144_visual_asset_release_seo_trust_css_runtime_source_registry_controls
 -- Schema 144: Visual asset release, desktop/mobile polish, local SEO trust signals,
 -- CSS visual regression, runtime fallback drills, and DB source-registry candidate controls.
 -- Build 2026-06-12b.
@@ -32933,9 +32933,9 @@ grant select on public.v_app_db_source_registry_candidate_queue to authenticated
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 144_visual_asset_release_seo_trust_css_runtime_source_registry_controls.sql ====
+-- END MIGRATION: 144_visual_asset_release_seo_trust_css_runtime_source_registry_controls
 
--- ==== BEGIN MIGRATION: 145_sanity_check_value_added_breakdown_and_enrichment_controls.sql ====
+-- BEGIN MIGRATION: 145_sanity_check_value_added_breakdown_and_enrichment_controls
 -- Schema 145: Application sanity check, value-added modification priorities,
 -- desktop/mobile parity, visual professional enrichment, local-search value,
 -- and source-of-truth migration controls.
@@ -33256,9 +33256,9 @@ grant select on public.v_app_source_of_truth_migration_value_queue to authentica
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 145_sanity_check_value_added_breakdown_and_enrichment_controls.sql ====
+-- END MIGRATION: 145_sanity_check_value_added_breakdown_and_enrichment_controls
 
--- ==== BEGIN MIGRATION: 146_high_value_execution_layer_payment_bank_recon_equipment_visual_route_quote_mobile_admin_controls.sql ====
+-- BEGIN MIGRATION: 146_high_value_execution_layer_payment_bank_recon_equipment_visual_route_quote_mobile_admin_controls
 -- Schema 146: Highest-value execution layer: payment actions, bank CSV preview,
 -- reconciliation match/split/undo/signoff, equipment scan custody, visual asset approvals,
 -- public route registry, quote/contact intake, mobile offline conflict cards, and Admin scorecard rails.
@@ -33693,9 +33693,9 @@ grant select on public.v_app_admin_scorecard_progress_rail_queue to authenticate
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 146_high_value_execution_layer_payment_bank_recon_equipment_visual_route_quote_mobile_admin_controls.sql ====
+-- END MIGRATION: 146_high_value_execution_layer_payment_bank_recon_equipment_visual_route_quote_mobile_admin_controls
 
--- ==== BEGIN MIGRATION: 147_markdown_consolidation_visual_placeholders_seo_mobile_sanity_controls.sql ====
+-- BEGIN MIGRATION: 147_markdown_consolidation_visual_placeholders_seo_mobile_sanity_controls
 -- Schema 147: Markdown consolidation, competitive SEO benchmarking, visual placeholders,
 -- desktop/mobile polish, and next-step sanity controls.
 -- Build 2026-06-14a.
@@ -33908,9 +33908,9 @@ grant select on public.v_app_next_step_sanity_queue to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 147_markdown_consolidation_visual_placeholders_seo_mobile_sanity_controls.sql ====
+-- END MIGRATION: 147_markdown_consolidation_visual_placeholders_seo_mobile_sanity_controls
 
--- ==== BEGIN MIGRATION: 148_real_write_actions_quote_payment_bank_recon_equipment_assets_routes_mobile_scorecards.sql ====
+-- BEGIN MIGRATION: 148_real_write_actions_quote_payment_bank_recon_equipment_assets_routes_mobile_scorecards
 -- Schema 148: Real write-action layer for quote/contact intake, payment requests,
 -- bank CSV previews, reconciliation actions, equipment scan/custody events,
 -- visual asset approvals, public route approvals, mobile offline conflicts, and Admin scorecards.
@@ -34355,9 +34355,9 @@ grant select, insert, update on public.admin_scorecard_progress_rails to authent
 grant select on public.v_payment_action_requests, public.v_bank_csv_import_previews, public.v_bank_csv_import_preview_rows, public.v_reconciliation_action_requests, public.v_equipment_scan_events, public.v_equipment_custody_timeline_events, public.v_visual_asset_approval_items, public.v_public_route_approval_items, public.v_mobile_offline_conflict_cards, public.v_admin_scorecard_progress_rails, public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 148_real_write_actions_quote_payment_bank_recon_equipment_assets_routes_mobile_scorecards.sql ====
+-- END MIGRATION: 148_real_write_actions_quote_payment_bank_recon_equipment_assets_routes_mobile_scorecards
 
--- ==== BEGIN MIGRATION: 149_operations_cockpit_write_controls_and_competitive_workflow_depth.sql ====
+-- BEGIN MIGRATION: 149_operations_cockpit_write_controls_and_competitive_workflow_depth
 -- Schema 149: Operations cockpit write controls, idempotency, approvals,
 -- fallback audit events, quote deduplication, bank import confirmation,
 -- and route/visual publication readiness.
@@ -34599,9 +34599,9 @@ grant select on public.v_admin_operations_cockpit_scorecards to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 149_operations_cockpit_write_controls_and_competitive_workflow_depth.sql ====
+-- END MIGRATION: 149_operations_cockpit_write_controls_and_competitive_workflow_depth
 
--- ==== BEGIN MIGRATION: 150_end_to_end_operations_customer_portal_media_route_publication.sql ====
+-- BEGIN MIGRATION: 150_end_to_end_operations_customer_portal_media_route_publication
 -- Schema 150: End-to-end operations execution, customer portal, media pipeline,
 -- approved route publication, live queues, and exact reconciliation controls.
 -- Build 2026-06-17b.
@@ -35131,9 +35131,9 @@ grant select on public.v_live_job_cost_dashboard to authenticated;
 grant select on public.v_schema_drift_status to authenticated;
 
 commit;
--- ==== END MIGRATION: 150_end_to_end_operations_customer_portal_media_route_publication.sql ====
+-- END MIGRATION: 150_end_to_end_operations_customer_portal_media_route_publication
 
--- ==== BEGIN MIGRATION: 151_transactional_rpc_accounting_reconciliation_quote_tests.sql ====
+-- BEGIN MIGRATION: 151_transactional_rpc_accounting_reconciliation_quote_tests
 -- Schema 151: Transactional PostgreSQL RPC layer for accounting, reconciliation,
 -- bank promotion, quote conversion, and portal deposits.
 -- Build 2026-06-18a.
@@ -36028,9 +36028,9 @@ grant select on public.operation_rpc_permission_tests to authenticated;
 grant select on public.v_operation_rpc_permission_matrix to authenticated;
 
 commit;
--- ==== END MIGRATION: 151_transactional_rpc_accounting_reconciliation_quote_tests.sql ====
+-- END MIGRATION: 151_transactional_rpc_accounting_reconciliation_quote_tests
 
--- ==== BEGIN MIGRATION: 152_staging_proof_permissions_stripe_health_accountant_export.sql ====
+-- BEGIN MIGRATION: 152_staging_proof_permissions_stripe_health_accountant_export
 -- Schema 152: Staging-proof harness, visible action permissions, Stripe health,
 -- reconciliation review detail, and secure accountant export packaging.
 -- Build 2026-06-22a.
@@ -36319,9 +36319,9 @@ grant select on public.v_operations_staging_test_summary to authenticated;
 grant select on public.v_accountant_export_readiness to authenticated;
 
 commit;
--- ==== END MIGRATION: 152_staging_proof_permissions_stripe_health_accountant_export.sql ====
+-- END MIGRATION: 152_staging_proof_permissions_stripe_health_accountant_export
 
--- ==== BEGIN MIGRATION: 153_release_fixture_policy_mapping_seo_alerts.sql ====
+-- BEGIN MIGRATION: 153_release_fixture_policy_mapping_seo_alerts
 -- Schema 153: Disposable staging fixtures, policy assertions, private media review,
 -- accountant close mapping, route-signal decisions, and Stripe delivery alerts.
 -- Build 2026-06-22b hotfix: preserve existing view-column order on replacement.
@@ -36971,9 +36971,9 @@ revoke all on public.v_accountant_mapping_readiness, public.v_route_content_deci
   public.v_stripe_webhook_alert_queue, public.v_security_policy_assertion_summary from anon, authenticated;
 
 commit;
--- ==== END MIGRATION: 153_release_fixture_policy_mapping_seo_alerts.sql ====
+-- END MIGRATION: 153_release_fixture_policy_mapping_seo_alerts
 
--- ==== BEGIN MIGRATION: 154_release_readiness_dashboard_and_evidence_snapshots.sql ====
+-- BEGIN MIGRATION: 154_release_readiness_dashboard_and_evidence_snapshots
 -- Schema 154: Human-reviewed release readiness dashboard and captured evidence snapshots.
 -- This migration does not deploy, publish, charge, or release anything automatically.
 -- It converts existing staging, policy, backup-rehearsal, payment, accounting, and
@@ -37280,5 +37280,479 @@ grant execute on function public.ywi_security_policy_assertions() to service_rol
 revoke all on public.v_release_readiness_dashboard from anon, authenticated;
 
 commit;
--- ==== END MIGRATION: 154_release_readiness_dashboard_and_evidence_snapshots.sql ====
+-- END MIGRATION: 154_release_readiness_dashboard_and_evidence_snapshots
+
+-- BEGIN MIGRATION: 155_live_job_updates_customer_timeline_and_visibility
+-- Schema 155: Live work updates, customer-visible progress timeline, private/staff note separation,
+-- approved-media attachments, and operational visibility guardrails.
+-- Build 2026-07-05a.
+--
+-- Purpose:
+-- 1. Give field teams a concise, auditable way to record arrival, progress, delay, access, and completion updates.
+-- 2. Let customers see only deliberately customer-visible, published updates through an existing token-protected portal.
+-- 3. Keep staff-only notes and unapproved/private media out of the customer surface.
+-- 4. Attach only approved public visual assets to customer-visible updates.
+-- 5. Preserve existing payment, release-evidence, media-approval, and portal-token controls.
+
+begin;
+
+create table if not exists public.work_order_live_updates (
+  id uuid primary key default gen_random_uuid(),
+  work_order_id uuid not null references public.work_orders(id) on delete cascade,
+  client_id uuid references public.clients(id) on delete set null,
+  author_profile_id uuid references public.profiles(id) on delete set null,
+  visibility text not null default 'staff',
+  update_type text not null default 'progress',
+  update_status text not null default 'published',
+  title text not null,
+  message text,
+  occurred_at timestamptz not null default now(),
+  progress_percent numeric(5,2),
+  customer_notification_status text not null default 'not_requested',
+  customer_notified_at timestamptz,
+  retracted_at timestamptz,
+  retracted_by_profile_id uuid references public.profiles(id) on delete set null,
+  retraction_reason text,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (visibility in ('customer','staff')),
+  check (update_type in ('arrival','progress','delay','access','completion','note')),
+  check (update_status in ('published','retracted')),
+  check (progress_percent is null or (progress_percent >= 0 and progress_percent <= 100)),
+  check (customer_notification_status in ('not_requested','queued','sent','not_available','failed'))
+);
+
+create index if not exists work_order_live_updates_order_idx
+  on public.work_order_live_updates(work_order_id, occurred_at desc, created_at desc);
+create index if not exists work_order_live_updates_customer_idx
+  on public.work_order_live_updates(client_id, visibility, update_status, occurred_at desc);
+create index if not exists work_order_live_updates_staff_queue_idx
+  on public.work_order_live_updates(update_status, visibility, occurred_at desc);
+
+create table if not exists public.work_order_live_update_media (
+  id uuid primary key default gen_random_uuid(),
+  live_update_id uuid not null references public.work_order_live_updates(id) on delete cascade,
+  visual_asset_id uuid not null references public.visual_asset_approval_items(id) on delete restrict,
+  display_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  unique(live_update_id, visual_asset_id)
+);
+create index if not exists work_order_live_update_media_update_idx
+  on public.work_order_live_update_media(live_update_id, display_order, created_at);
+
+alter table public.work_order_live_updates enable row level security;
+alter table public.work_order_live_update_media enable row level security;
+revoke all on public.work_order_live_updates, public.work_order_live_update_media from anon, authenticated;
+
+-- This view is intentionally not granted to browser roles. Customer portal reads
+-- it only through its token-validating service-role Edge Function.
+create or replace view public.v_customer_portal_live_updates
+with (security_barrier=true)
+as
+select
+  u.id as live_update_id,
+  u.work_order_id,
+  u.update_type,
+  u.title,
+  u.message,
+  u.occurred_at,
+  u.progress_percent,
+  u.customer_notification_status,
+  coalesce(
+    jsonb_agg(
+      jsonb_build_object(
+        'asset_id', a.id,
+        'url', a.public_url,
+        'thumbnail_url', coalesce(a.thumbnail_url, a.public_url),
+        'alt_text', coalesce(a.alt_text, u.title),
+        'width', a.pixel_width,
+        'height', a.pixel_height
+      )
+      order by m.display_order, m.created_at
+    ) filter (
+      where a.id is not null
+        and a.asset_status = 'approved'
+        and coalesce(a.public_url,'') <> ''
+    ),
+    '[]'::jsonb
+  ) as media
+from public.work_order_live_updates u
+left join public.work_order_live_update_media m on m.live_update_id = u.id
+left join public.visual_asset_approval_items a on a.id = m.visual_asset_id
+where u.visibility='customer'
+  and u.update_status='published'
+group by
+  u.id, u.work_order_id, u.update_type, u.title, u.message, u.occurred_at,
+  u.progress_percent, u.customer_notification_status;
+
+-- This staff queue exposes no direct private-storage path. It is fetched only by
+-- operations-manage after an authenticated role check.
+create or replace view public.v_work_order_live_update_queue
+with (security_barrier=true)
+as
+select
+  u.id,
+  u.work_order_id,
+  wo.work_order_number,
+  wo.status as work_order_status,
+  u.client_id,
+  c.legal_name as client_name,
+  u.visibility,
+  u.update_type,
+  u.update_status,
+  u.title,
+  u.message,
+  u.occurred_at,
+  u.progress_percent,
+  u.customer_notification_status,
+  u.customer_notified_at,
+  p.full_name as author_name,
+  u.retracted_at,
+  u.retracted_by_profile_id,
+  u.retraction_reason,
+  count(m.id)::int as attached_asset_count,
+  count(m.id) filter (where a.asset_status='approved' and coalesce(a.public_url,'') <> '')::int as approved_public_asset_count,
+  u.created_at,
+  u.updated_at
+from public.work_order_live_updates u
+join public.work_orders wo on wo.id=u.work_order_id
+left join public.clients c on c.id=u.client_id
+left join public.profiles p on p.id=u.author_profile_id
+left join public.work_order_live_update_media m on m.live_update_id=u.id
+left join public.visual_asset_approval_items a on a.id=m.visual_asset_id
+group by
+  u.id, wo.work_order_number, wo.status, c.legal_name, p.full_name
+order by u.occurred_at desc, u.created_at desc;
+
+create or replace function public.ywi_rpc_create_work_order_live_update(
+  p_work_order_id uuid,
+  p_actor_profile_id uuid,
+  p_visibility text default 'staff',
+  p_update_type text default 'progress',
+  p_title text default null,
+  p_message text default null,
+  p_occurred_at timestamptz default null,
+  p_progress_percent numeric default null,
+  p_asset_ids uuid[] default '{}'::uuid[],
+  p_customer_notification_requested boolean default false,
+  p_metadata jsonb default '{}'::jsonb
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_rank integer := coalesce(public.ywi_profile_rank(p_actor_profile_id),0);
+  v_visibility text := lower(trim(coalesce(p_visibility,'staff')));
+  v_type text := lower(trim(coalesce(p_update_type,'progress')));
+  v_title text := left(trim(coalesce(p_title,'')),180);
+  v_message text := nullif(left(trim(coalesce(p_message,'')),4000),'');
+  v_work_order public.work_orders%rowtype;
+  v_update public.work_order_live_updates%rowtype;
+  v_quote_package_id uuid;
+  v_assets uuid[];
+  v_asset_count integer := 0;
+  v_public_asset_count integer := 0;
+  v_notification text := 'not_requested';
+begin
+  if v_rank < 20 then
+    raise exception 'Only a site leader or higher may record a live work update.' using errcode='42501';
+  end if;
+  if v_visibility not in ('customer','staff') then
+    raise exception 'Visibility must be customer or staff.' using errcode='22023';
+  end if;
+  if v_visibility='customer' and v_rank < 30 then
+    raise exception 'Customer-visible updates require supervisor or higher.' using errcode='42501';
+  end if;
+  if v_type not in ('arrival','progress','delay','access','completion','note') then
+    raise exception 'Unsupported live update type.' using errcode='22023';
+  end if;
+  if length(v_title) < 3 then
+    raise exception 'Live update title must contain at least 3 characters.' using errcode='22023';
+  end if;
+  if p_progress_percent is not null and (p_progress_percent < 0 or p_progress_percent > 100) then
+    raise exception 'Progress must be between 0 and 100.' using errcode='22023';
+  end if;
+
+  select * into v_work_order from public.work_orders where id=p_work_order_id for update;
+  if not found then
+    raise exception 'Work order not found.' using errcode='P0002';
+  end if;
+
+  select coalesce(array_agg(distinct asset_id), '{}'::uuid[])
+  into v_assets
+  from unnest(coalesce(p_asset_ids,'{}'::uuid[])) as asset_id;
+
+  if cardinality(v_assets) > 8 then
+    raise exception 'A live update can include at most 8 approved visual assets.' using errcode='22023';
+  end if;
+  select count(*)::int,
+         count(*) filter (where asset_status='approved' and coalesce(public_url,'') <> '')::int
+  into v_asset_count, v_public_asset_count
+  from public.visual_asset_approval_items
+  where id = any(v_assets);
+
+  if v_asset_count <> cardinality(v_assets) then
+    raise exception 'One or more selected visual assets do not exist.' using errcode='P0002';
+  end if;
+  if v_visibility='customer' and v_public_asset_count <> cardinality(v_assets) then
+    raise exception 'Customer-visible updates may attach only approved assets with a public delivery URL.' using errcode='42501';
+  end if;
+
+  if p_customer_notification_requested and v_visibility='customer' then
+    v_notification := 'queued';
+  elsif p_customer_notification_requested then
+    v_notification := 'not_available';
+  end if;
+
+  insert into public.work_order_live_updates(
+    work_order_id, client_id, author_profile_id, visibility, update_type, update_status,
+    title, message, occurred_at, progress_percent, customer_notification_status, metadata
+  )
+  values (
+    v_work_order.id, v_work_order.client_id, p_actor_profile_id, v_visibility, v_type, 'published',
+    v_title, v_message, coalesce(p_occurred_at,now()), p_progress_percent, v_notification,
+    coalesce(p_metadata,'{}'::jsonb) || jsonb_build_object('schema',155,'customer_notification_requested',coalesce(p_customer_notification_requested,false))
+  )
+  returning * into v_update;
+
+  insert into public.work_order_live_update_media(live_update_id, visual_asset_id, display_order)
+  select v_update.id, asset_id, (row_number() over ())::int
+  from unnest(v_assets) as asset_id;
+
+  if v_visibility='customer' then
+    select id into v_quote_package_id
+    from public.estimate_quote_packages
+    where estimate_id=v_work_order.estimate_id
+    order by created_at desc
+    limit 1;
+
+    insert into public.customer_portal_events(
+      quote_package_id, estimate_id, work_order_id, event_type, event_status, event_note, event_payload
+    )
+    values (
+      v_quote_package_id, v_work_order.estimate_id, v_work_order.id, 'live_work_update_published', 'completed',
+      v_title, jsonb_build_object('live_update_id',v_update.id,'update_type',v_type,'visibility','customer','media_count',cardinality(v_assets),'schema',155)
+    );
+  end if;
+
+  update public.work_orders
+  set updated_at=now()
+  where id=v_work_order.id;
+
+  return jsonb_build_object(
+    'live_update_id',v_update.id,
+    'work_order_id',v_work_order.id,
+    'visibility',v_update.visibility,
+    'update_type',v_update.update_type,
+    'update_status',v_update.update_status,
+    'asset_count',cardinality(v_assets),
+    'customer_notification_status',v_update.customer_notification_status,
+    'message',case when v_visibility='customer'
+      then 'Customer-visible work update published. It will appear in the existing secure portal when the customer refreshes.'
+      else 'Staff-only work update saved. It is not visible through the customer portal.'
+    end
+  );
+end;
+$$;
+
+create or replace function public.ywi_rpc_retract_work_order_live_update(
+  p_live_update_id uuid,
+  p_actor_profile_id uuid,
+  p_retraction_reason text default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_rank integer := coalesce(public.ywi_profile_rank(p_actor_profile_id),0);
+  v_update public.work_order_live_updates%rowtype;
+begin
+  if v_rank < 30 then
+    raise exception 'Only a supervisor or higher may retract a live work update.' using errcode='42501';
+  end if;
+  select * into v_update from public.work_order_live_updates where id=p_live_update_id for update;
+  if not found then
+    raise exception 'Live work update not found.' using errcode='P0002';
+  end if;
+  if v_update.update_status='retracted' then
+    return jsonb_build_object('already_retracted',true,'live_update_id',v_update.id,'message','Live work update was already retracted.');
+  end if;
+
+  update public.work_order_live_updates
+  set update_status='retracted',
+      retracted_at=now(),
+      retracted_by_profile_id=p_actor_profile_id,
+      retraction_reason=nullif(left(trim(coalesce(p_retraction_reason,'')),1000),''),
+      customer_notification_status=case when visibility='customer' then 'not_available' else customer_notification_status end,
+      updated_at=now()
+  where id=v_update.id;
+
+  if v_update.visibility='customer' then
+    insert into public.customer_portal_events(
+      estimate_id, work_order_id, event_type, event_status, event_note, event_payload
+    )
+    select w.estimate_id, v_update.work_order_id, 'live_work_update_retracted', 'completed',
+           nullif(left(trim(coalesce(p_retraction_reason,'')),1000),''),
+           jsonb_build_object('live_update_id',v_update.id,'schema',155)
+    from public.work_orders w where w.id=v_update.work_order_id;
+  end if;
+
+  return jsonb_build_object('live_update_id',v_update.id,'retracted',true,'message','Live work update retracted. It is no longer visible in the customer portal.');
+end;
+$$;
+
+-- Existing policy summary is extended rather than replaced with a parallel,
+-- easy-to-miss check. It retains the same result shape consumed by schema 154.
+create or replace function public.ywi_security_policy_assertions()
+returns table(assertion_key text, assertion_status text, details text)
+language sql
+security definer
+set search_path = public, storage, pg_catalog
+as $$
+  with required_tables(table_name) as (
+    values ('visual_asset_approval_items'),('accountant_handoff_exports'),('estimate_quote_packages'),
+           ('customer_deposit_requests'),('operations_staging_fixture_sets'),('content_signal_observations'),
+           ('work_order_live_updates'),('work_order_live_update_media')
+  ), checks as (
+    select 'review_assets_private'::text as assertion_key,
+      case when exists(select 1 from storage.buckets where id='review-assets' and public=false) then 'passed' else 'failed' end as assertion_status,
+      'Review uploads must remain in a private bucket until approved.'::text as details
+    union all select 'accountant_exports_private', case when exists(select 1 from storage.buckets where id='accountant-exports' and public=false) then 'passed' else 'failed' end,
+      'Accountant ZIP packages must remain private and use signed downloads.'
+    union all select 'public_assets_bucket_present', case when exists(select 1 from storage.buckets where id='public-assets' and public=true) then 'passed' else 'failed' end,
+      'Public assets may be public only after the approval-copy workflow promotes them.'
+    union all select 'sensitive_tables_rls_enabled', case when not exists(
+      select 1 from required_tables r left join pg_class c on c.relname=r.table_name and c.relnamespace='public'::regnamespace where coalesce(c.relrowsecurity,false)=false
+    ) then 'passed' else 'failed' end,
+      'Sensitive direct-data tables must have Row Level Security enabled.'
+    union all select 'portal_rpc_not_public', case when not exists(
+      select 1 from information_schema.routine_privileges rp
+      where rp.routine_schema='public' and rp.routine_name='ywi_rpc_accept_quote_package' and rp.grantee in ('anon','authenticated') and rp.privilege_type='EXECUTE'
+    ) then 'passed' else 'failed' end,
+      'Portal conversion RPC is callable only through the token-validating service function.'
+    union all select 'live_update_rpcs_not_public', case when not exists(
+      select 1 from information_schema.routine_privileges rp
+      where rp.routine_schema='public'
+        and rp.routine_name in ('ywi_rpc_create_work_order_live_update','ywi_rpc_retract_work_order_live_update')
+        and rp.grantee in ('anon','authenticated')
+        and rp.privilege_type='EXECUTE'
+    ) then 'passed' else 'failed' end,
+      'Live job updates are written only by the authenticated role-checking service function.'
+  ) select * from checks;
+$$;
+
+-- Capabilities retain server-side rank enforcement. These labels help the Cockpit
+-- explain why customer-visible updates may be unavailable to a field role.
+create or replace function public.ywi_get_operations_capabilities(p_actor_profile_id uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_role text := lower(coalesce((select role from public.profiles where id = p_actor_profile_id and coalesce(is_active,true) is true), ''));
+  v_rank integer := coalesce(public.ywi_profile_rank(p_actor_profile_id), 0);
+  v_actions jsonb;
+begin
+  select coalesce(jsonb_object_agg(action_key,
+    jsonb_build_object(
+      'label', label,
+      'minimum_role', minimum_role,
+      'minimum_rank', minimum_rank,
+      'permitted', v_rank >= minimum_rank,
+      'reason', case when v_rank >= minimum_rank then 'Allowed for your role.' else 'Requires ' || replace(minimum_role, '_', ' ') || ' or higher.' end
+    )
+  ), '{}'::jsonb)
+  into v_actions
+  from (values
+    ('payment_action_request','Create payment action','job_admin',45),
+    ('payment_action_decision','Approve, reject, or post payment','job_admin',45),
+    ('bank_csv_preview','Parse bank CSV','job_admin',45),
+    ('bank_csv_confirm_import','Promote confirmed bank rows','job_admin',45),
+    ('reconciliation_action','Process reconciliation','job_admin',45),
+    ('equipment_scan_event','Record equipment custody scan','site_leader',20),
+    ('equipment_cost_recovery_decision','Approve equipment recovery','job_admin',45),
+    ('visual_asset_register','Register visual asset','supervisor',30),
+    ('visual_asset_decision','Approve or reject visual asset','job_admin',45),
+    ('public_route_register','Save public route','job_admin',45),
+    ('public_route_decision','Approve or reject public route','job_admin',45),
+    ('public_route_publish','Publish public route and sitemap','job_admin',45),
+    ('quote_owner_assign','Assign quote owner','supervisor',30),
+    ('quote_followup_event','Record quote follow-up','supervisor',30),
+    ('dispatch_schedule','Dispatch work order','supervisor',30),
+    ('job_cost_refresh','Refresh live job cost','supervisor',30),
+    ('work_order_live_update','Record live work update','site_leader',20),
+    ('work_order_live_update_retract','Retract live work update','supervisor',30),
+    ('accountant_export_prepare','Generate accountant package','job_admin',45),
+    ('staging_fixture_create','Create disposable staging fixture','job_admin',45),
+    ('staging_fixture_cleanup','Clean disposable staging fixture','job_admin',45),
+    ('content_signal_record','Record search/local performance evidence','job_admin',45),
+    ('content_signal_decision','Decide route/content follow-up','job_admin',45),
+    ('stripe_webhook_alert_decision','Acknowledge or resolve webhook alert','job_admin',45),
+    ('release_readiness_snapshot','Capture release evidence snapshot','job_admin',45)
+  ) as permissions(action_key, label, minimum_role, minimum_rank);
+  return jsonb_build_object('actor_profile_id',p_actor_profile_id,'actor_role',coalesce(v_role,'unknown'),'actor_rank',v_rank,'actions',v_actions,'generated_at',now());
+end;
+$$;
+
+insert into public.admin_scorecard_progress_rails (
+  rail_key, rail_area, rail_title, rail_status, progress_percent,
+  current_value, target_value, next_action_hint, owner_hint, sort_order, metadata
+) values (
+  'live_job_updates','customer_experience','Live job updates with customer/staff visibility','active',82,6,7,
+  'Deploy schema 155, test staff-only versus customer-visible updates, then attach one approved public image to a portal update.',
+  'Supervisor / field lead',65,'{"build":"2026-07-05a","schema":155,"human_review":true}'::jsonb
+)
+on conflict (rail_key) do update set
+  rail_area=excluded.rail_area, rail_title=excluded.rail_title, rail_status=excluded.rail_status,
+  progress_percent=excluded.progress_percent, current_value=excluded.current_value, target_value=excluded.target_value,
+  next_action_hint=excluded.next_action_hint, owner_hint=excluded.owner_hint, sort_order=excluded.sort_order,
+  metadata=excluded.metadata, updated_at=now();
+
+-- Preserve the existing view shape so schema 154's dependent dashboard remains
+-- valid; only the target version and message change.
+create or replace view public.v_schema_drift_status as
+select 155::int as expected_schema_version,
+  coalesce(max(schema_version) filter (where status='applied'),0)::int as latest_applied_schema_version,
+  case when coalesce(max(schema_version) filter (where status='applied'),0)>=155 then 'current' else 'behind' end as drift_status,
+  case when coalesce(max(schema_version) filter (where status='applied'),0)>=155
+    then 'Live database is at or ahead of the repo schema marker.'
+    else 'Live database is behind the deployed app. Apply migrations through schema 155.' end as message,
+  now() as checked_at
+from public.app_schema_versions;
+
+insert into public.app_schema_versions(
+  schema_version, migration_key, schema_name, release_label, description, status, notes
+) values (
+  155,
+  '155_live_job_updates_customer_timeline_and_visibility',
+  '155_live_job_updates_customer_timeline_and_visibility.sql',
+  '2026-07-05a',
+  'Adds controlled live work updates, customer/staff visibility, approved public media attachments, portal timeline rendering, and update retraction safeguards.',
+  'applied',
+  'Schema 155 keeps live field updates private by default, lets supervisors publish approved customer-visible updates, and preserves an auditable retraction path.'
+)
+on conflict (schema_version) do update set
+  migration_key=excluded.migration_key, schema_name=excluded.schema_name, release_label=excluded.release_label,
+  description=excluded.description, status=excluded.status, notes=excluded.notes, applied_at=now();
+
+revoke all on function public.ywi_rpc_create_work_order_live_update(uuid,uuid,text,text,text,text,timestamptz,numeric,uuid[],boolean,jsonb) from public;
+revoke all on function public.ywi_rpc_retract_work_order_live_update(uuid,uuid,text) from public;
+grant execute on function public.ywi_rpc_create_work_order_live_update(uuid,uuid,text,text,text,text,timestamptz,numeric,uuid[],boolean,jsonb) to service_role;
+grant execute on function public.ywi_rpc_retract_work_order_live_update(uuid,uuid,text) to service_role;
+-- The Edge Functions use the service role after authenticating the portal token or
+-- staff JWT themselves. Browser roles receive no direct select permission.
+grant select on public.v_customer_portal_live_updates, public.v_work_order_live_update_queue to service_role;
+revoke all on public.v_customer_portal_live_updates, public.v_work_order_live_update_queue from anon, authenticated;
+revoke all on function public.ywi_security_policy_assertions() from public;
+grant execute on function public.ywi_security_policy_assertions() to service_role;
+
+commit;
+-- END MIGRATION: 155_live_job_updates_customer_timeline_and_visibility
 
