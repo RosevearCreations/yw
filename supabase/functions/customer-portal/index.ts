@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const BUILD = '2026-06-30a';
-const SCHEMA = 154;
+const BUILD = '2026-07-05a';
+const SCHEMA = 155;
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -30,7 +30,27 @@ async function packageByToken(supabase:any, token:string) {
   if (!data || !data.portal_enabled) throw new HttpError(404, 'This customer portal link is unavailable.');
   return data;
 }
-function publicPackage(row:any) {
+async function portalLiveUpdates(supabase:any, workOrderId:string | null | undefined) {
+  if (!workOrderId) return [];
+  const { data, error } = await supabase
+    .from('v_customer_portal_live_updates')
+    .select('live_update_id,work_order_id,update_type,title,message,occurred_at,progress_percent,customer_notification_status,media')
+    .eq('work_order_id', workOrderId)
+    .order('occurred_at', { ascending:false })
+    .limit(30);
+  if (error) throw error;
+  return (data || []).map((row:any) => ({
+    id: row.live_update_id,
+    type: row.update_type,
+    title: row.title,
+    message: row.message,
+    occurred_at: row.occurred_at,
+    progress_percent: row.progress_percent,
+    media: Array.isArray(row.media) ? row.media : []
+  }));
+}
+
+function publicPackage(row:any, liveUpdates:any[] = []) {
   return {
     quote_package_id:row.quote_package_id, package_status:row.package_status, rendered_title:row.rendered_title,
     rendered_html:row.rendered_html, rendered_markdown:row.rendered_markdown, accepted_at:row.accepted_at,
@@ -38,7 +58,8 @@ function publicPackage(row:any) {
     estimate:{ id:row.estimate_id, number:row.estimate_number, status:row.estimate_status, subtotal:money(row.subtotal), tax_total:money(row.tax_total), total:money(row.total_amount), valid_until:row.valid_until },
     customer:{ name:row.client_name },
     work_order:row.work_order_id ? { id:row.work_order_id, number:row.work_order_number, status:row.work_order_status, scheduled_start:row.scheduled_start, scheduled_end:row.scheduled_end, schedule_status:row.schedule_status } : null,
-    deposit:row.latest_deposit_request_id ? { id:row.latest_deposit_request_id, status:row.latest_deposit_status, requested_amount:money(row.latest_deposit_amount), paid_amount:money(row.latest_paid_amount), receipt_url:row.receipt_url } : null
+    deposit:row.latest_deposit_request_id ? { id:row.latest_deposit_request_id, status:row.latest_deposit_status, requested_amount:money(row.latest_deposit_amount), paid_amount:money(row.latest_paid_amount), receipt_url:row.receipt_url } : null,
+    live_updates: liveUpdates
   };
 }
 
@@ -87,11 +108,15 @@ serve(async (req) => {
       }).eq('id',pkg.quote_package_id);
       await supabase.from('quote_package_client_events').insert({ quote_package_id:pkg.quote_package_id, event_action:'viewed', event_ip:ipHash, user_agent:userAgent });
       await supabase.from('customer_portal_events').insert({ quote_package_id:pkg.quote_package_id, estimate_id:pkg.estimate_id, work_order_id:pkg.work_order_id || null, event_type:'portal_viewed', event_payload:{ build:BUILD, schema:SCHEMA, ip_hash:ipHash } });
-      return Response.json({ ok:true, portal:publicPackage(pkg) }, { headers:corsHeaders });
+      const liveUpdates = await portalLiveUpdates(supabase, pkg.work_order_id);
+      return Response.json({ ok:true, portal:publicPackage(pkg, liveUpdates) }, { headers:corsHeaders });
     }
 
     if (action === 'accept_quote') {
-      if (pkg.accepted_at) return Response.json({ ok:true, already_accepted:true, portal:publicPackage(pkg) }, { headers:corsHeaders });
+      if (pkg.accepted_at) {
+        const existingUpdates = await portalLiveUpdates(supabase, pkg.work_order_id);
+        return Response.json({ ok:true, already_accepted:true, portal:publicPackage(pkg, existingUpdates) }, { headers:corsHeaders });
+      }
       const name=clean(body.customer_name,180);
       const email=clean(body.customer_email,260).toLowerCase();
       if (name.length < 2 || !validEmail(email)) throw new HttpError(400, 'Customer name and valid email are required.');
@@ -107,7 +132,8 @@ serve(async (req) => {
         p_user_agent:userAgent
       });
       const refreshed=await packageByToken(supabase,token);
-      return Response.json({ ok:true, accepted:!acceptedResult.already_accepted, already_accepted:!!acceptedResult.already_accepted, work_order:{ id:acceptedResult.work_order_id, number:acceptedResult.work_order_number }, portal:publicPackage(refreshed), rpc:acceptedResult }, { headers:corsHeaders });
+      const liveUpdates=await portalLiveUpdates(supabase, refreshed.work_order_id);
+      return Response.json({ ok:true, accepted:!acceptedResult.already_accepted, already_accepted:!!acceptedResult.already_accepted, work_order:{ id:acceptedResult.work_order_id, number:acceptedResult.work_order_number }, portal:publicPackage(refreshed, liveUpdates), rpc:acceptedResult }, { headers:corsHeaders });
     }
 
     if (action === 'create_deposit_checkout') {

@@ -1,4 +1,4 @@
-/* Customer portal - build 2026-06-30a / schema 154
+/* Customer portal - build 2026-07-05a / schema 155
    Public token-based quote review, acceptance, hosted deposits, dispatch status,
    and follow-up requests. The protected staff shell is hidden in portal mode. */
 'use strict';
@@ -95,6 +95,53 @@
     return html || markdownToHtml(row.rendered_markdown || '') || '<p>The detailed quote document is being prepared. The totals and acceptance controls below remain current.</p>';
   }
 
+  function liveUpdateType(type) {
+    const labels = {
+      arrival: 'On the way / arrived',
+      progress: 'Work in progress',
+      delay: 'Timing update',
+      access: 'Access or site update',
+      completion: 'Work completed',
+      note: 'Service note'
+    };
+    return labels[String(type || '').toLowerCase()] || 'Service update';
+  }
+
+  function liveUpdateTimeline(updates) {
+    const rows = Array.isArray(updates) ? updates : [];
+    if (!rows.length) {
+      return `<section class="customer-portal-updates customer-portal-updates-empty" aria-label="Service updates">
+        <header><div><span class="customer-portal-kicker">Service updates</span><h2>Updates will appear here</h2></div><small>Only updates deliberately shared with you are shown.</small></header>
+        <div class="customer-portal-update-placeholder" role="img" aria-label="Live service update placeholder"><span aria-hidden="true">◌</span><p>When your crew shares an arrival, progress, timing, or completion update, it will appear in this secure portal.</p></div>
+      </section>`;
+    }
+    const items = rows.map((row) => {
+      const percent = Number(row.progress_percent);
+      const hasProgress = Number.isFinite(percent) && percent >= 0 && percent <= 100;
+      const media = Array.isArray(row.media) ? row.media : [];
+      const mediaMarkup = media.map((item) => {
+        const url = safeUrl(item?.thumbnail_url || item?.url);
+        if (!url) return '';
+        const width = Math.max(1, Number(item?.width || 1200));
+        const height = Math.max(1, Number(item?.height || 800));
+        return `<a class="customer-portal-update-media" href="${esc(safeUrl(item?.url) || url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(url)}" alt="${esc(item?.alt_text || row.title || 'Approved service update image')}" width="${width}" height="${height}" loading="lazy" decoding="async"></a>`;
+      }).filter(Boolean).join('');
+      return `<li class="customer-portal-update customer-portal-update-${esc(String(row.type || 'note').toLowerCase().replace(/[^a-z0-9-]/g, ''))}">
+        <div class="customer-portal-update-marker" aria-hidden="true">●</div>
+        <article>
+          <header><div><span>${esc(liveUpdateType(row.type))}</span><h3>${esc(row.title || 'Service update')}</h3></div><time datetime="${esc(row.occurred_at || '')}">${esc(dateTime(row.occurred_at))}</time></header>
+          ${row.message ? `<p>${esc(row.message)}</p>` : ''}
+          ${hasProgress ? `<div class="customer-portal-update-progress"><div><span>Reported progress</span><strong>${Math.round(percent)}%</strong></div><progress max="100" value="${percent}">${Math.round(percent)}%</progress></div>` : ''}
+          ${mediaMarkup ? `<div class="customer-portal-update-media-grid">${mediaMarkup}</div>` : ''}
+        </article>
+      </li>`;
+    }).join('');
+    return `<section class="customer-portal-updates" aria-label="Service updates">
+      <header><div><span class="customer-portal-kicker">Live service updates</span><h2>Work progress shared with you</h2></div><small>Staff-only notes, private review images, and internal costing are never shown here.</small></header>
+      <ol>${items}</ol>
+    </section>`;
+  }
+
   function portalNotice(message, type = 'info') {
     const el = byId('customerPortalStatus');
     if (!el) return;
@@ -112,6 +159,7 @@
     const due = Number(row.deposit_required_amount || deposit?.requested_amount || 0);
     const receiptUrl = safeUrl(deposit?.receipt_url);
     const depositPaid = ['paid','complete','completed'].includes(String(deposit?.status || row.deposit_status || '').toLowerCase());
+    const liveUpdates = Array.isArray(row.live_updates) ? row.live_updates : [];
     document.title = `${row.rendered_title || row.estimate?.number || 'Customer quote'} | Yard Weasels Inc.`;
 
     content.innerHTML = `
@@ -134,6 +182,8 @@
         <article class="customer-portal-total"><small>Total</small><strong>${money(row.estimate?.total)}</strong></article>
         <article><small>Valid until</small><strong>${esc(row.estimate?.valid_until || 'Contact us')}</strong></article>
       </section>
+
+      ${liveUpdateTimeline(liveUpdates)}
 
       <div class="customer-portal-layout">
         <article class="customer-portal-document">

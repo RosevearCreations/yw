@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const BUILD = '2026-06-30a';
-const SCHEMA = 154;
+const BUILD = '2026-07-05a';
+const SCHEMA = 155;
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-idempotency-key',
@@ -674,7 +674,8 @@ async function queuePayload(supabase: any, profile: any) {
   const queueNames: Record<string, string> = {
     quotes: 'v_quote_contact_followup_queue', payments: 'v_payment_action_workbench', bank_imports: 'v_bank_csv_import_workbench',
     reconciliation: 'v_reconciliation_action_workbench', equipment: 'v_equipment_scan_resolution_queue', equipment_service: 'v_equipment_service_cost_recovery_queue',
-    assets: 'v_visual_asset_publication_readiness', routes: 'v_public_route_publication_readiness', portal: 'v_customer_portal_quote_directory', job_costs: 'v_live_job_cost_dashboard'
+    assets: 'v_visual_asset_publication_readiness', routes: 'v_public_route_publication_readiness', portal: 'v_customer_portal_quote_directory', job_costs: 'v_live_job_cost_dashboard',
+    job_updates: 'v_work_order_live_update_queue'
   };
   const entries = await Promise.all(Object.entries(queueNames).map(async ([key, view]) => {
     const rows = await safeSelect(supabase.from(view).select('*').limit(60));
@@ -1189,6 +1190,64 @@ serve(async (req) => {
       if (error) throw error;
       await supabase.from('job_cost_live_snapshots').update({ snapshot_status: 'superseded' }).eq('job_id', jobId).neq('id', data.id).eq('snapshot_status', 'current');
       return Response.json({ ok: true, record: data }, { headers: corsHeaders });
+    }
+
+    if (action === 'work_order_live_update_create') {
+      requireRank(profile, 20, action);
+      const workOrderId = clean(body.work_order_id, 80);
+      if (!isUuid(workOrderId)) throw new HttpError(400, 'Valid work_order_id is required.');
+      const suppliedAssetIds = Array.isArray(body.asset_ids) ? body.asset_ids : [];
+      const assetIds = suppliedAssetIds.map((value) => clean(value, 80)).filter((value) => isUuid(value));
+      if (assetIds.length !== suppliedAssetIds.length) throw new HttpError(400, 'Every selected visual asset must have a valid ID.');
+      const result = await callRpc(supabase, 'ywi_rpc_create_work_order_live_update', {
+        p_work_order_id: workOrderId,
+        p_actor_profile_id: profile.id,
+        p_visibility: clean(body.visibility || 'staff', 20),
+        p_update_type: clean(body.update_type || 'progress', 40),
+        p_title: clean(body.title, 180),
+        p_message: clean(body.message, 4000) || null,
+        p_occurred_at: clean(body.occurred_at, 80) || null,
+        p_progress_percent: body.progress_percent === '' || body.progress_percent === undefined || body.progress_percent === null ? null : Number(body.progress_percent),
+        p_asset_ids: assetIds,
+        p_customer_notification_requested: body.customer_notification_requested === true,
+        p_metadata: {
+          build: BUILD,
+          schema: SCHEMA,
+          source: 'operations-manage',
+          client_request_id: clean(body.idempotency_key, 160) || null
+        }
+      });
+      await audit(supabase, {
+        operation_action: action,
+        operation_status: 'published',
+        entity_type: 'work_order_live_update',
+        entity_id: result?.live_update_id,
+        actor_profile_id: profile.id,
+        request_payload: safeRequest(body),
+        response_payload: result
+      });
+      return Response.json({ ok: true, live_update: result }, { headers: corsHeaders });
+    }
+
+    if (action === 'work_order_live_update_retract') {
+      requireRank(profile, 30, action);
+      const liveUpdateId = clean(body.live_update_id, 80);
+      if (!isUuid(liveUpdateId)) throw new HttpError(400, 'Valid live_update_id is required.');
+      const result = await callRpc(supabase, 'ywi_rpc_retract_work_order_live_update', {
+        p_live_update_id: liveUpdateId,
+        p_actor_profile_id: profile.id,
+        p_retraction_reason: clean(body.retraction_reason, 1000) || null
+      });
+      await audit(supabase, {
+        operation_action: action,
+        operation_status: 'retracted',
+        entity_type: 'work_order_live_update',
+        entity_id: liveUpdateId,
+        actor_profile_id: profile.id,
+        request_payload: safeRequest(body),
+        response_payload: result
+      });
+      return Response.json({ ok: true, live_update: result }, { headers: corsHeaders });
     }
 
     if (action === 'staging_fixture_create' || action === 'staging_fixture_cleanup') {
