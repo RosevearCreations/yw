@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Source check plus optional service-role read of schema 155 policy assertions. */
+/** Source check plus optional service-role read of schema 156 policy assertions. */
 import fs from 'node:fs';
 import process from 'node:process';
 const root = process.cwd();
