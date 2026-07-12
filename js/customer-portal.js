@@ -1,4 +1,4 @@
-/* Customer portal - build 2026-07-05a / schema 155
+/* Customer portal - build 2026-07-07a / schema 156
    Public token-based quote review, acceptance, hosted deposits, dispatch status,
    and follow-up requests. The protected staff shell is hidden in portal mode. */
 'use strict';
@@ -142,6 +142,23 @@
     </section>`;
   }
 
+  function notificationPreferencePanel(preference) {
+    const current = preference || {};
+    const enabled = current.live_work_update_email_opt_in === true;
+    const status = String(current.consent_status || 'unknown');
+    const state = enabled ? 'Email updates are on' : (status === 'withdrawn' ? 'Email updates are off' : 'Choose whether you want update emails');
+    return `<section class="customer-portal-notification-preference" aria-label="Service update email preference">
+      <header><div><span class="customer-portal-kicker">Your choice</span><h2>Service update email</h2></div><strong class="${enabled ? 'is-on' : 'is-off'}">${esc(state)}</strong></header>
+      <p>Choose whether we may email you when a supervisor publishes a customer-safe service update. The email links back to this secure portal and never includes staff-only notes, private images, access information, or internal costing.</p>
+      <form id="customerPortalNotificationPreferenceForm" class="customer-portal-form">
+        <label class="customer-portal-check"><input type="checkbox" name="live_work_update_email_opt_in" ${enabled ? 'checked' : ''}> <span>Email me when a new customer-visible service update is published.</span></label>
+        <label>Email for service updates<input type="email" name="contact_email" autocomplete="email" inputmode="email" placeholder="${current.email_configured ? 'Enter an address only to change the saved email' : 'name@example.com'}"></label>
+        <small>You can turn this off at any time. This setting applies to future customer-visible updates; it does not send old updates again.</small>
+        <button type="submit" class="secondary">Save email preference</button>
+      </form>
+    </section>`;
+  }
+
   function portalNotice(message, type = 'info') {
     const el = byId('customerPortalStatus');
     if (!el) return;
@@ -160,6 +177,7 @@
     const receiptUrl = safeUrl(deposit?.receipt_url);
     const depositPaid = ['paid','complete','completed'].includes(String(deposit?.status || row.deposit_status || '').toLowerCase());
     const liveUpdates = Array.isArray(row.live_updates) ? row.live_updates : [];
+    const notificationPreference = row.notification_preferences || {};
     document.title = `${row.rendered_title || row.estimate?.number || 'Customer quote'} | Yard Weasels Inc.`;
 
     content.innerHTML = `
@@ -184,6 +202,7 @@
       </section>
 
       ${liveUpdateTimeline(liveUpdates)}
+      ${notificationPreferencePanel(notificationPreference)}
 
       <div class="customer-portal-layout">
         <article class="customer-portal-document">
@@ -273,6 +292,29 @@
         render(response.portal);
         portalNotice('Quote accepted. Your work order has been created or linked.', 'success');
       } catch (error) { portalNotice(error?.message || 'Quote acceptance failed.', 'error'); setButtonBusy(button, false); }
+    });
+
+    const preferenceForm = byId('customerPortalNotificationPreferenceForm');
+    preferenceForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const button = preferenceForm.querySelector('button[type="submit"]');
+      const data = Object.fromEntries(new FormData(preferenceForm).entries());
+      const enabled = preferenceForm.elements.live_work_update_email_opt_in?.checked === true;
+      const email = String(data.contact_email || '').trim();
+      if (enabled && email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+        portalNotice('Enter a valid email address or leave the field empty to keep the saved address.', 'error');
+        return;
+      }
+      setButtonBusy(button, true, 'Saving…');
+      try {
+        const response = await call({ action:'set_live_update_notifications', live_work_update_email_opt_in:enabled, contact_email:email });
+        if (!response?.ok) throw new Error(response?.error || 'Email preference could not be saved.');
+        render(response.portal);
+        portalNotice(response?.notification_preferences?.message || (enabled ? 'Live service update email is enabled.' : 'Live service update email is off.'), 'success');
+      } catch (error) {
+        portalNotice(error?.message || 'Email preference could not be saved.', 'error');
+        setButtonBusy(button, false);
+      }
     });
 
     const depositButton = byId('customerPortalDepositBtn');

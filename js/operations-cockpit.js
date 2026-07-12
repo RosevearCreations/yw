@@ -1,11 +1,11 @@
-/* Operations Cockpit - schema 155
+/* Operations Cockpit - schema 156
    Live Admin work queues, row-level approvals/posting, bank promotion,
    exact reconciliation, equipment resolution, public media upload, route
    publication, quote follow-up, dispatch, deposits, and job-cost refresh. */
 'use strict';
 
 (function () {
-  const BUILD = '2026-07-05a';
+  const BUILD = '2026-07-07a';
   const RETRY_KEY = 'ywi_operations_cockpit_retry_v2';
   const DRAFT_KEY = 'ywi_operations_cockpit_draft_v2';
   let cameraStream = null;
@@ -23,6 +23,7 @@
     'quote-assign':'quote_owner_assign', 'quote-contact':'quote_followup_event',
     'portal-dispatch':'dispatch_schedule', 'job-cost-refresh':'job_cost_refresh', 'deposit-paid':'deposit_status_update',
     'job-update-retract':'work_order_live_update_retract',
+    'customer-notification-retry':'customer_notification_retry',
     'webhook-ack':'stripe_webhook_alert_decision', 'webhook-resolve':'stripe_webhook_alert_decision',
     'signal-review':'content_signal_decision', 'signal-actioned':'content_signal_decision',
     'release-readiness-capture':'release_readiness_snapshot'
@@ -299,8 +300,24 @@
     const signalWrap = byId('oc_signal_queue'); const signals = queues.content_signals || [];
     if (signalWrap) signalWrap.innerHTML = signals.length ? signals.map((row) => `<article class="oc-release-card"><header><strong>${esc(row.route_path || row.route_key || 'Unlinked route signal')}</strong><span class="${statusClass(row.source_name)}">${esc(row.source_name.replaceAll('_',' '))}</span></header><dl><div><dt>Date</dt><dd>${esc(row.observation_date || '—')}</dd></div><div><dt>Evidence</dt><dd>${Number(row.impressions || 0)} impressions · ${Number(row.clicks || 0)} clicks · pos. ${row.average_position ?? '—'}</dd></div><div><dt>Recommendation</dt><dd>${esc(short(row.recommended_next_action, 160))}</dd></div></dl>${buttons([button('Mark review','signal-review',row.id,'',true),button('Mark actioned','signal-actioned',row.id,'',true)])}</article>`).join('') : emptyQueue('No route signals awaiting a decision', 'Add a Search Console, Google Business Profile, or manual analytics observation below.');
   }
+  function renderCustomerNotificationQueue() {
+    const wrap = byId('oc_customer_notification_queue'); if (!wrap) return;
+    const rows = queues.customer_notifications || [];
+    const delivery = queues.customer_notification_delivery || {};
+    const deliveryState = delivery.enabled
+      ? (delivery.resend_configured && delivery.run_token_configured ? 'Protected e-mail delivery is configured.' : 'Delivery is enabled but one or more provider credentials are still missing.')
+      : 'E-mail delivery is off for this deployment; queued messages will not send.';
+    const deliveryBadge = delivery.enabled && delivery.resend_configured && delivery.run_token_configured ? 'ready' : 'review';
+    const cards = rows.map((row) => {
+      const actions = [];
+      if (['manual_review','failed','blocked'].includes(String(row.delivery_status || ''))) actions.push(button('Retry after review','customer-notification-retry',row.id,'',true));
+      return `<article class="oc-queue-card oc-notification-delivery-card"><header><div><strong>${esc(row.work_order_number || 'Work order')}</strong><small>${esc(row.live_update_title || row.update_type || 'Customer-visible update')}</small></div><span class="${statusClass(row.delivery_status)}">${esc(row.delivery_status || 'unknown')}</span></header><dl><div><dt>Consent</dt><dd>${esc(row.consent_status || 'unknown')} · ${row.live_work_update_opt_in ? 'email on' : 'email off'}</dd></div><div><dt>Attempts</dt><dd>${Number(row.attempt_count || 0)} of ${Number(row.max_attempts || 0)}</dd></div><div><dt>Next attempt</dt><dd>${esc(when(row.next_attempt_at))}</dd></div><div><dt>Last result</dt><dd>${esc(short(row.last_error || row.cancellation_reason || row.provider_message_id || 'Awaiting protected dispatch', 150))}</dd></div></dl>${buttons(actions)}</article>`;
+    });
+    wrap.innerHTML = `<div class="oc-notification-delivery-status"><span class="${statusClass(deliveryBadge)}">${esc(delivery.enabled ? 'delivery state' : 'delivery off')}</span><p>${esc(deliveryState)} Email addresses, portal tokens, staff notes, and private media are never shown in this queue.</p></div>${cards.length ? cards.join('') : emptyQueue('No customer e-mails awaiting review', 'Customer-visible updates require an explicit portal opt-in before delivery is queued.')}`;
+  }
+
   function renderQueues() {
-    renderRails(); renderRolePermissions(); renderOperationsHealth(); renderReleaseDashboard(); renderReleaseProof(); renderPaymentQueue(); renderBankQueue(); renderReconQueue(); renderEquipmentQueue(); renderAssetQueue(); renderRouteQueue(); renderQuoteQueue(); renderPortalQueue(); renderLiveUpdateQueue(); hydrateLiveUpdateSelects(); decoratePermissionControls();
+    renderRails(); renderRolePermissions(); renderOperationsHealth(); renderReleaseDashboard(); renderReleaseProof(); renderPaymentQueue(); renderBankQueue(); renderReconQueue(); renderEquipmentQueue(); renderAssetQueue(); renderRouteQueue(); renderQuoteQueue(); renderPortalQueue(); renderLiveUpdateQueue(); renderCustomerNotificationQueue(); hydrateLiveUpdateSelects(); decoratePermissionControls();
   }
   function hydrateBankSelects() {
     const options = `<option value="">Choose bank account</option>${(queues.banks || []).map((bank) => `<option value="${esc(bank.id)}">${esc(bank.account_name)}${bank.is_default ? ' (default)' : ''}</option>`).join('')}`;
@@ -339,7 +356,8 @@
     const occurredAt = String(data.occurred_at || '').trim();
     const occurredIso = occurredAt ? new Date(occurredAt).toISOString() : null;
     if (occurredAt && Number.isNaN(new Date(occurredAt).valueOf())) throw new Error('Choose a valid update time.');
-    await send({
+    const notificationRequested = form.elements.customer_notification_requested?.checked === true;
+    const response = await send({
       action:'work_order_live_update_create',
       idempotency_key:idem('work_update'),
       work_order_id:data.work_order_id,
@@ -350,8 +368,16 @@
       occurred_at:occurredIso,
       progress_percent:data.progress_percent === '' ? null : Number(data.progress_percent),
       asset_ids:assetIds,
-      customer_notification_requested:form.elements.customer_notification_requested?.checked === true
+      customer_notification_requested:notificationRequested
     }, data.visibility === 'customer' ? 'Customer-visible live work update' : 'Staff-only live work update');
+    const notification = response?.notification;
+    if (notificationRequested && notification?.status === 'pending_consent') {
+      status('Update published. E-mail was not queued because the customer has not opted in through the secure portal.');
+    } else if (notificationRequested && notification?.queued) {
+      status('Update published and customer e-mail is queued for protected delivery.');
+    } else if (notificationRequested && notification?.message) {
+      status(notification.message);
+    }
     form.reset();
     hydrateLiveUpdateSelects();
   }
@@ -477,6 +503,7 @@
     if (action === 'portal-dispatch') { const start = prompt('Scheduled start (YYYY-MM-DDTHH:MM):'); if (!start) return; const end = prompt('Scheduled end (YYYY-MM-DDTHH:MM):'); if (!end) return; await send({ action:'dispatch_schedule', work_order_id:id, scheduled_start:new Date(start).toISOString(), scheduled_end:new Date(end).toISOString(), schedule_status:'scheduled' }, 'Dispatch schedule'); return; }
     if (action === 'webhook-ack' || action === 'webhook-resolve') { const decision = action === 'webhook-ack' ? 'acknowledged' : 'resolved'; await send({ action:'stripe_webhook_alert_decision', alert_id:id, alert_status:decision }, `Webhook alert ${decision}`); return; }
     if (action === 'signal-review' || action === 'signal-actioned') { const decision = action === 'signal-review' ? 'review' : 'actioned'; const note = prompt(decision === 'actioned' ? 'What change was made or scheduled?' : 'Review note (optional):') || ''; await send({ action:'content_signal_decision', observation_id:id, decision_status:decision, decision_note:note }, `Route signal marked ${decision}`); return; }
+    if (action === 'customer-notification-retry') { const note = prompt('Why is this e-mail safe to retry? This note remains staff-only.'); if (!note) return; await send({ action:'customer_notification_retry', outbox_id:id, retry_note:note }, 'Re-queuing customer e-mail'); return; }
     if (action === 'job-update-retract') { const reason = prompt('Why should this live update be retracted?'); if (!reason) return; await send({ action:'work_order_live_update_retract', live_update_id:id, retraction_reason:reason }, 'Live work update retraction'); return; }
     if (action === 'deposit-paid') { status('Deposit status is webhook-controlled. Use Stripe test checkout and confirm the verified webhook health card updates.', true); return; }
     if (action === 'job-cost-refresh') { await send({ action:'job_cost_refresh', job_id:Number(id) }, 'Live job-cost refresh'); }
@@ -485,14 +512,14 @@
   function panelHtml() {
     const todayValue = new Date().toISOString().slice(0,10);
     return `<section id="operationsCockpit" class="operations-cockpit admin-panel-block" data-admin-panel-title="Operations Cockpit" aria-labelledby="oc_title">
-      <div class="section-heading operations-cockpit-heading"><div><span class="operations-kicker">Schema 155 field-to-customer update controls</span><h3 id="oc_title">Operations Cockpit</h3><p class="section-subtitle">Approve, post, reconcile, resolve, publish, schedule, and share deliberately customer-visible work progress from desktop or mobile. Failed writes keep one local retry copy.</p></div><div class="section-graphic-placeholder operations-graphic"><span aria-hidden="true">⌁</span><strong>Live workflow control</strong><small>Replace with an approved dashboard/workshop photograph after consent and image review.</small></div></div>
+      <div class="section-heading operations-cockpit-heading"><div><span class="operations-kicker">Schema 156 field-to-customer update controls</span><h3 id="oc_title">Operations Cockpit</h3><p class="section-subtitle">Approve, post, reconcile, resolve, publish, schedule, and share deliberately customer-visible work progress from desktop or mobile. Failed writes keep one local retry copy.</p></div><div class="section-graphic-placeholder operations-graphic"><span aria-hidden="true">⌁</span><strong>Live workflow control</strong><small>Replace with an approved dashboard/workshop photograph after consent and image review.</small></div></div>
       <div id="oc_status" class="operations-status" hidden aria-live="polite"></div>
       <div id="oc_retry_wrap" class="operations-retry" hidden><span id="oc_retry_text"></span><button id="oc_retry_btn" type="button">Retry saved action</button><button id="oc_retry_clear" class="secondary" type="button">Discard retry</button></div>
       <div class="operations-toolbar"><button id="oc_refresh" type="button">Refresh all live queues</button><span>Build ${BUILD}</span></div>
       <div id="oc_scorecards" class="operations-scorecards" aria-label="Implementation progress"></div><section id="oc_role_permissions" class="oc-permission-strip" aria-label="Role capability checklist"></section><section class="oc-health-grid" aria-label="Payment and release health"><div id="oc_stripe_health" class="oc-health-list"></div><div id="oc_export_readiness" class="oc-export-readiness"></div></section><section id="oc_release_dashboard" class="oc-release-dashboard" aria-label="Release readiness dashboard"></section>
       <div class="operations-grid">
         <details open><summary>Quote owners, alerts, and follow-up</summary><p class="muted">Assign each request, set a due time, and preserve every contact event.</p><div id="oc_quote_queue" class="oc-live-queue"></div></details>
-        <details open><summary>Live job updates: staff-only or customer-visible</summary><p class="muted">Site leaders may save staff-only updates. Customer-visible updates require a supervisor, show only in the secure portal, and can attach only approved public images. This does not send a payment, publish a public web page, or expose staff notes.</p><form id="oc_live_update_form" class="operations-form"><label>Work order<select name="work_order_id" data-oc-work-order-select required><option value="">Loading accepted work orders…</option></select></label><label>Visibility<select name="visibility"><option value="staff">Staff only</option><option value="customer">Customer visible (supervisor)</option></select></label><label>Update type<select name="update_type"><option value="arrival">Arrival</option><option value="progress" selected>Progress</option><option value="delay">Timing update</option><option value="access">Access/site update</option><option value="completion">Completion</option><option value="note">Service note</option></select></label><label>Progress %<input name="progress_percent" type="number" min="0" max="100" step="1" placeholder="Optional" /></label><label>When<input name="occurred_at" type="datetime-local" /></label><label class="operations-span">Update title<input name="title" maxlength="180" minlength="3" required placeholder="Example: Crew arrived and site walk-through started" /></label><label class="operations-span">Customer-safe message<textarea name="message" maxlength="4000" placeholder="Use plain language. Do not include private staff, costing, or access-code information in customer-visible updates."></textarea></label><label class="operations-span">Approved public images (optional)<select name="asset_ids" data-oc-live-update-assets multiple size="4" aria-describedby="oc_live_update_asset_help"></select><small id="oc_live_update_asset_help">Only approved public images are available here. Private review images and staff-only notes cannot be shown to customers.</small></label><label class="operations-inline-check operations-span"><input name="customer_notification_requested" type="checkbox" /> Queue a customer-notification request when delivery is configured</label><button type="submit" data-oc-permission="work_order_live_update">Save live update</button></form><h4>Live update history</h4><div id="oc_live_updates_queue" class="oc-live-queue"></div></details>
+        <details open><summary>Live job updates: staff-only or customer-visible</summary><p class="muted">Site leaders may save staff-only updates. Customer-visible updates require a supervisor, show only in the secure portal, and can attach only approved public images. This does not send a payment, publish a public web page, or expose staff notes.</p><form id="oc_live_update_form" class="operations-form"><label>Work order<select name="work_order_id" data-oc-work-order-select required><option value="">Loading accepted work orders…</option></select></label><label>Visibility<select name="visibility"><option value="staff">Staff only</option><option value="customer">Customer visible (supervisor)</option></select></label><label>Update type<select name="update_type"><option value="arrival">Arrival</option><option value="progress" selected>Progress</option><option value="delay">Timing update</option><option value="access">Access/site update</option><option value="completion">Completion</option><option value="note">Service note</option></select></label><label>Progress %<input name="progress_percent" type="number" min="0" max="100" step="1" placeholder="Optional" /></label><label>When<input name="occurred_at" type="datetime-local" /></label><label class="operations-span">Update title<input name="title" maxlength="180" minlength="3" required placeholder="Example: Crew arrived and site walk-through started" /></label><label class="operations-span">Customer-safe message<textarea name="message" maxlength="4000" placeholder="Use plain language. Do not include private staff, costing, or access-code information in customer-visible updates."></textarea></label><label class="operations-span">Approved public images (optional)<select name="asset_ids" data-oc-live-update-assets multiple size="4" aria-describedby="oc_live_update_asset_help"></select><small id="oc_live_update_asset_help">Only approved public images are available here. Private review images and staff-only notes cannot be shown to customers.</small></label><label class="operations-inline-check operations-span"><input name="customer_notification_requested" type="checkbox" /> Queue a consent-controlled customer e-mail when the customer has opted in</label><button type="submit" data-oc-permission="work_order_live_update">Save live update</button></form><h4>Live update history</h4><div id="oc_live_updates_queue" class="oc-live-queue"></div><h4>Customer e-mail delivery</h4><div id="oc_customer_notification_queue" class="oc-live-queue"></div></details>
         <details open><summary>Payment action and posting</summary><form id="oc_payment_form" class="operations-form">
           <label>Action<select name="action_type"><option value="apply_payment">Apply payment</option><option value="reverse_payment">Reverse payment</option><option value="refund">Refund</option><option value="write_off">Write-off</option><option value="overpayment_credit">Overpayment credit</option></select></label>
           <label>Ledger side<select name="ledger_side"><option value="auto">Auto resolve</option><option value="ar">Accounts receivable</option><option value="ap">Accounts payable</option></select></label>
