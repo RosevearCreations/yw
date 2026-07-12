@@ -30,6 +30,11 @@ test('customer portal contract stays isolated when a staging portal URL is suppl
   await page.goto(process.env.YWI_E2E_PORTAL_URL, { waitUntil: 'domcontentloaded' });
   await expect(page.locator('#operationsCockpit')).toHaveCount(0);
   await expect(page.locator('.customer-portal-updates')).toBeVisible();
+  const preference = page.locator('.customer-portal-notification-preference');
+  await expect(preference).toBeVisible();
+  await expect(preference).toContainText(/Service update email/i);
+  const notificationEmail = preference.locator('input[name="contact_email"]');
+  await expect(notificationEmail).toHaveValue('');
   if (process.env.YWI_E2E_PORTAL_EXPECT_LIVE_UPDATE === '1') {
     await expect(page.locator('.customer-portal-update').first()).toBeVisible({ timeout: 15000 });
     await expect(page.locator('.customer-portal-updates')).toContainText(/Live service updates/i);

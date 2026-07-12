@@ -3184,3 +3184,26 @@ body.customer-portal-mode>:not(#customerPortalView):not(script):not(style),body.
   .customer-portal-update-marker{border:1px solid CanvasText;background:Canvas;color:CanvasText}
   .customer-portal-update-media:focus-visible{outline:2px solid Highlight}
 }
+
+
+/* Build 2026-07-07a — schema 156 consent-controlled live-update email.
+   Customer preference remains a light readable portal choice. Internal delivery
+   monitoring stays in the high-contrast dark Operations Cockpit. */
+.customer-portal-notification-preference{margin:16px 0;padding:clamp(18px,3vw,28px);border:1px solid rgba(15,71,55,.16);border-radius:18px;background:#f9fdfb;box-shadow:0 10px 26px rgba(17,50,40,.05)}
+.customer-portal-notification-preference>header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding-bottom:13px;border-bottom:1px solid rgba(15,71,55,.12)}
+.customer-portal-notification-preference h2{margin:.2rem 0 0;color:#173f32;font-size:clamp(1.12rem,2.2vw,1.45rem)}
+.customer-portal-notification-preference p{margin:14px 0;color:#2d4b3d;line-height:1.56}
+.customer-portal-notification-preference strong{display:inline-flex;align-items:center;min-height:2rem;padding:.35rem .65rem;border:1px solid #b9d9c9;border-radius:999px;background:#edf8f1;color:#175e3e;font-size:.8rem;white-space:nowrap}
+.customer-portal-notification-preference strong.is-off{border-color:#d8c990;background:#fff8de;color:#745409}
+.customer-portal-notification-preference .customer-portal-form{margin-top:13px}
+.customer-portal-notification-preference .customer-portal-check{display:flex;align-items:flex-start;gap:9px;color:#173f32;font-weight:760;line-height:1.45}
+.customer-portal-notification-preference .customer-portal-check input{inline-size:1.15rem;block-size:1.15rem;margin-top:.15rem;accent-color:#20754f}
+.customer-portal-notification-preference small{display:block;color:#536a5f;line-height:1.45}
+.customer-portal-notification-preference button{justify-self:start}
+.operations-cockpit .oc-notification-delivery-status{display:flex;align-items:flex-start;gap:10px;margin:0 0 11px;padding:11px 12px;border:1px solid rgba(147,197,253,.23);border-radius:12px;background:rgba(5,16,34,.54)}
+.operations-cockpit .oc-notification-delivery-status p{margin:0;color:var(--oc-text-muted);line-height:1.46}
+.operations-cockpit .oc-notification-delivery-card{border-color:rgba(125,211,252,.24);background:linear-gradient(145deg,rgba(12,27,50,.98),rgba(14,38,61,.95))}
+.operations-cockpit .oc-notification-delivery-card header>div{display:grid;gap:3px;min-width:0}
+.operations-cockpit .oc-notification-delivery-card header small{color:var(--oc-text-muted);font-weight:700}
+@media(max-width:620px){.customer-portal-notification-preference{padding:16px}.customer-portal-notification-preference>header{flex-direction:column}.customer-portal-notification-preference button{width:100%}.operations-cockpit .oc-notification-delivery-status{flex-direction:column}}
+@media(forced-colors:active){.customer-portal-notification-preference{border:1px solid CanvasText;background:Canvas;color:CanvasText}.customer-portal-notification-preference strong{border:1px solid CanvasText;background:Canvas;color:CanvasText}.operations-cockpit .oc-notification-delivery-status,.operations-cockpit .oc-notification-delivery-card{border:1px solid CanvasText;background:Canvas;color:CanvasText}}

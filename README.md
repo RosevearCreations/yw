@@ -1,48 +1,53 @@
 # Yard Weasels Inc. Operations Platform
 
-**Current source build:** `2026-07-05a`  
-**Current database marker:** `schema 155`  
-**Release state:** source-checked, ready for a dedicated staging deployment; not verified against a live Supabase, Stripe, storage, or browser session from this workspace.
+**Current source release:** `2026-07-07a` · **Database target:** schema `156`
 
-## What this application now does
+This repository contains the public site, secure customer portal, protected Operations Cockpit, Supabase migrations, Edge Functions, and static validation scripts for Yard Weasels Inc. The active documentation is intentionally limited to this README plus the two handoff files below.
 
-The application supports one operational path instead of disconnected admin screens:
+## Active handoff
 
-`lead → quote → customer acceptance → deposit → dispatch → live work updates → job-cost evidence → invoice/payment → reconciliation → accountant package → repeat service`
+- `docs/ACTIVE_PROJECT_HANDBOOK.md` — product scope, security boundaries, current architecture, and release state.
+- `docs/NEXT_STEPS_AND_SANITY_CHECK.md` — exact staging deployment and test steps.
 
-Schema 155 adds controlled live job updates:
+Historical Markdown has been preserved under `archive/retired-markdown-2026-07-07a/`; it is reference material, not an active instruction set.
 
-- Site leaders can save staff-only arrival, progress, access, delay, completion, and service notes.
-- Supervisors can deliberately publish customer-safe updates to the existing token-protected customer portal.
-- Customer-visible updates can attach only approved public delivery assets.
-- Staff-only notes, review-stage images, access information, costing, private storage paths, and internal controls are never returned by the portal view.
-- Retraction is auditable and removes a published update from the portal rather than deleting the record.
-- A visible portal placeholder remains until a customer-safe update is actually shared.
+## Current customer-to-cash workflow
 
-## Active handoff documents
+1. Lead / quote intake and owner follow-up.
+2. Customer portal review, quote acceptance, and server-calculated deposit checkout.
+3. Dispatch, secure live job updates, staff-only operational notes, and approved customer-visible images.
+4. Optional customer email alerts for future customer-visible updates **only after explicit portal opt-in**.
+5. Payment posting, reconciliation, accountant package readiness, review request, and repeat service.
 
-Only these Markdown files are active:
+## Schema 156: customer notification delivery
 
-1. `README.md` — current release marker and operating scope.
-2. `docs/ACTIVE_PROJECT_HANDBOOK.md` — architecture, permission boundaries, business/SEO rules, and the current feature map.
-3. `docs/NEXT_STEPS_AND_SANITY_CHECK.md` — exact staging, role, portal, mobile/desktop, and post-deployment test steps.
+Schema 156 adds a private, consent-controlled email outbox for customer-visible live job updates. The feature is email-only. It does not send customer messages until all of the following are true:
 
-Historical plans, tests, and handoffs are preserved under:
+- a supervisor publishes a customer-visible update;
+- the customer has explicitly opted in through the secure portal;
+- a current email address and portal link exist;
+- the protected dispatcher has been configured in staging or production.
 
-`archive/retired-markdown-2026-07-05a/`
+The staff queue never displays customer email addresses or portal tokens. Unsent items are cancelled on opt-out; retracted/non-customer-visible updates cannot be sent; uncertain network/provider outcomes are held for manual review.
 
-Do not treat archived documents as current instructions when they conflict with these three active files.
+## Commands
 
-## Non-negotiable safety and SEO rules
+```powershell
+npm run test:repo
+npm run test:contrast
+npm run test:live-updates
+npm run test:notifications
+npm run test:staging
+```
 
-- Keep one clear H1 on every public route.
-- Publish public routes only after copy, service area, CTA, image consent, approval, canonical URL, structured data, and sitemap checks pass.
-- Do not auto-publish routes from analytics observations or create thin location pages.
-- Use original, consent-approved images with descriptive, truthful alt text. Placeholders are visual scaffolding, not proof of completed work.
-- Keep customer portal data token-protected and out of sitemaps, public route generation, and search indexing.
-- Keep staff notes, internal costs, security/access details, private review media, accounting exports, secrets, and service-role credentials out of customer and public surfaces.
-- Preserve server-side role checks and transactional RPCs for accounting, reconciliation, quote conversion, deposits, work updates, and other multi-row writes.
+`test:staging` intentionally does not write to any database unless explicit staging-only environment configuration is supplied.
 
-## Current next milestone
+## Non-negotiable release rules
 
-Deploy schema 155 and the matching updated static/Edge Function files to a **dedicated staging project**. Then complete the detailed role, privacy, portal, media, and responsive browser tests in `docs/NEXT_STEPS_AND_SANITY_CHECK.md` before moving toward production.
+- Never place Supabase service-role, Stripe secret, Resend, or run-token values in browser code, commits, public files, or chat.
+- Keep exactly one meaningful H1 on each public page.
+- Publish public routes only after the approval workflow passes; customer portals, live updates, outbox data, and staff notes are not SEO pages.
+- Treat schemas 150–156 as a staging-first transaction chain. Confirm real RLS, storage, Stripe webhook, and rendered-device behavior before production.
+
+
+Stale delivery claims older than 15 minutes are moved to manual review; they are never resent automatically.
