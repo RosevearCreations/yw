@@ -1,228 +1,144 @@
-# Next Steps and Sanity Check
+# Next Steps and Staging Sanity Check
 
-**Build:** `2026-07-05a`  
-**Schema:** `155`  
-**Purpose:** exact staging and acceptance process for the current build.
+**Release:** `2026-07-07a` · **Schema:** `156`
 
-## 1. Completed in this build
+This is the active deployment and test guide. Use a dedicated non-production Supabase project and controlled test email addresses. Do not paste credentials into chat, source files, screenshots, or public GitHub Actions logs.
 
-- Added schema 155 live job updates with staff-only/customer-visible separation.
-- Added a portal timeline that returns only published customer-visible updates and approved public media.
-- Added supervisor-only customer publication and retraction safeguards.
-- Added a staff Cockpit form and live update history queue.
-- Added portal visual placeholders and responsive styles for empty and populated update states.
-- Preserved accounting, reconciliation, quote/deposit, Stripe, media-approval, route, release-evidence, and policy safeguards from schemas 150–154.
-- Rebuilt the canonical schema reference through migrations 030–155.
-- Physically reduced active documentation to three files; archived 80 older Markdown files under `archive/retired-markdown-2026-07-05a/`.
+## 1. Confirm the starting point
 
-## 2. Source checks to run before staging
+In Supabase SQL Editor, confirm schema 155 is already present:
 
-From the extracted project folder:
+```sql
+select * from public.v_schema_drift_status;
+```
+
+The current project must report at least schema 155 before applying schema 156.
+
+## 2. Apply schema 156
+
+1. Open `sql/156_customer_notification_consent_outbox_delivery.sql`.
+2. Copy the complete file into **Supabase → SQL Editor** in the staging project.
+3. Click **Run** once. Do not run it in production first.
+4. Confirm the expected version:
+
+```sql
+select * from public.v_schema_drift_status;
+
+select assertion_key, assertion_status, details
+from public.ywi_security_policy_assertions()
+where assertion_key like 'customer_notification%';
+```
+
+Expected result: `expected_schema_version = 156`, and the customer-notification policy assertions should be `passed` after RLS/grants are in place.
+
+## 3. Deploy matching functions and static files
+
+Deploy these together so the client UI, portal, RPCs, and dispatcher agree on schema 156:
+
+- static site files including `index.html`, `style.css`, `js/operations-cockpit.js`, and `js/customer-portal.js`;
+- `operations-manage`;
+- `customer-portal`;
+- `customer-notification-dispatch`;
+- existing dependent functions: `upload-public-asset`, `stripe-webhook`, and `accountant-export`.
+
+For Supabase CLI deployments, use your project’s normal process. The important point is that `customer-notification-dispatch` remains configured as `verify_jwt = false` **only because it independently requires the dedicated run token described below**. It is not a browser endpoint.
+
+## 4. Configure staging-only secrets
+
+Create staging-only values in Supabase Edge Function secrets. Use your own controlled test email address. Typical values are:
+
+```text
+YWI_CUSTOMER_NOTIFICATION_DELIVERY_ENABLED=true
+YWI_CUSTOMER_NOTIFICATION_RUN_TOKEN=<a unique random value of at least 32 characters>
+RESEND_API_KEY=<staging Resend key>
+RESEND_FROM_EMAIL=Yard Weasels Staging <updates@your-verified-domain.example>
+PUBLIC_SITE_URL=https://your-staging-site.example
+```
+
+Do not enable delivery until the no-consent and privacy checks below have passed. This feature sends email only; do not add SMS configuration.
+
+## 5. Run source checks locally
+
+From the project root:
 
 ```powershell
 npm ci
 npm run test:repo
-npm run test:staging
 npm run test:contrast
-node scripts/live-work-updates-check.mjs
+npm run test:live-updates
+npm run test:notifications
+npm run test:staging
 ```
 
-Expected behavior without staging credentials:
+`test:staging` should either run only against explicitly configured staging fixtures or report that live work was skipped. It must never target production.
 
-- repository/static checks pass;
-- the staging harness reports that live database checks were skipped;
-- no business records are created;
-- no deployment occurs.
+## 6. Required role, privacy, and delivery test
 
-## 3. Apply schema 155 in a dedicated staging database
+Create a clearly labelled test customer, quote package, and work order such as `STAGING-NOTIFY-001`. Use a test email address controlled by the team.
 
-Do not run this in production first.
+### A. No consent means no email
 
-1. In Supabase, choose a project whose name clearly identifies it as staging.
-2. Confirm schema 154 is already applied:
+1. Sign in as a site leader.
+2. Create a staff-only update. Confirm it is not visible in the customer portal.
+3. Attempt a customer-visible update. Confirm the server denies publication for a site leader.
+4. Sign in as a supervisor. Create a customer-visible update and tick the email-request box.
+5. Confirm the Cockpit shows **pending consent** or no queued email.
+6. Confirm the test inbox receives nothing.
 
-```sql
-select * from public.v_schema_drift_status;
+### B. Customer opt-in through the secure portal
+
+1. Open the secure portal for `STAGING-NOTIFY-001`.
+2. In **Service update email**, tick the opt-in box, enter the controlled test address, and save.
+3. Refresh the portal. Confirm it says email updates are on, but does not display the saved address.
+4. Publish a new customer-visible update as a supervisor and tick the email-request box.
+5. In the Cockpit’s **Customer e-mail delivery** queue, confirm only status, consent, attempts, and error/review details are visible. The email address and portal token must not appear.
+
+### C. Run one protected delivery batch
+
+Set a local PowerShell variable without saving it in a script:
+
+```powershell
+$env:YWI_CUSTOMER_NOTIFICATION_RUN_TOKEN = '<your staging run token>'
+$functionsUrl = 'https://<your-project-ref>.functions.supabase.co'
+Invoke-RestMethod -Method Post `
+  -Uri "$functionsUrl/customer-notification-dispatch" `
+  -Headers @{ Authorization = "Bearer $env:YWI_CUSTOMER_NOTIFICATION_RUN_TOKEN" } `
+  -ContentType 'application/json' `
+  -Body '{"limit":5}'
 ```
 
-Before schema 155, the expected marker is 154/current.
+Expected result: a short summary such as `sent`, `retry_scheduled`, `manual_review`, or `blocked`, with no recipient data in the response.
 
-3. Take or verify your non-production backup/export procedure.
-4. In **Supabase Dashboard → SQL Editor**, open:
+Then verify the test email:
 
-```text
-sql/155_live_job_updates_customer_timeline_and_visibility.sql
-```
+- contains a customer-safe title/message and secure portal link only;
+- contains no staff notes, internal costs, access codes, private image links, portal token as visible text, or other customer data;
+- opens the existing secure portal.
 
-5. Paste the entire file into a new query and run it once.
-6. Verify the migration:
+### D. Opt-out and retraction protections
 
-```sql
-select * from public.v_schema_drift_status;
+1. Queue a second controlled test update but do not dispatch yet.
+2. In the portal, turn email updates off. Confirm the outbox item becomes `cancelled`; no new email is received.
+3. Publish another update with consent on, then retract it before dispatch. Run the dispatcher. Confirm the item is cancelled/blocked and nothing is emailed.
+4. For a `manual_review` or `failed` test item, confirm a site leader cannot retry it and a job admin can retry only after entering a staff-only note.
 
-select
-  assertion_key,
-  assertion_status,
-  details
-from public.ywi_security_policy_assertions()
-order by assertion_key;
+## 7. Mobile and desktop verification
 
-select public.ywi_get_operations_capabilities('YOUR_STAGING_JOB_ADMIN_PROFILE_UUID');
-```
+Test at roughly 390px, 768px, and a normal desktop width:
 
-Confirm the returned JSON contains the live-update capability entries below.
+- Operations Cockpit text, queue cards, permission chips, alerts, and email-delivery status remain readable against the dark background.
+- Queue actions stack and remain within the page width.
+- Portal preference panel has no horizontal overflow, checkbox is easy to use, and the button is full width on a phone.
+- Keyboard focus is visible on all controls.
+- Use a private/incognito window or `Ctrl + F5` to avoid stale CSS/JavaScript.
 
-Confirm the JSON contains:
+## 8. Go/no-go rule
 
-- `work_order_live_update` with minimum role `site_leader`;
-- `work_order_live_update_retract` with minimum role `supervisor`.
+Do not enable customer notification delivery in production until the staging release dashboard has current schema evidence, passed policy assertions, a successful backup/restore rehearsal, webhook health, accountant-readiness review, real role/privacy tests, and actual rendered browser/device checks.
 
-7. Confirm the new objects exist:
+## Recommended work after staging proof
 
-```sql
-select to_regclass('public.work_order_live_updates') as updates_table,
-       to_regclass('public.work_order_live_update_media') as update_media_table,
-       to_regclass('public.v_customer_portal_live_updates') as portal_view,
-       to_regclass('public.v_work_order_live_update_queue') as staff_queue;
-```
+After schema 156 passes staging, the next highest-value work is service-execution proof: capture approved arrival/completion evidence and labour/material/equipment use during dispatch, then compare job cost against the accepted estimate without exposing internal costing in the customer portal.
 
-Expected: all four cells contain their public object name rather than `NULL`.
 
-## 4. Deploy matching application files together
-
-Deploy the schema and these code/static changes as one staging release:
-
-- `index.html`
-- `style.css`
-- `server-worker.js`
-- `js/operations-cockpit.js`
-- `js/customer-portal.js`
-- `js/public-routes.js`
-- `scripts/generate-public-routes.mjs`
-- `supabase/functions/operations-manage/index.ts`
-- `supabase/functions/customer-portal/index.ts`
-- `sql/155_live_job_updates_customer_timeline_and_visibility.sql`
-
-Do not put Supabase service-role keys, Stripe secrets, portal tokens, or mail-provider credentials in browser JavaScript, Git, public route content, screenshots, or chat messages.
-
-## 5. Prepare a safe test work order
-
-Use a clearly labelled staging record, never a real customer or live work order.
-
-1. Create/accept a staging quote using the existing fixture flow or current customer portal test flow.
-2. Confirm it creates a work order.
-3. In the Operations Cockpit queue, note the work order number and verify it starts with a staging/testing identifier or is otherwise unmistakably non-production.
-4. Upload a small original test image through the normal review-media workflow.
-5. Leave one image **pending review** and approve/promote a second image through the authorized media approval flow. Do not hand-copy files into the public bucket.
-
-## 6. Role and visibility acceptance test
-
-### A. Site leader: staff-only allowed
-
-1. Sign in as a staging **site leader**.
-2. Open **Admin → Operations Cockpit → Live job updates**.
-3. Choose the safe test work order.
-4. Choose **Staff only**.
-5. Enter title: `STAGING: crew arrival note`.
-6. Enter a message that would be useful internally, such as equipment or access preparation information.
-7. Save the update.
-8. Expected result: it appears in the Cockpit live update history with `Staff only` visibility.
-9. Open the matching customer portal link in a private/incognito browser. Expected result: this update does **not** appear.
-
-### B. Site leader: customer publication denied
-
-1. Still signed in as the site leader, choose **Customer visible (supervisor)**.
-2. Use title: `STAGING: customer-visible progress attempt`.
-3. Submit.
-4. Expected result: the application rejects the action with a permission message. No customer update is created.
-
-### C. Supervisor: customer publication allowed
-
-1. Sign in as a staging **supervisor**.
-2. Open the same work order.
-3. Choose **Customer visible (supervisor)**.
-4. Choose type **Arrival** or **Progress**.
-5. Use title: `STAGING: crew has arrived`.
-6. Use a customer-safe message. Do not include access codes, names of staff members, internal costing, private equipment issues, or security details.
-7. Set progress to `20` or another reasonable number.
-8. Select only the **approved public** test image.
-9. Optionally check the notification-request box. This should only queue the request; it does not prove that email/text delivery is configured.
-10. Save.
-11. Expected result: the Cockpit lists it as `Customer visible` and shows the approved media count.
-
-### D. Customer portal: only safe content appears
-
-1. Open the matching secure customer portal URL in a private/incognito browser.
-2. Refresh the page.
-3. Expected result: the **Live service updates** section shows the supervisor update with time, progress, customer-safe message, and approved image.
-4. Confirm the staff-only update is absent.
-5. Confirm no author profile ID, internal cost, private storage path, retraction reason, internal note, or pending-review image is visible in the browser page.
-6. View page source/devtools network response only if you are comfortable doing so. The `live_updates` payload must not contain staff-only rows.
-
-### E. Pending-review image cannot be used for customer display
-
-1. As supervisor, attempt to choose the pending-review image for a customer-visible update.
-2. The Cockpit selector should not offer it.
-3. If a direct test payload is used, the server must reject it because it lacks approved status/public delivery URL.
-4. Confirm the pending-review image remains outside public storage until the normal approval/promotion process completes.
-
-### F. Retraction is auditable and removes portal output
-
-1. As supervisor, choose **Retract** on the customer-visible staging update.
-2. Enter reason: `STAGING retraction test`.
-3. Expected result: the update remains in Cockpit history as retracted, with no delete action.
-4. Refresh the customer portal.
-5. Expected result: the retracted update no longer appears.
-6. Confirm the staff-only update is still not visible.
-
-## 7. Mobile and desktop test
-
-Test both an empty portal and a portal containing one customer-visible update.
-
-1. Open the staging Operations Cockpit as a supervisor.
-2. At about **390px** browser width, verify:
-   - live update form fields stack cleanly;
-   - select boxes and Save button remain within the viewport;
-   - history cards have no clipped text or horizontal page scroll;
-   - dark Cockpit text and state badges remain readable.
-3. At about **768px**, verify form fields and update cards do not overlap.
-4. At about **1440px**, verify the Cockpit fits naturally with the existing dashboard/queue layout.
-5. Open the customer portal at the same three widths and verify:
-   - empty placeholder is readable and does not look like completed work;
-   - timeline marker, timestamp, progress bar, and approved images scale without overlap;
-   - image links work and remain inside their cards;
-   - keyboard `Tab` focus stays visible.
-
-## 8. SEO sanity check
-
-Schema 155 should not create public SEO pages from job updates.
-
-Confirm:
-
-- customer portal URLs are not added to the sitemap;
-- live update messages do not appear in generated public route pages;
-- approved public route generation remains a separate human-reviewed process;
-- public route pages still have one H1, canonical URL, useful local copy, and approved imagery;
-- any before/after or service image used publicly has consent and truthful descriptive alt text.
-
-## 9. Release blockers
-
-Do not move this build to production until all are true:
-
-- schema 155 is current in dedicated staging;
-- customer/staff visibility tests pass;
-- site-leader denial and supervisor allow checks pass;
-- pending media cannot reach the portal or public bucket;
-- customer-visible updates show only approved media;
-- retracted updates disappear from portal output but remain auditable;
-- existing payment, quote, reconciliation, media, accountant, Stripe-webhook, RLS, backup/restore, and release-evidence checks still pass;
-- Cockpit and portal have been inspected at phone, tablet, and desktop widths;
-- an authorized human has reviewed the release dashboard evidence.
-
-## 10. Highest-value next work after staging proof
-
-1. Run schema 155 and this live-update workflow in staging; fix any real RLS/storage/permission differences before more feature work.
-2. Connect customer-notification delivery only after consent, provider configuration, retry handling, and test delivery evidence exist.
-3. Replace the most valuable public placeholders with original approved service, crew, equipment, and completed-work images.
-4. Use real customer/service activity to polish dispatch timing, job-cost capture, and quote follow-up rather than adding speculative modules.
-5. Review real Search Console and Google Business Profile observations manually before changing public route priorities or copy.
+Stale delivery claims older than 15 minutes are moved to manual review; they are never resent automatically.
