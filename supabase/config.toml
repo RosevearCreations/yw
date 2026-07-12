@@ -27,3 +27,6 @@ verify_jwt = true
 
 [functions.accountant-export]
 verify_jwt = true
+
+[functions.customer-notification-dispatch]
+verify_jwt = false

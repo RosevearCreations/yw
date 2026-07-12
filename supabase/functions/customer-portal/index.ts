@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const BUILD = '2026-07-05a';
-const SCHEMA = 155;
+const BUILD = '2026-07-07a';
+const SCHEMA = 156;
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -50,7 +50,23 @@ async function portalLiveUpdates(supabase:any, workOrderId:string | null | undef
   }));
 }
 
-function publicPackage(row:any, liveUpdates:any[] = []) {
+async function portalNotificationPreference(supabase:any, clientId:string | null | undefined) {
+  if (!clientId) return { live_work_update_email_opt_in:false, consent_status:'unknown', email_configured:false };
+  const { data, error } = await supabase
+    .from('customer_notification_preferences')
+    .select('consent_status,live_work_update_opt_in,contact_email')
+    .eq('client_id', clientId)
+    .eq('channel','email')
+    .maybeSingle();
+  if (error) throw error;
+  return {
+    live_work_update_email_opt_in: !!data?.live_work_update_opt_in && data?.consent_status === 'granted',
+    consent_status: data?.consent_status || 'unknown',
+    email_configured: Boolean(clean(data?.contact_email,260))
+  };
+}
+
+function publicPackage(row:any, liveUpdates:any[] = [], notificationPreference:any = {}) {
   return {
     quote_package_id:row.quote_package_id, package_status:row.package_status, rendered_title:row.rendered_title,
     rendered_html:row.rendered_html, rendered_markdown:row.rendered_markdown, accepted_at:row.accepted_at,
@@ -59,7 +75,12 @@ function publicPackage(row:any, liveUpdates:any[] = []) {
     customer:{ name:row.client_name },
     work_order:row.work_order_id ? { id:row.work_order_id, number:row.work_order_number, status:row.work_order_status, scheduled_start:row.scheduled_start, scheduled_end:row.scheduled_end, schedule_status:row.schedule_status } : null,
     deposit:row.latest_deposit_request_id ? { id:row.latest_deposit_request_id, status:row.latest_deposit_status, requested_amount:money(row.latest_deposit_amount), paid_amount:money(row.latest_paid_amount), receipt_url:row.receipt_url } : null,
-    live_updates: liveUpdates
+    live_updates: liveUpdates,
+    notification_preferences: {
+      live_work_update_email_opt_in: !!notificationPreference?.live_work_update_email_opt_in,
+      consent_status: notificationPreference?.consent_status || 'unknown',
+      email_configured: !!notificationPreference?.email_configured
+    }
   };
 }
 
@@ -109,13 +130,15 @@ serve(async (req) => {
       await supabase.from('quote_package_client_events').insert({ quote_package_id:pkg.quote_package_id, event_action:'viewed', event_ip:ipHash, user_agent:userAgent });
       await supabase.from('customer_portal_events').insert({ quote_package_id:pkg.quote_package_id, estimate_id:pkg.estimate_id, work_order_id:pkg.work_order_id || null, event_type:'portal_viewed', event_payload:{ build:BUILD, schema:SCHEMA, ip_hash:ipHash } });
       const liveUpdates = await portalLiveUpdates(supabase, pkg.work_order_id);
-      return Response.json({ ok:true, portal:publicPackage(pkg, liveUpdates) }, { headers:corsHeaders });
+      const notificationPreference = await portalNotificationPreference(supabase, pkg.client_id);
+      return Response.json({ ok:true, portal:publicPackage(pkg, liveUpdates, notificationPreference) }, { headers:corsHeaders });
     }
 
     if (action === 'accept_quote') {
       if (pkg.accepted_at) {
         const existingUpdates = await portalLiveUpdates(supabase, pkg.work_order_id);
-        return Response.json({ ok:true, already_accepted:true, portal:publicPackage(pkg, existingUpdates) }, { headers:corsHeaders });
+        const notificationPreference = await portalNotificationPreference(supabase, pkg.client_id);
+        return Response.json({ ok:true, already_accepted:true, portal:publicPackage(pkg, existingUpdates, notificationPreference) }, { headers:corsHeaders });
       }
       const name=clean(body.customer_name,180);
       const email=clean(body.customer_email,260).toLowerCase();
@@ -133,7 +156,8 @@ serve(async (req) => {
       });
       const refreshed=await packageByToken(supabase,token);
       const liveUpdates=await portalLiveUpdates(supabase, refreshed.work_order_id);
-      return Response.json({ ok:true, accepted:!acceptedResult.already_accepted, already_accepted:!!acceptedResult.already_accepted, work_order:{ id:acceptedResult.work_order_id, number:acceptedResult.work_order_number }, portal:publicPackage(refreshed, liveUpdates), rpc:acceptedResult }, { headers:corsHeaders });
+      const notificationPreference=await portalNotificationPreference(supabase, refreshed.client_id);
+      return Response.json({ ok:true, accepted:!acceptedResult.already_accepted, already_accepted:!!acceptedResult.already_accepted, work_order:{ id:acceptedResult.work_order_id, number:acceptedResult.work_order_number }, portal:publicPackage(refreshed, liveUpdates, notificationPreference), rpc:acceptedResult }, { headers:corsHeaders });
     }
 
     if (action === 'create_deposit_checkout') {
@@ -170,6 +194,20 @@ serve(async (req) => {
         p_provider_payload:{ mode:session.mode, payment_status:session.payment_status, amount_total:session.amount_total, currency:session.currency }
       });
       return Response.json({ ok:true, checkout_url:session.url, deposit:attached.deposit || deposit, rpc:{ prepared, attached } }, { headers:corsHeaders });
+    }
+
+    if (action === 'set_live_update_notifications') {
+      const enabled = body.live_work_update_email_opt_in === true;
+      const result = await callRpc(supabase,'ywi_rpc_set_customer_live_update_email_preference',{
+        p_quote_package_id:pkg.quote_package_id,
+        p_portal_token:token,
+        p_enable:enabled,
+        p_contact_email:clean(body.contact_email,260) || null
+      });
+      const refreshed=await packageByToken(supabase,token);
+      const liveUpdates=await portalLiveUpdates(supabase, refreshed.work_order_id);
+      const notificationPreference=await portalNotificationPreference(supabase, refreshed.client_id);
+      return Response.json({ ok:true, notification_preferences:result, portal:publicPackage(refreshed, liveUpdates, notificationPreference) }, { headers:corsHeaders });
     }
 
     if (action === 'request_service') {

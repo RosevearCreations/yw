@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const BUILD = '2026-07-05a';
-const SCHEMA = 155;
+const BUILD = '2026-07-07a';
+const SCHEMA = 156;
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-idempotency-key',
@@ -675,7 +675,7 @@ async function queuePayload(supabase: any, profile: any) {
     quotes: 'v_quote_contact_followup_queue', payments: 'v_payment_action_workbench', bank_imports: 'v_bank_csv_import_workbench',
     reconciliation: 'v_reconciliation_action_workbench', equipment: 'v_equipment_scan_resolution_queue', equipment_service: 'v_equipment_service_cost_recovery_queue',
     assets: 'v_visual_asset_publication_readiness', routes: 'v_public_route_publication_readiness', portal: 'v_customer_portal_quote_directory', job_costs: 'v_live_job_cost_dashboard',
-    job_updates: 'v_work_order_live_update_queue'
+    job_updates: 'v_work_order_live_update_queue', customer_notifications: 'v_customer_notification_delivery_queue'
   };
   const entries = await Promise.all(Object.entries(queueNames).map(async ([key, view]) => {
     const rows = await safeSelect(supabase.from(view).select('*').limit(60));
@@ -708,7 +708,13 @@ async function queuePayload(supabase: any, profile: any) {
     security_policy: policyRows?.[0] || {},
     content_signals: signalRows || [],
     webhook_alerts: alertRows || [],
-    release_dashboard: releaseRows?.[0] || {}
+    release_dashboard: releaseRows?.[0] || {},
+    customer_notification_delivery: {
+      enabled: clean(Deno.env.get('YWI_CUSTOMER_NOTIFICATION_DELIVERY_ENABLED'), 20).toLowerCase() === 'true',
+      resend_configured: Boolean(clean(Deno.env.get('RESEND_API_KEY'), 8) && clean(Deno.env.get('RESEND_FROM_EMAIL') || Deno.env.get('EMAIL_FROM'), 8)),
+      run_token_configured: Boolean(clean(Deno.env.get('YWI_CUSTOMER_NOTIFICATION_RUN_TOKEN'), 24)),
+      email_only: true
+    }
   };
 }
 
@@ -1217,6 +1223,13 @@ serve(async (req) => {
           client_request_id: clean(body.idempotency_key, 160) || null
         }
       });
+      let notification: any = null;
+      if (result?.visibility === 'customer' && body.customer_notification_requested === true && result?.live_update_id) {
+        notification = await callRpc(supabase, 'ywi_rpc_enqueue_customer_live_update_notification', {
+          p_live_update_id: result.live_update_id,
+          p_actor_profile_id: profile.id
+        });
+      }
       await audit(supabase, {
         operation_action: action,
         operation_status: 'published',
@@ -1224,9 +1237,30 @@ serve(async (req) => {
         entity_id: result?.live_update_id,
         actor_profile_id: profile.id,
         request_payload: safeRequest(body),
+        response_payload: { ...result, notification }
+      });
+      return Response.json({ ok: true, live_update: result, notification }, { headers: corsHeaders });
+    }
+
+    if (action === 'customer_notification_retry') {
+      requireRank(profile, 45, action);
+      const outboxId = clean(body.outbox_id, 80);
+      if (!isUuid(outboxId)) throw new HttpError(400, 'Valid outbox_id is required.');
+      const result = await callRpc(supabase, 'ywi_rpc_retry_customer_notification', {
+        p_outbox_id: outboxId,
+        p_actor_profile_id: profile.id,
+        p_retry_note: clean(body.retry_note, 1000) || null
+      });
+      await audit(supabase, {
+        operation_action: action,
+        operation_status: result?.status || 'queued',
+        entity_type: 'customer_notification_outbox',
+        entity_id: outboxId,
+        actor_profile_id: profile.id,
+        request_payload: safeRequest(body),
         response_payload: result
       });
-      return Response.json({ ok: true, live_update: result }, { headers: corsHeaders });
+      return Response.json({ ok:true, notification:result }, { headers:corsHeaders });
     }
 
     if (action === 'work_order_live_update_retract') {
