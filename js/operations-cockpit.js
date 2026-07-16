@@ -1,11 +1,11 @@
-/* Operations Cockpit - schema 156
+/* Operations Cockpit - schema 157
    Live Admin work queues, row-level approvals/posting, bank promotion,
    exact reconciliation, equipment resolution, public media upload, route
    publication, quote follow-up, dispatch, deposits, and job-cost refresh. */
 'use strict';
 
 (function () {
-  const BUILD = '2026-07-07a';
+  const BUILD = '2026-07-12a';
   const RETRY_KEY = 'ywi_operations_cockpit_retry_v2';
   const DRAFT_KEY = 'ywi_operations_cockpit_draft_v2';
   let cameraStream = null;
@@ -23,6 +23,7 @@
     'quote-assign':'quote_owner_assign', 'quote-contact':'quote_followup_event',
     'portal-dispatch':'dispatch_schedule', 'job-cost-refresh':'job_cost_refresh', 'deposit-paid':'deposit_status_update',
     'job-update-retract':'work_order_live_update_retract',
+    'execution-proof-approve':'work_order_execution_proof_decision', 'execution-proof-reject':'work_order_execution_proof_decision',
     'customer-notification-retry':'customer_notification_retry',
     'webhook-ack':'stripe_webhook_alert_decision', 'webhook-resolve':'stripe_webhook_alert_decision',
     'signal-review':'content_signal_decision', 'signal-actioned':'content_signal_decision',
@@ -300,6 +301,23 @@
     const signalWrap = byId('oc_signal_queue'); const signals = queues.content_signals || [];
     if (signalWrap) signalWrap.innerHTML = signals.length ? signals.map((row) => `<article class="oc-release-card"><header><strong>${esc(row.route_path || row.route_key || 'Unlinked route signal')}</strong><span class="${statusClass(row.source_name)}">${esc(row.source_name.replaceAll('_',' '))}</span></header><dl><div><dt>Date</dt><dd>${esc(row.observation_date || '—')}</dd></div><div><dt>Evidence</dt><dd>${Number(row.impressions || 0)} impressions · ${Number(row.clicks || 0)} clicks · pos. ${row.average_position ?? '—'}</dd></div><div><dt>Recommendation</dt><dd>${esc(short(row.recommended_next_action, 160))}</dd></div></dl>${buttons([button('Mark review','signal-review',row.id,'',true),button('Mark actioned','signal-actioned',row.id,'',true)])}</article>`).join('') : emptyQueue('No route signals awaiting a decision', 'Add a Search Console, Google Business Profile, or manual analytics observation below.');
   }
+
+  function renderExecutionProofQueue() {
+    const wrap = byId('oc_execution_proof_queue'); if (!wrap) return;
+    const proofs = queues.execution_proofs || [];
+    const costs = queues.execution_costs || [];
+    const costCards = costs.slice(0, 8).map((row) => `<article class="oc-execution-cost-card"><header><strong>${esc(row.work_order_number || 'Work order')}</strong><span class="${statusClass(row.cost_status)}">${esc(String(row.cost_status || 'unknown').replaceAll('_',' '))}</span></header><dl><div><dt>Customer</dt><dd>${esc(row.client_name || '—')}</dd></div><div><dt>Estimate / actual</dt><dd>${money(row.accepted_estimate_total)} / ${money(row.total_actual_cost)}</dd></div><div><dt>Margin</dt><dd>${money(row.margin_amount)} · ${Number(row.margin_percent || 0).toFixed(1)}%</dd></div><div><dt>Proofs</dt><dd>${Number(row.approved_proof_count || 0)} approved · ${Number(row.submitted_proof_count || 0)} pending</dd></div></dl></article>`).join('');
+    const proofCards = proofs.slice(0, 30).map((row) => {
+      const actions = [];
+      if (row.proof_status === 'submitted') {
+        actions.push(button('Approve proof','execution-proof-approve',row.id));
+        actions.push(button('Reject proof','execution-proof-reject',row.id,'',true));
+      }
+      return `<article class="oc-queue-card oc-execution-proof-card"><header><div><strong>${esc(row.work_order_number || 'Work order')}</strong><small>${esc(row.proof_type || 'proof')} · ${esc(row.title || 'Execution proof')}</small></div><span class="${statusClass(row.proof_status)}">${esc(row.proof_status || 'unknown')}</span></header><dl><div><dt>Customer</dt><dd>${esc(row.client_name || '—')}</dd></div><div><dt>Occurred</dt><dd>${when(row.occurred_at)}</dd></div><div><dt>Customer safe</dt><dd>${row.customer_visible ? 'yes, after approval' : 'no, staff only'}</dd></div><div><dt>Internal cost</dt><dd>${money(row.total_cost)} · labour ${money(row.labour_cost_total)} · materials ${money(row.material_cost_total)} · equipment ${money(row.equipment_cost_total)}</dd></div><div><dt>Assets</dt><dd>${Number(row.approved_public_asset_count || 0)} approved public / ${Number(row.attached_asset_count || 0)} attached</dd></div><div><dt>Cost status</dt><dd>${esc(String(row.cost_status || 'awaiting proof').replaceAll('_',' '))}</dd></div></dl>${row.staff_notes ? `<p class="oc-execution-note">${esc(short(row.staff_notes, 240))}</p>` : ''}${buttons(actions)}</article>`;
+    }).join('');
+    wrap.innerHTML = `<div class="oc-execution-summary"><p>Approved proof updates internal job-cost snapshots. Customer portal proof cards show only approved customer summaries and public images; labour, material, equipment, and margin data stay in this Cockpit.</p></div>${costCards ? `<div class="oc-execution-cost-grid">${costCards}</div>` : ''}${proofCards || emptyQueue('No execution proof yet', 'Submit arrival, progress, completion, or quality proof when a dispatched crew captures real service evidence.')}`;
+  }
+
   function renderCustomerNotificationQueue() {
     const wrap = byId('oc_customer_notification_queue'); if (!wrap) return;
     const rows = queues.customer_notifications || [];
@@ -317,7 +335,7 @@
   }
 
   function renderQueues() {
-    renderRails(); renderRolePermissions(); renderOperationsHealth(); renderReleaseDashboard(); renderReleaseProof(); renderPaymentQueue(); renderBankQueue(); renderReconQueue(); renderEquipmentQueue(); renderAssetQueue(); renderRouteQueue(); renderQuoteQueue(); renderPortalQueue(); renderLiveUpdateQueue(); renderCustomerNotificationQueue(); hydrateLiveUpdateSelects(); decoratePermissionControls();
+    renderRails(); renderRolePermissions(); renderOperationsHealth(); renderReleaseDashboard(); renderReleaseProof(); renderPaymentQueue(); renderBankQueue(); renderReconQueue(); renderEquipmentQueue(); renderAssetQueue(); renderRouteQueue(); renderQuoteQueue(); renderPortalQueue(); renderLiveUpdateQueue(); renderExecutionProofQueue(); renderCustomerNotificationQueue(); hydrateLiveUpdateSelects(); decoratePermissionControls();
   }
   function hydrateBankSelects() {
     const options = `<option value="">Choose bank account</option>${(queues.banks || []).map((bank) => `<option value="${esc(bank.id)}">${esc(bank.account_name)}${bank.is_default ? ' (default)' : ''}</option>`).join('')}`;
@@ -378,6 +396,37 @@
     } else if (notificationRequested && notification?.message) {
       status(notification.message);
     }
+    form.reset();
+    hydrateLiveUpdateSelects();
+  }
+
+
+  async function handleExecutionProof(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = formData(form);
+    const assetIds = [...form.querySelectorAll('[data-oc-live-update-assets] option:checked')].map((option) => option.value).filter(Boolean);
+    const occurredAt = String(data.occurred_at || '').trim();
+    const occurredIso = occurredAt ? new Date(occurredAt).toISOString() : null;
+    if (occurredAt && Number.isNaN(new Date(occurredAt).valueOf())) throw new Error('Choose a valid proof time.');
+    await send({
+      action:'work_order_execution_proof_submit',
+      idempotency_key:idem('execution_proof'),
+      work_order_id:data.work_order_id,
+      proof_type:data.proof_type,
+      title:data.title,
+      staff_notes:data.staff_notes,
+      customer_summary:data.customer_summary,
+      customer_visible:form.elements.customer_visible?.checked === true,
+      occurred_at:occurredIso,
+      progress_percent:data.progress_percent === '' ? null : Number(data.progress_percent),
+      asset_ids:assetIds,
+      labour_minutes:Number(data.labour_minutes || 0),
+      labour_hourly_rate:Number(data.labour_hourly_rate || 0),
+      material_cost_total:Number(data.material_cost_total || 0),
+      equipment_cost_total:Number(data.equipment_cost_total || 0),
+      other_cost_total:Number(data.other_cost_total || 0)
+    }, 'Service-execution proof capture');
     form.reset();
     hydrateLiveUpdateSelects();
   }
@@ -503,6 +552,7 @@
     if (action === 'portal-dispatch') { const start = prompt('Scheduled start (YYYY-MM-DDTHH:MM):'); if (!start) return; const end = prompt('Scheduled end (YYYY-MM-DDTHH:MM):'); if (!end) return; await send({ action:'dispatch_schedule', work_order_id:id, scheduled_start:new Date(start).toISOString(), scheduled_end:new Date(end).toISOString(), schedule_status:'scheduled' }, 'Dispatch schedule'); return; }
     if (action === 'webhook-ack' || action === 'webhook-resolve') { const decision = action === 'webhook-ack' ? 'acknowledged' : 'resolved'; await send({ action:'stripe_webhook_alert_decision', alert_id:id, alert_status:decision }, `Webhook alert ${decision}`); return; }
     if (action === 'signal-review' || action === 'signal-actioned') { const decision = action === 'signal-review' ? 'review' : 'actioned'; const note = prompt(decision === 'actioned' ? 'What change was made or scheduled?' : 'Review note (optional):') || ''; await send({ action:'content_signal_decision', observation_id:id, decision_status:decision, decision_note:note }, `Route signal marked ${decision}`); return; }
+    if (action === 'execution-proof-approve' || action === 'execution-proof-reject') { const decision = action.endsWith('approve') ? 'approve' : 'reject'; const note = prompt(decision === 'approve' ? 'Approval note (optional):' : 'Why is this proof rejected?'); if (decision === 'reject' && !note) return; await send({ action:'work_order_execution_proof_decision', execution_proof_id:id, decision, decision_note:note || '' }, `Execution proof ${decision}`); return; }
     if (action === 'customer-notification-retry') { const note = prompt('Why is this e-mail safe to retry? This note remains staff-only.'); if (!note) return; await send({ action:'customer_notification_retry', outbox_id:id, retry_note:note }, 'Re-queuing customer e-mail'); return; }
     if (action === 'job-update-retract') { const reason = prompt('Why should this live update be retracted?'); if (!reason) return; await send({ action:'work_order_live_update_retract', live_update_id:id, retraction_reason:reason }, 'Live work update retraction'); return; }
     if (action === 'deposit-paid') { status('Deposit status is webhook-controlled. Use Stripe test checkout and confirm the verified webhook health card updates.', true); return; }
@@ -512,7 +562,7 @@
   function panelHtml() {
     const todayValue = new Date().toISOString().slice(0,10);
     return `<section id="operationsCockpit" class="operations-cockpit admin-panel-block" data-admin-panel-title="Operations Cockpit" aria-labelledby="oc_title">
-      <div class="section-heading operations-cockpit-heading"><div><span class="operations-kicker">Schema 156 field-to-customer update controls</span><h3 id="oc_title">Operations Cockpit</h3><p class="section-subtitle">Approve, post, reconcile, resolve, publish, schedule, and share deliberately customer-visible work progress from desktop or mobile. Failed writes keep one local retry copy.</p></div><div class="section-graphic-placeholder operations-graphic"><span aria-hidden="true">⌁</span><strong>Live workflow control</strong><small>Replace with an approved dashboard/workshop photograph after consent and image review.</small></div></div>
+      <div class="section-heading operations-cockpit-heading"><div><span class="operations-kicker">Schema 157 field proof and customer update controls</span><h3 id="oc_title">Operations Cockpit</h3><p class="section-subtitle">Approve, post, reconcile, resolve, publish, schedule, and share deliberately customer-visible work progress from desktop or mobile. Failed writes keep one local retry copy.</p></div><div class="section-graphic-placeholder operations-graphic"><span aria-hidden="true">⌁</span><strong>Live workflow control</strong><small>Replace with an approved dashboard/workshop photograph after consent and image review.</small></div></div>
       <div id="oc_status" class="operations-status" hidden aria-live="polite"></div>
       <div id="oc_retry_wrap" class="operations-retry" hidden><span id="oc_retry_text"></span><button id="oc_retry_btn" type="button">Retry saved action</button><button id="oc_retry_clear" class="secondary" type="button">Discard retry</button></div>
       <div class="operations-toolbar"><button id="oc_refresh" type="button">Refresh all live queues</button><span>Build ${BUILD}</span></div>
@@ -520,6 +570,7 @@
       <div class="operations-grid">
         <details open><summary>Quote owners, alerts, and follow-up</summary><p class="muted">Assign each request, set a due time, and preserve every contact event.</p><div id="oc_quote_queue" class="oc-live-queue"></div></details>
         <details open><summary>Live job updates: staff-only or customer-visible</summary><p class="muted">Site leaders may save staff-only updates. Customer-visible updates require a supervisor, show only in the secure portal, and can attach only approved public images. This does not send a payment, publish a public web page, or expose staff notes.</p><form id="oc_live_update_form" class="operations-form"><label>Work order<select name="work_order_id" data-oc-work-order-select required><option value="">Loading accepted work orders…</option></select></label><label>Visibility<select name="visibility"><option value="staff">Staff only</option><option value="customer">Customer visible (supervisor)</option></select></label><label>Update type<select name="update_type"><option value="arrival">Arrival</option><option value="progress" selected>Progress</option><option value="delay">Timing update</option><option value="access">Access/site update</option><option value="completion">Completion</option><option value="note">Service note</option></select></label><label>Progress %<input name="progress_percent" type="number" min="0" max="100" step="1" placeholder="Optional" /></label><label>When<input name="occurred_at" type="datetime-local" /></label><label class="operations-span">Update title<input name="title" maxlength="180" minlength="3" required placeholder="Example: Crew arrived and site walk-through started" /></label><label class="operations-span">Customer-safe message<textarea name="message" maxlength="4000" placeholder="Use plain language. Do not include private staff, costing, or access-code information in customer-visible updates."></textarea></label><label class="operations-span">Approved public images (optional)<select name="asset_ids" data-oc-live-update-assets multiple size="4" aria-describedby="oc_live_update_asset_help"></select><small id="oc_live_update_asset_help">Only approved public images are available here. Private review images and staff-only notes cannot be shown to customers.</small></label><label class="operations-inline-check operations-span"><input name="customer_notification_requested" type="checkbox" /> Queue a consent-controlled customer e-mail when the customer has opted in</label><button type="submit" data-oc-permission="work_order_live_update">Save live update</button></form><h4>Live update history</h4><div id="oc_live_updates_queue" class="oc-live-queue"></div><h4>Customer e-mail delivery</h4><div id="oc_customer_notification_queue" class="oc-live-queue"></div></details>
+        <details open><summary>Service-execution proof and internal job cost</summary><p class="muted">Capture arrival/completion evidence plus labour, material, equipment, and other costs. Customer-visible proof requires approved public images and a customer-safe summary; internal costs never appear in the portal.</p><form id="oc_execution_proof_form" class="operations-form"><label>Work order<select name="work_order_id" data-oc-work-order-select required><option value="">Loading accepted work orders…</option></select></label><label>Proof type<select name="proof_type"><option value="arrival">Arrival</option><option value="progress">Progress</option><option value="completion">Completion</option><option value="quality">Quality check</option><option value="material">Material use</option><option value="equipment">Equipment use</option><option value="expense">Other expense</option><option value="note">Service note</option></select></label><label>Progress %<input name="progress_percent" type="number" min="0" max="100" step="1" placeholder="Optional" /></label><label>When<input name="occurred_at" type="datetime-local" /></label><label>Labour minutes<input name="labour_minutes" type="number" min="0" step="1" value="0" /></label><label>Labour hourly cost<input name="labour_hourly_rate" type="number" min="0" step="0.01" value="0" /></label><label>Material cost<input name="material_cost_total" type="number" min="0" step="0.01" value="0" /></label><label>Equipment cost<input name="equipment_cost_total" type="number" min="0" step="0.01" value="0" /></label><label>Other cost<input name="other_cost_total" type="number" min="0" step="0.01" value="0" /></label><label class="operations-span">Proof title<input name="title" maxlength="180" minlength="3" required placeholder="Example: Arrival walkaround completed" /></label><label class="operations-span">Staff notes<textarea name="staff_notes" maxlength="4000" placeholder="Internal proof notes, cost context, issue notes, or crew details. Never shown to customers."></textarea></label><label class="operations-span">Customer-safe summary<textarea name="customer_summary" maxlength="1500" placeholder="Optional summary shown only after supervisor approval if customer-visible is checked. Do not include costs or access details."></textarea></label><label class="operations-span">Approved public images (optional)<select name="asset_ids" data-oc-live-update-assets multiple size="4"></select><small>Customer-visible proof may use only approved public images. Private review media stays internal.</small></label><label class="operations-inline-check operations-span"><input name="customer_visible" type="checkbox" /> After supervisor approval, show this proof summary in the secure customer portal</label><button type="submit" data-oc-permission="work_order_execution_proof_submit">Capture service proof</button></form><h4>Execution proof and cost review</h4><div id="oc_execution_proof_queue" class="oc-live-queue"></div></details>
         <details open><summary>Payment action and posting</summary><form id="oc_payment_form" class="operations-form">
           <label>Action<select name="action_type"><option value="apply_payment">Apply payment</option><option value="reverse_payment">Reverse payment</option><option value="refund">Refund</option><option value="write_off">Write-off</option><option value="overpayment_credit">Overpayment credit</option></select></label>
           <label>Ledger side<select name="ledger_side"><option value="auto">Auto resolve</option><option value="ar">Accounts receivable</option><option value="ap">Accounts payable</option></select></label>
@@ -538,6 +589,7 @@
 
   function bind() {
     byId('oc_live_update_form')?.addEventListener('submit', (e) => handleLiveUpdate(e).catch((err) => status(err?.message || 'Live work update failed.', true)));
+    byId('oc_execution_proof_form')?.addEventListener('submit', (e) => handleExecutionProof(e).catch((err) => status(err?.message || 'Service-execution proof failed.', true)));
     byId('oc_payment_form')?.addEventListener('submit', (e) => handlePayment(e).catch(() => {}));
     byId('oc_bank_form')?.addEventListener('submit', (e) => handleBankPreview(e).catch((err) => status(err.message, true)));
     byId('oc_bank_confirm')?.addEventListener('click', () => handleBankConfirm().catch((err) => status(err.message, true)));

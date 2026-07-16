@@ -1,4 +1,4 @@
-/* Customer portal - build 2026-07-07a / schema 156
+/* Customer portal - build 2026-07-12a / schema 157
    Public token-based quote review, acceptance, hosted deposits, dispatch status,
    and follow-up requests. The protected staff shell is hidden in portal mode. */
 'use strict';
@@ -142,6 +142,27 @@
     </section>`;
   }
 
+
+  function executionProofTimeline(proofs) {
+    const rows = Array.isArray(proofs) ? proofs : [];
+    if (!rows.length) return '';
+    const labels = { arrival:'Arrival proof', progress:'Progress proof', completion:'Completion proof', quality:'Quality check', material:'Material update', equipment:'Equipment update', expense:'Service expense note', note:'Service proof' };
+    const items = rows.map((row) => {
+      const percent = Number(row.progress_percent);
+      const hasProgress = Number.isFinite(percent) && percent >= 0 && percent <= 100;
+      const media = Array.isArray(row.media) ? row.media : [];
+      const mediaMarkup = media.map((item) => {
+        const url = safeUrl(item?.thumbnail_url || item?.url);
+        if (!url) return '';
+        const width = Math.max(1, Number(item?.width || 1200));
+        const height = Math.max(1, Number(item?.height || 800));
+        return `<a class="customer-portal-update-media" href="${esc(safeUrl(item?.url) || url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(url)}" alt="${esc(item?.alt_text || row.title || 'Approved service proof image')}" width="${width}" height="${height}" loading="lazy" decoding="async"></a>`;
+      }).filter(Boolean).join('');
+      return `<li class="customer-portal-proof"><article><header><div><span>${esc(labels[String(row.type || '').toLowerCase()] || 'Service proof')}</span><h3>${esc(row.title || 'Approved service proof')}</h3></div><time datetime="${esc(row.occurred_at || '')}">${esc(dateTime(row.occurred_at))}</time></header>${row.customer_summary ? `<p>${esc(row.customer_summary)}</p>` : ''}${hasProgress ? `<div class="customer-portal-update-progress"><div><span>Reported progress</span><strong>${Math.round(percent)}%</strong></div><progress max="100" value="${percent}">${Math.round(percent)}%</progress></div>` : ''}${mediaMarkup ? `<div class="customer-portal-update-media-grid">${mediaMarkup}</div>` : ''}</article></li>`;
+    }).join('');
+    return `<section class="customer-portal-proofs" aria-label="Approved service proof"><header><div><span class="customer-portal-kicker">Approved proof</span><h2>Arrival, completion, and service evidence</h2></div><small>Only customer-safe summaries and approved public images are shown. Labour, material, equipment, and margin data stay internal.</small></header><ol>${items}</ol></section>`;
+  }
+
   function notificationPreferencePanel(preference) {
     const current = preference || {};
     const enabled = current.live_work_update_email_opt_in === true;
@@ -178,6 +199,7 @@
     const depositPaid = ['paid','complete','completed'].includes(String(deposit?.status || row.deposit_status || '').toLowerCase());
     const liveUpdates = Array.isArray(row.live_updates) ? row.live_updates : [];
     const notificationPreference = row.notification_preferences || {};
+    const executionProofs = Array.isArray(row.execution_proofs) ? row.execution_proofs : [];
     document.title = `${row.rendered_title || row.estimate?.number || 'Customer quote'} | Yard Weasels Inc.`;
 
     content.innerHTML = `
@@ -202,6 +224,7 @@
       </section>
 
       ${liveUpdateTimeline(liveUpdates)}
+      ${executionProofTimeline(executionProofs)}
       ${notificationPreferencePanel(notificationPreference)}
 
       <div class="customer-portal-layout">
