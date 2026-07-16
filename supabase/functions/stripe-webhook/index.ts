@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const BUILD='2026-07-07a';
-const SCHEMA=156;
+const BUILD='2026-07-12a';
+const SCHEMA=157;
 const jsonHeaders={ 'Content-Type':'application/json' };
 const clean=(v:unknown,max=1000)=>String(v ?? '').trim().slice(0,max);
 const money=(v:unknown)=>{const n=Number(v);return Number.isFinite(n)?Number(n.toFixed(2)):0;};

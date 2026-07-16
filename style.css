@@ -3186,7 +3186,7 @@ body.customer-portal-mode>:not(#customerPortalView):not(script):not(style),body.
 }
 
 
-/* Build 2026-07-07a — schema 156 consent-controlled live-update email.
+/* Build 2026-07-12a — schema 157 service-execution proof and consent-controlled live-update email.
    Customer preference remains a light readable portal choice. Internal delivery
    monitoring stays in the high-contrast dark Operations Cockpit. */
 .customer-portal-notification-preference{margin:16px 0;padding:clamp(18px,3vw,28px);border:1px solid rgba(15,71,55,.16);border-radius:18px;background:#f9fdfb;box-shadow:0 10px 26px rgba(17,50,40,.05)}
@@ -3207,3 +3207,30 @@ body.customer-portal-mode>:not(#customerPortalView):not(script):not(style),body.
 .operations-cockpit .oc-notification-delivery-card header small{color:var(--oc-text-muted);font-weight:700}
 @media(max-width:620px){.customer-portal-notification-preference{padding:16px}.customer-portal-notification-preference>header{flex-direction:column}.customer-portal-notification-preference button{width:100%}.operations-cockpit .oc-notification-delivery-status{flex-direction:column}}
 @media(forced-colors:active){.customer-portal-notification-preference{border:1px solid CanvasText;background:Canvas;color:CanvasText}.customer-portal-notification-preference strong{border:1px solid CanvasText;background:Canvas;color:CanvasText}.operations-cockpit .oc-notification-delivery-status,.operations-cockpit .oc-notification-delivery-card{border:1px solid CanvasText;background:Canvas;color:CanvasText}}
+
+/* Schema 157 service-execution proof and cost-review surfaces */
+.operations-cockpit .oc-execution-summary{display:flex;gap:10px;margin:0 0 12px;padding:12px 14px;border:1px solid rgba(125,211,252,.22);border-radius:13px;background:rgba(5,16,34,.54);color:var(--oc-text-muted);line-height:1.48}
+.operations-cockpit .oc-execution-cost-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.operations-cockpit .oc-execution-cost-card{display:grid;gap:10px;padding:13px;border:1px solid rgba(147,197,253,.24);border-radius:13px;background:linear-gradient(145deg,rgba(12,27,50,.96),rgba(14,38,61,.92));color:var(--oc-text)}
+.operations-cockpit .oc-execution-cost-card header,.operations-cockpit .oc-execution-proof-card header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(191,219,254,.14);padding-bottom:8px}
+.operations-cockpit .oc-execution-cost-card dl,.operations-cockpit .oc-execution-proof-card dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0}
+.operations-cockpit .oc-execution-cost-card dl>div,.operations-cockpit .oc-execution-proof-card dl>div{min-width:0;padding:9px;border:1px solid rgba(191,219,254,.14);border-radius:10px;background:rgba(5,16,34,.38)}
+.operations-cockpit .oc-execution-cost-card dt,.operations-cockpit .oc-execution-proof-card dt{color:var(--oc-text-faint);font-size:.72rem;text-transform:uppercase;font-weight:850;letter-spacing:.04em}
+.operations-cockpit .oc-execution-cost-card dd,.operations-cockpit .oc-execution-proof-card dd{margin:.2rem 0 0;color:var(--oc-text);overflow-wrap:anywhere}
+.operations-cockpit .oc-execution-proof-card{border-color:rgba(125,211,252,.24);background:linear-gradient(145deg,rgba(12,27,50,.98),rgba(14,38,61,.95))}
+.operations-cockpit .oc-execution-proof-card header>div{display:grid;gap:3px;min-width:0}
+.operations-cockpit .oc-execution-proof-card header small{color:var(--oc-text-muted);font-weight:700}
+.operations-cockpit .oc-execution-note{margin:12px 0 0;padding:10px 12px;border-left:3px solid rgba(125,211,252,.72);border-radius:0 9px 9px 0;background:rgba(15,47,76,.54);color:var(--oc-text-muted);line-height:1.45}
+.customer-portal-proofs{margin:18px 0;padding:clamp(18px,3vw,30px);border:1px solid rgba(13,71,91,.16);border-radius:18px;background:#f8fcff;box-shadow:0 10px 26px rgba(20,55,70,.05)}
+.customer-portal-proofs>header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}
+.customer-portal-proofs h2{margin:.2rem 0 0;color:#17354a;font-size:clamp(1.16rem,2.2vw,1.55rem)}
+.customer-portal-proofs small{color:#4f6472;line-height:1.45}
+.customer-portal-proofs ol{display:grid;gap:12px;margin:0;padding:0;list-style:none}
+.customer-portal-proof article{padding:15px;border:1px solid rgba(13,71,91,.15);border-radius:15px;background:#ffffff}
+.customer-portal-proof header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:9px}
+.customer-portal-proof header span{display:block;color:#25637d;font-size:.76rem;font-weight:850;text-transform:uppercase;letter-spacing:.045em}
+.customer-portal-proof h3{margin:.15rem 0 0;color:#17354a;font-size:1.04rem}
+.customer-portal-proof p{margin:.55rem 0 0;color:#304d5c;line-height:1.55}
+@media(max-width:760px){.operations-cockpit .oc-execution-cost-grid,.operations-cockpit .oc-execution-cost-card dl,.operations-cockpit .oc-execution-proof-card dl{grid-template-columns:1fr}.customer-portal-proofs>header,.customer-portal-proof header{flex-direction:column}}
+@media(forced-colors:active){.operations-cockpit .oc-execution-summary,.operations-cockpit .oc-execution-cost-card,.operations-cockpit .oc-execution-proof-card,.customer-portal-proofs,.customer-portal-proof article{border:1px solid CanvasText;background:Canvas;color:CanvasText}}
+

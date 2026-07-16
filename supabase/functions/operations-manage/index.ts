@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const BUILD = '2026-07-07a';
-const SCHEMA = 156;
+const BUILD = '2026-07-12a';
+const SCHEMA = 157;
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-idempotency-key',
@@ -675,7 +675,7 @@ async function queuePayload(supabase: any, profile: any) {
     quotes: 'v_quote_contact_followup_queue', payments: 'v_payment_action_workbench', bank_imports: 'v_bank_csv_import_workbench',
     reconciliation: 'v_reconciliation_action_workbench', equipment: 'v_equipment_scan_resolution_queue', equipment_service: 'v_equipment_service_cost_recovery_queue',
     assets: 'v_visual_asset_publication_readiness', routes: 'v_public_route_publication_readiness', portal: 'v_customer_portal_quote_directory', job_costs: 'v_live_job_cost_dashboard',
-    job_updates: 'v_work_order_live_update_queue', customer_notifications: 'v_customer_notification_delivery_queue'
+    job_updates: 'v_work_order_live_update_queue', customer_notifications: 'v_customer_notification_delivery_queue', execution_proofs: 'v_work_order_execution_proof_queue', execution_costs: 'v_work_order_execution_cost_dashboard'
   };
   const entries = await Promise.all(Object.entries(queueNames).map(async ([key, view]) => {
     const rows = await safeSelect(supabase.from(view).select('*').limit(60));
@@ -1240,6 +1240,49 @@ serve(async (req) => {
         response_payload: { ...result, notification }
       });
       return Response.json({ ok: true, live_update: result, notification }, { headers: corsHeaders });
+    }
+
+
+    if (action === 'work_order_execution_proof_submit') {
+      requireRank(profile, 20, action);
+      const workOrderId = clean(body.work_order_id, 80);
+      if (!isUuid(workOrderId)) throw new HttpError(400, 'Valid work_order_id is required.');
+      const assetIds = arrayValue(body.asset_ids).map((value) => clean(value, 80)).filter(isUuid);
+      const result = await callRpc(supabase, 'ywi_rpc_submit_work_order_execution_proof', {
+        p_work_order_id: workOrderId,
+        p_actor_profile_id: profile.id,
+        p_proof_type: clean(body.proof_type || 'progress', 40),
+        p_title: clean(body.title, 180),
+        p_staff_notes: clean(body.staff_notes, 4000) || null,
+        p_customer_summary: clean(body.customer_summary, 1500) || null,
+        p_customer_visible: body.customer_visible === true,
+        p_occurred_at: clean(body.occurred_at, 80) || null,
+        p_progress_percent: body.progress_percent === null || body.progress_percent === '' || body.progress_percent === undefined ? null : money(body.progress_percent),
+        p_asset_ids: assetIds,
+        p_labour_minutes: int(body.labour_minutes, 0),
+        p_labour_hourly_rate: money(body.labour_hourly_rate),
+        p_material_cost_total: money(body.material_cost_total),
+        p_equipment_cost_total: money(body.equipment_cost_total),
+        p_other_cost_total: money(body.other_cost_total),
+        p_metadata: { build: BUILD, schema: SCHEMA, idempotency_key: idempotencyKey(req, body, 'execution-proof') }
+      });
+      await audit(supabase, { operation_action: action, operation_status: 'submitted', entity_type: 'work_order_execution_proof', entity_id: result.execution_proof_id, actor_profile_id: profile.id, request_payload: safeRequest(body), response_payload: result });
+      return Response.json({ ok: true, proof: result }, { headers: corsHeaders });
+    }
+
+    if (action === 'work_order_execution_proof_decision') {
+      requireRank(profile, 30, action);
+      const proofId = clean(body.execution_proof_id, 80);
+      if (!isUuid(proofId)) throw new HttpError(400, 'Valid execution_proof_id is required.');
+      const decision = clean(body.decision || '', 40);
+      const result = await callRpc(supabase, 'ywi_rpc_decide_work_order_execution_proof', {
+        p_execution_proof_id: proofId,
+        p_actor_profile_id: profile.id,
+        p_decision: decision,
+        p_decision_note: clean(body.decision_note, 1200) || null
+      });
+      await audit(supabase, { operation_action: action, operation_status: decision || result.proof_status, entity_type: 'work_order_execution_proof', entity_id: proofId, actor_profile_id: profile.id, request_payload: safeRequest(body), response_payload: result });
+      return Response.json({ ok: true, proof: result }, { headers: corsHeaders });
     }
 
     if (action === 'customer_notification_retry') {

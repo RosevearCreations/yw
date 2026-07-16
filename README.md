@@ -1,53 +1,31 @@
-# Yard Weasels Inc. Operations Platform
+# YWI Operations Platform
 
-**Current source release:** `2026-07-07a` · **Database target:** schema `156`
+**Current source handoff:** `2026-07-12a`  
+**Database target:** schema `157`  
+**Current focus:** service-execution proof, approved customer-safe evidence, and internal estimate-versus-actual job costing.
 
-This repository contains the public site, secure customer portal, protected Operations Cockpit, Supabase migrations, Edge Functions, and static validation scripts for Yard Weasels Inc. The active documentation is intentionally limited to this README plus the two handoff files below.
+This repository is the active source package for the Yard Weasels Inc. operations platform. It combines quote intake, customer portal, deposits, dispatch, live job updates, consent-controlled customer email, media approval, accounting/reconciliation controls, accountant handoff, public route SEO, release evidence, and now service-execution proof.
 
-## Active handoff
+## Active documentation
 
-- `docs/ACTIVE_PROJECT_HANDBOOK.md` — product scope, security boundaries, current architecture, and release state.
-- `docs/NEXT_STEPS_AND_SANITY_CHECK.md` — exact staging deployment and test steps.
+Only these Markdown files are active:
 
-Historical Markdown has been preserved under `archive/retired-markdown-2026-07-07a/`; it is reference material, not an active instruction set.
+1. `README.md`
+2. `docs/ACTIVE_PROJECT_HANDBOOK.md`
+3. `docs/NEXT_STEPS_AND_SANITY_CHECK.md`
 
-## Current customer-to-cash workflow
+Historical Markdown files are preserved under `archive/retired-markdown-2026-07-12a/`.
 
-1. Lead / quote intake and owner follow-up.
-2. Customer portal review, quote acceptance, and server-calculated deposit checkout.
-3. Dispatch, secure live job updates, staff-only operational notes, and approved customer-visible images.
-4. Optional customer email alerts for future customer-visible updates **only after explicit portal opt-in**.
-5. Payment posting, reconciliation, accountant package readiness, review request, and repeat service.
+## Schema 157 summary
 
-## Schema 156: customer notification delivery
+Schema 157 adds service-execution proof and cost capture:
 
-Schema 156 adds a private, consent-controlled email outbox for customer-visible live job updates. The feature is email-only. It does not send customer messages until all of the following are true:
+- site leaders can submit arrival, progress, completion, quality, material, equipment, expense, or note proof;
+- supervisors approve or reject proof;
+- approved proof updates internal labour, material, equipment, other cost, margin, and estimate-versus-actual dashboards;
+- approved customer-visible proof can show a customer-safe summary and approved public images in the secure portal;
+- staff notes, labour, material, equipment cost, margin, and internal variance never appear in the customer portal or public SEO routes.
 
-- a supervisor publishes a customer-visible update;
-- the customer has explicitly opted in through the secure portal;
-- a current email address and portal link exist;
-- the protected dispatcher has been configured in staging or production.
+## Release boundary
 
-The staff queue never displays customer email addresses or portal tokens. Unsent items are cancelled on opt-out; retracted/non-customer-visible updates cannot be sent; uncertain network/provider outcomes are held for manual review.
-
-## Commands
-
-```powershell
-npm run test:repo
-npm run test:contrast
-npm run test:live-updates
-npm run test:notifications
-npm run test:staging
-```
-
-`test:staging` intentionally does not write to any database unless explicit staging-only environment configuration is supplied.
-
-## Non-negotiable release rules
-
-- Never place Supabase service-role, Stripe secret, Resend, or run-token values in browser code, commits, public files, or chat.
-- Keep exactly one meaningful H1 on each public page.
-- Publish public routes only after the approval workflow passes; customer portals, live updates, outbox data, and staff notes are not SEO pages.
-- Treat schemas 150–156 as a staging-first transaction chain. Confirm real RLS, storage, Stripe webhook, and rendered-device behavior before production.
-
-
-Stale delivery claims older than 15 minutes are moved to manual review; they are never resent automatically.
+The source package is statically checked. Live Supabase migrations, RLS/storage behavior, Stripe/Resend delivery, and authenticated browser/device rendering still require staging credentials and the test process in `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
