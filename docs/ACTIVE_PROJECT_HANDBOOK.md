@@ -1,57 +1,48 @@
-# Active Project Handbook — Yard Weasels Inc.
+# Active Project Handbook
 
-**Current release:** `2026-07-07a` · **Schema target:** `156` · **Status:** source-checked, pending live staging proof.
+**Release:** `2026-07-12a`  
+**Schema target:** `157`  
+**Business model:** local service operations with quote intake, customer portal, deposits, dispatch, proof-of-work, internal job costing, accountant handoff, and approved local SEO pages.
 
-## What this platform is for
+## Current direction
 
-Yard Weasels Inc. is being built as a practical field-service system: lead to quote, quote to accepted work order, dispatch, proof of work, deposits and accounting, customer communication, and repeat maintenance. Public marketing pages remain separate from secure customer and staff surfaces.
+The platform is moving from separate admin forms toward one controlled field-service workflow:
 
-## Current operating surfaces
+1. Quote request and owner follow-up.
+2. Customer portal quote review and acceptance.
+3. Stripe-hosted deposit request with webhook-controlled paid status.
+4. Dispatch scheduling and live staff/customer updates.
+5. Consent-controlled customer email notifications.
+6. Service-execution proof with arrival/completion evidence and internal cost capture.
+7. Accountant-ready export and release-readiness evidence.
+8. Approved public route pages and sitemap entries only after SEO and media gates pass.
 
-### Public website
+## Schema 157 service-execution proof
 
-- Local service pages, one clear H1 per page, approved imagery, descriptive alt text, canonical URLs, structured data that matches visible content, and approved sitemap entries.
-- Public routes are generated only after approval. Customer portals, job updates, internal queues, accounting, and private media do not enter sitemaps or public navigation.
+Schema 157 adds a proof and internal costing layer:
 
-### Customer portal
+- `work_order_execution_proofs` records arrival, progress, completion, quality, material, equipment, expense, and service-note proof.
+- `work_order_execution_proof_media` links approved visual assets to proof records.
+- `v_work_order_execution_cost_dashboard` compares approved actual labour/material/equipment/other cost against the accepted work-order estimate.
+- `v_work_order_execution_proof_queue` feeds the Operations Cockpit review queue.
+- `v_customer_portal_execution_proofs` exposes only approved customer-safe proof summaries and approved public images.
+- `ywi_rpc_submit_work_order_execution_proof` requires site leader or higher.
+- `ywi_rpc_decide_work_order_execution_proof` requires supervisor or higher.
 
-- Token-protected quote review and acceptance.
-- Server-calculated deposit requests and Stripe Checkout handoff.
-- Work-order schedule status, customer-safe live job timeline, and approved public images only.
-- Schema 156 preference panel for explicit future live-update email opt-in/out.
+Customer portal proof is private portal content, not public SEO content. It must never expose staff notes, costs, access details, margin, or private-review media.
 
-### Operations Cockpit
+## SEO direction
 
-- Role-aware accounting, reconciliation, equipment, media, route, quote, dispatch, job-cost, release-readiness, and live-work-update queues.
-- Cockpit is dark-surface by design with explicit text/state colours and mobile stacking rules.
-- Customer email delivery queue exposes status, attempts, consent state, and retry controls—not addresses, tokens, staff notes, or private media.
+Public SEO remains separate from customer portal content. Public pages need one clear H1, useful local-service copy, approved original images, descriptive alt text, canonical URLs, visible content matching structured data, and sitemap entries only after approval. Do not mass-publish thin automated pages.
 
-## Security and privacy boundaries
+## Security and payment boundaries
 
-- Customer-visible live updates require supervisor authority; staff updates remain staff-only.
-- Customer-visible update media must be approved for public delivery.
-- Private review uploads remain in `review-assets` until approval copies them to public delivery.
-- Schema 156 uses direct-table RLS, service-role-only notification RPCs, a token-protected portal preference action, and a separately protected scheduler endpoint.
-- Opting out cancels unsent customer emails. A retracted update cannot dispatch. Provider/network uncertainty is placed in `manual_review` instead of silently retrying a possible duplicate email.
-- Stripe payment status remains webhook-controlled. Do not manually mark hosted deposits paid.
+- Stripe deposit status remains webhook-controlled.
+- Customer notification delivery requires explicit portal opt-in and a protected dispatcher token.
+- Review assets stay private until approved and copied to public delivery.
+- Accountant exports stay private and use signed links.
+- Service-execution cost data is internal only.
 
-## Current schema highlights
+## Active documentation rule
 
-- **150**: transactional operations, portal, media approval, approved route generation.
-- **151**: transactional accounting/reconciliation/quote-conversion RPCs.
-- **152–154**: release evidence, policy assertions, accountant readiness, staging fixture support.
-- **155**: live job updates with customer/staff visibility and retraction.
-- **156**: explicit customer email preference, private delivery outbox, bounded retries, delivery audit, manual review, and protected dispatcher.
-
-The canonical schema reference is `sql/000_full_schema_reference.sql`, containing migrations 030–156.
-
-## Current release boundary
-
-Source contracts and static checks can prove wiring, syntax, documentation alignment, and basic CSS contracts. They cannot prove live database migration behavior, Supabase RLS/storage enforcement, provider delivery, webhook receipt, or authenticated device rendering. Those remain staging gates.
-
-## Documentation rule
-
-Only `README.md`, this handbook, and `docs/NEXT_STEPS_AND_SANITY_CHECK.md` are active. All older Markdown is preserved in the dated archive for history and recovery.
-
-
-Stale delivery claims older than 15 minutes are moved to manual review; they are never resent automatically.
+Only this handbook, `README.md`, and `docs/NEXT_STEPS_AND_SANITY_CHECK.md` are active. Historical Markdown is archived for recovery.
