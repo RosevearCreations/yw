@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
-  Schema 156 staging proof harness.
+  Schema 157 staging proof harness.
   Default: source-only checks. Live mode is locked to a named staging target.
   Optional fixture creation, live update creation, and cleanup are explicit so
   this command never silently changes business data.
@@ -44,8 +44,8 @@ add('schema156-consent-outbox', all(sql156, ['customer_notification_preferences'
 add('schema156-delivery-safety', all(sql156, ['live_update_not_customer_visible', 'customer_opted_out', "'manual_review'", 'ywi_rpc_claim_customer_notification', 'ywi_rpc_complete_customer_notification', 'ywi_rpc_recover_stale_customer_notification_claims', 'ywi_rpc_retry_customer_notification']), 'Retraction/opt-out prevent delivery and uncertain provider outcomes require review.');
 add('schema156-private-rpcs', all(sql156, ['revoke all on public.customer_notification_preferences, public.customer_notification_outbox, public.customer_notification_delivery_attempts from anon, authenticated', 'grant execute on function public.ywi_rpc_claim_customer_notification(uuid,text) to service_role']), 'Notification tables and RPCs are not browser-callable.');
 add('dispatcher-schema156-guard', all(dispatcher, ['YWI_CUSTOMER_NOTIFICATION_DELIVERY_ENABLED', 'YWI_CUSTOMER_NOTIFICATION_RUN_TOKEN', 'ywi_rpc_recover_stale_customer_notification_claims', "'Idempotency-Key'", "p_result_status:'manual_review'"]), 'Protected delivery requires enablement, a run token, idempotency, and manual review for uncertainty.');
-add('operations-schema155-live-update-actions', all(operations, ["const SCHEMA = 156", 'work_order_live_update_create', 'work_order_live_update_retract', 'customer_notification_retry', 'ywi_rpc_enqueue_customer_live_update_notification', 'v_work_order_live_update_queue']), 'Operations action path is wired.');
-add('portal-schema155-live-update-filter', all(portal, ["const SCHEMA = 156", 'portalLiveUpdates', 'portalNotificationPreference', "action === 'set_live_update_notifications'", 'v_customer_portal_live_updates', 'live_updates: liveUpdates']), 'Portal stays constrained to published customer-safe updates.');
+add('operations-schema155-live-update-actions', all(operations, ["const SCHEMA = 157", 'work_order_live_update_create', 'work_order_live_update_retract', 'customer_notification_retry', 'ywi_rpc_enqueue_customer_live_update_notification', 'v_work_order_live_update_queue']), 'Operations action path is wired.');
+add('portal-schema155-live-update-filter', all(portal, ["const SCHEMA = 157", 'portalLiveUpdates', 'portalNotificationPreference', "action === 'set_live_update_notifications'", 'v_customer_portal_live_updates', 'live_updates: liveUpdates']), 'Portal stays constrained to published customer-safe updates.');
 add('operations-body-read-once', (operations.match(/body = await req\.json\(\)\.catch\(\(\) => \(\{\}\)\);/g) || []).length === 1, 'Operations action body is consumed once.');
 add('protected-function-jwt-settings', all(config, ['[functions.operations-manage]', '[functions.accountant-export]', '[functions.upload-public-asset]']) && /\[functions\.operations-manage\]\s+verify_jwt = true/s.test(config), 'Protected Edge Functions retain JWT verification.');
 
@@ -54,7 +54,7 @@ if (checks.some((item) => !item.ok)) process.exit(1);
 
 const live = process.env.YWI_RUN_STAGING_RPC_TESTS === '1';
 if (!live) {
-  console.log('\nSKIP live staging proof — set YWI_RUN_STAGING_RPC_TESTS=1 only after schema 156 is deployed to a dedicated non-production project.');
+  console.log('\nSKIP live staging proof — set YWI_RUN_STAGING_RPC_TESTS=1 only after schema 157 is deployed to a dedicated non-production project.');
   process.exit(0);
 }
 const url = (process.env.SUPABASE_URL || process.env.SB_URL || '').replace(/\/$/, '');
@@ -83,7 +83,7 @@ async function functionCall(name, token, body) {
   return { status: res.status, data };
 }
 const runKey = `staging-schema156-${new Date().toISOString().replace(/[:.]/g, '-')}-${Math.random().toString(16).slice(2, 8)}`;
-const created = await rest('operations_staging_test_runs', { method: 'POST', body: JSON.stringify({ run_key: runKey, environment_label: 'staging', suite_name: 'operations_rpc_e2e_schema156', run_status: 'started', requested_by_profile_id: actorId, summary: { build: '2026-07-07a', schema: 156, fixture_mode: process.env.YWI_STAGING_CREATE_FIXTURES === '1' } }) });
+const created = await rest('operations_staging_test_runs', { method: 'POST', body: JSON.stringify({ run_key: runKey, environment_label: 'staging', suite_name: 'operations_rpc_e2e_schema157', run_status: 'started', requested_by_profile_id: actorId, summary: { build: '2026-07-12a', schema: 157, fixture_mode: process.env.YWI_STAGING_CREATE_FIXTURES === '1' } }) });
 const run = Array.isArray(created) ? created[0] : created;
 const cases = [];
 async function liveCase(caseKey, fn, optional = false) {
@@ -100,7 +100,7 @@ async function liveCase(caseKey, fn, optional = false) {
 let fixture = null;
 await liveCase('schema_drift_is_current', async () => {
   const rows = await rest('v_schema_drift_status?select=*'); const row = rows?.[0] || {};
-  if (Number(row.latest_applied_schema_version) < 156 || row.drift_status !== 'current') throw new Error(`Expected schema 156 current: ${JSON.stringify(row)}`);
+  if (Number(row.latest_applied_schema_version) < 156 || row.drift_status !== 'current') throw new Error(`Expected schema 157 current: ${JSON.stringify(row)}`);
   return row;
 });
 await liveCase('policy_assertions_pass', async () => {
@@ -117,7 +117,7 @@ await liveCase('release_readiness_dashboard_view', async () => {
 await liveCase('capability_snapshot_has_schema155-actions', async () => {
   const result = await rest('rpc/ywi_get_operations_capabilities', { method: 'POST', body: JSON.stringify({ p_actor_profile_id: actorId }) });
   const snap = Array.isArray(result) ? result[0] : result;
-  if (!snap?.actions?.work_order_live_update || !snap?.actions?.work_order_live_update_retract || !snap?.actions?.customer_notification_retry || !snap?.actions?.release_readiness_snapshot) throw new Error('Schema 156 capability actions are missing.');
+  if (!snap?.actions?.work_order_live_update || !snap?.actions?.work_order_live_update_retract || !snap?.actions?.customer_notification_retry || !snap?.actions?.release_readiness_snapshot) throw new Error('Schema 157 capability actions are missing.');
   return { role: snap.actor_role, rank: snap.actor_rank };
 });
 const jobAdminJwt = process.env.YWI_STAGING_JOB_ADMIN_JWT || '';
@@ -156,7 +156,7 @@ if (uuid(liveWorkOrderId)) await liveCase('staff_live_update_create_and_retract'
     p_update_type: 'note',
     p_title: 'STAGING: automated private work update',
     p_message: 'Staging-only harness test. This must not appear in the customer portal.',
-    p_metadata: { source: 'operations-rpc-staging-e2e', schema: 156, staging: true }
+    p_metadata: { source: 'operations-rpc-staging-e2e', schema: 157, staging: true }
   }) });
   const row = Array.isArray(createdUpdate) ? createdUpdate[0] : createdUpdate;
   if (!uuid(row?.live_update_id)) throw new Error(`Live update RPC did not return an id: ${JSON.stringify(row)}`);
@@ -174,7 +174,7 @@ if (fixture && process.env.YWI_STAGING_CLEANUP_FIXTURE === '1') await liveCase('
 const failed = cases.filter((item) => item.case_status === 'failed');
 try {
   await rest('operations_staging_test_results', { method: 'POST', body: JSON.stringify(cases.map((item) => ({ ...item, run_id: run.id }))) });
-  await rest(`operations_staging_test_runs?id=eq.${encodeURIComponent(run.id)}`, { method: 'PATCH', body: JSON.stringify({ run_status: failed.length ? 'failed' : 'passed', finished_at: new Date().toISOString(), summary: { build: '2026-07-07a', schema: 156, case_count: cases.length, failed_count: failed.length, fixture_set_id: fixture?.fixture_set_id || null, live_work_order_id: uuid(liveWorkOrderId) ? liveWorkOrderId : null } }) });
+  await rest(`operations_staging_test_runs?id=eq.${encodeURIComponent(run.id)}`, { method: 'PATCH', body: JSON.stringify({ run_status: failed.length ? 'failed' : 'passed', finished_at: new Date().toISOString(), summary: { build: '2026-07-12a', schema: 157, case_count: cases.length, failed_count: failed.length, fixture_set_id: fixture?.fixture_set_id || null, live_work_order_id: uuid(liveWorkOrderId) ? liveWorkOrderId : null } }) });
 } catch (error) {
   console.error(`WARN  Could not record full test outcome: ${error instanceof Error ? error.message : String(error)}`);
 }

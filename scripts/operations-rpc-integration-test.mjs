@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Transactional operation and schema 156 wiring check.
+ * Transactional operation and schema 157 wiring check.
  * It is safe without credentials; optional live checks only read metadata.
  */
 import fs from 'node:fs';
@@ -46,8 +46,8 @@ add('schema154-release-dashboard', hasAll(sql154, ['v_release_readiness_dashboar
 add('operations-schema154-dashboard-wiring', hasAll(operations, ['v_release_readiness_dashboard', 'release_readiness_capture', 'ywi_rpc_capture_release_readiness_snapshot']) && (operations.match(/body = await req\.json\(\)\.catch\(\(\) => \(\{\}\)\);/g) || []).length === 1, 'Operations queue loads the dashboard and reads the request payload once.');
 add('schema155-live-work-update-rpcs', hasAll(sql155, ['ywi_rpc_create_work_order_live_update', 'ywi_rpc_retract_work_order_live_update', 'v_customer_portal_live_updates', 'v_work_order_live_update_queue']), 'Live job updates are token-portal-safe and RPC-backed.');
 add('schema155-customer-media-and-role-guards', hasAll(sql155, ['Customer-visible updates may attach only approved assets with a public delivery URL.', 'Customer-visible updates require supervisor or higher.', 'Only a supervisor or higher may retract a live work update.']), 'Customer-visible updates require approved media and supervisor review.');
-add('operations-schema155-live-update-wiring', hasAll(operations, ['const SCHEMA = 156', 'work_order_live_update_create', 'work_order_live_update_retract', 'ywi_rpc_create_work_order_live_update', 'v_work_order_live_update_queue']), 'Operations Edge Function uses live-update RPCs and queue.');
-add('portal-schema155-live-update-filter', hasAll(portal, ['const SCHEMA = 156', 'portalLiveUpdates', 'v_customer_portal_live_updates', 'live_updates: liveUpdates']), 'Portal is limited to the portal-safe update view.');
+add('operations-schema155-live-update-wiring', hasAll(operations, ['const SCHEMA = 157', 'work_order_live_update_create', 'work_order_live_update_retract', 'ywi_rpc_create_work_order_live_update', 'v_work_order_live_update_queue']), 'Operations Edge Function uses live-update RPCs and queue.');
+add('portal-schema155-live-update-filter', hasAll(portal, ['const SCHEMA = 157', 'portalLiveUpdates', 'v_customer_portal_live_updates', 'live_updates: liveUpdates']), 'Portal is limited to the portal-safe update view.');
 
 const failed = checks.filter((item) => !item.ok);
 for (const item of checks) console.log(`${item.ok ? 'PASS' : 'FAIL'}  ${item.name}${item.details ? ` — ${item.details}` : ''}`);
@@ -74,7 +74,7 @@ try {
     get('v_release_readiness_dashboard?select=staging_evidence_status,public_content_status,policy_ready')
   ]);
   const schemaRow = schema?.[0] || {};
-  if (Number(schemaRow.latest_applied_schema_version) < 156 || schemaRow.drift_status !== 'current') throw new Error(`Schema 156 is not current: ${JSON.stringify(schemaRow)}`);
+  if (Number(schemaRow.latest_applied_schema_version) < 156 || schemaRow.drift_status !== 'current') throw new Error(`Schema 157 is not current: ${JSON.stringify(schemaRow)}`);
   console.log(`\nLIVE  schema ${schemaRow.latest_applied_schema_version} is current.`);
   console.log(`LIVE  policy assertions: ${policy?.[0]?.passed_count ?? 0}/${policy?.[0]?.assertion_count ?? 0} passed.`);
   console.log(`LIVE  mapping readiness: ${readiness?.[0]?.mapping_ready === true ? 'ready' : 'review required'}.`);
