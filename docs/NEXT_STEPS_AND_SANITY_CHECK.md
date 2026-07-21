@@ -1,7 +1,7 @@
 # Next Steps and Staging Sanity Check
 
-**Release:** `2026-07-12a`  
-**Schema:** `157`
+**Release:** `2026-07-17a`  
+**Schema:** `158`
 
 Use a dedicated non-production Supabase project. Do not paste credentials into chat, screenshots, source files, or public logs.
 
@@ -13,11 +13,11 @@ Run in Supabase SQL Editor:
 select * from public.v_schema_drift_status;
 ```
 
-The project should already be at schema 156 before applying schema 157.
+The project should already be at schema 157 before applying schema 158.
 
-## 2. Apply schema 157
+## 2. Apply schema 158
 
-1. Open `sql/157_service_execution_proof_cost_capture.sql`.
+1. Open `sql/158_supervisor_closeout_customer_signoff_invoice_followup.sql`.
 2. Copy the entire migration into Supabase SQL Editor.
 3. Run it once in staging only.
 4. Confirm:
@@ -27,10 +27,10 @@ select * from public.v_schema_drift_status;
 
 select assertion_key, assertion_status, details
 from public.ywi_security_policy_assertions()
-where assertion_key like '%execution_proof%';
+where assertion_key like '%closeout%';
 ```
 
-Expected: schema 157 is current and execution-proof RPC/privacy assertions pass after grants/RLS are active.
+Expected: schema 158 is current and closeout tables/RPCs are private.
 
 ## 3. Deploy matching files
 
@@ -54,52 +54,61 @@ npm run test:contrast
 npm run test:live-updates
 npm run test:notifications
 npm run test:execution-proof
+npm run test:closeout
 npm run test:staging
 ```
 
 `test:staging` must run only against a clearly labelled staging project or skip live work.
 
-## 5. Required service-execution proof test
+## 5. Required closeout test
 
-Create or use one labelled staging quote/work order such as `STAGING-PROOF-001`.
+Create or use one labelled staging quote/work order such as `STAGING-CLOSEOUT-001`.
 
-### A. Capture proof as site leader
+### A. Prepare approved proof
 
-1. Sign in as a site leader.
-2. Open **Admin → Operations Cockpit → Service-execution proof and internal job cost**.
-3. Choose the staging work order.
-4. Submit an **Arrival** proof with:
-   - proof title;
-   - staff note;
-   - optional approved public image;
-   - labour minutes and labour hourly cost;
-   - material/equipment/other cost if appropriate.
-5. Confirm the proof appears as `submitted`.
-6. Confirm the customer portal does not show it yet.
+1. Sign in as a site leader and submit arrival or completion proof.
+2. Sign in as supervisor and approve the proof.
+3. Confirm the internal cost dashboard updates.
 
-### B. Approve proof as supervisor
+### B. Submit supervisor closeout
 
-1. Sign in as supervisor or job admin.
-2. Approve the submitted proof.
-3. Confirm the cost card updates accepted estimate, actual cost, margin, and cost status.
-4. Confirm a customer-visible proof appears in the secure portal only if a customer-safe summary was entered and the proof was marked customer-visible.
-5. Confirm the portal does **not** show staff notes, labour cost, material cost, equipment cost, total cost, margin, or private-media paths.
+1. Open **Admin → Operations Cockpit → Supervisor closeout, signoff, invoice readiness, and follow-up**.
+2. Select the staging work order.
+3. Add a customer-safe closeout summary.
+4. Optionally select approved before and after public images.
+5. Check invoice-readiness and review-request options.
+6. Add a maintenance follow-up date.
+7. Submit the closeout package.
 
-### C. Reject proof
+### C. Approve closeout
 
-1. Submit a second proof with a deliberate test error.
-2. Reject it with a note.
-3. Confirm rejected proof is excluded from actual job cost.
+1. In the closeout queue, approve the package.
+2. Confirm the queue shows customer signoff requested.
+3. Confirm invoice readiness is blocked or waiting until customer signoff if signoff is required.
+
+### D. Customer portal signoff
+
+1. Open the staging customer portal token.
+2. Confirm the closeout section shows only the customer-safe summary and approved gallery images.
+3. Confirm there are no labour, material, equipment, margin, staff-note, access-detail, private-media, email-storage, or portal-token fields.
+4. Submit **Approve completed work**.
+5. Refresh the Cockpit and confirm customer signoff is `signed`, invoice readiness becomes `ready` if requested, review request becomes queued, and maintenance follow-up remains scheduled.
+
+### E. Follow-up request path
+
+1. Repeat with another staging closeout or reset the fixture.
+2. Use **Request follow-up** in the portal.
+3. Confirm the closeout becomes rework required and invoice readiness is blocked.
 
 ## 6. Mobile and desktop checks
 
 Check Operations Cockpit and customer portal at about 390px, 768px, and desktop width:
 
 - no text blends into the background;
-- action buttons stack instead of overlapping;
-- proof cards stay inside the viewport;
+- closeout/gallery buttons stack instead of overlapping;
+- before/after gallery cards stay inside the viewport;
 - keyboard focus is visible;
-- customer proof cards do not expose cost fields.
+- customer portal closeout does not expose internal cost fields.
 
 Use incognito or `Ctrl + F5` to avoid stale CSS/JavaScript.
 
@@ -118,4 +127,4 @@ Keep the previous staging gates:
 
 ## Recommended next work after staging proof
 
-After schema 157 passes staging, the next highest-value work is a supervisor closeout package: customer sign-off, final approved before/after gallery, invoice readiness, review request, and follow-up maintenance reminder from the same proof and cost records.
+After schema 158 passes staging, the next highest-value build is invoice/review automation: generate an invoice draft from the signed closeout, queue a customer review request after payment, and schedule maintenance reminders without exposing internal costs.

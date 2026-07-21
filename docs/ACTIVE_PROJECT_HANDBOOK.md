@@ -1,12 +1,12 @@
 # Active Project Handbook
 
-**Release:** `2026-07-12a`  
-**Schema target:** `157`  
-**Business model:** local service operations with quote intake, customer portal, deposits, dispatch, proof-of-work, internal job costing, accountant handoff, and approved local SEO pages.
+**Release:** `2026-07-17a`  
+**Schema target:** `158`  
+**Business model:** local field-service operations with quote intake, customer portal, deposits, dispatch, live proof, internal job costing, customer signoff, invoice readiness, review generation, maintenance follow-up, accountant handoff, and approved local SEO pages.
 
 ## Current direction
 
-The platform is moving from separate admin forms toward one controlled field-service workflow:
+The platform is becoming one controlled service lifecycle:
 
 1. Quote request and owner follow-up.
 2. Customer portal quote review and acceptance.
@@ -14,22 +14,26 @@ The platform is moving from separate admin forms toward one controlled field-ser
 4. Dispatch scheduling and live staff/customer updates.
 5. Consent-controlled customer email notifications.
 6. Service-execution proof with arrival/completion evidence and internal cost capture.
-7. Accountant-ready export and release-readiness evidence.
-8. Approved public route pages and sitemap entries only after SEO and media gates pass.
+7. Supervisor closeout package with customer-safe summary and before/after gallery.
+8. Customer portal closeout signoff or follow-up request.
+9. Invoice-readiness, review-request, and maintenance-follow-up queues.
+10. Accountant-ready export and release-readiness evidence.
+11. Approved public route pages and sitemap entries only after SEO and media gates pass.
 
-## Schema 157 service-execution proof
+## Schema 158 supervisor closeout
 
-Schema 157 adds a proof and internal costing layer:
+Schema 158 adds:
 
-- `work_order_execution_proofs` records arrival, progress, completion, quality, material, equipment, expense, and service-note proof.
-- `work_order_execution_proof_media` links approved visual assets to proof records.
-- `v_work_order_execution_cost_dashboard` compares approved actual labour/material/equipment/other cost against the accepted work-order estimate.
-- `v_work_order_execution_proof_queue` feeds the Operations Cockpit review queue.
-- `v_customer_portal_execution_proofs` exposes only approved customer-safe proof summaries and approved public images.
-- `ywi_rpc_submit_work_order_execution_proof` requires site leader or higher.
-- `ywi_rpc_decide_work_order_execution_proof` requires supervisor or higher.
+- `work_order_closeout_packages` for final closeout state, customer signoff, invoice readiness, review request, and maintenance follow-up.
+- `work_order_closeout_gallery_items` for approved before/after public gallery images.
+- `work_order_customer_closeout_signoffs` for portal signoff or follow-up requests.
+- `work_order_review_requests` for review-request readiness after signoff.
+- `work_order_maintenance_followups` for future customer-care reminders.
+- `v_work_order_closeout_queue` for the Operations Cockpit.
+- `v_customer_portal_closeout_packages` for customer-safe portal output only.
+- `ywi_rpc_submit_work_order_closeout_package`, `ywi_rpc_decide_work_order_closeout_package`, and `ywi_rpc_customer_sign_work_order_closeout`.
 
-Customer portal proof is private portal content, not public SEO content. It must never expose staff notes, costs, access details, margin, or private-review media.
+Customer portal closeout is private. It must never expose internal labour, material, equipment, margin, staff notes, access details, customer email storage, portal tokens, or private review media.
 
 ## SEO direction
 
@@ -41,7 +45,8 @@ Public SEO remains separate from customer portal content. Public pages need one 
 - Customer notification delivery requires explicit portal opt-in and a protected dispatcher token.
 - Review assets stay private until approved and copied to public delivery.
 - Accountant exports stay private and use signed links.
-- Service-execution cost data is internal only.
+- Service-execution cost and closeout cost data are internal only.
+- Closeout signoff is token-validated through the customer portal function.
 
 ## Active documentation rule
 
