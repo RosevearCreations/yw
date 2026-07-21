@@ -1,4 +1,4 @@
-/* Customer portal - build 2026-07-12a / schema 157
+/* Customer portal - build 2026-07-17a / schema 158
    Public token-based quote review, acceptance, hosted deposits, dispatch status,
    and follow-up requests. The protected staff shell is hidden in portal mode. */
 'use strict';
@@ -163,6 +163,36 @@
     return `<section class="customer-portal-proofs" aria-label="Approved service proof"><header><div><span class="customer-portal-kicker">Approved proof</span><h2>Arrival, completion, and service evidence</h2></div><small>Only customer-safe summaries and approved public images are shown. Labour, material, equipment, and margin data stay internal.</small></header><ol>${items}</ol></section>`;
   }
 
+
+  function closeoutPackagePanel(closeouts) {
+    const rows = Array.isArray(closeouts) ? closeouts : [];
+    if (!rows.length) return '';
+    const row = rows[0];
+    const gallery = Array.isArray(row.gallery) ? row.gallery : [];
+    const galleryMarkup = gallery.map((item) => {
+      const url = safeUrl(item?.thumbnail_url || item?.url);
+      if (!url) return '';
+      const width = Math.max(1, Number(item?.width || 1200));
+      const height = Math.max(1, Number(item?.height || 800));
+      return `<a class="customer-portal-closeout-media customer-portal-closeout-media-${esc(String(item?.role || 'image').toLowerCase())}" href="${esc(safeUrl(item?.url) || url)}" target="_blank" rel="noopener noreferrer"><img src="${esc(url)}" alt="${esc(item?.alt_text || 'Approved closeout gallery image')}" width="${width}" height="${height}" loading="lazy" decoding="async"><span>${esc(String(item?.role || 'image').replaceAll('_',' '))}</span></a>`;
+    }).filter(Boolean).join('');
+    const signed = row.customer_signoff_status === 'signed';
+    return `<section class="customer-portal-closeout" aria-label="Final service closeout">
+      <header><div><span class="customer-portal-kicker">Final closeout</span><h2>Review completed work</h2></div><strong class="${signed ? 'is-on' : 'is-off'}">${signed ? 'Signed off' : 'Signoff requested'}</strong></header>
+      <p>${esc(row.customer_summary || 'Your supervisor-approved closeout summary will appear here.')}</p>
+      ${galleryMarkup ? `<div class="customer-portal-closeout-gallery">${galleryMarkup}</div>` : `<div class="customer-portal-update-placeholder" role="img" aria-label="Before and after gallery placeholder"><span aria-hidden="true">▧</span><p>Approved before/after photos will appear here when available.</p></div>`}
+      <small>Internal labour, material, equipment, margin, staff notes, and private review images are never shown in this customer portal.</small>
+      ${!signed ? `<form id="customerPortalCloseoutSignoffForm" class="customer-portal-form customer-portal-closeout-form">
+        <h3>Customer signoff</h3>
+        <label>Your name<input type="text" name="customer_name" autocomplete="name" required minlength="2"></label>
+        <label>Email<input type="email" name="customer_email" autocomplete="email"></label>
+        <label>Optional note<textarea name="customer_note" maxlength="1500" rows="3" placeholder="Anything we should correct or follow up on?"></textarea></label>
+        <input type="hidden" name="closeout_package_id" value="${esc(row.id)}">
+        <div class="customer-portal-button-row"><button type="submit" name="accept_closeout" value="true" class="primary">Approve completed work</button><button type="submit" name="accept_closeout" value="false" class="secondary">Request follow-up</button></div>
+      </form>` : `<div class="customer-portal-confirmed"><span aria-hidden="true">✓</span><div><h3>Closeout signed</h3><p>Thank you. Invoice readiness, review request, and maintenance reminders now continue through the staff workflow.</p></div></div>`}
+    </section>`;
+  }
+
   function notificationPreferencePanel(preference) {
     const current = preference || {};
     const enabled = current.live_work_update_email_opt_in === true;
@@ -200,6 +230,7 @@
     const liveUpdates = Array.isArray(row.live_updates) ? row.live_updates : [];
     const notificationPreference = row.notification_preferences || {};
     const executionProofs = Array.isArray(row.execution_proofs) ? row.execution_proofs : [];
+    const closeouts = Array.isArray(row.closeouts) ? row.closeouts : [];
     document.title = `${row.rendered_title || row.estimate?.number || 'Customer quote'} | Yard Weasels Inc.`;
 
     content.innerHTML = `
@@ -225,6 +256,7 @@
 
       ${liveUpdateTimeline(liveUpdates)}
       ${executionProofTimeline(executionProofs)}
+      ${closeoutPackagePanel(closeouts)}
       ${notificationPreferencePanel(notificationPreference)}
 
       <div class="customer-portal-layout">
@@ -336,6 +368,26 @@
         portalNotice(response?.notification_preferences?.message || (enabled ? 'Live service update email is enabled.' : 'Live service update email is off.'), 'success');
       } catch (error) {
         portalNotice(error?.message || 'Email preference could not be saved.', 'error');
+        setButtonBusy(button, false);
+      }
+    });
+
+    const signoff = byId('customerPortalCloseoutSignoffForm');
+    signoff?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const submitter = event.submitter;
+      const button = submitter || signoff.querySelector('button[type="submit"]');
+      const data = Object.fromEntries(new FormData(signoff).entries());
+      const acceptCloseout = String(submitter?.value || data.accept_closeout || 'true') !== 'false';
+      if (!String(data.customer_name || '').trim()) { portalNotice('Enter your name before submitting closeout signoff.', 'error'); return; }
+      setButtonBusy(button, true, acceptCloseout ? 'Approving…' : 'Sending follow-up request…');
+      try {
+        const response = await call({ action:'sign_closeout', closeout_package_id:data.closeout_package_id, customer_name:data.customer_name, customer_email:data.customer_email, customer_note:data.customer_note, accept_closeout:acceptCloseout });
+        if (!response?.ok) throw new Error(response?.error || 'Closeout signoff could not be saved.');
+        render(response.portal);
+        portalNotice(acceptCloseout ? 'Thank you. The completed work has been signed off.' : 'Your follow-up request was sent to the staff queue.', 'success');
+      } catch (error) {
+        portalNotice(error?.message || 'Closeout signoff could not be saved.', 'error');
         setButtonBusy(button, false);
       }
     });
