@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const BUILD = '2026-07-12a';
-const SCHEMA = 157;
+const BUILD = '2026-07-17a';
+const SCHEMA = 158;
 // Review uploads are private until an approved staff decision copies them to public-assets.
 const BUCKET = 'review-assets';
 const corsHeaders = {

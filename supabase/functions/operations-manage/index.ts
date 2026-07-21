@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const BUILD = '2026-07-12a';
-const SCHEMA = 157;
+const BUILD = '2026-07-17a';
+const SCHEMA = 158;
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-idempotency-key',
@@ -675,7 +675,7 @@ async function queuePayload(supabase: any, profile: any) {
     quotes: 'v_quote_contact_followup_queue', payments: 'v_payment_action_workbench', bank_imports: 'v_bank_csv_import_workbench',
     reconciliation: 'v_reconciliation_action_workbench', equipment: 'v_equipment_scan_resolution_queue', equipment_service: 'v_equipment_service_cost_recovery_queue',
     assets: 'v_visual_asset_publication_readiness', routes: 'v_public_route_publication_readiness', portal: 'v_customer_portal_quote_directory', job_costs: 'v_live_job_cost_dashboard',
-    job_updates: 'v_work_order_live_update_queue', customer_notifications: 'v_customer_notification_delivery_queue', execution_proofs: 'v_work_order_execution_proof_queue', execution_costs: 'v_work_order_execution_cost_dashboard'
+    job_updates: 'v_work_order_live_update_queue', customer_notifications: 'v_customer_notification_delivery_queue', execution_proofs: 'v_work_order_execution_proof_queue', execution_costs: 'v_work_order_execution_cost_dashboard', closeouts: 'v_work_order_closeout_queue'
   };
   const entries = await Promise.all(Object.entries(queueNames).map(async ([key, view]) => {
     const rows = await safeSelect(supabase.from(view).select('*').limit(60));
@@ -1283,6 +1283,44 @@ serve(async (req) => {
       });
       await audit(supabase, { operation_action: action, operation_status: decision || result.proof_status, entity_type: 'work_order_execution_proof', entity_id: proofId, actor_profile_id: profile.id, request_payload: safeRequest(body), response_payload: result });
       return Response.json({ ok: true, proof: result }, { headers: corsHeaders });
+    }
+
+
+    if (action === 'work_order_closeout_submit') {
+      requireRank(profile, 30, action);
+      const workOrderId = clean(body.work_order_id, 80);
+      if (!isUuid(workOrderId)) throw new HttpError(400, 'Valid work_order_id is required.');
+      const beforeAssetIds = arrayValue(body.before_asset_ids).map((value) => clean(value, 80)).filter(isUuid);
+      const afterAssetIds = arrayValue(body.after_asset_ids).map((value) => clean(value, 80)).filter(isUuid);
+      const result = await callRpc(supabase, 'ywi_rpc_submit_work_order_closeout_package', {
+        p_work_order_id: workOrderId,
+        p_actor_profile_id: profile.id,
+        p_customer_summary: clean(body.customer_summary, 2000),
+        p_staff_closeout_notes: clean(body.staff_closeout_notes, 4000) || null,
+        p_invoice_ready_requested: body.invoice_ready_requested === true,
+        p_review_request_requested: body.review_request_requested === true,
+        p_maintenance_followup_due_at: isoDate(body.maintenance_followup_due_at) || null,
+        p_before_asset_ids: beforeAssetIds,
+        p_after_asset_ids: afterAssetIds,
+        p_metadata: { build: BUILD, schema: SCHEMA, idempotency_key: idempotencyKey(req, body, 'closeout-submit') }
+      });
+      await audit(supabase, { operation_action: action, operation_status: 'submitted', entity_type: 'work_order_closeout_package', entity_id: result.closeout_package_id, actor_profile_id: profile.id, request_payload: safeRequest(body), response_payload: result });
+      return Response.json({ ok: true, closeout: result }, { headers: corsHeaders });
+    }
+
+    if (action === 'work_order_closeout_decision') {
+      requireRank(profile, 30, action);
+      const closeoutId = clean(body.closeout_package_id, 80);
+      if (!isUuid(closeoutId)) throw new HttpError(400, 'Valid closeout_package_id is required.');
+      const decision = clean(body.decision || '', 40);
+      const result = await callRpc(supabase, 'ywi_rpc_decide_work_order_closeout_package', {
+        p_closeout_package_id: closeoutId,
+        p_actor_profile_id: profile.id,
+        p_decision: decision,
+        p_decision_note: clean(body.decision_note, 1500) || null
+      });
+      await audit(supabase, { operation_action: action, operation_status: decision || result.closeout_status, entity_type: 'work_order_closeout_package', entity_id: closeoutId, actor_profile_id: profile.id, request_payload: safeRequest(body), response_payload: result });
+      return Response.json({ ok: true, closeout: result }, { headers: corsHeaders });
     }
 
     if (action === 'customer_notification_retry') {

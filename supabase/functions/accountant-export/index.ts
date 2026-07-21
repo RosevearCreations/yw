@@ -2,8 +2,8 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { zipSync, strToU8 } from "npm:fflate@0.8.2";
 
-const BUILD = '2026-07-12a';
-const SCHEMA = 157;
+const BUILD = '2026-07-17a';
+const SCHEMA = 158;
 const BUCKET = 'accountant-exports';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
