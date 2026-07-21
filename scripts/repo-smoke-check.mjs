@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Repository-level static sanity check for build 2026-07-12a / schema 157. */
+/** Repository-level static sanity check for build 2026-07-17a / schema 158. */
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -8,23 +8,27 @@ import { createRequire } from 'node:module';
 const root = process.cwd();
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const exists = (file) => fs.existsSync(path.join(root, file));
-const all = (text, values) => values.every((value) => text.includes(value));
+const hasAll = (text, values) => values.every((value) => text.includes(value));
 const results = [];
 const add = (name, ok, details = '') => results.push({ name, ok, details });
 function walk(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const full = path.join(dir, entry.name);
-    return entry.isDirectory() ? walk(full) : [full];
+    if (entry.isDirectory()) return walk(full);
+    return [full];
   });
 }
 
 const schema = read('sql/000_full_schema_reference.sql');
-const migration151 = read('sql/151_transactional_rpc_accounting_reconciliation_quote_tests.sql');
-const migration153 = read('sql/153_release_fixture_policy_mapping_seo_alerts.sql');
-const migration154 = read('sql/154_release_readiness_dashboard_and_evidence_snapshots.sql');
-const migration155 = read('sql/155_live_job_updates_customer_timeline_and_visibility.sql');
-const migration156 = read('sql/156_customer_notification_consent_outbox_delivery.sql');
-const migration157 = read('sql/157_service_execution_proof_cost_capture.sql');
+const migrations = {
+  151: read('sql/151_transactional_rpc_accounting_reconciliation_quote_tests.sql'),
+  153: read('sql/153_release_fixture_policy_mapping_seo_alerts.sql'),
+  154: read('sql/154_release_readiness_dashboard_and_evidence_snapshots.sql'),
+  155: read('sql/155_live_job_updates_customer_timeline_and_visibility.sql'),
+  156: read('sql/156_customer_notification_consent_outbox_delivery.sql'),
+  157: read('sql/157_service_execution_proof_cost_capture.sql'),
+  158: read('sql/158_supervisor_closeout_customer_signoff_invoice_followup.sql')
+};
 const operations = read('supabase/functions/operations-manage/index.ts');
 const portal = read('supabase/functions/customer-portal/index.ts');
 const dispatcher = read('supabase/functions/customer-notification-dispatch/index.ts');
@@ -37,53 +41,46 @@ const index = read('index.html');
 const css = read('style.css');
 const config = read('supabase/config.toml');
 const routeGenerator = read('scripts/generate-public-routes.mjs');
+const readme = read('README.md');
+const handbook = read('docs/ACTIVE_PROJECT_HANDBOOK.md');
+const nextSteps = read('docs/NEXT_STEPS_AND_SANITY_CHECK.md');
 
-// Documentation and archive integrity.
-const ignoredDocRoots = [`${path.sep}archive${path.sep}`, `${path.sep}node_modules${path.sep}`, `${path.sep}.git${path.sep}`];
-const activeMd = walk(root)
-  .filter((file) => file.endsWith('.md') && !ignoredDocRoots.some((segment) => file.includes(segment)))
-  .map((file) => path.relative(root, file).replaceAll('\\', '/'))
-  .sort();
+// Documentation hygiene.
+const ignored = [`${path.sep}archive${path.sep}`, `${path.sep}node_modules${path.sep}`, `${path.sep}.git${path.sep}`];
+const activeMd = walk(root).filter((file) => file.endsWith('.md') && !ignored.some((segment) => file.includes(segment))).map((file) => path.relative(root, file).replaceAll('\\', '/')).sort();
 add('active-markdown-exactly-three', JSON.stringify(activeMd) === JSON.stringify(['README.md', 'docs/ACTIVE_PROJECT_HANDBOOK.md', 'docs/NEXT_STEPS_AND_SANITY_CHECK.md']), `Active Markdown: ${activeMd.join(', ') || 'none'}`);
-add('retired-markdown-archive-present', exists('archive/retired-markdown-2026-07-12a') && walk(path.join(root, 'archive/retired-markdown-2026-07-12a')).filter((file) => file.endsWith('.md')).length >= 80, 'Historical Markdown is preserved in the dated archive.');
-add('temp-write-files-retired', !walk(root).filter((file) => !file.includes(`${path.sep}archive${path.sep}`) && /test_write/i.test(path.basename(file))).length, 'No temporary write files remain active.');
-add('active-readme-schema157', all(read('README.md'), ['2026-07-12a', 'schema `157`', 'service-execution proof']), 'README identifies the current release and notification scope.');
-add('handoff-docs-current', all(read('docs/ACTIVE_PROJECT_HANDBOOK.md').toLowerCase(), ['schema target:', '157', 'service-execution proof']) && all(read('docs/NEXT_STEPS_AND_SANITY_CHECK.md').toLowerCase(), ['schema 157', 'execution proof', 'approve proof']), 'Active handoff explains current controls and detailed test process.');
+add('retired-markdown-archive-present', exists('archive/retired-markdown-2026-07-17a') && walk(path.join(root, 'archive/retired-markdown-2026-07-17a')).filter((file) => file.endsWith('.md')).length >= 80, 'Historical Markdown is preserved in dated archive.');
+add('temp-write-files-retired', !walk(root).some((file) => !file.includes(`${path.sep}archive${path.sep}`) && /test_write/i.test(path.basename(file))), 'No temporary write files remain active.');
+add('active-readme-current', hasAll(readme, ['2026-07-17a', 'schema `158`', 'supervisor closeout', 'customer signoff', 'invoice readiness']), 'README identifies schema 158 release.');
+add('handoff-docs-current', hasAll(handbook, ['Schema target:', '158', 'supervisor closeout', 'customer signoff']) && hasAll(nextSteps, ['schema 158', 'Supervisor closeout', 'customer signoff', 'invoice readiness']), 'Active handoff explains current controls and tests.');
 
 // Schema/reference integrity.
 const migrationBlocks = (schema.match(/BEGIN MIGRATION:/g) || []).length;
-add('canonical-schema-through-157', schema.includes('BEGIN MIGRATION: 030_') && schema.includes('BEGIN MIGRATION: 157_') && migrationBlocks === 128, `Canonical schema has ${migrationBlocks} migration blocks.`);
-add('canonical-schema-includes-schema157-verbatim', schema.includes(migration157.trim()), 'Full schema contains the current migration.');
-for (const [number, text] of [[151, migration151], [153, migration153], [154, migration154], [155, migration155], [156, migration156], [157, migration157]]) {
+add('canonical-schema-through-158', schema.includes('BEGIN MIGRATION: 030_') && schema.includes('BEGIN MIGRATION: 158_supervisor_closeout_customer_signoff_invoice_followup') && migrationBlocks === 129, `Canonical schema has ${migrationBlocks} migration blocks.`);
+add('canonical-schema-includes-schema158-verbatim', schema.includes(migrations[158].trim()), 'Full schema contains schema 158 migration verbatim.');
+for (const [number, text] of Object.entries(migrations)) {
   add(`schema${number}-transaction-balanced`, (text.match(/^begin;$/gmi) || []).length === 1 && (text.match(/^commit;$/gmi) || []).length === 1, `Schema ${number} has one BEGIN and one COMMIT marker.`);
 }
-add('schema155-live-update-privacy', all(migration155, ['enable row level security', 'Customer-visible updates may attach only approved assets with a public delivery URL.', 'revoke all on public.v_customer_portal_live_updates, public.v_work_order_live_update_queue from anon, authenticated']), 'Live updates remain token/JWT-service-only.');
-add('schema157-notification-objects', all(migration156, ['customer_notification_preferences', 'customer_notification_outbox', 'customer_notification_delivery_attempts', 'v_customer_notification_delivery_queue']), 'Consent, outbox, attempt log, and safe queue exist.');
-add('schema157-email-only-explicit-consent', all(migration156, ["channel in ('email')", 'live_work_update_opt_in', 'consent_status', 'customer_portal']), 'Schema starts email-only and requires explicit preference data.');
-add('schema157-status-compatibility', all(migration156, ['work_order_live_updates_customer_notification_status_check', "'pending_consent'", "'retry_scheduled'", "'manual_review'", "'opted_out'"]), 'Live-update notification states are compatible with the outbox lifecycle.');
-add('schema157-retraction-and-optout-protection', all(migration156, ['customer_opted_out', 'live_update_not_customer_visible', "delivery_status='cancelled'", 'customer_notified_at=case when v_result=\'sent\'']), 'Opt-out/retraction prevents unsent delivery and sent status records timestamps.');
-add('schema157-rpc-privacy', all(migration156, ['revoke all on public.customer_notification_preferences, public.customer_notification_outbox, public.customer_notification_delivery_attempts from anon, authenticated', 'grant execute on function public.ywi_rpc_claim_customer_notification(uuid,text) to service_role', 'ywi_rpc_retry_customer_notification']), 'Browser roles cannot access direct notification data or RPCs.');
+add('schema155-live-update-privacy', hasAll(migrations[155], ['enable row level security', 'Customer-visible updates may attach only approved assets with a public delivery URL.', 'v_customer_portal_live_updates']), 'Live updates remain token/JWT-service-only.');
+add('schema156-notification-safety', hasAll(migrations[156], ['customer_notification_preferences', 'customer_notification_outbox', 'customer_opted_out', 'live_update_not_customer_visible', 'manual_review', 'v_customer_notification_delivery_queue']), 'Consent, outbox, opt-out/retraction, and manual-review safety exist.');
+add('schema157-execution-proof-privacy', hasAll(migrations[157], ['work_order_execution_proofs', 'v_work_order_execution_cost_dashboard', 'v_customer_portal_execution_proofs', 'Customer portal never receives internal cost fields.', 'execution_proof_rpcs_not_public']), 'Execution proof and internal costing remain private.');
+add('schema158-closeout-objects', hasAll(migrations[158], ['work_order_closeout_packages', 'work_order_closeout_gallery_items', 'work_order_customer_closeout_signoffs', 'work_order_review_requests', 'work_order_maintenance_followups', 'v_customer_portal_closeout_packages']), 'Closeout/signoff/review/follow-up objects exist.');
+add('schema158-closeout-rpcs-private', hasAll(migrations[158], ['ywi_rpc_submit_work_order_closeout_package', 'ywi_rpc_decide_work_order_closeout_package', 'ywi_rpc_customer_sign_work_order_closeout', 'closeout_tables_not_public', 'closeout_rpcs_not_public']), 'Closeout RPCs are service-role/private and policy-asserted.');
+const closeoutPortalView = migrations[158].slice(migrations[158].indexOf('create view public.v_customer_portal_closeout_packages'), migrations[158].indexOf('revoke all on public.v_work_order_closeout_queue'));
+add('schema158-portal-cost-privacy', !/(total_actual_cost|margin_amount|staff_closeout_notes|labour_cost_total|material_cost_total)/.test(closeoutPortalView), 'Portal closeout view excludes internal cost/staff fields.');
 
-
-add('schema157-service-execution-objects', all(migration157, ['work_order_execution_proofs', 'v_work_order_execution_cost_dashboard', 'v_customer_portal_execution_proofs', 'ywi_rpc_submit_work_order_execution_proof', 'ywi_rpc_decide_work_order_execution_proof']), 'Service proof, cost comparison, portal-safe proof, and RPCs exist.');
-add('schema157-cost-privacy', all(migration157, ['Customer portal never receives internal cost fields.', 'Customer-visible execution proof may attach only approved assets with a public delivery URL.', 'execution_proof_rpcs_not_public']), 'Internal costing is excluded from customer portal and proof RPCs are private.');
-add('operations-schema157-wiring', all(operations, ["const SCHEMA = 157", "execution_proofs: 'v_work_order_execution_proof_queue'", "execution_costs: 'v_work_order_execution_cost_dashboard'", "work_order_execution_proof_submit", "ywi_rpc_decide_work_order_execution_proof"]), 'Operations function wires service-execution proof and internal cost queues.');
-add('portal-schema157-proof-privacy', all(portal, ["const SCHEMA = 157", 'portalExecutionProofs', 'v_customer_portal_execution_proofs', 'execution_proofs: executionProofs']), 'Token portal returns only customer-safe approved proof summaries.');
-add('cockpit-service-execution-ui', all(cockpit, ['oc_execution_proof_form', 'renderExecutionProofQueue', 'labour_minutes', 'material_cost_total', 'Customer portal proof cards show only approved customer summaries']), 'Cockpit captures proof and internal costs while explaining privacy.');
-add('portal-service-proof-ui', all(customerPortal, ['executionProofTimeline', 'Approved proof', 'Labour, material, equipment, and margin data stay internal.']), 'Customer portal shows approved proof but not costs.');
-
-// Function and UI wiring.
-add('operations-schema157-wiring', all(operations, ["const BUILD = '2026-07-12a'", 'const SCHEMA = 157', 'work_order_live_update_create', 'customer_notification_retry', 'ywi_rpc_enqueue_customer_live_update_notification', "customer_notifications: 'v_customer_notification_delivery_queue'"]), 'Operations function wires role-checked creation, safe queue data, and retry.');
+// Functions/UI wiring.
+add('operations-schema158-wiring', hasAll(operations, ["const BUILD = '2026-07-17a'", 'const SCHEMA = 158', "job_updates: 'v_work_order_live_update_queue'", "customer_notifications: 'v_customer_notification_delivery_queue'", "execution_proofs: 'v_work_order_execution_proof_queue'", "closeouts: 'v_work_order_closeout_queue'", "action === 'work_order_closeout_submit'", 'ywi_rpc_submit_work_order_closeout_package', "action === 'work_order_closeout_decision'", 'ywi_rpc_decide_work_order_closeout_package']), 'Operations function wires live update, notification, execution proof, and closeout queues/actions.');
 add('operations-request-body-once', (operations.match(/body = await req\.json\(\)\.catch\(\(\) => \(\{\}\)\);/g) || []).length === 1, 'Operations request payload is consumed once.');
-add('portal-schema157-preferences', all(portal, ["const BUILD = '2026-07-12a'", 'const SCHEMA = 157', 'portalLiveUpdates', 'portalNotificationPreference', "action === 'set_live_update_notifications'", 'ywi_rpc_set_customer_live_update_email_preference']), 'Customer portal returns safe preference flags and writes only through the token-validating function.');
-add('dispatcher-protected', all(dispatcher, ["const BUILD = '2026-07-12a'", 'const SCHEMA = 157', 'YWI_CUSTOMER_NOTIFICATION_DELIVERY_ENABLED', 'YWI_CUSTOMER_NOTIFICATION_RUN_TOKEN', "'Idempotency-Key'", "p_result_status:'manual_review'"]), 'Dispatcher requires an independent run token and safely handles uncertain provider outcomes.');
-add('portal-ui-preferences', all(customerPortal, ['customerPortalNotificationPreferenceForm', 'Service update email', 'never includes staff-only notes, private images, access information, or internal costing']), 'Customer portal explains and controls future notification preference.');
-add('cockpit-notification-ui', all(cockpit, ['renderCustomerNotificationQueue', 'oc_customer_notification_queue', "'customer-notification-retry':'customer_notification_retry'", 'Email addresses, portal tokens, staff notes, and private media are never shown in this queue.']), 'Cockpit delivery queue is role-aware and excludes private fields.');
-add('upload-private-review-asset', all(upload, ["const BUCKET = 'review-assets'", "const BUILD = '2026-07-12a'", 'const SCHEMA = 157', 'review_only:true', 'imageDimensions', 'checksum_sha256']), 'Upload handler verifies and stores review media privately.');
-add('webhook-marker-current', all(webhook, ["const BUILD='2026-07-12a'", 'const SCHEMA=157', 'validateSession', 'ywi_rpc_record_portal_deposit_paid', 'ywi_refresh_stripe_webhook_alerts']), 'Webhook retains verified payment and alert logic.');
-add('accountant-marker-current', all(accountant, ["const BUILD = '2026-07-12a'", 'const SCHEMA = 157', 'ywi_rpc_capture_accountant_close_snapshot', 'createSignedUrl']), 'Accountant export retains private close/mapping handling.');
+add('portal-schema158-wiring', hasAll(portal, ["const BUILD = '2026-07-17a'", 'const SCHEMA = 158', 'portalLiveUpdates', 'portalNotificationPreference', 'portalExecutionProofs', 'portalCloseoutPackages', "action === 'sign_closeout'", 'ywi_rpc_customer_sign_work_order_closeout']), 'Customer portal returns safe updates/proofs/closeouts and signs through RPC.');
+add('dispatcher-protected', hasAll(dispatcher, ["const BUILD = '2026-07-17a'", 'const SCHEMA = 158', 'YWI_CUSTOMER_NOTIFICATION_DELIVERY_ENABLED', 'YWI_CUSTOMER_NOTIFICATION_RUN_TOKEN', "'Idempotency-Key'", "p_result_status:'manual_review'"]), 'Dispatcher requires run token and safe provider uncertainty handling.');
+add('upload-private-review-asset', hasAll(upload, ["const BUCKET = 'review-assets'", "const BUILD = '2026-07-17a'", 'const SCHEMA = 158', 'review_only:true', 'imageDimensions', 'checksum_sha256']), 'Upload handler verifies and stores review media privately.');
+add('webhook-marker-current', hasAll(webhook, ["const BUILD='2026-07-17a'", 'const SCHEMA=158', 'validateSession', 'ywi_rpc_record_portal_deposit_paid', 'ywi_refresh_stripe_webhook_alerts']), 'Webhook retains verified payment and alert logic.');
+add('accountant-marker-current', hasAll(accountant, ["const BUILD = '2026-07-17a'", 'const SCHEMA = 158', 'ywi_rpc_capture_accountant_close_snapshot', 'createSignedUrl']), 'Accountant export retains private close/mapping handling.');
 add('jwt-config-protected-functions', /\[functions\.operations-manage\]\s+verify_jwt = true/s.test(config) && /\[functions\.upload-public-asset\]\s+verify_jwt = true/s.test(config) && /\[functions\.accountant-export\]\s+verify_jwt = true/s.test(config), 'Protected functions retain JWT verification.');
 add('dispatcher-config-explicit', /\[functions\.customer-notification-dispatch\]\s+verify_jwt = false/s.test(config), 'Dispatcher has explicit no-JWT config and performs its own run-token check.');
+add('cockpit-current-ui', hasAll(cockpit, ['renderLiveUpdateQueue', 'renderExecutionProofQueue', 'renderCloseoutQueue', 'oc_closeout_form', 'data-oc-closeout-before-assets', 'closeout-approve', 'closeout-invoice', 'Email addresses, portal tokens, staff notes, and private media are never shown in this queue.']), 'Cockpit includes live, notification, proof, and closeout surfaces.');
+add('customer-portal-current-ui', hasAll(customerPortal, ['executionProofTimeline', 'closeoutPackagePanel', 'customerPortalNotificationPreferenceForm', 'Approve completed work', 'Internal labour, material, equipment, margin, staff notes, and private review images are never shown in this customer portal.']), 'Portal shows customer-safe proof, closeout, signoff, and preference UI.');
 
 // SEO/CSS/cache guardrails.
 const h1Count = (index.match(/<h1\b/gi) || []).length;
@@ -91,17 +88,18 @@ add('homepage-one-h1', h1Count === 1, `Homepage H1 count: ${h1Count}.`);
 const ids = [...index.matchAll(/\bid=["']([^"']+)["']/gi)].map((match) => match[1]);
 const duplicateIds = ids.filter((id, idx) => ids.indexOf(id) !== idx);
 add('homepage-no-duplicate-ids', duplicateIds.length === 0, duplicateIds.length ? `Duplicates: ${[...new Set(duplicateIds)].join(', ')}` : 'No duplicate IDs.');
-add('build-cache-marker-current', all(index, ['2026-07-12a', 'operations-cockpit.js?v=2026-07-12a']) && read('server-worker.js').includes('ywi-shell-v2026-07-12a'), 'HTML and service-worker cache marker are current.');
-add('route-generator-cache-marker-current', routeGenerator.includes("const build = '2026-07-12a';"), 'Generated public pages reference the current static build marker.');
-add('visual-input-mime-match', cockpit.includes('accept="image/jpeg,image/png,image/webp"') && !migration153.includes('image/avif'), 'UI/storage MIME promise matches server verification.');
-add('cockpit-dark-contrast-remediation', all(css, ['--oc-text: #f8fbff', '--oc-surface: #0c172b', '.operations-cockpit .oc-badge-approved', '.operations-cockpit .oc-permission.is-allowed', '.operations-cockpit .oc-permission.is-restricted', '.operations-cockpit .operations-status[data-status="error"]', '@media (forced-colors: active)']), 'Cockpit dark-surface tokens and state contrast overrides remain present.');
-add('notification-responsive-css', all(css, ['.customer-portal-notification-preference', '.operations-cockpit .oc-notification-delivery-status', '.operations-cockpit .oc-notification-delivery-card', '@media(max-width:620px)']), 'Notification preference and Cockpit queue include responsive rules.');
+add('build-cache-marker-current', hasAll(index, ['2026-07-17a', 'operations-cockpit.js?v=2026-07-17a']) && read('server-worker.js').includes('ywi-shell-v2026-07-17a'), 'HTML and service-worker cache marker are current.');
+add('route-generator-cache-marker-current', routeGenerator.includes("const build = '2026-07-17a';"), 'Generated public pages reference current static build marker.');
+add('visual-input-mime-match', cockpit.includes('accept="image/jpeg,image/png,image/webp"') && !migrations[153].includes('image/avif'), 'UI/storage MIME promise matches server verification.');
+add('cockpit-dark-contrast-remediation', hasAll(css, ['--oc-text: #f8fbff', '--oc-surface: #0c172b', '.operations-cockpit .oc-badge-approved', '.operations-cockpit .oc-permission.is-allowed', '.operations-cockpit .oc-permission.is-restricted', '@media (forced-colors: active)']), 'Cockpit dark-surface tokens and contrast overrides remain present.');
+add('closeout-responsive-css', hasAll(css, ['.operations-cockpit .oc-closeout-card', '.customer-portal-closeout', '.customer-portal-closeout-gallery', '.customer-portal-closeout-form', '@media(max-width:620px)']), 'Closeout and portal surfaces include responsive CSS.');
 
-// Supporting scripts and syntax.
+// Support files.
 for (const file of [
   'scripts/staging-fixtures.mjs', 'scripts/security-policy-assertions.mjs', 'scripts/operations-cockpit-contrast-check.mjs',
   'scripts/release-readiness-dashboard-check.mjs', 'scripts/live-work-updates-check.mjs', 'scripts/customer-notification-delivery-check.mjs',
-  'tests/browser/operations-portal.spec.mjs', 'playwright.config.mjs', 'package-lock.json', '.github/workflows/staging-browser-integration.yml', '.gitignore', 'package.json'
+  'scripts/service-execution-proof-check.mjs', 'scripts/supervisor-closeout-check.mjs', 'tests/browser/operations-portal.spec.mjs',
+  'playwright.config.mjs', 'package-lock.json', '.github/workflows/staging-browser-integration.yml', '.gitignore', 'package.json'
 ]) add(`exists:${file}`, exists(file), 'Required support file is present.');
 
 const jsFiles = [
@@ -109,7 +107,7 @@ const jsFiles = [
   'scripts/generate-public-routes.mjs', 'scripts/operations-rpc-integration-test.mjs', 'scripts/security-policy-assertions.mjs',
   'scripts/staging-fixtures.mjs', 'scripts/operations-rpc-staging-e2e.mjs', 'scripts/operations-cockpit-contrast-check.mjs',
   'scripts/release-readiness-dashboard-check.mjs', 'scripts/live-work-updates-check.mjs', 'scripts/customer-notification-delivery-check.mjs',
-  'scripts/repo-smoke-check.mjs', 'playwright.config.mjs', 'app.js', 'server-worker.js'
+  'scripts/service-execution-proof-check.mjs', 'scripts/supervisor-closeout-check.mjs', 'scripts/repo-smoke-check.mjs', 'playwright.config.mjs', 'app.js', 'server-worker.js'
 ];
 for (const file of jsFiles) {
   const run = spawnSync(process.execPath, ['--check', file], { cwd: root, encoding: 'utf8' });
@@ -135,11 +133,9 @@ if (ts) {
 }
 
 for (const script of [
-  'scripts/operations-rpc-integration-test.mjs', 'scripts/security-policy-assertions.mjs',
-  'scripts/operations-cockpit-contrast-check.mjs', 'scripts/release-readiness-dashboard-check.mjs',
-  'scripts/live-work-updates-check.mjs', 'scripts/customer-notification-delivery-check.mjs',
-  'scripts/service-execution-proof-check.mjs',
-  'scripts/operations-rpc-staging-e2e.mjs'
+  'scripts/operations-rpc-integration-test.mjs', 'scripts/security-policy-assertions.mjs', 'scripts/operations-cockpit-contrast-check.mjs',
+  'scripts/release-readiness-dashboard-check.mjs', 'scripts/live-work-updates-check.mjs', 'scripts/customer-notification-delivery-check.mjs',
+  'scripts/service-execution-proof-check.mjs', 'scripts/supervisor-closeout-check.mjs', 'scripts/operations-rpc-staging-e2e.mjs'
 ]) {
   const run = spawnSync(process.execPath, [script], { cwd: root, encoding: 'utf8' });
   add(`static:${path.basename(script)}`, run.status === 0, run.status === 0 ? 'Static checks passed.' : (run.stderr || run.stdout).trim());

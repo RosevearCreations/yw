@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Schema 157 service-execution proof contract. Safe without credentials. */
+/** Schema 158 service-execution proof contract. Safe without credentials. */
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -17,12 +17,12 @@ const css=read('style.css');
  ['work_order_execution_proofs','proof table'],['work_order_execution_proof_media','proof media table'],['v_work_order_execution_proof_queue','staff proof queue'],['v_work_order_execution_cost_dashboard','internal cost dashboard'],['v_customer_portal_execution_proofs','portal-safe proof view'],['ywi_rpc_submit_work_order_execution_proof','submit proof RPC'],['ywi_rpc_decide_work_order_execution_proof','decide proof RPC'],['Only a site leader or higher may capture service-execution proof.','site leader submit guard'],['Only a supervisor or higher may approve or reject service-execution proof.','supervisor decision guard'],['Customer-visible execution proof may attach only approved assets with a public delivery URL.','approved public image gate'],['Customer portal never receives internal cost fields.','customer cost privacy message'],['execution_proof_rpcs_not_public','policy assertion']
 ].forEach(([needle,label])=>expect(sql,needle,label));
 expect(schema,'BEGIN MIGRATION: 157_service_execution_proof_cost_capture','canonical schema includes 157 migration');
-expect(ops,"const SCHEMA = 157",'operations schema marker');
+expect(ops,"const SCHEMA = 158",'operations schema marker');
 expect(ops,"execution_proofs: 'v_work_order_execution_proof_queue'",'operations proof queue view');
 expect(ops,"execution_costs: 'v_work_order_execution_cost_dashboard'",'operations cost queue view');
 expect(ops,"action === 'work_order_execution_proof_submit'",'operations submit action');
 expect(ops,"ywi_rpc_decide_work_order_execution_proof",'operations decision RPC');
-expect(portal,"const SCHEMA = 157",'portal schema marker');
+expect(portal,"const SCHEMA = 158",'portal schema marker');
 expect(portal,'portalExecutionProofs','portal proof reader');
 expect(portal,'execution_proofs: executionProofs','portal public package proof field');
 expect(cockpit,'oc_execution_proof_form','cockpit proof form');
