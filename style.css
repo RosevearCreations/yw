@@ -3186,7 +3186,7 @@ body.customer-portal-mode>:not(#customerPortalView):not(script):not(style),body.
 }
 
 
-/* Build 2026-07-12a — schema 157 service-execution proof and consent-controlled live-update email.
+/* Build 2026-07-17a — schema 158 service-execution proof and consent-controlled live-update email.
    Customer preference remains a light readable portal choice. Internal delivery
    monitoring stays in the high-contrast dark Operations Cockpit. */
 .customer-portal-notification-preference{margin:16px 0;padding:clamp(18px,3vw,28px);border:1px solid rgba(15,71,55,.16);border-radius:18px;background:#f9fdfb;box-shadow:0 10px 26px rgba(17,50,40,.05)}
@@ -3208,7 +3208,7 @@ body.customer-portal-mode>:not(#customerPortalView):not(script):not(style),body.
 @media(max-width:620px){.customer-portal-notification-preference{padding:16px}.customer-portal-notification-preference>header{flex-direction:column}.customer-portal-notification-preference button{width:100%}.operations-cockpit .oc-notification-delivery-status{flex-direction:column}}
 @media(forced-colors:active){.customer-portal-notification-preference{border:1px solid CanvasText;background:Canvas;color:CanvasText}.customer-portal-notification-preference strong{border:1px solid CanvasText;background:Canvas;color:CanvasText}.operations-cockpit .oc-notification-delivery-status,.operations-cockpit .oc-notification-delivery-card{border:1px solid CanvasText;background:Canvas;color:CanvasText}}
 
-/* Schema 157 service-execution proof and cost-review surfaces */
+/* Schema 158 service-execution proof and cost-review surfaces */
 .operations-cockpit .oc-execution-summary{display:flex;gap:10px;margin:0 0 12px;padding:12px 14px;border:1px solid rgba(125,211,252,.22);border-radius:13px;background:rgba(5,16,34,.54);color:var(--oc-text-muted);line-height:1.48}
 .operations-cockpit .oc-execution-cost-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
 .operations-cockpit .oc-execution-cost-card{display:grid;gap:10px;padding:13px;border:1px solid rgba(147,197,253,.24);border-radius:13px;background:linear-gradient(145deg,rgba(12,27,50,.96),rgba(14,38,61,.92));color:var(--oc-text)}
@@ -3234,3 +3234,20 @@ body.customer-portal-mode>:not(#customerPortalView):not(script):not(style),body.
 @media(max-width:760px){.operations-cockpit .oc-execution-cost-grid,.operations-cockpit .oc-execution-cost-card dl,.operations-cockpit .oc-execution-proof-card dl{grid-template-columns:1fr}.customer-portal-proofs>header,.customer-portal-proof header{flex-direction:column}}
 @media(forced-colors:active){.operations-cockpit .oc-execution-summary,.operations-cockpit .oc-execution-cost-card,.operations-cockpit .oc-execution-proof-card,.customer-portal-proofs,.customer-portal-proof article{border:1px solid CanvasText;background:Canvas;color:CanvasText}}
 
+
+/* Build 2026-07-17a — schema 158 supervisor closeout and customer signoff. */
+.operations-cockpit .oc-closeout-card{border-color:rgba(125,211,252,.32);background:linear-gradient(135deg,rgba(14,35,65,.96),rgba(9,20,38,.98))}
+.operations-cockpit .oc-closeout-card .oc-closeout-summary{margin:.7rem 0;color:var(--oc-text);line-height:1.5}
+.customer-portal-closeout{margin:1.25rem 0;padding:clamp(1rem,2vw,1.35rem);border:1px solid rgba(15,76,129,.16);border-radius:22px;background:linear-gradient(135deg,#ffffff,#f1f7fb);box-shadow:0 18px 42px rgba(15,31,48,.09)}
+.customer-portal-closeout>header{display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;margin-bottom:.8rem}
+.customer-portal-closeout>header h2{margin:.1rem 0 0;color:#10233d}
+.customer-portal-closeout>header strong{padding:.35rem .65rem;border-radius:999px;background:#e8f7ef;color:#0f5132;white-space:nowrap}
+.customer-portal-closeout>header strong.is-off{background:#fff7db;color:#6d4d00}
+.customer-portal-closeout-gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.75rem;margin:1rem 0}
+.customer-portal-closeout-media{position:relative;display:block;overflow:hidden;border-radius:16px;border:1px solid rgba(15,76,129,.15);background:#e9f2f8;color:#10233d;text-decoration:none}
+.customer-portal-closeout-media img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+.customer-portal-closeout-media span{position:absolute;left:.5rem;bottom:.5rem;padding:.22rem .48rem;border-radius:999px;background:rgba(16,35,61,.88);color:#fff;font-size:.75rem;font-weight:800;text-transform:capitalize}
+.customer-portal-closeout-form{margin-top:1rem;border-top:1px solid rgba(15,76,129,.12);padding-top:1rem}
+.customer-portal-button-row{display:flex;flex-wrap:wrap;gap:.75rem}
+.customer-portal-button-row button{flex:1 1 210px}
+@media(max-width:620px){.customer-portal-closeout>header{display:block}.customer-portal-closeout>header strong{display:inline-block;margin-top:.5rem}.customer-portal-closeout-gallery{grid-template-columns:1fr}.operations-cockpit .oc-closeout-card .oc-actions{grid-template-columns:1fr}}
