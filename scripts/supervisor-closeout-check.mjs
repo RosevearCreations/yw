@@ -57,7 +57,7 @@ add('schema158-private-grants', hasAll(migration, [
 add('schema158-reference-includes-migration', schema.includes('-- BEGIN MIGRATION: 158_supervisor_closeout_customer_signoff_invoice_followup') && schema.includes(migration.trim()), 'Full schema reference includes schema 158 verbatim.');
 
 add('operations-closeout-actions', hasAll(ops, [
-  "const BUILD = '2026-07-17a'",
+  "const BUILD = '2026-08-05a'",
   'const SCHEMA = 158',
   "closeouts: 'v_work_order_closeout_queue'",
   "action === 'work_order_closeout_submit'",
@@ -66,7 +66,7 @@ add('operations-closeout-actions', hasAll(ops, [
   'ywi_rpc_decide_work_order_closeout_package'
 ]), 'Operations function exposes role-checked closeout submit/decision actions.');
 add('portal-closeout-action', hasAll(portal, [
-  "const BUILD = '2026-07-17a'",
+  "const BUILD = '2026-08-05a'",
   'const SCHEMA = 158',
   'portalCloseoutPackages',
   'v_customer_portal_closeout_packages',

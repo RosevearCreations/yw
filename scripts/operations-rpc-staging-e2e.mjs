@@ -83,7 +83,7 @@ async function functionCall(name, token, body) {
   return { status: res.status, data };
 }
 const runKey = `staging-schema156-${new Date().toISOString().replace(/[:.]/g, '-')}-${Math.random().toString(16).slice(2, 8)}`;
-const created = await rest('operations_staging_test_runs', { method: 'POST', body: JSON.stringify({ run_key: runKey, environment_label: 'staging', suite_name: 'operations_rpc_e2e_schema158', run_status: 'started', requested_by_profile_id: actorId, summary: { build: '2026-07-17a', schema: 158, fixture_mode: process.env.YWI_STAGING_CREATE_FIXTURES === '1' } }) });
+const created = await rest('operations_staging_test_runs', { method: 'POST', body: JSON.stringify({ run_key: runKey, environment_label: 'staging', suite_name: 'operations_rpc_e2e_schema158', run_status: 'started', requested_by_profile_id: actorId, summary: { build: '2026-08-05a', schema: 158, fixture_mode: process.env.YWI_STAGING_CREATE_FIXTURES === '1' } }) });
 const run = Array.isArray(created) ? created[0] : created;
 const cases = [];
 async function liveCase(caseKey, fn, optional = false) {
@@ -174,7 +174,7 @@ if (fixture && process.env.YWI_STAGING_CLEANUP_FIXTURE === '1') await liveCase('
 const failed = cases.filter((item) => item.case_status === 'failed');
 try {
   await rest('operations_staging_test_results', { method: 'POST', body: JSON.stringify(cases.map((item) => ({ ...item, run_id: run.id }))) });
-  await rest(`operations_staging_test_runs?id=eq.${encodeURIComponent(run.id)}`, { method: 'PATCH', body: JSON.stringify({ run_status: failed.length ? 'failed' : 'passed', finished_at: new Date().toISOString(), summary: { build: '2026-07-17a', schema: 158, case_count: cases.length, failed_count: failed.length, fixture_set_id: fixture?.fixture_set_id || null, live_work_order_id: uuid(liveWorkOrderId) ? liveWorkOrderId : null } }) });
+  await rest(`operations_staging_test_runs?id=eq.${encodeURIComponent(run.id)}`, { method: 'PATCH', body: JSON.stringify({ run_status: failed.length ? 'failed' : 'passed', finished_at: new Date().toISOString(), summary: { build: '2026-08-05a', schema: 158, case_count: cases.length, failed_count: failed.length, fixture_set_id: fixture?.fixture_set_id || null, live_work_order_id: uuid(liveWorkOrderId) ? liveWorkOrderId : null } }) });
 } catch (error) {
   console.error(`WARN  Could not record full test outcome: ${error instanceof Error ? error.message : String(error)}`);
 }

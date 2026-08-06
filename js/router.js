@@ -86,6 +86,23 @@
     if (first) first.focus({ preventScroll: true });
   }
 
+  function scrollToActiveSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (!section) {
+      try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch { try { window.scrollTo(0, 0); } catch {} }
+      return;
+    }
+    const run = () => {
+      try {
+        section.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'auto' });
+      } catch {
+        try { window.scrollTo(0, Math.max(0, section.offsetTop - 112)); } catch {}
+      }
+    };
+    if (typeof window.requestAnimationFrame === 'function') window.requestAnimationFrame(run);
+    else run();
+  }
+
   function showSection(sectionId, options = {}) {
     if (!sectionId) return;
     const allowedSection = getAllowedSection(sectionId);
@@ -95,7 +112,7 @@
     if (!options.skipFocus) {
       try { focusSection(allowedSection); } catch {}
     }
-    try { window.scrollTo({ top: 0, behavior: 'auto' }); } catch { try { window.scrollTo(0, 0); } catch {} }
+    scrollToActiveSection(allowedSection);
     document.dispatchEvent(new CustomEvent('ywi:route-shown', { detail: { requested: sectionId, allowed: allowedSection, role: getRole() } }));
     if (allowedSection !== sectionId) {
       document.dispatchEvent(new CustomEvent('ywi:route-denied', { detail: { requested: sectionId, redirected: allowedSection, role: getRole() } }));

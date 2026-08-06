@@ -5,7 +5,7 @@
 'use strict';
 
 (function () {
-  const BUILD = '2026-07-17a';
+  const BUILD = '2026-08-05a';
   const RETRY_KEY = 'ywi_operations_cockpit_retry_v2';
   const DRAFT_KEY = 'ywi_operations_cockpit_draft_v2';
   let cameraStream = null;
