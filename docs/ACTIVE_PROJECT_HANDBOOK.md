@@ -1,6 +1,6 @@
 # Active Project Handbook
 
-**Release:** `2026-07-17a`  
+**Release:** `2026-08-05a`  
 **Schema target:** `158`  
 **Business model:** local field-service operations with quote intake, customer portal, deposits, dispatch, live proof, internal job costing, customer signoff, invoice readiness, review generation, maintenance follow-up, accountant handoff, and approved local SEO pages.
 
@@ -22,7 +22,7 @@ The platform is becoming one controlled service lifecycle:
 
 ## Schema 158 supervisor closeout
 
-Schema 158 adds:
+Schema 158 remains the current database target. It includes:
 
 - `work_order_closeout_packages` for final closeout state, customer signoff, invoice readiness, review request, and maintenance follow-up.
 - `work_order_closeout_gallery_items` for approved before/after public gallery images.
@@ -35,9 +35,22 @@ Schema 158 adds:
 
 Customer portal closeout is private. It must never expose internal labour, material, equipment, margin, staff notes, access details, customer email storage, portal tokens, or private review media.
 
+## 2026-08-05a app-shell navigation correction
+
+The large visual/value/quote support panels were previously above the routed app cards. That made every top menu item appear below a long static section. This build fixes the daily workflow by:
+
+- placing `<main class="container">` before the supporting panels;
+- moving the visual/value/support panels into `<aside class="app-supporting-panels">` below the app workspace;
+- scrolling directly to the selected allowed section through `scrollToActiveSection`;
+- adding `scroll-margin-top` to active cards so sticky navigation does not cover headings;
+- preserving section-level visual placeholders for Toolbox, PPE, First Aid, Incident, Inspection, Jobs, Equipment, and Admin;
+- keeping the mobile dropdown menu behavior.
+
 ## SEO direction
 
 Public SEO remains separate from customer portal content. Public pages need one clear H1, useful local-service copy, approved original images, descriptive alt text, canonical URLs, visible content matching structured data, and sitemap entries only after approval. Do not mass-publish thin automated pages.
+
+Supporting panels may provide useful public context, but they must not block the app workspace or become thin doorway content. Daily app sections should load first for users.
 
 ## Security and payment boundaries
 
