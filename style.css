@@ -1,5 +1,5 @@
 /* File: style.css
-   Brief description: UI refresh for auth, admin dashboard, cards, tables, forms, and responsive layout.
+   Brief description: UI refresh for auth, admin dashboard, cards, tables, routed navigation, forms, and responsive layout.
 */
 
 :root {
@@ -73,6 +73,34 @@ a {
 
 main.container {
   padding-bottom: 40px;
+}
+
+main.container > .card {
+  scroll-margin-top: clamp(96px, 15vh, 148px);
+}
+
+.app-supporting-panels {
+  width: min(var(--max-width), calc(100% - 28px));
+  margin: 10px auto 36px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.app-supporting-panels > section {
+  width: 100%;
+}
+
+.app-supporting-panels .graphic-placeholder-wall,
+.app-supporting-panels .surface-readiness-strip,
+.app-supporting-panels .surface-proof-strip,
+.app-supporting-panels .surface-value-strip,
+.app-supporting-panels .surface-execution-strip,
+.app-supporting-panels .public-intake-strip,
+.app-supporting-panels .mobile-conflict-preview-strip,
+.app-supporting-panels .write-action-proof-strip {
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .card,
@@ -3186,7 +3214,7 @@ body.customer-portal-mode>:not(#customerPortalView):not(script):not(style),body.
 }
 
 
-/* Build 2026-07-17a — schema 158 service-execution proof and consent-controlled live-update email.
+/* Build 2026-08-05a — schema 158 service-execution proof and consent-controlled live-update email.
    Customer preference remains a light readable portal choice. Internal delivery
    monitoring stays in the high-contrast dark Operations Cockpit. */
 .customer-portal-notification-preference{margin:16px 0;padding:clamp(18px,3vw,28px);border:1px solid rgba(15,71,55,.16);border-radius:18px;background:#f9fdfb;box-shadow:0 10px 26px rgba(17,50,40,.05)}
@@ -3235,7 +3263,7 @@ body.customer-portal-mode>:not(#customerPortalView):not(script):not(style),body.
 @media(forced-colors:active){.operations-cockpit .oc-execution-summary,.operations-cockpit .oc-execution-cost-card,.operations-cockpit .oc-execution-proof-card,.customer-portal-proofs,.customer-portal-proof article{border:1px solid CanvasText;background:Canvas;color:CanvasText}}
 
 
-/* Build 2026-07-17a — schema 158 supervisor closeout and customer signoff. */
+/* Build 2026-08-05a — schema 158 supervisor closeout and customer signoff. */
 .operations-cockpit .oc-closeout-card{border-color:rgba(125,211,252,.32);background:linear-gradient(135deg,rgba(14,35,65,.96),rgba(9,20,38,.98))}
 .operations-cockpit .oc-closeout-card .oc-closeout-summary{margin:.7rem 0;color:var(--oc-text);line-height:1.5}
 .customer-portal-closeout{margin:1.25rem 0;padding:clamp(1rem,2vw,1.35rem);border:1px solid rgba(15,76,129,.16);border-radius:22px;background:linear-gradient(135deg,#ffffff,#f1f7fb);box-shadow:0 18px 42px rgba(15,31,48,.09)}

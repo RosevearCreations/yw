@@ -1,4 +1,4 @@
-// Schema 158 / build 2026-07-17a
+// Schema 158 / build 2026-08-05a
 // Protected, consent-controlled delivery of customer-visible live job updates.
 //
 // This function is not a public endpoint. It requires a dedicated run token and
@@ -8,7 +8,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const BUILD = '2026-07-17a';
+const BUILD = '2026-08-05a';
 const SCHEMA = 158;
 const jsonHeaders = { 'Content-Type':'application/json', 'Cache-Control':'no-store' };
 
