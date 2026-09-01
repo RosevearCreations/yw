@@ -1,0 +1,44 @@
+name: Schema 164 next-step checkpoint
+
+on:
+  push:
+    branches:
+      - schema-164-cross-module-write-boundaries
+
+permissions:
+  contents: write
+
+jobs:
+  patch-next-step:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: schema-164-cross-module-write-boundaries
+          fetch-depth: 0
+      - name: Append precise Schema 164 restart marker
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('docs/NEXT_STEPS_AND_SANITY_CHECK.md')
+          text = path.read_text(encoding='utf-8')
+          marker = '## Schema 164 restart point — 2026-09-01f'
+          addition = "\n\n## Schema 164 restart point — 2026-09-01f\n1. Verify all 35 `operations-manage` handlers match both the source write-boundary manifest and Schema 164 database registry.\n2. Verify unknown actions resolve to no contract and are rejected before authorization/handler execution.\n3. Verify manual `deposit_status_update` is disabled at the boundary and Stripe webhook/customer checkout remain payment-truth authorities.\n4. Verify cross-module effects emit only private contract/status event metadata and Shared Core remains read-only.\n5. After Schema 164 is fully green on `main`, begin Schema 165: module-local Finance/Jobs write-service extraction from `operations-manage`, retaining the same action contracts during the move.\n"
+          if marker not in text:
+              path.write_text(text.rstrip() + addition, encoding='utf-8')
+          workflow = Path('.github/workflows/schema164-next-step-patch.yml')
+          if workflow.exists():
+              workflow.unlink()
+          PY
+      - name: Commit checkpoint and remove temporary workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/NEXT_STEPS_AND_SANITY_CHECK.md .github/workflows/schema164-next-step-patch.yml
+          git diff --cached --check
+          git diff --cached --quiet && exit 0
+          git commit -m "Schema 164 record restart point"
+          git push origin HEAD:schema-164-cross-module-write-boundaries
