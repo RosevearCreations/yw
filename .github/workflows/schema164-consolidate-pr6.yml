@@ -1,0 +1,114 @@
+name: Schema 164 consolidate parallel boundary work
+
+on:
+  push:
+    branches:
+      - schema-164-cross-module-write-boundaries
+
+permissions:
+  contents: write
+
+jobs:
+  consolidate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: schema-164-cross-module-write-boundaries
+          fetch-depth: 0
+      - name: Fetch parallel Schema 164 branch
+        run: git fetch origin schema-164-cross-module-event-boundaries:refs/remotes/origin/schema-164-cross-module-event-boundaries
+      - name: Consolidate event contracts, outbox, tests and authority docs
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json, subprocess
+
+          migration_path = Path('sql/164_cross_module_event_write_boundaries.sql')
+          migration = migration_path.read_text(encoding='utf-8')
+          parallel = subprocess.check_output([
+              'git','show','origin/schema-164-cross-module-event-boundaries:sql/164_cross_module_event_write_boundaries.sql'
+          ], text=True)
+
+          if 'create table if not exists public.app_cross_module_event_contracts' not in migration:
+              start = parallel.index('create table if not exists public.app_cross_module_event_contracts')
+              end = parallel.index('insert into public.it_readiness_check_registry(', start)
+              unique_block = parallel[start:end].rstrip() + '\n\n'
+              anchor = migration.index('insert into public.it_readiness_check_registry(')
+              migration = migration[:anchor] + unique_block + migration[anchor:]
+
+          migration = migration.replace(
+              "'cross_module_write_boundaries','Architecture','Cross-module writes use explicit action and event contracts','critical',\n  'Keep every operations-manage action in the fail-closed module write-boundary registry. Unknown actions must be rejected before business handlers run; cross-module effects require a named event key.',",
+              "'cross_module_write_boundaries','Architecture','Cross-module writes use explicit action contracts and a private versioned event outbox','critical',\n  'Keep every operations-manage action in the fail-closed write registry, keep each private domain single-owner, and publish versioned server-only events for cross-module reactions instead of granting cross-domain write access.',"
+          )
+          migration = migration.replace(
+              "'Complete source/runtime acceptance proving all 35 operations actions are explicitly contracted and unknown actions fail closed.',",
+              "'Complete source/runtime acceptance proving all 35 operations actions are explicitly contracted, unknown actions fail closed, and the private versioned event outbox/domain-ownership assertions remain green.',"
+          )
+          migration = migration.replace(
+              "'{\"build\":\"2026-09-01f\",\"schema\":164,\"action_contracts\":35,\"unknown_actions\":\"fail_closed\",\"cross_module_events\":\"private\"}'::jsonb",
+              "'{\"build\":\"2026-09-01f\",\"schema\":164,\"action_contracts\":35,\"unknown_actions\":\"fail_closed\",\"action_event_stream\":\"module_boundary_events\",\"event_contract_version\":1,\"cross_module_outbox\":\"app_cross_module_events\",\"domain_ownership\":\"single_owner\"}'::jsonb"
+          )
+          migration = migration.replace(
+              "'Registers fail-closed server write contracts and private named boundary events for the 35 operations-manage actions.',",
+              "'Registers fail-closed server write contracts for all 35 operations-manage actions plus a private versioned cross-module event contract/outbox and single-owner domain proof.',"
+          )
+          migration = migration.replace(
+              "'Control-plane and event-boundary release only. Shared Core canonical business identity storage is unchanged.'",
+              "'Control-plane and event-boundary release only. Shared Core canonical business identity storage is unchanged; cross-module publication is service-role-only and contract validated.'"
+          )
+          migration_path.write_text(migration, encoding='utf-8')
+
+          boundary_script = Path('scripts/module-boundary-check.mjs')
+          if not boundary_script.exists():
+              boundary_script.write_text(subprocess.check_output([
+                  'git','show','origin/schema-164-cross-module-event-boundaries:scripts/module-boundary-check.mjs'
+              ], text=True), encoding='utf-8')
+
+          package_path = Path('package.json')
+          package = json.loads(package_path.read_text(encoding='utf-8'))
+          package['scripts']['test:boundaries'] = 'node scripts/module-boundary-check.mjs'
+          package_path.write_text(json.dumps(package, indent=2) + '\n', encoding='utf-8')
+
+          workflow_path = Path('.github/workflows/staging-browser-integration.yml')
+          workflow = workflow_path.read_text(encoding='utf-8')
+          if 'npm run test:boundaries' not in workflow:
+              workflow = workflow.replace('      - run: npm run test:runtime\n', '      - run: npm run test:runtime\n      - run: npm run test:boundaries\n', 1)
+          workflow_path.write_text(workflow, encoding='utf-8')
+
+          doc_updates = {
+              'README.md': '- Schema 164 also retains a private versioned cross-module event contract/outbox with producer/consumer validation and single-owner domain assertions, consolidating the parallel Schema 164 boundary work into this canonical release.\n',
+              'docs/ACTIVE_PROJECT_HANDBOOK.md': '\nThe canonical Schema 164 release also includes the private `app_cross_module_event_contracts` / `app_cross_module_events` outbox, server-only publisher, producer/aggregate validation, and `v_module_domain_ownership` duplicate-owner proof. These architectural events complement the 35 action contracts; they do not create another business identity store.\n',
+              'docs/NEXT_STEPS_AND_SANITY_CHECK.md': '6. Verify `test:boundaries` passes: versioned cross-module contracts/outbox are private, publication is service-role-only, producer/domain assertions resolve, and no Shared Core identity is duplicated.\n'
+          }
+          for filename, addition in doc_updates.items():
+              path = Path(filename)
+              text = path.read_text(encoding='utf-8')
+              marker = addition.strip()
+              if marker not in text:
+                  path.write_text(text.rstrip() + '\n' + addition, encoding='utf-8')
+
+          temp = Path('.github/workflows/schema164-consolidate-pr6.yml')
+          if temp.exists():
+              temp.unlink()
+          PY
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run test:runtime
+      - run: npm run test:boundaries
+      - run: npm run test:modules
+      - name: Commit consolidated Schema 164
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sql/164_cross_module_event_write_boundaries.sql scripts/module-boundary-check.mjs package.json .github/workflows/staging-browser-integration.yml README.md docs/ACTIVE_PROJECT_HANDBOOK.md docs/NEXT_STEPS_AND_SANITY_CHECK.md .github/workflows/schema164-consolidate-pr6.yml
+          git diff --cached --check
+          git diff --cached --quiet && exit 0
+          git commit -m "Schema 164 consolidate parallel event boundary architecture"
+          git push origin HEAD:schema-164-cross-module-write-boundaries
