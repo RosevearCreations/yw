@@ -5,7 +5,7 @@
 
 'use strict';
 
-const CACHE_NAME = 'ywi-shell-v2026-08-05a';
+const CACHE_NAME = 'ywi-shell-v2026-09-01a';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -15,7 +15,9 @@ const APP_SHELL = [
   '/favicon.ico',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
+  '/js/security.js',
   '/js/router.js',
+  '/js/module-nav.js',
   '/js/mobile-menu.js',
   '/js/mobile-today.js',
   '/js/mobile-form-helper.js',
@@ -24,7 +26,6 @@ const APP_SHELL = [
   '/js/customer-portal.js',
   '/js/public-routes.js',
   '/js/account-ui.js',
-  '/js/security.js',
   '/js/bootstrap.js',
   '/js/auth.js',
   '/js/ui-auth.js',
@@ -33,6 +34,8 @@ const APP_SHELL = [
   '/js/jobs-ui.js',
   '/js/admin-ui.js',
   '/js/operations-cockpit.js',
+  '/js/finance-ui.js',
+  '/js/module-access-ui.js',
   '/js/hse-ops-ui.js',
   '/js/logbook-ui.js',
   '/js/reports-ui.js',

@@ -1,4 +1,4 @@
-/* Customer portal - build 2026-08-05a / schema 158
+/* Customer portal - build 2026-09-01a / schema 159
    Public token-based quote review, acceptance, hosted deposits, dispatch status,
    and follow-up requests. The protected staff shell is hidden in portal mode. */
 'use strict';

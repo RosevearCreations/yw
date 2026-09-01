@@ -96,11 +96,19 @@
   function syncQuickNav() {
     const { quickNav } = getEls();
     if (!quickNav) return;
-    const active = (document.querySelector('#mainNav a.active[href^="#"]')?.getAttribute('href') || window.location.hash || '#toolbox').replace('#', '');
+    const authState = window.YWI_AUTH?.getState?.() || {};
+    const sec = window.YWISecurity || null;
+    const section = String((window.location.hash || '#toolbox').replace('#', '').split('&')[0]);
+    const activeModule = sec?.getModuleForSection?.(section) || sec?.getVisibleModules?.(authState.role || 'employee')?.[0]?.key || '';
     quickNav.querySelectorAll('[data-mobile-quick]').forEach((link) => {
       const key = link.getAttribute('data-mobile-quick') || '';
-      link.classList.toggle('active', key === active);
-      if (key === active) link.setAttribute('aria-current', 'page');
+      const moduleKey = link.getAttribute('data-mobile-module') || sec?.getModuleForSection?.(key) || '';
+      const allowed = moduleKey ? (sec?.canViewModule?.(moduleKey, authState.role || 'employee', 'view') !== false) : true;
+      link.hidden = !allowed;
+      link.setAttribute('aria-hidden', allowed ? 'false' : 'true');
+      const isActive = allowed && moduleKey === activeModule;
+      link.classList.toggle('active', isActive);
+      if (isActive) link.setAttribute('aria-current', 'page');
       else link.removeAttribute('aria-current');
     });
   }
@@ -152,6 +160,7 @@
       sync();
       if (isMobile()) close();
     });
+    document.addEventListener('ywi:module-permissions-changed', sync);
     if (typeof window.matchMedia === 'function') {
       state.media = window.matchMedia(MOBILE_QUERY);
       state.media.addEventListener?.('change', sync);

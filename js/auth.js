@@ -8,7 +8,7 @@
 
 (function () {
   const boot = window.YWI_BOOT || null;
-  const security = window.YWISecurity || null;
+  function security() { return window.YWISecurity || null; }
   let sb = window.YWI_SB || window._sb || null;
 
   function getRuntimeConfig() {
@@ -79,7 +79,9 @@
     configError: boot?.state?.configError || '',
     needsAccountSetup: false,
     isLoggingOut: false,
-    identityKey: ''
+    identityKey: '',
+    modulePermissions: [],
+    modulePermissionsLoaded: false
   };
 
   function dispatch(name, detail = {}) {
@@ -117,6 +119,9 @@
     state.isAuthenticated = false;
     state.needsAccountSetup = false;
     state.identityKey = '';
+    state.modulePermissions = [];
+    state.modulePermissionsLoaded = false;
+    security()?.clearModulePermissions?.();
   }
 
   function getRedirectUrl() {
@@ -135,7 +140,7 @@
   }
 
   function getRoleLabel(role) {
-    if (security?.getRoleLabel) return security.getRoleLabel(role);
+    if (security()?.getRoleLabel) return security().getRoleLabel(role);
     const map = {
       worker: 'Employee',
       employee: 'Employee',
@@ -172,6 +177,27 @@
     }
   }
 
+  async function fetchModulePermissions(userId) {
+    if (!userId || !sb) return [];
+    try {
+      const { data, error } = await withTimeout(
+        sb.rpc('ywi_get_my_module_permissions'),
+        5000,
+        'Module permission lookup timed out.'
+      );
+      if (error) return [];
+      return Array.isArray(data) ? data : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function applyModulePermissions(rows, loaded = true) {
+    state.modulePermissions = Array.isArray(rows) ? rows : [];
+    state.modulePermissionsLoaded = !!loaded;
+    security()?.setModulePermissions?.(state.modulePermissions, { loaded: state.modulePermissionsLoaded });
+  }
+
   let applySessionVersion = 0;
 
   async function applySession(session) {
@@ -196,6 +222,9 @@
     state.profile = fetchedProfile || (sameUser ? previousProfile : null);
     state.role = getEffectiveRole(state.profile, state.user);
     state.roleLabel = getRoleLabel(state.role);
+    const moduleRows = await fetchModulePermissions(state.user.id);
+    if (currentVersion != applySessionVersion) return;
+    applyModulePermissions(moduleRows, moduleRows.length > 0);
     const username = safeText(state.profile?.username || state.user?.user_metadata?.username || state.user?.app_metadata?.username);
     const passwordReady = state.profile?.password_login_ready === true;
     const onboardingComplete = !!(state.profile?.onboarding_completed_at || state.profile?.account_setup_completed_at);
@@ -232,6 +261,7 @@
     state.authFlow = bootState.authFlow || state.authFlow || 'idle';
     state.configError = bootState.configError || state.configError || '';
     state.needsAccountSetup = !!bootState.needsAccountSetup;
+    if (Array.isArray(bootState.modulePermissions)) applyModulePermissions(bootState.modulePermissions, true);
     state.bootReady = true;
     state.pendingAuthResolution = false;
     state.identityKey = state.user?.id || '';
@@ -477,6 +507,10 @@
         state.profile = await fetchProfile(state.user.id);
         state.role = getEffectiveRole(state.profile, state.user) || normalizeRole(state.profile?.role || state.role, state.profile, state.user);
         state.roleLabel = getRoleLabel(state.role);
+      }
+      if (state.user?.id && !state.modulePermissionsLoaded) {
+        const moduleRows = await fetchModulePermissions(state.user.id);
+        applyModulePermissions(moduleRows, moduleRows.length > 0);
       }
       dispatch('ywi:auth-changed', { state: getState() });
     });

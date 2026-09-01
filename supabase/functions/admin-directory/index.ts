@@ -7,6 +7,7 @@
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { hasModuleAccess } from "../_shared/module-permissions.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,6 +31,16 @@ function effectiveRole(profile: any, user: any) {
   if (direct === 'admin' || tier === 'admin' || meta === 'admin') return 'admin';
   if (direct === 'supervisor' || tier === 'supervisor' || meta === 'supervisor') return 'supervisor';
   return direct || tier || meta || 'employee';
+}
+
+function moduleRequirementForScope(scope: string): { moduleKey: 'safety'|'finance'|'jobs'|'admin'; minimum: 'view'|'create'|'approve'|'manage' } | null {
+  const key = String(scope || '').trim().toLowerCase();
+  if (['reporting','evidence'].includes(key)) return { moduleKey: 'safety', minimum: key === 'evidence' ? 'approve' : 'view' };
+  if (['accounting','accounting_close','banking','tax_payroll','orders','accounting_backbone'].includes(key)) return { moduleKey: 'finance', minimum: 'view' };
+  if (['crew'].includes(key)) return { moduleKey: 'jobs', minimum: 'view' };
+  if (['module_permissions'].includes(key)) return { moduleKey: 'admin', minimum: 'manage' };
+  if (['all','users','people','sites','assignments','notifications','operations','command_center','health'].includes(key)) return { moduleKey: 'admin', minimum: 'view' };
+  return null;
 }
 
 async function safeList(supabase: any, table: string, columns = '*', orderColumn?: string, limit = 200, ascending = true) {
@@ -168,6 +179,38 @@ serve(async (req) => {
   const jobsPage = clampInt(body.jobs_page, 1, 1, 10000);
   const jobsPageSize = clampInt(body.jobs_page_size, Math.min(limit, 50), 1, 200);
   const jobsSearch = String(body.jobs_search || '').trim().toLowerCase();
+
+
+  const moduleRequirement = moduleRequirementForScope(scope);
+  if (moduleRequirement && !(await hasModuleAccess(supabase, actorProfile, moduleRequirement.moduleKey, moduleRequirement.minimum))) {
+    return Response.json({
+      ok:false,
+      error:`${moduleRequirement.moduleKey} module ${moduleRequirement.minimum} access is required.`,
+      module_key:moduleRequirement.moduleKey,
+      required_access:moduleRequirement.minimum
+    }, { status:403, headers:corsHeaders });
+  }
+
+  if (scope === 'module_permissions') {
+    if (normalizeRole(actorRole) !== 'admin') {
+      return Response.json({ ok:false, error:'Admin role is required to manage module permissions.' }, { status:403, headers:corsHeaders });
+    }
+    const [modules, profiles, roleDefaults, overrides, audit] = await Promise.all([
+      safeList(supabase, 'app_modules', '*', 'sort_order', 20, true),
+      safeList(supabase, 'profiles', 'id,full_name,email,role,is_active,employment_status,updated_at', 'full_name', 500, true),
+      safeList(supabase, 'app_role_module_permissions', '*', 'role', 100, true),
+      safeList(supabase, 'app_profile_module_permissions', '*', 'updated_at', 1000, false),
+      safeList(supabase, 'app_module_permission_audit', '*', 'created_at', 250, false),
+    ]);
+    return Response.json({
+      ok:true, scope:'module_permissions', actor_role:actorRole,
+      app_modules:modules,
+      module_permission_profiles:(profiles || []).filter((row:any) => row?.is_active !== false),
+      module_role_defaults:roleDefaults,
+      module_permission_overrides:overrides,
+      module_permission_audit:audit
+    }, { headers:corsHeaders });
+  }
 
   // Reporting can be a heavy screen. Return it through a narrow fast path so
   // Admin boot does not need to load people/site/assignment directories first.

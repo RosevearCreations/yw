@@ -19,6 +19,7 @@
     headerSession: document.getElementById('headerSession'),
     headerSessionName: document.getElementById('headerSessionName'),
     headerLoginBtn: document.getElementById('headerLoginBtn'),
+    headerProfileLink: document.getElementById('headerProfileLink'),
     headerSettingsLink: document.getElementById('headerSettingsLink'),
     headerLogoutBtn: document.getElementById('headerLogoutBtn'),
     authNotice: document.getElementById('authNotice'),
@@ -49,7 +50,8 @@
     configStatus: document.getElementById('runtimeConfigStatus'),
     tabButtons: Array.from(document.querySelectorAll('[data-auth-tab]')),
     panels: Array.from(document.querySelectorAll('[data-auth-panel]')),
-    headerNav: document.querySelector('.app-header nav'),
+    headerNav: document.getElementById('mainNav'),
+    moduleSectionNav: document.getElementById('moduleSectionNav'),
     appMain: document.querySelector('main.container')
   };
 
@@ -175,6 +177,7 @@ function syncAuthWall(state = {}) {
   document.body.dataset.authenticated = isAuthenticated ? 'true' : 'false';
   document.body.dataset.authPending = state.pendingAuthResolution ? 'true' : 'false';
   if (els.headerNav) els.headerNav.style.display = isAuthenticated ? '' : 'none';
+  if (els.moduleSectionNav) els.moduleSectionNav.style.display = isAuthenticated ? '' : 'none';
   if (els.appMain) els.appMain.style.display = isAuthenticated ? '' : 'none';
   if (els.authInfo) {
     if (isAuthenticated) {
@@ -194,6 +197,7 @@ function syncAuthWall(state = {}) {
       els.headerSessionName.textContent = state?.isAuthenticated ? `${displayName} · ${state.roleLabel || state.role || 'User'}` : 'Not signed in';
     }
     if (els.headerLoginBtn) els.headerLoginBtn.style.display = state?.isAuthenticated ? 'none' : '';
+    if (els.headerProfileLink) els.headerProfileLink.style.display = state?.isAuthenticated ? '' : 'none';
     if (els.headerSettingsLink) els.headerSettingsLink.style.display = state?.isAuthenticated ? '' : 'none';
     if (els.headerLogoutBtn) els.headerLogoutBtn.style.display = state?.isAuthenticated ? '' : 'none';
     if (els.headerSession) els.headerSession.classList.toggle('hidden', !state?.isAuthenticated);

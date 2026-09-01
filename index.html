@@ -8,17 +8,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>YWI Southern Ontario OHSA Mobile Field App | Today, Safety, Jobs</title>
+  <title>YWI Operations Platform | Safety/OHSA, Finance, Jobs, Admin</title>
   <meta name="description" content="YWI Southern Ontario OHSA mobile field app for Today actions, workplace safety, incident reporting, corrective-action tracking, worker self-service training, SDS acknowledgement, Southern Ontario jobs, crews, routes, equipment, inspections, reports, and admin workflow records." />
   <meta name="theme-color" content="#0f172a" />
   <meta name="color-scheme" content="dark light" />
 
-  <link rel="manifest" href="/manifest.json?v=2026-08-05a" />
-  <link rel="icon" href="/icons/icon-192.png?v=2026-08-05a" sizes="192x192" />
-  <link rel="stylesheet" href="/style.css?v=2026-08-05a" />
+  <link rel="manifest" href="/manifest.json?v=2026-09-01a" />
+  <link rel="icon" href="/icons/icon-192.png?v=2026-09-01a" sizes="192x192" />
+  <link rel="stylesheet" href="/style.css?v=2026-09-01a" />
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/js/app-config.js?v=2026-08-05a"></script>
+  <script src="/js/app-config.js?v=2026-09-01a"></script>
 
   <style>
     #authLoading {
@@ -104,7 +104,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-08-05a');
+          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-09-01a');
           if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
           }
@@ -126,6 +126,7 @@
 
       <div id="headerSession" class="header-session hidden">
         <span id="headerSessionName" class="header-session-name"></span>
+        <a href="#me" class="secondary" id="headerProfileLink" style="display:none;">Profile</a>
         <a href="#settings" class="secondary" id="headerSettingsLink" style="display:none;">Settings</a>
         <button id="headerLogoutBtn" class="secondary" type="button" style="display:none;">Logout</button>
       </div>
@@ -143,24 +144,13 @@
       <span class="main-menu-icon" aria-hidden="true"></span>
     </button>
 
-    <nav id="mainNav" class="main-nav" aria-label="Main app sections">
-      <a href="#today" class="active">Today</a>
-      <a href="#toolbox">Toolbox Talk</a>
-      <a href="#ppe">PPE Check</a>
-      <a href="#firstaid">First Aid Kit</a>
-      <a href="#incident">Incident / Near Miss</a>
-      <a href="#inspect">Site Inspection</a>
-      <a href="#drill">Emergency Drill</a>
-      <a href="#log">Logbook</a>
-      <a href="#reports">Reports</a>
-      <a href="#hseops">Safety Ops</a>
-      <a href="#me">My Profile</a>
-      <a href="#crew">Crew</a>
-      <a href="#jobs">Jobs</a>
-      <a href="#equipment">Equipment</a>
-      <a href="#settings">Settings</a>
-      <a href="#admin">Admin</a>
+    <nav id="mainNav" class="main-nav module-nav" aria-label="Main application modules">
+      <a href="#toolbox" class="active" data-module="safety">Safety / OHSA</a>
+      <a href="#finance" data-module="finance">Finance</a>
+      <a href="#today" data-module="jobs">Jobs</a>
+      <a href="#admin" data-module="admin">Admin</a>
     </nav>
+    <nav id="moduleSectionNav" class="module-section-nav" aria-label="Current module screens"></nav>
   </header>
 
   <div id="offlineBanner" class="notice" style="display:none;max-width:1100px;margin:14px auto 0;">You are offline or disconnected from the server. Some forms may still open, but sign-in, sync, uploads, and live data actions will not work until the connection returns.</div>
@@ -352,6 +342,7 @@
     <section id="log" class="card"><h2>Logbook</h2></section>
     <section id="reports" class="card"><h2>Historical Reports</h2></section>
     <section id="hseops" class="card"><h2>Ontario Safety Operations</h2></section>
+    <section id="finance" class="card"><div id="financeWorkspace"><div class="module-workspace-heading"><div><span class="module-kicker">Finance module</span><h2>Finance workspace</h2><p class="section-subtitle">Accounting, reconciliation, close, tax/payroll review, and accountant handoff are loaded only for profiles with Finance access.</p></div><div class="section-graphic-placeholder finance-graphic"><span aria-hidden="true">$</span><strong>Finance visual placeholder</strong><small>Future image: approved close dashboard or reconciliation proof.</small></div></div></div></section>
     <section id="me" class="card">
       <div class="section-heading">
         <div>
@@ -501,13 +492,11 @@
   </section>
   </aside>
 
-  <nav id="mobileQuickNav" class="mobile-quick-nav" aria-label="Mobile quick actions">
-    <a href="#today" data-mobile-quick="today"><span>Today</span><small class="mobile-quick-badge" data-mobile-badge="today" hidden>0</small></a>
-    <a href="#toolbox" data-mobile-quick="toolbox"><span>Talk</span><small class="mobile-quick-badge" data-mobile-badge="outbox" hidden>0</small></a>
-    <a href="#incident" data-mobile-quick="incident"><span>Incident</span></a>
-    <a href="#hseops" data-mobile-quick="hseops"><span>Safety</span></a>
-    <a href="#jobs" data-mobile-quick="jobs"><span>Jobs</span></a>
-    <a href="#admin" data-mobile-quick="admin"><span>Admin</span><small class="mobile-quick-badge" data-mobile-badge="actions" hidden>0</small></a>
+  <nav id="mobileQuickNav" class="mobile-quick-nav" aria-label="Mobile module shortcuts">
+    <a href="#toolbox" data-mobile-quick="toolbox" data-mobile-module="safety"><span>Safety</span><small class="mobile-quick-badge" data-mobile-badge="outbox" hidden>0</small></a>
+    <a href="#finance" data-mobile-quick="finance" data-mobile-module="finance"><span>Finance</span></a>
+    <a href="#today" data-mobile-quick="today" data-mobile-module="jobs"><span>Jobs</span><small class="mobile-quick-badge" data-mobile-badge="today" hidden>0</small></a>
+    <a href="#admin" data-mobile-quick="admin" data-mobile-module="admin"><span>Admin</span><small class="mobile-quick-badge" data-mobile-badge="actions" hidden>0</small></a>
   </nav>
 
   <datalist id="site-options"></datalist>
@@ -517,35 +506,38 @@
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
 
   <!-- Correct module order -->
-  <script src="/js/router.js?v=2026-08-05a"></script>
-  <script src="/js/mobile-menu.js?v=2026-08-05a"></script>
-  <script src="/js/mobile-today.js?v=2026-08-05a"></script>
-  <script src="/js/mobile-form-helper.js?v=2026-08-05a"></script>
-  <script src="/js/bootstrap.js?v=2026-08-05a"></script>
-  <script src="/js/auth.js?v=2026-08-05a"></script>
-  <script src="/js/security.js?v=2026-08-05a"></script>
-  <script src="/js/api.js?v=2026-08-05a"></script>
-  <script src="/js/customer-portal.js?v=2026-08-05a"></script>
-  <script src="/js/public-routes.js?v=2026-08-05a"></script>
-  <script src="/js/outbox.js?v=2026-08-05a"></script>
-  <script src="/js/admin-actions.js?v=2026-08-05a"></script>
-  <script src="/js/ui-auth.js?v=2026-08-05a"></script>
-  <script src="/js/account-ui.js?v=2026-08-05a"></script>
-  <script src="/js/profile-ui.js?v=2026-08-05a"></script>
-  <script src="/js/reference-data.js?v=2026-08-05a"></script>
-  <script src="/js/admin-ui.js?v=2026-08-05a"></script>
-  <script src="/js/operations-cockpit.js?v=2026-08-05a"></script>
-  <script src="/js/hse-ops-ui.js?v=2026-08-05a"></script>
-  <script src="/js/logbook-ui.js?v=2026-08-05a"></script>
-  <script src="/js/reports-ui.js?v=2026-08-05a"></script>
-  <script src="/js/jobs-ui.js?v=2026-08-05a"></script>
-  <script src="/js/forms-toolbox.js?v=2026-08-05a"></script>
-  <script src="/js/forms-ppe.js?v=2026-08-05a"></script>
-  <script src="/js/forms-firstaid.js?v=2026-08-05a"></script>
-  <script src="/js/forms-incident.js?v=2026-08-05a"></script>
-  <script src="/js/forms-inspection.js?v=2026-08-05a"></script>
-  <script src="/js/forms-drill.js?v=2026-08-05a"></script>
-  <script src="/app.js?v=2026-08-05a" defer></script>
+  <script src="/js/security.js?v=2026-09-01a"></script>
+  <script src="/js/router.js?v=2026-09-01a"></script>
+  <script src="/js/module-nav.js?v=2026-09-01a"></script>
+  <script src="/js/mobile-menu.js?v=2026-09-01a"></script>
+  <script src="/js/mobile-today.js?v=2026-09-01a"></script>
+  <script src="/js/mobile-form-helper.js?v=2026-09-01a"></script>
+  <script src="/js/bootstrap.js?v=2026-09-01a"></script>
+  <script src="/js/auth.js?v=2026-09-01a"></script>
+  <script src="/js/api.js?v=2026-09-01a"></script>
+  <script src="/js/customer-portal.js?v=2026-09-01a"></script>
+  <script src="/js/public-routes.js?v=2026-09-01a"></script>
+  <script src="/js/outbox.js?v=2026-09-01a"></script>
+  <script src="/js/admin-actions.js?v=2026-09-01a"></script>
+  <script src="/js/ui-auth.js?v=2026-09-01a"></script>
+  <script src="/js/account-ui.js?v=2026-09-01a"></script>
+  <script src="/js/profile-ui.js?v=2026-09-01a"></script>
+  <script src="/js/reference-data.js?v=2026-09-01a"></script>
+  <script src="/js/admin-ui.js?v=2026-09-01a"></script>
+  <script src="/js/operations-cockpit.js?v=2026-09-01a"></script>
+  <script src="/js/finance-ui.js?v=2026-09-01a"></script>
+  <script src="/js/module-access-ui.js?v=2026-09-01a"></script>
+  <script src="/js/hse-ops-ui.js?v=2026-09-01a"></script>
+  <script src="/js/logbook-ui.js?v=2026-09-01a"></script>
+  <script src="/js/reports-ui.js?v=2026-09-01a"></script>
+  <script src="/js/jobs-ui.js?v=2026-09-01a"></script>
+  <script src="/js/forms-toolbox.js?v=2026-09-01a"></script>
+  <script src="/js/forms-ppe.js?v=2026-09-01a"></script>
+  <script src="/js/forms-firstaid.js?v=2026-09-01a"></script>
+  <script src="/js/forms-incident.js?v=2026-09-01a"></script>
+  <script src="/js/forms-inspection.js?v=2026-09-01a"></script>
+  <script src="/js/forms-drill.js?v=2026-09-01a"></script>
+  <script src="/app.js?v=2026-09-01a" defer></script>
 
   <script>
     document.addEventListener('ywi:auth-changed', (e) => {

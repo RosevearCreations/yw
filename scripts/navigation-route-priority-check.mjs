@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Static check for the 2026-08-05a route-priority shell fix. */
+/** Static check for the 2026-09-01a route-priority shell fix. */
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -44,7 +44,7 @@ add('show-section-does-not-force-page-top', !showSectionBody.includes('window.sc
 add('sticky-header-scroll-margin', css.includes('main.container > .card') && css.includes('scroll-margin-top'), 'Active routed cards have scroll margin for sticky header.');
 add('support-panel-css-below-workspace', css.includes('.app-supporting-panels') && css.includes('.app-supporting-panels .graphic-placeholder-wall'), 'Supporting panel layout is scoped below the app workspace.');
 add('mobile-menu-still-closes-on-route', mobileMenu.includes("document.addEventListener('ywi:route-shown'") && mobileMenu.includes('if (isMobile()) close();'), 'Mobile menu closes when a route is shown.');
-add('cache-marker-current', index.includes('2026-08-05a') && read('server-worker.js').includes('2026-08-05a'), 'HTML and service worker use the current cache marker.');
+add('cache-marker-current', index.includes('2026-09-01a') && read('server-worker.js').includes('2026-09-01a'), 'HTML and service worker use the current cache marker.');
 
 const passed = results.filter((item) => item.ok).length;
 console.log(`\nNavigation route priority check: ${passed}/${results.length} passed\n`);

@@ -113,9 +113,9 @@ function ensureDiagnosticsPanel() {
     panel.style.display = 'none';
     if (canInitProtectedModules()) {
       initProtectedModules();
-      modules.adminUI?.loadDirectory?.();
+      if (canUseModule('admin','view')) modules.adminUI?.loadDirectory?.();
       modules.profileUI?.load?.();
-      modules.jobsUI?.load?.();
+      if (canUseModule('jobs','view')) modules.jobsUI?.load?.();
     }
   });
   return panel;
@@ -269,6 +269,14 @@ function getAccessProfile(role = appState.currentRole) {
   };
 }
 
+function canUseModule(moduleKey, minimum = 'view') {
+  const sec = security();
+  if (!sec?.getModuleAccess) return true;
+  const rank = { hidden:0, view:10, create:20, approve:30, manage:40 };
+  const actual = String(sec.getModuleAccess(moduleKey) || 'hidden').toLowerCase();
+  return (rank[actual] || 0) >= (rank[String(minimum || 'view').toLowerCase()] || 10);
+}
+
 function canInitProtectedModules() {
   const state = auth()?.getState?.() || {};
   return !!(
@@ -359,7 +367,7 @@ function seedAllTables() {
 }
 
 function initAdminModule() {
-  if (!canInitProtectedModules() || modules.adminUI || !window.YWIAdminUI?.create || !api()) return;
+  if (!canInitProtectedModules() || !canUseModule('admin','view') || modules.adminUI || !window.YWIAdminUI?.create || !api()) return;
   modules.adminUI = window.YWIAdminUI.create({
     loadAdminDirectory: api().loadAdminDirectory,
     loadAdminSelectors: api().loadAdminSelectors,
@@ -424,7 +432,7 @@ function initReferenceDataModule() {
 }
 
 function initJobsModule() {
-  if (!canInitProtectedModules() || modules.jobsUI || !jobsUIFactory()?.create || !api()) return;
+  if (!canInitProtectedModules() || !canUseModule('jobs','view') || modules.jobsUI || !jobsUIFactory()?.create || !api()) return;
   modules.jobsUI = jobsUIFactory().create({
     api: api(),
     getCurrentRole: () => appState.currentRole,
@@ -438,7 +446,7 @@ function initJobsModule() {
 
 
 function initReportsModule() {
-  if (!canInitProtectedModules() || modules.reportsUI || !window.YWIReportsUI?.create || !api()) return;
+  if (!canInitProtectedModules() || !canUseModule('safety','view') || modules.reportsUI || !window.YWIReportsUI?.create || !api()) return;
   modules.reportsUI = window.YWIReportsUI.create({
     loadAdminDirectory: api().loadAdminDirectory,
     manageAdminEntity: api().manageAdminEntity,
@@ -453,7 +461,7 @@ function initReportsModule() {
 }
 
 function initLogbookModule() {
-  if (!canInitProtectedModules() || modules.logbookUI || !window.YWILogbookUI?.create || !api()) return;
+  if (!canInitProtectedModules() || !canUseModule('safety','view') || modules.logbookUI || !window.YWILogbookUI?.create || !api()) return;
   modules.logbookUI = window.YWILogbookUI.create({
     fetchLogData: api().fetchLogData,
     fetchSubmissionDetail: api().fetchSubmissionDetail,
@@ -550,7 +558,7 @@ function initFormModules() {
 }
 
 function initAdminActions() {
-  if (!canInitProtectedModules() || modules.adminActions || !window.YWIAdminActions?.create || !api()) return;
+  if (!canInitProtectedModules() || !canUseModule('admin','create') || modules.adminActions || !window.YWIAdminActions?.create || !api()) return;
   modules.adminActions = window.YWIAdminActions.create({
     api: api(),
     getCurrentRole: () => appState.currentRole,
@@ -558,7 +566,7 @@ function initAdminActions() {
     setSummary: setManageSummary,
     onAfterSave: async () => {
       if (modules.adminUI?.loadDirectory) await modules.adminUI.loadDirectory();
-      if (modules.adminUI?.refreshSelectors) await modules.adminUI.refreshSelectors();
+      if (canUseModule('admin','view') && modules.adminUI?.refreshSelectors) await modules.adminUI.refreshSelectors();
     }
   });
   modules.adminActions.bind();
@@ -605,7 +613,7 @@ async function initializeAppShell() {
 
   appState.initialized = true;
 
-  if (location.hash === '#admin' && canInitProtectedModules() && modules.adminUI?.loadDirectory) {
+  if (location.hash === '#admin' && canInitProtectedModules() && canUseModule('admin','view') && modules.adminUI?.loadDirectory) {
     try {
       await modules.adminUI.loadDirectory();
     } catch (err) {
@@ -628,8 +636,8 @@ document.addEventListener('ywi:auth-changed', async (e) => {
 
   if (canInitProtectedModules()) {
     initProtectedModules();
-    if (modules.adminUI?.refreshSelectors) await modules.adminUI.refreshSelectors();
-    if (location.hash === '#admin' && modules.adminUI?.loadDirectory) {
+    if (canUseModule('admin','view') && modules.adminUI?.refreshSelectors) await modules.adminUI.refreshSelectors();
+    if (location.hash === '#admin' && canUseModule('admin','view') && modules.adminUI?.loadDirectory) {
       try {
         await modules.adminUI.loadDirectory();
       } catch (err) {
@@ -665,7 +673,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 window.addEventListener('hashchange', () => {
   setTimeout(seedAllTables, 0);
-  if (location.hash === '#admin' && canInitProtectedModules() && modules.adminUI?.loadDirectory) {
+  if (location.hash === '#admin' && canInitProtectedModules() && canUseModule('admin','view') && modules.adminUI?.loadDirectory) {
     modules.adminUI.loadDirectory().catch((err) => console.error('Admin hash load failed', err));
   }
 });
