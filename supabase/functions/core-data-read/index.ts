@@ -45,7 +45,7 @@ serve(async (req) => {
 
   const { data: actorProfile, error: profileError } = await supabase
     .from('profiles')
-    .select('id,role,staff_tier,is_active')
+    .select('id,role,is_active')
     .eq('id', userData.user.id)
     .single();
 
