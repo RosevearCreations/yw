@@ -1,142 +1,171 @@
 # YWI Next Steps and Sanity Check
 
-**Release:** `2026-09-01a`  
-**Schema:** `159`  
-**Primary staging goal:** prove module isolation with a real Safety-only test profile.
+**Release:** `2026-09-01b`  
+**Schema:** `160`  
+**Primary acceptance goal:** prove Admin full-access integrity, repaired Module Permissions profile loading, and the new Admin → I.T. Readiness cockpit before starting another major feature.
 
-## Deployment order
+## Current control-plane state
 
-1. Use a dedicated non-production Supabase project.
-2. Confirm schema 158 is already applied.
-3. Apply `sql/159_module_boundaries_permission_gated_navigation.sql` once.
-4. Deploy the matching static application and changed Edge Functions together.
-5. Hard-refresh the staging site or use an incognito window so the `2026-09-01a` cache marker loads.
+The connected YardWeasels Supabase project has migrations 159 and 160 applied. Read-only verification already confirms:
 
-Changed/protected functions include `admin-directory`, `admin-selectors`, `admin-manage`, `jobs-directory`, `jobs-manage`, `operations-manage`, `resend-email`, `review-list`, `review-submission`, `submission-detail`, `upload-image`, `upload-hse-packet-proof`, `upload-public-asset`, and `accountant-export`. Customer portal/Stripe/notification functions carry the schema 159 release marker but retain their existing private-token/webhook boundaries.
+- `v_schema_drift_status` is `160 / 160` and current;
+- `it` is registered as an Admin `manage` route;
+- all Schema 160 I.T. security assertions pass;
+- all active Admin profiles resolve to `manage` on Safety, Finance, Jobs, and Admin;
+- Admin access-integrity issue count is zero;
+- the protected `admin-it-control` Edge Function is deployed with JWT verification enabled.
+
+The remaining acceptance is the rendered/authenticated application path.
+
+## Deployment / source order
+
+1. Keep migrations ordered: schema 159 must exist before 160.
+2. Deploy the static Schema 160 application together with `admin-it-control` and matching protected functions/source.
+3. Confirm `supabase/config.toml` retains `[functions.admin-it-control] verify_jwt = true`.
+4. Hard-refresh or use an incognito session after the static deployment.
+5. Run the source checks below before treating the release as green.
+6. Do not start another schema-changing feature until the Admin acceptance below passes.
 
 ## Database sanity checks
 
-Run in Supabase SQL Editor:
+Run read-only checks:
 
 ```sql
 select * from public.v_schema_drift_status;
 
-select module_key, module_name, default_section_id, sort_order
-from public.app_modules
-order by sort_order;
+select section_id, module_key, minimum_access_level, is_enabled
+from public.app_module_routes
+where section_id = 'it';
 
-select role, module_key, access_level
-from public.app_role_module_permissions
-order by role, module_key;
+select *
+from public.ywi_it_readiness_security_assertions();
 
-select * from public.ywi_module_security_assertions();
+select profile_label, role,
+       safety_access, finance_access, jobs_access, admin_access,
+       all_modules_manage, integrity_issue_count
+from public.v_admin_module_access_integrity
+where role = 'admin';
 ```
 
-Expected: schema 159/current, four modules, role defaults populated, and every module security assertion `passed`.
+Expected:
 
-## Safety-only acceptance test
+- schema 160/current;
+- `it | admin | manage | true`;
+- every I.T. assertion `passed`;
+- every active Admin row shows `manage` four times, `all_modules_manage=true`, and `integrity_issue_count=0`.
 
-Create/use a clearly labelled non-production user such as `STAGING-SAFETY-ONLY`.
+## Admin Module Permissions acceptance — highest priority
 
-1. Sign in as an Admin.
-2. Open **Admin → Module Permissions**.
-3. Select the staging user.
-4. Click **Set Safety-only** and enter a reason.
-5. Sign out completely.
-6. Sign in as the Safety-only user.
-7. Confirm the first/top module is **Safety / OHSA**.
-8. Confirm Finance, Jobs, and Admin top-menu items are absent.
-9. Confirm the Safety sub-menu shows only Safety screens permitted by that profile's effective level.
-10. Submit a Toolbox/PPE test record using a `STAGING-` label and confirm the permitted Safety workflow succeeds.
+1. Sign in using an active Admin account.
+2. Open **Admin → Admin Control Center**.
+3. Locate **Module permissions**.
+4. Confirm the profile selector populates active profiles. The screen should not remain on “No profiles were returned.”
+5. Select each Admin profile.
+6. Confirm Safety, Finance, Jobs, and Admin all show effective `manage`.
+7. Confirm the four access selectors are disabled for Admin targets and the screen explains **Admin break-glass**.
+8. Refresh and repeat once to prove the dedicated `admin-it-control` endpoint is stable.
+9. Open browser DevTools Network and confirm the module load calls the protected `admin-it-control` function, not the old `admin-directory?scope=module_permissions` path.
 
-### Direct route bypass test
+Do **not** continue to new feature work if any active Admin lacks full access or if the profile selector does not populate.
 
-While still signed in as the Safety-only user, manually enter these hashes:
+## Admin → I.T. Readiness acceptance
 
-```text
-#finance
-#jobs
-#equipment
-#admin
-```
+1. While signed in as Admin, click **Admin** in the top navigation.
+2. In the Admin sub-navigation, click **I.T. Readiness**.
+3. Confirm I.T. Readiness becomes the main visible routed card under the sticky header; no large static block should sit above it.
+4. Confirm the hero summary shows:
+   - schema applied / expected;
+   - active Admin count;
+   - Admin access blockers;
+   - readiness/security blocker count.
+5. Confirm the access-integrity panel lists Admin profiles and shows green/passed full-access status.
+6. Confirm the security assertion panel loads.
+7. Confirm contained panels exist for database/preflight, deployment, functions, production readiness, recovery, runtime/Admin tasks, and public SEO.
+8. Click **Run browser smoke check** and confirm the safe client/config/session/one-H1 checks render without changing business data.
+9. Treat any red blocker as a release hold; I.T. Readiness must not auto-promote or auto-fix release state.
 
-Each request must redirect to an allowed Safety screen (or Profile if no Safety route is allowed). It must not expose the hidden module card.
+### Visual placeholder check
 
-### Direct API bypass test
+The I.T. panel intentionally includes an **I.T. readiness map placeholder**. It must clearly remain labelled as a future graphic and must not imply a completed dependency diagram or live evidence that does not exist.
 
-Use browser DevTools Console while signed in as the Safety-only user:
+## Safety-only regression test
 
-```js
-await YWIAPI.loadAdminDirectory({ scope: 'accounting' })
-```
+Use a clearly labelled non-production profile.
 
-Expected: HTTP 403 / Finance module access required.
+1. As Admin, open Module Permissions and select the non-admin fixture.
+2. Click **Set Safety-only**.
+3. Sign out completely and sign in as that fixture.
+4. Confirm Safety / OHSA is available.
+5. Confirm Finance, Jobs, and Admin are absent from the top navigation.
+6. Confirm a permitted Toolbox/PPE test action succeeds.
+7. Manually enter `#finance`, `#jobs`, `#equipment`, `#admin`, and `#it`.
+8. Confirm every hidden route redirects to an allowed screen and does not expose the protected card.
+9. Direct API requests to protected Finance/Jobs/Admin endpoints must return 403 even if the user’s historical role rank would otherwise qualify.
+10. Reset the fixture to role defaults after the test.
 
-```js
-await YWIAPI.loadAdminDirectory({ scope: 'all' })
-```
+## Admin override rejection test
 
-Expected: HTTP 403 / Admin module access required.
+Admin module access is immutable break-glass manage.
 
-If the staging user is Supervisor+ and would historically qualify for Jobs, call the Jobs directory through the app's Jobs loader or direct function request. Expected: HTTP 403 / Jobs module access required. This proves module denial is stronger than the old role-only rule.
-
-## Finance separation test
-
-Use a Supervisor or Job Admin test profile with Jobs access. Temporarily set Finance to `hidden` while leaving Jobs allowed. Load Jobs. Job/crew/equipment data may load, but Finance-only arrays such as accounting-ready queues, payment/reconciliation workbenches, tax/payroll review and profitability data must be empty/redacted.
-
-Restore the profile to role defaults after the test.
-
-## Admin permission manager test
-
-1. As Admin, set one profile's Finance level to `view`.
-2. Refresh the profile's session/sign in again.
-3. Confirm Finance appears.
-4. Set Finance back to `hidden`.
-5. Confirm Finance disappears after auth refresh.
-6. Use **Reset all to role defaults** and confirm the role matrix is restored.
-7. Confirm an Admin profile itself cannot be module-locked by the UI/API.
+1. Select an Admin profile in Module Permissions and confirm there is no enabled save/preset path for reducing access.
+2. Do not mutate the database merely to test this in Production.
+3. In a dedicated staging database, a service-side attempt to call `ywi_admin_set_profile_module_permissions` against an Admin target should fail with the break-glass override message.
+4. A direct insert/update into `app_profile_module_permissions` for an Admin target should also be rejected by `trg_prevent_admin_module_override`.
 
 ## Mobile and desktop checks
 
 Test approximately 390px, 768px, and desktop widths:
 
-- Four top modules do not overlap.
-- Mobile quick navigation shows only allowed modules.
-- The second-level module menu wraps/scrolls cleanly without horizontal page overflow.
-- Selecting a module makes its permitted section the main visible card under the sticky header.
-- Finance/Admin hidden users do not see empty placeholder shells for those modules.
-- Existing Operations Cockpit dark-theme contrast remains readable.
+- four top-level modules do not overlap;
+- Admin sub-navigation exposes Admin Control Center and I.T. Readiness only to allowed Admin/manage sessions;
+- Module Permissions profile/select controls remain usable and do not run off-screen;
+- I.T. readiness hero collapses to one column cleanly;
+- readiness metric cards, status chips, rows, and action buttons do not overlap;
+- mobile I.T. actions become full width;
+- routed cards remain the main visible content below the sticky header;
+- no horizontal page overflow;
+- forced-colors/high-contrast behavior remains understandable.
 
 ## Source checks
 
-From the repository root:
+From repository root:
 
 ```powershell
 npm ci
 npm run test:modules
+npm run test:it
 npm run test:repo
 npm run test:contrast
 npm run test:navigation
 ```
 
-Do not run live staging tests against Production credentials.
+Expected: every suite green. Do not use Production service-role credentials for local or PR tests.
 
-## Sanity status after schema 159
+## Supabase post-migration sanity
 
-Source target after this build:
+After Schema 160 is committed/deployed, run the Supabase security and performance advisors. New warnings/errors introduced by this release are blockers. Existing unrelated warnings should be recorded in I.T. Readiness/next work rather than silently ignored.
 
-- Module separation: implemented.
-- Safety-only navigation: implemented.
-- Server-side module enforcement: implemented on primary Safety/Jobs/Finance/Admin endpoints.
-- Admin per-profile overrides and audit trail: implemented.
-- Finance redaction from Jobs payload when Finance is hidden: implemented.
-- Customer portal/payment/SEO privacy boundaries: retained.
-- Production proof: pending staging acceptance.
+## Sanity status after Schema 160
 
-## Highest-value work after schema 159 passes staging
+- Four top-level modules: retained.
+- I.T. Readiness inside Admin/manage: implemented.
+- Live database schema 160: applied/current.
+- Admin full-access database invariant: implemented and currently green.
+- Dedicated Module Permissions endpoint: implemented and deployed.
+- Module Permissions active-profile loading repair: source/runtime control path implemented; browser acceptance pending.
+- Atomic module permission writes: implemented.
+- Admin module override prevention: implemented DB + UI.
+- I.T. readiness aggregation: implemented.
+- Browser smoke integration: implemented.
+- Responsive I.T. CSS and truthful visual placeholder: implemented.
+- Public SEO/private portal separation: retained.
+- Authenticated rendered browser/device proof: pending.
 
-1. Split the remaining large legacy Admin and Jobs JavaScript files physically into module folders so deployment bundles mirror the permission architecture.
-2. Move shared domain services behind module-specific APIs (`/safety`, `/jobs`, `/finance`, `/admin`) rather than continuing to grow generic Admin endpoints.
-3. Add automated role × module integration fixtures covering every access level, not only Safety-only.
-4. Add an Admin permission-diff/audit screen showing who changed access, why, and when.
-5. Continue approved public SEO/service pages separately; never reuse private operational content as public SEO copy without explicit approval.
+## Highest-value work after Schema 160 acceptance
+
+1. Physically split the remaining large Admin and Jobs client/server files into module folders so source bundles match the permission architecture.
+2. Move more generic Admin scopes behind domain-specific endpoints (`/safety`, `/jobs`, `/finance`, `/admin`) and let I.T. readiness report their release status.
+3. Add automated role × module authenticated fixtures across every access level, not only Safety-only.
+4. Add a focused Admin permission audit/diff view showing who changed access, why, and when.
+5. Turn the I.T. readiness placeholder into an approved dependency/status graphic sourced only from real readiness data.
+6. Continue public SEO/service content separately; never reuse private operational/customer evidence publicly without explicit approval.

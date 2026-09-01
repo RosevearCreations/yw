@@ -1,8 +1,8 @@
 /* File: js/module-nav.js
-   Schema 159 top-level module navigation.
-   The first navigation tier is Safety/OHSA, Finance, Jobs, Admin. A second tier shows
-   only routes that belong to the active permitted module. Profile and Settings stay
-   account utilities and do not grant access to another module.
+   Schema 160 top-level module navigation.
+   The first navigation tier remains Safety/OHSA, Finance, Jobs, Admin. A second tier shows
+   only routes that belong to the active permitted module. I.T. Readiness is an Admin/manage
+   sub-section, not a fifth top-level module.
 */
 
 'use strict';
@@ -11,13 +11,14 @@
   const SECTION_LABELS = {
     toolbox: 'Toolbox Talk', ppe: 'PPE Check', firstaid: 'First Aid Kit', incident: 'Incident / Near Miss',
     inspect: 'Site Inspection', drill: 'Emergency Drill', log: 'Logbook', reports: 'Safety Reports', hseops: 'Safety Operations',
-    finance: 'Finance Home', today: 'Today', crew: 'Crew', jobs: 'Jobs', equipment: 'Equipment', admin: 'Admin Control Center'
+    finance: 'Finance Home', today: 'Today', crew: 'Crew', jobs: 'Jobs', equipment: 'Equipment',
+    admin: 'Admin Control Center', it: 'I.T. Readiness'
   };
   const SECTION_ORDER = {
     safety: ['toolbox','ppe','firstaid','incident','inspect','drill','log','reports','hseops'],
     finance: ['finance'],
     jobs: ['today','crew','jobs','equipment'],
-    admin: ['admin']
+    admin: ['admin','it']
   };
 
   function security() { return window.YWISecurity || null; }

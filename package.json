@@ -13,7 +13,8 @@
     "test:execution-proof": "node scripts/service-execution-proof-check.mjs",
     "test:closeout": "node scripts/supervisor-closeout-check.mjs",
     "test:navigation": "node scripts/navigation-route-priority-check.mjs",
-    "test:modules": "node scripts/module-permissions-check.mjs"
+    "test:modules": "node scripts/module-permissions-check.mjs",
+    "test:it": "node scripts/admin-it-readiness-check.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
