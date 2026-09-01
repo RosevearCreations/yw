@@ -175,3 +175,10 @@ After Schema 160 is committed/deployed, run the Supabase security and performanc
 2. Verify denied modules make zero `core-data-read` requests and profile/permission changes invalidate Core caches.
 3. Keep Schema 162 lazy module loading green.
 4. Next release: Schema 164 cross-module event and write boundaries; shared identities remain Core-owned and read-only through `core-data-read`.
+
+## Schema 164 restart point — 2026-09-01f
+1. Verify all 35 `operations-manage` handlers match both the source write-boundary manifest and Schema 164 database registry.
+2. Verify unknown actions resolve to no contract and are rejected before authorization/handler execution.
+3. Verify manual `deposit_status_update` is disabled at the boundary and Stripe webhook/customer checkout remain payment-truth authorities.
+4. Verify cross-module effects emit only private contract/status event metadata and Shared Core remains read-only.
+5. After Schema 164 is fully green on `main`, begin Schema 165: module-local Finance/Jobs write-service extraction from `operations-manage`, retaining the same action contracts during the move.
