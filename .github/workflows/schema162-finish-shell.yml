@@ -1,0 +1,31 @@
+name: Schema 162 finish shell
+
+on:
+  push:
+    branches: [schema-162-permission-driven-module-runtime]
+
+permissions:
+  contents: write
+
+jobs:
+  finish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: schema-162-permission-driven-module-runtime
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/schema162-finish-shell.mjs
+      - name: Commit cache marker repair when needed
+        run: |
+          if git diff --quiet -- index.html scripts/repo-smoke-check.mjs; then
+            echo "Schema 162 cache markers already repaired."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html scripts/repo-smoke-check.mjs
+          git commit -m "Schema 162 align shell and cache markers"
+          git push origin HEAD:schema-162-permission-driven-module-runtime
