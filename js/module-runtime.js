@@ -1,14 +1,17 @@
 /* File: js/module-runtime.js
-   Schema 161 Shared Core + standalone module runtime contract.
+   Schema 162 Shared Core + standalone module runtime.
    The shell/Core may exist without any business module. Once auth and module permissions resolve,
    this runtime loads only the browser scripts owned by modules the current profile can view.
+   If the identity changes, the user signs out, or a loaded permission is removed, the page is
+   reloaded so stale module code is purged from memory. Server-side RLS/RPC/Edge authorization
+   remains the actual security boundary.
 */
 
 'use strict';
 
 (function () {
-  const BUILD = '2026-09-01c';
-  const CONTRACT_VERSION = 1;
+  const BUILD = '2026-09-01d';
+  const CONTRACT_VERSION = 2;
 
   const CORE_ENTITY_CONTRACTS = Object.freeze({
     profile: Object.freeze({ relation: 'profiles', primaryKey: 'id', primaryKeyType: 'uuid' }),
@@ -72,6 +75,8 @@
   const state = {
     syncing: false,
     queued: false,
+    reloading: false,
+    activeProfileId: null,
     loadedModules: new Set(),
     loadedScripts: new Set(),
     failedScripts: new Map(),
@@ -88,6 +93,10 @@
 
   function security() {
     return window.YWISecurity || null;
+  }
+
+  function profileIdentity(stateNow = authState()) {
+    return stateNow?.profile?.id || stateNow?.user?.id || null;
   }
 
   function normalizeScriptSrc(src) {
@@ -109,6 +118,32 @@
     const sec = security();
     if (!sec?.canViewModule) return false;
     return sec.canViewModule(moduleKey, currentRole(), 'view') === true;
+  }
+
+  function staleRuntimeReason(stateNow = authState()) {
+    if (state.reloading || stateNow.pendingAuthResolution) return null;
+    const hasLoadedModuleCode = state.loadedModules.size > 0 || state.loadedScripts.size > 0;
+    if (!hasLoadedModuleCode) return null;
+
+    if (!stateNow.isAuthenticated) return 'signed_out';
+
+    const nextProfileId = profileIdentity(stateNow);
+    if (state.activeProfileId && nextProfileId && state.activeProfileId !== nextProfileId) {
+      return 'profile_changed';
+    }
+
+    const lostModule = [...state.loadedModules].find((moduleKey) => !moduleAllowed(moduleKey));
+    if (lostModule) return `permission_removed:${lostModule}`;
+    return null;
+  }
+
+  function purgeStaleRuntime(reason) {
+    if (state.reloading) return;
+    state.reloading = true;
+    document.dispatchEvent(new CustomEvent('ywi:module-runtime-purge', {
+      detail: { reason, build: BUILD, contractVersion: CONTRACT_VERSION }
+    }));
+    window.location.reload();
   }
 
   function loadScript(src, moduleKey) {
@@ -158,8 +193,8 @@
   }
 
   function initializeLoadedFactories() {
-    // app.js is intentionally Core. Its classic-script functions become window members.
-    // They safely no-op until the factories for an allowed module have been loaded.
+    // app.js is Core. These functions safely no-op until their permitted factories exist.
+    // Calling again after module loading makes classic modules compatible with dynamic loading.
     window.initFormModules?.();
     window.initProtectedModules?.();
     window.seedAllTables?.();
@@ -175,7 +210,14 @@
     state.queued = false;
     try {
       const stateNow = authState();
+      const staleReason = staleRuntimeReason(stateNow);
+      if (staleReason) {
+        purgeStaleRuntime(staleReason);
+        return false;
+      }
+
       if (!stateNow.isAuthenticated || stateNow.pendingAuthResolution || stateNow.needsAccountSetup) return false;
+      state.activeProfileId = state.activeProfileId || profileIdentity(stateNow);
 
       for (const moduleKey of Object.keys(MODULE_MANIFEST)) {
         if (moduleAllowed(moduleKey)) await loadModule(moduleKey);
@@ -197,7 +239,7 @@
       return false;
     } finally {
       state.syncing = false;
-      if (state.queued) queueMicrotask(() => syncForCurrentAccess());
+      if (state.queued && !state.reloading) queueMicrotask(() => syncForCurrentAccess());
     }
   }
 
@@ -205,10 +247,12 @@
     return {
       build: BUILD,
       contractVersion: CONTRACT_VERSION,
+      activeProfileId: state.activeProfileId,
       loadedModules: [...state.loadedModules],
       loadedScripts: [...state.loadedScripts],
       failedScripts: Object.fromEntries(state.failedScripts),
-      lastSyncAt: state.lastSyncAt
+      lastSyncAt: state.lastSyncAt,
+      reloading: state.reloading
     };
   }
 

@@ -15,7 +15,7 @@
     "test:navigation": "node scripts/navigation-route-priority-check.mjs",
     "test:modules": "node scripts/module-permissions-check.mjs",
     "test:it": "node scripts/admin-it-readiness-check.mjs",
-    "test:runtime": "node scripts/module-runtime-check.mjs"
+    "test:runtime": "node scripts/module-runtime-check.mjs && node scripts/module-runtime-behavior-check.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

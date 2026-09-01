@@ -104,7 +104,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-09-01b');
+          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-09-01d');
           if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
           }
@@ -505,7 +505,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
 
-  <!-- Correct module order -->
+  <!-- Shared Core shell. Business modules are permission-loaded by module-runtime.js. -->
   <script src="/js/security.js?v=2026-09-01b"></script>
   <script src="/js/router.js?v=2026-09-01b"></script>
   <script src="/js/module-nav.js?v=2026-09-01b"></script>
@@ -518,26 +518,12 @@
   <script src="/js/customer-portal.js?v=2026-09-01b"></script>
   <script src="/js/public-routes.js?v=2026-09-01b"></script>
   <script src="/js/outbox.js?v=2026-09-01b"></script>
-  <script src="/js/admin-actions.js?v=2026-09-01b"></script>
   <script src="/js/ui-auth.js?v=2026-09-01b"></script>
   <script src="/js/account-ui.js?v=2026-09-01b"></script>
   <script src="/js/profile-ui.js?v=2026-09-01b"></script>
   <script src="/js/reference-data.js?v=2026-09-01b"></script>
-  <script src="/js/admin-ui.js?v=2026-09-01b"></script>
-  <script src="/js/operations-cockpit.js?v=2026-09-01b"></script>
-  <script src="/js/finance-ui.js?v=2026-09-01b"></script>
-  <script src="/js/module-access-ui.js?v=2026-09-01b"></script>
-  <script src="/js/hse-ops-ui.js?v=2026-09-01b"></script>
-  <script src="/js/logbook-ui.js?v=2026-09-01b"></script>
-  <script src="/js/reports-ui.js?v=2026-09-01b"></script>
-  <script src="/js/jobs-ui.js?v=2026-09-01b"></script>
-  <script src="/js/forms-toolbox.js?v=2026-09-01b"></script>
-  <script src="/js/forms-ppe.js?v=2026-09-01b"></script>
-  <script src="/js/forms-firstaid.js?v=2026-09-01b"></script>
-  <script src="/js/forms-incident.js?v=2026-09-01b"></script>
-  <script src="/js/forms-inspection.js?v=2026-09-01b"></script>
-  <script src="/js/forms-drill.js?v=2026-09-01b"></script>
-  <script src="/app.js?v=2026-09-01b" defer></script>
+  <script src="/js/module-runtime.js?v=2026-09-01d"></script>
+  <script src="/app.js?v=2026-09-01d" defer></script>
 
   <script>
     document.addEventListener('ywi:auth-changed', (e) => {

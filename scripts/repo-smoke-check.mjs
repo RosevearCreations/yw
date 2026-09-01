@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Repository-level static sanity check for build 2026-09-01b / schema 160. */
+/** Repository-level static sanity check for Shared Core/module runtime through Schema 162. */
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -102,7 +102,7 @@ const mainEnd = index.indexOf('</main>');
 const supportStart = index.indexOf('<aside class="app-supporting-panels"');
 add('route-cards-before-support-panels', mainStart > 0 && mainEnd > mainStart && supportStart > mainEnd, `main=${mainStart}, mainEnd=${mainEnd}, support=${supportStart}`);
 add('router-scrolls-to-active-card', read('js/router.js').includes('function scrollToActiveSection') && read('js/router.js').includes('section.scrollIntoView') && css.includes('scroll-margin-top'), 'Top-menu navigation targets the active card below the sticky header.');
-add('build-cache-marker-current', hasAll(index, ['2026-09-01b', 'operations-cockpit.js?v=2026-09-01b']) && read('server-worker.js').includes('ywi-shell-v2026-09-01b'), 'HTML and service-worker cache marker are current.');
+add('build-cache-marker-current', hasAll(index, ['server-worker.js?v=2026-09-01d', 'module-runtime.js?v=2026-09-01d', 'app.js?v=2026-09-01d']) && read('server-worker.js').includes('ywi-shell-v2026-09-01d'), 'Schema 162 HTML/runtime and service-worker cache markers are current.');
 add('route-generator-cache-marker-current', routeGenerator.includes("const build = '2026-09-01b';"), 'Generated public pages reference current static build marker.');
 add('visual-input-mime-match', cockpit.includes('accept="image/jpeg,image/png,image/webp"') && !migrations[153].includes('image/avif'), 'UI/storage MIME promise matches server verification.');
 add('cockpit-dark-contrast-remediation', hasAll(css, ['--oc-text: #f8fbff', '--oc-surface: #0c172b', '.operations-cockpit .oc-badge-approved', '.operations-cockpit .oc-permission.is-allowed', '.operations-cockpit .oc-permission.is-restricted', '@media (forced-colors: active)']), 'Cockpit dark-surface tokens and contrast overrides remain present.');
