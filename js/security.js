@@ -1,7 +1,8 @@
 /* File: js/security.js
-   Schema 159 module + role security helper.
+   Schema 160 module + role security helper.
    Roles still control approval/action seniority. Module permissions independently control
    whether Safety/OHSA, Finance, Jobs, or Admin surfaces exist for the signed-in profile.
+   I.T. Readiness is an Admin/manage sub-section. Admin remains break-glass manage everywhere.
 */
 
 'use strict';
@@ -33,7 +34,7 @@
     log: 'safety', reports: 'safety', hseops: 'safety',
     finance: 'finance',
     today: 'jobs', crew: 'jobs', jobs: 'jobs', equipment: 'jobs',
-    admin: 'admin'
+    admin: 'admin', it: 'admin'
   };
 
   const SECTION_ACCESS = {
@@ -41,10 +42,9 @@
     log: 'view', reports: 'approve', hseops: 'approve',
     finance: 'view',
     today: 'view', crew: 'approve', jobs: 'view', equipment: 'create',
-    admin: 'view'
+    admin: 'view', it: 'manage'
   };
 
-  // Legacy role fallback is used only while schema 159 permissions have not loaded.
   const ROLE_MODULE_DEFAULTS = {
     employee: { safety: 'create', finance: 'hidden', jobs: 'create', admin: 'hidden' },
     onsite_admin: { safety: 'create', finance: 'hidden', jobs: 'create', admin: 'hidden' },
@@ -57,7 +57,8 @@
 
   const SECTION_RULES = {
     today: 'worker', toolbox: 'worker', ppe: 'worker', firstaid: 'worker', incident: 'worker', inspect: 'worker', drill: 'worker',
-    me: 'worker', settings: 'worker', crew: 'supervisor', log: 'worker', reports: 'supervisor', hseops: 'worker', admin: 'admin', jobs: 'worker', equipment: 'worker', finance: 'supervisor'
+    me: 'worker', settings: 'worker', crew: 'supervisor', log: 'worker', reports: 'supervisor', hseops: 'worker',
+    admin: 'admin', it: 'admin', jobs: 'worker', equipment: 'worker', finance: 'supervisor'
   };
 
   const moduleState = { loaded: false, permissions: {}, rows: [] };
