@@ -1,0 +1,67 @@
+name: Schema 159 bootstrap
+
+on:
+  push:
+    branches:
+      - schema-159-module-permissions
+    paths:
+      - '.github/workflows/schema159-bootstrap.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: schema-159-module-permissions
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Reconstruct and verify Schema 159 patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .schema159-bootstrap/clean15_*.b64 > /tmp/schema159.patch.xz.b64
+          echo 'aba34237d7018b6ec6b3acda89eafcb31255f0910f9725cc037d9665708b3623  /tmp/schema159.patch.xz.b64' | sha256sum -c -
+          base64 --decode /tmp/schema159.patch.xz.b64 > /tmp/schema159.patch.xz
+          xz --decompress --stdout /tmp/schema159.patch.xz > /tmp/schema159.patch
+          echo '35ac949c4d71b4210b17a0d4fd071171ead7a23f66aed06d3cba0bef1f144d4f  /tmp/schema159.patch' | sha256sum -c -
+          git apply --check /tmp/schema159.patch
+          git apply /tmp/schema159.patch
+          rm -rf .schema159-bootstrap
+          rm -f .github/workflows/schema159-bootstrap.yml
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify module permission boundaries
+        run: npm run test:modules
+
+      - name: Verify repository smoke suite
+        run: npm run test:repo
+
+      - name: Verify Operations Cockpit contrast
+        run: npm run test:contrast
+
+      - name: Verify navigation priority
+        run: npm run test:navigation
+
+      - name: Commit validated Schema 159 tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --quiet && { echo 'No Schema 159 changes to commit'; exit 1; }
+          git commit -m 'Schema 159: modular permissions for Safety, Finance, Jobs and Admin'
+          git push origin HEAD:schema-159-module-permissions
