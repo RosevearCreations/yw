@@ -1,15 +1,16 @@
 /* File: server-worker.js
-   Brief description: Service worker updated for the new security/account/api modules.
+   Brief description: Service worker updated for Schema 160 Admin/I.T. readiness.
    Keeps static assets available offline while still avoiding auth callback, POST, and Supabase/API traffic.
 */
 
 'use strict';
 
-const CACHE_NAME = 'ywi-shell-v2026-09-01a';
+const CACHE_NAME = 'ywi-shell-v2026-09-01b';
 const APP_SHELL = [
   '/',
   '/index.html',
   '/style.css',
+  '/it-readiness.css',
   '/app.js',
   '/manifest.json',
   '/favicon.ico',
@@ -36,6 +37,7 @@ const APP_SHELL = [
   '/js/operations-cockpit.js',
   '/js/finance-ui.js',
   '/js/module-access-ui.js',
+  '/js/it-readiness-ui.js',
   '/js/hse-ops-ui.js',
   '/js/logbook-ui.js',
   '/js/reports-ui.js',
@@ -91,7 +93,6 @@ function isSupabaseRequest(url) {
   return url.origin.includes('supabase.co');
 }
 
-
 function isRuntimeConfigRequest(url) {
   return url.pathname === '/js/app-config.js';
 }
@@ -101,6 +102,7 @@ function isShellAssetRequest(url) {
     url.pathname === '/' ||
     url.pathname === '/index.html' ||
     url.pathname === '/style.css' ||
+    url.pathname === '/it-readiness.css' ||
     url.pathname === '/app.js' ||
     url.pathname === '/manifest.json' ||
     url.pathname.startsWith('/js/') ||
