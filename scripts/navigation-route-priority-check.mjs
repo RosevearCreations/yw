@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Static check for the 2026-09-01a route-priority shell fix. */
+/** Static check for the 2026-09-01b route-priority shell and Admin/I.T. readiness navigation. */
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -9,6 +9,8 @@ const index = read('index.html');
 const router = read('js/router.js');
 const css = read('style.css');
 const mobileMenu = read('js/mobile-menu.js');
+const moduleNav = read('js/module-nav.js');
+const security = read('js/security.js');
 const results = [];
 const add = (name, ok, details = '') => results.push({ name, ok, details });
 
@@ -44,7 +46,8 @@ add('show-section-does-not-force-page-top', !showSectionBody.includes('window.sc
 add('sticky-header-scroll-margin', css.includes('main.container > .card') && css.includes('scroll-margin-top'), 'Active routed cards have scroll margin for sticky header.');
 add('support-panel-css-below-workspace', css.includes('.app-supporting-panels') && css.includes('.app-supporting-panels .graphic-placeholder-wall'), 'Supporting panel layout is scoped below the app workspace.');
 add('mobile-menu-still-closes-on-route', mobileMenu.includes("document.addEventListener('ywi:route-shown'") && mobileMenu.includes('if (isMobile()) close();'), 'Mobile menu closes when a route is shown.');
-add('cache-marker-current', index.includes('2026-09-01a') && read('server-worker.js').includes('2026-09-01a'), 'HTML and service worker use the current cache marker.');
+add('it-remains-admin-subroute', moduleNav.includes("admin: ['admin','it']") && security.includes("admin: 'admin', it: 'admin'") && security.includes("admin: 'view', it: 'manage'"), 'I.T. Readiness remains an Admin/manage subroute, not a fifth top module.');
+add('cache-marker-current', index.includes('2026-09-01b') && read('server-worker.js').includes('ywi-shell-v2026-09-01b'), 'HTML and service worker use the current cache marker.');
 
 const passed = results.filter((item) => item.ok).length;
 console.log(`\nNavigation route priority check: ${passed}/${results.length} passed\n`);
