@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Static contract for schema 159 module boundaries plus schema 160 Admin/I.T. hardening. */
+/** Static contract for schema 159 module boundaries plus schema 160 Admin/I.T. hardening and Schema 164 shared-write enforcement. */
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -25,6 +25,7 @@ const adminItControl=read('supabase/functions/admin-it-control/index.ts');
 const jobsDirectory=read('supabase/functions/jobs-directory/index.ts');
 const jobsManage=read('supabase/functions/jobs-manage/index.ts');
 const operations=read('supabase/functions/operations-manage/index.ts');
+const writeBoundaries=read('supabase/functions/_shared/module-write-boundaries.ts');
 const accountant=read('supabase/functions/accountant-export/index.ts');
 const uploadPublic=read('supabase/functions/upload-public-asset/index.ts');
 const safetyFiles=['resend-email','review-list','review-submission','submission-detail','upload-image','upload-hse-packet-proof'];
@@ -51,19 +52,19 @@ add('admin-selectors-admin-module',hasAll(adminSelectors,['hasModuleAccess',"'ad
 add('admin-manage-module-audit',hasAll(adminManage,['moduleRequirementForEntity',"entity === 'module_permission'",'app_module_permission_audit',"preset === 'safety_only'"]));
 add('jobs-directory-enforces-and-redacts',hasAll(jobsDirectory,["'jobs', 'view'",'financeAllowed','financeRedactions','...financeRedactions']));
 add('jobs-manage-enforces',hasAll(jobsManage,["'jobs', 'create'","'finance', 'create'",'job_financial_event']));
-add('operations-action-module-map',hasAll(operations,['moduleRequirementForAction',"moduleKey:'finance'","moduleKey:'jobs'","moduleKey:'admin'",'const SCHEMA = 159']));
+add('operations-action-module-map',hasAll(operations,['resolveModuleWriteBoundary(action)','boundary.ownerModule','boundary.minimum','const SCHEMA = 159','const WRITE_BOUNDARY_SCHEMA = 164']) && hasAll(writeBoundaries,["'finance'","'jobs'","'admin'",'MODULE_WRITE_BOUNDARIES[key] || null']), 'Shared operations authorization is now fail-closed through the Schema 164 action contract.');
 add('accountant-finance-manage',hasAll(accountant,["'finance', 'manage'",'const SCHEMA = 159']));
 add('public-upload-admin-manage',hasAll(uploadPublic,["'admin', 'manage'",'const SCHEMA = 159']));
 for(const name of safetyFiles){const t=read(`supabase/functions/${name}/index.ts`); add(`safety-function:${name}`,hasAll(t,['hasModuleAccess',"'safety'"]));}
 let ts; try { const require=createRequire(import.meta.url); ts=require('typescript'); } catch {}
 if(ts){
-  for(const file of ['supabase/functions/_shared/module-permissions.ts','supabase/functions/admin-directory/index.ts','supabase/functions/admin-selectors/index.ts','supabase/functions/admin-manage/index.ts','supabase/functions/admin-it-control/index.ts','supabase/functions/jobs-directory/index.ts','supabase/functions/jobs-manage/index.ts','supabase/functions/operations-manage/index.ts','supabase/functions/accountant-export/index.ts','supabase/functions/upload-public-asset/index.ts',...safetyFiles.map((n)=>`supabase/functions/${n}/index.ts`)]){
+  for(const file of ['supabase/functions/_shared/module-permissions.ts','supabase/functions/_shared/module-write-boundaries.ts','supabase/functions/admin-directory/index.ts','supabase/functions/admin-selectors/index.ts','supabase/functions/admin-manage/index.ts','supabase/functions/admin-it-control/index.ts','supabase/functions/jobs-directory/index.ts','supabase/functions/jobs-manage/index.ts','supabase/functions/operations-manage/index.ts','supabase/functions/accountant-export/index.ts','supabase/functions/upload-public-asset/index.ts',...safetyFiles.map((n)=>`supabase/functions/${n}/index.ts`)]){
     const r=ts.transpileModule(read(file),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext},reportDiagnostics:true,fileName:file});
     const errors=(r.diagnostics||[]).filter((d)=>d.category===ts.DiagnosticCategory.Error);
     add(`typescript:${file}`,errors.length===0,errors.map((d)=>ts.flattenDiagnosticMessageText(d.messageText,' ')).join(' | '));
   }
 }
 const passed=out.filter((x)=>x.ok).length;
-console.log(`\nSchema 159/160 module permission check: ${passed}/${out.length} passed\n`);
+console.log(`\nSchema 159/160/164 module permission check: ${passed}/${out.length} passed\n`);
 for(const r of out) console.log(`${r.ok?'PASS':'FAIL'}  ${r.name}${r.details?` — ${r.details}`:''}`);
 process.exit(out.some((x)=>!x.ok)?1:0);
