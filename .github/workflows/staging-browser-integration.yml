@@ -22,6 +22,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:modules
+      - run: npm run test:it
       - run: npm run test:repo
       - run: npm run test:contrast
       - run: npm run test:navigation
