@@ -96,13 +96,24 @@ jobs:
       - name: Verify navigation priority
         run: npm run test:navigation
 
-      - name: Commit validated Schema 159 tree
+      - name: Commit validated Schema 159 application tree
         shell: bash
         run: |
           set -euo pipefail
+          # The GitHub Actions token can write repository contents but cannot
+          # create/update workflow files. Keep workflow paths unchanged in this
+          # bot commit; ChatGPT's GitHub connector will finalize those two files.
+          git checkout HEAD -- .github/workflows/schema159-bootstrap.yml
+          rm -f .github/workflows/staging-browser-integration.yml
+
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
+          if git diff --cached --name-only | grep -q '^\.github/workflows/'; then
+            echo 'Workflow path unexpectedly staged; refusing bot push.'
+            git diff --cached --name-only
+            exit 1
+          fi
           git diff --cached --quiet && { echo 'No Schema 159 changes to commit'; exit 1; }
           git commit -m 'Schema 159: modular permissions for Safety, Finance, Jobs and Admin'
           git push origin HEAD:schema-159-module-permissions
