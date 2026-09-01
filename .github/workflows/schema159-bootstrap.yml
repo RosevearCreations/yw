@@ -6,6 +6,8 @@ on:
       - main
     types:
       - opened
+      - synchronize
+      - reopened
 
 permissions:
   contents: write
@@ -41,8 +43,30 @@ jobs:
           rm -rf .schema159-bootstrap
           rm -f .github/workflows/schema159-bootstrap.yml
 
+      - name: Normalize npm registry references
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('package-lock.json')
+          text = path.read_text(encoding='utf-8')
+          old = 'https://packages.applied-caas-gateway1.internal.api.openai.org/artifactory/api/npm/npm-public/'
+          new = 'https://registry.npmjs.org/'
+          count = text.count(old)
+          if count:
+              path.write_text(text.replace(old, new), encoding='utf-8')
+          print(f'Normalized {count} private npm registry reference(s).')
+          if old in path.read_text(encoding='utf-8'):
+              raise SystemExit('Private npm registry reference remains in package-lock.json')
+          PY
+          npm config set registry https://registry.npmjs.org/
+          npm config set fetch-retries 5
+          npm config set fetch-retry-mintimeout 10000
+          npm config set fetch-retry-maxtimeout 60000
+
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-audit --no-fund
 
       - name: Verify module permission boundaries
         run: npm run test:modules
