@@ -1,5 +1,5 @@
 // Shared Core Data read-model contract for Schema 163.
-// This helper is read-only and intentionally projects bounded identity/directory fields.
+// This helper is read-only and intentionally projects bounded, schema-stable identity fields.
 
 export type CoreEntityKey =
   | 'profile'
@@ -26,37 +26,37 @@ export const CORE_READ_MODELS: Record<CoreEntityKey, {
   },
   customer: {
     relation: 'clients',
-    columns: 'id,client_code,legal_name,display_name,client_type,is_active',
+    columns: 'id,client_code,legal_name,display_name,is_active',
     orderColumn: 'legal_name',
     ascending: true,
   },
   customer_site: {
     relation: 'client_sites',
-    columns: 'id,client_id,legacy_site_id,site_code,site_name,service_address,city,province,postal_code,is_active',
+    columns: 'id,client_id,site_code,site_name,is_active',
     orderColumn: 'site_name',
     ascending: true,
   },
   job: {
     relation: 'jobs',
-    columns: 'id,job_code,job_name,site_id,job_type,status,priority,client_name,start_date,end_date,site_supervisor_profile_id,signing_supervisor_profile_id,admin_profile_id',
+    columns: 'id,job_code,job_name,status,priority,start_date,end_date',
     orderColumn: 'job_code',
     ascending: true,
   },
   equipment: {
     relation: 'equipment_master',
-    columns: 'id,equipment_code,item_name,equipment_category,manufacturer,model,ownership_type,is_active',
+    columns: 'id,equipment_code,item_name,equipment_category,is_active',
     orderColumn: 'item_name',
     ascending: true,
   },
   customer_asset: {
     relation: 'customer_assets',
-    columns: 'id,asset_code,client_id,client_site_id,asset_name,asset_type,serial_number,manufacturer,model,is_active',
+    columns: 'id,asset_code,asset_name,asset_type,client_id,client_site_id,is_active',
     orderColumn: 'asset_name',
     ascending: true,
   },
   service_document: {
     relation: 'service_contract_documents',
-    columns: 'id,document_number,source_entity,source_id,estimate_id,agreement_id,job_id,client_id,client_site_id,document_kind,document_status,title,contract_reference,effective_date,expiry_date',
+    columns: 'id,document_number,document_kind,document_status,agreement_id,estimate_id,job_id',
     orderColumn: 'document_number',
     ascending: true,
   },
