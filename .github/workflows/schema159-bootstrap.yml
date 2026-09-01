@@ -1,17 +1,18 @@
 name: Schema 159 bootstrap
 
 on:
-  push:
+  pull_request:
     branches:
-      - schema-159-module-permissions
-    paths:
-      - '.github/workflows/schema159-bootstrap.yml'
+      - main
+    types:
+      - opened
 
 permissions:
   contents: write
 
 jobs:
   apply-and-verify:
+    if: github.head_ref == 'schema-159-module-permissions'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout feature branch
