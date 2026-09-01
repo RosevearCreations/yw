@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Schema 161-162 source gate: Shared Core + permission-driven standalone modules. */
+/** Schema 161-163 source gate: Shared Core + permission-driven standalone modules. */
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -45,7 +45,7 @@ add('schema162-no-new-shared-identity-tables', !/create table/i.test(migration16
 add('schema162-it-readiness-wiring', hasAll(migration162, ['permission_driven_module_runtime','schema162_permission_runtime']), 'Permission-driven runtime is a tracked I.T. readiness/release item.');
 add('schema162-schema-drift-marker', hasAll(migration162, ['162::int as expected_schema_version', "'162_permission_driven_module_runtime'", "'2026-09-01d'"]), 'Schema/version marker advances to 162.');
 
-add('runtime-v2-build', hasAll(runtime, ["const BUILD = '2026-09-01d'", 'const CONTRACT_VERSION = 2']), 'Runtime contract/build is Schema 162.');
+add('runtime-v2-build', hasAll(runtime, ["const BUILD = '2026-09-01d'", 'const CONTRACT_VERSION = 2']), 'Runtime contract/build remains Schema 162 while Core services advance independently.');
 add('runtime-requires-authentication', hasAll(runtime, ['!stateNow.isAuthenticated','stateNow.pendingAuthResolution','stateNow.needsAccountSetup']), 'Runtime refuses module loading before auth/account readiness.');
 add('runtime-uses-permission-check', runtime.includes("sec.canViewModule(moduleKey, currentRole(), 'view') === true"), 'Browser module loading is permission driven.');
 add('runtime-loads-only-manifest-scripts', hasAll(runtime, ['for (const script of manifest.scripts)','await loadScript(script, moduleKey)']), 'Module loader follows the bounded manifest.');
@@ -55,19 +55,19 @@ add('runtime-preserves-server-authorization', security.includes('Hidden navigati
 
 add('shell-loads-runtime-once', (index.match(/<script src="\/js\/module-runtime\.js\?v=/g) || []).length === 1, 'Shared shell statically loads one module runtime.');
 add('shell-does-not-eager-load-business-modules', moduleScripts.every((script) => !index.includes(`<script src="${script}?v=`)), 'No Safety, Finance, Jobs, or Admin bundle is eagerly loaded by index.html.');
-add('shell-keeps-shared-core-services', hasAll(index, ['/js/security.js?','/js/auth.js?','/js/api.js?','/js/reference-data.js?','/app.js?']), 'Core/auth/data/application shell stays available independently of business modules.');
+add('shell-keeps-shared-core-services', hasAll(index, ['/js/security.js?','/js/auth.js?','/js/api.js?','/js/core-data-service.js?','/js/reference-data.js?','/app.js?']), 'Core/auth/data/application shell stays available independently of business modules.');
 
-add('service-worker-schema162-cache-marker', serverWorker.includes("const CACHE_NAME = 'ywi-shell-v2026-09-01d';"), 'Service worker uses the Schema 162 cache namespace.');
-add('service-worker-precaches-runtime-core', serverWorker.includes("'/js/module-runtime.js'"), 'Offline Shared Core includes the permission-driven runtime.');
+add('service-worker-core-cache-marker', serverWorker.includes("const CACHE_NAME = 'ywi-shell-v2026-09-01e';"), 'Service worker uses the Schema 163 Shared Core cache namespace.');
+add('service-worker-precaches-runtime-core', serverWorker.includes("'/js/module-runtime.js'") && serverWorker.includes("'/js/core-data-service.js'"), 'Offline Shared Core includes the permission runtime and Core Data service.');
 add('service-worker-does-not-precache-business-modules', moduleScripts.every((script) => !serverWorker.includes(`'${script}'`)), 'Service worker installation cannot pre-download Safety, Finance, Jobs, or Admin bundles.');
-add('service-worker-dynamic-module-cache-is-request-driven', hasAll(serverWorker, ['url.pathname.startsWith(\'/js/\')','fetch(req)','cache.put(req, copy)']), 'Authorized module bundles may be cached only after an actual browser request.');
+add('service-worker-dynamic-module-cache-is-request-driven', hasAll(serverWorker, ["url.pathname.startsWith('/js/')",'fetch(req)','cache.put(req, copy)']), 'Authorized module bundles may be cached only after an actual browser request.');
 
 const failures = results.filter((item) => !item.ok);
 for (const item of results) {
   console.log(`${item.ok ? 'PASS' : 'FAIL'} ${item.name}${item.details ? ` - ${item.details}` : ''}`);
 }
 if (failures.length) {
-  console.error(`\nSchema 161-162 module runtime gate failed: ${failures.length}/${results.length} checks.`);
+  console.error(`\nSchema 161-163 module runtime gate failed: ${failures.length}/${results.length} checks.`);
   process.exit(1);
 }
-console.log(`\nSchema 161-162 module runtime gate passed: ${results.length}/${results.length} checks.`);
+console.log(`\nSchema 161-163 module runtime gate passed: ${results.length}/${results.length} checks.`);
