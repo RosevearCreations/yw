@@ -7,6 +7,7 @@
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { effectiveModuleAccess, hasModuleAccess } from "../_shared/module-permissions.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,6 +23,43 @@ function normalizeRole(role?: string | null) {
 
 function roleRank(role: string) {
   return { employee:10, worker:10, staff:10, onsite_admin:18, site_leader:20, supervisor:30, hse:40, job_admin:45, admin:50 }[normalizeRole(role)] ?? 0;
+}
+
+
+type ModuleRequirement = { moduleKey:'safety'|'finance'|'jobs'|'admin'; minimum:'view'|'create'|'approve'|'manage' };
+
+const SAFETY_ENTITIES = new Set([
+  'corrective_action_task','equipment_jsa_hazard_link','hse_packet_event','hse_packet_proof','linked_hse_packet',
+  'report_preset','report_subscription','sds_acknowledgement','training_course','training_record',
+  'training_self_acknowledgement','worker_sds_self_acknowledgement'
+]);
+const FINANCE_ENTITIES = new Set([
+  'accountant_handoff_export','accounting_period_close','ap_bill','ap_payment','ap_payment_application','ap_vendor',
+  'ar_invoice','ar_payment','ar_payment_application','bank_account','bank_reconciliation_item','bank_reconciliation_session',
+  'bank_statement_import','business_tax_setting','commercial_approval_event','commercial_approval_threshold','cost_code',
+  'employee_time_entry','employee_time_entry_review','gl_account','gl_journal_batch','gl_journal_entry','gl_journal_sync_exception',
+  'invoice_candidate_posting_rule','job_financial_event','job_invoice_candidate','job_journal_candidate','journal_candidate_posting_rule',
+  'payment_application','payroll_export_run','payroll_remittance_run','remittance_filing_review','sales_tax_filing','tax_code'
+]);
+const JOB_ENTITIES = new Set([
+  'assignment','change_order','client','client_site','customer_asset','customer_asset_job_link','equipment_master','estimate','estimate_line',
+  'estimate_quote_package','job','job_completion_closeout_asset','job_completion_closeout_item','job_completion_review','job_completion_signoff_step',
+  'job_requirement','material','material_issue','material_issue_line','material_receipt','material_receipt_line','recurring_service_agreement',
+  'route','route_stop','route_stop_execution','route_stop_execution_attachment','sales_order','service_area','service_contract_document',
+  'service_execution_scheduler_setting','service_pricing_template','snow_event_trigger','subcontract_client','subcontract_dispatch',
+  'warranty_callback_event','work_order','work_order_line','work_order_release_review'
+]);
+
+function moduleRequirementForEntity(entity: unknown, action: unknown): ModuleRequirement {
+  const key = String(entity || '').trim().toLowerCase();
+  const act = String(action || '').trim().toLowerCase();
+  if (key === 'module_permission') return { moduleKey:'admin', minimum:'manage' };
+  const isDecision = /(approve|review|finalize|finalise|lock|reopen|verify|resolve|signoff|release|post)/.test(act);
+  const minimum = isDecision ? 'approve' : 'create';
+  if (SAFETY_ENTITIES.has(key)) return { moduleKey:'safety', minimum };
+  if (FINANCE_ENTITIES.has(key)) return { moduleKey:'finance', minimum };
+  if (JOB_ENTITIES.has(key)) return { moduleKey:'jobs', minimum };
+  return { moduleKey:'admin', minimum: key.startsWith('admin_') || ['profile','credential','catalog','site','notification'].includes(key) ? 'manage' : minimum };
 }
 
 function addMonthsToDate(baseDate?: string | null, months?: number | null) {
@@ -893,6 +931,76 @@ serve(async (req) => {
   const isAdmin = actorProfile.role === 'admin';
 
   try {
+    if (entity === 'module_permission') {
+      const allowed = normalizeRole(actorProfile.role) === 'admin' && await hasModuleAccess(supabase, actorProfile, 'admin', 'manage');
+      if (!allowed) return Response.json({ ok:false, error:'Admin manage access is required to change module permissions.' }, { status:403, headers:corsHeaders });
+      const profileId = String(body.profile_id || body.item_id || '').trim();
+      if (!profileId) return Response.json({ ok:false, error:'profile_id is required.' }, { status:400, headers:corsHeaders });
+      const { data: targetProfile, error: targetError } = await supabase.from('profiles').select('id,full_name,email,role,is_active').eq('id', profileId).maybeSingle();
+      if (targetError || !targetProfile?.id) return Response.json({ ok:false, error:'Target profile was not found.' }, { status:404, headers:corsHeaders });
+      if (normalizeRole(targetProfile.role) === 'admin') return Response.json({ ok:false, error:'Admin profiles retain break-glass module access and cannot be module-locked.' }, { status:400, headers:corsHeaders });
+      const reason = String(body.permission_reason || body.reason || 'Module permission updated from Admin.').trim().slice(0,300);
+      const moduleKeys = ['safety','finance','jobs','admin'] as const;
+      const writeAudit = async (moduleKey:string, previous:string|null, next:string) => {
+        await supabase.from('app_module_permission_audit').insert({ target_profile_id:profileId, module_key:moduleKey, previous_access_level:previous, new_access_level:next, change_reason:reason, actor_profile_id:actorId });
+      };
+      if (action === 'set') {
+        const moduleKey = String(body.module_key || '').trim().toLowerCase();
+        const accessLevel = String(body.access_level || '').trim().toLowerCase();
+        if (!moduleKeys.includes(moduleKey as any)) return Response.json({ ok:false, error:'Valid module_key is required.' }, { status:400, headers:corsHeaders });
+        if (!['hidden','view','create','approve','manage'].includes(accessLevel)) return Response.json({ ok:false, error:'Valid access_level is required.' }, { status:400, headers:corsHeaders });
+        const { data: previousRow } = await supabase.from('app_profile_module_permissions').select('access_level').eq('profile_id',profileId).eq('module_key',moduleKey).maybeSingle();
+        const { data, error } = await supabase.from('app_profile_module_permissions').upsert({ profile_id:profileId, module_key:moduleKey, access_level:accessLevel, permission_reason:reason, granted_by_profile_id:actorId, granted_at:new Date().toISOString(), updated_at:new Date().toISOString() }, { onConflict:'profile_id,module_key' }).select('*').single();
+        if (error) throw error;
+        await writeAudit(moduleKey, previousRow?.access_level || null, accessLevel);
+        return Response.json({ ok:true, record:data, effective_access_level:await effectiveModuleAccess(supabase,targetProfile,moduleKey as any) }, { headers:corsHeaders });
+      }
+      if (action === 'reset') {
+        const moduleKey = String(body.module_key || '').trim().toLowerCase();
+        if (!moduleKeys.includes(moduleKey as any)) return Response.json({ ok:false, error:'Valid module_key is required.' }, { status:400, headers:corsHeaders });
+        const { data: previousRow } = await supabase.from('app_profile_module_permissions').select('access_level').eq('profile_id',profileId).eq('module_key',moduleKey).maybeSingle();
+        const { error } = await supabase.from('app_profile_module_permissions').delete().eq('profile_id',profileId).eq('module_key',moduleKey);
+        if (error) throw error;
+        const next = await effectiveModuleAccess(supabase,targetProfile,moduleKey as any);
+        await writeAudit(moduleKey, previousRow?.access_level || null, next);
+        return Response.json({ ok:true, module_key:moduleKey, effective_access_level:next }, { headers:corsHeaders });
+      }
+      if (action === 'preset') {
+        const preset = String(body.preset || '').trim().toLowerCase();
+        if (preset === 'reset_all') {
+          const { data: previousRows } = await supabase.from('app_profile_module_permissions').select('module_key,access_level').eq('profile_id',profileId);
+          const { error } = await supabase.from('app_profile_module_permissions').delete().eq('profile_id',profileId);
+          if (error) throw error;
+          for (const moduleKey of moduleKeys) {
+            const previous = (previousRows || []).find((row:any)=>row.module_key===moduleKey)?.access_level || null;
+            const next = await effectiveModuleAccess(supabase,targetProfile,moduleKey);
+            await writeAudit(moduleKey, previous, next);
+          }
+          return Response.json({ ok:true, preset, profile_id:profileId }, { headers:corsHeaders });
+        }
+        if (preset === 'safety_only') {
+          const currentSafety = await effectiveModuleAccess(supabase,targetProfile,'safety');
+          const safetyLevel = currentSafety === 'hidden' ? 'create' : currentSafety;
+          const desired:Record<string,string> = { safety:safetyLevel, finance:'hidden', jobs:'hidden', admin:'hidden' };
+          const { data: previousRows } = await supabase.from('app_profile_module_permissions').select('module_key,access_level').eq('profile_id',profileId);
+          for (const moduleKey of moduleKeys) {
+            const { error } = await supabase.from('app_profile_module_permissions').upsert({ profile_id:profileId, module_key:moduleKey, access_level:desired[moduleKey], permission_reason:reason, granted_by_profile_id:actorId, granted_at:new Date().toISOString(), updated_at:new Date().toISOString() }, { onConflict:'profile_id,module_key' });
+            if (error) throw error;
+            const previous = (previousRows || []).find((row:any)=>row.module_key===moduleKey)?.access_level || null;
+            await writeAudit(moduleKey, previous, desired[moduleKey]);
+          }
+          return Response.json({ ok:true, preset, profile_id:profileId, module_access:desired }, { headers:corsHeaders });
+        }
+        return Response.json({ ok:false, error:'Unsupported module permission preset.' }, { status:400, headers:corsHeaders });
+      }
+      return Response.json({ ok:false, error:'Unsupported module permission action.' }, { status:400, headers:corsHeaders });
+    }
+
+    const moduleRequirement = moduleRequirementForEntity(entity, action);
+    if (!(await hasModuleAccess(supabase, actorProfile, moduleRequirement.moduleKey, moduleRequirement.minimum))) {
+      return Response.json({ ok:false, error:`${moduleRequirement.moduleKey} module ${moduleRequirement.minimum} access is required.`, module_key:moduleRequirement.moduleKey, required_access:moduleRequirement.minimum }, { status:403, headers:corsHeaders });
+    }
+
     if (entity === 'admin_saved_filter') {
       if (roleRank(actorProfile.role) < roleRank('supervisor')) {
         return Response.json({ ok:false, error:'Supervisor access is required.' }, { status:403, headers:corsHeaders });

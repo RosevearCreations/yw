@@ -5,6 +5,7 @@
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { hasModuleAccess } from "../_shared/module-permissions.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -65,6 +66,7 @@ serve(async (req) => {
   const { data: actorProfile } = await supabase.from('profiles').select('*').eq('id', userData.user.id).single();
   const actorRole = effectiveRole(actorProfile, userData.user);
   if (!actorProfile?.is_active) return Response.json({ ok:false, error:'Inactive profile' }, { status:403, headers:corsHeaders });
+  if (!(await hasModuleAccess(supabase, actorProfile, 'admin', 'view'))) return Response.json({ ok:false, error:'Admin module view access is required.', module_key:'admin', required_access:'view' }, { status:403, headers:corsHeaders });
   if (roleRank(actorRole) < roleRank('supervisor')) return Response.json({ ok:false, error:'Supervisor+ required' }, { status:403, headers:corsHeaders });
 
   const body = await req.json().catch(() => ({}));

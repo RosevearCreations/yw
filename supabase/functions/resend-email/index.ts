@@ -8,6 +8,7 @@
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { hasModuleAccess } from "../_shared/module-permissions.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,6 +28,7 @@ serve(async (req) => {
 
   const { data: actorProfile } = await supabase.from('profiles').select('*').eq('id', userData.user.id).single();
   if (!actorProfile?.is_active) return Response.json({ ok:false, error:'Inactive profile' }, { status:403, headers:corsHeaders });
+  if (!(await hasModuleAccess(supabase, actorProfile, 'safety', 'create'))) return Response.json({ ok:false, error:'Safety / OHSA module create access is required.', module_key:'safety', required_access:'create' }, { status:403, headers:corsHeaders });
 
   const body = await req.json();
   const formType = body.formType;

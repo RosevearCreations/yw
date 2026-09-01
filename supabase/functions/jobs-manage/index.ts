@@ -7,6 +7,7 @@
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { hasModuleAccess } from "../_shared/module-permissions.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -399,9 +400,14 @@ serve(async (req) => {
   const { data: userData, error: userError } = await supabase.auth.getUser(token);
   if (userError || !userData.user) return Response.json({ ok:false, error:'Unauthorized' }, { status:401, headers:corsHeaders });
   const { data: actorProfile } = await supabase.from('profiles').select('*').eq('id', userData.user.id).single();
-  if (!actorProfile?.is_active || roleRank(actorProfile.role) < roleRank('supervisor')) return Response.json({ ok:false, error:'Supervisor+ required' }, { status:403, headers:corsHeaders });
+  if (!actorProfile?.is_active) return Response.json({ ok:false, error:'Inactive profile' }, { status:403, headers:corsHeaders });
+  if (!(await hasModuleAccess(supabase, actorProfile, 'jobs', 'create'))) return Response.json({ ok:false, error:'Jobs module create access is required.', module_key:'jobs', required_access:'create' }, { status:403, headers:corsHeaders });
+  if (roleRank(actorProfile.role) < roleRank('supervisor')) return Response.json({ ok:false, error:'Supervisor+ role is required for Jobs management.' }, { status:403, headers:corsHeaders });
 
   const body = await req.json().catch(() => ({}));
+  if (body.entity === 'job_financial_event' && !(await hasModuleAccess(supabase, actorProfile, 'finance', 'create'))) {
+    return Response.json({ ok:false, error:'Finance module create access is required for job financial events.', module_key:'finance', required_access:'create' }, { status:403, headers:corsHeaders });
+  }
   try {
     if (body.entity === 'job' && body.action === 'upsert') {
       const siteId = await resolveSiteIdByCodeOrName(supabase, body.site_name);

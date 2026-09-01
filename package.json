@@ -1,7 +1,7 @@
 {
   "name": "ywi-operations-platform",
   "private": true,
-  "version": "2026.08.05",
+  "version": "2026.09.01",
   "type": "module",
   "scripts": {
     "test:repo": "node scripts/repo-smoke-check.mjs",
@@ -12,9 +12,11 @@
     "test:notifications": "node scripts/customer-notification-delivery-check.mjs",
     "test:execution-proof": "node scripts/service-execution-proof-check.mjs",
     "test:closeout": "node scripts/supervisor-closeout-check.mjs",
-    "test:navigation": "node scripts/navigation-route-priority-check.mjs"
+    "test:navigation": "node scripts/navigation-route-priority-check.mjs",
+    "test:modules": "node scripts/module-permissions-check.mjs"
   },
   "devDependencies": {
-    "@playwright/test": "^1.56.0"
+    "@playwright/test": "^1.56.0",
+    "typescript": "5.9.2"
   }
 }

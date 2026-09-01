@@ -1,8 +1,9 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { hasModuleAccess } from "../_shared/module-permissions.ts";
 
-const BUILD = '2026-08-05a';
-const SCHEMA = 158;
+const BUILD = '2026-09-01a';
+const SCHEMA = 159;
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-idempotency-key',
@@ -24,6 +25,20 @@ const money = (value: unknown) => {
   const n = Number(String(value ?? '').replace(/[$,]/g, ''));
   return Number.isFinite(n) ? Number(n.toFixed(2)) : 0;
 };
+type ModuleRequirement = { moduleKey:'safety'|'finance'|'jobs'|'admin'; minimum:'view'|'create'|'approve'|'manage' };
+
+function moduleRequirementForAction(action: string): ModuleRequirement {
+  if (['payment_action_request','bank_csv_preview'].includes(action)) return { moduleKey:'finance', minimum:'create' };
+  if (['payment_action_decision','bank_csv_confirm_import','reconciliation_action'].includes(action)) return { moduleKey:'finance', minimum:'approve' };
+  if (['reconciliation_suggest','job_cost_refresh'].includes(action)) return { moduleKey:'finance', minimum:'view' };
+  if (['equipment_scan_event','work_order_live_update_create','work_order_execution_proof_submit'].includes(action)) return { moduleKey:'jobs', minimum:'create' };
+  if (['equipment_cost_recovery_decision','quote_owner_assign','quote_followup_event','dispatch_schedule','work_order_execution_proof_decision','work_order_closeout_submit','work_order_closeout_decision','work_order_live_update_retract'].includes(action)) return { moduleKey:'jobs', minimum:'approve' };
+  if (['customer_notification_retry'].includes(action)) return { moduleKey:'jobs', minimum:'manage' };
+  if (['deposit_status_update'].includes(action)) return { moduleKey:'finance', minimum:'manage' };
+  if (action === 'operations_queue_list') return { moduleKey:'admin', minimum:'view' };
+  return { moduleKey:'admin', minimum:'manage' };
+}
+
 const int = (value: unknown, fallback = 0) => {
   const n = Number(value);
   return Number.isFinite(n) ? Math.trunc(n) : fallback;
@@ -735,6 +750,10 @@ serve(async (req) => {
     action = clean(body.action, 80);
     ({ profile } = await getActor(supabase, req));
     if (!action) throw new HttpError(400, 'action is required.');
+    const moduleRequirement = moduleRequirementForAction(action);
+    if (!(await hasModuleAccess(supabase, profile, moduleRequirement.moduleKey, moduleRequirement.minimum))) {
+      throw new HttpError(403, `${moduleRequirement.moduleKey} module ${moduleRequirement.minimum} access is required.`, { module_key:moduleRequirement.moduleKey, required_access:moduleRequirement.minimum });
+    }
 
     if (action === 'operations_queue_list') {
       requireRank(profile, 30, action);

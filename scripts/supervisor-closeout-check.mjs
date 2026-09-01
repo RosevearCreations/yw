@@ -57,8 +57,8 @@ add('schema158-private-grants', hasAll(migration, [
 add('schema158-reference-includes-migration', schema.includes('-- BEGIN MIGRATION: 158_supervisor_closeout_customer_signoff_invoice_followup') && schema.includes(migration.trim()), 'Full schema reference includes schema 158 verbatim.');
 
 add('operations-closeout-actions', hasAll(ops, [
-  "const BUILD = '2026-08-05a'",
-  'const SCHEMA = 158',
+  "const BUILD = '2026-09-01a'",
+  'const SCHEMA = 159',
   "closeouts: 'v_work_order_closeout_queue'",
   "action === 'work_order_closeout_submit'",
   'ywi_rpc_submit_work_order_closeout_package',
@@ -66,8 +66,8 @@ add('operations-closeout-actions', hasAll(ops, [
   'ywi_rpc_decide_work_order_closeout_package'
 ]), 'Operations function exposes role-checked closeout submit/decision actions.');
 add('portal-closeout-action', hasAll(portal, [
-  "const BUILD = '2026-08-05a'",
-  'const SCHEMA = 158',
+  "const BUILD = '2026-09-01a'",
+  'const SCHEMA = 159',
   'portalCloseoutPackages',
   'v_customer_portal_closeout_packages',
   "action === 'sign_closeout'",
@@ -97,7 +97,7 @@ add('closeout-responsive-css', hasAll(css, [
   '.customer-portal-closeout-form',
   '@media(max-width:620px)'
 ]), 'Closeout surfaces have responsive CSS.');
-add('docs-test-guide-closeout', hasAll(docs, ['schema 158', 'Supervisor closeout', 'customer signoff', 'invoice readiness', 'maintenance follow-up']), 'Active docs explain schema 158 and testing.');
+add('docs-test-guide-closeout', hasAll(docs, ['Schema 159', 'supervisor closeout', 'customer signoff', 'invoice readiness', 'maintenance follow-up']) || hasAll(docs, ['schema 159', 'supervisor closeout', 'customer signoff', 'invoice readiness', 'maintenance follow-up']), 'Active docs preserve closeout testing under the current schema 159 handoff.');
 
 const passed = results.filter((item) => item.ok).length;
 console.log(`\nSupervisor closeout contract: ${passed}/${results.length} passed\n`);

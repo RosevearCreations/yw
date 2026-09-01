@@ -5,6 +5,7 @@
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { hasModuleAccess } from "../_shared/module-permissions.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -50,7 +51,10 @@ serve(async (req) => {
   if (userError || !userData.user) return Response.json({ ok:false, error:'Unauthorized' }, { status:401, headers:corsHeaders });
   const { data: actorProfile } = await supabase.from('profiles').select('*').eq('id', userData.user.id).single();
   const actorRole = effectiveRole(actorProfile, userData.user);
-  if (!actorProfile?.is_active || roleRank(actorRole) < roleRank('supervisor')) return Response.json({ ok:false, error:'Supervisor+ required' }, { status:403, headers:corsHeaders });
+  if (!actorProfile?.is_active) return Response.json({ ok:false, error:'Inactive profile' }, { status:403, headers:corsHeaders });
+  if (!(await hasModuleAccess(supabase, actorProfile, 'jobs', 'view'))) return Response.json({ ok:false, error:'Jobs module view access is required.', module_key:'jobs', required_access:'view' }, { status:403, headers:corsHeaders });
+  if (roleRank(actorRole) < roleRank('supervisor')) return Response.json({ ok:false, error:'Supervisor+ role is required for the full Jobs directory.' }, { status:403, headers:corsHeaders });
+  const financeAllowed = await hasModuleAccess(supabase, actorProfile, 'finance', 'view');
 
   const { data: jobs } = await supabase.from('v_jobs_directory').select('*').order('start_date', { ascending: false });
   const { data: crews } = await supabase.from('v_crew_directory').select('*').order('crew_name');
@@ -188,8 +192,20 @@ serve(async (req) => {
     attachments: attachmentsByComment.get(String(row.id || '')) || []
   }));
 
+  const financeRedactions = financeAllowed ? {} : {
+    service_pricing_templates:[], tax_codes:[], business_tax_settings:[], estimates:[], estimate_lines:[], work_orders:[], work_order_lines:[],
+    job_accounting_ready_queue:[], commercial_approval_events:[], quote_packages:[], commercial_approval_thresholds:[], invoice_candidates:[], journal_candidates:[],
+    ar_ap_review_queue:[], profitability_scorecards:[], quote_output_rows:[], threshold_evaluations:[], invoice_posting_rules:[], journal_posting_rules:[],
+    accountant_handoff_exports:[], profitability_variance:[], invoice_postings:[], journal_postings:[], profitability_management:[], quote_package_engagement:[],
+    accounting_lifecycle:[], invoice_posting_automation:[], journal_posting_automation:[], accountant_handoff_bundles:[], accountant_packages:[],
+    ar_payment_applications:[], ap_payment_applications:[], journal_generated_lines:[], sales_tax_review:[], payroll_remittance_review:[], bank_reconciliation_match_scored:[],
+    job_cost_depth:[], payment_application_workbench:[], bank_reconciliation_review_workbench:[], remittance_filing_review_workbench:[], month_end_close_workbench:[],
+    job_financial_events:[], job_financial_rollups:[]
+  };
+
   return Response.json({
     ok:true,
+    module_access:{ jobs:'view', finance: financeAllowed ? 'view_or_higher' : 'hidden' },
     jobs: jobs || [],
     crews: crews || [],
     crew_members: crewMembers || [],
@@ -261,6 +277,7 @@ serve(async (req) => {
     month_end_close_workbench: monthEndCloseWorkbench || [],
     equipment_accountability: equipmentAccountability || [],
     equipment_service_tasks: equipmentServiceTasks || [],
-    evidence_assets: evidenceAssets
+    evidence_assets: evidenceAssets,
+    ...financeRedactions
   }, { headers: corsHeaders });
 });

@@ -27,7 +27,7 @@
   }
 
   function getNavLinks() {
-    return Array.from(document.querySelectorAll('nav a[href^="#"]'));
+    return Array.from(document.querySelectorAll('#mainNav a[href^="#"], #moduleSectionNav a[href^="#"]'));
   }
 
   function isAuthCallbackHash(raw) {
@@ -59,12 +59,21 @@
   }
 
   function updateNav(sectionId) {
+    const sec = security();
+    const role = getRole();
+    const activeModule = sec?.getModuleForSection?.(sectionId) || '';
     getNavLinks().forEach((link) => {
       const linkId = normalizeSectionId((link.getAttribute('href') || '').slice(1));
-      const alwaysVisible = ['today','toolbox','ppe','firstaid','incident','inspect','drill','log','hseops','me','jobs','equipment','settings'];
-      const allowed = security()?.canViewSection ? security().canViewSection(linkId, getRole()) : true;
-      link.classList.toggle('active', link.getAttribute('href') === `#${sectionId}`);
-      link.style.display = (allowed || alwaysVisible.includes(linkId)) ? '' : 'none';
+      const moduleKey = String(link.dataset.module || '').trim();
+      const allowed = moduleKey
+        ? (sec?.canViewModule ? sec.canViewModule(moduleKey, role, 'view') : true)
+        : (sec?.canViewSection ? sec.canViewSection(linkId, role) : true);
+      const isActive = moduleKey ? moduleKey === activeModule : linkId === sectionId;
+      link.classList.toggle('active', isActive);
+      link.hidden = !allowed;
+      link.setAttribute('aria-hidden', allowed ? 'false' : 'true');
+      if (isActive && allowed) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
     });
   }
 
@@ -156,7 +165,7 @@
     if (sectionId) showSection(sectionId, { skipFocus: true });
   }
 
-  window.YWIRouter = { init, showSection, getRequestedSection, isAuthCallbackHash };
+  window.YWIRouter = { init, showSection, getRequestedSection, isAuthCallbackHash, bindNav, updateNav };
   document.addEventListener('DOMContentLoaded', init);
   document.addEventListener('ywi:auth-changed', init);
 })();

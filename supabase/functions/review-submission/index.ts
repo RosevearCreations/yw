@@ -7,6 +7,7 @@
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { hasModuleAccess } from "../_shared/module-permissions.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,6 +29,7 @@ serve(async (req) => {
   if (!actorProfile?.is_active || roleRank(actorProfile.role) < roleRank('site_leader')) {
     return Response.json({ ok:false, error:'Site leader or higher required' }, { status:403, headers:corsHeaders });
   }
+  if (!(await hasModuleAccess(supabase, actorProfile, 'safety', 'approve'))) return Response.json({ ok:false, error:'Safety / OHSA module approve access is required.', module_key:'safety', required_access:'approve' }, { status:403, headers:corsHeaders });
 
   const body = await req.json();
   const submissionId = body.submission_id;

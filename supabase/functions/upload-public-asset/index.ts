@@ -1,8 +1,9 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { hasModuleAccess } from "../_shared/module-permissions.ts";
 
-const BUILD = '2026-08-05a';
-const SCHEMA = 158;
+const BUILD = '2026-09-01a';
+const SCHEMA = 159;
 // Review uploads are private until an approved staff decision copies them to public-assets.
 const BUCKET = 'review-assets';
 const corsHeaders = {
@@ -23,6 +24,7 @@ async function actor(supabase: any, req: Request) {
   if (!user?.id) throw new HttpError(401, 'Sign in is required.');
   const { data: profile } = await supabase.from('profiles').select('id, role, is_active').eq('id', user.id).maybeSingle();
   if (!profile?.id || profile.is_active === false || roleRank(profile.role) < 45) throw new HttpError(403, 'Job Admin or Admin access is required.');
+  if (!(await hasModuleAccess(supabase, profile, 'admin', 'manage'))) throw new HttpError(403, 'Admin module manage access is required for public asset review uploads.');
   return profile;
 }
 async function checksum(file: File) {
