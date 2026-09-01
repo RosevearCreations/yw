@@ -104,7 +104,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-09-01b');
+          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-09-01d');
           if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
           }
