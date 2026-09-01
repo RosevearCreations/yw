@@ -1,0 +1,71 @@
+name: Schema 164 authority docs patch
+
+on:
+  push:
+    branches:
+      - schema-164-cross-module-write-boundaries
+
+permissions:
+  contents: write
+
+jobs:
+  patch-docs:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: schema-164-cross-module-write-boundaries
+          fetch-depth: 0
+      - name: Append Schema 164 authority checkpoint once
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          additions = {
+            'README.md': '''
+
+## Schema 164 cross-module write-boundary checkpoint — 2026-09-01f
+- The 35 explicitly handled `operations-manage` actions now have one fail-closed server contract declaring owner module, minimum module access, boundary mode, domain, and event key where applicable.
+- Unknown actions no longer inherit Admin/manage access; they are rejected before any business handler runs.
+- `deposit_status_update` is explicitly disabled at the boundary so hosted Stripe payment truth cannot be manually changed by staff actions.
+- Declared cross-module effects emit private `module_boundary_events` metadata; request bodies are not copied into those events.
+- Existing handler role checks remain as defense in depth, and Schema 163 Shared Core data remains read-only.
+- Schema 164 creates no replacement customer, job, person, site, equipment, asset, or service-document identity tables.
+''',
+            'docs/ACTIVE_PROJECT_HANDBOOK.md': '''
+
+## Current architecture checkpoint — Schema 164 / 2026-09-01f
+The shared operations write surface is now fail closed. Every one of its 35 handled actions must exist in the source and database write-boundary registries before authorization or handler execution. The contract supplies the owning module and minimum access level; unknown actions are rejected, disabled actions are blocked, and declared cross-module effects receive a stable private event key. Existing role/rank checks remain additional protection. Shared Core identity reads remain owned by the Schema 163 read-only `core-data-read` service. The next bounded architecture release is Schema 165: extract Finance and Jobs write adapters/services from the shared `operations-manage` endpoint while preserving these contracts.
+''',
+            'docs/NEXT_STEPS_AND_SANITY_CHECK.md': '''
+
+## Schema 164 restart point — 2026-09-01f
+1. Verify all 35 `operations-manage` handlers match both the source write-boundary manifest and Schema 164 database registry.
+2. Verify unknown actions resolve to no contract and are rejected before authorization/handler execution.
+3. Verify manual `deposit_status_update` is disabled at the boundary and Stripe webhook/customer checkout remain payment-truth authorities.
+4. Verify cross-module effects emit only private contract/status event metadata and Shared Core remains read-only.
+5. After Schema 164 is fully green on `main`, begin Schema 165: module-local Finance/Jobs write-service extraction from `operations-manage`, retaining the same action contracts during the move.
+'''
+          }
+          for filename, addition in additions.items():
+            path = Path(filename)
+            current = path.read_text(encoding='utf-8')
+            if 'Schema 164' not in current:
+              path.write_text(current.rstrip() + addition.rstrip() + '\n', encoding='utf-8')
+
+          workflow = Path('.github/workflows/schema164-docs-patch.yml')
+          if workflow.exists():
+            workflow.unlink()
+          PY
+      - name: Commit docs and remove temporary workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md docs/ACTIVE_PROJECT_HANDBOOK.md docs/NEXT_STEPS_AND_SANITY_CHECK.md .github/workflows/schema164-docs-patch.yml
+          git diff --cached --check
+          git diff --cached --quiet && exit 0
+          git commit -m "Schema 164 record write-boundary checkpoint"
+          git push origin HEAD:schema-164-cross-module-write-boundaries
