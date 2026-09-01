@@ -1,13 +1,13 @@
 /* File: server-worker.js
-   Brief description: Schema 162 Shared Core service worker.
-   Pre-caches only the Core/public shell. Safety, Finance, Jobs, and Admin JavaScript
-   are fetched and cached only after the permission-driven browser runtime requests them.
-   Auth callback, POST, and Supabase/API traffic remain outside service-worker handling.
+   Brief description: Schema 163 Shared Core service worker.
+   Pre-caches only the Core/public shell, now including the read-only Core Data browser service.
+   Safety, Finance, Jobs, and Admin JavaScript are fetched and cached only after the permission-driven
+   browser runtime requests them. Auth callback, POST, and Supabase/API traffic remain uncached.
 */
 
 'use strict';
 
-const CACHE_NAME = 'ywi-shell-v2026-09-01d';
+const CACHE_NAME = 'ywi-shell-v2026-09-01e';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -26,6 +26,7 @@ const APP_SHELL = [
   '/js/mobile-form-helper.js',
   '/js/app-config.js',
   '/js/api.js',
+  '/js/core-data-service.js',
   '/js/customer-portal.js',
   '/js/public-routes.js',
   '/js/account-ui.js',
