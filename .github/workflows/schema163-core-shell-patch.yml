@@ -1,0 +1,89 @@
+name: Schema 163 exact Core shell patch
+
+on:
+  push:
+    branches:
+      - schema-163-core-data-service-read-models
+
+permissions:
+  contents: write
+
+jobs:
+  patch-core-shell:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: schema-163-core-data-service-read-models
+          fetch-depth: 0
+
+      - name: Patch bounded Schema 163 shell and authority markers
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          # index.html: bump service worker and insert one Shared Core data service after api.js.
+          index = Path('index.html')
+          text = index.read_text(encoding='utf-8')
+          old_sw = 'server-worker.js?v=2026-09-01d'
+          new_sw = 'server-worker.js?v=2026-09-01e'
+          if text.count(old_sw) != 1:
+              raise SystemExit(f'Expected exactly one Schema 162 service-worker marker, found {text.count(old_sw)}.')
+          text = text.replace(old_sw, new_sw, 1)
+
+          api_tag = '  <script src="/js/api.js?v=2026-09-01b"></script>'
+          core_tag = '  <script src="/js/core-data-service.js?v=2026-09-01e"></script>'
+          if core_tag not in text:
+              if text.count(api_tag) != 1:
+                  raise SystemExit(f'Expected exactly one Shared API shell tag, found {text.count(api_tag)}.')
+              text = text.replace(api_tag, api_tag + '\n' + core_tag, 1)
+          if text.count(core_tag) != 1:
+              raise SystemExit(f'Expected exactly one Shared Core data service tag, found {text.count(core_tag)}.')
+          index.write_text(text, encoding='utf-8')
+
+          # repo smoke: preserve Schema 162 runtime marker while advancing Shared Core cache and JWT proof.
+          smoke = Path('scripts/repo-smoke-check.mjs')
+          text = smoke.read_text(encoding='utf-8')
+          old_cache = "add('build-cache-marker-current', hasAll(index, ['server-worker.js?v=2026-09-01d', 'module-runtime.js?v=2026-09-01d', 'app.js?v=2026-09-01d']) && read('server-worker.js').includes('ywi-shell-v2026-09-01d'), 'Schema 162 HTML/runtime and service-worker cache markers are current.');"
+          new_cache = "add('build-cache-marker-current', hasAll(index, ['server-worker.js?v=2026-09-01e', 'core-data-service.js?v=2026-09-01e', 'module-runtime.js?v=2026-09-01d', 'app.js?v=2026-09-01d']) && read('server-worker.js').includes('ywi-shell-v2026-09-01e'), 'Schema 163 Shared Core cache marker is current while the Schema 162 module runtime remains stable.');"
+          if text.count(old_cache) != 1:
+              raise SystemExit(f'Expected exactly one repo-smoke cache assertion, found {text.count(old_cache)}.')
+          text = text.replace(old_cache, new_cache, 1)
+
+          old_jwt = "&& /\\[functions\\.admin-it-control\\]\\s+verify_jwt = true/s.test(config), 'Protected functions retain JWT verification.');"
+          new_jwt = "&& /\\[functions\\.admin-it-control\\]\\s+verify_jwt = true/s.test(config) && /\\[functions\\.core-data-read\\]\\s+verify_jwt = true/s.test(config), 'Protected functions retain JWT verification, including Shared Core reads.');"
+          if text.count(old_jwt) != 1:
+              raise SystemExit(f'Expected exactly one repo-smoke JWT assertion tail, found {text.count(old_jwt)}.')
+          text = text.replace(old_jwt, new_jwt, 1)
+          smoke.write_text(text, encoding='utf-8')
+
+          # Keep the three active Markdown authority files current without rewriting historical sections.
+          additions = {
+              'README.md': '''\n\n## Schema 163 Shared Core Data checkpoint — 2026-09-01e\n- Shared Core now has one protected, read-only `core-data-read` directory for `profiles`, `clients`, `client_sites`, `jobs`, `equipment_master`, `customer_assets`, and `service_contract_documents`.\n- Every read is bound to an authenticated active profile and the requesting Safety, Finance, Jobs, or Admin module must have `view` access.\n- Browser Core data is cached by signed-in profile + module + entity set and is invalidated on sign-out/profile change/module-permission change.\n- Schema 162 standalone business-module loading remains unchanged: business bundles are still fetched only after permission resolution.\n- Schema 163 creates no replacement customer/job/person/site/equipment/asset/document tables.\n''',
+              'docs/ACTIVE_PROJECT_HANDBOOK.md': '''\n\n## Current architecture checkpoint — Schema 163 / 2026-09-01e\nShared identity lookups now have one bounded read-only authority: `core-data-read`. The seven canonical relations remain `profiles`, `clients`, `client_sites`, `jobs`, `equipment_master`, `customer_assets`, and `service_contract_documents`. Business modules may consume these Core read models only after their own module `view` permission resolves. Do not add module-local identity directories. The next bounded architecture release is cross-module event/write-boundary enforcement.\n''',
+              'docs/NEXT_STEPS_AND_SANITY_CHECK.md': '''\n\n## Schema 163 restart point — 2026-09-01e\n1. Verify Schema 163 source/runtime gates and exact preview deployment.\n2. Verify denied modules make zero `core-data-read` requests and profile/permission changes invalidate Core caches.\n3. Keep Schema 162 lazy module loading green.\n4. Next release: Schema 164 cross-module event and write boundaries; shared identities remain Core-owned and read-only through `core-data-read`.\n'''
+          }
+          marker = 'Schema 163'
+          for name, addition in additions.items():
+              path = Path(name)
+              current = path.read_text(encoding='utf-8')
+              if marker not in current:
+                  path.write_text(current.rstrip() + addition + '\n', encoding='utf-8')
+
+          workflow = Path('.github/workflows/schema163-core-shell-patch.yml')
+          if workflow.exists():
+              workflow.unlink()
+          PY
+
+      - name: Commit exact Core shell patch and remove temporary workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html scripts/repo-smoke-check.mjs README.md docs/ACTIVE_PROJECT_HANDBOOK.md docs/NEXT_STEPS_AND_SANITY_CHECK.md .github/workflows/schema163-core-shell-patch.yml
+          git diff --cached --check
+          git diff --cached --quiet && exit 0
+          git commit -m "Schema 163 wire Shared Core data shell and authority docs"
+          git push origin HEAD:schema-163-core-data-service-read-models
