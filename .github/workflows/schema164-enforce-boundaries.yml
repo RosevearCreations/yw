@@ -1,0 +1,168 @@
+name: Schema 164 exact boundary enforcement
+
+on:
+  push:
+    branches:
+      - schema-164-cross-module-write-boundaries
+
+permissions:
+  contents: write
+
+jobs:
+  enforce:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: schema-164-cross-module-write-boundaries
+          fetch-depth: 0
+
+      - name: Apply exact fail-closed operations boundary patch
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('supabase/functions/operations-manage/index.ts')
+          text = path.read_text(encoding='utf-8')
+
+          old_import = 'import { hasModuleAccess } from "../_shared/module-permissions.ts";'
+          new_import = '''import { hasModuleAccess } from "../_shared/module-permissions.ts";
+          import { boundaryAuditFields, resolveModuleWriteBoundary } from "../_shared/module-write-boundaries.ts";'''
+          if text.count(old_import) != 1:
+              raise SystemExit(f'Expected exactly one module-permissions import, found {text.count(old_import)}.')
+          text = text.replace(old_import, new_import, 1)
+
+          old_contract = '''type ModuleRequirement = { moduleKey:'safety'|'finance'|'jobs'|'admin'; minimum:'view'|'create'|'approve'|'manage' };
+
+          function moduleRequirementForAction(action: string): ModuleRequirement {
+            if (['payment_action_request','bank_csv_preview'].includes(action)) return { moduleKey:'finance', minimum:'create' };
+            if (['payment_action_decision','bank_csv_confirm_import','reconciliation_action'].includes(action)) return { moduleKey:'finance', minimum:'approve' };
+            if (['reconciliation_suggest','job_cost_refresh'].includes(action)) return { moduleKey:'finance', minimum:'view' };
+            if (['equipment_scan_event','work_order_live_update_create','work_order_execution_proof_submit'].includes(action)) return { moduleKey:'jobs', minimum:'create' };
+            if (['equipment_cost_recovery_decision','quote_owner_assign','quote_followup_event','dispatch_schedule','work_order_execution_proof_decision','work_order_closeout_submit','work_order_closeout_decision','work_order_live_update_retract'].includes(action)) return { moduleKey:'jobs', minimum:'approve' };
+            if (['customer_notification_retry'].includes(action)) return { moduleKey:'jobs', minimum:'manage' };
+            if (['deposit_status_update'].includes(action)) return { moduleKey:'finance', minimum:'manage' };
+            if (action === 'operations_queue_list') return { moduleKey:'admin', minimum:'view' };
+            return { moduleKey:'admin', minimum:'manage' };
+          }
+
+          '''
+          if text.count(old_contract) != 1:
+              raise SystemExit(f'Expected exactly one permissive moduleRequirementForAction block, found {text.count(old_contract)}.')
+          text = text.replace(old_contract, '', 1)
+
+          old_markers = "const BUILD = '2026-09-01a';\nconst SCHEMA = 159;"
+          new_markers = "const BUILD = '2026-09-01a';\nconst SCHEMA = 159;\nconst WRITE_BOUNDARY_BUILD = '2026-09-01f';\nconst WRITE_BOUNDARY_SCHEMA = 164;"
+          if text.count(old_markers) != 1:
+              raise SystemExit(f'Expected exactly one operations build/schema marker pair, found {text.count(old_markers)}.')
+          text = text.replace(old_markers, new_markers, 1)
+
+          old_audit = '''async function audit(supabase: any, payload: Record<string, unknown>) {
+            try {
+              await supabase.from('operation_write_audit_events').insert({
+                operation_action: clean(payload.operation_action, 120) || 'unknown',
+                operation_status: clean(payload.operation_status, 80) || 'captured',
+                entity_type: clean(payload.entity_type, 120) || null,
+                entity_id: isUuid(payload.entity_id) ? payload.entity_id : null,
+                actor_profile_id: isUuid(payload.actor_profile_id) ? payload.actor_profile_id : null,
+                request_payload: objectValue(payload.request_payload),
+                response_payload: objectValue(payload.response_payload),
+                error_message: clean(payload.error_message, 2000) || null
+              });
+            } catch { /* audit cannot block the requested action */ }
+          }'''
+          new_audit = '''async function audit(supabase: any, payload: Record<string, unknown>) {
+            try {
+              const operationAction = clean(payload.operation_action, 120) || 'unknown';
+              const operationStatus = clean(payload.operation_status, 80) || 'captured';
+              const boundary = resolveModuleWriteBoundary(operationAction);
+              const boundaryFields = boundaryAuditFields(boundary);
+              const entityType = clean(payload.entity_type, 120) || null;
+              const entityId = isUuid(payload.entity_id) ? payload.entity_id : null;
+              const actorProfileId = isUuid(payload.actor_profile_id) ? payload.actor_profile_id : null;
+              await supabase.from('operation_write_audit_events').insert({
+                operation_action: operationAction,
+                operation_status: operationStatus,
+                entity_type: entityType,
+                entity_id: entityId,
+                actor_profile_id: actorProfileId,
+                request_payload: objectValue(payload.request_payload),
+                response_payload: objectValue(payload.response_payload),
+                error_message: clean(payload.error_message, 2000) || null,
+                ...boundaryFields
+              });
+              if (boundary?.crossModule && boundary.eventKey && operationStatus !== 'error') {
+                await supabase.from('module_boundary_events').insert({
+                  event_key: boundary.eventKey,
+                  source_module: boundary.ownerModule,
+                  operation_action: operationAction,
+                  domain_key: boundary.domain,
+                  entity_type: entityType,
+                  entity_id: entityId,
+                  actor_profile_id: actorProfileId,
+                  event_payload: {
+                    boundary_mode: boundary.mode,
+                    minimum_access: boundary.minimum,
+                    operation_status: operationStatus,
+                    build: WRITE_BOUNDARY_BUILD,
+                    schema: WRITE_BOUNDARY_SCHEMA
+                  }
+                });
+              }
+            } catch { /* audit and boundary-event capture cannot block the requested action */ }
+          }'''
+          if text.count(old_audit) != 1:
+              raise SystemExit(f'Expected exactly one legacy audit helper, found {text.count(old_audit)}.')
+          text = text.replace(old_audit, new_audit, 1)
+
+          old_auth = '''    if (!action) throw new HttpError(400, 'action is required.');
+              const moduleRequirement = moduleRequirementForAction(action);
+              if (!(await hasModuleAccess(supabase, profile, moduleRequirement.moduleKey, moduleRequirement.minimum))) {
+                throw new HttpError(403, `${moduleRequirement.moduleKey} module ${moduleRequirement.minimum} access is required.`, { module_key:moduleRequirement.moduleKey, required_access:moduleRequirement.minimum });
+              }
+          '''
+          new_auth = '''    if (!action) throw new HttpError(400, 'action is required.');
+              const boundary = resolveModuleWriteBoundary(action);
+              if (!boundary) {
+                throw new HttpError(400, `Unsupported operations-manage action: ${action}`, { boundary: 'unregistered_action' });
+              }
+              if (boundary.mode === 'disabled') {
+                throw new HttpError(409, `The ${action} action is disabled by the module write-boundary contract.`, {
+                  module_key: boundary.ownerModule,
+                  required_access: boundary.minimum,
+                  boundary_mode: boundary.mode,
+                  boundary_event_key: boundary.eventKey
+                });
+              }
+              if (!(await hasModuleAccess(supabase, profile, boundary.ownerModule, boundary.minimum))) {
+                throw new HttpError(403, `${boundary.ownerModule} module ${boundary.minimum} access is required.`, {
+                  module_key: boundary.ownerModule,
+                  required_access: boundary.minimum,
+                  boundary_mode: boundary.mode,
+                  boundary_event_key: boundary.eventKey
+                });
+              }
+          '''
+          if text.count(old_auth) != 1:
+              raise SystemExit(f'Expected exactly one legacy authorization block, found {text.count(old_auth)}.')
+          text = text.replace(old_auth, new_auth, 1)
+
+          path.write_text(text, encoding='utf-8')
+
+          workflow = Path('.github/workflows/schema164-enforce-boundaries.yml')
+          if workflow.exists():
+              workflow.unlink()
+          PY
+
+      - name: Commit exact boundary patch and remove temporary workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add supabase/functions/operations-manage/index.ts .github/workflows/schema164-enforce-boundaries.yml
+          git diff --cached --check
+          git diff --cached --quiet && exit 0
+          git commit -m "Schema 164 enforce fail-closed operations boundaries"
+          git push origin HEAD:schema-164-cross-module-write-boundaries
