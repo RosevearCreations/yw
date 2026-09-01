@@ -1,0 +1,53 @@
+name: YWI source and staging checks
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_staging:
+        description: 'Run staging-only integration proof'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false','true']
+
+jobs:
+  source-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run test:modules
+      - run: npm run test:repo
+      - run: npm run test:contrast
+      - run: npm run test:navigation
+
+  staging-proof:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_staging == 'true'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Refuse missing staging boundary
+        run: |
+          test "${YWI_RUN_STAGING_RPC_TESTS}" = "1"
+          test -n "${SUPABASE_URL}"
+          test -n "${SUPABASE_SERVICE_ROLE_KEY}"
+        env:
+          YWI_RUN_STAGING_RPC_TESTS: ${{ secrets.YWI_RUN_STAGING_RPC_TESTS }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      - run: npm run test:staging
+        env:
+          YWI_RUN_STAGING_RPC_TESTS: ${{ secrets.YWI_RUN_STAGING_RPC_TESTS }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
