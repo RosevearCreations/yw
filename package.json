@@ -15,7 +15,8 @@
     "test:navigation": "node scripts/navigation-route-priority-check.mjs",
     "test:modules": "node scripts/module-permissions-check.mjs",
     "test:it": "node scripts/admin-it-readiness-check.mjs",
-    "test:runtime": "node scripts/module-runtime-check.mjs && node scripts/module-runtime-behavior-check.mjs && node scripts/core-data-service-check.mjs && node scripts/core-data-service-behavior-check.mjs && node scripts/module-write-boundary-check.mjs && node scripts/module-write-boundary-behavior-check.mjs"
+    "test:runtime": "node scripts/module-runtime-check.mjs && node scripts/module-runtime-behavior-check.mjs && node scripts/core-data-service-check.mjs && node scripts/core-data-service-behavior-check.mjs && node scripts/module-write-boundary-check.mjs && node scripts/module-write-boundary-behavior-check.mjs",
+    "test:boundaries": "node scripts/module-boundary-check.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

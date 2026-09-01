@@ -182,3 +182,4 @@ After Schema 160 is committed/deployed, run the Supabase security and performanc
 3. Verify manual `deposit_status_update` is disabled at the boundary and Stripe webhook/customer checkout remain payment-truth authorities.
 4. Verify cross-module effects emit only private contract/status event metadata and Shared Core remains read-only.
 5. After Schema 164 is fully green on `main`, begin Schema 165: module-local Finance/Jobs write-service extraction from `operations-manage`, retaining the same action contracts during the move.
+6. Verify `test:boundaries` passes: versioned cross-module contracts/outbox are private, publication is service-role-only, producer/domain assertions resolve, and no Shared Core identity is duplicated.

@@ -79,3 +79,4 @@ Historical Markdown is preserved under `retired-markdown-2026-08-05a/` and earli
 - Declared cross-module effects emit private `module_boundary_events` metadata; request bodies are not copied into those events.
 - Existing handler role checks remain as defense in depth, and Schema 163 Shared Core data remains read-only.
 - Schema 164 creates no replacement customer, job, person, site, equipment, asset, or service-document identity tables.
+- Schema 164 also retains a private versioned cross-module event contract/outbox with producer/consumer validation and single-owner domain assertions, consolidating the parallel Schema 164 boundary work into this canonical release.
