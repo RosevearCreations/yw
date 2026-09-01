@@ -33,3 +33,6 @@ verify_jwt = false
 
 [functions.admin-it-control]
 verify_jwt = true
+
+[functions.core-data-read]
+verify_jwt = true

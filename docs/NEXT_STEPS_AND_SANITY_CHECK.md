@@ -169,3 +169,9 @@ After Schema 160 is committed/deployed, run the Supabase security and performanc
 4. Add a focused Admin permission audit/diff view showing who changed access, why, and when.
 5. Turn the I.T. readiness placeholder into an approved dependency/status graphic sourced only from real readiness data.
 6. Continue public SEO/service content separately; never reuse private operational/customer evidence publicly without explicit approval.
+
+## Schema 163 restart point — 2026-09-01e
+1. Verify Schema 163 source/runtime gates and exact preview deployment.
+2. Verify denied modules make zero `core-data-read` requests and profile/permission changes invalidate Core caches.
+3. Keep Schema 162 lazy module loading green.
+4. Next release: Schema 164 cross-module event and write boundaries; shared identities remain Core-owned and read-only through `core-data-read`.

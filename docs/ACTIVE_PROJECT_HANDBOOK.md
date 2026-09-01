@@ -133,3 +133,6 @@ This is database/control-plane proof, not rendered browser acceptance.
 ## Release boundary
 
 Before starting another major product feature, complete the authenticated Admin browser acceptance in `docs/NEXT_STEPS_AND_SANITY_CHECK.md`: Module Permissions must populate profiles; Admin targets must display immutable manage access on all four modules; I.T. Readiness must load; and a non-admin Safety-only fixture must still prove hidden navigation plus server-side denial.
+
+## Current architecture checkpoint — Schema 163 / 2026-09-01e
+Shared identity lookups now have one bounded read-only authority: `core-data-read`. The seven canonical relations remain `profiles`, `clients`, `client_sites`, `jobs`, `equipment_master`, `customer_assets`, and `service_contract_documents`. Business modules may consume these Core read models only after their own module `view` permission resolves. Do not add module-local identity directories. The next bounded architecture release is cross-module event/write-boundary enforcement.

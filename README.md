@@ -64,3 +64,10 @@ The I.T. screen is deliberately **readiness-first and non-destructive**. It repo
 The canonical reference `sql/000_full_schema_reference.sql` contains migrations 030 through 160 in order.
 
 Historical Markdown is preserved under `retired-markdown-2026-08-05a/` and earlier dated archive folders. Do not treat archived files as current authority.
+
+## Schema 163 Shared Core Data checkpoint — 2026-09-01e
+- Shared Core now has one protected, read-only `core-data-read` directory for `profiles`, `clients`, `client_sites`, `jobs`, `equipment_master`, `customer_assets`, and `service_contract_documents`.
+- Every read is bound to an authenticated active profile and the requesting Safety, Finance, Jobs, or Admin module must have `view` access.
+- Browser Core data is cached by signed-in profile + module + entity set and is invalidated on sign-out/profile change/module-permission change.
+- Schema 162 standalone business-module loading remains unchanged: business bundles are still fetched only after permission resolution.
+- Schema 163 creates no replacement customer/job/person/site/equipment/asset/document tables.
