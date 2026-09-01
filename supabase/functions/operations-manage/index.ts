@@ -1,9 +1,12 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { hasModuleAccess } from "../_shared/module-permissions.ts";
+import { boundaryAuditFields, resolveModuleWriteBoundary } from "../_shared/module-write-boundaries.ts";
 
 const BUILD = '2026-09-01a';
 const SCHEMA = 159;
+const WRITE_BOUNDARY_BUILD = '2026-09-01f';
+const WRITE_BOUNDARY_SCHEMA = 164;
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-idempotency-key',
@@ -25,20 +28,6 @@ const money = (value: unknown) => {
   const n = Number(String(value ?? '').replace(/[$,]/g, ''));
   return Number.isFinite(n) ? Number(n.toFixed(2)) : 0;
 };
-type ModuleRequirement = { moduleKey:'safety'|'finance'|'jobs'|'admin'; minimum:'view'|'create'|'approve'|'manage' };
-
-function moduleRequirementForAction(action: string): ModuleRequirement {
-  if (['payment_action_request','bank_csv_preview'].includes(action)) return { moduleKey:'finance', minimum:'create' };
-  if (['payment_action_decision','bank_csv_confirm_import','reconciliation_action'].includes(action)) return { moduleKey:'finance', minimum:'approve' };
-  if (['reconciliation_suggest','job_cost_refresh'].includes(action)) return { moduleKey:'finance', minimum:'view' };
-  if (['equipment_scan_event','work_order_live_update_create','work_order_execution_proof_submit'].includes(action)) return { moduleKey:'jobs', minimum:'create' };
-  if (['equipment_cost_recovery_decision','quote_owner_assign','quote_followup_event','dispatch_schedule','work_order_execution_proof_decision','work_order_closeout_submit','work_order_closeout_decision','work_order_live_update_retract'].includes(action)) return { moduleKey:'jobs', minimum:'approve' };
-  if (['customer_notification_retry'].includes(action)) return { moduleKey:'jobs', minimum:'manage' };
-  if (['deposit_status_update'].includes(action)) return { moduleKey:'finance', minimum:'manage' };
-  if (action === 'operations_queue_list') return { moduleKey:'admin', minimum:'view' };
-  return { moduleKey:'admin', minimum:'manage' };
-}
-
 const int = (value: unknown, fallback = 0) => {
   const n = Number(value);
   return Number.isFinite(n) ? Math.trunc(n) : fallback;
@@ -152,17 +141,43 @@ async function getActor(supabase: any, req: Request) {
 }
 async function audit(supabase: any, payload: Record<string, unknown>) {
   try {
+    const operationAction = clean(payload.operation_action, 120) || 'unknown';
+    const operationStatus = clean(payload.operation_status, 80) || 'captured';
+    const boundary = resolveModuleWriteBoundary(operationAction);
+    const boundaryFields = boundaryAuditFields(boundary);
+    const entityType = clean(payload.entity_type, 120) || null;
+    const entityId = isUuid(payload.entity_id) ? payload.entity_id : null;
+    const actorProfileId = isUuid(payload.actor_profile_id) ? payload.actor_profile_id : null;
     await supabase.from('operation_write_audit_events').insert({
-      operation_action: clean(payload.operation_action, 120) || 'unknown',
-      operation_status: clean(payload.operation_status, 80) || 'captured',
-      entity_type: clean(payload.entity_type, 120) || null,
-      entity_id: isUuid(payload.entity_id) ? payload.entity_id : null,
-      actor_profile_id: isUuid(payload.actor_profile_id) ? payload.actor_profile_id : null,
+      operation_action: operationAction,
+      operation_status: operationStatus,
+      entity_type: entityType,
+      entity_id: entityId,
+      actor_profile_id: actorProfileId,
       request_payload: objectValue(payload.request_payload),
       response_payload: objectValue(payload.response_payload),
-      error_message: clean(payload.error_message, 2000) || null
+      error_message: clean(payload.error_message, 2000) || null,
+      ...boundaryFields
     });
-  } catch { /* audit cannot block the requested action */ }
+    if (boundary?.crossModule && boundary.eventKey && operationStatus !== 'error') {
+      await supabase.from('module_boundary_events').insert({
+        event_key: boundary.eventKey,
+        source_module: boundary.ownerModule,
+        operation_action: operationAction,
+        domain_key: boundary.domain,
+        entity_type: entityType,
+        entity_id: entityId,
+        actor_profile_id: actorProfileId,
+        event_payload: {
+          boundary_mode: boundary.mode,
+          minimum_access: boundary.minimum,
+          operation_status: operationStatus,
+          build: WRITE_BOUNDARY_BUILD,
+          schema: WRITE_BOUNDARY_SCHEMA
+        }
+      });
+    }
+  } catch { /* audit and boundary-event capture cannot block the requested action */ }
 }
 async function sendEmailIfConfigured(notification: Record<string, unknown>) {
   const apiKey = clean(Deno.env.get('RESEND_API_KEY'), 500);
@@ -750,9 +765,25 @@ serve(async (req) => {
     action = clean(body.action, 80);
     ({ profile } = await getActor(supabase, req));
     if (!action) throw new HttpError(400, 'action is required.');
-    const moduleRequirement = moduleRequirementForAction(action);
-    if (!(await hasModuleAccess(supabase, profile, moduleRequirement.moduleKey, moduleRequirement.minimum))) {
-      throw new HttpError(403, `${moduleRequirement.moduleKey} module ${moduleRequirement.minimum} access is required.`, { module_key:moduleRequirement.moduleKey, required_access:moduleRequirement.minimum });
+    const boundary = resolveModuleWriteBoundary(action);
+    if (!boundary) {
+      throw new HttpError(400, `Unsupported operations-manage action: ${action}`, { boundary: 'unregistered_action' });
+    }
+    if (boundary.mode === 'disabled') {
+      throw new HttpError(409, `The ${action} action is disabled by the module write-boundary contract.`, {
+        module_key: boundary.ownerModule,
+        required_access: boundary.minimum,
+        boundary_mode: boundary.mode,
+        boundary_event_key: boundary.eventKey
+      });
+    }
+    if (!(await hasModuleAccess(supabase, profile, boundary.ownerModule, boundary.minimum))) {
+      throw new HttpError(403, `${boundary.ownerModule} module ${boundary.minimum} access is required.`, {
+        module_key: boundary.ownerModule,
+        required_access: boundary.minimum,
+        boundary_mode: boundary.mode,
+        boundary_event_key: boundary.eventKey
+      });
     }
 
     if (action === 'operations_queue_list') {

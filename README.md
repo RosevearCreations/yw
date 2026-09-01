@@ -71,3 +71,12 @@ Historical Markdown is preserved under `retired-markdown-2026-08-05a/` and earli
 - Browser Core data is cached by signed-in profile + module + entity set and is invalidated on sign-out/profile change/module-permission change.
 - Schema 162 standalone business-module loading remains unchanged: business bundles are still fetched only after permission resolution.
 - Schema 163 creates no replacement customer/job/person/site/equipment/asset/document tables.
+
+## Schema 164 cross-module write-boundary checkpoint — 2026-09-01f
+- The 35 explicitly handled `operations-manage` actions now have one fail-closed server contract declaring owner module, minimum module access, boundary mode, domain, and event key where applicable.
+- Unknown actions no longer inherit Admin/manage access; they are rejected before any business handler runs.
+- `deposit_status_update` is explicitly disabled at the boundary so hosted Stripe payment truth cannot be manually changed by staff actions.
+- Declared cross-module effects emit private `module_boundary_events` metadata; request bodies are not copied into those events.
+- Existing handler role checks remain as defense in depth, and Schema 163 Shared Core data remains read-only.
+- Schema 164 creates no replacement customer, job, person, site, equipment, asset, or service-document identity tables.
+- Schema 164 also retains a private versioned cross-module event contract/outbox with producer/consumer validation and single-owner domain assertions, consolidating the parallel Schema 164 boundary work into this canonical release.
