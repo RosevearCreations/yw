@@ -1,11 +1,13 @@
 /* File: server-worker.js
-   Brief description: Service worker updated for Schema 160 Admin/I.T. readiness.
-   Keeps static assets available offline while still avoiding auth callback, POST, and Supabase/API traffic.
+   Brief description: Schema 162 Shared Core service worker.
+   Pre-caches only the Core/public shell. Safety, Finance, Jobs, and Admin JavaScript
+   are fetched and cached only after the permission-driven browser runtime requests them.
+   Auth callback, POST, and Supabase/API traffic remain outside service-worker handling.
 */
 
 'use strict';
 
-const CACHE_NAME = 'ywi-shell-v2026-09-01b';
+const CACHE_NAME = 'ywi-shell-v2026-09-01d';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -32,23 +34,8 @@ const APP_SHELL = [
   '/js/ui-auth.js',
   '/js/profile-ui.js',
   '/js/reference-data.js',
-  '/js/jobs-ui.js',
-  '/js/admin-ui.js',
-  '/js/operations-cockpit.js',
-  '/js/finance-ui.js',
-  '/js/module-access-ui.js',
-  '/js/it-readiness-ui.js',
-  '/js/hse-ops-ui.js',
-  '/js/logbook-ui.js',
-  '/js/reports-ui.js',
-  '/js/admin-actions.js',
-  '/js/outbox.js',
-  '/js/forms-toolbox.js',
-  '/js/forms-ppe.js',
-  '/js/forms-firstaid.js',
-  '/js/forms-incident.js',
-  '/js/forms-inspection.js',
-  '/js/forms-drill.js'
+  '/js/module-runtime.js',
+  '/js/outbox.js'
 ];
 
 async function cacheAppShellWithFallback() {
