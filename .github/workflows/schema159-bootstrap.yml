@@ -43,27 +43,43 @@ jobs:
           rm -rf .schema159-bootstrap
           rm -f .github/workflows/schema159-bootstrap.yml
 
-      - name: Normalize npm registry references
+      - name: Normalize portable Node dependencies
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
+          import json
           from pathlib import Path
-          path = Path('package-lock.json')
-          text = path.read_text(encoding='utf-8')
-          old = 'https://packages.applied-caas-gateway1.internal.api.openai.org/artifactory/api/npm/npm-public/'
-          new = 'https://registry.npmjs.org/'
-          count = text.count(old)
+
+          lock = Path('package-lock.json')
+          lock_text = lock.read_text(encoding='utf-8')
+          old_registry = 'https://packages.applied-caas-gateway1.internal.api.openai.org/artifactory/api/npm/npm-public/'
+          public_registry = 'https://registry.npmjs.org/'
+          count = lock_text.count(old_registry)
           if count:
-              path.write_text(text.replace(old, new), encoding='utf-8')
+              lock.write_text(lock_text.replace(old_registry, public_registry), encoding='utf-8')
           print(f'Normalized {count} private npm registry reference(s).')
-          if old in path.read_text(encoding='utf-8'):
+          if old_registry in lock.read_text(encoding='utf-8'):
               raise SystemExit('Private npm registry reference remains in package-lock.json')
+
+          package_path = Path('package.json')
+          package = json.loads(package_path.read_text(encoding='utf-8'))
+          package.setdefault('devDependencies', {})['typescript'] = '5.9.2'
+          package_path.write_text(json.dumps(package, indent=2) + '\n', encoding='utf-8')
+
+          smoke_path = Path('scripts/repo-smoke-check.mjs')
+          smoke = smoke_path.read_text(encoding='utf-8')
+          old = "try { ts = require('typescript'); } catch { ts = require('/opt/nvm/versions/node/v22.16.0/lib/node_modules/typescript'); }"
+          new = "ts = require('typescript');"
+          if old not in smoke:
+              raise SystemExit('Expected local TypeScript fallback was not found in repo-smoke-check.mjs')
+          smoke_path.write_text(smoke.replace(old, new), encoding='utf-8')
           PY
           npm config set registry https://registry.npmjs.org/
           npm config set fetch-retries 5
           npm config set fetch-retry-mintimeout 10000
           npm config set fetch-retry-maxtimeout 60000
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
 
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
