@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Static check for the Schema 162 route-priority shell and Admin/I.T. readiness navigation. */
+/** Static check for the Schema 163 route-priority shell and Admin/I.T. readiness navigation. */
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -47,7 +47,7 @@ add('sticky-header-scroll-margin', css.includes('main.container > .card') && css
 add('support-panel-css-below-workspace', css.includes('.app-supporting-panels') && css.includes('.app-supporting-panels .graphic-placeholder-wall'), 'Supporting panel layout is scoped below the app workspace.');
 add('mobile-menu-still-closes-on-route', mobileMenu.includes("document.addEventListener('ywi:route-shown'") && mobileMenu.includes('if (isMobile()) close();'), 'Mobile menu closes when a route is shown.');
 add('it-remains-admin-subroute', moduleNav.includes("admin: ['admin','it']") && security.includes("admin: 'admin', it: 'admin'") && security.includes("admin: 'view', it: 'manage'"), 'I.T. Readiness remains an Admin/manage subroute, not a fifth top module.');
-add('cache-marker-current', index.includes('module-runtime.js?v=2026-09-01d') && index.includes('server-worker.js?v=2026-09-01d') && read('server-worker.js').includes('ywi-shell-v2026-09-01d'), 'HTML runtime/service-worker registration and cache namespace use the Schema 162 marker.');
+add('cache-marker-current', index.includes('module-runtime.js?v=2026-09-01d') && index.includes('core-data-service.js?v=2026-09-01e') && index.includes('server-worker.js?v=2026-09-01e') && read('server-worker.js').includes('ywi-shell-v2026-09-01e'), 'Module runtime remains v2 while Shared Core Data/service-worker cache advances to Schema 163.');
 
 const passed = results.filter((item) => item.ok).length;
 console.log(`\nNavigation route priority check: ${passed}/${results.length} passed\n`);
