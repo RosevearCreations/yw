@@ -124,7 +124,7 @@ function createHarness() {
   const deniedFinance = await h.runtime.loadModule('finance');
   assert.equal(deniedFinance, false, 'Denied Finance load must return false.');
   assert.equal(h.appendedScripts.length, 0, 'Denied Finance must not append or request a script.');
-  assert.deepEqual(h.runtime.getRuntimeState().loadedModules, [], 'Denied Finance must not initialize as loaded.');
+  assert.deepEqual(Array.from(h.runtime.getRuntimeState().loadedModules), [], 'Denied Finance must not initialize as loaded.');
 
   h.grants.finance = true;
   const allowedFinance = await h.runtime.loadModule('finance');
@@ -144,7 +144,7 @@ function createHarness() {
   const h = createHarness();
   h.grants.finance = true;
   await h.runtime.syncForCurrentAccess();
-  assert.deepEqual(h.runtime.getRuntimeState().loadedModules, ['finance']);
+  assert.deepEqual(Array.from(h.runtime.getRuntimeState().loadedModules), ['finance']);
   h.grants.finance = false;
   const result = await h.runtime.syncForCurrentAccess();
   assert.equal(result, false, 'Permission reduction should abort the current sync.');
