@@ -30,6 +30,27 @@ export const MAPPINGS=Object.freeze([
   }
 ]);
 
+export const OBSERVABILITY=Object.freeze([
+  {
+    mapping_rule_id:MAPPINGS[0].mapping_rule_id,mapping_key:'accounts_receivable',review_status:'review',mapping_approved:false,
+    review_age_days:69,review_age_code:'HUMAN_REVIEW_PENDING_STALE',drift_code:'NONE',technical_drift:false,account_recheck_recommended:false,
+    preflight_sample_count:0,preflight_mapping_blocker_count:0,preflight_reconciliation_code:'NO_GENERATED_PAIR_SAMPLE',preflight_reconciliation_issue:false,
+    observability_status:'amber',observability_action_hint:'Human accountant/bookkeeper review has been pending at least 30 days. This is a human decision queue, not an I.T. migration failure.'
+  },
+  {
+    mapping_rule_id:MAPPINGS[1].mapping_rule_id,mapping_key:'service_revenue',review_status:'approved',mapping_approved:true,
+    review_age_days:0,review_age_code:'REVIEW_COMPLETE',drift_code:'NONE',technical_drift:false,account_recheck_recommended:false,
+    preflight_sample_count:1,preflight_mapping_blocker_count:0,preflight_reconciliation_code:'ALIGNED',preflight_reconciliation_issue:false,
+    observability_status:'green',observability_action_hint:'Mapping observability is aligned with the canonical human review and posting-preflight authorities.'
+  },
+  {
+    mapping_rule_id:MAPPINGS[2].mapping_rule_id,mapping_key:'sales_tax_payable',review_status:'rejected',mapping_approved:false,
+    review_age_days:0,review_age_code:'REVIEW_REJECTED',drift_code:'NONE',technical_drift:false,account_recheck_recommended:false,
+    preflight_sample_count:0,preflight_mapping_blocker_count:0,preflight_reconciliation_code:'NO_GENERATED_PAIR_SAMPLE',preflight_reconciliation_issue:false,
+    observability_status:'amber',observability_action_hint:'A human rejected this mapping. Finance manage must decide whether to select/review another account.'
+  }
+]);
+
 export function mappingFixture(accessLevel='view'){
   const canManage=ACCESS_RANK[accessLevel]>=ACCESS_RANK.manage;
   return {
@@ -44,6 +65,14 @@ export function mappingFixture(accessLevel='view'){
       audit_event_count:2,latest_review_at:'2026-09-02T18:05:00.000Z',execution_release_enabled:false,provider_mutation_enabled:false,
       mapping_readiness_status:'amber',
       readiness_message:'Human accountant/bookkeeper mapping review is still required; this is not an I.T. migration failure.'
+    },
+    observability:OBSERVABILITY.map((row)=>({...row})),
+    observability_readiness:{
+      mapping_count:3,approved_count:1,pending_count:2,stale_review_count:1,aging_review_count:0,rejected_count:1,
+      technical_drift_count:0,account_recheck_count:0,preflight_reconciliation_issue_count:0,no_generated_pair_sample_count:2,
+      execution_release_enabled:false,provider_mutation_enabled:false,release_authority_status:'green',source_gate_status:'green',schema_status:'current',release_schema_version:181,
+      mapping_observability_status:'amber',
+      observability_message:'Human accountant/bookkeeper review is stale/pending; this is an accounting decision queue, not an I.T. migration failure.'
     },
     accounts:canManage?ACCOUNTS.map((row)=>({...row})):[],
     boundary:{human_accounting_decision_required:true,migration_auto_approval:false,posting_execution_authorized:false,provider_mutation:false,jobs_writeback:false}
