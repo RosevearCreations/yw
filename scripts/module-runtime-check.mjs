@@ -28,7 +28,7 @@ add('schema161-module-contract-registry', hasAll(migration161, ['app_module_cont
 add('schema161-no-parallel-business-identity-tables', !/(create table if not exists public\.(module_|safety_|finance_|jobs_|admin_)(customers|clients|people|profiles|jobs|assets|documents)\b)/i.test(migration161), 'Schema 161 does not create module-local duplicates of shared identities.');
 add('schema161-core-relations-match-existing-canonical-data', coreRelations.every((relation) => migration161.includes(`'${relation}'`) && runtime.includes(`relation: '${relation}'`)), `Core relations: ${coreRelations.join(', ')}`);
 add('schema161-four-module-contracts', moduleKeys.every((key) => migration161.includes(`('${key}'`) && runtime.includes(`${key}: Object.freeze({`)), 'Safety, Finance, Jobs and Admin have matching DB/browser manifests.');
-add('schema161-module-scripts-declared', moduleScripts.every((script) => migration161.includes(script) && runtime.includes(script)), 'DB and browser manifests agree on module entry scripts.');
+add('schema161-module-scripts-declared', moduleScripts.every((script) => migration161.includes(script) && runtime.includes(script)), 'DB and browser manifests agree on the original module entry scripts.');
 add('schema161-private-contract-control-plane', hasAll(migration161, [
   'alter table public.app_core_entity_contracts enable row level security;',
   'alter table public.app_module_contracts enable row level security;',
@@ -45,7 +45,7 @@ add('schema162-no-new-shared-identity-tables', !/create table/i.test(migration16
 add('schema162-it-readiness-wiring', hasAll(migration162, ['permission_driven_module_runtime','schema162_permission_runtime']), 'Permission-driven runtime is a tracked I.T. readiness/release item.');
 add('schema162-schema-drift-marker', hasAll(migration162, ['162::int as expected_schema_version', "'162_permission_driven_module_runtime'", "'2026-09-01d'"]), 'Schema/version marker advances to 162.');
 
-add('runtime-v2-build', hasAll(runtime, ["const BUILD = '2026-09-01d'", 'const CONTRACT_VERSION = 2']), 'Runtime contract/build remains Schema 162 while Core services advance independently.');
+add('runtime-v2-build', hasAll(runtime, ["const BUILD = '2026-09-02d'", 'const CONTRACT_VERSION = 2']), 'Runtime remains contract v2 with the current Schema 172 browser build stamp.');
 add('runtime-requires-authentication', hasAll(runtime, ['!stateNow.isAuthenticated','stateNow.pendingAuthResolution','stateNow.needsAccountSetup']), 'Runtime refuses module loading before auth/account readiness.');
 add('runtime-uses-permission-check', runtime.includes("sec.canViewModule(moduleKey, currentRole(), 'view') === true"), 'Browser module loading is permission driven.');
 add('runtime-loads-only-manifest-scripts', hasAll(runtime, ['for (const script of manifest.scripts)','await loadScript(script, moduleKey)']), 'Module loader follows the bounded manifest.');
