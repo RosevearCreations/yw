@@ -28,6 +28,17 @@ required(sql,[
   "'166_it_release_authority'",
 ], 'Schema 166 migration');
 
+required(sql,[
+  'revoke all on function public.ywi_effective_module_access(uuid,text) from public, anon, authenticated',
+  'revoke all on function public.ywi_profile_has_module_access(uuid,text,text) from public, anon, authenticated',
+  'revoke all on function public.ywi_get_profile_module_permissions(uuid) from public, anon, authenticated',
+  'grant execute on function public.ywi_effective_module_access(uuid,text) to service_role',
+  'grant execute on function public.ywi_profile_has_module_access(uuid,text,text) to service_role',
+  'grant execute on function public.ywi_get_profile_module_permissions(uuid) to service_role',
+  'revoke all on function public.ywi_get_my_module_permissions() from public, anon, authenticated',
+  'grant execute on function public.ywi_get_my_module_permissions() to authenticated, service_role',
+], 'Schema 159 privilege convergence');
+
 assert.ok(sql.includes("source_branch='main' and workflow_status='passed' and schema_version=166"),'Exact main/CI evidence must be part of the release authority proof.');
 assert.ok(sql.includes("not exists(select 1 from public.app_modules where module_key='it')"),'I.T. must remain outside the business module registry.');
 assert.ok(sql.includes("where section_id='it' and module_key='admin' and minimum_access_level='manage'"),'I.T. must remain an Admin/manage subsection.');
