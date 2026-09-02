@@ -1,0 +1,96 @@
+name: Build 179 source patch
+
+on:
+  push:
+    branches: [schema-179-finance-permissions-acceptance-release-hardening]
+    paths:
+      - .github/workflows/build179-source-patch.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: schema-179-finance-permissions-acceptance-release-hardening
+      - name: Apply bounded Build 179 source patches
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new):
+              p=Path(path); text=p.read_text()
+              if old not in text:
+                  raise SystemExit(f'Expected Build 179 patch anchor missing in {path}: {old[:90]!r}')
+              p.write_text(text.replace(old,new,1))
+
+          # Explicit JWT protection for both Finance completion endpoints.
+          p=Path('supabase/config.toml'); text=p.read_text()
+          anchor='[functions.finance-job-completion-posting-approval]\nverify_jwt = true'
+          if '[functions.finance-job-completion-review]' not in text:
+              if anchor not in text: raise SystemExit('Finance posting JWT config anchor missing')
+              text=text.replace(anchor,'[functions.finance-job-completion-review]\nverify_jwt = true\n\n'+anchor,1)
+              p.write_text(text)
+
+          # Finance review endpoint exposes its exact resolved server permission in read responses.
+          replace('supabase/functions/finance-job-completion-review/index.ts',
+              'import { hasModuleAccess } from "../_shared/module-permissions.ts";',
+              'import { effectiveModuleAccess, hasModuleAccess } from "../_shared/module-permissions.ts";')
+          replace('supabase/functions/finance-job-completion-review/index.ts',
+              '      actor_profile_id: actorId,\n      can_approve: await hasModuleAccess(supabase, actorProfile, "finance", "approve"),',
+              '      actor_profile_id: actorId,\n      access_level: await effectiveModuleAccess(supabase, actorProfile, "finance"),\n      can_create: await hasModuleAccess(supabase, actorProfile, "finance", "create"),\n      can_approve: await hasModuleAccess(supabase, actorProfile, "finance", "approve"),\n      can_manage: await hasModuleAccess(supabase, actorProfile, "finance", "manage"),')
+
+          # Finance posting endpoint exposes the same server-resolved ladder.
+          replace('supabase/functions/finance-job-completion-posting-approval/index.ts',
+              'import { hasModuleAccess } from "../_shared/module-permissions.ts";',
+              'import { effectiveModuleAccess, hasModuleAccess } from "../_shared/module-permissions.ts";')
+          replace('supabase/functions/finance-job-completion-posting-approval/index.ts',
+              '      actor_profile_id: actorId,\n      can_approve: await hasModuleAccess(supabase, actorProfile, "finance", "approve"),\n      can_manage: await hasModuleAccess(supabase, actorProfile, "finance", "manage"),',
+              '      actor_profile_id: actorId,\n      access_level: await effectiveModuleAccess(supabase, actorProfile, "finance"),\n      can_create: await hasModuleAccess(supabase, actorProfile, "finance", "create"),\n      can_approve: await hasModuleAccess(supabase, actorProfile, "finance", "approve"),\n      can_manage: await hasModuleAccess(supabase, actorProfile, "finance", "manage"),')
+
+          # Admin I.T. endpoint includes the Build 179 hardening surface and assertion family.
+          replace('supabase/functions/admin-it-control/index.ts',
+              '    finance_reconciliation: ["v_finance_job_completion_reconciliation_issues", "detected_at", false, 160],',
+              '    finance_reconciliation: ["v_finance_job_completion_reconciliation_issues", "detected_at", false, 160],\n    finance_release_hardening: ["v_it_finance_release_hardening_status", null, true, 10],')
+          replace('supabase/functions/admin-it-control/index.ts',
+              '  const [moduleAssertions, itAssertions, releaseAssertions, consumerObservabilityAssertions, financeOperationalAssertions] = await Promise.all([',
+              '  const [moduleAssertions, itAssertions, releaseAssertions, consumerObservabilityAssertions, financeOperationalAssertions, financeReleaseHardeningAssertions] = await Promise.all([')
+          replace('supabase/functions/admin-it-control/index.ts',
+              '    assertionRows(supabase, "ywi_finance_operational_control_plane_assertions", "Finance operational assertions failed."),\n  ]);',
+              '    assertionRows(supabase, "ywi_finance_operational_control_plane_assertions", "Finance operational assertions failed."),\n    assertionRows(supabase, "ywi_finance_release_hardening_assertions", "Finance release-hardening assertions failed."),\n  ]);')
+          replace('supabase/functions/admin-it-control/index.ts',
+              '    ...financeOperationalAssertions.rows,\n  ];',
+              '    ...financeOperationalAssertions.rows,\n    ...financeReleaseHardeningAssertions.rows,\n  ];')
+          replace('supabase/functions/admin-it-control/index.ts',
+              '    financeOperationalAssertions.error,\n  ].filter(Boolean);',
+              '    financeOperationalAssertions.error,\n    financeReleaseHardeningAssertions.error,\n  ].filter(Boolean);')
+          replace('supabase/functions/admin-it-control/index.ts',
+              '      finance_operational: financeOperationalAssertions.rows,\n      errors: assertionErrors,',
+              '      finance_operational: financeOperationalAssertions.rows,\n      finance_release_hardening: financeReleaseHardeningAssertions.rows,\n      errors: assertionErrors,')
+
+          # Admin I.T. UI renders Finance operational/reconciliation/hardening evidence and assertions.
+          replace('js/it-readiness-ui.js',
+              '      ...(Array.isArray(groups.consumer_observability)?groups.consumer_observability:[]),\n    ];',
+              '      ...(Array.isArray(groups.consumer_observability)?groups.consumer_observability:[]),\n      ...(Array.isArray(groups.finance_operational)?groups.finance_operational:[]),\n      ...(Array.isArray(groups.finance_release_hardening)?groups.finance_release_hardening:[]),\n    ];')
+          replace('js/it-readiness-ui.js',
+              '<h3>Module, I.T., release, and consumer assertions</h3>',
+              '<h3>Module, I.T., release, consumer, and Finance assertions</h3>')
+          replace('js/it-readiness-ui.js',
+              "        ${panel('cross_module_consumer_health','Event consumers','Jobs completion → Finance health')}\n        ${renderAdminIntegrity()}",
+              "        ${panel('cross_module_consumer_health','Event consumers','Jobs completion → Finance health')}\n        ${panel('finance_operational','Finance pipeline','Completion → accounting operational health')}\n        ${panel('finance_reconciliation','Finance reconciliation','Orphan, duplicate and accounting-divergence diagnostics')}\n        ${panel('finance_release_hardening','Finance release hardening','Permissions, acceptance and release-chain proof')}\n        ${renderAdminIntegrity()}")
+
+          # Build markers describe current client authority.
+          replace('js/finance-ui.js','Schema 178 Finance module home.','Schema 179 Finance module home.')
+          replace('js/finance-ui.js','<strong>Schema 178 boundary:</strong>','<strong>Schema 179 boundary:</strong>')
+          replace('js/finance-ui.js','<span>Schema 178</span>','<span>Schema 179</span>')
+          PY
+      - name: Commit bounded patches
+        run: |
+          git config user.name "YW Release Automation"
+          git config user.email "actions@users.noreply.github.com"
+          git add supabase/config.toml supabase/functions/finance-job-completion-review/index.ts supabase/functions/finance-job-completion-posting-approval/index.ts supabase/functions/admin-it-control/index.ts js/it-readiness-ui.js js/finance-ui.js
+          git commit -m "Wire Schema 179 Finance permission and I.T. surfaces"
+          git push origin HEAD:schema-179-finance-permissions-acceptance-release-hardening
