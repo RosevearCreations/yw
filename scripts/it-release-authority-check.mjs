@@ -8,7 +8,8 @@ const sql=read('sql/166_it_release_authority.sql');
 const dynamicSql=read('sql/167_real_cross_module_event_wiring.sql');
 const completionSql=read('sql/168_job_completion_event_wiring.sql');
 const financeSql=read('sql/169_finance_job_completion_consumer.sql');
-const currentSql=read('sql/170_it_cross_module_consumer_observability.sql');
+const observabilitySql=read('sql/170_it_cross_module_consumer_observability.sql');
+const currentSql=read('sql/171_finance_consumer_execution_retry.sql');
 const endpoint=read('supabase/functions/admin-it-control/index.ts');
 const itUi=read('js/it-readiness-ui.js');
 const moduleUi=read('js/module-access-ui.js');
@@ -75,7 +76,7 @@ required(financeSql,[
 assert.ok(financeSql.includes('revoke all on function public.ywi_finance_consume_job_completed_events(integer) from public, anon, authenticated;'),'Schema 169 consumer must remain unavailable to browser roles.');
 assert.ok(!/update\s+public\.(?:jobs|work_orders|job_completion_reviews)\b/i.test(financeSql),'Schema 169 Finance consumer must not write back into Jobs completion state.');
 
-required(currentSql,[
+required(observabilitySql,[
   'create or replace view public.v_it_cross_module_consumer_health',
   'ywi_it_cross_module_consumer_observability_assertions()',
   'consumer_no_failed_intake',
@@ -84,11 +85,29 @@ required(currentSql,[
   '170::int as expected_schema_version',
   "'170_it_cross_module_consumer_observability'",
   "'2026-09-02b'",
-], 'Schema 170 current release authority');
-assert.ok(currentSql.includes('revoke all on table public.v_it_cross_module_consumer_health from public, anon, authenticated;'),'Schema 170 health view must remain private.');
-assert.ok(currentSql.includes('Schema 170 adds health views/assertions only'),'Schema 170 must remain observability-only.');
+], 'Schema 170 observability authority');
+assert.ok(observabilitySql.includes('revoke all on table public.v_it_cross_module_consumer_health from public, anon, authenticated;'),'Schema 170 health view must remain private.');
+assert.ok(observabilitySql.includes('Schema 170 adds health views/assertions only'),'Schema 170 must remain observability-only.');
+
+required(currentSql,[
+  'create table if not exists public.finance_job_completion_consumer_runs',
+  'create table if not exists public.finance_job_completion_consumer_failures',
+  'ywi_finance_run_job_completion_consumer',
+  'ywi_finance_job_completion_execution_assertions()',
+  'v_finance_job_completion_execution_status',
+  "'finance_completion_execution_readiness'",
+  "'finance_completion_retry_state'",
+  '171::int as expected_schema_version',
+  "'171_finance_consumer_execution_retry'",
+  "'2026-09-02c'",
+], 'Schema 171 current release authority');
+assert.ok(currentSql.includes('revoke all on function public.ywi_finance_process_job_completed_event(bigint) from public, anon, authenticated, service_role;'),'Schema 171 helper must not be directly service/browser callable.');
+assert.ok(currentSql.includes('revoke all on function public.ywi_finance_consume_job_completed_events(integer) from service_role;'),'Schema 171 must retire the unledgered service entrypoint.');
+assert.ok(currentSql.includes('grant execute on function public.ywi_finance_run_job_completion_consumer(integer,text) to service_role;'),'Schema 171 controlled runner must be service-role executable.');
+assert.ok(currentSql.includes('attempt_count between 1 and 3'),'Schema 171 retries must have a database-enforced ceiling.');
+assert.ok(!/update\s+public\.(?:jobs|work_orders|job_completion_reviews)\b/i.test(currentSql),'Schema 171 execution must not write back into Jobs completion state.');
+assert.ok(!/insert\s+into\s+public\.app_modules[\s\S]*?['"]it['"]/i.test(currentSql),'I.T. must not become a fifth business module.');
 assert.ok(currentSql.includes("'Admin > I.T. Readiness'"),'I.T. must remain an Admin/manage subsection.');
-assert.ok(!/module_key\s*=\s*['"]it['"]|\('it'\s*,/i.test(currentSql),'I.T. must not become a fifth business module.');
 assert.ok(sql.includes('drop index if exists public.module_acceptance_scenarios_sort_order_idx'),'Schema 165 unused live index cleanup must remain explicit.');
 assert.ok(dynamicSql.includes('manual_human_promotion_required'),'Production promotion must remain manual.');
 
@@ -100,10 +119,13 @@ required(endpoint,[
   'ywi_it_release_authority_assertions',
   'ywi_it_cross_module_consumer_observability_assertions',
 ], 'admin-it-control');
+assert.ok(!endpoint.includes('ywi_finance_run_job_completion_consumer'),'Admin browser endpoint must not expose Schema 171 execution authority.');
 assert.ok(!endpoint.includes('expected_schema_version: 160'),'admin-it-control must not hardcode Schema 160 as current.');
 assert.ok(!endpoint.includes('>= 160'),'admin-it-control must compare live schema against the live expected schema, not a stale floor.');
 
 required(itUi,['release_authority','release_source_evidence','cross_module_consumer_health','consumer_observability'],'I.T. Readiness UI');
+assert.ok(!itUi.includes('ywi_finance_run_job_completion_consumer'),'I.T. browser UI must remain read-only for consumer execution.');
+assert.ok(!itUi.includes('retry_failed'),'I.T. browser UI must not expose a retry execution control.');
 assert.ok(!itUi.includes('Schema 160 control plane'),'I.T. Readiness heading must not claim a stale Schema 160 control plane.');
 assert.ok(!itUi.includes('expected_schema_version||160'),'I.T. Readiness must not fall back to Schema 160.');
 
@@ -111,4 +133,4 @@ for(const key of ['safety','finance','jobs','admin']) assert.ok(runtime.includes
 assert.ok(!/moduleKey\s*:\s*['"]it['"]|module_key\s*:\s*['"]it['"]/.test(runtime),'Runtime must not register I.T. as a fifth business module.');
 assert.ok(moduleUi.includes("const MODULES = ['safety','finance','jobs','admin']"),'Admin permission editor must remain exactly four-module aware.');
 
-console.log('Schema 170-aware I.T. release authority source gate: PASS');
+console.log('Schema 171-aware I.T. release authority source gate: PASS');
