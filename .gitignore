@@ -9,3 +9,8 @@ Thumbs.db
 *.log
 *.tmp
 *.bak
+
+# Repository hygiene: Git history is the archive.
+archive/
+retired-markdown-*/
+test_write*.txt

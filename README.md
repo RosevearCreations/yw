@@ -1,82 +1,68 @@
 # Yard Weasels Inc. Operations Platform
 
-**Current source handoff:** `2026-09-01b`  
-**Database target:** schema `160`  
+**Current source authority:** Schema `174`  
+**Database authority:** Schema `174` applied/current at the last verified release checkpoint  
 **Active documents:** this README, `docs/ACTIVE_PROJECT_HANDBOOK.md`, and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
 
-Schema 160 keeps the four top-level application modules introduced in schema 159 — **Safety / OHSA**, **Finance**, **Jobs**, and **Admin** — and adds **I.T. Readiness** as an Admin-only `manage` sub-section. I.T. Readiness is the control plane for preflight, preparedness, deployment readiness, database drift, function readiness, access integrity, backup/restore preparedness, runtime health, public SEO release checks, and browser smoke evidence.
+Yard Weasels is organized around four top-level staff modules: **Safety / OHSA**, **Finance**, **Jobs**, and **Admin**. **I.T. Readiness** remains an Admin/manage control-plane section, not a fifth business module.
 
-The Admin **Module Permissions** manager is also repaired. It now uses the dedicated `admin-it-control` Edge Function instead of depending on the large legacy `admin-directory` payload. Active profiles are loaded from the server, permission changes are applied atomically through a private service-role RPC, and Admin profiles are permanent break-glass `manage` across all four modules.
+## Current architecture
 
-## Module model
+- **Schema 159–160:** module permissions, Admin break-glass access, and I.T. Readiness control plane.
+- **Schema 161–163:** shared module contract, permission-driven lazy loading, and protected Shared Core read models.
+- **Schema 164–168:** fail-closed cross-module write/event boundaries and real job-completion event wiring.
+- **Schema 169–172:** Finance completion intake, observability/retry, and human review/disposition candidate authority.
+- **Schema 173:** private schema-dependency contracts and Finance dependency preflight.
+- **Schema 174:** repairs the Schema 173 guessed work-order type to canonical UUID and extends the Finance candidate identity-chain contracts.
 
-| Module | Purpose | Typical screens |
-| --- | --- | --- |
-| Safety / OHSA | Ontario workplace safety capture and review | Toolbox Talk, PPE, First Aid, Incident/Near Miss, Inspection, Drill, Logbook, Reports, Safety Operations |
-| Finance | Commercial/accounting workflow | Accounting home, reconciliation, close, tax/payroll review, accountant handoff |
-| Jobs | Field execution | Today, Crew, Jobs, Equipment, dispatch, proof, closeout |
-| Admin | System control | People/access, Module Permissions, **I.T. Readiness**, configuration, integrations, media/SEO approval, release controls |
+Schema 174 is control-plane convergence only. It does not post invoices or journals, mutate Jobs state, change Stripe/PayPal truth, or auto-promote Production.
 
-Each top-level module has one effective access level per profile: `hidden`, `view`, `create`, `approve`, or `manage`. Role still controls seniority inside an allowed module. Profile overrides control which modules exist for that person.
+## Non-negotiable boundaries
 
-## I.T. Readiness
+- Hidden navigation is not authorization; protected server paths independently enforce module access.
+- Active Admin profiles retain break-glass `manage` across Safety, Finance, Jobs, and Admin.
+- Shared Core identity data remains read-only through its protected Core data service; business modules must not create duplicate identity directories.
+- Cross-module writes must have an explicit owner/contract and fail closed when undeclared.
+- Stripe paid status remains webhook/provider controlled.
+- I.T. Readiness reports release blockers but does not automatically promote Production.
+- Public SEO remains separate from private staff/customer data and retains one-H1, canonical, approved-image, alt-text, structured-data, and sitemap gates.
 
-Admin → **I.T. Readiness** consolidates evidence from the existing operational control surfaces instead of creating another disconnected checklist. It summarizes:
+## Database and migration authority
 
-- database schema drift and schema preflight;
-- Admin/module access integrity and security assertions;
-- deployment checklist and deployment gate status;
-- required Edge Function readiness;
-- production/release readiness;
-- backup/restore rehearsal evidence;
-- runtime/error health and Admin task inbox;
-- public SEO release checks;
-- authenticated browser smoke checks.
+Keep every migration in `sql/` in numerical order. Applied migration files are historical database authority and must **not** be removed simply because a newer schema exists. `sql/000_full_schema_reference.sql` is the consolidated reference; numbered migration files remain the auditable sequence.
 
-The I.T. screen is deliberately **readiness-first and non-destructive**. It reports blockers and action hints; it does not automatically release to Production or bypass review gates.
+## Repository hygiene
 
-## Important security rules
+Historical snapshots and retired Markdown are intentionally **not** kept in the active tree. Git history is the archive. Do not add dated `archive/`, `retired-markdown-*`, `test_write*`, editor backup, generated Playwright, dependency, log, or temporary output back into source control.
 
-- Hidden navigation is not authorization. Edge Functions also enforce module access.
-- An active `admin` profile always resolves to break-glass `manage` for Safety, Finance, Jobs, and Admin.
-- Schema 160 blocks per-profile module override rows for Admin profiles at the database level, so an Admin cannot accidentally lock out another Admin.
-- Module permission writes are atomic and service-role-only through `ywi_admin_set_profile_module_permissions`.
-- `admin-it-control` authorizes from the server-owned `profiles.role` row; user-editable auth metadata is not used for permission decisions.
-- Jobs responses redact Finance-only arrays when Finance is hidden.
-- Safety-only users can continue using permitted Safety forms while Finance, Jobs, and Admin APIs deny access.
-- Customer portal routes remain token/private workflows and are not staff module permissions.
-- Stripe paid status remains webhook-controlled.
-- Public SEO routes remain separate from private staff/customer modules and still require approval, one H1, approved original images, descriptive alt text, canonical URLs, and sitemap approval.
+The active authority set is deliberately small:
 
-## Schema 160 files
+1. `README.md`
+2. `docs/ACTIVE_PROJECT_HANDBOOK.md`
+3. `docs/NEXT_STEPS_AND_SANITY_CHECK.md`
 
-- `sql/159_module_boundaries_permission_gated_navigation.sql`
-- `sql/160_it_readiness_admin_access_integrity.sql`
-- `supabase/functions/_shared/module-permissions.ts`
-- `supabase/functions/admin-it-control/index.ts`
-- `js/security.js`
-- `js/module-nav.js`
-- `js/module-access-ui.js`
-- `js/it-readiness-ui.js`
-- `it-readiness.css`
-- `scripts/admin-it-readiness-check.mjs`
+## Source verification
 
-The canonical reference `sql/000_full_schema_reference.sql` contains migrations 030 through 160 in order.
+Run the current source gates from repository root:
 
-Historical Markdown is preserved under `retired-markdown-2026-08-05a/` and earlier dated archive folders. Do not treat archived files as current authority.
+```powershell
+npm ci
+npm run test:repo
+npm run test:modules
+npm run test:it
+npm run test:runtime
+npm run test:boundaries
+npm run test:acceptance
+npm run test:release-authority
+npm run test:event-wiring
+npm run test:job-completion-event
+npm run test:finance-completion-consumer
+npm run test:consumer-observability
+npm run test:finance-consumer-execution
+npm run test:finance-completion-review
+npm run test:finance-schema-dependencies
+npm run test:contrast
+npm run test:navigation
+```
 
-## Schema 163 Shared Core Data checkpoint — 2026-09-01e
-- Shared Core now has one protected, read-only `core-data-read` directory for `profiles`, `clients`, `client_sites`, `jobs`, `equipment_master`, `customer_assets`, and `service_contract_documents`.
-- Every read is bound to an authenticated active profile and the requesting Safety, Finance, Jobs, or Admin module must have `view` access.
-- Browser Core data is cached by signed-in profile + module + entity set and is invalidated on sign-out/profile change/module-permission change.
-- Schema 162 standalone business-module loading remains unchanged: business bundles are still fetched only after permission resolution.
-- Schema 163 creates no replacement customer/job/person/site/equipment/asset/document tables.
-
-## Schema 164 cross-module write-boundary checkpoint — 2026-09-01f
-- The 35 explicitly handled `operations-manage` actions now have one fail-closed server contract declaring owner module, minimum module access, boundary mode, domain, and event key where applicable.
-- Unknown actions no longer inherit Admin/manage access; they are rejected before any business handler runs.
-- `deposit_status_update` is explicitly disabled at the boundary so hosted Stripe payment truth cannot be manually changed by staff actions.
-- Declared cross-module effects emit private `module_boundary_events` metadata; request bodies are not copied into those events.
-- Existing handler role checks remain as defense in depth, and Schema 163 Shared Core data remains read-only.
-- Schema 164 creates no replacement customer, job, person, site, equipment, asset, or service-document identity tables.
-- Schema 164 also retains a private versioned cross-module event contract/outbox with producer/consumer validation and single-owner domain assertions, consolidating the parallel Schema 164 boundary work into this canonical release.
+Rendered browser acceptance remains part of the GitHub/Vercel release gate. Production promotion remains deliberate and manual.
