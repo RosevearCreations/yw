@@ -30,6 +30,44 @@ export const MAPPINGS=Object.freeze([
   }
 ]);
 
+const expectedType=(mappingKey)=>({accounts_receivable:'asset',service_revenue:'revenue',sales_tax_payable:'liability'})[mappingKey];
+
+export const DECISION_SUPPORT=Object.freeze(MAPPINGS.flatMap((mapping)=>ACCOUNTS.map((account)=>{
+  const structural=account.account_type===expectedType(mapping.mapping_key);
+  const current=account.id===mapping.account_id;
+  const identity=account.system_code===mapping.source_key;
+  const compatibility=current&&structural?'CURRENT_SELECTION':identity&&structural?'SOURCE_IDENTITY_MATCH':structural?'TYPE_COMPATIBLE':'TYPE_MISMATCH';
+  return {
+    mapping_rule_id:mapping.mapping_rule_id,
+    mapping_key:mapping.mapping_key,
+    source_key:mapping.source_key,
+    target_label:mapping.target_label,
+    current_account_id:mapping.account_id,
+    current_account_number:mapping.account_number,
+    current_account_name:mapping.account_name,
+    current_account_type:mapping.account_type,
+    current_system_code:mapping.system_code,
+    review_status:mapping.review_status,
+    mapping_approved:mapping.mapping_approved,
+    expected_account_type:expectedType(mapping.mapping_key),
+    candidate_account_id:account.id,
+    candidate_account_number:account.account_number,
+    candidate_account_name:account.account_name,
+    candidate_account_type:account.account_type,
+    candidate_system_code:account.system_code,
+    candidate_normal_balance:account.normal_balance,
+    candidate_is_control_account:account.is_control_account,
+    candidate_is_active:true,
+    is_current_selection:current,
+    structural_match:structural,
+    source_identity_match:identity,
+    approval_eligible:structural,
+    compatibility_code:compatibility,
+    decision_rank:current&&structural?0:identity&&structural?10:structural?20:90,
+    decision_support_message:structural?'Active account is structurally compatible; final selection remains a human decision.':`Account type ${account.account_type} does not match the expected ${expectedType(mapping.mapping_key)} type and cannot be approved.`
+  };
+})));
+
 export const OBSERVABILITY=Object.freeze([
   {
     mapping_rule_id:MAPPINGS[0].mapping_rule_id,mapping_key:'accounts_receivable',review_status:'review',mapping_approved:false,
@@ -66,15 +104,21 @@ export function mappingFixture(accessLevel='view'){
       mapping_readiness_status:'amber',
       readiness_message:'Human accountant/bookkeeper mapping review is still required; this is not an I.T. migration failure.'
     },
+    decision_support:canManage?DECISION_SUPPORT.map((row)=>({...row})):[],
+    decision_support_readiness:{
+      mapping_count:3,eligible_candidate_count:4,type_mismatch_candidate_count:8,current_selection_incompatible_count:0,mapping_without_eligible_candidate_count:0,
+      execution_release_enabled:false,provider_mutation_enabled:false,mapping_decision_support_status:'green',
+      decision_support_message:'Decision support is structurally healthy. Final account selection and approval remain human accounting decisions.'
+    },
     observability:OBSERVABILITY.map((row)=>({...row})),
     observability_readiness:{
       mapping_count:3,approved_count:1,pending_count:2,stale_review_count:1,aging_review_count:0,rejected_count:1,
       technical_drift_count:0,account_recheck_count:0,preflight_reconciliation_issue_count:0,no_generated_pair_sample_count:2,
-      execution_release_enabled:false,provider_mutation_enabled:false,release_authority_status:'green',source_gate_status:'green',schema_status:'current',release_schema_version:181,
+      execution_release_enabled:false,provider_mutation_enabled:false,release_authority_status:'green',source_gate_status:'green',schema_status:'current',release_schema_version:183,
       mapping_observability_status:'amber',
       observability_message:'Human accountant/bookkeeper review is stale/pending; this is an accounting decision queue, not an I.T. migration failure.'
     },
     accounts:canManage?ACCOUNTS.map((row)=>({...row})):[],
-    boundary:{human_accounting_decision_required:true,migration_auto_approval:false,posting_execution_authorized:false,provider_mutation:false,jobs_writeback:false}
+    boundary:{human_accounting_decision_required:true,migration_auto_approval:false,structural_account_type_guard_on_approval:true,posting_execution_authorized:false,provider_mutation:false,jobs_writeback:false}
   };
 }
