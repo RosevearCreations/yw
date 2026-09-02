@@ -30,32 +30,37 @@ const readme=read('README.md');
 const handbook=read('docs/ACTIVE_PROJECT_HANDBOOK.md');
 const nextSteps=read('docs/NEXT_STEPS_AND_SANITY_CHECK.md');
 for(const [name,text] of [['README',readme],['Handbook',handbook],['Next steps',nextSteps]]){
-  add(`${name.toLowerCase().replaceAll(' ','-')}-schema175`,text.includes('175')&&text.includes('I.T. Readiness'),`${name} records Schema 175 as the current verified authority and retains the Admin/I.T. boundary.`);
+  add(`${name.toLowerCase().replaceAll(' ','-')}-schema176`,text.includes('176')&&text.includes('I.T. Readiness'),`${name} records Schema 176 as the current verified authority and retains the Admin/I.T. boundary.`);
 }
-add('docs-build176-next',handbook.includes('Build 176')&&nextSteps.includes('Build 176')&&nextSteps.includes('items 5–8'),'Active authority advances the next bounded work to Build 176 items 5–8.');
+add('docs-build177-next',handbook.includes('Build 177')&&nextSteps.includes('Build 177')&&nextSteps.includes('items 9–12'),'Active authority advances the next bounded engineering work to Build 177 items 9–12.');
 add('docs-four-module-boundary',[readme,handbook,nextSteps].every((text)=>['Safety','Finance','Jobs','Admin'].every((key)=>text.includes(key))),'Active authority retains Safety, Finance, Jobs and Admin.');
 add('docs-manual-production',[readme,handbook,nextSteps].every((text)=>/manual/i.test(text)&&/Production/i.test(text)),'Production promotion remains deliberate/manual.');
-add('docs-posting-execution-closed',[readme,handbook,nextSteps].every((text)=>/posting execution/i.test(text)&&/(closed|not_released)/i.test(text)),'Schema 175 posting approval remains explicitly separate from execution authority.');
+add('docs-posting-execution-closed',[readme,handbook,nextSteps].every((text)=>/posting execution/i.test(text)&&/(closed|disabled|false|not_released)/i.test(text)),'Schema 175/176 approval and preflight remain explicitly separate from execution authority.');
+add('docs-accounting-mapping-human-gate',[readme,handbook,nextSteps].every((text)=>/accountant|bookkeeper/i.test(text)&&/(mapping|chart)/i.test(text)),'Account mapping approval remains an explicit human accounting decision.');
 
 const sqlDir=path.join(root,'sql');
 const sqlNames=fs.readdirSync(sqlDir).filter((name)=>/^\d{3}_.+\.sql$/i.test(name));
 const versions=new Set(sqlNames.map((name)=>Number(name.slice(0,3))).filter((n)=>n>0));
 const missing=[];
-for(let n=30;n<=175;n++) if(!versions.has(n)) missing.push(n);
-add('migration-range-030-through-175',missing.length===0&&versions.has(175),missing.length?`Missing migration numbers: ${missing.join(', ')}`:'Every schema number 030–175 is represented.');
+for(let n=30;n<=176;n++) if(!versions.has(n)) missing.push(n);
+add('migration-range-030-through-176',missing.length===0&&versions.has(176),missing.length?`Missing migration numbers: ${missing.join(', ')}`:'Every schema number 030–176 is represented.');
 add('schema174-migration-present',exists('sql/174_finance_work_order_identity_contract_convergence.sql'),'Schema 174 convergence migration is present.');
 add('schema175-migration-present',exists('sql/175_finance_posting_safety_foundation.sql'),'Schema 175 posting-safety migration is present.');
+add('schema176-migration-present',exists('sql/176_finance_posting_preflight_accounting_mapping.sql'),'Schema 176 posting-preflight/accounting-mapping migration is present.');
 const schema173=read('sql/173_finance_schema_dependency_contract_guard.sql');
 const schema174=read('sql/174_finance_work_order_identity_contract_convergence.sql');
 const schema175=read('sql/175_finance_posting_safety_foundation.sql');
+const schema176=read('sql/176_finance_posting_preflight_accounting_mapping.sql');
 add('schema173-history-preserved',schema173.includes("'completion_review_work_order'")&&schema173.includes("'bigint'"),'Schema 173 historical dependency assumption remains auditable.');
 add('schema174-uuid-repair',schema174.includes("set expected_data_type='uuid'")&&schema174.includes("where contract_key='completion_review_work_order'"),'Schema 174 explicitly repairs the work-order identity contract to UUID.');
 add('schema175-posting-execution-closed',schema175.includes("check (execution_status='not_released')")&&schema175.includes('posting execution remains closed'),'Schema 175 adds approval/idempotency/provenance while retaining fail-closed posting execution.');
+add('schema176-read-only-preflight',schema176.includes('ywi_finance_job_completion_posting_preflight')&&schema176.includes('false as posting_execution_authorized')&&schema176.includes('false as provider_mutation_authorized'),'Schema 176 maps existing AR/GL authorities but keeps accounting/provider execution closed.');
+add('schema176-existing-accounting-authority', ['job_invoice_postings','ar_invoices','job_journal_postings','gl_journal_batches','gl_journal_entries','accountant_export_mapping_rules','chart_of_accounts'].every((key)=>schema176.includes(key)),'Schema 176 reuses existing accounting and mapping authorities.');
 
 const index=read('index.html');
 add('homepage-one-h1',(index.match(/<h1\b/gi)||[]).length===1,`Homepage H1 count: ${(index.match(/<h1\b/gi)||[]).length}.`);
 const config=read('supabase/config.toml');
-add('protected-control-functions',/\[functions\.admin-it-control\]\s+verify_jwt = true/s.test(config)&&/\[functions\.core-data-read\]\s+verify_jwt = true/s.test(config)&&/\[functions\.operations-manage\]\s+verify_jwt = true/s.test(config)&&/\[functions\.finance-job-completion-posting-approval\]\s+verify_jwt = true/s.test(config),'Core Admin/I.T., Shared Core, operations and Finance posting-approval functions retain JWT verification.');
+add('protected-control-functions',/\[functions\.admin-it-control\]\s+verify_jwt = true/s.test(config)&&/\[functions\.core-data-read\]\s+verify_jwt = true/s.test(config)&&/\[functions\.operations-manage\]\s+verify_jwt = true/s.test(config)&&/\[functions\.finance-job-completion-posting-approval\]\s+verify_jwt = true/s.test(config),'Core Admin/I.T., Shared Core, operations and Finance posting/preflight functions retain JWT verification.');
 
 const jsFiles=files.filter((file)=>/\.(?:js|mjs)$/i.test(file));
 for(const file of jsFiles){
@@ -66,7 +71,7 @@ for(const file of jsFiles){
 const required=[
   '.github/workflows/staging-browser-integration.yml','package.json','package-lock.json','playwright.config.mjs',
   'scripts/module-permissions-check.mjs','scripts/admin-it-readiness-check.mjs','scripts/it-release-authority-check.mjs',
-  'scripts/finance-schema-dependency-contract-check.mjs','scripts/finance-posting-safety-foundation-check.mjs',
+  'scripts/finance-schema-dependency-contract-check.mjs','scripts/finance-posting-safety-foundation-check.mjs','scripts/finance-posting-preflight-check.mjs',
   'supabase/functions/admin-it-control/index.ts','supabase/functions/finance-job-completion-posting-approval/index.ts',
   'supabase/functions/core-data-read/index.ts','supabase/functions/operations-manage/index.ts'
 ];
