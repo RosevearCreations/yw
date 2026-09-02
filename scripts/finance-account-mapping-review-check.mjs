@@ -50,7 +50,13 @@ add('schema180-finance-runtime-addon',runtime.includes("scripts: Object.freeze([
 add('schema180-ui-view-and-manage',hasAll(ui,["canViewModule?.('finance'","canManage()","data-mapping-review","Finance manage required for mapping decisions"]));
 add('schema180-ui-human-confirmation',ui.includes("window.confirm('Approve this exact chart-account mapping?")&&ui.includes('reason.trim().length<5'));
 add('schema180-ui-bounded-payload',ui.includes("{action:'review_mapping',mapping_key:mappingKey,account_id:accountId||null,review_status:reviewStatus,reason:reason.trim()}")&&!/execution_enabled\s*:/i.test(ui)&&!/provider_mutation\s*:/i.test(ui));
-add('schema180-ui-no-auto-selection',!/(selectedIndex\s*=|\.value\s*=.*accounts\[|auto.?approve)/i.test(ui));
+add(
+  'schema180-ui-no-auto-selection',
+  !/selectedIndex\s*=/.test(ui)
+    && !/\.value\s*=\s*[^;\n]*(?:accounts\[|payload\??\.?accounts)/i.test(ui)
+    && !/review_status\s*:\s*['"]approved['"]/i.test(ui),
+  'Browser never programmatically selects an account or hard-codes an approved mutation.'
+);
 
 add('schema180-it-readiness-source',itSource.includes('finance_account_mapping_review')&&itSource.includes('v_it_finance_account_mapping_review_status'));
 add('schema180-it-assertion-source',itSource.includes('ywi_finance_account_mapping_review_assertions'));
