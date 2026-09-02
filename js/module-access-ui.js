@@ -1,5 +1,5 @@
 /* File: js/module-access-ui.js
-   Schema 160 Admin module permission editor.
+   Admin module permission editor.
    Uses the dedicated Admin I.T. control endpoint so profile/module management does not depend
    on the large legacy admin-directory runtime. Admin profiles are immutable break-glass manage.
 */
@@ -19,12 +19,12 @@
   function ensureItAssets(){
     if(!document.querySelector('link[data-ywi-it-readiness]')){
       const link=document.createElement('link');
-      link.rel='stylesheet'; link.href='/it-readiness.css?v=2026-09-01b'; link.dataset.ywiItReadiness='1';
+      link.rel='stylesheet'; link.href='/it-readiness.css?v=2026-09-01h'; link.dataset.ywiItReadiness='1';
       document.head.appendChild(link);
     }
     if(!document.querySelector('script[data-ywi-it-readiness]')){
       const script=document.createElement('script');
-      script.src='/js/it-readiness-ui.js?v=2026-09-01b'; script.async=false; script.dataset.ywiItReadiness='1';
+      script.src='/js/it-readiness-ui.js?v=2026-09-01h'; script.async=false; script.dataset.ywiItReadiness='1';
       document.head.appendChild(script);
     }
   }
@@ -65,13 +65,13 @@
     const breakGlass=p&&normalizedRole(p.role)==='admin';
     const accessIntegrity=p?integrityFor(p.id):null;
     const sourceErrors=Array.isArray(state.payload?.source_errors)?state.payload.source_errors:[];
-    host.innerHTML=`<div class="module-access-heading"><div><span class="module-kicker">Schema 160 access control</span><h3>Module permissions</h3><p>Choose exactly which top-level modules a person can see. Role still controls approval seniority inside an allowed module. Admin accounts are fixed at manage across every module.</p></div><div class="section-graphic-placeholder module-access-graphic"><span aria-hidden="true">⌘</span><strong>Access map placeholder</strong><small>Future visual: approved role/module matrix diagram.</small></div></div>
+    host.innerHTML=`<div class="module-access-heading"><div><span class="module-kicker">Admin access control</span><h3>Module permissions</h3><p>Choose exactly which top-level modules a person can see. Role still controls approval seniority inside an allowed module. Admin accounts are fixed at manage across every module.</p></div><div class="section-graphic-placeholder module-access-graphic"><span aria-hidden="true">⌘</span><strong>Access map placeholder</strong><small>Future visual: approved role/module matrix diagram.</small></div></div>
       ${sourceErrors.length?`<div class="notice">Runtime source warning: ${esc(sourceErrors.join(' · '))}</div>`:''}
       <div class="module-access-toolbar"><label>Profile<select id="moduleAccessProfile">${people.map((row)=>`<option value="${esc(row.id)}"${String(row.id)===String(state.selectedProfileId)?' selected':''}>${esc(row.full_name||row.username||row.email||row.id)} · ${esc(row.role||'employee')}</option>`).join('')}</select></label><button id="moduleAccessRefresh" type="button" class="secondary">Refresh</button></div>
       ${p?`<div class="module-access-grid">${MODULES.map((key)=>accessCard(p,key)).join('')}</div>
       ${breakGlass?`<div class="module-access-note"><strong>Admin break-glass:</strong> this profile has permanent manage access to Safety, Finance, Jobs, and Admin.${accessIntegrity?.all_modules_manage===true?' Database integrity check is green.':' Refresh I.T. Readiness if the database integrity check is not green.'}</div>`:`<label class="operations-span">Change reason<input id="moduleAccessReason" maxlength="300" placeholder="Example: Safety-only field account" /></label>
       <div class="module-access-actions"><button id="moduleAccessSave" type="button">Save module overrides</button><button id="moduleAccessSafetyOnly" type="button" class="secondary">Set Safety-only</button><button id="moduleAccessReset" type="button" class="secondary">Reset all to role defaults</button></div>
-      <div class="module-access-note"><strong>Server enforcement:</strong> hidden modules are removed from navigation and protected APIs also deny access.</div>`}`:'<div class="finance-empty"><strong>No profiles were returned.</strong><br />Schema 160 expects the dedicated admin-it-control function and the Schema 159+ module tables. Use Admin → I.T. Readiness after deployment to diagnose runtime drift.</div>'}`;
+      <div class="module-access-note"><strong>Server enforcement:</strong> hidden modules are removed from navigation and protected APIs also deny access.</div>`}`:'<div class="finance-empty"><strong>No profiles were returned.</strong><br />The dedicated admin-it-control function requires the current module tables and release-authority schema. Use Admin → I.T. Readiness after deployment to diagnose runtime drift.</div>'}`;
     byId('moduleAccessProfile')?.addEventListener('change',(e)=>{state.selectedProfileId=e.target.value;render();});
     byId('moduleAccessRefresh')?.addEventListener('click',()=>load(true));
     byId('moduleAccessSave')?.addEventListener('click',save);
