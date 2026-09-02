@@ -18,7 +18,7 @@
 
   function statusValue(row) {
     if (!row || typeof row !== 'object') return 'unknown';
-    for (const key of ['status','check_status','readiness_status','gate_status','drift_status','assertion_status','health_status','result','state','release_authority_status','source_gate_status','repository_enforcement_status','mapping_readiness_status','mapping_observability_status']) {
+    for (const key of ['status','check_status','readiness_status','gate_status','drift_status','assertion_status','health_status','result','state','release_authority_status','source_gate_status','repository_enforcement_status','mapping_readiness_status','mapping_observability_status','mapping_decision_support_status']) {
       if (row[key] !== undefined && row[key] !== null) return String(row[key]).trim().toLowerCase();
     }
     for (const key of ['ok','passed','ready','is_ready','is_current','healthy']) {
@@ -48,7 +48,7 @@
   }
 
   function rowDetail(row) {
-    for (const key of ['release_message','message','details','description','action_hint','failure_hint','readiness_message','next_action_hint','resolution_hint','notes','route_hint','evidence_note','source_sha']) {
+    for (const key of ['release_message','message','details','description','action_hint','failure_hint','readiness_message','decision_support_message','next_action_hint','resolution_hint','notes','route_hint','evidence_note','source_sha']) {
       const value=row?.[key];
       if (value !== undefined && value !== null && String(value).trim()) {
         return typeof value === 'object' ? JSON.stringify(value) : String(value);
@@ -85,6 +85,7 @@
       ...(Array.isArray(groups.finance_release_hardening)?groups.finance_release_hardening:[]),
       ...(Array.isArray(groups.finance_account_mapping_review)?groups.finance_account_mapping_review:[]),
       ...(Array.isArray(groups.finance_account_mapping_observability)?groups.finance_account_mapping_observability:[]),
+      ...(Array.isArray(groups.finance_account_mapping_decision_support)?groups.finance_account_mapping_decision_support:[]),
     ];
     const errors=Array.isArray(groups.errors)?groups.errors:[];
     return `<section class="it-readiness-panel"><span class="it-readiness-kicker">Security proof</span><h3>Module, I.T., release, consumer, and Finance assertions</h3>${errors.length?errors.map((e)=>`<div class="it-readiness-error">${esc(e)}</div>`).join(''):''}${rows.length?`<div class="it-readiness-list">${rows.map((row)=>`<div class="it-readiness-row"><div><strong>${esc(row.assertion_key||'assertion')}</strong><small>${esc(row.details||'')}</small></div>${statusChip(row.assertion_status)}</div>`).join('')}</div>`:'<div class="it-readiness-empty">No assertion rows returned.</div>'}</section>`;
@@ -145,6 +146,7 @@
         ${panel('finance_reconciliation','Finance reconciliation','Orphan, duplicate and accounting-divergence diagnostics')}
         ${panel('finance_release_hardening','Finance release hardening','Permissions, acceptance and release-chain proof')}
         ${panel('finance_account_mapping_review','Finance mapping review','Human accountant mapping readiness and audit health')}
+        ${panel('finance_account_mapping_decision_support','Mapping decision support','Structural account-type compatibility and candidate health')}
         ${panel('finance_account_mapping_observability','Mapping observability','Human-review aging, technical drift and posting-preflight reconciliation')}
         ${renderAdminIntegrity()}
         ${renderAssertions()}
