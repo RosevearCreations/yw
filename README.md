@@ -22,7 +22,7 @@ Yard Weasels has exactly four top-level staff modules: **Safety / OHSA**, **Fina
 - **Schema 177:** atomic AR/GL execution/recovery/reversal machinery behind a private release switch that remains OFF.
 - **Schema 178:** completion-to-accounting lifecycle, blocker codes, reconciliation, and Admin → I.T. Finance readiness.
 - **Schema 179:** Finance permission matrix, direct-bypass guards, synthetic non-persistent/browser-only acceptance, JWT hardening, and full release gate.
-- **Schema 180:** human-controlled accountant mapping review over the existing `accountant_export_mapping_rules` → `chart_of_accounts` authority, immutable human-review audit, protected Finance-manage workflow, Admin → I.T. mapping readiness, and rendered acceptance.
+- **Schema 180 / Build 180 — COMPLETE:** human-controlled accountant mapping review over the existing `accountant_export_mapping_rules` → `chart_of_accounts` authority, immutable human-review audit, protected Finance-manage workflow, Admin → I.T. mapping readiness, and rendered acceptance.
 - **Schema 181:** read-only mapping review aging, canonical account/review drift detection, posting-preflight reconciliation, Finance UI observability, Admin → I.T. guidance, and rendered acceptance. It creates no second mapping authority and no new mapping mutation path.
 
 ## Build 181 verified closure
