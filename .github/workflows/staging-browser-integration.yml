@@ -35,6 +35,7 @@ jobs:
       - run: npm run test:consumer-observability
       - run: npm run test:finance-consumer-execution
       - run: npm run test:finance-completion-review
+      - run: npm run test:finance-schema-dependencies
       - run: npm run test:repo
       - run: npm run test:contrast
       - run: npm run test:navigation
