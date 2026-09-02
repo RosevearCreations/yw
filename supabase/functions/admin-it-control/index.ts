@@ -124,6 +124,7 @@ async function readinessPayload(supabase: any) {
     finance_reconciliation: ["v_finance_job_completion_reconciliation_issues", "detected_at", false, 160],
     finance_release_hardening: ["v_it_finance_release_hardening_status", null, true, 10],
     finance_account_mapping_review: ["v_it_finance_account_mapping_review_status", null, true, 10],
+    finance_account_mapping_observability: ["v_it_finance_account_mapping_observability_status", null, true, 10],
     admin_access_integrity: ["v_admin_module_access_integrity", "profile_label", true, 500],
     schema_preflight: ["v_admin_schema_preflight_checks", "sort_order", true, 160],
     deployment_checklist: ["v_admin_deployment_checklist", "sort_order", true, 160],
@@ -145,7 +146,7 @@ async function readinessPayload(supabase: any) {
   }));
   const data = Object.fromEntries(entries) as Record<string, { rows: any[]; error: string | null }>;
 
-  const [moduleAssertions, itAssertions, releaseAssertions, consumerObservabilityAssertions, financeOperationalAssertions, financeReleaseHardeningAssertions, financeAccountMappingAssertions] = await Promise.all([
+  const [moduleAssertions, itAssertions, releaseAssertions, consumerObservabilityAssertions, financeOperationalAssertions, financeReleaseHardeningAssertions, financeAccountMappingAssertions, financeAccountMappingObservabilityAssertions] = await Promise.all([
     assertionRows(supabase, "ywi_module_security_assertions", "Module assertions failed."),
     assertionRows(supabase, "ywi_it_readiness_security_assertions", "I.T. assertions failed."),
     assertionRows(supabase, "ywi_it_release_authority_assertions", "Release-authority assertions failed."),
@@ -153,6 +154,7 @@ async function readinessPayload(supabase: any) {
     assertionRows(supabase, "ywi_finance_operational_control_plane_assertions", "Finance operational assertions failed."),
     assertionRows(supabase, "ywi_finance_release_hardening_assertions", "Finance release-hardening assertions failed."),
     assertionRows(supabase, "ywi_finance_account_mapping_review_assertions", "Finance account-mapping assertions failed."),
+    assertionRows(supabase, "ywi_finance_account_mapping_observability_assertions", "Finance account-mapping observability assertions failed."),
   ]);
 
   const profilesResult = await listRows(supabase, "profiles", {
@@ -189,6 +191,7 @@ async function readinessPayload(supabase: any) {
     ...financeOperationalAssertions.rows,
     ...financeReleaseHardeningAssertions.rows,
     ...financeAccountMappingAssertions.rows,
+    ...financeAccountMappingObservabilityAssertions.rows,
   ];
   const assertionErrors = [
     moduleAssertions.error,
@@ -198,6 +201,7 @@ async function readinessPayload(supabase: any) {
     financeOperationalAssertions.error,
     financeReleaseHardeningAssertions.error,
     financeAccountMappingAssertions.error,
+    financeAccountMappingObservabilityAssertions.error,
   ].filter(Boolean);
   const assertionBlocking = assertionRowsCombined.filter((row: any) => String(row?.assertion_status || "").toLowerCase() !== "passed").length
     + assertionErrors.length;
@@ -250,6 +254,7 @@ async function readinessPayload(supabase: any) {
       finance_operational: financeOperationalAssertions.rows,
       finance_release_hardening: financeReleaseHardeningAssertions.rows,
       finance_account_mapping_review: financeAccountMappingAssertions.rows,
+      finance_account_mapping_observability: financeAccountMappingObservabilityAssertions.rows,
       errors: assertionErrors,
     },
     sections: Object.fromEntries(Object.entries(data).map(([key, item]) => [key, {
