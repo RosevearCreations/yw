@@ -1,7 +1,8 @@
 /* File: js/it-readiness-ui.js
    Admin I.T. readiness and release-authority cockpit.
    Consolidates schema/preflight/deployment/function/recovery/runtime/SEO readiness,
-   exact source/CI evidence, and admin access-integrity evidence without turning I.T. into a fifth module.
+   exact source/CI evidence, cross-module consumer health, and admin access-integrity evidence
+   without turning I.T. into a fifth module.
 */
 
 'use strict';
@@ -79,9 +80,10 @@
       ...(Array.isArray(groups.module)?groups.module:[]),
       ...(Array.isArray(groups.it)?groups.it:[]),
       ...(Array.isArray(groups.release_authority)?groups.release_authority:[]),
+      ...(Array.isArray(groups.consumer_observability)?groups.consumer_observability:[]),
     ];
     const errors=Array.isArray(groups.errors)?groups.errors:[];
-    return `<section class="it-readiness-panel"><span class="it-readiness-kicker">Security proof</span><h3>Module, I.T., and release-authority assertions</h3>${errors.length?errors.map((e)=>`<div class="it-readiness-error">${esc(e)}</div>`).join(''):''}${rows.length?`<div class="it-readiness-list">${rows.map((row)=>`<div class="it-readiness-row"><div><strong>${esc(row.assertion_key||'assertion')}</strong><small>${esc(row.details||'')}</small></div>${statusChip(row.assertion_status)}</div>`).join('')}</div>`:'<div class="it-readiness-empty">No assertion rows returned.</div>'}</section>`;
+    return `<section class="it-readiness-panel"><span class="it-readiness-kicker">Security proof</span><h3>Module, I.T., release, and consumer assertions</h3>${errors.length?errors.map((e)=>`<div class="it-readiness-error">${esc(e)}</div>`).join(''):''}${rows.length?`<div class="it-readiness-list">${rows.map((row)=>`<div class="it-readiness-row"><div><strong>${esc(row.assertion_key||'assertion')}</strong><small>${esc(row.details||'')}</small></div>${statusChip(row.assertion_status)}</div>`).join('')}</div>`:'<div class="it-readiness-empty">No assertion rows returned.</div>'}</section>`;
   }
 
   function renderAdminIntegrity() {
@@ -115,7 +117,7 @@
         <section class="it-readiness-summary">
           <span class="it-readiness-kicker">Release authority control plane</span>
           <h2>I.T. Readiness</h2>
-          <p>Preflight, preparedness, deployment, recovery, runtime, access, exact source/CI evidence, and public-release checks in one Admin-only workspace.</p>
+          <p>Preflight, deployment, recovery, runtime, access, exact source/CI evidence, cross-module consumer health, and public-release checks in one Admin-only workspace.</p>
           ${statusChip(overall)}
           <div class="it-readiness-metrics">
             <div class="it-readiness-metric"><strong>${esc(schema)}</strong><span>DB schema applied / expected</span></div>
@@ -134,6 +136,7 @@
       <div class="it-readiness-grid">
         ${panel('release_authority','Release authority','Application release authority')}
         ${panel('release_source_evidence','Source evidence','Exact main SHA / CI evidence')}
+        ${panel('cross_module_consumer_health','Event consumers','Jobs completion → Finance health')}
         ${renderAdminIntegrity()}
         ${renderAssertions()}
         ${panel('schema_drift','Database','Schema drift')}
@@ -163,7 +166,7 @@
       if(!payload)throw new Error('I.T. readiness endpoint returned no data.');
       state.payload=payload;
     }catch(err){
-      state.payload={summary:{overall_status:'red',expected_schema_version:0,latest_applied_schema_version:0,release_authority_status:'unknown',source_gate_status:'unknown',repository_enforcement_status:'unknown',active_admin_count:0,admin_access_integrity_blockers:1,readiness_blockers:1,assertion_blockers:0},sections:{},security_assertions:{module:[],it:[],release_authority:[],errors:[err?.message||'Unable to load I.T. readiness.']}};
+      state.payload={summary:{overall_status:'red',expected_schema_version:0,latest_applied_schema_version:0,release_authority_status:'unknown',source_gate_status:'unknown',repository_enforcement_status:'unknown',active_admin_count:0,admin_access_integrity_blockers:1,readiness_blockers:1,assertion_blockers:0},sections:{},security_assertions:{module:[],it:[],release_authority:[],consumer_observability:[],errors:[err?.message||'Unable to load I.T. readiness.']}};
     }finally{state.loading=false;render();}
   }
 

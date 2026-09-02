@@ -1,7 +1,7 @@
 {
   "name": "ywi-operations-platform",
   "private": true,
-  "version": "2026.09.01",
+  "version": "2026.09.02",
   "type": "module",
   "scripts": {
     "test:repo": "node scripts/repo-smoke-check.mjs",
@@ -22,7 +22,8 @@
     "test:release-authority": "node scripts/it-release-authority-check.mjs",
     "test:event-wiring": "node scripts/cross-module-event-wiring-check.mjs",
     "test:job-completion-event": "node scripts/job-completion-event-check.mjs",
-    "test:finance-completion-consumer": "node scripts/finance-job-completion-consumer-check.mjs"
+    "test:finance-completion-consumer": "node scripts/finance-job-completion-consumer-check.mjs",
+    "test:consumer-observability": "node scripts/it-cross-module-consumer-observability-check.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
