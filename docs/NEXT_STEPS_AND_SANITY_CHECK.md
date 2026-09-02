@@ -1,19 +1,19 @@
 # YWI Next Steps and Sanity Check
 
 **Current source/database boundary:** Schema `174`  
-**Current clean source checkpoint:** `main` at `ee49be76e378c1bb91d749d5534251227799deb6`  
+**Repository-cleanup baseline:** `main` at `ee49be76e378c1bb91d749d5534251227799deb6`  
 **Restart rule:** verify 174 remains current before beginning the next schema-changing build.
 
 ## Current checkpoint
 
 The latest verified release corrected Schema 173's guessed Finance work-order dependency type. `job_completion_reviews.work_order_id` is canonical `uuid`, and Schema 174 extends the UUID identity contracts used by the Finance completion candidate chain.
 
-At the current cleaned repository checkpoint:
+At the verified repository-cleanup baseline:
 
-- source `main` is `ee49be76e378c1bb91d749d5534251227799deb6`;
-- GitHub reports exactly one branch: `main`;
+- source `main` was `ee49be76e378c1bb91d749d5534251227799deb6` before subsequent roadmap-documentation commits;
+- GitHub reported exactly one branch: `main`;
 - exact-main source/browser gate Run #63 completed successfully after repository and branch cleanup;
-- database schema authority remains Schema `174` because repository cleanup did not change database state;
+- database schema authority remains Schema `174` because repository cleanup and roadmap documentation did not change database state;
 - Finance schema-dependency failures were zero at the Schema 174 convergence checkpoint;
 - Admin/I.T. release authority was green;
 - Production promotion remains manual;
