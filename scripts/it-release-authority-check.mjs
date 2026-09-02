@@ -11,7 +11,8 @@ const financeSql=read('sql/169_finance_job_completion_consumer.sql');
 const observabilitySql=read('sql/170_it_cross_module_consumer_observability.sql');
 const executionSql=read('sql/171_finance_consumer_execution_retry.sql');
 const reviewSql=read('sql/172_finance_review_disposition_candidate_authority.sql');
-const currentSql=read('sql/173_finance_schema_dependency_contract_guard.sql');
+const dependencySql=read('sql/173_finance_schema_dependency_contract_guard.sql');
+const currentSql=read('sql/174_finance_work_order_identity_contract_convergence.sql');
 const endpoint=read('supabase/functions/admin-it-control/index.ts');
 const financeReviewEndpoint=read('supabase/functions/finance-job-completion-review/index.ts');
 const financeUi=read('js/finance-ui.js');
@@ -132,7 +133,7 @@ assert.ok(!/update\s+public\.(?:jobs|work_orders|job_completion_reviews)\b/i.tes
 assert.ok(!/insert\s+into\s+public\.(?:ar_invoices|gl_batches|gl_entries|payments)\b/i.test(reviewExecutable),'Schema 172 must not post invoices, journals or payments.');
 assert.ok(!/stripe|paypal|payment_intent|paypal_order/i.test(reviewExecutable),'Schema 172 SQL must not mutate provider/payment truth.');
 
-required(currentSql,[
+required(dependencySql,[
   'create table if not exists public.app_schema_dependency_contracts',
   'create or replace view public.v_it_schema_dependency_status',
   'create or replace function public.ywi_schema_dependency_assertions()',
@@ -143,14 +144,33 @@ required(currentSql,[
   '173::int as expected_schema_version',
   "'173_finance_schema_dependency_contract_guard'",
   "'2026-09-02e'",
-], 'Schema 173 current release authority');
-assert.ok(currentSql.includes('alter table public.app_schema_dependency_contracts enable row level security;'),'Schema 173 dependency registry must use RLS.');
-assert.ok(currentSql.includes('revoke all on table public.app_schema_dependency_contracts from public,anon,authenticated;'),'Schema 173 dependency registry must remain private.');
-assert.ok(!/insert\s+into\s+public\.(?:job_invoice_candidates|job_journal_candidates|job_completion_accounting_events|payments|ar_invoices|gl_batches|gl_entries)\b/i.test(currentSql),'Schema 173 must not mutate business accounting state.');
-assert.ok(!/update\s+public\.(?:jobs|work_orders|job_completion_reviews)\b/i.test(currentSql),'Schema 173 must not write back into Jobs state.');
-assert.ok(!/stripe|paypal|payment_intent|paypal_order/i.test(currentSql),'Schema 173 must not mutate provider/payment truth.');
+], 'Schema 173 dependency authority');
+assert.ok(dependencySql.includes('alter table public.app_schema_dependency_contracts enable row level security;'),'Schema 173 dependency registry must use RLS.');
+assert.ok(dependencySql.includes('revoke all on table public.app_schema_dependency_contracts from public,anon,authenticated;'),'Schema 173 dependency registry must remain private.');
+assert.ok(dependencySql.includes("('completion_review_work_order','public','job_completion_reviews','work_order_id','bigint'"),'Schema 173 historical guessed bigint contract must remain reproducible so Schema 174 explicitly repairs it.');
+
+required(currentSql,[
+  "where contract_key='completion_review_work_order'",
+  "set expected_data_type='uuid'",
+  "'work_order_identity'",
+  "'invoice_candidate_work_order'",
+  "'completion_review_estimate'",
+  "'work_order_estimate'",
+  "'invoice_candidate_estimate'",
+  "'work_order_client'",
+  "'invoice_candidate_client'",
+  "'work_order_client_site'",
+  "'invoice_candidate_client_site'",
+  "'schema174_finance_work_order_identity_convergence'",
+  '174::int as expected_schema_version',
+  "'174_finance_work_order_identity_contract_convergence'",
+  "'2026-09-02f'",
+], 'Schema 174 current release authority');
+assert.ok(!/insert\s+into\s+public\.(?:job_invoice_candidates|job_journal_candidates|job_completion_accounting_events|payments|ar_invoices|gl_batches|gl_entries)\b/i.test(currentSql),'Schema 174 must not mutate business accounting state.');
+assert.ok(!/update\s+public\.(?:jobs|work_orders|job_completion_reviews)\b/i.test(currentSql),'Schema 174 must not write back into Jobs state.');
+assert.ok(!/stripe|paypal|payment_intent|paypal_order/i.test(currentSql),'Schema 174 must not mutate provider/payment truth.');
 assert.ok(!/insert\s+into\s+public\.app_modules[\s\S]*?['"]it['"]/i.test(currentSql),'I.T. must not become a fifth business module.');
-assert.ok(currentSql.includes("'Admin > I.T. Readiness'"),'Schema 173 dependency proof must remain inside Admin I.T. Readiness.');
+assert.ok(currentSql.includes('control-plane convergence only')||currentSql.includes('Control-plane convergence only'),'Schema 174 must remain a control-plane convergence release.');
 assert.ok(sql.includes('drop index if exists public.module_acceptance_scenarios_sort_order_idx'),'Schema 165 unused live index cleanup must remain explicit.');
 assert.ok(dynamicSql.includes('manual_human_promotion_required'),'Production promotion must remain manual.');
 
@@ -190,4 +210,4 @@ for(const key of ['safety','finance','jobs','admin']) assert.ok(runtime.includes
 assert.ok(!/moduleKey\s*:\s*['"]it['"]|module_key\s*:\s*['"]it['"]/.test(runtime),'Runtime must not register I.T. as a fifth business module.');
 assert.ok(moduleUi.includes("const MODULES = ['safety','finance','jobs','admin']"),'Admin permission editor must remain exactly four-module aware.');
 
-console.log('Schema 173-aware I.T. release authority source gate: PASS');
+console.log('Schema 174-aware I.T. release authority source gate: PASS');
