@@ -25,7 +25,7 @@ add('schema183-decision-support-private',hasAll(sql,[
 ]));
 add('schema183-three-expected-types',hasAll(sql,["when 'accounts_receivable' then 'asset'","when 'service_revenue' then 'revenue'","when 'sales_tax_payable' then 'liability'"]));
 add('schema183-ranking-without-auto-selection',hasAll(sql,['CURRENT_SELECTION','SOURCE_IDENTITY_MATCH','TYPE_COMPATIBLE','TYPE_MISMATCH','decision_rank'])&&!/set\s+account_id\s*=\s*['"][0-9a-f-]+['"]/i.test(sql));
-add('schema183-approval-guard',hasAll(sql,['v_new_status=\'approved\'','v_account_type is distinct from v_expected_account_type','not structurally compatible']));
+add('schema183-approval-guard',hasAll(sql,["v_new_status='approved'",'v_account_type is distinct from v_expected_account_type','not structurally compatible']));
 add('schema183-review-reject-remain-human',hasAll(sql,["v_new_status not in ('review','approved','rejected')",'Finance manage access is required for accountant mapping review.','review_reason']));
 add('schema183-assertions',hasAll(sql,['ywi_finance_account_mapping_decision_support_assertions','finance_mapping_decision_support_current_selection_compatible','finance_mapping_decision_support_db_approval_guard']));
 add('schema183-no-auto-approval',!/set\s+review_status\s*=\s*['"]approved['"]/i.test(sql));
