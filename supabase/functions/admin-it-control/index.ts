@@ -52,7 +52,7 @@ function rowStatus(row: any) {
   for (const key of [
     "status", "check_status", "readiness_status", "gate_status", "drift_status",
     "assertion_status", "health_status", "pipeline_status", "severity", "result", "state", "release_authority_status",
-    "source_gate_status", "repository_enforcement_status", "mapping_readiness_status",
+    "source_gate_status", "repository_enforcement_status", "mapping_readiness_status", "mapping_observability_status",
   ]) {
     if (row[key] !== undefined && row[key] !== null) return String(row[key]).trim().toLowerCase();
   }

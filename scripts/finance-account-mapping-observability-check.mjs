@@ -62,7 +62,7 @@ add('finance-ui-observability',hasAll(ui,['Mapping observability','technical dri
 add('finance-ui-human-controls-preserved',hasAll(ui,['data-mapping-review="approved"','data-mapping-review="rejected"','data-mapping-review="review"']));
 add('finance-ui-no-auto-decision',!/\.click\(\)|selectedIndex\s*=|review_status\s*:\s*['"]approved['"]/i.test(ui),'Client does not programmatically approve/select a mapping.');
 
-add('admin-it-observability-source',hasAll(adminEndpoint,['finance_account_mapping_observability','v_it_finance_account_mapping_observability_status','ywi_finance_account_mapping_observability_assertions']));
+add('admin-it-observability-source',hasAll(adminEndpoint,['finance_account_mapping_observability','v_it_finance_account_mapping_observability_status','ywi_finance_account_mapping_observability_assertions','mapping_observability_status']));
 add('admin-it-ui-observability',hasAll(itUi,['finance_account_mapping_observability','mapping_observability_status','Mapping observability']));
 add('admin-it-source-gate-observability',hasAll(adminCheck,['v_it_finance_account_mapping_observability_status','ywi_finance_account_mapping_observability_assertions','finance_account_mapping_observability']));
 
