@@ -34,12 +34,13 @@ const readme=read('README.md');
 const handbook=read('docs/ACTIVE_PROJECT_HANDBOOK.md');
 const nextSteps=read('docs/NEXT_STEPS_AND_SANITY_CHECK.md');
 for(const [name,text] of [['README',readme],['Handbook',handbook],['Next steps',nextSteps]]){
-  add(`${name.toLowerCase().replaceAll(' ','-')}-schema181`,text.includes('181')&&text.includes('I.T. Readiness'),`${name} records Schema 181 source authority and retains the Admin/I.T. boundary.`);
+  add(`${name.toLowerCase().replaceAll(' ','-')}-schema183`,text.includes('Schema 183')&&text.includes('I.T. Readiness'),`${name} records Schema 183 authority and retains the Admin/I.T. boundary.`);
 }
 add('docs-build179-complete',handbook.includes('Schema 179')&&handbook.includes('COMPLETE')&&nextSteps.includes('Build 179')&&nextSteps.includes('COMPLETE'),'Active authority records Build 179 permission/acceptance/release hardening as complete.');
 add('docs-build180-complete',[readme,handbook,nextSteps].every((text)=>text.includes('Build 180')&&/mapping/i.test(text)&&/COMPLETE/i.test(text)),'Active authority records Build 180 accountant mapping readiness/review as complete.');
 add('docs-build181-complete',[readme,handbook,nextSteps].every((text)=>text.includes('Build 181')&&/aging|drift|reconciliation/i.test(text)&&/COMPLETE/i.test(text)),'Active authority records Build 181 mapping observability as complete.');
-add('docs-build179-financial-release-closed',[readme,handbook,nextSteps].every((text)=>/execution release/i.test(text)&&/(off|closed|server-owned)/i.test(text)),'Build 179 does not release Finance accounting execution.');
+add('docs-build183-active',[readme,handbook,nextSteps].every((text)=>text.includes('Build 183')&&/decision support|compatibility/i.test(text)),'Active authority records Build 183 Finance mapping decision support.');
+add('docs-build179-financial-release-closed',[readme,handbook,nextSteps].every((text)=>/execution release/i.test(text)&&/(off|closed|server-owned)/i.test(text)),'Finance accounting execution remains closed.');
 add('docs-four-module-boundary',[readme,handbook,nextSteps].every((text)=>['Safety','Finance','Jobs','Admin'].every((key)=>text.includes(key))),'Active authority retains Safety, Finance, Jobs and Admin.');
 add('docs-manual-production',[readme,handbook,nextSteps].every((text)=>/manual/i.test(text)&&/Production/i.test(text)),'Production promotion remains deliberate/manual.');
 add('docs-accounting-mapping-human-gate',[readme,handbook,nextSteps].every((text)=>/accountant|bookkeeper/i.test(text)&&/(mapping|chart)/i.test(text)),'Account mapping approval remains an explicit human accounting decision.');
@@ -49,8 +50,8 @@ const sqlDir=path.join(root,'sql');
 const sqlNames=fs.readdirSync(sqlDir).filter((name)=>/^\d{3}_.+\.sql$/i.test(name));
 const versions=new Set(sqlNames.map((name)=>Number(name.slice(0,3))).filter((n)=>n>0));
 const missing=[];
-for(let n=30;n<=182;n++) if(!versions.has(n)) missing.push(n);
-add('migration-range-030-through-182',missing.length===0&&versions.has(182),missing.length?`Missing migration numbers: ${missing.join(', ')}`:'Every schema number 030–182 is represented.');
+for(let n=30;n<=183;n++) if(!versions.has(n)) missing.push(n);
+add('migration-range-030-through-183',missing.length===0&&versions.has(183),missing.length?`Missing migration numbers: ${missing.join(', ')}`:'Every schema number 030–183 is represented.');
 for(const [version,file] of [
   [174,'sql/174_finance_work_order_identity_contract_convergence.sql'],
   [175,'sql/175_finance_posting_safety_foundation.sql'],
@@ -61,6 +62,7 @@ for(const [version,file] of [
   [180,'sql/180_finance_account_mapping_review_workflow.sql'],
   [181,'sql/181_finance_account_mapping_observability.sql'],
   [182,'sql/182_schema181_release_authority_marker_convergence.sql'],
+  [183,'sql/183_finance_account_mapping_decision_support.sql'],
 ]) add(`schema${version}-migration-present`,exists(file),`Schema ${version} migration is present.`);
 
 const schema173=read('sql/173_finance_schema_dependency_contract_guard.sql');
@@ -73,6 +75,7 @@ const schema179=read('sql/179_finance_permissions_acceptance_release_hardening.s
 const schema180=read('sql/180_finance_account_mapping_review_workflow.sql');
 const schema181=read('sql/181_finance_account_mapping_observability.sql');
 const schema182=read('sql/182_schema181_release_authority_marker_convergence.sql');
+const schema183=read('sql/183_finance_account_mapping_decision_support.sql');
 add('schema173-history-preserved',schema173.includes("'completion_review_work_order'")&&schema173.includes("'bigint'"),'Schema 173 historical dependency assumption remains auditable.');
 add('schema174-uuid-repair',schema174.includes("set expected_data_type='uuid'")&&schema174.includes("where contract_key='completion_review_work_order'"),'Schema 174 explicitly repairs the work-order identity contract to UUID.');
 add('schema175-posting-approval-separate',schema175.includes('finance_job_completion_posting_approvals')&&schema175.includes('idempotency_key'),'Schema 175 retains separate posting approval/idempotency authority.');
@@ -99,6 +102,11 @@ add('schema182-marker-convergence',schema182.includes('182::int as expected_sche
 add('schema182-maintenance-only',schema182.includes("'maintenance_only',true")&&schema182.includes("'schema181_feature_state','complete'")&&schema182.includes("'business_data_mutation',false"),'Schema 182 is explicitly maintenance-only and preserves completed Schema 181 feature state.');
 add('schema182-no-business-mutation',!/\b(?:update|delete\s+from|insert\s+into)\s+public\.(?:accountant_export_mapping_rules|chart_of_accounts|jobs|work_orders|ar_invoices|gl_journal_batches|gl_journal_entries|job_invoice_postings|job_journal_postings)\b/i.test(schema182),'Schema 182 does not mutate mappings, accounting, or Jobs business data.');
 add('schema182-no-execution-provider-enable',!/execution_enabled\s*=\s*true/i.test(schema182)&&!/provider_mutation_enabled\s*=\s*true/i.test(schema182),'Schema 182 does not enable posting execution or provider mutation.');
+add('schema183-decision-support',['v_finance_account_mapping_decision_support','v_it_finance_account_mapping_decision_support_status','ywi_finance_account_mapping_decision_support_assertions','TYPE_MISMATCH','approval_eligible'].every((key)=>schema183.includes(key)),'Schema 183 adds structural chart-account decision support without another mapping authority.');
+add('schema183-approval-guard',schema183.includes('v_account_type is distinct from v_expected_account_type')&&schema183.includes('not structurally compatible'),'Schema 183 database authority blocks structurally incompatible human approval.');
+add('schema183-no-auto-approval',!/set\s+review_status\s*=\s*['"]approved['"]/i.test(schema183),'Schema 183 does not auto-approve mappings.');
+add('schema183-execution-provider-closed',!/execution_enabled\s*=\s*true/i.test(schema183)&&!/provider_mutation_enabled\s*=\s*true/i.test(schema183),'Schema 183 does not enable accounting execution or provider mutation.');
+add('schema183-no-jobs-writeback',!/\b(?:update|delete\s+from|insert\s+into)\s+public\.(?:jobs|work_orders)\b/i.test(schema183),'Schema 183 does not write Jobs state.');
 
 const fixture=read('tests/fixtures/finance-release-hardening-fixtures.mjs');
 const financeBrowser=read('tests/browser/finance-release-hardening.spec.mjs');
@@ -106,11 +114,13 @@ const mappingFixture=read('tests/fixtures/finance-account-mapping-review-fixture
 const mappingBrowser=read('tests/browser/finance-account-mapping-review.spec.mjs');
 add('schema179-synthetic-fixture-nonpersistent',fixture.includes('execution_release_enabled:false')&&fixture.includes('provider_mutation_authorized:false')&&!/fetch\(|supabase|payment_intent|paypal_order/i.test(fixture),'Build 179 synthetic Finance fixtures stay deterministic and non-persistent.');
 add('schema179-rendered-permission-matrix',['hidden','view','create','approve','manage'].every((key)=>financeBrowser.includes(`'${key}'`))&&financeBrowser.includes('phone')&&financeBrowser.includes('desktop'),'Rendered Finance acceptance covers the full user permission ladder on phone and desktop.');
-add('schema179-release-double-gate',financeBrowser.includes('server execution authorization and release truth')&&financeBrowser.includes('execute_posting'),'Rendered acceptance verifies execution needs both server authorization and server release truth.');
-add('schema180-mapping-fixture-nonpersistent',mappingFixture.includes('migration_auto_approval:false')&&mappingFixture.includes('posting_execution_authorized:false')&&!/fetch\(|supabase|stripe|paypal/i.test(mappingFixture),'Build 180 mapping fixtures are deterministic and non-persistent.');
+add('schema179-release-double-gate',financeBrowser.includes('server execution authorization and release truth')&&financeBrowser.includes('execute_posting'),'Rendered acceptance verifies execution needs both server authorization and release truth.');
+add('schema180-mapping-fixture-nonpersistent',mappingFixture.includes('migration_auto_approval:false')&&mappingFixture.includes('posting_execution_authorized:false')&&!/fetch\(|supabase|stripe|paypal/i.test(mappingFixture),'Mapping fixtures remain deterministic and non-persistent.');
 add('schema180-rendered-mapping-review',['hidden','view','create','approve','manage'].every((key)=>mappingBrowser.includes(`'${key}'`))&&mappingBrowser.includes('phone')&&mappingBrowser.includes('desktop'),'Rendered mapping acceptance covers Finance access levels on phone and desktop.');
 add('schema181-mapping-observability-fixture',mappingFixture.includes('observability_readiness')&&mappingFixture.includes('technical_drift_count')&&mappingFixture.includes('preflight_reconciliation_issue_count'),'Build 181 fixture carries deterministic read-only observability evidence.');
 add('schema181-rendered-observability',mappingBrowser.includes('Mapping observability')&&mappingBrowser.includes('HUMAN_REVIEW_PENDING_STALE')&&mappingBrowser.includes('NO_GENERATED_PAIR_SAMPLE'),'Rendered mapping acceptance covers human aging and neutral no-sample observability.');
+add('schema183-decision-support-fixture',mappingFixture.includes('DECISION_SUPPORT')&&mappingFixture.includes('mapping_decision_support_status')&&mappingFixture.includes('TYPE_MISMATCH'),'Build 183 fixture carries deterministic structural decision support.');
+add('schema183-rendered-decision-support',mappingBrowser.includes('Mapping decision support')&&mappingBrowser.includes('not structurally compatible')&&mappingBrowser.includes('TYPE_MISMATCH'),'Rendered mapping acceptance covers compatible and incompatible chart-account choices.');
 
 const index=read('index.html');
 add('homepage-one-h1',(index.match(/<h1\b/gi)||[]).length===1,`Homepage H1 count: ${(index.match(/<h1\b/gi)||[]).length}.`);
@@ -127,7 +137,7 @@ const required=[
   '.github/workflows/staging-browser-integration.yml','package.json','package-lock.json','playwright.config.mjs',
   'scripts/module-permissions-check.mjs','scripts/admin-it-readiness-check.mjs','scripts/it-release-authority-check.mjs',
   'scripts/finance-schema-dependency-contract-check.mjs','scripts/finance-posting-safety-foundation-check.mjs','scripts/finance-posting-preflight-check.mjs',
-  'scripts/finance-posting-execution-recovery-check.mjs','scripts/finance-operational-control-plane-check.mjs','scripts/finance-release-hardening-check.mjs','scripts/finance-account-mapping-review-check.mjs','scripts/finance-account-mapping-observability-check.mjs',
+  'scripts/finance-posting-execution-recovery-check.mjs','scripts/finance-operational-control-plane-check.mjs','scripts/finance-release-hardening-check.mjs','scripts/finance-account-mapping-review-check.mjs','scripts/finance-account-mapping-observability-check.mjs','scripts/finance-account-mapping-decision-support-check.mjs',
   'tests/fixtures/finance-release-hardening-fixtures.mjs','tests/browser/finance-release-hardening.spec.mjs',
   'tests/fixtures/finance-account-mapping-review-fixtures.mjs','tests/browser/finance-account-mapping-review.spec.mjs','js/finance-account-mapping-ui.js',
   'supabase/functions/admin-it-control/index.ts','supabase/functions/finance-job-completion-review/index.ts','supabase/functions/finance-job-completion-posting-approval/index.ts','supabase/functions/finance-account-mapping-review/index.ts',

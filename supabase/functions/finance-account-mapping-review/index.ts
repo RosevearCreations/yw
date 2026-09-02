@@ -26,6 +26,7 @@ const forbiddenFields = new Set([
   "execution_enabled", "execution_release_enabled", "provider_mutation", "provider_mutation_enabled",
   "posting_authorized", "execution_status", "posting_status", "job_id", "work_order_id",
   "subtotal", "tax_total", "total_amount", "amount", "stripe", "paypal", "payment_status",
+  "expected_account_type", "approval_eligible", "compatibility_code", "decision_rank",
 ]);
 
 function rejectedFields(body: Record<string, unknown>) {
@@ -66,30 +67,45 @@ Deno.serve(async (req: Request) => {
   const canManage = await hasModuleAccess(supabase, actorProfile, "finance", "manage");
 
   if (action === "list") {
-    const [mappingResult, statusResult, observabilityResult, observabilityStatusResult] = await Promise.all([
+    const [mappingResult, statusResult, observabilityResult, observabilityStatusResult, decisionSupportStatusResult] = await Promise.all([
       supabase.from("v_finance_account_mapping_review_directory").select("*").order("mapping_key"),
       supabase.from("v_it_finance_account_mapping_review_status").select("*").limit(1),
       supabase.from("v_finance_account_mapping_observability").select("*").order("mapping_key"),
       supabase.from("v_it_finance_account_mapping_observability_status").select("*").limit(1),
+      supabase.from("v_it_finance_account_mapping_decision_support_status").select("*").limit(1),
     ]);
-    if (mappingResult.error || statusResult.error || observabilityResult.error || observabilityStatusResult.error) {
+    if (mappingResult.error || statusResult.error || observabilityResult.error || observabilityStatusResult.error || decisionSupportStatusResult.error) {
       return reply({
         ok: false,
         error: mappingResult.error?.message || statusResult.error?.message || observabilityResult.error?.message
-          || observabilityStatusResult.error?.message || "Finance mapping readiness could not load.",
+          || observabilityStatusResult.error?.message || decisionSupportStatusResult.error?.message
+          || "Finance mapping readiness could not load.",
       }, 500);
     }
 
     let accounts: unknown[] = [];
+    let decisionSupport: unknown[] = [];
     if (canManage) {
-      const { data, error } = await supabase
-        .from("chart_of_accounts")
-        .select("id,account_number,account_name,account_type,system_code,normal_balance,is_control_account")
-        .eq("is_active", true)
-        .order("account_number")
-        .limit(500);
-      if (error) return reply({ ok: false, error: error.message || "Active chart accounts could not load." }, 500);
-      accounts = data || [];
+      const [accountResult, decisionSupportResult] = await Promise.all([
+        supabase
+          .from("chart_of_accounts")
+          .select("id,account_number,account_name,account_type,system_code,normal_balance,is_control_account")
+          .eq("is_active", true)
+          .order("account_number")
+          .limit(500),
+        supabase
+          .from("v_finance_account_mapping_decision_support")
+          .select("*")
+          .order("mapping_key")
+          .order("decision_rank")
+          .order("candidate_account_number")
+          .limit(1500),
+      ]);
+      if (accountResult.error || decisionSupportResult.error) {
+        return reply({ ok: false, error: accountResult.error?.message || decisionSupportResult.error?.message || "Active chart-account decision support could not load." }, 500);
+      }
+      accounts = accountResult.data || [];
+      decisionSupport = decisionSupportResult.data || [];
     }
 
     return reply({
@@ -102,10 +118,13 @@ Deno.serve(async (req: Request) => {
       readiness: statusResult.data?.[0] || {},
       observability: observabilityResult.data || [],
       observability_readiness: observabilityStatusResult.data?.[0] || {},
+      decision_support: decisionSupport,
+      decision_support_readiness: decisionSupportStatusResult.data?.[0] || {},
       accounts,
       boundary: {
         human_accounting_decision_required: true,
         migration_auto_approval: false,
+        structural_account_type_guard_on_approval: true,
         posting_execution_authorized: false,
         provider_mutation: false,
         jobs_writeback: false,
@@ -148,6 +167,7 @@ Deno.serve(async (req: Request) => {
     result: data?.[0] || null,
     boundary: {
       human_accounting_decision_recorded: true,
+      structural_account_type_guard_on_approval: true,
       posting_execution_authorized: false,
       provider_mutation: false,
       jobs_writeback: false,

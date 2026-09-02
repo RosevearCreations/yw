@@ -45,6 +45,7 @@ check('admin-it-control-readiness-sources', ['v_schema_drift_status','v_it_relea
 check('admin-it-control-release-assertions',endpoint.includes('ywi_it_release_authority_assertions'));
 check('admin-it-control-finance-mapping-readiness',endpoint.includes('v_it_finance_account_mapping_review_status')&&endpoint.includes('ywi_finance_account_mapping_review_assertions'));
 check('admin-it-control-finance-mapping-observability',endpoint.includes('v_it_finance_account_mapping_observability_status')&&endpoint.includes('ywi_finance_account_mapping_observability_assertions')&&endpoint.includes('finance_account_mapping_observability')&&endpoint.includes('mapping_observability_status'));
+check('admin-it-control-finance-mapping-decision-support',endpoint.includes('v_it_finance_account_mapping_decision_support_status')&&endpoint.includes('ywi_finance_account_mapping_decision_support_assertions')&&endpoint.includes('finance_account_mapping_decision_support')&&endpoint.includes('mapping_decision_support_status'));
 check('admin-it-control-dynamic-schema',endpoint.includes('expectedSchemaVersion')&&!endpoint.includes('expected_schema_version: 160')&&!endpoint.includes('>= 160'));
 check('admin-it-control-auth-user-count-only',endpoint.includes('auth.admin.listUsers')&&!endpoint.includes('data.users.map'));
 check('admin-it-control-jwt-config',config.includes('[functions.admin-it-control]')&&/\[functions\.admin-it-control\][\s\S]*?verify_jwt\s*=\s*true/.test(config));
@@ -63,6 +64,7 @@ check('it-ui-readiness-endpoint',itUi.includes("action:'it_readiness'"));
 check('it-ui-release-authority',itUi.includes("panel('release_authority'")&&itUi.includes("panel('release_source_evidence'")&&itUi.includes('repository_enforcement_status'));
 check('it-ui-finance-mapping-review',itUi.includes("panel('finance_account_mapping_review'")&&itUi.includes('mapping_readiness_status')&&itUi.includes('finance_account_mapping_review'));
 check('it-ui-finance-mapping-observability',itUi.includes("panel('finance_account_mapping_observability'")&&itUi.includes('mapping_observability_status')&&itUi.includes('finance_account_mapping_observability'));
+check('it-ui-finance-mapping-decision-support',itUi.includes("panel('finance_account_mapping_decision_support'")&&itUi.includes('mapping_decision_support_status')&&itUi.includes('finance_account_mapping_decision_support'));
 check('it-ui-no-stale-schema160-fallback',!itUi.includes('Schema 160 control plane')&&!itUi.includes('expected_schema_version||160'));
 check('it-ui-no-fifth-module',!itUi.includes('data-module="it"'));
 check('it-responsive-css',/@media\(max-width:900px\)/.test(css)&&/@media\(max-width:560px\)/.test(css));

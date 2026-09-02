@@ -53,6 +53,7 @@ function rowStatus(row: any) {
     "status", "check_status", "readiness_status", "gate_status", "drift_status",
     "assertion_status", "health_status", "pipeline_status", "severity", "result", "state", "release_authority_status",
     "source_gate_status", "repository_enforcement_status", "mapping_readiness_status", "mapping_observability_status",
+    "mapping_decision_support_status",
   ]) {
     if (row[key] !== undefined && row[key] !== null) return String(row[key]).trim().toLowerCase();
   }
@@ -125,6 +126,7 @@ async function readinessPayload(supabase: any) {
     finance_release_hardening: ["v_it_finance_release_hardening_status", null, true, 10],
     finance_account_mapping_review: ["v_it_finance_account_mapping_review_status", null, true, 10],
     finance_account_mapping_observability: ["v_it_finance_account_mapping_observability_status", null, true, 10],
+    finance_account_mapping_decision_support: ["v_it_finance_account_mapping_decision_support_status", null, true, 10],
     admin_access_integrity: ["v_admin_module_access_integrity", "profile_label", true, 500],
     schema_preflight: ["v_admin_schema_preflight_checks", "sort_order", true, 160],
     deployment_checklist: ["v_admin_deployment_checklist", "sort_order", true, 160],
@@ -146,7 +148,17 @@ async function readinessPayload(supabase: any) {
   }));
   const data = Object.fromEntries(entries) as Record<string, { rows: any[]; error: string | null }>;
 
-  const [moduleAssertions, itAssertions, releaseAssertions, consumerObservabilityAssertions, financeOperationalAssertions, financeReleaseHardeningAssertions, financeAccountMappingAssertions, financeAccountMappingObservabilityAssertions] = await Promise.all([
+  const [
+    moduleAssertions,
+    itAssertions,
+    releaseAssertions,
+    consumerObservabilityAssertions,
+    financeOperationalAssertions,
+    financeReleaseHardeningAssertions,
+    financeAccountMappingAssertions,
+    financeAccountMappingObservabilityAssertions,
+    financeAccountMappingDecisionSupportAssertions,
+  ] = await Promise.all([
     assertionRows(supabase, "ywi_module_security_assertions", "Module assertions failed."),
     assertionRows(supabase, "ywi_it_readiness_security_assertions", "I.T. assertions failed."),
     assertionRows(supabase, "ywi_it_release_authority_assertions", "Release-authority assertions failed."),
@@ -155,6 +167,7 @@ async function readinessPayload(supabase: any) {
     assertionRows(supabase, "ywi_finance_release_hardening_assertions", "Finance release-hardening assertions failed."),
     assertionRows(supabase, "ywi_finance_account_mapping_review_assertions", "Finance account-mapping assertions failed."),
     assertionRows(supabase, "ywi_finance_account_mapping_observability_assertions", "Finance account-mapping observability assertions failed."),
+    assertionRows(supabase, "ywi_finance_account_mapping_decision_support_assertions", "Finance account-mapping decision-support assertions failed."),
   ]);
 
   const profilesResult = await listRows(supabase, "profiles", {
@@ -192,6 +205,7 @@ async function readinessPayload(supabase: any) {
     ...financeReleaseHardeningAssertions.rows,
     ...financeAccountMappingAssertions.rows,
     ...financeAccountMappingObservabilityAssertions.rows,
+    ...financeAccountMappingDecisionSupportAssertions.rows,
   ];
   const assertionErrors = [
     moduleAssertions.error,
@@ -202,6 +216,7 @@ async function readinessPayload(supabase: any) {
     financeReleaseHardeningAssertions.error,
     financeAccountMappingAssertions.error,
     financeAccountMappingObservabilityAssertions.error,
+    financeAccountMappingDecisionSupportAssertions.error,
   ].filter(Boolean);
   const assertionBlocking = assertionRowsCombined.filter((row: any) => String(row?.assertion_status || "").toLowerCase() !== "passed").length
     + assertionErrors.length;
@@ -255,6 +270,7 @@ async function readinessPayload(supabase: any) {
       finance_release_hardening: financeReleaseHardeningAssertions.rows,
       finance_account_mapping_review: financeAccountMappingAssertions.rows,
       finance_account_mapping_observability: financeAccountMappingObservabilityAssertions.rows,
+      finance_account_mapping_decision_support: financeAccountMappingDecisionSupportAssertions.rows,
       errors: assertionErrors,
     },
     sections: Object.fromEntries(Object.entries(data).map(([key, item]) => [key, {

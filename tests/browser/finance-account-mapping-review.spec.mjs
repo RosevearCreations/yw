@@ -15,6 +15,7 @@ async function mount(page,accessLevel,viewport=viewports[1]){
   await page.addStyleTag({content:css});
   await page.evaluate(({fixture,accessLevel,rank})=>{
     window.__mappingCalls=[];
+    window.__mappingAlerts=[];
     window.YWI_AUTH={getState:()=>({isAuthenticated:true,role:accessLevel==='manage'?'admin':'employee',profile:{id:'synthetic-mapping-profile'}})};
     window.YWISecurity={
       canViewModule:(moduleKey,_role,minimum='view')=>moduleKey==='finance'&&Number(rank[accessLevel]||0)>=Number(rank[minimum]||0)
@@ -31,7 +32,7 @@ async function mount(page,accessLevel,viewport=viewports[1]){
     };
     window.prompt=()=> 'Synthetic accountant review reason';
     window.confirm=()=> true;
-    window.alert=()=>{};
+    window.alert=(message)=>window.__mappingAlerts.push(String(message||''));
   },{fixture,accessLevel,rank:ACCESS_RANK});
   await page.addScriptTag({content:source});
   await page.evaluate(()=>document.dispatchEvent(new Event('DOMContentLoaded')));
@@ -59,6 +60,19 @@ for(const viewport of viewports){
       await expect(host).toContainText('Accounts receivable');
       await expect(host).toContainText('Service revenue');
       await expect(host).toContainText('Sales tax payable');
+
+      // Build 183 rendered proof: structural decision support never makes the accounting decision.
+      await expect(host).toContainText('Mapping decision support');
+      await expect(host).toContainText(/never auto-selects or auto-approves/i);
+      await expect(host).toContainText(/final account selection and approval remain human accounting decisions/i);
+      expect(fixture.decision_support_readiness.current_selection_incompatible_count).toBe(0);
+      expect(fixture.decision_support_readiness.mapping_without_eligible_candidate_count).toBe(0);
+      if(ACCESS_RANK[accessLevel]>=ACCESS_RANK.manage){
+        expect(fixture.decision_support.some((row)=>row.compatibility_code==='TYPE_MISMATCH')).toBe(true);
+        expect(fixture.decision_support.some((row)=>row.approval_eligible===true)).toBe(true);
+        await expect(host).toContainText(/expected account type/i);
+        await expect(host).toContainText(/structurally compatible/i);
+      }
 
       // Build 181 rendered proof: human aging is distinct from technical drift / preflight failure.
       expect(fixture.observability[0].review_age_code).toBe('HUMAN_REVIEW_PENDING_STALE');
@@ -93,7 +107,17 @@ test('manage approval sends only bounded human mapping fields',async({page})=>{
   const call=await page.evaluate(()=>window.__mappingCalls.find((entry)=>entry.body?.action==='review_mapping'));
   expect(Object.keys(call.body).sort()).toEqual(['account_id','action','mapping_key','reason','review_status']);
   expect(call.body).toEqual({action:'review_mapping',mapping_key:key,account_id:ACCOUNTS[0].id,review_status:'approved',reason:'Synthetic accountant review reason'});
-  for(const forbidden of ['execution_enabled','execution_release_enabled','provider_mutation','job_id','work_order_id','subtotal','tax_total','total_amount','stripe','paypal','payment_status']) expect(call.body).not.toHaveProperty(forbidden);
+  for(const forbidden of ['execution_enabled','execution_release_enabled','provider_mutation','job_id','work_order_id','subtotal','tax_total','total_amount','stripe','paypal','payment_status','expected_account_type','approval_eligible','compatibility_code']) expect(call.body).not.toHaveProperty(forbidden);
+});
+
+test('manage client blocks structurally incompatible approval before mutation',async({page})=>{
+  await mount(page,'manage');
+  const key='service_revenue';
+  await page.locator(`[data-mapping-account="${key}"]`).selectOption(ACCOUNTS[3].id);
+  await page.locator(`[data-mapping-review="approved"][data-mapping-key="${key}"]`).click();
+  expect(await page.evaluate(()=>window.__mappingCalls.filter((call)=>call.body?.action==='review_mapping').length)).toBe(0);
+  const alerts=await page.evaluate(()=>window.__mappingAlerts);
+  expect(alerts.join(' ')).toContain('not structurally compatible');
 });
 
 test('approve-level user cannot create a mapping mutation in the real client',async({page})=>{
