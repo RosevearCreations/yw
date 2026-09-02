@@ -27,9 +27,13 @@ jobs:
       - run: npm run test:it
       - run: npm run test:runtime
       - run: npm run test:boundaries
+      - run: npm run test:acceptance
       - run: npm run test:repo
       - run: npm run test:contrast
       - run: npm run test:navigation
+      - name: Install Chromium for rendered module acceptance
+        run: npx playwright install --with-deps chromium
+      - run: npm run test:browser:modules
 
   staging-proof:
     if: github.event_name == 'workflow_dispatch' && inputs.run_staging == 'true'
