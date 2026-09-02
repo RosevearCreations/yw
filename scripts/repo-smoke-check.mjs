@@ -24,6 +24,7 @@ add('no-archive-tree',!exists('archive'),'Git history is the archive; active arc
 add('no-retired-markdown-tree',!fs.readdirSync(root,{withFileTypes:true}).some((entry)=>entry.isDirectory()&&/^retired-markdown-/i.test(entry.name)),'Dated retired Markdown must not return to the active tree.');
 add('no-test-write-artifacts',!files.some((file)=>/^test_write/i.test(path.basename(file))),'Temporary test_write artifacts are absent.');
 add('no-backup-temp-artifacts',!files.some((file)=>/\.(?:tmp|bak|log)$/i.test(file)),'Temporary, backup and log artifacts are absent.');
+add('no-generated-full-schema-snapshot',!exists('sql/000_full_schema_reference.sql'),'Numbered migrations are the schema source authority; stale generated full-schema snapshots stay out of the active tree.');
 
 const readme=read('README.md');
 const handbook=read('docs/ACTIVE_PROJECT_HANDBOOK.md');

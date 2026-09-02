@@ -9,7 +9,6 @@ const hasAll=(t,v)=>v.every((x)=>t.includes(x));
 const out=[]; const add=(name,ok,details='')=>out.push({name,ok,details});
 const migration=read('sql/159_module_boundaries_permission_gated_navigation.sql');
 const migration160=read('sql/160_it_readiness_admin_access_integrity.sql');
-const schema=read('sql/000_full_schema_reference.sql');
 const index=read('index.html');
 const security=read('js/security.js');
 const router=read('js/router.js');
@@ -34,7 +33,6 @@ add('schema159-four-modules', ['safety','finance','jobs','admin'].every((k)=>mig
 add('schema159-permission-rpcs',hasAll(migration,['ywi_effective_module_access','ywi_get_my_module_permissions','ywi_get_profile_module_permissions','ywi_module_security_assertions']));
 add('schema159-admin-break-glass',migration.includes("if v_role='admin' then return 'manage'; end if;"));
 add('schema160-admin-it-hardening',hasAll(migration160,['I.T. Readiness','trg_prevent_admin_module_override','v_admin_module_access_integrity','ywi_admin_set_profile_module_permissions','ywi_it_readiness_security_assertions']));
-add('canonical-reference-through-160',schema.includes('-- BEGIN MIGRATION: 159_module_boundaries_permission_gated_navigation') && schema.includes('-- BEGIN MIGRATION: 160_it_readiness_admin_access_integrity') && (schema.match(/BEGIN MIGRATION:/g)||[]).length===131);
 const topModules=[...index.matchAll(/data-module="([^"]+)"/g)].map((m)=>m[1]);
 add('top-navigation-exact-four-modules',JSON.stringify(topModules.slice(0,4))===JSON.stringify(['safety','finance','jobs','admin']),topModules.join(','));
 add('module-subnav-present',index.includes('id="moduleSectionNav"') && moduleNav.includes('SECTION_ORDER'));

@@ -29,11 +29,11 @@ Schema 174 is control-plane convergence only. It does not post invoices or journ
 
 ## Database and migration authority
 
-Keep every migration in `sql/` in numerical order. Applied migration files are historical database authority and must **not** be removed simply because a newer schema exists. `sql/000_full_schema_reference.sql` is the consolidated reference; numbered migration files remain the auditable sequence.
+Keep every numbered migration in `sql/` in numerical order. Applied migration files are historical database authority and must **not** be removed simply because a newer schema exists. The numbered migration chain is the sole source authority; generated full-schema snapshots are intentionally not tracked because they become stale duplicates of that chain.
 
 ## Repository hygiene
 
-Historical snapshots and retired Markdown are intentionally **not** kept in the active tree. Git history is the archive. Do not add dated `archive/`, `retired-markdown-*`, `test_write*`, editor backup, generated Playwright, dependency, log, or temporary output back into source control.
+Historical snapshots and retired Markdown are intentionally **not** kept in the active tree. Git history is the archive. Do not add dated `archive/`, `retired-markdown-*`, `test_write*`, editor backup, generated schema snapshots, generated Playwright output, dependency, log, or temporary output back into source control.
 
 The active authority set is deliberately small:
 
