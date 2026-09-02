@@ -30,7 +30,7 @@ const readme=read('README.md');
 const handbook=read('docs/ACTIVE_PROJECT_HANDBOOK.md');
 const nextSteps=read('docs/NEXT_STEPS_AND_SANITY_CHECK.md');
 for(const [name,text] of [['README',readme],['Handbook',handbook],['Next steps',nextSteps]]){
-  add(`${name.toLowerCase().replaceAll(' ','-')}-schema174`,text.includes('174')&&text.includes('I.T. Readiness'),`${name} identifies the current Schema 174 four-module/I.T. boundary.`);
+  add(`${name.toLowerCase().replaceAll(' ','-')}-schema174`,text.includes('174')&&text.includes('I.T. Readiness'),`${name} retains the verified Schema 174 restart boundary while Schema 175 is developed and converged.`);
 }
 add('docs-four-module-boundary',[readme,handbook,nextSteps].every((text)=>['Safety','Finance','Jobs','Admin'].every((key)=>text.includes(key))),'Active authority retains Safety, Finance, Jobs and Admin.');
 add('docs-manual-production',[readme,handbook,nextSteps].every((text)=>/manual/i.test(text)&&/Production/i.test(text)),'Production promotion remains deliberate/manual.');
@@ -39,18 +39,21 @@ const sqlDir=path.join(root,'sql');
 const sqlNames=fs.readdirSync(sqlDir).filter((name)=>/^\d{3}_.+\.sql$/i.test(name));
 const versions=new Set(sqlNames.map((name)=>Number(name.slice(0,3))).filter((n)=>n>0));
 const missing=[];
-for(let n=30;n<=174;n++) if(!versions.has(n)) missing.push(n);
-add('migration-range-030-through-174',missing.length===0&&versions.has(174),missing.length?`Missing migration numbers: ${missing.join(', ')}`:'Every schema number 030–174 is represented.');
+for(let n=30;n<=175;n++) if(!versions.has(n)) missing.push(n);
+add('migration-range-030-through-175',missing.length===0&&versions.has(175),missing.length?`Missing migration numbers: ${missing.join(', ')}`:'Every schema number 030–175 is represented.');
 add('schema174-migration-present',exists('sql/174_finance_work_order_identity_contract_convergence.sql'),'Schema 174 convergence migration is present.');
+add('schema175-migration-present',exists('sql/175_finance_posting_safety_foundation.sql'),'Schema 175 posting-safety migration is present.');
 const schema173=read('sql/173_finance_schema_dependency_contract_guard.sql');
 const schema174=read('sql/174_finance_work_order_identity_contract_convergence.sql');
+const schema175=read('sql/175_finance_posting_safety_foundation.sql');
 add('schema173-history-preserved',schema173.includes("'completion_review_work_order'")&&schema173.includes("'bigint'"),'Schema 173 historical dependency assumption remains auditable.');
 add('schema174-uuid-repair',schema174.includes("set expected_data_type='uuid'")&&schema174.includes("where contract_key='completion_review_work_order'"),'Schema 174 explicitly repairs the work-order identity contract to UUID.');
+add('schema175-posting-execution-closed',schema175.includes("check (execution_status='not_released')")&&schema175.includes('posting execution remains closed'),'Schema 175 adds approval/idempotency/provenance while retaining fail-closed posting execution.');
 
 const index=read('index.html');
 add('homepage-one-h1',(index.match(/<h1\b/gi)||[]).length===1,`Homepage H1 count: ${(index.match(/<h1\b/gi)||[]).length}.`);
 const config=read('supabase/config.toml');
-add('protected-control-functions',/\[functions\.admin-it-control\]\s+verify_jwt = true/s.test(config)&&/\[functions\.core-data-read\]\s+verify_jwt = true/s.test(config)&&/\[functions\.operations-manage\]\s+verify_jwt = true/s.test(config),'Core Admin/I.T., Shared Core and operations functions retain JWT verification.');
+add('protected-control-functions',/\[functions\.admin-it-control\]\s+verify_jwt = true/s.test(config)&&/\[functions\.core-data-read\]\s+verify_jwt = true/s.test(config)&&/\[functions\.operations-manage\]\s+verify_jwt = true/s.test(config)&&/\[functions\.finance-job-completion-posting-approval\]\s+verify_jwt = true/s.test(config),'Core Admin/I.T., Shared Core, operations and Finance posting-approval functions retain JWT verification.');
 
 const jsFiles=files.filter((file)=>/\.(?:js|mjs)$/i.test(file));
 for(const file of jsFiles){
@@ -61,7 +64,8 @@ for(const file of jsFiles){
 const required=[
   '.github/workflows/staging-browser-integration.yml','package.json','package-lock.json','playwright.config.mjs',
   'scripts/module-permissions-check.mjs','scripts/admin-it-readiness-check.mjs','scripts/it-release-authority-check.mjs',
-  'scripts/finance-schema-dependency-contract-check.mjs','supabase/functions/admin-it-control/index.ts',
+  'scripts/finance-schema-dependency-contract-check.mjs','scripts/finance-posting-safety-foundation-check.mjs',
+  'supabase/functions/admin-it-control/index.ts','supabase/functions/finance-job-completion-posting-approval/index.ts',
   'supabase/functions/core-data-read/index.ts','supabase/functions/operations-manage/index.ts'
 ];
 for(const file of required) add(`exists:${file}`,exists(file),'Required current release/control file is present.');
