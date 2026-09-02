@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 const root=process.cwd();
 const read=(file)=>fs.readFileSync(path.join(root,file),'utf8');
 const sql=read('sql/166_it_release_authority.sql');
+const currentSql=read('sql/167_real_cross_module_event_wiring.sql');
 const endpoint=read('supabase/functions/admin-it-control/index.ts');
 const itUi=read('js/it-readiness-ui.js');
 const moduleUi=read('js/module-access-ui.js');
@@ -39,11 +40,22 @@ required(sql,[
   'grant execute on function public.ywi_get_my_module_permissions() to authenticated, service_role',
 ], 'Schema 159 privilege convergence');
 
-assert.ok(sql.includes("source_branch='main' and workflow_status='passed' and schema_version=166"),'Exact main/CI evidence must be part of the release authority proof.');
-assert.ok(sql.includes("not exists(select 1 from public.app_modules where module_key='it')"),'I.T. must remain outside the business module registry.');
-assert.ok(sql.includes("where section_id='it' and module_key='admin' and minimum_access_level='manage'"),'I.T. must remain an Admin/manage subsection.');
+assert.ok(sql.includes("source_branch='main' and workflow_status='passed' and schema_version=166"),'Schema 166 historical exact main/CI evidence proof must remain reproducible.');
+required(currentSql,[
+  'create or replace view public.v_it_release_source_evidence_current',
+  'where e.schema_version=expected.expected_schema_version',
+  'ss.expected_schema_version as release_schema_version',
+  'src.schema_version=ss.expected_schema_version',
+  'repository enforcement is evaluated separately',
+  'ywi_cross_module_event_wiring_assertions()',
+  '167::int as expected_schema_version',
+], 'Schema 167 current release authority');
+assert.ok(!currentSql.includes("e.schema_version=166 then 'green'"),'Current release authority must not pin source evidence to Schema 166.');
+assert.ok(currentSql.includes("e.branch_protection_reported is false then 'amber'"),'Repository enforcement must remain a separate AMBER rail when main is reported unprotected.');
+assert.ok(currentSql.includes("not exists(select 1 from public.app_modules where module_key='it')"),'I.T. must remain outside the business module registry.');
+assert.ok(currentSql.includes("where section_id='it' and module_key='admin' and minimum_access_level='manage'"),'I.T. must remain an Admin/manage subsection.');
 assert.ok(sql.includes('drop index if exists public.module_acceptance_scenarios_sort_order_idx'),'Schema 165 unused live index cleanup must remain explicit.');
-assert.ok(!/deploy|publish|promote/i.test(sql.match(/production_promotion_mode[\s\S]{0,160}/i)?.[0]||'') || sql.includes('manual_human_promotion_required'),'Production promotion must remain manual.');
+assert.ok(currentSql.includes('manual_human_promotion_required'),'Production promotion must remain manual.');
 
 required(endpoint,[
   'v_schema_drift_status',
@@ -62,4 +74,4 @@ for(const key of ['safety','finance','jobs','admin']) assert.ok(runtime.includes
 assert.ok(!/moduleKey\s*:\s*['"]it['"]|module_key\s*:\s*['"]it['"]/.test(runtime),'Runtime must not register I.T. as a fifth business module.');
 assert.ok(moduleUi.includes("const MODULES = ['safety','finance','jobs','admin']"),'Admin permission editor must remain exactly four-module aware.');
 
-console.log('Schema 166 I.T. release authority source gate: PASS');
+console.log('Schema 167-aware I.T. release authority source gate: PASS');
