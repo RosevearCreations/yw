@@ -26,7 +26,8 @@
     "test:consumer-observability": "node scripts/it-cross-module-consumer-observability-check.mjs",
     "test:finance-consumer-execution": "node scripts/finance-job-completion-execution-check.mjs",
     "test:finance-completion-review": "node scripts/finance-job-completion-review-check.mjs",
-    "test:finance-schema-dependencies": "node scripts/finance-schema-dependency-contract-check.mjs"
+    "test:finance-schema-dependencies": "node scripts/finance-schema-dependency-contract-check.mjs",
+    "test:finance-posting-safety": "node scripts/finance-posting-safety-foundation-check.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
