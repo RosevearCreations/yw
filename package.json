@@ -21,7 +21,8 @@
     "test:acceptance": "node scripts/module-acceptance-check.mjs",
     "test:release-authority": "node scripts/it-release-authority-check.mjs",
     "test:event-wiring": "node scripts/cross-module-event-wiring-check.mjs",
-    "test:job-completion-event": "node scripts/job-completion-event-check.mjs"
+    "test:job-completion-event": "node scripts/job-completion-event-check.mjs",
+    "test:finance-completion-consumer": "node scripts/finance-job-completion-consumer-check.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
