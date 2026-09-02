@@ -1,0 +1,61 @@
+name: One-time branch prune
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  prune-obsolete-branches:
+    if: github.repository == 'RosevearCreations/yw'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete known obsolete branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          branches=(
+            "repo-hygiene-2026-09-02"
+            "repo-hygiene-remove-legacy-schema-baseline"
+            "schema-159-module-permissions"
+            "schema-160-it-readiness-admin-repair"
+            "schema-161-shared-core-module-contract"
+            "schema-162-dynamic-standalone-module-loading"
+            "schema-162-permission-driven-module-runtime"
+            "schema-163-core-data-service-read-models"
+            "schema-164-cross-module-event-boundaries"
+            "schema-164-cross-module-write-boundaries"
+            "schema-165-standalone-module-browser-acceptance"
+            "schema-166-it-release-authority"
+            "schema-167-real-cross-module-event-wiring"
+            "schema-168-job-completion-event-wiring"
+            "schema-169-finance-job-completion-consumer"
+            "schema-170-it-consumer-observability"
+            "schema-171-finance-consumer-execution-retry"
+            "schema-172-finance-review-disposition"
+            "schema-173-finance-schema-convergence-guard"
+            "schema-174-finance-dependency-type-convergence"
+            "schema-174-finance-work-order-identity-convergence"
+          )
+
+          for branch in "${branches[@]}"; do
+            if [[ "$branch" == "main" ]]; then
+              echo "Refusing to delete main"
+              exit 1
+            fi
+
+            if gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/${branch}" >/dev/null 2>&1; then
+              echo "Deleting ${branch}"
+              gh api --method DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/${branch}"
+            else
+              echo "Already absent: ${branch}"
+            fi
+          done
+
+          echo "Remaining branches:"
+          gh api "repos/${GITHUB_REPOSITORY}/branches?per_page=100" --jq '.[].name'
