@@ -63,10 +63,10 @@ select
   s.is_required,
   not exists (
     select 1
-    from unnest(s.allowed_module_keys || s.denied_module_keys) module_key
+    from unnest(s.allowed_module_keys || s.denied_module_keys) as resolved(module_key)
     where not exists (
       select 1 from public.app_modules m
-      where m.module_key=module_key
+      where m.module_key=resolved.module_key
     )
   ) as module_keys_resolve,
   cardinality(s.allowed_module_keys) + cardinality(s.denied_module_keys) = 4 as covers_four_modules,
