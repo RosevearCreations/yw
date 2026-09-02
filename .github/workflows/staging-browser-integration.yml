@@ -39,6 +39,7 @@ jobs:
       - run: npm run test:finance-posting-safety
       - run: npm run test:finance-posting-preflight
       - run: npm run test:finance-posting-execution-recovery
+      - run: npm run test:finance-operational-control-plane
       - run: npm run test:repo
       - run: npm run test:contrast
       - run: npm run test:navigation

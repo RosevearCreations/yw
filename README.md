@@ -1,7 +1,7 @@
 # Yard Weasels Inc. Operations Platform
 
-**Current source authority:** Schema `176`  
-**Database authority:** Schema `176` applied/current at the verified Build 176 checkpoint  
+**Current source authority:** Schema `178`  
+**Database authority:** Schema `177` remains the verified live boundary until the merged Schema 178 migration is deliberately applied and validated  
 **Active documents:** this README, `docs/ACTIVE_PROJECT_HANDBOOK.md`, and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
 
 Yard Weasels is organized around four top-level staff modules: **Safety / OHSA**, **Finance**, **Jobs**, and **Admin**. **I.T. Readiness** remains an Admin/manage control-plane section, not a fifth business module.
@@ -15,8 +15,10 @@ Yard Weasels is organized around four top-level staff modules: **Safety / OHSA**
 - **Schemas 173–174:** private dependency contracts plus convergence of the Finance work-order identity chain to canonical UUID.
 - **Schema 175:** separate Finance posting approval, durable idempotency identity, immutable provenance, and explicit posting-execution guards.
 - **Schema 176:** read-only Finance posting preflight mapped onto the existing `job_invoice_postings`/AR and `job_journal_postings`/GL authorities, paired invoice/journal consistency, and accountant-approved account-mapping prerequisites.
+- **Schema 177:** service-authorized atomic AR/GL posting machinery, durable idempotent retry/recovery detection, and auditable reversal/void authority, installed behind a server-owned execution release that remains OFF.
+- **Schema 178:** unified Finance completion-to-accounting lifecycle, reason-coded blockers, reconciliation/integrity diagnostics, dynamic current-schema dependency preflight, and expanded Admin → I.T. Finance pipeline readiness.
 
-Schema 176 is a **preflight and mapping authority**, not a posting-execution release. It produces server-owned dry-run plans for the existing AR/GL engine and refuses to authorize execution or provider mutation. The required `accounts_receivable`, `service_revenue`, and conditional `sales_tax_payable` mappings must be active and accountant/bookkeeper approved before a future posting release can pass preflight.
+Schema 178 is an **operational control-plane release**, not permission to turn on accounting effects. It exposes one lifecycle from intake → human disposition → draft candidates → separate posting approval → preflight → execution/recovery → reversal, while preserving the existing accounting authorities. The required `accounts_receivable`, `service_revenue`, and conditional `sales_tax_payable` mappings remain human accountant/bookkeeper decisions.
 
 ## Non-negotiable boundaries
 
@@ -24,10 +26,11 @@ Schema 176 is a **preflight and mapping authority**, not a posting-execution rel
 - Active Admin profiles retain break-glass `manage` across Safety, Finance, Jobs, and Admin.
 - Shared Core identity data remains read-only through its protected Core data service; business modules must not create duplicate identity directories.
 - Cross-module writes must have an explicit owner/contract and fail closed when undeclared.
-- Finance candidate approval, posting approval, posting preflight, and posting execution remain separate authorities.
-- Schema 175/176 completion-candidate posting paths remain closed: no AR invoice, GL batch/entry, payment, Jobs writeback, Stripe/PayPal mutation, or provider truth is created by the preflight path.
+- Finance candidate approval, posting approval, posting preflight, posting execution, recovery, and reversal remain distinct authorities.
+- Posting execution release remains server-owned and OFF at the current verified live checkpoint; the browser cannot enable it.
+- No Finance control-plane path may mutate Jobs or Stripe/PayPal/provider/payment truth.
 - Accountant/chart-of-accounts approvals are human accounting decisions and are not auto-approved by I.T. migrations.
-- I.T. Readiness reports release blockers but does not automatically promote Production.
+- I.T. Readiness reports release and Finance-pipeline blockers but does not automatically promote Production.
 - Public SEO remains separate from private staff/customer data and retains one-H1, canonical, approved-image, alt-text, structured-data, and sitemap gates.
 
 ## Database and migration authority
@@ -66,8 +69,10 @@ npm run test:finance-completion-review
 npm run test:finance-schema-dependencies
 npm run test:finance-posting-safety
 npm run test:finance-posting-preflight
+npm run test:finance-posting-execution-recovery
+npm run test:finance-operational-control-plane
 npm run test:contrast
 npm run test:navigation
 ```
 
-Rendered browser acceptance remains part of the GitHub release gate. Vercel deployment evidence is tracked separately from source correctness; an account build-rate-limit is an infrastructure blocker, not permission to bypass source gates. Production promotion remains deliberate and manual.
+Rendered browser acceptance remains part of the GitHub release gate. Vercel deployment evidence is tracked separately from source correctness; an account build-rate-limit or unavailable connector context is an infrastructure/evidence issue, not permission to bypass source gates. Production promotion remains deliberate and manual.

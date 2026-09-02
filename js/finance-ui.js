@@ -1,7 +1,8 @@
 /* File: js/finance-ui.js
-   Schema 172 Finance module home.
-   Finance owns human disposition of completed-job accounting intake and explicit draft-candidate generation.
-   Candidate amounts remain server-owned/canonical; this browser never supplies posting, payment or provider truth.
+   Schema 178 Finance module home.
+   Finance owns human disposition, draft-candidate generation, separate posting approval,
+   operational preflight visibility, controlled execution/recovery visibility and manage-only reversal.
+   Amounts, account identities, posting release state and provider/payment truth remain server-owned.
 */
 
 'use strict';
@@ -12,20 +13,34 @@
     loadedAt: 0,
     payload: null,
     reviewPayload: null,
+    postingPayload: null,
     error: '',
     reviewError: '',
+    postingError: '',
     mutating: false
   };
   const byId = (id) => document.getElementById(id);
-  const esc = (value) => window.YWIAPI?.escHtml?.(value) || String(value ?? '').replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m]));
+  const esc = (value) => window.YWIAPI?.escHtml?.(value) || String(value ?? '').replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
   function authState() { return window.YWI_AUTH?.getState?.() || {}; }
   function canView() { return window.YWISecurity?.canViewModule?.('finance', authState().role || 'employee', 'view') !== false; }
   function canApprove() { return window.YWISecurity?.canViewModule?.('finance', authState().role || 'employee', 'approve') === true; }
+  function canManage() { return window.YWISecurity?.canViewModule?.('finance', authState().role || 'employee', 'manage') === true; }
   function accessLevel() { return window.YWISecurity?.getModuleAccess?.('finance', authState().role || 'employee') || 'hidden'; }
 
   function rows(name) { return Array.isArray(state.payload?.[name]) ? state.payload[name] : []; }
   function reviewRows() { return Array.isArray(state.reviewPayload?.queue) ? state.reviewPayload.queue : []; }
+  function postingRows() {
+    const lifecycle = Array.isArray(state.postingPayload?.operational_lifecycle) ? state.postingPayload.operational_lifecycle : [];
+    const executionQueue = Array.isArray(state.postingPayload?.queue) ? state.postingPayload.queue : [];
+    const serverExecution = new Map(executionQueue.map((row) => [String(row?.intake_id || ''), row?.execution_authorized === true]));
+    return lifecycle.map((row) => ({
+      ...row,
+      execution_authorized: serverExecution.get(String(row?.intake_id || '')) === true
+    }));
+  }
+  function reconciliationRows() { return Array.isArray(state.postingPayload?.reconciliation_issues) ? state.postingPayload.reconciliation_issues : []; }
+
   function money(value) {
     const n = Number(value || 0);
     return Number.isFinite(n) ? new Intl.NumberFormat('en-CA', { style:'currency', currency:'CAD' }).format(n) : '—';
@@ -34,6 +49,11 @@
     if (!value) return '—';
     const d = new Date(value);
     return Number.isNaN(d.valueOf()) ? esc(value) : d.toLocaleDateString('en-CA');
+  }
+  function dateTimeText(value) {
+    if (!value) return '—';
+    const d = new Date(value);
+    return Number.isNaN(d.valueOf()) ? esc(value) : d.toLocaleString('en-CA');
   }
 
   function statCard(label, value, note) {
@@ -64,7 +84,7 @@
 
   function completionReviewPanel() {
     if (state.reviewError) {
-      return `<section class="finance-list-card"><div class="finance-list-heading"><h3>Completed jobs — Finance review</h3><span>Schema 172</span></div><div class="notice warning"><strong>Review queue unavailable.</strong><br>${esc(state.reviewError)}</div><p><small>Accounting remains available. Candidate generation stays fail-closed until the Schema 172 review authority is reachable.</small></p></section>`;
+      return `<section class="finance-list-card"><div class="finance-list-heading"><h3>Completed jobs — Finance review</h3><span>Disposition</span></div><div class="notice warning"><strong>Review queue unavailable.</strong><br>${esc(state.reviewError)}</div><p><small>Accounting remains available. Candidate generation stays fail-closed until the Finance review authority is reachable.</small></p></section>`;
     }
     const items = reviewRows();
     const status = state.reviewPayload?.status || {};
@@ -77,7 +97,7 @@
     return `<section class="finance-list-card">
       <div class="finance-list-heading"><div><h3>Completed jobs — Finance review</h3><small>Approve/reject first; generate draft candidates second.</small></div><span>${items.length} item${items.length === 1 ? '' : 's'}</span></div>
       ${summary}
-      <div class="finance-module-note"><strong>Schema 172 boundary:</strong> invoice totals come from the canonical work order. Journal figures are documentary completion totals only. Posting, payments, Stripe and PayPal remain unauthorized.</div>
+      <div class="finance-module-note"><strong>Candidate boundary:</strong> invoice totals come from the canonical work order. Journal figures are documentary completion totals only. Candidate generation does not post, charge, or mutate Jobs.</div>
       ${items.length ? `<div class="table-wrap"><table class="finance-table"><thead><tr><th>Job</th><th>Client</th><th>Completion</th><th>Canonical total</th><th>Disposition</th><th>Candidates</th><th>Action</th></tr></thead><tbody>${items.slice(0,30).map((r) => `<tr>
         <td data-label="Job"><strong>${esc(r.job_code || r.job_id)}</strong><br><small>${esc(r.job_name || r.work_order_number || '')}</small></td>
         <td data-label="Client">${esc(r.client_name || '—')}<br><small>${esc(r.site_name || '')}</small></td>
@@ -87,6 +107,55 @@
         <td data-label="Candidates">${esc(r.candidate_generation_status || '—')}<br><small>Invoice: ${esc(r.invoice_candidate_status || '—')} · Journal: ${esc(r.journal_candidate_status || '—')}</small></td>
         <td data-label="Action">${reviewActionCell(r)}</td>
       </tr>`).join('')}</tbody></table></div>` : `<div class="finance-empty"><strong>No completed jobs need Finance disposition.</strong><small>The queue is populated only by canonical jobs.job_completed events consumed through the controlled Finance intake.</small></div>`}
+    </section>`;
+  }
+
+  function lifecycleActionCell(row) {
+    if (!canApprove()) return '<small>View only</small>';
+    const buttons = [];
+    if (row?.lifecycle_stage === 'awaiting_posting_approval') {
+      buttons.push(`<button type="button" data-finance-posting="approve_posting" data-intake-id="${esc(row.intake_id)}" ${state.mutating ? 'disabled' : ''}>Approve posting</button>`);
+    }
+    if (row?.posting_approval_id && !['posted','reversed'].includes(String(row?.lifecycle_stage || ''))) {
+      buttons.push(`<button type="button" data-finance-posting="preflight" data-intake-id="${esc(row.intake_id)}" ${state.mutating ? 'disabled' : ''}>Run preflight</button>`);
+    }
+    if (row?.execution_authorized === true && row?.execution_release_enabled === true && !row?.execution_run_id) {
+      buttons.push(`<button type="button" data-finance-posting="execute_posting" data-intake-id="${esc(row.intake_id)}" ${state.mutating ? 'disabled' : ''}>Execute controlled posting</button>`);
+    }
+    if (row?.lifecycle_stage === 'posted' && canManage()) {
+      buttons.push(`<button type="button" data-finance-posting="reverse_posting" data-intake-id="${esc(row.intake_id)}" ${state.mutating ? 'disabled' : ''}>Reverse / void</button>`);
+    }
+    return buttons.length ? `<div class="finance-review-actions">${buttons.join('')}</div>` : '<small>No action available</small>';
+  }
+
+  function operationalLifecyclePanel() {
+    if (state.postingError) {
+      return `<section class="finance-list-card"><div class="finance-list-heading"><h3>Completion → accounting lifecycle</h3><span>Schema 178</span></div><div class="notice warning"><strong>Operational control plane unavailable.</strong><br>${esc(state.postingError)}</div></section>`;
+    }
+    const items = postingRows();
+    const summary = state.postingPayload?.operational_summary || {};
+    const reconciliation = reconciliationRows();
+    const executionEnabled = summary.execution_release_enabled === true;
+    return `<section class="finance-list-card">
+      <div class="finance-list-heading"><div><h3>Completion → accounting lifecycle</h3><small>One server-owned state chain from Finance intake through reversal.</small></div><span>${items.length} intake${items.length === 1 ? '' : 's'}</span></div>
+      <div class="finance-stat-grid">
+        ${statCard('Awaiting review', String(summary.awaiting_review_count || 0), `${summary.stale_review_count || 0} stale >24h`)}
+        ${statCard('Awaiting posting approval', String(summary.awaiting_posting_approval_count || 0), 'Separate human authority')}
+        ${statCard('Preflight blocked', String(summary.preflight_blocked_count || 0), 'Reason-coded blockers')}
+        ${statCard('Recovery required', String(summary.recovery_required_count || 0), 'Retry quarantined')}
+        ${statCard('Posted', String(summary.posted_count || 0), 'Paired AR + GL')}
+        ${statCard('Reversed', String(summary.reversed_count || 0), 'Auditable reversal')}
+      </div>
+      <div class="finance-module-note"><strong>Schema 178 boundary:</strong> posting execution release is <strong>${executionEnabled ? 'ENABLED' : 'OFF'}</strong>. The browser cannot enable it or approve accountant mappings. Provider/payment mutation remains OFF. Reconciliation issues: <strong>${reconciliation.length}</strong>.</div>
+      ${items.length ? `<div class="table-wrap"><table class="finance-table"><thead><tr><th>Job</th><th>Stage</th><th>Approval / preflight</th><th>Accounting pair</th><th>Blocker / next action</th><th>Action</th></tr></thead><tbody>${items.slice(0,50).map((r) => `<tr>
+        <td data-label="Job"><strong>${esc(r.job_code || r.job_id)}</strong><br><small>${esc(r.client_name || '')} · ${money(r.total_amount)}</small></td>
+        <td data-label="Stage"><strong>${esc(r.lifecycle_stage || 'blocked')}</strong><br><small>Queued ${dateTimeText(r.queued_at)}</small></td>
+        <td data-label="Approval / preflight">${esc(r.posting_approval_status || 'not approved')}<br><small>${esc(r.preflight_status || 'not run')} · mappings ${esc(r.invoice_mapping_status || '—')}/${esc(r.journal_mapping_status || '—')}</small></td>
+        <td data-label="Accounting pair">${esc(r.posting_execution_status || 'not started')}<br><small>AR ${r.ar_invoice_id ? 'linked' : '—'} · GL ${r.gl_batch_id ? 'linked' : '—'}${r.reversal_status ? ` · reversal ${esc(r.reversal_status)}` : ''}</small></td>
+        <td data-label="Blocker / next action"><strong>${esc(r.blocker_code || '—')}</strong><br>${esc(r.blocker_message || '')}<br><small>${esc(r.action_hint || '')}</small></td>
+        <td data-label="Action">${lifecycleActionCell(r)}</td>
+      </tr>`).join('')}</tbody></table></div>` : `<div class="finance-empty"><strong>No Finance completion lifecycle rows are waiting.</strong><small>The Schema 178 view follows canonical Finance intake only; it does not manufacture accounting work.</small></div>`}
+      ${reconciliation.length ? `<div class="notice warning"><strong>Finance reconciliation requires attention.</strong> ${reconciliation.slice(0,8).map((issue) => `${esc(issue.issue_code)} — ${esc(issue.action_hint)}`).join(' · ')}</div>` : `<div class="finance-module-note"><strong>Reconciliation:</strong> no Finance lifecycle integrity issues are currently reported.</div>`}
     </section>`;
   }
 
@@ -105,6 +174,43 @@
         if (action === 'generate') {
           if (!window.confirm('Generate draft invoice and journal candidates from canonical records? This does not post or charge anything.')) return;
           await mutateReview({ action:'generate_candidates', intake_id:intakeId });
+        }
+      });
+    });
+  }
+
+  function bindPostingActions() {
+    document.querySelectorAll('[data-finance-posting]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const action = button.dataset.financePosting;
+        const intakeId = button.dataset.intakeId;
+        if (!action || !intakeId || state.mutating) return;
+        const row = postingRows().find((item) => String(item.intake_id) === String(intakeId));
+        if (!row) return;
+        if (action === 'preflight') {
+          await mutatePosting({ action:'preflight', intake_id:intakeId });
+          return;
+        }
+        if (action === 'approve_posting') {
+          const reason = window.prompt('Finance posting approval reason:', '') || '';
+          if (reason.trim().length < 3) return;
+          await mutatePosting({ action, intake_id:intakeId, reason:reason.trim() });
+          return;
+        }
+        if (action === 'execute_posting') {
+          if (row.execution_authorized !== true || row.execution_release_enabled !== true) return;
+          if (!window.confirm('Execute the protected, idempotent AR + GL posting pair? No payment provider will be mutated.')) return;
+          const reason = window.prompt('Finance posting execution reason:', '') || '';
+          if (reason.trim().length < 3) return;
+          await mutatePosting({ action, intake_id:intakeId, reason:reason.trim() });
+          return;
+        }
+        if (action === 'reverse_posting') {
+          if (!canManage() || row.lifecycle_stage !== 'posted') return;
+          if (!window.confirm('Create an auditable reversal/void? The original posted GL history will be preserved.')) return;
+          const reason = window.prompt('Finance reversal / void reason:', '') || '';
+          if (reason.trim().length < 3) return;
+          await mutatePosting({ action, intake_id:intakeId, reason:reason.trim() });
         }
       });
     });
@@ -137,7 +243,7 @@
 
     host.innerHTML = `
       <div class="module-workspace-heading">
-        <div><span class="module-kicker">Finance module · ${esc(access)} access</span><h2>Finance workspace</h2><p>Accounting, reconciliation, completed-job review, close, tax/payroll review, and accountant handoff stay separate from Safety and Jobs navigation.</p></div>
+        <div><span class="module-kicker">Finance module · ${esc(access)} access</span><h2>Finance workspace</h2><p>Accounting, reconciliation, completed-job lifecycle, close, tax/payroll review, and accountant handoff stay separate from Safety and Jobs navigation.</p></div>
         <div class="section-graphic-placeholder finance-graphic"><span aria-hidden="true">$</span><strong>Finance proof placeholder</strong><small>Future approved visual: close dashboard, reconciliation proof, or accountant package preview.</small></div>
       </div>
       <div class="finance-stat-grid">
@@ -146,8 +252,9 @@
         ${statCard('Close packages', String(packageRows.length), 'Accountant delivery queue')}
         ${statCard('Tax / payroll', String(taxRows.length + payrollRows.length), 'Review records')}
       </div>
-      <div class="finance-module-note"><strong>Module boundary:</strong> Finance data is not loaded for Safety-only or Jobs-only profiles. Completed-job financial candidates now require Finance approval and canonical server-owned values.</div>
+      <div class="finance-module-note"><strong>Module boundary:</strong> Finance data is not loaded for Safety-only or Jobs-only profiles. All completion-to-accounting actions use protected server-owned authorities and preserve manual Production promotion.</div>
       <div class="finance-lists">
+        ${operationalLifecyclePanel()}
         ${completionReviewPanel()}
         ${compactTable('Accounting close', closeRows, [
           {label:'Period', render:(r)=>`${dateText(r.period_start)} – ${dateText(r.period_end)}`},
@@ -174,6 +281,7 @@
       <div class="finance-toolbar"><button id="financeRefresh" type="button">Refresh Finance</button><span>Last refreshed ${state.loadedAt ? new Date(state.loadedAt).toLocaleTimeString('en-CA') : '—'}</span></div>`;
     byId('financeRefresh')?.addEventListener('click', () => load(true));
     bindReviewActions();
+    bindPostingActions();
   }
 
   async function loadReview() {
@@ -190,6 +298,23 @@
     } catch (err) {
       state.reviewPayload = null;
       state.reviewError = err?.message || 'Finance completion review authority is unavailable.';
+    }
+  }
+
+  async function loadPosting() {
+    state.postingError = '';
+    try {
+      const response = await window.YWIAPI?.jsonFetch?.('finance-job-completion-posting-approval', {
+        method:'POST',
+        body:{ action:'list' },
+        requireAuth:true,
+        timeoutMs:30000
+      });
+      if (!response?.ok) throw new Error(response?.error || 'Finance posting operational authority returned no data.');
+      state.postingPayload = response;
+    } catch (err) {
+      state.postingPayload = null;
+      state.postingError = err?.message || 'Finance posting operational authority is unavailable.';
     }
   }
 
@@ -211,6 +336,25 @@
     }
   }
 
+  async function mutatePosting(payload) {
+    if (!canApprove() || state.mutating) return;
+    if (payload?.action === 'reverse_posting' && !canManage()) return;
+    state.mutating = true;
+    render();
+    try {
+      const response = await window.YWIAPI?.jsonFetch?.('finance-job-completion-posting-approval', {
+        method:'POST', body:payload, requireAuth:true, timeoutMs:30000
+      });
+      if (!response?.ok) throw new Error(response?.error || 'Finance posting control-plane action failed.');
+      await load(true);
+    } catch (err) {
+      state.postingError = err?.message || 'Finance posting control-plane action failed.';
+    } finally {
+      state.mutating = false;
+      render();
+    }
+  }
+
   async function load(force = false) {
     if (!canView() || state.loading) return;
     if (!force && state.payload && Date.now() - state.loadedAt < 30000) { render(); return; }
@@ -218,7 +362,8 @@
     try {
       const [accounting] = await Promise.all([
         window.YWIAPI?.loadAdminDirectory?.({ scope:'accounting', limit:40, timeoutMs:30000 }),
-        loadReview()
+        loadReview(),
+        loadPosting()
       ]);
       state.payload = accounting;
       if (!state.payload?.ok) throw new Error(state.payload?.error || 'Finance accounting scope returned no data.');
@@ -237,6 +382,10 @@
 
   document.addEventListener('DOMContentLoaded', () => { render(); if (active()) load(false); });
   document.addEventListener('ywi:route-shown', onRoute);
-  document.addEventListener('ywi:auth-changed', () => { state.payload = null; state.reviewPayload = null; state.loadedAt = 0; state.error = ''; state.reviewError = ''; render(); if (active()) load(true); });
+  document.addEventListener('ywi:auth-changed', () => {
+    state.payload = null; state.reviewPayload = null; state.postingPayload = null;
+    state.loadedAt = 0; state.error = ''; state.reviewError = ''; state.postingError = '';
+    render(); if (active()) load(true);
+  });
   document.addEventListener('ywi:module-permissions-changed', () => { render(); if (active()) load(true); });
 })();
