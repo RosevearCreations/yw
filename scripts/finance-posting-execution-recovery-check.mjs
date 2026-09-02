@@ -68,4 +68,6 @@ assert.ok(!/\.from\("(?:ar_invoices|gl_journal_batches|gl_journal_entries|job_in
 assert.ok(pkg.includes('"test:finance-posting-execution-recovery"'),'package.json must expose the Schema 177 source gate.');
 assert.ok(workflow.includes('npm run test:finance-posting-execution-recovery'),'GitHub CI must run the Schema 177 source gate.');
 
+assert.ok(migration.includes('r.execution_status as posting_execution_status'),'Schema 177 execution queue must alias the run status instead of colliding with Schema 175 execution_status.');
+
 console.log('Schema 177 Finance posting execution/recovery source gate passed.');
