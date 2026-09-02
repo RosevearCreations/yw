@@ -1,125 +1,99 @@
 # YWI Active Project Handbook
 
-**Current schema source authority:** `178`  
-**Verified live database boundary before Schema 178 promotion:** `177`  
-**Source authority:** `RosevearCreations/yw`  
-**Active architecture:** Safety / OHSA, Finance, Jobs, Admin; I.T. Readiness is inside Admin.
+**Current schema source authority:** `179`  
+**Verified live database boundary before Schema 179 promotion:** `178`  
+**Last clean-main Schema 178 checkpoint:** `400e559663d9d71ce07c8cac638a2ef7016320d0`, Run #95 (`33659172805`) — SUCCESS  
+**Source:** `RosevearCreations/yw`  
+**Architecture:** Safety / OHSA, Finance, Jobs, Admin; I.T. Readiness is inside Admin.
 
 ## System shape
 
-Yard Weasels combines public quote/SEO surfaces, private customer workflows, Safety/OHSA records, Jobs execution, Finance review/accounting workflows, and Admin/I.T. release controls. The application deliberately has four top-level staff modules. I.T. is a control-plane section inside Admin rather than another business domain.
+Yard Weasels combines public quote/SEO surfaces, private customer workflows, Safety/OHSA records, Jobs execution, Finance/accounting workflows, and Admin/I.T. release controls. There are exactly four staff modules. I.T. is a control-plane section inside Admin, not another business domain.
 
-A profile receives an effective module level of `hidden`, `view`, `create`, `approve`, or `manage`. Server authorization remains authoritative even when the client hides a route. Active Admin profiles are a recovery exception and resolve to `manage` on all four modules.
+A profile resolves to `hidden`, `view`, `create`, `approve`, or `manage`. Server authorization is authoritative even when the browser hides a route. Active Admin profiles are the recovery exception and resolve to `manage` across all four modules.
 
 ## Architecture progression
 
-### Schemas 159–160 — access and readiness
-Established module permissions, permanent Admin break-glass access, protected Module Permissions management, and Admin → I.T. Readiness.
+### Schemas 159–174 — modular authority and Finance intake
+Schemas 159–160 established module permissions, Admin break-glass, and I.T. Readiness. Schemas 161–163 established permission-driven module loading and protected Shared Core reads. Schemas 164–168 established fail-closed cross-module contracts/events and canonical job-completion events. Schemas 169–172 established Finance intake, observability/retry, human disposition, and documentary draft candidates. Schemas 173–174 added dependency contracts and repaired the work-order identity chain to canonical UUID.
 
-### Schemas 161–163 — modular runtime and Shared Core
-Established the shared module contract, permission-driven lazy loading, and protected read-only Shared Core models. Canonical shared identities remain centrally owned.
+### Schema 175 — posting safety
+Posting approval is separate from completion disposition/candidate approval. It carries server-owned idempotency and immutable provenance.
 
-### Schemas 164–168 — cross-module boundaries
-Moved shared operations to fail-closed owner/action contracts, private versioned cross-module events, and real job-completion event wiring. Payment truth is not a staff-controlled shortcut.
+### Schema 176 — existing accounting-engine preflight
+The Finance candidate pair maps to the existing accounting authorities:
 
-### Schemas 169–172 — Finance completion consumer
-Added the Finance job-completion intake path, I.T. observability, bounded execution/retry authority, and human review/disposition candidate authority. These stages prepare documentary draft accounting candidates; they do not post invoices, journals, or provider payments.
+- invoice: `job_invoice_postings` → `ar_invoices`;
+- journal: `job_journal_postings` → `gl_journal_batches` / `gl_journal_entries`;
+- mappings: `accountant_export_mapping_rules` → `chart_of_accounts`.
 
-### Schemas 173–174 — schema convergence protection
-Schema 173 introduced private dependency contracts and I.T. preflight checks. Schema 174 repaired the discovered work-order contract to canonical UUID and extended the Finance identity chain.
+Preflight is read-only. Amounts, account identities, and posting truth are server-owned, and required account mappings need explicit accountant/bookkeeper approval.
 
-### Schema 175 — Finance posting safety foundation
-Build 175 separated candidate approval from posting approval. Posting approval carries server-owned idempotency and immutable provenance, while database guards keep Finance accounting effects behind explicit execution authority.
+### Schema 177 — execution, recovery and reversal
+Atomic AR + balanced GL execution, durable idempotency, recovery quarantine, and auditable reversal are installed. The execution release is server-owned and remains OFF; provider mutation remains OFF. No accounting posting was manufactured merely to prove the release.
 
-### Schema 176 — Finance posting preflight and accounting-engine mapping
-Build 176 maps the approved Finance candidate pair onto the **existing** accounting authorities rather than creating parallel tables:
+### Schema 178 — operational control plane
+One read-only lifecycle now spans intake → disposition → draft candidates → posting approval → preflight → execution/recovery → reversal. Reason-coded blockers, reconciliation/integrity diagnostics, dynamic dependency preflight, and Admin → I.T. Finance pipeline status expose impossible/orphan/duplicate states without introducing another accounting system.
 
-- invoice path: `job_invoice_postings` → `ar_invoices`;
-- journal path: `job_journal_postings` → `gl_journal_batches` / `gl_journal_entries`;
-- chart authority: `accountant_export_mapping_rules` → `chart_of_accounts`.
+Schema 178 is fully release-proven on final clean `main` SHA `400e559663d9d71ce07c8cac638a2ef7016320d0`, Run #95 (`33659172805`). Live Schema 178 was verified current with dependency and Finance assertion chains green, reconciliation clean, posting execution OFF, provider mutation OFF, and zero unintended Finance posting effects. The protected Finance posting and Admin I.T. Edge functions were aligned with JWT verification.
 
-The protected Finance Edge function exposes read-only preflight. It verifies canonical identity, draft state, invoice/journal arithmetic, paired revenue consistency, accounting readiness, prior-posting absence, and accountant-approved active mappings. Account identities and amounts remain server-owned.
+### Schema 179 — Finance permissions, synthetic acceptance and release hardening
+Build 179 completes the autonomous Finance hardening sequence without releasing real accounting effects:
 
-### Schema 177 — controlled posting execution and recovery
-Build 177 added service-authorized atomic AR + GL execution, durable idempotency, retry/recovery quarantine and explicit reversal/void authority. Existing posted history is preserved; reversals create a separate reversing GL batch rather than rewriting prior history.
-
-Schema 177 was release-proven on exact-main SHA `4ee81b16fc78221adc4ccefd2f488c17f1a18da0`, GitHub Run #83 (`33654967250`), and release-evidence ID `7`. The protected `finance-job-completion-posting-approval` Edge function is active v3 with JWT verification.
-
-The execution machinery is installed **fail-closed**. The server-owned execution release remains OFF, provider mutation remains OFF, and required posting mappings remain `0 / 3` approved. No Finance AR/GL posting was created merely to prove the release.
-
-### Schema 178 — Finance operational control plane
-Build 178 adds one read-only operational lifecycle across the existing Schema 169–177 authorities:
-
-- intake / human disposition;
-- draft candidate generation;
-- separate posting approval;
-- reason-coded posting preflight;
-- execution / recovery state;
-- AR + GL identity links;
-- reversal state and recovery guidance.
-
-It also adds reconciliation diagnostics for orphan/impossible candidate/posting/execution/reversal states, a Finance pipeline I.T. status view, and operational assertions. Admin → I.T. Readiness consumes those private service-role views. The historical Admin schema-preflight dependency row is also corrected to follow the current schema marker dynamically rather than stopping at Schema 173.
-
-Build 178 is a control-plane/visibility release. It does not enable the Schema 177 execution switch, approve chart mappings, mutate Jobs, mutate Stripe/PayPal/provider truth, create another accounting system, add a fifth module, or promote Production.
+- explicit permission-matrix contracts for `hidden`, `view`, `create`, `approve`, `manage`, Admin break-glass, and server-control cases;
+- protected Finance endpoints report their server-resolved access level and capability ladder;
+- both Finance completion endpoints explicitly require JWT verification;
+- direct browser attempts to supply totals, account identities, posting state, release state, or provider truth remain rejected;
+- deterministic browser-only fixtures exercise review, candidate, approval, blocked preflight/release, recovery, posted and reversed rendering without persistent database or provider effects;
+- rendered phone/desktop acceptance uses the real Finance and I.T. client code;
+- Admin → I.T. adds Finance operational, reconciliation, and release-hardening evidence;
+- a database release-hardening assertion family verifies permission order, service-only Finance RPCs, Admin break-glass, private/off execution controls, human mapping authority, dependency integrity, reconciliation integrity, prior Schema 175–178 assertions, no Jobs writeback, and provider mutation closure.
 
 ## Current release boundary
 
-Before applying Schema 178, the verified live database remains Schema 177 with:
+Until Schema 179 is merged and exact-main source acceptance passes, the verified live database remains Schema 178. Build 179 must then be applied and validated in order. The following remain deliberately outside Build 179:
 
-- Schema drift `177 / 177`, current;
-- exact-main source evidence Run #83 / SHA `4ee81b16…` recorded;
-- Release Authority GREEN;
-- repository enforcement separately AMBER because GitHub reports `main` unprotected;
-- protected Finance posting Edge function ACTIVE v3 / JWT enabled;
-- posting execution release OFF;
-- provider mutation OFF;
-- accountant mappings `0 / 3` approved;
-- posting approvals `0`;
-- posting execution runs `0`;
-- reversals `0`;
-- Finance invoice postings `0`;
-- Finance journal postings `0`.
+- enabling Finance posting execution;
+- approving the `accounts_receivable`, `service_revenue`, or conditional `sales_tax_payable` mappings;
+- live Stripe/PayPal/provider mutation;
+- real-money/payment testing;
+- tax-policy or chart-of-accounts business decisions;
+- Production promotion.
 
-After Schema 178 merges, apply it only after exact-main CI passes, then verify drift, dependency contracts, Schema 175–178 assertions, reconciliation status, and zero unintended financial side effects before recording new release evidence.
+GitHub repository enforcement remains a separate infrastructure item because `main` is currently reported unprotected. It does not weaken application-level authorization, but Release Authority continues to report it separately as AMBER.
 
 ## Security and ownership invariants
 
-- Admin break-glass `manage` access across all four top-level modules remains mandatory until a replacement recovery authority exists.
-- Shared Core data is read-only to consuming business modules.
-- Cross-module writes require declared ownership, minimum permission, and an allowed boundary mode.
-- Private event/dependency/Finance operational registries remain non-public and service-controlled.
-- Finance review approval, posting approval, posting preflight, posting execution, recovery, and reversal are distinct authorities.
-- Posting execution release is server-owned; no browser control may enable it.
-- Accountant/chart-of-accounts decisions remain human accounting authority.
-- Finance does not write back to Jobs and does not mutate Stripe/PayPal/provider/payment truth through this pipeline.
-- I.T. Readiness may block/report a release but may not auto-promote Production.
-- Private job/customer evidence must never be reused as public SEO material without explicit approval.
+- Admin break-glass `manage` across all four modules is mandatory until deliberately replaced.
+- Shared Core identities are centrally owned and consumed read-only.
+- Cross-module writes require an explicit owner, access level and boundary mode.
+- Finance review, candidate generation, posting approval, preflight, execution, recovery and reversal are distinct authorities.
+- Posting execution release is private/server-owned and cannot be enabled by the browser.
+- Accountant/chart mapping approval remains human-controlled.
+- Finance completion/accounting RPCs do not write canonical Jobs/work-order state.
+- Stripe/PayPal/provider/payment truth remains outside this Finance pipeline.
+- I.T. Readiness may report or block a release but cannot auto-promote Production.
 
 ## Release discipline
 
-For each release:
+1. Start from exact current `main` plus verified live schema evidence.
+2. Query live catalog types/relationships before adding schema dependencies; never guess identity types.
+3. Preserve every applied numbered migration.
+4. Run all source/security gates on a bounded feature branch.
+5. Run rendered browser acceptance on real production client code with safe deterministic fixtures where live mutation is inappropriate.
+6. Merge only an exact green PR head.
+7. Run exact-main CI before applying the migration.
+8. Apply the database migration in order, then verify drift, dependencies, release assertions and zero unintended side effects.
+9. Deploy changed protected Edge functions after their database dependencies exist; verify JWT/version state.
+10. Record exact-main release evidence, update the release rail, clean merged branches/workflows, and verify the final clean-main SHA.
+11. Keep Production promotion deliberate/manual.
 
-1. Start from the current `main` source and current database schema evidence.
-2. Query live catalog types/relationships before adding dependent schema contracts; do not guess identities.
-3. Keep migrations additive and ordered; never edit old applied migration history merely to make a later migration unnecessary.
-4. Run source/unit boundary gates before merge.
-5. Run rendered browser acceptance where applicable.
-6. Verify the exact merged `main` SHA in GitHub Actions and inspect deployment evidence separately.
-7. Apply database migrations only when the release requires them, in order, then verify schema drift/dependencies/release-specific assertions.
-8. Deploy protected Edge functions only after their database dependencies exist and keep JWT verification on.
-9. Keep Production promotion deliberate and manual.
-10. Update these three active authority documents when the restart boundary materially changes.
+## Repository hygiene
 
-## Repository hygiene policy
+Git history is the archive. Do not keep stale Markdown, dated archive trees, generated full-schema snapshots, Playwright output, dependencies, logs, temp or backup artifacts in the active tree. Numbered SQL migrations remain permanent audit authority.
 
-Git history is the archive. The active tree should not contain dated Markdown snapshots, retired copies, test-write artifacts, editor backup files, generated browser-test output, dependencies, logs, temporary files, or generated full-schema snapshots. Historical numbered SQL migrations are auditable database authority and remain in source.
+The only active project authority documents are `README.md`, `docs/ACTIVE_PROJECT_HANDBOOK.md`, and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
 
-The only active project authority documents are:
+## Boundary after Build 179
 
-- `README.md`
-- `docs/ACTIVE_PROJECT_HANDBOOK.md`
-- `docs/NEXT_STEPS_AND_SANITY_CHECK.md`
-
-## Next bounded build
-
-After Schema 178 is fully merged, applied, runtime-verified and release-evidenced, the next engineering release is **Build 179 — Finance permissions, synthetic acceptance and release hardening**. Build 179 may test permission tiers, safe synthetic fixtures/cleanup, browser behavior and the full completion-to-accounting safety gate, but it must not auto-approve accountant mappings, enable live payment/provider mutation, invent tax/chart policy, or promote Production.
+Build 179 closes the previously defined 20-item autonomous Finance completion-to-accounting hardening sequence. After it is fully source/database/runtime/release proven, **do not automatically enable posting execution or approve accounting mappings**. The next YW build should be selected from safe non-financial infrastructure/business improvements unless the accounting policy gates are deliberately authorized separately.

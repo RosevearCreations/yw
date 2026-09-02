@@ -122,6 +122,7 @@ async function readinessPayload(supabase: any) {
     cross_module_consumer_health: ["v_it_cross_module_consumer_health", "check_key", true, 20],
     finance_operational: ["v_it_finance_completion_pipeline_status", null, true, 10],
     finance_reconciliation: ["v_finance_job_completion_reconciliation_issues", "detected_at", false, 160],
+    finance_release_hardening: ["v_it_finance_release_hardening_status", null, true, 10],
     admin_access_integrity: ["v_admin_module_access_integrity", "profile_label", true, 500],
     schema_preflight: ["v_admin_schema_preflight_checks", "sort_order", true, 160],
     deployment_checklist: ["v_admin_deployment_checklist", "sort_order", true, 160],
@@ -143,12 +144,13 @@ async function readinessPayload(supabase: any) {
   }));
   const data = Object.fromEntries(entries) as Record<string, { rows: any[]; error: string | null }>;
 
-  const [moduleAssertions, itAssertions, releaseAssertions, consumerObservabilityAssertions, financeOperationalAssertions] = await Promise.all([
+  const [moduleAssertions, itAssertions, releaseAssertions, consumerObservabilityAssertions, financeOperationalAssertions, financeReleaseHardeningAssertions] = await Promise.all([
     assertionRows(supabase, "ywi_module_security_assertions", "Module assertions failed."),
     assertionRows(supabase, "ywi_it_readiness_security_assertions", "I.T. assertions failed."),
     assertionRows(supabase, "ywi_it_release_authority_assertions", "Release-authority assertions failed."),
     assertionRows(supabase, "ywi_it_cross_module_consumer_observability_assertions", "Cross-module consumer observability assertions failed."),
     assertionRows(supabase, "ywi_finance_operational_control_plane_assertions", "Finance operational assertions failed."),
+    assertionRows(supabase, "ywi_finance_release_hardening_assertions", "Finance release-hardening assertions failed."),
   ]);
 
   const profilesResult = await listRows(supabase, "profiles", {
@@ -183,6 +185,7 @@ async function readinessPayload(supabase: any) {
     ...releaseAssertions.rows,
     ...consumerObservabilityAssertions.rows,
     ...financeOperationalAssertions.rows,
+    ...financeReleaseHardeningAssertions.rows,
   ];
   const assertionErrors = [
     moduleAssertions.error,
@@ -190,6 +193,7 @@ async function readinessPayload(supabase: any) {
     releaseAssertions.error,
     consumerObservabilityAssertions.error,
     financeOperationalAssertions.error,
+    financeReleaseHardeningAssertions.error,
   ].filter(Boolean);
   const assertionBlocking = assertionRowsCombined.filter((row: any) => String(row?.assertion_status || "").toLowerCase() !== "passed").length
     + assertionErrors.length;
@@ -240,6 +244,7 @@ async function readinessPayload(supabase: any) {
       release_authority: releaseAssertions.rows,
       consumer_observability: consumerObservabilityAssertions.rows,
       finance_operational: financeOperationalAssertions.rows,
+      finance_release_hardening: financeReleaseHardeningAssertions.rows,
       errors: assertionErrors,
     },
     sections: Object.fromEntries(Object.entries(data).map(([key, item]) => [key, {
