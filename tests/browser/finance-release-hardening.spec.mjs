@@ -71,7 +71,7 @@ for(const viewport of viewports){
       await expect(host.locator('[data-finance-review="approve"]')).toHaveCount(canApprove?1:0);
       await expect(host.locator('[data-finance-review="generate"]')).toHaveCount(canApprove?1:0);
       await expect(host.locator('[data-finance-posting="approve_posting"]')).toHaveCount(canApprove?1:0);
-      if(canApprove) await expect(host.locator('[data-finance-posting="preflight"]')).toHaveCount(3);
+      if(canApprove) await expect(host.locator('[data-finance-posting="preflight"]')).toHaveCount(2);
       else await expect(host.locator('[data-finance-posting="preflight"]')).toHaveCount(0);
 
       const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
