@@ -1,10 +1,10 @@
 # Yard Weasels Inc. Operations Platform
 
-**Current source authority:** Schema `181` — Build 181 ACTIVE  
-**Verified live database authority:** Schema `180 / 180` until exact-main Schema 181 proof is green and the migration is deliberately applied  
-**Final clean Schema 180 checkpoint:** `02fa56d7ef456b613278a9ecae568262c3c2410a`, Run #113 (`33687575034`) — SUCCESS  
-**Schema 180 release evidence:** ID `12`; Release Authority GREEN; repository enforcement separately AMBER because `main` is unprotected  
-**Active build:** Build `181` — Finance mapping review aging, drift, and reconciliation observability  
+**Current source authority:** Schema `181` — Build 181 COMPLETE  
+**Verified live database authority:** Schema `181 / 181`  
+**Published Build 181 product checkpoint:** `f8875bc3e1c479c8c78ab563bb46ef1b20a15c1d`, Run #117 (`33689829209`) — SUCCESS  
+**Repository state:** completed Schema 181 branches pruned; `main` is the single active branch; repository enforcement remains separately AMBER because `main` is unprotected  
+**Runtime:** `finance-account-mapping-review` v3 ACTIVE / JWT enabled; `admin-it-control` v12 ACTIVE / JWT enabled  
 **Active documents:** this README, `docs/ACTIVE_PROJECT_HANDBOOK.md`, and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
 
 Yard Weasels has exactly four top-level staff modules: **Safety / OHSA**, **Finance**, **Jobs**, and **Admin**. **I.T. Readiness** is an Admin/manage control-plane section, never a fifth business module.
@@ -22,40 +22,31 @@ Yard Weasels has exactly four top-level staff modules: **Safety / OHSA**, **Fina
 - **Schema 178:** completion-to-accounting lifecycle, blocker codes, reconciliation, and Admin → I.T. Finance readiness.
 - **Schema 179:** Finance permission matrix, direct-bypass guards, synthetic non-persistent/browser-only acceptance, JWT hardening, and full release gate.
 - **Schema 180:** human-controlled accountant mapping review over the existing `accountant_export_mapping_rules` → `chart_of_accounts` authority, immutable human-review audit, protected Finance-manage workflow, Admin → I.T. mapping readiness, and rendered acceptance.
-- **Schema 181 source:** read-only mapping review aging, canonical account/review drift detection, posting-preflight reconciliation, Finance UI observability, and Admin → I.T. guidance. It creates no second mapping authority and no new mapping mutation path.
+- **Schema 181:** read-only mapping review aging, canonical account/review drift detection, posting-preflight reconciliation, Finance UI observability, Admin → I.T. guidance, and rendered acceptance. It creates no second mapping authority and no new mapping mutation path.
 
-## Build 180 verified closure
+## Build 181 verified closure
 
-Build 180 is **COMPLETE** and live at `180 / 180`. The final post-prune source is `02fa56d7ef456b613278a9ecae568262c3c2410a`; exact-main Run #113 passed all source and rendered-browser gates and release evidence ID `12` binds that clean checkpoint to Schema 180.
+Build 181 is **COMPLETE** and live at `181 / 181`.
 
-Live invariants remain:
+Verified release invariants:
 
-- Schema 180 assertions: **8 / 8 PASS**;
+- Schema 181 assertions: **8 / 8 PASS**;
+- prior Schema 180 mapping assertions: **8 / 8 PASS**;
 - prior Schema 179 hardening assertions: **12 / 12 PASS**;
-- required Finance dependencies through Schema 180: **62 / 62 PASS**;
+- required Finance dependencies through Schema 181: **65 / 65 PASS**;
 - all active Admin profiles retain break-glass `manage` across Safety, Finance, Jobs, and Admin;
-- `accounts_receivable`, `service_revenue`, and `sales_tax_payable` retain their exact pre-migration account IDs and remain `review`;
+- `accounts_receivable`, `service_revenue`, and `sales_tax_payable` retain their pre-Build-181 account IDs and remain `review`;
 - release-created mapping-review audit events: **0**;
 - release-created posting effects: **0**;
 - posting execution release: **OFF**;
 - provider mutation: **OFF**;
 - Production promotion: manual.
 
-Mapping readiness is intentionally **AMBER** because the three account choices still require an explicit human accountant/bookkeeper decision. That is accounting readiness, not a failed application release.
+Live mapping observability is intentionally **AMBER** because all three unresolved human reviews are stale. Technical drift is **0** and preflight contradiction is **0**. This is a human accountant/bookkeeper decision backlog, not a failed application release.
 
-## Build 181 — ACTIVE
+Build 181 deliberately does **not** choose accounts, approve/reject mappings, write the Schema 180 immutable human-review audit, add another mutation endpoint, enable posting execution, mutate Stripe/PayPal/provider truth, write Jobs state, change tax/chart policy, or promote Production.
 
-Build 181 makes that human decision queue operationally observable without making the decision. The source release adds:
-
-- review age anchored to the canonical review/update timestamps, with recent, aging (7+ days), and stale (30+ days) classifications;
-- true technical drift detection for inactive/missing account state, immutable-review/current-state disagreement, and invalid approved-review evidence;
-- a separate recheck warning when chart-account metadata changes after a human approval;
-- reconciliation between the canonical mapping state and Schema 176 generated-pair preflight blocker codes;
-- neutral `NO_GENERATED_PAIR_SAMPLE` evidence where no current completion pair exercises a mapping;
-- reason-coded Finance and Admin → I.T. guidance that keeps human backlog AMBER while reserving RED for actual technical contradictions;
-- deterministic non-persistent/browser-only acceptance on phone and desktop across `hidden`, `view`, `create`, `approve`, and `manage`.
-
-Build 181 does **not** create a new mapping table, choose accounts, approve/reject mappings, write the Schema 180 immutable human-review audit, add another mutation endpoint, enable posting execution, mutate Stripe/PayPal/provider truth, write Jobs state, change tax/chart policy, or promote Production.
+The final exact-main release-evidence SHA/run is stored in `it_release_source_evidence` and surfaced by `v_it_release_source_evidence_current`; that database record is the canonical self-consistent source proof rather than embedding a self-referential closeout SHA in this file.
 
 ## Non-negotiable boundaries
 
@@ -75,7 +66,7 @@ Build 181 does **not** create a new mapping table, choose accounts, approve/reje
 
 ## Database and repository authority
 
-Every numbered migration in `sql/` is permanent audit history and the source migration chain is now ordered through Schema 181. The live database remains at Schema 180 until exact-main Schema 181 source proof is green. Git history is the archive; do not restore stale archive trees, retired Markdown, generated full-schema snapshots, Playwright output, dependencies, logs, temp, or backup artifacts.
+Every numbered migration in `sql/` is permanent audit history and the source migration chain is ordered through Schema 181. The live database is `181 / 181`. Git history is the archive; do not restore stale archive trees, retired Markdown, generated full-schema snapshots, Playwright output, dependencies, logs, temp, or backup artifacts.
 
 The only active Markdown authorities are:
 

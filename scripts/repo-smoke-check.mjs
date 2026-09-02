@@ -28,16 +28,17 @@ add('no-generated-full-schema-snapshot',!exists('sql/000_full_schema_reference.s
 add('no-temporary-build179-patch-workflow',!exists('.github/workflows/build179-source-patch.yml'),'Temporary remote source patch workflow is absent.');
 add('no-temporary-build180-patch-workflow',!exists('.github/workflows/build180-source-patch.yml'),'Temporary Build 180 source patch workflow is absent.');
 add('no-temporary-build181-patch-workflow',!exists('.github/workflows/build181-source-patch.yml')&&!exists('.github/workflows/build181-source-patch-v2.yml'),'Temporary Build 181 source patch workflows are absent.');
+add('no-temporary-schema181-branch-prune-workflow',!exists('.github/workflows/one-time-schema181-branch-prune.yml'),'One-time Schema 181 branch prune workflow is absent after cleanup.');
 
 const readme=read('README.md');
 const handbook=read('docs/ACTIVE_PROJECT_HANDBOOK.md');
 const nextSteps=read('docs/NEXT_STEPS_AND_SANITY_CHECK.md');
 for(const [name,text] of [['README',readme],['Handbook',handbook],['Next steps',nextSteps]]){
-  add(`${name.toLowerCase().replaceAll(' ','-')}-schema181`,text.includes('181')&&text.includes('I.T. Readiness'),`${name} records active Schema 181 source authority and retains the Admin/I.T. boundary.`);
+  add(`${name.toLowerCase().replaceAll(' ','-')}-schema181`,text.includes('181')&&text.includes('I.T. Readiness'),`${name} records Schema 181 source authority and retains the Admin/I.T. boundary.`);
 }
 add('docs-build179-complete',handbook.includes('Schema 179')&&handbook.includes('COMPLETE')&&nextSteps.includes('Build 179')&&nextSteps.includes('COMPLETE'),'Active authority records Build 179 permission/acceptance/release hardening as complete.');
 add('docs-build180-complete',[readme,handbook,nextSteps].every((text)=>text.includes('Build 180')&&/mapping/i.test(text)&&/COMPLETE/i.test(text)),'Active authority records Build 180 accountant mapping readiness/review as complete.');
-add('docs-build181-active',[readme,handbook,nextSteps].every((text)=>text.includes('Build 181')&&/aging|drift|reconciliation/i.test(text)&&/ACTIVE/i.test(text)),'Active authority records Build 181 mapping observability as the bounded source release.');
+add('docs-build181-complete',[readme,handbook,nextSteps].every((text)=>text.includes('Build 181')&&/aging|drift|reconciliation/i.test(text)&&/COMPLETE/i.test(text)),'Active authority records Build 181 mapping observability as complete.');
 add('docs-build179-financial-release-closed',[readme,handbook,nextSteps].every((text)=>/execution release/i.test(text)&&/(off|closed|server-owned)/i.test(text)),'Build 179 does not release Finance accounting execution.');
 add('docs-four-module-boundary',[readme,handbook,nextSteps].every((text)=>['Safety','Finance','Jobs','Admin'].every((key)=>text.includes(key))),'Active authority retains Safety, Finance, Jobs and Admin.');
 add('docs-manual-production',[readme,handbook,nextSteps].every((text)=>/manual/i.test(text)&&/Production/i.test(text)),'Production promotion remains deliberate/manual.');
