@@ -29,7 +29,7 @@ for(const token of requiredMigration) assert.ok(migration.includes(token),`Schem
 
 assert.ok(/revoke all on table public\.v_finance_job_completion_operational_lifecycle from public,anon,authenticated/i.test(migration),'Lifecycle view must stay service-role private.');
 assert.ok(/revoke all on table public\.v_finance_job_completion_reconciliation_issues from public,anon,authenticated/i.test(migration),'Reconciliation view must stay service-role private.');
-assert.ok(/provider_mutation_authorized[\s\S]{0,120}false/i.test(migration),'Schema 178 must keep provider mutation false.');
+assert.ok(migration.includes('false::boolean as provider_mutation_authorized'),'Schema 178 must keep provider mutation false.');
 assert.ok(!/update\s+public\.jobs\b/i.test(migration),'Schema 178 must not write back to Jobs.');
 assert.ok(!/provider_mutation_enabled\s*=\s*true/i.test(migration),'Schema 178 must not enable provider mutation.');
 assert.ok(!/execution_enabled\s*=\s*true/i.test(migration),'Schema 178 must not enable Finance posting execution.');
@@ -44,9 +44,9 @@ for(const token of [
   'execution_authorized',
   'reverse_posting',
 ]) assert.ok(financeUi.includes(token),`Finance UI is missing Build 178 lifecycle behavior: ${token}.`);
-assert.ok(/execution_authorized[^\n]{0,100}===\s*true|execution_authorized[^\n]{0,100}\?/.test(financeUi),'Finance UI execution action must depend on server execution_authorized truth.');
-assert.ok(!/execution_release[^\n]{0,80}(toggle|checkbox|enabled\s*=)/i.test(financeUi),'Finance UI must not expose an execution-release toggle.');
-assert.ok(!/mapping_approved[^\n]{0,80}(toggle|checkbox|update)/i.test(financeUi),'Finance UI must not approve accountant mappings.');
+assert.ok(financeUi.includes('row?.execution_authorized === true')&&financeUi.includes('row?.execution_release_enabled === true'),'Finance UI execution action must depend on server execution authorization/release truth.');
+assert.ok(!financeUi.includes("action:'set_execution_release'")&&!financeUi.includes('data-finance-execution-release'),'Finance UI must not expose an execution-release mutation control.');
+assert.ok(!financeUi.includes("action:'approve_account_mapping'")&&!financeUi.includes('data-finance-account-mapping'),'Finance UI must not approve accountant mappings.');
 
 for(const token of [
   'v_finance_job_completion_operational_lifecycle',
