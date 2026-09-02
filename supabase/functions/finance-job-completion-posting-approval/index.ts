@@ -64,24 +64,28 @@ Deno.serve(async (req: Request) => {
   if (!canView) return reply({ ok: false, error: "Finance module view access is required." }, 403);
 
   if (action === "list") {
-    const [{ data: queue, error: queueError }, { data: safety, error: safetyError }, { data: preflightStatus, error: preflightError }] = await Promise.all([
+    const [approvalQueueResult, preflightQueueResult, safetyResult, preflightStatusResult] = await Promise.all([
+      supabase.from("v_finance_job_completion_posting_approval_queue").select("intake_id").limit(100),
       supabase.from("v_finance_job_completion_posting_preflight_queue").select("*").limit(100),
       supabase.from("v_it_finance_posting_safety_status").select("*").limit(1),
       supabase.from("v_it_finance_posting_preflight_status").select("*").limit(1),
     ]);
-    if (queueError || safetyError || preflightError) {
-      return reply({ ok: false, error: queueError?.message || safetyError?.message || preflightError?.message || "Finance posting preflight queue could not load." }, 500);
+    const loadError = approvalQueueResult.error || preflightQueueResult.error || safetyResult.error || preflightStatusResult.error;
+    if (loadError) {
+      return reply({ ok: false, error: loadError.message || "Finance posting preflight queue could not load." }, 500);
     }
     return reply({
       ok: true,
       scope: "finance_job_completion_posting_preflight",
       actor_profile_id: actorId,
       can_approve: await hasModuleAccess(supabase, actorProfile, "finance", "approve"),
-      queue: queue || [],
-      safety: safety?.[0] || {},
-      preflight: preflightStatus?.[0] || {},
+      queue: preflightQueueResult.data || [],
+      approval_queue_count: approvalQueueResult.data?.length || 0,
+      safety: safetyResult.data?.[0] || {},
+      preflight: preflightStatusResult.data?.[0] || {},
       boundary: {
         separate_posting_approval_required: true,
+        approval_queue_authority_retained: true,
         idempotency_server_owned: true,
         immutable_provenance: true,
         accountant_mapping_approval_required: true,
