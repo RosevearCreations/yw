@@ -1,93 +1,101 @@
 # YWI Next Steps and Sanity Check
 
-**Current source authority:** Schema `183` — Build 183 Finance mapping decision support **ACTIVE / source review**  
-**Verified live database authority:** Schema `182 / 182` until Schema 183 source/browser proof succeeds and the migration is deliberately applied  
-**Current live release evidence:** Schema 182 on `main` at `e6d59abc4a6e870445321a7a8ca3cefa2c3cc6f8`, Run #123 (`33691541451`) — SUCCESS  
-**Build 183 source branch:** `schema-183-finance-mapping-decision-support`  
-**Repository enforcement:** separately AMBER because `main` is unprotected  
-**Current live runtime:** `finance-account-mapping-review` v3 ACTIVE / JWT enabled; `admin-it-control` v12 ACTIVE / JWT enabled  
-**Finance execution release:** **OFF**; provider mutation OFF; Production promotion manual  
-**Restart rule:** verify the Build 183 source branch, live `182 / 182`, preserved human mapping decisions, closed execution/provider switches, and exact source/browser proof before applying Schema 183.
+**Current authority:** Schema `183 / 183` — **Build 183 COMPLETE**  
+**Merged product checkpoint:** `e0e4628594a66f10347cf4b7c915f65fce57da79`, exact-main Run #128 (`33696331201`) — SUCCESS  
+**Runtime:** `finance-account-mapping-review` v4 ACTIVE / JWT enabled; `admin-it-control` v13 ACTIVE / JWT enabled  
+**Repository enforcement:** AMBER because `main` is unprotected  
+**Finance execution release:** **OFF**; provider mutation OFF; Production promotion manual.
 
 ## Current checkpoint
 
-Build 183 — **Finance mapping decision support and structural approval compatibility guard** — is ACTIVE in source review. It begins from the completed Schema 182 release-authority boundary and does not expand accounting policy.
+Build 183 — Finance mapping decision support and structural approval compatibility guard — is **COMPLETE**.
 
-The exact problem being fixed is bounded: the existing human mapping screen exposed every active `chart_of_accounts` row for all three mappings, while the Schema 180 RPC required only that an account exist and be active. Build 183 makes structural compatibility explicit and fails closed on incompatible human approval without choosing the account for the user.
+Verified closure:
 
-Expected structural types:
+- live database `183 / 183`, current;
+- Schema 183 decision-support assertions `6 / 6` PASS;
+- Schema 181 mapping-observability assertions `8 / 8` PASS;
+- Schema 180 mapping-review assertions `8 / 8` PASS;
+- Schema 179 release-hardening assertions `12 / 12` PASS;
+- all required schema dependency contracts `82 / 82` PASS;
+- active Admin profiles: 3, four-module break-glass blockers: 0;
+- decision-support status GREEN;
+- 10 structurally compatible active candidates;
+- 38 type-mismatch candidates exposed only for comparison;
+- incompatible current selections 0;
+- mappings without a compatible active candidate 0;
+- mapping-review audit count 0;
+- current mapping account IDs and `review` states unchanged;
+- mapping technical drift 0 and preflight contradiction 0;
+- `finance-account-mapping-review` v4 ACTIVE / JWT enabled;
+- `admin-it-control` v13 ACTIVE / JWT enabled;
+- posting execution release OFF;
+- provider mutation OFF;
+- canonical Jobs writeback prohibited;
+- Production promotion manual.
 
-- `accounts_receivable` → `asset`;
-- `service_revenue` → `revenue`;
-- `sales_tax_payable` → `liability`.
+Mapping observability remains intentionally **AMBER** because all three accountant/bookkeeper reviews are stale human decisions. This is a human accounting backlog, not an I.T. or release failure. Structural mapping decision support is GREEN.
 
-## Build 183 delivered source scope
-
-1. Adds private read-only `v_finance_account_mapping_decision_support` over the existing canonical mapping rules and active chart accounts.
-2. Classifies candidates as `CURRENT_SELECTION`, `SOURCE_IDENTITY_MATCH`, `TYPE_COMPATIBLE`, or `TYPE_MISMATCH` with a deterministic display rank.
-3. Adds `approval_eligible` structural evidence without creating another mapping authority or automatic chooser.
-4. Keeps detailed chart-account candidate comparison restricted to Finance `manage`; lower Finance levels remain read-only without mapping controls.
-5. Extends the existing mapping UI with expected account type, compatible/mismatch labels, candidate counts, and structural health.
-6. The browser does **not auto-select** or auto-approve an account and cannot submit server-owned compatibility/rank fields as authoritative mutation data.
-7. Adds a client-side warning that prevents sending an explicit approval for a known type mismatch.
-8. Replaces the existing Schema 180 mapping-review RPC definition only to add the DB-side approval guard; human `review` and `rejected` decisions remain available.
-9. Explicit human `approved` now fails closed if selected `account_type` differs from the canonical expected type, including direct API attempts that bypass the UI.
-10. Adds private `v_it_finance_account_mapping_decision_support_status` and a six-assertion decision-support family for structural health.
-11. Integrates decision-support status/assertions into Admin → I.T. Readiness without creating a fifth module.
-12. Extends deterministic non-persistent/browser-only acceptance across phone/desktop and the full Finance permission ladder.
-13. Adds `test:finance-account-mapping-decision-support` to CI and repository smoke authority.
-14. Adds Schema 183 dependency contracts for `chart_of_accounts.account_type`, `chart_of_accounts.system_code`, and canonical mapping `source_key`.
-15. Adds the Schema 183 I.T. readiness registry item and progress rail.
-16. Advances the source schema marker to 183 inside the new migration.
-17. Does not mutate current mapping account IDs/review states during migration.
-18. Does not create AR/GL postings or write canonical Jobs/work-order state.
-19. Keeps posting execution release **OFF** and Stripe/PayPal/provider mutation OFF.
-20. Keeps Production promotion deliberate/manual.
-
-## Preserved live decision state
-
-Until Schema 183 is applied, live remains Schema `182 / 182` and the user/accountant decision state remains unchanged:
-
-- `accounts_receivable` → `be9a4805-7a6b-4066-b827-ea7f11b94171` / 1100 Accounts Receivable / `review`;
-- `sales_tax_payable` → `18a7d16b-d3a5-4f82-9b82-de7dfe197a70` / 2100 Sales Tax Payable / `review`;
-- `service_revenue` → `0210b0e0-d68e-444b-940d-fae9f17e9e9a` / 4000 Landscape Service Revenue / `review`.
-
-Those current account types already align structurally with the Build 183 minimum rules, but Build 183 still does **not** approve them. Mapping-review audit count remains zero. The three unresolved reviews remain stale human accountant/bookkeeper decisions, so mapping observability remains intentionally AMBER while technical drift and preflight contradiction remain zero.
-
-## Build and schema sequence
+## Build sequence
 
 - **Build 175 — Finance posting safety foundation — COMPLETE**
 - **Build 176 — Existing accounting-engine mapping and preflight — COMPLETE**
 - **Build 177 — Posting execution and recovery — COMPLETE, execution release OFF**
 - **Build 178 — Finance operational control plane — COMPLETE**
 - **Build 179 — Permissions, synthetic non-persistent/browser-only acceptance and release hardening — COMPLETE**
-- **Build 180 — Accountant mapping readiness and review workflow — COMPLETE**
-- **Build 181 — Mapping review aging, drift, and reconciliation observability — COMPLETE**
+- **Build 180 — Accountant/bookkeeper mapping review workflow — COMPLETE**
+- **Build 181 — Mapping aging, drift, and preflight reconciliation observability — COMPLETE**
 - **Schema 182 — Release-authority marker convergence — COMPLETE maintenance repair**
-- **Build 183 / Schema 183 — Mapping decision support and structural approval guard — ACTIVE**
+- **Build 183 — Mapping decision support and structural approval guard — COMPLETE**
 
-## Build 183 release sequence
+## Build 183 delivered boundary
 
-1. Finish source review on `schema-183-finance-mapping-decision-support`.
-2. Run the full pull-request CI including the new decision-support source gate and all three rendered browser suites.
-3. Repair any source/browser failures on the feature branch; do not touch the live DB while source is red or in progress.
-4. Merge only an exact green feature source to `main`.
-5. Require exact-main source/browser proof containing Schema 183 before applying the DB migration.
-6. Apply `sql/183_finance_account_mapping_decision_support.sql` through Supabase migration authority.
-7. Verify live `183 / 183`, Schema 183 assertions, existing Schema 179–181 assertions, and required Finance dependency contracts.
-8. Verify the current three mapping account IDs/review states are unchanged and mapping-review audit count did not move as a side effect of release.
-9. Verify live decision-support health: exactly three canonical mappings, zero incompatible current selections, and at least one active compatible candidate for each mapping.
-10. Deploy the updated JWT-protected `finance-account-mapping-review` and `admin-it-control` functions.
-11. Verify runtime versions/status/JWT and live Finance/Admin I.T. reads.
-12. Mark the Schema 183 scorecard rail complete only after runtime/schema/source proof agrees.
-13. Synchronize these three canonical Markdown authorities from ACTIVE to COMPLETE.
-14. Merge final closeout source, prune completed branches, and leave one clean `main`.
-15. Require a final exact-main CI proof after cleanup.
-16. Record matching Schema 183 release evidence against that final exact SHA/run.
-17. Reverify release authority GREEN while repository enforcement may remain separately AMBER if branch protection is still absent.
-18. Check Vercel fresh; do not call it green if account/build throttling remains.
-19. Keep posting execution release OFF, provider mutation OFF, and Production manual.
-20. Only then select another bounded build.
+1. Private decision-support view over the existing canonical mapping/chart tables.
+2. Expected structural types: AR=`asset`, service revenue=`revenue`, sales tax payable=`liability`.
+3. Candidate classifications: `CURRENT_SELECTION`, `SOURCE_IDENTITY_MATCH`, `TYPE_COMPATIBLE`, `TYPE_MISMATCH`.
+4. Finance/manage receives detailed account comparison; lower Finance levels remain read-only.
+5. No browser auto-selection and no automatic approval.
+6. Existing human mapping RPC remains the only mapping mutation authority.
+7. Human `review` and `rejected` remain supported.
+8. Human `approved` now fails closed in the DB for the wrong structural account type.
+9. Client-side mismatch blocking is convenience only; server/DB authority is decisive.
+10. Server-owned compatibility/rank fields cannot be supplied as authoritative mutation data.
+11. Dedicated mapping decision-support I.T. status and assertion family.
+12. Admin → I.T. distinguishes stale human backlog from technical compatibility failure.
+13. Deterministic synthetic non-persistent/browser-only acceptance proves compatible approval and incompatible rejection on phone/desktop.
+14. Dedicated CI source gate and repository smoke integration.
+15. Three new Schema 183 dependency contracts.
+16. Schema 183 scorecard rail complete 10/10.
+17. Current mapping rows were not changed by release.
+18. No AR/GL postings or Jobs mutation were created.
+19. Stripe/PayPal/provider mutation remains OFF.
+20. Production remains deliberate/manual.
+
+## Human mapping state to preserve
+
+- `accounts_receivable` → `be9a4805-7a6b-4066-b827-ea7f11b94171` / 1100 Accounts Receivable / asset / `review`;
+- `sales_tax_payable` → `18a7d16b-d3a5-4f82-9b82-de7dfe197a70` / 2100 Sales Tax Payable / liability / `review`;
+- `service_revenue` → `0210b0e0-d68e-444b-940d-fae9f17e9e9a` / 4000 Landscape Service Revenue / revenue / `review`.
+
+Do **not** auto-approve these mappings merely to make the human queue green. Accountant/bookkeeper approval remains a human accounting decision.
+
+## Restart checks before another build
+
+1. Confirm repository is reduced to one clean `main` branch after Build 183 cleanup.
+2. Confirm latest exact-main `YWI source and staging checks` is SUCCESS on that exact SHA.
+3. Confirm `v_it_release_source_evidence_current` points to the same final `main` SHA/run at Schema 183.
+4. Confirm `v_it_release_authority_status` is GREEN; repository enforcement may remain separately AMBER while branch protection is absent.
+5. Confirm database is `183 / 183` current.
+6. Confirm Build 179, 180, 181, and 183 assertion families remain green.
+7. Confirm all required dependency contracts remain green.
+8. Confirm the three mapping IDs/account IDs/review states remain this human boundary unless a real accountant/bookkeeper changed them.
+9. Confirm decision support remains GREEN with 0 incompatible current selections and 0 missing eligible candidate mappings.
+10. Confirm mapping technical drift/preflight contradiction remain zero.
+11. Confirm `finance-account-mapping-review` and `admin-it-control` remain ACTIVE and JWT protected.
+12. Confirm Admin break-glass `manage` remains intact for Safety, Finance, Jobs, and Admin.
+13. Confirm execution release and provider mutation remain OFF.
+14. Keep synthetic acceptance non-persistent/browser-only.
+15. Keep Production promotion manual.
 
 ## Current source gates
 
@@ -122,32 +130,32 @@ npm run test:browser:finance
 npm run test:browser:finance-mapping
 ```
 
-Rendered browser acceptance remains mandatory before source-green. Schema 183 DB application follows exact-main source proof.
+Rendered browser acceptance remains mandatory before source-green.
 
 ## Architecture sanity rules
 
 - Safety / OHSA, Finance, Jobs, and Admin are the only top-level staff modules.
 - I.T. Readiness stays inside Admin/manage.
-- Shared Core owns canonical identities; modules do not create parallel identity stores.
-- Effective permission order is `hidden < view < create < approve < manage`.
+- Shared Core owns canonical identities.
+- Finance access order remains `hidden < view < create < approve < manage`.
 - Client visibility never replaces protected server authorization.
-- Completion disposition/candidate authority is not posting approval.
 - Posting approval is not execution release.
 - Preflight is read-only.
-- Mapping review is a human accounting authority.
-- Mapping observability reports aging/drift; it does not make the decision.
+- Mapping review is human accountant/bookkeeper authority.
+- Mapping observability reports aging/drift; it does not decide.
 - Mapping decision support reports structural compatibility; it does not choose or approve an account.
-- Explicit mapping approval requires an active structurally compatible account, enforced by the DB authority.
-- Execution release remains behind a private server-owned switch and is **OFF**.
-- Finance does not write canonical Jobs state through this completion/accounting pipeline.
-- Stripe/PayPal/provider/payment mutation remains OFF/outside this Finance pipeline.
-- Synthetic acceptance is non-persistent/browser-only and must not manufacture proof by mutating business data.
-- Production promotion is deliberate/manual.
+- Explicit human mapping approval requires an active structurally compatible account in the DB authority.
+- Finance does not write canonical Jobs state through this pipeline.
+- Stripe/PayPal/provider/payment mutation stays outside this Finance pipeline.
+- Synthetic acceptance remains non-persistent/browser-only.
+- Production promotion remains deliberate/manual.
 
-## Database and repository sanity
+## Repository sanity
 
-Keep numbered migrations permanent and ordered. Source now includes Schema 183; verified live remains Schema 182 until source gates pass and migration is applied. Do not edit old applied migrations to erase historical assumptions or repairs. Git history is the archive; the active tree retains only the three canonical Markdown authorities and excludes archive trees, retired Markdown, generated full-schema snapshots, Playwright output, dependencies, logs, temp, and backup artifacts.
+Numbered migrations remain permanent audit history through Schema 183. Git history is the archive. The active tree must retain only the three canonical Markdown authorities and exclude archive trees, retired Markdown, generated full-schema snapshots, Playwright output, dependencies, logs, temp, and backup artifacts.
 
-## Human-gated items outside autonomous mutation
+The final post-cleanup exact-main SHA/run is stored in database release evidence rather than self-referenced here.
+
+## Human-gated items
 
 Do not autonomously approve chart mappings, choose a different live account mapping, enable Finance posting execution, mutate payment providers, conduct real-money tests, invent tax/chart policy, change pricing, or promote Production.
