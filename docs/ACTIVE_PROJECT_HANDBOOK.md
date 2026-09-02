@@ -1,8 +1,9 @@
 # YWI Active Project Handbook
 
-**Current schema source/database authority:** `179`  
-**Schema 179 release checkpoint:** `c86a373ce14c3aef89b59ba46a63709989eb8cd5`, Run #98 (`33664931778`) — SUCCESS  
-**Release evidence:** ID `10`; Release Authority GREEN; repository enforcement separately AMBER  
+**Current schema source authority:** `180` on the active Build 180 feature path  
+**Verified live database authority:** `179 / 179` pending exact-main Schema 180 proof and deliberate migration  
+**Last clean-main Schema 179 checkpoint:** `d6110236d84c21a6cb3f799b3f2bb14001ce610b`, Run #104 (`33666237217`) — SUCCESS  
+**Schema 179 release evidence:** ID `10`; Release Authority GREEN; repository enforcement separately AMBER  
 **Source:** `RosevearCreations/yw`  
 **Architecture:** Safety / OHSA, Finance, Jobs, Admin; I.T. Readiness is inside Admin.
 
@@ -59,7 +60,7 @@ GitHub repository enforcement remains separately AMBER because `main` is still r
 
 ## Build 180 — accountant mapping readiness and review workflow
 
-The next bounded release is a **human-controlled mapping review control plane** over the existing accounting authorities, not an accounting-policy automation release.
+The active bounded release is a **human-controlled mapping review control plane** over the existing accounting authorities, not an accounting-policy automation release.
 
 Live catalog facts already verified before design:
 
@@ -71,7 +72,7 @@ Live catalog facts already verified before design:
 - the three Schema 176 posting mappings — `accounts_receivable`, `service_revenue`, and `sales_tax_payable` — already have account IDs selected but remain in `review`, not `approved`;
 - current live mapping selections must not be changed or approved merely to make the pipeline green.
 
-Build 180 may add immutable audit/history, protected Finance-manage review RPCs/endpoints, read-only readiness views, Finance/Admin I.T. UI, reasoned review actions, and non-persistent browser acceptance. It must preserve the existing table as canonical rather than creating a parallel mapping authority.
+Build 180 adds immutable audit/history, a protected Finance-manage review RPC/endpoint, read-only readiness views, a separately lazy-loaded Finance mapping UI, Admin → I.T. mapping evidence, reasoned review actions, and non-persistent browser acceptance. It must preserve the existing table as canonical rather than creating a parallel mapping authority.
 
 ## Security and ownership invariants
 

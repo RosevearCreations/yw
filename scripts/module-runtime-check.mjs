@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Schema 161-163 source gate: Shared Core + permission-driven standalone modules. */
+/** Schema 161-163/180 source gate: Shared Core + permission-driven standalone modules. */
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -17,10 +17,11 @@ const hasAll = (text, values) => values.every((value) => text.includes(value));
 
 const moduleKeys = ['safety','finance','jobs','admin'];
 const coreRelations = ['profiles','clients','client_sites','jobs','equipment_master','customer_assets','service_contract_documents'];
-const moduleScripts = [
+const originalModuleScripts = [
   '/js/hse-ops-ui.js','/js/logbook-ui.js','/js/reports-ui.js','/js/forms-toolbox.js','/js/forms-ppe.js','/js/forms-firstaid.js','/js/forms-incident.js','/js/forms-inspection.js','/js/forms-drill.js',
   '/js/finance-ui.js','/js/jobs-ui.js','/js/admin-actions.js','/js/admin-ui.js','/js/operations-cockpit.js','/js/module-access-ui.js','/js/it-readiness-ui.js'
 ];
+const currentBusinessScripts=[...originalModuleScripts,'/js/finance-account-mapping-ui.js','/js/jobs-finance-boundary.js'];
 
 add('schema161-transaction-balanced', (migration161.match(/^begin;$/gmi) || []).length === 1 && (migration161.match(/^commit;$/gmi) || []).length === 1, 'Schema 161 has one BEGIN and one COMMIT.');
 add('schema161-core-contract-registry', hasAll(migration161, ['app_core_entity_contracts','shared_by_modules','canonical_relation','primary_key_type']), 'Canonical shared identities are explicit database contracts.');
@@ -28,7 +29,8 @@ add('schema161-module-contract-registry', hasAll(migration161, ['app_module_cont
 add('schema161-no-parallel-business-identity-tables', !/(create table if not exists public\.(module_|safety_|finance_|jobs_|admin_)(customers|clients|people|profiles|jobs|assets|documents)\b)/i.test(migration161), 'Schema 161 does not create module-local duplicates of shared identities.');
 add('schema161-core-relations-match-existing-canonical-data', coreRelations.every((relation) => migration161.includes(`'${relation}'`) && runtime.includes(`relation: '${relation}'`)), `Core relations: ${coreRelations.join(', ')}`);
 add('schema161-four-module-contracts', moduleKeys.every((key) => migration161.includes(`('${key}'`) && runtime.includes(`${key}: Object.freeze({`)), 'Safety, Finance, Jobs and Admin have matching DB/browser manifests.');
-add('schema161-module-scripts-declared', moduleScripts.every((script) => migration161.includes(script) && runtime.includes(script)), 'DB and browser manifests agree on the original module entry scripts.');
+add('schema161-original-module-scripts-preserved', originalModuleScripts.every((script) => migration161.includes(script) && runtime.includes(script)), 'Original DB/browser module entry scripts remain auditable and present.');
+add('schema180-finance-addon-lazy-manifest',runtime.includes("scripts: Object.freeze(['/js/finance-ui.js','/js/finance-account-mapping-ui.js'])"),'Finance adds the Schema 180 mapping UI inside the permission-driven Finance manifest, not the public shell.');
 add('schema161-private-contract-control-plane', hasAll(migration161, [
   'alter table public.app_core_entity_contracts enable row level security;',
   'alter table public.app_module_contracts enable row level security;',
@@ -45,7 +47,7 @@ add('schema162-no-new-shared-identity-tables', !/create table/i.test(migration16
 add('schema162-it-readiness-wiring', hasAll(migration162, ['permission_driven_module_runtime','schema162_permission_runtime']), 'Permission-driven runtime is a tracked I.T. readiness/release item.');
 add('schema162-schema-drift-marker', hasAll(migration162, ['162::int as expected_schema_version', "'162_permission_driven_module_runtime'", "'2026-09-01d'"]), 'Schema/version marker advances to 162.');
 
-add('runtime-v2-build', hasAll(runtime, ["const BUILD = '2026-09-02d'", 'const CONTRACT_VERSION = 2']), 'Runtime remains contract v2 with the current Schema 172 browser build stamp.');
+add('runtime-v2-build', hasAll(runtime, ["const BUILD = '2026-09-02l'", 'const CONTRACT_VERSION = 2']), 'Runtime remains contract v2 with the Schema 180 browser build stamp.');
 add('runtime-requires-authentication', hasAll(runtime, ['!stateNow.isAuthenticated','stateNow.pendingAuthResolution','stateNow.needsAccountSetup']), 'Runtime refuses module loading before auth/account readiness.');
 add('runtime-uses-permission-check', runtime.includes("sec.canViewModule(moduleKey, currentRole(), 'view') === true"), 'Browser module loading is permission driven.');
 add('runtime-loads-only-manifest-scripts', hasAll(runtime, ['for (const script of manifest.scripts)','await loadScript(script, moduleKey)']), 'Module loader follows the bounded manifest.');
@@ -54,20 +56,18 @@ add('runtime-exposes-core-contract', hasAll(runtime, ['CORE_ENTITY_CONTRACTS','g
 add('runtime-preserves-server-authorization', security.includes('Hidden navigation is not authorization') || security.includes('Module permissions independently control'), 'Dynamic loading is additive; server authorization remains separate.');
 
 add('shell-loads-runtime-once', (index.match(/<script src="\/js\/module-runtime\.js\?v=/g) || []).length === 1, 'Shared shell statically loads one module runtime.');
-add('shell-does-not-eager-load-business-modules', moduleScripts.every((script) => !index.includes(`<script src="${script}?v=`)), 'No Safety, Finance, Jobs, or Admin bundle is eagerly loaded by index.html.');
+add('shell-does-not-eager-load-business-modules', currentBusinessScripts.every((script) => !index.includes(`<script src="${script}?v=`)), 'No Safety, Finance, Jobs, or Admin bundle is eagerly loaded by index.html.');
 add('shell-keeps-shared-core-services', hasAll(index, ['/js/security.js?','/js/auth.js?','/js/api.js?','/js/core-data-service.js?','/js/reference-data.js?','/app.js?']), 'Core/auth/data/application shell stays available independently of business modules.');
 
-add('service-worker-core-cache-marker', serverWorker.includes("const CACHE_NAME = 'ywi-shell-v2026-09-01e';"), 'Service worker uses the Schema 163 Shared Core cache namespace.');
+add('service-worker-core-cache-marker', serverWorker.includes("const CACHE_NAME = 'ywi-shell-v2026-09-01e';"), 'Service worker retains the Shared Core cache namespace; shell JS is network-first and business scripts use runtime versioned requests.');
 add('service-worker-precaches-runtime-core', serverWorker.includes("'/js/module-runtime.js'") && serverWorker.includes("'/js/core-data-service.js'"), 'Offline Shared Core includes the permission runtime and Core Data service.');
-add('service-worker-does-not-precache-business-modules', moduleScripts.every((script) => !serverWorker.includes(`'${script}'`)), 'Service worker installation cannot pre-download Safety, Finance, Jobs, or Admin bundles.');
+add('service-worker-does-not-precache-business-modules', currentBusinessScripts.every((script) => !serverWorker.includes(`'${script}'`)), 'Service worker installation cannot pre-download Safety, Finance, Jobs, or Admin bundles.');
 add('service-worker-dynamic-module-cache-is-request-driven', hasAll(serverWorker, ["url.pathname.startsWith('/js/')",'fetch(req)','cache.put(req, copy)']), 'Authorized module bundles may be cached only after an actual browser request.');
 
 const failures = results.filter((item) => !item.ok);
-for (const item of results) {
-  console.log(`${item.ok ? 'PASS' : 'FAIL'} ${item.name}${item.details ? ` - ${item.details}` : ''}`);
-}
+for (const item of results) console.log(`${item.ok ? 'PASS' : 'FAIL'} ${item.name}${item.details ? ` - ${item.details}` : ''}`);
 if (failures.length) {
-  console.error(`\nSchema 161-163 module runtime gate failed: ${failures.length}/${results.length} checks.`);
+  console.error(`\nSchema 161-180 module runtime gate failed: ${failures.length}/${results.length} checks.`);
   process.exit(1);
 }
-console.log(`\nSchema 161-163 module runtime gate passed: ${results.length}/${results.length} checks.`);
+console.log(`\nSchema 161-180 module runtime gate passed: ${results.length}/${results.length} checks.`);

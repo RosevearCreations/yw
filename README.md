@@ -1,8 +1,9 @@
 # Yard Weasels Inc. Operations Platform
 
-**Current source/database authority:** Schema `179`  
-**Schema 179 release checkpoint:** `c86a373ce14c3aef89b59ba46a63709989eb8cd5`, Run #98 (`33664931778`) — SUCCESS  
-**Release evidence:** ID `10`; Release Authority GREEN; repository enforcement separately AMBER because `main` is unprotected  
+**Current source authority:** Schema `180` on the active Build 180 feature path  
+**Verified live database authority:** Schema `179 / 179` until Schema 180 exact-main source proof is green and the migration is deliberately applied  
+**Last clean-main Schema 179 checkpoint:** `d6110236d84c21a6cb3f799b3f2bb14001ce610b`, Run #104 (`33666237217`) — SUCCESS  
+**Schema 179 release evidence:** ID `10`; Release Authority GREEN; repository enforcement separately AMBER because `main` is unprotected  
 **Active documents:** this README, `docs/ACTIVE_PROJECT_HANDBOOK.md`, and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
 
 Yard Weasels has exactly four top-level staff modules: **Safety / OHSA**, **Finance**, **Jobs**, and **Admin**. **I.T. Readiness** is an Admin/manage control-plane section, never a fifth business module.
@@ -37,9 +38,9 @@ Schema 179 is fully live and release-proven. The database is `179 / 179`, all 12
 - I.T. Readiness reports blockers; it does not auto-promote Production.
 - Production promotion remains deliberate and manual.
 
-## Next bounded build
+## Active bounded build
 
-**Build 180 — Finance accountant mapping readiness and review workflow** is the next safe autonomous build. It may add a protected human review workflow, audit history, readiness views, Finance/Admin I.T. UI, and non-persistent browser acceptance around the existing `accountant_export_mapping_rules` → `chart_of_accounts` authority. It must not choose accounts on the user's behalf, change existing live account selections merely for testing, auto-approve `review_status`, enable posting execution, mutate providers/payments, write Jobs state, invent tax/chart policy, or promote Production.
+**Build 180 — Finance accountant mapping readiness and review workflow** is ACTIVE. It may add a protected human review workflow, audit history, readiness views, Finance/Admin I.T. UI, and non-persistent browser acceptance around the existing `accountant_export_mapping_rules` → `chart_of_accounts` authority. It must not choose accounts on the user's behalf, change existing live account selections merely for testing, auto-approve `review_status`, enable posting execution, mutate providers/payments, write Jobs state, invent tax/chart policy, or promote Production.
 
 The live mapping model is already known: approval is represented by `review_status='approved'`; there is no separate `is_approved` field. Schema 176 treats a posting mapping as approved only when the mapping is active, explicitly approved, has a non-null account, and the linked account is active.
 
@@ -76,10 +77,12 @@ npm run test:finance-posting-preflight
 npm run test:finance-posting-execution-recovery
 npm run test:finance-operational-control-plane
 npm run test:finance-release-hardening
+npm run test:finance-account-mapping-review
 npm run test:contrast
 npm run test:navigation
 npm run test:browser:modules
 npm run test:browser:finance
+npm run test:browser:finance-mapping
 ```
 
 GitHub rendered-browser acceptance is mandatory before a release is source-green. Database migration follows exact-main source proof, never precedes it. Vercel deployment evidence is separate from source correctness; the current account has recently hit its daily deployment quota, so deployment must be freshly verified before being called green.

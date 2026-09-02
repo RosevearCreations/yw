@@ -18,7 +18,7 @@
 
   function statusValue(row) {
     if (!row || typeof row !== 'object') return 'unknown';
-    for (const key of ['status','check_status','readiness_status','gate_status','drift_status','assertion_status','health_status','result','state','release_authority_status','source_gate_status','repository_enforcement_status']) {
+    for (const key of ['status','check_status','readiness_status','gate_status','drift_status','assertion_status','health_status','result','state','release_authority_status','source_gate_status','repository_enforcement_status','mapping_readiness_status']) {
       if (row[key] !== undefined && row[key] !== null) return String(row[key]).trim().toLowerCase();
     }
     for (const key of ['ok','passed','ready','is_ready','is_current','healthy']) {
@@ -83,6 +83,7 @@
       ...(Array.isArray(groups.consumer_observability)?groups.consumer_observability:[]),
       ...(Array.isArray(groups.finance_operational)?groups.finance_operational:[]),
       ...(Array.isArray(groups.finance_release_hardening)?groups.finance_release_hardening:[]),
+      ...(Array.isArray(groups.finance_account_mapping_review)?groups.finance_account_mapping_review:[]),
     ];
     const errors=Array.isArray(groups.errors)?groups.errors:[];
     return `<section class="it-readiness-panel"><span class="it-readiness-kicker">Security proof</span><h3>Module, I.T., release, consumer, and Finance assertions</h3>${errors.length?errors.map((e)=>`<div class="it-readiness-error">${esc(e)}</div>`).join(''):''}${rows.length?`<div class="it-readiness-list">${rows.map((row)=>`<div class="it-readiness-row"><div><strong>${esc(row.assertion_key||'assertion')}</strong><small>${esc(row.details||'')}</small></div>${statusChip(row.assertion_status)}</div>`).join('')}</div>`:'<div class="it-readiness-empty">No assertion rows returned.</div>'}</section>`;
@@ -142,6 +143,7 @@
         ${panel('finance_operational','Finance pipeline','Completion → accounting operational health')}
         ${panel('finance_reconciliation','Finance reconciliation','Orphan, duplicate and accounting-divergence diagnostics')}
         ${panel('finance_release_hardening','Finance release hardening','Permissions, acceptance and release-chain proof')}
+        ${panel('finance_account_mapping_review','Finance mapping review','Human accountant mapping readiness and audit health')}
         ${renderAdminIntegrity()}
         ${renderAssertions()}
         ${panel('schema_drift','Database','Schema drift')}

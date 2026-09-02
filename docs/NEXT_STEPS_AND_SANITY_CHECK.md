@@ -1,10 +1,11 @@
 # YWI Next Steps and Sanity Check
 
-**Current source/database authority:** Schema `179`  
-**Schema 179 release checkpoint:** `c86a373ce14c3aef89b59ba46a63709989eb8cd5`, Run #98 (`33664931778`) — SUCCESS  
-**Release evidence:** ID `10`; Release Authority GREEN; repository enforcement separately AMBER  
-**Next bounded build:** Build `180` — Finance accountant mapping readiness and review workflow  
-**Restart rule:** verify live `179 / 179`, exact-main release evidence, protected function state, and execution/provider switches before extending Schema 180.
+**Current source authority:** Schema `180` on branch `schema-180-finance-account-mapping-review`  
+**Verified live database authority:** Schema `179 / 179` until exact-main Schema 180 proof and deliberate migration  
+**Last clean-main Schema 179 checkpoint:** `d6110236d84c21a6cb3f799b3f2bb14001ce610b`, Run #104 (`33666237217`) — SUCCESS  
+**Schema 179 release evidence:** ID `10`; Release Authority GREEN; repository enforcement separately AMBER  
+**Active bounded build:** Build `180` — Finance accountant mapping readiness and review workflow  
+**Restart rule:** verify the current Build 180 branch/PR head plus live `179 / 179` or `180 / 180` state before changing source or applying the migration.
 
 ## Current checkpoint
 
@@ -30,7 +31,7 @@ Verified Schema 179 boundary:
 
 The original Build 175–179 autonomous Finance hardening sequence is complete. Its items 17–20 were: permission enforcement for `hidden`, `view`, `create`, `approve`, `manage` plus Admin break-glass/direct bypass; deterministic synthetic end-to-end acceptance; rendered phone/desktop acceptance; and the full completion-to-accounting release gate.
 
-## Build 180 scope — ACTIVE/NEXT
+## Build 180 scope — ACTIVE
 
 Build 180 will make the existing accountant/chart mapping prerequisite operationally reviewable without making accounting policy decisions for the user.
 
@@ -95,13 +96,15 @@ npm run test:finance-posting-preflight
 npm run test:finance-posting-execution-recovery
 npm run test:finance-operational-control-plane
 npm run test:finance-release-hardening
+npm run test:finance-account-mapping-review
 npm run test:contrast
 npm run test:navigation
 npm run test:browser:modules
 npm run test:browser:finance
+npm run test:browser:finance-mapping
 ```
 
-Build 180 will extend this list with its focused mapping-review and rendered acceptance gates. GitHub rendered-browser acceptance remains required before source-green. Database migration follows exact-main source proof.
+Build 180 has extended this list with its focused mapping-review and rendered acceptance gates. GitHub rendered-browser acceptance remains required before source-green. Database migration follows exact-main source proof.
 
 ## Architecture sanity rules
 
@@ -123,7 +126,7 @@ Build 180 will extend this list with its focused mapping-review and rendered acc
 
 ## Database and repository sanity
 
-Keep numbered migrations permanent and ordered through Schema 179 and onward. Do not edit old applied migrations to erase historical assumptions/repairs. Git history is the repository archive; the active tree retains only the three canonical Markdown authorities and excludes stale archive trees, retired Markdown, generated full-schema snapshots, Playwright output, dependencies, logs, temp and backup artifacts.
+Keep numbered migrations permanent and ordered through Schema 180 and onward. Do not edit old applied migrations to erase historical assumptions/repairs. Git history is the repository archive; the active tree retains only the three canonical Markdown authorities and excludes stale archive trees, retired Markdown, generated full-schema snapshots, Playwright output, dependencies, logs, temp and backup artifacts.
 
 ## Build sequence
 
@@ -132,7 +135,7 @@ Keep numbered migrations permanent and ordered through Schema 179 and onward. Do
 - **Build 177 — Posting execution and recovery — COMPLETE, execution release OFF**
 - **Build 178 — Finance operational control plane — COMPLETE**
 - **Build 179 — Permissions, synthetic acceptance and release hardening — COMPLETE**
-- **Build 180 — Accountant mapping readiness and review workflow — NEXT/ACTIVE**
+- **Build 180 — Accountant mapping readiness and review workflow — ACTIVE**
 
 ## Human-gated items outside autonomous mutation
 
