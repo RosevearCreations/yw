@@ -38,7 +38,7 @@ export const MODULE_WRITE_BOUNDARIES: Readonly<Record<string, ModuleWriteBoundar
   equipment_cost_recovery_decision: contract('equipment_cost_recovery_decision', 'jobs', 'approve', 'write', 'equipment_cost_recovery', 'jobs.equipment.cost_recovery_decided', true),
   quote_owner_assign: contract('quote_owner_assign', 'jobs', 'approve', 'write', 'quote_operations', 'jobs.quote.owner_assigned'),
   quote_followup_event: contract('quote_followup_event', 'jobs', 'approve', 'write', 'quote_operations', 'jobs.quote.followup_recorded'),
-  dispatch_schedule: contract('dispatch_schedule', 'jobs', 'approve', 'write', 'dispatch', 'jobs.dispatch.scheduled'),
+  dispatch_schedule: contract('dispatch_schedule', 'jobs', 'approve', 'write', 'dispatch', 'jobs.job_scheduled', true),
   work_order_live_update_create: contract('work_order_live_update_create', 'jobs', 'create', 'write', 'work_order_updates', 'jobs.work_order.update_created', true),
   work_order_live_update_retract: contract('work_order_live_update_retract', 'jobs', 'approve', 'write', 'work_order_updates', 'jobs.work_order.update_retracted', true),
   work_order_execution_proof_submit: contract('work_order_execution_proof_submit', 'jobs', 'create', 'write', 'execution_proof', 'jobs.execution_proof.submitted', true),
