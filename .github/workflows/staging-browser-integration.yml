@@ -33,6 +33,7 @@ jobs:
       - run: npm run test:job-completion-event
       - run: npm run test:finance-completion-consumer
       - run: npm run test:consumer-observability
+      - run: npm run test:finance-consumer-execution
       - run: npm run test:repo
       - run: npm run test:contrast
       - run: npm run test:navigation
