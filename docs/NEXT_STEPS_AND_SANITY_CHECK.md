@@ -6,6 +6,7 @@
 **Build 183 source branch:** `schema-183-finance-mapping-decision-support`  
 **Repository enforcement:** separately AMBER because `main` is unprotected  
 **Current live runtime:** `finance-account-mapping-review` v3 ACTIVE / JWT enabled; `admin-it-control` v12 ACTIVE / JWT enabled  
+**Finance execution release:** **OFF**; provider mutation OFF; Production promotion manual  
 **Restart rule:** verify the Build 183 source branch, live `182 / 182`, preserved human mapping decisions, closed execution/provider switches, and exact source/browser proof before applying Schema 183.
 
 ## Current checkpoint
@@ -40,7 +41,7 @@ Expected structural types:
 16. Advances the source schema marker to 183 inside the new migration.
 17. Does not mutate current mapping account IDs/review states during migration.
 18. Does not create AR/GL postings or write canonical Jobs/work-order state.
-19. Keeps posting execution and Stripe/PayPal/provider mutation OFF.
+19. Keeps posting execution release **OFF** and Stripe/PayPal/provider mutation OFF.
 20. Keeps Production promotion deliberate/manual.
 
 ## Preserved live decision state
@@ -85,7 +86,7 @@ Those current account types already align structurally with the Build 183 minimu
 16. Record matching Schema 183 release evidence against that final exact SHA/run.
 17. Reverify release authority GREEN while repository enforcement may remain separately AMBER if branch protection is still absent.
 18. Check Vercel fresh; do not call it green if account/build throttling remains.
-19. Keep posting execution/provider mutation OFF and Production manual.
+19. Keep posting execution release OFF, provider mutation OFF, and Production manual.
 20. Only then select another bounded build.
 
 ## Current source gates
@@ -137,7 +138,7 @@ Rendered browser acceptance remains mandatory before source-green. Schema 183 DB
 - Mapping observability reports aging/drift; it does not make the decision.
 - Mapping decision support reports structural compatibility; it does not choose or approve an account.
 - Explicit mapping approval requires an active structurally compatible account, enforced by the DB authority.
-- Execution remains behind a private server-owned release switch and is **OFF**.
+- Execution release remains behind a private server-owned switch and is **OFF**.
 - Finance does not write canonical Jobs state through this completion/accounting pipeline.
 - Stripe/PayPal/provider/payment mutation remains OFF/outside this Finance pipeline.
 - Synthetic acceptance is non-persistent/browser-only and must not manufacture proof by mutating business data.
