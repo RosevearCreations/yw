@@ -1,0 +1,33 @@
+name: One-time Schema 180 branch prune
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/one-time-schema180-branch-prune.yml
+
+permissions:
+  contents: write
+
+jobs:
+  prune:
+    if: github.repository == 'RosevearCreations/yw'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Delete merged Schema 180 branches
+        shell: bash
+        run: |
+          git push origin --delete schema-180-finance-account-mapping-review || true
+          git push origin --delete schema-180-authority-closeout || true
+      - name: Remove this one-time workflow
+        shell: bash
+        run: |
+          git config user.name "YWI release cleanup"
+          git config user.email "actions@users.noreply.github.com"
+          git rm .github/workflows/one-time-schema180-branch-prune.yml
+          git commit -m "Remove completed Schema 180 branch prune workflow"
+          git push origin main
