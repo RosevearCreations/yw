@@ -33,7 +33,8 @@ const nextSteps=read('docs/NEXT_STEPS_AND_SANITY_CHECK.md');
 for(const [name,text] of [['README',readme],['Handbook',handbook],['Next steps',nextSteps]]){
   add(`${name.toLowerCase().replaceAll(' ','-')}-schema179`,text.includes('179')&&text.includes('I.T. Readiness'),`${name} records Schema 179 source authority and retains the Admin/I.T. boundary.`);
 }
-add('docs-build179-active',handbook.includes('Schema 179')&&nextSteps.includes('Build 179')&&nextSteps.includes('17.')&&nextSteps.includes('20.'),'Active authority records Build 179 permission/acceptance/release hardening.');
+add('docs-build179-complete',handbook.includes('Schema 179')&&handbook.includes('COMPLETE')&&nextSteps.includes('Build 179')&&nextSteps.includes('COMPLETE'),'Active authority records Build 179 permission/acceptance/release hardening as complete.');
+add('docs-build180-next',[readme,handbook,nextSteps].every((text)=>text.includes('Build 180')&&/mapping/i.test(text)),'Active authority advances the next bounded release to Build 180 accountant mapping readiness/review.');
 add('docs-build179-financial-release-closed',[readme,handbook,nextSteps].every((text)=>/execution release/i.test(text)&&/(off|closed|server-owned)/i.test(text)),'Build 179 does not release Finance accounting execution.');
 add('docs-four-module-boundary',[readme,handbook,nextSteps].every((text)=>['Safety','Finance','Jobs','Admin'].every((key)=>text.includes(key))),'Active authority retains Safety, Finance, Jobs and Admin.');
 add('docs-manual-production',[readme,handbook,nextSteps].every((text)=>/manual/i.test(text)&&/Production/i.test(text)),'Production promotion remains deliberate/manual.');
