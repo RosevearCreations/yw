@@ -1,5 +1,5 @@
 /* File: js/finance-account-mapping-ui.js
-   Schema 180 Finance accountant mapping readiness/review panel.
+   Schema 180 human accountant mapping review plus Schema 181 read-only observability.
    Human review only: this client cannot enable posting execution, mutate providers,
    write Jobs state, or auto-select/auto-approve a chart account.
 */
@@ -10,6 +10,7 @@
   const state = { payload:null, loading:false, mutating:false, error:'', loadedAt:0 };
   const byId=(id)=>document.getElementById(id);
   const esc=(value)=>window.YWIAPI?.escHtml?.(value)||String(value??'').replace(/[&<>"']/g,(m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const label=(value)=>String(value||'unknown').replaceAll('_',' ').toLowerCase();
 
   function auth(){ return window.YWI_AUTH?.getState?.()||{}; }
   function canView(){ return window.YWISecurity?.canViewModule?.('finance',auth().role||'employee','view')===true; }
@@ -30,13 +31,13 @@
     const accounts=Array.isArray(state.payload?.accounts)?state.payload.accounts:[];
     return `<option value="">Select an active chart account…</option>${accounts.map((account)=>{
       const id=String(account?.id||'');
-      const label=`${account?.account_number||'—'} — ${account?.account_name||'Unnamed account'} (${account?.account_type||'unknown'})`;
-      return `<option value="${esc(id)}" ${id===String(selected||'')?'selected':''}>${esc(label)}</option>`;
+      const text=`${account?.account_number||'—'} — ${account?.account_name||'Unnamed account'} (${account?.account_type||'unknown'})`;
+      return `<option value="${esc(id)}" ${id===String(selected||'')?'selected':''}>${esc(text)}</option>`;
     }).join('')}`;
   }
 
-  function statusCard(label,value,note){
-    return `<article class="finance-stat-card"><span>${esc(label)}</span><strong>${esc(value)}</strong><small>${esc(note||'')}</small></article>`;
+  function statusCard(title,value,note){
+    return `<article class="finance-stat-card"><span>${esc(title)}</span><strong>${esc(value)}</strong><small>${esc(note||'')}</small></article>`;
   }
 
   function mappingAction(row){
@@ -51,6 +52,21 @@
     </div>`;
   }
 
+  function observationCell(obs){
+    if(!obs) return '<strong>Not evaluated</strong><br><small>Refresh mapping observability.</small>';
+    const age=Number(obs.review_age_days||0);
+    return `<strong>${esc(label(obs.review_age_code))}</strong><br><small>${age} day(s) from the current human-review age anchor</small>`;
+  }
+
+  function driftCell(obs){
+    if(!obs) return '<strong>Not evaluated</strong>';
+    const technical=obs.technical_drift===true;
+    const preflightIssue=obs.preflight_reconciliation_issue===true;
+    return `<strong>${technical?'Technical drift':'Drift: '+esc(label(obs.drift_code))}</strong><br>
+      <small>Preflight: ${esc(label(obs.preflight_reconciliation_code))}${Number(obs.preflight_sample_count||0)===0?' · no generated pair sample':''}</small><br>
+      <small>${esc(obs.observability_action_hint||'')}</small>${preflightIssue?'<br><strong>Preflight reconciliation issue</strong>':''}`;
+  }
+
   function render(){
     inject();
     const host=byId('financeMappingWorkspace');
@@ -61,27 +77,44 @@
     if(!state.payload){ host.innerHTML='<section class="finance-list-card"><button id="financeMappingLoad" type="button">Load accountant mapping readiness</button></section>'; byId('financeMappingLoad')?.addEventListener('click',()=>load(true)); return; }
 
     const mappings=Array.isArray(state.payload.mappings)?state.payload.mappings:[];
+    const observations=Array.isArray(state.payload.observability)?state.payload.observability:[];
+    const obsByKey=Object.fromEntries(observations.map((row)=>[String(row?.mapping_key||''),row]));
     const readiness=state.payload.readiness||{};
-    const executionOn=readiness.execution_release_enabled===true;
-    const providerOn=readiness.provider_mutation_enabled===true;
+    const observabilityReadiness=state.payload.observability_readiness||{};
+    const executionOn=readiness.execution_release_enabled===true||observabilityReadiness.execution_release_enabled===true;
+    const providerOn=readiness.provider_mutation_enabled===true||observabilityReadiness.provider_mutation_enabled===true;
     host.innerHTML=`<section class="finance-list-card">
-      <div class="finance-list-heading"><div><h3>Accountant mapping review</h3><small>Human-controlled chart-of-accounts decisions for the Schema 176 posting prerequisite.</small></div><span>Schema 180</span></div>
+      <div class="finance-list-heading"><div><h3>Accountant mapping review</h3><small>Human-controlled chart-of-accounts decisions for the Schema 176 posting prerequisite.</small></div><span>Schema 181</span></div>
       <div class="finance-stat-grid">
         ${statusCard('Mappings',String(readiness.mapping_count??mappings.length),'AR · service revenue · conditional sales tax')}
         ${statusCard('Approved',String(readiness.approved_count??0),'Explicit human approvals')}
-        ${statusCard('Pending',String(readiness.pending_count??0),'Not an I.T. migration failure')}
-        ${statusCard('Audit events',String(readiness.audit_event_count??0),'Immutable review history')}
+        ${statusCard('Pending',String(readiness.pending_count??0),'Human decision queue; not an I.T. migration failure')}
+        ${statusCard('Audit events',String(readiness.audit_event_count??0),'Immutable human-review history')}
       </div>
-      <div class="finance-module-note"><strong>Schema 180 boundary:</strong> mapping review is a human accounting decision. Posting execution is <strong>${executionOn?'ENABLED':'OFF'}</strong>; provider/payment mutation is <strong>${providerOn?'ENABLED':'OFF'}</strong>. This panel cannot change either release control.</div>
+      <div class="finance-module-note"><strong>Schema 180/181 boundary:</strong> mapping review is a human accounting decision. Posting execution is <strong>${executionOn?'ENABLED':'OFF'}</strong>; provider/payment mutation is <strong>${providerOn?'ENABLED':'OFF'}</strong>. This panel cannot change either release control.</div>
       <div class="finance-module-note"><strong>${esc(readiness.mapping_readiness_status||'unknown')}</strong> — ${esc(readiness.readiness_message||'Mapping readiness has not been evaluated.')}</div>
-      ${mappings.length?`<div class="table-wrap"><table class="finance-table"><thead><tr><th>Mapping</th><th>Current account</th><th>Review</th><th>Blocker / next action</th><th>Human action</th></tr></thead><tbody>${mappings.map((row)=>`<tr>
+
+      <div class="finance-list-heading"><div><h3>Mapping observability</h3><small>Read-only human-review aging, technical drift, and generated-pair preflight reconciliation. Build 181 never changes the mapping decision.</small></div><span>${esc(observabilityReadiness.mapping_observability_status||'unknown')}</span></div>
+      <div class="finance-stat-grid">
+        ${statusCard('Stale human reviews',String(observabilityReadiness.stale_review_count??0),'Pending ≥ 30 days')}
+        ${statusCard('Technical drift',String(observabilityReadiness.technical_drift_count??0),'Mapping/account/audit contradictions')}
+        ${statusCard('Preflight issues',String(observabilityReadiness.preflight_reconciliation_issue_count??0),'Canonical mapping vs generated-pair preflight')}
+        ${statusCard('No live sample',String(observabilityReadiness.no_generated_pair_sample_count??0),'Neutral when no generated pair exercises a mapping')}
+      </div>
+      <div class="finance-module-note"><strong>${esc(observabilityReadiness.mapping_observability_status||'unknown')}</strong> — ${esc(observabilityReadiness.observability_message||'Mapping observability has not been evaluated.')}</div>
+
+      ${mappings.length?`<div class="table-wrap"><table class="finance-table"><thead><tr><th>Mapping</th><th>Current account</th><th>Review</th><th>Human review age</th><th>Drift / preflight</th><th>Blocker / next action</th><th>Human action</th></tr></thead><tbody>${mappings.map((row)=>{
+        const obs=obsByKey[String(row.mapping_key||'')];
+        return `<tr>
         <td data-label="Mapping"><strong>${esc(row.target_label||row.mapping_key)}</strong><br><small>${esc(row.mapping_key)}${row.conditional_for_zero_tax?' · conditional when tax > 0':''}</small></td>
         <td data-label="Current account">${row.account_id?`<strong>${esc(row.account_number||'—')} — ${esc(row.account_name||'')}</strong><br><small>${esc(row.account_type||'')} · ${row.account_is_active?'active':'inactive'}</small>`:'<strong>Not selected</strong>'}</td>
         <td data-label="Review"><strong>${esc(row.review_status||'review')}</strong><br><small>${row.reviewed_at?`Reviewed ${esc(new Date(row.reviewed_at).toLocaleString('en-CA'))}`:'No recorded Schema 180 review yet'}</small></td>
+        <td data-label="Human review age">${observationCell(obs)}</td>
+        <td data-label="Drift / preflight">${driftCell(obs)}</td>
         <td data-label="Blocker / next action"><strong>${esc(row.blocker_code||'—')}</strong><br>${esc(row.blocker_message||'')}<br><small>${esc(row.action_hint||'')}</small></td>
         <td data-label="Human action">${mappingAction(row)}</td>
-      </tr>`).join('')}</tbody></table></div>`:'<div class="finance-empty"><strong>No canonical posting mappings were returned.</strong><small>Do not manufacture mappings in the browser; investigate the server-owned accounting configuration.</small></div>'}
-      <div class="finance-toolbar"><button id="financeMappingRefresh" type="button">Refresh mapping readiness</button><span>${canManage()?'Finance manage may record a human decision.':'Read-only mapping readiness.'}</span></div>
+      </tr>`;}).join('')}</tbody></table></div>`:'<div class="finance-empty"><strong>No canonical posting mappings were returned.</strong><small>Do not manufacture mappings in the browser; investigate the server-owned accounting configuration.</small></div>'}
+      <div class="finance-toolbar"><button id="financeMappingRefresh" type="button">Refresh mapping readiness</button><span>${canManage()?'Finance manage may record a human decision.':'Read-only mapping readiness and observability.'}</span></div>
     </section>`;
     byId('financeMappingRefresh')?.addEventListener('click',()=>load(true));
     bindActions();
