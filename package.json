@@ -29,7 +29,8 @@
     "test:finance-schema-dependencies": "node scripts/finance-schema-dependency-contract-check.mjs",
     "test:finance-posting-safety": "node scripts/finance-posting-safety-foundation-check.mjs",
     "test:finance-posting-preflight": "node scripts/finance-posting-preflight-check.mjs",
-    "test:finance-posting-execution-recovery": "node scripts/finance-posting-execution-recovery-check.mjs"
+    "test:finance-posting-execution-recovery": "node scripts/finance-posting-execution-recovery-check.mjs",
+    "test:finance-operational-control-plane": "node scripts/finance-operational-control-plane-check.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
