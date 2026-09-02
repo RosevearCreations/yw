@@ -64,24 +64,52 @@ Deno.serve(async (req: Request) => {
   if (!canView) return reply({ ok: false, error: "Finance module view access is required." }, 403);
 
   if (action === "list") {
-    const [{ data: queue, error: queueError }, { data: safety, error: safetyError }] = await Promise.all([
-      supabase.from("v_finance_job_completion_posting_approval_queue").select("*").limit(100),
+    const [approvalQueueResult, preflightQueueResult, safetyResult, preflightStatusResult] = await Promise.all([
+      supabase.from("v_finance_job_completion_posting_approval_queue").select("intake_id").limit(100),
+      supabase.from("v_finance_job_completion_posting_preflight_queue").select("*").limit(100),
       supabase.from("v_it_finance_posting_safety_status").select("*").limit(1),
+      supabase.from("v_it_finance_posting_preflight_status").select("*").limit(1),
     ]);
-    if (queueError || safetyError) {
-      return reply({ ok: false, error: queueError?.message || safetyError?.message || "Finance posting-approval queue could not load." }, 500);
+    const loadError = approvalQueueResult.error || preflightQueueResult.error || safetyResult.error || preflightStatusResult.error;
+    if (loadError) {
+      return reply({ ok: false, error: loadError.message || "Finance posting preflight queue could not load." }, 500);
     }
     return reply({
       ok: true,
-      scope: "finance_job_completion_posting_approval",
+      scope: "finance_job_completion_posting_preflight",
       actor_profile_id: actorId,
       can_approve: await hasModuleAccess(supabase, actorProfile, "finance", "approve"),
-      queue: queue || [],
-      safety: safety?.[0] || {},
+      queue: preflightQueueResult.data || [],
+      approval_queue_count: approvalQueueResult.data?.length || 0,
+      safety: safetyResult.data?.[0] || {},
+      preflight: preflightStatusResult.data?.[0] || {},
       boundary: {
         separate_posting_approval_required: true,
+        approval_queue_authority_retained: true,
         idempotency_server_owned: true,
         immutable_provenance: true,
+        accountant_mapping_approval_required: true,
+        posting_execution_authorized: false,
+        provider_mutation: false,
+      },
+    });
+  }
+
+  if (action === "preflight") {
+    const intakeId = cleanText(body.intake_id, 80);
+    if (!intakeId) return reply({ ok: false, error: "intake_id is required." }, 400);
+    const forbidden = forbiddenFields(body);
+    if (forbidden.length) {
+      return reply({ ok: false, error: `Financial execution fields are server-owned for preflight: ${forbidden.join(", ")}.`, code: "SERVER_OWNED_POSTING_FIELDS" }, 400);
+    }
+    const { data, error } = await supabase.rpc("ywi_finance_job_completion_posting_preflight", { p_intake_id: intakeId });
+    if (error) return reply({ ok: false, error: error.message || "Finance posting preflight failed." }, 400);
+    return reply({
+      ok: true,
+      action: "preflight",
+      result: data?.[0] || null,
+      boundary: {
+        read_only: true,
         posting_execution_authorized: false,
         provider_mutation: false,
       },
@@ -125,5 +153,5 @@ Deno.serve(async (req: Request) => {
     });
   }
 
-  return reply({ ok: false, error: "Unsupported Finance posting-approval action." }, 400);
+  return reply({ ok: false, error: "Unsupported Finance posting-approval/preflight action." }, 400);
 });
