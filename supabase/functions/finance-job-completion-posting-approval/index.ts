@@ -65,27 +65,45 @@ Deno.serve(async (req: Request) => {
   if (!canView) return reply({ ok: false, error: "Finance module view access is required." }, 403);
 
   if (action === "list") {
-    const [approvalQueueResult, preflightQueueResult, executionQueueResult, safetyResult, preflightStatusResult, executionStatusResult] = await Promise.all([
+    const [
+      approvalQueueResult,
+      preflightQueueResult,
+      executionQueueResult,
+      lifecycleResult,
+      operationalSummaryResult,
+      reconciliationResult,
+      safetyResult,
+      preflightStatusResult,
+      executionStatusResult,
+    ] = await Promise.all([
       supabase.from("v_finance_job_completion_posting_approval_queue").select("intake_id").limit(100),
       supabase.from("v_finance_job_completion_posting_preflight_queue").select("*").limit(100),
       supabase.from("v_finance_job_completion_posting_execution_queue").select("*").limit(100),
+      supabase.from("v_finance_job_completion_operational_lifecycle").select("*").order("queued_at", { ascending: false }).limit(100),
+      supabase.from("v_finance_job_completion_operational_summary").select("*").limit(1),
+      supabase.from("v_finance_job_completion_reconciliation_issues").select("*").limit(100),
       supabase.from("v_it_finance_posting_safety_status").select("*").limit(1),
       supabase.from("v_it_finance_posting_preflight_status").select("*").limit(1),
       supabase.from("v_it_finance_posting_execution_status").select("*").limit(1),
     ]);
-    const loadError = approvalQueueResult.error || preflightQueueResult.error || executionQueueResult.error || safetyResult.error || preflightStatusResult.error || executionStatusResult.error;
+    const loadError = approvalQueueResult.error || preflightQueueResult.error || executionQueueResult.error
+      || lifecycleResult.error || operationalSummaryResult.error || reconciliationResult.error
+      || safetyResult.error || preflightStatusResult.error || executionStatusResult.error;
     if (loadError) {
-      return reply({ ok: false, error: loadError.message || "Finance posting control-plane queue could not load." }, 500);
+      return reply({ ok: false, error: loadError.message || "Finance operational control plane could not load." }, 500);
     }
     return reply({
       ok: true,
-      scope: "finance_job_completion_posting_execution_recovery",
+      scope: "finance_job_completion_operational_control_plane",
       actor_profile_id: actorId,
       can_approve: await hasModuleAccess(supabase, actorProfile, "finance", "approve"),
       can_manage: await hasModuleAccess(supabase, actorProfile, "finance", "manage"),
       queue: executionQueueResult.data || [],
       preflight_queue: preflightQueueResult.data || [],
       approval_queue_count: approvalQueueResult.data?.length || 0,
+      operational_lifecycle: lifecycleResult.data || [],
+      operational_summary: operationalSummaryResult.data?.[0] || {},
+      reconciliation_issues: reconciliationResult.data || [],
       safety: safetyResult.data?.[0] || {},
       preflight: preflightStatusResult.data?.[0] || {},
       execution: executionStatusResult.data?.[0] || {},
@@ -99,6 +117,7 @@ Deno.serve(async (req: Request) => {
         provider_mutation: false,
         execution_release_server_owned: true,
         reversal_manage_only: true,
+        operational_control_plane_read_only: true,
       },
     });
   }
