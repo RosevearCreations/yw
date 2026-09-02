@@ -35,7 +35,8 @@
     "test:finance-operational-control-plane": "node scripts/finance-operational-control-plane-check.mjs",
     "test:finance-release-hardening": "node scripts/finance-release-hardening-check.mjs",
     "test:finance-account-mapping-review": "node scripts/finance-account-mapping-review-check.mjs",
-    "test:finance-account-mapping-observability": "node scripts/finance-account-mapping-observability-check.mjs"
+    "test:finance-account-mapping-observability": "node scripts/finance-account-mapping-observability-check.mjs",
+    "test:finance-account-mapping-decision-support": "node scripts/finance-account-mapping-decision-support-check.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
