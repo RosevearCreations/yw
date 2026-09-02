@@ -1,21 +1,22 @@
 # Yard Weasels Inc. Operations Platform
 
-**Current source authority:** Schema `175`  
-**Database authority:** Schema `175` applied/current at the verified Build 175 checkpoint  
+**Current source authority:** Schema `176`  
+**Database authority:** Schema `176` applied/current at the verified Build 176 checkpoint  
 **Active documents:** this README, `docs/ACTIVE_PROJECT_HANDBOOK.md`, and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
 
 Yard Weasels is organized around four top-level staff modules: **Safety / OHSA**, **Finance**, **Jobs**, and **Admin**. **I.T. Readiness** remains an Admin/manage control-plane section, not a fifth business module.
 
 ## Current architecture
 
-- **Schema 159–160:** module permissions, Admin break-glass access, and I.T. Readiness control plane.
-- **Schema 161–163:** shared module contract, permission-driven lazy loading, and protected Shared Core read models.
-- **Schema 164–168:** fail-closed cross-module write/event boundaries and real job-completion event wiring.
-- **Schema 169–172:** Finance completion intake, observability/retry, and human review/disposition candidate authority.
-- **Schema 173–174:** private dependency contracts plus convergence of the Finance work-order identity chain to canonical UUID.
-- **Schema 175:** separate Finance posting approval, durable idempotency identity, immutable event/intake/disposition/candidate provenance, and explicit fail-closed posting-execution guards.
+- **Schemas 159–160:** module permissions, Admin break-glass access, and I.T. Readiness control plane.
+- **Schemas 161–163:** shared module contract, permission-driven lazy loading, and protected Shared Core read models.
+- **Schemas 164–168:** fail-closed cross-module write/event boundaries and real job-completion event wiring.
+- **Schemas 169–172:** Finance completion intake, observability/retry, and human review/disposition candidate authority.
+- **Schemas 173–174:** private dependency contracts plus convergence of the Finance work-order identity chain to canonical UUID.
+- **Schema 175:** separate Finance posting approval, durable idempotency identity, immutable provenance, and explicit posting-execution guards.
+- **Schema 176:** read-only Finance posting preflight mapped onto the existing `job_invoice_postings`/AR and `job_journal_postings`/GL authorities, paired invoice/journal consistency, and accountant-approved account-mapping prerequisites.
 
-Schema 175 is a posting **safety authority**, not a posting-execution release. It records a separate human posting approval only after the Schema 172 Finance disposition has produced both canonical draft candidates. It does **not** create AR invoices, GL journal batches/entries, payments, mutate Jobs state, change Stripe/PayPal truth, or auto-promote Production.
+Schema 176 is a **preflight and mapping authority**, not a posting-execution release. It produces server-owned dry-run plans for the existing AR/GL engine and refuses to authorize execution or provider mutation. The required `accounts_receivable`, `service_revenue`, and conditional `sales_tax_payable` mappings must be active and accountant/bookkeeper approved before a future posting release can pass preflight.
 
 ## Non-negotiable boundaries
 
@@ -23,9 +24,9 @@ Schema 175 is a posting **safety authority**, not a posting-execution release. I
 - Active Admin profiles retain break-glass `manage` across Safety, Finance, Jobs, and Admin.
 - Shared Core identity data remains read-only through its protected Core data service; business modules must not create duplicate identity directories.
 - Cross-module writes must have an explicit owner/contract and fail closed when undeclared.
-- Finance candidate approval and posting approval remain separate authorities.
-- Schema 175 posting approval does not authorize posting execution; the completion-candidate posting paths remain explicitly closed until a later reviewed release.
-- Stripe paid status remains webhook/provider controlled.
+- Finance candidate approval, posting approval, posting preflight, and posting execution remain separate authorities.
+- Schema 175/176 completion-candidate posting paths remain closed: no AR invoice, GL batch/entry, payment, Jobs writeback, Stripe/PayPal mutation, or provider truth is created by the preflight path.
+- Accountant/chart-of-accounts approvals are human accounting decisions and are not auto-approved by I.T. migrations.
 - I.T. Readiness reports release blockers but does not automatically promote Production.
 - Public SEO remains separate from private staff/customer data and retains one-H1, canonical, approved-image, alt-text, structured-data, and sitemap gates.
 
@@ -64,6 +65,7 @@ npm run test:finance-consumer-execution
 npm run test:finance-completion-review
 npm run test:finance-schema-dependencies
 npm run test:finance-posting-safety
+npm run test:finance-posting-preflight
 npm run test:contrast
 npm run test:navigation
 ```
