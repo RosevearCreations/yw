@@ -6,6 +6,7 @@
 **Build 183 source branch:** `schema-183-finance-mapping-decision-support`  
 **Repository enforcement:** separately AMBER because `main` is unprotected  
 **Current live runtime:** `finance-account-mapping-review` v3 ACTIVE / JWT enabled; `admin-it-control` v12 ACTIVE / JWT enabled  
+**Finance execution release:** **OFF**; provider mutation OFF; Production promotion manual  
 **Source:** `RosevearCreations/yw`  
 **Architecture:** Safety / OHSA, Finance, Jobs, Admin; I.T. Readiness is inside Admin.
 
@@ -77,7 +78,7 @@ Live remains Schema `182 / 182` with:
 - mapping-review audit events `0`;
 - technical mapping drift `0`;
 - preflight contradiction `0`;
-- posting execution OFF;
+- posting execution release **OFF**;
 - provider mutation OFF;
 - Finance completion/accounting Jobs writeback prohibited;
 - Production promotion manual.
@@ -94,7 +95,7 @@ The three stale human reviews remain an accounting decision backlog, not a migra
 - Read-only candidate detail is restricted to Finance/manage; lower Finance levels retain read-only mapping readiness/observability without account-choice controls.
 - No new mapping authority table is introduced.
 - No AR/GL posting records are created by Build 183.
-- Posting execution and provider mutation remain OFF.
+- Posting execution release remains OFF and provider mutation remains OFF.
 - Finance does not write canonical Jobs/work-order state through this pipeline.
 - Stripe/PayPal/provider/payment truth remains outside this Finance pipeline.
 - Production promotion remains deliberate/manual.
