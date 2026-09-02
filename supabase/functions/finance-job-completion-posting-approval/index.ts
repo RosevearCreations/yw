@@ -24,6 +24,7 @@ const forbiddenFinancialFields = new Set([
   "debit", "credit", "debit_account_id", "credit_account_id", "gl_account_id",
   "candidate_status", "posting_status", "posting_authorized", "execution_status",
   "ar_invoice_id", "gl_batch_id", "journal_entry_number", "batch_number",
+  "posting_approval_id", "execution_run_id", "reversal_id", "reversal_gl_batch_id",
   "provider_mutation", "post", "posted", "void", "reverse",
   "stripe", "stripe_payment_intent_id", "paypal", "paypal_order_id", "payment_status",
 ]);
@@ -64,25 +65,30 @@ Deno.serve(async (req: Request) => {
   if (!canView) return reply({ ok: false, error: "Finance module view access is required." }, 403);
 
   if (action === "list") {
-    const [approvalQueueResult, preflightQueueResult, safetyResult, preflightStatusResult] = await Promise.all([
+    const [approvalQueueResult, preflightQueueResult, executionQueueResult, safetyResult, preflightStatusResult, executionStatusResult] = await Promise.all([
       supabase.from("v_finance_job_completion_posting_approval_queue").select("intake_id").limit(100),
       supabase.from("v_finance_job_completion_posting_preflight_queue").select("*").limit(100),
+      supabase.from("v_finance_job_completion_posting_execution_queue").select("*").limit(100),
       supabase.from("v_it_finance_posting_safety_status").select("*").limit(1),
       supabase.from("v_it_finance_posting_preflight_status").select("*").limit(1),
+      supabase.from("v_it_finance_posting_execution_status").select("*").limit(1),
     ]);
-    const loadError = approvalQueueResult.error || preflightQueueResult.error || safetyResult.error || preflightStatusResult.error;
+    const loadError = approvalQueueResult.error || preflightQueueResult.error || executionQueueResult.error || safetyResult.error || preflightStatusResult.error || executionStatusResult.error;
     if (loadError) {
-      return reply({ ok: false, error: loadError.message || "Finance posting preflight queue could not load." }, 500);
+      return reply({ ok: false, error: loadError.message || "Finance posting control-plane queue could not load." }, 500);
     }
     return reply({
       ok: true,
-      scope: "finance_job_completion_posting_preflight",
+      scope: "finance_job_completion_posting_execution_recovery",
       actor_profile_id: actorId,
       can_approve: await hasModuleAccess(supabase, actorProfile, "finance", "approve"),
-      queue: preflightQueueResult.data || [],
+      can_manage: await hasModuleAccess(supabase, actorProfile, "finance", "manage"),
+      queue: executionQueueResult.data || [],
+      preflight_queue: preflightQueueResult.data || [],
       approval_queue_count: approvalQueueResult.data?.length || 0,
       safety: safetyResult.data?.[0] || {},
       preflight: preflightStatusResult.data?.[0] || {},
+      execution: executionStatusResult.data?.[0] || {},
       boundary: {
         separate_posting_approval_required: true,
         approval_queue_authority_retained: true,
@@ -91,6 +97,8 @@ Deno.serve(async (req: Request) => {
         accountant_mapping_approval_required: true,
         posting_execution_authorized: false,
         provider_mutation: false,
+        execution_release_server_owned: true,
+        reversal_manage_only: true,
       },
     });
   }
@@ -116,9 +124,6 @@ Deno.serve(async (req: Request) => {
     });
   }
 
-  const canApprove = await hasModuleAccess(supabase, actorProfile, "finance", "approve");
-  if (!canApprove) return reply({ ok: false, error: "Finance approve access is required." }, 403);
-
   const forbidden = forbiddenFields(body);
   if (forbidden.length) {
     return reply({
@@ -129,6 +134,8 @@ Deno.serve(async (req: Request) => {
   }
 
   if (action === "approve_posting") {
+    const canApprove = await hasModuleAccess(supabase, actorProfile, "finance", "approve");
+    if (!canApprove) return reply({ ok: false, error: "Finance approve access is required." }, 403);
     const intakeId = cleanText(body.intake_id, 80);
     const reason = cleanText(body.reason, 2000);
     if (!intakeId) return reply({ ok: false, error: "intake_id is required." }, 400);
@@ -153,5 +160,60 @@ Deno.serve(async (req: Request) => {
     });
   }
 
-  return reply({ ok: false, error: "Unsupported Finance posting-approval/preflight action." }, 400);
+  if (action === "execute_posting") {
+    const canApprove = await hasModuleAccess(supabase, actorProfile, "finance", "approve");
+    if (!canApprove) return reply({ ok: false, error: "Finance approve access is required for controlled posting execution." }, 403);
+    const intakeId = cleanText(body.intake_id, 80);
+    const reason = cleanText(body.reason, 2000);
+    if (!intakeId) return reply({ ok: false, error: "intake_id is required." }, 400);
+    if (reason.length < 3) return reply({ ok: false, error: "A Finance posting-execution reason is required." }, 400);
+
+    const { data, error } = await supabase.rpc("ywi_finance_execute_job_completion_posting", {
+      p_intake_id: intakeId,
+      p_reason: reason,
+      p_actor_profile_id: actorId,
+    });
+    if (error) return reply({ ok: false, error: error.message || "Controlled Finance posting execution failed." }, 400);
+
+    return reply({
+      ok: true,
+      action: "execute_posting",
+      result: data?.[0] || null,
+      boundary: {
+        execution_release_server_owned: true,
+        posting_execution_authorized: false,
+        browser_cannot_enable_execution: true,
+        provider_mutation: false,
+      },
+    });
+  }
+
+  if (action === "reverse_posting") {
+    const canManage = await hasModuleAccess(supabase, actorProfile, "finance", "manage");
+    if (!canManage) return reply({ ok: false, error: "Finance manage access is required for posting reversal." }, 403);
+    const intakeId = cleanText(body.intake_id, 80);
+    const reason = cleanText(body.reason, 2000);
+    if (!intakeId) return reply({ ok: false, error: "intake_id is required." }, 400);
+    if (reason.length < 3) return reply({ ok: false, error: "A reversal/void reason is required." }, 400);
+
+    const { data, error } = await supabase.rpc("ywi_finance_reverse_job_completion_posting", {
+      p_intake_id: intakeId,
+      p_reason: reason,
+      p_actor_profile_id: actorId,
+    });
+    if (error) return reply({ ok: false, error: error.message || "Finance posting reversal failed." }, 400);
+
+    return reply({
+      ok: true,
+      action: "reverse_posting",
+      result: data?.[0] || null,
+      boundary: {
+        manage_authority_required: true,
+        original_gl_history_preserved: true,
+        provider_mutation: false,
+      },
+    });
+  }
+
+  return reply({ ok: false, error: "Unsupported Finance posting approval/preflight/execution/recovery action." }, 400);
 });
