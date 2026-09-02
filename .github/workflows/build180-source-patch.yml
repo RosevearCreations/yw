@@ -1,0 +1,99 @@
+name: Build 180 source integration patch
+
+on:
+  push:
+    branches: [schema-180-finance-account-mapping-review]
+    paths:
+      - '.github/workflows/build180-source-patch.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: schema-180-finance-account-mapping-review
+      - name: Patch Build 180 integration and authorities
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def patch(path, replacements):
+              p=Path(path); s=p.read_text()
+              for old,new in replacements:
+                  if old not in s:
+                      raise SystemExit(f'missing expected text in {path}: {old[:120]!r}')
+                  s=s.replace(old,new,1)
+              p.write_text(s)
+
+          patch('supabase/functions/admin-it-control/index.ts', [
+            ('"source_gate_status", "repository_enforcement_status",', '"source_gate_status", "repository_enforcement_status", "mapping_readiness_status",'),
+            ('finance_release_hardening: ["v_it_finance_release_hardening_status", null, true, 10],\n    admin_access_integrity:', 'finance_release_hardening: ["v_it_finance_release_hardening_status", null, true, 10],\n    finance_account_mapping_review: ["v_it_finance_account_mapping_review_status", null, true, 10],\n    admin_access_integrity:'),
+            ('const [moduleAssertions, itAssertions, releaseAssertions, consumerObservabilityAssertions, financeOperationalAssertions, financeReleaseHardeningAssertions] = await Promise.all([', 'const [moduleAssertions, itAssertions, releaseAssertions, consumerObservabilityAssertions, financeOperationalAssertions, financeReleaseHardeningAssertions, financeAccountMappingAssertions] = await Promise.all(['),
+            ('assertionRows(supabase, "ywi_finance_release_hardening_assertions", "Finance release-hardening assertions failed."),\n  ]);', 'assertionRows(supabase, "ywi_finance_release_hardening_assertions", "Finance release-hardening assertions failed."),\n    assertionRows(supabase, "ywi_finance_account_mapping_review_assertions", "Finance account-mapping assertions failed."),\n  ]);'),
+            ('...financeReleaseHardeningAssertions.rows,\n  ];', '...financeReleaseHardeningAssertions.rows,\n    ...financeAccountMappingAssertions.rows,\n  ];'),
+            ('financeReleaseHardeningAssertions.error,\n  ].filter(Boolean);', 'financeReleaseHardeningAssertions.error,\n    financeAccountMappingAssertions.error,\n  ].filter(Boolean);'),
+            ('finance_release_hardening: financeReleaseHardeningAssertions.rows,\n      errors:', 'finance_release_hardening: financeReleaseHardeningAssertions.rows,\n      finance_account_mapping_review: financeAccountMappingAssertions.rows,\n      errors:'),
+          ])
+
+          patch('js/it-readiness-ui.js', [
+            ("'source_gate_status','repository_enforcement_status']", "'source_gate_status','repository_enforcement_status','mapping_readiness_status']"),
+            ('...(Array.isArray(groups.finance_release_hardening)?groups.finance_release_hardening:[]),\n    ];', '...(Array.isArray(groups.finance_release_hardening)?groups.finance_release_hardening:[]),\n      ...(Array.isArray(groups.finance_account_mapping_review)?groups.finance_account_mapping_review:[]),\n    ];'),
+            ("${panel('finance_release_hardening','Finance release hardening','Permissions, acceptance and release-chain proof')}\n        ${renderAdminIntegrity()}", "${panel('finance_release_hardening','Finance release hardening','Permissions, acceptance and release-chain proof')}\n        ${panel('finance_account_mapping_review','Finance mapping review','Human accountant mapping readiness and audit health')}\n        ${renderAdminIntegrity()}"),
+          ])
+
+          patch('scripts/admin-it-readiness-check.mjs', [
+            ("check('admin-it-control-release-assertions',endpoint.includes('ywi_it_release_authority_assertions'));", "check('admin-it-control-release-assertions',endpoint.includes('ywi_it_release_authority_assertions'));\ncheck('admin-it-control-finance-mapping-readiness',endpoint.includes('v_it_finance_account_mapping_review_status')&&endpoint.includes('ywi_finance_account_mapping_review_assertions'));"),
+            ("check('it-ui-release-authority',itUi.includes(\"panel('release_authority'\")&&itUi.includes(\"panel('release_source_evidence'\")&&itUi.includes('repository_enforcement_status'));", "check('it-ui-release-authority',itUi.includes(\"panel('release_authority'\")&&itUi.includes(\"panel('release_source_evidence'\")&&itUi.includes('repository_enforcement_status'));\ncheck('it-ui-finance-mapping-review',itUi.includes(\"panel('finance_account_mapping_review'\")&&itUi.includes('mapping_readiness_status')&&itUi.includes('finance_account_mapping_review'));"),
+          ])
+
+          patch('scripts/repo-smoke-check.mjs', [
+            ("add('no-temporary-build179-patch-workflow',!exists('.github/workflows/build179-source-patch.yml'),'Temporary remote source patch workflow is absent.');", "add('no-temporary-build179-patch-workflow',!exists('.github/workflows/build179-source-patch.yml'),'Temporary remote source patch workflow is absent.');\nadd('no-temporary-build180-patch-workflow',!exists('.github/workflows/build180-source-patch.yml'),'Temporary Build 180 source patch workflow is absent.');"),
+            ("add(`${name.toLowerCase().replaceAll(' ','-')}-schema179`,text.includes('179')&&text.includes('I.T. Readiness'),`${name} records Schema 179 source authority and retains the Admin/I.T. boundary.`);", "add(`${name.toLowerCase().replaceAll(' ','-')}-schema180`,text.includes('180')&&text.includes('I.T. Readiness'),`${name} records active Schema 180 source authority and retains the Admin/I.T. boundary.`);"),
+            ("add('docs-build180-next',[readme,handbook,nextSteps].every((text)=>text.includes('Build 180')&&/mapping/i.test(text)),'Active authority advances the next bounded release to Build 180 accountant mapping readiness/review.');", "add('docs-build180-active',[readme,handbook,nextSteps].every((text)=>text.includes('Build 180')&&/mapping/i.test(text)&&/active/i.test(text)),'Active authority records Build 180 accountant mapping readiness/review as the active source release.');"),
+            ('for(let n=30;n<=179;n++) if(!versions.has(n)) missing.push(n);\nadd(\'migration-range-030-through-179\',missing.length===0&&versions.has(179),missing.length?`Missing migration numbers: ${missing.join(\', \')}`:\'Every schema number 030–179 is represented.\');', 'for(let n=30;n<=180;n++) if(!versions.has(n)) missing.push(n);\nadd(\'migration-range-030-through-180\',missing.length===0&&versions.has(180),missing.length?`Missing migration numbers: ${missing.join(\', \')}`:\'Every schema number 030–180 is represented.\');'),
+            ("[179,'sql/179_finance_permissions_acceptance_release_hardening.sql'],\n])", "[179,'sql/179_finance_permissions_acceptance_release_hardening.sql'],\n  [180,'sql/180_finance_account_mapping_review_workflow.sql'],\n])"),
+            ("const schema179=read('sql/179_finance_permissions_acceptance_release_hardening.sql');", "const schema179=read('sql/179_finance_permissions_acceptance_release_hardening.sql');\nconst schema180=read('sql/180_finance_account_mapping_review_workflow.sql');"),
+            ("add('schema179-no-jobs-writeback',!/update\\s+public\\.(?:jobs|work_orders)\\b/i.test(schema179),'Schema 179 does not write canonical Jobs/work-order state.');", "add('schema179-no-jobs-writeback',!/update\\s+public\\.(?:jobs|work_orders)\\b/i.test(schema179),'Schema 179 does not write canonical Jobs/work-order state.');\nadd('schema180-human-mapping-authority',['finance_account_mapping_review_audit','ywi_finance_review_account_mapping','v_it_finance_account_mapping_review_status'].every((key)=>schema180.includes(key)),'Schema 180 adds human mapping review/audit/readiness over canonical mappings.');\nadd('schema180-no-auto-approval',!/set\\s+review_status\\s*=\\s*['\"]approved['\"]/i.test(schema180.slice(0,schema180.indexOf('create or replace function public.ywi_finance_review_account_mapping'))),'Schema 180 migration does not auto-approve live mappings.');\nadd('schema180-execution-provider-closed',!/execution_enabled\\s*=\\s*true/i.test(schema180)&&!/provider_mutation_enabled\\s*=\\s*true/i.test(schema180),'Schema 180 does not enable accounting execution or provider mutation.');\nadd('schema180-no-jobs-writeback',!/update\\s+public\\.(?:jobs|work_orders)\\b/i.test(schema180),'Schema 180 does not write Jobs state.');"),
+            ("const financeBrowser=read('tests/browser/finance-release-hardening.spec.mjs');", "const financeBrowser=read('tests/browser/finance-release-hardening.spec.mjs');\nconst mappingFixture=read('tests/fixtures/finance-account-mapping-review-fixtures.mjs');\nconst mappingBrowser=read('tests/browser/finance-account-mapping-review.spec.mjs');"),
+            ("add('schema179-release-double-gate',financeBrowser.includes('server execution authorization and release truth')&&financeBrowser.includes('execute_posting'),'Rendered acceptance verifies execution needs both server authorization and server release truth.');", "add('schema179-release-double-gate',financeBrowser.includes('server execution authorization and release truth')&&financeBrowser.includes('execute_posting'),'Rendered acceptance verifies execution needs both server authorization and server release truth.');\nadd('schema180-mapping-fixture-nonpersistent',mappingFixture.includes('migration_auto_approval:false')&&mappingFixture.includes('posting_execution_authorized:false')&&!/fetch\\(|supabase|stripe|paypal/i.test(mappingFixture),'Build 180 mapping fixtures are deterministic and non-persistent.');\nadd('schema180-rendered-mapping-review',['hidden','view','create','approve','manage'].every((key)=>mappingBrowser.includes(`'${key}'`))&&mappingBrowser.includes('phone')&&mappingBrowser.includes('desktop'),'Rendered mapping acceptance covers Finance access levels on phone and desktop.');"),
+            ("/\\[functions\\.finance-job-completion-posting-approval\\]\\s+verify_jwt = true/s.test(config),'Admin/I.T., Shared Core, operations and both Finance completion functions explicitly retain JWT verification.');", "/\\[functions\\.finance-job-completion-posting-approval\\]\\s+verify_jwt = true/s.test(config)&&/\\[functions\\.finance-account-mapping-review\\]\\s+verify_jwt = true/s.test(config),'Admin/I.T., Shared Core, operations, Finance completion, and Finance mapping functions explicitly retain JWT verification.');"),
+            ("'scripts/finance-posting-execution-recovery-check.mjs','scripts/finance-operational-control-plane-check.mjs','scripts/finance-release-hardening-check.mjs',", "'scripts/finance-posting-execution-recovery-check.mjs','scripts/finance-operational-control-plane-check.mjs','scripts/finance-release-hardening-check.mjs','scripts/finance-account-mapping-review-check.mjs',"),
+            ("'tests/fixtures/finance-release-hardening-fixtures.mjs','tests/browser/finance-release-hardening.spec.mjs',", "'tests/fixtures/finance-release-hardening-fixtures.mjs','tests/browser/finance-release-hardening.spec.mjs',\n  'tests/fixtures/finance-account-mapping-review-fixtures.mjs','tests/browser/finance-account-mapping-review.spec.mjs','js/finance-account-mapping-ui.js',"),
+            ("'supabase/functions/admin-it-control/index.ts','supabase/functions/finance-job-completion-review/index.ts','supabase/functions/finance-job-completion-posting-approval/index.ts',", "'supabase/functions/admin-it-control/index.ts','supabase/functions/finance-job-completion-review/index.ts','supabase/functions/finance-job-completion-posting-approval/index.ts','supabase/functions/finance-account-mapping-review/index.ts',"),
+          ])
+
+          patch('README.md', [
+            ('**Current source/database authority:** Schema `179`  \n**Schema 179 release checkpoint:** `c86a373ce14c3aef89b59ba46a63709989eb8cd5`, Run #98 (`33664931778`) — SUCCESS  \n**Release evidence:** ID `10`; Release Authority GREEN; repository enforcement separately AMBER because `main` is unprotected', '**Current source authority:** Schema `180` on the active Build 180 feature path  \n**Verified live database authority:** Schema `179 / 179` until Schema 180 exact-main source proof is green and the migration is deliberately applied  \n**Last clean-main Schema 179 checkpoint:** `d6110236d84c21a6cb3f799b3f2bb14001ce610b`, Run #104 (`33666237217`) — SUCCESS  \n**Schema 179 release evidence:** ID `10`; Release Authority GREEN; repository enforcement separately AMBER because `main` is unprotected'),
+            ('## Next bounded build\n\n**Build 180 — Finance accountant mapping readiness and review workflow** is the next safe autonomous build.', '## Active bounded build\n\n**Build 180 — Finance accountant mapping readiness and review workflow** is ACTIVE.'),
+            ('npm run test:finance-release-hardening\nnpm run test:contrast', 'npm run test:finance-release-hardening\nnpm run test:finance-account-mapping-review\nnpm run test:contrast'),
+            ('npm run test:browser:finance\n```', 'npm run test:browser:finance\nnpm run test:browser:finance-mapping\n```'),
+          ])
+
+          patch('docs/ACTIVE_PROJECT_HANDBOOK.md', [
+            ('**Current schema source/database authority:** `179`  \n**Schema 179 release checkpoint:** `c86a373ce14c3aef89b59ba46a63709989eb8cd5`, Run #98 (`33664931778`) — SUCCESS  \n**Release evidence:** ID `10`; Release Authority GREEN; repository enforcement separately AMBER', '**Current schema source authority:** `180` on the active Build 180 feature path  \n**Verified live database authority:** `179 / 179` pending exact-main Schema 180 proof and deliberate migration  \n**Last clean-main Schema 179 checkpoint:** `d6110236d84c21a6cb3f799b3f2bb14001ce610b`, Run #104 (`33666237217`) — SUCCESS  \n**Schema 179 release evidence:** ID `10`; Release Authority GREEN; repository enforcement separately AMBER'),
+            ('The next bounded release is a **human-controlled mapping review control plane**', 'The active bounded release is a **human-controlled mapping review control plane**'),
+            ('Build 180 may add immutable audit/history, protected Finance-manage review RPCs/endpoints, read-only readiness views, Finance/Admin I.T. UI, reasoned review actions, and non-persistent browser acceptance.', 'Build 180 adds immutable audit/history, a protected Finance-manage review RPC/endpoint, read-only readiness views, a separately lazy-loaded Finance mapping UI, Admin → I.T. mapping evidence, reasoned review actions, and non-persistent browser acceptance.'),
+          ])
+
+          patch('docs/NEXT_STEPS_AND_SANITY_CHECK.md', [
+            ('**Current source/database authority:** Schema `179`  \n**Schema 179 release checkpoint:** `c86a373ce14c3aef89b59ba46a63709989eb8cd5`, Run #98 (`33664931778`) — SUCCESS  \n**Release evidence:** ID `10`; Release Authority GREEN; repository enforcement separately AMBER  \n**Next bounded build:** Build `180` — Finance accountant mapping readiness and review workflow  \n**Restart rule:** verify live `179 / 179`, exact-main release evidence, protected function state, and execution/provider switches before extending Schema 180.', '**Current source authority:** Schema `180` on branch `schema-180-finance-account-mapping-review`  \n**Verified live database authority:** Schema `179 / 179` until exact-main Schema 180 proof and deliberate migration  \n**Last clean-main Schema 179 checkpoint:** `d6110236d84c21a6cb3f799b3f2bb14001ce610b`, Run #104 (`33666237217`) — SUCCESS  \n**Schema 179 release evidence:** ID `10`; Release Authority GREEN; repository enforcement separately AMBER  \n**Active bounded build:** Build `180` — Finance accountant mapping readiness and review workflow  \n**Restart rule:** verify the current Build 180 branch/PR head plus live `179 / 179` or `180 / 180` state before changing source or applying the migration.'),
+            ('## Build 180 scope — ACTIVE/NEXT', '## Build 180 scope — ACTIVE'),
+            ('npm run test:finance-release-hardening\nnpm run test:contrast', 'npm run test:finance-release-hardening\nnpm run test:finance-account-mapping-review\nnpm run test:contrast'),
+            ('npm run test:browser:finance\n```', 'npm run test:browser:finance\nnpm run test:browser:finance-mapping\n```'),
+            ('Build 180 will extend this list with its focused mapping-review and rendered acceptance gates.', 'Build 180 has extended this list with its focused mapping-review and rendered acceptance gates.'),
+            ('Keep numbered migrations permanent and ordered through Schema 179 and onward.', 'Keep numbered migrations permanent and ordered through Schema 180 and onward.'),
+            ('**Build 180 — Accountant mapping readiness and review workflow — NEXT/ACTIVE**', '**Build 180 — Accountant mapping readiness and review workflow — ACTIVE**'),
+          ])
+
+          Path('.github/workflows/build180-source-patch.yml').unlink()
+          PY
+          git config user.name 'YWI Build 180 automation'
+          git config user.email 'actions@users.noreply.github.com'
+          git add -A
+          git commit -m 'Complete Build 180 I.T. and release authority integration'
+          git push origin HEAD:schema-180-finance-account-mapping-review
