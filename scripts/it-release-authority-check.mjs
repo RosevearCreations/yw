@@ -10,7 +10,8 @@ const completionSql=read('sql/168_job_completion_event_wiring.sql');
 const financeSql=read('sql/169_finance_job_completion_consumer.sql');
 const observabilitySql=read('sql/170_it_cross_module_consumer_observability.sql');
 const executionSql=read('sql/171_finance_consumer_execution_retry.sql');
-const currentSql=read('sql/172_finance_review_disposition_candidate_authority.sql');
+const reviewSql=read('sql/172_finance_review_disposition_candidate_authority.sql');
+const currentSql=read('sql/173_finance_schema_dependency_contract_guard.sql');
 const endpoint=read('supabase/functions/admin-it-control/index.ts');
 const financeReviewEndpoint=read('supabase/functions/finance-job-completion-review/index.ts');
 const financeUi=read('js/finance-ui.js');
@@ -70,6 +71,7 @@ required(completionSql,[
 
 required(financeSql,[
   'create table if not exists public.finance_job_completion_intake',
+  'first_seen_at timestamptz not null default now()',
   'ywi_finance_consume_job_completed_events',
   'ywi_finance_job_completion_consumer_assertions()',
   '169::int as expected_schema_version',
@@ -102,7 +104,7 @@ assert.ok(executionSql.includes('grant execute on function public.ywi_finance_ru
 assert.ok(executionSql.includes('attempt_count between 1 and 3'),'Schema 171 retries must retain the database-enforced ceiling.');
 assert.ok(!/update\s+public\.(?:jobs|work_orders|job_completion_reviews)\b/i.test(executionSql),'Schema 171 execution must not write back into Jobs completion state.');
 
-required(currentSql,[
+required(reviewSql,[
   'create table if not exists public.finance_job_completion_review_dispositions',
   'ywi_finance_dispose_job_completion_review',
   'ywi_finance_generate_job_completion_candidates',
@@ -111,20 +113,44 @@ required(currentSql,[
   'v_finance_job_completion_review_status',
   "'finance_completion_human_disposition'",
   "'finance_completion_candidate_generation'",
+  'i.first_seen_at as queued_at',
+  'order by i.first_seen_at asc',
+  'min(i.first_seen_at)',
   '172::int as expected_schema_version',
   "'172_finance_review_disposition_candidate_authority'",
   "'2026-09-02d'",
-], 'Schema 172 current release authority');
-assert.ok(currentSql.includes('grant execute on function public.ywi_finance_dispose_job_completion_review(uuid,text,text,uuid) to service_role;'),'Schema 172 disposition RPC must remain service-role-only below the Edge authorization layer.');
-assert.ok(currentSql.includes('grant execute on function public.ywi_finance_generate_job_completion_candidates(uuid,uuid) to service_role;'),'Schema 172 generation RPC must remain service-role-only below the Edge authorization layer.');
-assert.ok(currentSql.includes('Invoice candidate amounts must come from canonical work-order totals.'),'Schema 172 must database-enforce canonical candidate amounts.');
-assert.ok(currentSql.includes('Schema 172 does not authorize candidate posting.'),'Schema 172 must fail closed on posting.');
-const currentExecutable=currentSql.split('create or replace function public.ywi_finance_dispose_job_completion_review')[1]?.split('create or replace view public.v_finance_job_completion_review_queue')[0] || '';
-assert.ok(!/update\s+public\.(?:jobs|work_orders|job_completion_reviews)\b/i.test(currentExecutable),'Schema 172 Finance authority must not write back into Jobs completion state.');
-assert.ok(!/insert\s+into\s+public\.(?:ar_invoices|gl_batches|gl_entries|payments)\b/i.test(currentExecutable),'Schema 172 must not post invoices, journals or payments.');
-assert.ok(!/stripe|paypal|payment_intent|paypal_order/i.test(currentExecutable),'Schema 172 SQL must not mutate provider/payment truth.');
+], 'Schema 172 Finance review authority');
+assert.ok(!reviewSql.includes('i.created_at'),'Schema 172 must not reference nonexistent finance intake created_at.');
+assert.ok(!reviewSql.includes('order by created_at desc'),'Schema 172 guards must use the canonical first_seen_at intake timestamp.');
+assert.ok((reviewSql.match(/order by first_seen_at desc/g)||[]).length===2,'Both Schema 172 candidate guards must select intake rows by first_seen_at.');
+assert.ok(reviewSql.includes('grant execute on function public.ywi_finance_dispose_job_completion_review(uuid,text,text,uuid) to service_role;'),'Schema 172 disposition RPC must remain service-role-only below the Edge authorization layer.');
+assert.ok(reviewSql.includes('grant execute on function public.ywi_finance_generate_job_completion_candidates(uuid,uuid) to service_role;'),'Schema 172 generation RPC must remain service-role-only below the Edge authorization layer.');
+assert.ok(reviewSql.includes('Invoice candidate amounts must come from canonical work-order totals.'),'Schema 172 must database-enforce canonical candidate amounts.');
+assert.ok(reviewSql.includes('Schema 172 does not authorize candidate posting.'),'Schema 172 must fail closed on posting.');
+const reviewExecutable=reviewSql.split('create or replace function public.ywi_finance_dispose_job_completion_review')[1]?.split('create or replace view public.v_finance_job_completion_review_queue')[0] || '';
+assert.ok(!/update\s+public\.(?:jobs|work_orders|job_completion_reviews)\b/i.test(reviewExecutable),'Schema 172 Finance authority must not write back into Jobs completion state.');
+assert.ok(!/insert\s+into\s+public\.(?:ar_invoices|gl_batches|gl_entries|payments)\b/i.test(reviewExecutable),'Schema 172 must not post invoices, journals or payments.');
+assert.ok(!/stripe|paypal|payment_intent|paypal_order/i.test(reviewExecutable),'Schema 172 SQL must not mutate provider/payment truth.');
+
+required(currentSql,[
+  'create table if not exists public.app_schema_dependency_contracts',
+  'create or replace view public.v_it_schema_dependency_status',
+  'create or replace function public.ywi_schema_dependency_assertions()',
+  "'schema173_finance_intake_contract_complete'",
+  "'schema173_schema172_first_seen_runtime'",
+  "'schema173_finance_dependency_contract'",
+  "'finance_schema_dependency_contracts'",
+  '173::int as expected_schema_version',
+  "'173_finance_schema_dependency_contract_guard'",
+  "'2026-09-02e'",
+], 'Schema 173 current release authority');
+assert.ok(currentSql.includes('alter table public.app_schema_dependency_contracts enable row level security;'),'Schema 173 dependency registry must use RLS.');
+assert.ok(currentSql.includes('revoke all on table public.app_schema_dependency_contracts from public,anon,authenticated;'),'Schema 173 dependency registry must remain private.');
+assert.ok(!/insert\s+into\s+public\.(?:job_invoice_candidates|job_journal_candidates|job_completion_accounting_events|payments|ar_invoices|gl_batches|gl_entries)\b/i.test(currentSql),'Schema 173 must not mutate business accounting state.');
+assert.ok(!/update\s+public\.(?:jobs|work_orders|job_completion_reviews)\b/i.test(currentSql),'Schema 173 must not write back into Jobs state.');
+assert.ok(!/stripe|paypal|payment_intent|paypal_order/i.test(currentSql),'Schema 173 must not mutate provider/payment truth.');
 assert.ok(!/insert\s+into\s+public\.app_modules[\s\S]*?['"]it['"]/i.test(currentSql),'I.T. must not become a fifth business module.');
-assert.ok(currentSql.includes("'Admin > I.T. Readiness'"),'Schema 172 I.T. visibility must remain an Admin subsection.');
+assert.ok(currentSql.includes("'Admin > I.T. Readiness'"),'Schema 173 dependency proof must remain inside Admin I.T. Readiness.');
 assert.ok(sql.includes('drop index if exists public.module_acceptance_scenarios_sort_order_idx'),'Schema 165 unused live index cleanup must remain explicit.');
 assert.ok(dynamicSql.includes('manual_human_promotion_required'),'Production promotion must remain manual.');
 
@@ -133,6 +159,7 @@ required(endpoint,[
   'v_it_release_authority_status',
   'v_it_release_source_evidence_current',
   'v_it_cross_module_consumer_health',
+  'v_admin_schema_preflight_checks',
   'ywi_it_release_authority_assertions',
   'ywi_it_cross_module_consumer_observability_assertions',
 ], 'admin-it-control');
@@ -155,7 +182,7 @@ assert.ok(!financeUi.includes("action:'post_candidate'"),'Finance Schema 172 UI 
 required(jobsBoundary,['jobCreateInvoiceCandidate','jobCreateJournalCandidate','jobPostInvoiceCandidate','jobPostJournalCandidate','button.hidden = true'],'Jobs Finance boundary');
 assert.ok(runtime.includes("scripts: Object.freeze(['/js/jobs-ui.js','/js/jobs-finance-boundary.js'])"),'Jobs boundary shim must load immediately after the Jobs UI.');
 
-required(itUi,['release_authority','release_source_evidence','cross_module_consumer_health','consumer_observability'],'I.T. Readiness UI');
+required(itUi,['release_authority','release_source_evidence','cross_module_consumer_health','schema_preflight','consumer_observability'],'I.T. Readiness UI');
 assert.ok(!itUi.includes('ywi_finance_run_job_completion_consumer'),'I.T. browser UI must remain read-only for consumer execution.');
 assert.ok(!itUi.includes('retry_failed'),'I.T. browser UI must not expose a retry execution control.');
 
@@ -163,4 +190,4 @@ for(const key of ['safety','finance','jobs','admin']) assert.ok(runtime.includes
 assert.ok(!/moduleKey\s*:\s*['"]it['"]|module_key\s*:\s*['"]it['"]/.test(runtime),'Runtime must not register I.T. as a fifth business module.');
 assert.ok(moduleUi.includes("const MODULES = ['safety','finance','jobs','admin']"),'Admin permission editor must remain exactly four-module aware.');
 
-console.log('Schema 172-aware I.T. release authority source gate: PASS');
+console.log('Schema 173-aware I.T. release authority source gate: PASS');
