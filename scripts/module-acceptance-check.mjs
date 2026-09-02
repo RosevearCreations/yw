@@ -8,7 +8,7 @@ const root = process.cwd();
 const sql = fs.readFileSync(path.join(root, 'sql/165_standalone_module_acceptance_matrix.sql'), 'utf8');
 const spec = fs.readFileSync(path.join(root, 'tests/browser/module-runtime-access.spec.mjs'), 'utf8');
 const runtime = fs.readFileSync(path.join(root, 'js/module-runtime.js'), 'utf8');
-const serviceWorker = fs.readFileSync(path.join(root, 'service-worker.js'), 'utf8');
+const serviceWorker = fs.readFileSync(path.join(root, 'server-worker.js'), 'utf8');
 
 function includesAll(source, values, label) {
   for (const value of values) assert.ok(source.includes(value), `${label} missing ${value}`);
