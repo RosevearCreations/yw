@@ -36,3 +36,6 @@ verify_jwt = true
 
 [functions.core-data-read]
 verify_jwt = true
+
+[functions.finance-job-completion-posting-approval]
+verify_jwt = true
