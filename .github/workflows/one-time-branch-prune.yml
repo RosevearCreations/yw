@@ -1,0 +1,35 @@
+name: One-time branch prune
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/one-time-branch-prune.yml
+
+permissions:
+  contents: write
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Guard repository and prune exact obsolete branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "RosevearCreations/yw"
+          for branch in \
+            schema-177-finance-posting-execution-recovery \
+            schema-177-migration-column-repair \
+            schema-178-finance-operational-control-plane
+          do
+            test "$branch" != "main"
+            if gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$branch" >/dev/null 2>&1; then
+              gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$branch"
+              echo "Deleted $branch"
+            else
+              echo "Already absent: $branch"
+            fi
+          done
