@@ -20,7 +20,7 @@ async function mount(page,accessLevel,viewport=viewports[1]){
       canViewModule:(moduleKey,_role,minimum='view')=>moduleKey==='finance'&&Number(rank[accessLevel]||0)>=Number(rank[minimum]||0)
     };
     window.YWIAPI={
-      escHtml:(value)=>String(value??'').replace(/[&<>"']/g,(m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])),
+      escHtml:(value)=>String(value??'').replace(/[&<>"']/g,(m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m])),
       jsonFetch:async(slug,options={})=>{
         window.__mappingCalls.push({slug,body:options.body||null});
         if(slug!=='finance-account-mapping-review') return {ok:false,error:'unexpected synthetic endpoint'};
@@ -47,7 +47,7 @@ async function mount(page,accessLevel,viewport=viewports[1]){
 for(const viewport of viewports){
   for(const accessLevel of levels){
     test(`mapping review ${accessLevel} surface on ${viewport.name}`,async({page})=>{
-      await mount(page,accessLevel,viewport);
+      const fixture=await mount(page,accessLevel,viewport);
       const host=page.locator('#financeMappingWorkspace');
       if(accessLevel==='hidden'){
         expect(await page.evaluate(()=>window.__mappingCalls.length)).toBe(0);
@@ -59,6 +59,19 @@ for(const viewport of viewports){
       await expect(host).toContainText('Accounts receivable');
       await expect(host).toContainText('Service revenue');
       await expect(host).toContainText('Sales tax payable');
+
+      // Build 181 rendered proof: human aging is distinct from technical drift / preflight failure.
+      expect(fixture.observability[0].review_age_code).toBe('HUMAN_REVIEW_PENDING_STALE');
+      expect(fixture.observability[0].preflight_reconciliation_code).toBe('NO_GENERATED_PAIR_SAMPLE');
+      expect(fixture.observability_readiness.technical_drift_count).toBe(0);
+      expect(fixture.observability_readiness.preflight_reconciliation_issue_count).toBe(0);
+      await expect(host).toContainText('Mapping observability');
+      await expect(host).toContainText(/technical drift/i);
+      await expect(host).toContainText(/preflight issues/i);
+      await expect(host).toContainText(/human review pending stale/i);
+      await expect(host).toContainText(/no generated pair sample/i);
+      await expect(host).toContainText('Human accountant/bookkeeper review is stale/pending');
+
       const manage=ACCESS_RANK[accessLevel]>=ACCESS_RANK.manage;
       await expect(host.locator('[data-mapping-account]')).toHaveCount(manage?3:0);
       await expect(host.locator('[data-mapping-review="approved"]')).toHaveCount(manage?3:0);

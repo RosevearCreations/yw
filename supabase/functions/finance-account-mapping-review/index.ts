@@ -66,12 +66,18 @@ Deno.serve(async (req: Request) => {
   const canManage = await hasModuleAccess(supabase, actorProfile, "finance", "manage");
 
   if (action === "list") {
-    const [mappingResult, statusResult] = await Promise.all([
+    const [mappingResult, statusResult, observabilityResult, observabilityStatusResult] = await Promise.all([
       supabase.from("v_finance_account_mapping_review_directory").select("*").order("mapping_key"),
       supabase.from("v_it_finance_account_mapping_review_status").select("*").limit(1),
+      supabase.from("v_finance_account_mapping_observability").select("*").order("mapping_key"),
+      supabase.from("v_it_finance_account_mapping_observability_status").select("*").limit(1),
     ]);
-    if (mappingResult.error || statusResult.error) {
-      return reply({ ok: false, error: mappingResult.error?.message || statusResult.error?.message || "Finance mapping readiness could not load." }, 500);
+    if (mappingResult.error || statusResult.error || observabilityResult.error || observabilityStatusResult.error) {
+      return reply({
+        ok: false,
+        error: mappingResult.error?.message || statusResult.error?.message || observabilityResult.error?.message
+          || observabilityStatusResult.error?.message || "Finance mapping readiness could not load.",
+      }, 500);
     }
 
     let accounts: unknown[] = [];
@@ -94,6 +100,8 @@ Deno.serve(async (req: Request) => {
       can_manage: canManage,
       mappings: mappingResult.data || [],
       readiness: statusResult.data?.[0] || {},
+      observability: observabilityResult.data || [],
+      observability_readiness: observabilityStatusResult.data?.[0] || {},
       accounts,
       boundary: {
         human_accounting_decision_required: true,
