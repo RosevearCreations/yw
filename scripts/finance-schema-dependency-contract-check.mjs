@@ -7,6 +7,7 @@ const read=(file)=>fs.readFileSync(path.join(root,file),'utf8');
 const schema169=read('sql/169_finance_job_completion_consumer.sql');
 const schema172=read('sql/172_finance_review_disposition_candidate_authority.sql');
 const schema173=read('sql/173_finance_schema_dependency_contract_guard.sql');
+const schema174=read('sql/174_finance_dependency_type_convergence.sql');
 const workflow=read('.github/workflows/staging-browser-integration.yml');
 const failures=[];
 const check=(name,ok)=>{console.log(`${ok?'PASS':'FAIL'} ${name}`);if(!ok)failures.push(name);};
@@ -31,11 +32,21 @@ check('schema173-no-business-mutation',!/insert\s+into\s+public\.(?:job_invoice_
 check('schema173-no-jobs-writeback',!/update\s+public\.(?:jobs|work_orders|job_completion_reviews)\b/i.test(schema173));
 check('schema173-no-provider-truth',!/stripe|paypal|payment_intent|paypal_order/i.test(schema173));
 check('schema173-no-fifth-module',!/insert\s+into\s+public\.app_modules[\s\S]*?['"]it['"]/i.test(schema173));
-check('schema173-marker',schema173.includes('173::int as expected_schema_version')&&schema173.includes("'173_finance_schema_dependency_contract_guard'")&&schema173.includes("'2026-09-02e'"));
-check('schema173-workflow-gate',workflow.includes('npm run test:finance-schema-dependencies'));
+check('schema173-historical-marker',schema173.includes('173::int as expected_schema_version')&&schema173.includes("'173_finance_schema_dependency_contract_guard'")&&schema173.includes("'2026-09-02e'"));
+
+check('schema174-transaction-balanced',(schema174.match(/^begin;$/gmi)||[]).length===1&&(schema174.match(/^commit;$/gmi)||[]).length===1);
+check('schema174-live-uuid-prerequisite',schema174.includes("table_name='job_completion_reviews'")&&schema174.includes("column_name='work_order_id'")&&schema174.includes("data_type='uuid'"));
+check('schema174-targeted-contract-correction',schema174.includes("contract_key='completion_review_work_order'")&&schema174.includes("set expected_data_type='uuid'")&&schema174.includes("relation_name='job_completion_reviews'")&&schema174.includes("column_name='work_order_id'"));
+check('schema174-fails-closed-on-missing-contract',schema174.includes("raise exception 'Schema 173 completion_review_work_order dependency contract is missing.'"));
+check('schema174-it-readiness-wiring',schema174.includes("'finance_dependency_type_convergence','Architecture'")&&schema174.includes("'Admin > I.T. Readiness'"));
+check('schema174-metadata-only',!/insert\s+into\s+public\.(?:job_invoice_candidates|job_journal_candidates|job_completion_accounting_events|payments|ar_invoices|gl_batches|gl_entries)\b/i.test(schema174)&&!/update\s+public\.(?:jobs|work_orders|job_completion_reviews|finance_job_completion_intake)\b/i.test(schema174));
+check('schema174-no-provider-truth',!/stripe|paypal|payment_intent|paypal_order/i.test(schema174));
+check('schema174-no-fifth-module',!/insert\s+into\s+public\.app_modules[\s\S]*?['"]it['"]/i.test(schema174));
+check('schema174-marker',schema174.includes('174::int as expected_schema_version')&&schema174.includes("'174_finance_dependency_type_convergence'")&&schema174.includes("'2026-09-02f'"));
+check('schema174-workflow-gate',workflow.includes('npm run test:finance-schema-dependencies'));
 
 if(failures.length){
-  console.error(`Schema 173 Finance schema dependency gate failed: ${failures.join(', ')}`);
+  console.error(`Schema 174 Finance dependency type-convergence gate failed: ${failures.join(', ')}`);
   process.exit(1);
 }
-console.log('Schema 173 Finance schema dependency/convergence source gate: PASS');
+console.log('Schema 174 Finance schema dependency/type convergence source gate: PASS');
