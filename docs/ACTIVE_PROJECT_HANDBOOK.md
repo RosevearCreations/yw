@@ -1,6 +1,6 @@
 # YWI Active Project Handbook
 
-**Current schema authority:** `174`  
+**Current schema authority:** `175`  
 **Source authority:** `RosevearCreations/yw`  
 **Active architecture:** Safety / OHSA, Finance, Jobs, Admin; I.T. Readiness is inside Admin.
 
@@ -32,7 +32,13 @@ Added the Finance job-completion intake path, I.T. observability, bounded execut
 
 Schema 173 introduced private dependency contracts and I.T. preflight checks for Finance schema assumptions. That guard exposed an incorrect guessed `bigint` contract for `job_completion_reviews.work_order_id`. Schema 174 deliberately repairs the contract to canonical `uuid` and adds the UUID identity chain used by the Finance candidates.
 
-This is the current database/source boundary. Schema 174 is control-plane convergence only and does not write back into Jobs, post accounting entries, or change Stripe/PayPal truth.
+### Schema 175 — Finance posting safety foundation
+
+Build 175 separates **candidate approval** from **posting approval**. A posting approval may be recorded only for an approved Finance disposition with both canonical Schema 172 draft candidates. The approval carries a server-owned idempotency identity and immutable provenance linking the Jobs completion event, Finance intake, Finance disposition, invoice candidate, journal candidate, approver, and timestamp.
+
+Schema 175 also adds independent uniqueness contracts for future invoice/journal posting retries and database guards that explicitly reject posting rows for Schema 172 completion candidates. Therefore Build 175 does **not** post an AR invoice or GL journal, alter Jobs state, mutate Stripe/PayPal/provider truth, or authorize Production promotion.
+
+This is the current database/source boundary.
 
 ## Security and ownership invariants
 
@@ -40,7 +46,8 @@ This is the current database/source boundary. Schema 174 is control-plane conver
 - Shared Core data is read-only to consuming business modules.
 - Cross-module writes require declared ownership, minimum permission, and an allowed boundary mode.
 - Private event/dependency registries remain non-public and service-controlled.
-- Finance review/candidate flows do not become automatic invoice/journal/payment posting without a separately reviewed release.
+- Finance review/candidate approval and Finance posting approval are distinct human authorities.
+- A Schema 175 posting approval retains `execution_status='not_released'`; it is not permission to create AR/GL/payment effects.
 - Stripe/PayPal/provider truth must remain provider/webhook controlled.
 - I.T. Readiness may block or report a release but may not auto-promote Production.
 - Private job/customer evidence must never be reused as public SEO material without explicit approval.
@@ -53,8 +60,8 @@ For each release:
 2. Keep migrations additive and ordered; never edit old applied migration history merely to make a later migration unnecessary.
 3. Run source/unit boundary gates before merge.
 4. Run rendered browser acceptance where applicable.
-5. Verify the exact merged `main` SHA in GitHub Actions and the matching deployment.
-6. Apply database migrations only when the release requires them, in order, then verify schema drift/preflight.
+5. Verify the exact merged `main` SHA in GitHub Actions and inspect deployment evidence separately.
+6. Apply database migrations only when the release requires them, in order, then verify schema drift/preflight and release-specific assertions.
 7. Keep Production promotion deliberate and manual.
 8. Update the three active authority documents when the restart boundary materially changes.
 
@@ -72,4 +79,6 @@ When those files disagree with a verified newer source/database checkpoint, upda
 
 ## Current checkpoint
 
-Schema 174 is the current verified source/database authority. The Schema 174 Finance dependency preflight is green after correcting the work-order identity contract to UUID. The next product build should begin only after confirming this checkpoint remains current and should extend the existing four-module architecture rather than create duplicate services or a fifth module.
+Schema 175 is the current verified database authority. Live verification reports `175 / 175` current, all 24 required Finance dependency contracts passing, all six Schema 175 posting-safety assertions passing, zero posting-execution violations, and zero Schema 172 invoice/journal posting rows. The JWT-protected `finance-job-completion-posting-approval` Edge function is deployed and active.
+
+The next bounded product build is **Build 176 — connect Finance to the existing accounting engine**, beginning with mappings into the existing `job_invoice_postings` / AR invoice and `job_journal_postings` / `gl_journal_batches` authorities, followed by a read-only posting preflight and paired invoice/journal consistency validation. Posting execution itself remains closed until the later explicit Build 177 authority.
