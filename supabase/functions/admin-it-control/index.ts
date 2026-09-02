@@ -119,6 +119,7 @@ async function readinessPayload(supabase: any) {
     schema_drift: ["v_schema_drift_status", null, true, 10],
     release_authority: ["v_it_release_authority_status", null, true, 10],
     release_source_evidence: ["v_it_release_source_evidence_current", null, true, 10],
+    cross_module_consumer_health: ["v_it_cross_module_consumer_health", "check_key", true, 20],
     admin_access_integrity: ["v_admin_module_access_integrity", "profile_label", true, 500],
     schema_preflight: ["v_admin_schema_preflight_checks", "sort_order", true, 160],
     deployment_checklist: ["v_admin_deployment_checklist", "sort_order", true, 160],
@@ -140,10 +141,11 @@ async function readinessPayload(supabase: any) {
   }));
   const data = Object.fromEntries(entries) as Record<string, { rows: any[]; error: string | null }>;
 
-  const [moduleAssertions, itAssertions, releaseAssertions] = await Promise.all([
+  const [moduleAssertions, itAssertions, releaseAssertions, consumerObservabilityAssertions] = await Promise.all([
     assertionRows(supabase, "ywi_module_security_assertions", "Module assertions failed."),
     assertionRows(supabase, "ywi_it_readiness_security_assertions", "I.T. assertions failed."),
     assertionRows(supabase, "ywi_it_release_authority_assertions", "Release-authority assertions failed."),
+    assertionRows(supabase, "ywi_it_cross_module_consumer_observability_assertions", "Cross-module consumer observability assertions failed."),
   ]);
 
   const profilesResult = await listRows(supabase, "profiles", {
@@ -176,8 +178,14 @@ async function readinessPayload(supabase: any) {
     ...moduleAssertions.rows,
     ...itAssertions.rows,
     ...releaseAssertions.rows,
+    ...consumerObservabilityAssertions.rows,
   ];
-  const assertionErrors = [moduleAssertions.error, itAssertions.error, releaseAssertions.error].filter(Boolean);
+  const assertionErrors = [
+    moduleAssertions.error,
+    itAssertions.error,
+    releaseAssertions.error,
+    consumerObservabilityAssertions.error,
+  ].filter(Boolean);
   const assertionBlocking = assertionRowsCombined.filter((row: any) => String(row?.assertion_status || "").toLowerCase() !== "passed").length
     + assertionErrors.length;
 
@@ -225,6 +233,7 @@ async function readinessPayload(supabase: any) {
       module: moduleAssertions.rows,
       it: itAssertions.rows,
       release_authority: releaseAssertions.rows,
+      consumer_observability: consumerObservabilityAssertions.rows,
       errors: assertionErrors,
     },
     sections: Object.fromEntries(Object.entries(data).map(([key, item]) => [key, {
