@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { hasModuleAccess } from "../_shared/module-permissions.ts";
+import { effectiveModuleAccess, hasModuleAccess } from "../_shared/module-permissions.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -73,7 +73,10 @@ Deno.serve(async (req: Request) => {
       ok: true,
       scope: "finance_job_completion_review",
       actor_profile_id: actorId,
+      access_level: await effectiveModuleAccess(supabase, actorProfile, "finance"),
+      can_create: await hasModuleAccess(supabase, actorProfile, "finance", "create"),
       can_approve: await hasModuleAccess(supabase, actorProfile, "finance", "approve"),
+      can_manage: await hasModuleAccess(supabase, actorProfile, "finance", "manage"),
       queue: queue || [],
       status: status?.[0] || {},
       boundary: {

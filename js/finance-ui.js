@@ -1,5 +1,5 @@
 /* File: js/finance-ui.js
-   Schema 178 Finance module home.
+   Schema 179 Finance module home.
    Finance owns human disposition, draft-candidate generation, separate posting approval,
    operational preflight visibility, controlled execution/recovery visibility and manage-only reversal.
    Amounts, account identities, posting release state and provider/payment truth remain server-owned.
@@ -130,7 +130,7 @@
 
   function operationalLifecyclePanel() {
     if (state.postingError) {
-      return `<section class="finance-list-card"><div class="finance-list-heading"><h3>Completion → accounting lifecycle</h3><span>Schema 178</span></div><div class="notice warning"><strong>Operational control plane unavailable.</strong><br>${esc(state.postingError)}</div></section>`;
+      return `<section class="finance-list-card"><div class="finance-list-heading"><h3>Completion → accounting lifecycle</h3><span>Schema 179</span></div><div class="notice warning"><strong>Operational control plane unavailable.</strong><br>${esc(state.postingError)}</div></section>`;
     }
     const items = postingRows();
     const summary = state.postingPayload?.operational_summary || {};
@@ -146,7 +146,7 @@
         ${statCard('Posted', String(summary.posted_count || 0), 'Paired AR + GL')}
         ${statCard('Reversed', String(summary.reversed_count || 0), 'Auditable reversal')}
       </div>
-      <div class="finance-module-note"><strong>Schema 178 boundary:</strong> posting execution release is <strong>${executionEnabled ? 'ENABLED' : 'OFF'}</strong>. The browser cannot enable it or approve accountant mappings. Provider/payment mutation remains OFF. Reconciliation issues: <strong>${reconciliation.length}</strong>.</div>
+      <div class="finance-module-note"><strong>Schema 179 boundary:</strong> posting execution release is <strong>${executionEnabled ? 'ENABLED' : 'OFF'}</strong>. The browser cannot enable it or approve accountant mappings. Provider/payment mutation remains OFF. Reconciliation issues: <strong>${reconciliation.length}</strong>.</div>
       ${items.length ? `<div class="table-wrap"><table class="finance-table"><thead><tr><th>Job</th><th>Stage</th><th>Approval / preflight</th><th>Accounting pair</th><th>Blocker / next action</th><th>Action</th></tr></thead><tbody>${items.slice(0,50).map((r) => `<tr>
         <td data-label="Job"><strong>${esc(r.job_code || r.job_id)}</strong><br><small>${esc(r.client_name || '')} · ${money(r.total_amount)}</small></td>
         <td data-label="Stage"><strong>${esc(r.lifecycle_stage || 'blocked')}</strong><br><small>Queued ${dateTimeText(r.queued_at)}</small></td>

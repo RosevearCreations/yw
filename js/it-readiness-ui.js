@@ -81,9 +81,11 @@
       ...(Array.isArray(groups.it)?groups.it:[]),
       ...(Array.isArray(groups.release_authority)?groups.release_authority:[]),
       ...(Array.isArray(groups.consumer_observability)?groups.consumer_observability:[]),
+      ...(Array.isArray(groups.finance_operational)?groups.finance_operational:[]),
+      ...(Array.isArray(groups.finance_release_hardening)?groups.finance_release_hardening:[]),
     ];
     const errors=Array.isArray(groups.errors)?groups.errors:[];
-    return `<section class="it-readiness-panel"><span class="it-readiness-kicker">Security proof</span><h3>Module, I.T., release, and consumer assertions</h3>${errors.length?errors.map((e)=>`<div class="it-readiness-error">${esc(e)}</div>`).join(''):''}${rows.length?`<div class="it-readiness-list">${rows.map((row)=>`<div class="it-readiness-row"><div><strong>${esc(row.assertion_key||'assertion')}</strong><small>${esc(row.details||'')}</small></div>${statusChip(row.assertion_status)}</div>`).join('')}</div>`:'<div class="it-readiness-empty">No assertion rows returned.</div>'}</section>`;
+    return `<section class="it-readiness-panel"><span class="it-readiness-kicker">Security proof</span><h3>Module, I.T., release, consumer, and Finance assertions</h3>${errors.length?errors.map((e)=>`<div class="it-readiness-error">${esc(e)}</div>`).join(''):''}${rows.length?`<div class="it-readiness-list">${rows.map((row)=>`<div class="it-readiness-row"><div><strong>${esc(row.assertion_key||'assertion')}</strong><small>${esc(row.details||'')}</small></div>${statusChip(row.assertion_status)}</div>`).join('')}</div>`:'<div class="it-readiness-empty">No assertion rows returned.</div>'}</section>`;
   }
 
   function renderAdminIntegrity() {
@@ -137,6 +139,9 @@
         ${panel('release_authority','Release authority','Application release authority')}
         ${panel('release_source_evidence','Source evidence','Exact main SHA / CI evidence')}
         ${panel('cross_module_consumer_health','Event consumers','Jobs completion → Finance health')}
+        ${panel('finance_operational','Finance pipeline','Completion → accounting operational health')}
+        ${panel('finance_reconciliation','Finance reconciliation','Orphan, duplicate and accounting-divergence diagnostics')}
+        ${panel('finance_release_hardening','Finance release hardening','Permissions, acceptance and release-chain proof')}
         ${renderAdminIntegrity()}
         ${renderAssertions()}
         ${panel('schema_drift','Database','Schema drift')}
