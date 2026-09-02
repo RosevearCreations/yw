@@ -10,7 +10,7 @@
 'use strict';
 
 (function () {
-  const BUILD = '2026-09-01d';
+  const BUILD = '2026-09-02d';
   const CONTRACT_VERSION = 2;
 
   const CORE_ENTITY_CONTRACTS = Object.freeze({
@@ -54,7 +54,7 @@
       key: 'jobs',
       label: 'Jobs',
       version: CONTRACT_VERSION,
-      scripts: Object.freeze(['/js/jobs-ui.js']),
+      scripts: Object.freeze(['/js/jobs-ui.js','/js/jobs-finance-boundary.js']),
       coreDependencies: SHARED_CORE_DEPENDENCIES
     }),
     admin: Object.freeze({
@@ -193,8 +193,6 @@
   }
 
   function initializeLoadedFactories() {
-    // app.js is Core. These functions safely no-op until their permitted factories exist.
-    // Calling again after module loading makes classic modules compatible with dynamic loading.
     window.initFormModules?.();
     window.initProtectedModules?.();
     window.seedAllTables?.();

@@ -64,42 +64,20 @@ function createHarness() {
   const window = {
     location: {
       origin: 'https://example.test',
-      reload() {
-        reloadCount += 1;
-      }
+      reload() { reloadCount += 1; }
     },
-    YWI_AUTH: {
-      getState: () => authState
-    },
-    YWISecurity: {
-      canViewModule: (moduleKey) => grants[moduleKey] === true
-    },
+    YWI_AUTH: { getState: () => authState },
+    YWISecurity: { canViewModule: (moduleKey) => grants[moduleKey] === true },
     initFormModules() {},
     initProtectedModules() {},
     seedAllTables() {},
     YWIModuleNav: { sync() {} },
-    dispatchEvent(event) {
-      dispatchedEvents.push(event);
-      return true;
-    }
+    dispatchEvent(event) { dispatchedEvents.push(event); return true; }
   };
 
   const sandbox = {
-    window,
-    document,
-    URL,
-    Date,
-    Error,
-    Promise,
-    Set,
-    Map,
-    Object,
-    String,
-    Array,
-    encodeURIComponent,
-    CustomEvent: TestCustomEvent,
-    queueMicrotask,
-    console
+    window, document, URL, Date, Error, Promise, Set, Map, Object, String, Array,
+    encodeURIComponent, CustomEvent: TestCustomEvent, queueMicrotask, console
   };
 
   vm.createContext(sandbox);
@@ -118,7 +96,7 @@ function createHarness() {
 {
   const h = createHarness();
   assert.ok(h.runtime, 'YWIModuleRuntime should be exposed.');
-  assert.equal(h.runtime.BUILD, '2026-09-01d');
+  assert.equal(h.runtime.BUILD, '2026-09-02d');
   assert.equal(h.runtime.CONTRACT_VERSION, 2);
 
   const deniedFinance = await h.runtime.loadModule('finance');
@@ -130,7 +108,7 @@ function createHarness() {
   const allowedFinance = await h.runtime.loadModule('finance');
   assert.equal(allowedFinance, true, 'Allowed Finance load should succeed.');
   assert.equal(h.appendedScripts.length, 1, 'Allowed Finance should request exactly one manifest script.');
-  assert.equal(h.appendedScripts[0].src, '/js/finance-ui.js?v=2026-09-01d');
+  assert.equal(h.appendedScripts[0].src, '/js/finance-ui.js?v=2026-09-02d');
   assert.equal(h.appendedScripts[0].dataset.ywiModule, 'finance');
   assert.equal(h.appendedScripts[0].dataset.ywiRuntime, 'permission-driven');
 
@@ -159,6 +137,9 @@ function createHarness() {
   const h = createHarness();
   h.grants.jobs = true;
   await h.runtime.syncForCurrentAccess();
+  assert.equal(h.appendedScripts.length, 2, 'Allowed Jobs should load the Jobs UI and Schema 172 Finance-boundary shim.');
+  assert.equal(h.appendedScripts[0].src, '/js/jobs-ui.js?v=2026-09-02d');
+  assert.equal(h.appendedScripts[1].src, '/js/jobs-finance-boundary.js?v=2026-09-02d');
   h.setAuth({ isAuthenticated: false });
   await h.runtime.syncForCurrentAccess();
   assert.equal(h.reloadCount, 1, 'Sign-out should reload once after module code was loaded.');
@@ -178,6 +159,7 @@ function createHarness() {
 console.log('PASS runtime-denied-module-not-requested');
 console.log('PASS runtime-allowed-module-requested-from-manifest');
 console.log('PASS runtime-permission-reduction-purges-stale-code');
+console.log('PASS runtime-jobs-finance-boundary-loaded');
 console.log('PASS runtime-signout-purges-stale-code');
 console.log('PASS runtime-profile-change-purges-stale-code');
-console.log('\nSchema 162 module runtime behavior gate passed: 5/5 checks.');
+console.log('\nSchema 162/172 module runtime behavior gate passed: 6/6 checks.');

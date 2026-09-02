@@ -17,7 +17,7 @@ const moduleScripts = Object.freeze({
     '/js/forms-drill.js'
   ],
   finance: ['/js/finance-ui.js'],
-  jobs: ['/js/jobs-ui.js'],
+  jobs: ['/js/jobs-ui.js', '/js/jobs-finance-boundary.js'],
   admin: [
     '/js/admin-actions.js',
     '/js/admin-ui.js',
@@ -125,6 +125,12 @@ for (const viewport of viewports) {
         expect(requested).toContain('/js/it-readiness-ui.js');
       } else {
         expect(requested).not.toContain('/js/it-readiness-ui.js');
+      }
+
+      if (scenario.allowed.includes('jobs')) {
+        expect(requested).toContain('/js/jobs-finance-boundary.js');
+      } else {
+        expect(requested).not.toContain('/js/jobs-finance-boundary.js');
       }
     });
   }
