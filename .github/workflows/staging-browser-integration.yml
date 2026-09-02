@@ -42,6 +42,7 @@ jobs:
       - run: npm run test:finance-operational-control-plane
       - run: npm run test:finance-release-hardening
       - run: npm run test:finance-account-mapping-review
+      - run: npm run test:finance-account-mapping-observability
       - run: npm run test:repo
       - run: npm run test:contrast
       - run: npm run test:navigation
