@@ -5,7 +5,8 @@ import assert from 'node:assert/strict';
 const root=process.cwd();
 const read=(file)=>fs.readFileSync(path.join(root,file),'utf8');
 const sql=read('sql/166_it_release_authority.sql');
-const currentSql=read('sql/167_real_cross_module_event_wiring.sql');
+const dynamicSql=read('sql/167_real_cross_module_event_wiring.sql');
+const currentSql=read('sql/168_job_completion_event_wiring.sql');
 const endpoint=read('supabase/functions/admin-it-control/index.ts');
 const itUi=read('js/it-readiness-ui.js');
 const moduleUi=read('js/module-access-ui.js');
@@ -41,21 +42,28 @@ required(sql,[
 ], 'Schema 159 privilege convergence');
 
 assert.ok(sql.includes("source_branch='main' and workflow_status='passed' and schema_version=166"),'Schema 166 historical exact main/CI evidence proof must remain reproducible.');
-required(currentSql,[
+required(dynamicSql,[
   'create or replace view public.v_it_release_source_evidence_current',
   'where e.schema_version=expected.expected_schema_version',
   'ss.expected_schema_version as release_schema_version',
   'src.schema_version=ss.expected_schema_version',
   'repository enforcement is evaluated separately',
+], 'Schema 167 dynamic release authority');
+assert.ok(!dynamicSql.includes("e.schema_version=166 then 'green'"),'Current release authority must not pin source evidence to Schema 166.');
+assert.ok(dynamicSql.includes("e.branch_protection_reported is false then 'amber'"),'Repository enforcement must remain a separate AMBER rail when main is reported unprotected.');
+required(currentSql,[
   'ywi_cross_module_event_wiring_assertions()',
-  '167::int as expected_schema_version',
-], 'Schema 167 current release authority');
-assert.ok(!currentSql.includes("e.schema_version=166 then 'green'"),'Current release authority must not pin source evidence to Schema 166.');
-assert.ok(currentSql.includes("e.branch_protection_reported is false then 'amber'"),'Repository enforcement must remain a separate AMBER rail when main is reported unprotected.');
-assert.ok(currentSql.includes("not exists(select 1 from public.app_modules where module_key='it')"),'I.T. must remain outside the business module registry.');
-assert.ok(currentSql.includes("where section_id='it' and module_key='admin' and minimum_access_level='manage'"),'I.T. must remain an Admin/manage subsection.');
+  'job_completion_event_wired_atomically',
+  'job_completion_evidence_server_derived',
+  '168::int as expected_schema_version',
+  "'168_job_completion_event_wiring'",
+  "'2026-09-01j'",
+], 'Schema 168 current release authority');
+assert.ok(currentSql.includes("not exists(\n      select 1 from information_schema.routine_privileges"),'Schema 168 must retain private trigger/publisher authority checks.');
+assert.ok(currentSql.includes("'Admin > I.T. Readiness'"),'I.T. must remain an Admin/manage subsection.');
+assert.ok(!/module_key\s*=\s*['"]it['"]|\('it'\s*,/i.test(currentSql),'I.T. must not become a fifth business module.');
 assert.ok(sql.includes('drop index if exists public.module_acceptance_scenarios_sort_order_idx'),'Schema 165 unused live index cleanup must remain explicit.');
-assert.ok(currentSql.includes('manual_human_promotion_required'),'Production promotion must remain manual.');
+assert.ok(dynamicSql.includes('manual_human_promotion_required'),'Production promotion must remain manual.');
 
 required(endpoint,[
   'v_schema_drift_status',
@@ -74,4 +82,4 @@ for(const key of ['safety','finance','jobs','admin']) assert.ok(runtime.includes
 assert.ok(!/moduleKey\s*:\s*['"]it['"]|module_key\s*:\s*['"]it['"]/.test(runtime),'Runtime must not register I.T. as a fifth business module.');
 assert.ok(moduleUi.includes("const MODULES = ['safety','finance','jobs','admin']"),'Admin permission editor must remain exactly four-module aware.');
 
-console.log('Schema 167-aware I.T. release authority source gate: PASS');
+console.log('Schema 168-aware I.T. release authority source gate: PASS');
