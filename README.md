@@ -1,8 +1,8 @@
 # Yard Weasels Inc. Operations Platform
 
-**Current source authority:** Schema `179` Build 179 release path  
-**Verified live database boundary:** Schema `178` until merged Schema 179 is deliberately applied and validated  
-**Last clean-main Schema 178 checkpoint:** `400e559663d9d71ce07c8cac638a2ef7016320d0`, Run #95 (`33659172805`) — SUCCESS  
+**Current source/database authority:** Schema `179`  
+**Schema 179 release checkpoint:** `c86a373ce14c3aef89b59ba46a63709989eb8cd5`, Run #98 (`33664931778`) — SUCCESS  
+**Release evidence:** ID `10`; Release Authority GREEN; repository enforcement separately AMBER because `main` is unprotected  
 **Active documents:** this README, `docs/ACTIVE_PROJECT_HANDBOOK.md`, and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
 
 Yard Weasels has exactly four top-level staff modules: **Safety / OHSA**, **Finance**, **Jobs**, and **Admin**. **I.T. Readiness** is an Admin/manage control-plane section, never a fifth business module.
@@ -16,11 +16,11 @@ Yard Weasels has exactly four top-level staff modules: **Safety / OHSA**, **Fina
 - **Schemas 173–174:** dependency contracts and convergence of the Finance work-order identity chain to canonical UUID.
 - **Schema 175:** separate posting approval, idempotency identity, provenance, and execution guards.
 - **Schema 176:** read-only posting preflight over the existing AR/GL accounting engine and accountant-approved mapping prerequisites.
-- **Schema 177:** atomic AR/GL execution/recovery/reversal machinery behind a server-owned release switch that remains OFF.
+- **Schema 177:** atomic AR/GL execution/recovery/reversal machinery behind a server-owned execution release that remains OFF.
 - **Schema 178:** unified completion-to-accounting lifecycle, blocker codes, reconciliation, and Admin → I.T. Finance pipeline readiness.
-- **Schema 179:** Finance permission-matrix contracts, deterministic non-persistent synthetic browser acceptance, direct-bypass guards, explicit JWT protection for both Finance completion endpoints, and a full release-hardening gate.
+- **Schema 179:** Finance permission-matrix contracts, deterministic non-persistent/browser-only synthetic acceptance, direct-bypass guards, explicit JWT protection for both Finance completion endpoints, and the complete release-hardening gate.
 
-Build 179 is **verification and hardening**, not permission to create accounting effects. Synthetic Finance fixtures are browser-only and never write invoices, journals, payments, mappings, Jobs state, or provider state.
+Schema 179 is fully live and release-proven. The database is `179 / 179`, all 12 Build 179 hardening assertions pass, all 16 acceptance contracts remain non-persistent, and the protected runtime is aligned: `finance-job-completion-review` v1, `finance-job-completion-posting-approval` v5, and `admin-it-control` v9, all with JWT verification enabled.
 
 ## Non-negotiable boundaries
 
@@ -36,6 +36,12 @@ Build 179 is **verification and hardening**, not permission to create accounting
 - Stripe, PayPal, payment-provider, and payment truth mutation remain outside this Finance pipeline.
 - I.T. Readiness reports blockers; it does not auto-promote Production.
 - Production promotion remains deliberate and manual.
+
+## Next bounded build
+
+**Build 180 — Finance accountant mapping readiness and review workflow** is the next safe autonomous build. It may add a protected human review workflow, audit history, readiness views, Finance/Admin I.T. UI, and non-persistent browser acceptance around the existing `accountant_export_mapping_rules` → `chart_of_accounts` authority. It must not choose accounts on the user's behalf, change existing live account selections merely for testing, auto-approve `review_status`, enable posting execution, mutate providers/payments, write Jobs state, invent tax/chart policy, or promote Production.
+
+The live mapping model is already known: approval is represented by `review_status='approved'`; there is no separate `is_approved` field. Schema 176 treats a posting mapping as approved only when the mapping is active, explicitly approved, has a non-null account, and the linked account is active.
 
 ## Database and repository authority
 
@@ -76,4 +82,4 @@ npm run test:browser:modules
 npm run test:browser:finance
 ```
 
-GitHub rendered-browser acceptance is mandatory before a release is source-green. Database migration follows exact-main source proof, never precedes it. Vercel deployment evidence is separate from source correctness and must be verified before claiming deployment green.
+GitHub rendered-browser acceptance is mandatory before a release is source-green. Database migration follows exact-main source proof, never precedes it. Vercel deployment evidence is separate from source correctness; the current account has recently hit its daily deployment quota, so deployment must be freshly verified before being called green.
