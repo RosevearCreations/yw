@@ -582,7 +582,7 @@ as
 select
   q.*,
   r.id as execution_run_id,
-  r.execution_status,
+  r.execution_status as posting_execution_status,
   r.attempt_count,
   r.invoice_posting_id,
   r.ar_invoice_id,
