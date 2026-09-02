@@ -35,7 +35,8 @@ for(const [name,text] of [['README',readme],['Handbook',handbook],['Next steps',
   add(`${name.toLowerCase().replaceAll(' ','-')}-schema180`,text.includes('180')&&text.includes('I.T. Readiness'),`${name} records active Schema 180 source authority and retains the Admin/I.T. boundary.`);
 }
 add('docs-build179-complete',handbook.includes('Schema 179')&&handbook.includes('COMPLETE')&&nextSteps.includes('Build 179')&&nextSteps.includes('COMPLETE'),'Active authority records Build 179 permission/acceptance/release hardening as complete.');
-add('docs-build180-active',[readme,handbook,nextSteps].every((text)=>text.includes('Build 180')&&/mapping/i.test(text)&&/active/i.test(text)),'Active authority records Build 180 accountant mapping readiness/review as the active source release.');
+add('docs-build180-complete',[readme,handbook,nextSteps].every((text)=>text.includes('Build 180')&&/mapping/i.test(text)&&/COMPLETE/i.test(text)),'Active authority records Build 180 accountant mapping readiness/review as complete.');
+add('docs-build181-next',[readme,handbook,nextSteps].every((text)=>text.includes('Build 181')&&/aging|drift|reconciliation/i.test(text)&&/next/i.test(text)),'Active authority advances the next bounded release to Build 181 mapping observability.');
 add('docs-build179-financial-release-closed',[readme,handbook,nextSteps].every((text)=>/execution release/i.test(text)&&/(off|closed|server-owned)/i.test(text)),'Build 179 does not release Finance accounting execution.');
 add('docs-four-module-boundary',[readme,handbook,nextSteps].every((text)=>['Safety','Finance','Jobs','Admin'].every((key)=>text.includes(key))),'Active authority retains Safety, Finance, Jobs and Admin.');
 add('docs-manual-production',[readme,handbook,nextSteps].every((text)=>/manual/i.test(text)&&/Production/i.test(text)),'Production promotion remains deliberate/manual.');
