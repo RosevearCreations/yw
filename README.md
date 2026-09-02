@@ -1,9 +1,9 @@
 # Yard Weasels Inc. Operations Platform
 
-**Current source authority:** Schema `180` on the active Build 180 feature path  
-**Verified live database authority:** Schema `179 / 179` until Schema 180 exact-main source proof is green and the migration is deliberately applied  
-**Last clean-main Schema 179 checkpoint:** `d6110236d84c21a6cb3f799b3f2bb14001ce610b`, Run #104 (`33666237217`) — SUCCESS  
-**Schema 179 release evidence:** ID `10`; Release Authority GREEN; repository enforcement separately AMBER because `main` is unprotected  
+**Current source/database authority:** Schema `180` — Build 180 COMPLETE  
+**Schema 180 merged checkpoint:** `b37491932ac1d6dbac7917bd9848d8ca120fb6e9`, Run #109 (`33673018358`) — SUCCESS  
+**Schema 180 release evidence:** ID `11`; Release Authority GREEN; repository enforcement separately AMBER because `main` is unprotected  
+**Next bounded build:** Build `181` — Finance mapping review aging, drift, and reconciliation observability  
 **Active documents:** this README, `docs/ACTIVE_PROJECT_HANDBOOK.md`, and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
 
 Yard Weasels has exactly four top-level staff modules: **Safety / OHSA**, **Finance**, **Jobs**, and **Admin**. **I.T. Readiness** is an Admin/manage control-plane section, never a fifth business module.
@@ -14,39 +14,55 @@ Yard Weasels has exactly four top-level staff modules: **Safety / OHSA**, **Fina
 - **Schemas 161–163:** shared module contract, permission-driven lazy loading, and protected Shared Core reads.
 - **Schemas 164–168:** fail-closed cross-module writes/events and canonical job-completion event wiring.
 - **Schemas 169–172:** Finance completion intake, observability/retry, human disposition, and draft candidate authority.
-- **Schemas 173–174:** dependency contracts and convergence of the Finance work-order identity chain to canonical UUID.
+- **Schemas 173–174:** dependency contracts and canonical UUID convergence.
 - **Schema 175:** separate posting approval, idempotency identity, provenance, and execution guards.
-- **Schema 176:** read-only posting preflight over the existing AR/GL accounting engine and accountant-approved mapping prerequisites.
+- **Schema 176:** read-only posting preflight over the existing AR/GL engine and accountant-approved mapping prerequisites.
 - **Schema 177:** atomic AR/GL execution/recovery/reversal machinery behind a server-owned execution release that remains OFF.
-- **Schema 178:** unified completion-to-accounting lifecycle, blocker codes, reconciliation, and Admin → I.T. Finance pipeline readiness.
-- **Schema 179:** Finance permission-matrix contracts, deterministic non-persistent/browser-only synthetic acceptance, direct-bypass guards, explicit JWT protection for both Finance completion endpoints, and the complete release-hardening gate.
+- **Schema 178:** unified completion-to-accounting lifecycle, blocker codes, reconciliation, and Admin → I.T. Finance readiness.
+- **Schema 179:** Finance permission matrix, synthetic non-persistent/browser-only acceptance, direct-bypass guards, JWT hardening, and complete release gate.
+- **Schema 180:** human-controlled accountant mapping review over the existing `accountant_export_mapping_rules` → `chart_of_accounts` authority, immutable review audit, Finance-manage endpoint/UI, Admin → I.T. mapping readiness, and rendered acceptance.
 
-Schema 179 is fully live and release-proven. The database is `179 / 179`, all 12 Build 179 hardening assertions pass, all 16 acceptance contracts remain non-persistent, and the protected runtime is aligned: `finance-job-completion-review` v1, `finance-job-completion-posting-approval` v5, and `admin-it-control` v9, all with JWT verification enabled.
+## Build 180 verified closure
+
+Build 180 is **COMPLETE** and live at `180 / 180`. Exact-main Run #109 passed all source/static and rendered browser suites before the migration was applied. Post-migration verification proved:
+
+- Schema 180 assertions: **8 / 8 PASS**;
+- prior Schema 179 hardening assertions: **12 / 12 PASS**;
+- required Finance dependencies through Schema 180: **62 / 62 PASS**;
+- all active Admin profiles retain break-glass `manage` across Safety, Finance, Jobs, and Admin;
+- `accounts_receivable`, `service_revenue`, and `sales_tax_payable` retained the exact pre-migration account IDs and remained `review`;
+- mapping review audit events created by the release: **0**;
+- release-created posting approvals/execution runs/reversals/invoice postings/journal postings: **0**;
+- posting execution release: **OFF**;
+- provider mutation: **OFF**;
+- `finance-account-mapping-review` v2 — ACTIVE / JWT enabled;
+- `admin-it-control` v10 — ACTIVE / JWT enabled.
+
+Mapping readiness is intentionally **AMBER** because the three mappings still require an explicit human accountant/bookkeeper decision. That is accounting readiness, not a failed application release.
 
 ## Non-negotiable boundaries
 
 - Server authorization is authoritative; hidden navigation is not security.
-- Effective Finance levels remain `hidden < view < create < approve < manage`.
-- Active Admin profiles retain break-glass `manage` on Safety, Finance, Jobs, and Admin.
-- Shared Core identities remain centrally owned and read-only to consuming modules.
+- Finance access remains `hidden < view < create < approve < manage`.
+- Admin break-glass `manage` remains across all four modules.
+- Shared Core identities remain centrally owned and read-only to consumers.
 - Cross-module writes require declared ownership and fail closed when undeclared.
-- Finance human disposition, candidate generation, posting approval, preflight, execution, recovery, and reversal remain distinct authorities.
-- Posting execution release is server-owned and remains **OFF**. The browser cannot enable it.
-- Required chart/account mappings remain human accountant/bookkeeper decisions.
-- Finance completion/accounting flows do not write back to Jobs.
-- Stripe, PayPal, payment-provider, and payment truth mutation remain outside this Finance pipeline.
+- Finance disposition, candidate generation, posting approval, preflight, execution, recovery, reversal, and mapping review are separate authorities.
+- Posting execution release is server-owned and remains **OFF**.
+- Accountant/chart mapping choices and approvals remain human decisions.
+- Finance completion/accounting flows do not write canonical Jobs state.
+- Stripe, PayPal, provider, and payment truth remain outside this Finance pipeline.
+- Synthetic acceptance is non-persistent/browser-only and cannot manufacture release evidence through business-data mutation.
 - I.T. Readiness reports blockers; it does not auto-promote Production.
 - Production promotion remains deliberate and manual.
 
-## Active bounded build
+## Next bounded build
 
-**Build 180 — Finance accountant mapping readiness and review workflow** is ACTIVE. It may add a protected human review workflow, audit history, readiness views, Finance/Admin I.T. UI, and non-persistent browser acceptance around the existing `accountant_export_mapping_rules` → `chart_of_accounts` authority. It must not choose accounts on the user's behalf, change existing live account selections merely for testing, auto-approve `review_status`, enable posting execution, mutate providers/payments, write Jobs state, invent tax/chart policy, or promote Production.
-
-The live mapping model is already known: approval is represented by `review_status='approved'`; there is no separate `is_approved` field. Schema 176 treats a posting mapping as approved only when the mapping is active, explicitly approved, has a non-null account, and the linked account is active.
+**Build 181 — Finance mapping review aging, drift, and reconciliation observability** is next. It may add read-only stale/pending-review age, mapping/account drift observations, historical reconciliation evidence, and Admin → I.T. guidance. It must not choose accounts, approve mappings, enable execution/provider mutation, write Jobs state, change tax/chart policy, or promote Production.
 
 ## Database and repository authority
 
-Every numbered migration in `sql/` is permanent audit history and must remain in sequence. Generated full-schema snapshots are not tracked because the numbered migration chain is the schema authority. Git history is the archive; do not restore `archive/`, `retired-markdown-*`, `test_write*`, generated Playwright output, dependencies, logs, backup/temp files, or generated schema snapshots.
+Every numbered migration in `sql/` is permanent audit history and remains ordered through Schema 180. Git history is the archive; do not restore stale archive trees, retired Markdown, generated full-schema snapshots, Playwright output, dependencies, logs, temp, or backup artifacts.
 
 The only active Markdown authorities are:
 
@@ -85,4 +101,4 @@ npm run test:browser:finance
 npm run test:browser:finance-mapping
 ```
 
-GitHub rendered-browser acceptance is mandatory before a release is source-green. Database migration follows exact-main source proof, never precedes it. Vercel deployment evidence is separate from source correctness; the current account has recently hit its daily deployment quota, so deployment must be freshly verified before being called green.
+Rendered browser acceptance is mandatory before source-green. Database migration follows exact-main source proof. Deployment evidence is separate from source correctness and must be freshly verified before deployment is called green.
