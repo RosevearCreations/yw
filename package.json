@@ -7,6 +7,7 @@
     "test:repo": "node scripts/repo-smoke-check.mjs",
     "test:browser": "playwright test --config=playwright.config.mjs tests/browser/operations-portal.spec.mjs",
     "test:browser:modules": "playwright test --config=playwright.config.mjs tests/browser/module-runtime-access.spec.mjs",
+    "test:browser:finance": "playwright test --config=playwright.config.mjs tests/browser/finance-release-hardening.spec.mjs",
     "test:staging": "node scripts/operations-rpc-staging-e2e.mjs",
     "test:contrast": "node scripts/operations-cockpit-contrast-check.mjs",
     "test:live-updates": "node scripts/live-work-updates-check.mjs",
@@ -30,7 +31,8 @@
     "test:finance-posting-safety": "node scripts/finance-posting-safety-foundation-check.mjs",
     "test:finance-posting-preflight": "node scripts/finance-posting-preflight-check.mjs",
     "test:finance-posting-execution-recovery": "node scripts/finance-posting-execution-recovery-check.mjs",
-    "test:finance-operational-control-plane": "node scripts/finance-operational-control-plane-check.mjs"
+    "test:finance-operational-control-plane": "node scripts/finance-operational-control-plane-check.mjs",
+    "test:finance-release-hardening": "node scripts/finance-release-hardening-check.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
