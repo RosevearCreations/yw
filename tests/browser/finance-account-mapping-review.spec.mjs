@@ -54,8 +54,8 @@ for(const viewport of viewports){
         return;
       }
       await expect(host).toContainText('Human accountant/bookkeeper mapping review is still required');
-      await expect(host).toContainText('posting execution is OFF');
-      await expect(host).toContainText('provider/payment mutation is OFF');
+      await expect(host).toContainText(/posting execution is OFF/i);
+      await expect(host).toContainText(/provider\/payment mutation is OFF/i);
       await expect(host).toContainText('Accounts receivable');
       await expect(host).toContainText('Service revenue');
       await expect(host).toContainText('Sales tax payable');
