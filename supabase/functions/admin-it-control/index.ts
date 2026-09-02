@@ -38,11 +38,21 @@ async function listRows(
   }
 }
 
+async function assertionRows(supabase: any, rpcName: string, fallback: string) {
+  try {
+    const { data, error } = await supabase.rpc(rpcName);
+    return { rows: data || [], error: error?.message || null };
+  } catch (err) {
+    return { rows: [], error: String((err as Error)?.message || err || fallback) };
+  }
+}
+
 function rowStatus(row: any) {
   if (!row || typeof row !== "object") return "unknown";
   for (const key of [
     "status", "check_status", "readiness_status", "gate_status", "drift_status",
-    "assertion_status", "health_status", "result", "state",
+    "assertion_status", "health_status", "result", "state", "release_authority_status",
+    "source_gate_status", "repository_enforcement_status",
   ]) {
     if (row[key] !== undefined && row[key] !== null) return String(row[key]).trim().toLowerCase();
   }
@@ -105,8 +115,10 @@ async function modulePermissionPayload(supabase: any) {
 
 async function readinessPayload(supabase: any) {
   const sources = {
-    readiness_registry: ["it_readiness_check_registry", "sort_order", true, 100],
+    readiness_registry: ["it_readiness_check_registry", "sort_order", true, 120],
     schema_drift: ["v_schema_drift_status", null, true, 10],
+    release_authority: ["v_it_release_authority_status", null, true, 10],
+    release_source_evidence: ["v_it_release_source_evidence_current", null, true, 10],
     admin_access_integrity: ["v_admin_module_access_integrity", "profile_label", true, 500],
     schema_preflight: ["v_admin_schema_preflight_checks", "sort_order", true, 160],
     deployment_checklist: ["v_admin_deployment_checklist", "sort_order", true, 160],
@@ -128,25 +140,11 @@ async function readinessPayload(supabase: any) {
   }));
   const data = Object.fromEntries(entries) as Record<string, { rows: any[]; error: string | null }>;
 
-  let moduleAssertions: any[] = [];
-  let moduleAssertionError: string | null = null;
-  try {
-    const { data: rows, error } = await supabase.rpc("ywi_module_security_assertions");
-    moduleAssertions = rows || [];
-    moduleAssertionError = error?.message || null;
-  } catch (err) {
-    moduleAssertionError = String((err as Error)?.message || err || "Module assertions failed.");
-  }
-
-  let itAssertions: any[] = [];
-  let itAssertionError: string | null = null;
-  try {
-    const { data: rows, error } = await supabase.rpc("ywi_it_readiness_security_assertions");
-    itAssertions = rows || [];
-    itAssertionError = error?.message || null;
-  } catch (err) {
-    itAssertionError = String((err as Error)?.message || err || "I.T. assertions failed.");
-  }
+  const [moduleAssertions, itAssertions, releaseAssertions] = await Promise.all([
+    assertionRows(supabase, "ywi_module_security_assertions", "Module assertions failed."),
+    assertionRows(supabase, "ywi_it_readiness_security_assertions", "I.T. assertions failed."),
+    assertionRows(supabase, "ywi_it_release_authority_assertions", "Release-authority assertions failed."),
+  ]);
 
   const profilesResult = await listRows(supabase, "profiles", {
     columns: "id,role,is_active",
@@ -157,9 +155,9 @@ async function readinessPayload(supabase: any) {
   let authUserCount: number | null = null;
   let authAlignmentError: string | null = null;
   try {
-    const { data, error } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const { data: authData, error } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
     if (error) throw error;
-    authUserCount = Array.isArray(data?.users) ? data.users.length : 0;
+    authUserCount = Array.isArray(authData?.users) ? authData.users.length : 0;
   } catch (err) {
     authAlignmentError = String((err as Error)?.message || err || "Auth alignment check failed.");
   }
@@ -167,18 +165,35 @@ async function readinessPayload(supabase: any) {
   const adminIntegrityRows = data.admin_access_integrity.rows.filter((row: any) => normalizedRole(row?.role) === "admin");
   const adminIntegrityBlocking = adminIntegrityRows.filter((row: any) => row?.all_modules_manage !== true).length;
   const schemaRow = data.schema_drift.rows[0] || null;
-  const schemaCurrent = schemaRow?.drift_status === "current" && Number(schemaRow?.latest_applied_schema_version || 0) >= 160;
-  const assertionRows = [...moduleAssertions, ...itAssertions];
-  const assertionBlocking = assertionRows.filter((row: any) => String(row?.assertion_status || "").toLowerCase() !== "passed").length
-    + (moduleAssertionError ? 1 : 0) + (itAssertionError ? 1 : 0);
+  const releaseAuthorityRow = data.release_authority.rows[0] || null;
+  const expectedSchemaVersion = Number(schemaRow?.expected_schema_version || releaseAuthorityRow?.release_schema_version || 0);
+  const latestAppliedSchemaVersion = Number(schemaRow?.latest_applied_schema_version || 0);
+  const schemaCurrent = expectedSchemaVersion > 0
+    && schemaRow?.drift_status === "current"
+    && latestAppliedSchemaVersion >= expectedSchemaVersion;
+
+  const assertionRowsCombined = [
+    ...moduleAssertions.rows,
+    ...itAssertions.rows,
+    ...releaseAssertions.rows,
+  ];
+  const assertionErrors = [moduleAssertions.error, itAssertions.error, releaseAssertions.error].filter(Boolean);
+  const assertionBlocking = assertionRowsCombined.filter((row: any) => String(row?.assertion_status || "").toLowerCase() !== "passed").length
+    + assertionErrors.length;
 
   const sections = Object.fromEntries(Object.entries(data).map(([key, item]) => [key, summarizeRows(item.rows, item.error)]));
   const knownBlocking = Object.entries(sections)
-    .filter(([key]) => !["admin_access_integrity", "schema_drift", "readiness_registry"].includes(key))
+    .filter(([key]) => !["admin_access_integrity", "schema_drift", "readiness_registry", "release_source_evidence"].includes(key))
     .reduce((sum, [, summary]: any) => sum + Number(summary.blocking || 0), 0);
 
+  const repositoryEnforcementStatus = String(releaseAuthorityRow?.repository_enforcement_status || "unknown").toLowerCase();
+  const repositoryPolicyWarning = repositoryEnforcementStatus === "green" ? 0 : 1;
   const criticalBlocking = (schemaCurrent ? 0 : 1) + adminIntegrityBlocking + assertionBlocking;
-  const overallStatus = criticalBlocking > 0 ? "red" : knownBlocking > 0 ? "amber" : "green";
+  const overallStatus = criticalBlocking > 0
+    ? "red"
+    : knownBlocking > 0 || repositoryPolicyWarning > 0
+      ? "amber"
+      : "green";
 
   return {
     ok: overallStatus !== "red",
@@ -187,8 +202,16 @@ async function readinessPayload(supabase: any) {
     summary: {
       overall_status: overallStatus,
       schema_current: schemaCurrent,
-      expected_schema_version: 160,
-      latest_applied_schema_version: Number(schemaRow?.latest_applied_schema_version || 0),
+      expected_schema_version: expectedSchemaVersion,
+      latest_applied_schema_version: latestAppliedSchemaVersion,
+      release_authority_status: releaseAuthorityRow?.release_authority_status || "unknown",
+      source_gate_status: releaseAuthorityRow?.source_gate_status || "unknown",
+      repository_enforcement_status: repositoryEnforcementStatus,
+      branch_protection_reported: releaseAuthorityRow?.branch_protection_reported ?? null,
+      branch_policy_verified: releaseAuthorityRow?.branch_policy_verified === true,
+      source_sha: releaseAuthorityRow?.source_sha || null,
+      workflow_run_id: releaseAuthorityRow?.workflow_run_id || null,
+      production_promotion_mode: releaseAuthorityRow?.production_promotion_mode || "manual_human_promotion_required",
       active_profile_count: activeProfiles.length,
       auth_user_count: authUserCount,
       auth_profile_count_match: authUserCount === null ? null : authUserCount === activeProfiles.length,
@@ -199,9 +222,10 @@ async function readinessPayload(supabase: any) {
       readiness_blockers: knownBlocking,
     },
     security_assertions: {
-      module: moduleAssertions,
-      it: itAssertions,
-      errors: [moduleAssertionError, itAssertionError].filter(Boolean),
+      module: moduleAssertions.rows,
+      it: itAssertions.rows,
+      release_authority: releaseAssertions.rows,
+      errors: assertionErrors,
     },
     sections: Object.fromEntries(Object.entries(data).map(([key, item]) => [key, {
       rows: item.rows,

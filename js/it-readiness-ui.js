@@ -1,7 +1,7 @@
 /* File: js/it-readiness-ui.js
-   Schema 160 Admin I.T. readiness cockpit.
-   Consolidates schema/preflight/deployment/function/recovery/runtime/SEO readiness and
-   admin access-integrity evidence without turning I.T. into a fifth top-level module.
+   Admin I.T. readiness and release-authority cockpit.
+   Consolidates schema/preflight/deployment/function/recovery/runtime/SEO readiness,
+   exact source/CI evidence, and admin access-integrity evidence without turning I.T. into a fifth module.
 */
 
 'use strict';
@@ -17,7 +17,7 @@
 
   function statusValue(row) {
     if (!row || typeof row !== 'object') return 'unknown';
-    for (const key of ['status','check_status','readiness_status','gate_status','drift_status','assertion_status','health_status','result','state']) {
+    for (const key of ['status','check_status','readiness_status','gate_status','drift_status','assertion_status','health_status','result','state','release_authority_status','source_gate_status','repository_enforcement_status']) {
       if (row[key] !== undefined && row[key] !== null) return String(row[key]).trim().toLowerCase();
     }
     for (const key of ['ok','passed','ready','is_ready','is_current','healthy']) {
@@ -40,14 +40,14 @@
   }
 
   function rowTitle(row, fallback='Readiness check') {
-    for (const key of ['check_title','title','label','name','check_name','gate_name','setting_name','assertion_key','check_key','task_title','page_path','function_name','scope_key']) {
+    for (const key of ['check_title','title','label','name','check_name','gate_name','setting_name','assertion_key','check_key','task_title','page_path','function_name','scope_key','source_branch']) {
       if (row?.[key]) return String(row[key]);
     }
     return fallback;
   }
 
   function rowDetail(row) {
-    for (const key of ['message','details','description','action_hint','failure_hint','readiness_message','next_action_hint','resolution_hint','notes','route_hint']) {
+    for (const key of ['release_message','message','details','description','action_hint','failure_hint','readiness_message','next_action_hint','resolution_hint','notes','route_hint','evidence_note','source_sha']) {
       const value=row?.[key];
       if (value !== undefined && value !== null && String(value).trim()) {
         return typeof value === 'object' ? JSON.stringify(value) : String(value);
@@ -75,9 +75,13 @@
 
   function renderAssertions() {
     const groups=state.payload?.security_assertions || {};
-    const rows=[...(Array.isArray(groups.module)?groups.module:[]),...(Array.isArray(groups.it)?groups.it:[])];
+    const rows=[
+      ...(Array.isArray(groups.module)?groups.module:[]),
+      ...(Array.isArray(groups.it)?groups.it:[]),
+      ...(Array.isArray(groups.release_authority)?groups.release_authority:[]),
+    ];
     const errors=Array.isArray(groups.errors)?groups.errors:[];
-    return `<section class="it-readiness-panel"><span class="it-readiness-kicker">Security proof</span><h3>Module and I.T. assertions</h3>${errors.length?errors.map((e)=>`<div class="it-readiness-error">${esc(e)}</div>`).join(''):''}${rows.length?`<div class="it-readiness-list">${rows.map((row)=>`<div class="it-readiness-row"><div><strong>${esc(row.assertion_key||'assertion')}</strong><small>${esc(row.details||'')}</small></div>${statusChip(row.assertion_status)}</div>`).join('')}</div>`:'<div class="it-readiness-empty">No assertion rows returned.</div>'}</section>`;
+    return `<section class="it-readiness-panel"><span class="it-readiness-kicker">Security proof</span><h3>Module, I.T., and release-authority assertions</h3>${errors.length?errors.map((e)=>`<div class="it-readiness-error">${esc(e)}</div>`).join(''):''}${rows.length?`<div class="it-readiness-list">${rows.map((row)=>`<div class="it-readiness-row"><div><strong>${esc(row.assertion_key||'assertion')}</strong><small>${esc(row.details||'')}</small></div>${statusChip(row.assertion_status)}</div>`).join('')}</div>`:'<div class="it-readiness-empty">No assertion rows returned.</div>'}</section>`;
   }
 
   function renderAdminIntegrity() {
@@ -104,25 +108,32 @@
 
     const s=state.payload.summary||{};
     const overall=String(s.overall_status||'unknown').toLowerCase();
-    const schema=`${Number(s.latest_applied_schema_version||0)} / ${Number(s.expected_schema_version||160)}`;
+    const schema=`${Number(s.latest_applied_schema_version||0)} / ${Number(s.expected_schema_version||0)}`;
+    const sourceSha=s.source_sha?String(s.source_sha).slice(0,12):'not recorded';
     host.innerHTML=`<div class="it-readiness-shell">
       <div class="it-readiness-hero">
         <section class="it-readiness-summary">
-          <span class="it-readiness-kicker">Schema 160 control plane</span>
+          <span class="it-readiness-kicker">Release authority control plane</span>
           <h2>I.T. Readiness</h2>
-          <p>Preflight, preparedness, deployment, recovery, runtime, access, and public-release checks in one Admin-only workspace.</p>
+          <p>Preflight, preparedness, deployment, recovery, runtime, access, exact source/CI evidence, and public-release checks in one Admin-only workspace.</p>
           ${statusChip(overall)}
           <div class="it-readiness-metrics">
             <div class="it-readiness-metric"><strong>${esc(schema)}</strong><span>DB schema applied / expected</span></div>
+            <div class="it-readiness-metric"><strong>${esc(sourceSha)}</strong><span>recorded main source SHA</span></div>
+            <div class="it-readiness-metric"><strong>${esc(s.source_gate_status||'unknown')}</strong><span>main source gate</span></div>
+            <div class="it-readiness-metric"><strong>${esc(s.repository_enforcement_status||'unknown')}</strong><span>repository enforcement</span></div>
             <div class="it-readiness-metric"><strong>${Number(s.active_admin_count||0)}</strong><span>active admins checked</span></div>
             <div class="it-readiness-metric"><strong>${Number(s.admin_access_integrity_blockers||0)}</strong><span>admin access blockers</span></div>
             <div class="it-readiness-metric"><strong>${Number(s.readiness_blockers||0)+Number(s.assertion_blockers||0)}</strong><span>readiness/security blockers</span></div>
+            <div class="it-readiness-metric"><strong>${esc(s.production_promotion_mode||'manual')}</strong><span>production promotion</span></div>
           </div>
           <div class="it-readiness-actions"><button id="itReadinessRefresh" type="button">Refresh readiness</button><button id="itReadinessSmoke" type="button" class="secondary">Run browser smoke check</button></div>
         </section>
         <aside class="it-readiness-visual" aria-label="I.T. readiness visual placeholder"><div class="it-visual-icon" aria-hidden="true">⌁</div><strong>I.T. readiness map placeholder</strong><small>Future approved visual: dependency map showing Source → Database → Functions → Client → Release gates.</small></aside>
       </div>
       <div class="it-readiness-grid">
+        ${panel('release_authority','Release authority','Application release authority')}
+        ${panel('release_source_evidence','Source evidence','Exact main SHA / CI evidence')}
         ${renderAdminIntegrity()}
         ${renderAssertions()}
         ${panel('schema_drift','Database','Schema drift')}
@@ -152,7 +163,7 @@
       if(!payload)throw new Error('I.T. readiness endpoint returned no data.');
       state.payload=payload;
     }catch(err){
-      state.payload={summary:{overall_status:'red',expected_schema_version:160,latest_applied_schema_version:0,active_admin_count:0,admin_access_integrity_blockers:1,readiness_blockers:1,assertion_blockers:0},sections:{},security_assertions:{module:[],it:[],errors:[err?.message||'Unable to load I.T. readiness.']}};
+      state.payload={summary:{overall_status:'red',expected_schema_version:0,latest_applied_schema_version:0,release_authority_status:'unknown',source_gate_status:'unknown',repository_enforcement_status:'unknown',active_admin_count:0,admin_access_integrity_blockers:1,readiness_blockers:1,assertion_blockers:0},sections:{},security_assertions:{module:[],it:[],release_authority:[],errors:[err?.message||'Unable to load I.T. readiness.']}};
     }finally{state.loading=false;render();}
   }
 
