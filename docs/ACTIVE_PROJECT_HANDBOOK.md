@@ -1,9 +1,9 @@
 # YWI Active Project Handbook
 
-**Current schema source/database authority:** `180` — Build 180 COMPLETE  
-**Schema 180 merged checkpoint:** `b37491932ac1d6dbac7917bd9848d8ca120fb6e9`, Run #109 (`33673018358`) — SUCCESS  
-**Schema 180 release evidence:** ID `11`; Release Authority GREEN; repository enforcement separately AMBER  
-**Next bounded build:** Build `181` — Finance mapping review aging, drift, and reconciliation observability  
+**Current schema source authority:** `181` — Build 181 ACTIVE  
+**Verified live database authority:** `180 / 180` pending exact-main Schema 181 proof and deliberate migration  
+**Final clean Schema 180 checkpoint:** `02fa56d7ef456b613278a9ecae568262c3c2410a`, Run #113 (`33687575034`) — SUCCESS  
+**Schema 180 release evidence:** ID `12`; Release Authority GREEN; repository enforcement separately AMBER  
 **Source:** `RosevearCreations/yw`  
 **Architecture:** Safety / OHSA, Finance, Jobs, Admin; I.T. Readiness is inside Admin.
 
@@ -16,7 +16,7 @@ A profile resolves to `hidden`, `view`, `create`, `approve`, or `manage`. Server
 ## Architecture progression
 
 ### Schemas 159–174 — modular authority and Finance intake
-Schemas 159–160 established module permissions, Admin break-glass, and I.T. Readiness. Schemas 161–163 established permission-driven lazy loading and protected Shared Core reads. Schemas 164–168 established fail-closed cross-module contracts/events and canonical job-completion events. Schemas 169–172 established Finance intake, observability/retry, human disposition, and documentary draft candidates. Schemas 173–174 added dependency contracts and repaired the work-order identity chain to canonical UUID.
+Schemas 159–160 established module permissions, Admin break-glass, and I.T. Readiness. Schemas 161–163 established permission-driven loading and protected Shared Core reads. Schemas 164–168 established fail-closed cross-module contracts/events and canonical job-completion events. Schemas 169–172 established Finance intake, retry/observability, human disposition, and documentary draft candidates. Schemas 173–174 added dependency contracts and repaired the work-order identity chain to canonical UUID.
 
 ### Schema 175 — posting safety
 Posting approval is separate from completion disposition/candidate approval and carries server-owned idempotency and immutable provenance.
@@ -34,78 +34,56 @@ One read-only lifecycle spans intake → disposition → candidates → posting 
 Build 179 completed the original Finance hardening sequence with permission-matrix contracts, direct-bypass guards, JWT protection, deterministic synthetic non-persistent/browser-only fixtures, rendered phone/desktop acceptance, Admin → I.T. evidence, and a 12-assertion release-hardening family. Posting execution/provider mutation remained OFF and Jobs writeback prohibited.
 
 ### Schema 180 — accountant mapping readiness and review workflow — COMPLETE
-Build 180 operationalized the existing accountant/chart mapping prerequisite without making accounting-policy decisions for the user.
+Build 180 operationalized the existing accountant/chart mapping prerequisite without making accounting-policy decisions for the user. `accountant_export_mapping_rules` remains canonical; approval is `review_status='approved'`; human review mutation is protected by service-role plus DB-side Finance `manage`; selected accounts must resolve to active `chart_of_accounts`; every actual review action writes immutable private human-review audit history.
 
-Canonical facts and delivered authority:
+The final post-prune Schema 180 source checkpoint is `02fa56d7ef456b613278a9ecae568262c3c2410a`, Run #113 (`33687575034`) SUCCESS, release evidence ID `12`. The database is `180 / 180`, Schema 180 assertions are 8/8, prior Schema 179 assertions are 12/12, and Finance dependencies are 62/62. All three posting mappings retain their original selected account IDs and remain `review`; release-created review audit/posting effects remain zero. Posting execution and provider mutation remain OFF.
 
-- `accountant_export_mapping_rules` remains the mapping source of truth; no parallel mapping table was created;
-- approval is `review_status='approved'`; there is no invented `is_approved` field;
-- account selection remains `account_id uuid` → `chart_of_accounts(id)`;
-- the review mutation is service-role-only with DB-side Finance `manage` defense in depth;
-- only `accounts_receivable`, `service_revenue`, and `sales_tax_payable` are in the bounded posting-mapping workflow;
-- selected accounts must exist and be active; approval requires an account;
-- every human review action creates immutable private audit history;
-- Finance view can inspect readiness; Finance manage can select/review through the protected endpoint/UI;
-- Admin → I.T. exposes mapping readiness and the Schema 180 assertion family;
-- deterministic rendered acceptance is non-persistent and does not touch live mapping/accounting/provider state.
+### Schema 181 — mapping aging, drift and reconciliation observability — ACTIVE
 
-## Build 180 release proof
+Build 181 adds **derived read-only observability**, not another accounting authority. Its source design is bounded to:
 
-Schema 180 is live at `180 / 180`. Exact-main Run #109 on `b37491932ac1d6dbac7917bd9848d8ca120fb6e9` passed all source/static and rendered browser gates before migration. Release evidence ID `11` binds that source to Schema 180.
+- human-review age derived from canonical `reviewed_at`, mapping `updated_at`, and `created_at`;
+- technical classification of pending review as recent, aging at 7+ days, or stale at 30+ days without treating that human backlog as an I.T. failure;
+- true drift detection for inactive/missing account state, immutable-review/current-state disagreement, and approved mappings without valid review evidence;
+- a separate recheck warning when an approved chart account changes after the recorded human review;
+- reconciliation of each canonical mapping with Schema 176 generated-pair blocker codes (`AR_ACCOUNT_MAPPING_NOT_APPROVED`, `REVENUE_ACCOUNT_MAPPING_NOT_APPROVED`, and conditional `TAX_ACCOUNT_MAPPING_NOT_APPROVED`);
+- neutral `NO_GENERATED_PAIR_SAMPLE` status when no current generated pair exercises a mapping;
+- Finance UI and Admin → I.T. reason codes separating **human decision backlog (AMBER)** from **technical contradictions (RED)**;
+- deterministic synthetic non-persistent/browser-only acceptance across `hidden`, `view`, `create`, `approve`, and `manage` on phone and desktop.
 
-Post-migration proof:
-
-- Schema 180 mapping assertions: **8 / 8 PASS**;
-- Schema 179 release-hardening assertions: **12 / 12 PASS**;
-- required Finance dependency contracts through 180: **62 / 62 PASS**;
-- all three active Admin profiles retain four-module break-glass `manage`;
-- `accounts_receivable` retained account `be9a4805-7a6b-4066-b827-ea7f11b94171` and remains `review`;
-- `sales_tax_payable` retained account `18a7d16b-d3a5-4f82-9b82-de7dfe197a70` and remains `review`;
-- `service_revenue` retained account `0210b0e0-d68e-444b-940d-fae9f17e9e9a` and remains `review`;
-- release-created mapping review audit events: **0**;
-- release-created posting approvals, execution runs, reversals, invoice postings, and journal postings: **0**;
-- posting execution release OFF; provider mutation OFF;
-- `finance-account-mapping-review` v2 ACTIVE / JWT enabled;
-- `admin-it-control` v10 ACTIVE / JWT enabled.
-
-Mapping readiness remains intentionally **AMBER** because human accountant/bookkeeper review is still pending. Application Release Authority is GREEN. Repository enforcement is separately AMBER because `main` remains reported unprotected. Production promotion remains manual.
+Build 181 deliberately creates **no new table** and **no new mutation endpoint**. The existing Schema 180 `review_mapping` workflow remains the only mapping mutation authority. Build 181 does not insert into the immutable human-review audit, modify `accountant_export_mapping_rules` or `chart_of_accounts`, enable execution/provider mutation, write Jobs state, invent tax/chart policy, or promote Production.
 
 ## Security and ownership invariants
 
 - Admin break-glass `manage` across Safety, Finance, Jobs, and Admin remains mandatory until deliberately replaced.
 - Shared Core identities are centrally owned and consumed read-only.
 - Cross-module writes require an explicit owner, access level, and boundary mode.
-- Finance disposition, candidate generation, posting approval, preflight, execution, recovery, reversal, and accountant mapping review are distinct authorities.
+- Finance disposition, candidate generation, posting approval, preflight, execution, recovery, reversal, accountant mapping review, and mapping observability remain separate concerns.
 - Posting execution release is private/server-owned and cannot be enabled by the browser.
 - Accountant/chart mapping choices and approvals remain human-controlled.
 - Finance completion/accounting RPCs do not write canonical Jobs/work-order state.
 - Stripe/PayPal/provider/payment truth remains outside this Finance pipeline.
 - Synthetic acceptance is non-persistent/browser-only.
 - I.T. Readiness may report or block a release but cannot auto-promote Production.
+- Production promotion remains deliberate/manual.
 
-## Next bounded release — Build 181
+## Build 181 release discipline
 
-Build 181 is limited to **read-only Finance mapping review aging, drift, and reconciliation observability**. Safe targets include pending-review age/staleness, detection of account/activity/status drift after a human review, immutable observation history, comparison against Finance preflight/release evidence, and reasoned Admin → I.T. guidance.
-
-Build 181 must not choose an account, approve/reject a mapping for the user, enable Finance execution/provider mutation, write Jobs state, invent tax/chart policy, conduct real-money testing, or promote Production.
-
-## Release discipline
-
-1. Start from exact current `main` plus verified live schema evidence.
-2. Query live catalog types/relationships before adding schema dependencies; never guess identity types.
-3. Preserve every applied numbered migration.
-4. Run all source/security gates on a bounded feature branch.
-5. Use deterministic non-persistent fixtures where live mutation is inappropriate.
+1. Start from the clean Schema 180 `main` checkpoint `02fa56d7ef456b613278a9ecae568262c3c2410a` and verified live `180 / 180` evidence.
+2. Query live catalog types and existing preflight/lifecycle columns before adding Schema 181 dependencies; never guess types.
+3. Preserve all existing mapping account IDs/review states during source tests and migration.
+4. Run the dedicated `test:finance-account-mapping-observability` plus every existing source/security gate on the bounded feature branch.
+5. Run rendered mapping acceptance on real client code using deterministic non-persistent fixtures.
 6. Merge only an exact green PR head.
-7. Require exact-main CI before applying a migration.
-8. Verify drift, dependencies, assertions, and zero unintended effects after migration.
-9. Deploy changed protected Edge functions after DB dependencies exist and verify JWT/version state.
-10. Record exact-main release evidence, update the release rail, clean merged branches/workflows, and verify final clean-main source.
+7. Require a separate exact-main green run before applying Schema 181.
+8. Apply Schema 181 with the canonical migration applicator, then verify schema drift, dependencies, Schema 180/181 assertions, mapping identity preservation, zero new review-audit/posting effects, and both execution switches OFF.
+9. Deploy only the changed protected functions (`finance-account-mapping-review` and `admin-it-control`) after database dependencies exist; verify JWT/version state.
+10. Record exact-main release evidence, complete the Schema 181 rail, synchronize these three canonical documents, prune completed branches, and prove final clean-main CI.
 11. Keep Production promotion deliberate/manual.
 
 ## Repository hygiene
 
-Git history is the archive. Do not keep stale Markdown, archive trees, generated full-schema snapshots, Playwright output, dependencies, logs, temp, or backup artifacts in the active tree. Numbered SQL migrations remain permanent audit authority.
+Git history is the archive. Do not keep stale Markdown, archive trees, generated full-schema snapshots, Playwright output, dependencies, logs, temp, or backup artifacts in the active tree. Numbered SQL migrations remain permanent audit authority and the source chain is now ordered through Schema 181; the live DB remains Schema 180 until migration proof is complete.
 
 The only active project authority documents are `README.md`, `docs/ACTIVE_PROJECT_HANDBOOK.md`, and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
 
