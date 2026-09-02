@@ -1,0 +1,41 @@
+name: Build 181 I.T. observability status fix
+on:
+  push:
+    branches: [schema-181-it-observability-status-fix]
+    paths: [.github/workflows/build181-it-status-fix.yml]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: schema-181-it-observability-status-fix
+          fetch-depth: 0
+      - name: Fix observability status classification and lock with tests
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          def rep(path, old, new):
+              p=Path(path); t=p.read_text()
+              if old not in t: raise SystemExit(f'missing anchor in {path}: {old!r}')
+              p.write_text(t.replace(old,new,1))
+
+          rep('supabase/functions/admin-it-control/index.ts',
+              '    "source_gate_status", "repository_enforcement_status", "mapping_readiness_status",\n',
+              '    "source_gate_status", "repository_enforcement_status", "mapping_readiness_status", "mapping_observability_status",\n')
+          rep('scripts/admin-it-readiness-check.mjs',
+              "check('admin-it-control-finance-mapping-observability',endpoint.includes('v_it_finance_account_mapping_observability_status')&&endpoint.includes('ywi_finance_account_mapping_observability_assertions')&&endpoint.includes('finance_account_mapping_observability'));",
+              "check('admin-it-control-finance-mapping-observability',endpoint.includes('v_it_finance_account_mapping_observability_status')&&endpoint.includes('ywi_finance_account_mapping_observability_assertions')&&endpoint.includes('finance_account_mapping_observability')&&endpoint.includes('mapping_observability_status'));")
+          rep('scripts/finance-account-mapping-observability-check.mjs',
+              "add('admin-it-observability-source',hasAll(adminEndpoint,['finance_account_mapping_observability','v_it_finance_account_mapping_observability_status','ywi_finance_account_mapping_observability_assertions']));",
+              "add('admin-it-observability-source',hasAll(adminEndpoint,['finance_account_mapping_observability','v_it_finance_account_mapping_observability_status','ywi_finance_account_mapping_observability_assertions','mapping_observability_status']));")
+          PY
+          git rm .github/workflows/build181-it-status-fix.yml
+          git config user.name "YWI Build 181 repair"
+          git config user.email "actions@users.noreply.github.com"
+          git add supabase/functions/admin-it-control/index.ts scripts/admin-it-readiness-check.mjs scripts/finance-account-mapping-observability-check.mjs
+          git commit -m "Fix Admin I.T. mapping observability status classification"
+          git push origin schema-181-it-observability-status-fix
