@@ -1,0 +1,63 @@
+name: Build 181 source patch v2
+on:
+  push:
+    branches: [schema-181-finance-mapping-observability]
+    paths: [.github/workflows/build181-source-patch-v2.yml]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: schema-181-finance-mapping-observability
+          fetch-depth: 0
+      - name: Apply non-workflow Build 181 integration
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          def rep(path, old, new):
+              p=Path(path); t=p.read_text()
+              if old not in t: raise SystemExit(f'missing anchor: {path}: {old[:90]!r}')
+              p.write_text(t.replace(old,new,1))
+
+          p='supabase/functions/admin-it-control/index.ts'
+          rep(p,'    finance_account_mapping_review: ["v_it_finance_account_mapping_review_status", null, true, 10],\n','    finance_account_mapping_review: ["v_it_finance_account_mapping_review_status", null, true, 10],\n    finance_account_mapping_observability: ["v_it_finance_account_mapping_observability_status", null, true, 10],\n')
+          rep(p,'financeReleaseHardeningAssertions, financeAccountMappingAssertions] = await Promise.all([','financeReleaseHardeningAssertions, financeAccountMappingAssertions, financeAccountMappingObservabilityAssertions] = await Promise.all([')
+          rep(p,'    assertionRows(supabase, "ywi_finance_account_mapping_review_assertions", "Finance account-mapping assertions failed."),\n  ]);','    assertionRows(supabase, "ywi_finance_account_mapping_review_assertions", "Finance account-mapping assertions failed."),\n    assertionRows(supabase, "ywi_finance_account_mapping_observability_assertions", "Finance account-mapping observability assertions failed."),\n  ]);')
+          rep(p,'    ...financeAccountMappingAssertions.rows,\n  ];','    ...financeAccountMappingAssertions.rows,\n    ...financeAccountMappingObservabilityAssertions.rows,\n  ];')
+          rep(p,'    financeAccountMappingAssertions.error,\n  ].filter(Boolean);','    financeAccountMappingAssertions.error,\n    financeAccountMappingObservabilityAssertions.error,\n  ].filter(Boolean);')
+          rep(p,'      finance_account_mapping_review: financeAccountMappingAssertions.rows,\n      errors: assertionErrors,','      finance_account_mapping_review: financeAccountMappingAssertions.rows,\n      finance_account_mapping_observability: financeAccountMappingObservabilityAssertions.rows,\n      errors: assertionErrors,')
+
+          p='js/it-readiness-ui.js'
+          rep(p,"'source_gate_status','repository_enforcement_status','mapping_readiness_status']","'source_gate_status','repository_enforcement_status','mapping_readiness_status','mapping_observability_status']")
+          rep(p,'      ...(Array.isArray(groups.finance_account_mapping_review)?groups.finance_account_mapping_review:[]),\n    ];','      ...(Array.isArray(groups.finance_account_mapping_review)?groups.finance_account_mapping_review:[]),\n      ...(Array.isArray(groups.finance_account_mapping_observability)?groups.finance_account_mapping_observability:[]),\n    ];')
+          rep(p,"        ${panel('finance_account_mapping_review','Finance mapping review','Human accountant mapping readiness and audit health')}\n","        ${panel('finance_account_mapping_review','Finance mapping review','Human accountant mapping readiness and audit health')}\n        ${panel('finance_account_mapping_observability','Mapping observability','Human-review aging, technical drift and posting-preflight reconciliation')}\n")
+
+          p='scripts/admin-it-readiness-check.mjs'
+          rep(p,"check('admin-it-control-finance-mapping-readiness',endpoint.includes('v_it_finance_account_mapping_review_status')&&endpoint.includes('ywi_finance_account_mapping_review_assertions'));\n","check('admin-it-control-finance-mapping-readiness',endpoint.includes('v_it_finance_account_mapping_review_status')&&endpoint.includes('ywi_finance_account_mapping_review_assertions'));\ncheck('admin-it-control-finance-mapping-observability',endpoint.includes('v_it_finance_account_mapping_observability_status')&&endpoint.includes('ywi_finance_account_mapping_observability_assertions')&&endpoint.includes('finance_account_mapping_observability'));\n")
+          rep(p,"check('it-ui-finance-mapping-review',itUi.includes(\"panel('finance_account_mapping_review'\")&&itUi.includes('mapping_readiness_status')&&itUi.includes('finance_account_mapping_review'));\n","check('it-ui-finance-mapping-review',itUi.includes(\"panel('finance_account_mapping_review'\")&&itUi.includes('mapping_readiness_status')&&itUi.includes('finance_account_mapping_review'));\ncheck('it-ui-finance-mapping-observability',itUi.includes(\"panel('finance_account_mapping_observability'\")&&itUi.includes('mapping_observability_status')&&itUi.includes('finance_account_mapping_observability'));\n")
+
+          p='package.json'
+          rep(p,'    "test:finance-account-mapping-review": "node scripts/finance-account-mapping-review-check.mjs"\n','    "test:finance-account-mapping-review": "node scripts/finance-account-mapping-review-check.mjs",\n    "test:finance-account-mapping-observability": "node scripts/finance-account-mapping-observability-check.mjs"\n')
+
+          p='scripts/repo-smoke-check.mjs'
+          rep(p,"add('no-temporary-build180-patch-workflow',!exists('.github/workflows/build180-source-patch.yml'),'Temporary Build 180 source patch workflow is absent.');\n","add('no-temporary-build180-patch-workflow',!exists('.github/workflows/build180-source-patch.yml'),'Temporary Build 180 source patch workflow is absent.');\nadd('no-temporary-build181-patch-workflow',!exists('.github/workflows/build181-source-patch.yml')&&!exists('.github/workflows/build181-source-patch-v2.yml'),'Temporary Build 181 source patch workflows are absent.');\n")
+          rep(p,"  add(`${name.toLowerCase().replaceAll(' ','-')}-schema180`,text.includes('180')&&text.includes('I.T. Readiness'),`${name} records active Schema 180 source authority and retains the Admin/I.T. boundary.`);","  add(`${name.toLowerCase().replaceAll(' ','-')}-schema181`,text.includes('181')&&text.includes('I.T. Readiness'),`${name} records active Schema 181 source authority and retains the Admin/I.T. boundary.`);")
+          rep(p,"add('docs-build181-next',[readme,handbook,nextSteps].every((text)=>text.includes('Build 181')&&/aging|drift|reconciliation/i.test(text)&&/next/i.test(text)),'Active authority advances the next bounded release to Build 181 mapping observability.');","add('docs-build181-active',[readme,handbook,nextSteps].every((text)=>text.includes('Build 181')&&/aging|drift|reconciliation/i.test(text)&&/ACTIVE/i.test(text)),'Active authority records Build 181 mapping observability as the bounded source release.');")
+          rep(p,'for(let n=30;n<=180;n++) if(!versions.has(n)) missing.push(n);','for(let n=30;n<=181;n++) if(!versions.has(n)) missing.push(n);')
+          rep(p,"add('migration-range-030-through-180',missing.length===0&&versions.has(180),missing.length?`Missing migration numbers: ${missing.join(', ')}`:'Every schema number 030–180 is represented.');","add('migration-range-030-through-181',missing.length===0&&versions.has(181),missing.length?`Missing migration numbers: ${missing.join(', ')}`:'Every schema number 030–181 is represented.');")
+          rep(p,"  [180,'sql/180_finance_account_mapping_review_workflow.sql'],\n])","  [180,'sql/180_finance_account_mapping_review_workflow.sql'],\n  [181,'sql/181_finance_account_mapping_observability.sql'],\n])")
+          rep(p,"const schema180=read('sql/180_finance_account_mapping_review_workflow.sql');\n","const schema180=read('sql/180_finance_account_mapping_review_workflow.sql');\nconst schema181=read('sql/181_finance_account_mapping_observability.sql');\n")
+          rep(p,"add('schema180-no-jobs-writeback',!/update\\s+public\\.(?:jobs|work_orders)\\b/i.test(schema180),'Schema 180 does not write Jobs state.');\n","add('schema180-no-jobs-writeback',!/update\\s+public\\.(?:jobs|work_orders)\\b/i.test(schema180),'Schema 180 does not write Jobs state.');\nadd('schema181-read-only-observability',['v_finance_account_mapping_observability','v_it_finance_account_mapping_observability_status','ywi_finance_account_mapping_observability_assertions'].every((key)=>schema181.includes(key))&&!/^\\s*create\\s+table\\b/gmi.test(schema181),'Schema 181 adds derived observability without another mapping authority table.');\nadd('schema181-aging-drift-preflight',['HUMAN_REVIEW_PENDING_STALE','REVIEW_AUDIT_STATE_DRIFT','NO_GENERATED_PAIR_SAMPLE','STALE_PREFLIGHT_MAPPING_BLOCKER','MISSING_PREFLIGHT_MAPPING_BLOCKER'].every((key)=>schema181.includes(key)),'Schema 181 distinguishes human aging, technical drift and preflight reconciliation.');\nadd('schema181-no-mapping-auto-mutation',!/\\b(?:update|delete\\s+from|insert\\s+into)\\s+public\\.accountant_export_mapping_rules\\b/i.test(schema181),'Schema 181 does not modify canonical mapping decisions.');\nadd('schema181-execution-provider-closed',!/execution_enabled\\s*=\\s*true/i.test(schema181)&&!/provider_mutation_enabled\\s*=\\s*true/i.test(schema181),'Schema 181 does not enable accounting execution or provider mutation.');\nadd('schema181-no-jobs-writeback',!/\\b(?:update|delete\\s+from|insert\\s+into)\\s+public\\.(?:jobs|work_orders)\\b/i.test(schema181),'Schema 181 does not write Jobs state.');\n")
+          rep(p,"add('schema180-rendered-mapping-review',['hidden','view','create','approve','manage'].every((key)=>mappingBrowser.includes(`'${key}'`))&&mappingBrowser.includes('phone')&&mappingBrowser.includes('desktop'),'Rendered mapping acceptance covers Finance access levels on phone and desktop.');\n","add('schema180-rendered-mapping-review',['hidden','view','create','approve','manage'].every((key)=>mappingBrowser.includes(`'${key}'`))&&mappingBrowser.includes('phone')&&mappingBrowser.includes('desktop'),'Rendered mapping acceptance covers Finance access levels on phone and desktop.');\nadd('schema181-mapping-observability-fixture',mappingFixture.includes('observability_readiness')&&mappingFixture.includes('technical_drift_count')&&mappingFixture.includes('preflight_reconciliation_issue_count'),'Build 181 fixture carries deterministic read-only observability evidence.');\nadd('schema181-rendered-observability',mappingBrowser.includes('Mapping observability')&&mappingBrowser.includes('HUMAN_REVIEW_PENDING_STALE')&&mappingBrowser.includes('NO_GENERATED_PAIR_SAMPLE'),'Rendered mapping acceptance covers human aging and neutral no-sample observability.');\n")
+          rep(p,"  'scripts/finance-posting-execution-recovery-check.mjs','scripts/finance-operational-control-plane-check.mjs','scripts/finance-release-hardening-check.mjs','scripts/finance-account-mapping-review-check.mjs',\n","  'scripts/finance-posting-execution-recovery-check.mjs','scripts/finance-operational-control-plane-check.mjs','scripts/finance-release-hardening-check.mjs','scripts/finance-account-mapping-review-check.mjs','scripts/finance-account-mapping-observability-check.mjs',\n")
+          PY
+          git rm .github/workflows/build181-source-patch-v2.yml
+          git config user.name "YWI Build 181 integration"
+          git config user.email "actions@users.noreply.github.com"
+          git add supabase/functions/admin-it-control/index.ts js/it-readiness-ui.js scripts/admin-it-readiness-check.mjs package.json scripts/repo-smoke-check.mjs
+          git commit -m "Integrate Build 181 observability into I.T. and repository gates"
+          git push origin schema-181-finance-mapping-observability
