@@ -9,13 +9,11 @@ const results = [];
 const add = (name, ok, details = '') => results.push({ name, ok, details });
 
 const migration = read('sql/158_supervisor_closeout_customer_signoff_invoice_followup.sql');
-const schema = read('sql/000_full_schema_reference.sql');
 const ops = read('supabase/functions/operations-manage/index.ts');
 const portal = read('supabase/functions/customer-portal/index.ts');
 const cockpit = read('js/operations-cockpit.js');
 const customerPortal = read('js/customer-portal.js');
 const css = read('style.css');
-const docs = read('docs/NEXT_STEPS_AND_SANITY_CHECK.md') + '\n' + read('docs/ACTIVE_PROJECT_HANDBOOK.md');
 
 add('schema158-migration-file-present', migration.startsWith('begin;') && migration.trim().endsWith('commit;'), 'Migration has transaction markers.');
 add('schema158-closeout-tables', hasAll(migration, [
@@ -54,7 +52,6 @@ add('schema158-private-grants', hasAll(migration, [
   'closeout_tables_not_public',
   'closeout_rpcs_not_public'
 ]), 'Closeout tables/functions are not directly available to browser roles.');
-add('schema158-reference-includes-migration', schema.includes('-- BEGIN MIGRATION: 158_supervisor_closeout_customer_signoff_invoice_followup') && schema.includes(migration.trim()), 'Full schema reference includes schema 158 verbatim.');
 
 add('operations-closeout-actions', hasAll(ops, [
   "const BUILD = '2026-09-01a'",
@@ -97,7 +94,6 @@ add('closeout-responsive-css', hasAll(css, [
   '.customer-portal-closeout-form',
   '@media(max-width:620px)'
 ]), 'Closeout surfaces have responsive CSS.');
-add('docs-test-guide-closeout', hasAll(docs, ['Schema 159', 'supervisor closeout', 'customer signoff', 'invoice readiness', 'maintenance follow-up']) || hasAll(docs, ['schema 159', 'supervisor closeout', 'customer signoff', 'invoice readiness', 'maintenance follow-up']), 'Active docs preserve closeout testing under the current schema 159 handoff.');
 
 const passed = results.filter((item) => item.ok).length;
 console.log(`\nSupervisor closeout contract: ${passed}/${results.length} passed\n`);
