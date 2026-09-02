@@ -118,6 +118,7 @@ async function mountIt(page,role='admin'){
   },{fixture,role});
   await page.addScriptTag({content:itSource});
   await page.evaluate(()=>document.dispatchEvent(new Event('DOMContentLoaded')));
+  await page.evaluate(()=>document.getElementById('it')?.classList.add('active'));
   return fixture;
 }
 
