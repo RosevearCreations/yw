@@ -30,10 +30,12 @@ const readme=read('README.md');
 const handbook=read('docs/ACTIVE_PROJECT_HANDBOOK.md');
 const nextSteps=read('docs/NEXT_STEPS_AND_SANITY_CHECK.md');
 for(const [name,text] of [['README',readme],['Handbook',handbook],['Next steps',nextSteps]]){
-  add(`${name.toLowerCase().replaceAll(' ','-')}-schema174`,text.includes('174')&&text.includes('I.T. Readiness'),`${name} retains the verified Schema 174 restart boundary while Schema 175 is developed and converged.`);
+  add(`${name.toLowerCase().replaceAll(' ','-')}-schema175`,text.includes('175')&&text.includes('I.T. Readiness'),`${name} records Schema 175 as the current verified authority and retains the Admin/I.T. boundary.`);
 }
+add('docs-build176-next',handbook.includes('Build 176')&&nextSteps.includes('Build 176')&&nextSteps.includes('items 5–8'),'Active authority advances the next bounded work to Build 176 items 5–8.');
 add('docs-four-module-boundary',[readme,handbook,nextSteps].every((text)=>['Safety','Finance','Jobs','Admin'].every((key)=>text.includes(key))),'Active authority retains Safety, Finance, Jobs and Admin.');
 add('docs-manual-production',[readme,handbook,nextSteps].every((text)=>/manual/i.test(text)&&/Production/i.test(text)),'Production promotion remains deliberate/manual.');
+add('docs-posting-execution-closed',[readme,handbook,nextSteps].every((text)=>/posting execution/i.test(text)&&/(closed|not_released)/i.test(text)),'Schema 175 posting approval remains explicitly separate from execution authority.');
 
 const sqlDir=path.join(root,'sql');
 const sqlNames=fs.readdirSync(sqlDir).filter((name)=>/^\d{3}_.+\.sql$/i.test(name));

@@ -1,32 +1,39 @@
 # YWI Next Steps and Sanity Check
 
-**Current source/database boundary:** Schema `174`  
+**Current source/database boundary:** Schema `175`  
 **Repository-cleanup baseline:** `main` at `ee49be76e378c1bb91d749d5534251227799deb6`  
-**Restart rule:** verify 174 remains current before beginning the next schema-changing build.
+**Build 175 source merge checkpoint:** `29a99d065a47776e4aa8e56ea1db6cb754954d92`  
+**Restart rule:** verify Schema 175 remains current before beginning Build 176 or any later schema-changing work.
 
 ## Current checkpoint
 
-The latest verified release corrected Schema 173's guessed Finance work-order dependency type. `job_completion_reviews.work_order_id` is canonical `uuid`, and Schema 174 extends the UUID identity contracts used by the Finance completion candidate chain.
+Build 175 — Finance posting safety foundation — is complete at the database/runtime boundary.
 
-At the verified repository-cleanup baseline:
+Verified Build 175 evidence:
 
-- source `main` was `ee49be76e378c1bb91d749d5534251227799deb6` before subsequent roadmap-documentation commits;
-- GitHub reported exactly one branch: `main`;
-- exact-main source/browser gate Run #63 completed successfully after repository and branch cleanup;
-- database schema authority remains Schema `174` because repository cleanup and roadmap documentation did not change database state;
-- Finance schema-dependency failures were zero at the Schema 174 convergence checkpoint;
-- Admin/I.T. release authority was green;
-- Production promotion remains manual;
-- GitHub `main` branch protection remains an infrastructure hardening item rather than a Schema 174 database blocker.
+- exact merged `main` source SHA `29a99d065a47776e4aa8e56ea1db6cb754954d92` passed GitHub Run #67 (`33648494759`), including the dedicated posting-safety source gate and rendered Chromium module acceptance;
+- Supabase schema drift reports `175 / 175` and `current`;
+- all `24 / 24` required Finance schema-dependency contracts pass;
+- all `6 / 6` Schema 175 Finance posting-safety assertions pass;
+- posting execution violations = `0`;
+- Schema 172 invoice posting rows = `0`;
+- Schema 172 journal posting rows = `0`;
+- the JWT-protected `finance-job-completion-posting-approval` Edge function is deployed and active;
+- Vercel currently reports an account `build-rate-limit` failure, which is infrastructure throttling rather than a GitHub source-gate regression;
+- Production promotion remains manual and was not performed.
+
+Build 175 created a separate human posting-approval authority, durable idempotency identity, and immutable event → intake → disposition → candidate → approval provenance. It deliberately keeps accounting execution closed. No AR invoice, GL batch/entry, payment, Jobs writeback, Stripe/PayPal mutation, fifth module, or Production promotion was introduced.
 
 ## First checks on restart
 
-1. Confirm `main` has not regressed from Schema 174.
-2. Confirm database drift/preflight still reports Schema 174 current before applying another migration.
-3. Confirm Admin remains break-glass `manage` across Safety, Finance, Jobs, and Admin.
-4. Run the current source gates and rendered browser acceptance appropriate to the next change.
-5. Keep I.T. Readiness inside Admin; do not create a fifth top-level module.
-6. Keep Production promotion deliberate/manual.
+1. Confirm `main` has not regressed from Schema 175.
+2. Confirm database drift reports Schema `175` current before applying another migration.
+3. Confirm all required Finance dependency contracts and Schema 175 posting-safety assertions remain green.
+4. Confirm Admin remains break-glass `manage` across Safety, Finance, Jobs, and Admin.
+5. Run the current source gates and rendered browser acceptance appropriate to the next change.
+6. Keep I.T. Readiness inside Admin; do not create a fifth top-level module.
+7. Keep Schema 175 posting execution closed while Build 176 adds mappings/preflight only.
+8. Keep Production promotion deliberate/manual.
 
 ## Current source gates
 
@@ -46,18 +53,21 @@ npm run test:consumer-observability
 npm run test:finance-consumer-execution
 npm run test:finance-completion-review
 npm run test:finance-schema-dependencies
+npm run test:finance-posting-safety
 npm run test:contrast
 npm run test:navigation
 ```
 
-GitHub/Vercel rendered-browser acceptance remains required before calling the resulting `main` checkpoint green.
+GitHub rendered-browser acceptance remains required before calling a resulting `main` checkpoint source-green. Vercel deployment evidence remains separately visible; account build-rate throttling is not permission to bypass source or database gates.
 
 ## Architecture sanity rules
 
 - **Safety / OHSA, Finance, Jobs, Admin** remain the only top-level staff modules.
 - Shared Core owns canonical shared identities; modules consume read models rather than create duplicates.
 - Cross-module writes fail closed unless a declared contract identifies the owner and allowed operation.
-- Finance job-completion review/candidate state is not permission to auto-post invoices, journals, or payments.
+- Finance job-completion review/candidate state is not posting approval.
+- Finance posting approval is not posting execution authority.
+- Schema 175 completion-candidate posting paths remain explicitly closed until a later reviewed release.
 - Stripe/PayPal/provider truth remains provider/webhook controlled.
 - Public SEO remains separate from private operations/customer evidence.
 - One public H1, canonical URL, structured data, approved public image/alt text, and sitemap controls remain release requirements.
@@ -66,7 +76,7 @@ GitHub/Vercel rendered-browser acceptance remains required before calling the re
 
 Treat numbered files in `sql/` as permanent migration history. Do not delete or rewrite an applied migration because a later schema supersedes its runtime objects. Use a new ordered migration when database state must change.
 
-Schema 173's dependency guard must remain reproducible because Schema 174 explicitly demonstrates and repairs the historical `bigint` assumption to `uuid`. Removing either migration would weaken the audit trail.
+Schema 173's historical dependency assumption, Schema 174's UUID correction, and Schema 175's posting-safety authority must all remain auditable in order. Do not collapse them into a generated full-schema snapshot.
 
 ## Repository sanity
 
@@ -75,19 +85,20 @@ The repository root should stay free of:
 - dated `archive/` snapshots;
 - `retired-markdown-*` directories;
 - `test_write*` artifacts;
+- generated full-schema snapshots;
 - `node_modules/`, Playwright output, logs, temp files, and editor backups.
 
 Git history is the historical archive. Keep only the three active authority documents and update them in place when the restart boundary changes.
 
 ## Next bounded development direction
 
-Resume from the existing Finance completion-review/candidate architecture rather than starting a parallel accounting path. Before adding automatic accounting effects, explicitly define and test the human approval, idempotency, posting, reversal, provider-truth, and audit boundaries. Any new schema work starts at **Schema 175** only after Schema 174 source/database preflight is reverified.
+Proceed to **Build 176 — Connect Finance to the existing accounting engine**. Build 176 covers roadmap items 5–8 only: map the existing Schema 172/175 candidate/approval chain into the existing invoice and journal posting authorities, add a non-mutating posting dry-run/preflight, and add paired invoice/journal consistency validation. Build 176 must **not** open actual accounting posting execution; that remains a separately reviewed Build 177 concern.
 
 ## Autonomous Build 175-179 execution queue
 
-The following 20 items are the canonical next autonomous development sequence. They may be implemented without additional business input as long as the existing architecture and safety boundaries remain unchanged.
+The following 20 items remain the canonical autonomous development sequence. Build 175 items 1–4 are now complete; Build 176 items 5–8 are next. The item wording is retained so the original approved plan remains stable and auditable.
 
-### Build 175 — Finance posting safety foundation
+### Build 175 — Finance posting safety foundation — COMPLETE
 
 1. **Reverify Schema 174 source/database convergence.** Run the complete read-only schema drift, dependency-preflight, module-access, I.T. readiness, and release-authority checks before introducing 175.
 
@@ -97,7 +108,7 @@ The following 20 items are the canonical next autonomous development sequence. T
 
 4. **Add immutable posting provenance.** Every future accounting effect should retain the complete chain: Jobs completion event → Finance intake → Finance disposition → invoice/journal candidate → posting approval → accounting record → actor/timestamp.
 
-### Build 176 — Connect Finance to the existing accounting engine
+### Build 176 — Connect Finance to the existing accounting engine — NEXT
 
 5. **Map invoice candidates into the existing `job_invoice_postings` / AR invoice architecture.** Do not create another invoice table.
 
@@ -139,7 +150,7 @@ The following 20 items are the canonical next autonomous development sequence. T
 
 ## Autonomous execution boundary
 
-All 20 items above can be developed without further business input while preserving the already-established rules: four modules only, Admin break-glass access, Shared Core ownership, fail-closed cross-module writes, manual Production promotion, and provider-controlled Stripe/PayPal truth.
+All remaining items above can be developed without further business input while preserving the already-established rules: four modules only, Admin break-glass access, Shared Core ownership, fail-closed cross-module writes, manual Production promotion, and provider-controlled Stripe/PayPal truth.
 
 Keep the following outside this autonomous batch unless separately authorized or required by an already-fixed existing contract:
 
@@ -150,4 +161,4 @@ Keep the following outside this autonomous batch unless separately authorized or
 - pricing changes;
 - real-money/payment testing.
 
-The intended execution sequence is **Build 175 → 176 → 177 → 178 → 179**, completing each build through migration/source work, regression gates, database convergence where required, exact-main CI, and authority-document updates before moving to the next.
+The intended execution sequence remains **Build 175 → 176 → 177 → 178 → 179**, completing each build through migration/source work, regression gates, database convergence where required, exact-main CI, and authority-document updates before moving to the next.
