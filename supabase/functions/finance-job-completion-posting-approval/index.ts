@@ -1,4 +1,4 @@
-import "jsr:@supabase/functions-js@1.0.4/edge-runtime.d.ts";
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { hasModuleAccess } from "../_shared/module-permissions.ts";
 
