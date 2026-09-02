@@ -297,7 +297,7 @@ where rv.reversal_status='completed'
 union all
 select
   'duplicate_invoice_candidate_posting:'||p.invoice_candidate_id::text,'critical','DUPLICATE_INVOICE_POSTING_REFERENCE',null::uuid,
-  'job_invoice_posting',min(p.id),p.invoice_candidate_id,
+  'job_invoice_posting',min(p.id::text)::uuid,p.invoice_candidate_id,
   format('%s invoice posting rows reference the same candidate.',count(*)),
   'Keep the uniqueness guard intact and investigate any bypass before Finance posting is released.',now()
 from public.job_invoice_postings p
@@ -305,7 +305,7 @@ group by p.invoice_candidate_id having count(*)>1
 union all
 select
   'duplicate_journal_candidate_posting:'||p.journal_candidate_id::text,'critical','DUPLICATE_JOURNAL_POSTING_REFERENCE',null::uuid,
-  'job_journal_posting',min(p.id),p.journal_candidate_id,
+  'job_journal_posting',min(p.id::text)::uuid,p.journal_candidate_id,
   format('%s journal posting rows reference the same candidate.',count(*)),
   'Keep the uniqueness guard intact and investigate any bypass before Finance posting is released.',now()
 from public.job_journal_postings p
