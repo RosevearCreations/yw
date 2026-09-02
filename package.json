@@ -24,7 +24,8 @@
     "test:job-completion-event": "node scripts/job-completion-event-check.mjs",
     "test:finance-completion-consumer": "node scripts/finance-job-completion-consumer-check.mjs",
     "test:consumer-observability": "node scripts/it-cross-module-consumer-observability-check.mjs",
-    "test:finance-consumer-execution": "node scripts/finance-job-completion-execution-check.mjs"
+    "test:finance-consumer-execution": "node scripts/finance-job-completion-execution-check.mjs",
+    "test:finance-completion-review": "node scripts/finance-job-completion-review-check.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
