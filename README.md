@@ -5,6 +5,7 @@
 **Published Build 181 product checkpoint:** `f8875bc3e1c479c8c78ab563bb46ef1b20a15c1d`, Run #117 (`33689829209`) — SUCCESS  
 **Repository state:** completed Schema 181 branches pruned; `main` is the single active branch; repository enforcement remains separately AMBER because `main` is unprotected  
 **Runtime:** `finance-account-mapping-review` v3 ACTIVE / JWT enabled; `admin-it-control` v12 ACTIVE / JWT enabled  
+**Release-closeout gate:** repository smoke requires Build 181 COMPLETE and live `181 / 181` authority; the final exact-main SHA/run is recorded in release evidence after CI succeeds  
 **Active documents:** this README, `docs/ACTIVE_PROJECT_HANDBOOK.md`, and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
 
 Yard Weasels has exactly four top-level staff modules: **Safety / OHSA**, **Finance**, **Jobs**, and **Admin**. **I.T. Readiness** is an Admin/manage control-plane section, never a fifth business module.
