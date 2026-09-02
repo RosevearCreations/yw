@@ -8,6 +8,18 @@ begin;
 -- Eight deterministic acceptance rows do not need it; removing it converges live storage to source.
 drop index if exists public.module_acceptance_scenarios_sort_order_idx;
 
+-- Reassert the original Schema 159 browser/service boundary. These helpers accept arbitrary
+-- profile IDs and must never be browser-callable; only the self-scoped permission RPC is exposed
+-- to signed-in users. Explicit anon/authenticated revokes protect against privilege drift.
+revoke all on function public.ywi_effective_module_access(uuid,text) from public, anon, authenticated;
+revoke all on function public.ywi_profile_has_module_access(uuid,text,text) from public, anon, authenticated;
+revoke all on function public.ywi_get_profile_module_permissions(uuid) from public, anon, authenticated;
+grant execute on function public.ywi_effective_module_access(uuid,text) to service_role;
+grant execute on function public.ywi_profile_has_module_access(uuid,text,text) to service_role;
+grant execute on function public.ywi_get_profile_module_permissions(uuid) to service_role;
+revoke all on function public.ywi_get_my_module_permissions() from public, anon, authenticated;
+grant execute on function public.ywi_get_my_module_permissions() to authenticated, service_role;
+
 create table if not exists public.it_release_source_evidence (
   id bigint generated always as identity primary key,
   source_branch text not null,
