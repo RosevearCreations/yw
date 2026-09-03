@@ -2,21 +2,18 @@ name: Build 190 authority docs closeout
 
 on:
   push:
-    branches: [build-190-authority-doc-closeout]
+    branches:
+      - build-190-authority-doc-closeout
 
 permissions:
   contents: write
 
 jobs:
   converge-docs:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Prepend verified Build 190 authority
-        shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -48,24 +45,17 @@ Build 190 deliberately does **not** treat an advisor warning as proof of a live 
 **Next bounded technical candidate — Build 191:** inventory every live `pg_net` dependency and usage path, prove extension-schema relocation safety, and only then decide whether relocation should be applied. Supabase Auth password/MFA configuration remains a separate external-control path and must not be guessed from PostgreSQL catalogs.
 '''
 
-          paths = [
-              Path('README.md'),
-              Path('docs/ACTIVE_PROJECT_HANDBOOK.md'),
-              Path('docs/NEXT_STEPS_AND_SANITY_CHECK.md'),
-          ]
-          for path in paths:
+          for path in map(Path, ['README.md','docs/ACTIVE_PROJECT_HANDBOOK.md','docs/NEXT_STEPS_AND_SANITY_CHECK.md']):
               text = path.read_text(encoding='utf-8')
-              if '## Build 190 final release authority' in text:
-                  continue
-              first_nl = text.find('\n')
-              if first_nl < 0:
-                  raise SystemExit(f'No heading line found in {path}')
-              text = text[:first_nl+1] + '\n' + block + '\n' + text[first_nl+1:]
-              path.write_text(text, encoding='utf-8')
+              if '## Build 190 final release authority' not in text:
+                  first_nl = text.find('\n')
+                  if first_nl < 0:
+                      raise SystemExit(f'No heading line found in {path}')
+                  path.write_text(text[:first_nl+1] + '\n' + block + '\n' + text[first_nl+1:], encoding='utf-8')
           PY
           rm .github/workflows/build190-authority-doc-closeout.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md docs/ACTIVE_PROJECT_HANDBOOK.md docs/NEXT_STEPS_AND_SANITY_CHECK.md .github/workflows/build190-authority-doc-closeout.yml
+          git add -A
           git commit -m "Build 190: converge canonical release authority"
-          git push origin HEAD:build-190-authority-doc-closeout
+          git push
