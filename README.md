@@ -1,5 +1,12 @@
 # Yard Weasels Inc. Operations Platform
 
+## Historical release anchors retained for audit
+
+- **Build 184 / Schema 184 — COMPLETE product proof:** `main` `613118f52fcbad147a56226ccdeabf3a64a1c8b0`, exact-main Run #136 (`33698631685`) — SUCCESS.
+- **Build 183 / Schema 183 — COMPLETE prior clean authority:** `main` `2f4e4fa25299dd285718c2bb78cc40fc05c55ebf`, exact-main Run #132 (`33697274220`) — GREEN.
+
+These historical anchors remain audit evidence only; current live authority is Build 185 / Schema 185 and Build 186 remains source-only until its release gates pass.
+
 **Current live authority:** Schema `185 / 185` — **Build 185 COMPLETE**  
 **Final clean-main checkpoint:** `d126ddfb403d31faba1d9826df3e0ad1e0d58fd7`, exact-main Run #149 (`33705924533`) — GREEN  
 **Final clean release evidence:** row `18` in `it_release_source_evidence`  
