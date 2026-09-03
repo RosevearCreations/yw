@@ -69,7 +69,8 @@
         '/js/admin-ui.js',
         '/js/operations-cockpit.js',
         '/js/module-access-ui.js',
-        '/js/it-readiness-ui.js'
+        '/js/it-readiness-ui.js',
+        '/js/staging-acceptance-ui.js'
       ]),
       coreDependencies: SHARED_CORE_DEPENDENCIES
     })

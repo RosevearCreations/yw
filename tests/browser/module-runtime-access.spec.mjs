@@ -11,7 +11,7 @@ const moduleScripts = Object.freeze({
   ],
   finance: ['/js/finance-ui.js','/js/finance-account-mapping-ui.js'],
   jobs: ['/js/jobs-ui.js','/js/jobs-finance-boundary.js','/js/equipment-scanner.js'],
-  admin: ['/js/admin-actions.js','/js/admin-ui.js','/js/operations-cockpit.js','/js/module-access-ui.js','/js/it-readiness-ui.js']
+  admin: ['/js/admin-actions.js','/js/admin-ui.js','/js/operations-cockpit.js','/js/module-access-ui.js','/js/it-readiness-ui.js','/js/staging-acceptance-ui.js']
 });
 
 const scenarios = [
@@ -68,6 +68,7 @@ for(const viewport of viewports){
       expect(coreRelations).toEqual(canonicalCore);
       for(const denied of ['safety','finance','jobs','admin'].filter((key)=>!scenario.allowed.includes(key))) for(const deniedScript of moduleScripts[denied]) expect(requested).not.toContain(deniedScript);
       expect(requested.includes('/js/it-readiness-ui.js')).toBe(scenario.allowed.includes('admin'));
+      expect(requested.includes('/js/staging-acceptance-ui.js')).toBe(scenario.allowed.includes('admin'));
       expect(requested.includes('/js/jobs-finance-boundary.js')).toBe(scenario.allowed.includes('jobs'));
       expect(requested.includes('/js/equipment-scanner.js')).toBe(scenario.allowed.includes('jobs'));
       expect(requested.includes('/js/finance-account-mapping-ui.js')).toBe(scenario.allowed.includes('finance'));
