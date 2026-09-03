@@ -35,7 +35,7 @@ add('schema188-no-business-auto-close',hasAll(migration,[
 ]) && !/update\s+public\.admin_scorecard_progress_rails[\s\S]{0,500}where\s+rail_key\s+in\s*\([^)]*(?:operations_cockpit_live|quote_intake_live|payment_actions_live|bank_csv_preview_live|route_asset_approval_live|customer_portal_live|live_job_updates|customer_live_update_notifications|service_execution_proof_costing|supervisor_closeout_signoff_invoice_followup|approved_route_generation)/i.test(migration));
 add('schema188-finance-provider-closed',hasAll(migration,[
   'open_rail_finance_provider_mutation_closed','execution_release_enabled','provider_mutation_enabled',
-  "'must_remain_off'"
+  '"must_remain_off"'
 ]));
 add('schema188-readonly-assertion',hasAll(migration,[
   'open_rail_readiness_is_read_only','ywi_open_rail_acceptance_readiness_assertions'
