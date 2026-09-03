@@ -18,7 +18,7 @@
 
   function statusValue(row) {
     if (!row || typeof row !== 'object') return 'unknown';
-    for (const key of ['status','check_status','readiness_status','gate_status','drift_status','assertion_status','health_status','result','state','release_authority_status','source_gate_status','repository_enforcement_status','mapping_readiness_status','mapping_observability_status','mapping_decision_support_status','scorecard_truth_status','truth_status','resolution_status']) {
+    for (const key of ['status','check_status','readiness_status','gate_status','drift_status','assertion_status','health_status','result','state','release_authority_status','source_gate_status','repository_enforcement_status','mapping_readiness_status','mapping_observability_status','mapping_decision_support_status','scorecard_truth_status','truth_status','resolution_status','technical_readiness_status']) {
       if (row[key] !== undefined && row[key] !== null) return String(row[key]).trim().toLowerCase();
     }
     for (const key of ['ok','passed','ready','is_ready','is_current','healthy']) {
@@ -48,7 +48,7 @@
   }
 
   function rowDetail(row) {
-    for (const key of ['release_message','truth_message','resolution_note','message','details','description','action_hint','failure_hint','readiness_message','decision_support_message','next_action_hint','resolution_hint','notes','route_hint','evidence_note','source_sha']) {
+    for (const key of ['current_action','technical_readiness_detail','evidence_requirement','release_message','truth_message','resolution_note','message','details','description','action_hint','failure_hint','readiness_message','decision_support_message','next_action_hint','resolution_hint','notes','route_hint','evidence_note','source_sha']) {
       const value=row?.[key];
       if (value !== undefined && value !== null && String(value).trim()) {
         return typeof value === 'object' ? JSON.stringify(value) : String(value);
@@ -86,6 +86,7 @@
       ...(Array.isArray(groups.it)?groups.it:[]),
       ...(Array.isArray(groups.release_authority)?groups.release_authority:[]),
       ...(Array.isArray(groups.scorecard_truth)?groups.scorecard_truth:[]),
+      ...(Array.isArray(groups.open_rail_acceptance_readiness)?groups.open_rail_acceptance_readiness:[]),
       ...(Array.isArray(groups.consumer_observability)?groups.consumer_observability:[]),
       ...(Array.isArray(groups.finance_operational)?groups.finance_operational:[]),
       ...(Array.isArray(groups.finance_release_hardening)?groups.finance_release_hardening:[]),
@@ -95,6 +96,20 @@
     ];
     const errors=Array.isArray(groups.errors)?groups.errors:[];
     return `<section class="it-readiness-panel"><span class="it-readiness-kicker">Security proof</span><h3>Module, I.T., scorecard truth, release, consumer, and Finance assertions</h3>${errors.length?errors.map((e)=>`<div class="it-readiness-error">${esc(e)}</div>`).join(''):''}${rows.length?`<div class="it-readiness-list">${rows.map((row)=>`<div class="it-readiness-row"><div><strong>${esc(row.assertion_key||'assertion')}</strong><small>${esc(row.details||'')}</small></div>${statusChip(row.assertion_status)}</div>`).join('')}</div>`:'<div class="it-readiness-empty">No assertion rows returned.</div>'}</section>`;
+  }
+
+  function renderAcceptanceReadiness() {
+    const section=state.payload?.sections?.open_rail_acceptance_readiness;
+    if(!section) return '<section class="it-readiness-panel"><span class="it-readiness-kicker">Acceptance Readiness</span><h3>Current action for human-gated rails</h3><div class="it-readiness-empty">No open-rail readiness source returned.</div></section>';
+    if(section.error) return `<section class="it-readiness-panel"><span class="it-readiness-kicker">Acceptance Readiness</span><h3>Current action for human-gated rails</h3><div class="it-readiness-error">${esc(section.error)}</div></section>`;
+    const rows=Array.isArray(section.rows)?section.rows:[];
+    return `<section class="it-readiness-panel"><span class="it-readiness-kicker">Acceptance Readiness</span><h3>Current action for human-gated rails</h3><p>Technical readiness is separate from human acceptance. Historical scorecard hints remain audit evidence; follow the current action below.</p>${rows.length?`<div class="it-readiness-list">${rows.map((row)=>{
+      const qualifiers=[];
+      if(row?.requires_human===true)qualifiers.push('human required');
+      if(row?.requires_external===true)qualifiers.push('external evidence');
+      if(row?.resolution_class)qualifiers.push(String(row.resolution_class).replaceAll('_',' '));
+      return `<div class="it-readiness-row"><div><strong>${esc(row.rail_title||row.rail_key||'Acceptance rail')}</strong><small><b>Current action:</b> ${esc(row.current_action||'')}</small><small><b>Evidence:</b> ${esc(row.evidence_requirement||'')}</small><small><b>Technical truth:</b> ${esc(row.technical_readiness_detail||row.technical_readiness_code||'')}</small>${row.historical_hint_stale===true?'<small><b>Historical deploy hint is stale.</b> It is retained only for audit history.</small>':''}${qualifiers.length?`<small>${esc(qualifiers.join(' · '))}</small>`:''}</div>${statusChip(row.technical_readiness_status||'pending')}</div>`;
+    }).join('')}</div>`:'<div class="it-readiness-empty">No open business acceptance rails are currently pending.</div>'}</section>`;
   }
 
   function renderAdminIntegrity() {
@@ -152,6 +167,7 @@
         ${panel('release_authority','Release authority','Application release authority')}
         ${panel('release_source_evidence','Source evidence','Exact main SHA / CI evidence')}
         ${panel('scorecard_truth_status','Scorecard truth','Readiness-work classification integrity')}
+        ${renderAcceptanceReadiness()}
         ${panel('scorecard_truth','Outstanding work','Verified closures and classified pending rails')}
         ${panel('cross_module_consumer_health','Event consumers','Jobs completion → Finance health')}
         ${panel('finance_operational','Finance pipeline','Completion → accounting operational health')}

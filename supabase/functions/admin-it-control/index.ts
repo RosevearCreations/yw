@@ -122,6 +122,7 @@ async function readinessPayload(supabase: any) {
     release_source_evidence: ["v_it_release_source_evidence_current", null, true, 10],
     scorecard_truth: ["v_it_scorecard_progress_truth", "sort_order", true, 240],
     scorecard_truth_status: ["v_it_scorecard_progress_truth_status", null, true, 10],
+    open_rail_acceptance_readiness: ["v_it_open_rail_acceptance_readiness", "sort_order", true, 80],
     cross_module_consumer_health: ["v_it_cross_module_consumer_health", "check_key", true, 20],
     finance_operational: ["v_it_finance_completion_pipeline_status", null, true, 10],
     finance_reconciliation: ["v_finance_job_completion_reconciliation_issues", "detected_at", false, 160],
@@ -155,6 +156,7 @@ async function readinessPayload(supabase: any) {
     itAssertions,
     releaseAssertions,
     scorecardTruthAssertions,
+    openRailReadinessAssertions,
     consumerObservabilityAssertions,
     financeOperationalAssertions,
     financeReleaseHardeningAssertions,
@@ -166,6 +168,7 @@ async function readinessPayload(supabase: any) {
     assertionRows(supabase, "ywi_it_readiness_security_assertions", "I.T. assertions failed."),
     assertionRows(supabase, "ywi_it_release_authority_assertions", "Release-authority assertions failed."),
     assertionRows(supabase, "ywi_it_scorecard_truth_assertions", "I.T. scorecard-truth assertions failed."),
+    assertionRows(supabase, "ywi_open_rail_acceptance_readiness_assertions", "Open-rail acceptance-readiness assertions failed."),
     assertionRows(supabase, "ywi_it_cross_module_consumer_observability_assertions", "Cross-module consumer observability assertions failed."),
     assertionRows(supabase, "ywi_finance_operational_control_plane_assertions", "Finance operational assertions failed."),
     assertionRows(supabase, "ywi_finance_release_hardening_assertions", "Finance release-hardening assertions failed."),
@@ -206,6 +209,7 @@ async function readinessPayload(supabase: any) {
     ...itAssertions.rows,
     ...releaseAssertions.rows,
     ...scorecardTruthAssertions.rows,
+    ...openRailReadinessAssertions.rows,
     ...consumerObservabilityAssertions.rows,
     ...financeOperationalAssertions.rows,
     ...financeReleaseHardeningAssertions.rows,
@@ -218,6 +222,7 @@ async function readinessPayload(supabase: any) {
     itAssertions.error,
     releaseAssertions.error,
     scorecardTruthAssertions.error,
+    openRailReadinessAssertions.error,
     consumerObservabilityAssertions.error,
     financeOperationalAssertions.error,
     financeReleaseHardeningAssertions.error,
@@ -236,6 +241,10 @@ async function readinessPayload(supabase: any) {
   const repositoryEnforcementStatus = String(releaseAuthorityRow?.repository_enforcement_status || "unknown").toLowerCase();
   const repositoryPolicyWarning = repositoryEnforcementStatus === "green" ? 0 : 1;
   const criticalBlocking = (schemaCurrent ? 0 : 1) + adminIntegrityBlocking + assertionBlocking;
+  const openRailRows = data.open_rail_acceptance_readiness?.rows || [];
+  const openRailTechnicalReadyCount = openRailRows.filter((row:any) => String(row?.technical_readiness_status || "").toLowerCase() === "ready").length;
+  const openRailPendingCount = openRailRows.filter((row:any) => String(row?.technical_readiness_status || "").toLowerCase() === "pending").length;
+
   const overallStatus = criticalBlocking > 0
     ? "red"
     : knownBlocking > 0 || repositoryPolicyWarning > 0
@@ -264,6 +273,9 @@ async function readinessPayload(supabase: any) {
       scorecard_unclassified_open_count: Number(scorecardTruthRow?.unclassified_open_count || 0),
       scorecard_human_pending_count: Number(scorecardTruthRow?.human_pending_count || 0),
       scorecard_external_pending_count: Number(scorecardTruthRow?.external_pending_count || 0),
+      open_rail_acceptance_count: openRailRows.length,
+      open_rail_technical_ready_count: openRailTechnicalReadyCount,
+      open_rail_technical_pending_count: openRailPendingCount,
       active_profile_count: activeProfiles.length,
       auth_user_count: authUserCount,
       auth_profile_count_match: authUserCount === null ? null : authUserCount === activeProfiles.length,
@@ -278,6 +290,7 @@ async function readinessPayload(supabase: any) {
       it: itAssertions.rows,
       release_authority: releaseAssertions.rows,
       scorecard_truth: scorecardTruthAssertions.rows,
+      open_rail_acceptance_readiness: openRailReadinessAssertions.rows,
       consumer_observability: consumerObservabilityAssertions.rows,
       finance_operational: financeOperationalAssertions.rows,
       finance_release_hardening: financeReleaseHardeningAssertions.rows,
