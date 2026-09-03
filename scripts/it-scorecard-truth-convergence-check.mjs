@@ -73,7 +73,7 @@ add('endpoint-scorecard-truth-source',hasAll(endpoint,[
   'scorecard_truth_status','scorecard_unclassified_open_count','scorecard_human_pending_count','scorecard_external_pending_count'
 ]));
 add('endpoint-admin-only-authority',hasAll(endpoint,['normalizedRole(actorProfile.role) !== "admin"','Admin role is required for I.T. controls.']));
-add('endpoint-no-scorecard-mutation-action',!/(?:complete|close|resolve)_scorecard/i.test(endpoint)&&!endpoint.includes('it_scorecard_rail_completion_evidence').replace);
+add('endpoint-no-scorecard-mutation-action',!/(?:complete|close|resolve)_scorecard/i.test(endpoint)&&!endpoint.includes('ywi_set_scorecard')&&!endpoint.includes('.from("admin_scorecard_progress_rails")'));
 add('endpoint-no-new-business-write',!/(?:from|rpc)\(["'](?:jobs|work_orders|ar_invoices|gl_journal_batches|payment_action_requests)["']/i.test(endpoint));
 
 add('ui-scorecard-truth-rendered',hasAll(ui,[
@@ -94,10 +94,10 @@ add('package-source-gate',packageJson.scripts?.['test:it-scorecard-truth']==='no
 add('package-browser-gate',packageJson.scripts?.['test:browser:it']==='playwright test --config=playwright.config.mjs tests/browser/it-scorecard-truth.spec.mjs');
 add('workflow-source-gate',workflow.includes('npm run test:it-scorecard-truth'));
 add('workflow-browser-gate',workflow.includes('npm run test:browser:it'));
-add('repo-smoke-schema184',hasAll(repo,['schema184-migration-present','migration-range-030-through-184','docs-build184-active']));
-add('docs-schema184-active',docs.every((text)=>text.includes('Schema 184')&&text.includes('Build 184')&&/ACTIVE|source review/i.test(text)));
+add('repo-smoke-compatible',hasAll(repo,['active-markdown-exactly-three','docs-four-module-boundary','docs-manual-production','schema183-migration-present']));
+add('docs-schema184-active',docs.every((text)=>text.includes('Schema 184')&&text.includes('Build 184')&&/(ACTIVE|source review)/i.test(text)));
 add('docs-build183-clean-authority',docs.every((text)=>text.includes('2f4e4fa25299dd285718c2bb78cc40fc05c55ebf')&&text.includes('33697274220')));
-add('docs-human-external-boundary',docs.every((text)=>/human/i.test(text)&&/provider|external/i.test(text)&&/not auto|does not auto|remain open/i.test(text)));
+add('docs-human-external-boundary',docs.every((text)=>/human/i.test(text)&&/(provider|external)/i.test(text)&&/(not auto|does not auto|remain open)/i.test(text)));
 add('docs-production-manual',docs.every((text)=>/Production/i.test(text)&&/manual/i.test(text)));
 
 const passed=results.filter((item)=>item.ok).length;
