@@ -12,6 +12,7 @@
 (function () {
   const BUILD = '2026-09-02l';
   const CONTRACT_VERSION = 2;
+  const GLOBAL_PASSWORD_SECURITY_SCRIPT = '/js/password-security.js';
 
   const CORE_ENTITY_CONTRACTS = Object.freeze({
     profile: Object.freeze({ relation: 'profiles', primaryKey: 'id', primaryKeyType: 'uuid' }),
@@ -100,6 +101,16 @@
   function existingScript(src) {
     const target = normalizeScriptSrc(src);
     return [...document.scripts].find((script) => normalizeScriptSrc(script.src || script.getAttribute('src') || '') === target) || null;
+  }
+
+  function loadGlobalPasswordSecurity() {
+    if (existingScript(GLOBAL_PASSWORD_SECURITY_SCRIPT)) return;
+    const script = document.createElement('script');
+    script.src = `${GLOBAL_PASSWORD_SECURITY_SCRIPT}?v=${encodeURIComponent(BUILD)}-b191`;
+    script.async = false;
+    script.dataset.ywiCoreSecurity = 'password';
+    script.onerror = () => window.dispatchEvent(new CustomEvent('ywi:app-error', { detail: { scope:'password-security', message:'Password visibility/security controls could not be loaded.', details:['Refresh before entering or changing a password.'] } }));
+    document.head.appendChild(script);
   }
 
   function moduleAllowed(moduleKey) {
@@ -200,6 +211,7 @@
   function getCoreContract(entityKey) { return entityKey ? CORE_ENTITY_CONTRACTS[String(entityKey || '').toLowerCase()] || null : CORE_ENTITY_CONTRACTS; }
 
   function bind() {
+    loadGlobalPasswordSecurity();
     document.addEventListener('ywi:auth-changed', () => queueMicrotask(syncForCurrentAccess));
     document.addEventListener('ywi:module-permissions-changed', () => queueMicrotask(syncForCurrentAccess));
     document.addEventListener('DOMContentLoaded', () => queueMicrotask(syncForCurrentAccess));
