@@ -25,6 +25,7 @@ jobs:
       - run: npm ci
       - run: npm run test:modules
       - run: npm run test:it
+      - run: npm run test:it-scorecard-truth
       - run: npm run test:runtime
       - run: npm run test:boundaries
       - run: npm run test:acceptance
@@ -52,6 +53,7 @@ jobs:
       - run: npm run test:browser:modules
       - run: npm run test:browser:finance
       - run: npm run test:browser:finance-mapping
+      - run: npm run test:browser:it
 
   staging-proof:
     if: github.event_name == 'workflow_dispatch' && inputs.run_staging == 'true'
