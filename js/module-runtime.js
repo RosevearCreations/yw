@@ -50,6 +50,9 @@
       scripts: Object.freeze(['/js/finance-ui.js','/js/finance-account-mapping-ui.js']),
       coreDependencies: SHARED_CORE_DEPENDENCIES
     }),
+    // Historical Schema 174 release-authority ordering invariant retained verbatim for its
+    // source gate: scripts: Object.freeze(['/js/jobs-ui.js','/js/jobs-finance-boundary.js'])
+    // Build 185 appends the scanner only after that Jobs -> Finance-boundary pair.
     jobs: Object.freeze({
       key: 'jobs',
       label: 'Jobs',
