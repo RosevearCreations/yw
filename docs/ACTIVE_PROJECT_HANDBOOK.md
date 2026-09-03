@@ -1,13 +1,12 @@
 # YWI Active Project Handbook
 
-**Current schema source authority:** `184` — **Build 184 ACTIVE / source review**  
-**Verified live database authority:** `183 / 183` until Build 184 source/browser proof succeeds and Schema 184 is deliberately applied  
-**Last clean release evidence:** `main` `2f4e4fa25299dd285718c2bb78cc40fc05c55ebf`, Run #132 (`33697274220`) — application release authority GREEN  
-**Build 184 source branch:** `schema-184-it-scorecard-truth-convergence`  
-**Current live runtime:** `finance-account-mapping-review` v4 ACTIVE / JWT enabled; `admin-it-control` v13 ACTIVE / JWT enabled  
+**Current schema authority:** `184 / 184` — **Build 184 COMPLETE**  
+**Merged product checkpoint:** `613118f52fcbad147a56226ccdeabf3a64a1c8b0`, exact-main Run #136 (`33698631685`) — SUCCESS  
+**Previous clean release evidence:** Build 183 `main` `2f4e4fa25299dd285718c2bb78cc40fc05c55ebf`, Run #132 (`33697274220`) — GREEN  
+**Runtime:** `finance-account-mapping-review` v4 ACTIVE / JWT enabled; `admin-it-control` v14 ACTIVE / JWT enabled  
 **Repository enforcement:** separately AMBER because `main` is unprotected  
 **Finance execution release:** **OFF**; provider mutation OFF; Production promotion manual  
-**Vercel:** separately AMBER while build-rate-limited  
+**Vercel:** separate infrastructure/account status and must be freshly verified  
 **Architecture:** Safety / OHSA, Finance, Jobs, Admin; I.T. Readiness is inside Admin/manage.
 
 ## System shape
@@ -26,62 +25,64 @@ Yard Weasels combines public quote/SEO surfaces, private customer workflows, Saf
 - Schema 181 / Build 181 — **COMPLETE**: human-review aging, technical drift, and posting-preflight reconciliation observability.
 - Schema 182 — **COMPLETE maintenance repair**: release marker convergence without business mutation.
 - Schema 183 / Build 183 — **COMPLETE**: structural chart-account decision support and DB-side approval compatibility enforcement.
-- Schema 184 / Build 184 — **ACTIVE**: I.T. scorecard truth convergence and blocker classification.
+- Schema 184 / Build 184 — **COMPLETE**: I.T. scorecard truth convergence and blocker classification.
 
 ## Build 184 authority
 
-Build 184 fixes a control-plane truth problem rather than inventing new business behavior. Several old readiness rails still say ACTIVE even though current, later release proof has already superseded their historical next actions. Other rails are genuinely unfinished because they need staging acceptance, external provider testing, human accounting review, content approval, or additional feature work.
+Build 184 resolves a control-plane truth problem without inventing business completion. It distinguishes historical readiness rails already superseded by stronger current proof from genuinely unfinished work that still requires staging acceptance, provider testing, accounting review, content approval, or implementation.
 
-Build 184 separates those cases explicitly.
+### Evidence-backed historical closures
 
-### Evidence-closable historical rails
+Exactly three rails were converged to `complete`, and only after current fail-closed proof passed:
 
-Only these three rails may be automatically converged to `complete`, and the migration aborts unless their current proof is green:
+1. `schema159_module_permissions` — current module-security assertions, rendered module acceptance, and zero Admin break-glass blockers.
+2. `schema160_it_readiness` — current I.T. security assertions and zero Admin break-glass blockers.
+3. `schema164_cross_module_boundaries` — current module write-boundary, cross-module boundary, event-wiring, and rendered module-acceptance assertions.
 
-1. `schema159_module_permissions` — requires current module-security assertions, rendered module acceptance, and zero Admin break-glass blockers.
-2. `schema160_it_readiness` — requires current I.T. security assertions and zero Admin break-glass blockers.
-3. `schema164_cross_module_boundaries` — requires current module write-boundary, cross-module boundary, event-wiring, and rendered module-acceptance assertions.
+Each is now **100% / verified_complete** with one private immutable completion-evidence record. Prior status/progress/current value/next action are retained in metadata. The browser cannot create, alter, close, or resolve scorecard evidence.
 
-Each closure writes immutable private completion evidence and preserves the prior rail state inside metadata. The browser cannot create or alter completion evidence.
+### Real open work remains real
 
-### Open work that must remain open
+After Build 184 closeout the scorecard has **38 rails: 26 complete / 12 open**. Every open rail is explicitly classified, with **0 unclassified** and **0 proof-closure drift**:
 
-Build 184 classifies rather than completes the remaining work:
+- `staging_acceptance` — 6: Operations Cockpit, quote intake, live job updates, customer live-update notifications, service-execution proof/costing, supervisor closeout/signoff;
+- `accounting_acceptance` — 2: payment actions and bank CSV/reconciliation acceptance;
+- `provider_acceptance` — 1: customer portal Stripe test-mode checkout/webhook/status acceptance;
+- `content_approval` — 2: route/visual approval and approved-route generation;
+- `feature_followup` — 1: equipment barcode/QR camera scanning.
 
-- `staging_acceptance`: Operations Cockpit, quote intake, live job updates, customer live-update email, service-execution proof/costing, supervisor closeout/signoff;
-- `accounting_acceptance`: payment actions and bank CSV/reconciliation acceptance;
-- `provider_acceptance`: customer portal Stripe test-mode acceptance;
-- `content_approval`: route/visual approval and approved route generation;
-- `feature_followup`: equipment barcode/QR camera scanning;
-- `build_acceptance`: Build 184 until its own source/database/runtime/release evidence is complete.
+Human pending count is **11** and external pending count is **1**. A contract-level guard prohibits automatic closure for human/external-dependent work.
 
-A contract-level guard prohibits `auto_close_allowed=true` when a rail requires a human or external dependency. This means human/provider/accounting/content/staging work cannot be made green merely by changing a progress number.
+## Verified live Build 184 state
 
-## Admin → I.T. Readiness behavior
+- Schema `184 / 184` current.
+- Build 184 assertions **6 / 6 PASS**.
+- Required dependency contracts **85 / 85 PASS**.
+- Scorecard truth **GREEN**.
+- Open/classified/unclassified: **12 / 12 / 0**.
+- Proof-closure drift: **0**.
+- Active Admin break-glass integrity: **3 admins / 0 blockers**.
+- Build 184 rail: **complete / 100% / 10 of 10**.
+- `admin-it-control` **v14 ACTIVE / JWT enabled**.
+- Human-selected Finance mappings remain unchanged in `review`; mapping-review audit count **0**.
+- Posting execution release OFF; provider mutation OFF; canonical Jobs writeback prohibited; Production manual.
 
-The Admin-only I.T. endpoint and UI receive two new private read-only surfaces:
+The existing mapping decisions remain explicit human accountant/bookkeeper authority. Build 184 does **not auto-select** or auto-approve a mapping and structural compatibility remains only a safety floor, not an accounting recommendation engine.
 
-- `v_it_scorecard_progress_truth` — per-rail resolution class, human/external requirement, immutable evidence count, truth status, and current action message;
-- `v_it_scorecard_progress_truth_status` — structural summary including open/classified/unclassified counts, human/external pending counts, proof-closure drift, and overall scorecard-truth status.
+## Next autonomous build
 
-`ywi_it_scorecard_truth_assertions()` becomes part of the I.T. security proof. Open classified work is a warning/AMBER work queue, not a release blocker. An unclassified open rail or a proof-closed rail that loses evidence is RED.
+**Build 185 — Equipment barcode/QR camera scanning and custody evidence hardening** is next. It is selected because `equipment_scan_custody_live` is the only remaining open rail classified `feature_followup` with neither a human nor an external-provider dependency.
 
-The I.T. browser UI exposes no `complete`, `close`, or `resolve` mutation. It only displays the control-plane truth and existing refresh/browser-smoke actions.
+Before Build 185 changes source or schema:
 
-## Verified Build 183 baseline to preserve
-
-- database `183 / 183` current;
-- clean source `2f4e4fa25299dd285718c2bb78cc40fc05c55ebf`, Run #132 `33697274220` GREEN;
-- application release authority GREEN;
-- required dependency contracts `82 / 82` PASS;
-- active Admin break-glass integrity `3 admins / 0 blockers`;
-- Build 183 assertions `6 / 6`, Build 181 `8 / 8`, Build 180 `8 / 8`, Build 179 `12 / 12`;
-- human-selected mapping rows remain unchanged and `review`;
-- mapping-review audit count `0`;
-- Finance posting execution release OFF;
-- provider mutation OFF;
-- canonical Jobs/work-order writeback prohibited;
-- Production promotion manual.
+1. Verify the final post-Build184 clean `main` SHA/run and Schema184 release evidence agree.
+2. Inspect live canonical equipment/custody tables, types, constraints, indexes, audit/evidence relations, and current module/write-boundary contracts.
+3. Inspect existing equipment UI, scan/custody actions, upload-equipment-evidence, Operations/Jobs endpoints, and mobile patterns.
+4. Reuse canonical equipment identity; do not create a parallel equipment table.
+5. Determine the owning module from existing contracts rather than guessing.
+6. Preserve a manual identifier fallback when camera/barcode APIs are unavailable or permission is denied.
+7. Require protected server authorization for custody mutations; browser scanning alone is never authority.
+8. Add phone-first rendered acceptance and release gating before closing the feature rail.
 
 ## Security and ownership invariants
 
@@ -90,31 +91,32 @@ The I.T. browser UI exposes no `complete`, `close`, or `resolve` mutation. It on
 - Shared Core identities are centrally owned and consumed read-only.
 - Cross-module writes require an explicit owner/access/boundary contract.
 - Posting approval is not execution release; the Finance execution release remains server-owned and OFF.
-- Accountant/bookkeeper mapping selection and approval remain human decisions; Build 184 does not auto-select or auto-approve mappings.
+- Accountant/bookkeeper mapping selection and approval remain human decisions.
 - Finance completion/accounting RPCs do not write canonical Jobs/work-order state.
 - Stripe/PayPal/provider/payment truth remains outside this Finance pipeline.
-- Synthetic acceptance is non-persistent/browser-only.
-- Human, external-provider, accounting, content, staging, and feature work remains open until actually completed.
+- Synthetic Finance acceptance is non-persistent/browser-only.
 - Production promotion remains deliberate/manual.
 
-## Restart discipline during Build 184
+## Restart discipline after Build 184
 
-1. Verify source branch descends from clean Build 183 `main` SHA `2f4e4fa25299dd285718c2bb78cc40fc05c55ebf`.
-2. Verify live DB remains `183 / 183` until the full Build 184 source and rendered-browser gate is green.
-3. Verify the three human Finance mappings remain unchanged unless a real accountant/bookkeeper changed them.
-4. Verify execution release and provider mutation remain OFF.
-5. Verify the Build 184 migration only closes Schemas 159/160/164 and only after current assertions pass.
-6. Verify every other open rail has an explicit resolution class and is not auto-closed.
-7. Verify Admin → I.T. remains Admin-only and the browser has no scorecard completion mutation.
-8. After exact-main proof, apply Schema 184 deliberately, deploy the updated JWT-protected `admin-it-control`, verify live assertions/dependencies, then close the Build 184 rail and authority documents.
-9. Keep Vercel rate-limit status separate from source correctness.
+1. Start from the single clean `main` branch after authority closeout/branch pruning.
+2. Verify latest exact-main `YWI source and staging checks` is SUCCESS and matches Schema 184 release evidence.
+3. Verify live DB remains `184 / 184` and Build184 assertions/dependencies remain `6/6` and `85/85`.
+4. Verify scorecard truth remains GREEN with 12 classified open rails, 0 unclassified and 0 proof drift.
+5. Verify Admin break-glass remains 3/0 blockers.
+6. Verify `admin-it-control` remains ACTIVE and JWT protected.
+7. Preserve the three human Finance mapping decisions unless a real accountant/bookkeeper changes them.
+8. Keep Finance execution release/provider mutation OFF.
+9. Keep Vercel status separate from source correctness.
 10. Keep Production manual.
 
 ## Repository hygiene
 
-Git history is the archive. Numbered migrations are permanent audit history; source now contains Schema 184 while live remains Schema 183 during source review. The only active Markdown authorities are `README.md`, this handbook, and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
+Git history is the archive. Numbered migrations are permanent audit history through Schema 184. The only active Markdown authorities are `README.md`, this handbook, and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
 
 Do not retain archive trees, retired Markdown, generated full-schema snapshots, Playwright output, dependencies, logs, temp, backup files, or one-time cleanup workflows after use.
+
+The final exact clean-main source SHA/run is stored in `it_release_source_evidence` after branch cleanup and final CI.
 
 ## Human-gated items
 
