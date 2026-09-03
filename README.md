@@ -1,5 +1,28 @@
 # Yard Weasels Inc. Operations Platform
 
+## Build 189 final release authority
+
+**Build 189 — Submission security boundary convergence — COMPLETE.**
+
+Final verified authority:
+
+- live database **Schema 189 / 189 CURRENT**;
+- merged `main` SHA **`9691ac2e8b289d2e08e675738d757644ccb19411`**;
+- exact-main **Run #171 / `33770003587` — GREEN** across every source/static gate and all six rendered browser suites;
+- canonical release-source evidence **row 23**;
+- live submission-security assertions **6 / 6 PASS**;
+- broad authenticated `submissions` SELECT/INSERT bypass policies removed and the direct authenticated insert fallback is ownership/active-profile/form-role scoped;
+- database role ranking matches the current browser/server role vocabulary;
+- `resend-email` **v48 ACTIVE / JWT enabled**, with Safety/create authorization, authenticated profile ownership, the live `date` column, and the exact shared module-permission dependency bundled;
+- Build 189 technical rail **COMPLETE 100%**;
+- application release authority **GREEN**; repository enforcement remains separately **AMBER** because `main` is unprotected;
+- Finance posting execution remains **OFF**; provider/payment mutation remains **OFF**; Production promotion remains **manual**.
+
+Build 189 hardens the Safety submission trust boundary without rewriting historical submission identities. The seven legacy submission rows that lack `submitted_by_profile_id` remain unchanged because there is no reliable identity evidence to backfill. No Build 189 path auto-closes business acceptance work.
+
+Post-closeout scorecard truth is **43 rails / 32 complete / 11 open**. The same 11 human/provider/accounting/content acceptance rails remain open and separately evidence-gated.
+
+
 ## Build 188 final release authority
 
 **Build 188 — Open-rail acceptance readiness and current-action truth — COMPLETE.**
