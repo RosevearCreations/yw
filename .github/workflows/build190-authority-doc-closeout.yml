@@ -1,0 +1,71 @@
+name: Build 190 authority docs closeout
+
+on:
+  push:
+    branches: [build-190-authority-doc-closeout]
+
+permissions:
+  contents: write
+
+jobs:
+  converge-docs:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Prepend verified Build 190 authority
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          block = r'''## Build 190 final release authority
+
+**Build 190 — Security advisor truth reconciliation — COMPLETE.**
+
+Final verified product authority:
+
+- live database **Schema 190 / 190 CURRENT**;
+- merged product `main` SHA **`3159dbf447583ab0a19d21a4196a3237efb4c144`**;
+- exact-main **Run #178 / `33774434247` — GREEN** across every source/static/release/Finance gate and all six rendered browser suites;
+- canonical release-source evidence **row 24**;
+- live security-advisor truth assertions **7 / 7 PASS**;
+- captured advisor snapshot **75 claims / 70 stale objects / 2 verified safe / 1 catalog-confirmed follow-up / 2 external-verification items / 0 unclassified**;
+- advisor reconciliation status **GREEN** while remaining security follow-up status is correctly **AMBER**;
+- `public.set_updated_at()` now has fixed `search_path=public,pg_temp`;
+- the Supabase advisor endpoint has not yet converged and continues to report stale/deleted objects, so live PostgreSQL catalog truth remains authoritative;
+- the only catalog-confirmed extension follow-up is `pg_net` installed in `public`; relocation is **not** authorized until dependency/usage reconnaissance proves it safe;
+- leaked-password protection and MFA remain separately evidence-gated Supabase Auth configuration follow-ups;
+- Build 190 technical rail **COMPLETE 100% / 10 of 10** with immutable exact-main completion evidence;
+- post-closeout scorecard truth **44 rails / 33 complete / 11 open**; the same 11 human/provider/accounting/content acceptance rails remain open;
+- application release authority **GREEN**; repository enforcement remains separately **AMBER** because `main` is unprotected;
+- Finance posting execution remains **OFF**; provider/payment mutation remains **OFF**; Production promotion remains **manual**.
+
+Build 190 deliberately does **not** treat an advisor warning as proof of a live defect. Findings are classified as `stale_object`, `verified_safe`, `confirmed_followup`, or `external_verification` against live catalog/configuration authority before remediation. No Build 190 path rewrites business rows or auto-closes human acceptance work.
+
+**Next bounded technical candidate — Build 191:** inventory every live `pg_net` dependency and usage path, prove extension-schema relocation safety, and only then decide whether relocation should be applied. Supabase Auth password/MFA configuration remains a separate external-control path and must not be guessed from PostgreSQL catalogs.
+'''
+
+          paths = [
+              Path('README.md'),
+              Path('docs/ACTIVE_PROJECT_HANDBOOK.md'),
+              Path('docs/NEXT_STEPS_AND_SANITY_CHECK.md'),
+          ]
+          for path in paths:
+              text = path.read_text(encoding='utf-8')
+              if '## Build 190 final release authority' in text:
+                  continue
+              first_nl = text.find('\n')
+              if first_nl < 0:
+                  raise SystemExit(f'No heading line found in {path}')
+              text = text[:first_nl+1] + '\n' + block + '\n' + text[first_nl+1:]
+              path.write_text(text, encoding='utf-8')
+          PY
+          rm .github/workflows/build190-authority-doc-closeout.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md docs/ACTIVE_PROJECT_HANDBOOK.md docs/NEXT_STEPS_AND_SANITY_CHECK.md .github/workflows/build190-authority-doc-closeout.yml
+          git commit -m "Build 190: converge canonical release authority"
+          git push origin HEAD:build-190-authority-doc-closeout
