@@ -6,6 +6,7 @@ import path from 'node:path';
 const root=process.cwd();
 const read=(file)=>fs.readFileSync(path.join(root,file),'utf8');
 const migration=read('sql/185_equipment_scan_identity_custody_hardening.sql');
+const authorityMigration=read('sql/185b_equipment_scan_release_authority_convergence.sql');
 const endpoint=read('supabase/functions/equipment-scan-manage/index.ts');
 const config=read('supabase/config.toml');
 const scanner=read('js/equipment-scanner.js');
@@ -56,6 +57,19 @@ add('schema185-ledger-marker',hasAll(migration,[
   "'schema185_equipment_scan_custody_hardening'"
 ]));
 add('schema185-no-finance-provider-mutation',!/\b(?:insert\s+into|update|delete\s+from)\s+public\.(?:job_financial_events|ar_|ap_|stripe|paypal|gl_journal|payment_)/i.test(migration));
+
+add('schema185-authority-repair-transaction-balanced',(authorityMigration.match(/^begin;$/gmi)||[]).length===1&&(authorityMigration.match(/^commit;$/gmi)||[]).length===1);
+add('schema185-authority-marker-current',hasAll(authorityMigration,[
+  'create or replace view public.v_schema_drift_status',
+  '185::int as expected_schema_version',
+  ">= 185 then 'current'",
+  'Apply migrations through schema 185 in order.'
+]));
+add('schema185-authority-marker-private',hasAll(authorityMigration,[
+  'revoke all on table public.v_schema_drift_status from public,anon,authenticated;',
+  'grant select on table public.v_schema_drift_status to service_role;'
+]));
+add('schema185-authority-repair-bounded',!/\b(?:insert\s+into|delete\s+from|update)\s+public\.(?:equipment_items|equipment_master|equipment_scan_events|equipment_custody_timeline_events|job_financial_events|ar_|ap_|stripe|paypal|gl_journal|payment_)/i.test(authorityMigration));
 
 add('scan-boundary-contract-jobs-create',boundary.includes("equipment_scan_event: contract('equipment_scan_event', 'jobs', 'create', 'write', 'equipment_custody'"));
 add('scan-endpoint-module-enforcement',hasAll(endpoint,[
