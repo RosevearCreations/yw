@@ -4,7 +4,8 @@
  * Supabase project. It refuses ambiguous targets and never defaults to production.
  *
  * Create: YWI_STAGING_FIXTURES=1 YWI_STAGING_LABEL=staging
- *         YWI_STAGING_CONFIRM=I_CONFIRM_STAGING_ONLY ... node scripts/staging-fixtures.mjs create
+ *         YWI_STAGING_CONFIRM=I_CONFIRM_STAGING_ONLY
+ *         YWI_STAGING_PROJECT_REF=<dedicated-staging-ref> ... node scripts/staging-fixtures.mjs create
  * Cleanup: same interlocks plus YWI_STAGING_FIXTURE_SET_ID=<uuid> ... cleanup
  */
 import process from 'node:process';
@@ -17,8 +18,20 @@ const label = String(process.env.YWI_STAGING_LABEL || '').trim().toLowerCase();
 const confirm = process.env.YWI_STAGING_CONFIRM || '';
 const enabled = process.env.YWI_STAGING_FIXTURES === '1';
 const fixtureLabel = String(process.env.YWI_STAGING_FIXTURE_LABEL || 'STAGING-RPC').trim().toUpperCase();
+const expectedStagingRef = String(process.env.YWI_STAGING_PROJECT_REF || '').trim();
+const productionRef = String(process.env.YWI_PRODUCTION_PROJECT_REF || 'jmqvkgiqlimdhcofwkxr').trim();
 
 function fail(message) { console.error(`ERROR  ${message}`); process.exit(1); }
+function projectRefFromUrl(value) {
+  try {
+    const host = new URL(value).hostname;
+    const match = host.match(/^([a-z0-9-]+)\.supabase\.co$/i);
+    return match?.[1] || '';
+  } catch {
+    return '';
+  }
+}
+
 if (!['create','cleanup'].includes(action)) {
   console.log('Usage: node scripts/staging-fixtures.mjs create|cleanup');
   process.exit(0);
@@ -26,6 +39,10 @@ if (!['create','cleanup'].includes(action)) {
 if (!enabled) fail('Set YWI_STAGING_FIXTURES=1. Fixtures are disabled by default.');
 if (label !== 'staging' || confirm !== 'I_CONFIRM_STAGING_ONLY') fail('Set YWI_STAGING_LABEL=staging and YWI_STAGING_CONFIRM=I_CONFIRM_STAGING_ONLY.');
 if (!url || !key || !actorId) fail('Set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and YWI_STAGING_JOB_ADMIN_PROFILE_ID.');
+if (!expectedStagingRef) fail('Set YWI_STAGING_PROJECT_REF to the dedicated non-production Supabase project ref.');
+const actualProjectRef = projectRefFromUrl(url);
+if (!actualProjectRef || actualProjectRef !== expectedStagingRef) fail(`SUPABASE_URL project ref ${actualProjectRef || '(unresolved)'} does not match YWI_STAGING_PROJECT_REF.`);
+if (actualProjectRef === productionRef) fail('Refusing staging fixture mutation against the YardWeasels Production project ref.');
 if (action === 'create' && !/^STAGING-[A-Z0-9_-]{3,80}$/.test(fixtureLabel)) fail('YWI_STAGING_FIXTURE_LABEL must begin STAGING- and use only A-Z, 0-9, _, or -.');
 
 async function rpc(name, body) {
@@ -43,12 +60,12 @@ try {
     const result = await rpc('ywi_rpc_create_staging_fixture_set', { p_actor_profile_id:actorId, p_fixture_label:fixtureLabel });
     const safe = { ...result };
     if (safe.portal_token && process.env.YWI_REVEAL_STAGING_TOKENS !== '1') safe.portal_token = '[masked: set YWI_REVEAL_STAGING_TOKENS=1 only for a local staging browser test]';
-    console.log(JSON.stringify(safe, null, 2));
+    console.log(JSON.stringify({ ...safe, staging_project_ref:actualProjectRef }, null, 2));
   } else {
     const fixtureSetId = process.env.YWI_STAGING_FIXTURE_SET_ID || '';
     if (!/^[0-9a-f-]{36}$/i.test(fixtureSetId)) fail('Set YWI_STAGING_FIXTURE_SET_ID to the UUID returned by create.');
     const result = await rpc('ywi_rpc_cleanup_staging_fixture_set', { p_fixture_set_id:fixtureSetId, p_actor_profile_id:actorId, p_cleanup_note:'Cleanup requested by scripts/staging-fixtures.mjs.' });
-    console.log(JSON.stringify(result, null, 2));
+    console.log(JSON.stringify({ ...result, staging_project_ref:actualProjectRef }, null, 2));
   }
 } catch (error) {
   fail(error instanceof Error ? error.message : String(error));
