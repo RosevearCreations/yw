@@ -1,0 +1,58 @@
+name: One-time Build 187 documentation convergence
+
+on:
+  push:
+    branches: [schema-187-staging-scenario-catalog]
+    paths:
+      - '.github/workflows/one-time-build187-doc-start.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  converge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: schema-187-staging-scenario-catalog
+      - name: Record Build 187 active authority
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          files=[Path('README.md'),Path('docs/ACTIVE_PROJECT_HANDBOOK.md'),Path('docs/NEXT_STEPS_AND_SANITY_CHECK.md')]
+          block='''\n## Build 187 active authority\n\n**Build 187 — Staging acceptance scenario catalog + prerequisite truth convergence — ACTIVE IN SOURCE ONLY.**\n\nCurrent release boundary:\n\n- live database remains **Schema 186 / 186 CURRENT**;\n- final clean Build 186 `main` is **`02734b2168511b4faa54bf5f7fdea92b1d8f5b3d`**, exact-main **Run #160 / `33711102071` GREEN**, release evidence **row 20**;\n- original Build 186 product merge proof remains `046b9289acbe79c2a4feb4606a42dc50a8cad33d`, Run #154 / `33710506232`, evidence row 19;\n- Build 187 source branch is **`schema-187-staging-scenario-catalog`**;\n- exact 43,674-byte first Schema 187 migration commit `9483d9fb38143ce602bc406a6ca02cf22490ac2b` passed an outer-transaction rollback proof with SHA-256 `a3758b9733487cb90e6dee6652045a47c8c29d0cd30f9c7a5f824dbd73d6404e`;\n- the rollback proof seeded all six Operations catalog cases pending, rejected premature finalization, prevented callers from weakening blocking/evidence metadata, allowed explicit evidence -> finalize -> human signoff, and verified `operations_cockpit_live` stayed open;\n- Schema 187 has **not** been applied live yet;\n- Finance posting execution remains **OFF**; provider/payment mutation remains **OFF**; Production promotion remains **manual**.\n\nBuild 187 converts the six real `staging_acceptance` rails into machine-readable, fail-closed evidence checklists without inventing a separate evidence database. New Schema 187 runs seed every enabled catalog case as `pending`; runner-controlled cases may be recorded by the dedicated staging runner, human cases can only be recorded explicitly through Admin > I.T., finalization refuses pending cases and treats skipped blocking cases as failures, and signoff remains evidence only. **No Build 187 path auto-closes a business rail.**\n\nThe six cataloged rails are Operations Cockpit, quote/contact intake, live job updates, customer live-update notifications, service-execution proof/costing, and supervisor closeout/customer signoff/invoice follow-up. A dedicated non-production YardWeasels Supabase project is still not configured, so real staging execution remains closed rather than falling back to Production.\n'''
+          for p in files:
+              s=p.read_text()
+              if '## Build 187 active authority' not in s:
+                  lines=s.splitlines(True)
+                  s=''.join(lines[:1])+block+''.join(lines[1:])
+              s=s.replace('No separate YardWeasels Supabase staging project is currently configured, so Build 186 did not fabricate live staging evidence or fall back to Production. The next build must be selected from a fresh readiness/architecture review rather than auto-completing any human/provider/accounting/content gate.',
+                          'No separate YardWeasels Supabase staging project is currently configured, so Build 186 did not fabricate live staging evidence or fall back to Production. Build 187 is the selected technical follow-up: it catalogs the evidence/prerequisite truth needed to execute those six staging rails safely without auto-completing them.')
+              s=s.replace('There is no honest autonomous feature-followup rail. Remaining business work requires actual evidence or approval; Build 187 must therefore come from a fresh technical/readiness review rather than auto-closing those rails.',
+                          'There is no honest autonomous feature-followup rail. Build 187 was selected from a fresh technical/readiness review to make the six staging evidence requirements exact and fail-closed without auto-closing them.')
+              s=s.replace('**Build 186 release evidence:** row `19` in `it_release_source_evidence`', '**Build 186 final clean release evidence:** row `20` in `it_release_source_evidence`')
+              s=s.replace('**Build 186 release evidence:** row `19`  ', '**Build 186 final clean release evidence:** row `20`  ')
+              s=s.replace('**Build 186:** **COMPLETE** on `main`; exact-main Run #154 and release evidence row 19 are GREEN', '**Build 186:** **COMPLETE** on `main`; final clean Run #160 and release evidence row 20 are GREEN')
+              p.write_text(s)
+
+          # Build-sequence / architecture progression markers.
+          p=Path('docs/NEXT_STEPS_AND_SANITY_CHECK.md'); s=p.read_text()
+          marker='- **Build 186 — Staging acceptance control plane + evidence runner modernization — COMPLETE**'
+          if marker in s and 'Build 187 — Staging acceptance scenario catalog' not in s:
+              s=s.replace(marker,marker+'\n- **Build 187 — Staging acceptance scenario catalog + prerequisite truth convergence — ACTIVE IN SOURCE**')
+          p.write_text(s)
+
+          p=Path('docs/ACTIVE_PROJECT_HANDBOOK.md'); s=p.read_text()
+          marker='- Schema 186 / Build 186 — **COMPLETE**: staging acceptance control plane, service-private evidence hardening, exact source/schema binding, explicit human signoff, and Admin I.T. acceptance evidence.'
+          if marker in s and 'Schema 187 / Build 187' not in s:
+              s=s.replace(marker,marker+'\n- Schema 187 / Build 187 — **ACTIVE SOURCE WORK**: six-rail staging scenario catalog, pending-case seeding, prerequisite truth, explicit human case evidence and fail-closed finalization.')
+          p.write_text(s)
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add README.md docs/ACTIVE_PROJECT_HANDBOOK.md docs/NEXT_STEPS_AND_SANITY_CHECK.md
+          git commit -m 'Record Build 187 active authority in canonical docs'
+          git push origin HEAD:schema-187-staging-scenario-catalog
