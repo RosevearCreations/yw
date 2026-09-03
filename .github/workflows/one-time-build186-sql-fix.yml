@@ -28,8 +28,8 @@ jobs:
           s = s.replace('cross join current_schema cs', 'cross join schema_state cs')
           if s == old:
               raise SystemExit('Expected current_schema CTE markers were not found.')
-          if 'current_schema' in s:
-              raise SystemExit('Unexpected current_schema marker remains after patch.')
+          if '), current_schema as (' in s or 'cross join current_schema cs' in s:
+              raise SystemExit('Reserved current_schema CTE syntax remains after patch.')
           p.write_text(s)
           PY
           git config user.name 'github-actions[bot]'
