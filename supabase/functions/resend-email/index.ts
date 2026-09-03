@@ -20,7 +20,7 @@ function roleRank(role: string) {
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+  if (req.method === 'OPTIONS') return new Response('ok', { headers:corsHeaders });
   const supabase = createClient((Deno.env.get('SB_URL') || Deno.env.get('SUPABASE_URL'))!, (Deno.env.get('SB_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'))!);
   const token = (req.headers.get('Authorization') ?? '').replace('Bearer ', '');
   const { data: userData, error: userError } = await supabase.auth.getUser(token);
@@ -47,7 +47,7 @@ serve(async (req) => {
     site: siteText,
     site_id: siteId,
     form_type: formType,
-    submission_date: payload.date || new Date().toISOString().slice(0,10),
+    date: payload.date || new Date().toISOString().slice(0,10),
     submitted_by: payload.submitted_by || payload.checked_by || payload.inspector || payload.supervisor || actorProfile.full_name || actorProfile.email,
     submitted_by_profile_id: actorProfile.id,
     payload,
