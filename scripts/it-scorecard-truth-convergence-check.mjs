@@ -95,7 +95,9 @@ add('package-browser-gate',packageJson.scripts?.['test:browser:it']==='playwrigh
 add('workflow-source-gate',workflow.includes('npm run test:it-scorecard-truth'));
 add('workflow-browser-gate',workflow.includes('npm run test:browser:it'));
 add('repo-smoke-compatible',hasAll(repo,['active-markdown-exactly-three','docs-four-module-boundary','docs-manual-production','sql/183_finance_account_mapping_decision_support.sql']));
-add('docs-schema184-active',docs.every((text)=>text.includes('Schema 184')&&text.includes('Build 184')&&/(ACTIVE|source review)/i.test(text)));
+add('docs-schema184-complete',docs.every((text)=>text.includes('Schema 184')&&text.includes('Build 184')&&/COMPLETE/i.test(text)));
+add('docs-build184-product-proof',docs.every((text)=>text.includes('613118f52fcbad147a56226ccdeabf3a64a1c8b0')&&text.includes('33698631685')));
+add('docs-runtime-v14',docs.every((text)=>text.includes('admin-it-control')&&/v14/i.test(text)&&/JWT/i.test(text)));
 add('docs-build183-clean-authority',docs.every((text)=>text.includes('2f4e4fa25299dd285718c2bb78cc40fc05c55ebf')&&text.includes('33697274220')));
 add('docs-human-external-boundary',docs.every((text)=>/human/i.test(text)&&/(provider|external)/i.test(text)&&/(not auto|does not auto|remain open)/i.test(text)));
 add('docs-production-manual',docs.every((text)=>/Production/i.test(text)&&/manual/i.test(text)));
