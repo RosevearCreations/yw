@@ -13,13 +13,19 @@ on:
         type: choice
         options: ['false','true']
       target_rail:
-        description: 'Build 186 staging acceptance rail'
+        description: 'Schema 187 staging acceptance rail'
         required: false
         default: 'operations_cockpit_live'
         type: choice
-        options: ['operations_cockpit_live']
+        options:
+          - operations_cockpit_live
+          - quote_intake_live
+          - live_job_updates
+          - customer_live_update_notifications
+          - service_execution_proof_costing
+          - supervisor_closeout_signoff_invoice_followup
       create_fixtures:
-        description: 'Create and clean disposable STAGING fixtures during the run'
+        description: 'Create and clean disposable STAGING fixtures during the runner phase'
         required: false
         default: 'false'
         type: choice
@@ -40,6 +46,7 @@ jobs:
       - run: npm run test:it-scorecard-truth
       - run: npm run test:equipment-scan
       - run: npm run test:staging-acceptance
+      - run: npm run test:staging-scenarios
       - run: npm run test:runtime
       - run: npm run test:boundaries
       - run: npm run test:acceptance
@@ -89,8 +96,6 @@ jobs:
           test -n "${SUPABASE_SERVICE_ROLE_KEY}"
           test -n "${YWI_STAGING_PROJECT_REF}"
           test -n "${YWI_STAGING_JOB_ADMIN_PROFILE_ID}"
-          test -n "${YWI_STAGING_JOB_ADMIN_JWT}"
-          test -n "${YWI_STAGING_WORKER_JWT}"
           test "${YWI_STAGING_PROJECT_REF}" != "${YWI_PRODUCTION_PROJECT_REF}"
         env:
           YWI_RUN_STAGING_RPC_TESTS: ${{ secrets.YWI_RUN_STAGING_RPC_TESTS }}
@@ -98,10 +103,8 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           YWI_STAGING_PROJECT_REF: ${{ secrets.YWI_STAGING_PROJECT_REF }}
           YWI_STAGING_JOB_ADMIN_PROFILE_ID: ${{ secrets.YWI_STAGING_JOB_ADMIN_PROFILE_ID }}
-          YWI_STAGING_JOB_ADMIN_JWT: ${{ secrets.YWI_STAGING_JOB_ADMIN_JWT }}
-          YWI_STAGING_WORKER_JWT: ${{ secrets.YWI_STAGING_WORKER_JWT }}
           YWI_PRODUCTION_PROJECT_REF: jmqvkgiqlimdhcofwkxr
-      - name: Run Schema 186 staging acceptance
+      - name: Run Schema 187 staging catalog evidence
         run: npm run test:staging
         env:
           YWI_RUN_STAGING_RPC_TESTS: ${{ secrets.YWI_RUN_STAGING_RPC_TESTS }}
@@ -118,4 +121,4 @@ jobs:
           YWI_STAGING_WORKFLOW_RUN_ID: ${{ github.run_id }}
           YWI_STAGING_TARGET_RAIL: ${{ inputs.target_rail }}
           YWI_STAGING_CREATE_FIXTURES: ${{ inputs.create_fixtures == 'true' && '1' || '0' }}
-          YWI_STAGING_FIXTURE_LABEL: STAGING-B186-OPS
+          YWI_STAGING_FIXTURE_LABEL: STAGING-B187-RUN
