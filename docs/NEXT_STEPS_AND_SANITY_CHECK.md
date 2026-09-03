@@ -1,23 +1,27 @@
 # YWI Next Steps and Sanity Check
 
-## Build 187 active authority
+## Build 187 final release authority
 
-**Build 187 — Staging acceptance scenario catalog + prerequisite truth convergence — ACTIVE IN SOURCE ONLY.**
+**Build 187 — Staging acceptance scenario catalog + prerequisite truth convergence — COMPLETE.**
 
-Current release boundary:
+Final verified authority:
 
-- live database remains **Schema 186 / 186 CURRENT**;
-- final clean Build 186 `main` is **`02734b2168511b4faa54bf5f7fdea92b1d8f5b3d`**, exact-main **Run #160 / `33711102071` GREEN**, release evidence **row 20**;
-- original Build 186 product merge proof remains `046b9289acbe79c2a4feb4606a42dc50a8cad33d`, Run #154 / `33710506232`, evidence row 19;
-- Build 187 source branch is **`schema-187-staging-scenario-catalog`**;
-- exact 43,674-byte first Schema 187 migration commit `9483d9fb38143ce602bc406a6ca02cf22490ac2b` passed an outer-transaction rollback proof with SHA-256 `a3758b9733487cb90e6dee6652045a47c8c29d0cd30f9c7a5f824dbd73d6404e`;
-- the rollback proof seeded all six Operations catalog cases pending, rejected premature finalization, prevented callers from weakening blocking/evidence metadata, allowed explicit evidence -> finalize -> human signoff, and verified `operations_cockpit_live` stayed open;
-- Schema 187 has **not** been applied live yet;
+- live database **Schema 187 / 187 CURRENT**;
+- merged `main` SHA **`0fd4b49ed7340d484fea637c8bab08851ba340cf`**;
+- exact-main **Run #162 / `33760270850` — GREEN** across every source/static gate and all six rendered browser suites;
+- canonical release-source evidence **row 21**;
+- exact 43,674-byte Schema 187 migration SHA-256 **`a3758b9733487cb90e6dee6652045a47c8c29d0cd30f9c7a5f824dbd73d6404e`** passed rollback proof before live apply;
+- live staging security + scenario-catalog assertions **15 / 15 PASS**;
+- `admin-staging-acceptance` **v2 ACTIVE / JWT enabled**;
+- Build 187 rail **COMPLETE 100% / 10 of 10**;
+- application release authority **GREEN**; repository enforcement remains separately **AMBER** because `main` is unprotected;
 - Finance posting execution remains **OFF**; provider/payment mutation remains **OFF**; Production promotion remains **manual**.
 
-Build 187 converts the six real `staging_acceptance` rails into machine-readable, fail-closed evidence checklists without inventing a separate evidence database. New Schema 187 runs seed every enabled catalog case as `pending`; runner-controlled cases may be recorded by the dedicated staging runner, human cases can only be recorded explicitly through Admin > I.T., finalization refuses pending cases and treats skipped blocking cases as failures, and signoff remains evidence only. **No Build 187 path auto-closes a business rail.**
+Build 187 catalogs all six real `staging_acceptance` rails as fail-closed evidence checklists. New runs seed enabled cases as pending, callers cannot weaken catalog-controlled blocking/evidence metadata, finalization rejects pending evidence and treats skipped blocking cases as failures, and human signoff remains explicit. **No Build 187 path auto-closes a business readiness rail.**
 
-The six cataloged rails are Operations Cockpit, quote/contact intake, live job updates, customer live-update notifications, service-execution proof/costing, and supervisor closeout/customer signoff/invoice follow-up. A dedicated non-production YardWeasels Supabase project is still not configured, so real staging execution remains closed rather than falling back to Production.
+Post-closeout scorecard truth is **41 rails / 30 complete / 11 open**, all **11 / 11 classified**, **0 unclassified**, and **0 proof-closure drift**. Remaining open work is **6 staging acceptance**, **2 accounting acceptance**, **1 provider acceptance**, and **2 content approval** rails. Human pending remains **11** and external pending **1**; autonomous `feature_followup` pending is **0**.
+
+A dedicated non-production YardWeasels Supabase project is still not configured, so real business staging execution remains closed rather than falling back to Production. The next build must come from a fresh review of the remaining 11 classified rails and must not fabricate human/provider/accounting/content evidence.
 
 ## Build 186 final release authority
 
@@ -44,34 +48,34 @@ No separate YardWeasels Supabase staging project is currently configured, so Bui
 - **Build 184 / Schema 184 — COMPLETE product proof:** `main` `613118f52fcbad147a56226ccdeabf3a64a1c8b0`, exact-main Run #136 (`33698631685`) — SUCCESS.
 - **Build 183 / Schema 183 — COMPLETE prior clean authority:** `main` `2f4e4fa25299dd285718c2bb78cc40fc05c55ebf`, exact-main Run #132 (`33697274220`) — GREEN.
 
-These historical anchors remain audit evidence only; current live authority is Build 186 / Schema 186 with exact-main release proof recorded.
+These historical anchors remain audit evidence only; current live authority is Build 187 / Schema 187 with exact-main release proof recorded.
 
-**Current live authority:** Schema `186 / 186` — **Build 186 COMPLETE**  
-**Build 186 product checkpoint:** `046b9289acbe79c2a4feb4606a42dc50a8cad33d`, exact-main Run #154 (`33710506232`) — GREEN  
-**Build 186 final clean release evidence:** row `20`  
-**Runtime:** `equipment-scan-manage` v1 ACTIVE / JWT enabled; `admin-it-control` v14 ACTIVE / JWT enabled  
+**Current live authority:** Schema `187 / 187` — **Build 187 COMPLETE**  
+**Build 187 checkpoint:** `0fd4b49ed7340d484fea637c8bab08851ba340cf`, exact-main Run #162 (`33760270850`) — GREEN  
+**Build 187 release evidence:** row `21`  
+**Runtime:** `admin-staging-acceptance` v2 ACTIVE / JWT enabled; `equipment-scan-manage` v1 ACTIVE / JWT enabled; `admin-it-control` v14 ACTIVE / JWT enabled  
 **Repository enforcement:** separately AMBER because `main` is unprotected  
 **Finance execution release:** **OFF**; provider/payment mutation OFF; Production promotion manual  
-**Build 186:** **COMPLETE** on `main`; Schema 186 / 186 is live and release-authority GREEN.
+**Build 187:** **COMPLETE** on `main`; Schema 187 / 187 is live and release-authority GREEN.
 
 ## Current checkpoint
 
-Build 186 — **staging acceptance control plane + evidence runner modernization** — is completely closed in source, database, runtime, rendered acceptance, and release authority.
+Build 187 — **staging acceptance scenario catalog + prerequisite truth convergence** — is completely closed in source, database, runtime, rendered acceptance, and release authority.
 
 Verified closure:
 
-- live database `186 / 186`, current;
-- merged product `main` SHA `046b9289acbe79c2a4feb4606a42dc50a8cad33d`;
-- exact-main Run #154 / `33710506232` GREEN;
-- release evidence row 19;
-- Schema 186 staging-security assertions `7 / 7` PASS;
-- `admin-staging-acceptance` v1 ACTIVE / JWT enabled;
-- Build 186 rail complete 100% / 10 of 10;
-- scorecard truth GREEN: 40 rails, 29 complete, 11 open, 11 classified, 0 unclassified, 0 proof drift;
+- live database `187 / 187`, current;
+- merged `main` SHA `0fd4b49ed7340d484fea637c8bab08851ba340cf`;
+- exact-main Run #162 / `33760270850` GREEN;
+- release evidence row 21;
+- staging security + catalog assertions `15 / 15` PASS;
+- `admin-staging-acceptance` v2 ACTIVE / JWT enabled;
+- Build 187 rail complete 100% / 10 of 10;
+- scorecard truth GREEN: 41 rails, 30 complete, 11 open, 11 classified, 0 unclassified, 0 proof drift;
 - six business staging-acceptance rails remain open and human-gated;
 - Finance execution OFF, provider/payment mutation OFF, Production promotion manual.
 
-No dedicated YW Supabase staging project is configured, so real business staging acceptance has not been fabricated.
+No dedicated YW Supabase staging project is configured, so real business staging acceptance has not been fabricated. The next build must be chosen from a fresh review of the remaining 11 classified rails.
 
 ## Build sequence
 
@@ -87,13 +91,14 @@ No dedicated YW Supabase staging project is configured, so real business staging
 - **Build 184 — I.T. scorecard truth convergence — COMPLETE**
 - **Build 185 — Equipment barcode/QR camera scanning and custody evidence hardening — COMPLETE**
 - **Build 186 — Staging acceptance control plane + evidence runner modernization — COMPLETE**
+- **Build 187 — Staging acceptance scenario catalog + prerequisite truth convergence — COMPLETE**
 
-## Scorecard after Build 186
+## Scorecard after Build 187
 
 Live scorecard truth is GREEN:
 
-- 40 total rails;
-- 29 complete / 11 open;
+- 41 total rails;
+- 30 complete / 11 open;
 - 11 / 11 open rails classified;
 - unclassified open 0;
 - proof-closure drift 0;
