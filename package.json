@@ -25,6 +25,7 @@
     "test:it": "node scripts/admin-it-readiness-check.mjs",
     "test:it-scorecard-truth": "node scripts/it-scorecard-truth-convergence-check.mjs",
     "test:open-rail-readiness": "node scripts/open-rail-acceptance-readiness-check.mjs",
+    "test:submission-security": "node scripts/submission-security-boundary-check.mjs",
     "test:equipment-scan": "node scripts/equipment-scan-custody-hardening-check.mjs",
     "test:runtime": "node scripts/module-runtime-check.mjs && node scripts/module-runtime-behavior-check.mjs && node scripts/core-data-service-check.mjs && node scripts/core-data-service-behavior-check.mjs && node scripts/module-write-boundary-check.mjs && node scripts/module-write-boundary-behavior-check.mjs",
     "test:boundaries": "node scripts/module-boundary-check.mjs",
