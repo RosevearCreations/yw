@@ -1,43 +1,58 @@
 # YWI Next Steps and Sanity Check
 
+## Build 186 final release authority
+
+**Build 186 — Staging acceptance control plane + evidence runner modernization — COMPLETE.**
+
+Final verified product authority:
+
+- live database **Schema 186 / 186 CURRENT**;
+- merged `main` product SHA **`046b9289acbe79c2a4feb4606a42dc50a8cad33d`**;
+- exact-main **Run #154 / `33710506232` — GREEN** across all static gates and six rendered browser suites;
+- canonical release-source evidence **row 19**;
+- `admin-staging-acceptance` **v1 ACTIVE / JWT enabled**;
+- Schema 186 staging-security assertions **7 / 7 PASS**;
+- application release authority **GREEN**; repository enforcement remains separately **AMBER** because `main` is unprotected;
+- Finance posting execution remains **OFF**; provider/payment mutation remains **OFF**; Production promotion remains **manual**;
+- Build 186 evidence and human signoff **never auto-close business staging rails**.
+
+Current scorecard truth after Build 186: **40 rails / 29 complete / 11 open**, all **11 / 11 classified**, **0 unclassified**, **0 proof drift**. Remaining open work is **6 staging acceptance**, **2 accounting acceptance**, **1 provider acceptance**, and **2 content approval** rails. Human pending remains **11** and external pending **1**; autonomous feature-followup pending is **0**.
+
+No separate YardWeasels Supabase staging project is currently configured, so Build 186 did not fabricate live staging evidence or fall back to Production. The next build must be selected from a fresh readiness/architecture review rather than auto-completing any human/provider/accounting/content gate.
+
 ## Historical release anchors retained for audit
 
 - **Build 184 / Schema 184 — COMPLETE product proof:** `main` `613118f52fcbad147a56226ccdeabf3a64a1c8b0`, exact-main Run #136 (`33698631685`) — SUCCESS.
 - **Build 183 / Schema 183 — COMPLETE prior clean authority:** `main` `2f4e4fa25299dd285718c2bb78cc40fc05c55ebf`, exact-main Run #132 (`33697274220`) — GREEN.
 
-These historical anchors remain audit evidence only; current live authority is Build 185 / Schema 185 and Build 186 remains source-only until its release gates pass.
+These historical anchors remain audit evidence only; current live authority is Build 186 / Schema 186 with exact-main release proof recorded.
 
-**Current live authority:** Schema `185 / 185` — **Build 185 COMPLETE**  
-**Final clean-main checkpoint:** `d126ddfb403d31faba1d9826df3e0ad1e0d58fd7`, exact-main Run #149 (`33705924533`) — GREEN  
-**Final Build 185 release evidence:** row `18`  
+**Current live authority:** Schema `186 / 186` — **Build 186 COMPLETE**  
+**Build 186 product checkpoint:** `046b9289acbe79c2a4feb4606a42dc50a8cad33d`, exact-main Run #154 (`33710506232`) — GREEN  
+**Build 186 release evidence:** row `19`  
 **Runtime:** `equipment-scan-manage` v1 ACTIVE / JWT enabled; `admin-it-control` v14 ACTIVE / JWT enabled  
 **Repository enforcement:** separately AMBER because `main` is unprotected  
 **Finance execution release:** **OFF**; provider/payment mutation OFF; Production promotion manual  
-**Build 186:** ACTIVE on `schema-186-staging-acceptance-control-plane`; Schema 186 not live yet.
+**Build 186:** **COMPLETE** on `main`; Schema 186 / 186 is live and release-authority GREEN.
 
 ## Current checkpoint
 
-Build 185 — **equipment barcode/QR camera scanning + custody evidence hardening** — is completely closed.
+Build 186 — **staging acceptance control plane + evidence runner modernization** — is completely closed in source, database, runtime, rendered acceptance, and release authority.
 
 Verified closure:
 
-- live database `185 / 185`, current;
-- final clean `main` SHA `d126ddfb403d31faba1d9826df3e0ad1e0d58fd7`;
-- exact-main Run #149 / `33705924533` GREEN;
-- final release evidence row 18;
-- Build 185 equipment assertions `7 / 7` PASS;
-- canonical physical equipment → UUID `equipment_master` linkage enforced;
-- exact equipment code / asset tag / serial / QR / barcode registry enforced;
-- ambiguous/colliding identifiers fail closed;
-- scan and custody idempotency/provenance enforced;
-- camera results remain untrusted until protected server resolution;
-- manual fallback remains permanent;
-- `equipment-scan-manage` v1 ACTIVE / JWT enabled;
-- equipment operational tables remained empty through acceptance;
-- `equipment_scan_custody_live` and Build 185 rail complete;
-- repository reduced to exactly one branch before Build 186 was created.
+- live database `186 / 186`, current;
+- merged product `main` SHA `046b9289acbe79c2a4feb4606a42dc50a8cad33d`;
+- exact-main Run #154 / `33710506232` GREEN;
+- release evidence row 19;
+- Schema 186 staging-security assertions `7 / 7` PASS;
+- `admin-staging-acceptance` v1 ACTIVE / JWT enabled;
+- Build 186 rail complete 100% / 10 of 10;
+- scorecard truth GREEN: 40 rails, 29 complete, 11 open, 11 classified, 0 unclassified, 0 proof drift;
+- six business staging-acceptance rails remain open and human-gated;
+- Finance execution OFF, provider/payment mutation OFF, Production promotion manual.
 
-Finance/accounting truth, payment providers, and Production were untouched.
+No dedicated YW Supabase staging project is configured, so real business staging acceptance has not been fabricated.
 
 ## Build sequence
 
@@ -52,14 +67,14 @@ Finance/accounting truth, payment providers, and Production were untouched.
 - **Build 183 — Mapping decision support and structural approval compatibility guard — COMPLETE**
 - **Build 184 — I.T. scorecard truth convergence — COMPLETE**
 - **Build 185 — Equipment barcode/QR camera scanning and custody evidence hardening — COMPLETE**
-- **Build 186 — Staging acceptance control plane + evidence runner modernization — ACTIVE**
+- **Build 186 — Staging acceptance control plane + evidence runner modernization — COMPLETE**
 
-## Scorecard after Build 185
+## Scorecard after Build 186
 
 Live scorecard truth is GREEN:
 
-- 39 total rails;
-- 28 complete / 11 open;
+- 40 total rails;
+- 29 complete / 11 open;
 - 11 / 11 open rails classified;
 - unclassified open 0;
 - proof-closure drift 0;
@@ -71,11 +86,11 @@ Live scorecard truth is GREEN:
 - human pending 11;
 - external pending 1.
 
-There is no longer an honest autonomous feature-followup rail. The remaining work requires actual evidence or approval.
+There is no honest autonomous feature-followup rail. Remaining business work requires actual evidence or approval; Build 187 must therefore come from a fresh technical/readiness review rather than auto-closing those rails.
 
-## Build 186 — bounded objective
+## Build 186 — delivered boundary
 
-Build 186 upgrades the existing staging evidence machinery so the remaining staging acceptance work can be performed safely and repeatedly.
+Build 186 upgraded the existing staging evidence machinery so remaining staging acceptance work can be performed safely and repeatedly.
 
 It **reuses**:
 
@@ -86,7 +101,7 @@ It **reuses**:
 
 It does not create a second staging/acceptance authority.
 
-### Build 186 required controls
+### Build 186 delivered controls
 
 1. Bind each new staging acceptance run to one current `staging_acceptance` rail.
 2. Bind every run to the exact source SHA, optional workflow run ID, and current schema version.
@@ -110,9 +125,9 @@ It does not create a second staging/acceptance authority.
 - The historical `operations-rpc-staging-e2e.mjs` still described Schema 158 and did not enforce a project-ref production block; Build 186 replaces that obsolete live runner behavior with a current source/schema/rail-bound evidence run.
 - No dedicated YW Supabase staging project currently exists in the connected project list. Build 186 does not create paid staging infrastructure automatically.
 
-## First Build 186 live suite
+## Build 186 live-staging boundary
 
-The initial live runner is intentionally restricted to `operations_cockpit_live`.
+The live runner is intentionally restricted to `operations_cockpit_live`; it has not been executed against Production and cannot do so by fallback.
 
 Required dedicated-staging evidence:
 

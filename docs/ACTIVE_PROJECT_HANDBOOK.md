@@ -1,19 +1,39 @@
 # YWI Active Project Handbook
 
+## Build 186 final release authority
+
+**Build 186 — Staging acceptance control plane + evidence runner modernization — COMPLETE.**
+
+Final verified product authority:
+
+- live database **Schema 186 / 186 CURRENT**;
+- merged `main` product SHA **`046b9289acbe79c2a4feb4606a42dc50a8cad33d`**;
+- exact-main **Run #154 / `33710506232` — GREEN** across all static gates and six rendered browser suites;
+- canonical release-source evidence **row 19**;
+- `admin-staging-acceptance` **v1 ACTIVE / JWT enabled**;
+- Schema 186 staging-security assertions **7 / 7 PASS**;
+- application release authority **GREEN**; repository enforcement remains separately **AMBER** because `main` is unprotected;
+- Finance posting execution remains **OFF**; provider/payment mutation remains **OFF**; Production promotion remains **manual**;
+- Build 186 evidence and human signoff **never auto-close business staging rails**.
+
+Current scorecard truth after Build 186: **40 rails / 29 complete / 11 open**, all **11 / 11 classified**, **0 unclassified**, **0 proof drift**. Remaining open work is **6 staging acceptance**, **2 accounting acceptance**, **1 provider acceptance**, and **2 content approval** rails. Human pending remains **11** and external pending **1**; autonomous feature-followup pending is **0**.
+
+No separate YardWeasels Supabase staging project is currently configured, so Build 186 did not fabricate live staging evidence or fall back to Production. The next build must be selected from a fresh readiness/architecture review rather than auto-completing any human/provider/accounting/content gate.
+
 ## Historical release anchors retained for audit
 
 - **Build 184 / Schema 184 — COMPLETE product proof:** `main` `613118f52fcbad147a56226ccdeabf3a64a1c8b0`, exact-main Run #136 (`33698631685`) — SUCCESS.
 - **Build 183 / Schema 183 — COMPLETE prior clean authority:** `main` `2f4e4fa25299dd285718c2bb78cc40fc05c55ebf`, exact-main Run #132 (`33697274220`) — GREEN.
 
-These historical anchors remain audit evidence only; current live authority is Build 185 / Schema 185 and Build 186 remains source-only until its release gates pass.
+These historical anchors remain audit evidence only; current live authority is Build 186 / Schema 186 with exact-main release proof recorded.
 
-**Current live schema authority:** `185 / 185` — **Build 185 COMPLETE**  
-**Final clean-main Build 185 checkpoint:** `d126ddfb403d31faba1d9826df3e0ad1e0d58fd7`, exact-main Run #149 (`33705924533`) — GREEN  
-**Release evidence:** row `18` in `it_release_source_evidence`  
+**Current live schema authority:** `186 / 186` — **Build 186 COMPLETE**  
+**Build 186 product checkpoint:** `046b9289acbe79c2a4feb4606a42dc50a8cad33d`, exact-main Run #154 (`33710506232`) — GREEN  
+**Build 186 release evidence:** row `19` in `it_release_source_evidence`  
 **Runtime:** `equipment-scan-manage` v1 ACTIVE / JWT enabled; `admin-it-control` v14 ACTIVE / JWT enabled  
 **Repository enforcement:** separately AMBER because `main` is unprotected  
 **Finance execution release:** **OFF**; provider/payment mutation OFF; Production promotion manual  
-**Build 186:** ACTIVE in source on `schema-186-staging-acceptance-control-plane`; live database remains Schema 185 until source/browser proof is green  
+**Build 186:** **COMPLETE** on `main`; live database is Schema 186 / 186 CURRENT  
 **Architecture:** Safety / OHSA, Finance, Jobs, Admin; I.T. Readiness is inside Admin/manage.
 
 ## System shape
@@ -34,7 +54,7 @@ Yard Weasels combines public quote/SEO surfaces, private customer workflows, Saf
 - Schema 183 / Build 183 — **COMPLETE**: structural chart-account decision support and DB-side approval compatibility enforcement.
 - Schema 184 / Build 184 — **COMPLETE**: I.T. scorecard truth convergence and blocker classification.
 - Schema 185 / Build 185 — **COMPLETE**: barcode/QR camera scanning, canonical equipment identity convergence, exact identifier resolution, and scan/custody evidence hardening.
-- Schema 186 / Build 186 — **ACTIVE SOURCE WORK**: staging acceptance control plane and evidence runner modernization.
+- Schema 186 / Build 186 — **COMPLETE**: staging acceptance control plane, service-private evidence hardening, exact source/schema binding, explicit human signoff, and Admin I.T. acceptance evidence.
 
 ## Build 185 authority
 
@@ -57,12 +77,12 @@ Final Build 185 proof:
 
 Finance, payment providers, accounting truth, and Production were untouched.
 
-## Scorecard truth after Build 185
+## Scorecard truth after Build 186
 
 Live scorecard truth remains GREEN:
 
-- **39** total rails;
-- **28 complete / 11 open**;
+- **40** total rails;
+- **29 complete / 11 open**;
 - all **11 / 11** open rails classified;
 - unclassified open **0**;
 - proof-closure drift **0**;
@@ -79,11 +99,11 @@ The remaining open work is real acceptance/approval work:
 
 A contract-level guard prohibits automatic completion of human/external-dependent work.
 
-## Build 186 authority and scope
+## Build 186 delivered authority and scope
 
-Build 186 exists because the roadmap has reached a different phase: no autonomous feature-followup rail remains. The next valuable work is making human staging evidence safe, repeatable, source-bound, and auditable.
+Build 186 was selected because the roadmap had reached a different phase: no autonomous feature-followup rail remains. The next valuable work is making human staging evidence safe, repeatable, source-bound, and auditable.
 
-Schema 186 reuses the existing staging authorities rather than creating parallel tables:
+Schema 186 reused the existing staging authorities rather than creating parallel tables:
 
 - `operations_staging_test_runs`;
 - `operations_staging_test_results`;

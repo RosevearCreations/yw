@@ -1,19 +1,39 @@
 # Yard Weasels Inc. Operations Platform
 
+## Build 186 final release authority
+
+**Build 186 — Staging acceptance control plane + evidence runner modernization — COMPLETE.**
+
+Final verified product authority:
+
+- live database **Schema 186 / 186 CURRENT**;
+- merged `main` product SHA **`046b9289acbe79c2a4feb4606a42dc50a8cad33d`**;
+- exact-main **Run #154 / `33710506232` — GREEN** across all static gates and six rendered browser suites;
+- canonical release-source evidence **row 19**;
+- `admin-staging-acceptance` **v1 ACTIVE / JWT enabled**;
+- Schema 186 staging-security assertions **7 / 7 PASS**;
+- application release authority **GREEN**; repository enforcement remains separately **AMBER** because `main` is unprotected;
+- Finance posting execution remains **OFF**; provider/payment mutation remains **OFF**; Production promotion remains **manual**;
+- Build 186 evidence and human signoff **never auto-close business staging rails**.
+
+Current scorecard truth after Build 186: **40 rails / 29 complete / 11 open**, all **11 / 11 classified**, **0 unclassified**, **0 proof drift**. Remaining open work is **6 staging acceptance**, **2 accounting acceptance**, **1 provider acceptance**, and **2 content approval** rails. Human pending remains **11** and external pending **1**; autonomous feature-followup pending is **0**.
+
+No separate YardWeasels Supabase staging project is currently configured, so Build 186 did not fabricate live staging evidence or fall back to Production. The next build must be selected from a fresh readiness/architecture review rather than auto-completing any human/provider/accounting/content gate.
+
 ## Historical release anchors retained for audit
 
 - **Build 184 / Schema 184 — COMPLETE product proof:** `main` `613118f52fcbad147a56226ccdeabf3a64a1c8b0`, exact-main Run #136 (`33698631685`) — SUCCESS.
 - **Build 183 / Schema 183 — COMPLETE prior clean authority:** `main` `2f4e4fa25299dd285718c2bb78cc40fc05c55ebf`, exact-main Run #132 (`33697274220`) — GREEN.
 
-These historical anchors remain audit evidence only; current live authority is Build 185 / Schema 185 and Build 186 remains source-only until its release gates pass.
+These historical anchors remain audit evidence only; current live authority is Build 186 / Schema 186 with exact-main release proof recorded.
 
-**Current live authority:** Schema `185 / 185` — **Build 185 COMPLETE**  
-**Final clean-main checkpoint:** `d126ddfb403d31faba1d9826df3e0ad1e0d58fd7`, exact-main Run #149 (`33705924533`) — GREEN  
-**Final clean release evidence:** row `18` in `it_release_source_evidence`  
+**Current live authority:** Schema `186 / 186` — **Build 186 COMPLETE**  
+**Build 186 product checkpoint:** `046b9289acbe79c2a4feb4606a42dc50a8cad33d`, exact-main Run #154 (`33710506232`) — GREEN  
+**Build 186 release evidence:** row `19` in `it_release_source_evidence`  
 **Runtime:** `equipment-scan-manage` v1 ACTIVE / JWT enabled; `admin-it-control` v14 ACTIVE / JWT enabled  
 **Repository enforcement:** separately AMBER because `main` is unprotected  
 **Finance execution release:** **OFF**; provider/payment mutation OFF; Production promotion manual  
-**Build 186:** **ACTIVE in source only** on `schema-186-staging-acceptance-control-plane`; Schema 186 is not live until its source/browser gates are GREEN  
+**Build 186:** **COMPLETE** on `main`; exact-main Run #154 and release evidence row 19 are GREEN  
 **Active documents:** this README, `docs/ACTIVE_PROJECT_HANDBOOK.md`, and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
 
 Yard Weasels has exactly four top-level staff modules: **Safety / OHSA**, **Finance**, **Jobs**, and **Admin**. **I.T. Readiness** stays inside Admin/manage and is never a fifth module.
@@ -58,15 +78,15 @@ Verified final state:
 
 Finance posting execution stayed OFF, Stripe/PayPal/provider/payment mutation stayed OFF, and Production was not promoted.
 
-## Build 186 — active bounded work
+## Build 186 delivered boundary
 
-**Build 186 — Staging acceptance control plane + evidence runner modernization** is the current source build.
+**Build 186 — Staging acceptance control plane + evidence runner modernization** is complete on `main`.
 
 Build 185 removed the last autonomous feature-followup rail. Remaining business readiness items require real staging, accounting, provider, or content evidence. Build 186 therefore improves how that evidence is executed and recorded instead of pretending those human gates are complete.
 
 The bounded design reuses the existing `operations_staging_test_runs`, `operations_staging_test_results`, `operations_staging_fixture_sets`, and `operations_staging_fixture_records` authorities. It does not create a parallel acceptance database.
 
-Build 186 must provide:
+Build 186 delivered:
 
 1. exact target-rail, source-SHA, workflow-run and schema binding for staging evidence;
 2. service-private staging run/result/fixture tables;
@@ -79,7 +99,7 @@ Build 186 must provide:
 9. a current Schema 186 marker in the same migration so release authority cannot lag the feature schema;
 10. source and rendered browser gates before Schema 186 is applied.
 
-The first live acceptance suite is intentionally bounded to `operations_cockpit_live`. It will require a **dedicated non-production Supabase project**, a staging admin identity/JWT, a lower-rank worker JWT, and manual GitHub workflow dispatch. Until that separate staging target exists, live staging execution remains closed rather than falling back to Production.
+The first live acceptance suite remains intentionally bounded to `operations_cockpit_live`. Real execution still requires a **dedicated non-production Supabase project**, a staging admin identity/JWT, a lower-rank worker JWT, and manual GitHub workflow dispatch. That separate staging target does not currently exist, so business staging acceptance remains open rather than falling back to Production.
 
 ## Remaining human-gated work
 
@@ -110,9 +130,9 @@ Build 186 improves evidence mechanics. It does **not** auto-complete these rails
 
 ## Repository and release authority
 
-Numbered migrations are permanent audit history through Schema 185; Schema 186 is currently proposed on its feature branch. Git history is the archive. Do not restore archive trees, retired Markdown, generated schema snapshots, Playwright output, dependencies, logs, temp, backup artifacts, or completed one-time cleanup workflows.
+Numbered migrations are permanent audit history through Schema 186; Schema 186 is live and release-authority GREEN. Git history is the archive. Do not restore archive trees, retired Markdown, generated schema snapshots, Playwright output, dependencies, logs, temp, backup artifacts, or completed one-time cleanup workflows.
 
-The final Build 185 clean-main SHA/run is recorded in database release evidence row 18. Repository protection remains separately AMBER while `main` is unprotected. Vercel/deployment state is separate from source correctness and must be freshly verified before deployment is called green.
+Build 186 product release proof is recorded in database release evidence row 19; the final documentation-closeout SHA/run is recorded separately after this closeout merges. Repository protection remains separately AMBER while `main` is unprotected. Vercel/deployment state is separate from source correctness and must be freshly verified before deployment is called green.
 
 ## Source verification
 
