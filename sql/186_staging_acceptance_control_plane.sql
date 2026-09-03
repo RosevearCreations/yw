@@ -437,7 +437,7 @@ with staging_rails as (
   join public.it_scorecard_rail_resolution_contracts c on c.rail_key=r.rail_key
   where r.rail_status<>'complete'
     and c.resolution_class='staging_acceptance'
-), current_schema as (
+), schema_state as (
   select expected_schema_version,latest_applied_schema_version,drift_status
   from public.v_schema_drift_status
   limit 1
@@ -479,7 +479,7 @@ select
   end as acceptance_complete,
   now() as checked_at
 from staging_rails sr
-cross join current_schema cs
+cross join schema_state cs
 left join lateral (
   select r.*
   from public.operations_staging_test_runs r
