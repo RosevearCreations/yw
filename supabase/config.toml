@@ -40,6 +40,9 @@ verify_jwt = true
 [functions.admin-staging-acceptance]
 verify_jwt = true
 
+[functions.admin-account-security]
+verify_jwt = true
+
 [functions.core-data-read]
 verify_jwt = true
 
