@@ -1,18 +1,17 @@
 # Yard Weasels Inc. Operations Platform
 
-**Current source authority:** Schema `184` — **Build 184 ACTIVE / source review**  
-**Verified live database authority:** Schema `183 / 183` until Build 184 source/browser proof is green and Schema 184 is deliberately applied  
-**Last clean release evidence:** `main` at `2f4e4fa25299dd285718c2bb78cc40fc05c55ebf`, Run #132 (`33697274220`) — application release authority GREEN  
-**Build 184 source branch:** `schema-184-it-scorecard-truth-convergence`  
-**Current live runtime:** `finance-account-mapping-review` v4 ACTIVE / JWT enabled; `admin-it-control` v13 ACTIVE / JWT enabled  
-**Repository enforcement:** separately AMBER because `main` is unprotected  
+**Current authority:** Schema `184 / 184` — **Build 184 COMPLETE**  
+**Merged product checkpoint:** `613118f52fcbad147a56226ccdeabf3a64a1c8b0`, exact-main Run #136 (`33698631685`) — SUCCESS  
+**Previous clean release evidence:** Build 183 `main` `2f4e4fa25299dd285718c2bb78cc40fc05c55ebf`, Run #132 (`33697274220`) — GREEN  
+**Runtime:** `finance-account-mapping-review` v4 ACTIVE / JWT enabled; `admin-it-control` v14 ACTIVE / JWT enabled  
+**Repository enforcement:** AMBER because `main` is unprotected  
 **Finance execution release:** **OFF**; provider mutation OFF; Production promotion manual  
-**Vercel:** separately AMBER while the account is build-rate-limited  
+**Vercel:** separate infrastructure status; do not call deployment green unless a fresh exact-main check succeeds  
 **Active documents:** this README, `docs/ACTIVE_PROJECT_HANDBOOK.md`, and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
 
 Yard Weasels has exactly four top-level staff modules: **Safety / OHSA**, **Finance**, **Jobs**, and **Admin**. **I.T. Readiness** stays inside Admin/manage and is never a fifth module.
 
-## Architecture through Build 184
+## Architecture through Schema 184
 
 - Schemas 159–174 established module permissions, Admin break-glass, I.T. Readiness, permission-driven loading, Shared Core, fail-closed cross-module contracts/events, canonical job-completion events, Finance intake/review, and dependency convergence.
 - Schema 175 added separate posting approval, idempotency, provenance, and execution guards.
@@ -24,49 +23,37 @@ Yard Weasels has exactly four top-level staff modules: **Safety / OHSA**, **Fina
 - Schema 181 / Build 181 — **COMPLETE**: human-review aging, technical drift, and posting-preflight reconciliation observability.
 - Schema 182 — **COMPLETE maintenance repair**: release-authority marker convergence only.
 - Schema 183 / Build 183 — **COMPLETE**: chart-account decision support and DB-side structural approval compatibility guard.
-- Schema 184 / Build 184 — **ACTIVE**: I.T. scorecard truth convergence and explicit blocker classification.
+- Schema 184 / Build 184 — **COMPLETE**: I.T. scorecard truth convergence, immutable historical completion evidence, and explicit blocker classification.
 
-## Build 184 scope
+## Build 184 verified closure
 
-The current scorecard still contains older rails whose historical next-action text was superseded by later release proof. Build 184 makes the scorecard reflect current truth without pretending that genuine acceptance work is complete.
+Build 184 fixes control-plane truth without inventing business completion. It closes only historical rails whose later, stronger proof is already green and keeps real acceptance work visible.
 
-Only three historical rails may be proof-closed automatically, and only after current fail-closed assertions prove them green:
+Verified live state:
 
-- `schema159_module_permissions` — current module-security + rendered module acceptance + Admin break-glass proof;
-- `schema160_it_readiness` — current I.T. security + active Admin four-module `manage` integrity;
-- `schema164_cross_module_boundaries` — current write-boundary, boundary/event-wiring, and rendered module acceptance proof.
-
-Their completion evidence is private, immutable, and append-only. If the required current proof is not green, Schema 184 aborts rather than changing the rail.
-
-All genuinely unfinished rails remain open and receive an explicit current resolution class instead of being auto-completed:
-
-- **staging acceptance:** Operations Cockpit, quote intake, live job updates, customer live-update email, service-execution proof/costing, supervisor closeout/signoff;
-- **accounting acceptance:** payment actions and bank CSV/reconciliation acceptance;
-- **provider acceptance:** customer portal Stripe test-mode checkout/webhook/status acceptance;
-- **content approval:** route/visual approval and approved-route generation;
-- **feature follow-up:** equipment barcode/QR camera scanning;
-- **build acceptance:** Build 184 itself until live DB/runtime/exact-main evidence closes it.
-
-Admin → I.T. Readiness gains a private scorecard-truth feed showing verified historical closures, classified open work, unclassified-open count, human/external requirements, and proof-closure drift. The browser has no control for completing a rail.
-
-## Verified Build 183 boundary being preserved
-
-- live database: **183 / 183 current**;
-- final clean source: `2f4e4fa25299dd285718c2bb78cc40fc05c55ebf`, Run #132 `33697274220` — GREEN;
-- Schema 183 assertions: **6 / 6 PASS**;
-- Schema 181 assertions: **8 / 8 PASS**;
-- Schema 180 assertions: **8 / 8 PASS**;
-- Schema 179 assertions: **12 / 12 PASS**;
-- required dependency contracts: **82 / 82 PASS**;
-- active Admin break-glass integrity: **3 admins / 0 blockers**;
-- current mapping choices unchanged and all three review states remain `review`;
-- mapping-review audit count **0**;
-- posting execution release **OFF**;
+- database **184 / 184 CURRENT**;
+- Build 184 scorecard-truth assertions **6 / 6 PASS**;
+- required schema dependency contracts **85 / 85 PASS**;
+- Admin break-glass integrity **3 admins / 0 blockers**;
+- scorecard truth **GREEN**;
+- **38** total rails: **26 complete / 12 open**;
+- open rails classified **12 / 12**; unclassified open rails **0**;
+- proof-closure drift **0**;
+- `schema159_module_permissions`, `schema160_it_readiness`, and `schema164_cross_module_boundaries` are each **100% / verified_complete** with one immutable evidence record;
+- Build 184 rail itself is **100% complete**;
+- `admin-it-control` **v14 ACTIVE / JWT enabled**;
+- human Finance mapping choices remain unchanged, all three remain `review`, and mapping-review audit count remains **0**;
+- Finance posting execution release **OFF**;
 - provider mutation **OFF**;
-- canonical Jobs writeback prohibited;
-- Production promotion manual.
+- Production promotion **manual**.
 
-The existing mapping decisions remain human accountant/bookkeeper authority. Build 184 does **not auto-select**, auto-approve, reject, or change a chart mapping merely to turn an I.T. status green.
+The 12 remaining rails are genuine work and remain open: six staging-acceptance items, two accounting-acceptance items, one provider-acceptance item, two content-approval items, and one feature follow-up. Human/provider/accounting/content/staging work is not auto-completed merely to make the dashboard green.
+
+## Current next autonomous build
+
+**Build 185 — Equipment barcode/QR camera scanning and custody evidence hardening** is the next bounded autonomous feature candidate. `equipment_scan_custody_live` is the only remaining open rail classified `feature_followup` that requires neither a human decision nor an external provider. Before implementation, inspect the canonical equipment/custody schema, current scanner UI, module ownership and write-boundary contracts; do not create a parallel equipment identity system.
+
+All other open rails retain their real gates: staging acceptance, accountant/bookkeeper review, content approval, or Stripe/provider acceptance.
 
 ## Non-negotiable boundaries
 
@@ -76,19 +63,18 @@ The existing mapping decisions remain human accountant/bookkeeper authority. Bui
 - Shared Core identities remain centrally owned and read-only to consumers.
 - Cross-module writes require declared ownership and fail closed when undeclared.
 - Posting approval is not execution release; posting execution release stays server-owned and **OFF**.
-- Accountant/bookkeeper mapping choices and approvals remain human decisions.
+- Accountant/bookkeeper chart mapping choices and approvals remain human decisions. Build 184 does **not auto-select** or auto-approve a mapping.
 - Finance completion/accounting flows do not write canonical Jobs/work-order state.
 - Stripe, PayPal, provider, and payment truth remain outside this Finance pipeline.
-- Synthetic acceptance remains non-persistent/browser-only.
-- Human/provider/accounting/content/staging work is not auto-completed by Build 184.
+- Synthetic Finance acceptance remains non-persistent/browser-only.
 - I.T. Readiness reports blockers; it cannot auto-promote Production.
 - Production promotion remains deliberate/manual.
 
 ## Repository and release authority
 
-Numbered migrations are permanent audit history and source now includes Schema 184 while live remains Schema 183 until the Build 184 source/browser gate succeeds. Git history is the archive; do not restore archive trees, retired Markdown, generated schema snapshots, Playwright output, dependencies, logs, temp, or backup artifacts.
+Numbered migrations are permanent audit history through Schema 184. Git history is the archive; do not restore archive trees, retired Markdown, generated schema snapshots, Playwright output, dependencies, logs, temp, or backup artifacts.
 
-The last completed release is bound in `it_release_source_evidence` to exact clean `main` SHA `2f4e4fa25299dd285718c2bb78cc40fc05c55ebf` / Run `33697274220`. Build 184 will receive its own final exact-main evidence only after migration/runtime proof, authority closeout, branch cleanup, and final CI.
+Build 184 product proof is bound to merged `main` SHA `613118f52fcbad147a56226ccdeabf3a64a1c8b0` / Run `33698631685`. The final post-authority-closeout clean-main SHA/run is recorded in `it_release_source_evidence` after branch pruning and the final exact-main workflow, avoiding a self-referential SHA in this document.
 
 ## Source verification
 
@@ -125,4 +111,4 @@ npm run test:browser:finance-mapping
 npm run test:browser:it
 ```
 
-Rendered browser acceptance remains mandatory before source-green. Deployment/Vercel evidence is separate from source correctness and must be reported separately.
+Rendered browser acceptance remains mandatory before source-green. Deployment/Vercel evidence is separate from source correctness and must be freshly verified before deployment is called green.
