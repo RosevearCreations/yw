@@ -1,0 +1,45 @@
+name: Build 189 docs closeout
+
+on:
+  push:
+    branches:
+      - build-189-release-closeout
+
+permissions:
+  contents: write
+
+jobs:
+  converge-docs:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: build-189-release-closeout
+      - name: Converge canonical Build 189 authority
+        env:
+          SECTION_B64: IyMgQnVpbGQgMTg5IGZpbmFsIHJlbGVhc2UgYXV0aG9yaXR5CgoqKkJ1aWxkIDE4OSDigJQgU3VibWlzc2lvbiBzZWN1cml0eSBib3VuZGFyeSBjb252ZXJnZW5jZSDigJQgQ09NUExFVEUuKioKCkZpbmFsIHZlcmlmaWVkIGF1dGhvcml0eToKCi0gbGl2ZSBkYXRhYmFzZSAqKlNjaGVtYSAxODkgLyAxODkgQ1VSUkVOVCoqOwotIG1lcmdlZCBgbWFpbmAgU0hBICoqYDk2OTFhYzJlOGIyODlkMmUwOGU2NzU3MzhkNzU3NjQ0Y2NiMTk0MTFgKio7Ci0gZXhhY3QtbWFpbiAqKlJ1biAjMTcxIC8gYDMzNzcwMDAzNTg3YCDigJQgR1JFRU4qKiBhY3Jvc3MgZXZlcnkgc291cmNlL3N0YXRpYyBnYXRlIGFuZCBhbGwgc2l4IHJlbmRlcmVkIGJyb3dzZXIgc3VpdGVzOwotIGNhbm9uaWNhbCByZWxlYXNlLXNvdXJjZSBldmlkZW5jZSAqKnJvdyAyMyoqOwotIGxpdmUgc3VibWlzc2lvbi1zZWN1cml0eSBhc3NlcnRpb25zICoqNiAvIDYgUEFTUyoqOwotIGJyb2FkIGF1dGhlbnRpY2F0ZWQgYHN1Ym1pc3Npb25zYCBTRUxFQ1QvSU5TRVJUIGJ5cGFzcyBwb2xpY2llcyByZW1vdmVkIGFuZCB0aGUgZGlyZWN0IGF1dGhlbnRpY2F0ZWQgaW5zZXJ0IGZhbGxiYWNrIGlzIG93bmVyc2hpcC9hY3RpdmUtcHJvZmlsZS9mb3JtLXJvbGUgc2NvcGVkOwotIGRhdGFiYXNlIHJvbGUgcmFua2luZyBtYXRjaGVzIHRoZSBjdXJyZW50IGJyb3dzZXIvc2VydmVyIHJvbGUgdm9jYWJ1bGFyeTsKLSBgcmVzZW5kLWVtYWlsYCAqKnY0OCBBQ1RJVkUgLyBKV1QgZW5hYmxlZCoqLCB3aXRoIFNhZmV0eS9jcmVhdGUgYXV0aG9yaXphdGlvbiwgYXV0aGVudGljYXRlZCBwcm9maWxlIG93bmVyc2hpcCwgdGhlIGxpdmUgYGRhdGVgIGNvbHVtbiwgYW5kIHRoZSBleGFjdCBzaGFyZWQgbW9kdWxlLXBlcm1pc3Npb24gZGVwZW5kZW5jeSBidW5kbGVkOwotIEJ1aWxkIDE4OSB0ZWNobmljYWwgcmFpbCAqKkNPTVBMRVRFIDEwMCUqKjsKLSBhcHBsaWNhdGlvbiByZWxlYXNlIGF1dGhvcml0eSAqKkdSRUVOKio7IHJlcG9zaXRvcnkgZW5mb3JjZW1lbnQgcmVtYWlucyBzZXBhcmF0ZWx5ICoqQU1CRVIqKiBiZWNhdXNlIGBtYWluYCBpcyB1bnByb3RlY3RlZDsKLSBGaW5hbmNlIHBvc3RpbmcgZXhlY3V0aW9uIHJlbWFpbnMgKipPRkYqKjsgcHJvdmlkZXIvcGF5bWVudCBtdXRhdGlvbiByZW1haW5zICoqT0ZGKio7IFByb2R1Y3Rpb24gcHJvbW90aW9uIHJlbWFpbnMgKiptYW51YWwqKi4KCkJ1aWxkIDE4OSBoYXJkZW5zIHRoZSBTYWZldHkgc3VibWlzc2lvbiB0cnVzdCBib3VuZGFyeSB3aXRob3V0IHJld3JpdGluZyBoaXN0b3JpY2FsIHN1Ym1pc3Npb24gaWRlbnRpdGllcy4gVGhlIHNldmVuIGxlZ2FjeSBzdWJtaXNzaW9uIHJvd3MgdGhhdCBsYWNrIGBzdWJtaXR0ZWRfYnlfcHJvZmlsZV9pZGAgcmVtYWluIHVuY2hhbmdlZCBiZWNhdXNlIHRoZXJlIGlzIG5vIHJlbGlhYmxlIGlkZW50aXR5IGV2aWRlbmNlIHRvIGJhY2tmaWxsLiBObyBCdWlsZCAxODkgcGF0aCBhdXRvLWNsb3NlcyBidXNpbmVzcyBhY2NlcHRhbmNlIHdvcmsuCgpQb3N0LWNsb3Nlb3V0IHNjb3JlY2FyZCB0cnV0aCBpcyAqKjQzIHJhaWxzIC8gMzIgY29tcGxldGUgLyAxMSBvcGVuKiouIFRoZSBzYW1lIDExIGh1bWFuL3Byb3ZpZGVyL2FjY291bnRpbmcvY29udGVudCBhY2NlcHRhbmNlIHJhaWxzIHJlbWFpbiBvcGVuIGFuZCBzZXBhcmF0ZWx5IGV2aWRlbmNlLWdhdGVkLgoK
+        run: |
+          python - <<'PY'
+          import base64
+          from pathlib import Path
+          import os
+
+          section = base64.b64decode(os.environ['SECTION_B64']).decode('utf-8')
+          for name in ['README.md', 'docs/ACTIVE_PROJECT_HANDBOOK.md', 'docs/NEXT_STEPS_AND_SANITY_CHECK.md']:
+              p = Path(name)
+              text = p.read_text(encoding='utf-8')
+              if '## Build 189 final release authority' in text:
+                  continue
+              first_nl = text.find('\n')
+              if first_nl < 0:
+                  raise SystemExit(f'Missing H1 line in {name}')
+              text = text[:first_nl+1] + '\n' + section + text[first_nl+1:]
+              p.write_text(text, encoding='utf-8')
+          PY
+          rm .github/workflows/build-189-docs-closeout.yml
+          git config user.name "John Rosevear"
+          git config user.email "jfrosevear@gmail.com"
+          git add -A
+          git commit -m "Converge Build 189 canonical release authority [skip ci]"
+          git push origin HEAD:build-189-release-closeout
