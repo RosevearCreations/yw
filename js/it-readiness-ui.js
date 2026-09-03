@@ -1,8 +1,8 @@
 /* File: js/it-readiness-ui.js
    Admin I.T. readiness and release-authority cockpit.
    Consolidates schema/preflight/deployment/function/recovery/runtime/SEO readiness,
-   exact source/CI evidence, cross-module consumer health, and admin access-integrity evidence
-   without turning I.T. into a fifth module.
+   exact source/CI evidence, scorecard-truth classification, cross-module consumer health,
+   and admin access-integrity evidence without turning I.T. into a fifth module.
 */
 
 'use strict';
@@ -18,7 +18,7 @@
 
   function statusValue(row) {
     if (!row || typeof row !== 'object') return 'unknown';
-    for (const key of ['status','check_status','readiness_status','gate_status','drift_status','assertion_status','health_status','result','state','release_authority_status','source_gate_status','repository_enforcement_status','mapping_readiness_status','mapping_observability_status','mapping_decision_support_status']) {
+    for (const key of ['status','check_status','readiness_status','gate_status','drift_status','assertion_status','health_status','result','state','release_authority_status','source_gate_status','repository_enforcement_status','mapping_readiness_status','mapping_observability_status','mapping_decision_support_status','scorecard_truth_status','truth_status','resolution_status']) {
       if (row[key] !== undefined && row[key] !== null) return String(row[key]).trim().toLowerCase();
     }
     for (const key of ['ok','passed','ready','is_ready','is_current','healthy']) {
@@ -41,14 +41,14 @@
   }
 
   function rowTitle(row, fallback='Readiness check') {
-    for (const key of ['check_title','title','label','name','check_name','gate_name','setting_name','assertion_key','check_key','task_title','page_path','function_name','scope_key','source_branch']) {
+    for (const key of ['rail_title','check_title','title','label','name','check_name','gate_name','setting_name','assertion_key','rail_key','check_key','task_title','page_path','function_name','scope_key','source_branch']) {
       if (row?.[key]) return String(row[key]);
     }
     return fallback;
   }
 
   function rowDetail(row) {
-    for (const key of ['release_message','message','details','description','action_hint','failure_hint','readiness_message','decision_support_message','next_action_hint','resolution_hint','notes','route_hint','evidence_note','source_sha']) {
+    for (const key of ['release_message','truth_message','resolution_note','message','details','description','action_hint','failure_hint','readiness_message','decision_support_message','next_action_hint','resolution_hint','notes','route_hint','evidence_note','source_sha']) {
       const value=row?.[key];
       if (value !== undefined && value !== null && String(value).trim()) {
         return typeof value === 'object' ? JSON.stringify(value) : String(value);
@@ -64,7 +64,12 @@
     if (!rows.length) return '<div class="it-readiness-empty">No current rows. This can be healthy for queues that only contain exceptions.</div>';
     return `<div class="it-readiness-list">${rows.slice(0,30).map((row)=>{
       const st=statusValue(row);
-      return `<div class="it-readiness-row"><div><strong>${esc(rowTitle(row,fallbackTitle))}</strong>${rowDetail(row)?`<small>${esc(rowDetail(row))}</small>`:''}</div>${statusChip(st)}</div>`;
+      const qualifiers=[];
+      if(row?.requires_human===true)qualifiers.push('human');
+      if(row?.requires_external===true)qualifiers.push('external');
+      if(row?.resolution_class)qualifiers.push(String(row.resolution_class).replaceAll('_',' '));
+      const detail=rowDetail(row);
+      return `<div class="it-readiness-row"><div><strong>${esc(rowTitle(row,fallbackTitle))}</strong>${detail?`<small>${esc(detail)}</small>`:''}${qualifiers.length?`<small>${esc(qualifiers.join(' · '))}</small>`:''}</div>${statusChip(st)}</div>`;
     }).join('')}</div>${rows.length>30?`<small>Showing 30 of ${rows.length} rows.</small>`:''}`;
   }
 
@@ -80,6 +85,7 @@
       ...(Array.isArray(groups.module)?groups.module:[]),
       ...(Array.isArray(groups.it)?groups.it:[]),
       ...(Array.isArray(groups.release_authority)?groups.release_authority:[]),
+      ...(Array.isArray(groups.scorecard_truth)?groups.scorecard_truth:[]),
       ...(Array.isArray(groups.consumer_observability)?groups.consumer_observability:[]),
       ...(Array.isArray(groups.finance_operational)?groups.finance_operational:[]),
       ...(Array.isArray(groups.finance_release_hardening)?groups.finance_release_hardening:[]),
@@ -88,7 +94,7 @@
       ...(Array.isArray(groups.finance_account_mapping_decision_support)?groups.finance_account_mapping_decision_support:[]),
     ];
     const errors=Array.isArray(groups.errors)?groups.errors:[];
-    return `<section class="it-readiness-panel"><span class="it-readiness-kicker">Security proof</span><h3>Module, I.T., release, consumer, and Finance assertions</h3>${errors.length?errors.map((e)=>`<div class="it-readiness-error">${esc(e)}</div>`).join(''):''}${rows.length?`<div class="it-readiness-list">${rows.map((row)=>`<div class="it-readiness-row"><div><strong>${esc(row.assertion_key||'assertion')}</strong><small>${esc(row.details||'')}</small></div>${statusChip(row.assertion_status)}</div>`).join('')}</div>`:'<div class="it-readiness-empty">No assertion rows returned.</div>'}</section>`;
+    return `<section class="it-readiness-panel"><span class="it-readiness-kicker">Security proof</span><h3>Module, I.T., scorecard truth, release, consumer, and Finance assertions</h3>${errors.length?errors.map((e)=>`<div class="it-readiness-error">${esc(e)}</div>`).join(''):''}${rows.length?`<div class="it-readiness-list">${rows.map((row)=>`<div class="it-readiness-row"><div><strong>${esc(row.assertion_key||'assertion')}</strong><small>${esc(row.details||'')}</small></div>${statusChip(row.assertion_status)}</div>`).join('')}</div>`:'<div class="it-readiness-empty">No assertion rows returned.</div>'}</section>`;
   }
 
   function renderAdminIntegrity() {
@@ -122,13 +128,17 @@
         <section class="it-readiness-summary">
           <span class="it-readiness-kicker">Release authority control plane</span>
           <h2>I.T. Readiness</h2>
-          <p>Preflight, deployment, recovery, runtime, access, exact source/CI evidence, cross-module consumer health, and public-release checks in one Admin-only workspace.</p>
+          <p>Preflight, deployment, recovery, runtime, access, exact source/CI evidence, scorecard truth, cross-module consumer health, and public-release checks in one Admin-only workspace.</p>
           ${statusChip(overall)}
           <div class="it-readiness-metrics">
             <div class="it-readiness-metric"><strong>${esc(schema)}</strong><span>DB schema applied / expected</span></div>
             <div class="it-readiness-metric"><strong>${esc(sourceSha)}</strong><span>recorded main source SHA</span></div>
             <div class="it-readiness-metric"><strong>${esc(s.source_gate_status||'unknown')}</strong><span>main source gate</span></div>
             <div class="it-readiness-metric"><strong>${esc(s.repository_enforcement_status||'unknown')}</strong><span>repository enforcement</span></div>
+            <div class="it-readiness-metric"><strong>${esc(s.scorecard_truth_status||'unknown')}</strong><span>scorecard truth</span></div>
+            <div class="it-readiness-metric"><strong>${Number(s.scorecard_open_count||0)}</strong><span>classified/open readiness rails</span></div>
+            <div class="it-readiness-metric"><strong>${Number(s.scorecard_unclassified_open_count||0)}</strong><span>unclassified open rails</span></div>
+            <div class="it-readiness-metric"><strong>${Number(s.scorecard_human_pending_count||0)} / ${Number(s.scorecard_external_pending_count||0)}</strong><span>human / external pending rails</span></div>
             <div class="it-readiness-metric"><strong>${Number(s.active_admin_count||0)}</strong><span>active admins checked</span></div>
             <div class="it-readiness-metric"><strong>${Number(s.admin_access_integrity_blockers||0)}</strong><span>admin access blockers</span></div>
             <div class="it-readiness-metric"><strong>${Number(s.readiness_blockers||0)+Number(s.assertion_blockers||0)}</strong><span>readiness/security blockers</span></div>
@@ -141,6 +151,8 @@
       <div class="it-readiness-grid">
         ${panel('release_authority','Release authority','Application release authority')}
         ${panel('release_source_evidence','Source evidence','Exact main SHA / CI evidence')}
+        ${panel('scorecard_truth_status','Scorecard truth','Readiness-work classification integrity')}
+        ${panel('scorecard_truth','Outstanding work','Verified closures and classified pending rails')}
         ${panel('cross_module_consumer_health','Event consumers','Jobs completion → Finance health')}
         ${panel('finance_operational','Finance pipeline','Completion → accounting operational health')}
         ${panel('finance_reconciliation','Finance reconciliation','Orphan, duplicate and accounting-divergence diagnostics')}
@@ -177,7 +189,7 @@
       if(!payload)throw new Error('I.T. readiness endpoint returned no data.');
       state.payload=payload;
     }catch(err){
-      state.payload={summary:{overall_status:'red',expected_schema_version:0,latest_applied_schema_version:0,release_authority_status:'unknown',source_gate_status:'unknown',repository_enforcement_status:'unknown',active_admin_count:0,admin_access_integrity_blockers:1,readiness_blockers:1,assertion_blockers:0},sections:{},security_assertions:{module:[],it:[],release_authority:[],consumer_observability:[],errors:[err?.message||'Unable to load I.T. readiness.']}};
+      state.payload={summary:{overall_status:'red',expected_schema_version:0,latest_applied_schema_version:0,release_authority_status:'unknown',source_gate_status:'unknown',repository_enforcement_status:'unknown',scorecard_truth_status:'unknown',scorecard_open_count:0,scorecard_unclassified_open_count:1,scorecard_human_pending_count:0,scorecard_external_pending_count:0,active_admin_count:0,admin_access_integrity_blockers:1,readiness_blockers:1,assertion_blockers:0},sections:{},security_assertions:{module:[],it:[],release_authority:[],scorecard_truth:[],consumer_observability:[],errors:[err?.message||'Unable to load I.T. readiness.']}};
     }finally{state.loading=false;render();}
   }
 
