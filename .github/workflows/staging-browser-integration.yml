@@ -47,6 +47,7 @@ jobs:
       - run: npm run test:open-rail-readiness
       - run: npm run test:submission-security
       - run: npm run test:security-advisor-truth
+      - run: npm run test:admin-account-security
       - run: npm run test:equipment-scan
       - run: npm run test:staging-acceptance
       - run: npm run test:staging-scenarios
@@ -80,6 +81,7 @@ jobs:
       - run: npm run test:browser:it
       - run: npm run test:browser:equipment-scan
       - run: npm run test:browser:staging-acceptance
+      - run: npm run test:browser:admin-account-security
 
   staging-proof:
     if: github.event_name == 'workflow_dispatch' && inputs.run_staging == 'true'
