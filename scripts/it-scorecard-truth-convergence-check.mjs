@@ -94,7 +94,7 @@ add('package-source-gate',packageJson.scripts?.['test:it-scorecard-truth']==='no
 add('package-browser-gate',packageJson.scripts?.['test:browser:it']==='playwright test --config=playwright.config.mjs tests/browser/it-scorecard-truth.spec.mjs');
 add('workflow-source-gate',workflow.includes('npm run test:it-scorecard-truth'));
 add('workflow-browser-gate',workflow.includes('npm run test:browser:it'));
-add('repo-smoke-compatible',hasAll(repo,['active-markdown-exactly-three','docs-four-module-boundary','docs-manual-production','schema183-migration-present']));
+add('repo-smoke-compatible',hasAll(repo,['active-markdown-exactly-three','docs-four-module-boundary','docs-manual-production','sql/183_finance_account_mapping_decision_support.sql']));
 add('docs-schema184-active',docs.every((text)=>text.includes('Schema 184')&&text.includes('Build 184')&&/(ACTIVE|source review)/i.test(text)));
 add('docs-build183-clean-authority',docs.every((text)=>text.includes('2f4e4fa25299dd285718c2bb78cc40fc05c55ebf')&&text.includes('33697274220')));
 add('docs-human-external-boundary',docs.every((text)=>/human/i.test(text)&&/(provider|external)/i.test(text)&&/(not auto|does not auto|remain open)/i.test(text)));
