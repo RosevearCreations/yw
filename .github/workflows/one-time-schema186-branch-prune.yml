@@ -1,0 +1,29 @@
+name: One-time Schema 186 branch prune
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/one-time-schema186-branch-prune.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Delete completed Build 186 branches
+        shell: bash
+        run: |
+          set -euo pipefail
+          for branch in \
+            schema-186-staging-acceptance-control-plane \
+            schema-186-release-authority-closeout \
+            schema-186-release-authority-closeout-clean
+          do
+            if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+              git push origin --delete "$branch"
+            fi
+          done
