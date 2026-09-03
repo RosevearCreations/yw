@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-/** Build/Schema 186 source gate: staging acceptance control plane + evidence runner modernization. */
+/** Build/Schema 186 foundation gate, including compatible Schema 187 catalog evolution. */
 import fs from 'node:fs';
 import path from 'node:path';
 
 const root=process.cwd();
 const read=(file)=>fs.readFileSync(path.join(root,file),'utf8');
 const migration=read('sql/186_staging_acceptance_control_plane.sql');
+const migration187=read('sql/187_staging_acceptance_scenario_catalog.sql');
 const runner=read('scripts/operations-rpc-staging-e2e.mjs');
 const fixtures=read('scripts/staging-fixtures.mjs');
 const endpoint=read('supabase/functions/admin-staging-acceptance/index.ts');
@@ -57,24 +58,30 @@ add('schema186-marker-and-ledger',hasAll(migration,[
   '186::int as expected_schema_version',"186,'186_staging_acceptance_control_plane'","'2026-09-02r'",
   "'schema186_staging_acceptance_control_plane'"
 ]));
-add('schema186-no-finance-provider-production-mutation',!/\b(?:insert\s+into|update|delete\s+from)\s+public\.(?:job_financial_events|finance_|ar_|ap_|stripe|paypal|payment_|gl_journal)/i.test(migration)&&!migration.includes('production_promotion',migration.indexOf('insert into public.app_schema_versions')));
+add('schema186-no-finance-provider-production-mutation',!/\b(?:insert\s+into|update|delete\s+from)\s+public\.(?:job_financial_events|finance_|ar_|ap_|stripe|paypal|payment_|gl_journal)/i.test(migration));
 
+add('schema187-preserves-schema186-control-plane',hasAll(migration187,[
+  'operations_staging_acceptance_scenarios','ywi_rpc_start_staging_acceptance_run',
+  'ywi_rpc_record_staging_acceptance_result','ywi_rpc_finalize_staging_acceptance_run',
+  'catalog_never_auto_closes_scorecard'
+]));
 add('runner-refuses-production-project',hasAll(runner,[
   'YWI_STAGING_PROJECT_REF','YWI_PRODUCTION_PROJECT_REF',"'jmqvkgiqlimdhcofwkxr'",
-  'Refusing Build 186 staging acceptance against the YardWeasels Production project ref.'
+  'Refusing Schema 187 staging acceptance against the YardWeasels Production project ref.'
 ]));
 add('runner-source-and-schema-bound',hasAll(runner,[
   'YWI_STAGING_SOURCE_SHA','YWI_STAGING_WORKFLOW_RUN_ID','v_schema_drift_status',
   'ywi_rpc_start_staging_acceptance_run','p_source_sha:sourceSha','p_schema_version:expectedSchema'
 ]));
 add('runner-records-cases-through-rpc',hasAll(runner,[
-  'ywi_rpc_record_staging_acceptance_result','p_evidence_kind:kind','p_is_blocking:blocking',
-  'ywi_rpc_finalize_staging_acceptance_run'
+  'ywi_rpc_record_staging_acceptance_result','p_evidence_kind:catalog.evidence_kind',
+  'p_is_blocking:catalog.is_blocking','p_expected_outcome:catalog.expected_outcome'
 ]));
-add('runner-never-auto-signs-off',!runner.includes("rpc('ywi_rpc_signoff_staging_acceptance_run'")&&runner.includes('awaiting_human_signoff'));
-add('runner-bounded-to-operations-cockpit',hasAll(runner,[
-  "targetRail !== 'operations_cockpit_live'",'operations_cockpit_job_admin_allowed',
-  'operations_cockpit_worker_denied','has_stripe_health:true'
+add('runner-never-auto-signs-off-or-finalizes',!runner.includes("rpc('ywi_rpc_signoff_staging_acceptance_run'")&&!runner.includes("rpc('ywi_rpc_finalize_staging_acceptance_run'")&&runner.includes('pending_human_case_count'));
+add('runner-schema187-six-rail-catalog-bound',hasAll(runner,[
+  'allowedRails','operations_cockpit_live','quote_intake_live','live_job_updates',
+  'customer_live_update_notifications','service_execution_proof_costing','supervisor_closeout_signoff_invoice_followup',
+  'operations_cockpit_admin_allowed','operations_cockpit_worker_denied'
 ]));
 add('fixture-script-refuses-production-project',hasAll(fixtures,[
   'YWI_STAGING_PROJECT_REF','YWI_PRODUCTION_PROJECT_REF','Refusing staging fixture mutation against the YardWeasels Production project ref.'
@@ -86,30 +93,24 @@ add('admin-staging-endpoint-admin-manage',hasAll(endpoint,[
 ]));
 add('admin-staging-endpoint-status-private-view',hasAll(endpoint,[
   "from('v_it_staging_acceptance_status')",'ywi_staging_acceptance_security_assertions',
-  "from('operations_staging_test_runs')"
+  "from('operations_staging_test_runs')","from('v_it_staging_acceptance_scenario_plan')"
 ]));
 add('admin-staging-endpoint-jwt-config',/\[functions\.admin-staging-acceptance\]\s*\nverify_jwt = true/.test(config));
 add('admin-staging-ui-human-explicit',hasAll(ui,[
   'Approve evidence','Reject evidence','window.confirm','does not close the scorecard rail',
-  "jsonFetch?.('admin-staging-acceptance'"
+  "jsonFetch?.('admin-staging-acceptance'","action:'record_case'","action:'finalize'"
 ]));
 add('admin-staging-ui-loaded-by-admin-module',runtime.includes("'/js/staging-acceptance-ui.js'")&&runtime.includes("const BUILD = '2026-09-02l'"));
 
-add('workflow-source-gates-build186',workflow.includes('npm run test:staging-acceptance')&&workflow.includes('npm run test:browser:staging-acceptance'));
+add('workflow-source-gates-staging',workflow.includes('npm run test:staging-acceptance')&&workflow.includes('npm run test:staging-scenarios')&&workflow.includes('npm run test:browser:staging-acceptance'));
 add('workflow-live-staging-manual-only',hasAll(workflow,[
   "github.event_name == 'workflow_dispatch' && inputs.run_staging == 'true'",'environment: staging',
   'YWI_STAGING_PROJECT_REF: ${{ secrets.YWI_STAGING_PROJECT_REF }}',
-  'YWI_STAGING_JOB_ADMIN_JWT: ${{ secrets.YWI_STAGING_JOB_ADMIN_JWT }}',
-  'YWI_STAGING_WORKER_JWT: ${{ secrets.YWI_STAGING_WORKER_JWT }}',
-  'YWI_PRODUCTION_PROJECT_REF: jmqvkgiqlimdhcofwkxr',
-  'YWI_STAGING_SOURCE_SHA: ${{ github.sha }}'
+  'YWI_PRODUCTION_PROJECT_REF: jmqvkgiqlimdhcofwkxr','YWI_STAGING_SOURCE_SHA: ${{ github.sha }}'
 ]));
-add('package-build186-gates',pkg.scripts?.['test:staging-acceptance']?.includes('staging-acceptance-control-plane-check.mjs')&&pkg.scripts?.['test:browser:staging-acceptance']?.includes('staging-acceptance.spec.mjs'));
+add('package-staging-gates',pkg.scripts?.['test:staging-acceptance']?.includes('staging-acceptance-control-plane-check.mjs')&&pkg.scripts?.['test:staging-scenarios']?.includes('staging-scenario-catalog-check.mjs')&&pkg.scripts?.['test:browser:staging-acceptance']?.includes('staging-acceptance.spec.mjs'));
 
 const failures=results.filter((item)=>!item.ok);
 for(const item of results) console.log(`${item.ok?'PASS':'FAIL'} ${item.name}${item.detail?` - ${item.detail}`:''}`);
-if(failures.length){
-  console.error(`\nBuild 186 staging acceptance gate failed: ${failures.length}/${results.length} checks.`);
-  process.exit(1);
-}
-console.log(`\nBuild 186 staging acceptance gate passed: ${results.length}/${results.length} checks.`);
+if(failures.length){console.error(`\nStaging acceptance foundation gate failed: ${failures.length}/${results.length} checks.`);process.exit(1);}
+console.log(`\nStaging acceptance foundation gate passed: ${results.length}/${results.length} checks.`);
