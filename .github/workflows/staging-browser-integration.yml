@@ -44,6 +44,7 @@ jobs:
       - run: npm run test:modules
       - run: npm run test:it
       - run: npm run test:it-scorecard-truth
+      - run: npm run test:open-rail-readiness
       - run: npm run test:equipment-scan
       - run: npm run test:staging-acceptance
       - run: npm run test:staging-scenarios
