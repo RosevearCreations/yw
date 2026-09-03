@@ -32,3 +32,4 @@ jobs:
           git add supabase/functions/admin-it-control/index.ts js/it-readiness-ui.js tests/browser/it-scorecard-truth.spec.mjs package.json .github/workflows/staging-browser-integration.yml
           git commit -m 'Wire Build 188 acceptance readiness into Admin I.T. and CI'
           git push origin HEAD:schema-188-open-rail-acceptance-readiness
+# rerun after JSON guard convergence
