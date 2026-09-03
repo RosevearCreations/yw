@@ -29,17 +29,21 @@ add('no-temporary-build179-patch-workflow',!exists('.github/workflows/build179-s
 add('no-temporary-build180-patch-workflow',!exists('.github/workflows/build180-source-patch.yml'),'Temporary Build 180 source patch workflow is absent.');
 add('no-temporary-build181-patch-workflow',!exists('.github/workflows/build181-source-patch.yml')&&!exists('.github/workflows/build181-source-patch-v2.yml'),'Temporary Build 181 source patch workflows are absent.');
 add('no-temporary-schema181-branch-prune-workflow',!exists('.github/workflows/one-time-schema181-branch-prune.yml'),'One-time Schema 181 branch prune workflow is absent after cleanup.');
+add('no-temporary-schema184-branch-prune-workflow',!exists('.github/workflows/one-time-schema184-branch-prune.yml'),'One-time Schema 184 branch prune workflow is absent outside the bounded cleanup operation.');
 
 const readme=read('README.md');
 const handbook=read('docs/ACTIVE_PROJECT_HANDBOOK.md');
 const nextSteps=read('docs/NEXT_STEPS_AND_SANITY_CHECK.md');
 for(const [name,text] of [['README',readme],['Handbook',handbook],['Next steps',nextSteps]]){
-  add(`${name.toLowerCase().replaceAll(' ','-')}-schema183`,text.includes('Schema 183')&&text.includes('I.T. Readiness'),`${name} records Schema 183 authority and retains the Admin/I.T. boundary.`);
+  add(`${name.toLowerCase().replaceAll(' ','-')}-schema183`,text.includes('Schema 183')&&text.includes('I.T. Readiness'),`${name} preserves Schema 183 history and the Admin/I.T. boundary.`);
+  add(`${name.toLowerCase().replaceAll(' ','-')}-schema184`,text.includes('Schema 184')&&text.includes('I.T. Readiness')&&/Build 184[\s\S]*COMPLETE|COMPLETE[\s\S]*Build 184/i.test(text),`${name} records completed Schema 184 authority.`);
 }
 add('docs-build179-complete',handbook.includes('Schema 179')&&handbook.includes('COMPLETE')&&nextSteps.includes('Build 179')&&nextSteps.includes('COMPLETE'),'Active authority records Build 179 permission/acceptance/release hardening as complete.');
 add('docs-build180-complete',[readme,handbook,nextSteps].every((text)=>text.includes('Build 180')&&/mapping/i.test(text)&&/COMPLETE/i.test(text)),'Active authority records Build 180 accountant mapping readiness/review as complete.');
 add('docs-build181-complete',[readme,handbook,nextSteps].every((text)=>text.includes('Build 181')&&/aging|drift|reconciliation/i.test(text)&&/COMPLETE/i.test(text)),'Active authority records Build 181 mapping observability as complete.');
 add('docs-build183-active',[readme,handbook,nextSteps].every((text)=>text.includes('Build 183')&&/decision support|compatibility/i.test(text)),'Active authority records Build 183 Finance mapping decision support.');
+add('docs-build184-complete',[readme,handbook,nextSteps].every((text)=>text.includes('Build 184')&&/scorecard truth/i.test(text)&&/COMPLETE/i.test(text)),'Active authority records Build 184 I.T. scorecard truth convergence as complete.');
+add('docs-build185-next',[readme,handbook,nextSteps].every((text)=>text.includes('Build 185')&&/barcode|QR/i.test(text)),'Active authority records equipment barcode/QR custody hardening as the next bounded build.');
 add('docs-build179-financial-release-closed',[readme,handbook,nextSteps].every((text)=>/execution release/i.test(text)&&/(off|closed|server-owned)/i.test(text)),'Finance accounting execution remains closed.');
 add('docs-four-module-boundary',[readme,handbook,nextSteps].every((text)=>['Safety','Finance','Jobs','Admin'].every((key)=>text.includes(key))),'Active authority retains Safety, Finance, Jobs and Admin.');
 add('docs-manual-production',[readme,handbook,nextSteps].every((text)=>/manual/i.test(text)&&/Production/i.test(text)),'Production promotion remains deliberate/manual.');
@@ -50,8 +54,8 @@ const sqlDir=path.join(root,'sql');
 const sqlNames=fs.readdirSync(sqlDir).filter((name)=>/^\d{3}_.+\.sql$/i.test(name));
 const versions=new Set(sqlNames.map((name)=>Number(name.slice(0,3))).filter((n)=>n>0));
 const missing=[];
-for(let n=30;n<=183;n++) if(!versions.has(n)) missing.push(n);
-add('migration-range-030-through-183',missing.length===0&&versions.has(183),missing.length?`Missing migration numbers: ${missing.join(', ')}`:'Every schema number 030–183 is represented.');
+for(let n=30;n<=184;n++) if(!versions.has(n)) missing.push(n);
+add('migration-range-030-through-184',missing.length===0&&versions.has(184),missing.length?`Missing migration numbers: ${missing.join(', ')}`:'Every schema number 030–184 is represented.');
 for(const [version,file] of [
   [174,'sql/174_finance_work_order_identity_contract_convergence.sql'],
   [175,'sql/175_finance_posting_safety_foundation.sql'],
@@ -63,6 +67,7 @@ for(const [version,file] of [
   [181,'sql/181_finance_account_mapping_observability.sql'],
   [182,'sql/182_schema181_release_authority_marker_convergence.sql'],
   [183,'sql/183_finance_account_mapping_decision_support.sql'],
+  [184,'sql/184_it_scorecard_truth_convergence.sql'],
 ]) add(`schema${version}-migration-present`,exists(file),`Schema ${version} migration is present.`);
 
 const schema173=read('sql/173_finance_schema_dependency_contract_guard.sql');
@@ -76,6 +81,7 @@ const schema180=read('sql/180_finance_account_mapping_review_workflow.sql');
 const schema181=read('sql/181_finance_account_mapping_observability.sql');
 const schema182=read('sql/182_schema181_release_authority_marker_convergence.sql');
 const schema183=read('sql/183_finance_account_mapping_decision_support.sql');
+const schema184=read('sql/184_it_scorecard_truth_convergence.sql');
 add('schema173-history-preserved',schema173.includes("'completion_review_work_order'")&&schema173.includes("'bigint'"),'Schema 173 historical dependency assumption remains auditable.');
 add('schema174-uuid-repair',schema174.includes("set expected_data_type='uuid'")&&schema174.includes("where contract_key='completion_review_work_order'"),'Schema 174 explicitly repairs the work-order identity contract to UUID.');
 add('schema175-posting-approval-separate',schema175.includes('finance_job_completion_posting_approvals')&&schema175.includes('idempotency_key'),'Schema 175 retains separate posting approval/idempotency authority.');
@@ -107,6 +113,10 @@ add('schema183-approval-guard',schema183.includes('v_account_type is distinct fr
 add('schema183-no-auto-approval',!/set\s+review_status\s*=\s*['"]approved['"]/i.test(schema183),'Schema 183 does not auto-approve mappings.');
 add('schema183-execution-provider-closed',!/execution_enabled\s*=\s*true/i.test(schema183)&&!/provider_mutation_enabled\s*=\s*true/i.test(schema183),'Schema 183 does not enable accounting execution or provider mutation.');
 add('schema183-no-jobs-writeback',!/\b(?:update|delete\s+from|insert\s+into)\s+public\.(?:jobs|work_orders)\b/i.test(schema183),'Schema 183 does not write Jobs state.');
+add('schema184-scorecard-truth-private',['it_scorecard_rail_resolution_contracts','it_scorecard_rail_completion_evidence','v_it_scorecard_progress_truth','v_it_scorecard_progress_truth_status','ywi_it_scorecard_truth_assertions','with (security_invoker=true)'].every((key)=>schema184.includes(key)),'Schema 184 keeps scorecard truth and immutable completion evidence private.');
+add('schema184-auto-close-bounded',schema184.includes('check (not auto_close_allowed or (requires_human is false and requires_external is false))')&&schema184.includes("where r.rail_key in ('schema159_module_permissions','schema160_it_readiness','schema164_cross_module_boundaries')"),'Schema 184 auto-close authority is bounded to the three assertion-backed historical rails.');
+add('schema184-no-business-accounting-jobs-mutation',!/\b(?:insert\s+into|update|delete\s+from)\s+public\.(?:jobs|work_orders|clients|client_sites|ar_invoices|gl_journal_batches|gl_journal_entries|job_invoice_postings|job_journal_postings|accountant_export_mapping_rules|chart_of_accounts|payment_action_requests|bank_csv_import_previews|quote_contact_requests)\b/i.test(schema184),'Schema 184 does not mutate business, accounting, mapping, or Jobs records.');
+add('schema184-execution-provider-closed',!/execution_enabled\s*=\s*true/i.test(schema184)&&!/provider_mutation_enabled\s*=\s*true/i.test(schema184),'Schema 184 does not enable posting execution or provider mutation.');
 
 const fixture=read('tests/fixtures/finance-release-hardening-fixtures.mjs');
 const financeBrowser=read('tests/browser/finance-release-hardening.spec.mjs');
@@ -135,11 +145,11 @@ for(const file of jsFiles){
 
 const required=[
   '.github/workflows/staging-browser-integration.yml','package.json','package-lock.json','playwright.config.mjs',
-  'scripts/module-permissions-check.mjs','scripts/admin-it-readiness-check.mjs','scripts/it-release-authority-check.mjs',
+  'scripts/module-permissions-check.mjs','scripts/admin-it-readiness-check.mjs','scripts/it-release-authority-check.mjs','scripts/it-scorecard-truth-convergence-check.mjs',
   'scripts/finance-schema-dependency-contract-check.mjs','scripts/finance-posting-safety-foundation-check.mjs','scripts/finance-posting-preflight-check.mjs',
   'scripts/finance-posting-execution-recovery-check.mjs','scripts/finance-operational-control-plane-check.mjs','scripts/finance-release-hardening-check.mjs','scripts/finance-account-mapping-review-check.mjs','scripts/finance-account-mapping-observability-check.mjs','scripts/finance-account-mapping-decision-support-check.mjs',
   'tests/fixtures/finance-release-hardening-fixtures.mjs','tests/browser/finance-release-hardening.spec.mjs',
-  'tests/fixtures/finance-account-mapping-review-fixtures.mjs','tests/browser/finance-account-mapping-review.spec.mjs','js/finance-account-mapping-ui.js',
+  'tests/fixtures/finance-account-mapping-review-fixtures.mjs','tests/browser/finance-account-mapping-review.spec.mjs','tests/browser/it-scorecard-truth.spec.mjs','js/finance-account-mapping-ui.js','js/it-readiness-ui.js',
   'supabase/functions/admin-it-control/index.ts','supabase/functions/finance-job-completion-review/index.ts','supabase/functions/finance-job-completion-posting-approval/index.ts','supabase/functions/finance-account-mapping-review/index.ts',
   'supabase/functions/core-data-read/index.ts','supabase/functions/operations-manage/index.ts'
 ];
