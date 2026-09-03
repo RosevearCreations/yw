@@ -17,18 +17,23 @@ function payload(){
       production_promotion_mode:'manual_human_promotion_required',scorecard_truth_status:'green',
       scorecard_open_count:4,scorecard_unclassified_open_count:0,scorecard_human_pending_count:2,
       scorecard_external_pending_count:1,active_admin_count:3,admin_access_integrity_blockers:0,
-      readiness_blockers:0,assertion_blockers:0,
+      readiness_blockers:0,assertion_blockers:0,open_rail_acceptance_count:11,open_rail_technical_ready_count:8,open_rail_technical_pending_count:3,
     },
     security_assertions:{
       module:[],it:[],release_authority:[],consumer_observability:[],finance_operational:[],
       finance_release_hardening:[],finance_account_mapping_review:[],finance_account_mapping_observability:[],
       finance_account_mapping_decision_support:[],errors:[],
       scorecard_truth:[{assertion_key:'it_scorecard_truth_open_rails_classified',assertion_status:'passed',details:'Every open scorecard rail has an explicit current resolution class.'}],
+      open_rail_acceptance_readiness:[{assertion_key:'open_rail_stale_hints_overridden',assertion_status:'passed',details:'Known stale deploy instructions are overridden by current actions.'}],
     },
     sections:{
       release_authority:{...empty,rows:[{release_authority_status:'green',release_message:'Application release authority is green.'}],summary:{status:'passed',total:1,blocking:0,warning:0,error:null}},
       release_source_evidence:{...empty},
       scorecard_truth_status:{...empty,rows:[{scorecard_truth_status:'green',open_count:4,unclassified_open_count:0,truth_message:'Scorecard truth is structurally converged.'}],summary:{status:'passed',total:1,blocking:0,warning:0,error:null}},
+      open_rail_acceptance_readiness:{...empty,rows:[
+        {rail_key:'quote_intake_live',rail_title:'Public quote and contact intake',resolution_class:'staging_acceptance',requires_human:true,requires_external:false,technical_readiness_status:'ready',technical_readiness_code:'ready_for_dedicated_staging_evidence',technical_readiness_detail:'Schema 188/188 current; catalog controls green.',current_action:'Do not redeploy Production or reapply an old schema. Confirm quote-contact-submit is present in the dedicated staging project, then execute the invalid-payload, valid STAGING request, event-history, and fixture-cleanup cases from the acceptance catalog.',evidence_requirement:'Evidence must include rejection, exactly one staging request, matching event, cleanup and signoff.',historical_hint_stale:true},
+        {rail_key:'live_job_updates',rail_title:'Live job updates',resolution_class:'staging_acceptance',requires_human:true,requires_external:false,technical_readiness_status:'ready',technical_readiness_code:'ready_for_dedicated_staging_evidence',technical_readiness_detail:'Schema 188/188 current; catalog controls green.',current_action:'Schema 188 already includes the historical live-update schema work; do not reapply Schema 155. In dedicated staging, test staff-only visibility, customer-visible updates, approved public media, and retraction.',evidence_requirement:'Evidence must prove privacy, customer visibility, approved media, retraction and signoff.',historical_hint_stale:true}
+      ],summary:{status:'warning',total:2,blocking:0,warning:0,error:null}},
       scorecard_truth:{...empty,rows:[
         {rail_key:'schema159_module_permissions',rail_title:'Module boundaries and per-profile access',rail_status:'complete',resolution_class:'verified_complete',requires_human:false,requires_external:false,resolution_status:'verified_complete',truth_status:'green',truth_message:'Historical rail is complete with immutable current-proof evidence.'},
         {rail_key:'customer_portal_live',rail_title:'Customer portal, acceptance, deposit, dispatch, and job cost',rail_status:'active',resolution_class:'provider_acceptance',requires_human:true,requires_external:true,resolution_status:'provider_acceptance_pending',truth_status:'amber',truth_message:'Keep open for Stripe test-mode hosted checkout/webhook/customer-status acceptance.'},
@@ -70,6 +75,11 @@ for(const viewport of viewports){
     const calls=await mount(page);
     const workspace=page.locator('#itReadinessWorkspace');
     await expect(workspace).toContainText('Readiness-work classification integrity');
+    await expect(workspace).toContainText('Acceptance Readiness');
+    await expect(workspace).toContainText('Current action for human-gated rails');
+    await expect(workspace).toContainText('quote-contact-submit is present in the dedicated staging project');
+    await expect(workspace).toContainText('Schema 188 already includes the historical live-update schema work');
+    await expect(workspace).toContainText(/historical deploy hint is stale/i);
     await expect(workspace).toContainText('Verified closures and classified pending rails');
     await expect(workspace).toContainText('Module boundaries and per-profile access');
     await expect(workspace).toContainText('verified complete');
