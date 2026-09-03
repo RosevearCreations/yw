@@ -1,0 +1,25 @@
+name: One-time Build 186 SQL export
+
+on:
+  push:
+    branches: [schema-186-staging-acceptance-control-plane]
+    paths:
+      - '.github/workflows/one-time-build186-sql-export.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: schema-186-staging-acceptance-control-plane
+      - name: Upload exact Schema 186 migration
+        uses: actions/upload-artifact@v4
+        with:
+          name: schema-186-exact
+          path: sql/186_staging_acceptance_control_plane.sql
+          if-no-files-found: error
+          retention-days: 1
