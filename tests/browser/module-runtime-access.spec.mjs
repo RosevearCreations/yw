@@ -14,6 +14,7 @@ const moduleScripts = Object.freeze({
   admin: ['/js/admin-actions.js','/js/admin-ui.js','/js/operations-cockpit.js','/js/module-access-ui.js','/js/it-readiness-ui.js','/js/staging-acceptance-ui.js']
 });
 
+const coreSecurityScripts = ['/js/password-security.js'];
 const scenarios = [
   { key:'anonymous', authenticated:false, allowed:[] },
   { key:'safety_only', authenticated:true, allowed:['safety'] },
@@ -27,7 +28,7 @@ const scenarios = [
 
 const viewports=[{name:'phone',width:390,height:844},{name:'desktop',width:1440,height:960}];
 const canonicalCore={profile:'profiles',customer:'clients',customer_site:'client_sites',job:'jobs',equipment:'equipment_master',customer_asset:'customer_assets',service_document:'service_contract_documents'};
-const expectedScripts=(allowed)=>allowed.flatMap((moduleKey)=>moduleScripts[moduleKey]);
+const expectedScripts=(allowed)=>[...coreSecurityScripts,...allowed.flatMap((moduleKey)=>moduleScripts[moduleKey])];
 
 async function mountRuntime(page,scenario){
   const requested=[];
@@ -63,6 +64,7 @@ for(const viewport of viewports){
       const coreRelations=await page.evaluate(()=>Object.fromEntries(Object.entries(window.YWIModuleRuntime.getCoreContract()).map(([key,value])=>[key,value.relation])));
       expect(state.loadedModules).toEqual(scenario.allowed);
       expect(requested).toEqual(expectedScripts(scenario.allowed));
+      expect(requested.filter((path)=>path==='/js/password-security.js')).toHaveLength(1);
       expect(manifestKeys).toEqual(['safety','finance','jobs','admin']);
       expect(manifestKeys).not.toContain('it');
       expect(coreRelations).toEqual(canonicalCore);

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Schema 162/180/185 behavior gate: denied modules are never requested; stale loaded module code is purged. */
+/** Schema 162/180/185/191 behavior gate: denied modules are never requested; stale loaded module code is purged; Build 191 core password security may load independently. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -41,7 +41,16 @@ function createHarness() {
   const sandbox={ window,document,URL,Date,Error,Promise,Set,Map,Object,String,Array,encodeURIComponent,CustomEvent:TestCustomEvent,queueMicrotask,console };
   vm.createContext(sandbox);
   vm.runInContext(source,sandbox,{filename:'js/module-runtime.js'});
-  return { runtime:window.YWIModuleRuntime, grants, appendedScripts, dispatchedEvents, get reloadCount(){return reloadCount;}, setAuth(next){authState={...authState,...next};} };
+  return {
+    runtime:window.YWIModuleRuntime,
+    grants,
+    appendedScripts,
+    moduleScripts:()=>appendedScripts.filter((script)=>!!script.dataset.ywiModule),
+    coreSecurityScripts:()=>appendedScripts.filter((script)=>script.dataset.ywiCoreSecurity==='password'),
+    dispatchedEvents,
+    get reloadCount(){return reloadCount;},
+    setAuth(next){authState={...authState,...next};}
+  };
 }
 
 {
@@ -49,25 +58,28 @@ function createHarness() {
   assert.ok(h.runtime,'YWIModuleRuntime should be exposed.');
   assert.equal(h.runtime.BUILD,'2026-09-02l');
   assert.equal(h.runtime.CONTRACT_VERSION,2);
+  assert.equal(h.coreSecurityScripts().length,1,'Build 191 password-security core script should load exactly once.');
+  assert.equal(h.coreSecurityScripts()[0].src,'/js/password-security.js?v=2026-09-02l-b191');
 
   const deniedFinance=await h.runtime.loadModule('finance');
   assert.equal(deniedFinance,false,'Denied Finance load must return false.');
-  assert.equal(h.appendedScripts.length,0,'Denied Finance must not append or request a script.');
+  assert.equal(h.moduleScripts().length,0,'Denied Finance must not append or request a business-module script.');
   assert.deepEqual(Array.from(h.runtime.getRuntimeState().loadedModules),[],'Denied Finance must not initialize as loaded.');
 
   h.grants.finance=true;
   const allowedFinance=await h.runtime.loadModule('finance');
   assert.equal(allowedFinance,true,'Allowed Finance load should succeed.');
-  assert.equal(h.appendedScripts.length,2,'Allowed Finance should request the lifecycle and Schema 180 mapping-review scripts.');
-  assert.equal(h.appendedScripts[0].src,'/js/finance-ui.js?v=2026-09-02l');
-  assert.equal(h.appendedScripts[1].src,'/js/finance-account-mapping-ui.js?v=2026-09-02l');
-  assert.ok(h.appendedScripts.every((script)=>script.dataset.ywiModule==='finance'));
-  assert.ok(h.appendedScripts.every((script)=>script.dataset.ywiRuntime==='permission-driven'));
+  const financeScripts=h.moduleScripts();
+  assert.equal(financeScripts.length,2,'Allowed Finance should request the lifecycle and Schema 180 mapping-review scripts.');
+  assert.equal(financeScripts[0].src,'/js/finance-ui.js?v=2026-09-02l');
+  assert.equal(financeScripts[1].src,'/js/finance-account-mapping-ui.js?v=2026-09-02l');
+  assert.ok(financeScripts.every((script)=>script.dataset.ywiModule==='finance'));
+  assert.ok(financeScripts.every((script)=>script.dataset.ywiRuntime==='permission-driven'));
 
-  const beforeAdminAttempt=h.appendedScripts.length;
+  const beforeAdminAttempt=h.moduleScripts().length;
   const deniedAdmin=await h.runtime.loadModule('admin');
   assert.equal(deniedAdmin,false,'Denied Admin load must return false.');
-  assert.equal(h.appendedScripts.length,beforeAdminAttempt,'Denied Admin must not request any Admin scripts.');
+  assert.equal(h.moduleScripts().length,beforeAdminAttempt,'Denied Admin must not request any Admin scripts.');
 }
 
 {
@@ -84,12 +96,13 @@ function createHarness() {
 {
   const h=createHarness(); h.grants.jobs=true;
   await h.runtime.syncForCurrentAccess();
-  assert.equal(h.appendedScripts.length,3,'Allowed Jobs should load the Jobs UI, Finance-boundary shim, and Build 185 equipment scanner.');
-  assert.equal(h.appendedScripts[0].src,'/js/jobs-ui.js?v=2026-09-02l');
-  assert.equal(h.appendedScripts[1].src,'/js/jobs-finance-boundary.js?v=2026-09-02l');
-  assert.equal(h.appendedScripts[2].src,'/js/equipment-scanner.js?v=2026-09-02l');
-  assert.ok(h.appendedScripts.every((script)=>script.dataset.ywiModule==='jobs'));
-  assert.ok(h.appendedScripts.every((script)=>script.dataset.ywiRuntime==='permission-driven'));
+  const jobScripts=h.moduleScripts();
+  assert.equal(jobScripts.length,3,'Allowed Jobs should load the Jobs UI, Finance-boundary shim, and Build 185 equipment scanner.');
+  assert.equal(jobScripts[0].src,'/js/jobs-ui.js?v=2026-09-02l');
+  assert.equal(jobScripts[1].src,'/js/jobs-finance-boundary.js?v=2026-09-02l');
+  assert.equal(jobScripts[2].src,'/js/equipment-scanner.js?v=2026-09-02l');
+  assert.ok(jobScripts.every((script)=>script.dataset.ywiModule==='jobs'));
+  assert.ok(jobScripts.every((script)=>script.dataset.ywiRuntime==='permission-driven'));
   h.setAuth({isAuthenticated:false});
   await h.runtime.syncForCurrentAccess();
   assert.equal(h.reloadCount,1,'Sign-out should reload once after module code was loaded.');
@@ -105,6 +118,7 @@ function createHarness() {
   assert.ok(h.dispatchedEvents.some((event)=>event.type==='ywi:module-runtime-purge'&&event.detail?.reason==='profile_changed'));
 }
 
+console.log('PASS runtime-password-security-core-loaded-once');
 console.log('PASS runtime-denied-module-not-requested');
 console.log('PASS runtime-allowed-module-requested-from-manifest');
 console.log('PASS runtime-finance-mapping-review-lazy-loaded');
@@ -112,4 +126,4 @@ console.log('PASS runtime-permission-reduction-purges-stale-code');
 console.log('PASS runtime-jobs-finance-boundary-and-equipment-scanner-loaded');
 console.log('PASS runtime-signout-purges-stale-code');
 console.log('PASS runtime-profile-change-purges-stale-code');
-console.log('\nSchema 162/180/185 module runtime behavior gate passed: 7/7 checks.');
+console.log('\nSchema 162/180/185/191 module runtime behavior gate passed: 8/8 checks.');
