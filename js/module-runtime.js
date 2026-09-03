@@ -47,7 +47,7 @@
     }),
     admin: Object.freeze({
       key: 'admin', label: 'Admin', version: CONTRACT_VERSION,
-      scripts: Object.freeze(['/js/admin-actions.js','/js/admin-ui.js','/js/operations-cockpit.js','/js/module-access-ui.js','/js/it-readiness-ui.js','/js/staging-acceptance-ui.js','/js/admin-account-security-ui.js']),
+      scripts: Object.freeze(['/js/admin-actions.js','/js/admin-ui.js','/js/operations-cockpit.js','/js/module-access-ui.js','/js/it-readiness-ui.js','/js/staging-acceptance-ui.js']),
       coreDependencies: SHARED_CORE_DEPENDENCIES
     })
   });
