@@ -25,6 +25,9 @@ verify_jwt = true
 [functions.operations-manage]
 verify_jwt = true
 
+[functions.equipment-scan-manage]
+verify_jwt = true
+
 [functions.accountant-export]
 verify_jwt = true
 

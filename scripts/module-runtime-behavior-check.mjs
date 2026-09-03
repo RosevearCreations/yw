@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Schema 162/180 behavior gate: denied modules are never requested; stale loaded module code is purged. */
+/** Schema 162/180/185 behavior gate: denied modules are never requested; stale loaded module code is purged. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -84,9 +84,12 @@ function createHarness() {
 {
   const h=createHarness(); h.grants.jobs=true;
   await h.runtime.syncForCurrentAccess();
-  assert.equal(h.appendedScripts.length,2,'Allowed Jobs should load the Jobs UI and Finance-boundary shim.');
+  assert.equal(h.appendedScripts.length,3,'Allowed Jobs should load the Jobs UI, Finance-boundary shim, and Build 185 equipment scanner.');
   assert.equal(h.appendedScripts[0].src,'/js/jobs-ui.js?v=2026-09-02l');
   assert.equal(h.appendedScripts[1].src,'/js/jobs-finance-boundary.js?v=2026-09-02l');
+  assert.equal(h.appendedScripts[2].src,'/js/equipment-scanner.js?v=2026-09-02l');
+  assert.ok(h.appendedScripts.every((script)=>script.dataset.ywiModule==='jobs'));
+  assert.ok(h.appendedScripts.every((script)=>script.dataset.ywiRuntime==='permission-driven'));
   h.setAuth({isAuthenticated:false});
   await h.runtime.syncForCurrentAccess();
   assert.equal(h.reloadCount,1,'Sign-out should reload once after module code was loaded.');
@@ -106,7 +109,7 @@ console.log('PASS runtime-denied-module-not-requested');
 console.log('PASS runtime-allowed-module-requested-from-manifest');
 console.log('PASS runtime-finance-mapping-review-lazy-loaded');
 console.log('PASS runtime-permission-reduction-purges-stale-code');
-console.log('PASS runtime-jobs-finance-boundary-loaded');
+console.log('PASS runtime-jobs-finance-boundary-and-equipment-scanner-loaded');
 console.log('PASS runtime-signout-purges-stale-code');
 console.log('PASS runtime-profile-change-purges-stale-code');
-console.log('\nSchema 162/180 module runtime behavior gate passed: 7/7 checks.');
+console.log('\nSchema 162/180/185 module runtime behavior gate passed: 7/7 checks.');
