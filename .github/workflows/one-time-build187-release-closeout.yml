@@ -1,0 +1,91 @@
+name: One-time Build 187 release closeout convergence
+
+on:
+  push:
+    branches: [schema-187-release-authority-closeout]
+    paths:
+      - '.github/workflows/one-time-build187-release-closeout.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  converge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: schema-187-release-authority-closeout
+      - name: Close Build 187 canonical authority
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          files=[Path('README.md'),Path('docs/ACTIVE_PROJECT_HANDBOOK.md'),Path('docs/NEXT_STEPS_AND_SANITY_CHECK.md')]
+          completed='''## Build 187 final release authority\n\n**Build 187 — Staging acceptance scenario catalog + prerequisite truth convergence — COMPLETE.**\n\nFinal verified authority:\n\n- live database **Schema 187 / 187 CURRENT**;\n- merged `main` SHA **`0fd4b49ed7340d484fea637c8bab08851ba340cf`**;\n- exact-main **Run #162 / `33760270850` — GREEN** across every source/static gate and all six rendered browser suites;\n- canonical release-source evidence **row 21**;\n- exact 43,674-byte Schema 187 migration SHA-256 **`a3758b9733487cb90e6dee6652045a47c8c29d0cd30f9c7a5f824dbd73d6404e`** passed rollback proof before live apply;\n- live staging security + scenario-catalog assertions **15 / 15 PASS**;\n- `admin-staging-acceptance` **v2 ACTIVE / JWT enabled**;\n- Build 187 rail **COMPLETE 100% / 10 of 10**;\n- application release authority **GREEN**; repository enforcement remains separately **AMBER** because `main` is unprotected;\n- Finance posting execution remains **OFF**; provider/payment mutation remains **OFF**; Production promotion remains **manual**.\n\nBuild 187 catalogs all six real `staging_acceptance` rails as fail-closed evidence checklists. New runs seed enabled cases as pending, callers cannot weaken catalog-controlled blocking/evidence metadata, finalization rejects pending evidence and treats skipped blocking cases as failures, and human signoff remains explicit. **No Build 187 path auto-closes a business readiness rail.**\n\nPost-closeout scorecard truth is **41 rails / 30 complete / 11 open**, all **11 / 11 classified**, **0 unclassified**, and **0 proof-closure drift**. Remaining open work is **6 staging acceptance**, **2 accounting acceptance**, **1 provider acceptance**, and **2 content approval** rails. Human pending remains **11** and external pending **1**; autonomous `feature_followup` pending is **0**.\n\nA dedicated non-production YardWeasels Supabase project is still not configured, so real business staging execution remains closed rather than falling back to Production. The next build must come from a fresh review of the remaining 11 classified rails and must not fabricate human/provider/accounting/content evidence.\n'''
+
+          for p in files:
+              s=p.read_text()
+              s=re.sub(r'## Build 187 active authority\n.*?(?=## Build 186 final release authority)', completed+'\n', s, count=1, flags=re.S)
+              s=s.replace('current live authority is Build 186 / Schema 186', 'current live authority is Build 187 / Schema 187')
+              s=s.replace('Current live authority:** Schema `186 / 186` — **Build 186 COMPLETE**', 'Current live authority:** Schema `187 / 187` — **Build 187 COMPLETE**')
+              s=s.replace('Current live schema authority:** `186 / 186` — **Build 186 COMPLETE**', 'Current live schema authority:** `187 / 187` — **Build 187 COMPLETE**')
+              p.write_text(s)
+
+          # README summary block.
+          p=Path('README.md'); s=p.read_text()
+          s=re.sub(r'\*\*Current live authority:\*\*.*?\*\*Active documents:\*\* this README, `docs/ACTIVE_PROJECT_HANDBOOK.md`, and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`\.',
+'''**Current live authority:** Schema `187 / 187` — **Build 187 COMPLETE**  
+**Build 187 checkpoint:** `0fd4b49ed7340d484fea637c8bab08851ba340cf`, exact-main Run #162 (`33760270850`) — GREEN  
+**Build 187 release evidence:** row `21` in `it_release_source_evidence`  
+**Runtime:** `admin-staging-acceptance` v2 ACTIVE / JWT enabled; `equipment-scan-manage` v1 ACTIVE / JWT enabled; `admin-it-control` v14 ACTIVE / JWT enabled  
+**Repository enforcement:** separately AMBER because `main` is unprotected  
+**Finance execution release:** **OFF**; provider/payment mutation OFF; Production promotion manual  
+**Build 187:** **COMPLETE** on `main`; live database is Schema 187 / 187 CURRENT  
+**Active documents:** this README, `docs/ACTIVE_PROJECT_HANDBOOK.md`, and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.''', s, count=1, flags=re.S)
+          if 'Schema 187 / Build 187 — **COMPLETE**' not in s:
+              marker='- Schema 185 / Build 185 — **COMPLETE**: equipment barcode/QR camera scanning, canonical equipment-master linkage, exact identifier resolution, idempotent scan/custody provenance, and phone/desktop rendered acceptance.'
+              if marker in s:
+                  s=s.replace(marker, marker+'\n- Schema 186 / Build 186 — **COMPLETE**: staging acceptance control plane, service-private evidence hardening, exact source/schema binding, explicit human signoff, and Admin I.T. acceptance evidence.\n- Schema 187 / Build 187 — **COMPLETE**: six-rail staging scenario catalog, pending-case seeding, prerequisite truth, explicit human case evidence, fail-closed finalization, and exact-main release authority.')
+          p.write_text(s)
+
+          # Handbook summary block.
+          p=Path('docs/ACTIVE_PROJECT_HANDBOOK.md'); s=p.read_text()
+          s=re.sub(r'\*\*Current live schema authority:\*\*.*?\*\*Architecture:\*\* Safety / OHSA, Finance, Jobs, Admin; I\.T\. Readiness is inside Admin/manage\.',
+'''**Current live schema authority:** `187 / 187` — **Build 187 COMPLETE**  
+**Build 187 checkpoint:** `0fd4b49ed7340d484fea637c8bab08851ba340cf`, exact-main Run #162 (`33760270850`) — GREEN  
+**Build 187 release evidence:** row `21` in `it_release_source_evidence`  
+**Runtime:** `admin-staging-acceptance` v2 ACTIVE / JWT enabled; `equipment-scan-manage` v1 ACTIVE / JWT enabled; `admin-it-control` v14 ACTIVE / JWT enabled  
+**Repository enforcement:** separately AMBER because `main` is unprotected  
+**Finance execution release:** **OFF**; provider/payment mutation OFF; Production promotion manual  
+**Build 187:** **COMPLETE** on `main`; live database is Schema 187 / 187 CURRENT  
+**Architecture:** Safety / OHSA, Finance, Jobs, Admin; I.T. Readiness is inside Admin/manage.''', s, count=1, flags=re.S)
+          s=s.replace('- Schema 187 / Build 187 — **ACTIVE SOURCE WORK**: six-rail staging scenario catalog, pending-case seeding, prerequisite truth, explicit human case evidence and fail-closed finalization.', '- Schema 187 / Build 187 — **COMPLETE**: six-rail staging scenario catalog, pending-case seeding, prerequisite truth, explicit human case evidence, fail-closed finalization, and exact-main release authority.')
+          p.write_text(s)
+
+          # Next-steps checkpoint and scorecard.
+          p=Path('docs/NEXT_STEPS_AND_SANITY_CHECK.md'); s=p.read_text()
+          s=re.sub(r'\*\*Current live authority:\*\*.*?\*\*Build 186:\*\* \*\*COMPLETE\*\* on `main`; Schema 186 / 186 is live and release-authority GREEN\.',
+'''**Current live authority:** Schema `187 / 187` — **Build 187 COMPLETE**  
+**Build 187 checkpoint:** `0fd4b49ed7340d484fea637c8bab08851ba340cf`, exact-main Run #162 (`33760270850`) — GREEN  
+**Build 187 release evidence:** row `21`  
+**Runtime:** `admin-staging-acceptance` v2 ACTIVE / JWT enabled; `equipment-scan-manage` v1 ACTIVE / JWT enabled; `admin-it-control` v14 ACTIVE / JWT enabled  
+**Repository enforcement:** separately AMBER because `main` is unprotected  
+**Finance execution release:** **OFF**; provider/payment mutation OFF; Production promotion manual  
+**Build 187:** **COMPLETE** on `main`; Schema 187 / 187 is live and release-authority GREEN.''', s, count=1, flags=re.S)
+          checkpoint='''## Current checkpoint\n\nBuild 187 — **staging acceptance scenario catalog + prerequisite truth convergence** — is completely closed in source, database, runtime, rendered acceptance, and release authority.\n\nVerified closure:\n\n- live database `187 / 187`, current;\n- merged `main` SHA `0fd4b49ed7340d484fea637c8bab08851ba340cf`;\n- exact-main Run #162 / `33760270850` GREEN;\n- release evidence row 21;\n- staging security + catalog assertions `15 / 15` PASS;\n- `admin-staging-acceptance` v2 ACTIVE / JWT enabled;\n- Build 187 rail complete 100% / 10 of 10;\n- scorecard truth GREEN: 41 rails, 30 complete, 11 open, 11 classified, 0 unclassified, 0 proof drift;\n- six business staging-acceptance rails remain open and human-gated;\n- Finance execution OFF, provider/payment mutation OFF, Production promotion manual.\n\nNo dedicated YW Supabase staging project is configured, so real business staging acceptance has not been fabricated. The next build must be chosen from a fresh review of the remaining 11 classified rails.\n\n'''
+          s=re.sub(r'## Current checkpoint\n.*?(?=## Build sequence)', checkpoint, s, count=1, flags=re.S)
+          if '- **Build 187 — Staging acceptance scenario catalog + prerequisite truth convergence — COMPLETE**' not in s:
+              marker='- **Build 186 — Staging acceptance control plane + evidence runner modernization — COMPLETE**'
+              s=s.replace(marker, marker+'\n- **Build 187 — Staging acceptance scenario catalog + prerequisite truth convergence — COMPLETE**')
+          s=s.replace('## Scorecard after Build 186', '## Scorecard after Build 187')
+          s=s.replace('- 40 total rails;\n- 29 complete / 11 open;', '- 41 total rails;\n- 30 complete / 11 open;')
+          p.write_text(s)
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add README.md docs/ACTIVE_PROJECT_HANDBOOK.md docs/NEXT_STEPS_AND_SANITY_CHECK.md
+          git commit -m 'Close Build 187 canonical release authority'
+          git push origin HEAD:schema-187-release-authority-closeout
