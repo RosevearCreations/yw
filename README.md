@@ -1,5 +1,27 @@
 # Yard Weasels Inc. Operations Platform
 
+## Build 188 final release authority
+
+**Build 188 — Open-rail acceptance readiness and current-action truth — COMPLETE.**
+
+Final verified authority:
+
+- live database **Schema 188 / 188 CURRENT**;
+- merged `main` SHA **`7abe15b5acbd0cb88cc5d7ac4d83c1443c192dac`**;
+- exact-main **Run #166 / `33766833882` — GREEN** across every source/static gate and all six rendered browser suites;
+- canonical release-source evidence **row 22**;
+- exact 26,705-byte Schema 188 migration SHA-256 **`577bb27f894f3b4dcae10197107b2718778c5c62bfa155b9421cdda83927262f`** passed rollback proof before live apply;
+- live open-rail readiness assertions **8 / 8 PASS**;
+- `admin-it-control` **v15 ACTIVE / JWT enabled**;
+- Build 188 rail **COMPLETE 100%** with immutable exact-main completion evidence;
+- application release authority **GREEN**; repository enforcement remains separately **AMBER** because `main` is unprotected;
+- Finance posting execution remains **OFF**; provider/payment mutation remains **OFF**; Production promotion remains **manual**.
+
+Build 188 adds a service-private current-action/evidence runbook and a read-only technical readiness view over the 11 remaining business acceptance rails. Historical scorecard instructions remain audit evidence, while current guidance explicitly overrides stale quote-intake deployment wording and the obsolete Schema 155 live-update instruction. **No Build 188 path auto-closes a business acceptance rail.**
+
+Post-closeout scorecard truth is **42 rails / 31 complete / 11 open**, all **11 / 11 classified**, **0 unclassified**, and **0 proof-closure drift**. The open set remains **6 staging acceptance**, **2 accounting acceptance**, **1 provider acceptance**, and **2 content approval** rails; all 11 remain human-required and one remains external/provider-required. Technical readiness currently reports eight rails ready for their required human evidence and three pending external/content prerequisites.
+
+
 ## Build 187 final release authority
 
 **Build 187 — Staging acceptance scenario catalog + prerequisite truth convergence — COMPLETE.**
@@ -48,16 +70,15 @@ No separate YardWeasels Supabase staging project is currently configured, so Bui
 - **Build 184 / Schema 184 — COMPLETE product proof:** `main` `613118f52fcbad147a56226ccdeabf3a64a1c8b0`, exact-main Run #136 (`33698631685`) — SUCCESS.
 - **Build 183 / Schema 183 — COMPLETE prior clean authority:** `main` `2f4e4fa25299dd285718c2bb78cc40fc05c55ebf`, exact-main Run #132 (`33697274220`) — GREEN.
 
-These historical anchors remain audit evidence only; current live authority is Build 187 / Schema 187 with exact-main release proof recorded.
+These historical anchors remain audit evidence only; current live authority is Build 188 / Schema 188 with exact-main release proof recorded.
 
-**Current live authority:** Schema `187 / 187` — **Build 187 COMPLETE**  
-**Build 187 checkpoint:** `0fd4b49ed7340d484fea637c8bab08851ba340cf`, exact-main Run #162 (`33760270850`) — GREEN  
-**Build 187 release evidence:** row `21` in `it_release_source_evidence`  
-**Runtime:** `admin-staging-acceptance` v2 ACTIVE / JWT enabled; `equipment-scan-manage` v1 ACTIVE / JWT enabled; `admin-it-control` v14 ACTIVE / JWT enabled  
+**Current live authority:** Schema `188 / 188` — **Build 188 COMPLETE**  
+**Build 188 checkpoint:** `7abe15b5acbd0cb88cc5d7ac4d83c1443c192dac`, exact-main Run #166 (`33766833882`) — GREEN  
+**Build 188 release evidence:** row `22` in `it_release_source_evidence`  
+**Runtime:** `admin-staging-acceptance` v2 ACTIVE / JWT enabled; `equipment-scan-manage` v1 ACTIVE / JWT enabled; `admin-it-control` v15 ACTIVE / JWT enabled  
 **Repository enforcement:** separately AMBER because `main` is unprotected  
 **Finance execution release:** **OFF**; provider/payment mutation OFF; Production promotion manual  
-**Build 187:** **COMPLETE** on `main`; live database is Schema 187 / 187 CURRENT  
-**Active documents:** this README, `docs/ACTIVE_PROJECT_HANDBOOK.md`, and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
+**Build 188:** **COMPLETE** on `main`; live database is Schema 188 / 188 CURRENT  
 
 Yard Weasels has exactly four top-level staff modules: **Safety / OHSA**, **Finance**, **Jobs**, and **Admin**. **I.T. Readiness** stays inside Admin/manage and is never a fifth module.
 
@@ -77,6 +98,7 @@ Yard Weasels has exactly four top-level staff modules: **Safety / OHSA**, **Fina
 - Schema 185 / Build 185 — **COMPLETE**: equipment barcode/QR camera scanning, canonical equipment-master linkage, exact identifier resolution, idempotent scan/custody provenance, and phone/desktop rendered acceptance.
 - Schema 186 / Build 186 — **COMPLETE**: staging acceptance control plane, service-private evidence hardening, exact source/schema binding, explicit human signoff, and Admin I.T. acceptance evidence.
 - Schema 187 / Build 187 — **COMPLETE**: six-rail staging scenario catalog, pending-case seeding, prerequisite truth, explicit human case evidence, fail-closed finalization, and exact-main release authority.
+- Schema 188 / Build 188 — **COMPLETE**: unified read-only current-action/evidence readiness over all 11 human-gated business rails, stale-hint override, and exact-main release authority.
 
 ## Build 185 verified closure
 
