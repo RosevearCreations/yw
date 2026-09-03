@@ -10,7 +10,7 @@
 'use strict';
 
 (function () {
-  const BUILD = '2026-09-02l';
+  const BUILD = '2026-09-02r';
   const CONTRACT_VERSION = 2;
 
   const CORE_ENTITY_CONTRACTS = Object.freeze({
@@ -69,7 +69,8 @@
         '/js/admin-ui.js',
         '/js/operations-cockpit.js',
         '/js/module-access-ui.js',
-        '/js/it-readiness-ui.js'
+        '/js/it-readiness-ui.js',
+        '/js/staging-acceptance-ui.js'
       ]),
       coreDependencies: SHARED_CORE_DEPENDENCIES
     })
