@@ -6,6 +6,7 @@
 
 (function () {
   const TOGGLE_MARKER = 'ywiPasswordToggleBound';
+  const ADMIN_SECURITY_SCRIPT = '/js/admin-account-security-ui.js';
   let patched = false;
 
   function esc(value) {
@@ -17,19 +18,16 @@
     if (input.type !== 'password' && input.dataset.ywiPasswordField !== '1') return;
     input.dataset[TOGGLE_MARKER] = '1';
     input.dataset.ywiPasswordField = '1';
-
     const wrapper = document.createElement('span');
     wrapper.className = 'ywi-password-input-wrap';
     wrapper.style.display = 'grid';
     wrapper.style.gridTemplateColumns = 'minmax(0,1fr) auto';
     wrapper.style.gap = '6px';
     wrapper.style.alignItems = 'center';
-
     const parent = input.parentNode;
     if (!parent) return;
     parent.insertBefore(wrapper, input);
     wrapper.appendChild(input);
-
     const toggle = document.createElement('button');
     toggle.type = 'button';
     toggle.className = 'secondary ywi-password-toggle';
@@ -54,18 +52,26 @@
     root.querySelectorAll?.('input[type="password"],input[data-ywi-password-field="1"]').forEach(bindPasswordInput);
   }
 
+  function loadAdminSecurityUi() {
+    const state = window.YWI_AUTH?.getState?.() || {};
+    if (String(state.role || '').toLowerCase() !== 'admin' || state.needsAccountSetup) return;
+    if ([...document.scripts].some((s) => new URL(s.src || '', location.origin).pathname === ADMIN_SECURITY_SCRIPT)) return;
+    const script = document.createElement('script');
+    script.src = `${ADMIN_SECURITY_SCRIPT}?v=2026-09-03e`;
+    script.async = false;
+    script.dataset.ywiAdminSecurity = '1';
+    script.onerror = () => window.dispatchEvent(new CustomEvent('ywi:app-error',{detail:{scope:'admin-account-security-ui',message:'Admin account security controls could not be loaded.',details:['Refresh before attempting an account reset.']}}));
+    document.head.appendChild(script);
+  }
+
   function renderResetBanner() {
     const auth = window.YWI_AUTH;
     const state = auth?.getState?.() || {};
     const required = state.profile?.password_reset_required === true;
     const settings = document.getElementById('settings');
     if (!settings) return;
-
     let banner = document.getElementById('temporaryPasswordRequiredNotice');
-    if (!required) {
-      banner?.remove();
-      return;
-    }
+    if (!required) { banner?.remove(); return; }
     if (!banner) {
       banner = document.createElement('div');
       banner.id = 'temporaryPasswordRequiredNotice';
@@ -81,16 +87,12 @@
     const auth = window.YWI_AUTH;
     if (!auth || patched) return false;
     patched = true;
-
     const originalGetState = auth.getState.bind(auth);
     auth.getState = function getStateWithPasswordGate() {
       const state = originalGetState() || {};
-      if (state.profile?.password_reset_required === true) {
-        return { ...state, needsAccountSetup: true, passwordResetRequired: true };
-      }
+      if (state.profile?.password_reset_required === true) return { ...state, needsAccountSetup: true, passwordResetRequired: true };
       return state;
     };
-
     const originalChangePassword = auth.changePassword.bind(auth);
     auth.changePassword = async function changePasswordWithResetCompletion(newPassword) {
       const before = originalGetState() || {};
@@ -98,11 +100,7 @@
       const result = await originalChangePassword(newPassword);
       if (wasTemporary) {
         try {
-          const payload = await window.YWIAPI?.jsonFetch?.('admin-account-security', {
-            method: 'POST',
-            body: { action: 'confirm_password_change' },
-            requireAuth: true,
-          });
+          const payload = await window.YWIAPI?.jsonFetch?.('admin-account-security', { method:'POST', body:{ action:'confirm_password_change' }, requireAuth:true });
           if (!payload?.ok) throw new Error(payload?.error || 'Unable to clear temporary-password requirement.');
           await auth.refresh?.();
         } catch (err) {
@@ -111,7 +109,6 @@
       }
       return result;
     };
-
     return true;
   }
 
@@ -119,6 +116,7 @@
     patchAuth();
     bindPasswordVisibility(document);
     renderResetBanner();
+    loadAdminSecurityUi();
   }
 
   const observer = new MutationObserver((mutations) => {
@@ -131,14 +129,11 @@
     }
   });
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', sync, { once: true });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', sync, { once:true });
   else sync();
-  observer.observe(document.documentElement, { childList: true, subtree: true });
-  document.addEventListener('ywi:auth-changed', () => queueMicrotask(sync));
+  observer.observe(document.documentElement,{childList:true,subtree:true});
+  document.addEventListener('ywi:auth-changed',()=>queueMicrotask(sync));
+  document.addEventListener('ywi:module-runtime-ready',()=>queueMicrotask(sync));
 
-  window.YWIPasswordSecurity = Object.freeze({
-    bindPasswordVisibility,
-    isTemporaryPasswordRequired: () => window.YWI_AUTH?.getState?.()?.profile?.password_reset_required === true,
-    escape: esc,
-  });
+  window.YWIPasswordSecurity = Object.freeze({ bindPasswordVisibility, isTemporaryPasswordRequired:()=>window.YWI_AUTH?.getState?.()?.profile?.password_reset_required===true, escape:esc });
 })();
