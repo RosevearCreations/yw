@@ -1,17 +1,17 @@
 # YWI Active Project Handbook
 
-**Current schema authority:** `184 / 184` — **Build 184 COMPLETE**  
-**Merged product checkpoint:** `613118f52fcbad147a56226ccdeabf3a64a1c8b0`, exact-main Run #136 (`33698631685`) — SUCCESS  
-**Previous clean release evidence:** Build 183 `main` `2f4e4fa25299dd285718c2bb78cc40fc05c55ebf`, Run #132 (`33697274220`) — GREEN  
-**Runtime:** `finance-account-mapping-review` v4 ACTIVE / JWT enabled; `admin-it-control` v14 ACTIVE / JWT enabled  
+**Current live schema authority:** `185 / 185` — **Build 185 COMPLETE**  
+**Final clean-main Build 185 checkpoint:** `d126ddfb403d31faba1d9826df3e0ad1e0d58fd7`, exact-main Run #149 (`33705924533`) — GREEN  
+**Release evidence:** row `18` in `it_release_source_evidence`  
+**Runtime:** `equipment-scan-manage` v1 ACTIVE / JWT enabled; `admin-it-control` v14 ACTIVE / JWT enabled  
 **Repository enforcement:** separately AMBER because `main` is unprotected  
-**Finance execution release:** **OFF**; provider mutation OFF; Production promotion manual  
-**Vercel:** separate infrastructure/account status and must be freshly verified  
+**Finance execution release:** **OFF**; provider/payment mutation OFF; Production promotion manual  
+**Build 186:** ACTIVE in source on `schema-186-staging-acceptance-control-plane`; live database remains Schema 185 until source/browser proof is green  
 **Architecture:** Safety / OHSA, Finance, Jobs, Admin; I.T. Readiness is inside Admin/manage.
 
 ## System shape
 
-Yard Weasels combines public quote/SEO surfaces, private customer workflows, Safety/OHSA records, Jobs execution, Finance/accounting workflows, and Admin/I.T. release controls. There are exactly four staff modules. A profile resolves to `hidden`, `view`, `create`, `approve`, or `manage`; server authorization remains authoritative. Active Admin profiles retain break-glass `manage` across all four modules.
+Yard Weasels combines public quote/SEO surfaces, private customer workflows, Safety/OHSA records, Jobs execution, Finance/accounting workflows, and Admin/I.T. release controls. There are exactly four staff modules. A profile resolves to `hidden`, `view`, `create`, `approve`, or `manage`; protected server authorization remains authoritative. Active Admin profiles retain break-glass `manage` across all four modules.
 
 ## Architecture progression
 
@@ -26,98 +26,134 @@ Yard Weasels combines public quote/SEO surfaces, private customer workflows, Saf
 - Schema 182 — **COMPLETE maintenance repair**: release marker convergence without business mutation.
 - Schema 183 / Build 183 — **COMPLETE**: structural chart-account decision support and DB-side approval compatibility enforcement.
 - Schema 184 / Build 184 — **COMPLETE**: I.T. scorecard truth convergence and blocker classification.
+- Schema 185 / Build 185 — **COMPLETE**: barcode/QR camera scanning, canonical equipment identity convergence, exact identifier resolution, and scan/custody evidence hardening.
+- Schema 186 / Build 186 — **ACTIVE SOURCE WORK**: staging acceptance control plane and evidence runner modernization.
 
-## Build 184 authority
+## Build 185 authority
 
-Build 184 resolves a control-plane truth problem without inventing business completion. It distinguishes historical readiness rails already superseded by stronger current proof from genuinely unfinished work that still requires staging acceptance, provider testing, accounting review, content approval, or implementation.
+Build 185 closed equipment scanning without creating a parallel equipment system. Physical Jobs equipment now links explicitly to canonical UUID `equipment_master`; exact private identifier resolution covers equipment code, asset tag, serial number, QR and barcode values; collisions fail closed; and scan/custody provenance is idempotent and auditable.
 
-### Evidence-backed historical closures
+Final Build 185 proof:
 
-Exactly three rails were converged to `complete`, and only after current fail-closed proof passed:
+- Schema `185 / 185` current;
+- exact clean `main` `d126ddfb403d31faba1d9826df3e0ad1e0d58fd7`;
+- exact-main Run #149 / `33705924533` GREEN;
+- release evidence row 18;
+- Build 185 equipment assertions **7 / 7 PASS**;
+- `equipment_scan_event` remains Jobs/create;
+- phone camera and desktop/manual fallback rendered acceptance passed;
+- raw camera/manual values remain untrusted until protected exact server resolution;
+- `equipment-scan-manage` v1 ACTIVE / JWT enabled;
+- no equipment fixture/business rows were persisted during release proof;
+- `equipment_scan_custody_live` and the Build 185 rail are complete;
+- repository cleanup returned the project to one branch: `main`.
 
-1. `schema159_module_permissions` — current module-security assertions, rendered module acceptance, and zero Admin break-glass blockers.
-2. `schema160_it_readiness` — current I.T. security assertions and zero Admin break-glass blockers.
-3. `schema164_cross_module_boundaries` — current module write-boundary, cross-module boundary, event-wiring, and rendered module-acceptance assertions.
+Finance, payment providers, accounting truth, and Production were untouched.
 
-Each is now **100% / verified_complete** with one private immutable completion-evidence record. Prior status/progress/current value/next action are retained in metadata. The browser cannot create, alter, close, or resolve scorecard evidence.
+## Scorecard truth after Build 185
 
-### Real open work remains real
+Live scorecard truth remains GREEN:
 
-After Build 184 closeout the scorecard has **38 rails: 26 complete / 12 open**. Every open rail is explicitly classified, with **0 unclassified** and **0 proof-closure drift**:
+- **39** total rails;
+- **28 complete / 11 open**;
+- all **11 / 11** open rails classified;
+- unclassified open **0**;
+- proof-closure drift **0**;
+- human pending **11**;
+- external pending **1**;
+- feature follow-up pending **0**.
+
+The remaining open work is real acceptance/approval work:
 
 - `staging_acceptance` — 6: Operations Cockpit, quote intake, live job updates, customer live-update notifications, service-execution proof/costing, supervisor closeout/signoff;
 - `accounting_acceptance` — 2: payment actions and bank CSV/reconciliation acceptance;
 - `provider_acceptance` — 1: customer portal Stripe test-mode checkout/webhook/status acceptance;
-- `content_approval` — 2: route/visual approval and approved-route generation;
-- `feature_followup` — 1: equipment barcode/QR camera scanning.
+- `content_approval` — 2: route/visual approval and approved-route generation.
 
-Human pending count is **11** and external pending count is **1**. A contract-level guard prohibits automatic closure for human/external-dependent work.
+A contract-level guard prohibits automatic completion of human/external-dependent work.
 
-## Verified live Build 184 state
+## Build 186 authority and scope
 
-- Schema `184 / 184` current.
-- Build 184 assertions **6 / 6 PASS**.
-- Required dependency contracts **85 / 85 PASS**.
-- Scorecard truth **GREEN**.
-- Open/classified/unclassified: **12 / 12 / 0**.
-- Proof-closure drift: **0**.
-- Active Admin break-glass integrity: **3 admins / 0 blockers**.
-- Build 184 rail: **complete / 100% / 10 of 10**.
-- `admin-it-control` **v14 ACTIVE / JWT enabled**.
-- Human-selected Finance mappings remain unchanged in `review`; mapping-review audit count **0**.
-- Posting execution release OFF; provider mutation OFF; canonical Jobs writeback prohibited; Production manual.
+Build 186 exists because the roadmap has reached a different phase: no autonomous feature-followup rail remains. The next valuable work is making human staging evidence safe, repeatable, source-bound, and auditable.
 
-The existing mapping decisions remain explicit human accountant/bookkeeper authority. Build 184 does **not auto-select** or auto-approve a mapping and structural compatibility remains only a safety floor, not an accounting recommendation engine.
+Schema 186 reuses the existing staging authorities rather than creating parallel tables:
 
-## Next autonomous build
+- `operations_staging_test_runs`;
+- `operations_staging_test_results`;
+- `operations_staging_fixture_sets`;
+- `operations_staging_fixture_records`.
 
-**Build 185 — Equipment barcode/QR camera scanning and custody evidence hardening** is next. It is selected because `equipment_scan_custody_live` is the only remaining open rail classified `feature_followup` with neither a human nor an external-provider dependency.
+The existing run/result/fixture tables are currently empty in the live YardWeasels database, so the control plane can be hardened before real staging evidence exists.
 
-Before Build 185 changes source or schema:
+### Build 186 security findings
 
-1. Verify the final post-Build184 clean `main` SHA/run and Schema184 release evidence agree.
-2. Inspect live canonical equipment/custody tables, types, constraints, indexes, audit/evidence relations, and current module/write-boundary contracts.
-3. Inspect existing equipment UI, scan/custody actions, upload-equipment-evidence, Operations/Jobs endpoints, and mobile patterns.
-4. Reuse canonical equipment identity; do not create a parallel equipment table.
-5. Determine the owning module from existing contracts rather than guessing.
-6. Preserve a manual identifier fallback when camera/barcode APIs are unavailable or permission is denied.
-7. Require protected server authorization for custody mutations; browser scanning alone is never authority.
-8. Add phone-first rendered acceptance and release gating before closing the feature rail.
+Preflight found two inherited staging-authority weaknesses worth correcting before staging execution:
 
-## Security and ownership invariants
+1. `operations_staging_test_runs` and `operations_staging_test_results` have RLS enabled and no policies, but still retain broad `anon`/`authenticated` table grants. Schema 186 removes those grants and keeps the tables service-private.
+2. `ywi_rpc_create_staging_fixture_set` and `ywi_rpc_cleanup_staging_fixture_set` are `SECURITY DEFINER` functions that accept an explicit actor profile ID and were executable by `anon`/`authenticated`. Schema 186 revokes browser execution and makes staging fixture mutation service-role-only.
 
-- Admin break-glass `manage` across Safety, Finance, Jobs, and Admin remains mandatory.
-- I.T. Readiness stays inside Admin/manage, never as a fifth module.
-- Shared Core identities are centrally owned and consumed read-only.
-- Cross-module writes require an explicit owner/access/boundary contract.
-- Posting approval is not execution release; the Finance execution release remains server-owned and OFF.
-- Accountant/bookkeeper mapping selection and approval remain human decisions.
-- Finance completion/accounting RPCs do not write canonical Jobs/work-order state.
-- Stripe/PayPal/provider/payment truth remains outside this Finance pipeline.
-- Synthetic Finance acceptance is non-persistent/browser-only.
-- Production promotion remains deliberate/manual.
+### Build 186 evidence contract
 
-## Restart discipline after Build 184
+New staging evidence binds each run to:
 
-1. Start from the single clean `main` branch after authority closeout/branch pruning.
-2. Verify latest exact-main `YWI source and staging checks` is SUCCESS and matches Schema 184 release evidence.
-3. Verify live DB remains `184 / 184` and Build184 assertions/dependencies remain `6/6` and `85/85`.
-4. Verify scorecard truth remains GREEN with 12 classified open rails, 0 unclassified and 0 proof drift.
-5. Verify Admin break-glass remains 3/0 blockers.
-6. Verify `admin-it-control` remains ACTIVE and JWT protected.
-7. Preserve the three human Finance mapping decisions unless a real accountant/bookkeeper changes them.
-8. Keep Finance execution release/provider mutation OFF.
-9. Keep Vercel status separate from source correctness.
-10. Keep Production manual.
+- one current `staging_acceptance` scorecard rail;
+- exact 40-character source SHA;
+- optional source workflow run ID;
+- current schema version;
+- optional tracked disposable fixture set;
+- automated/runtime/browser/manual evidence cases;
+- blocking/non-blocking outcome;
+- explicit human signoff when the rail requires it.
+
+Automated pass returns `awaiting_human_signoff` for human-required rails. Explicit approve/reject signoff records evidence but **does not update `admin_scorecard_progress_rails`**. Scorecard completion remains a separate deliberate release decision.
+
+### Dedicated staging boundary
+
+The modernized staging runner requires:
+
+- manual GitHub `workflow_dispatch`;
+- `environment: staging`;
+- dedicated staging Supabase URL/service key;
+- `YWI_STAGING_PROJECT_REF` matching that URL;
+- hard refusal if the target ref equals YardWeasels Production `jmqvkgiqlimdhcofwkxr`;
+- explicit `YWI_STAGING_CONFIRM=I_CONFIRM_STAGING_ONLY`;
+- staging Admin profile ID/JWT and lower-rank worker JWT;
+- exact source SHA/workflow run binding.
+
+There is currently no dedicated YW Supabase staging project in the connected project list. Build 186 therefore prepares and gates the system but does **not** create a paid Supabase branch/project automatically and does not fall back to Production.
+
+The first live suite is deliberately bounded to `operations_cockpit_live`: authorized Cockpit load/capabilities/Stripe-health evidence plus lower-rank denial, with disposable fixtures optional and cleanup tracked.
+
+## Historical release boundaries that remain binding
+
+- Build 179 — **COMPLETE**: permissions/release hardening; synthetic Finance acceptance remains non-persistent/browser-only.
+- Build 180 — **COMPLETE**: accountant/bookkeeper mapping workflow; mappings remain human authority.
+- Build 181 — **COMPLETE**: mapping aging, drift, and reconciliation observability.
+- Build 183 — **COMPLETE**: decision support/compatibility does not choose accounting policy.
+- Build 184 — **COMPLETE**: scorecard truth classifies work but does not perform human/external work.
+- Build 185 — **COMPLETE**: barcode/QR equipment scanning/custody hardening.
+
+Posting approval is not execution release. Finance posting execution release remains server-owned and **OFF**. Provider/payment mutation remains OFF. Production promotion remains manual.
+
+## Restart discipline during Build 186
+
+1. Start from Build 185 clean-main `d126ddfb403d31faba1d9826df3e0ad1e0d58fd7` / Run #149 / evidence row 18.
+2. Confirm live database remains `185 / 185` until Schema 186 source/browser proof is GREEN.
+3. Continue only on `schema-186-staging-acceptance-control-plane` until its PR is proven.
+4. Confirm Build 185 equipment assertions remain 7/7 and `equipment-scan-manage` remains ACTIVE/JWT protected.
+5. Confirm scorecard truth remains GREEN with 11 classified open rails and no feature-followup rail.
+6. Do not create or mutate a dedicated staging project without deliberate setup/cost approval.
+7. Never aim staging automation at project ref `jmqvkgiqlimdhcofwkxr`.
+8. Keep Finance posting execution/provider mutation OFF.
+9. Keep accountant/bookkeeper mapping decisions human.
+10. Keep Production promotion manual.
 
 ## Repository hygiene
 
-Git history is the archive. Numbered migrations are permanent audit history through Schema 184. The only active Markdown authorities are `README.md`, this handbook, and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
+Git history is the archive. Numbered migrations are permanent audit history through live Schema 185; Schema 186 is proposed source until applied. The only active Markdown authorities are `README.md`, this handbook, and `docs/NEXT_STEPS_AND_SANITY_CHECK.md`.
 
-Do not retain archive trees, retired Markdown, generated full-schema snapshots, Playwright output, dependencies, logs, temp, backup files, or one-time cleanup workflows after use.
-
-The final exact clean-main source SHA/run is stored in `it_release_source_evidence` after branch cleanup and final CI.
+Do not retain archive trees, retired Markdown, generated full-schema snapshots, Playwright output, dependencies, logs, temp, backup files, or completed one-time cleanup workflows.
 
 ## Human-gated items
 
-Do not autonomously approve chart mappings, choose different live mapping accounts, enable Finance posting execution, mutate Stripe/PayPal/provider truth, conduct real-money tests, invent tax/chart policy, change pricing, approve public content, or promote Production.
+Do not autonomously approve chart mappings, choose different live mapping accounts, enable Finance posting execution, mutate Stripe/PayPal/provider truth, conduct real-money tests, invent tax/chart policy, change pricing, approve public content, create paid staging infrastructure, or promote Production.
