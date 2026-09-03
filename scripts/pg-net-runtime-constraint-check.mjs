@@ -19,9 +19,10 @@ add('schema192-live-dependency-inventory',hasAll(migration,[
   'service_execution_scheduler_dispatch_default','report_subscription_delivery_dispatch_default',
   'net.http_post','net._http_response','cron.job'
 ]));
-add('schema192-nonrelocatable-truth',hasAll(migration,[
-  'e.extrelocatable','pg_net_non_relocatable_truth','do not force relocation'
-]));
+add('schema192-nonrelocatable-truth',
+  hasAll(migration,['e.extrelocatable','pg_net_non_relocatable_truth'])
+    && /(?:does not|do not) force relocation/i.test(migration),
+);
 add('schema192-todo-suppression',hasAll(migration,[
   "s.object_name<>'pg_net'","p.status='accepted'",'pg_net_false_relocation_todo_suppressed'
 ]));
