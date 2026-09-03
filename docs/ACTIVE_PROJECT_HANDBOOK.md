@@ -1,5 +1,24 @@
 # YWI Active Project Handbook
 
+## Build 187 active authority
+
+**Build 187 — Staging acceptance scenario catalog + prerequisite truth convergence — ACTIVE IN SOURCE ONLY.**
+
+Current release boundary:
+
+- live database remains **Schema 186 / 186 CURRENT**;
+- final clean Build 186 `main` is **`02734b2168511b4faa54bf5f7fdea92b1d8f5b3d`**, exact-main **Run #160 / `33711102071` GREEN**, release evidence **row 20**;
+- original Build 186 product merge proof remains `046b9289acbe79c2a4feb4606a42dc50a8cad33d`, Run #154 / `33710506232`, evidence row 19;
+- Build 187 source branch is **`schema-187-staging-scenario-catalog`**;
+- exact 43,674-byte first Schema 187 migration commit `9483d9fb38143ce602bc406a6ca02cf22490ac2b` passed an outer-transaction rollback proof with SHA-256 `a3758b9733487cb90e6dee6652045a47c8c29d0cd30f9c7a5f824dbd73d6404e`;
+- the rollback proof seeded all six Operations catalog cases pending, rejected premature finalization, prevented callers from weakening blocking/evidence metadata, allowed explicit evidence -> finalize -> human signoff, and verified `operations_cockpit_live` stayed open;
+- Schema 187 has **not** been applied live yet;
+- Finance posting execution remains **OFF**; provider/payment mutation remains **OFF**; Production promotion remains **manual**.
+
+Build 187 converts the six real `staging_acceptance` rails into machine-readable, fail-closed evidence checklists without inventing a separate evidence database. New Schema 187 runs seed every enabled catalog case as `pending`; runner-controlled cases may be recorded by the dedicated staging runner, human cases can only be recorded explicitly through Admin > I.T., finalization refuses pending cases and treats skipped blocking cases as failures, and signoff remains evidence only. **No Build 187 path auto-closes a business rail.**
+
+The six cataloged rails are Operations Cockpit, quote/contact intake, live job updates, customer live-update notifications, service-execution proof/costing, and supervisor closeout/customer signoff/invoice follow-up. A dedicated non-production YardWeasels Supabase project is still not configured, so real staging execution remains closed rather than falling back to Production.
+
 ## Build 186 final release authority
 
 **Build 186 — Staging acceptance control plane + evidence runner modernization — COMPLETE.**
@@ -18,7 +37,7 @@ Final verified product authority:
 
 Current scorecard truth after Build 186: **40 rails / 29 complete / 11 open**, all **11 / 11 classified**, **0 unclassified**, **0 proof drift**. Remaining open work is **6 staging acceptance**, **2 accounting acceptance**, **1 provider acceptance**, and **2 content approval** rails. Human pending remains **11** and external pending **1**; autonomous feature-followup pending is **0**.
 
-No separate YardWeasels Supabase staging project is currently configured, so Build 186 did not fabricate live staging evidence or fall back to Production. The next build must be selected from a fresh readiness/architecture review rather than auto-completing any human/provider/accounting/content gate.
+No separate YardWeasels Supabase staging project is currently configured, so Build 186 did not fabricate live staging evidence or fall back to Production. Build 187 is the selected technical follow-up: it catalogs the evidence/prerequisite truth needed to execute those six staging rails safely without auto-completing them.
 
 ## Historical release anchors retained for audit
 
@@ -29,7 +48,7 @@ These historical anchors remain audit evidence only; current live authority is B
 
 **Current live schema authority:** `186 / 186` — **Build 186 COMPLETE**  
 **Build 186 product checkpoint:** `046b9289acbe79c2a4feb4606a42dc50a8cad33d`, exact-main Run #154 (`33710506232`) — GREEN  
-**Build 186 release evidence:** row `19` in `it_release_source_evidence`  
+**Build 186 final clean release evidence:** row `20` in `it_release_source_evidence`  
 **Runtime:** `equipment-scan-manage` v1 ACTIVE / JWT enabled; `admin-it-control` v14 ACTIVE / JWT enabled  
 **Repository enforcement:** separately AMBER because `main` is unprotected  
 **Finance execution release:** **OFF**; provider/payment mutation OFF; Production promotion manual  
@@ -55,6 +74,7 @@ Yard Weasels combines public quote/SEO surfaces, private customer workflows, Saf
 - Schema 184 / Build 184 — **COMPLETE**: I.T. scorecard truth convergence and blocker classification.
 - Schema 185 / Build 185 — **COMPLETE**: barcode/QR camera scanning, canonical equipment identity convergence, exact identifier resolution, and scan/custody evidence hardening.
 - Schema 186 / Build 186 — **COMPLETE**: staging acceptance control plane, service-private evidence hardening, exact source/schema binding, explicit human signoff, and Admin I.T. acceptance evidence.
+- Schema 187 / Build 187 — **ACTIVE SOURCE WORK**: six-rail staging scenario catalog, pending-case seeding, prerequisite truth, explicit human case evidence and fail-closed finalization.
 
 ## Build 185 authority
 
