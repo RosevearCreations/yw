@@ -70,8 +70,18 @@ test('eyeball reveals only the value entered in the browser and temporary passwo
 });
 
 test('Admin can generate/edit temporary password and active To-Do hides legacy completed/release panels', async ({ page }) => {
-  await basePage(page,{role:'admin',resetRequired:false});
+  // Load the global password helper while non-Admin so its real production lazy-loader
+  // does not race this focused test's explicit inline Admin UI injection.
+  await basePage(page,{role:'employee',resetRequired:false});
   await page.addScriptTag({content:passwordSource});
+  await page.evaluate(() => {
+    window.__authState = {
+      ...window.__authState,
+      role:'admin',
+      profile:{...window.__authState.profile,id:'admin-1',full_name:'Admin User',password_reset_required:false},
+      user:{id:'admin-1'}
+    };
+  });
   await page.addScriptTag({content:adminSource});
   await page.evaluate(() => document.dispatchEvent(new CustomEvent('ywi:module-loaded',{detail:{moduleKey:'admin'}})));
   await expect(page.locator('#adminCurrentTodoPanel')).toContainText('Only unresolved current requirements');
