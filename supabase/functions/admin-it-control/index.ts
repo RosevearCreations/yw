@@ -53,7 +53,7 @@ function rowStatus(row: any) {
     "status", "check_status", "readiness_status", "gate_status", "drift_status",
     "assertion_status", "health_status", "pipeline_status", "severity", "result", "state", "release_authority_status",
     "source_gate_status", "repository_enforcement_status", "mapping_readiness_status", "mapping_observability_status",
-    "mapping_decision_support_status",
+    "mapping_decision_support_status", "scorecard_truth_status", "truth_status", "resolution_status",
   ]) {
     if (row[key] !== undefined && row[key] !== null) return String(row[key]).trim().toLowerCase();
   }
@@ -72,7 +72,7 @@ function summarizeRows(rows: any[] = [], error: string | null = null) {
   for (const row of rows) {
     const status = rowStatus(row);
     if (failureWords.test(status)) blocking += 1;
-    else if (warningWords.test(status)) warning += 1;
+    else if (warningWords.test(status) || status.endsWith('_pending')) warning += 1;
   }
   return {
     status: blocking ? "error" : warning ? "warning" : "passed",
@@ -116,10 +116,12 @@ async function modulePermissionPayload(supabase: any) {
 
 async function readinessPayload(supabase: any) {
   const sources = {
-    readiness_registry: ["it_readiness_check_registry", "sort_order", true, 120],
+    readiness_registry: ["it_readiness_check_registry", "sort_order", true, 160],
     schema_drift: ["v_schema_drift_status", null, true, 10],
     release_authority: ["v_it_release_authority_status", null, true, 10],
     release_source_evidence: ["v_it_release_source_evidence_current", null, true, 10],
+    scorecard_truth: ["v_it_scorecard_progress_truth", "sort_order", true, 240],
+    scorecard_truth_status: ["v_it_scorecard_progress_truth_status", null, true, 10],
     cross_module_consumer_health: ["v_it_cross_module_consumer_health", "check_key", true, 20],
     finance_operational: ["v_it_finance_completion_pipeline_status", null, true, 10],
     finance_reconciliation: ["v_finance_job_completion_reconciliation_issues", "detected_at", false, 160],
@@ -152,6 +154,7 @@ async function readinessPayload(supabase: any) {
     moduleAssertions,
     itAssertions,
     releaseAssertions,
+    scorecardTruthAssertions,
     consumerObservabilityAssertions,
     financeOperationalAssertions,
     financeReleaseHardeningAssertions,
@@ -162,6 +165,7 @@ async function readinessPayload(supabase: any) {
     assertionRows(supabase, "ywi_module_security_assertions", "Module assertions failed."),
     assertionRows(supabase, "ywi_it_readiness_security_assertions", "I.T. assertions failed."),
     assertionRows(supabase, "ywi_it_release_authority_assertions", "Release-authority assertions failed."),
+    assertionRows(supabase, "ywi_it_scorecard_truth_assertions", "I.T. scorecard-truth assertions failed."),
     assertionRows(supabase, "ywi_it_cross_module_consumer_observability_assertions", "Cross-module consumer observability assertions failed."),
     assertionRows(supabase, "ywi_finance_operational_control_plane_assertions", "Finance operational assertions failed."),
     assertionRows(supabase, "ywi_finance_release_hardening_assertions", "Finance release-hardening assertions failed."),
@@ -190,6 +194,7 @@ async function readinessPayload(supabase: any) {
   const adminIntegrityBlocking = adminIntegrityRows.filter((row: any) => row?.all_modules_manage !== true).length;
   const schemaRow = data.schema_drift.rows[0] || null;
   const releaseAuthorityRow = data.release_authority.rows[0] || null;
+  const scorecardTruthRow = data.scorecard_truth_status.rows[0] || null;
   const expectedSchemaVersion = Number(schemaRow?.expected_schema_version || releaseAuthorityRow?.release_schema_version || 0);
   const latestAppliedSchemaVersion = Number(schemaRow?.latest_applied_schema_version || 0);
   const schemaCurrent = expectedSchemaVersion > 0
@@ -200,6 +205,7 @@ async function readinessPayload(supabase: any) {
     ...moduleAssertions.rows,
     ...itAssertions.rows,
     ...releaseAssertions.rows,
+    ...scorecardTruthAssertions.rows,
     ...consumerObservabilityAssertions.rows,
     ...financeOperationalAssertions.rows,
     ...financeReleaseHardeningAssertions.rows,
@@ -211,6 +217,7 @@ async function readinessPayload(supabase: any) {
     moduleAssertions.error,
     itAssertions.error,
     releaseAssertions.error,
+    scorecardTruthAssertions.error,
     consumerObservabilityAssertions.error,
     financeOperationalAssertions.error,
     financeReleaseHardeningAssertions.error,
@@ -252,6 +259,11 @@ async function readinessPayload(supabase: any) {
       source_sha: releaseAuthorityRow?.source_sha || null,
       workflow_run_id: releaseAuthorityRow?.workflow_run_id || null,
       production_promotion_mode: releaseAuthorityRow?.production_promotion_mode || "manual_human_promotion_required",
+      scorecard_truth_status: scorecardTruthRow?.scorecard_truth_status || "unknown",
+      scorecard_open_count: Number(scorecardTruthRow?.open_count || 0),
+      scorecard_unclassified_open_count: Number(scorecardTruthRow?.unclassified_open_count || 0),
+      scorecard_human_pending_count: Number(scorecardTruthRow?.human_pending_count || 0),
+      scorecard_external_pending_count: Number(scorecardTruthRow?.external_pending_count || 0),
       active_profile_count: activeProfiles.length,
       auth_user_count: authUserCount,
       auth_profile_count_match: authUserCount === null ? null : authUserCount === activeProfiles.length,
@@ -265,6 +277,7 @@ async function readinessPayload(supabase: any) {
       module: moduleAssertions.rows,
       it: itAssertions.rows,
       release_authority: releaseAssertions.rows,
+      scorecard_truth: scorecardTruthAssertions.rows,
       consumer_observability: consumerObservabilityAssertions.rows,
       finance_operational: financeOperationalAssertions.rows,
       finance_release_hardening: financeReleaseHardeningAssertions.rows,

@@ -15,6 +15,7 @@ const docs=[read('README.md'),read('docs/ACTIVE_PROJECT_HANDBOOK.md'),read('docs
 const results=[];
 const add=(name,ok,details='')=>results.push({name,ok,details});
 const hasAll=(text,needles)=>needles.every((needle)=>text.includes(needle));
+const plain=(text)=>text.replaceAll('*','');
 
 add('schema183-migration-present',fs.existsSync('sql/183_finance_account_mapping_decision_support.sql'));
 add('schema183-transaction-balanced',(sql.match(/\bbegin;/gi)||[]).length===1&&(sql.match(/\bcommit;/gi)||[]).length===1);
@@ -45,7 +46,7 @@ add('package-source-gate',pkg.scripts?.['test:finance-account-mapping-decision-s
 add('workflow-source-gate',workflow.includes('npm run test:finance-account-mapping-decision-support'));
 add('repo-smoke-schema183',hasAll(repo,["[183,'sql/183_finance_account_mapping_decision_support.sql']",'schema183-decision-support','scripts/finance-account-mapping-decision-support-check.mjs']));
 add('docs-schema183-active',docs.every((text)=>text.includes('Schema 183')&&text.includes('Build 183')));
-add('docs-human-boundary',docs.every((text)=>/human/i.test(text)&&/mapping/i.test(text)&&/auto-select|auto select|does not choose|does not auto/i.test(text)));
+add('docs-human-boundary',docs.every((text)=>{const normalized=plain(text);return /human/i.test(normalized)&&/mapping/i.test(normalized)&&/auto-select|auto select|does not choose|does not auto/i.test(normalized);}));
 add('docs-production-manual',docs.every((text)=>/Production/i.test(text)&&/manual/i.test(text)));
 
 const passed=results.filter((r)=>r.ok).length;
