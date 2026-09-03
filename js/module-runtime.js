@@ -10,7 +10,7 @@
 'use strict';
 
 (function () {
-  const BUILD = '2026-09-02r';
+  const BUILD = '2026-09-02l';
   const CONTRACT_VERSION = 2;
 
   const CORE_ENTITY_CONTRACTS = Object.freeze({
