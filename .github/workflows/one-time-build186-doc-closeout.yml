@@ -1,0 +1,54 @@
+name: One-time Build 186 documentation closeout
+
+on:
+  push:
+    branches: [schema-186-release-authority-closeout]
+    paths:
+      - '.github/workflows/one-time-build186-doc-closeout.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  closeout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: schema-186-release-authority-closeout
+      - name: Converge canonical Build 186 authority docs
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          files=[Path('README.md'),Path('docs/ACTIVE_PROJECT_HANDBOOK.md'),Path('docs/NEXT_STEPS_AND_SANITY_CHECK.md')]
+          summary='''\n## Build 186 final release authority\n\n**Build 186 — Staging acceptance control plane + evidence runner modernization — COMPLETE.**\n\nFinal verified product authority:\n\n- live database **Schema 186 / 186 CURRENT**;\n- merged `main` product SHA **`046b9289acbe79c2a4feb4606a42dc50a8cad33d`**;\n- exact-main **Run #154 / `33710506232` — GREEN** across all static gates and six rendered browser suites;\n- canonical release-source evidence **row 19**;\n- `admin-staging-acceptance` **v1 ACTIVE / JWT enabled**;\n- Schema 186 staging-security assertions **7 / 7 PASS**;\n- application release authority **GREEN**; repository enforcement remains separately **AMBER** because `main` is unprotected;\n- Finance posting execution remains **OFF**; provider/payment mutation remains **OFF**; Production promotion remains **manual**;\n- Build 186 evidence and human signoff **never auto-close business staging rails**.\n\nCurrent scorecard truth after Build 186: **40 rails / 29 complete / 11 open**, all **11 / 11 classified**, **0 unclassified**, **0 proof drift**. Remaining open work is **6 staging acceptance**, **2 accounting acceptance**, **1 provider acceptance**, and **2 content approval** rails. Human pending remains **11** and external pending **1**; autonomous feature-followup pending is **0**.\n\nNo separate YardWeasels Supabase staging project is currently configured, so Build 186 did not fabricate live staging evidence or fall back to Production. The next build must be selected from a fresh readiness/architecture review rather than auto-completing any human/provider/accounting/content gate.\n'''
+          replacements={
+            '**Current live authority:** Schema `185 / 185` — **Build 185 COMPLETE**':'**Current live authority:** Schema `186 / 186` — **Build 186 COMPLETE**',
+            '**Current live schema authority:** `185 / 185` — **Build 185 COMPLETE**':'**Current live schema authority:** `186 / 186` — **Build 186 COMPLETE**',
+            '**Final clean-main checkpoint:** `d126ddfb403d31faba1d9826df3e0ad1e0d58fd7`, exact-main Run #149 (`33705924533`) — GREEN':'**Build 186 product checkpoint:** `046b9289acbe79c2a4feb4606a42dc50a8cad33d`, exact-main Run #154 (`33710506232`) — GREEN',
+            '**Final clean-main Build 185 checkpoint:** `d126ddfb403d31faba1d9826df3e0ad1e0d58fd7`, exact-main Run #149 (`33705924533`) — GREEN':'**Build 186 product checkpoint:** `046b9289acbe79c2a4feb4606a42dc50a8cad33d`, exact-main Run #154 (`33710506232`) — GREEN',
+            '**Final Build 185 release evidence:** row `18`':'**Build 186 release evidence:** row `19`',
+            '**Final clean release evidence:** row `18` in `it_release_source_evidence`':'**Build 186 release evidence:** row `19` in `it_release_source_evidence`',
+            '**Release evidence:** row `18` in `it_release_source_evidence`':'**Build 186 release evidence:** row `19` in `it_release_source_evidence`',
+            '**Build 186:** **ACTIVE in source only** on `schema-186-staging-acceptance-control-plane`; Schema 186 is not live until its source/browser gates are GREEN':'**Build 186:** **COMPLETE** on `main`; exact-main Run #154 and release evidence row 19 are GREEN',
+            '**Build 186:** ACTIVE in source on `schema-186-staging-acceptance-control-plane`; live database remains Schema 185 until source/browser proof is green':'**Build 186:** **COMPLETE** on `main`; live database is Schema 186 / 186 CURRENT',
+            '**Build 186:** ACTIVE on `schema-186-staging-acceptance-control-plane`; Schema 186 not live yet.':'**Build 186:** **COMPLETE** on `main`; Schema 186 / 186 is live and release-authority GREEN.',
+            '- Schema 186 / Build 186 — **ACTIVE SOURCE WORK**: staging acceptance control plane and evidence runner modernization.':'- Schema 186 / Build 186 — **COMPLETE**: staging acceptance control plane, service-private evidence hardening, exact source/schema binding, explicit human signoff, and Admin I.T. acceptance evidence.',
+            '- **Build 186 — Staging acceptance control plane + evidence runner modernization — ACTIVE**':'- **Build 186 — Staging acceptance control plane + evidence runner modernization — COMPLETE**',
+          }
+          for p in files:
+              s=p.read_text()
+              for old,new in replacements.items(): s=s.replace(old,new)
+              s=s.replace('These historical anchors remain audit evidence only; current live authority is Build 185 / Schema 185 and Build 186 remains source-only until its release gates pass.', 'These historical anchors remain audit evidence only; current live authority is Build 186 / Schema 186 with exact-main release proof recorded.')
+              if '## Build 186 final release authority' not in s:
+                  lines=s.splitlines(True)
+                  insert=1
+                  s=''.join(lines[:insert])+summary+''.join(lines[insert:])
+              p.write_text(s)
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add README.md docs/ACTIVE_PROJECT_HANDBOOK.md docs/NEXT_STEPS_AND_SANITY_CHECK.md
+          git commit -m 'Close Build 186 canonical release authority docs'
+          git push origin HEAD:schema-186-release-authority-closeout
