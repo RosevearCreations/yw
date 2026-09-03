@@ -22,14 +22,13 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Wire Build 188 source
-        run: python scripts/.tmp_build188_wire.py
+        run: python scripts/.tmp_build188_wire_v2.py
       - name: Verify Build 188 source gate
         run: npm run test:open-rail-readiness
       - name: Commit wired source
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add supabase/functions/admin-it-control/index.ts js/it-readiness-ui.js tests/browser/it-scorecard-truth.spec.mjs package.json .github/workflows/staging-browser-integration.yml
+          git add supabase/functions/admin-it-control/index.ts js/it-readiness-ui.js tests/browser/it-scorecard-truth.spec.mjs package.json
           git commit -m 'Wire Build 188 acceptance readiness into Admin I.T. and CI'
           git push origin HEAD:schema-188-open-rail-acceptance-readiness
-# rerun after JSON guard convergence
