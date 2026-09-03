@@ -1,0 +1,29 @@
+name: One-time Build 192 branch prune
+
+'on':
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete every branch except main and dev
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/branches?per_page=100" --jq '.[].name' | while read -r branch; do
+            case "$branch" in
+              main|dev) echo "Keeping $branch" ;;
+              *)
+                encoded=$(printf '%s' "$branch" | jq -sRr @uri)
+                echo "Deleting $branch"
+                gh api -X DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/${encoded}"
+                ;;
+            esac
+          done
