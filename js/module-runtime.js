@@ -54,7 +54,7 @@
       key: 'jobs',
       label: 'Jobs',
       version: CONTRACT_VERSION,
-      scripts: Object.freeze(['/js/jobs-ui.js','/js/jobs-finance-boundary.js']),
+      scripts: Object.freeze(['/js/jobs-ui.js','/js/jobs-finance-boundary.js','/js/equipment-scanner.js']),
       coreDependencies: SHARED_CORE_DEPENDENCIES
     }),
     admin: Object.freeze({
