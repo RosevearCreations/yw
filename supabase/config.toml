@@ -51,3 +51,6 @@ verify_jwt = true
 
 [functions.finance-account-mapping-review]
 verify_jwt = true
+
+[functions.resend-email]
+verify_jwt = true
