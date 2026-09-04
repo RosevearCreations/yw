@@ -82,9 +82,11 @@ jobs:
       - run: npm run test:contrast
       - run: npm run test:navigation
       - run: npm run test:three-surface
+      - run: npm run test:field-ux
       - name: Install Chromium for rendered module acceptance
         run: npx playwright install --with-deps chromium
       - run: npm run test:browser:three-surface
+      - run: npm run test:browser:field-ux
       - run: npm run test:browser:modules
       - run: npm run test:browser:finance
       - run: npm run test:browser:finance-mapping
