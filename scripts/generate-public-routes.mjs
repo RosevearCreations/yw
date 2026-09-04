@@ -19,7 +19,6 @@ const root = process.cwd();
 const endpoint = String(process.env.PUBLIC_CONTENT_ENDPOINT || '').replace(/\/$/, '');
 const anonKey = String(process.env.SUPABASE_ANON_KEY || '');
 const siteUrl = String(process.env.PUBLIC_SITE_URL || 'https://yardweasels.ca').replace(/\/$/, '');
-const build = '2026-09-01b';
 if (!endpoint) {
   console.error('Missing PUBLIC_CONTENT_ENDPOINT. No route files were changed.');
   process.exit(2);
@@ -34,8 +33,10 @@ const safePath = (value = '') => {
   return clean;
 };
 const safeUrl = (value = '', fallback = '') => {
+  const raw = String(value || fallback || '').trim();
+  if (!raw) return fallback;
   try {
-    const parsed = new URL(String(value || fallback), siteUrl);
+    const parsed = new URL(raw, siteUrl);
     if (!['http:', 'https:'].includes(parsed.protocol)) return fallback;
     return parsed.href;
   } catch { return fallback; }
@@ -105,7 +106,7 @@ function pageHtml(route, visual) {
   <meta name="description" content="${escapeHtml(route.meta_description || route.page_intro || '')}">
   <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
   <link rel="canonical" href="${escapeHtml(canonical)}">
-  <link rel="stylesheet" href="/style.css?v=${build}">
+  <link rel="stylesheet" href="/style.css">
   <meta property="og:locale" content="en_CA">
   <meta property="og:type" content="website"><meta property="og:title" content="${escapeHtml(route.page_title)}"><meta property="og:description" content="${escapeHtml(route.meta_description || '')}"><meta property="og:url" content="${escapeHtml(canonical)}">${image ? `\n  <meta property="og:image" content="${escapeHtml(image)}">` : ''}
   <script type="application/ld+json">${schema}</script>
@@ -147,4 +148,4 @@ for (const entry of sitemap.entries || []) {
   console.log(`Generated ${routePath}/index.html`);
 }
 await fs.writeFile(path.join(root, 'sitemap.xml'), sitemapXml(generated), 'utf8');
-console.log(`Generated ${generated.length} approved public page(s) and sitemap.xml for build ${build}.`);
+console.log(`Generated ${generated.length} approved public page(s) and sitemap.xml.`);
