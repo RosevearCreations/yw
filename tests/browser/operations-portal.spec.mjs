@@ -105,7 +105,7 @@ for (const device of widths) {
     await expect(page.locator('#operationsCockpit')).toHaveCount(0);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
     expect(overflow).toBeFalsy();
-    await expect(page.locator('main, #main, body')).toBeVisible();
+    await expect(page.locator('main.container')).toBeVisible();
     expect(getProductionSupabaseRequests()).toBe(0);
   });
 }
