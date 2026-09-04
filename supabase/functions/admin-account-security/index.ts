@@ -1,5 +1,5 @@
 // Edge Function: admin-account-security
-// Build 191 — audited admin temporary-password resets + current Admin To-Do.
+// Current audited admin temporary-password resets + current I.T. work authority.
 // Plaintext passwords are accepted only for the immediate Supabase Auth admin update;
 // they are never persisted, logged, echoed, or placed in audit metadata.
 
@@ -111,19 +111,31 @@ serve(async (req) => {
   }
 
   if (action === "overview" || action === "list_accounts") {
-    const [{ data: accounts, error: accountsError }, { data: todo, error: todoError }, { data: todoStatus, error: statusError }] = await Promise.all([
+    const [
+      { data: accounts, error: accountsError },
+      { data: todo, error: todoError },
+      { data: todoStatus, error: statusError },
+      { data: nextSafeActionStatus, error: nextStatusError },
+      { data: nextSafeActionQueue, error: nextQueueError },
+    ] = await Promise.all([
       admin.from("v_admin_account_security_directory").select("*").order("full_name", { ascending: true }),
       admin.from("v_it_current_admin_todo").select("*").order("sort_order", { ascending: true }),
       admin.from("v_it_current_admin_todo_status").select("*").maybeSingle(),
+      admin.from("v_it_next_safe_action_status").select("*").maybeSingle(),
+      admin.from("v_it_next_safe_action_queue").select("*").order("priority_bucket", { ascending: true }).order("sort_order", { ascending: true }),
     ]);
     if (accountsError) return response({ ok: false, error: accountsError.message }, 500);
     if (todoError) return response({ ok: false, error: todoError.message }, 500);
     if (statusError) return response({ ok: false, error: statusError.message }, 500);
+    if (nextStatusError) return response({ ok: false, error: nextStatusError.message }, 500);
+    if (nextQueueError) return response({ ok: false, error: nextQueueError.message }, 500);
     return response({
       ok: true,
       accounts: accounts || [],
       current_todo: todo || [],
       current_todo_status: todoStatus || null,
+      next_safe_action_status: nextSafeActionStatus || null,
+      next_safe_action_queue: nextSafeActionQueue || [],
       password_policy: { min_length: 12, requires_upper: true, requires_lower: true, requires_number: true, requires_symbol: true },
       security_note: "Existing passwords cannot be viewed. Admins may replace another user's password with a temporary password that must be changed by that user.",
     });
