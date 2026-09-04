@@ -23,11 +23,11 @@ add('notification-preference-is-explicit', portal.includes("action:'set_live_upd
 add('closeout-signoff-is-explicit', portal.includes("action:'sign_closeout'"), 'Customer closeout approval/follow-up remains an explicit action.');
 add('customer-lifecycle-panels-exist', hasAll(portal, ['liveUpdateTimeline(liveUpdates)', 'executionProofTimeline(executionProofs)', 'closeoutPackagePanel(closeouts)', 'notificationPreferencePanel(notificationPreference)']), 'Updates, approved proof, closeout and notification preference remain part of one customer surface.');
 add('customer-server-view-remains-bounded', hasAll(portalFn, ['v_customer_portal_live_updates', 'v_customer_portal_execution_proofs']), 'Server-side customer reads continue through portal-safe views.');
-add('internal-cost-fields-not-rendered', !hasAll(portal, ['row.margin_amount']) && !portal.includes('row.labour_cost_total') && !portal.includes('row.material_cost_total') && !portal.includes('row.equipment_cost_total') && !portal.includes('row.staff_notes'), 'Internal costing and staff-note fields are not rendered by customer-portal.js.');
+add('internal-cost-fields-not-rendered', !portal.includes('row.margin_amount') && !portal.includes('row.labour_cost_total') && !portal.includes('row.material_cost_total') && !portal.includes('row.equipment_cost_total') && !portal.includes('row.staff_notes'), 'Internal costing and staff-note fields are not rendered by customer-portal.js.');
 add('responsive-portal-css-exists', hasAll(css, ['.customer-portal-layout{display:grid', '@media(max-width:960px)', '@media(max-width:620px)', '.customer-portal-shell,.public-route-shell']), 'Portal has distinct desktop/tablet/phone layout rules.');
 add('legacy-live-portal-case-stays-staging-only', hasAll(oldBrowser, ['YWI_E2E_PORTAL_URL', 'disposable STAGING portal token']), 'Optional live portal evidence remains staging-only and separate from deterministic CI.');
-add('build210-source-gate-is-mandatory', workflow.includes('npm run test:customer-portal'), 'Build 210 source authority is required by the release workflow.');
-add('build210-browser-gate-is-mandatory', workflow.includes('npm run test:browser:customer-portal'), 'Build 210 rendered portal acceptance is required by the release workflow.');
+add('build210-source-gate-is-mandatory', workflow.includes('node scripts/customer-portal-responsive-privacy-enforcement-check.mjs'), 'Build 210 source authority is required by the release workflow.');
+add('build210-browser-gate-is-mandatory', workflow.includes('tests/browser/customer-portal-responsive-privacy.spec.mjs'), 'Build 210 rendered portal acceptance is required by the release workflow.');
 add('three-surface-regression-remains-mandatory', hasAll(workflow, ['npm run test:three-surface', 'npm run test:browser:three-surface']), 'Mobile app, desktop app and public website regression still run alongside the portal gate.');
 
 const failed = checks.filter((item) => !item.ok);
