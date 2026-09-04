@@ -2,8 +2,9 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { hasModuleAccess } from "../_shared/module-permissions.ts";
 
-const BUILD = '2026-09-03a';
-const SCHEMA = 187;
+const BUILD = '2026-09-04a';
+const SCHEMA = 197;
+const KNOWN_PRODUCTION_PROJECT_REF = 'jmqvkgiqlimdhcofwkxr';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,6 +25,78 @@ class HttpError extends Error {
 const clean = (value: unknown, max = 2000) => String(value ?? '').trim().slice(0, max);
 const isUuid = (value: unknown) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(clean(value,80));
 const caseKeyOk = (value: unknown) => /^[a-z0-9][a-z0-9_]{2,119}$/.test(clean(value,120));
+const truthy = (value: unknown) => ['1','true','yes','enabled'].includes(clean(value,40).toLowerCase());
+
+function projectRefFromUrl(value: string) {
+  try {
+    const host = new URL(value).hostname;
+    const match = host.match(/^([a-z0-9-]+)\.supabase\.co$/i);
+    return match?.[1] || '';
+  } catch {
+    return '';
+  }
+}
+
+async function runtimeEnvironmentGuard(supabase: any, supabaseUrl: string) {
+  const actualProjectRef = projectRefFromUrl(supabaseUrl);
+  const runtimeEnvironment = clean(Deno.env.get('YWI_RUNTIME_ENVIRONMENT'),40).toLowerCase();
+  const expectedStagingRef = clean(Deno.env.get('YWI_STAGING_PROJECT_REF'),80).toLowerCase();
+  const configuredProductionRef = clean(Deno.env.get('YWI_PRODUCTION_PROJECT_REF') || KNOWN_PRODUCTION_PROJECT_REF,80).toLowerCase();
+  const mutationFlag = truthy(Deno.env.get('YWI_STAGING_ACCEPTANCE_MUTATION_ENABLED'));
+
+  let registeredAuthority: any = null;
+  if (actualProjectRef) {
+    const { data, error } = await supabase
+      .from('it_runtime_environment_authorities')
+      .select('project_ref,environment_class,staging_acceptance_mutation_allowed,authority_note')
+      .eq('project_ref',actualProjectRef)
+      .maybeSingle();
+    if (error) throw error;
+    registeredAuthority = data || null;
+  }
+
+  const knownProduction = Boolean(actualProjectRef) && (
+    actualProjectRef === KNOWN_PRODUCTION_PROJECT_REF ||
+    actualProjectRef === configuredProductionRef ||
+    registeredAuthority?.environment_class === 'production'
+  );
+  const explicitStaging = runtimeEnvironment === 'staging';
+  const exactRefMatch = Boolean(actualProjectRef && expectedStagingRef && actualProjectRef === expectedStagingRef);
+  const registryAllows = registeredAuthority == null || registeredAuthority.staging_acceptance_mutation_allowed === true;
+  const mutationAllowed = explicitStaging && mutationFlag && exactRefMatch && !knownProduction && registryAllows;
+
+  let reason = 'Dedicated staging mutation is explicitly enabled.';
+  if (knownProduction) reason = 'Production project authority permanently denies staging-acceptance mutation.';
+  else if (!actualProjectRef) reason = 'The current Supabase project ref could not be resolved.';
+  else if (!explicitStaging) reason = 'YWI_RUNTIME_ENVIRONMENT must be exactly staging for acceptance mutation.';
+  else if (!expectedStagingRef) reason = 'YWI_STAGING_PROJECT_REF is required for acceptance mutation.';
+  else if (!exactRefMatch) reason = 'The runtime project ref does not match YWI_STAGING_PROJECT_REF.';
+  else if (!mutationFlag) reason = 'YWI_STAGING_ACCEPTANCE_MUTATION_ENABLED is not explicitly enabled.';
+  else if (!registryAllows) reason = 'Runtime environment authority denies staging-acceptance mutation for this project.';
+
+  return {
+    runtime_environment: runtimeEnvironment || 'unconfigured',
+    actual_project_ref: actualProjectRef || null,
+    expected_staging_project_ref: expectedStagingRef || null,
+    configured_production_project_ref: configuredProductionRef || KNOWN_PRODUCTION_PROJECT_REF,
+    registered_environment_class: registeredAuthority?.environment_class || null,
+    registered_mutation_allowed: registeredAuthority?.staging_acceptance_mutation_allowed ?? null,
+    explicit_staging: explicitStaging,
+    exact_project_ref_match: exactRefMatch,
+    mutation_flag_enabled: mutationFlag,
+    known_production: knownProduction,
+    mutation_allowed: mutationAllowed,
+    reason,
+  };
+}
+
+function assertStagingMutationAllowed(guard: any) {
+  if (guard?.mutation_allowed === true) return;
+  throw new HttpError(409,'Staging acceptance mutation is locked for this runtime environment.',{
+    environment_guard:guard,
+    required:'Set YWI_RUNTIME_ENVIRONMENT=staging, YWI_STAGING_PROJECT_REF to this exact non-production project ref, and YWI_STAGING_ACCEPTANCE_MUTATION_ENABLED=true. Production is always denied.'
+  });
+}
 
 async function getActor(supabase: any, req: Request) {
   const token = clean((req.headers.get('authorization') || '').replace(/^Bearer\s+/i,''),5000);
@@ -43,17 +116,19 @@ async function getActor(supabase: any, req: Request) {
   return profile;
 }
 
-async function statusPayload(supabase: any) {
+async function statusPayload(supabase: any, environmentGuard: any) {
   const [
     { data: rows, error: rowsError },
     { data: securityAssertions, error: securityError },
     { data: catalogAssertions, error: catalogError },
+    { data: environmentAssertions, error: environmentError },
     { data: scenarioPlan, error: scenarioError },
     { data: recentRuns, error: runsError },
   ] = await Promise.all([
     supabase.from('v_it_staging_acceptance_status').select('*').order('sort_order',{ ascending:true }),
     supabase.rpc('ywi_staging_acceptance_security_assertions'),
     supabase.rpc('ywi_staging_acceptance_catalog_assertions'),
+    supabase.rpc('ywi_staging_environment_guard_assertions'),
     supabase.from('v_it_staging_acceptance_scenario_plan').select('*').order('rail_key',{ascending:true}).order('case_sort_order',{ascending:true}),
     supabase.from('operations_staging_test_runs')
       .select('id,run_key,target_rail_key,suite_name,run_status,source_sha,source_workflow_run_id,schema_version,fixture_set_id,human_signoff_required,human_signoff_status,human_signoff_by_profile_id,human_signoff_at,started_at,finished_at,evidence_note')
@@ -64,18 +139,21 @@ async function statusPayload(supabase: any) {
   if (rowsError) throw rowsError;
   if (securityError) throw securityError;
   if (catalogError) throw catalogError;
+  if (environmentError) throw environmentError;
   if (scenarioError) throw scenarioError;
   if (runsError) throw runsError;
 
   const securityRows = securityAssertions || [];
   const catalogRows = catalogAssertions || [];
-  const failedAssertions = [...securityRows,...catalogRows].filter((row:any) => String(row?.assertion_status || '').toLowerCase() !== 'passed');
+  const environmentRows = environmentAssertions || [];
+  const failedAssertions = [...securityRows,...catalogRows,...environmentRows].filter((row:any) => String(row?.assertion_status || '').toLowerCase() !== 'passed');
   const acceptanceRows = rows || [];
   const scenarios = scenarioPlan || [];
   return {
     ok: failedAssertions.length === 0,
     build:BUILD,
     schema:SCHEMA,
+    environment_guard:environmentGuard,
     summary:{
       rail_count:acceptanceRows.length,
       scenario_count:scenarios.length,
@@ -86,11 +164,14 @@ async function statusPayload(supabase: any) {
       failed_count:acceptanceRows.filter((row:any)=>['failed','rejected','stale_schema'].includes(String(row?.staging_acceptance_status || ''))).length,
       assertion_failures:failedAssertions.length,
       business_rail_auto_close:false,
+      staging_mutation_allowed:environmentGuard?.mutation_allowed === true,
+      known_production_runtime:environmentGuard?.known_production === true,
     },
     staging_acceptance:acceptanceRows,
     scenario_plan:scenarios,
     security_assertions:securityRows,
     catalog_assertions:catalogRows,
+    environment_assertions:environmentRows,
     recent_runs:recentRuns || [],
   };
 }
@@ -126,12 +207,15 @@ Deno.serve(async (req:Request) => {
     if (!supabaseUrl || !serviceKey) throw new HttpError(500,'admin-staging-acceptance is not configured.');
     const supabase = createClient(supabaseUrl,serviceKey,{ auth:{ persistSession:false } });
     const profile = await getActor(supabase,req);
+    const environmentGuard = await runtimeEnvironmentGuard(supabase,supabaseUrl);
     const body = await req.json().catch(()=>({}));
     const action = clean(body?.action || 'status',80).toLowerCase();
 
     if (action === 'status') {
-      return Response.json(await statusPayload(supabase),{ headers:corsHeaders });
+      return Response.json(await statusPayload(supabase,environmentGuard),{ headers:corsHeaders });
     }
+
+    assertStagingMutationAllowed(environmentGuard);
 
     if (action === 'record_case') {
       const runId = clean(body?.run_id,80);
@@ -151,10 +235,10 @@ Deno.serve(async (req:Request) => {
         p_is_blocking:scenario.is_blocking,
         p_expected_outcome:scenario.expected_outcome,
         p_observed_outcome:note || `Human marked ${decision}.`,
-        p_details:{ human_evidence:true, recorded_from:'admin-staging-acceptance' },
+        p_details:{ human_evidence:true, recorded_from:'admin-staging-acceptance', environment_guard:'staging_allowed' },
       });
       if (error) throw error;
-      return Response.json({ ok:true,build:BUILD,schema:SCHEMA,case_result:data,status:await statusPayload(supabase) },{ headers:corsHeaders });
+      return Response.json({ ok:true,build:BUILD,schema:SCHEMA,case_result:data,status:await statusPayload(supabase,environmentGuard) },{ headers:corsHeaders });
     }
 
     if (action === 'finalize') {
@@ -167,7 +251,7 @@ Deno.serve(async (req:Request) => {
         p_failure_reason:note || null,
       });
       if (error) throw error;
-      return Response.json({ ok:true,build:BUILD,schema:SCHEMA,finalize:data,status:await statusPayload(supabase) },{ headers:corsHeaders });
+      return Response.json({ ok:true,build:BUILD,schema:SCHEMA,finalize:data,status:await statusPayload(supabase,environmentGuard) },{ headers:corsHeaders });
     }
 
     if (action === 'signoff') {
@@ -183,7 +267,7 @@ Deno.serve(async (req:Request) => {
         p_note:note || null,
       });
       if (error) throw error;
-      return Response.json({ ok:true,build:BUILD,schema:SCHEMA,signoff:data,status:await statusPayload(supabase) },{ headers:corsHeaders });
+      return Response.json({ ok:true,build:BUILD,schema:SCHEMA,signoff:data,status:await statusPayload(supabase,environmentGuard) },{ headers:corsHeaders });
     }
 
     throw new HttpError(400,`Unsupported action: ${action || '(blank)'}.`);
