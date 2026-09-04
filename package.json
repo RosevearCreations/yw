@@ -23,6 +23,8 @@
     "test:staging-target-preflight": "node scripts/staging-target-preflight-check.mjs",
     "repository:protection:require": "node scripts/repository-protection-preflight.mjs",
     "test:repository-protection-preflight": "node scripts/repository-protection-preflight-check.mjs",
+    "release:evidence:write": "node scripts/release-source-evidence-bundle.mjs",
+    "test:release-source-evidence": "node scripts/release-source-evidence-bundle-check.mjs",
     "test:staging": "node scripts/operations-rpc-staging-e2e.mjs",
     "test:staging-acceptance": "node scripts/staging-acceptance-control-plane-check.mjs && node scripts/operations-rpc-staging-e2e.mjs",
     "test:staging-scenarios": "node scripts/staging-scenario-catalog-check.mjs",
