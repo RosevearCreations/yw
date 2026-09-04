@@ -18,6 +18,7 @@
     "test:staging-scenarios": "node scripts/staging-scenario-catalog-check.mjs",
     "test:staging-environment-guard": "node scripts/staging-environment-guard-check.mjs",
     "test:staging-runtime-schema": "node scripts/staging-runtime-schema-authority-check.mjs",
+    "test:current-schema-staging-runbook": "node scripts/current-schema-staging-runbook-authority-check.mjs",
     "test:contrast": "node scripts/operations-cockpit-contrast-check.mjs",
     "test:live-updates": "node scripts/live-work-updates-check.mjs",
     "test:notifications": "node scripts/customer-notification-delivery-check.mjs",
