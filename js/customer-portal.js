@@ -9,6 +9,23 @@
   if (!token) return;
 
   document.body.classList.add('customer-portal-mode');
+  function ensureMeta(name, content) {
+    let meta = document.head.querySelector(`meta[name="${name}"]`);
+    if (!meta) { meta = document.createElement('meta'); meta.name = name; document.head.append(meta); }
+    meta.content = content;
+  }
+  function demoteAppShellH1() {
+    const heading = document.querySelector('.app-header h1');
+    if (!heading) return;
+    const replacement = document.createElement('div');
+    replacement.className = 'app-title';
+    replacement.setAttribute('role','heading');
+    replacement.setAttribute('aria-level','2');
+    replacement.textContent = heading.textContent;
+    heading.replaceWith(replacement);
+  }
+  ensureMeta('robots','noindex,nofollow,noarchive,nosnippet');
+  demoteAppShellH1();
   const esc = (value) => String(value ?? '').replace(/[&<>'"]/g, (ch) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[ch]));
   const money = (value) => Number(value || 0).toLocaleString('en-CA', { style:'currency', currency:'CAD' });
   const dateTime = (value) => value ? new Date(value).toLocaleString('en-CA', { dateStyle:'medium', timeStyle:'short' }) : 'To be scheduled';

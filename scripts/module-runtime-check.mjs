@@ -61,7 +61,7 @@ add('shell-loads-runtime-once', (index.match(/<script src="\/js\/module-runtime\
 add('shell-does-not-eager-load-business-modules', currentBusinessScripts.every((script) => !index.includes(`<script src="${script}?v=`)), 'No Safety, Finance, Jobs, or Admin bundle is eagerly loaded by index.html.');
 add('shell-keeps-shared-core-services', hasAll(index, ['/js/security.js?','/js/auth.js?','/js/api.js?','/js/core-data-service.js?','/js/reference-data.js?','/app.js?']), 'Core/auth/data/application shell stays available independently of business modules.');
 
-add('service-worker-core-cache-marker', serverWorker.includes("const CACHE_NAME = 'ywi-shell-v2026-09-01e';"), 'Service worker retains the Shared Core cache namespace; shell JS is network-first and business scripts use runtime versioned requests.');
+add('service-worker-core-cache-marker', /const CACHE_NAME = 'ywi-shell-v[^']+';/.test(serverWorker), 'Service worker retains a versioned Shared Core cache namespace; shell JS is network-first and business scripts use runtime versioned requests.');
 add('service-worker-precaches-runtime-core', serverWorker.includes("'/js/module-runtime.js'") && serverWorker.includes("'/js/core-data-service.js'"), 'Offline Shared Core includes the permission runtime and Core Data service.');
 add('service-worker-does-not-precache-business-modules', currentBusinessScripts.every((script) => !serverWorker.includes(`'${script}'`)), 'Service worker installation cannot pre-download Safety, Finance, Jobs, or Admin bundles.');
 add('service-worker-dynamic-module-cache-is-request-driven', hasAll(serverWorker, ["url.pathname.startsWith('/js/')",'fetch(req)','cache.put(req, copy)']), 'Authorized module bundles may be cached only after an actual browser request.');

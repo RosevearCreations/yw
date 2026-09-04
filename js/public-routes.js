@@ -1,4 +1,4 @@
-/* Approved public route renderer - build 2026-09-01a / schema 159
+/* Approved public route renderer.
    Runtime fallback for approved route records. Static generation remains the
    preferred deployment path for crawler-ready HTML and sitemap output. */
 'use strict';
@@ -14,8 +14,31 @@
   document.body.classList.add('public-route-mode');
   const esc = (value) => String(value ?? '').replace(/[&<>'"]/g, (ch) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[ch]));
   const byId = (id) => document.getElementById(id);
-  const safeUrl = (value, fallback = '') => { try { const parsed = new URL(String(value || fallback), window.location.origin); return ['http:','https:'].includes(parsed.protocol) ? parsed.href : fallback; } catch { return fallback; } };
+  const safeUrl = (value, fallback = '') => {
+    const raw = String(value || fallback || '').trim();
+    if (!raw) return '';
+    try {
+      const parsed = new URL(raw, window.location.origin);
+      return ['http:','https:'].includes(parsed.protocol) ? parsed.href : fallback;
+    } catch { return fallback; }
+  };
   const safeCta = (value) => { const raw = String(value || '/#quote-intake'); return raw.startsWith('/') || raw.startsWith('#') ? raw : '/#quote-intake'; };
+  function safeCanonical(value, fallback) {
+    try {
+      const candidate = new URL(String(value || fallback), window.location.origin);
+      return candidate.origin === window.location.origin ? candidate.href : new URL(fallback, window.location.origin).href;
+    } catch { return new URL(fallback, window.location.origin).href; }
+  }
+  function demoteAppShellH1() {
+    const heading = document.querySelector('.app-header h1');
+    if (!heading) return;
+    const replacement = document.createElement('div');
+    replacement.className = 'app-title';
+    replacement.setAttribute('role','heading');
+    replacement.setAttribute('aria-level','2');
+    replacement.textContent = heading.textContent;
+    heading.replaceWith(replacement);
+  }
 
   function sanitizeHtml(raw) {
     const parser = new DOMParser();
@@ -82,10 +105,11 @@
     const main = shell();
     const body = sanitizeHtml(route.page_body_html || '') || markdownToHtml(route.page_body_markdown || '') || `<p>${esc(route.page_intro || '')}</p>`;
     const imageUrl = safeUrl(visual?.public_url || visual?.source_url || '', '');
-    const canonical = safeUrl(route.canonical_url, `${window.location.origin}${route.route_path}`);
+    const canonical = safeCanonical(route.canonical_url, `${window.location.origin}${route.route_path}`);
     const cta = safeCta(route.primary_cta_path);
     document.title = route.page_title;
     ensureMeta('description', route.meta_description || route.page_intro || '');
+    ensureMeta('robots', 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1');
     ensureCanonical(canonical);
     ensureProperty('og:title', route.page_title);
     ensureProperty('og:description', route.meta_description || route.page_intro || '');
@@ -113,7 +137,7 @@
         <nav class="public-route-breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><span>${esc(route.service_name || route.location_name || 'Service')}</span></nav>
         <section class="public-route-hero">
           <div><span class="public-route-kicker">${esc(route.location_name || 'Southern Ontario')}</span><h1>${esc(route.h1_text)}</h1><p>${esc(route.page_intro || route.meta_description || '')}</p><div class="public-route-hero-actions"><a class="primary" href="${esc(cta)}">Request a quote</a><a class="secondary" href="/#quote-intake">View contact form</a></div></div>
-          ${imageUrl ? `<figure><img src="${esc(imageUrl)}" alt="${esc(visual.alt_text || route.h1_text)}" width="${Number(visual.pixel_width || 1200)}" height="${Number(visual.pixel_height || 800)}" loading="eager" decoding="async"><figcaption>Approved service visual</figcaption></figure>` : `<div class="public-route-visual-placeholder" role="img" aria-label="Approved service image placeholder"><span aria-hidden="true">◇</span><strong>Service visual placeholder</strong><small>This publishes only until an approved, compressed, consent-cleared image replaces it.</small></div>`}
+          ${imageUrl ? `<figure><img src="${esc(imageUrl)}" alt="${esc(visual?.alt_text || route.h1_text)}" width="${Number(visual?.pixel_width || 1200)}" height="${Number(visual?.pixel_height || 800)}" loading="eager" decoding="async"><figcaption>Approved service visual</figcaption></figure>` : `<div class="public-route-visual-placeholder" role="img" aria-label="Approved service image placeholder"><span aria-hidden="true">◇</span><strong>Service visual placeholder</strong><small>This publishes only until an approved, compressed, consent-cleared image replaces it.</small></div>`}
         </section>
         <section class="public-route-proof"><strong>Local proof</strong><p>${esc(route.local_proof_hint || 'Ask us about availability, service scope, and proof relevant to your Southern Ontario site.')}</p></section>
         <section class="public-route-content">${body}</section>
@@ -124,7 +148,9 @@
 
   async function load() {
     const main = shell();
-    main.innerHTML = '<section class="public-route-loading"><span class="auth-loading-spinner" aria-hidden="true"></span><h1>Loading service page…</h1></section>';
+    demoteAppShellH1();
+    ensureMeta('robots', 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1');
+    main.innerHTML = '<section class="public-route-loading"><span class="auth-loading-spinner" aria-hidden="true"></span><h2>Loading service page…</h2></section>';
     try {
       if (!window.YWIAPI?.fetchPublicContent) throw new Error('Public content service is unavailable.');
       const response = await window.YWIAPI.fetchPublicContent({ action:'route', route_path:path });
@@ -132,6 +158,7 @@
       render(response.route, response.visual);
     } catch (error) {
       document.title = 'Page not found | Yard Weasels Inc.';
+      ensureMeta('robots', 'noindex,follow');
       main.innerHTML = `<section class="public-route-error"><span aria-hidden="true">404</span><h1>Published page not found</h1><p>${esc(error?.message || 'This page is not available.')}</p><a class="primary" href="/">Return home</a></section>`;
     }
   }

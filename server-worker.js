@@ -7,10 +7,11 @@
 
 'use strict';
 
-const CACHE_NAME = 'ywi-shell-v2026-09-01e';
+const CACHE_NAME = 'ywi-shell-v2026-09-03a';
 const APP_SHELL = [
   '/',
   '/index.html',
+  '/help.html',
   '/style.css',
   '/it-readiness.css',
   '/app.js',
@@ -89,6 +90,7 @@ function isShellAssetRequest(url) {
   return url.origin === self.location.origin && (
     url.pathname === '/' ||
     url.pathname === '/index.html' ||
+    url.pathname === '/help.html' ||
     url.pathname === '/style.css' ||
     url.pathname === '/it-readiness.css' ||
     url.pathname === '/app.js' ||

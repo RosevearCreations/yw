@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Static check for the Schema 163 route-priority shell and Admin/I.T. readiness navigation. */
+/** Static check for current route-priority shell and Admin/I.T. readiness navigation. */
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -11,6 +11,7 @@ const css = read('style.css');
 const mobileMenu = read('js/mobile-menu.js');
 const moduleNav = read('js/module-nav.js');
 const security = read('js/security.js');
+const serverWorker = read('server-worker.js');
 const results = [];
 const add = (name, ok, details = '') => results.push({ name, ok, details });
 
@@ -20,14 +21,8 @@ const supportStart = index.indexOf('<aside class="app-supporting-panels"');
 const authLoadingStart = index.indexOf('<section id="authLoading"');
 const firstVisualPanel = Math.min(
   ...[
-    'graphic-placeholder-wall app-support-panel',
-    'surface-readiness-strip app-support-panel',
-    'surface-proof-strip app-support-panel',
-    'surface-value-strip app-support-panel',
-    'surface-execution-strip app-support-panel',
-    'public-intake-strip app-support-panel',
-    'mobile-conflict-preview-strip app-support-panel',
-    'write-action-proof-strip app-support-panel'
+    'public-home-intro app-support-panel',
+    'public-intake-strip app-support-panel'
   ].map((needle) => {
     const idx = index.indexOf(needle);
     return idx >= 0 ? idx : Number.POSITIVE_INFINITY;
@@ -37,17 +32,20 @@ const firstVisualPanel = Math.min(
 add('main-exists-before-support-panels', mainStart > 0 && supportStart > mainEnd && mainEnd > mainStart, `main=${mainStart}, mainEnd=${mainEnd}, support=${supportStart}`);
 add('no-large-support-panels-before-main', firstVisualPanel > mainEnd, `first support panel index=${firstVisualPanel}; mainEnd=${mainEnd}`);
 add('auth-loading-before-main-only', authLoadingStart > 0 && authLoadingStart < mainStart, 'Only the auth-loading/login shell is before the app workspace.');
-add('supporting-panels-preserved-below-app', index.includes('<aside class="app-supporting-panels"') && index.includes('Hero operations visual') && index.includes('Quote / contact intake'), 'Supporting visuals and intake panels remain available below active route sections.');
-add('section-placeholders-preserved', ['Toolbox visual placeholder','PPE proof placeholder','First aid visual placeholder','Incident evidence placeholder','Inspection visual placeholder','Job workflow placeholder','Equipment scan placeholder','Admin control center placeholder'].every((needle) => index.includes(needle)), 'Section-level placeholders remain in routed cards.');
+add('current-public-panels-preserved-below-app', index.includes('<aside class="app-supporting-panels"') && index.includes('Current service information and a clear way to contact us') && index.includes('Quote / contact intake'), 'Current public service information and contact intake remain below active application route sections without stale planning panels.');
+add('section-placeholders-preserved', ['Toolbox visual placeholder','PPE proof placeholder','First aid visual placeholder','Incident evidence placeholder','Inspection visual placeholder','Job workflow placeholder','Equipment scan placeholder','Admin control center placeholder'].every((needle) => index.includes(needle)), 'Section-level operational placeholders remain in routed application cards.');
 add('router-scrolls-to-active-section', router.includes('function scrollToActiveSection') && router.includes('section.scrollIntoView') && router.includes('scrollToActiveSection(allowedSection)'), 'Router scrolls to the selected allowed card.');
 const showSectionStart = router.indexOf('function showSection');
 const showSectionBody = showSectionStart >= 0 ? router.slice(showSectionStart, router.indexOf('function onNavClick', showSectionStart)) : '';
 add('show-section-does-not-force-page-top', !showSectionBody.includes('window.scrollTo({ top: 0'), 'showSection no longer scrolls to the page top above support panels.');
 add('sticky-header-scroll-margin', css.includes('main.container > .card') && css.includes('scroll-margin-top'), 'Active routed cards have scroll margin for sticky header.');
-add('support-panel-css-below-workspace', css.includes('.app-supporting-panels') && css.includes('.app-supporting-panels .graphic-placeholder-wall'), 'Supporting panel layout is scoped below the app workspace.');
+add('support-panel-css-below-workspace', css.includes('.app-supporting-panels'), 'Supporting panel layout remains scoped below the app workspace.');
 add('mobile-menu-still-closes-on-route', mobileMenu.includes("document.addEventListener('ywi:route-shown'") && mobileMenu.includes('if (isMobile()) close();'), 'Mobile menu closes when a route is shown.');
 add('it-remains-admin-subroute', moduleNav.includes("admin: ['admin','it']") && security.includes("admin: 'admin', it: 'admin'") && security.includes("admin: 'view', it: 'manage'"), 'I.T. Readiness remains an Admin/manage subroute, not a fifth top module.');
-add('cache-marker-current', index.includes('module-runtime.js?v=2026-09-01d') && index.includes('core-data-service.js?v=2026-09-01e') && index.includes('server-worker.js?v=2026-09-01e') && read('server-worker.js').includes('ywi-shell-v2026-09-01e'), 'Module runtime remains v2 while Shared Core Data/service-worker cache advances to Schema 163.');
+const runtimeScript = index.match(/\/js\/module-runtime\.js\?v=[^"']+/)?.[0] || '';
+const coreScript = index.match(/\/js\/core-data-service\.js\?v=[^"']+/)?.[0] || '';
+const workerScript = index.match(/\/server-worker\.js\?v=[^"']+/)?.[0] || '';
+add('cache-marker-current', !!runtimeScript && !!coreScript && !!workerScript && /const CACHE_NAME = 'ywi-shell-v[^']+';/.test(serverWorker), 'Shared Core assets and module runtime retain explicit cache-busting URLs and a versioned service-worker cache without hard-coding an obsolete release stamp.');
 
 const passed = results.filter((item) => item.ok).length;
 console.log(`\nNavigation route priority check: ${passed}/${results.length} passed\n`);

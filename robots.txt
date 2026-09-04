@@ -1,7 +1,13 @@
 User-agent: *
 Allow: /
+Disallow: /api/
 Disallow: /admin
 Disallow: /account
 Disallow: /internal
+Disallow: /docs/
+Disallow: /sql/
+Disallow: /scripts/
+Disallow: /supabase/
+Disallow: /.github/
 
 Sitemap: https://yardweasels.ca/sitemap.xml
