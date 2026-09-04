@@ -11,7 +11,11 @@ function assertIncludes(text, value, label) {
 const migration = read('sql/199_next_safe_action_authority.sql');
 const pkg = JSON.parse(read('package.json'));
 const workflow = read('.github/workflows/staging-browser-integration.yml');
+const api = read('supabase/functions/admin-account-security/index.ts');
+const ui = read('js/admin-account-security-ui.js');
+const browser = read('tests/browser/admin-account-security.spec.mjs');
 const readme = read('README.md');
+const handbook = read('docs/ACTIVE_PROJECT_HANDBOOK.md');
 const nextSteps = read('docs/NEXT_STEPS_AND_SANITY_CHECK.md');
 const help = read('help.html');
 
@@ -43,7 +47,17 @@ if (pkg.scripts['test:next-safe-action'] !== 'node scripts/next-safe-action-auth
   throw new Error('package.json must expose test:next-safe-action');
 }
 assertIncludes(workflow, 'npm run test:next-safe-action', 'CI next-safe-action gate');
+for (const required of ['v_it_next_safe_action_status','v_it_next_safe_action_queue','next_safe_action_status','next_safe_action_queue']) {
+  assertIncludes(api, required, 'Admin account-security next-safe-action API');
+}
+for (const required of ['adminNextSafeActionPanel','Next safe action','candidate after environment guard','does not authorize staging mutation']) {
+  assertIncludes(ui, required, 'Admin next-safe-action UI');
+}
+for (const required of ['adminNextSafeActionPanel','6 staging-ready','2 accounting blocked','does not authorize staging mutation']) {
+  assertIncludes(browser, required, 'rendered next-safe-action browser acceptance');
+}
 assertIncludes(readme, 'next safe action', 'README next-safe-action guidance');
+assertIncludes(handbook, 'Next safe action authority', 'handbook next-safe-action guidance');
 assertIncludes(nextSteps, 'next safe action', 'next-steps guidance');
 assertIncludes(help, 'Next safe action', 'operator Help guidance');
 
