@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /*
-  Schema 187 catalog-aware staging acceptance runner.
+  Current-schema staging acceptance runner backed by the Schema 187 scenario catalog.
 
   Source mode is non-mutating and runs in normal CI.
   Live mode is manual-only and refuses the YardWeasels Production Supabase ref.
-  A live run records runner-controlled evidence for any of the six staging rails,
-  then deliberately remains STARTED while human catalog cases are pending.
-  Admin > I.T. records those human cases, finalizes the run, and signs it off.
+  A live run requires the dedicated staging database to match the repository's exact
+  current schema marker before any runner-controlled evidence is recorded.
+  Human catalog cases remain pending for Admin > I.T. review, finalization, and signoff.
   No evidence path auto-closes a readiness rail.
 */
 import fs from 'node:fs';
@@ -24,6 +24,13 @@ const checks = [];
 const add = (name, ok, details = '') => checks.push({ name, ok:!!ok, details });
 const uuid = (value) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || '').trim());
 const sha40 = (value) => /^[0-9a-f]{40}$/.test(String(value || '').trim());
+const CATALOG_SCHEMA_VERSION = 187;
+const schemaFiles = fs.readdirSync('sql').filter((name) => /^\d{3}_.+\.sql$/i.test(name));
+const schemaVersions = schemaFiles.map((name) => Number(name.slice(0,3))).filter(Number.isFinite);
+const repoLatestSchema = Math.max(...schemaVersions);
+const currentSchemaFile = schemaFiles.find((name) => Number(name.slice(0,3)) === repoLatestSchema) || '';
+const currentSchemaMigration = currentSchemaFile ? read(`sql/${currentSchemaFile}`) : '';
+const expectedMarkerPattern = new RegExp(`\\b${repoLatestSchema}(?:::int)?\\s+as\\s+expected_schema_version\\b`,'i');
 const allowedRails = new Set([
   'operations_cockpit_live','quote_intake_live','live_job_updates',
   'customer_live_update_notifications','service_execution_proof_costing',
@@ -50,13 +57,15 @@ add('schema187-finalize-fail-closed', all(migration187,[
   "case_status='pending'","case_status in ('failed','skipped')",
   'cannot be finalized while % evidence row(s) are pending'
 ]));
-add('schema187-marker-converges-now', migration187.includes('187::int as expected_schema_version') && migration187.includes("187,'187_staging_acceptance_scenario_catalog'"));
+add('current-repository-schema-detected', Number.isInteger(repoLatestSchema) && repoLatestSchema >= CATALOG_SCHEMA_VERSION && !!currentSchemaFile, `${repoLatestSchema}:${currentSchemaFile}`);
+add('current-repository-schema-marker-exact', expectedMarkerPattern.test(currentSchemaMigration));
 add('fixture-script-project-ref-guard', all(fixturesScript,[
   'YWI_STAGING_PROJECT_REF','YWI_PRODUCTION_PROJECT_REF',
   "'jmqvkgiqlimdhcofwkxr'",'Refusing staging fixture mutation against the YardWeasels Production project ref.'
 ]));
 add('workflow-remains-manual-staging-only', all(workflow,[
-  'workflow_dispatch','run_staging','environment: staging','npm run test:staging'
+  'workflow_dispatch','run_staging','environment: staging','npm run test:staging',
+  'Run current-schema staging catalog evidence'
 ]));
 add('operations-cockpit-authority-still-present', all(operations,[
   "action === 'operations_queue_list'",'capabilities: capabilitySnapshot','stripe_health:'
@@ -68,7 +77,7 @@ if (checks.some((item) => !item.ok)) process.exit(1);
 
 const live = process.env.YWI_RUN_STAGING_RPC_TESTS === '1';
 if (!live) {
-  console.log('\nSKIP live staging acceptance — source checks only. Live evidence requires manual workflow dispatch and a dedicated non-production project ref.');
+  console.log(`\nSKIP live staging acceptance — source checks only. Repository schema ${repoLatestSchema}; catalog schema ${CATALOG_SCHEMA_VERSION}. Live evidence requires manual workflow dispatch and a dedicated non-production project ref.`);
   process.exit(0);
 }
 
@@ -85,7 +94,7 @@ const sourceSha = String(process.env.YWI_STAGING_SOURCE_SHA || '').trim().toLowe
 const workflowRunId = Number(process.env.YWI_STAGING_WORKFLOW_RUN_ID || 0) || null;
 const targetRail = String(process.env.YWI_STAGING_TARGET_RAIL || 'operations_cockpit_live').trim();
 const createFixtures = process.env.YWI_STAGING_CREATE_FIXTURES === '1';
-const fixtureLabel = String(process.env.YWI_STAGING_FIXTURE_LABEL || 'STAGING-B187-RUN').trim().toUpperCase();
+const fixtureLabel = String(process.env.YWI_STAGING_FIXTURE_LABEL || `STAGING-S${repoLatestSchema}-RUN`).trim().toUpperCase();
 
 function fail(message) { console.error(`ERROR  ${message}`); process.exit(1); }
 function projectRefFromUrl(value) {
@@ -101,13 +110,13 @@ if (label !== 'staging' || confirmation !== 'I_CONFIRM_STAGING_ONLY') fail('Live
 if (!uuid(actorId)) fail('Set YWI_STAGING_JOB_ADMIN_PROFILE_ID to the dedicated staging admin profile UUID.');
 if (!expectedStagingRef) fail('Set YWI_STAGING_PROJECT_REF to the dedicated non-production Supabase project ref.');
 if (!sha40(sourceSha)) fail('Set YWI_STAGING_SOURCE_SHA to the exact 40-character commit under test.');
-if (!allowedRails.has(targetRail)) fail(`Unsupported Schema 187 staging rail: ${targetRail}.`);
+if (!allowedRails.has(targetRail)) fail(`Unsupported staging acceptance rail in catalog Schema ${CATALOG_SCHEMA_VERSION}: ${targetRail}.`);
 if (targetRail === 'operations_cockpit_live' && (!jobAdminJwt || !workerJwt)) {
   fail('Operations Cockpit evidence requires both YWI_STAGING_JOB_ADMIN_JWT and YWI_STAGING_WORKER_JWT.');
 }
 const actualProjectRef = projectRefFromUrl(url);
 if (!actualProjectRef || actualProjectRef !== expectedStagingRef) fail(`SUPABASE_URL project ref ${actualProjectRef || '(unresolved)'} does not match YWI_STAGING_PROJECT_REF.`);
-if (actualProjectRef === productionRef) fail('Refusing Schema 187 staging acceptance against the YardWeasels Production project ref.');
+if (actualProjectRef === productionRef) fail('Refusing current-schema staging acceptance against the YardWeasels Production project ref.');
 
 const headers = { apikey:key, authorization:`Bearer ${key}`, 'Content-Type':'application/json', Prefer:'return=representation' };
 async function rest(path, options = {}) {
@@ -133,12 +142,13 @@ const scalarJson = (value) => Array.isArray(value) ? value[0] : value;
 const schemaRows = await rest('v_schema_drift_status?select=expected_schema_version,latest_applied_schema_version,drift_status');
 const schema = schemaRows?.[0] || {};
 const expectedSchema = Number(schema.expected_schema_version || 0);
-if (schema.drift_status !== 'current' || expectedSchema < 187 || Number(schema.latest_applied_schema_version || 0) < expectedSchema) {
-  fail(`Dedicated staging database must be current on Schema 187+ before acceptance: ${JSON.stringify(schema)}`);
+const latestAppliedSchema = Number(schema.latest_applied_schema_version || 0);
+if (schema.drift_status !== 'current' || expectedSchema !== repoLatestSchema || latestAppliedSchema !== repoLatestSchema) {
+  fail(`Dedicated staging database must exactly match repository Schema ${repoLatestSchema} before acceptance: ${JSON.stringify(schema)}`);
 }
 
 const catalogRows = await rest(`operations_staging_acceptance_scenarios?select=case_key,evidence_kind,verification_mode,is_blocking,expected_outcome,sort_order&rail_key=eq.${encodeURIComponent(targetRail)}&is_enabled=eq.true&order=sort_order.asc`);
-if (!Array.isArray(catalogRows) || !catalogRows.length) fail(`No enabled Schema 187 catalog scenarios were returned for ${targetRail}.`);
+if (!Array.isArray(catalogRows) || !catalogRows.length) fail(`No enabled staging catalog scenarios (catalog Schema ${CATALOG_SCHEMA_VERSION}) were returned for ${targetRail}.`);
 if (!catalogRows.some((row) => row.verification_mode === 'human' && row.is_blocking === true)) fail(`Target rail ${targetRail} has no blocking human evidence case.`);
 const catalogByKey = new Map(catalogRows.map((row) => [row.case_key,row]));
 
@@ -154,15 +164,15 @@ try {
     console.log(`FIXTURE  ${fixture.fixture_set_id} created in ${actualProjectRef}`);
   }
 
-  const runKey = `staging-b187-${targetRail}-${new Date().toISOString().replace(/[:.]/g,'-')}-${Math.random().toString(16).slice(2,8)}`;
+  const runKey = `staging-s${repoLatestSchema}-${targetRail}-${new Date().toISOString().replace(/[:.]/g,'-')}-${Math.random().toString(16).slice(2,8)}`;
   const started = await rpc('ywi_rpc_start_staging_acceptance_run', {
-    p_actor_profile_id:actorId,p_run_key:runKey,p_suite_name:`build187_${targetRail}_acceptance`,p_target_rail_key:targetRail,
+    p_actor_profile_id:actorId,p_run_key:runKey,p_suite_name:`schema${repoLatestSchema}_${targetRail}_acceptance`,p_target_rail_key:targetRail,
     p_source_sha:sourceSha,p_schema_version:expectedSchema,p_source_workflow_run_id:workflowRunId,p_fixture_set_id:fixture?.fixture_set_id || null,
   });
   run = scalarJson(started) || started;
   if (!uuid(run?.run_id)) throw new Error(`Start acceptance RPC did not return run_id: ${JSON.stringify(run)}`);
   if (Number(run?.catalog_case_count || 0) !== catalogRows.length) throw new Error(`Run seeded ${run?.catalog_case_count} cases but catalog returned ${catalogRows.length}.`);
-  console.log(`RUN  ${run.run_id} started for ${targetRail} with ${catalogRows.length} catalog cases.`);
+  console.log(`RUN  ${run.run_id} started for ${targetRail} on repository Schema ${repoLatestSchema} with ${catalogRows.length} catalog cases.`);
 
   async function liveCase(caseKey, fn) {
     const catalog = catalogByKey.get(caseKey);
@@ -184,7 +194,7 @@ try {
     recordedCases.push({ case_key:caseKey,case_status:status,is_blocking:catalog.is_blocking });
   }
 
-  await liveCase('schema_current', async () => schema);
+  await liveCase('schema_current', async () => ({ ...schema, repository_schema:repoLatestSchema, catalog_schema:CATALOG_SCHEMA_VERSION }));
   await liveCase('staging_security_assertions', async () => {
     const [securityRows,catalogAssertions] = await Promise.all([
       rpc('ywi_staging_acceptance_security_assertions',{}),rpc('ywi_staging_acceptance_catalog_assertions',{})
@@ -217,7 +227,7 @@ try {
   if (fixture?.fixture_set_id) {
     const cleaned=await rpc('ywi_rpc_cleanup_staging_fixture_set',{
       p_fixture_set_id:fixture.fixture_set_id,p_actor_profile_id:actorId,
-      p_cleanup_note:`Schema 187 runner cleanup for ${run.run_id}.`
+      p_cleanup_note:`Current-schema staging runner cleanup for Schema ${repoLatestSchema}, run ${run.run_id}.`
     });
     const result=scalarJson(cleaned)||cleaned;
     if (result?.cleaned!==true && result?.already_cleaned!==true) throw new Error(`Fixture cleanup did not confirm completion: ${JSON.stringify(result)}`);
@@ -230,6 +240,7 @@ try {
   const runnerFailed=recordedCases.filter((row)=>row.case_status==='failed' && row.is_blocking).length;
   console.log(JSON.stringify({
     staging_project_ref:actualProjectRef,target_rail:targetRail,source_sha:sourceSha,workflow_run_id:workflowRunId,
+    repository_schema:repoLatestSchema,catalog_schema:CATALOG_SCHEMA_VERSION,
     run_id:run.run_id,catalog_case_count:catalogRows.length,runner_case_count:recordedCases.length,
     runner_blocking_failed_count:runnerFailed,pending_human_case_count:pendingHuman.length,
     next_action:runnerFailed
@@ -242,7 +253,7 @@ try {
     try {
       await rpc('ywi_rpc_cleanup_staging_fixture_set',{
         p_fixture_set_id:fixture.fixture_set_id,p_actor_profile_id:actorId,
-        p_cleanup_note:'Emergency cleanup after Schema 187 staging runner failure.'
+        p_cleanup_note:`Emergency cleanup after current-schema staging runner failure on Schema ${repoLatestSchema}.`
       });
     } catch (cleanupError) { cleanupFailure=cleanupError instanceof Error?cleanupError.message:String(cleanupError); }
   }
