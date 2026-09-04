@@ -14,7 +14,14 @@
   document.body.classList.add('public-route-mode');
   const esc = (value) => String(value ?? '').replace(/[&<>'"]/g, (ch) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[ch]));
   const byId = (id) => document.getElementById(id);
-  const safeUrl = (value, fallback = '') => { try { const parsed = new URL(String(value || fallback), window.location.origin); return ['http:','https:'].includes(parsed.protocol) ? parsed.href : fallback; } catch { return fallback; } };
+  const safeUrl = (value, fallback = '') => {
+    const raw = String(value || fallback || '').trim();
+    if (!raw) return '';
+    try {
+      const parsed = new URL(raw, window.location.origin);
+      return ['http:','https:'].includes(parsed.protocol) ? parsed.href : fallback;
+    } catch { return fallback; }
+  };
   const safeCta = (value) => { const raw = String(value || '/#quote-intake'); return raw.startsWith('/') || raw.startsWith('#') ? raw : '/#quote-intake'; };
   function safeCanonical(value, fallback) {
     try {
@@ -130,7 +137,7 @@
         <nav class="public-route-breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><span>${esc(route.service_name || route.location_name || 'Service')}</span></nav>
         <section class="public-route-hero">
           <div><span class="public-route-kicker">${esc(route.location_name || 'Southern Ontario')}</span><h1>${esc(route.h1_text)}</h1><p>${esc(route.page_intro || route.meta_description || '')}</p><div class="public-route-hero-actions"><a class="primary" href="${esc(cta)}">Request a quote</a><a class="secondary" href="/#quote-intake">View contact form</a></div></div>
-          ${imageUrl ? `<figure><img src="${esc(imageUrl)}" alt="${esc(visual.alt_text || route.h1_text)}" width="${Number(visual.pixel_width || 1200)}" height="${Number(visual.pixel_height || 800)}" loading="eager" decoding="async"><figcaption>Approved service visual</figcaption></figure>` : `<div class="public-route-visual-placeholder" role="img" aria-label="Approved service image placeholder"><span aria-hidden="true">◇</span><strong>Service visual placeholder</strong><small>This publishes only until an approved, compressed, consent-cleared image replaces it.</small></div>`}
+          ${imageUrl ? `<figure><img src="${esc(imageUrl)}" alt="${esc(visual?.alt_text || route.h1_text)}" width="${Number(visual?.pixel_width || 1200)}" height="${Number(visual?.pixel_height || 800)}" loading="eager" decoding="async"><figcaption>Approved service visual</figcaption></figure>` : `<div class="public-route-visual-placeholder" role="img" aria-label="Approved service image placeholder"><span aria-hidden="true">◇</span><strong>Service visual placeholder</strong><small>This publishes only until an approved, compressed, consent-cleared image replaces it.</small></div>`}
         </section>
         <section class="public-route-proof"><strong>Local proof</strong><p>${esc(route.local_proof_hint || 'Ask us about availability, service scope, and proof relevant to your Southern Ontario site.')}</p></section>
         <section class="public-route-content">${body}</section>
