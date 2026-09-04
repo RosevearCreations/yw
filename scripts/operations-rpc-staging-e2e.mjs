@@ -6,7 +6,8 @@
   Live mode is manual-only and refuses the YardWeasels Production Supabase ref.
   A live run requires the dedicated staging database to match the repository's exact
   current schema marker before any runner-controlled evidence is recorded.
-  Human catalog cases remain pending for Admin > I.T. review, finalization, and signoff.
+  Disposable quote/contact runtime cases may be runner-owned by later schema authority;
+  blocking human catalog cases remain pending for Admin > I.T. review, finalization, and signoff.
   No evidence path auto-closes a readiness rail.
 */
 import fs from 'node:fs';
@@ -15,9 +16,12 @@ import process from 'node:process';
 const read = (file) => fs.readFileSync(file, 'utf8');
 const migration186 = read('sql/186_staging_acceptance_control_plane.sql');
 const migration187 = read('sql/187_staging_acceptance_scenario_catalog.sql');
+const migration201 = fs.existsSync('sql/201_core_live_write_staging_runner_authority.sql')
+  ? read('sql/201_core_live_write_staging_runner_authority.sql') : '';
 const fixturesScript = read('scripts/staging-fixtures.mjs');
 const workflow = read('.github/workflows/staging-browser-integration.yml');
 const operations = read('supabase/functions/operations-manage/index.ts');
+const quoteSubmit = read('supabase/functions/quote-contact-submit/index.ts');
 const config = read('supabase/config.toml');
 const all = (text, values) => values.every((value) => text.includes(value));
 const checks = [];
@@ -57,6 +61,10 @@ add('schema187-finalize-fail-closed', all(migration187,[
   "case_status='pending'","case_status in ('failed','skipped')",
   'cannot be finalized while % evidence row(s) are pending'
 ]));
+add('schema201-quote-runner-authority-source', repoLatestSchema < 201 || all(migration201,[
+  'quote_invalid_payload_rejected','quote_submission_creates_request','quote_created_event_recorded',
+  'quote_fixture_cleanup','quote_human_acceptance_review','verification_mode = \'runner\''
+]));
 add('current-repository-schema-detected', Number.isInteger(repoLatestSchema) && repoLatestSchema >= CATALOG_SCHEMA_VERSION && !!currentSchemaFile, `${repoLatestSchema}:${currentSchemaFile}`);
 add('current-repository-schema-marker-exact', expectedMarkerPattern.test(currentSchemaMigration));
 add('fixture-script-project-ref-guard', all(fixturesScript,[
@@ -71,6 +79,11 @@ add('operations-cockpit-authority-still-present', all(operations,[
   "action === 'operations_queue_list'",'capabilities: capabilitySnapshot','stripe_health:'
 ]));
 add('operations-manage-source-jwt-required', /\[functions\.operations-manage\]\s*\nverify_jwt = true/.test(config));
+add('quote-public-contract-source', all(quoteSubmit,[
+  "if (!privacyConsent) details.push('Consent is required before we can contact you.')",
+  "request_source: 'public_website'",'duplicate_fingerprint','quote_contact_request_events'
+]));
+add('quote-public-function-config', /\[functions\.quote-contact-submit\]\s*\nverify_jwt = false/.test(config));
 
 for (const item of checks) console.log(`${item.ok ? 'PASS' : 'FAIL'}  ${item.name}${item.details ? ` — ${item.details}` : ''}`);
 if (checks.some((item) => !item.ok)) process.exit(1);
@@ -83,6 +96,9 @@ if (!live) {
 
 const url = (process.env.SUPABASE_URL || process.env.SB_URL || '').replace(/\/$/, '');
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SB_SERVICE_ROLE_KEY || '';
+const publicKey = String(
+  process.env.YWI_STAGING_PUBLIC_KEY || process.env.SUPABASE_ANON_KEY || process.env.SB_ANON_KEY || ''
+).trim();
 const label = String(process.env.YWI_STAGING_LABEL || '').trim().toLowerCase();
 const confirmation = process.env.YWI_STAGING_CONFIRM || '';
 const actorId = String(process.env.YWI_STAGING_JOB_ADMIN_PROFILE_ID || '').trim();
@@ -114,6 +130,9 @@ if (!allowedRails.has(targetRail)) fail(`Unsupported staging acceptance rail in 
 if (targetRail === 'operations_cockpit_live' && (!jobAdminJwt || !workerJwt)) {
   fail('Operations Cockpit evidence requires both YWI_STAGING_JOB_ADMIN_JWT and YWI_STAGING_WORKER_JWT.');
 }
+if (targetRail === 'quote_intake_live' && !publicKey) {
+  fail('Quote intake staging evidence requires YWI_STAGING_PUBLIC_KEY (or staging anon key) so the runner exercises the same unauthenticated public contract as the website.');
+}
 const actualProjectRef = projectRefFromUrl(url);
 if (!actualProjectRef || actualProjectRef !== expectedStagingRef) fail(`SUPABASE_URL project ref ${actualProjectRef || '(unresolved)'} does not match YWI_STAGING_PROJECT_REF.`);
 if (actualProjectRef === productionRef) fail('Refusing current-schema staging acceptance against the YardWeasels Production project ref.');
@@ -131,6 +150,15 @@ async function rpc(name, body) { return rest(`rpc/${name}`, { method:'POST', bod
 async function functionCall(name, token, body) {
   const res = await fetch(`${url}/functions/v1/${name}`, {
     method:'POST',headers:{ apikey:key, authorization:`Bearer ${token}`, 'Content-Type':'application/json' },body:JSON.stringify(body),
+  });
+  const raw = await res.text();
+  let data = null;
+  try { data = raw ? JSON.parse(raw) : null; } catch { data = raw; }
+  return { status:res.status, data };
+}
+async function publicFunctionCall(name, body) {
+  const res = await fetch(`${url}/functions/v1/${name}`, {
+    method:'POST',headers:{ apikey:publicKey, 'Content-Type':'application/json' },body:JSON.stringify(body),
   });
   const raw = await res.text();
   let data = null;
@@ -156,6 +184,31 @@ let fixture = null;
 let run = null;
 const recordedCases = [];
 let cleanupFailure = null;
+let quoteAcceptance = null;
+
+async function cleanupQuoteAcceptanceRequest(requestId, expectedLabel, expectedContact) {
+  if (!uuid(requestId)) throw new Error('Quote cleanup requires the exact staging request UUID.');
+  const rows = await rest(`quote_contact_requests?select=id,full_name,contact_value,message,page_path&id=eq.${encodeURIComponent(requestId)}`);
+  const row = rows?.[0];
+  if (!row) return { already_cleaned:true, request_id:requestId };
+  const safe = String(row.full_name || '').includes(expectedLabel)
+    && String(row.contact_value || '') === expectedContact
+    && expectedContact.endsWith('@example.invalid')
+    && String(row.message || '').includes(expectedLabel)
+    && String(row.page_path || '') === '/staging-acceptance';
+  if (!safe) throw new Error(`Refusing quote cleanup because the exact row is not a labelled disposable staging fixture: ${JSON.stringify(row)}`);
+  await rest(`quote_contact_request_events?request_id=eq.${encodeURIComponent(requestId)}`, { method:'DELETE' });
+  await rest(`quote_contact_requests?id=eq.${encodeURIComponent(requestId)}`, { method:'DELETE' });
+  const [requestsAfter,eventsAfter] = await Promise.all([
+    rest(`quote_contact_requests?select=id&id=eq.${encodeURIComponent(requestId)}`),
+    rest(`quote_contact_request_events?select=id&request_id=eq.${encodeURIComponent(requestId)}`)
+  ]);
+  if ((requestsAfter?.length || 0) !== 0 || (eventsAfter?.length || 0) !== 0) {
+    throw new Error(`Quote staging cleanup did not remove the disposable request/event evidence for ${requestId}.`);
+  }
+  return { cleaned:true, request_id:requestId };
+}
+
 try {
   if (createFixtures) {
     const createdFixture = await rpc('ywi_rpc_create_staging_fixture_set', { p_actor_profile_id:actorId,p_fixture_label:fixtureLabel });
@@ -196,13 +249,16 @@ try {
 
   await liveCase('schema_current', async () => ({ ...schema, repository_schema:repoLatestSchema, catalog_schema:CATALOG_SCHEMA_VERSION }));
   await liveCase('staging_security_assertions', async () => {
-    const [securityRows,catalogAssertions] = await Promise.all([
-      rpc('ywi_staging_acceptance_security_assertions',{}),rpc('ywi_staging_acceptance_catalog_assertions',{})
-    ]);
-    const failed = [...(Array.isArray(securityRows)?securityRows:[]),...(Array.isArray(catalogAssertions)?catalogAssertions:[])]
-      .filter((row) => row?.assertion_status !== 'passed');
+    const assertionCalls = [
+      rpc('ywi_staging_acceptance_security_assertions',{}),
+      rpc('ywi_staging_acceptance_catalog_assertions',{})
+    ];
+    if (repoLatestSchema >= 201) assertionCalls.push(rpc('ywi_core_live_write_staging_runner_assertions',{}));
+    const assertionGroups = await Promise.all(assertionCalls);
+    const rows = assertionGroups.flatMap((group) => Array.isArray(group) ? group : []);
+    const failed = rows.filter((row) => row?.assertion_status !== 'passed');
     if (failed.length) throw new Error(`Staging acceptance assertions failed: ${JSON.stringify(failed)}`);
-    return { security_assertion_count:Array.isArray(securityRows)?securityRows.length:0,catalog_assertion_count:Array.isArray(catalogAssertions)?catalogAssertions.length:0 };
+    return { assertion_count:rows.length, schema:repoLatestSchema };
   });
   await liveCase('target_rail_visible', async () => {
     const rows = await rest(`v_it_staging_acceptance_status?select=rail_key,staging_acceptance_status,requires_human,acceptance_complete&rail_key=eq.${encodeURIComponent(targetRail)}`);
@@ -221,6 +277,68 @@ try {
       const result=await functionCall('operations-manage',workerJwt,{action:'operations_queue_list'});
       if (result.status!==403) throw new Error(`Expected HTTP 403 for lower-rank worker, received ${result.status}.`);
       return { http_status:result.status };
+    });
+  }
+
+  if (targetRail === 'quote_intake_live') {
+    const shortId = run.run_id.replaceAll('-','').slice(0,12).toUpperCase();
+    const quoteLabel = `STAGING-${shortId}`;
+    const invalidContact = `staging-invalid-${shortId.toLowerCase()}@example.invalid`;
+    const validContact = `staging-${shortId.toLowerCase()}@example.invalid`;
+    quoteAcceptance = { label:quoteLabel, contact:validContact, request_id:null, cleaned:false };
+
+    await liveCase('quote_invalid_payload_rejected', async () => {
+      const result = await publicFunctionCall('quote-contact-submit', {
+        full_name:`${quoteLabel} Invalid Consent`,contact_value:invalidContact,
+        service_type:'Staging acceptance',message:`${quoteLabel} invalid quote acceptance probe`,
+        page_path:'/staging-acceptance',privacy_consent:false,referrer:quoteLabel
+      });
+      if (result.status !== 400 || result.data?.ok !== false) {
+        throw new Error(`Expected public quote HTTP 400 for missing consent, received ${result.status}: ${JSON.stringify(result.data)}`);
+      }
+      const rows = await rest(`quote_contact_requests?select=id&contact_value=eq.${encodeURIComponent(invalidContact)}`);
+      if ((rows?.length || 0) !== 0) throw new Error('Invalid quote payload created a business row.');
+      return { http_status:result.status, business_rows_created:0, contact:invalidContact };
+    });
+
+    await liveCase('quote_submission_creates_request', async () => {
+      const result = await publicFunctionCall('quote-contact-submit', {
+        full_name:`${quoteLabel} Acceptance`,contact_value:validContact,
+        service_type:'Staging acceptance',service_area:'Dedicated staging only',
+        message:`${quoteLabel} disposable quote/contact staging acceptance request`,
+        preferred_contact_method:'email',page_path:'/staging-acceptance',privacy_consent:true,referrer:quoteLabel
+      });
+      if (result.status !== 200 || result.data?.ok !== true || result.data?.duplicate === true || !uuid(result.data?.request_id)) {
+        throw new Error(`Expected one new public staging quote request, received ${result.status}: ${JSON.stringify(result.data)}`);
+      }
+      quoteAcceptance.request_id = result.data.request_id;
+      const rows = await rest(`quote_contact_requests?select=id,full_name,contact_value,message,page_path,request_status,followup_due_at&id=eq.${encodeURIComponent(result.data.request_id)}`);
+      const row = rows?.[0];
+      if (!row || row.contact_value !== validContact || !String(row.full_name || '').includes(quoteLabel)
+        || !String(row.message || '').includes(quoteLabel) || row.page_path !== '/staging-acceptance' || !row.followup_due_at) {
+        throw new Error(`Persisted quote row did not match the disposable staging label: ${JSON.stringify(row)}`);
+      }
+      return { http_status:result.status,request_id:row.id,status:row.request_status,followup_due_at:row.followup_due_at,contact:validContact };
+    });
+
+    await liveCase('quote_created_event_recorded', async () => {
+      if (!uuid(quoteAcceptance?.request_id)) throw new Error('Quote request creation did not return a request ID.');
+      const events = await rest(`quote_contact_request_events?select=id,event_type,event_note,created_at&request_id=eq.${encodeURIComponent(quoteAcceptance.request_id)}&event_type=eq.created&order=created_at.asc`);
+      if (!Array.isArray(events) || events.length !== 1 || events[0]?.event_type !== 'created') {
+        throw new Error(`Expected exactly one matching created event, received: ${JSON.stringify(events)}`);
+      }
+      const duplicates = await rest(`quote_contact_requests?select=id&contact_value=eq.${encodeURIComponent(validContact)}`);
+      if ((duplicates?.length || 0) !== 1 || duplicates[0]?.id !== quoteAcceptance.request_id) {
+        throw new Error(`Expected exactly one labelled staging quote row, received: ${JSON.stringify(duplicates)}`);
+      }
+      return { request_id:quoteAcceptance.request_id,created_event_id:events[0].id,matching_request_count:1 };
+    });
+
+    await liveCase('quote_fixture_cleanup', async () => {
+      if (!uuid(quoteAcceptance?.request_id)) throw new Error('Quote cleanup cannot run without the exact request ID.');
+      const result = await cleanupQuoteAcceptanceRequest(quoteAcceptance.request_id, quoteLabel, validContact);
+      quoteAcceptance.cleaned = true;
+      return result;
     });
   }
 
@@ -243,21 +361,33 @@ try {
     repository_schema:repoLatestSchema,catalog_schema:CATALOG_SCHEMA_VERSION,
     run_id:run.run_id,catalog_case_count:catalogRows.length,runner_case_count:recordedCases.length,
     runner_blocking_failed_count:runnerFailed,pending_human_case_count:pendingHuman.length,
+    quote_disposable_request_cleaned:targetRail==='quote_intake_live' ? quoteAcceptance?.cleaned===true : null,
     next_action:runnerFailed
       ? 'Resolve failed runner evidence before recording human cases. The scorecard rail remains open.'
       : 'Open Admin > I.T., record every pending human catalog case, finalize the run, then explicitly approve/reject it. The scorecard rail remains open.',
   },null,2));
   if (runnerFailed) process.exitCode=1;
 } catch (error) {
+  if (quoteAcceptance?.request_id && quoteAcceptance.cleaned!==true) {
+    try {
+      await cleanupQuoteAcceptanceRequest(quoteAcceptance.request_id, quoteAcceptance.label, quoteAcceptance.contact);
+      quoteAcceptance.cleaned=true;
+    } catch (quoteCleanupError) {
+      cleanupFailure=`quote cleanup: ${quoteCleanupError instanceof Error?quoteCleanupError.message:String(quoteCleanupError)}`;
+    }
+  }
   if (fixture?.fixture_set_id && fixture.cleaned!==true) {
     try {
       await rpc('ywi_rpc_cleanup_staging_fixture_set',{
         p_fixture_set_id:fixture.fixture_set_id,p_actor_profile_id:actorId,
         p_cleanup_note:`Emergency cleanup after current-schema staging runner failure on Schema ${repoLatestSchema}.`
       });
-    } catch (cleanupError) { cleanupFailure=cleanupError instanceof Error?cleanupError.message:String(cleanupError); }
+    } catch (fixtureCleanupError) {
+      const message=fixtureCleanupError instanceof Error?fixtureCleanupError.message:String(fixtureCleanupError);
+      cleanupFailure=cleanupFailure ? `${cleanupFailure}; fixture cleanup: ${message}` : `fixture cleanup: ${message}`;
+    }
   }
   console.error(`ERROR  ${error instanceof Error?error.message:String(error)}`);
-  if (cleanupFailure) console.error(`ERROR  fixture cleanup also failed: ${cleanupFailure}`);
+  if (cleanupFailure) console.error(`ERROR  cleanup also failed: ${cleanupFailure}`);
   process.exitCode=1;
 }
