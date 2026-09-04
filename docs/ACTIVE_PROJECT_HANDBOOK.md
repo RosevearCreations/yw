@@ -14,17 +14,23 @@ A hidden screen is not a security boundary. Reads and writes remain server-enfor
 
 ## Online Help
 
-`/help.html` is the maintained operator guide. It must remain usable on phone and desktop, contain exactly one H1, and stay `noindex`. The app header must expose a Help link. When workflows change materially, Help changes in the same source release.
+`/help.html` is the maintained operator guide. It must remain usable on phone and desktop, contain exactly one H1, and stay `noindex`. The app header must expose a Help link. When workflows, public-search boundaries, or important operator actions change materially, Help changes in the same source release.
 
 ## Public web/search boundary
 
-The home page and approved service/location pages are search-oriented surfaces. Customer portal tokens, operational Help and internal application routes are not search landing pages. Public pages require one H1, descriptive metadata, same-origin canonical, index/follow, responsive layout, crawlable links, accessible images, approved content, and canonical-only sitemap entries with accurate freshness. Static public route HTML is preferred so crawlers do not depend on client-side requests for primary content.
+The home page and approved service/location pages are search-oriented surfaces. Customer portal tokens, operational Help and internal application routes are not search landing pages.
+
+`https://yardweasels.ca` is the canonical public authority for the operations application and its approved public routes. `https://ywiinc.com` is an established separate business website and must not become an automatic cross-domain canonical target. A future authority change requires deliberate page-equivalence review rather than a domain substitution.
+
+Public pages require one H1, descriptive metadata, a canonical on the configured public authority, index/follow only on the canonical host, responsive layout, crawlable links, accessible images, approved content, and canonical-only sitemap entries with accurate freshness. Preview and other noncanonical hosts remain `noindex` while pointing canonically to the public authority. Vercel Preview `X-Robots-Tag: noindex` is an extra platform safeguard; application policy must still be correct independently.
+
+The canonical origin and browser host-index policy are centralized in `js/app-config.js`. The static public-route generator reads that source and does not accept a deployment-time canonical-domain override. Static public route HTML is preferred so crawlers do not depend on client-side requests for primary content.
 
 ## Mobile, PC application and webpage layout
 
 - **Phone:** bottom module shortcuts, Today-first workflow, touch-friendly forms, local draft/offline guidance and no horizontal overflow.
 - **Desktop application:** full module navigation, wider workspaces, readable tables/cards and the same permission model as mobile.
-- **Public webpage:** responsive content/contact paths, one H1, stable canonical/metadata, crawlable content and no internal planning copy.
+- **Public webpage:** responsive content/contact paths, one H1, stable canonical/metadata, crawlable content, canonical-host indexing only, and no internal planning copy.
 
 ## Data and release authority
 
