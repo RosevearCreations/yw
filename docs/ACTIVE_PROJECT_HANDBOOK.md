@@ -48,6 +48,14 @@ The phone application must keep these stages touch-usable without horizontal ove
 
 Lifecycle feature migrations are permanent historical authority for the tables/RPCs they introduced. Current release/schema identity comes from the current database/release authority and must not be inferred from an older build or feature metadata stamp. The release workflow must run the live update, execution proof, closeout and combined job-lifecycle gates on every applicable change.
 
+## Customer notification delivery authority
+
+The customer notification delivery path for customer-visible live updates requires **explicit opt-in** before any email delivery attempt. Customer preference changes flow through the protected customer portal action. Notification preference, outbox and delivery-attempt records remain service-private; browser roles do not receive direct table access, and the Operations delivery queue must stay bounded so customer email addresses and portal tokens are not exposed merely to review delivery status.
+
+Delivery is fail-closed. The dispatcher requires its explicit enable guard and run token, uses provider idempotency, and treats uncertain transport as **manual review** rather than success or an automatic retry. Retry is a deliberate staff action after review. Customer notification content may link back to the secure portal but must not include staff-only notes, private media, access details, internal costing or margin context.
+
+Phone acceptance verifies that the customer consent preference remains understandable, touch-usable and overflow-free. Desktop acceptance verifies pending-consent, delivered and manual-review states without exposing private delivery identifiers. The historical notification migration remains feature history; current schema/release authority remains separate and current-derived.
+
 ## Public web/search boundary
 
 The home page and approved service/location pages are search-oriented surfaces. Customer portal tokens, operational Help and internal application routes are not search landing pages.

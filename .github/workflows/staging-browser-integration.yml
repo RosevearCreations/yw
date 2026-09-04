@@ -85,6 +85,8 @@ jobs:
       - run: npm run test:three-surface
       - run: npm run test:field-ux
       - run: npm run test:live-updates
+      - run: npm run test:notifications
+      - run: npm run test:notification-enforcement
       - run: npm run test:execution-proof
       - run: npm run test:closeout
       - run: npm run test:job-lifecycle
@@ -92,6 +94,7 @@ jobs:
         run: npx playwright install --with-deps chromium
       - run: npm run test:browser:three-surface
       - run: npm run test:browser:field-ux
+      - run: npm run test:browser:notifications
       - run: npm run test:browser:job-lifecycle
       - run: npm run test:browser:modules
       - run: npm run test:browser:finance
