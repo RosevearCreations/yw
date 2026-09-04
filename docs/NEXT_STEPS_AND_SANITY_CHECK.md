@@ -10,7 +10,9 @@ Before new feature work, verify `dev`/`main` parity, current schema drift, relea
 
 ## Public web and Help review
 
-Every release that changes navigation, workflows or public pages must update `/help.html` in the same change. Public/indexable pages retain one H1, current canonical metadata, crawler-ready content, canonical-only sitemap entries and responsive phone/desktop rendering. Portal and Help surfaces remain `noindex`.
+Every release that changes navigation, workflows, public pages, or public-search behavior must update `/help.html` in the same change. Public/indexable pages retain one H1, current metadata, canonical URLs on `https://yardweasels.ca`, crawler-ready content, canonical-only sitemap entries and responsive phone/desktop rendering. Portal and Help surfaces remain `noindex`.
+
+Treat `https://ywiinc.com` as a separate established business website, not an automatic canonical destination. Noncanonical and preview application hosts remain `noindex` while pointing canonically to yardweasels.ca. Verify both the canonical-host rendering case and the preview/noncanonical rendering case in browser acceptance. The application-level rule remains required even when the deployment provider adds its own preview noindex header.
 
 ## Remaining work selection
 
