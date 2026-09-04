@@ -40,7 +40,7 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      - run: npm ci
+      - run: npm ci --no-audit --no-fund
       - run: npm run test:modules
       - run: npm run test:it
       - run: npm run test:it-scorecard-truth
@@ -96,7 +96,7 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      - run: npm ci
+      - run: npm ci --no-audit --no-fund
       - name: Refuse missing staging boundary
         run: |
           test "${YWI_RUN_STAGING_RPC_TESTS}" = "1"
