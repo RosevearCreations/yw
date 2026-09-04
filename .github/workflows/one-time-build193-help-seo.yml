@@ -21,7 +21,7 @@ jobs:
           node-version: '22'
       - name: Apply current Help, documentation and SEO authority
         run: python scripts/one-time-build193-implement.py
-      - name: Complete durable documentation boundary and remove bootstrap files
+      - name: Complete durable documentation boundary and stage self-clean state for tests
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -40,7 +40,11 @@ jobs:
           node --check tests/browser/help-seo-layout.spec.mjs
           npm run test:help-seo
           npm run test:repo
-      - name: Commit implementation
+      - name: Restore workflow files for authorized follow-up wiring
+        run: |
+          git restore --source=HEAD -- .github/workflows/staging-browser-integration.yml
+          git restore --source=HEAD -- .github/workflows/one-time-build193-help-seo.yml
+      - name: Commit verified product implementation
         run: |
           git config user.name "John Rosevear"
           git config user.email "jfrosevear@gmail.com"
