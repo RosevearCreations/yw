@@ -6,6 +6,8 @@
   "scripts": {
     "test:repo": "node scripts/repo-smoke-check.mjs",
     "test:browser": "playwright test --config=playwright.config.mjs tests/browser/operations-portal.spec.mjs",
+    "test:three-surface": "node scripts/three-surface-interface-enforcement-check.mjs",
+    "test:browser:three-surface": "playwright test --config=playwright.config.mjs tests/browser/three-surface-interface.spec.mjs",
     "test:browser:modules": "playwright test --config=playwright.config.mjs tests/browser/module-runtime-access.spec.mjs",
     "test:browser:finance": "playwright test --config=playwright.config.mjs tests/browser/finance-release-hardening.spec.mjs",
     "test:browser:finance-mapping": "playwright test --config=playwright.config.mjs tests/browser/finance-account-mapping-review.spec.mjs",
