@@ -39,7 +39,31 @@ check('production-url-is-denied-even-with-nonproduction-staging-ref',()=>{
 check('production-staging-ref-is-denied',()=>{
   const result=evaluateStagingTarget({...base,YWI_STAGING_PROJECT_REF:KNOWN_PRODUCTION_PROJECT_REF});
   assert.equal(result.ok,false);
-  assert(result.errors.some((value)=>value.includes('must not equal the Production')));
+  assert(result.errors.some((value)=>value.includes('known or configured Production')));
+});
+
+check('known-production-ref-cannot-be-hidden-by-configured-production-override',()=>{
+  const result=evaluateStagingTarget({
+    ...base,
+    YWI_PRODUCTION_PROJECT_REF:'some-other-production-ref',
+    SUPABASE_URL:`https://${KNOWN_PRODUCTION_PROJECT_REF}.supabase.co`,
+    YWI_STAGING_PROJECT_REF:KNOWN_PRODUCTION_PROJECT_REF,
+  });
+  assert.equal(result.ok,false);
+  assert.equal(result.non_production_target,false);
+  assert(result.errors.filter((value)=>value.includes('Production')).length>=2);
+});
+
+check('configured-production-ref-is-also-denied',()=>{
+  const configured='secondary-production-ref';
+  const result=evaluateStagingTarget({
+    ...base,
+    YWI_PRODUCTION_PROJECT_REF:configured,
+    SUPABASE_URL:`https://${configured}.supabase.co`,
+    YWI_STAGING_PROJECT_REF:configured,
+  });
+  assert.equal(result.ok,false);
+  assert.equal(result.non_production_target,false);
 });
 
 check('crossed-url-and-ref-secret-set-is-denied',()=>{
