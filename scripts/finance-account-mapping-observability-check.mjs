@@ -72,10 +72,6 @@ add('browser-full-finance-access-ladder',['hidden','view','create','approve','ma
 
 add('package-source-gate',pkg.includes('"test:finance-account-mapping-observability"'));
 add('workflow-source-gate',workflow.includes('npm run test:finance-account-mapping-observability'));
-add('repo-smoke-schema181',repo.includes('schema181')&&repo.includes('finance-account-mapping-observability-check.mjs'));
-add('docs-schema181-active',[readme,handbook,nextSteps].every((text)=>text.includes('Build 181')&&text.includes('ACTIVE')&&/aging|drift|reconciliation/i.test(text)));
-add('docs-human-mapping-boundary',[readme,handbook,nextSteps].every((text)=>/human/i.test(text)&&/mapping/i.test(text)&&/execution/i.test(text)&&/OFF/i.test(text)));
-add('docs-production-manual',[readme,handbook,nextSteps].every((text)=>/Production/i.test(text)&&/manual/i.test(text)));
 
 const passed=checks.filter((item)=>item.ok).length;
 console.log(`Finance account-mapping observability check: ${passed}/${checks.length} passed\n`);

@@ -4,21 +4,32 @@
 -->
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-CA">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>YWI Operations Platform | Safety/OHSA, Finance, Jobs, Admin</title>
-  <meta name="description" content="YWI Southern Ontario OHSA mobile field app for Today actions, workplace safety, incident reporting, corrective-action tracking, worker self-service training, SDS acknowledgement, Southern Ontario jobs, crews, routes, equipment, inspections, reports, and admin workflow records." />
+  <title>Yard Weasels Inc. | Southern Ontario Service & Operations Portal</title>
+  <meta name="description" content="Yard Weasels Inc. provides current Southern Ontario service information, quote and contact access, and a secure operations portal for authorized staff and customers." />
+
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+  <link rel="canonical" href="https://yardweasels.ca/" />
+  <meta property="og:locale" content="en_CA" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Yard Weasels Inc." />
+  <meta property="og:title" content="Yard Weasels Inc. | Southern Ontario Service & Operations Portal" />
+  <meta property="og:description" content="Current Southern Ontario service information, quote and contact access, and secure operations tools." />
+  <meta property="og:url" content="https://yardweasels.ca/" />
+  <meta name="twitter:card" content="summary" />
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://yardweasels.ca/#organization","name":"Yard Weasels Inc.","url":"https://yardweasels.ca/"},{"@type":"WebSite","@id":"https://yardweasels.ca/#website","url":"https://yardweasels.ca/","name":"Yard Weasels Inc.","publisher":{"@id":"https://yardweasels.ca/#organization"},"inLanguage":"en-CA"}]}</script>
   <meta name="theme-color" content="#0f172a" />
   <meta name="color-scheme" content="dark light" />
 
-  <link rel="manifest" href="/manifest.json?v=2026-09-01b" />
-  <link rel="icon" href="/icons/icon-192.png?v=2026-09-01b" sizes="192x192" />
-  <link rel="stylesheet" href="/style.css?v=2026-09-01b" />
+  <link rel="manifest" href="/manifest.json?v=2026-09-03a" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="stylesheet" href="/style.css?v=2026-09-03a" />
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/js/app-config.js?v=2026-09-01b"></script>
+  <script src="/js/app-config.js?v=2026-09-03a"></script>
 
   <style>
     #authLoading {
@@ -104,7 +115,7 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', async () => {
         try {
-          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-09-01e');
+          const reg = await navigator.serviceWorker.register('/server-worker.js?v=2026-09-03a');
           if (navigator.serviceWorker.controller) {
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
           }
@@ -118,9 +129,10 @@
 <body>
   <header class="app-header">
     <div class="header-top">
-      <h1>YWI Southern Ontario OHSA</h1>
+      <h1>Yard Weasels Inc. Southern Ontario Operations</h1>
 
       <div class="header-session-actions">
+        <a class="secondary header-help-link" href="/help.html" aria-label="Open online help">Help</a>
         <button id="headerLoginBtn" class="secondary" type="button">Login</button>
       </div>
 
@@ -359,81 +371,25 @@
     <section id="admin" class="card"><h2>Admin</h2><div class="section-graphic-placeholder"><span aria-hidden="true">▥</span><strong>Admin control center placeholder</strong><small>Future image: scorecards, progress rails, release readiness, and issue heat map.</small></div></section>
   </main>
 
-  <aside class="app-supporting-panels" aria-label="Supporting visuals and public intake panels">
-  <section class="graphic-placeholder-wall app-support-panel" aria-label="Visual graphic placeholders for application enrichment">
-    <div class="graphic-placeholder-card graphic-placeholder-hero">
-      <span class="graphic-placeholder-badge">Image placeholder</span>
-      <strong>Hero operations visual</strong>
-      <small>Future approved image: crew, jobsite, equipment, or clean dashboard screenshot with descriptive alt text.</small>
-    </div>
-    <div class="graphic-placeholder-card">
-      <span class="graphic-placeholder-icon" aria-hidden="true">▣</span>
-      <strong>Desktop control center</strong>
-      <small>Placeholder for Admin scorecard/progress rail screenshot once approved.</small>
-    </div>
-    <div class="graphic-placeholder-card">
-      <span class="graphic-placeholder-icon" aria-hidden="true">◎</span>
-      <strong>Mobile field workflow</strong>
-      <small>Placeholder for phone-first Today, scan, incident, or offline conflict image.</small>
-    </div>
-    <div class="graphic-placeholder-card">
-      <span class="graphic-placeholder-icon" aria-hidden="true">◇</span>
-      <strong>Proof and trust strip</strong>
-      <small>Placeholder for service-area proof, safe-work evidence, before/after visuals, or testimonial block.</small>
-    </div>
-  </section>
-
-  <section class="surface-readiness-strip app-support-panel" aria-label="Desktop website and mobile field app readiness">
-    <div class="surface-readiness-card">
-      <span class="surface-readiness-eyebrow">Southern Ontario OHSA safety app</span>
-      <div class="surface-readiness-grid">
-        <span><strong>Desktop website</strong><small>Admin dashboards, jobs, equipment, reports, and accounting readiness</small></span>
-        <span><strong>Mobile field app</strong><small>Today actions, inspections, incidents, PPE, drills, offline fallback, and crew workflows</small></span>
-        <span><strong>Professional visuals</strong><small>Clear cards, polished gradients, readable contrast, and image-ready sections</small></span>
-      </div>
-    </div>
-  </section>
-  <section class="surface-proof-strip app-support-panel" aria-label="Professional proof and visual polish priorities">
-    <div class="surface-proof-card">
-      <span class="surface-proof-eyebrow">Professional release polish</span>
-      <div class="surface-proof-grid">
-        <span><strong>Local trust signals</strong><small>Clear Southern Ontario service wording, honest proof, and useful conversion paths</small></span>
-        <span><strong>Visual asset discipline</strong><small>Image-ready sections require alt text, proof, compression, and fallback copy</small></span>
-        <span><strong>Fallback-ready design</strong><small>Desktop and mobile surfaces stay readable when cache, image, or network issues appear</small></span>
+  <aside class="app-supporting-panels" aria-label="Public service information and quote access">
+  <section class="public-home-intro app-support-panel" aria-label="Yard Weasels Inc. Southern Ontario service information">
+    <div class="public-intake-card">
+      <div class="public-intake-copy">
+        <span class="surface-execution-eyebrow">Yard Weasels Inc. · Southern Ontario</span>
+        <h2>Current service information and a clear way to contact us</h2>
+        <p>Use our approved public service pages for details about currently published offerings and service areas. For pricing, availability, an existing job, or a general question, send a quote or contact request below.</p>
+        <p>Authorized staff can sign in above to use the Safety / OHSA, Finance, Jobs, and Admin workspaces. Customer quote links open in a separate secure portal.</p>
+        <p><a class="primary" href="#quote-intake">Request a quote or contact</a></p>
       </div>
     </div>
   </section>
 
-
-
-  <section class="surface-value-strip app-support-panel" aria-label="Application value map and next improvements">
-    <div class="surface-value-card">
-      <span class="surface-value-eyebrow">Sanity check value map</span>
-      <div class="surface-value-grid">
-        <span><strong>Operational value</strong><small>Payment closeout, reconciliation, equipment custody, and job proof should move from queues into action buttons.</small></span>
-        <span><strong>Search value</strong><small>Local pages should publish only when proof, title, one H1, internal links, and conversion paths are ready.</small></span>
-        <span><strong>Professional polish</strong><small>Approved visuals, subtle motion, and responsive scorecards can sharpen the brand without slowing the app.</small></span>
-      </div>
-    </div>
-  </section>
-
-  <section class="surface-execution-strip app-support-panel" aria-label="Highest-value execution priorities">
-    <div class="surface-execution-card">
-      <span class="surface-execution-eyebrow">Highest-value execution layer</span>
-      <div class="surface-execution-grid">
-        <span><strong>Payment + bank control</strong><small>Apply, reverse, refund, write off, overpayment, CSV preview, rejected rows, and reconciliation signoff.</small></span>
-        <span><strong>Equipment + mobile proof</strong><small>QR/barcode scan, manual fallback, custody timeline, offline conflict cards, and return-to-service evidence.</small></span>
-        <span><strong>Growth + polish</strong><small>Visual approval registry, public route registry, quote/contact intake, scorecards, and progress rails.</small></span>
-      </div>
-    </div>
-  </section>
-
-  <section id="quote-intake" class="public-intake-strip app-support-panel" aria-label="Quote and contact intake preview">
+<section id="quote-intake" class="public-intake-strip app-support-panel" aria-label="Quote and contact intake preview">
     <div class="public-intake-card">
       <div class="public-intake-copy">
         <span class="surface-execution-eyebrow">Quote / contact intake</span>
-        <h2>Request a Southern Ontario safety, job, or equipment workflow follow-up</h2>
-        <p>This public intake shell is ready for the next Edge submit path. It keeps the page at one H1 while giving visitors a clear desktop and mobile conversion action.</p>
+        <h2>Request a Yard Weasels Inc. service quote or follow-up</h2>
+        <p>Tell us what you need, where the work or question applies, and the best way to reach you. We will use the information only to respond to this request and continue the relevant service conversation.</p>
       </div>
       <form id="publicQuoteContactForm" class="public-intake-form" aria-label="Quote and contact intake form">
         <label>Name<input type="text" name="name" placeholder="Your name" autocomplete="name" required /></label>
@@ -441,9 +397,9 @@
         <label>Service type
           <select name="service_type">
             <option value="">Choose one</option>
-            <option>OHSA safety app setup</option>
-            <option>Job / equipment workflow</option>
-            <option>Quote or service request</option>
+            <option>Service request</option>
+            <option>Quote follow-up</option>
+            <option>Existing job question</option>
             <option>General question</option>
           </select>
         </label>
@@ -457,40 +413,7 @@
       </form>
     </div>
   </section>
-
-  <section class="mobile-conflict-preview-strip app-support-panel" aria-label="Mobile offline conflict card preview">
-    <div class="mobile-conflict-preview-card">
-      <span class="surface-execution-eyebrow">Mobile fallback preview</span>
-      <div class="mobile-conflict-grid">
-        <span><strong>Retry sync</strong><small>Use when the local draft is still valid and network is back.</small></span>
-        <span><strong>Keep local copy</strong><small>Protect field notes, photos, and signatures until the server accepts them.</small></span>
-        <span><strong>Review conflict</strong><small>Compare server and local versions before replacing or saving as new.</small></span>
-      </div>
-    </div>
-  </section>
-
-
-  <section class="write-action-proof-strip app-support-panel" aria-label="Real write action proof layer">
-    <div class="write-action-proof-card">
-      <div class="write-action-proof-copy">
-        <span class="surface-execution-eyebrow">Schema 148 live action layer</span>
-        <h2>Moving from planning queues to real operational writes</h2>
-        <p>Quote/contact intake now has a public submit path, while payment, bank CSV, reconciliation, equipment custody, route approval, visual approval, offline conflicts, and scorecards have DB-backed write targets.</p>
-        <div class="write-action-pill-grid">
-          <span><strong>Public conversion</strong><small>Quote/contact requests write to a trackable table.</small></span>
-          <span><strong>Admin execution</strong><small>Payment, bank, and reconciliation requests now have write targets.</small></span>
-          <span><strong>Field accountability</strong><small>Equipment scan and custody events can be captured with manual fallback.</small></span>
-          <span><strong>SEO publishing control</strong><small>Routes and visuals are approved before sitemap expansion.</small></span>
-        </div>
-      </div>
-      <div class="write-action-proof-visual" aria-label="Graphic placeholders for live work streams">
-        <span><strong>Quote card placeholder</strong><small>Future visual: contact request flowing into Admin follow-up.</small></span>
-        <span><strong>Bank preview placeholder</strong><small>Future visual: CSV rows accepted, rejected, duplicate flagged.</small></span>
-        <span><strong>Equipment custody placeholder</strong><small>Future visual: scan → checkout → arrival → return → service.</small></span>
-      </div>
-    </div>
-  </section>
-  </aside>
+</aside>
 
   <nav id="mobileQuickNav" class="mobile-quick-nav" aria-label="Mobile module shortcuts">
     <a href="#toolbox" data-mobile-quick="toolbox" data-mobile-module="safety"><span>Safety</span><small class="mobile-quick-badge" data-mobile-badge="outbox" hidden>0</small></a>
@@ -506,25 +429,25 @@
   <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.2.0/dist/signature_pad.umd.min.js"></script>
 
   <!-- Shared Core shell. Business modules are permission-loaded by module-runtime.js. -->
-  <script src="/js/security.js?v=2026-09-01b"></script>
-  <script src="/js/router.js?v=2026-09-01b"></script>
-  <script src="/js/module-nav.js?v=2026-09-01b"></script>
-  <script src="/js/mobile-menu.js?v=2026-09-01b"></script>
-  <script src="/js/mobile-today.js?v=2026-09-01b"></script>
-  <script src="/js/mobile-form-helper.js?v=2026-09-01b"></script>
-  <script src="/js/bootstrap.js?v=2026-09-01b"></script>
-  <script src="/js/auth.js?v=2026-09-01b"></script>
-  <script src="/js/api.js?v=2026-09-01b"></script>
-  <script src="/js/core-data-service.js?v=2026-09-01e"></script>
-  <script src="/js/customer-portal.js?v=2026-09-01b"></script>
-  <script src="/js/public-routes.js?v=2026-09-01b"></script>
-  <script src="/js/outbox.js?v=2026-09-01b"></script>
-  <script src="/js/ui-auth.js?v=2026-09-01b"></script>
-  <script src="/js/account-ui.js?v=2026-09-01b"></script>
-  <script src="/js/profile-ui.js?v=2026-09-01b"></script>
-  <script src="/js/reference-data.js?v=2026-09-01b"></script>
-  <script src="/js/module-runtime.js?v=2026-09-01d"></script>
-  <script src="/app.js?v=2026-09-01d" defer></script>
+  <script src="/js/security.js?v=2026-09-03a"></script>
+  <script src="/js/router.js?v=2026-09-03a"></script>
+  <script src="/js/module-nav.js?v=2026-09-03a"></script>
+  <script src="/js/mobile-menu.js?v=2026-09-03a"></script>
+  <script src="/js/mobile-today.js?v=2026-09-03a"></script>
+  <script src="/js/mobile-form-helper.js?v=2026-09-03a"></script>
+  <script src="/js/bootstrap.js?v=2026-09-03a"></script>
+  <script src="/js/auth.js?v=2026-09-03a"></script>
+  <script src="/js/api.js?v=2026-09-03a"></script>
+  <script src="/js/core-data-service.js?v=2026-09-03a"></script>
+  <script src="/js/customer-portal.js?v=2026-09-03a"></script>
+  <script src="/js/public-routes.js?v=2026-09-03a"></script>
+  <script src="/js/outbox.js?v=2026-09-03a"></script>
+  <script src="/js/ui-auth.js?v=2026-09-03a"></script>
+  <script src="/js/account-ui.js?v=2026-09-03a"></script>
+  <script src="/js/profile-ui.js?v=2026-09-03a"></script>
+  <script src="/js/reference-data.js?v=2026-09-03a"></script>
+  <script src="/js/module-runtime.js?v=2026-09-03a"></script>
+  <script src="/app.js?v=2026-09-03a" defer></script>
 
   <script>
     document.addEventListener('ywi:auth-changed', (e) => {

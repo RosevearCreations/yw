@@ -19,7 +19,6 @@ const root = process.cwd();
 const endpoint = String(process.env.PUBLIC_CONTENT_ENDPOINT || '').replace(/\/$/, '');
 const anonKey = String(process.env.SUPABASE_ANON_KEY || '');
 const siteUrl = String(process.env.PUBLIC_SITE_URL || 'https://yardweasels.ca').replace(/\/$/, '');
-const build = '2026-09-01b';
 if (!endpoint) {
   console.error('Missing PUBLIC_CONTENT_ENDPOINT. No route files were changed.');
   process.exit(2);
@@ -34,11 +33,20 @@ const safePath = (value = '') => {
   return clean;
 };
 const safeUrl = (value = '', fallback = '') => {
+  const raw = String(value || fallback || '').trim();
+  if (!raw) return fallback;
   try {
-    const parsed = new URL(String(value || fallback), siteUrl);
+    const parsed = new URL(raw, siteUrl);
     if (!['http:', 'https:'].includes(parsed.protocol)) return fallback;
     return parsed.href;
   } catch { return fallback; }
+};
+const safeCanonical = (value = '', fallback = '') => {
+  try {
+    const base = new URL(siteUrl);
+    const candidate = new URL(String(value || fallback), base);
+    return candidate.origin === base.origin ? candidate.href : new URL(fallback, base).href;
+  } catch { return new URL(fallback, siteUrl).href; }
 };
 function inlineMarkdown(value = '') {
   return escapeHtml(value).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>');
@@ -84,7 +92,7 @@ async function call(payload) {
   return data;
 }
 function pageHtml(route, visual) {
-  const canonical = safeUrl(route.canonical_url, `${siteUrl}${route.route_path}`);
+  const canonical = safeCanonical(route.canonical_url, `${siteUrl}${route.route_path}`);
   const image = safeUrl(visual?.public_url || visual?.source_url, '');
   const cta = String(route.primary_cta_path || '/#quote-intake').startsWith('/') || String(route.primary_cta_path || '').startsWith('#') ? route.primary_cta_path : '/#quote-intake';
   const body = sanitizeApprovedHtml(route.page_body_html || '') || markdownToHtml(route.page_body_markdown || '') || `<p>${escapeHtml(route.page_intro || '')}</p>`;
@@ -96,9 +104,10 @@ function pageHtml(route, visual) {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>${escapeHtml(route.page_title)}</title>
   <meta name="description" content="${escapeHtml(route.meta_description || route.page_intro || '')}">
-  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
   <link rel="canonical" href="${escapeHtml(canonical)}">
-  <link rel="stylesheet" href="/style.css?v=${build}">
+  <link rel="stylesheet" href="/style.css">
+  <meta property="og:locale" content="en_CA">
   <meta property="og:type" content="website"><meta property="og:title" content="${escapeHtml(route.page_title)}"><meta property="og:description" content="${escapeHtml(route.meta_description || '')}"><meta property="og:url" content="${escapeHtml(canonical)}">${image ? `\n  <meta property="og:image" content="${escapeHtml(image)}">` : ''}
   <script type="application/ld+json">${schema}</script>
 </head>
@@ -117,10 +126,14 @@ function pageHtml(route, visual) {
 </body>
 </html>\n`;
 }
+function validLastmod(value = '') {
+  const text = String(value || '').slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : '';
+}
 function sitemapXml(entries) {
-  const rows = [{ route_path:'/', canonical_url:`${siteUrl}/`, last_modified:new Date().toISOString().slice(0,10), change_frequency:'weekly', priority:1 }, ...entries];
-  const unique = [...new Map(rows.map((row) => [row.route_path, row])).values()];
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${unique.map((row) => `  <url>\n    <loc>${escapeHtml(safeUrl(row.canonical_url, `${siteUrl}${row.route_path}`))}</loc>\n    <lastmod>${escapeHtml(row.last_modified || new Date().toISOString().slice(0,10))}</lastmod>\n    <changefreq>${escapeHtml(row.change_frequency || 'monthly')}</changefreq>\n    <priority>${Number(row.priority || 0.7).toFixed(1)}</priority>\n  </url>`).join('\n')}\n</urlset>\n`;
+  const rows = [{ route_path:'/', canonical_url:`${siteUrl}/`, last_modified:'2026-09-03' }, ...entries];
+  const unique = [...new Map(rows.map((row) => [safeCanonical(row.canonical_url, `${siteUrl}${row.route_path}`), row])).entries()];
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${unique.map(([canonical,row]) => { const lastmod=validLastmod(row.last_modified); return `  <url>\n    <loc>${escapeHtml(canonical)}</loc>${lastmod ? `\n    <lastmod>${lastmod}</lastmod>` : ''}\n  </url>`; }).join('\n')}\n</urlset>\n`;
 }
 
 const sitemap = await call({ action:'sitemap' });
@@ -135,4 +148,4 @@ for (const entry of sitemap.entries || []) {
   console.log(`Generated ${routePath}/index.html`);
 }
 await fs.writeFile(path.join(root, 'sitemap.xml'), sitemapXml(generated), 'utf8');
-console.log(`Generated ${generated.length} approved public page(s) and sitemap.xml for build ${build}.`);
+console.log(`Generated ${generated.length} approved public page(s) and sitemap.xml.`);

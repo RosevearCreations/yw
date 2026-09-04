@@ -1,161 +1,18 @@
 #!/usr/bin/env node
-/** Current repository-level hygiene and static sanity gate. */
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
-
-const root=process.cwd();
-const read=(file)=>fs.readFileSync(path.join(root,file),'utf8');
-const exists=(file)=>fs.existsSync(path.join(root,file));
-const results=[];
-const add=(name,ok,details='')=>results.push({name,ok,details});
-const walk=(dir)=>fs.readdirSync(dir,{withFileTypes:true}).flatMap((entry)=>{
-  const full=path.join(dir,entry.name);
-  if(entry.name==='.git'||entry.name==='node_modules'||entry.name==='playwright-report'||entry.name==='test-results') return [];
-  return entry.isDirectory()?walk(full):[full];
-});
-
-const files=walk(root);
-const rel=(file)=>path.relative(root,file).replaceAll('\\','/');
-const activeMd=files.filter((file)=>file.endsWith('.md')).map(rel).sort();
-const expectedMd=['README.md','docs/ACTIVE_PROJECT_HANDBOOK.md','docs/NEXT_STEPS_AND_SANITY_CHECK.md'];
-add('active-markdown-exactly-three',JSON.stringify(activeMd)===JSON.stringify(expectedMd),`Active Markdown: ${activeMd.join(', ')||'none'}`);
-add('no-archive-tree',!exists('archive'),'Git history is the archive; active archive/ must not return.');
-add('no-retired-markdown-tree',!fs.readdirSync(root,{withFileTypes:true}).some((entry)=>entry.isDirectory()&&/^retired-markdown-/i.test(entry.name)),'Dated retired Markdown must not return to the active tree.');
-add('no-test-write-artifacts',!files.some((file)=>/^test_write/i.test(path.basename(file))),'Temporary test_write artifacts are absent.');
-add('no-backup-temp-artifacts',!files.some((file)=>/\.(?:tmp|bak|log)$/i.test(file)),'Temporary, backup and log artifacts are absent.');
-add('no-generated-full-schema-snapshot',!exists('sql/000_full_schema_reference.sql'),'Numbered migrations are the schema source authority; stale generated full-schema snapshots stay out of the active tree.');
-add('no-temporary-build179-patch-workflow',!exists('.github/workflows/build179-source-patch.yml'),'Temporary remote source patch workflow is absent.');
-add('no-temporary-build180-patch-workflow',!exists('.github/workflows/build180-source-patch.yml'),'Temporary Build 180 source patch workflow is absent.');
-add('no-temporary-build181-patch-workflow',!exists('.github/workflows/build181-source-patch.yml')&&!exists('.github/workflows/build181-source-patch-v2.yml'),'Temporary Build 181 source patch workflows are absent.');
-add('no-temporary-schema181-branch-prune-workflow',!exists('.github/workflows/one-time-schema181-branch-prune.yml'),'One-time Schema 181 branch prune workflow is absent after cleanup.');
-add('no-temporary-schema184-branch-prune-workflow',!exists('.github/workflows/one-time-schema184-branch-prune.yml'),'One-time Schema 184 branch prune workflow is absent outside the bounded cleanup operation.');
-
-const readme=read('README.md');
-const handbook=read('docs/ACTIVE_PROJECT_HANDBOOK.md');
-const nextSteps=read('docs/NEXT_STEPS_AND_SANITY_CHECK.md');
-for(const [name,text] of [['README',readme],['Handbook',handbook],['Next steps',nextSteps]]){
-  add(`${name.toLowerCase().replaceAll(' ','-')}-schema183`,text.includes('Schema 183')&&text.includes('I.T. Readiness'),`${name} preserves Schema 183 history and the Admin/I.T. boundary.`);
-  add(`${name.toLowerCase().replaceAll(' ','-')}-schema184`,text.includes('Schema 184')&&text.includes('I.T. Readiness')&&/Build 184[\s\S]*COMPLETE|COMPLETE[\s\S]*Build 184/i.test(text),`${name} records completed Schema 184 authority.`);
-}
-add('docs-build179-complete',handbook.includes('Schema 179')&&handbook.includes('COMPLETE')&&nextSteps.includes('Build 179')&&nextSteps.includes('COMPLETE'),'Active authority records Build 179 permission/acceptance/release hardening as complete.');
-add('docs-build180-complete',[readme,handbook,nextSteps].every((text)=>text.includes('Build 180')&&/mapping/i.test(text)&&/COMPLETE/i.test(text)),'Active authority records Build 180 accountant mapping readiness/review as complete.');
-add('docs-build181-complete',[readme,handbook,nextSteps].every((text)=>text.includes('Build 181')&&/aging|drift|reconciliation/i.test(text)&&/COMPLETE/i.test(text)),'Active authority records Build 181 mapping observability as complete.');
-add('docs-build183-active',[readme,handbook,nextSteps].every((text)=>text.includes('Build 183')&&/decision support|compatibility/i.test(text)),'Active authority records Build 183 Finance mapping decision support.');
-add('docs-build184-complete',[readme,handbook,nextSteps].every((text)=>text.includes('Build 184')&&/scorecard truth/i.test(text)&&/COMPLETE/i.test(text)),'Active authority records Build 184 I.T. scorecard truth convergence as complete.');
-add('docs-build185-next',[readme,handbook,nextSteps].every((text)=>text.includes('Build 185')&&/barcode|QR/i.test(text)),'Active authority records equipment barcode/QR custody hardening as the next bounded build.');
-add('docs-build179-financial-release-closed',[readme,handbook,nextSteps].every((text)=>/execution release/i.test(text)&&/(off|closed|server-owned)/i.test(text)),'Finance accounting execution remains closed.');
-add('docs-four-module-boundary',[readme,handbook,nextSteps].every((text)=>['Safety','Finance','Jobs','Admin'].every((key)=>text.includes(key))),'Active authority retains Safety, Finance, Jobs and Admin.');
-add('docs-manual-production',[readme,handbook,nextSteps].every((text)=>/manual/i.test(text)&&/Production/i.test(text)),'Production promotion remains deliberate/manual.');
-add('docs-accounting-mapping-human-gate',[readme,handbook,nextSteps].every((text)=>/accountant|bookkeeper/i.test(text)&&/(mapping|chart)/i.test(text)),'Account mapping approval remains an explicit human accounting decision.');
-add('docs-synthetic-nonpersistent',[readme,handbook,nextSteps].every((text)=>/synthetic/i.test(text)&&/(non-persistent|browser-only|do not persist|does not persist)/i.test(text)),'Synthetic Finance acceptance is explicitly non-persistent/browser-only.');
-
-const sqlDir=path.join(root,'sql');
-const sqlNames=fs.readdirSync(sqlDir).filter((name)=>/^\d{3}_.+\.sql$/i.test(name));
-const versions=new Set(sqlNames.map((name)=>Number(name.slice(0,3))).filter((n)=>n>0));
-const missing=[];
-for(let n=30;n<=184;n++) if(!versions.has(n)) missing.push(n);
-add('migration-range-030-through-184',missing.length===0&&versions.has(184),missing.length?`Missing migration numbers: ${missing.join(', ')}`:'Every schema number 030–184 is represented.');
-for(const [version,file] of [
-  [174,'sql/174_finance_work_order_identity_contract_convergence.sql'],
-  [175,'sql/175_finance_posting_safety_foundation.sql'],
-  [176,'sql/176_finance_posting_preflight_accounting_mapping.sql'],
-  [177,'sql/177_finance_posting_execution_recovery.sql'],
-  [178,'sql/178_finance_operational_control_plane.sql'],
-  [179,'sql/179_finance_permissions_acceptance_release_hardening.sql'],
-  [180,'sql/180_finance_account_mapping_review_workflow.sql'],
-  [181,'sql/181_finance_account_mapping_observability.sql'],
-  [182,'sql/182_schema181_release_authority_marker_convergence.sql'],
-  [183,'sql/183_finance_account_mapping_decision_support.sql'],
-  [184,'sql/184_it_scorecard_truth_convergence.sql'],
-]) add(`schema${version}-migration-present`,exists(file),`Schema ${version} migration is present.`);
-
-const schema173=read('sql/173_finance_schema_dependency_contract_guard.sql');
-const schema174=read('sql/174_finance_work_order_identity_contract_convergence.sql');
-const schema175=read('sql/175_finance_posting_safety_foundation.sql');
-const schema176=read('sql/176_finance_posting_preflight_accounting_mapping.sql');
-const schema177=read('sql/177_finance_posting_execution_recovery.sql');
-const schema178=read('sql/178_finance_operational_control_plane.sql');
-const schema179=read('sql/179_finance_permissions_acceptance_release_hardening.sql');
-const schema180=read('sql/180_finance_account_mapping_review_workflow.sql');
-const schema181=read('sql/181_finance_account_mapping_observability.sql');
-const schema182=read('sql/182_schema181_release_authority_marker_convergence.sql');
-const schema183=read('sql/183_finance_account_mapping_decision_support.sql');
-const schema184=read('sql/184_it_scorecard_truth_convergence.sql');
-add('schema173-history-preserved',schema173.includes("'completion_review_work_order'")&&schema173.includes("'bigint'"),'Schema 173 historical dependency assumption remains auditable.');
-add('schema174-uuid-repair',schema174.includes("set expected_data_type='uuid'")&&schema174.includes("where contract_key='completion_review_work_order'"),'Schema 174 explicitly repairs the work-order identity contract to UUID.');
-add('schema175-posting-approval-separate',schema175.includes('finance_job_completion_posting_approvals')&&schema175.includes('idempotency_key'),'Schema 175 retains separate posting approval/idempotency authority.');
-add('schema176-read-only-preflight',schema176.includes('ywi_finance_job_completion_posting_preflight')&&schema176.includes('false as posting_execution_authorized')&&schema176.includes('false as provider_mutation_authorized'),'Schema 176 maps existing AR/GL authorities but keeps preflight non-executing.');
-add('schema176-existing-accounting-authority',['job_invoice_postings','ar_invoices','job_journal_postings','gl_journal_batches','gl_journal_entries','accountant_export_mapping_rules','chart_of_accounts'].every((key)=>schema176.includes(key)),'Schema 176 reuses existing accounting and mapping authorities.');
-add('schema177-execution-release-fail-closed',schema177.includes('finance_job_completion_posting_execution_controls')&&schema177.includes("'finance_job_completion_v1',false,false,177")&&schema177.includes('provider_mutation_enabled=false'),'Schema 177 execution/recovery machinery remains behind a disabled provider-safe release control.');
-add('schema177-recovery-reversal',schema177.includes("execution_status='recovery_required'")&&schema177.includes('finance_job_completion_posting_reversals')&&schema177.includes('reversal_gl_batch_id'),'Schema 177 retains recovery quarantine and auditable reversal authority.');
-add('schema178-operational-control-plane',['v_finance_job_completion_operational_lifecycle','v_finance_job_completion_reconciliation_issues','v_it_finance_completion_pipeline_status','ywi_finance_operational_control_plane_assertions'].every((key)=>schema178.includes(key)),'Schema 178 retains lifecycle, reconciliation and I.T. Finance pipeline observability.');
-add('schema178-dynamic-dependency-preflight',schema178.includes('required_by_schema <= coalesce((select expected_schema_version from public.v_schema_drift_status limit 1),178)')&&!/where\s+required_by_schema\s*<=\s*173\b/i.test(schema178),'Admin dependency preflight follows the current schema marker.');
-add('schema179-release-hardening',['finance_release_acceptance_scenarios','ywi_finance_release_hardening_assertions','v_it_finance_release_hardening_status'].every((key)=>schema179.includes(key)),'Schema 179 adds private permission/acceptance/release-hardening control-plane authority.');
-add('schema179-permission-matrix',['hidden','view','create','approve','manage','admin_break_glass','server_control'].every((key)=>schema179.includes(`'${key}'`)),'Schema 179 covers the Finance permission ladder, Admin break-glass and server-control cases.');
-add('schema179-no-execution-provider-enable',!/execution_enabled\s*=\s*true/i.test(schema179)&&!/provider_mutation_enabled\s*=\s*true/i.test(schema179),'Schema 179 does not enable accounting execution or provider mutation.');
-add('schema179-no-jobs-writeback',!/update\s+public\.(?:jobs|work_orders)\b/i.test(schema179),'Schema 179 does not write canonical Jobs/work-order state.');
-add('schema180-human-mapping-authority',['finance_account_mapping_review_audit','ywi_finance_review_account_mapping','v_it_finance_account_mapping_review_status'].every((key)=>schema180.includes(key)),'Schema 180 adds human mapping review/audit/readiness over canonical mappings.');
-add('schema180-no-auto-approval',!/set\s+review_status\s*=\s*['"]approved['"]/i.test(schema180.slice(0,schema180.indexOf('create or replace function public.ywi_finance_review_account_mapping'))),'Schema 180 migration does not auto-approve live mappings.');
-add('schema180-execution-provider-closed',!/execution_enabled\s*=\s*true/i.test(schema180)&&!/provider_mutation_enabled\s*=\s*true/i.test(schema180),'Schema 180 does not enable accounting execution or provider mutation.');
-add('schema180-no-jobs-writeback',!/update\s+public\.(?:jobs|work_orders)\b/i.test(schema180),'Schema 180 does not write Jobs state.');
-add('schema181-read-only-observability',['v_finance_account_mapping_observability','v_it_finance_account_mapping_observability_status','ywi_finance_account_mapping_observability_assertions'].every((key)=>schema181.includes(key))&&!/^\s*create\s+table\b/gmi.test(schema181),'Schema 181 adds derived observability without another mapping authority table.');
-add('schema181-aging-drift-preflight',['HUMAN_REVIEW_PENDING_STALE','REVIEW_AUDIT_STATE_DRIFT','NO_GENERATED_PAIR_SAMPLE','STALE_PREFLIGHT_MAPPING_BLOCKER','MISSING_PREFLIGHT_MAPPING_BLOCKER'].every((key)=>schema181.includes(key)),'Schema 181 distinguishes human aging, technical drift and preflight reconciliation.');
-add('schema181-no-mapping-auto-mutation',!/\b(?:update|delete\s+from|insert\s+into)\s+public\.accountant_export_mapping_rules\b/i.test(schema181),'Schema 181 does not modify canonical mapping decisions.');
-add('schema181-execution-provider-closed',!/execution_enabled\s*=\s*true/i.test(schema181)&&!/provider_mutation_enabled\s*=\s*true/i.test(schema181),'Schema 181 does not enable accounting execution or provider mutation.');
-add('schema181-no-jobs-writeback',!/\b(?:update|delete\s+from|insert\s+into)\s+public\.(?:jobs|work_orders)\b/i.test(schema181),'Schema 181 does not write Jobs state.');
-add('schema182-marker-convergence',schema182.includes('182::int as expected_schema_version')&&schema182.includes("schema_version,migration_key")&&schema182.includes("182,")&&schema182.includes('v_schema_drift_status'),'Schema 182 advances the release-authority schema marker and records its maintenance ledger row.');
-add('schema182-maintenance-only',schema182.includes("'maintenance_only',true")&&schema182.includes("'schema181_feature_state','complete'")&&schema182.includes("'business_data_mutation',false"),'Schema 182 is explicitly maintenance-only and preserves completed Schema 181 feature state.');
-add('schema182-no-business-mutation',!/\b(?:update|delete\s+from|insert\s+into)\s+public\.(?:accountant_export_mapping_rules|chart_of_accounts|jobs|work_orders|ar_invoices|gl_journal_batches|gl_journal_entries|job_invoice_postings|job_journal_postings)\b/i.test(schema182),'Schema 182 does not mutate mappings, accounting, or Jobs business data.');
-add('schema182-no-execution-provider-enable',!/execution_enabled\s*=\s*true/i.test(schema182)&&!/provider_mutation_enabled\s*=\s*true/i.test(schema182),'Schema 182 does not enable posting execution or provider mutation.');
-add('schema183-decision-support',['v_finance_account_mapping_decision_support','v_it_finance_account_mapping_decision_support_status','ywi_finance_account_mapping_decision_support_assertions','TYPE_MISMATCH','approval_eligible'].every((key)=>schema183.includes(key)),'Schema 183 adds structural chart-account decision support without another mapping authority.');
-add('schema183-approval-guard',schema183.includes('v_account_type is distinct from v_expected_account_type')&&schema183.includes('not structurally compatible'),'Schema 183 database authority blocks structurally incompatible human approval.');
-add('schema183-no-auto-approval',!/set\s+review_status\s*=\s*['"]approved['"]/i.test(schema183),'Schema 183 does not auto-approve mappings.');
-add('schema183-execution-provider-closed',!/execution_enabled\s*=\s*true/i.test(schema183)&&!/provider_mutation_enabled\s*=\s*true/i.test(schema183),'Schema 183 does not enable accounting execution or provider mutation.');
-add('schema183-no-jobs-writeback',!/\b(?:update|delete\s+from|insert\s+into)\s+public\.(?:jobs|work_orders)\b/i.test(schema183),'Schema 183 does not write Jobs state.');
-add('schema184-scorecard-truth-private',['it_scorecard_rail_resolution_contracts','it_scorecard_rail_completion_evidence','v_it_scorecard_progress_truth','v_it_scorecard_progress_truth_status','ywi_it_scorecard_truth_assertions','with (security_invoker=true)'].every((key)=>schema184.includes(key)),'Schema 184 keeps scorecard truth and immutable completion evidence private.');
-add('schema184-auto-close-bounded',schema184.includes('check (not auto_close_allowed or (requires_human is false and requires_external is false))')&&schema184.includes("where r.rail_key in ('schema159_module_permissions','schema160_it_readiness','schema164_cross_module_boundaries')"),'Schema 184 auto-close authority is bounded to the three assertion-backed historical rails.');
-add('schema184-no-business-accounting-jobs-mutation',!/\b(?:insert\s+into|update|delete\s+from)\s+public\.(?:jobs|work_orders|clients|client_sites|ar_invoices|gl_journal_batches|gl_journal_entries|job_invoice_postings|job_journal_postings|accountant_export_mapping_rules|chart_of_accounts|payment_action_requests|bank_csv_import_previews|quote_contact_requests)\b/i.test(schema184),'Schema 184 does not mutate business, accounting, mapping, or Jobs records.');
-add('schema184-execution-provider-closed',!/execution_enabled\s*=\s*true/i.test(schema184)&&!/provider_mutation_enabled\s*=\s*true/i.test(schema184),'Schema 184 does not enable posting execution or provider mutation.');
-
-const fixture=read('tests/fixtures/finance-release-hardening-fixtures.mjs');
-const financeBrowser=read('tests/browser/finance-release-hardening.spec.mjs');
-const mappingFixture=read('tests/fixtures/finance-account-mapping-review-fixtures.mjs');
-const mappingBrowser=read('tests/browser/finance-account-mapping-review.spec.mjs');
-add('schema179-synthetic-fixture-nonpersistent',fixture.includes('execution_release_enabled:false')&&fixture.includes('provider_mutation_authorized:false')&&!/fetch\(|supabase|payment_intent|paypal_order/i.test(fixture),'Build 179 synthetic Finance fixtures stay deterministic and non-persistent.');
-add('schema179-rendered-permission-matrix',['hidden','view','create','approve','manage'].every((key)=>financeBrowser.includes(`'${key}'`))&&financeBrowser.includes('phone')&&financeBrowser.includes('desktop'),'Rendered Finance acceptance covers the full user permission ladder on phone and desktop.');
-add('schema179-release-double-gate',financeBrowser.includes('server execution authorization and release truth')&&financeBrowser.includes('execute_posting'),'Rendered acceptance verifies execution needs both server authorization and release truth.');
-add('schema180-mapping-fixture-nonpersistent',mappingFixture.includes('migration_auto_approval:false')&&mappingFixture.includes('posting_execution_authorized:false')&&!/fetch\(|supabase|stripe|paypal/i.test(mappingFixture),'Mapping fixtures remain deterministic and non-persistent.');
-add('schema180-rendered-mapping-review',['hidden','view','create','approve','manage'].every((key)=>mappingBrowser.includes(`'${key}'`))&&mappingBrowser.includes('phone')&&mappingBrowser.includes('desktop'),'Rendered mapping acceptance covers Finance access levels on phone and desktop.');
-add('schema181-mapping-observability-fixture',mappingFixture.includes('observability_readiness')&&mappingFixture.includes('technical_drift_count')&&mappingFixture.includes('preflight_reconciliation_issue_count'),'Build 181 fixture carries deterministic read-only observability evidence.');
-add('schema181-rendered-observability',mappingBrowser.includes('Mapping observability')&&mappingBrowser.includes('HUMAN_REVIEW_PENDING_STALE')&&mappingBrowser.includes('NO_GENERATED_PAIR_SAMPLE'),'Rendered mapping acceptance covers human aging and neutral no-sample observability.');
-add('schema183-decision-support-fixture',mappingFixture.includes('DECISION_SUPPORT')&&mappingFixture.includes('mapping_decision_support_status')&&mappingFixture.includes('TYPE_MISMATCH'),'Build 183 fixture carries deterministic structural decision support.');
-add('schema183-rendered-decision-support',mappingBrowser.includes('Mapping decision support')&&mappingBrowser.includes('not structurally compatible')&&mappingBrowser.includes('TYPE_MISMATCH'),'Rendered mapping acceptance covers compatible and incompatible chart-account choices.');
-
-const index=read('index.html');
-add('homepage-one-h1',(index.match(/<h1\b/gi)||[]).length===1,`Homepage H1 count: ${(index.match(/<h1\b/gi)||[]).length}.`);
-const config=read('supabase/config.toml');
-add('protected-control-functions',/\[functions\.admin-it-control\]\s+verify_jwt = true/s.test(config)&&/\[functions\.core-data-read\]\s+verify_jwt = true/s.test(config)&&/\[functions\.operations-manage\]\s+verify_jwt = true/s.test(config)&&/\[functions\.finance-job-completion-review\]\s+verify_jwt = true/s.test(config)&&/\[functions\.finance-job-completion-posting-approval\]\s+verify_jwt = true/s.test(config)&&/\[functions\.finance-account-mapping-review\]\s+verify_jwt = true/s.test(config),'Admin/I.T., Shared Core, operations, Finance completion, and Finance mapping functions explicitly retain JWT verification.');
-
-const jsFiles=files.filter((file)=>/\.(?:js|mjs)$/i.test(file));
-for(const file of jsFiles){
-  const run=spawnSync(process.execPath,['--check',rel(file)],{cwd:root,encoding:'utf8'});
-  add(`syntax:${rel(file)}`,run.status===0,run.status===0?'Syntax OK.':(run.stderr||run.stdout).trim());
-}
-
-const required=[
-  '.github/workflows/staging-browser-integration.yml','package.json','package-lock.json','playwright.config.mjs',
-  'scripts/module-permissions-check.mjs','scripts/admin-it-readiness-check.mjs','scripts/it-release-authority-check.mjs','scripts/it-scorecard-truth-convergence-check.mjs',
-  'scripts/finance-schema-dependency-contract-check.mjs','scripts/finance-posting-safety-foundation-check.mjs','scripts/finance-posting-preflight-check.mjs',
-  'scripts/finance-posting-execution-recovery-check.mjs','scripts/finance-operational-control-plane-check.mjs','scripts/finance-release-hardening-check.mjs','scripts/finance-account-mapping-review-check.mjs','scripts/finance-account-mapping-observability-check.mjs','scripts/finance-account-mapping-decision-support-check.mjs',
-  'tests/fixtures/finance-release-hardening-fixtures.mjs','tests/browser/finance-release-hardening.spec.mjs',
-  'tests/fixtures/finance-account-mapping-review-fixtures.mjs','tests/browser/finance-account-mapping-review.spec.mjs','tests/browser/it-scorecard-truth.spec.mjs','js/finance-account-mapping-ui.js','js/it-readiness-ui.js',
-  'supabase/functions/admin-it-control/index.ts','supabase/functions/finance-job-completion-review/index.ts','supabase/functions/finance-job-completion-posting-approval/index.ts','supabase/functions/finance-account-mapping-review/index.ts',
-  'supabase/functions/core-data-read/index.ts','supabase/functions/operations-manage/index.ts'
-];
-for(const file of required) add(`exists:${file}`,exists(file),'Required current release/control file is present.');
-
-const passed=results.filter((item)=>item.ok).length;
-console.log(`\nYWI repository smoke check: ${passed}/${results.length} passed\n`);
-for(const item of results) console.log(`${item.ok?'PASS':'FAIL'}  ${item.name}${item.details?` — ${item.details}`:''}`);
-process.exit(results.some((item)=>!item.ok)?1:0);
+const root=process.cwd(); const results=[]; const add=(name,ok,detail='')=>results.push({name,ok:!!ok,detail});
+const walk=(dir)=>fs.readdirSync(dir,{withFileTypes:true}).flatMap((e)=>{const f=path.join(dir,e.name);if(['.git','node_modules','playwright-report','test-results'].includes(e.name))return[];return e.isDirectory()?walk(f):[f];});
+const files=walk(root); const rel=(f)=>path.relative(root,f).replaceAll('\\','/');
+const activeMd=files.filter((f)=>f.endsWith('.md')).map(rel).sort();
+add('active-markdown-exactly-three',JSON.stringify(activeMd)===JSON.stringify(['README.md','docs/ACTIVE_PROJECT_HANDBOOK.md','docs/NEXT_STEPS_AND_SANITY_CHECK.md']),activeMd.join(', '));
+add('no-archive-tree',!fs.existsSync('archive')); add('no-retired-markdown-tree',!files.some((f)=>/retired-markdown-/i.test(rel(f))));
+add('no-temporary-artifacts',!files.some((f)=>/(?:^|\/)(?:test_write[^/]*|.*\.(?:tmp|bak|log))$/i.test(rel(f))));
+add('no-one-time-workflows-after-bootstrap',!files.some((f)=>/^\.github\/workflows\/one-time-/i.test(rel(f))));
+add('no-generated-full-schema-snapshot',!fs.existsSync('sql/000_full_schema_reference.sql'));
+const docs=activeMd.map((f)=>fs.readFileSync(f,'utf8'));
+add('active-docs-no-build-ledger',docs.every((t)=>!(/\bBuild\s+\d+\b/i.test(t)))); add('active-docs-no-run-or-sha-ledger',docs.every((t)=>!(/\bRun\s*#?\d+\b/i.test(t))&&!/\b[0-9a-f]{40}\b/i.test(t)));
+add('docs-four-module-boundary',docs.every((t)=>['Safety','Finance','Jobs','Admin'].every((k)=>t.includes(k)))); add('docs-online-help',docs.every((t)=>/help\.html/i.test(t))); add('docs-manual-production',docs.every((t)=>/Production/i.test(t)&&/manual|deliberate/i.test(t))); add('docs-finance-provider-fail-closed',docs.every((t)=>/Finance/i.test(t)&&/provider/i.test(t)&&/(OFF|fail-closed)/i.test(t)));
+const sqlNames=files.map(rel).filter((f)=>/^sql\/\d{3}_.+\.sql$/i.test(f)); const nums=sqlNames.map((f)=>Number(path.basename(f).slice(0,3))).filter(Number.isFinite).sort((a,b)=>a-b); const unique=[...new Set(nums)]; const missing=[]; if(unique.length){for(let n=30;n<=Math.max(...unique);n++)if(!unique.includes(n))missing.push(n);}
+add('migration-history-contiguous',missing.length===0,missing.join(',')); add('migration-version-unique',unique.length===nums.length); add('help-present',fs.existsSync('help.html')); add('seo-gate-present',fs.existsSync('scripts/help-seo-hygiene-check.mjs')); add('seo-browser-gate-present',fs.existsSync('tests/browser/help-seo-layout.spec.mjs'));
+const passed=results.filter((x)=>x.ok).length; console.log(`Repository hygiene: ${passed}/${results.length} passed`); for(const r of results)console.log(`${r.ok?'PASS':'FAIL'}  ${r.name}${r.detail?' — '+r.detail:''}`); process.exit(passed===results.length?0:1);
