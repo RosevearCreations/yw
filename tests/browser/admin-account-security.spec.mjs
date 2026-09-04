@@ -40,7 +40,26 @@ async function basePage(page, { role='employee', resetRequired=false } = {}) {
               {profile_id:'user-2',full_name:'Worker Two',username:'worker2',email:'worker2@example.test',role:'employee',is_active:true,password_login_ready:true,password_reset_required:false,password_changed_at:null}
             ],
             current_todo:[{todo_key:'rail:operations_cockpit_live',todo_title:'Operations Cockpit live acceptance',todo_status:'ready',current_action:'Run current staging scenario evidence.',evidence_requirement:'Human staging signoff.',source_kind:'staging_acceptance',requires_human:true,requires_external:false,sort_order:1}],
-            current_todo_status:{current_todo_count:1,business_acceptance_count:1,security_followup_count:0,repository_followup_count:0}
+            current_todo_status:{current_todo_count:1,business_acceptance_count:1,security_followup_count:0,repository_followup_count:0},
+            next_safe_action_status:{
+              current_action_count:14,
+              staging_ready_candidate_count:6,
+              external_verification_count:3,
+              pending_human_or_provider_count:3,
+              blocked_accounting_count:2,
+              next_todo_key:'rail:operations_cockpit_live',
+              next_todo_title:'Operations Cockpit live acceptance',
+              next_action_class:'staging_ready_candidate',
+              safe_candidate_after_environment_guard:true,
+              next_action:'Run current staging scenario evidence.',
+              next_safety_note:'Candidate only. Re-verify the dedicated non-production staging environment guard before mutation.'
+            },
+            next_safe_action_queue:[{
+              todo_key:'rail:operations_cockpit_live',todo_title:'Operations Cockpit live acceptance',todo_status:'ready',
+              current_action:'Run current staging scenario evidence.',source_kind:'staging_acceptance',priority_bucket:10,
+              action_class:'staging_ready_candidate',safe_candidate_after_environment_guard:true,
+              safety_note:'Candidate only. Re-verify the dedicated non-production staging environment guard before mutation.',sort_order:1
+            }]
           };
         }
         if (action === 'reset_temporary_password') return {ok:true,target_label:'Worker Two',force_password_change:true};
@@ -69,9 +88,7 @@ test('eyeball reveals only the value entered in the browser and temporary passwo
   expect(await page.evaluate(() => window.__authState.profile.password_reset_required)).toBe(false);
 });
 
-test('Admin can generate/edit temporary password and active To-Do hides legacy completed/release panels', async ({ page }) => {
-  // Load the global password helper while non-Admin so its real production lazy-loader
-  // does not race this focused test's explicit inline Admin UI injection.
+test('Admin renders next safe action, current To-Do, and audited temporary password controls', async ({ page }) => {
   await basePage(page,{role:'employee',resetRequired:false});
   await page.addScriptTag({content:passwordSource});
   await page.evaluate(() => {
@@ -84,11 +101,19 @@ test('Admin can generate/edit temporary password and active To-Do hides legacy c
   });
   await page.addScriptTag({content:adminSource});
   await page.evaluate(() => document.dispatchEvent(new CustomEvent('ywi:module-loaded',{detail:{moduleKey:'admin'}})));
+
+  await expect(page.locator('#adminNextSafeActionPanel')).toContainText('Operations Cockpit live acceptance');
+  await expect(page.locator('#adminNextSafeActionPanel')).toContainText('candidate after environment guard');
+  await expect(page.locator('#adminNextSafeActionPanel')).toContainText('6 staging-ready');
+  await expect(page.locator('#adminNextSafeActionPanel')).toContainText('2 accounting blocked');
+  await expect(page.locator('#adminNextSafeActionPanel')).toContainText('does not authorize staging mutation');
+
   await expect(page.locator('#adminCurrentTodoPanel')).toContainText('Only unresolved current requirements');
   await expect(page.locator('#adminCurrentTodoPanel')).toContainText('Run current staging scenario evidence.');
   await expect(page.getByText('Old completed rails')).toBeHidden();
   await expect(page.getByText('Schema 107 old check')).toBeHidden();
   await expect(page.getByText('Old production review')).toBeHidden();
+
   await page.locator('button[data-profile-id="user-2"]').click();
   const temp = page.locator('#adminTemporaryPassword');
   await expect(temp).toBeVisible();

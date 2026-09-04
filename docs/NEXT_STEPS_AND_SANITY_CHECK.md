@@ -6,11 +6,17 @@ Start every work session from current `dev` and `main`, then verify that their a
 
 ## Required sanity checks
 
-Before new feature work, verify `dev`/`main` parity, current schema drift, release authority separately from repository enforcement, intended Finance/provider fail-closed state, Current Admin To-Do truth, Auth security evidence freshness, no accidental business-rail closure, repository/Help/SEO/browser gates, staging acceptance mutation lock state, and removal of temporary branches/workflows/files after release proof.
+Before new feature work, verify `dev`/`main` parity, current schema drift, release authority separately from repository enforcement, intended Finance/provider fail-closed state, Current Admin To-Do truth, Auth security evidence freshness, next safe action classification, no accidental business-rail closure, repository/Help/SEO/browser gates, staging acceptance mutation lock state, and removal of temporary branches/workflows/files after release proof.
 
 ## Auth security evidence sanity check
 
 Treat leaked-password protection and MFA as external Supabase Auth configuration. Verify each setting with recent authoritative external evidence before considering its follow-up resolved. Do not infer either setting from PostgreSQL catalogs, a historical security-advisor row, or the absence of a current advisor warning. Stale evidence requires re-verification, and application source work must not change the Auth setting or auto-close its Current Admin To-Do item.
+
+## Next safe action sanity check
+
+Use the current I.T. next safe action authority to rank unresolved work. A `staging_ready_candidate` means the rail is technically ready for dedicated staging evidence; it does **not** mean mutation is authorized. Re-verify the non-production staging environment guard immediately before any staging write.
+
+Keep external Auth/GitHub follow-ups separate from source readiness, keep content/provider items pending until their actual human/test evidence exists, and keep blocked accounting acceptance blocked with Finance posting execution and payment-provider mutation OFF. The prioritization layer must never auto-close a rail, publish content, change Auth, or promote Production.
 
 ## Staging acceptance mutation sanity check
 
