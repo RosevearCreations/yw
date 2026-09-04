@@ -18,7 +18,7 @@ A hidden screen is not a security boundary. Reads and writes remain server-enfor
 
 ## Auth security evidence boundary
 
-Leaked-password protection and MFA options are controlled by the external Supabase Auth control plane. Current readiness may treat either control as secure only when recent authoritative external evidence records the actual configured state. Advisor history, advisor snapshots, database catalogs, and absence of an advisor warning are not substitutes for that proof. Evidence is service-private and freshness-aware; stale evidence reopens verification. Application source changes must not mutate these Auth settings or auto-close their Current Admin To-Do follow-ups.
+Leaked-password protection and MFA options are controlled by the external Supabase Auth control plane. Current readiness may treat either control as secure only when recent authoritative evidence identifies the actual current state from the **Supabase Dashboard** or **Supabase Management API**, retains a durable evidence reference, and matches the secure state for that specific control. Manual notes, screenshots or other supporting context may be retained, but `manual_external` evidence is non-authoritative and cannot produce `verified_secure`. Advisor history, advisor snapshots, database catalogs, and absence of an advisor warning are also not substitutes for control-plane proof. Evidence is service-private and freshness-aware; stale evidence reopens verification. Application source changes must not mutate these Auth settings or auto-close their Current Admin To-Do follow-ups.
 
 ## Next safe action authority
 

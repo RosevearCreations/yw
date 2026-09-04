@@ -8,11 +8,11 @@ When Production promotion is deliberately on hold, treat the resulting `dev`/`ma
 
 ## Required sanity checks
 
-Before new feature work, verify `dev`/`main` parity or an explicitly documented promotion hold, current schema drift, release authority separately from repository enforcement, intended Finance/provider fail-closed state, Current Admin To-Do truth, Auth security evidence freshness, next safe action classification, no accidental business-rail closure, repository/Help/SEO/browser gates, staging acceptance mutation lock state, and removal of temporary branches/workflows/files after release proof.
+Before new feature work, verify `dev`/`main` parity or an explicitly documented promotion hold, current schema drift, release authority separately from repository enforcement, intended Finance/provider fail-closed state, Current Admin To-Do truth, Auth security evidence freshness and provenance, next safe action classification, no accidental business-rail closure, repository/Help/SEO/browser gates, staging acceptance mutation lock state, and removal of temporary branches/workflows/files after release proof.
 
 ## Auth security evidence sanity check
 
-Treat leaked-password protection and MFA as external Supabase Auth configuration. Verify each setting with recent authoritative external evidence before considering its follow-up resolved. Do not infer either setting from PostgreSQL catalogs, a historical security-advisor row, or the absence of a current advisor warning. Stale evidence requires re-verification, and application source work must not change the Auth setting or auto-close its Current Admin To-Do item.
+Treat leaked-password protection and MFA as external Supabase Auth configuration. A secure result requires recent authoritative evidence from the **Supabase Dashboard** or **Supabase Management API**, a durable evidence reference, and the exact secure state for that control. Manual notes, screenshots or other supporting context may be retained, but `manual_external` evidence is non-authoritative and must never become `verified_secure`. Do not infer either setting from PostgreSQL catalogs, a current or historical security-advisor row, or the absence of an advisor warning. Stale evidence requires re-verification, and application source work must not change the Auth setting or auto-close its Current Admin To-Do item.
 
 ## Next safe action sanity check
 
