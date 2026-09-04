@@ -51,7 +51,11 @@ add('browser-schema-mismatch-lock-proof',all(browser,[
 add('browser-no-stale-build187-runtime-labels',!browser.includes("run_key:'staging-b187-ops'")&&!browser.includes("suite_name:'build187_operations_cockpit_live_acceptance'"));
 
 add('runner-already-current-schema-exact',all(runner,[
-  'Current-schema staging acceptance runner','repoLatestSchema','latestSchema !== repoLatestSchema','Refusing current-schema staging acceptance against the YardWeasels Production project ref.'
+  'Current-schema staging acceptance runner',
+  'repoLatestSchema',
+  'expectedSchema !== repoLatestSchema',
+  'latestAppliedSchema !== repoLatestSchema',
+  'Refusing current-schema staging acceptance against the YardWeasels Production project ref.'
 ]));
 add('help-exact-schema-second-lock',all(help,[
   'Exact schema is a second independent lock.','v_schema_drift_status','expected repository schema and latest applied staging schema','match exactly'
