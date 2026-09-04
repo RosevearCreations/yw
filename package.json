@@ -1,7 +1,7 @@
 {
   "name": "ywi-operations-platform",
   "private": true,
-  "version": "2026.09.03",
+  "version": "2026.09.04",
   "type": "module",
   "scripts": {
     "test:repo": "node scripts/repo-smoke-check.mjs",
@@ -16,6 +16,7 @@
     "test:staging": "node scripts/operations-rpc-staging-e2e.mjs",
     "test:staging-acceptance": "node scripts/staging-acceptance-control-plane-check.mjs && node scripts/operations-rpc-staging-e2e.mjs",
     "test:staging-scenarios": "node scripts/staging-scenario-catalog-check.mjs",
+    "test:staging-environment-guard": "node scripts/staging-environment-guard-check.mjs",
     "test:contrast": "node scripts/operations-cockpit-contrast-check.mjs",
     "test:live-updates": "node scripts/live-work-updates-check.mjs",
     "test:notifications": "node scripts/customer-notification-delivery-check.mjs",
