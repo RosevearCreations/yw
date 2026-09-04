@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Build/Schema 186 foundation gate, including compatible Schema 187 catalog evolution. */
+/** Staging acceptance foundation gate, including the compatible Schema 187 catalog and current-schema runner. */
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -67,10 +67,11 @@ add('schema187-preserves-schema186-control-plane',hasAll(migration187,[
 ]));
 add('runner-refuses-production-project',hasAll(runner,[
   'YWI_STAGING_PROJECT_REF','YWI_PRODUCTION_PROJECT_REF',"'jmqvkgiqlimdhcofwkxr'",
-  'Refusing Schema 187 staging acceptance against the YardWeasels Production project ref.'
+  'Refusing current-schema staging acceptance against the YardWeasels Production project ref.'
 ]));
-add('runner-source-and-schema-bound',hasAll(runner,[
+add('runner-source-and-exact-schema-bound',hasAll(runner,[
   'YWI_STAGING_SOURCE_SHA','YWI_STAGING_WORKFLOW_RUN_ID','v_schema_drift_status',
+  'repoLatestSchema','expectedSchema !== repoLatestSchema','latestAppliedSchema !== repoLatestSchema',
   'ywi_rpc_start_staging_acceptance_run','p_source_sha:sourceSha','p_schema_version:expectedSchema'
 ]));
 add('runner-records-cases-through-rpc',hasAll(runner,[
@@ -78,8 +79,9 @@ add('runner-records-cases-through-rpc',hasAll(runner,[
   'p_is_blocking:catalog.is_blocking','p_expected_outcome:catalog.expected_outcome'
 ]));
 add('runner-never-auto-signs-off-or-finalizes',!runner.includes("rpc('ywi_rpc_signoff_staging_acceptance_run'")&&!runner.includes("rpc('ywi_rpc_finalize_staging_acceptance_run'")&&runner.includes('pending_human_case_count'));
-add('runner-schema187-six-rail-catalog-bound',hasAll(runner,[
-  'allowedRails','operations_cockpit_live','quote_intake_live','live_job_updates',
+add('runner-current-schema-six-rail-catalog-bound',hasAll(runner,[
+  'Current-schema staging acceptance runner','CATALOG_SCHEMA_VERSION = 187','allowedRails',
+  'operations_cockpit_live','quote_intake_live','live_job_updates',
   'customer_live_update_notifications','service_execution_proof_costing','supervisor_closeout_signoff_invoice_followup',
   'operations_cockpit_admin_allowed','operations_cockpit_worker_denied'
 ]));
@@ -106,7 +108,8 @@ add('workflow-source-gates-staging',workflow.includes('npm run test:staging-acce
 add('workflow-live-staging-manual-only',hasAll(workflow,[
   "github.event_name == 'workflow_dispatch' && inputs.run_staging == 'true'",'environment: staging',
   'YWI_STAGING_PROJECT_REF: ${{ secrets.YWI_STAGING_PROJECT_REF }}',
-  'YWI_PRODUCTION_PROJECT_REF: jmqvkgiqlimdhcofwkxr','YWI_STAGING_SOURCE_SHA: ${{ github.sha }}'
+  'YWI_PRODUCTION_PROJECT_REF: jmqvkgiqlimdhcofwkxr','YWI_STAGING_SOURCE_SHA: ${{ github.sha }}',
+  'Run current-schema staging catalog evidence','STAGING-CURRENT-RUN'
 ]));
 add('package-staging-gates',pkg.scripts?.['test:staging-acceptance']?.includes('staging-acceptance-control-plane-check.mjs')&&pkg.scripts?.['test:staging-scenarios']?.includes('staging-scenario-catalog-check.mjs')&&pkg.scripts?.['test:browser:staging-acceptance']?.includes('staging-acceptance.spec.mjs'));
 
