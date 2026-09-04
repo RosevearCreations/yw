@@ -112,7 +112,7 @@ add('help-current',
   helpLower.includes('staging mutation guard') &&
   help.includes('YWI_RUNTIME_ENVIRONMENT') &&
   help.includes('YWI_STAGING_ACCEPTANCE_MUTATION_ENABLED') &&
-  help.includes('Exact schema is a second independent lock.')
+  help.includes('Exact current-schema parity is a second independent lock.')
 );
 add('durable-docs-current',[readme,handbook,nextSteps].every((text)=>text.includes('staging acceptance mutation')));
 add('active-docs-no-build-ledger',![readme,handbook,nextSteps].some((text)=>/Build\s+197|Run\s+#?\d+|[0-9a-f]{40}/i.test(text)));
