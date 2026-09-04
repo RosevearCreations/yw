@@ -181,4 +181,20 @@ on conflict(schema_version) do update set
   schema_name=excluded.schema_name,description=excluded.description,status=excluded.status,applied_at=excluded.applied_at,
   applied_by=excluded.applied_by,notes=excluded.notes,migration_key=excluded.migration_key,release_label=excluded.release_label;
 
+-- Keep the source/live drift authority exact for this release. This changes no business data.
+create or replace view public.v_schema_drift_status as
+select
+  199 as expected_schema_version,
+  coalesce(max(schema_version) filter (where status='applied'),0) as latest_applied_schema_version,
+  case when coalesce(max(schema_version) filter (where status='applied'),0) >= 199 then 'current' else 'drift' end::text as drift_status,
+  case when coalesce(max(schema_version) filter (where status='applied'),0) >= 199
+    then 'Live database is at or ahead of the repo schema marker.'
+    else 'Live database is behind the repo schema marker.'
+  end::text as message,
+  now() as checked_at
+from public.app_schema_versions;
+
+revoke all on table public.v_schema_drift_status from public,anon,authenticated;
+grant select on table public.v_schema_drift_status to service_role;
+
 commit;
