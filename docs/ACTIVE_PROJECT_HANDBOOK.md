@@ -36,6 +36,10 @@ Environment identity is only the first lock. The expected repository schema and 
 
 The manual runner retains an independent project-ref/confirmation guard, so a UI or environment misconfiguration does not become the only line of defense. Staging evidence, finalization, and human signoff never auto-close the underlying business rail.
 
+For **quote/contact** staging acceptance, the runner may own only bounded disposable runtime evidence on the dedicated non-production project: reject an invalid no-consent request, create exactly one uniquely labelled STAGING request using an `example.invalid` contact, prove its matching created event, and delete only the exact verified staging row/event set. The public-key call must exercise the same unauthenticated quote/contact contract used by the website. A blocking human review remains required after runner evidence, and finalization/signoff stay explicit. The Operations Cockpit write-form round trip remains human-controlled rather than being replayed automatically.
+
+If no dedicated non-production Supabase project or branch exists, source work may improve the runner but no live staging evidence may be claimed. Do not substitute the Production project, Production customer data, or a Production provider for missing staging infrastructure.
+
 ## Public web/search boundary
 
 The home page and approved service/location pages are search-oriented surfaces. Customer portal tokens, operational Help and internal application routes are not search landing pages.
