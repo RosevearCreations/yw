@@ -1,20 +1,136 @@
 import { test, expect } from '@playwright/test';
+import http from 'node:http';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
-const baseURL = process.env.YWI_E2E_BASE_URL || 'http://127.0.0.1:4173';
+const externalBaseURL = String(process.env.YWI_E2E_BASE_URL || '').trim();
+let baseURL = externalBaseURL;
+let localServer = null;
+
 const widths = [
   { name: 'phone', width: 390, height: 844 },
   { name: 'tablet', width: 768, height: 1024 },
   { name: 'desktop', width: 1440, height: 960 }
 ];
 
+const mimeTypes = new Map([
+  ['.html', 'text/html; charset=utf-8'],
+  ['.css', 'text/css; charset=utf-8'],
+  ['.js', 'application/javascript; charset=utf-8'],
+  ['.json', 'application/json; charset=utf-8'],
+  ['.svg', 'image/svg+xml'],
+  ['.png', 'image/png'],
+  ['.jpg', 'image/jpeg'],
+  ['.jpeg', 'image/jpeg'],
+  ['.webp', 'image/webp'],
+  ['.ico', 'image/x-icon']
+]);
+
+async function serveRepositoryFile(req, res) {
+  try {
+    const requestUrl = new URL(req.url || '/', 'http://127.0.0.1');
+    const decodedPath = decodeURIComponent(requestUrl.pathname);
+    const relativePath = decodedPath === '/' ? 'index.html' : decodedPath.replace(/^\/+/, '');
+    const repositoryRoot = path.resolve(process.cwd());
+    const filePath = path.resolve(repositoryRoot, relativePath);
+    const insideRepository = filePath === repositoryRoot || filePath.startsWith(`${repositoryRoot}${path.sep}`);
+    if (!insideRepository) {
+      res.writeHead(403, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('Forbidden');
+      return;
+    }
+    const body = await fs.readFile(filePath);
+    res.writeHead(200, {
+      'content-type': mimeTypes.get(path.extname(filePath).toLowerCase()) || 'application/octet-stream',
+      'cache-control': 'no-store'
+    });
+    res.end(body);
+  } catch (error) {
+    const status = error?.code === 'ENOENT' ? 404 : 500;
+    res.writeHead(status, { 'content-type': 'text/plain; charset=utf-8' });
+    res.end(status === 404 ? 'Not found' : 'Static test server error');
+  }
+}
+
+async function stubDeterministicThirdPartyRuntime(page) {
+  const productionNonTelemetryRequests = [];
+  const sensitiveTelemetryRequests = [];
+  let interceptedProductionTelemetryCount = 0;
+  await page.route('https://cdn.jsdelivr.net/**', async (route) => {
+    const url = route.request().url();
+    let body = '';
+    if (url.includes('@supabase/supabase-js')) {
+      body = `window.supabase={createClient(){const chain={select(){return chain},eq(){return chain},order(){return chain},limit(){return chain},maybeSingle:async()=>({data:null,error:null}),single:async()=>({data:null,error:null}),then(resolve){return Promise.resolve({data:[],error:null}).then(resolve)}};return {auth:{getSession:async()=>({data:{session:null},error:null}),onAuthStateChange:()=>({data:{subscription:{unsubscribe(){}}}}),refreshSession:async()=>({data:{session:null},error:null}),exchangeCodeForSession:async()=>({data:{session:null},error:null}),setSession:async()=>({data:{session:null},error:null})},from(){return chain},functions:{invoke:async()=>({data:null,error:null})}}}};`;
+    } else if (url.includes('signature_pad')) {
+      body = 'window.SignaturePad=class SignaturePad{clear(){} isEmpty(){return true} toDataURL(){return ""}};';
+    }
+    await route.fulfill({ status: 200, contentType: 'application/javascript; charset=utf-8', body });
+  });
+  await page.route('https://jmqvkgiqlimdhcofwkxr.supabase.co/**', async (route) => {
+    const request = route.request();
+    const requestUrl = new URL(request.url());
+    const method = request.method().toUpperCase();
+    const isTelemetry = method === 'POST' && requestUrl.pathname === '/functions/v1/analytics-traffic' && !requestUrl.search;
+    if (isTelemetry) {
+      interceptedProductionTelemetryCount += 1;
+      const rawBody = String(request.postData() || '');
+      if (/access_token|refresh_token|authorization|password|contact_email|customer_email|invoice_reference|payment_reference|staff_note|labou?r_cost|material_cost|equipment_cost/i.test(rawBody)) {
+        sensitiveTelemetryRequests.push(rawBody.slice(0, 500));
+      }
+      await route.fulfill({ status: 204, body: '' });
+      return;
+    }
+    productionNonTelemetryRequests.push(`${method} ${requestUrl.pathname}${requestUrl.search}`);
+    await route.fulfill({ status: 503, contentType: 'application/json; charset=utf-8', body: '{"error":"Production business/data access blocked by deterministic browser smoke"}' });
+  });
+  return {
+    getProductionNonTelemetryRequests: () => [...productionNonTelemetryRequests],
+    getSensitiveTelemetryRequests: () => [...sensitiveTelemetryRequests],
+    getInterceptedProductionTelemetryCount: () => interceptedProductionTelemetryCount
+  };
+}
+
+test.beforeAll(async () => {
+  if (externalBaseURL) return;
+  localServer = http.createServer((req, res) => {
+    serveRepositoryFile(req, res).catch(() => {
+      if (!res.headersSent) res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('Static test server error');
+    });
+  });
+  await new Promise((resolve, reject) => {
+    localServer.once('error', reject);
+    localServer.listen(0, '127.0.0.1', resolve);
+  });
+  const address = localServer.address();
+  if (!address || typeof address === 'string') throw new Error('Deterministic test server did not expose a local TCP port.');
+  baseURL = `http://127.0.0.1:${address.port}`;
+});
+
+test.afterAll(async () => {
+  if (!localServer) return;
+  await new Promise((resolve) => localServer.close(resolve));
+});
+
 for (const device of widths) {
-  test(`public shell stays readable on ${device.name}`, async ({ page }) => {
+  test(`public shell stays canonical and readable on ${device.name}`, async ({ page }) => {
+    const productionBoundary = await stubDeterministicThirdPartyRuntime(page);
     await page.setViewportSize({ width: device.width, height: device.height });
-    await page.goto(baseURL, { waitUntil: 'domcontentloaded' });
+    await page.goto(`${baseURL}/`, { waitUntil: 'domcontentloaded' });
     await expect(page.locator('h1')).toHaveCount(1);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://yardweasels.ca/');
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /index,follow/i);
+    await expect(page.locator('#mainNav a[data-module]')).toHaveCount(4);
+    await expect(page.locator('#operationsCockpit')).toHaveCount(0);
+    await expect(page.locator('main.container')).toBeHidden();
+    await expect(page.locator('.public-home-intro')).toBeVisible();
+    await expect(page.locator('#publicQuoteContactForm')).toBeVisible();
+    await expect(page.locator('.public-home-intro')).toContainText(/Authorized staff can sign in above/i);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
     expect(overflow).toBeFalsy();
-    await expect(page.locator('main, #main, body')).toBeVisible();
+    expect(productionBoundary.getProductionNonTelemetryRequests()).toEqual([]);
+    expect(productionBoundary.getSensitiveTelemetryRequests()).toEqual([]);
+    expect(productionBoundary.getInterceptedProductionTelemetryCount()).toBeGreaterThanOrEqual(0);
   });
 }
 

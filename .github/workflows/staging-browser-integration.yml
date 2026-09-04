@@ -92,11 +92,13 @@ jobs:
       - run: node scripts/customer-portal-responsive-privacy-enforcement-check.mjs
       - run: node scripts/private-evidence-security-policy-enforcement-check.mjs
       - run: node scripts/release-readiness-evidence-enforcement-check.mjs
+      - run: node scripts/canonical-app-shell-browser-enforcement-check.mjs
       - run: npm run test:execution-proof
       - run: npm run test:closeout
       - run: npm run test:job-lifecycle
       - name: Install Chromium for rendered module acceptance
         run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
       - run: npm run test:browser:three-surface
       - run: npm run test:browser:field-ux
       - run: npm run test:browser:notifications
