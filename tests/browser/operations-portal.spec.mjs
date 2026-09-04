@@ -103,9 +103,12 @@ for (const device of widths) {
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /index,follow/i);
     await expect(page.locator('#mainNav a[data-module]')).toHaveCount(4);
     await expect(page.locator('#operationsCockpit')).toHaveCount(0);
+    await expect(page.locator('main.container')).toBeHidden();
+    await expect(page.locator('.public-home-intro')).toBeVisible();
+    await expect(page.locator('#publicQuoteContactForm')).toBeVisible();
+    await expect(page.locator('.public-home-intro')).toContainText(/Authorized staff can sign in above/i);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
     expect(overflow).toBeFalsy();
-    await expect(page.locator('main.container')).toBeVisible();
     expect(getProductionSupabaseRequests()).toBe(0);
   });
 }
