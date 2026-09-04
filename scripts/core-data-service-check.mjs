@@ -53,8 +53,10 @@ const writeTransport = /jsonFetch\(['"][^'"]*(?:write|create|update|delete|save|
 add('browser-no-write-api', !!exportedSurface && !exportedWriteMethods && !writeTransport && hasAll(exportedSurface, ['read,', 'readEntity,', 'invalidate,', 'getState']), 'Exported browser surface exposes reads/cache invalidation only; Map.delete cleanup is not a business-data write.');
 add('browser-contract-current', hasAll(browser, ["const BUILD = '2026-09-01e'", 'const CONTRACT_VERSION = 1', ...entities.map((key) => `'${key}'`)]), 'Browser service declares all seven Schema 163 entities.');
 
-add('shell-loads-core-data-before-module-runtime', index.includes('/js/core-data-service.js?v=2026-09-01e') && index.indexOf('/js/core-data-service.js?v=2026-09-01e') < index.indexOf('/js/module-runtime.js?v=2026-09-01d'), 'Shared Core data service loads before business-module runtime.');
-add('worker-precaches-core-data-service', worker.includes("'/js/core-data-service.js'") && worker.includes("CACHE_NAME = 'ywi-shell-v2026-09-01e'"), 'Core data browser service is part of the Core shell cache generation.');
+const coreScriptMatch = index.match(/<script src="(\/js\/core-data-service\.js\?v=[^"]+)"><\/script>/);
+const runtimeScriptMatch = index.match(/<script src="(\/js\/module-runtime\.js\?v=[^"]+)"><\/script>/);
+add('shell-loads-core-data-before-module-runtime', !!coreScriptMatch && !!runtimeScriptMatch && index.indexOf(coreScriptMatch[0]) < index.indexOf(runtimeScriptMatch[0]), 'Shared Core data service loads before business-module runtime regardless of cache-busting release stamp.');
+add('worker-precaches-core-data-service', worker.includes("'/js/core-data-service.js'") && /const CACHE_NAME = 'ywi-shell-v[^']+';/.test(worker), 'Core data browser service is part of a versioned Core shell cache generation.');
 add('worker-does-not-prefetch-business-modules', !['/js/finance-ui.js','/js/jobs-ui.js','/js/admin-ui.js','/js/hse-ops-ui.js'].some((script) => worker.includes(`'${script}'`) || worker.includes(`"${script}"`)), 'Schema 162 business-module lazy loading remains intact.');
 
 try {
