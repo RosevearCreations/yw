@@ -1,7 +1,8 @@
 /* File: js/staging-acceptance-ui.js
-   Build 187 Admin > I.T. staging acceptance scenario/evidence add-on.
-   The catalog is read through a JWT-protected Admin/manage endpoint.
-   Human case evidence, finalization, and signoff are explicit; none closes a scorecard rail automatically.
+   Admin > I.T. staging acceptance scenario/evidence add-on.
+   Catalog/status is read through a JWT-protected Admin/manage endpoint.
+   Human evidence mutation is fail-closed unless the endpoint proves a dedicated staging runtime.
+   Evidence and signoff never close scorecard rails automatically.
 */
 'use strict';
 
@@ -14,13 +15,15 @@
   const cleanStatus=(value)=>String(value || 'pending').trim().toLowerCase();
   function statusClass(value){
     const status=cleanStatus(value);
-    if(/accepted|approved|passed|green|complete|satisfied|source_ready/.test(status))return 'passed';
-    if(/failed|rejected|red|stale|error|blocked/.test(status))return 'error';
-    if(/awaiting|pending|progress|amber|review|required|not_run|runtime|human/.test(status))return 'warning';
+    if(/accepted|approved|passed|green|complete|satisfied|source_ready|enabled/.test(status))return 'passed';
+    if(/failed|rejected|red|stale|error|blocked|locked|denied|production/.test(status))return 'error';
+    if(/awaiting|pending|progress|amber|review|required|not_run|runtime|human|unconfigured/.test(status))return 'warning';
     return 'unknown';
   }
   function chip(value){return `<span class="it-readiness-status ${statusClass(value)}">${esc(String(value || 'pending').replaceAll('_',' '))}</span>`;}
   function shortSha(value){const text=String(value || '');return text ? text.slice(0,12) : 'not run';}
+  function environmentGuard(){return state.payload?.environment_guard || {};}
+  function mutationAllowed(){return environmentGuard().mutation_allowed===true;}
 
   function panelHost(){
     const grid=document.querySelector('#itReadinessWorkspace .it-readiness-grid');
@@ -41,8 +44,9 @@
   }
 
   function scenarioRows(group){
+    const writesAllowed=mutationAllowed();
     return group.map((row)=>{
-      const canRecord=row.human_action_required===true && row.run_id && row.run_status==='started';
+      const canRecord=writesAllowed && row.human_action_required===true && row.run_id && row.run_status==='started';
       const prerequisites=Array.isArray(row.prerequisites)?row.prerequisites:[];
       return `<div class="it-readiness-row staging-scenario-row">
         <div>
@@ -58,23 +62,44 @@
     }).join('');
   }
 
+  function renderEnvironmentGuard(){
+    const guard=environmentGuard();
+    const allowed=guard.mutation_allowed===true;
+    const status=allowed?'enabled':'locked';
+    const actual=guard.actual_project_ref || 'unresolved';
+    const expected=guard.expected_staging_project_ref || 'not configured';
+    const runtime=guard.runtime_environment || 'unconfigured';
+    const reason=guard.reason || 'No environment guard was returned; mutation remains locked.';
+    return `<div class="${allowed?'help-callout':'it-readiness-error'} staging-environment-guard">
+      <strong>Environment mutation guard: ${esc(status.toUpperCase())}</strong><br>
+      <small>Runtime ${esc(runtime)} · current project ${esc(actual)} · expected staging project ${esc(expected)}</small><br>
+      <small>${esc(reason)}</small>
+      ${allowed?'<br><small>Human staging evidence writes are enabled only for this explicitly configured non-production project.</small>':'<br><small>Status/catalog reads remain available. Pass/Fail, Finalize, and Signoff controls stay hidden while locked.</small>'}
+    </div>`;
+  }
+
   function render(){
     const host=panelHost();
     if(!host)return false;
     if(!isAdmin()){host.innerHTML='<div class="it-readiness-error">Admin manage access is required for staging acceptance evidence.</div>';return true;}
     if(state.loading){host.innerHTML='<div class="it-readiness-loading">Loading staging acceptance evidence…</div>';return true;}
     if(!state.payload){
-      host.innerHTML='<span class="it-readiness-kicker">Acceptance</span><h3>Staging acceptance evidence</h3><p>Catalog cases stay pending until their evidence is explicit.</p><button id="stagingAcceptanceLoad" type="button">Load staging acceptance</button>';
+      host.innerHTML='<span class="it-readiness-kicker">Acceptance</span><h3>Staging acceptance evidence</h3><p>Catalog cases stay pending until their evidence is explicit. Mutation remains locked unless the endpoint proves a dedicated staging runtime.</p><button id="stagingAcceptanceLoad" type="button">Load staging acceptance</button>';
       document.getElementById('stagingAcceptanceLoad')?.addEventListener('click',()=>load(true));return true;
     }
 
     const summary=state.payload.summary || {};
     const rows=Array.isArray(state.payload.staging_acceptance)?state.payload.staging_acceptance:[];
     const scenarios=Array.isArray(state.payload.scenario_plan)?state.payload.scenario_plan:[];
-    const assertions=[...(Array.isArray(state.payload.security_assertions)?state.payload.security_assertions:[]),...(Array.isArray(state.payload.catalog_assertions)?state.payload.catalog_assertions:[])];
+    const assertions=[
+      ...(Array.isArray(state.payload.security_assertions)?state.payload.security_assertions:[]),
+      ...(Array.isArray(state.payload.catalog_assertions)?state.payload.catalog_assertions:[]),
+      ...(Array.isArray(state.payload.environment_assertions)?state.payload.environment_assertions:[]),
+    ];
     const failedAssertions=assertions.filter((row)=>cleanStatus(row?.assertion_status)!=='passed');
     const rowByRail=new Map(rows.map((row)=>[row.rail_key,row]));
     const groups=groupScenarios(scenarios);
+    const writesAllowed=mutationAllowed();
 
     const railHtml=groups.size ? [...groups.entries()].map(([railKey,group])=>{
       const rail=rowByRail.get(railKey) || group[0] || {};
@@ -83,8 +108,8 @@
       const passed=group.filter((row)=>row.evidence_status==='passed').length;
       const runStarted=rail.run_status==='started' || group.some((row)=>row.run_status==='started');
       const runId=rail.run_id || group.find((row)=>row.run_id)?.run_id;
-      const canFinalize=runStarted && runId && pending===0;
-      const canSign=rail.run_status==='passed' && rail.requires_human===true && rail.human_signoff_status==='pending' && rail.run_id;
+      const canFinalize=writesAllowed && runStarted && runId && pending===0;
+      const canSign=writesAllowed && rail.run_status==='passed' && rail.requires_human===true && rail.human_signoff_status==='pending' && rail.run_id;
       return `<div class="staging-acceptance-rail">
         <div class="it-readiness-row staging-acceptance-row"><div>
           <strong>${esc(rail.rail_title || railKey)}</strong>
@@ -102,6 +127,7 @@
       <span class="it-readiness-kicker">Acceptance control plane</span>
       <h3>Staging acceptance evidence</h3>
       <p>Dedicated staging only · ${Number(summary.rail_count||0)} open rail(s) · ${Number(summary.scenario_count||0)} catalog case(s) · ${Number(summary.pending_evidence_count||0)} pending evidence · ${Number(summary.human_action_count||0)} human action(s) · ${Number(summary.assertion_failures||0)} assertion failure(s).</p>
+      ${renderEnvironmentGuard()}
       <p><strong>No automatic rail closure:</strong> runner results, human case evidence, finalization, and signoff are evidence only. Scorecard completion remains a separate deliberate release action.</p>
       ${failedAssertions.length?`<div class="it-readiness-error">${failedAssertions.map((row)=>esc(`${row.assertion_key}: ${row.assertion_detail || 'failed'}`)).join('<br>')}</div>`:''}
       <div class="it-readiness-list">${railHtml}</div>
@@ -109,6 +135,7 @@
 
     document.getElementById('stagingAcceptanceRefresh')?.addEventListener('click',()=>load(true));
     host.querySelectorAll('[data-staging-case]').forEach((button)=>button.addEventListener('click',async()=>{
+      if(!mutationAllowed()){window.alert('Staging acceptance mutation is locked for this runtime. Refresh I.T. Readiness after configuring a dedicated staging environment.');return;}
       const decision=button.getAttribute('data-staging-case');const runId=button.getAttribute('data-run-id');const caseKey=button.getAttribute('data-case-key');
       if(!runId||!caseKey||!decision)return;
       if(!window.confirm(`Mark ${caseKey} as ${decision}? This records human staging evidence and does not close the scorecard rail.`))return;
@@ -121,6 +148,7 @@
       }catch(err){window.alert(err?.message || 'Unable to record staging case evidence.');button.disabled=false;}
     }));
     host.querySelectorAll('[data-staging-finalize]').forEach((button)=>button.addEventListener('click',async()=>{
+      if(!mutationAllowed()){window.alert('Staging acceptance mutation is locked for this runtime.');return;}
       const runId=button.getAttribute('data-staging-finalize');if(!runId)return;
       if(!window.confirm('Finalize this evidence run now? Finalization fails closed if any catalog case is still pending. It does not close the scorecard rail.'))return;
       button.disabled=true;
@@ -130,6 +158,7 @@
       }catch(err){window.alert(err?.message || 'Unable to finalize staging evidence.');button.disabled=false;}
     }));
     host.querySelectorAll('[data-staging-signoff]').forEach((button)=>button.addEventListener('click',async()=>{
+      if(!mutationAllowed()){window.alert('Staging acceptance mutation is locked for this runtime.');return;}
       const decision=button.getAttribute('data-staging-signoff');const runId=button.getAttribute('data-run-id');if(!runId||!decision)return;
       const actionWord=decision==='approved'?'approve':'reject';
       if(!window.confirm(`Explicitly ${actionWord} this finalized staging acceptance evidence? This records human review but does not close the scorecard rail.`))return;
@@ -148,7 +177,7 @@
     try{
       const payload=await window.YWIAPI?.jsonFetch?.('admin-staging-acceptance',{method:'POST',body:{action:'status'},requireAuth:true,timeoutMs:45000});
       if(!payload)throw new Error('Staging acceptance endpoint returned no data.');state.payload=payload;
-    }catch(err){state.payload={summary:{rail_count:0,scenario_count:0,pending_evidence_count:0,human_action_count:0,assertion_failures:1,business_rail_auto_close:false},staging_acceptance:[],scenario_plan:[],security_assertions:[{assertion_key:'staging_acceptance_endpoint',assertion_status:'failed',assertion_detail:err?.message || 'Unable to load staging acceptance evidence.'}],catalog_assertions:[]};}
+    }catch(err){state.payload={environment_guard:{mutation_allowed:false,runtime_environment:'unknown',reason:'Staging acceptance endpoint status could not be loaded; mutation remains locked.'},summary:{rail_count:0,scenario_count:0,pending_evidence_count:0,human_action_count:0,assertion_failures:1,business_rail_auto_close:false,staging_mutation_allowed:false},staging_acceptance:[],scenario_plan:[],security_assertions:[{assertion_key:'staging_acceptance_endpoint',assertion_status:'failed',assertion_detail:err?.message || 'Unable to load staging acceptance evidence.'}],catalog_assertions:[],environment_assertions:[]};}
     finally{state.loading=false;render();}
   }
 

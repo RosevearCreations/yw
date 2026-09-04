@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Build/Schema 187 source gate: six-rail staging scenario catalog + prerequisite truth. */
+/** Schema 187 catalog source gate; the serving endpoint may advance to later compatible schemas. */
 import fs from 'node:fs';
 import path from 'node:path';
 const root=process.cwd();
@@ -13,6 +13,7 @@ const pkg=JSON.parse(read('package.json'));
 const results=[];
 const add=(name,ok)=>results.push({name,ok:!!ok});
 const hasAll=(text,values)=>values.every((value)=>text.includes(value));
+const endpointSchema=Number(endpoint.match(/const SCHEMA = (\d+);/)?.[1] || 0);
 const rails=[
   'operations_cockpit_live','quote_intake_live','live_job_updates',
   'customer_live_update_notifications','service_execution_proof_costing',
@@ -35,7 +36,7 @@ add('schema187-never-auto-closes-business-rails',hasAll(migration,['catalog_neve
 add('schema187-marker-ledger',hasAll(migration,['187::int as expected_schema_version',"187,'187_staging_acceptance_scenario_catalog'","'2026-09-03a'","'schema187_staging_scenario_catalog'"]));
 add('schema187-no-finance-provider-mutation',!/\b(?:insert\s+into|update|delete\s+from)\s+public\.(?:job_financial_events|finance_|ar_|ap_|stripe|paypal|payment_|gl_journal)/i.test(migration));
 
-add('endpoint-schema187-status-catalog',hasAll(endpoint,["const BUILD = '2026-09-03a'",'const SCHEMA = 187',"from('v_it_staging_acceptance_scenario_plan')",'ywi_staging_acceptance_catalog_assertions','scenario_plan:scenarios']));
+add('endpoint-current-status-catalog',endpointSchema>=187&&hasAll(endpoint,["from('v_it_staging_acceptance_scenario_plan')",'ywi_staging_acceptance_catalog_assertions','scenario_plan:scenarios']));
 add('endpoint-human-case-only',hasAll(endpoint,["action === 'record_case'", "scenario.verification_mode !== 'human'",'Human evidence can only be recorded on a started staging run.','ywi_rpc_record_staging_acceptance_result']));
 add('endpoint-explicit-finalize-and-signoff',hasAll(endpoint,["action === 'finalize'",'ywi_rpc_finalize_staging_acceptance_run',"action === 'signoff'",'ywi_rpc_signoff_staging_acceptance_run']));
 add('endpoint-admin-manage',endpoint.includes("hasModuleAccess(supabase,profile,'admin','manage')"));
@@ -56,5 +57,5 @@ add('package-schema187-source-gate',pkg.scripts?.['test:staging-scenarios']==='n
 
 const failures=results.filter((item)=>!item.ok);
 for(const item of results)console.log(`${item.ok?'PASS':'FAIL'} ${item.name}`);
-if(failures.length){console.error(`\nBuild 187 staging scenario gate failed: ${failures.length}/${results.length} checks.`);process.exit(1);}
-console.log(`\nBuild 187 staging scenario gate passed: ${results.length}/${results.length} checks.`);
+if(failures.length){console.error(`\nSchema 187 staging scenario gate failed: ${failures.length}/${results.length} checks.`);process.exit(1);}
+console.log(`\nSchema 187 staging scenario gate passed: ${results.length}/${results.length} checks.`);

@@ -14,7 +14,15 @@ A hidden screen is not a security boundary. Reads and writes remain server-enfor
 
 ## Online Help
 
-`/help.html` is the maintained operator guide. It must remain usable on phone and desktop, contain exactly one H1, and stay `noindex`. The app header must expose a Help link. When workflows, public-search boundaries, or important operator actions change materially, Help changes in the same source release.
+`/help.html` is the maintained operator guide. It must remain usable on phone and desktop, contain exactly one H1, and stay `noindex`. The app header must expose a Help link. When workflows, public-search boundaries, staging mutation rules, or important operator actions change materially, Help changes in the same source release.
+
+## Staging acceptance environment boundary
+
+Staging acceptance is evidence collection, not Production business activity. Status/catalog information may be viewed from Production, but staging acceptance mutation must fail closed unless the running edge function proves that it is operating against the intended dedicated staging project.
+
+Human staging acceptance mutation requires `YWI_RUNTIME_ENVIRONMENT=staging`, an exact `YWI_STAGING_PROJECT_REF` match to the current non-production project, and `YWI_STAGING_ACCEPTANCE_MUTATION_ENABLED=true`. The registered Production project remains denied regardless of those variables. The UI must expose the current guard state and hide Pass/Fail, Finalize, and Signoff controls whenever mutation is locked.
+
+The manual runner retains an independent project-ref/confirmation guard, so a UI or environment misconfiguration does not become the only line of defense. Staging evidence, finalization, and human signoff never auto-close the underlying business rail.
 
 ## Public web/search boundary
 
@@ -38,7 +46,7 @@ Search discovery must fail closed when route path, sitemap canonical, and render
 
 Numbered SQL migrations are retained permanently as schema history. Live schema state is read from database authority views rather than copied here. GitHub source checks and service-private release-source evidence hold exact source/run proof.
 
-Production promotion is deliberate/manual. Source work must not enable Finance execution, provider mutation, publish unapproved content, submit search URLs externally, or close human/external acceptance rails unless that specific change is separately authorized and evidenced.
+Production promotion is deliberate/manual. Source work must not enable Finance execution, provider mutation, publish unapproved content, submit search URLs externally, run staging acceptance against Production, or close human/external acceptance rails unless that specific change is separately authorized and evidenced.
 
 ## Hygiene rules
 

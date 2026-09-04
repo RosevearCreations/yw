@@ -6,7 +6,15 @@ Start every work session from current `dev` and `main`, then verify that their a
 
 ## Required sanity checks
 
-Before new feature work, verify `dev`/`main` parity, current schema drift, release authority separately from repository enforcement, intended Finance/provider fail-closed state, Current Admin To-Do truth, no accidental business-rail closure, repository/Help/SEO/browser gates, and removal of temporary branches/workflows/files after release proof.
+Before new feature work, verify `dev`/`main` parity, current schema drift, release authority separately from repository enforcement, intended Finance/provider fail-closed state, Current Admin To-Do truth, no accidental business-rail closure, repository/Help/SEO/browser gates, staging acceptance mutation lock state, and removal of temporary branches/workflows/files after release proof.
+
+## Staging acceptance mutation sanity check
+
+Treat Production staging-acceptance mutation as prohibited. Status/catalog reads may be available there, but Pass/Fail evidence, Finalize, and Signoff must remain locked.
+
+Before any human staging evidence is recorded, verify all three current runtime conditions: `YWI_RUNTIME_ENVIRONMENT=staging`, `YWI_STAGING_PROJECT_REF` exactly matches the intended non-production Supabase project, and `YWI_STAGING_ACCEPTANCE_MUTATION_ENABLED=true`. The current project must not be the registered Production project. The I.T. staging panel must visibly report the environment guard as enabled before mutation controls are used.
+
+The manual staging runner has its own project-ref/confirmation guard and remains manual-only. Never use a Production project, real customer data, Production payment, or Production provider mutation as staging evidence. Evidence/signoff does not auto-close the business rail.
 
 ## Public web and Help review
 
