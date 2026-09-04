@@ -57,6 +57,7 @@ jobs:
       - run: npm run test:staging-environment-guard
       - run: npm run test:staging-runtime-schema
       - run: npm run test:current-schema-staging-runbook
+      - run: npm run test:core-live-write-staging
       - run: npm run test:runtime
       - run: npm run test:boundaries
       - run: npm run test:acceptance
@@ -115,10 +116,15 @@ jobs:
           test -n "${YWI_STAGING_PROJECT_REF}"
           test -n "${YWI_STAGING_JOB_ADMIN_PROFILE_ID}"
           test "${YWI_STAGING_PROJECT_REF}" != "${YWI_PRODUCTION_PROJECT_REF}"
+          if [ "${TARGET_RAIL}" = "quote_intake_live" ]; then
+            test -n "${YWI_STAGING_PUBLIC_KEY}"
+          fi
         env:
+          TARGET_RAIL: ${{ inputs.target_rail }}
           YWI_RUN_STAGING_RPC_TESTS: ${{ secrets.YWI_RUN_STAGING_RPC_TESTS }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          YWI_STAGING_PUBLIC_KEY: ${{ secrets.YWI_STAGING_PUBLIC_KEY }}
           YWI_STAGING_PROJECT_REF: ${{ secrets.YWI_STAGING_PROJECT_REF }}
           YWI_STAGING_JOB_ADMIN_PROFILE_ID: ${{ secrets.YWI_STAGING_JOB_ADMIN_PROFILE_ID }}
           YWI_PRODUCTION_PROJECT_REF: jmqvkgiqlimdhcofwkxr
@@ -128,6 +134,7 @@ jobs:
           YWI_RUN_STAGING_RPC_TESTS: ${{ secrets.YWI_RUN_STAGING_RPC_TESTS }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          YWI_STAGING_PUBLIC_KEY: ${{ secrets.YWI_STAGING_PUBLIC_KEY }}
           YWI_STAGING_PROJECT_REF: ${{ secrets.YWI_STAGING_PROJECT_REF }}
           YWI_PRODUCTION_PROJECT_REF: jmqvkgiqlimdhcofwkxr
           YWI_STAGING_LABEL: staging
