@@ -51,6 +51,7 @@
     "test:finance-account-mapping-observability": "node scripts/finance-account-mapping-observability-check.mjs",
     "test:finance-account-mapping-decision-support": "node scripts/finance-account-mapping-decision-support-check.mjs",
     "test:help-seo": "node scripts/help-seo-hygiene-check.mjs",
+    "test:search-discovery": "node scripts/search-discovery-quality-check.mjs",
     "test:browser:help-seo": "playwright test --config=playwright.config.mjs tests/browser/help-seo-layout.spec.mjs"
   },
   "devDependencies": {
