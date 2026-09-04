@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Schema 187 catalog source gate; the serving endpoint may advance to later compatible schemas. */
+/** Schema 187 catalog source gate; the serving endpoint and runner may advance to later compatible schemas. */
 import fs from 'node:fs';
 import path from 'node:path';
 const root=process.cwd();
@@ -41,9 +41,10 @@ add('endpoint-human-case-only',hasAll(endpoint,["action === 'record_case'", "sce
 add('endpoint-explicit-finalize-and-signoff',hasAll(endpoint,["action === 'finalize'",'ywi_rpc_finalize_staging_acceptance_run',"action === 'signoff'",'ywi_rpc_signoff_staging_acceptance_run']));
 add('endpoint-admin-manage',endpoint.includes("hasModuleAccess(supabase,profile,'admin','manage')"));
 
-add('runner-schema187-catalog-aware',hasAll(runner,['Schema 187 catalog-aware staging acceptance runner','operations_staging_acceptance_scenarios','allowedRails','catalog_case_count','pending_human_case_count']));
+add('runner-current-schema-catalog-aware',hasAll(runner,['Current-schema staging acceptance runner','CATALOG_SCHEMA_VERSION = 187','operations_staging_acceptance_scenarios','repoLatestSchema','catalog_case_count','pending_human_case_count']));
 add('runner-six-rail-allowlist',rails.every((rail)=>runner.includes(`'${rail}'`)));
-add('runner-production-refusal',hasAll(runner,['YWI_PRODUCTION_PROJECT_REF',"'jmqvkgiqlimdhcofwkxr'",'Refusing Schema 187 staging acceptance against the YardWeasels Production project ref.']));
+add('runner-production-refusal',hasAll(runner,['YWI_PRODUCTION_PROJECT_REF',"'jmqvkgiqlimdhcofwkxr'",'Refusing current-schema staging acceptance against the YardWeasels Production project ref.']));
+add('runner-requires-exact-repository-schema',hasAll(runner,['expectedSchema !== repoLatestSchema','latestAppliedSchema !== repoLatestSchema','must exactly match repository Schema']));
 add('runner-leaves-human-evidence-pending',hasAll(runner,['Runner cannot mark human-controlled case','record every pending human catalog case','finalize the run'])&&!runner.includes("rpc('ywi_rpc_finalize_staging_acceptance_run'"));
 
 add('ui-renders-scenario-catalog',hasAll(ui,['scenario_plan','staging-scenario-row','Prerequisite truth','pending evidence','human action(s)']));
@@ -51,7 +52,7 @@ add('ui-human-case-actions-explicit',hasAll(ui,['data-staging-case="passed"','da
 add('ui-finalize-and-signoff-explicit',hasAll(ui,['data-staging-finalize',"action:'finalize'",'Approve evidence','Reject evidence',"action:'signoff'"]));
 add('ui-repeats-no-auto-close-boundary',ui.includes('Scorecard completion remains a separate deliberate release action'));
 
-add('workflow-six-rail-manual-dispatch',rails.every((rail)=>workflow.includes(`- ${rail}`))&&hasAll(workflow,['workflow_dispatch','environment: staging','Run Schema 187 staging catalog evidence']));
+add('workflow-six-rail-manual-dispatch',rails.every((rail)=>workflow.includes(`- ${rail}`))&&hasAll(workflow,['workflow_dispatch','environment: staging','Run current-schema staging catalog evidence']));
 add('workflow-runs-schema187-source-gate',workflow.includes('npm run test:staging-scenarios'));
 add('package-schema187-source-gate',pkg.scripts?.['test:staging-scenarios']==='node scripts/staging-scenario-catalog-check.mjs');
 

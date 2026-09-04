@@ -13,7 +13,7 @@ on:
         type: choice
         options: ['false','true']
       target_rail:
-        description: 'Schema 187 staging acceptance rail'
+        description: 'Current-schema staging acceptance rail (Schema 187 catalog)'
         required: false
         default: 'operations_cockpit_live'
         type: choice
@@ -116,7 +116,7 @@ jobs:
           YWI_STAGING_PROJECT_REF: ${{ secrets.YWI_STAGING_PROJECT_REF }}
           YWI_STAGING_JOB_ADMIN_PROFILE_ID: ${{ secrets.YWI_STAGING_JOB_ADMIN_PROFILE_ID }}
           YWI_PRODUCTION_PROJECT_REF: jmqvkgiqlimdhcofwkxr
-      - name: Run Schema 187 staging catalog evidence
+      - name: Run current-schema staging catalog evidence
         run: npm run test:staging
         env:
           YWI_RUN_STAGING_RPC_TESTS: ${{ secrets.YWI_RUN_STAGING_RPC_TESTS }}
@@ -133,4 +133,4 @@ jobs:
           YWI_STAGING_WORKFLOW_RUN_ID: ${{ github.run_id }}
           YWI_STAGING_TARGET_RAIL: ${{ inputs.target_rail }}
           YWI_STAGING_CREATE_FIXTURES: ${{ inputs.create_fixtures == 'true' && '1' || '0' }}
-          YWI_STAGING_FIXTURE_LABEL: STAGING-B187-RUN
+          YWI_STAGING_FIXTURE_LABEL: STAGING-CURRENT-RUN
