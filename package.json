@@ -30,6 +30,7 @@
     "test:submission-security": "node scripts/submission-security-boundary-check.mjs",
     "test:security-advisor-truth": "node scripts/security-advisor-truth-reconciliation-check.mjs",
     "test:admin-account-security": "node scripts/admin-account-security-readiness-check.mjs",
+    "test:auth-security-evidence": "node scripts/auth-security-evidence-authority-check.mjs",
     "test:pg-net-runtime": "node scripts/pg-net-runtime-constraint-check.mjs",
     "test:equipment-scan": "node scripts/equipment-scan-custody-hardening-check.mjs",
     "test:runtime": "node scripts/module-runtime-check.mjs && node scripts/module-runtime-behavior-check.mjs && node scripts/core-data-service-check.mjs && node scripts/core-data-service-behavior-check.mjs && node scripts/module-write-boundary-check.mjs && node scripts/module-write-boundary-behavior-check.mjs",

@@ -14,7 +14,11 @@ A hidden screen is not a security boundary. Reads and writes remain server-enfor
 
 ## Online Help
 
-`/help.html` is the maintained operator guide. It must remain usable on phone and desktop, contain exactly one H1, and stay `noindex`. The app header must expose a Help link. When workflows, public-search boundaries, staging mutation rules, or important operator actions change materially, Help changes in the same source release.
+`/help.html` is the maintained operator guide. It must remain usable on phone and desktop, contain exactly one H1, and stay `noindex`. The app header must expose a Help link. When workflows, public-search boundaries, staging mutation rules, Auth security evidence rules, or important operator actions change materially, Help changes in the same source release.
+
+## Auth security evidence boundary
+
+Leaked-password protection and MFA options are controlled by the external Supabase Auth control plane. Current readiness may treat either control as secure only when recent authoritative external evidence records the actual configured state. Advisor history, advisor snapshots, database catalogs, and absence of an advisor warning are not substitutes for that proof. Evidence is service-private and freshness-aware; stale evidence reopens verification. Application source changes must not mutate these Auth settings or auto-close their Current Admin To-Do follow-ups.
 
 ## Staging acceptance environment boundary
 
@@ -46,7 +50,7 @@ Search discovery must fail closed when route path, sitemap canonical, and render
 
 Numbered SQL migrations are retained permanently as schema history. Live schema state is read from database authority views rather than copied here. GitHub source checks and service-private release-source evidence hold exact source/run proof.
 
-Production promotion is deliberate/manual. Source work must not enable Finance execution, provider mutation, publish unapproved content, submit search URLs externally, run staging acceptance against Production, or close human/external acceptance rails unless that specific change is separately authorized and evidenced.
+Production promotion is deliberate/manual. Source work must not enable Finance execution, provider mutation, mutate external Auth controls, publish unapproved content, submit search URLs externally, run staging acceptance against Production, or close human/external acceptance rails unless that specific change is separately authorized and evidenced.
 
 ## Hygiene rules
 
