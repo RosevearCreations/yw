@@ -66,6 +66,14 @@ Treat repository enforcement as an external GitHub control, separate from green 
 
 The preflight must fail closed when main is unprotected, the evidence is missing, the branch SHA is stale/different, the event is not an exact main push, or the ref is not `refs/heads/main`. A successful pull-request workflow is not branch-protection evidence. This source gate does not enable or alter GitHub branch protection/rulesets and must not auto-close `repository:main_protection`; the external follow-up remains open until GitHub itself reports enforcement.
 
+## Exact-main release-source evidence sanity check
+
+After the canonical source/browser job succeeds on an actual `main` push, a dependent release-source evidence job must independently re-read GitHub's current `branches/main` state and re-run the exact-main protection preflight. Only then may it write `release-source-evidence.json` and upload the run-scoped `ywi-main-release-source-<run-id>-<attempt>` GitHub Actions artifact. The artifact contains the exact source SHA, GitHub-reported main SHA, workflow run ID and attempt, workflow name, dynamically discovered repository schema version, source-check result, and the observed `main` protected state. GitHub artifact retention remains governed by repository/organization settings.
+
+Treat this JSON as a **release-source candidate**, not as proof that Production was deployed. It intentionally keeps detailed `branch_policy_verified=false`, marks the database-record candidate `workflow_status=unknown`, and says the final workflow conclusion must be verified after the run completes. Before recording that candidate as `passed` in the private I.T. release-source evidence authority, re-open the exact GitHub run and verify its final conclusion is `success`. Do not infer detailed ruleset policy from the simple protected flag.
+
+Generating or uploading the artifact does not write release evidence to Supabase, mutate Production data, enable Finance/provider mutation, promote `main`, deploy Production, or auto-close any GitHub/release/business rail. Recording the server-side evidence and any later Production promotion remain separate authorized actions.
+
 ## Remaining work selection
 
 Choose the next technical feature from a fresh I.T. Readiness / Current Admin To-Do review. Do not invent autonomous work merely to increase a score. Rails classified as human, accounting, provider, content or staging acceptance remain open until their actual evidence exists.
