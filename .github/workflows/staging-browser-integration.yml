@@ -55,6 +55,7 @@ jobs:
       - run: npm run test:staging-acceptance
       - run: npm run test:staging-scenarios
       - run: npm run test:staging-environment-guard
+      - run: npm run test:staging-runtime-schema
       - run: npm run test:runtime
       - run: npm run test:boundaries
       - run: npm run test:acceptance
