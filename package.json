@@ -21,6 +21,8 @@
     "test:browser:admin-account-security": "playwright test --config=playwright.config.mjs tests/browser/admin-account-security.spec.mjs",
     "staging:preflight": "node scripts/staging-target-preflight.mjs",
     "test:staging-target-preflight": "node scripts/staging-target-preflight-check.mjs",
+    "repository:protection:require": "node scripts/repository-protection-preflight.mjs",
+    "test:repository-protection-preflight": "node scripts/repository-protection-preflight-check.mjs",
     "test:staging": "node scripts/operations-rpc-staging-e2e.mjs",
     "test:staging-acceptance": "node scripts/staging-acceptance-control-plane-check.mjs && node scripts/operations-rpc-staging-e2e.mjs",
     "test:staging-scenarios": "node scripts/staging-scenario-catalog-check.mjs",

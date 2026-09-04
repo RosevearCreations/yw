@@ -41,6 +41,19 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - run: npm run test:repository-protection-preflight
+      - name: Require GitHub repository enforcement on exact main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          YWI_GITHUB_EVENT_NAME: ${{ github.event_name }}
+          YWI_GITHUB_REF: ${{ github.ref }}
+          YWI_EXPECTED_MAIN_SHA: ${{ github.sha }}
+        run: |
+          main_json="$(gh api "repos/${GITHUB_REPOSITORY}/branches/main")"
+          export YWI_GITHUB_MAIN_SHA="$(printf '%s' "$main_json" | jq -r '.commit.sha // empty')"
+          export YWI_GITHUB_MAIN_PROTECTED="$(printf '%s' "$main_json" | jq -r '.protected // empty')"
+          npm run repository:protection:require
       - run: npm run test:modules
       - run: npm run test:it
       - run: npm run test:it-scorecard-truth
