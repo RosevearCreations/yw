@@ -1,9 +1,13 @@
 import { test, expect } from '@playwright/test';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
-const uiPath=path.resolve(here,'../../js/staging-acceptance-ui.js');
+const repoRoot=path.resolve(here,'../..');
+const uiPath=path.resolve(repoRoot,'js/staging-acceptance-ui.js');
+const schemaFiles=fs.readdirSync(path.resolve(repoRoot,'sql')).filter((name)=>/^\d{3}_.+\.sql$/i.test(name));
+const CURRENT_SCHEMA=Math.max(...schemaFiles.map((name)=>Number(name.slice(0,3))).filter(Number.isFinite));
 const runId='11111111-1111-4111-8111-111111111111';
 const sourceSha='02734b2168511b4faa54bf5f7fdea92b1d8f5b3d';
 
@@ -11,8 +15,8 @@ const baseRail={
   rail_key:'operations_cockpit_live',rail_title:'Operations cockpit write forms',rail_status:'active',progress_percent:94,
   resolution_class:'staging_acceptance',requires_human:true,requires_external:false,
   resolution_note:'Keep open until the Cockpit staging acceptance requested by the rail is actually exercised.',
-  run_id:runId,run_key:'staging-b187-ops',suite_name:'build187_operations_cockpit_live_acceptance',
-  run_status:'started',source_sha:sourceSha,source_workflow_run_id:33711102071,schema_version:197,
+  run_id:runId,run_key:`staging-s${CURRENT_SCHEMA}-ops`,suite_name:`schema${CURRENT_SCHEMA}_operations_cockpit_live_acceptance`,
+  run_status:'started',source_sha:sourceSha,source_workflow_run_id:33711102071,schema_version:CURRENT_SCHEMA,
   fixture_set_id:null,fixture_status:null,fixture_label:null,human_signoff_required:true,human_signoff_status:'pending',
   result_count:6,passed_count:5,failed_count:0,blocking_failed_count:0,skipped_count:0,
   staging_acceptance_status:'collecting_evidence',acceptance_complete:false
@@ -22,7 +26,7 @@ const scenario=(case_key,case_title,verification_mode,evidence_status,human_acti
   resolution_class:'staging_acceptance',requires_human:true,requires_external:false,
   case_key,case_title,case_description:`Evidence for ${case_title}.`,evidence_kind:verification_mode==='human'?'manual':'automated',
   verification_mode,is_blocking:true,expected_outcome:`Expected ${case_title}.`,prerequisites:[{kind:'fixture',key:'STAGING only'}],case_sort_order:10,
-  run_id:runId,run_key:baseRail.run_key,suite_name:baseRail.suite_name,run_status:'started',source_sha:sourceSha,source_workflow_run_id:33711102071,schema_version:197,
+  run_id:runId,run_key:baseRail.run_key,suite_name:baseRail.suite_name,run_status:'started',source_sha:sourceSha,source_workflow_run_id:33711102071,schema_version:CURRENT_SCHEMA,
   human_signoff_required:true,human_signoff_status:'pending',case_status:evidence_status==='passed'?'passed':'pending',observed_outcome:evidence_status==='passed'?'passed':null,
   evidence_status,prerequisite_truth:evidence_status==='passed'?'satisfied_by_evidence':'requires_human_staging_evidence',human_action_required
 });
@@ -39,13 +43,19 @@ const productionGuard={
   explicit_staging:false,exact_project_ref_match:false,mutation_flag_enabled:false,known_production:true,mutation_allowed:false,
   reason:'Production project authority permanently denies staging-acceptance mutation.'
 };
+const currentSchemaAuthority={
+  expected_schema_version:CURRENT_SCHEMA,latest_applied_schema_version:CURRENT_SCHEMA,drift_status:'current',exact_schema_match:true,
+  minimum_schema:197,message:'Live database exactly matches the current repository schema marker.',checked_at:'2026-09-04T14:00:00Z'
+};
 
 const basePayload={
-  ok:true,build:'2026-09-04a',schema:197,environment_guard:structuredClone(stagingGuard),
-  summary:{rail_count:1,scenario_count:6,accepted_count:0,awaiting_human_count:0,pending_evidence_count:1,human_action_count:1,failed_count:0,assertion_failures:0,business_rail_auto_close:false,staging_mutation_allowed:true,known_production_runtime:false},
+  ok:true,build:'2026-09-04b',schema:CURRENT_SCHEMA,minimum_schema:197,
+  schema_authority:structuredClone(currentSchemaAuthority),environment_guard:structuredClone(stagingGuard),
+  summary:{rail_count:1,scenario_count:6,accepted_count:0,awaiting_human_count:0,pending_evidence_count:1,human_action_count:1,failed_count:0,assertion_failures:0,schema_current:true,business_rail_auto_close:false,staging_mutation_allowed:true,known_production_runtime:false},
   security_assertions:[{assertion_key:'staging_human_signoff_fail_closed',assertion_status:'passed',assertion_detail:'Human approval remains required.'}],
   catalog_assertions:[{assertion_key:'catalog_each_rail_has_human_blocking_case',assertion_status:'passed',assertion_detail:'Human evidence remains blocking.'}],
   environment_assertions:[{assertion_key:'production_project_registered_fail_closed',assertion_status:'passed',assertion_detail:'Production mutation is denied.'}],
+  schema_assertions:[{assertion_key:'staging_runtime_schema_current',assertion_status:'passed',assertion_detail:`Runtime schema is exactly current at ${CURRENT_SCHEMA}.`}],
   staging_acceptance:[structuredClone(baseRail)],
   scenario_plan:[
     scenario('schema_current','Schema is current','runner','passed'),
@@ -74,15 +84,15 @@ async function renderHarness(page,width,height,payload=basePayload){
           const row=next.scenario_plan.find((item)=>item.case_key===options.body.case_key);
           row.case_status=options.body.decision;row.evidence_status=options.body.decision;row.human_action_required=false;row.observed_outcome=options.body.note;
           next.summary.pending_evidence_count=0;next.summary.human_action_count=0;next.staging_acceptance[0].passed_count=6;
-          window.__stagingPayload=next;return {ok:true,build:'2026-09-04a',schema:197,case_result:{case_status:options.body.decision},status:structuredClone(next)};
+          window.__stagingPayload=next;return {ok:true,build:'2026-09-04b',schema:next.schema,case_result:{case_status:options.body.decision},status:structuredClone(next)};
         }
         if(action==='finalize'){
           const next=structuredClone(window.__stagingPayload);next.staging_acceptance[0].run_status='passed';next.staging_acceptance[0].staging_acceptance_status='awaiting_human_signoff';next.summary.awaiting_human_count=1;next.scenario_plan.forEach((row)=>row.run_status='passed');window.__stagingPayload=next;
-          return {ok:true,build:'2026-09-04a',schema:197,finalize:{run_status:'passed',acceptance_status:'awaiting_human_signoff',scorecard_auto_closed:false},status:structuredClone(next)};
+          return {ok:true,build:'2026-09-04b',schema:next.schema,finalize:{run_status:'passed',acceptance_status:'awaiting_human_signoff',scorecard_auto_closed:false},status:structuredClone(next)};
         }
         if(action==='signoff'){
           const next=structuredClone(window.__stagingPayload);next.staging_acceptance[0].human_signoff_status='approved';next.staging_acceptance[0].staging_acceptance_status='accepted';next.staging_acceptance[0].acceptance_complete=true;next.summary.accepted_count=1;next.summary.awaiting_human_count=0;window.__stagingPayload=next;
-          return {ok:true,build:'2026-09-04a',schema:197,signoff:{acceptance_status:'accepted',scorecard_auto_closed:false},status:structuredClone(next)};
+          return {ok:true,build:'2026-09-04b',schema:next.schema,signoff:{acceptance_status:'accepted',scorecard_auto_closed:false},status:structuredClone(next)};
         }
         return structuredClone(window.__stagingPayload);
       }
@@ -92,11 +102,14 @@ async function renderHarness(page,width,height,payload=basePayload){
   await page.evaluate(()=>document.dispatchEvent(new CustomEvent('ywi:module-runtime-ready')));
 }
 
-test('phone staging runtime exposes catalog prerequisites and explicit human evidence controls',async({page})=>{
+test('phone staging runtime exposes exact current schema and explicit human evidence controls',async({page})=>{
   await renderHarness(page,390,844);
   const panel=page.locator('#stagingAcceptancePanel');
   await expect(panel).toBeVisible();
   await expect(panel).toContainText('Environment mutation guard: ENABLED');
+  await expect(panel).toContainText('Runtime schema authority: CURRENT');
+  await expect(panel).toContainText(`Expected Schema ${CURRENT_SCHEMA}`);
+  await expect(panel).toContainText(`live Schema ${CURRENT_SCHEMA}`);
   await expect(panel).toContainText('6 catalog case(s)');
   await expect(panel).toContainText('Cockpit write-form round trip');
   await expect(panel).toContainText('Prerequisite truth');
@@ -133,6 +146,24 @@ test('desktop staging runtime requires human case then finalize then signoff wit
   await expect(panel).toContainText('Scorecard completion remains a separate deliberate release action');
 });
 
+test('staging environment with schema mismatch stays readable and hides all mutation controls',async({page})=>{
+  const stale=structuredClone(basePayload);
+  stale.ok=false;stale.schema_authority.latest_applied_schema_version=CURRENT_SCHEMA-1;stale.schema_authority.exact_schema_match=false;stale.schema_authority.drift_status='behind';
+  stale.schema_authority.message='Staging database is behind the current repository schema.';
+  stale.schema_assertions=[{assertion_key:'staging_runtime_schema_current',assertion_status:'failed',assertion_detail:'Exact current schema is required.'}];
+  stale.summary.schema_current=false;stale.summary.staging_mutation_allowed=false;stale.summary.assertion_failures=1;
+  await renderHarness(page,1280,900,stale);
+  const panel=page.locator('#stagingAcceptancePanel');
+  await expect(panel).toContainText('Environment mutation guard: ENABLED');
+  await expect(panel).toContainText('Runtime schema authority: MISMATCH');
+  await expect(panel).toContainText('human staging mutation is locked');
+  await expect(panel.getByRole('button',{name:'Pass evidence'})).toHaveCount(0);
+  await expect(panel.getByRole('button',{name:'Fail evidence'})).toHaveCount(0);
+  await expect(panel.getByRole('button',{name:'Finalize evidence run'})).toHaveCount(0);
+  const actions=(await page.evaluate(()=>window.__stagingCalls || [])).map((call)=>call.options?.body?.action);
+  expect(actions).toEqual(['status']);
+});
+
 test('phone Production runtime stays readable but hides all staging mutation controls',async({page})=>{
   const locked=structuredClone(basePayload);
   locked.environment_guard=structuredClone(productionGuard);
@@ -140,6 +171,7 @@ test('phone Production runtime stays readable but hides all staging mutation con
   await renderHarness(page,390,844,locked);
   const panel=page.locator('#stagingAcceptancePanel');
   await expect(panel).toContainText('Environment mutation guard: LOCKED');
+  await expect(panel).toContainText('Runtime schema authority: CURRENT');
   await expect(panel).toContainText('Production project authority permanently denies staging-acceptance mutation.');
   await expect(panel).toContainText('Status/catalog reads remain available');
   await expect(panel.getByRole('button',{name:'Pass evidence'})).toHaveCount(0);
