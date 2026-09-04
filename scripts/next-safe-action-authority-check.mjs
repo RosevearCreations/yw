@@ -9,7 +9,6 @@ function assertIncludes(text, value, label) {
 }
 
 const migration = read('sql/199_next_safe_action_authority.sql');
-const schemaMarker = read('sql/199_next_safe_action_authority_expected_marker.sql');
 const pkg = JSON.parse(read('package.json'));
 const workflow = read('.github/workflows/staging-browser-integration.yml');
 const api = read('supabase/functions/admin-account-security/index.ts');
@@ -31,26 +30,21 @@ for (const required of [
   'open_business_acceptance_unchanged',
   'finance_provider_execution_off',
   'schema199_next_safe_action_authority',
-  "199,'199_next_safe_action_authority'"
-]) assertIncludes(migration, required, 'Schema 199 authority');
-
-for (const required of [
+  "199,'199_next_safe_action_authority'",
   'create or replace view public.v_schema_drift_status',
   '199 as expected_schema_version',
   ">= 199 then 'current'",
   'grant select on table public.v_schema_drift_status to service_role'
-]) assertIncludes(schemaMarker, required, 'Schema 199 exact drift marker');
+]) assertIncludes(migration, required, 'Schema 199 authority');
 
-for (const unsafeText of [migration, schemaMarker]) {
-  for (const forbidden of [
-    'execution_enabled=true;',
-    'provider_mutation_enabled=true;',
-    "rail_status='complete'",
-    'auth.config',
-    'IndexNow'
-  ]) {
-    if (unsafeText.includes(forbidden)) throw new Error(`Unsafe Schema 199 mutation/publish token present: ${forbidden}`);
-  }
+for (const forbidden of [
+  'execution_enabled=true;',
+  'provider_mutation_enabled=true;',
+  "rail_status='complete'",
+  'auth.config',
+  'IndexNow'
+]) {
+  if (migration.includes(forbidden)) throw new Error(`Unsafe Schema 199 mutation/publish token present: ${forbidden}`);
 }
 
 if (pkg.scripts['test:next-safe-action'] !== 'node scripts/next-safe-action-authority-check.mjs') {
