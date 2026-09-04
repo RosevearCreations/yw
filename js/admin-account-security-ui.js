@@ -1,4 +1,4 @@
-/* Build 191 — Admin account security + current-only Admin To-Do.
+/* Admin account security + current I.T. work authority.
    Existing passwords are never available. Admin may replace another active user's
    password with an audited temporary password that must be changed by the user. */
 'use strict';
@@ -32,6 +32,26 @@
     return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString('en-CA');
   }
 
+  function nextSafeActionHtml() {
+    const status = state.payload?.next_safe_action_status || {};
+    const queue = Array.isArray(state.payload?.next_safe_action_queue) ? state.payload.next_safe_action_queue : [];
+    const next = queue[0] || {};
+    const title = status.next_todo_title || next.todo_title || 'No unresolved action';
+    const action = status.next_action || next.current_action || 'No current unresolved action requires prioritization.';
+    const note = status.next_safety_note || next.safety_note || 'Continue to use current release and environment guards.';
+    const actionClass = status.next_action_class || next.action_class || 'none';
+    const candidate = status.safe_candidate_after_environment_guard === true || next.safe_candidate_after_environment_guard === true;
+    return `<section class="it-readiness-panel" id="adminNextSafeActionPanel">
+      <span class="it-readiness-kicker">Next safe action</span>
+      <h3>${esc(title)}</h3>
+      <p><strong>${esc(actionClass.replaceAll('_',' '))}</strong>${candidate ? ' · candidate after environment guard' : ''}</p>
+      <p><b>Current action:</b> ${esc(action)}</p>
+      <p class="muted"><b>Safety:</b> ${esc(note)}</p>
+      <p class="muted">${Number(status.staging_ready_candidate_count || 0)} staging-ready · ${Number(status.external_verification_count || 0)} external verification · ${Number(status.pending_human_or_provider_count || 0)} content/provider pending · ${Number(status.blocked_accounting_count || 0)} accounting blocked.</p>
+      <p class="muted">Priority is guidance only. It does not authorize staging mutation, close a rail, change Auth, publish content, enable Finance/provider mutation, or promote Production.</p>
+    </section>`;
+  }
+
   function currentTodoHtml() {
     const rows = Array.isArray(state.payload?.current_todo) ? state.payload.current_todo : [];
     const status = state.payload?.current_todo_status || {};
@@ -40,7 +60,7 @@
       <h3>Only unresolved current requirements</h3>
       <p>${Number(status.current_todo_count || rows.length)} current item(s) · ${Number(status.business_acceptance_count || 0)} business acceptance · ${Number(status.security_followup_count || 0)} security · ${Number(status.repository_followup_count || 0)} repository.</p>
       <p class="muted">Completed builds and superseded preflight/prerelease checklists are retained for audit but removed from this active list.</p>
-      ${rows.length ? `<div class="it-readiness-list">${rows.map((row) => `<div class="it-readiness-row"><div><strong>${esc(row.todo_title || row.todo_key)}</strong><small><b>Current action:</b> ${esc(row.current_action || '')}</small><small><b>Evidence:</b> ${esc(row.evidence_requirement || '')}</small><small>${esc([row.source_kind, row.requires_human ? 'human required' : '', row.requires_external ? 'external evidence' : ''].filter(Boolean).join(' · '))}</small></div><span class="it-readiness-status ${String(row.todo_status || '').toLowerCase()==='ready'?'warning':'warning'}">${esc(row.todo_status || 'pending')}</span></div>`).join('')}</div>` : '<div class="it-readiness-empty">No current unresolved Admin To-Do items.</div>'}
+      ${rows.length ? `<div class="it-readiness-list">${rows.map((row) => `<div class="it-readiness-row"><div><strong>${esc(row.todo_title || row.todo_key)}</strong><small><b>Current action:</b> ${esc(row.current_action || '')}</small><small><b>Evidence:</b> ${esc(row.evidence_requirement || '')}</small><small>${esc([row.source_kind, row.requires_human ? 'human required' : '', row.requires_external ? 'external evidence' : ''].filter(Boolean).join(' · '))}</small></div><span class="it-readiness-status warning">${esc(row.todo_status || 'pending')}</span></div>`).join('')}</div>` : '<div class="it-readiness-empty">No current unresolved Admin To-Do items.</div>'}
     </section>`;
   }
 
@@ -112,7 +132,7 @@
       byId('adminAccountSecurityLoad')?.addEventListener('click', load);
       return;
     }
-    host.innerHTML = `<div class="it-readiness-grid">${currentTodoHtml()}${accountsHtml()}</div>`;
+    host.innerHTML = `<div class="it-readiness-grid">${nextSafeActionHtml()}${currentTodoHtml()}${accountsHtml()}</div>`;
     renderEditor();
     bindActions();
     hideHistoricalTodoPanels();
@@ -165,7 +185,7 @@
       state.payload = payload;
     } catch (err) {
       state.error = err?.message || 'Unable to load Admin account security.';
-      state.payload = { accounts:[], current_todo:[], current_todo_status:null };
+      state.payload = { accounts:[], current_todo:[], current_todo_status:null, next_safe_action_status:null, next_safe_action_queue:[] };
     } finally {
       state.loading = false;
       render();
