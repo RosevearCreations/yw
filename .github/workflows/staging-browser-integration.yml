@@ -48,6 +48,7 @@ jobs:
       - run: npm run test:submission-security
       - run: npm run test:security-advisor-truth
       - run: npm run test:admin-account-security
+      - run: npm run test:auth-security-evidence
       - run: npm run test:pg-net-runtime
       - run: npm run test:equipment-scan
       - run: npm run test:staging-acceptance

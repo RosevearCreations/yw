@@ -6,7 +6,11 @@ Start every work session from current `dev` and `main`, then verify that their a
 
 ## Required sanity checks
 
-Before new feature work, verify `dev`/`main` parity, current schema drift, release authority separately from repository enforcement, intended Finance/provider fail-closed state, Current Admin To-Do truth, no accidental business-rail closure, repository/Help/SEO/browser gates, staging acceptance mutation lock state, and removal of temporary branches/workflows/files after release proof.
+Before new feature work, verify `dev`/`main` parity, current schema drift, release authority separately from repository enforcement, intended Finance/provider fail-closed state, Current Admin To-Do truth, Auth security evidence freshness, no accidental business-rail closure, repository/Help/SEO/browser gates, staging acceptance mutation lock state, and removal of temporary branches/workflows/files after release proof.
+
+## Auth security evidence sanity check
+
+Treat leaked-password protection and MFA as external Supabase Auth configuration. Verify each setting with recent authoritative external evidence before considering its follow-up resolved. Do not infer either setting from PostgreSQL catalogs, a historical security-advisor row, or the absence of a current advisor warning. Stale evidence requires re-verification, and application source work must not change the Auth setting or auto-close its Current Admin To-Do item.
 
 ## Staging acceptance mutation sanity check
 

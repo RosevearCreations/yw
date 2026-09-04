@@ -10,7 +10,7 @@ The public layer consists of the home/contact surface and approved service/locat
 
 ## Operator help
 
-Current in-app guidance is maintained at **`/help.html`** and linked from the application header. Help covers sign-in/recovery, mobile workflow, the four modules, offline/sync behavior, customer portal privacy, public-search authority, staging safety, and troubleshooting. The Help page is intentionally `noindex` so operational guidance does not compete with public service content in search.
+Current in-app guidance is maintained at **`/help.html`** and linked from the application header. Help covers sign-in/recovery, mobile workflow, the four modules, offline/sync behavior, customer portal privacy, public-search authority, staging safety, Auth security evidence, and troubleshooting. The Help page is intentionally `noindex` so operational guidance does not compete with public service content in search.
 
 ## Public search and SEO contract
 
@@ -30,6 +30,10 @@ A staging acceptance mutation requires all three runtime conditions at once: `YW
 
 The manual staging runner independently refuses the Production project ref and still requires its existing staging confirmation variables. Staging acceptance evidence never auto-closes a scorecard rail; human signoff and later release closure remain separate deliberate actions.
 
+## Auth security evidence contract
+
+Leaked-password protection and MFA are Supabase Auth control-plane settings and therefore require **recent authoritative external evidence** before either follow-up can be treated as secure. Historical advisor rows, advisor snapshots, and the absence of an advisor warning are not sufficient proof of the current setting. Auth security evidence is service-private, freshness-aware, and remains separate from application release authority; source changes do not mutate these external Auth settings or auto-close their Current Admin To-Do items.
+
 ## Release and readiness truth
 
 Do not copy release SHAs, workflow run numbers, or historical build numbers into active documentation. Current source/release authority belongs in GitHub and service-private I.T. release views. Current database version belongs in `v_schema_drift_status` / `app_schema_versions`.
@@ -44,4 +48,4 @@ Git history and numbered migrations are the audit trail. Do not recreate archive
 
 ## Development checks
 
-`npm run test:repo` verifies repository hygiene and durable documentation rules. `npm run test:it` verifies I.T. authority, including current-readiness versus historical-audit separation. `npm run test:staging-environment-guard` verifies Production denial, explicit staging enablement, endpoint/UI lock behavior, durable guidance, and preservation of human-gated rails. `npm run test:help-seo` verifies Help/search/H1/static search controls. `npm run test:search-discovery` verifies canonical/sitemap parity, freshness, structured data, fail-closed conflicts, and the no-automatic-submission boundary. Rendered browser acceptance includes phone and desktop Help/app/public-page layout checks plus canonical-host, canonical-conflict, noncanonical-preview indexing behavior, and staging environment lock behavior.
+`npm run test:repo` verifies repository hygiene and durable documentation rules. `npm run test:it` verifies I.T. authority, including current-readiness versus historical-audit separation. `npm run test:auth-security-evidence` verifies the Auth security evidence authority, freshness rules, advisor-versus-authoritative proof boundary, Current Admin To-Do derivation, and safety invariants. `npm run test:staging-environment-guard` verifies Production denial, explicit staging enablement, endpoint/UI lock behavior, durable guidance, and preservation of human-gated rails. `npm run test:help-seo` verifies Help/search/H1/static search controls. `npm run test:search-discovery` verifies canonical/sitemap parity, freshness, structured data, fail-closed conflicts, and the no-automatic-submission boundary. Rendered browser acceptance includes phone and desktop Help/app/public-page layout checks plus canonical-host, canonical-conflict, noncanonical-preview indexing behavior, and staging environment lock behavior.
