@@ -28,9 +28,21 @@
     } catch { return fallback; }
   };
   const safeCta = (value) => { const raw = String(value || '/#quote-intake'); return raw.startsWith('/') || raw.startsWith('#') ? raw : '/#quote-intake'; };
-  function safeCanonical(value, fallbackPath) {
-    if (authority?.canonicalUrl) return authority.canonicalUrl(value, fallbackPath);
-    return '';
+  const normalizedPath = (value) => {
+    try { return new URL(String(value || '/'), authority?.canonicalOrigin || window.location.origin).pathname.replace(/\/+$/, '') || '/'; }
+    catch { return ''; }
+  };
+  function canonicalState(route) {
+    if (!authority?.canonicalUrl || !authority?.canonicalOrigin) return { canonical:'', consistent:false };
+    const routePath = route?.route_path || path;
+    const canonical = authority.canonicalUrl(routePath, routePath);
+    const raw = String(route?.canonical_url || canonical).trim();
+    try {
+      const supplied = new URL(raw, authority.canonicalOrigin);
+      const expected = new URL(canonical);
+      const consistent = supplied.origin === expected.origin && normalizedPath(supplied.href) === normalizedPath(expected.href) && !supplied.search && !supplied.hash;
+      return { canonical, consistent };
+    } catch { return { canonical, consistent:false }; }
   }
   function publicIndexDirective() {
     return authority?.indexDirective ? authority.indexDirective() : 'noindex,follow';
@@ -90,6 +102,8 @@
     if (!meta) { meta = document.createElement('meta'); meta.setAttribute('property', property); document.head.append(meta); }
     meta.content = content;
   }
+  function removeProperty(property) { document.head.querySelectorAll(`meta[property="${property}"]`).forEach((node) => node.remove()); }
+  function removeMeta(name) { document.head.querySelectorAll(`meta[name="${name}"]`).forEach((node) => node.remove()); }
   function ensureCanonical(url) {
     if (!url) return;
     let link = document.head.querySelector('link[rel="canonical"]');
@@ -108,31 +122,59 @@
     return main;
   }
 
+  function schemaGraph(route, canonical) {
+    const label = route.service_name || route.location_name || route.h1_text || route.page_title;
+    const description = route.meta_description || route.page_intro || '';
+    const site = String(authority?.canonicalOrigin || '').replace(/\/$/, '');
+    return {
+      '@context':'https://schema.org',
+      '@graph':[
+        {'@type':'WebPage','@id':`${canonical}#webpage`,url:canonical,name:route.page_title,description,inLanguage:'en-CA',isPartOf:{'@id':`${site}/#website`},breadcrumb:{'@id':`${canonical}#breadcrumb`}},
+        {'@type':'Service','@id':`${canonical}#service`,name:route.service_name || route.h1_text,description,areaServed:route.location_name || 'Southern Ontario',provider:{'@id':`${site}/#organization`},url:canonical,mainEntityOfPage:{'@id':`${canonical}#webpage`}},
+        {'@type':'BreadcrumbList','@id':`${canonical}#breadcrumb`,itemListElement:[
+          {'@type':'ListItem',position:1,name:'Home',item:`${site}/`},
+          {'@type':'ListItem',position:2,name:label,item:canonical}
+        ]}
+      ]
+    };
+  }
+
   function render(route, visual) {
     const main = shell();
     const body = sanitizeHtml(route.page_body_html || '') || markdownToHtml(route.page_body_markdown || '') || `<p>${esc(route.page_intro || '')}</p>`;
     const imageUrl = safeUrl(visual?.public_url || visual?.source_url || '', '');
-    const canonical = safeCanonical(route.canonical_url, route.route_path || path);
+    const canonicalInfo = canonicalState(route);
+    const canonical = canonicalInfo.canonical;
     const cta = safeCta(route.primary_cta_path);
+    const description = route.meta_description || route.page_intro || '';
+    const imageAlt = visual?.alt_text || route.h1_text || route.page_title;
+    const robotsDirective = canonicalInfo.consistent ? publicIndexDirective() : 'noindex,follow';
     document.title = route.page_title;
-    ensureMeta('description', route.meta_description || route.page_intro || '');
-    ensureMeta('robots', publicIndexDirective());
+    ensureMeta('description', description);
+    ensureMeta('robots', robotsDirective);
     ensureCanonical(canonical);
     ensureProperty('og:title', route.page_title);
-    ensureProperty('og:description', route.meta_description || route.page_intro || '');
+    ensureProperty('og:description', description);
     ensureProperty('og:url', canonical);
     ensureProperty('og:type', 'website');
-    if (imageUrl) ensureProperty('og:image', imageUrl);
+    ensureMeta('twitter:card', imageUrl ? 'summary_large_image' : 'summary');
+    ensureMeta('twitter:title', route.page_title);
+    ensureMeta('twitter:description', description);
+    if (imageUrl) {
+      ensureProperty('og:image', imageUrl);
+      ensureProperty('og:image:alt', imageAlt);
+      ensureMeta('twitter:image', imageUrl);
+      ensureMeta('twitter:image:alt', imageAlt);
+    } else {
+      removeProperty('og:image'); removeProperty('og:image:alt'); removeMeta('twitter:image'); removeMeta('twitter:image:alt');
+    }
+    document.documentElement.dataset.canonicalConsistency = canonicalInfo.consistent ? 'consistent' : 'conflict';
 
     document.querySelectorAll('script[data-public-route-schema]').forEach((node) => node.remove());
     const schema = document.createElement('script');
     schema.type = 'application/ld+json';
     schema.dataset.publicRouteSchema = '1';
-    schema.textContent = JSON.stringify({
-      '@context':'https://schema.org', '@type':'Service', name:route.service_name || route.h1_text,
-      description:route.meta_description || route.page_intro, areaServed:route.location_name || 'Southern Ontario',
-      provider:{ '@type':'Organization', name:'Yard Weasels Inc.', url:authority?.canonicalOrigin || canonical }, url:canonical
-    });
+    schema.textContent = JSON.stringify(schemaGraph(route, canonical));
     document.head.append(schema);
 
     main.innerHTML = `
@@ -144,7 +186,7 @@
         <nav class="public-route-breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><span>${esc(route.service_name || route.location_name || 'Service')}</span></nav>
         <section class="public-route-hero">
           <div><span class="public-route-kicker">${esc(route.location_name || 'Southern Ontario')}</span><h1>${esc(route.h1_text)}</h1><p>${esc(route.page_intro || route.meta_description || '')}</p><div class="public-route-hero-actions"><a class="primary" href="${esc(cta)}">Request a quote</a><a class="secondary" href="/#quote-intake">View contact form</a></div></div>
-          ${imageUrl ? `<figure><img src="${esc(imageUrl)}" alt="${esc(visual?.alt_text || route.h1_text)}" width="${Number(visual?.pixel_width || 1200)}" height="${Number(visual?.pixel_height || 800)}" loading="eager" decoding="async"><figcaption>Approved service visual</figcaption></figure>` : `<div class="public-route-visual-placeholder" role="img" aria-label="Approved service image placeholder"><span aria-hidden="true">◇</span><strong>Service visual placeholder</strong><small>This publishes only until an approved, compressed, consent-cleared image replaces it.</small></div>`}
+          ${imageUrl ? `<figure><img src="${esc(imageUrl)}" alt="${esc(imageAlt)}" width="${Number(visual?.pixel_width || 1200)}" height="${Number(visual?.pixel_height || 800)}" loading="eager" decoding="async"><figcaption>Approved service visual</figcaption></figure>` : `<div class="public-route-visual-placeholder" role="img" aria-label="Approved service image placeholder"><span aria-hidden="true">◇</span><strong>Service visual placeholder</strong><small>This publishes only until an approved, compressed, consent-cleared image replaces it.</small></div>`}
         </section>
         <section class="public-route-proof"><strong>Local proof</strong><p>${esc(route.local_proof_hint || 'Ask us about availability, service scope, and proof relevant to your Southern Ontario site.')}</p></section>
         <section class="public-route-content">${body}</section>
