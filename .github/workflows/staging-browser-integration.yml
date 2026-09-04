@@ -55,6 +55,7 @@ jobs:
       - run: npm run test:staging-acceptance
       - run: npm run test:staging-scenarios
       - run: npm run test:staging-environment-guard
+      - run: npm run test:staging-target-preflight
       - run: npm run test:staging-runtime-schema
       - run: npm run test:current-schema-staging-runbook
       - run: npm run test:core-live-write-staging
@@ -129,25 +130,18 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - name: Refuse missing staging boundary
-        run: |
-          test "${YWI_RUN_STAGING_RPC_TESTS}" = "1"
-          test -n "${SUPABASE_URL}"
-          test -n "${SUPABASE_SERVICE_ROLE_KEY}"
-          test -n "${YWI_STAGING_PROJECT_REF}"
-          test -n "${YWI_STAGING_JOB_ADMIN_PROFILE_ID}"
-          test "${YWI_STAGING_PROJECT_REF}" != "${YWI_PRODUCTION_PROJECT_REF}"
-          if [ "${TARGET_RAIL}" = "quote_intake_live" ]; then
-            test -n "${YWI_STAGING_PUBLIC_KEY}"
-          fi
+      - name: Verify exact staging target identity
+        run: npm run staging:preflight
         env:
-          TARGET_RAIL: ${{ inputs.target_rail }}
           YWI_RUN_STAGING_RPC_TESTS: ${{ secrets.YWI_RUN_STAGING_RPC_TESTS }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           YWI_STAGING_PUBLIC_KEY: ${{ secrets.YWI_STAGING_PUBLIC_KEY }}
           YWI_STAGING_PROJECT_REF: ${{ secrets.YWI_STAGING_PROJECT_REF }}
           YWI_STAGING_JOB_ADMIN_PROFILE_ID: ${{ secrets.YWI_STAGING_JOB_ADMIN_PROFILE_ID }}
+          YWI_STAGING_TARGET_RAIL: ${{ inputs.target_rail }}
+          YWI_STAGING_LABEL: staging
+          YWI_STAGING_CONFIRM: I_CONFIRM_STAGING_ONLY
           YWI_PRODUCTION_PROJECT_REF: jmqvkgiqlimdhcofwkxr
       - name: Run current-schema staging catalog evidence
         run: npm run test:staging
