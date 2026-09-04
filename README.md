@@ -10,13 +10,15 @@ The public layer consists of the home/contact surface and approved service/locat
 
 ## Operator help
 
-Current in-app guidance is maintained at **`/help.html`** and linked from the application header. Help covers sign-in/recovery, mobile workflow, the four modules, offline/sync behavior, customer portal privacy, and troubleshooting. The Help page is intentionally `noindex` so operational guidance does not compete with public service content in search.
+Current in-app guidance is maintained at **`/help.html`** and linked from the application header. Help covers sign-in/recovery, mobile workflow, the four modules, offline/sync behavior, customer portal privacy, public-search authority, and troubleshooting. The Help page is intentionally `noindex` so operational guidance does not compete with public service content in search.
 
 ## Public search and SEO contract
 
-Public/indexable pages must have exactly one rendered page-level `H1`, responsive mobile and desktop layout without horizontal overflow, a useful title and meta description, an on-site canonical URL, index/follow directives only for genuinely public content, crawlable links, approved content, canonical-only sitemap entries with truthful `lastmod`, and accessible image alternative text. Customer portal and operational Help surfaces remain `noindex`.
+**`https://yardweasels.ca` is the canonical public authority for this application and its approved service/location routes.** The established `https://ywiinc.com` business website remains a separate public presence; do not point application canonicals there unless a deliberate future mapping proves that an equivalent destination page exists and the authority decision is intentionally changed.
 
-The static public-route generator remains the preferred crawler path. The browser route renderer is a fallback and must preserve the same canonical, indexing, and one-H1 rules.
+Public/indexable pages must have exactly one rendered page-level `H1`, responsive mobile and desktop layout without horizontal overflow, a useful title and meta description, a canonical URL on the configured public authority, index/follow directives only on the canonical public host, crawlable links, approved content, canonical-only sitemap entries with truthful `lastmod`, and accessible image alternative text. Customer portal and operational Help surfaces remain `noindex`. Preview/noncanonical hosts must remain `noindex` while retaining canonicals to the public authority. Vercel Preview protection is treated as an additional platform safeguard, not the sole indexing control.
+
+The canonical origin and rendered host-index policy are centralized in `js/app-config.js`. The static public-route generator reads that authority rather than accepting a deployment-time canonical-domain override. Static public route HTML remains the preferred crawler path; the browser route renderer is a fallback and must preserve the same canonical, indexing, and one-H1 rules.
 
 ## Release truth
 
@@ -30,4 +32,4 @@ Git history and numbered migrations are the audit trail. Do not recreate archive
 
 ## Development checks
 
-`npm run test:repo` verifies repository hygiene and durable documentation rules. `npm run test:help-seo` verifies Help/search/H1/static search controls. Rendered browser acceptance includes phone and desktop Help/app/public-page layout checks.
+`npm run test:repo` verifies repository hygiene and durable documentation rules. `npm run test:help-seo` verifies Help/search/H1/static search controls. Rendered browser acceptance includes phone and desktop Help/app/public-page layout checks plus canonical-host and noncanonical-preview indexing behavior.

@@ -11,6 +11,11 @@
   const hasPortal = new URLSearchParams(window.location.search).has('portal');
   if (hasPortal || reserved.has(path) || reservedRoots.has(routeRoot)) return;
 
+  const authority = window.YWI_PUBLIC_WEB_AUTHORITY;
+  if (!authority?.canonicalUrl || !authority?.indexDirective || !authority?.canonicalOrigin) {
+    console.error('Public web authority is unavailable; refusing to mark a dynamic public route indexable.');
+  }
+
   document.body.classList.add('public-route-mode');
   const esc = (value) => String(value ?? '').replace(/[&<>'"]/g, (ch) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[ch]));
   const byId = (id) => document.getElementById(id);
@@ -23,11 +28,12 @@
     } catch { return fallback; }
   };
   const safeCta = (value) => { const raw = String(value || '/#quote-intake'); return raw.startsWith('/') || raw.startsWith('#') ? raw : '/#quote-intake'; };
-  function safeCanonical(value, fallback) {
-    try {
-      const candidate = new URL(String(value || fallback), window.location.origin);
-      return candidate.origin === window.location.origin ? candidate.href : new URL(fallback, window.location.origin).href;
-    } catch { return new URL(fallback, window.location.origin).href; }
+  function safeCanonical(value, fallbackPath) {
+    if (authority?.canonicalUrl) return authority.canonicalUrl(value, fallbackPath);
+    return '';
+  }
+  function publicIndexDirective() {
+    return authority?.indexDirective ? authority.indexDirective() : 'noindex,follow';
   }
   function demoteAppShellH1() {
     const heading = document.querySelector('.app-header h1');
@@ -85,6 +91,7 @@
     meta.content = content;
   }
   function ensureCanonical(url) {
+    if (!url) return;
     let link = document.head.querySelector('link[rel="canonical"]');
     if (!link) { link = document.createElement('link'); link.rel = 'canonical'; document.head.append(link); }
     link.href = url;
@@ -105,11 +112,11 @@
     const main = shell();
     const body = sanitizeHtml(route.page_body_html || '') || markdownToHtml(route.page_body_markdown || '') || `<p>${esc(route.page_intro || '')}</p>`;
     const imageUrl = safeUrl(visual?.public_url || visual?.source_url || '', '');
-    const canonical = safeCanonical(route.canonical_url, `${window.location.origin}${route.route_path}`);
+    const canonical = safeCanonical(route.canonical_url, route.route_path || path);
     const cta = safeCta(route.primary_cta_path);
     document.title = route.page_title;
     ensureMeta('description', route.meta_description || route.page_intro || '');
-    ensureMeta('robots', 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1');
+    ensureMeta('robots', publicIndexDirective());
     ensureCanonical(canonical);
     ensureProperty('og:title', route.page_title);
     ensureProperty('og:description', route.meta_description || route.page_intro || '');
@@ -124,7 +131,7 @@
     schema.textContent = JSON.stringify({
       '@context':'https://schema.org', '@type':'Service', name:route.service_name || route.h1_text,
       description:route.meta_description || route.page_intro, areaServed:route.location_name || 'Southern Ontario',
-      provider:{ '@type':'Organization', name:'Yard Weasels Inc.', url:window.location.origin }, url:canonical
+      provider:{ '@type':'Organization', name:'Yard Weasels Inc.', url:authority?.canonicalOrigin || canonical }, url:canonical
     });
     document.head.append(schema);
 
@@ -149,7 +156,7 @@
   async function load() {
     const main = shell();
     demoteAppShellH1();
-    ensureMeta('robots', 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1');
+    ensureMeta('robots', publicIndexDirective());
     main.innerHTML = '<section class="public-route-loading"><span class="auth-loading-spinner" aria-hidden="true"></span><h2>Loading service page…</h2></section>';
     try {
       if (!window.YWIAPI?.fetchPublicContent) throw new Error('Public content service is unavailable.');
