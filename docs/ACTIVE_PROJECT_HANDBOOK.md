@@ -24,13 +24,15 @@ Leaked-password protection and MFA options are controlled by the external Supaba
 
 Current Admin To-Do is the unresolved-work authority. The derived next safe action queue may prioritize technically ready staging-acceptance items ahead of external, content/provider, and blocked accounting items, but priority is not permission to mutate.
 
-A staging-ready candidate still requires the dedicated non-production staging environment guard immediately before mutation and remains subject to human signoff. External Auth/GitHub follow-ups require current control-plane evidence. Content/provider work remains pending until its explicit approval/test evidence exists. Accounting acceptance remains blocked while Finance posting execution and payment-provider mutation are OFF. The priority layer must never auto-close a business rail, change Auth, publish content, enable Finance/provider mutation, or promote Production.
+A staging-ready candidate still requires the dedicated non-production staging environment guard and **exact current-schema parity** immediately before mutation and remains subject to human signoff. External Auth/GitHub follow-ups require current control-plane evidence. Content/provider work remains pending until its explicit approval/test evidence exists. Accounting acceptance remains blocked while Finance posting execution and payment-provider mutation are OFF. The priority layer must never auto-close a business rail, change Auth, publish content, enable Finance/provider mutation, or promote Production.
 
 ## Staging acceptance environment boundary
 
 Staging acceptance is evidence collection, not Production business activity. Status/catalog information may be viewed from Production, but staging acceptance mutation must fail closed unless the running edge function proves that it is operating against the intended dedicated staging project.
 
 Human staging acceptance mutation requires `YWI_RUNTIME_ENVIRONMENT=staging`, an exact `YWI_STAGING_PROJECT_REF` match to the current non-production project, and `YWI_STAGING_ACCEPTANCE_MUTATION_ENABLED=true`. The registered Production project remains denied regardless of those variables. The UI must expose the current guard state and hide Pass/Fail, Finalize, and Signoff controls whenever mutation is locked.
+
+Environment identity is only the first lock. The expected repository schema and latest applied staging schema must also match exactly before mutation is available. The historical Schema 187 scenario catalog remains the accepted case catalog, but it is not the current execution schema label. A staging database that is behind or ahead of source is not current and must remain fail-closed.
 
 The manual runner retains an independent project-ref/confirmation guard, so a UI or environment misconfiguration does not become the only line of defense. Staging evidence, finalization, and human signoff never auto-close the underlying business rail.
 
