@@ -47,7 +47,7 @@ add('operations-runtime-wires-entire-lifecycle', all(ops,[
   "action === 'work_order_live_update_create'","action === 'work_order_live_update_retract'",
   "action === 'work_order_execution_proof_submit'","action === 'work_order_execution_proof_decision'",
   "action === 'work_order_closeout_submit'","action === 'work_order_closeout_decision'",
-  "live_updates: 'v_work_order_live_update_queue'","execution_proofs: 'v_work_order_execution_proof_queue'",
+  "job_updates: 'v_work_order_live_update_queue'","execution_proofs: 'v_work_order_execution_proof_queue'",
   "execution_costs: 'v_work_order_execution_cost_dashboard'","closeouts: 'v_work_order_closeout_queue'"
 ]));
 add('customer-runtime-wires-safe-lifecycle', all(portal,[
