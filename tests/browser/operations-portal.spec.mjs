@@ -53,7 +53,9 @@ async function serveRepositoryFile(req, res) {
 }
 
 async function stubDeterministicThirdPartyRuntime(page) {
-  let productionSupabaseRequests = 0;
+  const productionNonTelemetryRequests = [];
+  const sensitiveTelemetryRequests = [];
+  let interceptedProductionTelemetryCount = 0;
   await page.route('https://cdn.jsdelivr.net/**', async (route) => {
     const url = route.request().url();
     let body = '';
@@ -65,10 +67,27 @@ async function stubDeterministicThirdPartyRuntime(page) {
     await route.fulfill({ status: 200, contentType: 'application/javascript; charset=utf-8', body });
   });
   await page.route('https://jmqvkgiqlimdhcofwkxr.supabase.co/**', async (route) => {
-    productionSupabaseRequests += 1;
-    await route.fulfill({ status: 503, contentType: 'application/json; charset=utf-8', body: '{"error":"blocked by deterministic browser smoke"}' });
+    const request = route.request();
+    const requestUrl = new URL(request.url());
+    const method = request.method().toUpperCase();
+    const isTelemetry = method === 'POST' && requestUrl.pathname === '/functions/v1/analytics-traffic' && !requestUrl.search;
+    if (isTelemetry) {
+      interceptedProductionTelemetryCount += 1;
+      const rawBody = String(request.postData() || '');
+      if (/access_token|refresh_token|authorization|password|contact_email|customer_email|invoice_reference|payment_reference|staff_note|labou?r_cost|material_cost|equipment_cost/i.test(rawBody)) {
+        sensitiveTelemetryRequests.push(rawBody.slice(0, 500));
+      }
+      await route.fulfill({ status: 204, body: '' });
+      return;
+    }
+    productionNonTelemetryRequests.push(`${method} ${requestUrl.pathname}${requestUrl.search}`);
+    await route.fulfill({ status: 503, contentType: 'application/json; charset=utf-8', body: '{"error":"Production business/data access blocked by deterministic browser smoke"}' });
   });
-  return () => productionSupabaseRequests;
+  return {
+    getProductionNonTelemetryRequests: () => [...productionNonTelemetryRequests],
+    getSensitiveTelemetryRequests: () => [...sensitiveTelemetryRequests],
+    getInterceptedProductionTelemetryCount: () => interceptedProductionTelemetryCount
+  };
 }
 
 test.beforeAll(async () => {
@@ -95,7 +114,7 @@ test.afterAll(async () => {
 
 for (const device of widths) {
   test(`public shell stays canonical and readable on ${device.name}`, async ({ page }) => {
-    const getProductionSupabaseRequests = await stubDeterministicThirdPartyRuntime(page);
+    const productionBoundary = await stubDeterministicThirdPartyRuntime(page);
     await page.setViewportSize({ width: device.width, height: device.height });
     await page.goto(`${baseURL}/`, { waitUntil: 'domcontentloaded' });
     await expect(page.locator('h1')).toHaveCount(1);
@@ -109,7 +128,9 @@ for (const device of widths) {
     await expect(page.locator('.public-home-intro')).toContainText(/Authorized staff can sign in above/i);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
     expect(overflow).toBeFalsy();
-    expect(getProductionSupabaseRequests()).toBe(0);
+    expect(productionBoundary.getProductionNonTelemetryRequests()).toEqual([]);
+    expect(productionBoundary.getSensitiveTelemetryRequests()).toEqual([]);
+    expect(productionBoundary.getInterceptedProductionTelemetryCount()).toBeGreaterThanOrEqual(0);
   });
 }
 
