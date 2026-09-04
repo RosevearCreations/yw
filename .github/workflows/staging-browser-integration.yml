@@ -43,6 +43,7 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run test:repository-protection-preflight
       - run: npm run test:release-source-evidence
+      - run: npm run test:release-source-evidence-verify
       - name: Require GitHub repository enforcement on exact main
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
