@@ -23,7 +23,7 @@
     "test:closeout": "node scripts/supervisor-closeout-check.mjs",
     "test:navigation": "node scripts/navigation-route-priority-check.mjs",
     "test:modules": "node scripts/module-permissions-check.mjs",
-    "test:it": "node scripts/admin-it-readiness-check.mjs",
+    "test:it": "node scripts/admin-it-readiness-check.mjs && node scripts/current-readiness-authority-check.mjs",
     "test:it-scorecard-truth": "node scripts/it-scorecard-truth-convergence-check.mjs",
     "test:open-rail-readiness": "node scripts/open-rail-acceptance-readiness-check.mjs",
     "test:submission-security": "node scripts/submission-security-boundary-check.mjs",
