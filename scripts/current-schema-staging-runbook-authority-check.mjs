@@ -4,8 +4,8 @@ import fs from 'node:fs';
 const read=(file)=>fs.readFileSync(file,'utf8');
 const migration=read('sql/200_current_schema_staging_runbook_authority.sql');
 const migration187=read('sql/187_staging_acceptance_scenario_catalog.sql');
-const ui=read('js/admin-account-security-ui.js');
-const browser=read('tests/browser/admin-account-security.spec.mjs');
+const stagingUi=read('js/staging-acceptance-ui.js');
+const stagingBrowser=read('tests/browser/staging-acceptance.spec.mjs');
 const help=read('help.html');
 const readme=read('README.md');
 const handbook=read('docs/ACTIVE_PROJECT_HANDBOOK.md');
@@ -48,15 +48,9 @@ add('schema200-no-business-rail-auto-close',!migration.includes("rail_status='co
 add('schema200-no-finance-provider-mutation',!/\b(?:insert\s+into|update|delete\s+from)\s+public\.(?:job_financial_events|finance_job_completion_posting_execution_controls|ar_|ap_|stripe|paypal|payment_|gl_journal)/i.test(migration));
 add('schema187-catalog-preserved',all(migration187,['operations_staging_acceptance_scenarios','catalog_exact_six_business_rails','catalog_each_rail_has_human_blocking_case']));
 
-add('ui-prefers-double-guard-with-backward-fallback',all(ui,[
-  'safe_candidate_after_environment_and_schema_guard','safe_candidate_after_environment_guard',
-  'candidate after environment + schema guard'
-]));
-add('browser-double-guard-rendered',all(browser,[
-  'safe_candidate_after_environment_and_schema_guard:true','candidate after environment + schema guard',
-  'exact current-schema parity'
-]));
-add('help-current-schema-runbook',all(help,['exact current-schema','historical Schema 187','environment + schema']));
+add('existing-ui-renders-runtime-schema-authority',all(stagingUi,['Runtime schema authority:','Expected Schema','live Schema','human staging mutation is locked']));
+add('existing-browser-proves-schema-mismatch-lock',all(stagingBrowser,['staging environment with schema mismatch stays readable and hides all mutation controls','Runtime schema authority: MISMATCH']));
+add('help-current-schema-runbook',all(help,['exact current-schema','historical Schema 187','Environment + schema']));
 add('durable-docs-current',[readme,handbook,nextSteps].every((text)=>text.includes('exact current-schema')));
 add('active-docs-no-build-ledger',![readme,handbook,nextSteps].some((text)=>/Build\s+202|Run\s+#?\d+|[0-9a-f]{40}/i.test(text)));
 add('package-gate-wired',pkg.scripts?.['test:current-schema-staging-runbook']==='node scripts/current-schema-staging-runbook-authority-check.mjs');
