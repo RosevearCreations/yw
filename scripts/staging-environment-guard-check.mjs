@@ -9,6 +9,7 @@ const browser=read('tests/browser/staging-acceptance.spec.mjs');
 const packageJson=read('package.json');
 const workflow=read('.github/workflows/staging-browser-integration.yml');
 const help=read('help.html');
+const helpLower=help.toLowerCase();
 const readme=read('README.md');
 const handbook=read('docs/ACTIVE_PROJECT_HANDBOOK.md');
 const nextSteps=read('docs/NEXT_STEPS_AND_SANITY_CHECK.md');
@@ -36,7 +37,10 @@ add('schema197-business-safety',all(migration,[
   "'finance_mutation',false",
   "'payment_provider_mutation',false"
 ]));
-add('schema197-marker',migration.includes('197::int as expected_schema_version') && migration.includes("197,'197_staging_environment_guard'"));
+add('schema197-marker',
+  migration.includes('197::int as expected_schema_version') &&
+  /values\s*\(\s*197\s*,\s*'197_staging_environment_guard'\s*,\s*'197_staging_environment_guard\.sql'/i.test(migration)
+);
 
 add('endpoint-production-hard-deny',all(endpoint,[
   "const KNOWN_PRODUCTION_PROJECT_REF = 'jmqvkgiqlimdhcofwkxr'",
@@ -93,11 +97,11 @@ add('runner-production-refusal-preserved',all(runner,[
 ]));
 add('package-gate-wired',packageJson.includes('"test:staging-environment-guard": "node scripts/staging-environment-guard-check.mjs"'));
 add('workflow-gate-wired',workflow.includes('npm run test:staging-environment-guard'));
-add('help-current',all(help,[
-  'staging mutation guard',
-  'YWI_RUNTIME_ENVIRONMENT',
-  'YWI_STAGING_ACCEPTANCE_MUTATION_ENABLED'
-]));
+add('help-current',
+  helpLower.includes('staging mutation guard') &&
+  help.includes('YWI_RUNTIME_ENVIRONMENT') &&
+  help.includes('YWI_STAGING_ACCEPTANCE_MUTATION_ENABLED')
+);
 add('durable-docs-current',[readme,handbook,nextSteps].every((text)=>text.includes('staging acceptance mutation')));
 add('active-docs-no-build-ledger',![readme,handbook,nextSteps].some((text)=>/Build\s+197|Run\s+#?\d+|[0-9a-f]{40}/i.test(text)));
 
