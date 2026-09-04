@@ -40,6 +40,14 @@ For **quote/contact** staging acceptance, the runner may own only bounded dispos
 
 If no dedicated non-production Supabase project or branch exists, source work may improve the runner but no live staging evidence may be claimed. Do not substitute the Production project, Production customer data, or a Production provider for missing staging infrastructure.
 
+## Job lifecycle authority
+
+Jobs follows a single operational sequence: **live update → execution proof → closeout**. The live update stage records field progress with explicit staff/customer visibility and an approved-public-media gate for customer-visible material. The execution proof stage captures arrival/completion evidence and internal labour, material and equipment context for authorized review. The closeout stage turns approved proof into a customer-safe summary/gallery, requires supervisor/customer decisions, and controls invoice-readiness, review-request and maintenance follow-up state.
+
+The phone application must keep these stages touch-usable without horizontal overflow. The desktop application must keep the lifecycle reviewable as a coherent workbench while preserving internal decision context. The customer portal may display only customer-safe updates, approved proof and approved closeout material; internal costs, margin, staff notes and private review media remain staff-only.
+
+Lifecycle feature migrations are permanent historical authority for the tables/RPCs they introduced. Current release/schema identity comes from the current database/release authority and must not be inferred from an older build or feature metadata stamp. The release workflow must run the live update, execution proof, closeout and combined job-lifecycle gates on every applicable change.
+
 ## Public web/search boundary
 
 The home page and approved service/location pages are search-oriented surfaces. Customer portal tokens, operational Help and internal application routes are not search landing pages.
