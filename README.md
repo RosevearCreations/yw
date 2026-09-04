@@ -20,9 +20,11 @@ Public/indexable pages must have exactly one rendered page-level `H1`, responsiv
 
 The canonical origin and rendered host-index policy are centralized in `js/app-config.js`. The static public-route generator reads that authority rather than accepting a deployment-time canonical-domain override. Static public route HTML remains the preferred crawler path; the browser route renderer is a fallback and must preserve the same canonical, indexing, and one-H1 rules.
 
-## Release truth
+## Release and readiness truth
 
 Do not copy release SHAs, workflow run numbers, or historical build numbers into active documentation. Current source/release authority belongs in GitHub and service-private I.T. release views. Current database version belongs in `v_schema_drift_status` / `app_schema_versions`.
+
+The I.T. **Production readiness** panel is a current derived authority, not a manually maintained prerelease checklist. It derives from live schema drift, exact-source release authority, repository enforcement, scorecard classification, Current Admin To-Do, public Help/search authority, and Finance/provider execution safety. Retired production-readiness/foundation rows remain available only through historical readiness audit so old instructions cannot become current work again.
 
 Production promotion remains deliberate/manual. Finance posting execution and payment-provider mutation remain OFF unless a separately authorized release explicitly changes those controls. Human accounting/provider/content/staging acceptance work must not be auto-closed by source changes.
 
@@ -32,4 +34,4 @@ Git history and numbered migrations are the audit trail. Do not recreate archive
 
 ## Development checks
 
-`npm run test:repo` verifies repository hygiene and durable documentation rules. `npm run test:help-seo` verifies Help/search/H1/static search controls. Rendered browser acceptance includes phone and desktop Help/app/public-page layout checks plus canonical-host and noncanonical-preview indexing behavior.
+`npm run test:repo` verifies repository hygiene and durable documentation rules. `npm run test:it` verifies I.T. authority, including current-readiness versus historical-audit separation. `npm run test:help-seo` verifies Help/search/H1/static search controls. Rendered browser acceptance includes phone and desktop Help/app/public-page layout checks plus canonical-host and noncanonical-preview indexing behavior.
