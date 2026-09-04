@@ -58,9 +58,9 @@ add('runner-already-current-schema-exact',all(runner,[
   'Refusing current-schema staging acceptance against the YardWeasels Production project ref.'
 ]));
 add('help-exact-schema-second-lock',all(help,[
-  'Exact schema is a second independent lock.','v_schema_drift_status','expected repository schema and latest applied staging schema','match exactly'
+  'Exact current-schema parity is a second independent lock.','v_schema_drift_status','expected repository schema and latest applied staging schema','match exactly'
 ]));
-add('help-preserves-historical-catalog-distinction',help.includes('historical Schema 187 scenario catalog remains valid history'));
+add('help-preserves-historical-catalog-distinction',help.includes('historical Schema 187 scenario catalog remains the catalog authority'));
 add('package-gate-wired',packageJson.includes('"test:staging-runtime-schema": "node scripts/staging-runtime-schema-authority-check.mjs"'));
 add('workflow-gate-wired',workflow.includes('npm run test:staging-runtime-schema'));
 
