@@ -93,7 +93,11 @@ add('browser-production-lock-proof',all(browser,[
 add('runner-production-refusal-preserved',all(runner,[
   "'jmqvkgiqlimdhcofwkxr'",
   'actualProjectRef === productionRef',
-  'Refusing Schema 187 staging acceptance against the YardWeasels Production project ref.'
+  'Refusing current-schema staging acceptance against the YardWeasels Production project ref.'
+]));
+add('runner-exact-schema-boundary',all(runner,[
+  'repoLatestSchema','expectedSchema !== repoLatestSchema','latestAppliedSchema !== repoLatestSchema',
+  'Dedicated staging database must exactly match repository Schema'
 ]));
 add('package-gate-wired',packageJson.includes('"test:staging-environment-guard": "node scripts/staging-environment-guard-check.mjs"'));
 add('workflow-gate-wired',workflow.includes('npm run test:staging-environment-guard'));
