@@ -52,7 +52,7 @@ add('operations-runtime-wires-entire-lifecycle', all(ops,[
 ]));
 add('customer-runtime-wires-safe-lifecycle', all(portal,[
   'v_customer_portal_live_updates','v_customer_portal_execution_proofs','v_customer_portal_closeout_packages',
-  'live_updates: liveUpdates','execution_proofs: executionProofs','closeouts,'
+  'live_updates: liveUpdates','execution_proofs: executionProofs','closeouts,',
   "action === 'sign_closeout'",'ywi_rpc_customer_sign_work_order_closeout'
 ]));
 add('staff-ui-wires-lifecycle', all(cockpit,[
