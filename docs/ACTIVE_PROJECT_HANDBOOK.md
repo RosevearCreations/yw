@@ -50,9 +50,11 @@ Search discovery must fail closed when route path, sitemap canonical, and render
 
 ## Mobile, PC application and webpage layout
 
-- **Phone:** bottom module shortcuts, Today-first workflow, touch-friendly forms, local draft/offline guidance and no horizontal overflow.
-- **Desktop application:** full module navigation, wider workspaces, readable tables/cards and the same permission model as mobile.
+- **Phone:** bottom module shortcuts, Today-first workflow, touch-friendly forms, local draft/offline guidance and no horizontal overflow. Today must distinguish offline, pending, conflict, and current sync states and must never auto-overwrite a local or server copy during conflict handling.
+- **Desktop application:** full module navigation, wider workspaces, readable tables/cards and the same permission model as mobile. The Jobs workbench may search/filter rendered Saved Jobs for review, but those controls are presentation-only and must not mutate job records.
 - **Public webpage:** responsive content/contact paths, one H1, stable canonical/metadata, crawlable content, canonical-host indexing only, accurate sitemap freshness, visible-content structured data, and no internal planning copy.
+
+A restored network connection is not proof that local work synchronized. Queued forms, drafts, actions, and conflicts remain visible until server confirmation or deliberate operator review. Conflict review must preserve both local and current server state until a deliberate resolution path is chosen.
 
 ## Data and release authority
 
