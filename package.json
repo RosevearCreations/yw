@@ -31,6 +31,8 @@
     "test:notifications": "node scripts/customer-notification-delivery-check.mjs",
     "test:notification-enforcement": "node scripts/customer-notification-release-enforcement-check.mjs",
     "test:browser:notifications": "playwright test --config=playwright.config.mjs tests/browser/customer-notification-delivery.spec.mjs",
+    "test:public-route-publication": "node scripts/public-route-publication-enforcement-check.mjs",
+    "test:browser:public-route-publication": "playwright test --config=playwright.config.mjs tests/browser/public-route-publication.spec.mjs",
     "test:execution-proof": "node scripts/service-execution-proof-check.mjs",
     "test:closeout": "node scripts/supervisor-closeout-check.mjs",
     "test:navigation": "node scripts/navigation-route-priority-check.mjs",
