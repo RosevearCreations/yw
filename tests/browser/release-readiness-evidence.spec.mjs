@@ -18,14 +18,18 @@ for (const viewport of [{ name:'phone', width:390 }, { name:'desktop', width:144
     await mountReleaseReview(page, viewport.width);
     await expect(page.locator('h1')).toHaveCount(1);
     await expect(page.locator('.review-banner')).toContainText(/REVIEW ONLY/i);
+    await expect(page.locator('.review-banner')).toContainText(/does not deploy code or promote Production/i);
     await expect(page.locator('#oc_release_dashboard')).toContainText(/Production decision/i);
     await expect(page.locator('#oc_release_dashboard')).toContainText(/Not performed/i);
     await expect(page.locator('select[name="review_scope"] option')).toHaveCount(2);
     await expect(page.locator('input[name="confirmation_phrase"]')).toHaveAttribute('placeholder', 'Type REVIEW ONLY');
     await expect(page.getByRole('button', { name:'Capture evidence snapshot' })).toBeVisible();
     await expect(page.locator('#oc_release_snapshot_form')).toContainText(/cannot deploy code, publish routes, or change payment status/i);
-    const body = (await page.locator('body').innerText()).toLowerCase();
-    for (const forbidden of ['deploy production', 'promote production', 'release now', 'enable finance posting', 'charge customer']) expect(body).not.toContain(forbidden);
+
+    const mutationControl = /deploy production|promote production|release now|enable finance posting|charge customer/i;
+    await expect(page.getByRole('button', { name: mutationControl })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: mutationControl })).toHaveCount(0);
+
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
     const buttonBox = await page.getByRole('button', { name:'Capture evidence snapshot' }).boundingBox();
