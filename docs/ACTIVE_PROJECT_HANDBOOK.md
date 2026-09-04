@@ -26,17 +26,19 @@ Public pages require one H1, descriptive metadata, a canonical on the configured
 
 The canonical origin and browser host-index policy are centralized in `js/app-config.js`. The static public-route generator reads that source and does not accept a deployment-time canonical-domain override. Static public route HTML is preferred so crawlers do not depend on client-side requests for primary content.
 
+Search discovery must fail closed when route path, sitemap canonical, and rendered canonical disagree. Sitemap `lastmod` is a freshness signal and must reflect meaningful source/content change rather than merely a deployment timestamp; future-dated freshness is invalid. Structured data must mirror the visible page and current authority, including WebPage, Service, and BreadcrumbList semantics. Phone and desktop browser acceptance verifies these signals together with the one-H1 and no-overflow rules. External search-engine submission is explicit and separate from publication; IndexNow or Search Console submission must not be automatic and cannot bypass route/content approval.
+
 ## Mobile, PC application and webpage layout
 
 - **Phone:** bottom module shortcuts, Today-first workflow, touch-friendly forms, local draft/offline guidance and no horizontal overflow.
 - **Desktop application:** full module navigation, wider workspaces, readable tables/cards and the same permission model as mobile.
-- **Public webpage:** responsive content/contact paths, one H1, stable canonical/metadata, crawlable content, canonical-host indexing only, and no internal planning copy.
+- **Public webpage:** responsive content/contact paths, one H1, stable canonical/metadata, crawlable content, canonical-host indexing only, accurate sitemap freshness, visible-content structured data, and no internal planning copy.
 
 ## Data and release authority
 
 Numbered SQL migrations are retained permanently as schema history. Live schema state is read from database authority views rather than copied here. GitHub source checks and service-private release-source evidence hold exact source/run proof.
 
-Production promotion is deliberate/manual. Source work must not enable Finance execution, provider mutation, or close human/external acceptance rails unless that specific change is separately authorized and evidenced.
+Production promotion is deliberate/manual. Source work must not enable Finance execution, provider mutation, publish unapproved content, submit search URLs externally, or close human/external acceptance rails unless that specific change is separately authorized and evidenced.
 
 ## Hygiene rules
 
