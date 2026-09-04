@@ -30,7 +30,11 @@ for (const required of [
   'open_business_acceptance_unchanged',
   'finance_provider_execution_off',
   'schema199_next_safe_action_authority',
-  "199,'199_next_safe_action_authority'"
+  "199,'199_next_safe_action_authority'",
+  'create or replace view public.v_schema_drift_status',
+  '199 as expected_schema_version',
+  ">= 199 then 'current'",
+  'grant select on table public.v_schema_drift_status to service_role'
 ]) assertIncludes(migration, required, 'Schema 199 authority');
 
 for (const forbidden of [
