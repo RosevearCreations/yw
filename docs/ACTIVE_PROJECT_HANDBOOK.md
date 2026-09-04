@@ -14,11 +14,17 @@ A hidden screen is not a security boundary. Reads and writes remain server-enfor
 
 ## Online Help
 
-`/help.html` is the maintained operator guide. It must remain usable on phone and desktop, contain exactly one H1, and stay `noindex`. The app header must expose a Help link. When workflows, public-search boundaries, staging mutation rules, Auth security evidence rules, or important operator actions change materially, Help changes in the same source release.
+`/help.html` is the maintained operator guide. It must remain usable on phone and desktop, contain exactly one H1, and stay `noindex`. The app header must expose a Help link. When workflows, public-search boundaries, staging mutation rules, Auth security evidence rules, next safe action rules, or important operator actions change materially, Help changes in the same source release.
 
 ## Auth security evidence boundary
 
 Leaked-password protection and MFA options are controlled by the external Supabase Auth control plane. Current readiness may treat either control as secure only when recent authoritative external evidence records the actual configured state. Advisor history, advisor snapshots, database catalogs, and absence of an advisor warning are not substitutes for that proof. Evidence is service-private and freshness-aware; stale evidence reopens verification. Application source changes must not mutate these Auth settings or auto-close their Current Admin To-Do follow-ups.
+
+## Next safe action authority
+
+Current Admin To-Do is the unresolved-work authority. The derived next safe action queue may prioritize technically ready staging-acceptance items ahead of external, content/provider, and blocked accounting items, but priority is not permission to mutate.
+
+A staging-ready candidate still requires the dedicated non-production staging environment guard immediately before mutation and remains subject to human signoff. External Auth/GitHub follow-ups require current control-plane evidence. Content/provider work remains pending until its explicit approval/test evidence exists. Accounting acceptance remains blocked while Finance posting execution and payment-provider mutation are OFF. The priority layer must never auto-close a business rail, change Auth, publish content, enable Finance/provider mutation, or promote Production.
 
 ## Staging acceptance environment boundary
 
