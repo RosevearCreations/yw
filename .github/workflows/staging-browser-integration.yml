@@ -42,6 +42,7 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - run: npm run test:repository-protection-preflight
+      - run: npm run test:release-source-evidence
       - name: Require GitHub repository enforcement on exact main
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
@@ -131,6 +132,40 @@ jobs:
       - run: npx playwright test --config=playwright.config.mjs tests/browser/staging-infrastructure-readiness.spec.mjs
       - run: npm run test:browser:admin-account-security
       - run: npm run test:browser:help-seo
+
+  release-source-evidence:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: source-checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Re-verify exact main and write release-source candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          YWI_GITHUB_EVENT_NAME: ${{ github.event_name }}
+          YWI_GITHUB_REF: ${{ github.ref }}
+          YWI_GITHUB_REPOSITORY: ${{ github.repository }}
+          YWI_EXPECTED_MAIN_SHA: ${{ github.sha }}
+          YWI_GITHUB_RUN_ID: ${{ github.run_id }}
+          YWI_GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+          YWI_GITHUB_WORKFLOW_NAME: ${{ github.workflow }}
+          YWI_SOURCE_CHECKS_RESULT: ${{ needs.source-checks.result }}
+          YWI_RELEASE_EVIDENCE_PATH: release-source-evidence.json
+        run: |
+          main_json="$(gh api "repos/${GITHUB_REPOSITORY}/branches/main")"
+          export YWI_GITHUB_MAIN_SHA="$(printf '%s' "$main_json" | jq -r '.commit.sha // empty')"
+          export YWI_GITHUB_MAIN_PROTECTED="$(printf '%s' "$main_json" | jq -r '.protected // empty')"
+          npm run repository:protection:require
+          npm run release:evidence:write
+      - name: Upload exact-main release-source candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: ywi-main-release-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: release-source-evidence.json
+          if-no-files-found: error
 
   staging-proof:
     if: github.event_name == 'workflow_dispatch' && inputs.run_staging == 'true'
