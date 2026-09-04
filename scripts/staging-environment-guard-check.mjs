@@ -54,10 +54,10 @@ add('endpoint-three-part-staging-enable',all(endpoint,[
   'exactRefMatch',
   'mutationAllowed'
 ]));
-add('endpoint-mutation-guard-before-actions',/if \(action === 'status'\)[\s\S]*assertStagingMutationAllowed\(environmentGuard\);[\s\S]*if \(action === 'record_case'\)/.test(endpoint));
+add('endpoint-mutation-guard-before-actions',/if \(action === 'status'\)[\s\S]*assertStagingMutationAllowed\(environmentGuard\);[\s\S]*assertCurrentRuntimeSchema\(schemaAuthority\);[\s\S]*if \(action === 'record_case'\)/.test(endpoint));
 add('endpoint-status-remains-readable',all(endpoint,[
   'environment_guard:environmentGuard',
-  'staging_mutation_allowed:environmentGuard?.mutation_allowed === true',
+  'staging_mutation_allowed:environmentGuard?.mutation_allowed === true && schemaAuthority.exact_schema_match === true',
   'known_production_runtime:environmentGuard?.known_production === true'
 ]));
 add('endpoint-environment-assertions',all(endpoint,[
@@ -67,27 +67,34 @@ add('endpoint-environment-assertions',all(endpoint,[
 
 add('ui-lock-state',all(ui,[
   'Environment mutation guard:',
-  'mutation_allowed===true',
+  'environmentGuard().mutation_allowed===true && schemaCurrent()',
   'Status/catalog reads remain available. Pass/Fail, Finalize, and Signoff controls stay hidden while locked.'
 ]));
-add('ui-controls-require-guard',all(ui,[
+add('ui-controls-require-composed-guard',all(ui,[
   'const canRecord=writesAllowed',
   'const canFinalize=writesAllowed',
-  'const canSign=writesAllowed'
+  'const canSign=writesAllowed',
+  'function schemaCurrent(){return schemaAuthority().exact_schema_match===true;}'
 ]));
 add('ui-failed-load-locks',all(ui,[
   "mutation_allowed:false",
+  'exact_schema_match:false',
   'mutation remains locked.'
 ]));
 
 add('browser-staging-enabled-proof',all(browser,[
   'Environment mutation guard: ENABLED',
+  'Runtime schema authority: CURRENT',
   "expect(actions).toEqual(['status','record_case','finalize','signoff'])"
 ]));
 add('browser-production-lock-proof',all(browser,[
   'phone Production runtime stays readable but hides all staging mutation controls',
   'Environment mutation guard: LOCKED',
   "expect(actions).toEqual(['status'])"
+]));
+add('browser-schema-mismatch-lock-proof',all(browser,[
+  'staging environment with schema mismatch stays readable and hides all mutation controls',
+  'Runtime schema authority: MISMATCH'
 ]));
 
 add('runner-production-refusal-preserved',all(runner,[
@@ -104,7 +111,8 @@ add('workflow-gate-wired',workflow.includes('npm run test:staging-environment-gu
 add('help-current',
   helpLower.includes('staging mutation guard') &&
   help.includes('YWI_RUNTIME_ENVIRONMENT') &&
-  help.includes('YWI_STAGING_ACCEPTANCE_MUTATION_ENABLED')
+  help.includes('YWI_STAGING_ACCEPTANCE_MUTATION_ENABLED') &&
+  help.includes('Exact schema is a second independent lock.')
 );
 add('durable-docs-current',[readme,handbook,nextSteps].every((text)=>text.includes('staging acceptance mutation')));
 add('active-docs-no-build-ledger',![readme,handbook,nextSteps].some((text)=>/Build\s+197|Run\s+#?\d+|[0-9a-f]{40}/i.test(text)));
