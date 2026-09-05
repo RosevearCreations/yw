@@ -77,6 +77,48 @@ for(const file of files){
   if(Number.isInteger(schema)&&schema>=FUTURE_SCHEMA)auditFutureDefiners(fs.readFileSync(path.join(SQL_DIR,file),'utf8'),file);
 }
 
+// Verify the current source does not rely on browser/Data API calls to the helpers whose
+// direct client execution Schema 206 removes. The alert refresher is intentionally called
+// only by service-role Edge Functions.
+function walk(dir){
+  if(!fs.existsSync(dir))return [];
+  return fs.readdirSync(dir,{withFileTypes:true}).flatMap((entry)=>{
+    if(['.git','node_modules','playwright-report','test-results'].includes(entry.name))return [];
+    const full=path.join(dir,entry.name);
+    return entry.isDirectory()?walk(full):[full];
+  });
+}
+const sourceFiles=walk(ROOT).filter((file)=>/\.(?:js|mjs|ts|tsx)$/i.test(file));
+const targetNames=requiredTargets.map((signature)=>signature.slice(0,signature.indexOf('(')));
+const allowedDirectCallers=new Map([
+  ['ywi_refresh_stripe_webhook_alerts',new Set([
+    'supabase/functions/operations-manage/index.ts',
+    'supabase/functions/stripe-webhook/index.ts',
+  ])],
+]);
+const seenAllowed=new Map([...allowedDirectCallers].map(([name])=>[name,new Set()]));
+for(const file of sourceFiles){
+  const rel=path.relative(ROOT,file).replaceAll('\\','/');
+  const text=fs.readFileSync(file,'utf8');
+  for(const name of targetNames){
+    const directRpc=new RegExp(`\\.rpc\\(\\s*['\"]${name}['\"]`,'g');
+    if(!directRpc.test(text))continue;
+    const allowed=allowedDirectCallers.get(name);
+    if(!allowed?.has(rel)){
+      errors.push(`${rel}: direct RPC call to reviewed helper ${name} is not an approved service-role caller.`);
+      continue;
+    }
+    if(!/SUPABASE_SERVICE_ROLE_KEY|SB_SERVICE_ROLE_KEY/.test(text)){
+      errors.push(`${rel}: approved ${name} caller must use a service-role client.`);
+    }
+    seenAllowed.get(name)?.add(rel);
+  }
+}
+for(const [name,expected] of allowedDirectCallers){
+  const seen=seenAllowed.get(name)||new Set();
+  for(const rel of expected)if(!seen.has(rel))errors.push(`${rel}: expected service-role ${name} RPC call is missing.`);
+}
+
 // Synthetic future-regression proof: secure pattern passes; missing search_path and missing
 // role decisions must fail. Keep this isolated from the repository error list.
 function syntheticErrors(sql){
@@ -108,6 +150,7 @@ console.log(JSON.stringify({
   boundary_schema:BOUNDARY_SCHEMA,
   future_enforcement_schema:FUTURE_SCHEMA,
   reviewed_target_count:requiredTargets.length,
+  approved_direct_service_callers:[...allowedDirectCallers.entries()].flatMap(([name,paths])=>[...paths].map((file)=>({name,file}))),
   errors,
 },null,2));
 if(errors.length){
