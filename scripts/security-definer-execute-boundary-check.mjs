@@ -101,8 +101,11 @@ for(const file of sourceFiles){
   const rel=path.relative(ROOT,file).replaceAll('\\','/');
   const text=fs.readFileSync(file,'utf8');
   for(const name of targetNames){
-    const directRpc=new RegExp(`\\.rpc\\(\\s*['\"]${name}['\"]`,'g');
-    if(!directRpc.test(text))continue;
+    const directPatterns=[
+      new RegExp(`\\.rpc\\(\\s*['\"]${name}['\"]`),
+      new RegExp(`\\bcallRpc\\(\\s*[^,]+,\\s*['\"]${name}['\"]`),
+    ];
+    if(!directPatterns.some((pattern)=>pattern.test(text)))continue;
     const allowed=allowedDirectCallers.get(name);
     if(!allowed?.has(rel)){
       errors.push(`${rel}: direct RPC call to reviewed helper ${name} is not an approved service-role caller.`);
