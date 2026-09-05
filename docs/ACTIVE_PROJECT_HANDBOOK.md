@@ -80,6 +80,12 @@ Search discovery must fail closed when route path, sitemap canonical, and render
 
 A restored network connection is not proof that local work synchronized. Queued forms, drafts, actions, and conflicts remain visible until server confirmation or deliberate operator review. Conflict review must preserve both local and current server state until a deliberate resolution path is chosen.
 
+## Supabase Data API access contract
+
+YW must not depend on Supabase automatically granting new `public` tables to Data API roles. Every migration that creates a new `public` table from the current guarded migration boundary forward must declare its access posture in that same migration: enable RLS, explicitly GRANT only the privileges actually required, and explicitly GRANT or REVOKE `anon` / `authenticated` access so client exposure is intentional rather than inherited from platform defaults. Broad `GRANT ALL` to client roles is prohibited.
+
+The permanent repository smoke gate runs `scripts/data-api-explicit-access-check.mjs` and fails closed for any guarded migration that creates a public table without RLS plus an explicit least-privilege access decision. Historical migrations remain audit history rather than being rewritten merely to satisfy the new source rule. Current Production privilege posture is checked separately from source migration linting; neither the lint nor a read-only privilege audit applies a schema change or authorizes Production promotion.
+
 ## Data and release authority
 
 Numbered SQL migrations are retained permanently as schema history. Live schema state is read from database authority views rather than copied here. GitHub source checks and service-private release-source evidence hold exact source/run proof.
