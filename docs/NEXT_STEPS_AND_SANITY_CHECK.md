@@ -52,7 +52,7 @@ Do not use historical feature metadata as current release/schema truth. Current 
 
 Treat the customer notification path as consent-first. A customer-visible live update may enter the delivery path only when the customer has an **explicit opt-in** for email notifications. No consent means no delivery attempt. Keep notification preference, outbox and delivery-attempt records service-private, and keep the staff delivery queue bounded so customer email addresses and portal tokens are not exposed merely for operational review.
 
-The dispatcher must remain fail-closed behind its explicit delivery-enable guard and run token, with provider idempotency on delivery attempts. Transport uncertainty must remain **manual review**, never automatic success and never automatic retry. Retry remains a deliberate staff action after review. Customer-facing notification content may link to the secure portal but must not contain staff-only notes, private images, access details, internal costing or margin information.
+The dispatcher must remain fail-closed behind its explicit delivery-enable guard and run token, with provider idempotency on delivery attempts. Transport uncertainty must remain **manual review**, never automatic success and never automatic retry. Retry remains a deliberate staff action after review. Customer-facing notification content may link back to the secure portal but must not contain staff-only notes, private images, access details, internal costing or margin information.
 
 For notification-related changes, run the historical notification contract, the current release-enforcement gate and the rendered notification browser acceptance. Verify 390/430 customer preference controls remain touch-usable and overflow-free, desktop pending-consent/delivered/manual-review states remain readable, and customer/staff surfaces preserve the privacy boundary. Historical notification migration metadata is audit history rather than current schema identity.
 
@@ -80,7 +80,11 @@ After the exact run has completed, use current GitHub evidence for that run plus
 
 Only a successful final verification may write `release-source-evidence-verified.json` with the database-record candidate `workflow_status=passed`. Failure removes any stale verified output. Even in the verified file, `branch_policy_verified=false` remains unchanged because the protected flag does not prove detailed ruleset policy. The verifier does not write Supabase release evidence, mutate Production data, enable Finance/provider mutation, deploy Production, promote `main`, or auto-close any GitHub/release/business rail.
 
-Recording the verified payload through the authorized server/service release-evidence path and any later Production promotion remain separate deliberate actions.
+To persist a final verified payload, use `npm run release:evidence:record -- <verified.json>` only as a separate deliberate action. The recorder must do a **fresh** GitHub lookup of the exact workflow run and current `main` immediately before the database call; it must reject a moved SHA, a different run attempt, a failed/in-progress run, or `protected=false`. It also requires the exact Production Supabase URL/project, service-role credentials, `YWI_RELEASE_EVIDENCE_RECORD_CONFIRM=I_CONFIRM_RELEASE_EVIDENCE_RECORD`, a final verification no older than the recording window, and exact Production schema parity with the verified source schema.
+
+The authorized database RPC derives `workflow_status=passed` itself; callers do not supply the status or `branch_policy_verified`. It records the repository, run attempt, canonical workflow path, verification-contract version, and SHA-256 digest of the verified payload, then the recorder immediately re-reads current release-source authority. Direct service-role INSERT/UPDATE/DELETE and the legacy permissive release recorder must remain disabled. A source-gate GREEN result still does not prove detailed GitHub ruleset policy and does not deploy or promote Production.
+
+Recording the verified payload and any later Production promotion remain separate deliberate actions.
 
 ## Remaining work selection
 
