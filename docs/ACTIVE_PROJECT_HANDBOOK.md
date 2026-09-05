@@ -84,6 +84,10 @@ A restored network connection is not proof that local work synchronized. Queued 
 
 Numbered SQL migrations are retained permanently as schema history. Live schema state is read from database authority views rather than copied here. GitHub source checks and service-private release-source evidence hold exact source/run proof.
 
+Release-source evidence has three separate stages: the exact-main workflow writes a candidate, final verification proves the completed successful run plus current protected `main`, and deliberate recording persists that already-verified proof. After final verification, `npm run release:evidence:record -- <verified.json>` must perform a **fresh** GitHub run and current-main re-check, require the exact Production Supabase URL/project, service-role credentials, `YWI_RELEASE_EVIDENCE_RECORD_CONFIRM=I_CONFIRM_RELEASE_EVIDENCE_RECORD`, exact current Production schema parity, and then use only the verified service-role recording RPC. The database derives `passed`; callers do not supply workflow status or detailed branch-policy truth. Raw release-evidence table writes and the legacy permissive recorder are not valid recording paths. The recorder hashes the verified payload, records run attempt and workflow path, immediately re-reads current release authority, and keeps detailed branch-policy verification false until separately proven.
+
+Recording release-source evidence is not deployment or Production promotion. A verified/recorded source gate may coexist with repository-policy AMBER, external Auth follow-ups, human/provider/content acceptance, and staging/accounting blockers. Those rails stay separate and evidence-driven.
+
 Production promotion is deliberate/manual. Source work must not enable Finance execution, provider mutation, mutate external Auth controls, publish unapproved content, submit search URLs externally, run staging acceptance against Production, or close human/external acceptance rails unless that specific change is separately authorized and evidenced.
 
 ## Hygiene rules
