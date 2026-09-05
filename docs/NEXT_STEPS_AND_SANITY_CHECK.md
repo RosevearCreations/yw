@@ -52,7 +52,7 @@ Do not use historical feature metadata as current release/schema truth. Current 
 
 Treat the customer notification path as consent-first. A customer-visible live update may enter the delivery path only when the customer has an **explicit opt-in** for email notifications. No consent means no delivery attempt. Keep notification preference, outbox and delivery-attempt records service-private, and keep the staff delivery queue bounded so customer email addresses and portal tokens are not exposed merely for operational review.
 
-The dispatcher must remain fail-closed behind its explicit delivery-enable guard and run token, with provider idempotency on delivery attempts. Transport uncertainty must remain **manual review**, never automatic success and never automatic retry. Retry remains a deliberate staff action after review. Customer-facing notification content may link back to the secure portal but must not contain staff-only notes, private images, access details, internal costing or margin information.
+The dispatcher must remain fail-closed behind its explicit delivery-enable guard and run token, with provider idempotency on delivery attempts. Transport uncertainty must remain **manual review**, never automatic success and never automatic retry. Retry remains a deliberate staff action after review. Customer-facing notification content may link to the secure portal but must not contain staff-only notes, private images, access details, internal costing or margin information.
 
 For notification-related changes, run the historical notification contract, the current release-enforcement gate and the rendered notification browser acceptance. Verify 390/430 customer preference controls remain touch-usable and overflow-free, desktop pending-consent/delivered/manual-review states remain readable, and customer/staff surfaces preserve the privacy boundary. Historical notification migration metadata is audit history rather than current schema identity.
 
@@ -63,6 +63,12 @@ Every release that changes navigation, workflows, public pages, or public-search
 Treat `https://ywiinc.com` as a separate established business website, not an automatic canonical destination. Noncanonical and preview application hosts remain `noindex` while pointing canonically to yardweasels.ca. Verify the canonical-host, canonical-conflict, and preview/noncanonical rendering cases in browser acceptance. A disagreement between approved route path, sitemap canonical, and rendered canonical fails closed to `noindex` until corrected.
 
 Sitemap `lastmod` must represent meaningful source/content freshness rather than simply the deployment date and must never be future-dated. Public route structured data should expose matching WebPage, Service, and BreadcrumbList semantics without contradicting the visible H1, title, description, route or provider. External search-engine submission is a separately configured action; do not automatically call IndexNow or Search Console and never use submission as a substitute for content approval.
+
+## Supabase Data API migration sanity check
+
+Supabase is removing automatic Data API grants for newly created public tables. YW therefore treats implicit access as invalid source authority. For every guarded future migration that creates a `public` table, the creating migration must enable RLS, explicitly declare least-privilege table grants, and explicitly GRANT or REVOKE `anon` / `authenticated` access. Do not use `GRANT ALL` for client roles and do not assume historical default privileges will exist for a new table.
+
+The repository smoke gate permanently runs `scripts/data-api-explicit-access-check.mjs`; a new guarded migration that omits RLS or its explicit access decision must fail source CI before merge. Historical migrations remain unchanged audit history. A read-only Production privilege audit is separate evidence: source linting must not mutate live grants, apply a schema migration, create staging infrastructure, or promote Production.
 
 ## Repository enforcement sanity check
 
