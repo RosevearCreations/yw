@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import {auditRepository as auditDataApiAccess} from './data-api-explicit-access-check.mjs';
 const root=process.cwd(); const results=[]; const add=(name,ok,detail='')=>results.push({name,ok:!!ok,detail});
 const walk=(dir)=>fs.readdirSync(dir,{withFileTypes:true}).flatMap((e)=>{const f=path.join(dir,e.name);if(['.git','node_modules','playwright-report','test-results'].includes(e.name))return[];return e.isDirectory()?walk(f):[f];});
 const files=walk(root); const rel=(f)=>path.relative(root,f).replaceAll('\\','/');
@@ -14,5 +15,7 @@ const docs=activeMd.map((f)=>fs.readFileSync(f,'utf8'));
 add('active-docs-no-build-ledger',docs.every((t)=>!(/\bBuild\s+\d+\b/i.test(t)))); add('active-docs-no-run-or-sha-ledger',docs.every((t)=>!(/\bRun\s*#?\d+\b/i.test(t))&&!/\b[0-9a-f]{40}\b/i.test(t)));
 add('docs-four-module-boundary',docs.every((t)=>['Safety','Finance','Jobs','Admin'].every((k)=>t.includes(k)))); add('docs-online-help',docs.every((t)=>/help\.html/i.test(t))); add('docs-manual-production',docs.every((t)=>/Production/i.test(t)&&/manual|deliberate/i.test(t))); add('docs-finance-provider-fail-closed',docs.every((t)=>/Finance/i.test(t)&&/provider/i.test(t)&&/(OFF|fail-closed)/i.test(t)));
 const sqlNames=files.map(rel).filter((f)=>/^sql\/\d{3}_.+\.sql$/i.test(f)); const nums=sqlNames.map((f)=>Number(path.basename(f).slice(0,3))).filter(Number.isFinite).sort((a,b)=>a-b); const unique=[...new Set(nums)]; const missing=[]; if(unique.length){for(let n=30;n<=Math.max(...unique);n++)if(!unique.includes(n))missing.push(n);}
-add('migration-history-contiguous',missing.length===0,missing.join(',')); add('migration-version-unique',unique.length===nums.length); add('help-present',fs.existsSync('help.html')); add('seo-gate-present',fs.existsSync('scripts/help-seo-hygiene-check.mjs')); add('seo-browser-gate-present',fs.existsSync('tests/browser/help-seo-layout.spec.mjs'));
+add('migration-history-contiguous',missing.length===0,missing.join(',')); add('migration-version-unique',unique.length===nums.length);
+const dataApiAudit=auditDataApiAccess(); add('future-data-api-access-explicit',dataApiAudit.ok,dataApiAudit.errors.join(' | '));
+add('help-present',fs.existsSync('help.html')); add('seo-gate-present',fs.existsSync('scripts/help-seo-hygiene-check.mjs')); add('seo-browser-gate-present',fs.existsSync('tests/browser/help-seo-layout.spec.mjs'));
 const passed=results.filter((x)=>x.ok).length; console.log(`Repository hygiene: ${passed}/${results.length} passed`); for(const r of results)console.log(`${r.ok?'PASS':'FAIL'}  ${r.name}${r.detail?' — '+r.detail:''}`); process.exit(passed===results.length?0:1);
