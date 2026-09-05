@@ -27,6 +27,8 @@
     "release:evidence:verify": "node scripts/release-source-evidence-verify.mjs",
     "test:release-source-evidence": "node scripts/release-source-evidence-bundle-check.mjs",
     "test:release-source-evidence-verify": "node scripts/release-source-evidence-verify-check.mjs",
+    "auth:evidence:intake": "node scripts/auth-security-evidence-intake.mjs",
+    "test:auth-security-evidence-intake": "node scripts/auth-security-evidence-intake-check.mjs",
     "test:staging": "node scripts/operations-rpc-staging-e2e.mjs",
     "test:staging-acceptance": "node scripts/staging-acceptance-control-plane-check.mjs && node scripts/operations-rpc-staging-e2e.mjs",
     "test:staging-scenarios": "node scripts/staging-scenario-catalog-check.mjs",
