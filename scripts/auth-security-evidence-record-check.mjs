@@ -107,7 +107,9 @@ const tampered=structuredClone(validCandidate);
 tampered.database_record_candidate.verification_status='verified_followup';
 add('tampered-derived-status-rejected',!buildAuthEvidenceRecordPlan(tampered,env(),{now:NOW}).ok);
 
-const staleCandidate=candidate({observed_at:'2026-07-01T00:00:00.000Z'});
+const staleCandidate=structuredClone(validCandidate);
+staleCandidate.observed_at='2026-07-01T00:00:00.000Z';
+staleCandidate.database_record_candidate.observed_at=staleCandidate.observed_at;
 add('stale-candidate-rejected-at-recording',!buildAuthEvidenceRecordPlan(staleCandidate,env(),{now:NOW}).ok);
 
 let calls=[];
