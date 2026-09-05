@@ -13,7 +13,7 @@ on:
         type: choice
         options: ['false','true']
       target_rail:
-        description: 'Schema 187 staging acceptance rail'
+        description: 'Current-schema staging acceptance rail (Schema 187 catalog)'
         required: false
         default: 'operations_cockpit_live'
         type: choice
@@ -41,6 +41,22 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - run: npm run test:repository-protection-preflight
+      - run: npm run test:release-source-evidence
+      - run: npm run test:release-source-evidence-verify
+      - run: npm run test:release-source-evidence-record
+      - name: Require GitHub repository enforcement on exact main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          YWI_GITHUB_EVENT_NAME: ${{ github.event_name }}
+          YWI_GITHUB_REF: ${{ github.ref }}
+          YWI_EXPECTED_MAIN_SHA: ${{ github.sha }}
+        run: |
+          main_json="$(gh api "repos/${GITHUB_REPOSITORY}/branches/main")"
+          export YWI_GITHUB_MAIN_SHA="$(printf '%s' "$main_json" | jq -r '.commit.sha // empty')"
+          export YWI_GITHUB_MAIN_PROTECTED="$(printf '%s' "$main_json" | jq -r '.protected // empty')"
+          npm run repository:protection:require
       - run: npm run test:modules
       - run: npm run test:it
       - run: npm run test:it-scorecard-truth
@@ -49,12 +65,18 @@ jobs:
       - run: npm run test:security-advisor-truth
       - run: npm run test:admin-account-security
       - run: npm run test:auth-security-evidence
+      - run: npm run test:auth-security-evidence-intake
+      - run: npm run test:auth-security-evidence-record
       - run: npm run test:next-safe-action
       - run: npm run test:pg-net-runtime
       - run: npm run test:equipment-scan
       - run: npm run test:staging-acceptance
       - run: npm run test:staging-scenarios
       - run: npm run test:staging-environment-guard
+      - run: npm run test:staging-target-preflight
+      - run: npm run test:staging-runtime-schema
+      - run: npm run test:current-schema-staging-runbook
+      - run: npm run test:core-live-write-staging
       - run: npm run test:runtime
       - run: npm run test:boundaries
       - run: npm run test:acceptance
@@ -79,16 +101,75 @@ jobs:
       - run: npm run test:repo
       - run: npm run test:contrast
       - run: npm run test:navigation
+      - run: npm run test:three-surface
+      - run: npm run test:field-ux
+      - run: npm run test:live-updates
+      - run: npm run test:notifications
+      - run: npm run test:notification-enforcement
+      - run: npm run test:public-route-publication
+      - run: node scripts/transactional-operations-safety-enforcement-check.mjs
+      - run: node scripts/customer-portal-responsive-privacy-enforcement-check.mjs
+      - run: node scripts/private-evidence-security-policy-enforcement-check.mjs
+      - run: node scripts/release-readiness-evidence-enforcement-check.mjs
+      - run: node scripts/canonical-app-shell-browser-enforcement-check.mjs
+      - run: node scripts/staging-infrastructure-readiness-enforcement-check.mjs
+      - run: npm run test:execution-proof
+      - run: npm run test:closeout
+      - run: npm run test:job-lifecycle
       - name: Install Chromium for rendered module acceptance
         run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - run: npm run test:browser:three-surface
+      - run: npm run test:browser:field-ux
+      - run: npm run test:browser:notifications
+      - run: npm run test:browser:public-route-publication
+      - run: npx playwright test --config=playwright.config.mjs tests/browser/customer-portal-responsive-privacy.spec.mjs
+      - run: npx playwright test --config=playwright.config.mjs tests/browser/private-evidence-security-policy.spec.mjs
+      - run: npx playwright test --config=playwright.config.mjs tests/browser/release-readiness-evidence.spec.mjs
+      - run: npm run test:browser:job-lifecycle
       - run: npm run test:browser:modules
       - run: npm run test:browser:finance
       - run: npm run test:browser:finance-mapping
       - run: npm run test:browser:it
       - run: npm run test:browser:equipment-scan
       - run: npm run test:browser:staging-acceptance
+      - run: npx playwright test --config=playwright.config.mjs tests/browser/staging-infrastructure-readiness.spec.mjs
       - run: npm run test:browser:admin-account-security
       - run: npm run test:browser:help-seo
+
+  release-source-evidence:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: source-checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Re-verify exact main and write release-source candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          YWI_GITHUB_EVENT_NAME: ${{ github.event_name }}
+          YWI_GITHUB_REF: ${{ github.ref }}
+          YWI_GITHUB_REPOSITORY: ${{ github.repository }}
+          YWI_EXPECTED_MAIN_SHA: ${{ github.sha }}
+          YWI_GITHUB_RUN_ID: ${{ github.run_id }}
+          YWI_GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+          YWI_GITHUB_WORKFLOW_NAME: ${{ github.workflow }}
+          YWI_SOURCE_CHECKS_RESULT: ${{ needs.source-checks.result }}
+          YWI_RELEASE_EVIDENCE_PATH: release-source-evidence.json
+        run: |
+          main_json="$(gh api "repos/${GITHUB_REPOSITORY}/branches/main")"
+          export YWI_GITHUB_MAIN_SHA="$(printf '%s' "$main_json" | jq -r '.commit.sha // empty')"
+          export YWI_GITHUB_MAIN_PROTECTED="$(printf '%s' "$main_json" | jq -r '.protected // empty')"
+          npm run repository:protection:require
+          npm run release:evidence:write
+      - name: Upload exact-main release-source candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: ywi-main-release-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: release-source-evidence.json
+          if-no-files-found: error
 
   staging-proof:
     if: github.event_name == 'workflow_dispatch' && inputs.run_staging == 'true'
@@ -101,27 +182,26 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - name: Refuse missing staging boundary
-        run: |
-          test "${YWI_RUN_STAGING_RPC_TESTS}" = "1"
-          test -n "${SUPABASE_URL}"
-          test -n "${SUPABASE_SERVICE_ROLE_KEY}"
-          test -n "${YWI_STAGING_PROJECT_REF}"
-          test -n "${YWI_STAGING_JOB_ADMIN_PROFILE_ID}"
-          test "${YWI_STAGING_PROJECT_REF}" != "${YWI_PRODUCTION_PROJECT_REF}"
+      - name: Verify exact staging target identity
+        run: npm run staging:preflight
         env:
           YWI_RUN_STAGING_RPC_TESTS: ${{ secrets.YWI_RUN_STAGING_RPC_TESTS }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          YWI_STAGING_PUBLIC_KEY: ${{ secrets.YWI_STAGING_PUBLIC_KEY }}
           YWI_STAGING_PROJECT_REF: ${{ secrets.YWI_STAGING_PROJECT_REF }}
           YWI_STAGING_JOB_ADMIN_PROFILE_ID: ${{ secrets.YWI_STAGING_JOB_ADMIN_PROFILE_ID }}
+          YWI_STAGING_TARGET_RAIL: ${{ inputs.target_rail }}
+          YWI_STAGING_LABEL: staging
+          YWI_STAGING_CONFIRM: I_CONFIRM_STAGING_ONLY
           YWI_PRODUCTION_PROJECT_REF: jmqvkgiqlimdhcofwkxr
-      - name: Run Schema 187 staging catalog evidence
+      - name: Run current-schema staging catalog evidence
         run: npm run test:staging
         env:
           YWI_RUN_STAGING_RPC_TESTS: ${{ secrets.YWI_RUN_STAGING_RPC_TESTS }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          YWI_STAGING_PUBLIC_KEY: ${{ secrets.YWI_STAGING_PUBLIC_KEY }}
           YWI_STAGING_PROJECT_REF: ${{ secrets.YWI_STAGING_PROJECT_REF }}
           YWI_PRODUCTION_PROJECT_REF: jmqvkgiqlimdhcofwkxr
           YWI_STAGING_LABEL: staging
@@ -133,4 +213,4 @@ jobs:
           YWI_STAGING_WORKFLOW_RUN_ID: ${{ github.run_id }}
           YWI_STAGING_TARGET_RAIL: ${{ inputs.target_rail }}
           YWI_STAGING_CREATE_FIXTURES: ${{ inputs.create_fixtures == 'true' && '1' || '0' }}
-          YWI_STAGING_FIXTURE_LABEL: STAGING-B187-RUN
+          YWI_STAGING_FIXTURE_LABEL: STAGING-CURRENT-RUN

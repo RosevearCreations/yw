@@ -16,6 +16,9 @@ verify_jwt = false
 [functions.public-content]
 verify_jwt = false
 
+[functions.quote-contact-submit]
+verify_jwt = false
+
 [functions.stripe-webhook]
 verify_jwt = false
 

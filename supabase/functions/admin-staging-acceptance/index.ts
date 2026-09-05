@@ -2,8 +2,8 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { hasModuleAccess } from "../_shared/module-permissions.ts";
 
-const BUILD = '2026-09-04a';
-const SCHEMA = 197;
+const BUILD = '2026-09-04b';
+const MINIMUM_SCHEMA = 197;
 const KNOWN_PRODUCTION_PROJECT_REF = 'jmqvkgiqlimdhcofwkxr';
 
 const corsHeaders = {
@@ -90,11 +90,40 @@ async function runtimeEnvironmentGuard(supabase: any, supabaseUrl: string) {
   };
 }
 
+async function runtimeSchemaAuthority(supabase:any) {
+  const { data, error } = await supabase
+    .from('v_schema_drift_status')
+    .select('expected_schema_version,latest_applied_schema_version,drift_status,message,checked_at')
+    .maybeSingle();
+  if (error) throw error;
+  const expectedSchema = Number(data?.expected_schema_version || 0);
+  const latestSchema = Number(data?.latest_applied_schema_version || 0);
+  const driftStatus = clean(data?.drift_status,40).toLowerCase();
+  const exactSchemaMatch = driftStatus === 'current' && expectedSchema >= MINIMUM_SCHEMA && latestSchema === expectedSchema;
+  return {
+    expected_schema_version:expectedSchema || null,
+    latest_applied_schema_version:latestSchema || null,
+    drift_status:driftStatus || 'unknown',
+    exact_schema_match:exactSchemaMatch,
+    minimum_schema:MINIMUM_SCHEMA,
+    message:clean(data?.message,1000) || null,
+    checked_at:data?.checked_at || null,
+  };
+}
+
 function assertStagingMutationAllowed(guard: any) {
   if (guard?.mutation_allowed === true) return;
   throw new HttpError(409,'Staging acceptance mutation is locked for this runtime environment.',{
     environment_guard:guard,
     required:'Set YWI_RUNTIME_ENVIRONMENT=staging, YWI_STAGING_PROJECT_REF to this exact non-production project ref, and YWI_STAGING_ACCEPTANCE_MUTATION_ENABLED=true. Production is always denied.'
+  });
+}
+
+function assertCurrentRuntimeSchema(authority:any) {
+  if (authority?.exact_schema_match === true) return;
+  throw new HttpError(409,'Staging acceptance mutation is locked until the staging database exactly matches the current repository schema authority.',{
+    schema_authority:authority,
+    required:'v_schema_drift_status must report current and latest_applied_schema_version must exactly equal expected_schema_version.'
   });
 }
 
@@ -124,6 +153,7 @@ async function statusPayload(supabase: any, environmentGuard: any) {
     { data: environmentAssertions, error: environmentError },
     { data: scenarioPlan, error: scenarioError },
     { data: recentRuns, error: runsError },
+    schemaAuthority,
   ] = await Promise.all([
     supabase.from('v_it_staging_acceptance_status').select('*').order('sort_order',{ ascending:true }),
     supabase.rpc('ywi_staging_acceptance_security_assertions'),
@@ -135,6 +165,7 @@ async function statusPayload(supabase: any, environmentGuard: any) {
       .eq('acceptance_class','staging_acceptance')
       .order('started_at',{ ascending:false })
       .limit(20),
+    runtimeSchemaAuthority(supabase),
   ]);
   if (rowsError) throw rowsError;
   if (securityError) throw securityError;
@@ -146,13 +177,23 @@ async function statusPayload(supabase: any, environmentGuard: any) {
   const securityRows = securityAssertions || [];
   const catalogRows = catalogAssertions || [];
   const environmentRows = environmentAssertions || [];
-  const failedAssertions = [...securityRows,...catalogRows,...environmentRows].filter((row:any) => String(row?.assertion_status || '').toLowerCase() !== 'passed');
+  const schemaRows = [{
+    assertion_key:'staging_runtime_schema_current',
+    assertion_status:schemaAuthority.exact_schema_match ? 'passed' : 'failed',
+    assertion_detail:schemaAuthority.exact_schema_match
+      ? `Runtime schema is exactly current at ${schemaAuthority.expected_schema_version}.`
+      : `Expected schema ${schemaAuthority.expected_schema_version ?? 'unknown'}; live schema ${schemaAuthority.latest_applied_schema_version ?? 'unknown'}; drift ${schemaAuthority.drift_status}.`,
+  }];
+  const failedAssertions = [...securityRows,...catalogRows,...environmentRows,...schemaRows]
+    .filter((row:any) => String(row?.assertion_status || '').toLowerCase() !== 'passed');
   const acceptanceRows = rows || [];
   const scenarios = scenarioPlan || [];
   return {
     ok: failedAssertions.length === 0,
     build:BUILD,
-    schema:SCHEMA,
+    schema:schemaAuthority.expected_schema_version,
+    minimum_schema:MINIMUM_SCHEMA,
+    schema_authority:schemaAuthority,
     environment_guard:environmentGuard,
     summary:{
       rail_count:acceptanceRows.length,
@@ -163,8 +204,9 @@ async function statusPayload(supabase: any, environmentGuard: any) {
       human_action_count:scenarios.filter((row:any)=>row?.human_action_required === true).length,
       failed_count:acceptanceRows.filter((row:any)=>['failed','rejected','stale_schema'].includes(String(row?.staging_acceptance_status || ''))).length,
       assertion_failures:failedAssertions.length,
+      schema_current:schemaAuthority.exact_schema_match,
       business_rail_auto_close:false,
-      staging_mutation_allowed:environmentGuard?.mutation_allowed === true,
+      staging_mutation_allowed:environmentGuard?.mutation_allowed === true && schemaAuthority.exact_schema_match === true,
       known_production_runtime:environmentGuard?.known_production === true,
     },
     staging_acceptance:acceptanceRows,
@@ -172,6 +214,7 @@ async function statusPayload(supabase: any, environmentGuard: any) {
     security_assertions:securityRows,
     catalog_assertions:catalogRows,
     environment_assertions:environmentRows,
+    schema_assertions:schemaRows,
     recent_runs:recentRuns || [],
   };
 }
@@ -216,6 +259,8 @@ Deno.serve(async (req:Request) => {
     }
 
     assertStagingMutationAllowed(environmentGuard);
+    const schemaAuthority = await runtimeSchemaAuthority(supabase);
+    assertCurrentRuntimeSchema(schemaAuthority);
 
     if (action === 'record_case') {
       const runId = clean(body?.run_id,80);
@@ -235,10 +280,11 @@ Deno.serve(async (req:Request) => {
         p_is_blocking:scenario.is_blocking,
         p_expected_outcome:scenario.expected_outcome,
         p_observed_outcome:note || `Human marked ${decision}.`,
-        p_details:{ human_evidence:true, recorded_from:'admin-staging-acceptance', environment_guard:'staging_allowed' },
+        p_details:{ human_evidence:true, recorded_from:'admin-staging-acceptance', environment_guard:'staging_allowed', schema_authority:'exact_current' },
       });
       if (error) throw error;
-      return Response.json({ ok:true,build:BUILD,schema:SCHEMA,case_result:data,status:await statusPayload(supabase,environmentGuard) },{ headers:corsHeaders });
+      const status=await statusPayload(supabase,environmentGuard);
+      return Response.json({ ok:true,build:BUILD,schema:status.schema,case_result:data,status },{ headers:corsHeaders });
     }
 
     if (action === 'finalize') {
@@ -251,7 +297,8 @@ Deno.serve(async (req:Request) => {
         p_failure_reason:note || null,
       });
       if (error) throw error;
-      return Response.json({ ok:true,build:BUILD,schema:SCHEMA,finalize:data,status:await statusPayload(supabase,environmentGuard) },{ headers:corsHeaders });
+      const status=await statusPayload(supabase,environmentGuard);
+      return Response.json({ ok:true,build:BUILD,schema:status.schema,finalize:data,status },{ headers:corsHeaders });
     }
 
     if (action === 'signoff') {
@@ -267,13 +314,14 @@ Deno.serve(async (req:Request) => {
         p_note:note || null,
       });
       if (error) throw error;
-      return Response.json({ ok:true,build:BUILD,schema:SCHEMA,signoff:data,status:await statusPayload(supabase,environmentGuard) },{ headers:corsHeaders });
+      const status=await statusPayload(supabase,environmentGuard);
+      return Response.json({ ok:true,build:BUILD,schema:status.schema,signoff:data,status },{ headers:corsHeaders });
     }
 
     throw new HttpError(400,`Unsupported action: ${action || '(blank)'}.`);
   } catch (error) {
     const status = error instanceof HttpError ? error.status : 500;
     const message = error instanceof Error ? error.message : 'admin-staging-acceptance failed.';
-    return Response.json({ ok:false,error:message,details:error instanceof HttpError ? error.details : undefined,build:BUILD,schema:SCHEMA },{ status,headers:corsHeaders });
+    return Response.json({ ok:false,error:message,details:error instanceof HttpError ? error.details : undefined,build:BUILD,minimum_schema:MINIMUM_SCHEMA },{ status,headers:corsHeaders });
   }
 });

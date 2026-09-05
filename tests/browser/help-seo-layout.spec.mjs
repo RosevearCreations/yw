@@ -10,7 +10,18 @@ const portal=read('js/customer-portal.js');
 const clean=(html)=>html.replace(/<script\b[\s\S]*?<\/script>/gi,'');
 const viewports=[{name:'phone',width:390,height:844},{name:'desktop',width:1440,height:960}];
 const demoRoute={route_path:'/services/demo',canonical_url:'https://yardweasels.ca/services/demo',page_title:'Demo service | Yard Weasels Inc.',meta_description:'Approved demo service page for rendered SEO acceptance.',h1_text:'Approved Southern Ontario Demo Service',page_intro:'Approved public service introduction.',service_name:'Demo Service',location_name:'Southern Ontario',page_body_markdown:'## What to expect\nClear approved service information.',primary_cta_path:'/#quote-intake',local_proof_hint:'Published only after content approval.'};
-async function noOverflow(page,width){const size=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,client:document.documentElement.clientWidth}));expect(size.scroll).toBeLessThanOrEqual(Math.max(width,size.client)+1);}
+async function noOverflow(page,width){
+  const result=await page.evaluate((viewportWidth)=>{
+    const root=document.documentElement;
+    const offenders=[...document.querySelectorAll('body *')].map((el)=>{
+      const rect=el.getBoundingClientRect();
+      return {tag:el.tagName.toLowerCase(),id:el.id||'',className:typeof el.className==='string'?el.className:'',left:Math.round(rect.left),right:Math.round(rect.right),width:Math.round(rect.width),scrollWidth:el.scrollWidth,text:(el.textContent||'').trim().replace(/\s+/g,' ').slice(0,120)};
+    }).filter((item)=>item.right>viewportWidth+1||item.left<-1||item.scrollWidth>item.width+1).sort((a,b)=>Math.max(b.right-viewportWidth,b.scrollWidth-b.width)-Math.max(a.right-viewportWidth,a.scrollWidth-a.width)).slice(0,12);
+    return {scroll:root.scrollWidth,client:root.clientWidth,offenders};
+  },width);
+  if(result.scroll>Math.max(width,result.client)+1)console.log('RESPONSIVE_OVERFLOW',JSON.stringify(result));
+  expect(result.scroll).toBeLessThanOrEqual(Math.max(width,result.client)+1);
+}
 async function loadPublicRoute(page,url,route=demoRoute){await page.route(url,r=>r.fulfill({status:200,contentType:'text/html',body:clean(index)}));await page.goto(url);await page.addStyleTag({content:css});await page.addScriptTag({content:appConfig});await page.evaluate((payload)=>{window.YWIAPI={fetchPublicContent:async()=>({ok:true,route:payload,visual:null})};},route);await page.addScriptTag({content:routes});await expect(page.getByRole('heading',{level:1,name:'Approved Southern Ontario Demo Service'})).toBeVisible();}
 async function publicSchemaTypes(page){return page.locator('script[data-public-route-schema]').evaluate((node)=>{const parsed=JSON.parse(node.textContent||'{}');return (parsed['@graph']||[]).map((item)=>item['@type']);});}
 for(const v of viewports){

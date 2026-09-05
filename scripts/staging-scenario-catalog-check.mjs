@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Schema 187 catalog source gate; the serving endpoint may advance to later compatible schemas. */
+/** Schema 187 catalog source gate; the serving endpoint and runner may advance to later compatible schemas. */
 import fs from 'node:fs';
 import path from 'node:path';
 const root=process.cwd();
@@ -13,7 +13,7 @@ const pkg=JSON.parse(read('package.json'));
 const results=[];
 const add=(name,ok)=>results.push({name,ok:!!ok});
 const hasAll=(text,values)=>values.every((value)=>text.includes(value));
-const endpointSchema=Number(endpoint.match(/const SCHEMA = (\d+);/)?.[1] || 0);
+const endpointMinimumSchema=Number(endpoint.match(/const MINIMUM_SCHEMA = (\d+);/)?.[1] || 0);
 const rails=[
   'operations_cockpit_live','quote_intake_live','live_job_updates',
   'customer_live_update_notifications','service_execution_proof_costing',
@@ -36,14 +36,18 @@ add('schema187-never-auto-closes-business-rails',hasAll(migration,['catalog_neve
 add('schema187-marker-ledger',hasAll(migration,['187::int as expected_schema_version',"187,'187_staging_acceptance_scenario_catalog'","'2026-09-03a'","'schema187_staging_scenario_catalog'"]));
 add('schema187-no-finance-provider-mutation',!/\b(?:insert\s+into|update|delete\s+from)\s+public\.(?:job_financial_events|finance_|ar_|ap_|stripe|paypal|payment_|gl_journal)/i.test(migration));
 
-add('endpoint-current-status-catalog',endpointSchema>=187&&hasAll(endpoint,["from('v_it_staging_acceptance_scenario_plan')",'ywi_staging_acceptance_catalog_assertions','scenario_plan:scenarios']));
+add('endpoint-current-status-catalog',endpointMinimumSchema>=187&&hasAll(endpoint,[
+  "from('v_it_staging_acceptance_scenario_plan')",'ywi_staging_acceptance_catalog_assertions','scenario_plan:scenarios',
+  'runtimeSchemaAuthority','schema_authority:schemaAuthority'
+]));
 add('endpoint-human-case-only',hasAll(endpoint,["action === 'record_case'", "scenario.verification_mode !== 'human'",'Human evidence can only be recorded on a started staging run.','ywi_rpc_record_staging_acceptance_result']));
 add('endpoint-explicit-finalize-and-signoff',hasAll(endpoint,["action === 'finalize'",'ywi_rpc_finalize_staging_acceptance_run',"action === 'signoff'",'ywi_rpc_signoff_staging_acceptance_run']));
 add('endpoint-admin-manage',endpoint.includes("hasModuleAccess(supabase,profile,'admin','manage')"));
 
-add('runner-schema187-catalog-aware',hasAll(runner,['Schema 187 catalog-aware staging acceptance runner','operations_staging_acceptance_scenarios','allowedRails','catalog_case_count','pending_human_case_count']));
+add('runner-current-schema-catalog-aware',hasAll(runner,['Current-schema staging acceptance runner','CATALOG_SCHEMA_VERSION = 187','operations_staging_acceptance_scenarios','repoLatestSchema','catalog_case_count','pending_human_case_count']));
 add('runner-six-rail-allowlist',rails.every((rail)=>runner.includes(`'${rail}'`)));
-add('runner-production-refusal',hasAll(runner,['YWI_PRODUCTION_PROJECT_REF',"'jmqvkgiqlimdhcofwkxr'",'Refusing Schema 187 staging acceptance against the YardWeasels Production project ref.']));
+add('runner-production-refusal',hasAll(runner,['YWI_PRODUCTION_PROJECT_REF',"'jmqvkgiqlimdhcofwkxr'",'Refusing current-schema staging acceptance against the YardWeasels Production project ref.']));
+add('runner-requires-exact-repository-schema',hasAll(runner,['expectedSchema !== repoLatestSchema','latestAppliedSchema !== repoLatestSchema','must exactly match repository Schema']));
 add('runner-leaves-human-evidence-pending',hasAll(runner,['Runner cannot mark human-controlled case','record every pending human catalog case','finalize the run'])&&!runner.includes("rpc('ywi_rpc_finalize_staging_acceptance_run'"));
 
 add('ui-renders-scenario-catalog',hasAll(ui,['scenario_plan','staging-scenario-row','Prerequisite truth','pending evidence','human action(s)']));
@@ -51,7 +55,7 @@ add('ui-human-case-actions-explicit',hasAll(ui,['data-staging-case="passed"','da
 add('ui-finalize-and-signoff-explicit',hasAll(ui,['data-staging-finalize',"action:'finalize'",'Approve evidence','Reject evidence',"action:'signoff'"]));
 add('ui-repeats-no-auto-close-boundary',ui.includes('Scorecard completion remains a separate deliberate release action'));
 
-add('workflow-six-rail-manual-dispatch',rails.every((rail)=>workflow.includes(`- ${rail}`))&&hasAll(workflow,['workflow_dispatch','environment: staging','Run Schema 187 staging catalog evidence']));
+add('workflow-six-rail-manual-dispatch',rails.every((rail)=>workflow.includes(`- ${rail}`))&&hasAll(workflow,['workflow_dispatch','environment: staging','Run current-schema staging catalog evidence']));
 add('workflow-runs-schema187-source-gate',workflow.includes('npm run test:staging-scenarios'));
 add('package-schema187-source-gate',pkg.scripts?.['test:staging-scenarios']==='node scripts/staging-scenario-catalog-check.mjs');
 
