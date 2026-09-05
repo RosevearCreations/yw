@@ -237,8 +237,8 @@ revoke all on function public.ywi_record_auth_security_evidence(text,text,text,t
 grant execute on function public.ywi_record_auth_security_evidence(text,text,text,timestamptz,text,text,text,jsonb,uuid)
   to service_role;
 
--- Defense in depth: current readiness independently requires the official source, traceability fields,
--- a registered Production project, freshness and the exact secure state before reporting verified_secure.
+-- Defense in depth: preserve every existing Schema 202 view column in its exact order.
+-- The new traceability fields are appended only; PostgreSQL CREATE OR REPLACE VIEW requires this.
 create or replace view public.v_it_auth_security_evidence_current
 with (security_invoker=true)
 as
@@ -267,9 +267,6 @@ select
   l.expires_at,
   l.evidence_reference,
   l.evidence_detail,
-  l.source_project_ref,
-  l.source_capture_sha256,
-  l.recording_contract_version,
   case
     when l.evidence_id is null then 'pending_external_verification'
     when l.expires_at is not null and l.expires_at <= now() then 'stale_external_evidence'
@@ -314,7 +311,10 @@ select
       or l.observed_state in ('disabled','not_configured') then 'Recent authoritative Supabase control-plane evidence confirms that follow-up is still required.'
     else 'External Auth configuration still requires authoritative Supabase Dashboard or Management API verification.'
   end::text as status_message,
-  now() as checked_at
+  now() as checked_at,
+  l.source_project_ref,
+  l.source_capture_sha256,
+  l.recording_contract_version
 from controls c
 left join latest l on l.control_key=c.control_key;
 
@@ -514,16 +514,16 @@ on conflict(schema_version) do update set
 create or replace view public.v_schema_drift_status as
 select
   203 as expected_schema_version,
-  coalesce(max(schema_version) filter (where status='applied'),0) as latest_applied_schema_version,
+  coalesce(max(schema_version) filter(where status='applied'),0) as latest_applied_schema_version,
   case
-    when coalesce(max(schema_version) filter (where status='applied'),0)=203 then 'current'
-    when coalesce(max(schema_version) filter (where status='applied'),0)>203 then 'ahead'
+    when coalesce(max(schema_version) filter(where status='applied'),0)=203 then 'current'
+    when coalesce(max(schema_version) filter(where status='applied'),0)>203 then 'ahead'
     else 'drift'
   end::text as drift_status,
   case
-    when coalesce(max(schema_version) filter (where status='applied'),0)=203
+    when coalesce(max(schema_version) filter(where status='applied'),0)=203
       then 'Live database matches the repository schema marker.'
-    when coalesce(max(schema_version) filter (where status='applied'),0)>203
+    when coalesce(max(schema_version) filter(where status='applied'),0)>203
       then 'Live database is ahead of the repository schema marker.'
     else 'Live database is behind the repository schema marker.'
   end::text as message,
