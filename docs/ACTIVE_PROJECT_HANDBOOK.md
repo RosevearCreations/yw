@@ -86,6 +86,14 @@ YW must not depend on Supabase automatically granting new `public` tables to Dat
 
 The permanent repository smoke gate runs `scripts/data-api-explicit-access-check.mjs` and fails closed for any guarded migration that creates a public table without RLS plus an explicit least-privilege access decision. Historical migrations remain audit history rather than being rewritten merely to satisfy the new source rule. Current Production privilege posture is checked separately from source migration linting; neither the lint nor a read-only privilege audit applies a schema change or authorizes Production promotion.
 
+## SECURITY DEFINER function boundary
+
+Database functions are part of the Data API permission surface. `SECURITY DEFINER` is exceptional because it runs with the function owner's authority and therefore must never become callable merely because PostgreSQL or Supabase supplied a default `EXECUTE` grant. New public functions use explicit opt-in execution: default `EXECUTE` is revoked for `PUBLIC`, `anon`, `authenticated`, and `service_role`, and each migration must make deliberate caller-role decisions.
+
+Every new `SECURITY DEFINER` function in `public` must pin `search_path`, explicitly revoke `PUBLIC` execution, explicitly decide `anon`, `authenticated`, and `service_role` execution, and must not grant `PUBLIC` execution. Internal trigger, scheduler, permission, Finance, and service helpers stay non-browser-callable unless a separately reviewed API contract requires otherwise. Prefer `SECURITY INVOKER` where owner privileges are unnecessary; RLS or nested RPC use is not evidence that a helper itself needs a browser-callable Data API endpoint.
+
+The permanent repository smoke gate runs `scripts/security-definer-execute-boundary-check.mjs`. Runtime verification is service-private through `v_it_security_definer_execute_boundary` and `ywi_security_definer_execute_boundary_assertions()`. A source gate does not alter Production by itself, and Production promotion remains deliberate.
+
 ## Data and release authority
 
 Numbered SQL migrations are retained permanently as schema history. Live schema state is read from database authority views rather than copied here. GitHub source checks and service-private release-source evidence hold exact source/run proof.
