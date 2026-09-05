@@ -70,6 +70,14 @@ Supabase is removing automatic Data API grants for newly created public tables. 
 
 The repository smoke gate permanently runs `scripts/data-api-explicit-access-check.mjs`; a new guarded migration that omits RLS or its explicit access decision must fail source CI before merge. Historical migrations remain unchanged audit history. A read-only Production privilege audit is separate evidence: source linting must not mutate live grants, apply a schema migration, create staging infrastructure, or promote Production.
 
+## SECURITY DEFINER execution sanity check
+
+Treat every `SECURITY DEFINER` function as a privileged API surface, even when it is only intended as an internal helper. New public functions must not inherit `EXECUTE` from PostgreSQL/Supabase defaults. A new `SECURITY DEFINER` declaration must pin `search_path`, explicitly revoke `PUBLIC`, explicitly decide `anon`, `authenticated`, and `service_role` execution, and never grant `PUBLIC` execution.
+
+Before promoting a schema that changes function privileges, inspect the actual intended caller: browser RPC, service-role Edge Function, trigger, pg_cron, nested RPC, or RLS helper. Do not blanket-revoke an intentionally exposed RPC and do not leave an internal trigger/scheduler/Finance/permission helper browser-callable merely because a historical default grant exists. Prefer invoker semantics when creator privileges are unnecessary.
+
+The repository smoke gate permanently runs `scripts/security-definer-execute-boundary-check.mjs`. After this security convergence is eventually applied to an authorized database, verify the service-private `v_it_security_definer_execute_boundary` and `ywi_security_definer_execute_boundary_assertions()` results. Source-only acceptance does not prove the live database changed and does not authorize applying the migration to Production.
+
 ## Repository enforcement sanity check
 
 Treat repository enforcement as an external GitHub control, separate from green source tests and separate from application release authority. The exact-main repository protection preflight runs only for a `push` to `refs/heads/main`; it reads GitHub's current `branches/main` evidence, requires `protected=true`, and requires the GitHub-reported main SHA to exactly match the workflow release SHA.
