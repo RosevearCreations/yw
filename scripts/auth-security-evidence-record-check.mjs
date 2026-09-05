@@ -4,6 +4,7 @@ import {buildAuthEvidenceRecordCandidate} from './auth-security-evidence-intake.
 import {buildAuthEvidenceRecordPlan,recordAuthEvidenceCandidate,EXPECTED_PROJECT_REF,RECORD_CONFIRM,SOURCE_CONFIRM} from './auth-security-evidence-record.mjs';
 
 const migration=fs.readFileSync('sql/203_auth_evidence_authorized_recording.sql','utf8');
+const lockMigration=fs.readFileSync('sql/204_auth_evidence_direct_write_lock.sql','utf8');
 const packageJson=fs.readFileSync('package.json','utf8');
 const workflow=fs.readFileSync('.github/workflows/staging-browser-integration.yml','utf8');
 const handbook=fs.readFileSync('docs/ACTIVE_PROJECT_HANDBOOK.md','utf8');
@@ -95,6 +96,24 @@ add('schema203-assertions-and-safety',all(migration,[
   "'production_promotion',false"
 ]));
 add('schema203-marker',migration.includes('203 as expected_schema_version') && /values\s*\(\s*203\s*,\s*'203_auth_evidence_authorized_recording'/i.test(migration));
+add('schema204-direct-table-write-lock',all(lockMigration,[
+  'revoke insert,update on table public.it_auth_security_evidence from service_role;',
+  'grant select on table public.it_auth_security_evidence to service_role;',
+  'direct_service_table_write_blocked',
+  'authorized_recording_rpc_service_only',
+  "not has_table_privilege('service_role','public.it_auth_security_evidence','insert')",
+  "not has_table_privilege('service_role','public.it_auth_security_evidence','update')",
+  'ywi_auth_security_recording_access_assertions'
+]));
+add('schema204-safety',all(lockMigration,[
+  'open_business_acceptance_unchanged',
+  'finance_provider_execution_off',
+  "'direct_service_table_insert',false",
+  "'direct_service_table_update',false",
+  "'auth_setting_mutation',false",
+  "'production_promotion',false"
+]));
+add('schema204-marker',lockMigration.includes('204 as expected_schema_version') && /values\s*\(\s*204\s*,\s*'204_auth_evidence_direct_write_lock'/i.test(lockMigration));
 
 const validCandidate=candidate();
 const validPlan=buildAuthEvidenceRecordPlan(validCandidate,env(),{now:NOW});
