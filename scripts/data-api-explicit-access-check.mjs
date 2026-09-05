@@ -38,12 +38,14 @@ export function inspectMigrationAccess(sql,fileName='synthetic_206.sql'){
     const t=escapeRe(table);
     const rlsRe=new RegExp(`alter\\s+table\\s+(?:if\\s+exists\\s+)?public\\.${t}\\s+enable\\s+row\\s+level\\s+security`,'i');
     const explicitGrantRe=new RegExp(`grant\\s+(?!all\\b)[^;]+\\s+on\\s+table\\s+public\\.${t}\\s+to\\s+[^;]*(?:service_role|anon|authenticated)`,'i');
-    const clientDecisionRe=new RegExp(`(?:grant|revoke)\\s+[^;]+\\s+on\\s+table\\s+public\\.${t}\\s+(?:to|from)\\s+[^;]*(?:anon|authenticated)`,'i');
+    const anonDecisionRe=new RegExp(`(?:grant|revoke)\\s+[^;]+\\s+on\\s+table\\s+public\\.${t}\\s+(?:to|from)\\s+[^;]*\\banon\\b`,'i');
+    const authenticatedDecisionRe=new RegExp(`(?:grant|revoke)\\s+[^;]+\\s+on\\s+table\\s+public\\.${t}\\s+(?:to|from)\\s+[^;]*\\bauthenticated\\b`,'i');
     const broadClientGrantRe=new RegExp(`grant\\s+all(?:\\s+privileges)?\\s+on\\s+table\\s+public\\.${t}\\s+to\\s+[^;]*(?:anon|authenticated)`,'i');
 
     if(!rlsRe.test(source))errors.push(`${fileName}: public.${table} must enable row level security in the creating migration.`);
     if(!explicitGrantRe.test(source))errors.push(`${fileName}: public.${table} must declare at least one explicit least-privilege table GRANT for service_role/anon/authenticated.`);
-    if(!clientDecisionRe.test(source))errors.push(`${fileName}: public.${table} must explicitly GRANT or REVOKE anon/authenticated access in the creating migration.`);
+    if(!anonDecisionRe.test(source))errors.push(`${fileName}: public.${table} must explicitly GRANT or REVOKE anon access in the creating migration.`);
+    if(!authenticatedDecisionRe.test(source))errors.push(`${fileName}: public.${table} must explicitly GRANT or REVOKE authenticated access in the creating migration.`);
     if(broadClientGrantRe.test(source))errors.push(`${fileName}: public.${table} must not GRANT ALL table privileges to anon/authenticated; declare only the required privileges.`);
   }
 
@@ -73,6 +75,12 @@ function runParserRegression(){
     create table public.bad_implicit(id bigint primary key);
     alter table public.bad_implicit enable row level security;
   `;
+  const missingAnonDecision=`
+    create table public.bad_missing_anon(id bigint primary key);
+    alter table public.bad_missing_anon enable row level security;
+    revoke all on table public.bad_missing_anon from public,authenticated,service_role;
+    grant select on table public.bad_missing_anon to service_role;
+  `;
   const broadGrant=`
     create table public.bad_all(id bigint primary key);
     alter table public.bad_all enable row level security;
@@ -86,6 +94,7 @@ function runParserRegression(){
     ['client-contract-passes',inspectMigrationAccess(validClient,'206_client.sql').errors.length===0],
     ['missing-rls-fails',inspectMigrationAccess(missingRls,'206_bad.sql').errors.some((x)=>x.includes('row level security'))],
     ['implicit-access-fails',inspectMigrationAccess(implicitOnly,'206_bad.sql').errors.some((x)=>x.includes('explicit least-privilege'))],
+    ['missing-anon-decision-fails',inspectMigrationAccess(missingAnonDecision,'206_bad.sql').errors.some((x)=>x.includes('anon access'))],
     ['grant-all-client-fails',inspectMigrationAccess(broadGrant,'206_bad.sql').errors.some((x)=>x.includes('must not GRANT ALL'))],
     ['historical-files-are-baseline-only',inspectMigrationAccess('create table public.legacy(id int);','205_legacy.sql').checked===false],
   ];
@@ -123,7 +132,7 @@ function main(){
     return;
   }
   console.log('\nDATA API EXPLICIT ACCESS PREFLIGHT: GREEN');
-  console.log(`Every public table created in Schema ${MIN_ENFORCED_SCHEMA}+ must declare RLS plus explicit least-privilege Data API grants/revokes in the creating migration.`);
+  console.log(`Every public table created in Schema ${MIN_ENFORCED_SCHEMA}+ must declare RLS plus explicit least-privilege Data API grants/revokes for both anon and authenticated roles in the creating migration.`);
 }
 
 if(process.argv[1] && path.resolve(process.argv[1])===fileURLToPath(import.meta.url))main();
