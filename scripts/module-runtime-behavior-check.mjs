@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Schema 162/180/185/191 + Build 228 behavior gate: only the active permitted business module is requested. */
+/** Schema 162/180/185/191 + Build 228 behavior gate: active module and persistent Core loaders stay route-bounded. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -22,7 +22,7 @@ function createHarness(initialHash = '#finance') {
   const document = {
     scripts: [], listeners:new Map(),
     addEventListener(type,handler){ if(!this.listeners.has(type))this.listeners.set(type,[]); this.listeners.get(type).push(handler); },
-    dispatchEvent(event){ dispatchedEvents.push(event); for(const handler of this.listeners.get(event.type)||[]) handler(event); return true; },
+    dispatchEvent(event){ dispatchedEvents.push(event); for(const handler of this.listeners.get(event.type)||[]) handler.call(this,event); return true; },
     createElement(tagName){
       assert.equal(tagName,'script');
       return { src:'', async:true, dataset:{}, getAttribute(name){ return name==='src'?this.src:null; } };
@@ -32,7 +32,57 @@ function createHarness(initialHash = '#finance') {
 
   const sectionModules={toolbox:'safety',finance:'finance',today:'jobs',crew:'jobs',jobs:'jobs',equipment:'jobs',admin:'admin',it:'admin'};
   const location={ hash:initialHash, origin:'https://example.test', reload(){ reloadCount+=1; } };
-  const calls={ protected:0, forms:0, seed:0, admin:0, adminActions:0, logbook:0, reports:0, profile:0, reference:0, jobs:0 };
+  const calls={
+    protected:0, forms:0, seed:0, admin:0, adminActions:0, logbook:0, reports:0, profile:0, reference:0, jobs:0,
+    profileSelfTransport:0, profileTimeTransport:0, profileCrewTransport:0, profileRoleRender:0, referenceTransport:0
+  };
+
+  const profileFactory = {
+    create(config = {}) {
+      const getAuthState = config.getAuthState || (()=>authState);
+      const getAccessProfile = config.getAccessProfile || (()=>({canViewCrew:true}));
+      const instance = {
+        async loadSelfProfile(){ if(getAuthState()?.isAuthenticated) calls.profileSelfTransport+=1; },
+        async loadCrew(){ if(getAuthState()?.isAuthenticated && getAccessProfile(authState.role)?.canViewCrew) calls.profileCrewTransport+=1; },
+        applyRoleVisibility(){ calls.profileRoleRender+=1; },
+        async init(){
+          document.addEventListener('ywi:auth-changed',()=>{
+            const next=getAuthState();
+            if(!next?.isAuthenticated||next?.isLoggingOut) return;
+            calls.profileSelfTransport+=1;
+            calls.profileTimeTransport+=1;
+            if(getAccessProfile(authState.role)?.canViewCrew) calls.profileCrewTransport+=1;
+          });
+          document.addEventListener('ywi:route-shown',(event)=>{
+            const section=event?.detail?.allowed||event?.detail?.requested||'';
+            if(section==='me'&&getAuthState()?.isAuthenticated){calls.profileSelfTransport+=1;calls.profileTimeTransport+=1;}
+            if(section==='crew'&&getAuthState()?.isAuthenticated&&getAccessProfile(authState.role)?.canViewCrew) calls.profileCrewTransport+=1;
+          });
+          const next=getAuthState();
+          if(!next?.isAuthenticated||next?.isLoggingOut) return;
+          calls.profileSelfTransport+=1;
+          calls.profileTimeTransport+=1;
+          if(getAccessProfile(authState.role)?.canViewCrew) calls.profileCrewTransport+=1;
+        }
+      };
+      return instance;
+    }
+  };
+
+  const referenceFactory = {
+    create(config = {}) {
+      const instance={
+        async load(){ return config.api?.fetchReferenceData?.({include_people:true,include_sites:true,include_catalogs:true}); },
+        init(){
+          document.addEventListener('ywi:auth-changed',()=>instance.load());
+          document.addEventListener('ywi:boot-ready',()=>instance.load());
+          instance.load();
+        }
+      };
+      return instance;
+    }
+  };
+
   const window = {
     location,
     YWI_AUTH:{ getState:()=>authState },
@@ -40,6 +90,8 @@ function createHarness(initialHash = '#finance') {
       canViewModule:(moduleKey)=>grants[moduleKey]===true,
       getModuleForSection:(section)=>sectionModules[section]||null
     },
+    YWIProfileUI:profileFactory,
+    YWIReferenceData:referenceFactory,
     initProtectedModules(){ calls.protected+=1; },
     initFormModules(){ calls.forms+=1; },
     seedAllTables(){ calls.seed+=1; },
@@ -59,6 +111,8 @@ function createHarness(initialHash = '#finance') {
   vm.runInContext(source,sandbox,{filename:'js/module-runtime.js'});
   return {
     runtime:window.YWIModuleRuntime,
+    window,
+    document,
     grants,
     appendedScripts,
     moduleScripts:()=>appendedScripts.filter((script)=>!!script.dataset.ywiModule),
@@ -67,6 +121,7 @@ function createHarness(initialHash = '#finance') {
     calls,
     get reloadCount(){return reloadCount;},
     setAuth(next){authState={...authState,...next};},
+    async event(type,detail={}){ document.dispatchEvent(new TestCustomEvent(type,{detail})); await new Promise((resolve)=>setTimeout(resolve,0)); },
     async route(section){ location.hash=`#${section}`; document.dispatchEvent(new TestCustomEvent('ywi:route-shown',{detail:{allowed:section,requested:section}})); await new Promise((resolve)=>setTimeout(resolve,0)); }
   };
 }
@@ -101,7 +156,10 @@ function createHarness(initialHash = '#finance') {
   await h.route('today');
   assert.ok(h.runtime.getRuntimeState().loadedModules.includes('jobs'),'Navigating to Jobs should lazy-load Jobs.');
   assert.equal(h.calls.jobs,1,'Jobs controller should initialize when a Jobs route is active.');
-  assert.equal(h.calls.reference,1,'Jobs may initialize shared reference data when it is the active module.');
+  assert.equal(h.calls.reference,0,'Today must not initialize shared reference data just because it belongs to Jobs.');
+
+  await h.route('jobs');
+  assert.equal(h.calls.reference,1,'The Jobs manager may initialize reference data when its selector-rich route is actually active.');
 }
 
 {
@@ -135,12 +193,67 @@ function createHarness(initialHash = '#finance') {
   assert.ok(h.dispatchedEvents.some((event)=>event.type==='ywi:module-runtime-purge'&&event.detail?.reason==='profile_changed'));
 }
 
+{
+  const h=createHarness('#crew');
+  const profile=h.window.YWIProfileUI.create({
+    getAuthState:()=>h.window.YWI_AUTH.getState(),
+    getAccessProfile:()=>({canViewCrew:true})
+  });
+  await profile.init();
+  assert.equal(h.calls.profileSelfTransport,0,'Opening Crew must not preload self-profile data.');
+  assert.equal(h.calls.profileTimeTransport,0,'Opening Crew must not preload time-clock context.');
+  assert.equal(h.calls.profileCrewTransport,1,'Opening Crew loads only the Crew transport once.');
+
+  await h.route('finance');
+  await h.event('ywi:auth-changed',{state:h.window.YWI_AUTH.getState()});
+  assert.equal(h.calls.profileSelfTransport,0,'A persistent profile listener must not reload self profile while Finance is active.');
+  assert.equal(h.calls.profileTimeTransport,0,'A persistent profile listener must not reload time clock while Finance is active.');
+  assert.equal(h.calls.profileCrewTransport,1,'A persistent profile listener must not reload Crew while Finance is active.');
+
+  await h.route('today');
+  await h.event('ywi:auth-changed',{state:h.window.YWI_AUTH.getState()});
+  assert.equal(h.calls.profileSelfTransport,0,'Supabase auth/visibility recovery on Today must not trigger self-profile transport.');
+  assert.equal(h.calls.profileTimeTransport,0,'Supabase auth/visibility recovery on Today must not trigger time-clock transport.');
+  assert.equal(h.calls.profileCrewTransport,1,'Supabase auth/visibility recovery on Today must not trigger Crew transport.');
+
+  await h.route('me');
+  assert.equal(h.calls.profileSelfTransport,1,'My Profile route loads self profile when explicitly opened.');
+  assert.equal(h.calls.profileTimeTransport,1,'My Profile route loads time-clock context when explicitly opened.');
+  assert.equal(h.calls.profileCrewTransport,1,'My Profile route does not preload Crew.');
+}
+
+{
+  const h=createHarness('#jobs');
+  const reference=h.window.YWIReferenceData.create({
+    api:{fetchReferenceData:async()=>{h.calls.referenceTransport+=1;return {sites:[],supervisors:[],admins:[],employees:[],positions:[],trades:[]};}}
+  });
+  reference.init();
+  await new Promise((resolve)=>setTimeout(resolve,0));
+  assert.equal(h.calls.referenceTransport,1,'Reference data loads when the selector-rich Jobs manager is explicitly active.');
+
+  await h.route('today');
+  await h.event('ywi:auth-changed',{state:h.window.YWI_AUTH.getState()});
+  await h.event('ywi:boot-ready',{});
+  assert.equal(h.calls.referenceTransport,1,'Today auth/boot recovery must not reload reference data.');
+
+  await h.route('finance');
+  await h.event('ywi:auth-changed',{state:h.window.YWI_AUTH.getState()});
+  assert.equal(h.calls.referenceTransport,1,'Finance auth recovery must not reload a previously initialized reference-data service.');
+
+  await h.route('equipment');
+  await new Promise((resolve)=>setTimeout(resolve,0));
+  assert.equal(h.calls.referenceTransport,2,'Equipment may refresh reference data when that selector-rich route is explicitly opened.');
+}
+
 console.log('PASS runtime-active-module-only-first-sync');
 console.log('PASS runtime-route-lazy-loads-next-module');
 console.log('PASS runtime-finance-does-not-boot-admin-jobs-profile-reference');
 console.log('PASS runtime-it-does-not-boot-heavy-admin-control-center');
+console.log('PASS runtime-today-does-not-boot-reference-profile');
 console.log('PASS runtime-denied-module-not-requested');
 console.log('PASS runtime-jobs-bundle-remains-bounded');
 console.log('PASS runtime-signout-purges-stale-code');
 console.log('PASS runtime-profile-change-purges-stale-code');
-console.log('\nSchema 162/180/185/191 + Build 228 module runtime behavior gate passed: 8/8 checks.');
+console.log('PASS runtime-persistent-profile-auth-listener-route-bounded');
+console.log('PASS runtime-persistent-reference-listeners-route-bounded');
+console.log('\nSchema 162/180/185/191 + Build 228 module runtime behavior gate passed: 11/11 checks.');
