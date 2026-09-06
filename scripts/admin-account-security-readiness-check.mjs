@@ -9,6 +9,8 @@ const passwordUi = read('js/password-security.js');
 const adminUi = read('js/admin-account-security-ui.js');
 const runtime = read('js/module-runtime.js');
 const config = read('supabase/config.toml');
+const auth = read('js/auth.js');
+const serviceWorker = read('server-worker.js');
 
 const checks = [];
 const add = (key, ok, detail) => checks.push({key,ok:!!ok,detail});
@@ -43,12 +45,16 @@ add(
     && !runtime.includes("'/js/admin-account-security-ui.js'"),
   'Existing Admin module manifest retains all historical scripts; password security is global and the new Admin account-security UI is loaded outside the manifest.'
 );
-add('finance-provider-boundary', !/(stripe|paypal|finance_job|posting_execution|provider_mutation\s*:\s*true)/i.test(edge + passwordUi + adminUi), 'Build 191 account-security runtime does not add Finance/provider mutation paths.');
+add('auth-listener-synchronous', auth.includes('sb.auth.onAuthStateChange((event, session) => {') && !auth.includes('sb.auth.onAuthStateChange(async (event, session) => {'), 'Supabase onAuthStateChange callback returns synchronously instead of awaiting client work.');
+add('auth-refresh-work-deferred', hasAll(auth,['function scheduleAuthEventResolution(event, session)','setTimeout(async () => {','await applySession(session || null)','scheduleAuthEventResolution(event, session || null);']), 'Profile/permission refresh work is deferred until after the Supabase auth callback releases its client lock.');
+add('token-refresh-no-reload-loop', hasAll(auth,["event === 'TOKEN_REFRESHED'","event === 'SIGNED_IN'",'sameResolvedUser','updateSessionSnapshot(session || null);']) && !/if \(\(event === 'TOKEN_REFRESHED'[\s\S]{0,500}dispatch\('ywi:auth-changed'/.test(auth), 'Routine same-user token/sign-in refresh updates the session snapshot without re-dispatching all profile/reference loaders.');
+add('auth-hotfix-cache-invalidated', serviceWorker.includes("const CACHE_NAME = 'ywi-shell-v2026-09-06a';") && serviceWorker.includes("fetch(assetUrl, { cache: 'reload' })"), 'Service worker cache generation forces the repaired auth runtime into the active shell.');
+add('finance-provider-boundary', !/(stripe|paypal|finance_job|posting_execution|provider_mutation\s*:\s*true)/i.test(edge + passwordUi + adminUi), 'Account-security/auth-refresh runtime does not add Finance/provider mutation paths.');
 
 const failed = checks.filter((x)=>!x.ok);
 for (const check of checks) console.log(`${check.ok?'PASS':'FAIL'} ${check.key}: ${check.detail}`);
 if (failed.length) {
-  console.error(`\nBuild 191 source gate failed: ${failed.map((x)=>x.key).join(', ')}`);
+  console.error(`\nAdmin account-security/auth-refresh source gate failed: ${failed.map((x)=>x.key).join(', ')}`);
   process.exit(1);
 }
-console.log(`\nBuild 191 source gate passed (${checks.length}/${checks.length}).`);
+console.log(`\nAdmin account-security/auth-refresh source gate passed (${checks.length}/${checks.length}).`);
