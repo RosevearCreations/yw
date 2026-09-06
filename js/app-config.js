@@ -72,3 +72,45 @@ window.YWI_RUNTIME_CONFIG = Object.assign({}, window.YWI_RUNTIME_CONFIG || {}, {
   APP_CONFIG_SOURCE: 'js/app-config.js',
   APP_CONFIG_UPDATED_AT: '2026-09-03'
 });
+
+// Keep Supabase auth callbacks synchronous from the client's perspective. Application callbacks
+// are scheduled in a microtask before they perform profile/API work, which avoids holding the
+// auth client callback lock while preserving the subscription contract for bootstrap/auth.js.
+(function installAuthCallbackLifecycleGuard() {
+  const supabase = window.supabase;
+  if (!supabase?.createClient || supabase.createClient.__ywiAuthCallbackGuarded) return;
+  const originalCreateClient = supabase.createClient.bind(supabase);
+
+  function reportCallbackFailure(error) {
+    const message = error?.message || 'Deferred authentication callback failed.';
+    console.error('Deferred authentication callback failed.', error || message);
+    try { window.dispatchEvent(new CustomEvent('ywi:app-error', { detail:{ scope:'auth-callback', message } })); } catch {}
+  }
+
+  function deferCallback(callback, event, session) {
+    const run = () => {
+      try { Promise.resolve(callback(event, session)).catch(reportCallbackFailure); }
+      catch (error) { reportCallbackFailure(error); }
+    };
+    if (typeof queueMicrotask === 'function') queueMicrotask(run);
+    else Promise.resolve().then(run);
+  }
+
+  function guardedCreateClient(...args) {
+    const client = originalCreateClient(...args);
+    const auth = client?.auth;
+    if (!auth?.onAuthStateChange || auth.onAuthStateChange.__ywiAuthCallbackGuarded) return client;
+    const originalOnAuthStateChange = auth.onAuthStateChange.bind(auth);
+    const guardedOnAuthStateChange = function guardedOnAuthStateChange(callback) {
+      if (typeof callback !== 'function') return originalOnAuthStateChange(callback);
+      return originalOnAuthStateChange((event, session) => { deferCallback(callback, event, session); });
+    };
+    guardedOnAuthStateChange.__ywiAuthCallbackGuarded = true;
+    auth.onAuthStateChange = guardedOnAuthStateChange;
+    return client;
+  }
+
+  guardedCreateClient.__ywiAuthCallbackGuarded = true;
+  guardedCreateClient.__ywiOriginalCreateClient = originalCreateClient;
+  supabase.createClient = guardedCreateClient;
+})();
