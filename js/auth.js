@@ -1,7 +1,7 @@
 /* File: js/auth.js
    Brief description: Shared authentication controller that coordinates Supabase auth with bootstrap state,
    exposes sign-in/logout/reset/password-change helpers, and keeps the app informed of current user/profile/role state.
-   This version avoids hanging getSession()/refreshSession() calls during onboarding and account setup.
+   This version avoids hanging getSession()/refreshSession() calls during onboarding, account setup, and auth refresh events.
 */
 
 'use strict';
@@ -516,21 +516,59 @@
     });
   }
 
+  let authEventResolutionVersion = 0;
+
+  function updateSessionSnapshot(session) {
+    state.session = session || null;
+    state.user = session?.user || null;
+    state.isAuthenticated = !!session?.access_token;
+    state.identityKey = state.user?.id || '';
+    if (!state.user?.id) clearResolvedState();
+  }
+
+  function scheduleAuthEventResolution(event, session) {
+    const currentVersion = ++authEventResolutionVersion;
+    setTimeout(async () => {
+      if (currentVersion !== authEventResolutionVersion) return;
+      if (state.isLoggingOut && !session) return;
+      try {
+        await applySession(session || null);
+        state.authError = '';
+        if (boot?.state?.initialized || state.bootReady) {
+          state.pendingAuthResolution = false;
+          dispatch('ywi:auth-changed', { state: getState(), authEvent: event });
+        }
+      } catch (err) {
+        state.pendingAuthResolution = false;
+        state.authError = err?.message || 'Authentication refresh failed.';
+        dispatch('ywi:auth-changed', { state: getState(), authEvent: event });
+      }
+    }, 0);
+  }
+
   function bindSupabaseAuthEvents() {
     sb = window.YWI_SB || window._sb || sb || null;
     if (!sb?.auth?.onAuthStateChange) return;
-    sb.auth.onAuthStateChange(async (event, session) => {
-      if (state.isLoggingOut && !session) {
+    sb.auth.onAuthStateChange((event, session) => {
+      if (state.isLoggingOut) return;
+
+      const previousUserId = state.user?.id || '';
+      const nextUserId = session?.user?.id || '';
+      const sameResolvedUser = !!previousUserId
+        && previousUserId === nextUserId
+        && !!state.profile
+        && state.modulePermissionsLoaded;
+
+      if ((event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') && sameResolvedUser) {
+        updateSessionSnapshot(session || null);
+        state.authError = '';
         state.pendingAuthResolution = false;
-        dispatch('ywi:auth-changed', { state: getState() });
         return;
       }
-      await applySession(session || null);
-      state.authError = '';
-      if (boot?.state?.initialized || state.bootReady) {
-        state.pendingAuthResolution = false;
-        dispatch('ywi:auth-changed', { state: getState() });
-      }
+
+      // Supabase auth callbacks must return immediately. Any awaited Supabase work here can
+      // deadlock the shared client and make unrelated API calls hang after tab visibility/session refresh.
+      scheduleAuthEventResolution(event, session || null);
     });
   }
 
