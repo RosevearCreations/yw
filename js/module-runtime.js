@@ -10,7 +10,7 @@
 'use strict';
 
 (function () {
-  const BUILD = '2026-09-06a';
+  const BUILD = '2026-09-06b';
   const CONTRACT_VERSION = 2;
   const GLOBAL_PASSWORD_SECURITY_SCRIPT = '/js/password-security.js';
 
@@ -70,6 +70,7 @@
       scripts: Object.freeze([
         '/js/admin-actions.js',
         '/js/admin-ui.js',
+        '/js/admin-hub-ui.js',
         '/js/operations-cockpit.js',
         '/js/module-access-ui.js',
         '/js/it-readiness-ui.js',
