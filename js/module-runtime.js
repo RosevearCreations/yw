@@ -25,6 +25,8 @@
   });
 
   const SHARED_CORE_DEPENDENCIES = Object.freeze(Object.keys(CORE_ENTITY_CONTRACTS));
+  const PROFILE_CORE_SECTIONS = Object.freeze(['me', 'crew', 'settings']);
+  const REFERENCE_DATA_SECTIONS = Object.freeze(['toolbox', 'ppe', 'firstaid', 'incident', 'inspect', 'drill', 'jobs', 'equipment']);
 
   const MODULE_MANIFEST = Object.freeze({
     safety: Object.freeze({
@@ -146,6 +148,14 @@
     return navKey && moduleAllowed(navKey) ? navKey : null;
   }
 
+  function profileCoreSection(section = activeSection()) {
+    return PROFILE_CORE_SECTIONS.includes(String(section || '').trim());
+  }
+
+  function referenceDataNeeded(section = activeSection()) {
+    return REFERENCE_DATA_SECTIONS.includes(String(section || '').trim());
+  }
+
   function staleRuntimeReason(stateNow = authState()) {
     if (state.reloading || stateNow.pendingAuthResolution) return null;
     const hasLoadedModuleCode = state.loadedModules.size > 0 || state.loadedScripts.size > 0;
@@ -198,12 +208,151 @@
     return true;
   }
 
+  function installCoreRouteLoadGuards() {
+    const profileFactory = window.YWIProfileUI?.create;
+    if (typeof profileFactory === 'function' && profileFactory.__ywiCoreRouteGuard !== true) {
+      const originalProfileFactory = profileFactory;
+      const guardedProfileFactory = function guardedProfileFactory(config = {}) {
+        const realGetAuthState = typeof config.getAuthState === 'function'
+          ? config.getAuthState
+          : (() => window.YWI_AUTH?.getState?.() || {});
+        const realGetAccessProfile = typeof config.getAccessProfile === 'function'
+          ? config.getAccessProfile
+          : (() => ({ canViewCrew:false }));
+        let suppressInitialNetwork = false;
+        let initializing = false;
+
+        const guardedConfig = {
+          ...config,
+          getAuthState: () => {
+            const current = realGetAuthState() || {};
+            return suppressInitialNetwork ? { ...current, isAuthenticated:false } : current;
+          },
+          getAccessProfile: (...args) => {
+            const access = realGetAccessProfile(...args) || {};
+            return { ...access, canViewCrew: activeSection() === 'crew' && access.canViewCrew === true };
+          }
+        };
+
+        const instance = originalProfileFactory(guardedConfig);
+        if (!instance || typeof instance.init !== 'function') return instance;
+        const originalInit = instance.init.bind(instance);
+        const originalLoadCrew = typeof instance.loadCrew === 'function' ? instance.loadCrew.bind(instance) : null;
+        const originalApplyRoleVisibility = typeof instance.applyRoleVisibility === 'function' ? instance.applyRoleVisibility.bind(instance) : null;
+
+        instance.init = async function routeAwareProfileInit(...args) {
+          const section = activeSection();
+          suppressInitialNetwork = section !== 'me';
+          initializing = true;
+          const nativeAddEventListener = document.addEventListener;
+          document.addEventListener = function guardedProfileAddEventListener(type, listener, options) {
+            if (type === 'ywi:auth-changed' && typeof listener === 'function') {
+              const guardedListener = function routeAwareProfileAuthListener(event) {
+                const next = event?.detail?.state || realGetAuthState() || {};
+                if (!next?.isAuthenticated || next?.isLoggingOut) return listener.call(this, event);
+                if (initializing) return undefined;
+                const currentSection = activeSection();
+                if (currentSection === 'me') return listener.call(this, event);
+                if (currentSection === 'crew') return originalLoadCrew?.();
+                if (currentSection === 'settings') return originalApplyRoleVisibility?.();
+                return undefined;
+              };
+              return nativeAddEventListener.call(this, type, guardedListener, options);
+            }
+            return nativeAddEventListener.call(this, type, listener, options);
+          };
+
+          let initPromise;
+          try {
+            initPromise = originalInit(...args);
+          } finally {
+            document.addEventListener = nativeAddEventListener;
+          }
+
+          try {
+            await initPromise;
+          } finally {
+            suppressInitialNetwork = false;
+            initializing = false;
+          }
+
+          const current = realGetAuthState() || {};
+          if (section === 'crew' && current.isAuthenticated && !current.isLoggingOut) await originalLoadCrew?.();
+          if (section === 'settings') originalApplyRoleVisibility?.();
+        };
+        instance.__ywiCoreRouteGuard = true;
+        return instance;
+      };
+      guardedProfileFactory.__ywiCoreRouteGuard = true;
+      window.YWIProfileUI.create = guardedProfileFactory;
+    }
+
+    const referenceFactory = window.YWIReferenceData?.create;
+    if (typeof referenceFactory === 'function' && referenceFactory.__ywiCoreRouteGuard !== true) {
+      const originalReferenceFactory = referenceFactory;
+      const guardedReferenceFactory = function guardedReferenceFactory(config = {}) {
+        const originalApi = config.api || null;
+        const originalFetchReferenceData = typeof originalApi?.fetchReferenceData === 'function'
+          ? originalApi.fetchReferenceData.bind(originalApi)
+          : null;
+        let inflight = null;
+        const guardedApi = Object.create(originalApi || null);
+        if (originalFetchReferenceData) {
+          guardedApi.fetchReferenceData = (...args) => {
+            if (!referenceDataNeeded()) return Promise.resolve({ sites:[], supervisors:[], admins:[], employees:[], positions:[], trades:[] });
+            if (inflight) return inflight;
+            inflight = Promise.resolve(originalFetchReferenceData(...args)).finally(() => { inflight = null; });
+            return inflight;
+          };
+        }
+
+        const instance = originalReferenceFactory({ ...config, api:guardedApi });
+        if (!instance || typeof instance.init !== 'function') return instance;
+        const originalInit = instance.init.bind(instance);
+        const originalLoad = typeof instance.load === 'function' ? instance.load.bind(instance) : null;
+        let routeBound = false;
+
+        instance.init = function routeAwareReferenceInit(...args) {
+          const nativeAddEventListener = document.addEventListener;
+          document.addEventListener = function guardedReferenceAddEventListener(type, listener, options) {
+            if ((type === 'ywi:auth-changed' || type === 'ywi:boot-ready') && typeof listener === 'function') {
+              const guardedListener = function routeAwareReferenceListener(event) {
+                if (!referenceDataNeeded()) return undefined;
+                return listener.call(this, event);
+              };
+              return nativeAddEventListener.call(this, type, guardedListener, options);
+            }
+            return nativeAddEventListener.call(this, type, listener, options);
+          };
+          try {
+            const result = originalInit(...args);
+            if (!routeBound) {
+              nativeAddEventListener.call(document, 'ywi:route-shown', (event) => {
+                const section = String(event?.detail?.allowed || event?.detail?.requested || '').split('&')[0].trim();
+                if (referenceDataNeeded(section)) originalLoad?.();
+              });
+              routeBound = true;
+            }
+            return result;
+          } finally {
+            document.addEventListener = nativeAddEventListener;
+          }
+        };
+        instance.__ywiCoreRouteGuard = true;
+        return instance;
+      };
+      guardedReferenceFactory.__ywiCoreRouteGuard = true;
+      window.YWIReferenceData.create = guardedReferenceFactory;
+    }
+  }
+
   function captureOriginal(name) {
     if (!guardedOriginals[name] && typeof window[name] === 'function') guardedOriginals[name] = window[name];
     return guardedOriginals[name] || null;
   }
 
   function installActiveBootGuard() {
+    installCoreRouteLoadGuards();
     const protectedInit = captureOriginal('initProtectedModules');
     const formInit = captureOriginal('initFormModules');
     const seedTables = captureOriginal('seedAllTables');
@@ -243,14 +392,14 @@
         formInit?.();
         logbookInit?.();
         reportsInit?.();
-        referenceInit?.();
+        if (referenceDataNeeded(section)) referenceInit?.();
         seedTables?.();
         return;
       }
 
       if (moduleKey === 'jobs') {
         jobsInit?.();
-        referenceInit?.();
+        if (referenceDataNeeded(section)) referenceInit?.();
         if (section === 'crew') profileInit?.();
         return;
       }
@@ -287,6 +436,7 @@
     state.syncing = true;
     state.queued = false;
     try {
+      installCoreRouteLoadGuards();
       installActiveBootGuard();
       const stateNow = authState();
       const staleReason = staleRuntimeReason(stateNow);
@@ -328,22 +478,25 @@
   function queueSync() { queueMicrotask(syncForCurrentAccess); }
 
   function bind() {
+    installCoreRouteLoadGuards();
     loadGlobalPasswordSecurity();
-    document.addEventListener('ywi:boot-ready', () => { installActiveBootGuard(); queueSync(); });
-    document.addEventListener('ywi:auth-changed', () => { installActiveBootGuard(); queueSync(); });
-    document.addEventListener('ywi:module-permissions-changed', () => { installActiveBootGuard(); queueSync(); });
+    document.addEventListener('ywi:boot-ready', () => { installCoreRouteLoadGuards(); installActiveBootGuard(); queueSync(); });
+    document.addEventListener('ywi:auth-changed', () => { installCoreRouteLoadGuards(); installActiveBootGuard(); queueSync(); });
+    document.addEventListener('ywi:module-permissions-changed', () => { installCoreRouteLoadGuards(); installActiveBootGuard(); queueSync(); });
     document.addEventListener('ywi:route-shown', (event) => {
       state.routeSection = String(event?.detail?.allowed || event?.detail?.requested || '').split('&')[0].trim();
+      installCoreRouteLoadGuards();
       installActiveBootGuard();
       queueSync();
     });
     document.addEventListener('DOMContentLoaded', () => {
       state.domReady = true;
+      installCoreRouteLoadGuards();
       installActiveBootGuard();
       queueSync();
     });
   }
 
   bind();
-  window.YWIModuleRuntime = Object.freeze({ BUILD, CONTRACT_VERSION, CORE_ENTITY_CONTRACTS, MODULE_MANIFEST, moduleAllowed, activeSection, activeModule, loadModule, syncForCurrentAccess, getRuntimeState, getManifest, getCoreContract });
+  window.YWIModuleRuntime = Object.freeze({ BUILD, CONTRACT_VERSION, CORE_ENTITY_CONTRACTS, MODULE_MANIFEST, moduleAllowed, activeSection, activeModule, profileCoreSection, referenceDataNeeded, loadModule, syncForCurrentAccess, getRuntimeState, getManifest, getCoreContract });
 })();
