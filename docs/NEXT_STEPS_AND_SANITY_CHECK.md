@@ -10,6 +10,14 @@ When Production promotion is deliberately on hold, treat the resulting `dev`/`ma
 
 Before new feature work, verify `dev`/`main` parity or an explicitly documented promotion hold, current schema drift, release authority separately from repository enforcement, intended Finance/provider fail-closed state, Current Admin To-Do truth, Auth security evidence freshness and provenance, next safe action classification, no accidental business-rail closure, repository/Help/SEO/browser gates, staging acceptance mutation lock state, and removal of temporary branches/workflows/files after release proof.
 
+## Admin workspace sanity check
+
+Treat Admin Home as an orientation surface, not permission to fetch or execute the entire administrative backend. On initial entry, the browser should load only the bounded Admin command-center scope. Deeper people/access, operations, safety/evidence, accounting, diagnostics/integrations, audit/security, selector and configuration reads should occur only after the operator opens the corresponding focused workspace.
+
+The Admin home must keep **Needs Attention** first, followed by permission-aware cards for **People & Access**, **Business & Operations**, **Safety & Evidence**, **Finance & Accounting**, **Diagnostics & Integrations**, **Audit & Security**, and **I.T. & System**. Admin search may jump to a known workspace/panel. Focused workspaces retain a breadcrumb/back path, and large panels remain progressively disclosed so the page does not return to an unstructured long-scroll layout.
+
+Verify that view-only Admin access cannot reveal manage-only cards, and remember that hiding a card is presentation only: all actual authorization remains server/module enforced. Opening I.T. Readiness must route to the dedicated I.T. screen rather than booting the heavy Admin Control Center. Status chips and Needs Attention summaries are advisory; they must not auto-close work, change permissions, enable Finance/provider execution, mutate Auth, sign off staging, or promote Production.
+
 ## Auth security evidence sanity check
 
 Treat leaked-password protection and MFA as external Supabase Auth configuration. A secure result requires recent authoritative evidence from the **Supabase Dashboard** or **Supabase Management API**, a durable evidence reference, and the exact secure state for that control. Manual notes, screenshots or other supporting context may be retained, but `manual_external` evidence is non-authoritative and must never become `verified_secure`. Do not infer either setting from PostgreSQL catalogs, a current or historical security-advisor row, or the absence of an advisor warning. Stale evidence requires re-verification, and application source work must not change the Auth setting or auto-close its Current Admin To-Do item.

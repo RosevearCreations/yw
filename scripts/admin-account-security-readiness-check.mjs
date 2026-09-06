@@ -35,6 +35,7 @@ add('admin-reset-ui', hasAll(adminUi,['Set temporary password','Generate another
 const adminHistoricalScripts = [
   '/js/admin-actions.js',
   '/js/admin-ui.js',
+  '/js/admin-hub-ui.js',
   '/js/operations-cockpit.js',
   '/js/module-access-ui.js',
   '/js/it-readiness-ui.js',
@@ -45,7 +46,7 @@ add(
   runtime.includes("const GLOBAL_PASSWORD_SECURITY_SCRIPT = '/js/password-security.js'")
     && adminHistoricalScripts.every((script)=>runtime.includes(`'${script}'`))
     && !runtime.includes("'/js/admin-account-security-ui.js'"),
-  'Existing Admin module manifest retains all historical scripts; password security is global and the account-security UI is loaded outside the manifest.'
+  'Existing Admin module manifest retains all historical scripts plus the Build 229 organization layer; password security is global and the account-security UI is loaded outside the manifest.'
 );
 add('auth-listener-synchronous', auth.includes('sb.auth.onAuthStateChange((event, session) => {') && !auth.includes('sb.auth.onAuthStateChange(async (event, session) => {'), 'Supabase onAuthStateChange callback returns synchronously instead of awaiting client work.');
 add('auth-refresh-work-deferred', hasAll(auth,['function scheduleAuthEventResolution(event, session)','setTimeout(async () => {','await applySession(session || null)','scheduleAuthEventResolution(event, session || null);']), 'Profile/permission refresh work is deferred until after the Supabase auth callback releases its client lock.');
