@@ -83,7 +83,9 @@ test('opening People loads only its bounded scope once and keeps the workspace s
   await page.locator('[data-admin-hub-group="people"]').click();
   await expect.poll(async()=>page.evaluate(()=>window.__calls.filter((value)=>value==='directory:people').length)).toBe(1);
   await expect(page.locator('#ad_hub_breadcrumb')).toContainText('People & Access');
-  await expect(page.locator('.admin-hub-detail:not([hidden]) summary')).toContainText(/Staff Directory|Assignment|Catalog|Password/);
+  const visiblePeoplePanels=page.locator('.admin-hub-detail:not([hidden]) summary');
+  await expect(visiblePeoplePanels).toHaveCount(2);
+  await expect(visiblePeoplePanels.first()).toContainText(/Staff Directory|Password/);
   await page.locator('[data-admin-hub-group="people"]').click();
   await expect(page.locator('#ad_hub_breadcrumb')).toContainText('People & Access');
   expect(await page.evaluate(()=>window.__calls.filter((value)=>value==='directory:people').length)).toBe(1);
