@@ -1,8 +1,7 @@
 /* File: js/it-readiness-ui.js
    Admin I.T. readiness and release-authority cockpit.
-   Consolidates schema/preflight/deployment/function/recovery/runtime/SEO readiness,
-   exact source/CI evidence, scorecard-truth classification, cross-module consumer health,
-   and admin access-integrity evidence without turning I.T. into a fifth module.
+   Interactive screen loads use the bounded runtime authority; deep release/security assertion
+   graphs remain explicit CI/operator verification and are never executed just to render a page.
 */
 
 'use strict';
@@ -30,7 +29,7 @@
   function statusClass(value) {
     const status = String(value || 'unknown').toLowerCase();
     if (/green|passed|pass|current|ready|healthy|success|complete/.test(status)) return 'passed';
-    if (/amber|warning|warn|review|pending|attention/.test(status)) return 'warning';
+    if (/amber|warning|warn|review|pending|attention|deferred/.test(status)) return 'warning';
     if (/red|fail|error|critical|blocked|behind|missing|unhealthy|not_ready/.test(status)) return 'error';
     return 'unknown';
   }
@@ -60,6 +59,9 @@
   function renderRows(section, fallbackTitle) {
     if (!section) return '<div class="it-readiness-empty">No readiness source returned.</div>';
     if (section.error) return `<div class="it-readiness-error">${esc(section.error)}</div>`;
+    if (section.deferred === true) {
+      return '<div class="it-readiness-empty"><strong>Deep verification deferred.</strong><br>Release/security assertion graphs are intentionally not executed during ordinary screen rendering. They remain enforced by the canonical source/release gates.</div>';
+    }
     const rows=Array.isArray(section.rows)?section.rows:[];
     if (!rows.length) return '<div class="it-readiness-empty">No current rows. This can be healthy for queues that only contain exceptions.</div>';
     return `<div class="it-readiness-list">${rows.slice(0,30).map((row)=>{
@@ -76,11 +78,17 @@
   function panel(key,title,subtitle) {
     const section=state.payload?.sections?.[key];
     const summary=section?.summary || {};
-    return `<section class="it-readiness-panel"><span class="it-readiness-kicker">${esc(title)}</span><h3>${esc(subtitle)}</h3><p>${Number(summary.blocking||0)} blocking · ${Number(summary.warning||0)} warning · ${Number(summary.total||0)} row(s)</p>${renderRows(section,subtitle)}</section>`;
+    const summaryLine=section?.deferred===true
+      ? 'Deep verification deferred from interactive load'
+      : `${Number(summary.blocking||0)} blocking · ${Number(summary.warning||0)} warning · ${Number(summary.total||0)} row(s)`;
+    return `<section class="it-readiness-panel"><span class="it-readiness-kicker">${esc(title)}</span><h3>${esc(subtitle)}</h3><p>${esc(summaryLine)}</p>${renderRows(section,subtitle)}</section>`;
   }
 
   function renderAssertions() {
     const groups=state.payload?.security_assertions || {};
+    if(groups.deferred===true){
+      return '<section class="it-readiness-panel"><span class="it-readiness-kicker">Security proof</span><h3>Deep release and security assertions</h3><p>Deferred from interactive rendering.</p><div class="it-readiness-empty">The full assertion graph remains part of canonical CI/release verification. It is not interpreted as GREEN merely because this runtime screen does not execute it.</div></section>';
+    }
     const rows=[
       ...(Array.isArray(groups.module)?groups.module:[]),
       ...(Array.isArray(groups.it)?groups.it:[]),
@@ -95,7 +103,7 @@
       ...(Array.isArray(groups.finance_account_mapping_decision_support)?groups.finance_account_mapping_decision_support:[]),
     ];
     const errors=Array.isArray(groups.errors)?groups.errors:[];
-    return `<section class="it-readiness-panel"><span class="it-readiness-kicker">Security proof</span><h3>Module, I.T., scorecard truth, release, consumer, and Finance assertions</h3>${errors.length?errors.map((e)=>`<div class="it-readiness-error">${esc(e)}</div>`).join(''):''}${rows.length?`<div class="it-readiness-list">${rows.map((row)=>`<div class="it-readiness-row"><div><strong>${esc(row.assertion_key||'assertion')}</strong><small>${esc(row.details||'')}</small></div>${statusChip(row.assertion_status)}</div>`).join('')}</div>`:'<div class="it-readiness-empty">No assertion rows returned.</div>'}</section>`;
+    return `<section class="it-readiness-panel"><span class="it-readiness-kicker">Security proof</span><h3>Module, I.T., scorecard truth, release, consumer, and Finance assertions</h3>${errors.length?errors.map((e)=>`<div class="it-readiness-error">${esc(e)}</div>`).join(''):''}${rows.length?`<div class="it-readiness-list">${rows.map((row)=>`<div class="it-readiness-row"><div><strong>${esc(row.assertion_key||'assertion')}</strong><small>${esc(row.details||row.assertion_detail||'')}</small></div>${statusChip(row.assertion_status)}</div>`).join('')}</div>`:'<div class="it-readiness-empty">No assertion rows returned.</div>'}</section>`;
   }
 
   function renderAcceptanceReadiness() {
@@ -113,7 +121,9 @@
   }
 
   function renderAdminIntegrity() {
-    const rows=(state.payload?.sections?.admin_access_integrity?.rows || []).filter((row)=>String(row?.role||'').toLowerCase()==='admin');
+    const section=state.payload?.sections?.admin_access_integrity;
+    if(section?.error) return `<section class="it-readiness-panel"><span class="it-readiness-kicker">Access integrity</span><h3>Admin break-glass access</h3><div class="it-readiness-error">${esc(section.error)}</div></section>`;
+    const rows=(section?.rows || []).filter((row)=>String(row?.role||'').toLowerCase()==='admin');
     return `<section class="it-readiness-panel"><span class="it-readiness-kicker">Access integrity</span><h3>Admin break-glass access</h3><p>Every active admin must resolve to <strong>manage</strong> on Safety, Finance, Jobs, and Admin.</p>${rows.length?`<div class="it-readiness-list">${rows.map((row)=>{
       const ok=row.all_modules_manage===true;
       return `<div class="it-readiness-row"><div><strong>${esc(row.profile_label||row.profile_id||'Admin')}</strong><small>Safety ${esc(row.safety_access)} · Finance ${esc(row.finance_access)} · Jobs ${esc(row.jobs_access)} · Admin ${esc(row.admin_access)}</small></div>${statusChip(ok?'passed':'error')}</div>`;
@@ -131,19 +141,20 @@
     const host=byId('itReadinessWorkspace');
     if(!host)return;
     if(!isAdmin()) { host.innerHTML='<div class="it-readiness-error">Admin manage access is required for I.T. Readiness.</div>'; return; }
-    if(state.loading){host.innerHTML='<div class="it-readiness-loading">Loading I.T. readiness evidence…</div>';return;}
+    if(state.loading){host.innerHTML='<div class="it-readiness-loading">Loading bounded I.T. runtime readiness…</div>';return;}
     if(!state.payload){host.innerHTML='<div class="it-readiness-empty"><button id="itReadinessLoad" type="button">Load I.T. readiness</button></div>';byId('itReadinessLoad')?.addEventListener('click',()=>load(true));return;}
 
     const s=state.payload.summary||{};
     const overall=String(s.overall_status||'unknown').toLowerCase();
     const schema=`${Number(s.latest_applied_schema_version||0)} / ${Number(s.expected_schema_version||0)}`;
     const sourceSha=s.source_sha?String(s.source_sha).slice(0,12):'not recorded';
+    const bounded=state.payload?.interactive_mode==='bounded_runtime';
     host.innerHTML=`<div class="it-readiness-shell">
       <div class="it-readiness-hero">
         <section class="it-readiness-summary">
           <span class="it-readiness-kicker">Release authority control plane</span>
           <h2>I.T. Readiness</h2>
-          <p>Preflight, deployment, recovery, runtime, access, exact source/CI evidence, scorecard truth, cross-module consumer health, and public-release checks in one Admin-only workspace.</p>
+          <p>${bounded?'Bounded runtime view: current schema, release, access, runtime health and open acceptance truth. Deep assertion graphs stay in explicit CI/operator verification so this screen cannot overload Production.':'Preflight, deployment, recovery, runtime, access, exact source/CI evidence, scorecard truth, cross-module consumer health, and public-release checks.'}</p>
           ${statusChip(overall)}
           <div class="it-readiness-metrics">
             <div class="it-readiness-metric"><strong>${esc(schema)}</strong><span>DB schema applied / expected</span></div>
@@ -156,9 +167,10 @@
             <div class="it-readiness-metric"><strong>${Number(s.scorecard_human_pending_count||0)} / ${Number(s.scorecard_external_pending_count||0)}</strong><span>human / external pending rails</span></div>
             <div class="it-readiness-metric"><strong>${Number(s.active_admin_count||0)}</strong><span>active admins checked</span></div>
             <div class="it-readiness-metric"><strong>${Number(s.admin_access_integrity_blockers||0)}</strong><span>admin access blockers</span></div>
-            <div class="it-readiness-metric"><strong>${Number(s.readiness_blockers||0)+Number(s.assertion_blockers||0)}</strong><span>readiness/security blockers</span></div>
-            <div class="it-readiness-metric"><strong>${esc(s.production_promotion_mode||'manual')}</strong><span>production promotion</span></div>
+            <div class="it-readiness-metric"><strong>${Number(s.readiness_blockers||0)+Number(s.assertion_blockers||0)}</strong><span>runtime/readiness blockers</span></div>
+            <div class="it-readiness-metric"><strong>${bounded?'bounded':'legacy'}</strong><span>interactive load mode</span></div>
           </div>
+          ${state.payload?.source_errors?.length?`<div class="it-readiness-error"><strong>Runtime degraded.</strong> ${esc(state.payload.source_errors.join(' · '))}</div>`:''}
           <div class="it-readiness-actions"><button id="itReadinessRefresh" type="button">Refresh readiness</button><button id="itReadinessSmoke" type="button" class="secondary">Run browser smoke check</button></div>
         </section>
         <aside class="it-readiness-visual" aria-label="I.T. readiness visual placeholder"><div class="it-visual-icon" aria-hidden="true">⌁</div><strong>I.T. readiness map placeholder</strong><small>Future approved visual: dependency map showing Source → Database → Functions → Client → Release gates.</small></aside>
@@ -201,11 +213,11 @@
     if(state.payload&&!force){render();return;}
     state.loading=true;render();
     try{
-      const payload=await window.YWIAPI?.jsonFetch?.('admin-it-control',{method:'POST',body:{action:'it_readiness'},requireAuth:true,timeoutMs:45000});
-      if(!payload)throw new Error('I.T. readiness endpoint returned no data.');
+      const payload=await window.YWIAPI?.jsonFetch?.('admin-it-readiness-runtime',{method:'POST',body:{action:'it_readiness_runtime'},requireAuth:true,timeoutMs:12000});
+      if(!payload)throw new Error('I.T. runtime readiness endpoint returned no data.');
       state.payload=payload;
     }catch(err){
-      state.payload={summary:{overall_status:'red',expected_schema_version:0,latest_applied_schema_version:0,release_authority_status:'unknown',source_gate_status:'unknown',repository_enforcement_status:'unknown',scorecard_truth_status:'unknown',scorecard_open_count:0,scorecard_unclassified_open_count:1,scorecard_human_pending_count:0,scorecard_external_pending_count:0,active_admin_count:0,admin_access_integrity_blockers:1,readiness_blockers:1,assertion_blockers:0},sections:{},security_assertions:{module:[],it:[],release_authority:[],scorecard_truth:[],consumer_observability:[],errors:[err?.message||'Unable to load I.T. readiness.']}};
+      state.payload={interactive_mode:'bounded_runtime',source_errors:[err?.message||'Unable to load I.T. readiness.'],summary:{overall_status:'red',expected_schema_version:0,latest_applied_schema_version:0,release_authority_status:'unknown',source_gate_status:'unknown',repository_enforcement_status:'unknown',scorecard_truth_status:'unknown',scorecard_open_count:0,scorecard_unclassified_open_count:1,scorecard_human_pending_count:0,scorecard_external_pending_count:0,active_admin_count:0,admin_access_integrity_blockers:1,readiness_blockers:1,assertion_blockers:0},sections:{},security_assertions:{deferred:true,errors:[]}};
     }finally{state.loading=false;render();}
   }
 
