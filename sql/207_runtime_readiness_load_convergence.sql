@@ -232,7 +232,9 @@ as $$
       then 'passed' else 'failed' end,
     'The lightweight Finance runtime authority remains service-role-only.';
 $$;
-revoke all on function public.ywi_runtime_readiness_load_convergence_assertions() from public,anon,authenticated;
+revoke execute on function public.ywi_runtime_readiness_load_convergence_assertions() from public;
+revoke execute on function public.ywi_runtime_readiness_load_convergence_assertions() from anon;
+revoke execute on function public.ywi_runtime_readiness_load_convergence_assertions() from authenticated;
 grant execute on function public.ywi_runtime_readiness_load_convergence_assertions() to service_role;
 
 insert into public.it_readiness_check_registry(
