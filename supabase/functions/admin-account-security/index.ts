@@ -35,6 +35,79 @@ function strongTemporaryPassword(value: unknown) {
     /[^A-Za-z0-9]/.test(password);
 }
 
+function priorityForTodo(row: any) {
+  const kind = String(row?.source_kind || "");
+  const status = String(row?.todo_status || "");
+  if (kind === "staging_acceptance" && status === "ready") return 10;
+  if (kind === "security_followup" || kind === "repository_followup") return 20;
+  if (kind === "content_approval" || kind === "provider_acceptance") return 30;
+  if (kind === "accounting_acceptance" || status === "blocked") return 40;
+  return 50;
+}
+
+function decorateTodo(row: any) {
+  const kind = String(row?.source_kind || "");
+  const status = String(row?.todo_status || "");
+  const priority_bucket = priorityForTodo(row);
+  const action_class = kind === "staging_acceptance" && status === "ready"
+    ? "staging_ready_candidate"
+    : kind === "security_followup" || kind === "repository_followup"
+      ? "external_verification"
+      : kind === "content_approval"
+        ? "human_content_approval"
+        : kind === "provider_acceptance"
+          ? "provider_acceptance"
+          : kind === "accounting_acceptance" || status === "blocked"
+            ? "blocked_accounting_acceptance"
+            : "review_required";
+  const safe = kind === "staging_acceptance" && status === "ready";
+  const safety_note = safe
+    ? "Candidate only. Before any mutation, re-verify the dedicated non-production staging environment guard and use labelled disposable/test data. Human signoff remains required."
+    : kind === "security_followup" || kind === "repository_followup"
+      ? "External control-plane evidence is required. Do not infer completion from application source or CI."
+      : kind === "content_approval"
+        ? "Human route/visual approval is required before public publishing or sitemap expansion."
+        : kind === "provider_acceptance"
+          ? "Use provider test mode only; Production provider mutation remains prohibited."
+          : kind === "accounting_acceptance" || status === "blocked"
+            ? "Keep Finance posting execution and provider mutation OFF; complete controlled accounting acceptance first."
+            : "Review the current authority before taking action.";
+  return { ...row, priority_bucket, action_class, safe_candidate_after_environment_guard: safe, safety_note };
+}
+
+function deriveTodoStatus(todo: any[]) {
+  return {
+    current_todo_count: todo.length,
+    business_acceptance_count: todo.filter((row) => String(row?.todo_key || "").startsWith("rail:")).length,
+    security_followup_count: todo.filter((row) => row?.source_kind === "security_followup").length,
+    repository_followup_count: todo.filter((row) => row?.source_kind === "repository_followup").length,
+    human_required_count: todo.filter((row) => row?.requires_human === true).length,
+    external_required_count: todo.filter((row) => row?.requires_external === true).length,
+    todo_status: todo.length === 0 ? "green" : "amber",
+    status_message: "Only current unresolved actions appear here. Deep release assertions are not recomputed by this overview read.",
+    checked_at: new Date().toISOString(),
+  };
+}
+
+function deriveNextStatus(queue: any[]) {
+  const next = queue[0] || null;
+  return {
+    current_action_count: queue.length,
+    staging_ready_candidate_count: queue.filter((row) => row.action_class === "staging_ready_candidate").length,
+    external_verification_count: queue.filter((row) => row.action_class === "external_verification").length,
+    pending_human_or_provider_count: queue.filter((row) => row.action_class === "human_content_approval" || row.action_class === "provider_acceptance").length,
+    blocked_accounting_count: queue.filter((row) => row.action_class === "blocked_accounting_acceptance").length,
+    next_todo_key: next?.todo_key || null,
+    next_todo_title: next?.todo_title || null,
+    next_action_class: next?.action_class || null,
+    safe_candidate_after_environment_guard: next?.safe_candidate_after_environment_guard ?? null,
+    next_action: next?.current_action || null,
+    next_safety_note: next?.safety_note || null,
+    next_action_status: next ? "amber" : "green",
+    checked_at: new Date().toISOString(),
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return response({ ok: false, error: "POST required." }, 405);
@@ -111,31 +184,33 @@ serve(async (req) => {
   }
 
   if (action === "overview" || action === "list_accounts") {
+    // Read the expensive current I.T. authority exactly once. Status and priority summaries are
+    // deterministic projections of that same snapshot, so the overview cannot fan one page load
+    // into four copies of the readiness graph.
     const [
       { data: accounts, error: accountsError },
       { data: todo, error: todoError },
-      { data: todoStatus, error: statusError },
-      { data: nextSafeActionStatus, error: nextStatusError },
-      { data: nextSafeActionQueue, error: nextQueueError },
     ] = await Promise.all([
       admin.from("v_admin_account_security_directory").select("*").order("full_name", { ascending: true }),
       admin.from("v_it_current_admin_todo").select("*").order("sort_order", { ascending: true }),
-      admin.from("v_it_current_admin_todo_status").select("*").maybeSingle(),
-      admin.from("v_it_next_safe_action_status").select("*").maybeSingle(),
-      admin.from("v_it_next_safe_action_queue").select("*").order("priority_bucket", { ascending: true }).order("sort_order", { ascending: true }),
     ]);
     if (accountsError) return response({ ok: false, error: accountsError.message }, 500);
     if (todoError) return response({ ok: false, error: todoError.message }, 500);
-    if (statusError) return response({ ok: false, error: statusError.message }, 500);
-    if (nextStatusError) return response({ ok: false, error: nextStatusError.message }, 500);
-    if (nextQueueError) return response({ ok: false, error: nextQueueError.message }, 500);
+
+    const currentTodo = Array.isArray(todo) ? todo : [];
+    const queue = currentTodo.map(decorateTodo).sort((a, b) =>
+      Number(a.priority_bucket || 50) - Number(b.priority_bucket || 50)
+      || Number(a.sort_order || 0) - Number(b.sort_order || 0)
+      || String(a.todo_key || "").localeCompare(String(b.todo_key || ""))
+    );
+
     return response({
       ok: true,
       accounts: accounts || [],
-      current_todo: todo || [],
-      current_todo_status: todoStatus || null,
-      next_safe_action_status: nextSafeActionStatus || null,
-      next_safe_action_queue: nextSafeActionQueue || [],
+      current_todo: currentTodo,
+      current_todo_status: deriveTodoStatus(currentTodo),
+      next_safe_action_status: deriveNextStatus(queue),
+      next_safe_action_queue: queue,
       password_policy: { min_length: 12, requires_upper: true, requires_lower: true, requires_number: true, requires_symbol: true },
       security_note: "Existing passwords cannot be viewed. Admins may replace another user's password with a temporary password that must be changed by that user.",
     });
