@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Schema 162/180/185/191 + Build 228 behavior gate: active module and persistent Core loaders stay route-bounded. */
+/** Schema 162/180/185/191 + Build 228-229 behavior gate: active module and persistent Core loaders stay route-bounded. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -129,16 +129,16 @@ function createHarness(initialHash = '#finance') {
 {
   const h=createHarness('#finance');
   assert.ok(h.runtime,'YWIModuleRuntime should be exposed.');
-  assert.equal(h.runtime.BUILD,'2026-09-06a');
+  assert.equal(h.runtime.BUILD,'2026-09-06b');
   assert.equal(h.runtime.CONTRACT_VERSION,2);
   assert.equal(h.coreSecurityScripts().length,1,'Password-security core script should load exactly once.');
-  assert.equal(h.coreSecurityScripts()[0].src,'/js/password-security.js?v=2026-09-06a-b191');
+  assert.equal(h.coreSecurityScripts()[0].src,'/js/password-security.js?v=2026-09-06b-b191');
 
   await h.runtime.syncForCurrentAccess();
   assert.deepEqual(Array.from(h.runtime.getRuntimeState().loadedModules),['finance'],'An admin with all grants must request only the active Finance module on first sync.');
   assert.equal(h.moduleScripts().length,2,'Active Finance should request only its two scripts.');
-  assert.equal(h.moduleScripts()[0].src,'/js/finance-ui.js?v=2026-09-06a');
-  assert.equal(h.moduleScripts()[1].src,'/js/finance-account-mapping-ui.js?v=2026-09-06a');
+  assert.equal(h.moduleScripts()[0].src,'/js/finance-ui.js?v=2026-09-06b');
+  assert.equal(h.moduleScripts()[1].src,'/js/finance-account-mapping-ui.js?v=2026-09-06b');
   assert.ok(h.moduleScripts().every((script)=>script.dataset.ywiRuntime==='permission-driven'));
   assert.equal(h.calls.admin,0,'Finance boot must not initialize Admin.');
   assert.equal(h.calls.jobs,0,'Finance boot must not initialize Jobs.');
@@ -175,9 +175,9 @@ function createHarness(initialHash = '#finance') {
   await h.runtime.syncForCurrentAccess();
   const jobScripts=h.moduleScripts();
   assert.equal(jobScripts.length,3,'Active Jobs should load the Jobs UI, Finance-boundary shim, and equipment scanner.');
-  assert.equal(jobScripts[0].src,'/js/jobs-ui.js?v=2026-09-06a');
-  assert.equal(jobScripts[1].src,'/js/jobs-finance-boundary.js?v=2026-09-06a');
-  assert.equal(jobScripts[2].src,'/js/equipment-scanner.js?v=2026-09-06a');
+  assert.equal(jobScripts[0].src,'/js/jobs-ui.js?v=2026-09-06b');
+  assert.equal(jobScripts[1].src,'/js/jobs-finance-boundary.js?v=2026-09-06b');
+  assert.equal(jobScripts[2].src,'/js/equipment-scanner.js?v=2026-09-06b');
   h.setAuth({isAuthenticated:false});
   await h.runtime.syncForCurrentAccess();
   assert.equal(h.reloadCount,1,'Sign-out should reload once after module code was loaded.');
@@ -256,4 +256,4 @@ console.log('PASS runtime-signout-purges-stale-code');
 console.log('PASS runtime-profile-change-purges-stale-code');
 console.log('PASS runtime-persistent-profile-auth-listener-route-bounded');
 console.log('PASS runtime-persistent-reference-listeners-route-bounded');
-console.log('\nSchema 162/180/185/191 + Build 228 module runtime behavior gate passed: 11/11 checks.');
+console.log('\nSchema 162/180/185/191 + Build 228-229 module runtime behavior gate passed: 11/11 checks.');
