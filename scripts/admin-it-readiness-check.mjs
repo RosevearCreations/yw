@@ -9,7 +9,9 @@ function check(name,ok,detail=''){checks.push({name,ok:!!ok,detail});}
 
 const migration=read('sql/160_it_readiness_admin_access_integrity.sql');
 const releaseMigration=read('sql/166_it_release_authority.sql');
+const runtimeMigration=read('sql/207_runtime_readiness_load_convergence.sql');
 const endpoint=read('supabase/functions/admin-it-control/index.ts');
+const runtimeEndpoint=read('supabase/functions/admin-it-readiness-runtime/index.ts');
 const moduleUi=read('js/module-access-ui.js');
 const itUi=read('js/it-readiness-ui.js');
 const security=read('js/security.js');
@@ -36,19 +38,31 @@ check('schema166-release-assertions',releaseMigration.includes('ywi_it_release_a
 check('schema166-manual-promotion',releaseMigration.includes('manual_human_promotion_required'));
 check('schema166-drift-marker',releaseMigration.includes('166::int as expected_schema_version'));
 
+check('schema207-migration-present',exists('sql/207_runtime_readiness_load_convergence.sql'));
+check('schema207-lightweight-finance-view',runtimeMigration.includes('v_it_finance_runtime_readiness_status')&&runtimeMigration.includes('persisted_release_proof_plus_live_controls'));
+check('schema207-interactive-view-does-not-run-finance-assertions',runtimeMigration.includes("pg_get_viewdef('public.v_it_finance_runtime_readiness_status'::regclass,true)")&&runtimeMigration.includes("not like '%ywi_finance_release_hardening_assertions%'"));
+check('schema207-open-rail-rewired',runtimeMigration.includes('from public.v_it_finance_runtime_readiness_status')&&!/finance_state as \([\s\S]{0,500}from public\.v_it_finance_release_hardening_status/.test(runtimeMigration));
+check('schema207-business-rails-stay-open',runtimeMigration.includes("count(*) from public.v_it_open_rail_acceptance_readiness where rail_status<>'complete')=11"));
+check('schema207-finance-provider-off',runtimeMigration.includes('execution_enabled=true or provider_mutation_enabled=true'));
+check('schema207-marker',runtimeMigration.includes("207,'207_runtime_readiness_load_convergence'")&&runtimeMigration.includes('select 207 as expected_schema_version'));
+
 check('admin-it-control-source',exists('supabase/functions/admin-it-control/index.ts'));
 check('admin-it-control-requires-profile-admin',endpoint.includes('normalizedRole(actorProfile.role) !== "admin"'));
 check('admin-it-control-no-user-metadata-auth',!endpoint.includes('user_metadata')&&!endpoint.includes('app_metadata'));
 check('admin-it-control-module-profile-payload',endpoint.includes('module_permission_profiles')&&endpoint.includes('v_admin_module_access_integrity'));
 check('admin-it-control-atomic-save-rpc',endpoint.includes('ywi_admin_set_profile_module_permissions'));
-check('admin-it-control-readiness-sources', ['v_schema_drift_status','v_it_release_authority_status','v_it_release_source_evidence_current','v_admin_schema_preflight_checks','v_admin_deployment_checklist','v_admin_function_readiness_checks','v_production_readiness_checklist','v_admin_backup_restore_rehearsal_directory','v_admin_error_health_center','v_public_seo_smoke_check'].every((value)=>endpoint.includes(value)));
-check('admin-it-control-release-assertions',endpoint.includes('ywi_it_release_authority_assertions'));
-check('admin-it-control-finance-mapping-readiness',endpoint.includes('v_it_finance_account_mapping_review_status')&&endpoint.includes('ywi_finance_account_mapping_review_assertions'));
-check('admin-it-control-finance-mapping-observability',endpoint.includes('v_it_finance_account_mapping_observability_status')&&endpoint.includes('ywi_finance_account_mapping_observability_assertions')&&endpoint.includes('finance_account_mapping_observability')&&endpoint.includes('mapping_observability_status'));
-check('admin-it-control-finance-mapping-decision-support',endpoint.includes('v_it_finance_account_mapping_decision_support_status')&&endpoint.includes('ywi_finance_account_mapping_decision_support_assertions')&&endpoint.includes('finance_account_mapping_decision_support')&&endpoint.includes('mapping_decision_support_status'));
+check('admin-it-control-deep-readiness-preserved',endpoint.includes('ywi_it_release_authority_assertions')&&endpoint.includes('ywi_finance_release_hardening_assertions'));
 check('admin-it-control-dynamic-schema',endpoint.includes('expectedSchemaVersion')&&!endpoint.includes('expected_schema_version: 160')&&!endpoint.includes('>= 160'));
 check('admin-it-control-auth-user-count-only',endpoint.includes('auth.admin.listUsers')&&!endpoint.includes('data.users.map'));
 check('admin-it-control-jwt-config',config.includes('[functions.admin-it-control]')&&/\[functions\.admin-it-control\][\s\S]*?verify_jwt\s*=\s*true/.test(config));
+
+check('runtime-readiness-endpoint-present',exists('supabase/functions/admin-it-readiness-runtime/index.ts'));
+check('runtime-readiness-admin-only',runtimeEndpoint.includes('normalizeRole(actorProfile.role) !== "admin"')&&runtimeEndpoint.includes('Active Admin role is required'));
+check('runtime-readiness-bounded-sources', ['v_schema_drift_status','v_it_release_authority_status','v_it_scorecard_progress_truth_status','v_it_open_rail_acceptance_readiness','v_admin_module_access_integrity','v_admin_error_health_center','v_admin_function_readiness_checks','v_it_current_admin_todo'].every((value)=>runtimeEndpoint.includes(value)));
+check('runtime-readiness-no-deep-rpc',!runtimeEndpoint.includes('.rpc(')&&!runtimeEndpoint.includes('ywi_finance_release_hardening_assertions'));
+check('runtime-readiness-deferred-truth',runtimeEndpoint.includes('deep_verification_deferred: true')&&runtimeEndpoint.includes('explicit_deep_verification_only'));
+check('runtime-readiness-source-errors-red',runtimeEndpoint.includes('sourceErrors.length')&&runtimeEndpoint.includes('criticalBlocking > 0 ? "red"'));
+check('runtime-readiness-jwt-config',/\[functions\.admin-it-readiness-runtime\][\s\S]*?verify_jwt\s*=\s*true/.test(config));
 
 check('module-ui-dedicated-endpoint',moduleUi.includes("jsonFetch?.('admin-it-control'")&&moduleUi.includes("action:'module_permissions'"));
 check('module-ui-no-legacy-directory-dependency',!moduleUi.includes("loadAdminDirectory?.({scope:'module_permissions'"));
@@ -60,11 +74,11 @@ check('module-ui-it-assets',moduleUi.includes('/js/it-readiness-ui.js?v=2026-09-
 check('it-ui-present',exists('js/it-readiness-ui.js'));
 check('it-ui-route-injected',itUi.includes("section.id='it'")&&itUi.includes("e?.detail?.allowed==='it'"));
 check('it-ui-browser-smoke',itUi.includes('runSmokeCheck'));
-check('it-ui-readiness-endpoint',itUi.includes("action:'it_readiness'"));
+check('it-ui-bounded-readiness-endpoint',itUi.includes("jsonFetch?.('admin-it-readiness-runtime'")&&itUi.includes("action:'it_readiness_runtime'")&&itUi.includes('timeoutMs:12000'));
+check('it-ui-deferred-not-green',itUi.includes('Deep verification deferred.')&&itUi.includes('not interpreted as GREEN'));
+check('it-ui-runtime-degraded-visible',itUi.includes('<strong>Runtime degraded.</strong>')&&itUi.includes('source_errors'));
 check('it-ui-release-authority',itUi.includes("panel('release_authority'")&&itUi.includes("panel('release_source_evidence'")&&itUi.includes('repository_enforcement_status'));
-check('it-ui-finance-mapping-review',itUi.includes("panel('finance_account_mapping_review'")&&itUi.includes('mapping_readiness_status')&&itUi.includes('finance_account_mapping_review'));
-check('it-ui-finance-mapping-observability',itUi.includes("panel('finance_account_mapping_observability'")&&itUi.includes('mapping_observability_status')&&itUi.includes('finance_account_mapping_observability'));
-check('it-ui-finance-mapping-decision-support',itUi.includes("panel('finance_account_mapping_decision_support'")&&itUi.includes('mapping_decision_support_status')&&itUi.includes('finance_account_mapping_decision_support'));
+check('it-ui-finance-panels-retained-as-deferred',itUi.includes("panel('finance_release_hardening'")&&itUi.includes("panel('finance_account_mapping_observability'")&&itUi.includes("panel('finance_account_mapping_decision_support'"));
 check('it-ui-no-stale-schema160-fallback',!itUi.includes('Schema 160 control plane')&&!itUi.includes('expected_schema_version||160'));
 check('it-ui-no-fifth-module',!itUi.includes('data-module="it"'));
 check('it-responsive-css',/@media\(max-width:900px\)/.test(css)&&/@media\(max-width:560px\)/.test(css));
