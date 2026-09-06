@@ -40,6 +40,9 @@ verify_jwt = false
 [functions.admin-it-control]
 verify_jwt = true
 
+[functions.admin-it-readiness-runtime]
+verify_jwt = true
+
 [functions.admin-staging-acceptance]
 verify_jwt = true
 

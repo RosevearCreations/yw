@@ -51,9 +51,28 @@ if (pkg.scripts['test:next-safe-action'] !== 'node scripts/next-safe-action-auth
   throw new Error('package.json must expose test:next-safe-action');
 }
 assertIncludes(workflow, 'npm run test:next-safe-action', 'CI next-safe-action gate');
-for (const required of ['v_it_next_safe_action_status','v_it_next_safe_action_queue','next_safe_action_status','next_safe_action_queue']) {
+
+// The database Schema 199 views remain the canonical authority. The interactive account-security
+// endpoint may project their deterministic priority/status rules from one v_it_current_admin_todo
+// snapshot so it does not execute the same expensive readiness graph multiple times per page load.
+for (const required of [
+  'v_it_current_admin_todo',
+  'function priorityForTodo(row: any)',
+  'function decorateTodo(row: any)',
+  'function deriveNextStatus(queue: any[])',
+  'next_safe_action_status: deriveNextStatus(queue)',
+  'next_safe_action_queue: queue',
+  'staging_ready_candidate',
+  'external_verification',
+  'blocked_accounting_acceptance',
+  'safe_candidate_after_environment_guard'
+]) {
   assertIncludes(api, required, 'Admin account-security next-safe-action API');
 }
+if (api.includes('.from("v_it_next_safe_action_status")') || api.includes('.from("v_it_next_safe_action_queue")')) {
+  throw new Error('Admin account-security overview must not re-run derivative next-safe-action views; derive them from the single current-To-Do snapshot.');
+}
+
 for (const required of ['adminNextSafeActionPanel','Next safe action','candidate after environment guard','does not authorize staging mutation']) {
   assertIncludes(ui, required, 'Admin next-safe-action UI');
 }
