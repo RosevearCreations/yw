@@ -1,12 +1,16 @@
-
 /* File: js/reference-data.js
    Brief description: Shared reference-data loader for populated site, supervisor, employee,
-   position, and trade fields. Populates datalists/select-style inputs so forms can use admin/supervisor-managed values.
+   position, and trade fields. Build 230 keeps the directory in memory for a short bounded
+   freshness window, coalesces concurrent reads, invalidates on identity changes, and loads
+   only when the active route actually contains a reference-data workflow.
 */
 
 'use strict';
 
 (function () {
+  const REFERENCE_TTL_MS = 5 * 60 * 1000;
+  const REFERENCE_ROUTES = new Set(['toolbox','ppe','firstaid','inspect','drill','hseops','jobs','equipment','admin','me']);
+
   function $(sel, root = document) { return root.querySelector(sel); }
   function $$(sel, root = document) { return Array.from(root.querySelectorAll(sel)); }
 
@@ -36,62 +40,168 @@
     });
   }
 
+  function currentRoute() {
+    return String(window.location?.hash || '#today').replace(/^#/, '').split(/[?&]/)[0].trim().toLowerCase() || 'today';
+  }
+
+  function routeNeedsReferenceData(route = currentRoute()) {
+    return REFERENCE_ROUTES.has(String(route || '').trim().toLowerCase());
+  }
+
+  function identityKey(authState = {}) {
+    return String(authState?.identityKey || authState?.profile?.id || authState?.user?.id || authState?.profile?.email || authState?.user?.email || '').trim();
+  }
+
   function createReferenceDataUI(config = {}) {
     const api = config.api;
-    const getCurrentRole = config.getCurrentRole || (() => 'worker');
     const getAuthState = config.getAuthState || (() => window.YWI_AUTH?.getState?.() || {});
-    const state = { last: null, loadVersion: 0 };
+    const now = config.now || (() => Date.now());
+    const state = {
+      last: null,
+      loadedAt: 0,
+      identityKey: '',
+      inflight: null,
+      inflightIdentity: '',
+      loadVersion: 0,
+      bound: false,
+      lastInvalidationReason: ''
+    };
 
-    async function load() {
-      if (!api?.fetchReferenceData) return;
+    function isFresh(authState = getAuthState()) {
+      const key = identityKey(authState);
+      return !!(
+        state.last &&
+        key &&
+        state.identityKey === key &&
+        state.loadedAt > 0 &&
+        (now() - state.loadedAt) < REFERENCE_TTL_MS
+      );
+    }
+
+    function apply(resp = state.last || {}) {
+      if (!resp) return null;
+      const sites = (resp.sites || []).map((s) => s.site_name ? `${s.site_code || s.site_name} — ${s.site_name}` : (s.site_code || s.site_name)).filter(Boolean);
+      const supervisors = (resp.supervisors || []).map((p) => p.display_name || p.full_name || p.email).filter(Boolean);
+      const admins = (resp.admins || []).map((p) => p.display_name || p.full_name || p.email).filter(Boolean);
+      const employees = (resp.employees || []).map((p) => p.display_name || p.full_name || p.email).filter(Boolean);
+      const positions = (resp.positions || []).map((x) => x.name || x).filter(Boolean);
+      const trades = (resp.trades || []).map((x) => x.name || x).filter(Boolean);
+
+      fillDataList('site-options', sites);
+      fillDataList('supervisor-options', supervisors);
+      fillDataList('employee-options', employees);
+      fillDataList('admin-options', admins);
+      fillDataList('position-options', positions);
+      fillDataList('trade-options', trades);
+
+      setListOnSelectors(['#tb_site','#ppe_site','#fa_site','#insp_site','#dr_site','#ad_search_site_name'], 'site-options');
+      setListOnSelectors(['#tb_leader','#ppe_checker','#fa_checker','#insp_inspector','#dr_supervisor','#insp_approver_other','#job_supervisor_name','#job_signing_supervisor_name','#eq_assigned_supervisor','#am_profile_default_supervisor_name','#am_profile_override_supervisor_name'], 'supervisor-options');
+      setListOnSelectors(['.insp-assigned','.tb-name','.ppe-name','.dr-name','.insp-worker-name'], 'employee-options');
+      setListOnSelectors(['#job_admin_name','#am_profile_default_admin_name','#am_profile_override_admin_name'], 'admin-options');
+      setListOnSelectors(['#me_current_position','#am_profile_current_position'], 'position-options');
+      setListOnSelectors(['#me_trade_specialty','#am_profile_trade_specialty'], 'trade-options');
+      return resp;
+    }
+
+    function invalidate(reason = 'manual') {
+      state.loadVersion += 1;
+      state.last = null;
+      state.loadedAt = 0;
+      state.identityKey = '';
+      state.inflight = null;
+      state.inflightIdentity = '';
+      state.lastInvalidationReason = String(reason || 'manual');
+    }
+
+    async function load(options = {}) {
+      const force = options?.force === true;
+      if (!api?.fetchReferenceData) return null;
       const authState = getAuthState();
-      if (!authState?.isAuthenticated || authState?.isLoggingOut) return;
+      if (!authState?.isAuthenticated || authState?.isLoggingOut) return null;
+      const key = identityKey(authState);
+      if (!key) return null;
+
+      if (state.identityKey && state.identityKey !== key) invalidate('identity-change');
+      if (!force && isFresh(authState)) return apply(state.last);
+      if (!force && state.inflight && state.inflightIdentity === key) return state.inflight;
+
       const loadVersion = ++state.loadVersion;
-      try {
-        const resp = await api.fetchReferenceData({ include_people: true, include_sites: true, include_catalogs: true });
-        if (loadVersion !== state.loadVersion) return;
-        state.last = resp || {};
+      const request = Promise.resolve()
+        .then(() => api.fetchReferenceData({ include_people: true, include_sites: true, include_catalogs: true }))
+        .then((resp) => {
+          const currentState = getAuthState();
+          if (loadVersion !== state.loadVersion || identityKey(currentState) !== key || !currentState?.isAuthenticated || currentState?.isLoggingOut) return null;
+          state.last = resp || {};
+          state.loadedAt = now();
+          state.identityKey = key;
+          return apply(state.last);
+        })
+        .catch((err) => {
+          const currentState = getAuthState();
+          if (currentState?.isLoggingOut || !currentState?.isAuthenticated || loadVersion !== state.loadVersion) return null;
+          console.warn('Reference data refresh failed; the current screen remains usable.', err?.message || err);
+          return state.last ? apply(state.last) : null;
+        })
+        .finally(() => {
+          if (state.inflight === request) {
+            state.inflight = null;
+            state.inflightIdentity = '';
+          }
+        });
 
-        const sites = (resp.sites || []).map((s) => s.site_name ? `${s.site_code || s.site_name} — ${s.site_name}` : (s.site_code || s.site_name)).filter(Boolean);
-        const supervisors = (resp.supervisors || []).map((p) => p.display_name || p.full_name || p.email).filter(Boolean);
-        const admins = (resp.admins || []).map((p) => p.display_name || p.full_name || p.email).filter(Boolean);
-        const employees = (resp.employees || []).map((p) => p.display_name || p.full_name || p.email).filter(Boolean);
-        const positions = (resp.positions || []).map((x) => x.name || x).filter(Boolean);
-        const trades = (resp.trades || []).map((x) => x.name || x).filter(Boolean);
+      state.inflight = request;
+      state.inflightIdentity = key;
+      return request;
+    }
 
-        fillDataList('site-options', sites);
-        fillDataList('supervisor-options', supervisors);
-        fillDataList('employee-options', employees);
-        fillDataList('admin-options', admins);
-        fillDataList('position-options', positions);
-        fillDataList('trade-options', trades);
-
-        setListOnSelectors(['#tb_site','#ppe_site','#fa_site','#insp_site','#dr_site','#ad_search_site_name'], 'site-options');
-        setListOnSelectors(['#tb_leader','#ppe_checker','#fa_checker','#insp_inspector','#dr_supervisor','#insp_approver_other','#job_supervisor_name','#job_signing_supervisor_name','#eq_assigned_supervisor','#am_profile_default_supervisor_name','#am_profile_override_supervisor_name'], 'supervisor-options');
-        setListOnSelectors(['.insp-assigned','.tb-name','.ppe-name','.dr-name','.insp-worker-name'], 'employee-options');
-        setListOnSelectors(['#job_admin_name','#am_profile_default_admin_name','#am_profile_override_admin_name'], 'admin-options');
-        setListOnSelectors(['#me_current_position','#am_profile_current_position'], 'position-options');
-        setListOnSelectors(['#me_trade_specialty','#am_profile_trade_specialty'], 'trade-options');
-      } catch (err) {
-        const currentState = getAuthState();
-        if (currentState?.isLoggingOut || !currentState?.isAuthenticated) return;
-        console.error('Reference data load failed', err);
-      }
+    function loadForRoute(route, options = {}) {
+      if (!routeNeedsReferenceData(route)) return Promise.resolve(null);
+      return load(options);
     }
 
     function bind() {
+      if (state.bound) return;
+      state.bound = true;
       document.addEventListener('ywi:auth-changed', (event) => {
         const nextState = event?.detail?.state || getAuthState();
-        if (!nextState?.isAuthenticated || nextState?.isLoggingOut) return;
-        load();
+        const nextKey = identityKey(nextState);
+        if (!nextState?.isAuthenticated || nextState?.isLoggingOut) {
+          invalidate('signed-out');
+          return;
+        }
+        if (state.identityKey && nextKey && state.identityKey !== nextKey) invalidate('identity-change');
+        if (event?.detail?.event === 'TOKEN_REFRESHED' && event?.detail?.sameIdentity === true) return;
+        void loadForRoute(currentRoute());
       });
-      document.addEventListener('ywi:boot-ready', () => { load(); });
+      document.addEventListener('ywi:boot-ready', () => { void loadForRoute(currentRoute()); });
+      document.addEventListener('ywi:route-shown', (event) => {
+        const route = event?.detail?.allowed || event?.detail?.requested || currentRoute();
+        void loadForRoute(route);
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible' || !routeNeedsReferenceData(currentRoute()) || isFresh()) return;
+        void load();
+      });
     }
 
-    function init() { bind(); load(); }
+    function init() {
+      bind();
+      return loadForRoute(currentRoute());
+    }
 
-    return { init, load, state };
+    const instance = { init, load, loadForRoute, invalidate, isFresh, apply, state, ttlMs: REFERENCE_TTL_MS };
+    return instance;
   }
 
-  window.YWIReferenceData = { create: createReferenceDataUI };
+  const registry = {
+    active: null,
+    create(config = {}) {
+      const instance = createReferenceDataUI(config);
+      registry.active = instance;
+      return instance;
+    },
+    routeNeedsReferenceData
+  };
+
+  window.YWIReferenceData = registry;
 })();
