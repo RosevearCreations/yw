@@ -189,8 +189,7 @@
       return loadForRoute(currentRoute());
     }
 
-    const instance = { init, load, loadForRoute, invalidate, isFresh, apply, state, ttlMs: REFERENCE_TTL_MS };
-    return instance;
+    return { init, load, loadForRoute, invalidate, isFresh, apply, state, ttlMs: REFERENCE_TTL_MS };
   }
 
   const registry = {
@@ -204,4 +203,88 @@
   };
 
   window.YWIReferenceData = registry;
+
+  // Profile/Crew network coordination. Profile UI keeps all rendering and write authority; this
+  // decorator only prevents off-route reads and reuses an identical request while it is in flight.
+  function decorateProfileFactory() {
+    const profileRegistry = window.YWIProfileUI;
+    const originalCreate = profileRegistry?.create;
+    if (typeof originalCreate !== 'function' || originalCreate.__ywiReferenceLifecycleDecorated) return false;
+
+    function createGuardedApi(api = {}) {
+      const inflight = new Map();
+      const originalFetchProfileScope = typeof api.fetchProfileScope === 'function' ? api.fetchProfileScope.bind(api) : null;
+      const originalFetchTimeClock = typeof api.fetchMyTimeClockContext === 'function' ? api.fetchMyTimeClockContext.bind(api) : null;
+      const originalSaveMyProfile = typeof api.saveMyProfile === 'function' ? api.saveMyProfile.bind(api) : null;
+
+      function scopeName(input) {
+        return typeof input === 'string' ? input : String(input?.scope || '').trim();
+      }
+
+      function profileIdentity() {
+        return identityKey(window.YWI_AUTH?.getState?.() || window.YWI_BOOT?.getState?.() || {});
+      }
+
+      function safeOffRouteResponse(scope) {
+        const state = window.YWI_AUTH?.getState?.() || window.YWI_BOOT?.getState?.() || {};
+        if (scope === 'self') return { profile: state?.profile || null, profiles: state?.profile ? [state.profile] : [] };
+        if (scope === 'crew') return { profiles: [] };
+        return {};
+      }
+
+      function routeAllows(scope) {
+        const route = currentRoute();
+        if (scope === 'self') return route === 'me';
+        if (scope === 'crew') return route === 'crew';
+        return ['me','crew','settings'].includes(route);
+      }
+
+      function coalesce(key, run) {
+        if (inflight.has(key)) return inflight.get(key);
+        const request = Promise.resolve().then(run).finally(() => {
+          if (inflight.get(key) === request) inflight.delete(key);
+        });
+        inflight.set(key, request);
+        return request;
+      }
+
+      async function fetchProfileScope(input) {
+        const scope = scopeName(input);
+        if (!originalFetchProfileScope || !routeAllows(scope)) return safeOffRouteResponse(scope);
+        const payload = typeof input === 'object' && input ? input : { scope };
+        const key = `${profileIdentity()}|${scope}|${String(payload.search || '')}|${String(payload.role_filter || '')}`;
+        return coalesce(key, () => originalFetchProfileScope(input));
+      }
+
+      async function fetchMyTimeClockContext(...args) {
+        if (!originalFetchTimeClock || currentRoute() !== 'me') return { active_entry:null, recent_entries:[], jobs:[] };
+        return coalesce(`${profileIdentity()}|time-clock`, () => originalFetchTimeClock(...args));
+      }
+
+      async function saveMyProfile(...args) {
+        if (!originalSaveMyProfile) throw new Error('Profile save is unavailable.');
+        const response = await originalSaveMyProfile(...args);
+        if (response?.ok) registry.active?.invalidate?.('self-profile-save');
+        return response;
+      }
+
+      return {
+        ...api,
+        fetchProfileScope,
+        ...(originalFetchTimeClock ? { fetchMyTimeClockContext } : {}),
+        ...(originalSaveMyProfile ? { saveMyProfile } : {}),
+        __ywiProfileRequestLifecycle: Object.freeze({ inflight, currentRoute })
+      };
+    }
+
+    const decoratedCreate = function createProfileWithReferenceLifecycle(config = {}) {
+      return originalCreate({ ...config, api:createGuardedApi(config.api || {}) });
+    };
+    decoratedCreate.__ywiReferenceLifecycleDecorated = true;
+    profileRegistry.create = decoratedCreate;
+    profileRegistry.referenceLifecycleVersion = 1;
+    return true;
+  }
+
+  decorateProfileFactory();
 })();
