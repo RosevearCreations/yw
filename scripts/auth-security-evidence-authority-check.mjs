@@ -86,11 +86,15 @@ add('schema202-marker',
   schema202.includes('202 as expected_schema_version') &&
   /values\s*\(\s*202\s*,\s*'202_auth_evidence_provenance_hardening'/i.test(schema202)
 );
-add('account-security-overview-current-todo',all(endpoint,[
-  'v_it_current_admin_todo',
-  'v_it_current_admin_todo_status',
-  'current_todo: todo || []'
-]));
+add('account-security-overview-current-todo',
+  (endpoint.match(/\.from\("v_it_current_admin_todo"\)/g)||[]).length===1 &&
+  !endpoint.includes('.from("v_it_current_admin_todo_status")') &&
+  all(endpoint,[
+    'function deriveTodoStatus(todo: any[])',
+    'current_todo: currentTodo',
+    'current_todo_status: deriveTodoStatus(currentTodo)'
+  ])
+);
 add('account-security-ui-shows-evidence-requirement',all(ui,[
   'Current Admin To-Do',
   '<b>Current action:</b>',
