@@ -102,7 +102,7 @@ add('admin-staging-ui-human-explicit',hasAll(ui,[
   'Approve evidence','Reject evidence','window.confirm','does not close the scorecard rail',
   "jsonFetch?.('admin-staging-acceptance'","action:'record_case'","action:'finalize'"
 ]));
-add('admin-staging-ui-loaded-by-admin-module',runtime.includes("'/js/staging-acceptance-ui.js'")&&runtime.includes("const BUILD = '2026-09-02l'"));
+add('admin-staging-ui-loaded-by-admin-module',runtime.includes("'/js/staging-acceptance-ui.js'")&&runtime.includes("const BUILD = '2026-09-06a'"));
 
 add('workflow-source-gates-staging',workflow.includes('npm run test:staging-acceptance')&&workflow.includes('npm run test:staging-scenarios')&&workflow.includes('npm run test:browser:staging-acceptance'));
 add('workflow-live-staging-manual-only',hasAll(workflow,[
