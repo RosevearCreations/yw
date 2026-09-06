@@ -11,7 +11,7 @@
 
 (function () {
   const BUILD = '2026-09-06a';
-  const CONTRACT_VERSION = 3;
+  const CONTRACT_VERSION = 2;
   const GLOBAL_PASSWORD_SECURITY_SCRIPT = '/js/password-security.js';
 
   const CORE_ENTITY_CONTRACTS = Object.freeze({
@@ -177,7 +177,7 @@
       script.src = `${src}${joiner}v=${encodeURIComponent(BUILD)}`;
       script.async = false;
       script.dataset.ywiModule = moduleKey;
-      script.dataset.ywiRuntime = 'active-route';
+      script.dataset.ywiRuntime = 'permission-driven';
       script.onload = () => { state.loadedScripts.add(normalized); state.failedScripts.delete(normalized); resolve(true); };
       script.onerror = () => {
         const error = new Error(`Unable to load ${moduleKey} module script: ${src}`);
