@@ -1,7 +1,7 @@
 /* File: js/module-runtime.js
    Schema 162 Shared Core + standalone module runtime.
    The shell/Core may exist without any business module. Once auth and module permissions resolve,
-   this runtime loads only the browser scripts owned by modules the current profile can view.
+   this runtime loads only the browser scripts owned by the active permitted module.
    If the identity changes, the user signs out, or a loaded permission is removed, the page is
    reloaded so stale module code is purged from memory. Server-side RLS/RPC/Edge authorization
    remains the actual security boundary.
@@ -10,8 +10,8 @@
 'use strict';
 
 (function () {
-  const BUILD = '2026-09-02l';
-  const CONTRACT_VERSION = 2;
+  const BUILD = '2026-09-06a';
+  const CONTRACT_VERSION = 3;
   const GLOBAL_PASSWORD_SECURITY_SCRIPT = '/js/password-security.js';
 
   const CORE_ENTITY_CONTRACTS = Object.freeze({
@@ -81,12 +81,18 @@
     syncing: false,
     queued: false,
     reloading: false,
+    domReady: false,
     activeProfileId: null,
+    activeModuleKey: null,
+    routeSection: '',
     loadedModules: new Set(),
     loadedScripts: new Set(),
     failedScripts: new Map(),
     lastSyncAt: 0
   };
+
+  const guardedOriginals = Object.create(null);
+  let bootGuardInstalled = false;
 
   function authState() { return window.YWI_AUTH?.getState?.() || {}; }
   function currentRole() { return authState().role || 'employee'; }
@@ -121,6 +127,25 @@
     return sec.canViewModule(moduleKey, currentRole(), 'view') === true;
   }
 
+  function activeSection() {
+    const routed = String(state.routeSection || '').trim();
+    if (routed) return routed;
+    const hash = String(window.location?.hash || '').replace(/^#/, '').split('&')[0].trim();
+    if (hash) return hash;
+    return String(window.YWIRouter?.getRequestedSection?.() || '').split('&')[0].trim();
+  }
+
+  function activeModule() {
+    const section = activeSection();
+    if (section === 'me' || section === 'settings') return null;
+    const sec = security();
+    const mapped = sec?.getModuleForSection?.(section) || null;
+    if (mapped && moduleAllowed(mapped)) return mapped;
+    if (section) return null;
+    const navKey = window.YWIModuleNav?.activeModule?.() || null;
+    return navKey && moduleAllowed(navKey) ? navKey : null;
+  }
+
   function staleRuntimeReason(stateNow = authState()) {
     if (state.reloading || stateNow.pendingAuthResolution) return null;
     const hasLoadedModuleCode = state.loadedModules.size > 0 || state.loadedScripts.size > 0;
@@ -152,7 +177,7 @@
       script.src = `${src}${joiner}v=${encodeURIComponent(BUILD)}`;
       script.async = false;
       script.dataset.ywiModule = moduleKey;
-      script.dataset.ywiRuntime = 'permission-driven';
+      script.dataset.ywiRuntime = 'active-route';
       script.onload = () => { state.loadedScripts.add(normalized); state.failedScripts.delete(normalized); resolve(true); };
       script.onerror = () => {
         const error = new Error(`Unable to load ${moduleKey} module script: ${src}`);
@@ -173,11 +198,88 @@
     return true;
   }
 
-  function initializeLoadedFactories() {
-    window.initFormModules?.();
+  function captureOriginal(name) {
+    if (!guardedOriginals[name] && typeof window[name] === 'function') guardedOriginals[name] = window[name];
+    return guardedOriginals[name] || null;
+  }
+
+  function installActiveBootGuard() {
+    const protectedInit = captureOriginal('initProtectedModules');
+    const formInit = captureOriginal('initFormModules');
+    const seedTables = captureOriginal('seedAllTables');
+    const adminInit = captureOriginal('initAdminModule');
+    const adminActionsInit = captureOriginal('initAdminActions');
+    const logbookInit = captureOriginal('initLogbookModule');
+    const reportsInit = captureOriginal('initReportsModule');
+    const profileInit = captureOriginal('initProfileModule');
+    const referenceInit = captureOriginal('initReferenceDataModule');
+    const jobsInit = captureOriginal('initJobsModule');
+
+    if (!protectedInit || !formInit || !seedTables) return false;
+    if (bootGuardInstalled && window.initProtectedModules?.__ywiActiveBootGuard === true) return true;
+
+    const guardedForms = function guardedForms() {
+      if (activeModule() === 'safety') return formInit();
+      return undefined;
+    };
+    guardedForms.__ywiActiveBootGuard = true;
+
+    const guardedSeed = function guardedSeed() {
+      if (activeModule() === 'safety') return seedTables();
+      return undefined;
+    };
+    guardedSeed.__ywiActiveBootGuard = true;
+
+    const guardedProtected = function guardedProtected() {
+      const section = activeSection();
+      const moduleKey = activeModule();
+
+      if (section === 'me' || section === 'settings') {
+        profileInit?.();
+        return;
+      }
+
+      if (moduleKey === 'safety') {
+        formInit?.();
+        logbookInit?.();
+        reportsInit?.();
+        referenceInit?.();
+        seedTables?.();
+        return;
+      }
+
+      if (moduleKey === 'jobs') {
+        jobsInit?.();
+        referenceInit?.();
+        if (section === 'crew') profileInit?.();
+        return;
+      }
+
+      if (moduleKey === 'admin') {
+        if (section === 'admin') {
+          adminInit?.();
+          adminActionsInit?.();
+        }
+        return;
+      }
+
+      // Finance scripts own their route lifecycle. Deliberately do not initialize Admin,
+      // Jobs, profile, reference-data, or Safety controllers while Finance is active.
+    };
+    guardedProtected.__ywiActiveBootGuard = true;
+
+    window.initFormModules = guardedForms;
+    window.seedAllTables = guardedSeed;
+    window.initProtectedModules = guardedProtected;
+    bootGuardInstalled = true;
+    return true;
+  }
+
+  function initializeLoadedFactories(moduleKey) {
+    installActiveBootGuard();
     window.initProtectedModules?.();
-    window.seedAllTables?.();
     window.YWIModuleNav?.sync?.();
+    state.activeModuleKey = moduleKey || null;
   }
 
   async function syncForCurrentAccess() {
@@ -185,18 +287,20 @@
     state.syncing = true;
     state.queued = false;
     try {
+      installActiveBootGuard();
       const stateNow = authState();
       const staleReason = staleRuntimeReason(stateNow);
       if (staleReason) { purgeStaleRuntime(staleReason); return false; }
       if (!stateNow.isAuthenticated || stateNow.pendingAuthResolution || stateNow.needsAccountSetup) return false;
       state.activeProfileId = state.activeProfileId || profileIdentity(stateNow);
-      for (const moduleKey of Object.keys(MODULE_MANIFEST)) if (moduleAllowed(moduleKey)) await loadModule(moduleKey);
-      initializeLoadedFactories();
+      const targetModule = activeModule();
+      if (targetModule) await loadModule(targetModule);
+      initializeLoadedFactories(targetModule);
       state.lastSyncAt = Date.now();
       document.dispatchEvent(new CustomEvent('ywi:module-runtime-ready', { detail: getRuntimeState() }));
       return true;
     } catch (err) {
-      window.dispatchEvent(new CustomEvent('ywi:app-error', { detail: { scope:'module-runtime', message:err?.message || 'A permitted module could not be loaded.', details:['Only authorized modules are requested by the browser runtime. Refresh after resolving the module load failure.'] } }));
+      window.dispatchEvent(new CustomEvent('ywi:app-error', { detail: { scope:'module-runtime', message:err?.message || 'A permitted module could not be loaded.', details:['Only the active authorized module is requested by the browser runtime. Refresh after resolving the module load failure.'] } }));
       return false;
     } finally {
       state.syncing = false;
@@ -205,18 +309,41 @@
   }
 
   function getRuntimeState() {
-    return { build:BUILD, contractVersion:CONTRACT_VERSION, activeProfileId:state.activeProfileId, loadedModules:[...state.loadedModules], loadedScripts:[...state.loadedScripts], failedScripts:Object.fromEntries(state.failedScripts), lastSyncAt:state.lastSyncAt, reloading:state.reloading };
+    return {
+      build: BUILD,
+      contractVersion: CONTRACT_VERSION,
+      activeProfileId: state.activeProfileId,
+      activeModuleKey: state.activeModuleKey,
+      routeSection: activeSection(),
+      loadedModules: [...state.loadedModules],
+      loadedScripts: [...state.loadedScripts],
+      failedScripts: Object.fromEntries(state.failedScripts),
+      lastSyncAt: state.lastSyncAt,
+      reloading: state.reloading
+    };
   }
   function getManifest(moduleKey) { return moduleKey ? MODULE_MANIFEST[String(moduleKey || '').toLowerCase()] || null : MODULE_MANIFEST; }
   function getCoreContract(entityKey) { return entityKey ? CORE_ENTITY_CONTRACTS[String(entityKey || '').toLowerCase()] || null : CORE_ENTITY_CONTRACTS; }
 
+  function queueSync() { queueMicrotask(syncForCurrentAccess); }
+
   function bind() {
     loadGlobalPasswordSecurity();
-    document.addEventListener('ywi:auth-changed', () => queueMicrotask(syncForCurrentAccess));
-    document.addEventListener('ywi:module-permissions-changed', () => queueMicrotask(syncForCurrentAccess));
-    document.addEventListener('DOMContentLoaded', () => queueMicrotask(syncForCurrentAccess));
+    document.addEventListener('ywi:boot-ready', () => { installActiveBootGuard(); queueSync(); });
+    document.addEventListener('ywi:auth-changed', () => { installActiveBootGuard(); queueSync(); });
+    document.addEventListener('ywi:module-permissions-changed', () => { installActiveBootGuard(); queueSync(); });
+    document.addEventListener('ywi:route-shown', (event) => {
+      state.routeSection = String(event?.detail?.allowed || event?.detail?.requested || '').split('&')[0].trim();
+      installActiveBootGuard();
+      queueSync();
+    });
+    document.addEventListener('DOMContentLoaded', () => {
+      state.domReady = true;
+      installActiveBootGuard();
+      queueSync();
+    });
   }
 
   bind();
-  window.YWIModuleRuntime = Object.freeze({ BUILD, CONTRACT_VERSION, CORE_ENTITY_CONTRACTS, MODULE_MANIFEST, moduleAllowed, loadModule, syncForCurrentAccess, getRuntimeState, getManifest, getCoreContract });
+  window.YWIModuleRuntime = Object.freeze({ BUILD, CONTRACT_VERSION, CORE_ENTITY_CONTRACTS, MODULE_MANIFEST, moduleAllowed, activeSection, activeModule, loadModule, syncForCurrentAccess, getRuntimeState, getManifest, getCoreContract });
 })();
