@@ -25,7 +25,9 @@ add('stale-deploy-hints-guarded', hasAll(migration,['current_todo_excludes_super
 add('server-admin-reset', hasAll(edge,['admin.auth.admin.updateUserById','reset_temporary_password','targetProfileId === actorId','force_password_change: true','password_reset_required: true']), 'Protected server path resets another active user without current password and forces replacement.');
 add('server-no-password-echo', !/temporary_password\s*:/i.test(edge.split('return response({').slice(-1)[0] || '') && !/metadata:\s*\{[^}]*password/i.test(edge), 'Edge does not persist or echo the temporary password in reset metadata/response.');
 add('self-confirm-clears-gate', hasAll(edge,['confirm_password_change','password_reset_required: false','password_changed_at: now','reset_status: "completed"']), 'Authenticated user can clear the gate only after browser auth password update succeeds.');
-add('jwt-protected', /\[functions\.admin-account-security\][\s\S]*?verify_jwt\s*=\s*true/.test(config), 'New Admin account-security function is JWT protected.');
+add('jwt-protected', /\[functions\.admin-account-security\][\s\S]*?verify_jwt\s*=\s*true/.test(config), 'Admin account-security function is JWT protected.');
+add('overview-single-todo-snapshot', (edge.match(/\.from\("v_it_current_admin_todo"\)/g)||[]).length===1 && !edge.includes('.from("v_it_current_admin_todo_status")') && !edge.includes('.from("v_it_next_safe_action_status")') && !edge.includes('.from("v_it_next_safe_action_queue")'), 'Overview reads current I.T. authority once instead of executing four derivative view graphs.');
+add('overview-derived-status-parity', hasAll(edge,['function deriveTodoStatus(todo: any[])','function deriveNextStatus(queue: any[])','function decorateTodo(row: any)','priorityForTodo(row)']), 'Todo and next-safe-action summaries are deterministic projections of one database snapshot.');
 add('eyeball-toggle', hasAll(passwordUi,["toggle.textContent = '👁'","input.type = showing ? 'password' : 'text'","aria-label', showing ? 'Show password' : 'Hide password'"]), 'Eyeball toggles entered password between masked and regular print.');
 add('forced-module-gate', hasAll(passwordUi,['password_reset_required === true','needsAccountSetup: true','confirm_password_change']), 'Temporary-password flag is surfaced through the existing module setup gate until replacement.');
 add('admin-current-todo-ui', hasAll(adminUi,['Current Admin To-Do','Only unresolved current requirements','Completed builds and superseded preflight/prerelease checklists are retained for audit','hideHistoricalTodoPanels']), 'Admin UI shows current-only work and hides legacy audit-only panels.');
@@ -43,12 +45,12 @@ add(
   runtime.includes("const GLOBAL_PASSWORD_SECURITY_SCRIPT = '/js/password-security.js'")
     && adminHistoricalScripts.every((script)=>runtime.includes(`'${script}'`))
     && !runtime.includes("'/js/admin-account-security-ui.js'"),
-  'Existing Admin module manifest retains all historical scripts; password security is global and the new Admin account-security UI is loaded outside the manifest.'
+  'Existing Admin module manifest retains all historical scripts; password security is global and the account-security UI is loaded outside the manifest.'
 );
 add('auth-listener-synchronous', auth.includes('sb.auth.onAuthStateChange((event, session) => {') && !auth.includes('sb.auth.onAuthStateChange(async (event, session) => {'), 'Supabase onAuthStateChange callback returns synchronously instead of awaiting client work.');
 add('auth-refresh-work-deferred', hasAll(auth,['function scheduleAuthEventResolution(event, session)','setTimeout(async () => {','await applySession(session || null)','scheduleAuthEventResolution(event, session || null);']), 'Profile/permission refresh work is deferred until after the Supabase auth callback releases its client lock.');
 add('token-refresh-no-reload-loop', hasAll(auth,["event === 'TOKEN_REFRESHED'","event === 'SIGNED_IN'",'sameResolvedUser','updateSessionSnapshot(session || null);']) && !/if \(\(event === 'TOKEN_REFRESHED'[\s\S]{0,500}dispatch\('ywi:auth-changed'/.test(auth), 'Routine same-user token/sign-in refresh updates the session snapshot without re-dispatching all profile/reference loaders.');
-add('auth-hotfix-cache-invalidated', serviceWorker.includes("const CACHE_NAME = 'ywi-shell-v2026-09-06a';") && serviceWorker.includes("fetch(assetUrl, { cache: 'reload' })"), 'Service worker cache generation forces the repaired auth runtime into the active shell.');
+add('runtime-load-cache-invalidated', serviceWorker.includes("const CACHE_NAME = 'ywi-shell-v2026-09-06b';") && serviceWorker.includes("fetch(assetUrl, { cache: 'reload' })"), 'Service worker cache generation forces the bounded readiness runtime into the active shell.');
 add('finance-provider-boundary', !/(stripe|paypal|finance_job|posting_execution|provider_mutation\s*:\s*true)/i.test(edge + passwordUi + adminUi), 'Account-security/auth-refresh runtime does not add Finance/provider mutation paths.');
 
 const failed = checks.filter((x)=>!x.ok);

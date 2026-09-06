@@ -9,7 +9,7 @@ function payload(){
   const empty={rows:[],error:null,summary:{status:'passed',total:0,blocking:0,warning:0,error:null}};
   return {
     ok:true,
-    scope:'it_readiness',
+    scope:'it_readiness_runtime',
     summary:{
       overall_status:'amber',schema_current:true,expected_schema_version:184,latest_applied_schema_version:184,
       release_authority_status:'green',source_gate_status:'green',repository_enforcement_status:'amber',
@@ -91,7 +91,7 @@ for(const viewport of viewports){
     await expect(workspace).toContainText('Equipment scan and custody timeline');
     await expect(workspace).toContainText('feature followup');
     await expect(workspace).toContainText('0');
-    expect(calls).toEqual([{action:'it_readiness'}]);
+    expect(calls).toEqual([{action:'it_readiness_runtime'}]);
     expect(await workspace.getByRole('button',{name:/complete/i}).count()).toBe(0);
   });
 }
