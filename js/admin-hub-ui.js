@@ -320,8 +320,16 @@
       loadGroupOnce(selected);
       refreshCards();
       if (options.panelTitle) {
+        const remembered = new Set(loadJson(STORAGE_OPEN, []));
+        remembered.add(options.panelTitle);
+        saveJson(STORAGE_OPEN, [...remembered]);
         const details = [...section.querySelectorAll('.admin-hub-detail')].find((node) => node.dataset.adminHubTitle === options.panelTitle);
-        if (details) { details.hidden = false; details.open = true; details.scrollIntoView({ behavior:'smooth', block:'start' }); }
+        if (details) {
+          details.hidden = false;
+          details.open = true;
+          details.setAttribute('open','');
+          details.scrollIntoView({ behavior:'smooth', block:'start' });
+        }
       } else if (selected !== 'home') {
         document.getElementById('ad_hub_workspace_heading')?.scrollIntoView?.({ behavior:'smooth', block:'start' });
       }
