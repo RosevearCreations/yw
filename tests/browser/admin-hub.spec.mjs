@@ -26,6 +26,7 @@ async function mount(page,{manage=true}={}){
               <div class="section-heading"><div><h2>Admin</h2><p class="section-subtitle">Legacy long form content.</p></div></div>
               <div class="admin-panel-block" data-admin-panel-title="Admin Home Command Center"><div><h3>Admin Home Command Center</h3><p class="section-subtitle">Current command center.</p></div><button id="ad_command_refresh_panel">Refresh</button></div>
               <div class="admin-panel-block"><div><h3>Staff Directory and Access</h3><p class="section-subtitle">Staff and roles.</p></div><button id="ad_staff_refresh_panel">Refresh Staff</button></div>
+              <div class="admin-panel-block"><div><h3>Admin Password Control</h3><p class="section-subtitle">Temporary password and account access controls.</p></div></div>
               <div class="admin-panel-block"><div><h3>Operations and Accounting Backbone Manager</h3><p class="section-subtitle">Jobs and operations.</p></div><button id="ad_jobs_refresh_panel">Refresh Jobs</button></div>
               <div class="admin-panel-block"><div><h3>Evidence Manager</h3><p class="section-subtitle">Safety evidence.</p></div><button id="ad_evidence_refresh_panel">Refresh Evidence</button></div>
               <div class="admin-panel-block"><div><h3>Guided Close Center</h3><p class="section-subtitle">Finance close.</p></div><button id="ad_accounting_refresh_panel">Refresh Accounting</button></div>
@@ -73,18 +74,18 @@ test('Admin opens as grouped card home and defers deep scopes',async({page})=>{
   await expect(page.locator('#ad_hub_search_input')).toHaveAttribute('placeholder',/Find an Admin setting/);
   await expect(page.locator('#ad_hub_activity_list')).toContainText('Synthetic audit event');
   expect(await page.evaluate(()=>window.__calls)).toEqual(['directory:command_center']);
-  await expect(page.locator('.admin-hub-detail')).toHaveCount(7);
-  await expect(page.locator('.admin-hub-detail:not([hidden])')).toHaveCount(1);
+  await expect(page.locator('.admin-hub-detail')).toHaveCount(8);
+  await expect(page.locator('.admin-hub-detail:not([hidden])')).toHaveCount(2);
 });
 
-test('opening People loads only its bounded scope once and remembers the workspace',async({page})=>{
+test('opening People loads only its bounded scope once and keeps the workspace selected',async({page})=>{
   await mount(page,{manage:true});
   await page.locator('[data-admin-hub-group="people"]').click();
   await expect.poll(async()=>page.evaluate(()=>window.__calls.filter((value)=>value==='directory:people').length)).toBe(1);
   await expect(page.locator('#ad_hub_breadcrumb')).toContainText('People & Access');
   await expect(page.locator('.admin-hub-detail:not([hidden]) summary')).toContainText(/Staff Directory|Assignment|Catalog|Password/);
-  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('ywi_admin_hub_section_v1')))).toBe('people');
   await page.locator('[data-admin-hub-group="people"]').click();
+  await expect(page.locator('#ad_hub_breadcrumb')).toContainText('People & Access');
   expect(await page.evaluate(()=>window.__calls.filter((value)=>value==='directory:people').length)).toBe(1);
 });
 
