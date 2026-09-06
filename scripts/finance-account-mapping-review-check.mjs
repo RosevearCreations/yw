@@ -46,7 +46,7 @@ add('schema180-endpoint-manage-write',hasAll(endpoint,['hasModuleAccess(supabase
 add('schema180-endpoint-bounded-fields',hasAll(endpoint,['mapping_key','account_id','review_status','reason','SERVER_OWNED_MAPPING_FIELDS'])&&['execution_enabled','provider_mutation','job_id','work_order_id','subtotal','tax_total','total_amount','stripe','paypal'].every((key)=>endpoint.includes(`"${key}"`)));
 add('schema180-endpoint-no-release-provider-jobs',endpoint.includes('posting_execution_authorized: false')&&endpoint.includes('provider_mutation: false')&&endpoint.includes('jobs_writeback: false'));
 
-add('schema180-finance-runtime-addon',runtime.includes("scripts: Object.freeze(['/js/finance-ui.js','/js/finance-account-mapping-ui.js'])")&&runtime.includes("const BUILD = '2026-09-06a'"));
+add('schema180-finance-runtime-addon',runtime.includes("scripts: Object.freeze(['/js/finance-ui.js','/js/finance-account-mapping-ui.js'])")&&runtime.includes("const BUILD = '2026-09-06b'"));
 add('schema180-ui-view-and-manage',hasAll(ui,["canViewModule?.('finance'","canManage()","data-mapping-review","Finance manage required for mapping decisions"]));
 add('schema180-ui-human-confirmation',ui.includes("window.confirm('Approve this exact chart-account mapping?")&&ui.includes('reason.trim().length<5'));
 add('schema180-ui-bounded-payload',ui.includes("{action:'review_mapping',mapping_key:mappingKey,account_id:accountId||null,review_status:reviewStatus,reason:reason.trim()}")&&!/execution_enabled\s*:/i.test(ui)&&!/provider_mutation\s*:/i.test(ui));
