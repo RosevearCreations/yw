@@ -57,7 +57,15 @@ add(
     && !/review_status\s*:\s*['"]approved['"]/i.test(ui),
   'Browser never programmatically selects an account or hard-codes an approved mutation.'
 );
-add('build228-mapping-readiness-on-demand',hasAll(ui,['Deep mapping/observability/decision-support reads are intentionally manual.','Load accountant mapping readiness','YWIFinanceMappingReview={load,render}'])&&!/ywi:route-shown[^\n]*load\(/.test(ui),'Build 228 keeps the deep mapping read behind an explicit operator action instead of Finance route startup.');
+add(
+  'build228-mapping-readiness-on-demand',
+  hasAll(ui,['deep mapping/observability/decision-support reads are intentionally manual.','Load accountant mapping readiness','YWIFinanceMappingReview={load,render}'])
+    && !/DOMContentLoaded[^\n]*load\(/.test(ui)
+    && !/ywi:route-shown[^\n]*load\(/.test(ui)
+    && !/ywi:auth-changed[^\n]*load\(/.test(ui)
+    && !/ywi:module-permissions-changed[^\n]*load\(/.test(ui),
+  'Build 228 keeps the deep mapping read behind an explicit operator action instead of Finance route/auth startup.'
+);
 
 add('schema180-it-readiness-source',itSource.includes('finance_account_mapping_review')&&itSource.includes('v_it_finance_account_mapping_review_status'));
 add('schema180-it-assertion-source',itSource.includes('ywi_finance_account_mapping_review_assertions'));
