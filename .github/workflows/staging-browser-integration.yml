@@ -79,6 +79,7 @@ jobs:
       - run: npm run test:core-live-write-staging
       - run: npm run test:runtime
       - run: npm run test:profile-reference-lifecycle
+      - run: npm run test:workspace-organization
       - run: npm run test:boundaries
       - run: npm run test:acceptance
       - run: npm run test:release-authority
@@ -130,6 +131,7 @@ jobs:
       - run: npm run test:browser:job-lifecycle
       - run: npm run test:browser:modules
       - run: npm run test:browser:profile-reference-lifecycle
+      - run: npm run test:browser:workspace-organization
       - run: npm run test:browser:finance
       - run: npm run test:browser:finance-mapping
       - run: npm run test:browser:it
