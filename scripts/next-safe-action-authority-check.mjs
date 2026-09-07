@@ -13,6 +13,8 @@ const pkg = JSON.parse(read('package.json'));
 const workflow = read('.github/workflows/staging-browser-integration.yml');
 const api = read('supabase/functions/admin-account-security/index.ts');
 const ui = read('js/admin-account-security-ui.js');
+const passwordUi = read('js/password-security.js');
+const runtimeGate = read('js/next-safe-action-runtime-gate.js');
 const browser = read('tests/browser/admin-account-security.spec.mjs');
 const readme = read('README.md');
 const handbook = read('docs/ACTIVE_PROJECT_HANDBOOK.md');
@@ -79,9 +81,39 @@ for (const required of ['adminNextSafeActionPanel','Next safe action','candidate
 for (const required of ['adminNextSafeActionPanel','6 staging-ready','2 accounting blocked','does not authorize staging mutation']) {
   assertIncludes(browser, required, 'rendered next-safe-action browser acceptance');
 }
+
+// Build 252: source-ready staging guidance must be paired with the actual runtime/schema guard.
+for (const required of [
+  'adminNextSafeActionRuntimeGate',
+  'Runtime execution gate:',
+  'Source-ready does not mean runnable staging.',
+  "jsonFetch?.('admin-staging-acceptance'",
+  "body:{ action:'status' }",
+  'guard.mutation_allowed === true',
+  'schema.exact_schema_match === true',
+  'Status-only staging guard could not be loaded; staging mutation remains locked.',
+  'Refresh execution gate',
+  'YWINextSafeActionRuntimeGate'
+]) assertIncludes(runtimeGate, required, 'Build 252 runtime execution gate');
+for (const forbidden of ["action:'record_case'","action:'finalize'","action:'signoff'"]) {
+  if (runtimeGate.includes(forbidden)) throw new Error(`Build 252 runtime gate must remain status-only: ${forbidden}`);
+}
+for (const required of [
+  "const NEXT_SAFE_ACTION_RUNTIME_GATE_SCRIPT = '/js/next-safe-action-runtime-gate.js'",
+  'loadNextSafeActionRuntimeGate();',
+  'Staging mutation remains locked until the guard is readable.'
+]) assertIncludes(passwordUi, required, 'Build 252 Admin runtime-gate loader');
+for (const required of [
+  'Runtime execution gate: LOCKED',
+  'Source-ready does not mean runnable staging.',
+  'Production project authority permanently denies staging-acceptance mutation.',
+  "path:'admin-staging-acceptance'",
+  "action:'status'"
+]) assertIncludes(browser, required, 'Build 252 rendered runtime-gate acceptance');
+
 assertIncludes(readme, 'next safe action', 'README next-safe-action guidance');
 assertIncludes(handbook, 'Next safe action authority', 'handbook next-safe-action guidance');
 assertIncludes(nextSteps, 'next safe action', 'next-steps guidance');
 assertIncludes(help, 'Next safe action', 'operator Help guidance');
 
-console.log('Build 199 next-safe-action authority source gate: PASS');
+console.log('Build 199/252 next-safe-action authority source gate: PASS');
