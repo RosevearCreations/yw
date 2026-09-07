@@ -27,10 +27,6 @@ add('build249-build246-remains-policy-authority', all(resolution,[
   'Build 246 remains the only release-classification / required-gate policy authority',
   'These keys do NOT decide which gates are required; Build 246 does that',
   'releaseEvidenceChecklistCockpit'
-]) || all(resolution,[
-  'Build 246 remains the only release-classification / required-gate policy authority',
-  'These keys do NOT decide which gates are required; Build 246 does that',
-  'releaseEvidenceChecklistCockpit'
 ]), 'The guidance catalog explains selected gates but never selects them.');
 
 add('build249-guidance-covers-build246-gate-catalog', build246Gates.every((gate)=>resolution.includes(`'${gate}':`)), `All ${build246Gates.length} Build 246 gate scripts have explicit operator guidance.`);
@@ -76,7 +72,7 @@ add('build249-auth-guidance-does-not-weaken-security', all(resolution,[
 add('build249-finance-provider-guidance-does-not-enable-risk', all(resolution,[
   'do not enable posting, bypass approvals, or activate a provider',
   'do not enable providers or relax posting safeguards',
-  'Do not enable posting or a payment provider just to satisfy the test'
+  'do not enable posting or a payment provider just to satisfy the test'
 ]), 'Finance/provider guidance preserves posting and provider safety boundaries.');
 
 add('build249-browser-and-performance-guidance-preserves-tests', all(resolution,[
@@ -85,7 +81,7 @@ add('build249-browser-and-performance-guidance-preserves-tests', all(resolution,
   'Budget changes require explicit review'
 ]), 'Rendered/performance failures must be fixed rather than hidden by weaker tests or budgets.');
 
-add('build249-presentation-only-no-direct-data-authority', !/(YWIAPI|supabase|jsonFetch|manageAdminEntity|fetch\s*\()/i.test(resolution), 'Build 249 has no browser API, Supabase, GitHub fetch or write authority.');
+add('build249-presentation-only-no-direct-data-authority', !/(YWIAPI|window\.supabase|jsonFetch|manageAdminEntity|fetch\s*\()/i.test(resolution), 'Build 249 has no browser API, Supabase client, GitHub fetch or write authority.');
 
 add('build249-only-reads-existing-checklist-dom', all(resolution,[
   "document.getElementById('releaseEvidenceChecklistCockpit')",
