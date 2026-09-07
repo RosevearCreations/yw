@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
 const clean = (value) => String(value ?? '').trim();
+const splitCsv = (value) => clean(value).split(',').map((item) => item.trim()).filter(Boolean);
 
 export function resolvePromotionFreshnessEnv(env = process.env, deps = {}) {
   const resolved = { ...env };
@@ -43,6 +44,38 @@ export function resolvePromotionFreshnessEnv(env = process.env, deps = {}) {
   return resolved;
 }
 
+export function resolvePromotionAncestryEnv(env = process.env, deps = {}) {
+  const resolved = { ...env };
+  const eventName = clean(resolved.YWI_GITHUB_EVENT_NAME);
+  const baseRef = clean(resolved.YWI_GITHUB_BASE_REF);
+  const headRef = clean(resolved.YWI_GITHUB_HEAD_REF);
+  if (eventName !== 'pull_request' || baseRef !== 'main' || headRef !== 'dev') return resolved;
+  if (clean(resolved.YWI_GITHUB_PROMOTION_MERGE_BASES) && clean(resolved.YWI_GITHUB_LIVE_MAIN_PARENTS)) return resolved;
+
+  const git = deps.git || ((args) => execFileSync('git', args, { encoding: 'utf8' }));
+  const isShallow = deps.isShallow || (() => fs.existsSync('.git/shallow'));
+  try {
+    const fetchArgs = ['fetch', '--no-tags', '--prune'];
+    if (isShallow()) fetchArgs.push('--unshallow');
+    fetchArgs.push(
+      'origin',
+      '+refs/heads/dev:refs/remotes/origin/dev',
+      '+refs/heads/main:refs/remotes/origin/main',
+    );
+    git(fetchArgs);
+
+    const mergeBases = String(git(['merge-base', '--all', 'refs/remotes/origin/main', 'refs/remotes/origin/dev']) || '')
+      .split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+    const mainLine = String(git(['rev-list', '--parents', '-n', '1', 'refs/remotes/origin/main']) || '')
+      .trim().split(/\s+/).filter(Boolean);
+    if (mergeBases.length) resolved.YWI_GITHUB_PROMOTION_MERGE_BASES ||= mergeBases.join(',');
+    if (mainLine.length > 1) resolved.YWI_GITHUB_LIVE_MAIN_PARENTS ||= mainLine.slice(1).join(',');
+  } catch (error) {
+    resolved.YWI_PROMOTION_ANCESTRY_ERROR = clean(error?.message || error);
+  }
+  return resolved;
+}
+
 export function evaluateProductionPromotionShape(env = process.env) {
   const eventName = clean(env.YWI_GITHUB_EVENT_NAME);
   const ref = clean(env.YWI_GITHUB_REF);
@@ -52,16 +85,21 @@ export function evaluateProductionPromotionShape(env = process.env) {
   const prBaseSha = clean(env.YWI_GITHUB_PR_BASE_SHA);
   const liveDevSha = clean(env.YWI_GITHUB_LIVE_DEV_SHA);
   const liveMainSha = clean(env.YWI_GITHUB_LIVE_MAIN_SHA);
+  const mergeBases = splitCsv(env.YWI_GITHUB_PROMOTION_MERGE_BASES);
+  const liveMainParents = splitCsv(env.YWI_GITHUB_LIVE_MAIN_PARENTS);
   const blockers = [];
   let mode = 'unsupported';
   let freshnessStatus = 'not_applicable';
+  let ancestryStatus = 'not_applicable';
   let promotionFreshnessVerified = false;
+  let promotionAncestryVerified = false;
   let nextSafeAction = 'Use the canonical Development feature or Development-to-Production promotion flow.';
 
   if (eventName === 'pull_request') {
     if (baseRef === 'main') {
       mode = 'production_promotion_candidate';
       freshnessStatus = 'unverified';
+      ancestryStatus = 'unverified';
       if (headRef !== 'dev') {
         blockers.push('production_main_requires_dev_head');
         nextSafeAction = 'Retarget Production promotion so base is main and head is the proven dev branch; do not promote a feature branch directly to main.';
@@ -77,7 +115,36 @@ export function evaluateProductionPromotionShape(env = process.env) {
       } else {
         freshnessStatus = 'current';
         promotionFreshnessVerified = true;
-        nextSafeAction = 'Run the complete canonical source and rendered-browser promotion gate on this exact current dev SHA before merging main.';
+        if (liveDevSha === liveMainSha) {
+          blockers.push('promotion_has_no_dev_changes');
+          ancestryStatus = 'no_changes';
+          nextSafeAction = 'Do not open or merge a Production promotion when current dev and main already point to the same SHA.';
+        } else if (mergeBases.length === 0) {
+          blockers.push('promotion_ancestry_evidence_missing');
+          nextSafeAction = 'Re-run the promotion gate with fetched dev/main history so the common ancestor and current main parents can be verified.';
+        } else if (mergeBases.length > 1) {
+          blockers.push('promotion_ancestry_ambiguous');
+          ancestryStatus = 'ambiguous';
+          nextSafeAction = 'Reconcile the dev/main history to one canonical common ancestor before attempting Production promotion.';
+        } else {
+          const mergeBase = mergeBases[0];
+          if (mergeBase === liveMainSha) {
+            ancestryStatus = 'main_is_dev_ancestor';
+            promotionAncestryVerified = true;
+            nextSafeAction = 'Run the complete canonical source and rendered-browser promotion gate on this exact current dev SHA before merging main.';
+          } else if (!liveMainParents.length) {
+            blockers.push('promotion_ancestry_evidence_missing');
+            nextSafeAction = 'Re-run the promotion gate with current main parent evidence so the previously promoted Development lineage can be verified.';
+          } else if (liveMainParents.includes(mergeBase)) {
+            ancestryStatus = 'previous_promoted_dev_preserved';
+            promotionAncestryVerified = true;
+            nextSafeAction = 'Run the complete canonical source and rendered-browser promotion gate on this exact current dev SHA before merging main.';
+          } else {
+            blockers.push('promotion_ancestry_not_canonical');
+            ancestryStatus = 'noncanonical';
+            nextSafeAction = 'Reconcile any main-only change or rewritten Development history back into dev, preserve the previously promoted Development lineage, then rerun the feature and promotion gates.';
+          }
+        }
       }
     } else if (baseRef === 'dev') {
       mode = 'development_feature_candidate';
@@ -116,9 +183,13 @@ export function evaluateProductionPromotionShape(env = process.env) {
     pr_base_sha: prBaseSha || null,
     live_dev_sha: liveDevSha || null,
     live_main_sha: liveMainSha || null,
+    promotion_merge_bases: mergeBases,
+    live_main_parents: liveMainParents,
     mode,
     freshness_status: freshnessStatus,
+    ancestry_status: ancestryStatus,
     promotion_freshness_verified: promotionFreshnessVerified,
+    promotion_ancestry_verified: promotionAncestryVerified,
     blocker_codes: blockers,
     next_safe_action: nextSafeAction,
     production_promotion_authorized: false,
@@ -127,7 +198,7 @@ export function evaluateProductionPromotionShape(env = process.env) {
 
 export function renderPromotionShapeSummary(result) {
   return [
-    '### Production promotion shape and freshness',
+    '### Production promotion shape, freshness and ancestry',
     '',
     result.ok ? '**VALID SHAPE**' : '**BLOCKED**',
     '',
@@ -137,23 +208,27 @@ export function renderPromotionShapeSummary(result) {
     `- Head: \`${result.head_ref || 'n/a'}\``,
     `- Mode: \`${result.mode}\``,
     `- Promotion freshness: \`${result.freshness_status}\``,
+    `- Promotion ancestry: \`${result.ancestry_status}\``,
     `- PR head SHA: \`${result.pr_head_sha || 'n/a'}\``,
     `- Current dev SHA: \`${result.live_dev_sha || 'n/a'}\``,
     `- PR base SHA: \`${result.pr_base_sha || 'n/a'}\``,
     `- Current main SHA: \`${result.live_main_sha || 'n/a'}\``,
+    `- Merge base(s): ${result.promotion_merge_bases.length ? result.promotion_merge_bases.map((sha) => `\`${sha}\``).join(', ') : 'none'}`,
+    `- Current main parent(s): ${result.live_main_parents.length ? result.live_main_parents.map((sha) => `\`${sha}\``).join(', ') : 'none'}`,
     `- Blocker codes: ${result.blocker_codes.length ? result.blocker_codes.map((code)=>`\`${code}\``).join(', ') : 'none'}`,
     '',
     '#### Next safe action',
     '',
     result.next_safe_action,
     '',
-    '> This guard validates branch/event shape and current promotion-branch freshness only. It never authorizes Production promotion, never merges a pull request, and never bypasses source, browser, repository-enforcement, staging, database, Auth, Finance, provider, or human acceptance gates.',
+    '> This guard validates branch/event shape, current promotion-branch freshness and canonical Development/Production ancestry only. It never authorizes Production promotion, never merges a pull request, and never bypasses source, browser, repository-enforcement, staging, database, Auth, Finance, provider, or human acceptance gates.',
     '',
   ].join('\n');
 }
 
 function runCli() {
-  const hydratedEnv = resolvePromotionFreshnessEnv(process.env);
+  const freshnessEnv = resolvePromotionFreshnessEnv(process.env);
+  const hydratedEnv = resolvePromotionAncestryEnv(freshnessEnv);
   const result = evaluateProductionPromotionShape(hydratedEnv);
   const summary = renderPromotionShapeSummary(result);
   console.log(JSON.stringify(result, null, 2));
