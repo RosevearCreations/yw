@@ -7,6 +7,9 @@ const read=(file)=>fs.readFileSync(path.join(root,file),'utf8');
 const hub=read('js/admin-hub-ui.js');
 const runtime=read('js/module-runtime.js');
 const admin=read('js/admin-ui.js');
+const config=read('js/app-config.js');
+const operations=read('js/admin-operations-workspace.js');
+const worker=read('server-worker.js');
 const results=[];
 const add=(name,ok,detail='')=>results.push({name,ok:!!ok,detail});
 const all=(text,values)=>values.every((value)=>text.includes(value));
@@ -23,9 +26,16 @@ add('standard-status-language', all(hub,['BLOCKED','READY','OPEN TO LOAD','ACTIO
 add('audit-activity', all(hub,['Recent Admin & Audit Activity','ad_audit_log_table','collectAuditRows']), 'Recent administrative audit activity is surfaced on the Admin home.');
 add('legacy-actions-preserved', all(admin,['refreshAdminPanelScope','applyAdminSectionFilter','focusAdminHubEntity']), 'Build 229 decorates rather than replaces the existing Admin data/action authority.');
 add('runtime-order', runtime.includes("'/js/admin-ui.js',\n        '/js/admin-hub-ui.js',\n        '/js/operations-cockpit.js'"), 'Hub decorator loads after Admin UI and before secondary Admin controllers.');
-add('no-finance-provider-enable', !/(provider_mutation\s*[:=]\s*true|posting_execution\s*[:=]\s*true|stripe.*enable|paypal.*enable)/i.test(hub), 'Information architecture cannot enable Finance/provider execution.');
+
+add('build234-lazy-script', all(config,['loadAdminOperationsWorkspaceOnDemand','Business & Operations','/js/admin-operations-workspace.js?v=2026-09-07a','data-ywi-admin-operations-workspace']), 'Build 234 operations presentation is fetched only after the focused workspace is selected.');
+add('build234-existing-authority', all(operations,['window.YWIAdminHub?.open?.(\'operations\'','ad_jobs_refresh_panel','Operations and Accounting Backbone Manager','Dropdown and Catalog Manager','Admin Task Inbox']), 'Build 234 reuses existing Admin panels and the existing bounded operations refresh.');
+add('build234-bounded-summary', all(operations,['#ad_ops_dashboard_cards .admin-stat-card','.slice(0, 6)','#ad_task_table tbody tr','.slice(0, 3)','ad_site_activity_summary']), 'Operations overview is bounded to six metrics, three tasks, and the already-rendered activity summary.');
+add('build234-no-direct-data-authority', !/(YWIAPI|supabase|jsonFetch|manageAdminEntity|fetch\s*\()/i.test(operations), 'Focused operations presentation adds no direct API/database authority.');
+add('build234-no-precache', !worker.match(/APP_SHELL\s*=\s*\[[\s\S]*admin-operations-workspace\.js/), 'Build 234 operations JavaScript is not added to the Core precache list.');
+add('build234-cache-contract', worker.includes("const CACHE_NAME = 'ywi-shell-v2026-09-07b';") && worker.includes("fetch(assetUrl, { cache: 'reload' })"), 'Build 234 preserves the current account-security shell contract; app-config remains network-first for the lazy loader.');
+add('no-finance-provider-enable', !/(provider_mutation\s*[:=]\s*true|posting_execution\s*[:=]\s*true|stripe.*enable|paypal.*enable)/i.test(`${hub}\n${operations}`), 'Information architecture cannot enable Finance/provider execution.');
 
 const failed=results.filter((row)=>!row.ok);
 for(const row of results) console.log(`${row.ok?'PASS':'FAIL'} ${row.name}${row.detail?` - ${row.detail}`:''}`);
-if(failed.length){console.error(`\nBuild 229 Admin hub gate failed: ${failed.length}/${results.length}`);process.exit(1);}
-console.log(`\nBuild 229 Admin hub gate passed: ${results.length}/${results.length}`);
+if(failed.length){console.error(`\nBuild 234 Admin workspace gate failed: ${failed.length}/${results.length}`);process.exit(1);}
+console.log(`\nBuild 234 Admin workspace gate passed: ${results.length}/${results.length}`);
