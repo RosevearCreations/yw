@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
 
 const css = fs.readFileSync('style.css', 'utf8');
+const cockpitRuntime = fs.readFileSync('js/operations-cockpit.js', 'utf8');
+const proofGuardRuntime = fs.readFileSync('js/execution-proof-runtime-guard.js', 'utf8');
 
 async function mountStaff(page, { width = 390, height = 844 } = {}) {
   await page.setViewportSize({ width, height });
@@ -28,6 +30,54 @@ async function mountCustomer(page, { width = 390, height = 844 } = {}) {
     <section class="customer-portal-proofs fixture-card"><h2>Service proof</h2><article><strong>Completion proof approved</strong><p>Customer-safe before/after evidence is ready for review.</p></article></section>
     <section class="customer-portal-closeout fixture-card"><h2>Closeout</h2><p>Please review the completed-work summary and approved gallery.</p><form class="customer-portal-closeout-form"><button class="primary" type="button">Approve completed work</button><button class="secondary" type="button">Request follow-up</button></form></section>
   </main></body></html>`);
+}
+
+async function mountActualExecutionProofCockpit(page) {
+  await page.setViewportSize({ width: 1280, height: 960 });
+  await page.setContent(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>${css}</style></head><body><main><section id="admin"><div id="ad_stats_grid"></div></section></main></body></html>`);
+  await page.evaluate(() => {
+    const workOrderId = '11111111-1111-4111-8111-111111111111';
+    const assetId = '22222222-2222-4222-8222-222222222222';
+    const proofId = '33333333-3333-4333-8333-333333333333';
+    window.__opsCalls = [];
+    const queueState = new Proxy({
+      capabilities:{ actions:{
+        work_order_execution_proof_submit:{ permitted:true, reason:'' },
+        work_order_execution_proof_decision:{ permitted:true, reason:'' }
+      }},
+      portal:[{ work_order_id:workOrderId, work_order_number:'WO-STAGING-253', client_name:'Staging Customer' }],
+      assets:[{ id:assetId, asset_status:'approved', public_url:'https://example.test/approved-proof.jpg', asset_key:'staging-proof', image_role:'service_proof' }],
+      execution_proofs:[{
+        id:proofId, work_order_id:workOrderId, work_order_number:'WO-STAGING-253', client_name:'Staging Customer',
+        proof_type:'arrival', title:'Arrival proof awaiting review', proof_status:'submitted', occurred_at:'2026-09-07T14:00:00Z',
+        customer_visible:true, total_cost:111.00, labour_cost_total:63.75, material_cost_total:25.25,
+        equipment_cost_total:17.00, other_cost_total:5.00, approved_public_asset_count:1, attached_asset_count:1,
+        cost_status:'proof_pending', staff_notes:'Internal staging-only cost context.'
+      }],
+      execution_costs:[{
+        work_order_id:workOrderId, work_order_number:'WO-STAGING-253', client_name:'Staging Customer', cost_status:'review',
+        accepted_estimate_total:500, total_actual_cost:111, margin_amount:389, margin_percent:77.8,
+        approved_proof_count:0, submitted_proof_count:1
+      }],
+      banks:[], rails:[], payments:[], bank_imports:[], bank_items:[], reconciliation:[], equipment:[], equipment_scans:[],
+      routes:[], quotes:[], live_updates:[], closeouts:[], customer_notifications:[], webhook_alerts:[], content_signals:[]
+    }, { get(target, prop) { return prop in target ? target[prop] : []; } });
+    window.YWIAPI = {
+      manageOperations: async (payload) => {
+        window.__opsCalls.push(JSON.parse(JSON.stringify(payload)));
+        if (payload?.action === 'operations_queue_list') return { ok:true, build:'build253-runtime-fixture', queues:queueState };
+        if (payload?.action === 'work_order_execution_proof_submit') return { ok:true, proof:{ id:proofId, ...payload } };
+        if (payload?.action === 'work_order_execution_proof_decision') return { ok:true, proof:{ id:proofId, proof_status:payload.decision === 'approve' ? 'approved' : 'rejected' } };
+        return { ok:true };
+      },
+      escHtml:(value)=>String(value ?? '')
+    };
+  });
+  await page.addScriptTag({ content: proofGuardRuntime });
+  await page.addScriptTag({ content: cockpitRuntime });
+  await page.evaluate(() => document.dispatchEvent(new Event('DOMContentLoaded')));
+  await expect(page.locator('#oc_execution_proof_form')).toBeVisible();
+  await expect(page.locator('[data-oc-work-order-select] option')).toHaveCount(2);
 }
 
 for (const viewport of [{name:'phone-390',width:390,height:844},{name:'phone-430',width:430,height:932}]) {
@@ -67,4 +117,51 @@ test('customer portal lifecycle remains customer-safe on phone', async ({ page }
   }
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);
+});
+
+test('real Operations Cockpit execution-proof runtime blocks unsafe capture and sends representative costing only after valid preflight', async ({ page }) => {
+  await mountActualExecutionProofCockpit(page);
+  const form = page.locator('#oc_execution_proof_form');
+  await form.locator('[name="work_order_id"]').selectOption('11111111-1111-4111-8111-111111111111');
+  await form.locator('[name="proof_type"]').selectOption('arrival');
+  await form.locator('[name="title"]').fill('Arrival walkaround captured');
+  await form.locator('[name="customer_visible"]').check();
+
+  await form.evaluate((node) => node.dispatchEvent(new Event('submit', { bubbles:true, cancelable:true })));
+  await expect(page.locator('#oc_status')).toContainText('Customer-visible execution proof requires a customer-safe summary.');
+  let submits = await page.evaluate(() => window.__opsCalls.filter((row) => row.action === 'work_order_execution_proof_submit'));
+  expect(submits).toHaveLength(0);
+
+  await form.locator('[name="customer_summary"]').fill('Crew arrived and completed the customer-safe walkaround.');
+  await form.locator('[name="labour_minutes"]').fill('-5');
+  await form.evaluate((node) => node.dispatchEvent(new Event('submit', { bubbles:true, cancelable:true })));
+  await expect(page.locator('#oc_status')).toContainText('Execution proof costs must be zero or positive numbers.');
+  submits = await page.evaluate(() => window.__opsCalls.filter((row) => row.action === 'work_order_execution_proof_submit'));
+  expect(submits).toHaveLength(0);
+
+  await form.locator('[name="labour_minutes"]').fill('90');
+  await form.locator('[name="labour_hourly_rate"]').fill('42.50');
+  await form.locator('[name="material_cost_total"]').fill('35.25');
+  await form.locator('[name="equipment_cost_total"]').fill('18');
+  await form.locator('[name="other_cost_total"]').fill('5');
+  await form.locator('[name="asset_ids"]').selectOption('22222222-2222-4222-8222-222222222222');
+  await form.evaluate((node) => node.dispatchEvent(new Event('submit', { bubbles:true, cancelable:true })));
+  await expect.poll(async () => page.evaluate(() => window.__opsCalls.filter((row) => row.action === 'work_order_execution_proof_submit').length)).toBe(1);
+
+  const payload = await page.evaluate(() => window.__opsCalls.find((row) => row.action === 'work_order_execution_proof_submit'));
+  expect(payload).toMatchObject({
+    work_order_id:'11111111-1111-4111-8111-111111111111', proof_type:'arrival', customer_visible:true,
+    labour_minutes:90, labour_hourly_rate:42.5, material_cost_total:35.25, equipment_cost_total:18, other_cost_total:5,
+    customer_summary:'Crew arrived and completed the customer-safe walkaround.', asset_ids:['22222222-2222-4222-8222-222222222222']
+  });
+
+  await expect(page.locator('#oc_execution_proof_queue')).toContainText('Internal cost');
+  await expect(page.locator('#oc_execution_proof_queue')).toContainText('Margin');
+  await expect(page.locator('#oc_execution_proof_queue')).toContainText('Internal staging-only cost context.');
+  await expect(page.getByRole('button', { name:'Approve proof' })).toBeVisible();
+  await page.evaluate(() => { window.prompt = () => 'Supervisor reviewed staging proof'; });
+  await page.getByRole('button', { name:'Approve proof' }).click();
+  await expect.poll(async () => page.evaluate(() => window.__opsCalls.filter((row) => row.action === 'work_order_execution_proof_decision').length)).toBe(1);
+  const decision = await page.evaluate(() => window.__opsCalls.find((row) => row.action === 'work_order_execution_proof_decision'));
+  expect(decision).toMatchObject({ execution_proof_id:'33333333-3333-4333-8333-333333333333', decision:'approve' });
 });
