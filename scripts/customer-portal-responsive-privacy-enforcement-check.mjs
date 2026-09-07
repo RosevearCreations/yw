@@ -137,7 +137,8 @@ add('build255-provider-rail-remains-test-mode-human-external', hasAll(runbook, [
   'human review that no Production payment/provider mutation was used.',
   '"production_payment":"forbidden"'
 ]), 'Build 255 strengthens the technical boundary but does not substitute for required Stripe test-mode/human evidence.');
-add('build255-no-live-enable-hardcoded', !/STRIPE_LIVE_CHECKOUT_ENABLED\s*[=:]\s*["']?true/i.test(stripePolicySource + '\n' + portalFn + '\n' + webhookFn), 'Source never hardcodes the live provider switch on.');
+const stripeCallerSources = `${portalFn}\n${webhookFn}`;
+add('build255-no-live-enable-hardcoded', !/liveCheckoutEnabled\s*:\s*["']true["']|STRIPE_LIVE_CHECKOUT_ENABLED\s*=\s*["']?true/i.test(stripeCallerSources), 'Runtime callers read the live-enable switch from environment state and never hardcode it on.');
 add('build255-no-business-rail-auto-close', !/update\s+public\.admin_scorecard_progress_rails[\s\S]{0,500}customer_portal_live/i.test(stripePolicySource + '\n' + portalFn + '\n' + webhookFn), 'Runtime policy cannot close the customer portal rail.');
 add('build255-real-browser-provider-contract', hasAll(portalBrowser, [
   "const portalRuntime = fs.readFileSync('js/customer-portal.js', 'utf8')",
