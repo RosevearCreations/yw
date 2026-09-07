@@ -6,12 +6,26 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+const GITHUB_COMPARE_URL = "https://api.github.com/repos/RosevearCreations/yw/compare/main...dev";
 
 type Section = {
   rows: any[];
   error: string | null;
   deferred?: boolean;
   summary: { status: string; total: number; blocking: number; warning: number; error: string | null };
+};
+
+type ReleaseDivergence = {
+  available: boolean;
+  comparison_status: string;
+  divergence_status: string;
+  development_sha: string | null;
+  production_sha: string | null;
+  development_tree_sha: string | null;
+  production_tree_sha: string | null;
+  development_commits_pending: number;
+  production_only_commits: number;
+  error: string | null;
 };
 
 function response(payload: unknown, status = 200) {
@@ -78,6 +92,66 @@ function deferredSection(): Section {
   };
 }
 
+async function loadReleaseDivergence(): Promise<ReleaseDivergence> {
+  const fallback: ReleaseDivergence = {
+    available: false,
+    comparison_status: "unavailable",
+    divergence_status: "evidence_unavailable",
+    development_sha: null,
+    production_sha: null,
+    development_tree_sha: null,
+    production_tree_sha: null,
+    development_commits_pending: 0,
+    production_only_commits: 0,
+    error: null,
+  };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 2500);
+  try {
+    const githubResponse = await fetch(GITHUB_COMPARE_URL, {
+      headers: {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "ywi-admin-it-readiness",
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+      signal: controller.signal,
+    });
+    if (!githubResponse.ok) throw new Error(`GitHub compare returned HTTP ${githubResponse.status}.`);
+    const payload = await githubResponse.json();
+    const developmentSha = String(payload?.head_commit?.sha || "").trim() || null;
+    const productionSha = String(payload?.base_commit?.sha || "").trim() || null;
+    const developmentTree = String(payload?.head_commit?.commit?.tree?.sha || "").trim() || null;
+    const productionTree = String(payload?.base_commit?.commit?.tree?.sha || "").trim() || null;
+    const aheadBy = Math.max(0, Number(payload?.ahead_by || 0));
+    const behindBy = Math.max(0, Number(payload?.behind_by || 0));
+    const comparisonStatus = String(payload?.status || "unknown").trim().toLowerCase() || "unknown";
+    let divergenceStatus = "review_required";
+    if (developmentTree && productionTree && developmentTree === productionTree) divergenceStatus = "content_current";
+    else if (aheadBy > 0) divergenceStatus = "development_changes_pending";
+    else if (behindBy > 0) divergenceStatus = "production_only_drift";
+    else if (comparisonStatus === "identical") divergenceStatus = "content_current";
+    return {
+      available: Boolean(developmentSha && productionSha),
+      comparison_status: comparisonStatus,
+      divergence_status: divergenceStatus,
+      development_sha: developmentSha,
+      production_sha: productionSha,
+      development_tree_sha: developmentTree,
+      production_tree_sha: productionTree,
+      development_commits_pending: aheadBy,
+      production_only_commits: behindBy,
+      error: null,
+    };
+  } catch (err) {
+    return {
+      ...fallback,
+      error: String((err as Error)?.message || err || "Live GitHub comparison could not be loaded."),
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return response({ ok: false, error: "POST required." }, 405);
@@ -103,17 +177,20 @@ Deno.serve(async (req: Request) => {
     return response({ ok: false, error: "Active Admin role is required for I.T. Readiness." }, 403);
   }
 
-  const sources = await Promise.all([
-    listRows(supabase, "v_schema_drift_status", { limit: 2 }),
-    listRows(supabase, "v_it_release_authority_status", { limit: 2 }),
-    listRows(supabase, "v_it_release_source_evidence_current", { limit: 2 }),
-    listRows(supabase, "v_it_scorecard_progress_truth_status", { limit: 2 }),
-    listRows(supabase, "v_it_open_rail_acceptance_readiness", { order: "sort_order", limit: 80 }),
-    listRows(supabase, "v_admin_module_access_integrity", { order: "profile_label", limit: 100 }),
-    listRows(supabase, "v_admin_error_health_center", { order: "severity_rank", limit: 80 }),
-    listRows(supabase, "v_admin_function_readiness_checks", { order: "sort_order", limit: 80 }),
-    listRows(supabase, "it_readiness_check_registry", { order: "sort_order", limit: 160 }),
-    listRows(supabase, "v_it_current_admin_todo", { order: "sort_order", limit: 80 }),
+  const [sources, releaseDivergence] = await Promise.all([
+    Promise.all([
+      listRows(supabase, "v_schema_drift_status", { limit: 2 }),
+      listRows(supabase, "v_it_release_authority_status", { limit: 2 }),
+      listRows(supabase, "v_it_release_source_evidence_current", { limit: 2 }),
+      listRows(supabase, "v_it_scorecard_progress_truth_status", { limit: 2 }),
+      listRows(supabase, "v_it_open_rail_acceptance_readiness", { order: "sort_order", limit: 80 }),
+      listRows(supabase, "v_admin_module_access_integrity", { order: "profile_label", limit: 100 }),
+      listRows(supabase, "v_admin_error_health_center", { order: "severity_rank", limit: 80 }),
+      listRows(supabase, "v_admin_function_readiness_checks", { order: "sort_order", limit: 80 }),
+      listRows(supabase, "it_readiness_check_registry", { order: "sort_order", limit: 160 }),
+      listRows(supabase, "v_it_current_admin_todo", { order: "sort_order", limit: 80 }),
+    ]),
+    loadReleaseDivergence(),
   ]);
 
   const [schemaDrift, releaseAuthority, releaseEvidence, scorecardTruthStatus, openRails, adminIntegrity, runtimeHealth, functionReadiness, readinessRegistry, currentTodo] = sources;
@@ -174,6 +251,16 @@ Deno.serve(async (req: Request) => {
       source_sha: releaseRow.source_sha || null,
       workflow_run_id: releaseRow.workflow_run_id || null,
       production_promotion_mode: releaseRow.production_promotion_mode || "manual_human_promotion_required",
+      github_divergence_evidence_available: releaseDivergence.available,
+      github_compare_status: releaseDivergence.comparison_status,
+      release_divergence_status: releaseDivergence.divergence_status,
+      development_sha: releaseDivergence.development_sha,
+      production_sha: releaseDivergence.production_sha,
+      development_tree_sha: releaseDivergence.development_tree_sha,
+      production_tree_sha: releaseDivergence.production_tree_sha,
+      development_commits_pending: releaseDivergence.development_commits_pending,
+      production_only_commits: releaseDivergence.production_only_commits,
+      release_divergence_error: releaseDivergence.error,
       scorecard_truth_status: scorecardRow.scorecard_truth_status || "unknown",
       scorecard_open_count: Number(scorecardRow.open_count || 0),
       scorecard_unclassified_open_count: Number(scorecardRow.unclassified_open_count || 0),
