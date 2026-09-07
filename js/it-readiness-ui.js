@@ -8,6 +8,13 @@
 
 (function () {
   const state = { payload:null, loading:false, smoke:null, smokeLoading:false };
+  const PERFORMANCE_BUDGETS = Object.freeze({
+    coreShellAssets: 30,
+    coreShellJs: 21,
+    moduleScripts: Object.freeze({ safety:10, finance:3, jobs:4, admin:8 }),
+    itRuntimeReads: 10,
+    mobileRefreshMinMs: 30000
+  });
   const byId = (id) => document.getElementById(id);
   const esc = (value) => window.YWIAPI?.escHtml?.(value) || String(value ?? '')
     .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
@@ -29,7 +36,7 @@
   function statusClass(value) {
     const status = String(value || 'unknown').toLowerCase();
     if (/green|passed|pass|current|ready|healthy|success|complete/.test(status)) return 'passed';
-    if (/amber|warning|warn|review|pending|attention|deferred/.test(status)) return 'warning';
+    if (/amber|warning|warn|review|pending|attention|deferred|manual/.test(status)) return 'warning';
     if (/red|fail|error|critical|blocked|behind|missing|unhealthy|not_ready/.test(status)) return 'error';
     return 'unknown';
   }
@@ -37,6 +44,76 @@
   function statusChip(value) {
     const clean = String(value || 'unknown').replaceAll('_',' ');
     return `<span class="it-readiness-status ${statusClass(value)}">${esc(clean)}</span>`;
+  }
+
+  function releaseStage(title,status,detail) {
+    return `<article class="it-release-stage"><div><span>${esc(title)}</span><strong>${esc(detail)}</strong></div>${statusChip(status)}</article>`;
+  }
+
+  function nextReleaseAction(summary={}) {
+    if (Array.isArray(state.payload?.source_errors) && state.payload.source_errors.length) {
+      return 'Resolve the bounded I.T. runtime source error before treating any later release signal as current.';
+    }
+    if (summary.schema_current !== true) {
+      return 'Restore exact database schema parity before release work continues.';
+    }
+    if (String(summary.source_gate_status || '').toLowerCase() !== 'green') {
+      return 'Complete exact-main source/CI evidence before evaluating deployment readiness.';
+    }
+    if (String(summary.repository_enforcement_status || '').toLowerCase() !== 'green') {
+      return 'Verify GitHub repository enforcement on the exact current main SHA before release.';
+    }
+    if (Number(summary.scorecard_unclassified_open_count || 0) > 0) {
+      return 'Classify every open readiness rail before release evidence can be treated as complete.';
+    }
+    if (Number(summary.current_todo_count || 0) > 0) {
+      return 'Resolve the current Admin To-Do queue in priority order without bypassing human or external gates.';
+    }
+    if (Number(summary.open_rail_acceptance_count || 0) > 0) {
+      return 'Complete required human/external acceptance on dedicated non-Production staging; do not substitute Production.';
+    }
+    return 'Review exact release evidence and approvals. Production promotion remains a separate manual human decision.';
+  }
+
+  function renderPerformanceBudgets() {
+    const b=PERFORMANCE_BUDGETS;
+    return `<div id="runtimePerformanceBudgets" class="it-performance-budget-shell">
+      <div class="it-performance-budget-head"><div><span class="it-readiness-kicker">CI-enforced performance contract</span><h4>Application load budgets</h4></div><small>Structural budgets prevent future builds from quietly restoring eager whole-application loading.</small></div>
+      <div class="it-performance-budget-grid">
+        <article class="it-performance-budget"><span>Core shell</span><strong>${b.coreShellAssets} assets / ${b.coreShellJs} JS</strong><small>Business-module scripts stay outside the precache shell.</small></article>
+        <article class="it-performance-budget"><span>Safety module</span><strong>Safety ≤ ${b.moduleScripts.safety}</strong><small>Permission-driven scripts per module manifest.</small></article>
+        <article class="it-performance-budget"><span>Finance module</span><strong>Finance ≤ ${b.moduleScripts.finance}</strong><small>Review/posting reads remain workspace-selected.</small></article>
+        <article class="it-performance-budget"><span>Jobs module</span><strong>Jobs ≤ ${b.moduleScripts.jobs}</strong><small>Only active permitted module code is requested.</small></article>
+        <article class="it-performance-budget"><span>Admin module</span><strong>Admin ≤ ${b.moduleScripts.admin}</strong><small>Deep Admin/I.T. authorities remain progressive/on-demand.</small></article>
+        <article class="it-performance-budget"><span>I.T. runtime</span><strong>I.T. bounded reads ≤ ${b.itRuntimeReads}</strong><small>Deep assertion graphs remain explicit CI/operator verification. Today background refresh stays ≥ ${Math.round(b.mobileRefreshMinMs/1000)}s.</small></article>
+      </div>
+    </div>`;
+  }
+
+  function renderReleaseDeploymentCockpit() {
+    const s=state.payload?.summary||{};
+    const sourceSha=s.source_sha?String(s.source_sha).slice(0,12):'not recorded';
+    const sourceDetail=s.workflow_run_id?`${sourceSha} · run ${s.workflow_run_id}`:sourceSha;
+    const databaseDetail=`${Number(s.latest_applied_schema_version||0)} / ${Number(s.expected_schema_version||0)} schema`;
+    const repositoryDetail=s.branch_protection_reported===true
+      ? (s.branch_policy_verified===true?'protected · policy verified':'protected · detailed policy pending')
+      : 'protection not verified';
+    const acceptanceCount=Number(s.open_rail_acceptance_count||0);
+    const acceptancePending=acceptanceCount>0||Number(s.scorecard_human_pending_count||0)>0||Number(s.scorecard_external_pending_count||0)>0;
+    const acceptanceStatus=Number(s.scorecard_unclassified_open_count||0)>0?'blocked':acceptancePending?'pending':'ready';
+    const promotionMode=String(s.production_promotion_mode||'manual_human_promotion_required').replaceAll('_',' ');
+    return `<section id="releaseDeploymentCockpit" class="it-release-cockpit">
+      <div class="it-release-cockpit-head"><div><span class="it-readiness-kicker">Release & deployment cockpit</span><h3>Current release path</h3><p>One read-only path from source evidence to manual Production promotion. This cockpit never deploys or promotes; it only organizes the bounded authority already returned by I.T. Readiness.</p></div>${statusChip(s.release_authority_status||s.overall_status||'unknown')}</div>
+      <div class="it-release-stage-grid">
+        ${releaseStage('Source / CI',s.source_gate_status||'unknown',sourceDetail)}
+        ${releaseStage('Database',s.schema_current===true?'current':'behind',databaseDetail)}
+        ${releaseStage('Repository',s.repository_enforcement_status||'unknown',repositoryDetail)}
+        ${releaseStage('Acceptance',acceptanceStatus,`${acceptanceCount} open acceptance rail${acceptanceCount===1?'':'s'}`)}
+        ${releaseStage('Production promotion','manual',promotionMode)}
+      </div>
+      <div class="it-release-next"><span>Next safe release action</span><strong>${esc(nextReleaseAction(s))}</strong><small>Human, external, staging, accounting, provider, Auth and content evidence remains separate from source-green status.</small></div>
+      ${renderPerformanceBudgets()}
+    </section>`;
   }
 
   function rowTitle(row, fallback='Readiness check') {
@@ -175,6 +252,7 @@
         </section>
         <aside class="it-readiness-visual" aria-label="I.T. readiness visual placeholder"><div class="it-visual-icon" aria-hidden="true">⌁</div><strong>I.T. readiness map placeholder</strong><small>Future approved visual: dependency map showing Source → Database → Functions → Client → Release gates.</small></aside>
       </div>
+      ${renderReleaseDeploymentCockpit()}
       <div class="it-readiness-grid">
         ${panel('release_authority','Release authority','Application release authority')}
         ${panel('release_source_evidence','Source evidence','Exact main SHA / CI evidence')}
@@ -217,7 +295,7 @@
       if(!payload)throw new Error('I.T. runtime readiness endpoint returned no data.');
       state.payload=payload;
     }catch(err){
-      state.payload={interactive_mode:'bounded_runtime',source_errors:[err?.message||'Unable to load I.T. readiness.'],summary:{overall_status:'red',expected_schema_version:0,latest_applied_schema_version:0,release_authority_status:'unknown',source_gate_status:'unknown',repository_enforcement_status:'unknown',scorecard_truth_status:'unknown',scorecard_open_count:0,scorecard_unclassified_open_count:1,scorecard_human_pending_count:0,scorecard_external_pending_count:0,active_admin_count:0,admin_access_integrity_blockers:1,readiness_blockers:1,assertion_blockers:0},sections:{},security_assertions:{deferred:true,errors:[]}};
+      state.payload={interactive_mode:'bounded_runtime',source_errors:[err?.message||'Unable to load I.T. readiness.'],summary:{overall_status:'red',schema_current:false,expected_schema_version:0,latest_applied_schema_version:0,release_authority_status:'unknown',source_gate_status:'unknown',repository_enforcement_status:'unknown',branch_protection_reported:null,branch_policy_verified:false,source_sha:null,workflow_run_id:null,production_promotion_mode:'manual_human_promotion_required',scorecard_truth_status:'unknown',scorecard_open_count:0,scorecard_unclassified_open_count:1,scorecard_human_pending_count:0,scorecard_external_pending_count:0,open_rail_acceptance_count:0,active_admin_count:0,admin_access_integrity_blockers:1,readiness_blockers:1,assertion_blockers:0,current_todo_count:0},sections:{},security_assertions:{deferred:true,errors:[]}};
     }finally{state.loading=false;render();}
   }
 
@@ -245,5 +323,5 @@
   document.addEventListener('DOMContentLoaded',init);
   document.addEventListener('ywi:auth-changed',()=>{inject();state.payload=null;state.smoke=null;render();});
   document.addEventListener('ywi:route-shown',(e)=>{if(e?.detail?.allowed==='it'&&isAdmin())load(false);});
-  window.YWIITReadiness={load,render};
+  window.YWIITReadiness={load,render,getSnapshot:()=>state.payload,PERFORMANCE_BUDGETS};
 })();

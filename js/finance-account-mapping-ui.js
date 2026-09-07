@@ -109,7 +109,7 @@
     if(!canView()){ host.innerHTML=''; return; }
     if(state.loading){ host.innerHTML='<section class="finance-list-card"><div class="finance-empty"><strong>Loading accountant mapping readiness…</strong></div></section>'; return; }
     if(state.error){ host.innerHTML=`<section class="finance-list-card"><div class="notice warning"><strong>Account mapping review unavailable.</strong><br>${esc(state.error)}</div><button id="financeMappingRefresh" type="button">Retry</button></section>`; byId('financeMappingRefresh')?.addEventListener('click',()=>load(true)); return; }
-    if(!state.payload){ host.innerHTML='<section class="finance-list-card"><button id="financeMappingLoad" type="button">Load accountant mapping readiness</button></section>'; byId('financeMappingLoad')?.addEventListener('click',()=>load(true)); return; }
+    if(!state.payload){ host.innerHTML='<section class="finance-list-card"><div class="finance-list-heading"><div><h3>Accountant mapping review</h3><small>Deep mapping, observability, and decision-support reads are loaded only when you request them.</small></div><span>On demand</span></div><button id="financeMappingLoad" type="button">Load accountant mapping readiness</button></section>'; byId('financeMappingLoad')?.addEventListener('click',()=>load(true)); return; }
 
     const mappings=Array.isArray(state.payload.mappings)?state.payload.mappings:[];
     const observations=Array.isArray(state.payload.observability)?state.payload.observability:[];
@@ -210,9 +210,11 @@
     finally{ state.loading=false; render(); }
   }
 
-  document.addEventListener('DOMContentLoaded',()=>{ inject(); render(); if(active()) load(false); });
-  document.addEventListener('ywi:route-shown',(event)=>{ if(event?.detail?.allowed==='finance'||active()) load(false); });
-  document.addEventListener('ywi:auth-changed',()=>{ state.payload=null; state.loadedAt=0; state.error=''; render(); if(active()) load(true); });
-  document.addEventListener('ywi:module-permissions-changed',()=>{ state.payload=null; state.loadedAt=0; render(); if(active()) load(true); });
+  // Build 228: deep mapping/observability/decision-support reads are intentionally manual.
+  // Route, auth, and permission changes render the control but never fan out the heavy read automatically.
+  document.addEventListener('DOMContentLoaded',()=>{ inject(); render(); });
+  document.addEventListener('ywi:route-shown',(event)=>{ if(event?.detail?.allowed==='finance'||active()) { inject(); render(); } });
+  document.addEventListener('ywi:auth-changed',()=>{ state.payload=null; state.loadedAt=0; state.error=''; inject(); render(); });
+  document.addEventListener('ywi:module-permissions-changed',()=>{ state.payload=null; state.loadedAt=0; state.error=''; inject(); render(); });
   window.YWIFinanceMappingReview={load,render};
 })();

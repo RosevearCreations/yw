@@ -35,6 +35,7 @@ add('admin-reset-ui', hasAll(adminUi,['Set temporary password','Generate another
 const adminHistoricalScripts = [
   '/js/admin-actions.js',
   '/js/admin-ui.js',
+  '/js/admin-hub-ui.js',
   '/js/operations-cockpit.js',
   '/js/module-access-ui.js',
   '/js/it-readiness-ui.js',
@@ -45,12 +46,12 @@ add(
   runtime.includes("const GLOBAL_PASSWORD_SECURITY_SCRIPT = '/js/password-security.js'")
     && adminHistoricalScripts.every((script)=>runtime.includes(`'${script}'`))
     && !runtime.includes("'/js/admin-account-security-ui.js'"),
-  'Existing Admin module manifest retains all historical scripts; password security is global and the account-security UI is loaded outside the manifest.'
+  'Existing Admin module manifest retains all historical scripts plus the Build 229 organization layer; password security is global and the account-security UI is loaded outside the manifest.'
 );
 add('auth-listener-synchronous', auth.includes('sb.auth.onAuthStateChange((event, session) => {') && !auth.includes('sb.auth.onAuthStateChange(async (event, session) => {'), 'Supabase onAuthStateChange callback returns synchronously instead of awaiting client work.');
 add('auth-refresh-work-deferred', hasAll(auth,['function scheduleAuthEventResolution(event, session)','setTimeout(async () => {','await applySession(session || null)','scheduleAuthEventResolution(event, session || null);']), 'Profile/permission refresh work is deferred until after the Supabase auth callback releases its client lock.');
 add('token-refresh-no-reload-loop', hasAll(auth,["event === 'TOKEN_REFRESHED'","event === 'SIGNED_IN'",'sameResolvedUser','updateSessionSnapshot(session || null);']) && !/if \(\(event === 'TOKEN_REFRESHED'[\s\S]{0,500}dispatch\('ywi:auth-changed'/.test(auth), 'Routine same-user token/sign-in refresh updates the session snapshot without re-dispatching all profile/reference loaders.');
-add('runtime-load-cache-invalidated', serviceWorker.includes("const CACHE_NAME = 'ywi-shell-v2026-09-06b';") && serviceWorker.includes("fetch(assetUrl, { cache: 'reload' })"), 'Service worker cache generation forces the bounded readiness runtime into the active shell.');
+add('runtime-load-cache-invalidated', serviceWorker.includes("const CACHE_NAME = 'ywi-shell-v2026-09-07b';") && serviceWorker.includes("fetch(assetUrl, { cache: 'reload' })") && serviceWorker.includes("'/js/workspace-organization.js'"), 'Service worker cache generation forces the bounded readiness runtime and current People/Admin workspace code into the active shell.');
 add('finance-provider-boundary', !/(stripe|paypal|finance_job|posting_execution|provider_mutation\s*:\s*true)/i.test(edge + passwordUi + adminUi), 'Account-security/auth-refresh runtime does not add Finance/provider mutation paths.');
 
 const failed = checks.filter((x)=>!x.ok);

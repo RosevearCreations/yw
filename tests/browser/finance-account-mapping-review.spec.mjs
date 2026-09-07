@@ -36,12 +36,25 @@ async function mount(page,accessLevel,viewport=viewports[1]){
   },{fixture,accessLevel,rank:ACCESS_RANK});
   await page.addScriptTag({content:source});
   await page.evaluate(()=>document.dispatchEvent(new Event('DOMContentLoaded')));
+
   if(accessLevel==='hidden'){
     await expect(page.locator('#financeMappingWorkspace')).toHaveCount(1);
     await expect(page.locator('#financeMappingWorkspace')).toBeEmpty();
-  }else{
-    await expect(page.locator('#financeMappingWorkspace')).toContainText('Accountant mapping review');
+    expect(await page.evaluate(()=>window.__mappingCalls.length)).toBe(0);
+    return fixture;
   }
+
+  const host=page.locator('#financeMappingWorkspace');
+  await expect(host).toContainText('Accountant mapping review');
+  await expect(host).toContainText('Deep mapping, observability, and decision-support reads are loaded only when you request them.');
+  await expect(host.locator('#financeMappingLoad')).toHaveCount(1);
+  expect(await page.evaluate(()=>window.__mappingCalls.length)).toBe(0);
+
+  // Build 228 proof: merely opening Finance does not run the deep mapping query. The operator must
+  // explicitly request it, after which all historical decision/observability controls still render.
+  await host.locator('#financeMappingLoad').click();
+  await expect.poll(async()=>page.evaluate(()=>window.__mappingCalls.filter((call)=>call.body?.action==='list').length)).toBe(1);
+  await expect(host).toContainText('Human accountant/bookkeeper mapping review is still required');
   return fixture;
 }
 
@@ -50,11 +63,9 @@ for(const viewport of viewports){
     test(`mapping review ${accessLevel} surface on ${viewport.name}`,async({page})=>{
       const fixture=await mount(page,accessLevel,viewport);
       const host=page.locator('#financeMappingWorkspace');
-      if(accessLevel==='hidden'){
-        expect(await page.evaluate(()=>window.__mappingCalls.length)).toBe(0);
-        return;
-      }
-      await expect(host).toContainText('Human accountant/bookkeeper mapping review is still required');
+      if(accessLevel==='hidden') return;
+
+      expect(await page.evaluate(()=>window.__mappingCalls.filter((call)=>call.body?.action==='list').length)).toBe(1);
       await expect(host).toContainText(/posting execution is OFF/i);
       await expect(host).toContainText(/provider\/payment mutation is OFF/i);
       await expect(host).toContainText('Accounts receivable');
@@ -97,6 +108,31 @@ for(const viewport of viewports){
     });
   }
 }
+
+test('route/auth/permission events do not auto-run the mapping query',async({page})=>{
+  const fixture=mappingFixture('manage');
+  await page.setContent('<!doctype html><html><body><section id="finance" class="active"><div id="financeWorkspace"></div></section></body></html>');
+  await page.evaluate(({fixture,rank})=>{
+    window.__mappingCalls=[];
+    window.YWI_AUTH={getState:()=>({isAuthenticated:true,role:'admin',profile:{id:'synthetic-mapping-profile'}})};
+    window.YWISecurity={canViewModule:(moduleKey,_role,minimum='view')=>moduleKey==='finance'&&Number(rank.manage)>=Number(rank[minimum]||0)};
+    window.YWIAPI={
+      escHtml:(value)=>String(value??''),
+      jsonFetch:async(slug,options={})=>{window.__mappingCalls.push({slug,body:options.body||null});return fixture;}
+    };
+    window.alert=()=>{}; window.prompt=()=>''; window.confirm=()=>true;
+  },{fixture,rank:ACCESS_RANK});
+  await page.addScriptTag({content:source});
+  await page.evaluate(()=>{
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    document.dispatchEvent(new CustomEvent('ywi:route-shown',{detail:{allowed:'finance'}}));
+    document.dispatchEvent(new CustomEvent('ywi:auth-changed',{detail:{state:window.YWI_AUTH.getState()}}));
+    document.dispatchEvent(new CustomEvent('ywi:module-permissions-changed'));
+  });
+  await page.waitForTimeout(25);
+  expect(await page.evaluate(()=>window.__mappingCalls.length)).toBe(0);
+  await expect(page.locator('#financeMappingLoad')).toHaveCount(1);
+});
 
 test('manage approval sends only bounded human mapping fields',async({page})=>{
   await mount(page,'manage');

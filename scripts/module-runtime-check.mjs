@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-/** Schema 161-163/180/185/186 source gate: Shared Core + permission-driven standalone modules. */
+/** Schema 161-163/180/185/186 + Build 228-229 source gate: Shared Core + permission-driven standalone modules. */
 import fs from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const runtime = read('js/module-runtime.js');
+const adminHub = read('js/admin-hub-ui.js');
 const migration161 = read('sql/161_shared_core_module_contract.sql');
 const migration162 = read('sql/162_permission_driven_module_runtime.sql');
 const security = read('js/security.js');
@@ -21,7 +22,7 @@ const originalModuleScripts = [
   '/js/hse-ops-ui.js','/js/logbook-ui.js','/js/reports-ui.js','/js/forms-toolbox.js','/js/forms-ppe.js','/js/forms-firstaid.js','/js/forms-incident.js','/js/forms-inspection.js','/js/forms-drill.js',
   '/js/finance-ui.js','/js/jobs-ui.js','/js/admin-actions.js','/js/admin-ui.js','/js/operations-cockpit.js','/js/module-access-ui.js','/js/it-readiness-ui.js'
 ];
-const currentBusinessScripts=[...originalModuleScripts,'/js/finance-account-mapping-ui.js','/js/jobs-finance-boundary.js','/js/equipment-scanner.js','/js/staging-acceptance-ui.js'];
+const currentBusinessScripts=[...originalModuleScripts,'/js/admin-hub-ui.js','/js/finance-account-mapping-ui.js','/js/jobs-finance-boundary.js','/js/equipment-scanner.js','/js/staging-acceptance-ui.js'];
 
 add('schema161-transaction-balanced', (migration161.match(/^begin;$/gmi) || []).length === 1 && (migration161.match(/^commit;$/gmi) || []).length === 1, 'Schema 161 has one BEGIN and one COMMIT.');
 add('schema161-core-contract-registry', hasAll(migration161, ['app_core_entity_contracts','shared_by_modules','canonical_relation','primary_key_type']), 'Canonical shared identities are explicit database contracts.');
@@ -30,9 +31,11 @@ add('schema161-no-parallel-business-identity-tables', !/(create table if not exi
 add('schema161-core-relations-match-existing-canonical-data', coreRelations.every((relation) => migration161.includes(`'${relation}'`) && runtime.includes(`relation: '${relation}'`)), `Core relations: ${coreRelations.join(', ')}`);
 add('schema161-four-module-contracts', moduleKeys.every((key) => migration161.includes(`('${key}'`) && runtime.includes(`${key}: Object.freeze({`)), 'Safety, Finance, Jobs and Admin have matching DB/browser manifests.');
 add('schema161-original-module-scripts-preserved', originalModuleScripts.every((script) => migration161.includes(script) && runtime.includes(script)), 'Original DB/browser module entry scripts remain auditable and present.');
-add('schema180-finance-addon-lazy-manifest',runtime.includes("scripts: Object.freeze(['/js/finance-ui.js','/js/finance-account-mapping-ui.js'])"),'Finance adds the Schema 180 mapping UI inside the permission-driven Finance manifest, not the public shell.');
+add('schema180-finance-addon-lazy-manifest',runtime.includes("scripts: Object.freeze(['/js/finance-ui.js','/js/finance-account-mapping-ui.js'])"),'Finance keeps the Schema 180 mapping UI inside the permission-driven Finance manifest, not the public shell.');
 add('schema185-equipment-scanner-lazy-manifest',runtime.includes("scripts: Object.freeze(['/js/jobs-ui.js','/js/jobs-finance-boundary.js','/js/equipment-scanner.js'])"),'Build 185 camera/manual scanning loads only with the permission-driven Jobs module.');
 add('schema186-staging-acceptance-admin-addon',runtime.includes("'/js/it-readiness-ui.js',\n        '/js/staging-acceptance-ui.js'"),'Build 186 staging acceptance rendering loads only inside the permission-driven Admin module after I.T. Readiness.');
+add('build229-admin-hub-lazy-manifest', runtime.includes("'/js/admin-ui.js',\n        '/js/admin-hub-ui.js',\n        '/js/operations-cockpit.js'"), 'The Admin information-architecture layer loads only with the permission-driven Admin module and after the legacy Admin controller it decorates.');
+add('build229-admin-hub-progressive-disclosure', hasAll(adminHub,['People & Access','Needs Attention','Find an Admin setting','Recent Admin & Audit Activity','admin-hub-detail','deferredScopes','scope !== \'command_center\'']), 'Build 229 provides card navigation, search, audit orientation, collapsible panels, and command-center-only initial Admin data loading.');
 add('schema161-private-contract-control-plane', hasAll(migration161, [
   'alter table public.app_core_entity_contracts enable row level security;',
   'alter table public.app_module_contracts enable row level security;',
@@ -49,10 +52,16 @@ add('schema162-no-new-shared-identity-tables', !/create table/i.test(migration16
 add('schema162-it-readiness-wiring', hasAll(migration162, ['permission_driven_module_runtime','schema162_permission_runtime']), 'Permission-driven runtime is a tracked I.T. readiness/release item.');
 add('schema162-schema-drift-marker', hasAll(migration162, ['162::int as expected_schema_version', "'162_permission_driven_module_runtime'", "'2026-09-01d'"]), 'Schema/version marker advances to 162.');
 
-add('runtime-v2-build', hasAll(runtime, ["const BUILD = '2026-09-02l'", 'const CONTRACT_VERSION = 2']), 'Runtime retains the historical contract-v2 cache stamp while Build 186 adds a new Admin script URL.');
+add('runtime-v2-build', hasAll(runtime, ["const BUILD = '2026-09-06b'", 'const CONTRACT_VERSION = 2']), 'Build 229 bumps the browser runtime cache stamp while retaining the Schema 162 contract-v2 authority.');
 add('runtime-requires-authentication', hasAll(runtime, ['!stateNow.isAuthenticated','stateNow.pendingAuthResolution','stateNow.needsAccountSetup']), 'Runtime refuses module loading before auth/account readiness.');
 add('runtime-uses-permission-check', runtime.includes("sec.canViewModule(moduleKey, currentRole(), 'view') === true"), 'Browser module loading is permission driven.');
 add('runtime-loads-only-manifest-scripts', hasAll(runtime, ['for (const script of manifest.scripts)','await loadScript(script, moduleKey)']), 'Module loader follows the bounded manifest.');
+add('runtime-loads-only-active-module', hasAll(runtime, ['function activeModule()', 'const targetModule = activeModule();', 'if (targetModule) await loadModule(targetModule);']) && !runtime.includes('for (const moduleKey of Object.keys(MODULE_MANIFEST))'), 'Build 228 no longer walks every permitted business module during startup.');
+add('runtime-route-lazy-sync', hasAll(runtime, ["document.addEventListener('ywi:route-shown'", 'state.routeSection =', 'queueSync();']), 'Route changes load the next permitted module only when it becomes active.');
+add('runtime-active-boot-guard', hasAll(runtime, ['installActiveBootGuard','__ywiActiveBootGuard', 'Finance scripts own their route lifecycle.', "moduleKey === 'admin'", "moduleKey === 'jobs'", "moduleKey === 'safety'"]), 'Shared app factories are constrained to the active screen; Finance deliberately owns its route lifecycle and cannot boot Admin/Jobs/Profile/Reference-data work.');
+add('runtime-profile-listener-route-guard', hasAll(runtime, ['installCoreRouteLoadGuards','guardedProfileFactory','routeAwareProfileAuthListener', "currentSection === 'crew'", "currentSection === 'settings'", 'if (initializing) return undefined;']), 'Previously initialized Profile listeners remain route-aware across later auth/visibility recovery.');
+add('runtime-reference-listener-route-guard', hasAll(runtime, ['REFERENCE_DATA_SECTIONS','guardedReferenceFactory','routeAwareReferenceListener','if (!referenceDataNeeded()) return undefined;','if (inflight) return inflight;']), 'Reference-data auth/boot listeners are route-bounded and concurrent requests are deduplicated.');
+add('runtime-today-no-core-fanout', runtime.includes("const REFERENCE_DATA_SECTIONS = Object.freeze(['toolbox', 'ppe', 'firstaid', 'incident', 'inspect', 'drill', 'jobs', 'equipment']);") && hasAll(runtime,["if (referenceDataNeeded(section)) referenceInit?.();","if (section === 'crew') profileInit?.();"]), 'Today loads Jobs itself without preloading Profile/Crew or the full reference-data directory.');
 add('runtime-purges-stale-loaded-code', hasAll(runtime, ['staleRuntimeReason','permission_removed:','profile_changed','signed_out','window.location.reload()']), 'Sign-out, identity change, and permission downgrade purge loaded module code.');
 add('runtime-exposes-core-contract', hasAll(runtime, ['CORE_ENTITY_CONTRACTS','getCoreContract','YWIModuleRuntime']), 'Shared Core contract is available to client modules.');
 add('runtime-preserves-server-authorization', security.includes('Hidden navigation is not authorization') || security.includes('Module permissions independently control'), 'Dynamic loading is additive; server authorization remains separate.');
@@ -69,7 +78,7 @@ add('service-worker-dynamic-module-cache-is-request-driven', hasAll(serverWorker
 const failures = results.filter((item) => !item.ok);
 for (const item of results) console.log(`${item.ok ? 'PASS' : 'FAIL'} ${item.name}${item.details ? ` - ${item.details}` : ''}`);
 if (failures.length) {
-  console.error(`\nSchema 161-186 module runtime gate failed: ${failures.length}/${results.length} checks.`);
+  console.error(`\nSchema 161-186 / Build 228-229 module runtime gate failed: ${failures.length}/${results.length} checks.`);
   process.exit(1);
 }
-console.log(`\nSchema 161-186 module runtime gate passed: ${results.length}/${results.length} checks.`);
+console.log(`\nSchema 161-186 / Build 228-229 module runtime gate passed: ${results.length}/${results.length} checks.`);

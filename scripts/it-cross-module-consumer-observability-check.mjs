@@ -8,6 +8,8 @@ const migration=read('sql/170_it_cross_module_consumer_observability.sql');
 const endpoint=read('supabase/functions/admin-it-control/index.ts');
 const ui=read('js/it-readiness-ui.js');
 const moduleUi=read('js/module-access-ui.js');
+const runtime=read('js/module-runtime.js');
+const serviceWorker=read('server-worker.js');
 const workflow=read('.github/workflows/staging-browser-integration.yml');
 const failures=[];
 const check=(name,ok)=>{console.log(`${ok?'PASS':'FAIL'} ${name}`);if(!ok)failures.push(name);};
@@ -25,7 +27,12 @@ check('schema170-no-core-identity-duplication',!/create\s+table\s+(?:if\s+not\s+
 check('schema170-marker',migration.includes('170::int as expected_schema_version')&&migration.includes("'170_it_cross_module_consumer_observability'")&&migration.includes("'2026-09-02b'"));
 check('schema170-endpoint-health-source',endpoint.includes('v_it_cross_module_consumer_health')&&endpoint.includes('ywi_it_cross_module_consumer_observability_assertions'));
 check('schema170-ui-health-panel',ui.includes("panel('cross_module_consumer_health'")&&ui.includes('consumer_observability'));
-check('schema170-it-assets-still-loaded',moduleUi.includes('/js/it-readiness-ui.js?v=')&&moduleUi.includes('/it-readiness.css?v='));
+check('schema170-it-assets-still-loaded',
+  !moduleUi.includes('ensureItAssets')
+    && !moduleUi.includes('/js/it-readiness-ui.js?v=')
+    && runtime.includes("'/js/it-readiness-ui.js'")
+    && serviceWorker.includes("'/it-readiness.css'"),
+);
 check('schema170-workflow-gate',workflow.includes('npm run test:consumer-observability'));
 
 if(failures.length){

@@ -8,6 +8,20 @@ This is the durable operating handbook for the Yard Weasels Inc. application. It
 
 The protected staff application has four top-level modules: **Safety / OHSA**, **Finance**, **Jobs**, and **Admin**. I.T. Readiness is inside Admin. Shared Core owns authentication, profile/session state, common data contracts, navigation, offline behavior and permission-driven module loading.
 
+## Profile, crew and reference-data lifecycle
+
+Profile and crew reads are route-scoped rather than global startup work. **My Profile** may render the authenticated profile already held by Shared Core immediately, then refresh the self profile and time-clock context only while the Profile route is active. **Crew** reads occur only while the Crew route is active and the current access profile allows Crew visibility. Identical in-flight profile, crew, or time-clock reads are coalesced instead of duplicated.
+
+Shared site, employee, supervisor, admin, position, and trade reference data uses a short bounded freshness window. Identical concurrent reference refreshes share one request; signing out or changing identity invalidates the cached set; a successful self-profile save invalidates it so future selectors can refresh. A failed refresh must not blank an already usable screen. Supabase auth-state callbacks must return control promptly; profile/API refresh work is deferred so application work does not hold the Auth callback lifecycle.
+
+## Admin workspace architecture
+
+Admin is a focused control center rather than one continuously loaded long-form page. Its home surface starts with **Needs Attention**, then permission-aware cards for **People & Access**, **Business & Operations**, **Safety & Evidence**, **Finance & Accounting**, **Diagnostics & Integrations**, **Audit & Security**, and **I.T. & System**. The Admin search control may jump directly to a known workspace or panel, and focused workspaces retain a breadcrumb/back path to Admin Home. Large legacy panels are progressively disclosed and may remember their open/closed state locally for operator convenience.
+
+Admin presentation does not replace authorization. Cards are filtered by the current Admin access level, while every underlying read/write remains server/module enforced. Initial Admin entry loads only the bounded command-center scope; deeper directories, selectors, accounting, evidence, health, audit and configuration data are requested only when the operator opens the relevant workspace. I.T. Readiness remains a dedicated Admin route and must not initialize the heavy Admin Control Center merely because I.T. is opened.
+
+The Admin home status language is concise and action-oriented: READY for current bounded evidence, ACTION when operator review is required, BLOCKED for failed/degraded runtime authority, and OPEN TO LOAD when evidence has not yet been requested. Needs Attention and recent audit activity are orientation aids only; they do not auto-resolve a task, change permissions, enable Finance/provider execution, mutate external Auth controls, close a release rail, or authorize Production promotion.
+
 ## Permission and safety boundary
 
 A hidden screen is not a security boundary. Reads and writes remain server-enforced. Admin break-glass is explicit. Finance posting and provider mutation are fail-closed. Human accounting decisions, provider acceptance, content approval and staging acceptance stay human/external when their contracts require it.
