@@ -128,3 +128,38 @@ window.YWI_RUNTIME_CONFIG = Object.assign({}, window.YWI_RUNTIME_CONFIG || {}, {
   };
   document.head.appendChild(script);
 })();
+
+// Build 234 keeps the focused Business & Operations presentation layer out of the Core/Admin
+// first-load path. The existing Admin hub remains the data/authorization authority and the
+// operations helper is fetched only after that workspace is actually selected.
+(function loadAdminOperationsWorkspaceOnDemand() {
+  const selector = 'script[data-ywi-admin-operations-workspace="1"]';
+  let observer = null;
+
+  function isOperationsOpen() {
+    return String(document.querySelector('#ad_hub_breadcrumb strong')?.textContent || '').trim() === 'Business & Operations';
+  }
+
+  function loadIfNeeded() {
+    if (!isOperationsOpen() || document.querySelector(selector)) return;
+    const script = document.createElement('script');
+    script.src = '/js/admin-operations-workspace.js?v=2026-09-07a';
+    script.async = false;
+    script.dataset.ywiAdminOperationsWorkspace = '1';
+    script.onerror = () => {
+      try { window.dispatchEvent(new CustomEvent('ywi:app-error', { detail:{ scope:'admin-operations-workspace', message:'Business & Operations workspace controls could not be loaded.', details:['Existing Admin operations authority remains available through the underlying panels.'] } })); } catch {}
+    };
+    document.head.appendChild(script);
+  }
+
+  function startObserver() {
+    loadIfNeeded();
+    const root = document.getElementById('admin') || document.body;
+    if (!root || observer) return;
+    observer = new MutationObserver(loadIfNeeded);
+    observer.observe(root, { subtree:true, childList:true, characterData:true });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startObserver, { once:true });
+  else startObserver();
+})();
