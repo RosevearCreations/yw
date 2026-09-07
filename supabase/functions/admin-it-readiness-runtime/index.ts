@@ -177,21 +177,20 @@ Deno.serve(async (req: Request) => {
     return response({ ok: false, error: "Active Admin role is required for I.T. Readiness." }, 403);
   }
 
-  const [sources, releaseDivergence] = await Promise.all([
-    Promise.all([
-      listRows(supabase, "v_schema_drift_status", { limit: 2 }),
-      listRows(supabase, "v_it_release_authority_status", { limit: 2 }),
-      listRows(supabase, "v_it_release_source_evidence_current", { limit: 2 }),
-      listRows(supabase, "v_it_scorecard_progress_truth_status", { limit: 2 }),
-      listRows(supabase, "v_it_open_rail_acceptance_readiness", { order: "sort_order", limit: 80 }),
-      listRows(supabase, "v_admin_module_access_integrity", { order: "profile_label", limit: 100 }),
-      listRows(supabase, "v_admin_error_health_center", { order: "severity_rank", limit: 80 }),
-      listRows(supabase, "v_admin_function_readiness_checks", { order: "sort_order", limit: 80 }),
-      listRows(supabase, "it_readiness_check_registry", { order: "sort_order", limit: 160 }),
-      listRows(supabase, "v_it_current_admin_todo", { order: "sort_order", limit: 80 }),
-    ]),
-    loadReleaseDivergence(),
+  const releaseDivergencePromise = loadReleaseDivergence();
+  const sources = await Promise.all([
+    listRows(supabase, "v_schema_drift_status", { limit: 2 }),
+    listRows(supabase, "v_it_release_authority_status", { limit: 2 }),
+    listRows(supabase, "v_it_release_source_evidence_current", { limit: 2 }),
+    listRows(supabase, "v_it_scorecard_progress_truth_status", { limit: 2 }),
+    listRows(supabase, "v_it_open_rail_acceptance_readiness", { order: "sort_order", limit: 80 }),
+    listRows(supabase, "v_admin_module_access_integrity", { order: "profile_label", limit: 100 }),
+    listRows(supabase, "v_admin_error_health_center", { order: "severity_rank", limit: 80 }),
+    listRows(supabase, "v_admin_function_readiness_checks", { order: "sort_order", limit: 80 }),
+    listRows(supabase, "it_readiness_check_registry", { order: "sort_order", limit: 160 }),
+    listRows(supabase, "v_it_current_admin_todo", { order: "sort_order", limit: 80 }),
   ]);
+  const releaseDivergence = await releaseDivergencePromise;
 
   const [schemaDrift, releaseAuthority, releaseEvidence, scorecardTruthStatus, openRails, adminIntegrity, runtimeHealth, functionReadiness, readinessRegistry, currentTodo] = sources;
   const required = [schemaDrift, releaseAuthority, scorecardTruthStatus, openRails, adminIntegrity, runtimeHealth, functionReadiness, currentTodo];
