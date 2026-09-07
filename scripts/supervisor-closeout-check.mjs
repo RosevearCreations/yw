@@ -13,6 +13,9 @@ const ops = read('supabase/functions/operations-manage/index.ts');
 const portal = read('supabase/functions/customer-portal/index.ts');
 const cockpit = read('js/operations-cockpit.js');
 const customerPortal = read('js/customer-portal.js');
+const closeoutGuard = read('js/closeout-runtime-guard.js');
+const passwordSecurity = read('js/password-security.js');
+const lifecycleBrowser = read('tests/browser/job-lifecycle.spec.mjs');
 const css = read('style.css');
 
 add('schema158-migration-file-present', migration.startsWith('begin;') && migration.trim().endsWith('commit;'), 'Migration has transaction markers.');
@@ -94,6 +97,34 @@ add('closeout-responsive-css', hasAll(css, [
   '.customer-portal-closeout-form',
   '@media(max-width:620px)'
 ]), 'Closeout surfaces have responsive CSS.');
+
+add('build254-closeout-runtime-guard', hasAll(closeoutGuard, [
+  "const FORM_ID = 'oc_closeout_form'",
+  "const INVOICE_ACTION = 'closeout-invoice'",
+  'Choose different approved images for BEFORE and AFTER closeout gallery positions.',
+  'Customer signoff is required before invoice readiness.',
+  'validateGallery',
+  'readSignoffStatus',
+  'event.stopImmediatePropagation()',
+  'ywi:operations-cockpit-updated'
+]), 'Browser guard prevents duplicate gallery roles and blocks premature invoice readiness while server/RPC rules remain authoritative.');
+add('build254-closeout-runtime-loader', hasAll(passwordSecurity, [
+  "const CLOSEOUT_RUNTIME_GUARD_SCRIPT = '/js/closeout-runtime-guard.js'",
+  'loadCloseoutRuntimeGuard',
+  '2026-09-07-build254',
+  'Server-side closeout and signoff validation remains authoritative.'
+]), 'Authenticated staff bootstrap loads the Build 254 closeout guard without changing the module manifest or service-worker core cache.');
+add('build254-real-runtime-browser-contract', hasAll(lifecycleBrowser, [
+  "const closeoutGuardRuntime = fs.readFileSync('js/closeout-runtime-guard.js', 'utf8')",
+  "const customerPortalRuntime = fs.readFileSync('js/customer-portal.js', 'utf8')",
+  'mountActualCloseoutCockpit',
+  'mountActualCustomerCloseoutPortal',
+  "action === 'work_order_closeout_submit'",
+  "action === 'work_order_closeout_decision'",
+  "action === 'sign_closeout'",
+  'Waiting for customer signoff',
+  'Mark invoice-ready'
+]), 'Rendered acceptance executes the real Cockpit and customer portal runtimes through closeout submission, supervisor approval, customer signoff, and invoice readiness.');
 
 const passed = results.filter((item) => item.ok).length;
 console.log(`\nSupervisor closeout contract: ${passed}/${results.length} passed\n`);
