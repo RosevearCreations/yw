@@ -33,7 +33,7 @@ async function mount(page){
       <div class="it-readiness-hero"></div>
       <div class="it-readiness-grid">
         <section class="it-readiness-panel"><h3>Application release authority</h3><span class="it-readiness-status passed">ready</span></section>
-        <section class="it-readiness-panel"><h3>Schema drift</h3><span class="it-readiness-status passed">current</span></section>
+        <section class="it-readiness-panel"><h3>Database schema drift</h3><span class="it-readiness-status passed">current</span></section>
         <section class="it-readiness-panel"><h3>Finance pipeline</h3><span class="it-readiness-status warning">pending</span></section>
         <section class="it-readiness-panel"><h3>Admin break-glass access</h3><span class="it-readiness-status error">blocked</span></section>
         <section class="it-readiness-panel"><h3>Public SEO release checks</h3><span class="it-readiness-status passed">ready</span></section>
