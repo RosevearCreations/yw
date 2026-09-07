@@ -292,18 +292,35 @@ window.YWI_RUNTIME_CONFIG = Object.assign({}, window.YWI_RUNTIME_CONFIG || {}, {
   else startObserver();
 })();
 
-// Build 248 keeps the focused I.T. & System overview behind the existing I.T. route.
-// It reads only the established bounded I.T. Readiness snapshot, including Build 246 release-policy
-// and exact-SHA canonical workflow gate evidence, and reuses the existing readiness refresh control.
+// Build 249 keeps Build 248's focused I.T. workspace as the evidence renderer, then chains a
+// presentation-only Release Resolution Cockpit that explains the gates Build 246 selected.
 (function loadITSystemWorkspaceOnDemand() {
   const selector = 'script[data-ywi-it-system-workspace="1"]';
+  const resolutionSelector = 'script[data-ywi-it-release-resolution-cockpit="1"]';
+
+  function loadITReleaseResolutionCockpit() {
+    if (document.querySelector(resolutionSelector)) return;
+    const resolution = document.createElement('script');
+    resolution.src = '/js/it-release-resolution-cockpit.js?v=2026-09-07a';
+    resolution.async = false;
+    resolution.dataset.ywiItReleaseResolutionCockpit = '1';
+    resolution.onerror = () => {
+      try { window.dispatchEvent(new CustomEvent('ywi:app-error', { detail:{ scope:'it-release-resolution-cockpit', message:'Release resolution guidance could not be loaded.', details:['Build 248 exact-SHA evidence and all canonical release/repository controls remain authoritative.'] } })); } catch {}
+    };
+    document.head.appendChild(resolution);
+  }
 
   function loadIfNeeded(event) {
-    if (event?.detail?.allowed !== 'it' || document.querySelector(selector)) return;
+    if (event?.detail?.allowed !== 'it') return;
+    if (document.querySelector(selector)) {
+      loadITReleaseResolutionCockpit();
+      return;
+    }
     const script = document.createElement('script');
     script.src = '/js/it-system-workspace.js?v=2026-09-07c';
     script.async = false;
     script.dataset.ywiItSystemWorkspace = '1';
+    script.onload = loadITReleaseResolutionCockpit;
     script.onerror = () => {
       try { window.dispatchEvent(new CustomEvent('ywi:app-error', { detail:{ scope:'it-system-workspace', message:'I.T. & System focused workspace could not be loaded.', details:['Existing bounded I.T. Readiness and release-authority controls remain available on the I.T. screen.'] } })); } catch {}
     };
