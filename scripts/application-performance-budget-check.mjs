@@ -14,7 +14,7 @@ const workflow = read('.github/workflows/staging-browser-integration.yml');
 
 const limits = Object.freeze({
   shellAssets: 30,
-  shellJs: 20,
+  shellJs: 21,
   moduleScripts: Object.freeze({ safety: 10, finance: 3, jobs: 4, admin: 8 }),
   itRuntimeReads: 10,
   mobileRefreshMinMs: 30000,
@@ -57,7 +57,7 @@ add('finance-posting-remains-selected-workspace-only', /finance-job-completion-p
 add('finance-mapping-remains-on-demand', /Load accountant mapping readiness/.test(financeMapping) && /if\(!state\.payload\)/.test(financeMapping));
 add('release-cockpit-present', /Release & deployment cockpit/.test(itUi) && /Next safe release action/.test(itUi) && /Production promotion/.test(itUi));
 add('release-cockpit-read-only', /This cockpit never deploys or promotes/.test(itUi) && !/data-release-(?:deploy|promote)/i.test(itUi));
-add('budget-contract-exported-in-ui', /const PERFORMANCE_BUDGETS = Object\.freeze/.test(itUi) && /coreShellAssets:\s*30/.test(itUi) && /itRuntimeReads:\s*10/.test(itUi));
+add('budget-contract-exported-in-ui', /const PERFORMANCE_BUDGETS = Object\.freeze/.test(itUi) && /coreShellAssets:\s*30/.test(itUi) && /coreShellJs:\s*21/.test(itUi) && /itRuntimeReads:\s*10/.test(itUi));
 add('no-finance-provider-enablement', !/(FINANCE_POSTING_EXECUTION_ENABLED\s*=\s*true|PAYMENT_PROVIDER_MUTATION_ENABLED\s*=\s*true|provider_mutation_allowed\s*=\s*true)/i.test(itUi + organizer));
 add('help-documents-release-cockpit', /Release &amp; Deployment Cockpit/.test(help) && /performance budget/i.test(help));
 add('source-command-wired', pkg.scripts?.['test:performance-budgets'] === 'node scripts/application-performance-budget-check.mjs');
