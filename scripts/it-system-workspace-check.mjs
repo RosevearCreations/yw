@@ -18,9 +18,9 @@ const all=(text,values)=>values.every((value)=>text.includes(value));
 add('build240-lazy-route-loader', all(config,[
   'loadITSystemWorkspaceOnDemand',
   "event?.detail?.allowed !== 'it'",
-  '/js/it-system-workspace.js?v=2026-09-07b',
+  '/js/it-system-workspace.js?v=2026-09-07a',
   'data-ywi-it-system-workspace'
-]), 'Build 240 is fetched only after the established router opens the I.T. route, with a fresh asset version.');
+]), 'Build 240 preserves the established on-demand I.T. route loader; the helper remains outside the Core precache.');
 
 add('build240-existing-it-authority', all(workspace,[
   'window.YWIITReadiness?.getSnapshot?.()',
