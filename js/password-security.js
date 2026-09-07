@@ -9,6 +9,7 @@
   const ADMIN_SECURITY_SCRIPT = '/js/admin-account-security-ui.js';
   const NEXT_SAFE_ACTION_RUNTIME_GATE_SCRIPT = '/js/next-safe-action-runtime-gate.js';
   const EXECUTION_PROOF_RUNTIME_GUARD_SCRIPT = '/js/execution-proof-runtime-guard.js';
+  const CLOSEOUT_RUNTIME_GUARD_SCRIPT = '/js/closeout-runtime-guard.js';
   let patched = false;
 
   function esc(value) {
@@ -90,6 +91,19 @@
     document.head.appendChild(script);
   }
 
+  function loadCloseoutRuntimeGuard() {
+    const state = window.YWI_AUTH?.getState?.() || {};
+    if (!String(state.role || '').trim() || state.needsAccountSetup || !document.getElementById('operationsCockpit')) return;
+    if (window.YWICloseoutRuntimeGuard) return;
+    if ([...document.scripts].some((s) => new URL(s.src || '', location.origin).pathname === CLOSEOUT_RUNTIME_GUARD_SCRIPT)) return;
+    const script = document.createElement('script');
+    script.src = `${CLOSEOUT_RUNTIME_GUARD_SCRIPT}?v=2026-09-07-build254`;
+    script.async = false;
+    script.dataset.ywiCloseoutRuntimeGuard = '1';
+    script.onerror = () => window.dispatchEvent(new CustomEvent('ywi:app-error',{detail:{scope:'closeout-runtime-guard',message:'Closeout browser preflight could not be loaded.',details:['Server-side closeout and signoff validation remains authoritative. Refresh before submitting a closeout or invoice-readiness action.']}}));
+    document.head.appendChild(script);
+  }
+
   function renderResetBanner() {
     const auth = window.YWI_AUTH;
     const state = auth?.getState?.() || {};
@@ -145,6 +159,7 @@
     loadAdminSecurityUi();
     loadNextSafeActionRuntimeGate();
     loadExecutionProofRuntimeGuard();
+    loadCloseoutRuntimeGuard();
   }
 
   const observer = new MutationObserver((mutations) => {
@@ -153,6 +168,7 @@
         if (node.nodeType !== 1) return;
         if (node.matches?.('input[type="password"],input[data-ywi-password-field="1"]')) bindPasswordInput(node);
         bindPasswordVisibility(node);
+        if (node.matches?.('#operationsCockpit') || node.querySelector?.('#operationsCockpit')) loadCloseoutRuntimeGuard();
       });
     }
   });
