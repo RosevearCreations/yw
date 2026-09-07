@@ -47,9 +47,14 @@
     document.head.appendChild(style);
   }
 
+  function rowText(row) {
+    if (row?.cells?.length) return [...row.cells].map((cell) => String(cell.textContent || '').trim()).join(' | ');
+    return String(row?.textContent || '').trim();
+  }
+
   function rowsFor(selector, emptyPattern) {
     return [...document.querySelectorAll(selector)]
-      .filter((row) => row.cells?.length && !(emptyPattern || /no .*loaded|no .*items/i).test(row.textContent || ''));
+      .filter((row) => row.cells?.length && !(emptyPattern || /no .*loaded|no .*items/i).test(rowText(row)));
   }
 
   function countRows(selector, emptyPattern) {
@@ -65,7 +70,7 @@
     let hard = 0;
     let review = 0;
     for (const row of sourceRows) {
-      const text = String(row.textContent || '');
+      const text = rowText(row);
       if (/\b(fail|failed|blocked|error|critical|missing)\b/i.test(text)) hard += 1;
       else if (/\b(warning|review|action|overdue|pending)\b/i.test(text)) review += 1;
     }
