@@ -291,3 +291,23 @@ window.YWI_RUNTIME_CONFIG = Object.assign({}, window.YWI_RUNTIME_CONFIG || {}, {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startObserver, { once:true });
   else startObserver();
 })();
+
+// Build 239 keeps the focused I.T. & System overview behind the existing I.T. route.
+// It reads only the established bounded I.T. Readiness snapshot and reuses its refresh control.
+(function loadITSystemWorkspaceOnDemand() {
+  const selector = 'script[data-ywi-it-system-workspace="1"]';
+
+  function loadIfNeeded(event) {
+    if (event?.detail?.allowed !== 'it' || document.querySelector(selector)) return;
+    const script = document.createElement('script');
+    script.src = '/js/it-system-workspace.js?v=2026-09-07a';
+    script.async = false;
+    script.dataset.ywiItSystemWorkspace = '1';
+    script.onerror = () => {
+      try { window.dispatchEvent(new CustomEvent('ywi:app-error', { detail:{ scope:'it-system-workspace', message:'I.T. & System focused workspace could not be loaded.', details:['Existing bounded I.T. Readiness and release-authority controls remain available on the I.T. screen.'] } })); } catch {}
+    };
+    document.head.appendChild(script);
+  }
+
+  document.addEventListener('ywi:route-shown', loadIfNeeded);
+})();
