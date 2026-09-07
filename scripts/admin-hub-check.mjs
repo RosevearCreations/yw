@@ -11,6 +11,7 @@ const config=read('js/app-config.js');
 const operations=read('js/admin-operations-workspace.js');
 const safety=read('js/admin-safety-workspace.js');
 const finance=read('js/admin-finance-workspace.js');
+const diagnostics=read('js/admin-diagnostics-workspace.js');
 const worker=read('server-worker.js');
 const results=[];
 const add=(name,ok,detail='')=>results.push({name,ok:!!ok,detail});
@@ -49,9 +50,17 @@ add('build236-bounded-summary', all(finance,['#ad_close_wizard_detail_table tbod
 add('build236-no-direct-data-authority', !/(YWIAPI|supabase|jsonFetch|manageAdminEntity|fetch\s*\()/i.test(finance), 'Focused Finance presentation adds no direct API/database authority.');
 add('build236-no-precache', !worker.match(/APP_SHELL\s*=\s*\[[\s\S]*admin-finance-workspace\.js/), 'Build 236 Finance JavaScript is not added to the Core precache list.');
 add('build236-observer-bounded', all(finance,['ad_hub_breadcrumb','ad_accounting_age_badge','ad_close_center_summary','ad_close_wizard_detail_table','ad_orders_table','ad_accounting_table','ad_task_table']) && !finance.includes("observer.observe(document.getElementById(WORKSPACE_ID)"), 'Build 236 observes established accounting evidence sources only and cannot self-observe its rendered workspace.');
-add('no-finance-provider-enable', !/(provider_mutation\s*[:=]\s*true|posting_execution\s*[:=]\s*true|stripe.*enable|paypal.*enable|payment_execution\s*[:=]\s*true)/i.test(`${hub}\n${operations}\n${safety}\n${finance}`), 'Information architecture cannot enable Finance posting/payment/provider execution.');
+
+add('build237-lazy-script', all(config,['loadAdminDiagnosticsWorkspaceOnDemand','Diagnostics & Integrations','/js/admin-diagnostics-workspace.js?v=2026-09-07a','data-ywi-admin-diagnostics-workspace']), 'Build 237 diagnostics presentation is fetched only after the focused Diagnostics & Integrations workspace is selected.');
+add('build237-existing-authority', all(diagnostics,['window.YWIAdminHub?.open?.(\'messaging\'','ad_health_refresh_panel','App Health and Schema Center','Deploy Smoke Check','Conflict Review','Approval Queue']), 'Build 237 reuses established Admin diagnostics/messaging panels and the bounded health refresh.');
+add('build237-bounded-summary', all(diagnostics,['#ad_health_table tbody tr','#ad_smoke_table tbody tr','#ad_conflicts_table tbody tr','#ad_notifications_table tbody tr','ad_health_summary','ad_smoke_summary']), 'Diagnostics overview is bounded to already-rendered health, smoke, conflict, and notification state.');
+add('build237-no-direct-data-authority', !/(YWIAPI|supabase|jsonFetch|manageAdminEntity|fetch\s*\()/i.test(diagnostics), 'Focused Diagnostics presentation adds no direct API/database authority.');
+add('build237-no-side-effect-shortcuts', !/(ad_run_smoke|ad_reload_conflicts|ad_retry_sync|ad_email_|dispatchNotification|sendEmail)/i.test(diagnostics), 'Build 237 cannot directly run smoke checks, mutate conflict queues, retry sync, or send notification/email actions.');
+add('build237-no-precache', !worker.match(/APP_SHELL\s*=\s*\[[\s\S]*admin-diagnostics-workspace\.js/), 'Build 237 Diagnostics JavaScript is not added to the Core precache list.');
+add('build237-observer-bounded', all(diagnostics,['ad_hub_breadcrumb','ad_health_age_badge','ad_health_summary','ad_health_table','ad_smoke_summary','ad_smoke_table','ad_conflict_summary','ad_conflicts_table','ad_notifications_table']) && !diagnostics.includes("observer.observe(document.getElementById(WORKSPACE_ID)"), 'Build 237 observes established diagnostics evidence sources only and cannot self-observe its rendered workspace.');
+add('no-finance-provider-enable', !/(provider_mutation\s*[:=]\s*true|posting_execution\s*[:=]\s*true|stripe.*enable|paypal.*enable|payment_execution\s*[:=]\s*true)/i.test(`${hub}\n${operations}\n${safety}\n${finance}\n${diagnostics}`), 'Information architecture cannot enable Finance posting/payment/provider execution.');
 
 const failed=results.filter((row)=>!row.ok);
 for(const row of results) console.log(`${row.ok?'PASS':'FAIL'} ${row.name}${row.detail?` - ${row.detail}`:''}`);
-if(failed.length){console.error(`\nBuild 236 Admin workspace gate failed: ${failed.length}/${results.length}`);process.exit(1);}
-console.log(`\nBuild 236 Admin workspace gate passed: ${results.length}/${results.length}`);
+if(failed.length){console.error(`\nBuild 237 Admin workspace gate failed: ${failed.length}/${results.length}`);process.exit(1);}
+console.log(`\nBuild 237 Admin workspace gate passed: ${results.length}/${results.length}`);
