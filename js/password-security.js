@@ -7,6 +7,7 @@
 (function () {
   const TOGGLE_MARKER = 'ywiPasswordToggleBound';
   const ADMIN_SECURITY_SCRIPT = '/js/admin-account-security-ui.js';
+  const NEXT_SAFE_ACTION_RUNTIME_GATE_SCRIPT = '/js/next-safe-action-runtime-gate.js';
   let patched = false;
 
   function esc(value) {
@@ -64,6 +65,18 @@
     document.head.appendChild(script);
   }
 
+  function loadNextSafeActionRuntimeGate() {
+    const state = window.YWI_AUTH?.getState?.() || {};
+    if (String(state.role || '').toLowerCase() !== 'admin' || state.needsAccountSetup) return;
+    if ([...document.scripts].some((s) => new URL(s.src || '', location.origin).pathname === NEXT_SAFE_ACTION_RUNTIME_GATE_SCRIPT)) return;
+    const script = document.createElement('script');
+    script.src = `${NEXT_SAFE_ACTION_RUNTIME_GATE_SCRIPT}?v=2026-09-07-build252`;
+    script.async = false;
+    script.dataset.ywiNextSafeActionRuntimeGate = '1';
+    script.onerror = () => window.dispatchEvent(new CustomEvent('ywi:app-error',{detail:{scope:'next-safe-action-runtime-gate',message:'Next safe action runtime guard could not be loaded.',details:['Staging mutation remains locked until the guard is readable.']}}));
+    document.head.appendChild(script);
+  }
+
   function renderResetBanner() {
     const auth = window.YWI_AUTH;
     const state = auth?.getState?.() || {};
@@ -117,6 +130,7 @@
     bindPasswordVisibility(document);
     renderResetBanner();
     loadAdminSecurityUi();
+    loadNextSafeActionRuntimeGate();
   }
 
   const observer = new MutationObserver((mutations) => {
