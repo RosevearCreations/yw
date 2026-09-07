@@ -8,6 +8,7 @@
   const TOGGLE_MARKER = 'ywiPasswordToggleBound';
   const ADMIN_SECURITY_SCRIPT = '/js/admin-account-security-ui.js';
   const NEXT_SAFE_ACTION_RUNTIME_GATE_SCRIPT = '/js/next-safe-action-runtime-gate.js';
+  const EXECUTION_PROOF_RUNTIME_GUARD_SCRIPT = '/js/execution-proof-runtime-guard.js';
   let patched = false;
 
   function esc(value) {
@@ -77,6 +78,18 @@
     document.head.appendChild(script);
   }
 
+  function loadExecutionProofRuntimeGuard() {
+    const state = window.YWI_AUTH?.getState?.() || {};
+    if (String(state.role || '').toLowerCase() !== 'admin' || state.needsAccountSetup) return;
+    if ([...document.scripts].some((s) => new URL(s.src || '', location.origin).pathname === EXECUTION_PROOF_RUNTIME_GUARD_SCRIPT)) return;
+    const script = document.createElement('script');
+    script.src = `${EXECUTION_PROOF_RUNTIME_GUARD_SCRIPT}?v=2026-09-07-build253`;
+    script.async = false;
+    script.dataset.ywiExecutionProofRuntimeGuard = '1';
+    script.onerror = () => window.dispatchEvent(new CustomEvent('ywi:app-error',{detail:{scope:'execution-proof-runtime-guard',message:'Execution-proof browser preflight could not be loaded.',details:['Server-side execution-proof validation remains authoritative. Refresh before capturing customer-visible proof.']}}));
+    document.head.appendChild(script);
+  }
+
   function renderResetBanner() {
     const auth = window.YWI_AUTH;
     const state = auth?.getState?.() || {};
@@ -131,6 +144,7 @@
     renderResetBanner();
     loadAdminSecurityUi();
     loadNextSafeActionRuntimeGate();
+    loadExecutionProofRuntimeGuard();
   }
 
   const observer = new MutationObserver((mutations) => {
