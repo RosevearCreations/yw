@@ -138,8 +138,11 @@
         const heading = host.querySelector('.module-workspace-heading');
         heading?.insertAdjacentElement('afterend', nav);
       }
-      nav.innerHTML = FINANCE_WORKSPACES.map((item) => `<button type="button" class="finance-workspace-choice" data-finance-workspace="${esc(item.key)}" aria-pressed="${item.key === state.financeWorkspace ? 'true' : 'false'}"><strong>${esc(item.title)}</strong><small>${esc(item.note)}</small></button>`).join('');
-      nav.querySelectorAll('[data-finance-workspace]').forEach((button) => button.addEventListener('click', () => selectFinanceWorkspace(button.dataset.financeWorkspace)));
+      if (nav.dataset.workspaceState !== state.financeWorkspace) {
+        nav.dataset.workspaceState = state.financeWorkspace;
+        nav.innerHTML = FINANCE_WORKSPACES.map((item) => `<button type="button" class="finance-workspace-choice" data-finance-workspace="${esc(item.key)}" aria-pressed="${item.key === state.financeWorkspace ? 'true' : 'false'}"><strong>${esc(item.title)}</strong><small>${esc(item.note)}</small></button>`).join('');
+        nav.querySelectorAll('[data-finance-workspace]').forEach((button) => button.addEventListener('click', () => selectFinanceWorkspace(button.dataset.financeWorkspace)));
+      }
 
       let note = host.querySelector('.finance-workspace-note');
       if (!note) {
@@ -147,7 +150,11 @@
         note.className = 'finance-workspace-note';
         nav.insertAdjacentElement('afterend', note);
       }
-      note.innerHTML = `<strong>${esc((FINANCE_WORKSPACES.find((item) => item.key === state.financeWorkspace) || FINANCE_WORKSPACES[0]).title)}:</strong> ${esc(financeDirectionText())}`;
+      const selected = FINANCE_WORKSPACES.find((item) => item.key === state.financeWorkspace) || FINANCE_WORKSPACES[0];
+      if (note.dataset.workspaceState !== state.financeWorkspace) {
+        note.dataset.workspaceState = state.financeWorkspace;
+        note.innerHTML = `<strong>${esc(selected.title)}:</strong> ${esc(financeDirectionText())}`;
+      }
 
       host.querySelectorAll('.finance-list-card').forEach((panel) => {
         const panelKey = financePanelKey(panel);
@@ -183,7 +190,10 @@
 
   function groupTodayCards() {
     const grid = document.getElementById('mobileTodayGrid');
-    if (!grid || grid.dataset.organized === '1') return;
+    if (!grid) return;
+    if (grid.dataset.organized === '1' && grid.querySelector('.today-group-heading')) return;
+    grid.querySelectorAll('.today-group-heading').forEach((label) => label.remove());
+    grid.dataset.organized = '';
     const cards = Array.from(grid.querySelectorAll('[data-today-card]'));
     if (!cards.length) return;
     const groups = [
