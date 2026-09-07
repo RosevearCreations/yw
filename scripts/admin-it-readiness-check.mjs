@@ -13,6 +13,8 @@ const runtimeMigration=read('sql/207_runtime_readiness_load_convergence.sql');
 const endpoint=read('supabase/functions/admin-it-control/index.ts');
 const runtimeEndpoint=read('supabase/functions/admin-it-readiness-runtime/index.ts');
 const moduleUi=read('js/module-access-ui.js');
+const runtime=read('js/module-runtime.js');
+const serviceWorker=read('server-worker.js');
 const itUi=read('js/it-readiness-ui.js');
 const security=read('js/security.js');
 const nav=read('js/module-nav.js');
@@ -72,7 +74,13 @@ check('module-ui-no-legacy-directory-dependency',!moduleUi.includes("loadAdminDi
 check('module-ui-atomic-save',moduleUi.includes("action:'save_module_permissions'")&&moduleUi.includes('changes=MODULES.map'));
 check('module-ui-admin-break-glass-disabled',moduleUi.includes('Admin break-glass')&&moduleUi.includes("normalizedRole(p.role)==='admin'"));
 check('module-ui-four-modules',moduleUi.includes("const MODULES = ['safety','finance','jobs','admin']"));
-check('module-ui-it-assets',moduleUi.includes('/js/it-readiness-ui.js?v=2026-09-01h')&&moduleUi.includes('/it-readiness.css?v=2026-09-01h'));
+check('module-ui-it-assets',
+  !moduleUi.includes('ensureItAssets')
+    && !moduleUi.includes("script.src='/js/it-readiness-ui.js")
+    && runtime.includes("'/js/it-readiness-ui.js'")
+    && serviceWorker.includes("'/it-readiness.css'"),
+  'Module Access must not inject a duplicate/stale I.T. runtime; the Admin manifest owns I.T. JavaScript and the shell owns its stylesheet.'
+);
 
 check('it-ui-present',exists('js/it-readiness-ui.js'));
 check('it-ui-route-injected',itUi.includes("section.id='it'")&&itUi.includes("e?.detail?.allowed==='it'"));

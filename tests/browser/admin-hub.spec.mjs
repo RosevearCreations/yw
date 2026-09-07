@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const hubSource=fs.readFileSync(path.join(process.cwd(),'js/admin-hub-ui.js'),'utf8');
+const moduleAccessSource=fs.readFileSync(path.join(process.cwd(),'js/module-access-ui.js'),'utf8');
 
 async function mount(page,{manage=true}={}){
   await page.setContent('<!doctype html><html><head></head><body><main><section id="admin" class="card"></section><section id="it" class="card"></section></main></body></html>');
@@ -65,6 +66,47 @@ async function mount(page,{manage=true}={}){
   });
 }
 
+async function mountPeopleAccess(page){
+  await page.route('http://people.test/**',async(route)=>{
+    await route.fulfill({
+      status:200,
+      contentType:'text/html',
+      body:'<!doctype html><html><head></head><body><main><section id="admin" class="card"><div class="section-heading"><h2>Admin</h2></div></section></main></body></html>'
+    });
+  });
+  await page.goto('http://people.test/');
+  await page.evaluate(()=>{
+    localStorage.setItem('ywi_admin_hub_section_v1',JSON.stringify('home'));
+    window.__moduleCalls=[];
+    window.__hubOpen=null;
+    window.YWI_AUTH={getState:()=>({isAuthenticated:true,role:'admin',profile:{id:'admin-1'}})};
+    window.YWIAdminHub={open:(section,options)=>{window.__hubOpen={section,options};}};
+    window.YWIAPI={
+      escHtml:(value)=>String(value??'').replace(/[&<>"']/g,(m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m])),
+      jsonFetch:async(path,options)=>{
+        window.__moduleCalls.push({path,body:options?.body});
+        return {
+          ok:true,
+          module_permission_profiles:[
+            {id:'admin-1',full_name:'Alex Admin',email:'alex@example.invalid',role:'admin',is_active:true,employment_status:'active'},
+            {id:'sup-1',full_name:'Bea Supervisor',email:'bea@example.invalid',role:'supervisor',is_active:true,employment_status:'active'},
+            {id:'emp-1',full_name:'Chris Employee',email:'chris@example.invalid',role:'employee',is_active:true,employment_status:'active'}
+          ],
+          module_role_defaults:[
+            {role:'admin',module_key:'safety',access_level:'manage'},{role:'admin',module_key:'finance',access_level:'manage'},{role:'admin',module_key:'jobs',access_level:'manage'},{role:'admin',module_key:'admin',access_level:'manage'},
+            {role:'supervisor',module_key:'safety',access_level:'approve'},{role:'supervisor',module_key:'finance',access_level:'view'},{role:'supervisor',module_key:'jobs',access_level:'approve'},{role:'supervisor',module_key:'admin',access_level:'view'},
+            {role:'employee',module_key:'safety',access_level:'create'},{role:'employee',module_key:'finance',access_level:'hidden'},{role:'employee',module_key:'jobs',access_level:'view'},{role:'employee',module_key:'admin',access_level:'hidden'}
+          ],
+          module_permission_overrides:[{profile_id:'emp-1',module_key:'safety',access_level:'view'}],
+          admin_module_access_integrity:[{profile_id:'admin-1',all_modules_manage:true}],
+          source_errors:[]
+        };
+      }
+    };
+  });
+  await page.addScriptTag({content:moduleAccessSource});
+}
+
 test('Admin opens as grouped card home and defers deep scopes',async({page})=>{
   await mount(page,{manage:true});
   await expect(page.locator('#ad_hub_needs')).toContainText('Needs Attention');
@@ -117,4 +159,33 @@ test('I.T. card routes to the separate Admin I.T. Readiness screen',async({page}
   await mount(page,{manage:true});
   await page.locator('[data-admin-hub-group="it"]').click();
   await expect.poll(async()=>page.evaluate(()=>window.__route)).toBe('it');
+});
+
+test('People module access stays idle on Admin Home, then becomes a searchable focused workspace',async({page})=>{
+  await mountPeopleAccess(page);
+  await page.evaluate(()=>document.dispatchEvent(new CustomEvent('ywi:route-shown',{detail:{allowed:'admin'}})));
+  expect(await page.evaluate(()=>window.__moduleCalls.length)).toBe(0);
+  await expect(page.locator('#moduleAccessManager')).toContainText('Module access is loaded on demand');
+
+  await page.evaluate(()=>{
+    localStorage.setItem('ywi_admin_hub_section_v1',JSON.stringify('people'));
+    document.dispatchEvent(new CustomEvent('ywi:route-shown',{detail:{allowed:'admin'}}));
+  });
+  await expect.poll(async()=>page.evaluate(()=>window.__moduleCalls.length)).toBe(1);
+  expect(await page.evaluate(()=>window.__moduleCalls[0])).toEqual({path:'admin-it-control',body:{action:'module_permissions'}});
+  await expect(page.locator('.module-access-metrics article')).toHaveCount(5);
+  await expect(page.locator('.module-access-metrics')).toContainText('3');
+  await expect(page.locator('#moduleAccessPeopleList .module-access-person')).toHaveCount(3);
+  await expect(page.locator('#moduleAccessManager')).toContainText('Staff module access');
+
+  await page.locator('#moduleAccessSearch').fill('Bea');
+  await expect(page.locator('#moduleAccessPeopleList .module-access-person')).toHaveCount(1);
+  await expect(page.locator('#moduleAccessPeopleList')).toContainText('Bea Supervisor');
+  await page.locator('#moduleAccessPeopleList .module-access-person').click();
+  await expect(page.locator('#moduleAccessProfile')).toHaveValue('sup-1');
+  await expect(page.locator('#moduleAccessManager')).toContainText('Effective: approve');
+
+  await page.locator('[data-people-panel="Admin Password Control"]').click();
+  await expect.poll(async()=>page.evaluate(()=>window.__hubOpen?.options?.panelTitle)).toBe('Admin Password Control');
+  expect(await page.evaluate(()=>window.__moduleCalls.length)).toBe(1);
 });
