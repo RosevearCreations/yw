@@ -77,7 +77,7 @@ async function mountActualExecutionProofCockpit(page) {
   await page.addScriptTag({ content: cockpitRuntime });
   await page.evaluate(() => document.dispatchEvent(new Event('DOMContentLoaded')));
   await expect(page.locator('#oc_execution_proof_form')).toBeVisible();
-  await expect(page.locator('[data-oc-work-order-select] option')).toHaveCount(2);
+  await expect(page.locator('#oc_execution_proof_form [data-oc-work-order-select] option')).toHaveCount(2);
 }
 
 for (const viewport of [{name:'phone-390',width:390,height:844},{name:'phone-430',width:430,height:932}]) {
