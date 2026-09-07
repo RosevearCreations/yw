@@ -73,9 +73,6 @@ window.YWI_RUNTIME_CONFIG = Object.assign({}, window.YWI_RUNTIME_CONFIG || {}, {
   APP_CONFIG_UPDATED_AT: '2026-09-07'
 });
 
-// Keep Supabase auth callbacks synchronous from the client's perspective. Application callbacks
-// are scheduled in a microtask before they perform profile/API work, which avoids holding the
-// auth client callback lock while preserving the subscription contract for bootstrap/auth.js.
 (function installAuthCallbackLifecycleGuard() {
   const supabase = window.supabase;
   if (!supabase?.createClient || supabase.createClient.__ywiAuthCallbackGuarded) return;
@@ -115,8 +112,6 @@ window.YWI_RUNTIME_CONFIG = Object.assign({}, window.YWI_RUNTIME_CONFIG || {}, {
   supabase.createClient = guardedCreateClient;
 })();
 
-// Build 231 loads the workspace organizer from the head config before protected modules resolve.
-// It only shapes browser presentation/request timing; server-side permissions remain authoritative.
 (function loadWorkspaceOrganization() {
   if (document.querySelector('script[data-ywi-workspace-organization="1"]')) return;
   const script = document.createElement('script');
@@ -129,9 +124,6 @@ window.YWI_RUNTIME_CONFIG = Object.assign({}, window.YWI_RUNTIME_CONFIG || {}, {
   document.head.appendChild(script);
 })();
 
-// Build 234 keeps the focused Business & Operations presentation layer out of the Core/Admin
-// first-load path. The existing Admin hub remains the data/authorization authority and the
-// operations helper is fetched only after that workspace is actually selected.
 (function loadAdminOperationsWorkspaceOnDemand() {
   const selector = 'script[data-ywi-admin-operations-workspace="1"]';
   let observer = null;
@@ -148,6 +140,40 @@ window.YWI_RUNTIME_CONFIG = Object.assign({}, window.YWI_RUNTIME_CONFIG || {}, {
     script.dataset.ywiAdminOperationsWorkspace = '1';
     script.onerror = () => {
       try { window.dispatchEvent(new CustomEvent('ywi:app-error', { detail:{ scope:'admin-operations-workspace', message:'Business & Operations workspace controls could not be loaded.', details:['Existing Admin operations authority remains available through the underlying panels.'] } })); } catch {}
+    };
+    document.head.appendChild(script);
+  }
+
+  function startObserver() {
+    loadIfNeeded();
+    const root = document.getElementById('admin') || document.body;
+    if (!root || observer) return;
+    observer = new MutationObserver(loadIfNeeded);
+    observer.observe(root, { subtree:true, childList:true, characterData:true });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startObserver, { once:true });
+  else startObserver();
+})();
+
+// Build 235 follows the same load-shedding boundary for Safety & Evidence. The focused helper
+// is presentation-only and is fetched only after the Admin hub selects the safety workspace.
+(function loadAdminSafetyWorkspaceOnDemand() {
+  const selector = 'script[data-ywi-admin-safety-workspace="1"]';
+  let observer = null;
+
+  function isSafetyOpen() {
+    return String(document.querySelector('#ad_hub_breadcrumb strong')?.textContent || '').trim() === 'Safety & Evidence';
+  }
+
+  function loadIfNeeded() {
+    if (!isSafetyOpen() || document.querySelector(selector)) return;
+    const script = document.createElement('script');
+    script.src = '/js/admin-safety-workspace.js?v=2026-09-07a';
+    script.async = false;
+    script.dataset.ywiAdminSafetyWorkspace = '1';
+    script.onerror = () => {
+      try { window.dispatchEvent(new CustomEvent('ywi:app-error', { detail:{ scope:'admin-safety-workspace', message:'Safety & Evidence workspace controls could not be loaded.', details:['Existing Admin safety and evidence authority remains available through the underlying panels.'] } })); } catch {}
     };
     document.head.appendChild(script);
   }
