@@ -279,3 +279,233 @@
     knownGates: Object.freeze(Object.keys(GATE_GUIDANCE))
   });
 })();
+
+/* Build 250 Release Readiness Summary.
+   Build 246 remains required-gate policy authority; Build 248 remains exact-SHA evidence authority;
+   Build 249 remains gate-resolution guidance authority. This summary only composes those established
+   signals with repository, schema and operational-acceptance readiness into one fail-closed next action.
+*/
+(function () {
+  const BUILD = 250;
+  const SUMMARY_ID = 'releaseReadinessSummary';
+  const STYLE_ID = 'itReleaseReadinessSummaryStyles';
+  let active = true;
+  let observer = null;
+
+  function esc(value) {
+    return String(value ?? '').replace(/[&<>"']/g,(m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function human(value) {
+    return String(value || 'not recorded').replaceAll('_',' ');
+  }
+
+  function shortSha(value) {
+    const text = String(value || '').trim();
+    return text ? text.slice(0,12) : 'not recorded';
+  }
+
+  function readinessSnapshot() {
+    try { return window.YWIITReadiness?.getSnapshot?.() || null; }
+    catch { return null; }
+  }
+
+  function readyStatus(value) {
+    const text = String(value || '').trim().toLowerCase();
+    if (/red|fail|failed|blocked|unprotected|missing|stale|unknown|error/.test(text)) return false;
+    return /green|ready|current|protected|passed|pass|success|complete|proven/.test(text);
+  }
+
+  function firstUnresolvedEvidence(summary) {
+    const items = Array.isArray(summary?.release_evidence_checklist_items) ? summary.release_evidence_checklist_items : [];
+    return items.find((item)=>/missing|stale/.test(String(item?.status || '').toLowerCase())) || null;
+  }
+
+  function resolutionForUnresolved(summary) {
+    const item = firstUnresolvedEvidence(summary);
+    if (!item) return null;
+    const resolver = window.YWIITReleaseResolutionCockpit?.guidanceFor;
+    const resolved = typeof resolver === 'function' ? resolver(item.gate,item.status,item.detail) : null;
+    return {
+      gate:String(item.gate || 'required gate'),
+      status:String(item.status || 'missing'),
+      action:String(resolved?.action || 'Treat this required gate as unresolved, repair its canonical evidence path, and rerun the exact Development candidate proof.')
+    };
+  }
+
+  function readinessState(payload) {
+    if (!payload) return { label:'LOAD READINESS', state:'open' };
+    const summary = payload.summary || {};
+    if (summary.branch_protection_reported !== true || !readyStatus(summary.repository_enforcement_status)) return { label:'BLOCKED', state:'blocked' };
+    if (summary.schema_current !== true) return { label:'BLOCKED', state:'blocked' };
+    const divergence = String(summary.release_divergence_status || '').toLowerCase();
+    if (divergence === 'production_only_drift') return { label:'BLOCKED', state:'blocked' };
+    if (divergence === 'development_changes_pending') {
+      if (!summary.release_policy_available || !summary.release_evidence_checklist_available) return { label:'BLOCKED', state:'blocked' };
+      const evidenceStatus = String(summary.release_evidence_checklist_status || '').toLowerCase();
+      if (evidenceStatus === 'missing') return { label:'BLOCKED', state:'blocked' };
+      if (evidenceStatus === 'stale') return { label:'NEEDS FRESH PROOF', state:'action' };
+      if (evidenceStatus === 'proven') return { label:'PROMOTION PATH READY', state:'action' };
+      return { label:'REVIEW REQUIRED', state:'action' };
+    }
+    if (divergence === 'content_current') {
+      if (Number(summary.open_rail_acceptance_count || 0) > 0 || Number(summary.current_todo_count || 0) > 0) return { label:'OPERATIONAL FOLLOW-UP', state:'action' };
+      return { label:'CURRENT', state:'ready' };
+    }
+    return { label:'REVIEW REQUIRED', state:'action' };
+  }
+
+  function nextSafeAction(payload) {
+    if (!payload) return 'Refresh the established I.T. Readiness source before making a release decision. Unavailable evidence remains unresolved.';
+    const summary = payload.summary || {};
+    if (summary.branch_protection_reported !== true || !readyStatus(summary.repository_enforcement_status)) {
+      return 'Open RosevearCreations/yw → Settings → Branches, add or verify the main branch protection rule, require pull requests and canonical status checks, keep force pushes and deletion disabled, then require a fresh exact-main workflow to observe protected=true on that exact main SHA.';
+    }
+    if (summary.schema_current !== true) {
+      return 'Converge the required schema in Development/staging in canonical migration order, verify exact schema truth, and rerun dependent gates. Never patch Production ad hoc.';
+    }
+    const divergence = String(summary.release_divergence_status || '').toLowerCase();
+    if (divergence === 'production_only_drift') {
+      return 'Reconcile Production-only history back into dev, restore one canonical Development lineage, and rerun the full Development proof before any further promotion.';
+    }
+    if (divergence === 'development_changes_pending' && !summary.release_policy_available) {
+      return 'Restore complete changed-file evidence so Build 246 can classify the exact Development candidate; do not infer a lower-risk class or promote an unclassified diff.';
+    }
+    if (divergence === 'development_changes_pending' && !summary.release_evidence_checklist_available) {
+      return 'Restore the exact-SHA canonical workflow evidence selected by Build 246 before any Production promotion. Missing evidence is not equivalent to a passing gate.';
+    }
+    const evidenceStatus = String(summary.release_evidence_checklist_status || '').toLowerCase();
+    if (divergence === 'development_changes_pending' && /missing|stale/.test(evidenceStatus)) {
+      const unresolved = resolutionForUnresolved(summary);
+      if (unresolved) return `${unresolved.gate}: ${unresolved.action}`;
+      return 'Resolve the missing or stale Build 246-selected gate evidence on the exact Development candidate, then rerun the canonical proof.';
+    }
+    if (divergence === 'development_changes_pending' && evidenceStatus === 'proven') {
+      return 'All Build 246-selected gates have fresh exact-SHA evidence. Continue only through the normal dev → main promotion PR; this summary cannot authorize or perform the promotion.';
+    }
+    if (divergence === 'content_current' && Number(summary.open_rail_acceptance_count || 0) > 0) {
+      const count = Number(summary.open_rail_acceptance_count || 0);
+      return `Close the next operational acceptance rail through its established human/evidence path (${count} open). Do not auto-close business evidence from this summary.`;
+    }
+    if (divergence === 'content_current' && Number(summary.current_todo_count || 0) > 0) {
+      const count = Number(summary.current_todo_count || 0);
+      return `Resolve the next current Admin To-Do item through its owning control (${count} open). Keep historical/audit-only items out of the current work queue.`;
+    }
+    if (divergence === 'content_current') {
+      return 'No source promotion is pending and no current acceptance/Admin blocker is reported. Continue the approved roadmap from Development.';
+    }
+    return 'Resolve the Development/Production comparison ambiguity in the established release cockpit before taking any Production action.';
+  }
+
+  function buildModel(payload = readinessSnapshot()) {
+    const summary = payload?.summary || {};
+    const state = readinessState(payload);
+    const divergence = String(summary.release_divergence_status || '').toLowerCase();
+    const pending = divergence === 'development_changes_pending';
+    const counts = summary.release_evidence_checklist_counts || {};
+    const gates = Array.isArray(summary.release_policy_required_gates) ? summary.release_policy_required_gates : [];
+    const candidate = pending && summary.release_policy_available
+      ? `${human(summary.release_policy_primary_class)} · ${String(summary.release_policy_risk_level || 'review').toUpperCase()} risk`
+      : divergence === 'content_current' ? 'No pending candidate' : human(divergence || 'unresolved');
+    const evidence = pending
+      ? summary.release_evidence_checklist_available
+        ? `${Number(counts.proven || 0)} / ${gates.length || Number(counts.proven || 0) + Number(counts.missing || 0) + Number(counts.stale || 0)} proven · ${Number(counts.missing || 0)} missing · ${Number(counts.stale || 0)} stale`
+        : 'Exact-SHA evidence unavailable'
+      : 'Not applicable';
+    const repository = summary.branch_protection_reported === true && readyStatus(summary.repository_enforcement_status)
+      ? 'PROTECTED'
+      : summary.branch_protection_reported === false ? 'UNPROTECTED' : 'UNVERIFIED';
+    const schema = `${Number(summary.latest_applied_schema_version || 0)} / ${Number(summary.expected_schema_version || 0)}${summary.schema_current === true ? ' current' : ' review'}`;
+    const acceptance = `${Number(summary.open_rail_acceptance_count || 0)} open acceptance rail${Number(summary.open_rail_acceptance_count || 0) === 1 ? '' : 's'} · ${Number(summary.open_rail_technical_pending_count || 0)} technical pending`;
+    return {
+      state,
+      candidate,
+      candidateSha:shortSha(summary.release_evidence_checklist_candidate_sha || summary.development_sha),
+      workflowRun:summary.release_evidence_checklist_workflow_run_number || summary.workflow_run_id || 'not recorded',
+      evidence,
+      repository,
+      repositoryStatus:human(summary.repository_enforcement_status || 'not loaded'),
+      schema,
+      acceptance,
+      nextAction:nextSafeAction(payload)
+    };
+  }
+
+  function injectStyles() {
+    if (document.getElementById(STYLE_ID)) return;
+    const style = document.createElement('style');
+    style.id = STYLE_ID;
+    style.textContent = `
+      #releaseReadinessSummary{margin:14px 0;padding:14px;border-radius:14px;border:1px solid rgba(125,211,252,.24);background:rgba(8,47,73,.22)}
+      #releaseReadinessSummary .it-release-summary-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+      #releaseReadinessSummary .it-release-summary-head h3{margin:2px 0 0}
+      #releaseReadinessSummary .it-release-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+      #releaseReadinessSummary .it-release-summary-card{padding:10px;border-radius:10px;background:rgba(15,23,42,.55);border:1px solid rgba(148,163,184,.18);min-width:0}
+      #releaseReadinessSummary .it-release-summary-card span{display:block;color:#9fb3c8;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em}
+      #releaseReadinessSummary .it-release-summary-card strong{display:block;margin-top:4px;color:#f8fbff;overflow-wrap:anywhere}
+      #releaseReadinessSummary .it-release-summary-card small{display:block;margin-top:4px;color:#c8d5e3;line-height:1.35;overflow-wrap:anywhere}
+      #releaseReadinessSummary .it-release-summary-action{margin:12px 0 0;padding:10px 11px;border-radius:10px;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.2);color:#dbeafe;line-height:1.45}
+      #releaseReadinessSummary .it-release-summary-note{margin:9px 0 0;color:#aebfd0;font-size:.8rem;line-height:1.4}
+      @media (max-width:900px){#releaseReadinessSummary .it-release-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+      @media (max-width:620px){#releaseReadinessSummary .it-release-summary-grid{grid-template-columns:1fr}}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function render() {
+    injectStyles();
+    if (!active) return;
+    const host = document.getElementById('itSystemWorkspace');
+    if (!host) return;
+    host.querySelector(`#${SUMMARY_ID}`)?.remove();
+    const model = buildModel();
+    const section = document.createElement('section');
+    section.id = SUMMARY_ID;
+    section.dataset.build = String(BUILD);
+    section.setAttribute('aria-labelledby','releaseReadinessSummaryTitle');
+    section.innerHTML = `
+      <div class="it-release-summary-head">
+        <div><span class="module-kicker">Build ${BUILD} · release readiness summary</span><h3 id="releaseReadinessSummaryTitle">One release posture, one safe next action</h3></div>
+        <span class="it-system-status" data-state="${esc(model.state.state)}">${esc(model.state.label)}</span>
+      </div>
+      <div class="it-release-summary-grid">
+        <div class="it-release-summary-card"><span>Candidate / classification</span><strong>${esc(model.candidate)}</strong><small>candidate ${esc(model.candidateSha)}</small></div>
+        <div class="it-release-summary-card"><span>Exact-SHA gate evidence</span><strong>${esc(model.evidence)}</strong><small>canonical run ${esc(model.workflowRun)}</small></div>
+        <div class="it-release-summary-card"><span>Repository authority</span><strong>${esc(model.repository)}</strong><small>${esc(model.repositoryStatus)}</small></div>
+        <div class="it-release-summary-card"><span>Schema / staging acceptance</span><strong>${esc(model.schema)}</strong><small>${esc(model.acceptance)}</small></div>
+      </div>
+      <p class="it-release-summary-action"><strong>Safe next action:</strong> ${esc(model.nextAction)}</p>
+      <p class="it-release-summary-note"><strong>Advisory summary only.</strong> Build 246 selects required gates, Build 248 owns exact-SHA evidence, and Build 249 owns gate-specific correction guidance. This summary does not execute gates, mutate evidence, change repository settings, apply migrations, enable Finance/provider actions, or authorize Production. Unavailable evidence remains unresolved.</p>`;
+    const anchor = host.querySelector('#releaseDivergenceCockpit');
+    if (anchor) anchor.insertAdjacentElement('beforebegin',section);
+    else host.prepend(section);
+  }
+
+  function scheduleRender() {
+    queueMicrotask(render);
+  }
+
+  function start() {
+    injectStyles();
+    scheduleRender();
+    const source = document.getElementById('itReadinessWorkspace');
+    if (source && !observer) {
+      observer = new MutationObserver(scheduleRender);
+      observer.observe(source,{ subtree:true, childList:true, characterData:true, attributes:true, attributeFilter:['data-status'] });
+    }
+    document.addEventListener('ywi:route-shown',(event)=>{
+      active = event?.detail?.allowed === 'it';
+      scheduleRender();
+    });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded',start,{ once:true });
+  else start();
+
+  window.YWIITReleaseReadinessSummary = Object.freeze({
+    build:BUILD,
+    render,
+    getModel:()=>buildModel(),
+    nextSafeAction:(payload)=>nextSafeAction(payload || readinessSnapshot())
+  });
+})();
