@@ -27,6 +27,8 @@
     "test:browser:admin-account-security": "playwright test --config=playwright.config.mjs tests/browser/admin-account-security.spec.mjs",
     "staging:preflight": "node scripts/staging-target-preflight.mjs",
     "test:staging-target-preflight": "node scripts/staging-target-preflight-check.mjs",
+    "promotion:shape:require": "node scripts/production-promotion-shape-preflight.mjs",
+    "test:promotion-shape": "node scripts/production-promotion-shape-preflight-check.mjs",
     "repository:protection:require": "node scripts/repository-protection-preflight.mjs",
     "test:repository-protection-preflight": "node scripts/repository-protection-preflight-check.mjs",
     "release:evidence:write": "node scripts/release-source-evidence-bundle.mjs",
