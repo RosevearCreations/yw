@@ -55,7 +55,7 @@ jobs:
         run: |
           main_json="$(gh api "repos/${GITHUB_REPOSITORY}/branches/main")"
           export YWI_GITHUB_MAIN_SHA="$(printf '%s' "$main_json" | jq -r '.commit.sha // empty')"
-          export YWI_GITHUB_MAIN_PROTECTED="$(printf '%s' "$main_json" | jq -r '.protected // empty')"
+          export YWI_GITHUB_MAIN_PROTECTED="$(printf '%s' "$main_json" | jq -r 'if has("protected") then (.protected|tostring) else "" end')"
           npm run repository:protection:require
       - run: npm run test:modules
       - run: npm run test:it
@@ -167,7 +167,7 @@ jobs:
         run: |
           main_json="$(gh api "repos/${GITHUB_REPOSITORY}/branches/main")"
           export YWI_GITHUB_MAIN_SHA="$(printf '%s' "$main_json" | jq -r '.commit.sha // empty')"
-          export YWI_GITHUB_MAIN_PROTECTED="$(printf '%s' "$main_json" | jq -r '.protected // empty')"
+          export YWI_GITHUB_MAIN_PROTECTED="$(printf '%s' "$main_json" | jq -r 'if has("protected") then (.protected|tostring) else "" end')"
           npm run repository:protection:require
           npm run release:evidence:write
       - name: Upload exact-main release-source candidate
