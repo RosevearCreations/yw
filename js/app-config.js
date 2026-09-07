@@ -292,15 +292,16 @@ window.YWI_RUNTIME_CONFIG = Object.assign({}, window.YWI_RUNTIME_CONFIG || {}, {
   else startObserver();
 })();
 
-// Build 247 keeps the focused I.T. & System overview behind the existing I.T. route.
-// It reads only the established bounded I.T. Readiness snapshot, including Build 246 release-policy evidence, and reuses its refresh control.
+// Build 248 keeps the focused I.T. & System overview behind the existing I.T. route.
+// It reads only the established bounded I.T. Readiness snapshot, including Build 246 release-policy
+// and exact-SHA canonical workflow gate evidence, and reuses the existing readiness refresh control.
 (function loadITSystemWorkspaceOnDemand() {
   const selector = 'script[data-ywi-it-system-workspace="1"]';
 
   function loadIfNeeded(event) {
     if (event?.detail?.allowed !== 'it' || document.querySelector(selector)) return;
     const script = document.createElement('script');
-    script.src = '/js/it-system-workspace.js?v=2026-09-07b';
+    script.src = '/js/it-system-workspace.js?v=2026-09-07c';
     script.async = false;
     script.dataset.ywiItSystemWorkspace = '1';
     script.onerror = () => {
