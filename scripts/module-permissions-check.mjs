@@ -44,6 +44,12 @@ add('auth-loads-self-permissions',auth.includes("rpc('ywi_get_my_module_permissi
 add('protected-ui-initialization-module-aware',hasAll(app,["canUseModule('admin','view')","canUseModule('jobs','view')","canUseModule('safety','view')"]));
 add('admin-permission-editor-safety-only',hasAll(moduleAccess,["preset('safety_only')","action:'preset_module_permissions'",'Set Safety-only','admin-it-control']));
 add('admin-permission-editor-admin-break-glass',hasAll(moduleAccess,['Admin break-glass',"normalizedRole(p.role)==='admin'",'disabled title="Admin always has manage access."']));
+add('build233-people-access-searchable-overview',hasAll(moduleAccess,['People & Access overview','moduleAccessSearch','moduleAccessRoleFilter','moduleAccessOverridesOnly','module-access-people-list','profileAccessSummary']),'People & Access exposes a searchable active-profile summary before editing module controls.');
+add('build233-people-access-bounded-profile-list',hasAll(moduleAccess,['const shown=people.slice(0,60)','Showing the first ${shown.length} of ${people.length} matching active profiles']),'People cards are bounded so a large staff directory cannot create an unbounded Admin DOM.');
+add('build233-module-access-lazy-to-people',hasAll(moduleAccess,["const ADMIN_HUB_STORAGE = 'ywi_admin_hub_section_v1'","function peopleWorkspaceOpen()","if(isAdmin()&&peopleWorkspaceOpen())load(false)","[data-admin-hub-group=\"people\"]"]),'Module permissions load only when the People & Access workspace is actually selected.');
+add('build233-no-stale-it-readiness-injection',!moduleAccess.includes("script.src='/js/it-readiness-ui.js?v=2026-09-01h'") && !moduleAccess.includes('ensureItAssets'),'Module access no longer injects a stale duplicate I.T. Readiness runtime.');
+add('build233-people-panel-grouping',hasAll(moduleAccess,['<h3>Staff module access</h3>','data-people-panel="Staff Directory and Access"','data-people-panel="Assignment Workbench"','data-people-panel="Admin Password Control"']),'The module access panel is classified as People & Access and links to the related staff controls.');
+add('build233-module-access-operator-api',hasAll(moduleAccess,['window.YWIModuleAccess=Object.freeze','getSnapshot:()=>state.payload','getFilteredProfiles:()=>filteredProfiles()','selectProfile']),'The focused People workspace exposes bounded read-only operator state without changing server authority.');
 add('admin-it-control-atomic-permission-write',hasAll(adminItControl,['module_permission_profiles','save_module_permissions','preset_module_permissions','ywi_admin_set_profile_module_permissions']));
 add('admin-directory-enforces-modules',hasAll(adminDirectory,['hasModuleAccess',"scope === 'module_permissions'","moduleRequirementForScope","app_profile_module_permissions"]));
 add('admin-selectors-admin-module',hasAll(adminSelectors,['hasModuleAccess',"'admin', 'view'"]));
@@ -63,6 +69,6 @@ if(ts){
   }
 }
 const passed=out.filter((x)=>x.ok).length;
-console.log(`\nSchema 159/160/164 module permission check: ${passed}/${out.length} passed\n`);
+console.log(`\nSchema 159/160/164 + Build 233 module permission check: ${passed}/${out.length} passed\n`);
 for(const r of out) console.log(`${r.ok?'PASS':'FAIL'}  ${r.name}${r.details?` — ${r.details}`:''}`);
 process.exit(out.some((x)=>!x.ok)?1:0);
