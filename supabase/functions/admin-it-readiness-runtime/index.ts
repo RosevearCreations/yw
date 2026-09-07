@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { buildRuntimeReleaseChangePolicy, RUNTIME_POLICY_MODE, RUNTIME_POLICY_SOURCE_AUTHORITY } from "../_shared/release-change-policy-runtime.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,6 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const GITHUB_COMPARE_URL = "https://api.github.com/repos/RosevearCreations/yw/compare/main...dev";
+const GITHUB_COMPARE_FILE_CAP = 300;
 
 type Section = {
   rows: any[];
@@ -25,6 +27,11 @@ type ReleaseDivergence = {
   production_tree_sha: string | null;
   development_commits_pending: number;
   production_only_commits: number;
+  policy_available: boolean;
+  policy_status: string;
+  policy: any | null;
+  policy_error: string | null;
+  comparison_files_truncated: boolean;
   error: string | null;
 };
 
@@ -103,6 +110,11 @@ async function loadReleaseDivergence(): Promise<ReleaseDivergence> {
     production_tree_sha: null,
     development_commits_pending: 0,
     production_only_commits: 0,
+    policy_available: false,
+    policy_status: "evidence_unavailable",
+    policy: null,
+    policy_error: null,
+    comparison_files_truncated: false,
     error: null,
   };
   const controller = new AbortController();
@@ -125,11 +137,36 @@ async function loadReleaseDivergence(): Promise<ReleaseDivergence> {
     const aheadBy = Math.max(0, Number(payload?.ahead_by || 0));
     const behindBy = Math.max(0, Number(payload?.behind_by || 0));
     const comparisonStatus = String(payload?.status || "unknown").trim().toLowerCase() || "unknown";
+    const changedFiles = Array.isArray(payload?.files)
+      ? payload.files.map((row: any) => String(row?.filename || "").trim()).filter(Boolean)
+      : [];
+    const filesTruncated = changedFiles.length >= GITHUB_COMPARE_FILE_CAP;
     let divergenceStatus = "review_required";
     if (developmentTree && productionTree && developmentTree === productionTree) divergenceStatus = "content_current";
     else if (aheadBy > 0) divergenceStatus = "development_changes_pending";
     else if (behindBy > 0) divergenceStatus = "production_only_drift";
     else if (comparisonStatus === "identical") divergenceStatus = "content_current";
+
+    let policy: any | null = null;
+    let policyStatus = "not_applicable";
+    let policyError: string | null = null;
+    if (aheadBy > 0) {
+      if (filesTruncated) {
+        policyStatus = "classification_incomplete";
+        policyError = `GitHub compare returned ${GITHUB_COMPARE_FILE_CAP} files; release classification refuses to infer complete coverage at the compare file cap.`;
+      } else if (!changedFiles.length) {
+        policyStatus = "changed_file_evidence_unavailable";
+        policyError = "Development commits are pending but GitHub returned no changed-file evidence; release classification cannot infer a safe class.";
+      } else {
+        policy = buildRuntimeReleaseChangePolicy(changedFiles);
+        policyStatus = "classified";
+      }
+    } else if (divergenceStatus === "content_current") {
+      policyStatus = "no_pending_candidate";
+    } else if (divergenceStatus === "production_only_drift") {
+      policyStatus = "production_only_drift";
+    }
+
     return {
       available: Boolean(developmentSha && productionSha),
       comparison_status: comparisonStatus,
@@ -140,11 +177,17 @@ async function loadReleaseDivergence(): Promise<ReleaseDivergence> {
       production_tree_sha: productionTree,
       development_commits_pending: aheadBy,
       production_only_commits: behindBy,
+      policy_available: Boolean(policy),
+      policy_status: policyStatus,
+      policy,
+      policy_error: policyError,
+      comparison_files_truncated: filesTruncated,
       error: null,
     };
   } catch (err) {
     return {
       ...fallback,
+      policy_error: "Live GitHub comparison is unavailable; release classification is unavailable by design.",
       error: String((err as Error)?.message || err || "Live GitHub comparison could not be loaded."),
     };
   } finally {
@@ -230,6 +273,7 @@ Deno.serve(async (req: Request) => {
   };
   for (const key of deferredKeys) sections[key] = deferredSection();
 
+  const policy = releaseDivergence.policy || {};
   return response({
     ok: overallStatus !== "red",
     scope: "it_readiness_runtime",
@@ -260,6 +304,21 @@ Deno.serve(async (req: Request) => {
       development_commits_pending: releaseDivergence.development_commits_pending,
       production_only_commits: releaseDivergence.production_only_commits,
       release_divergence_error: releaseDivergence.error,
+      release_policy_available: releaseDivergence.policy_available,
+      release_policy_status: releaseDivergence.policy_status,
+      release_policy_source_authority: policy.source_authority || RUNTIME_POLICY_SOURCE_AUTHORITY,
+      release_policy_runtime_mode: policy.runtime_mode || RUNTIME_POLICY_MODE,
+      release_policy_primary_class: policy.primary_class || null,
+      release_policy_classes: policy.classes || [],
+      release_policy_risk_level: policy.risk_level || null,
+      release_policy_evidence_profile: policy.evidence_profile || null,
+      release_policy_manual_review_required: policy.manual_review_required === true,
+      release_policy_required_gates: policy.required_gate_scripts || [],
+      release_policy_changed_file_count: Number(policy.changed_file_count || 0),
+      release_policy_changed_files: policy.changed_files || [],
+      release_policy_changed_migrations: policy.changed_migrations || [],
+      release_policy_comparison_files_truncated: releaseDivergence.comparison_files_truncated,
+      release_policy_error: releaseDivergence.policy_error,
       scorecard_truth_status: scorecardRow.scorecard_truth_status || "unknown",
       scorecard_open_count: Number(scorecardRow.open_count || 0),
       scorecard_unclassified_open_count: Number(scorecardRow.unclassified_open_count || 0),
