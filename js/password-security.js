@@ -93,7 +93,8 @@
 
   function loadCloseoutRuntimeGuard() {
     const state = window.YWI_AUTH?.getState?.() || {};
-    if (!String(state.role || '').trim() || state.needsAccountSetup) return;
+    if (!String(state.role || '').trim() || state.needsAccountSetup || !document.getElementById('operationsCockpit')) return;
+    if (window.YWICloseoutRuntimeGuard) return;
     if ([...document.scripts].some((s) => new URL(s.src || '', location.origin).pathname === CLOSEOUT_RUNTIME_GUARD_SCRIPT)) return;
     const script = document.createElement('script');
     script.src = `${CLOSEOUT_RUNTIME_GUARD_SCRIPT}?v=2026-09-07-build254`;
@@ -167,6 +168,7 @@
         if (node.nodeType !== 1) return;
         if (node.matches?.('input[type="password"],input[data-ywi-password-field="1"]')) bindPasswordInput(node);
         bindPasswordVisibility(node);
+        if (node.matches?.('#operationsCockpit') || node.querySelector?.('#operationsCockpit')) loadCloseoutRuntimeGuard();
       });
     }
   });
