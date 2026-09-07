@@ -88,6 +88,11 @@ check('workflow-has-exact-main-live-gate',()=>{
     'npm run repository:protection:require',
   ]) assert.ok(workflow.includes(value),value);
 });
+check('workflow-preserves-explicit-false-protection-evidence',()=>{
+  assert.ok(workflow.includes('if has("protected") then (.protected|tostring) else "" end'));
+  assert.ok(!workflow.includes("jq -r '.protected // empty'"));
+  assert.equal((workflow.match(/if has\("protected"\) then \(\.protected\|tostring\) else "" end/g)||[]).length,2);
+});
 check('workflow-does-not-use-green-ci-as-protection-proof',()=>assert.ok(!workflow.includes('YWI_GITHUB_MAIN_PROTECTED: true')));
 check('preflight-writes-actions-summary-without-bypass',()=>{
   assert.ok(preflightSource.includes('GITHUB_STEP_SUMMARY'));
