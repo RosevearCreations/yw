@@ -223,3 +223,37 @@ window.YWI_RUNTIME_CONFIG = Object.assign({}, window.YWI_RUNTIME_CONFIG || {}, {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startObserver, { once:true });
   else startObserver();
 })();
+
+// Build 237 keeps Diagnostics & Integrations behind the same bounded, on-demand Admin boundary.
+// The helper only summarizes rendered Admin state and reuses established health/messaging controls.
+(function loadAdminDiagnosticsWorkspaceOnDemand() {
+  const selector = 'script[data-ywi-admin-diagnostics-workspace="1"]';
+  let observer = null;
+
+  function isDiagnosticsOpen() {
+    return String(document.querySelector('#ad_hub_breadcrumb strong')?.textContent || '').trim() === 'Diagnostics & Integrations';
+  }
+
+  function loadIfNeeded() {
+    if (!isDiagnosticsOpen() || document.querySelector(selector)) return;
+    const script = document.createElement('script');
+    script.src = '/js/admin-diagnostics-workspace.js?v=2026-09-07a';
+    script.async = false;
+    script.dataset.ywiAdminDiagnosticsWorkspace = '1';
+    script.onerror = () => {
+      try { window.dispatchEvent(new CustomEvent('ywi:app-error', { detail:{ scope:'admin-diagnostics-workspace', message:'Diagnostics & Integrations workspace controls could not be loaded.', details:['Existing Admin health, smoke, conflict and notification authorities remain available through their established panels.'] } })); } catch {}
+    };
+    document.head.appendChild(script);
+  }
+
+  function startObserver() {
+    loadIfNeeded();
+    const root = document.getElementById('admin') || document.body;
+    if (!root || observer) return;
+    observer = new MutationObserver(loadIfNeeded);
+    observer.observe(root, { subtree:true, childList:true, characterData:true });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startObserver, { once:true });
+  else startObserver();
+})();
