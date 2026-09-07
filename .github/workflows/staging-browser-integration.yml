@@ -41,6 +41,14 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci --no-audit --no-fund
+      - name: Validate Development / Production promotion shape
+        env:
+          YWI_GITHUB_EVENT_NAME: ${{ github.event_name }}
+          YWI_GITHUB_REF: ${{ github.ref }}
+          YWI_GITHUB_BASE_REF: ${{ github.base_ref }}
+          YWI_GITHUB_HEAD_REF: ${{ github.head_ref }}
+        run: npm run promotion:shape:require
+      - run: npm run test:promotion-shape
       - run: npm run test:repository-protection-preflight
       - run: npm run test:release-source-evidence
       - run: npm run test:release-source-evidence-verify
