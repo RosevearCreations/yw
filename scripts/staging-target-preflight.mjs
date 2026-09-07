@@ -1,13 +1,22 @@
 #!/usr/bin/env node
 /**
- * Build 215 staging-target identity preflight.
+ * Build 251 staging-target identity and rail-specific credential preflight.
  *
  * This is intentionally source/runtime configuration validation only. It does
- * not connect to Supabase, mutate data, create fixtures, or print secrets.
+ * not connect to Supabase, mutate data, create fixtures, run acceptance, or
+ * print secret values. The live runner remains the execution authority.
  */
 import { pathToFileURL } from 'node:url';
 
 export const KNOWN_PRODUCTION_PROJECT_REF='jmqvkgiqlimdhcofwkxr';
+export const STAGING_ACCEPTANCE_RAILS=Object.freeze([
+  'operations_cockpit_live',
+  'quote_intake_live',
+  'live_job_updates',
+  'customer_live_update_notifications',
+  'service_execution_proof_costing',
+  'supervisor_closeout_signoff_invoice_followup',
+]);
 
 const clean=(value)=>String(value ?? '').trim();
 const truth=(value)=>clean(value)==='1';
@@ -27,27 +36,46 @@ export function evaluateStagingTarget(env={}){
   const expectedRef=clean(env.YWI_STAGING_PROJECT_REF).toLowerCase();
   const actualRef=projectRefFromSupabaseUrl(env.SUPABASE_URL);
   const targetRail=clean(env.YWI_STAGING_TARGET_RAIL || env.TARGET_RAIL || 'operations_cockpit_live').toLowerCase();
+  const targetRailSupported=STAGING_ACCEPTANCE_RAILS.includes(targetRail);
+  const operationsIdentityPairRequired=targetRail==='operations_cockpit_live';
+  const publicKeyRequired=targetRail==='quote_intake_live';
+  const serviceRoleKeyPresent=Boolean(clean(env.SUPABASE_SERVICE_ROLE_KEY));
+  const jobAdminJwtPresent=Boolean(clean(env.YWI_STAGING_JOB_ADMIN_JWT));
+  const workerJwtPresent=Boolean(clean(env.YWI_STAGING_WORKER_JWT));
+  const publicKeyPresent=Boolean(clean(env.YWI_STAGING_PUBLIC_KEY));
   const errors=[];
 
   if(!truth(env.YWI_RUN_STAGING_RPC_TESTS))errors.push('YWI_RUN_STAGING_RPC_TESTS must be exactly 1.');
   if(!clean(env.SUPABASE_URL))errors.push('SUPABASE_URL is required.');
   else if(!actualRef)errors.push('SUPABASE_URL must be an https://<project-ref>.supabase.co URL.');
-  if(!clean(env.SUPABASE_SERVICE_ROLE_KEY))errors.push('SUPABASE_SERVICE_ROLE_KEY is required.');
+  if(!serviceRoleKeyPresent)errors.push('SUPABASE_SERVICE_ROLE_KEY is required.');
   if(!expectedRef)errors.push('YWI_STAGING_PROJECT_REF is required.');
   if(!clean(env.YWI_STAGING_JOB_ADMIN_PROFILE_ID))errors.push('YWI_STAGING_JOB_ADMIN_PROFILE_ID is required.');
   if(clean(env.YWI_STAGING_LABEL).toLowerCase()!=='staging')errors.push('YWI_STAGING_LABEL must be exactly staging.');
   if(clean(env.YWI_STAGING_CONFIRM)!=='I_CONFIRM_STAGING_ONLY')errors.push('YWI_STAGING_CONFIRM must be exactly I_CONFIRM_STAGING_ONLY.');
+  if(!targetRailSupported)errors.push(`YWI_STAGING_TARGET_RAIL must be one of: ${STAGING_ACCEPTANCE_RAILS.join(', ')}.`);
 
   if(expectedRef && productionRefs.has(expectedRef))errors.push('YWI_STAGING_PROJECT_REF must not equal any known or configured Production project ref.');
   if(actualRef && productionRefs.has(actualRef))errors.push('SUPABASE_URL resolves to a known or configured Production project and is forbidden for staging proof.');
   if(actualRef && expectedRef && actualRef!==expectedRef)errors.push('SUPABASE_URL project ref must exactly match YWI_STAGING_PROJECT_REF.');
 
-  if(targetRail==='quote_intake_live'&&!clean(env.YWI_STAGING_PUBLIC_KEY))errors.push('YWI_STAGING_PUBLIC_KEY is required for quote_intake_live staging proof.');
+  if(operationsIdentityPairRequired && !jobAdminJwtPresent)errors.push('YWI_STAGING_JOB_ADMIN_JWT is required for operations_cockpit_live staging proof.');
+  if(operationsIdentityPairRequired && !workerJwtPresent)errors.push('YWI_STAGING_WORKER_JWT is required for operations_cockpit_live staging proof.');
+  if(publicKeyRequired && !publicKeyPresent)errors.push('YWI_STAGING_PUBLIC_KEY is required for quote_intake_live staging proof.');
 
   const nonProductionTarget=Boolean(actualRef && expectedRef && !productionRefs.has(actualRef) && !productionRefs.has(expectedRef));
+  const requiredSecretInputs=[
+    'SUPABASE_SERVICE_ROLE_KEY',
+    ...(operationsIdentityPairRequired?['YWI_STAGING_JOB_ADMIN_JWT','YWI_STAGING_WORKER_JWT']:[]),
+    ...(publicKeyRequired?['YWI_STAGING_PUBLIC_KEY']:[]),
+  ];
+  const missingSecretInputs=requiredSecretInputs.filter((name)=>!clean(env[name]));
+
   return {
     ok:errors.length===0,
     target_rail:targetRail,
+    target_rail_supported:targetRailSupported,
+    supported_target_rails:[...STAGING_ACCEPTANCE_RAILS],
     known_production_project_ref:KNOWN_PRODUCTION_PROJECT_REF,
     configured_production_project_ref:configuredProductionRef || KNOWN_PRODUCTION_PROJECT_REF,
     expected_staging_project_ref:expectedRef || null,
@@ -55,10 +83,15 @@ export function evaluateStagingTarget(env={}){
     exact_project_ref_match:Boolean(actualRef && expectedRef && actualRef===expectedRef),
     non_production_target:nonProductionTarget,
     runner_enabled:truth(env.YWI_RUN_STAGING_RPC_TESTS),
-    service_role_key_present:Boolean(clean(env.SUPABASE_SERVICE_ROLE_KEY)),
+    service_role_key_present:serviceRoleKeyPresent,
     admin_profile_present:Boolean(clean(env.YWI_STAGING_JOB_ADMIN_PROFILE_ID)),
-    public_key_required:targetRail==='quote_intake_live',
-    public_key_present:Boolean(clean(env.YWI_STAGING_PUBLIC_KEY)),
+    operations_identity_pair_required:operationsIdentityPairRequired,
+    job_admin_jwt_present:jobAdminJwtPresent,
+    worker_jwt_present:workerJwtPresent,
+    public_key_required:publicKeyRequired,
+    public_key_present:publicKeyPresent,
+    required_secret_inputs:requiredSecretInputs,
+    missing_secret_inputs:missingSecretInputs,
     staging_label_confirmed:clean(env.YWI_STAGING_LABEL).toLowerCase()==='staging',
     staging_phrase_confirmed:clean(env.YWI_STAGING_CONFIRM)==='I_CONFIRM_STAGING_ONLY',
     errors
