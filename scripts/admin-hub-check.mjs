@@ -12,6 +12,7 @@ const operations=read('js/admin-operations-workspace.js');
 const safety=read('js/admin-safety-workspace.js');
 const finance=read('js/admin-finance-workspace.js');
 const diagnostics=read('js/admin-diagnostics-workspace.js');
+const auditSecurity=read('js/admin-audit-security-workspace.js');
 const worker=read('server-worker.js');
 const results=[];
 const add=(name,ok,detail='')=>results.push({name,ok:!!ok,detail});
@@ -58,9 +59,18 @@ add('build237-no-direct-data-authority', !/(YWIAPI|supabase|jsonFetch|manageAdmi
 add('build237-no-side-effect-shortcuts', !/(ad_run_smoke|ad_reload_conflicts|ad_retry_sync|ad_email_|dispatchNotification|sendEmail)/i.test(diagnostics), 'Build 237 cannot directly run smoke checks, mutate conflict queues, retry sync, or send notification/email actions.');
 add('build237-no-precache', !worker.match(/APP_SHELL\s*=\s*\[[\s\S]*admin-diagnostics-workspace\.js/), 'Build 237 Diagnostics JavaScript is not added to the Core precache list.');
 add('build237-observer-bounded', all(diagnostics,['ad_hub_breadcrumb','ad_health_age_badge','ad_health_summary','ad_health_table','ad_smoke_summary','ad_smoke_table','ad_conflict_summary','ad_conflicts_table','ad_notifications_table']) && !diagnostics.includes("observer.observe(document.getElementById(WORKSPACE_ID)"), 'Build 237 observes established diagnostics evidence sources only and cannot self-observe its rendered workspace.');
-add('no-finance-provider-enable', !/(provider_mutation\s*[:=]\s*true|posting_execution\s*[:=]\s*true|stripe.*enable|paypal.*enable|payment_execution\s*[:=]\s*true)/i.test(`${hub}\n${operations}\n${safety}\n${finance}\n${diagnostics}`), 'Information architecture cannot enable Finance posting/payment/provider execution.');
+
+add('build238-lazy-script', all(config,['loadAdminAuditSecurityWorkspaceOnDemand','Audit & Security','/js/admin-audit-security-workspace.js?v=2026-09-07a','data-ywi-admin-audit-security-workspace']), 'Build 238 audit/security presentation is fetched only after the focused Audit & Security workspace is selected.');
+add('build238-existing-authority', all(auditSecurity,['window.YWIAdminHub?.open?.(\'readiness\'','ad_health_refresh_panel','Production Readiness and Permissions','ad_readiness_table','ad_permissions_table','ad_deployment_gate_table','ad_audit_log_table']), 'Build 238 reuses established Admin readiness/security evidence and the bounded health/readiness refresh.');
+add('build238-bounded-summary', all(auditSecurity,['#ad_schema_preflight_table tbody tr','#ad_readiness_table tbody tr','#ad_permissions_table tbody tr','#ad_deployment_gate_table tbody tr','#ad_backup_rehearsal_table tbody tr','#ad_audit_log_table tbody tr']), 'Audit & Security overview is bounded to already-rendered readiness, permission, deployment, recovery and audit evidence.');
+add('build238-no-direct-data-authority', !/(YWIAPI|supabase|jsonFetch|manageAdminEntity|fetch\s*\()/i.test(auditSecurity), 'Focused Audit & Security presentation adds no direct API/database authority.');
+add('build238-no-security-mutation-shortcuts', !/(ad_password_save|ad_permission_save|ad_role_permission_save|ad_backup_restore|ad_deploy_execute|updatePermission|setRole|executeRestore)/i.test(auditSecurity), 'Build 238 cannot directly mutate passwords, roles, permissions, deployments, or backup/restore state.');
+add('build238-no-precache', !worker.match(/APP_SHELL\s*=\s*\[[\s\S]*admin-audit-security-workspace\.js/), 'Build 238 Audit & Security JavaScript is not added to the Core precache list.');
+add('build238-observer-bounded', all(auditSecurity,['ad_hub_breadcrumb','ad_health_age_badge','ad_schema_preflight_table','ad_readiness_table','ad_permissions_table','ad_action_permission_table','ad_deployment_gate_table','ad_backup_rehearsal_table','ad_audit_log_table']) && !auditSecurity.includes("observer.observe(document.getElementById(WORKSPACE_ID)"), 'Build 238 observes established readiness/audit evidence sources only and cannot self-observe its rendered workspace.');
+
+add('no-finance-provider-enable', !/(provider_mutation\s*[:=]\s*true|posting_execution\s*[:=]\s*true|stripe.*enable|paypal.*enable|payment_execution\s*[:=]\s*true)/i.test(`${hub}\n${operations}\n${safety}\n${finance}\n${diagnostics}\n${auditSecurity}`), 'Information architecture cannot enable Finance posting/payment/provider execution.');
 
 const failed=results.filter((row)=>!row.ok);
 for(const row of results) console.log(`${row.ok?'PASS':'FAIL'} ${row.name}${row.detail?` - ${row.detail}`:''}`);
-if(failed.length){console.error(`\nBuild 237 Admin workspace gate failed: ${failed.length}/${results.length}`);process.exit(1);}
-console.log(`\nBuild 237 Admin workspace gate passed: ${results.length}/${results.length}`);
+if(failed.length){console.error(`\nBuild 238 Admin workspace gate failed: ${failed.length}/${results.length}`);process.exit(1);}
+console.log(`\nBuild 238 Admin workspace gate passed: ${results.length}/${results.length}`);
