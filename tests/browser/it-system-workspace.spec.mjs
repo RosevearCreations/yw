@@ -32,6 +32,7 @@ async function mountIT(page){
         expected_schema_version:174,
         source_gate_status:'green',
         repository_enforcement_status:'red',
+        branch_protection_reported:false,
         source_sha:'abcdef1234567890',
         workflow_run_id:354,
         admin_access_integrity_blockers:0,
@@ -50,16 +51,17 @@ async function mountIT(page){
       window.__refreshes+=1;
       window.__snapshot.summary.overall_status='green';
       window.__snapshot.summary.repository_enforcement_status='green';
+      window.__snapshot.summary.branch_protection_reported=true;
       document.getElementById('runtimeMarker').textContent='refreshed';
     });
   });
   await page.addScriptTag({content:workspaceSource});
 }
 
-test('Build 239 renders bounded I.T. and System overview from existing readiness authority',async({page})=>{
+test('Build 240 renders bounded I.T. overview with actionable repository remediation',async({page})=>{
   await mountIT(page);
   await expect(page.locator('#itSystemWorkspace')).toBeVisible();
-  await expect(page.locator('#itSystemWorkspace')).toHaveAttribute('data-build','239');
+  await expect(page.locator('#itSystemWorkspace')).toHaveAttribute('data-build','240');
   await expect(page.locator('#itSystemWorkspace')).toContainText('does not deploy, change repository protection, mutate database schema, change authentication/roles, run browser smoke');
   await expect(page.locator('.it-system-status')).toContainText('BLOCKED');
   await expect(page.locator('.it-system-metric')).toHaveCount(4);
@@ -70,10 +72,21 @@ test('Build 239 renders bounded I.T. and System overview from existing readiness
   await expect(page.locator('.it-system-context')).toContainText('abcdef123456');
   await expect(page.locator('.it-system-context')).toContainText('workflow 354');
   await expect(page.locator('.it-system-grid .it-system-card')).toHaveCount(4);
+
+  const remediation=page.locator('#repositoryEnforcementRemediation');
+  await expect(remediation).toBeVisible();
+  await expect(remediation).toContainText('Repository enforcement requires manual GitHub action');
+  await expect(remediation).toContainText('Settings → Branches');
+  await expect(remediation).toContainText('classic branch protection rule targeting main');
+  await expect(remediation).toContainText('Require a pull request before merging');
+  await expect(remediation).toContainText('force pushes and branch deletion disabled');
+  await expect(remediation).toContainText('protected=true');
+  await expect(remediation).toContainText('cannot enable branch protection');
+  await expect(remediation.locator('li')).toHaveCount(5);
   expect(await page.evaluate(()=>window.__refreshes)).toBe(0);
 });
 
-test('Build 239 follows I.T. route visibility without creating a second data load',async({page})=>{
+test('Build 240 follows I.T. route visibility without creating a second data load',async({page})=>{
   await mountIT(page);
   await page.evaluate(()=>document.dispatchEvent(new CustomEvent('ywi:route-shown',{detail:{allowed:'admin'}})));
   await expect(page.locator('#itSystemWorkspace')).toBeHidden();
@@ -84,13 +97,15 @@ test('Build 239 follows I.T. route visibility without creating a second data loa
   expect(await page.evaluate(()=>window.__refreshes)).toBe(0);
 });
 
-test('Build 239 reuses existing I.T. navigation and readiness refresh controls',async({page})=>{
+test('Build 240 reuses existing I.T. refresh and removes remediation only when repository authority becomes green',async({page})=>{
   await mountIT(page);
 
   await page.locator('[data-it-system-key="runtime"]').click();
   await expect.poll(async()=>page.evaluate(()=>window.__scrolled)).toBe('runtimePanel');
 
+  await expect(page.locator('#repositoryEnforcementRemediation')).toBeVisible();
   await page.locator('#itSystemRefresh').click();
   await expect.poll(async()=>page.evaluate(()=>window.__refreshes)).toBe(1);
   await expect(page.locator('.it-system-status')).toContainText('CURRENT');
+  await expect(page.locator('#repositoryEnforcementRemediation')).toHaveCount(0);
 });
