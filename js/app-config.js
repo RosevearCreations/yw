@@ -65,12 +65,12 @@ ywiApplyPublicDocumentAuthority();
 
 window.YWI_RUNTIME_CONFIG = Object.assign({}, window.YWI_RUNTIME_CONFIG || {}, {
   SB_URL: 'https://jmqvkgiqlimdhcofwkxr.supabase.co',
-  SB_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptcXZrZ2lxbGltZGhjb2Z3a3hyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwMDYzNDYsImV4cCI6MjA4NTU4MjM0Nn0.ULYqX2TL08_wfREPCIZjIbRf8nAc61ZWndm8UUJZ-D4',
+  SB_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqdXF2a2dpcWxpbWRoY29md2t4ciIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzcwMDA2MzQ2LCJleHAiOjIwODU1ODIzNDZ9.ULYqX2TL08_wfREPCIZjIbRf8nAc61ZWndm8UUJZ-D4',
   SUPABASE_URL: 'https://jmqvkgiqlimdhcofwkxr.supabase.co',
-  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptcXZrZ2lxbGltZGhjb2Z3a3hyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwMDYzNDYsImV4cCI6MjA4NTU4MjM0Nn0.ULYqX2TL08_wfREPCIZjIbRf8nAc61ZWndm8UUJZ-D4',
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqdXF2a2dpcWxpbWRoY29md2t4ciIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzcwMDA2MzQ2LCJleHAiOjIwODU1ODIzNDZ9.ULYqX2TL08_wfREPCIZjIbRf8nAc61ZWndm8UUJZ-D4',
   APP_ENV: 'production',
   APP_CONFIG_SOURCE: 'js/app-config.js',
-  APP_CONFIG_UPDATED_AT: '2026-09-03'
+  APP_CONFIG_UPDATED_AT: '2026-09-07'
 });
 
 // Keep Supabase auth callbacks synchronous from the client's perspective. Application callbacks
@@ -113,4 +113,18 @@ window.YWI_RUNTIME_CONFIG = Object.assign({}, window.YWI_RUNTIME_CONFIG || {}, {
   guardedCreateClient.__ywiAuthCallbackGuarded = true;
   guardedCreateClient.__ywiOriginalCreateClient = originalCreateClient;
   supabase.createClient = guardedCreateClient;
+})();
+
+// Build 231 loads the workspace organizer from the head config before protected modules resolve.
+// It only shapes browser presentation/request timing; server-side permissions remain authoritative.
+(function loadWorkspaceOrganization() {
+  if (document.querySelector('script[data-ywi-workspace-organization="1"]')) return;
+  const script = document.createElement('script');
+  script.src = '/js/workspace-organization.js?v=2026-09-07a';
+  script.async = false;
+  script.dataset.ywiWorkspaceOrganization = '1';
+  script.onerror = () => {
+    try { window.dispatchEvent(new CustomEvent('ywi:app-error', { detail:{ scope:'workspace-organization', message:'Workspace organization controls could not be loaded.', details:['Core authorization remains in force. Reload before using Finance review/posting controls.'] } })); } catch {}
+  };
+  document.head.appendChild(script);
 })();
