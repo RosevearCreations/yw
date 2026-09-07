@@ -10,6 +10,7 @@ const admin=read('js/admin-ui.js');
 const config=read('js/app-config.js');
 const operations=read('js/admin-operations-workspace.js');
 const safety=read('js/admin-safety-workspace.js');
+const finance=read('js/admin-finance-workspace.js');
 const worker=read('server-worker.js');
 const results=[];
 const add=(name,ok,detail='')=>results.push({name,ok:!!ok,detail});
@@ -41,9 +42,16 @@ add('build235-bounded-summary', all(safety,['#ad_evidence_manager_table tbody tr
 add('build235-no-direct-data-authority', !/(YWIAPI|supabase|jsonFetch|manageAdminEntity|fetch\s*\()/i.test(safety), 'Focused safety presentation adds no direct API/database authority.');
 add('build235-no-precache', !worker.match(/APP_SHELL\s*=\s*\[[\s\S]*admin-safety-workspace\.js/), 'Build 235 safety JavaScript is not added to the Core precache list.');
 add('build235-observer-bounded', all(safety,['ad_hub_breadcrumb','ad_evidence_age_badge','ad_evidence_summary','ad_evidence_manager_table','ad_evidence_action_queue_table','ad_attendance_evidence_table','ad_hse_evidence_table']) && !safety.includes("observer.observe(document.getElementById(WORKSPACE_ID)"), 'Build 235 observes existing evidence sources only and cannot self-observe its rendered workspace.');
-add('no-finance-provider-enable', !/(provider_mutation\s*[:=]\s*true|posting_execution\s*[:=]\s*true|stripe.*enable|paypal.*enable)/i.test(`${hub}\n${operations}\n${safety}`), 'Information architecture cannot enable Finance/provider execution.');
+
+add('build236-lazy-script', all(config,['loadAdminFinanceWorkspaceOnDemand','Finance & Accounting','/js/admin-finance-workspace.js?v=2026-09-07a','data-ywi-admin-finance-workspace']), 'Build 236 finance presentation is fetched only after the focused Finance & Accounting workspace is selected.');
+add('build236-existing-authority', all(finance,['window.YWIAdminHub?.open?.(\'accounting\'','ad_accounting_refresh_panel','Guided Close Center','Orders and Accounting Stub','Operations and Accounting Backbone Manager','Admin Task Inbox']), 'Build 236 reuses established Admin accounting panels and the bounded accounting refresh.');
+add('build236-bounded-summary', all(finance,['#ad_close_wizard_detail_table tbody tr','#ad_orders_table tbody tr','#ad_accounting_table tbody tr','#ad_task_table tbody tr','ad_close_center_summary']), 'Finance overview is bounded to already-rendered close, order, accounting-entry, and task state.');
+add('build236-no-direct-data-authority', !/(YWIAPI|supabase|jsonFetch|manageAdminEntity|fetch\s*\()/i.test(finance), 'Focused Finance presentation adds no direct API/database authority.');
+add('build236-no-precache', !worker.match(/APP_SHELL\s*=\s*\[[\s\S]*admin-finance-workspace\.js/), 'Build 236 Finance JavaScript is not added to the Core precache list.');
+add('build236-observer-bounded', all(finance,['ad_hub_breadcrumb','ad_accounting_age_badge','ad_close_center_summary','ad_close_wizard_detail_table','ad_orders_table','ad_accounting_table','ad_task_table']) && !finance.includes("observer.observe(document.getElementById(WORKSPACE_ID)"), 'Build 236 observes established accounting evidence sources only and cannot self-observe its rendered workspace.');
+add('no-finance-provider-enable', !/(provider_mutation\s*[:=]\s*true|posting_execution\s*[:=]\s*true|stripe.*enable|paypal.*enable|payment_execution\s*[:=]\s*true)/i.test(`${hub}\n${operations}\n${safety}\n${finance}`), 'Information architecture cannot enable Finance posting/payment/provider execution.');
 
 const failed=results.filter((row)=>!row.ok);
 for(const row of results) console.log(`${row.ok?'PASS':'FAIL'} ${row.name}${row.detail?` - ${row.detail}`:''}`);
-if(failed.length){console.error(`\nBuild 235 Admin workspace gate failed: ${failed.length}/${results.length}`);process.exit(1);}
-console.log(`\nBuild 235 Admin workspace gate passed: ${results.length}/${results.length}`);
+if(failed.length){console.error(`\nBuild 236 Admin workspace gate failed: ${failed.length}/${results.length}`);process.exit(1);}
+console.log(`\nBuild 236 Admin workspace gate passed: ${results.length}/${results.length}`);
