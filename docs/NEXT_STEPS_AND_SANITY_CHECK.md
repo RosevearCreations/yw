@@ -18,6 +18,12 @@ The Admin home must keep **Needs Attention** first, followed by permission-aware
 
 Verify that view-only Admin access cannot reveal manage-only cards, and remember that hiding a card is presentation only: all actual authorization remains server/module enforced. Opening I.T. Readiness must route to the dedicated I.T. screen rather than booting the heavy Admin Control Center. Status chips and Needs Attention summaries are advisory; they must not auto-close work, change permissions, enable Finance/provider execution, mutate Auth, sign off staging, or promote Production.
 
+## Profile, Crew and reference data sanity check
+
+Opening **My Profile** should show the authenticated profile record immediately when it is already available, then refresh the self profile and time-clock context only while the Profile route is active. Opening Profile must not preload Crew. **Crew** reads should occur only on the Crew route and only for an access profile that may view Crew. Repeated identical in-flight Profile, Crew, or time-clock reads should resolve through one shared request rather than producing duplicate network work.
+
+Shared site, employee, supervisor, admin, position and trade reference data should be reused within its short bounded freshness window. Verify a forced refresh can bypass freshness when deliberately requested, changing identity or signing out invalidates the reference set, stale responses cannot overwrite a newer identity, and a successful profile save invalidates selectors for a later refresh. A reference refresh failure must leave an already usable screen usable. Auth-state callbacks must not wait on profile/API refresh work before returning control to the Supabase client lifecycle.
+
 ## Auth security evidence sanity check
 
 Treat leaked-password protection and MFA as external Supabase Auth configuration. A secure result requires recent authoritative evidence from the **Supabase Dashboard** or **Supabase Management API**, a durable evidence reference, and the exact secure state for that control. Manual notes, screenshots or other supporting context may be retained, but `manual_external` evidence is non-authoritative and must never become `verified_secure`. Do not infer either setting from PostgreSQL catalogs, a current or historical security-advisor row, or the absence of an advisor warning. Stale evidence requires re-verification, and application source work must not change the Auth setting or auto-close its Current Admin To-Do item.
