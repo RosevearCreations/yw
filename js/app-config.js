@@ -257,3 +257,37 @@ window.YWI_RUNTIME_CONFIG = Object.assign({}, window.YWI_RUNTIME_CONFIG || {}, {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startObserver, { once:true });
   else startObserver();
 })();
+
+// Build 238 keeps Audit & Security behind the same bounded, on-demand Admin boundary.
+// The helper summarizes rendered readiness/audit evidence and cannot mutate security authority.
+(function loadAdminAuditSecurityWorkspaceOnDemand() {
+  const selector = 'script[data-ywi-admin-audit-security-workspace="1"]';
+  let observer = null;
+
+  function isAuditSecurityOpen() {
+    return String(document.querySelector('#ad_hub_breadcrumb strong')?.textContent || '').trim() === 'Audit & Security';
+  }
+
+  function loadIfNeeded() {
+    if (!isAuditSecurityOpen() || document.querySelector(selector)) return;
+    const script = document.createElement('script');
+    script.src = '/js/admin-audit-security-workspace.js?v=2026-09-07a';
+    script.async = false;
+    script.dataset.ywiAdminAuditSecurityWorkspace = '1';
+    script.onerror = () => {
+      try { window.dispatchEvent(new CustomEvent('ywi:app-error', { detail:{ scope:'admin-audit-security-workspace', message:'Audit & Security workspace controls could not be loaded.', details:['Existing Admin readiness, permissions, deployment, backup/restore and audit authorities remain available through their established panels.'] } })); } catch {}
+    };
+    document.head.appendChild(script);
+  }
+
+  function startObserver() {
+    loadIfNeeded();
+    const root = document.getElementById('admin') || document.body;
+    if (!root || observer) return;
+    observer = new MutationObserver(loadIfNeeded);
+    observer.observe(root, { subtree:true, childList:true, characterData:true });
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startObserver, { once:true });
+  else startObserver();
+})();
