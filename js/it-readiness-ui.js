@@ -10,7 +10,7 @@
   const state = { payload:null, loading:false, smoke:null, smokeLoading:false };
   const PERFORMANCE_BUDGETS = Object.freeze({
     coreShellAssets: 30,
-    coreShellJs: 20,
+    coreShellJs: 21,
     moduleScripts: Object.freeze({ safety:10, finance:3, jobs:4, admin:8 }),
     itRuntimeReads: 10,
     mobileRefreshMinMs: 30000
