@@ -159,12 +159,23 @@
   function start() {
     injectStyles();
     render();
-    const admin = document.getElementById('admin') || document.body;
     observer = new MutationObserver(() => {
       if (applying) return;
       queueMicrotask(render);
     });
-    observer.observe(admin, { subtree:true, childList:true, characterData:true, attributes:true, attributeFilter:['data-status'] });
+    [
+      document.getElementById('ad_hub_breadcrumb'),
+      document.getElementById('ad_jobs_age_badge'),
+      document.getElementById('ad_ops_dashboard_cards'),
+      document.getElementById('ad_site_activity_summary'),
+      document.getElementById('ad_task_table')
+    ].filter(Boolean).forEach((node) => observer.observe(node, {
+      subtree:true,
+      childList:true,
+      characterData:true,
+      attributes:true,
+      attributeFilter:['data-status']
+    }));
     window.addEventListener('ywi:route-shown', render);
   }
 
