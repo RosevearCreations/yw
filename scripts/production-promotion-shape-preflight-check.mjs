@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { evaluateProductionPromotionShape, renderPromotionShapeSummary } from './production-promotion-shape-preflight.mjs';
+import { evaluateProductionPromotionShape, renderPromotionShapeSummary, resolvePromotionFreshnessEnv } from './production-promotion-shape-preflight.mjs';
 
 const checks=[];
 const check=(name,fn)=>{try{fn();checks.push({name,ok:true});}catch(error){checks.push({name,ok:false,error:error?.message||String(error)});}};
@@ -56,6 +56,42 @@ check('stale-promotion-base-is-locked',()=>{
   assert.ok(r.blocker_codes.includes('promotion_base_not_current_main'));
   assert.match(r.next_safe_action,/current main tip/i);
 });
+check('freshness-hydration-reads-event-and-exact-remote-refs',()=>{
+  const env={...feature,YWI_GITHUB_BASE_REF:'main',YWI_GITHUB_HEAD_REF:'dev',GITHUB_EVENT_PATH:'/tmp/event.json'};
+  const hydrated=resolvePromotionFreshnessEnv(env,{
+    readFile:()=>JSON.stringify({pull_request:{head:{sha:'dev-current-sha'},base:{sha:'main-current-sha'}}}),
+    lsRemote:()=>[
+      'dev-current-sha\trefs/heads/dev',
+      'main-current-sha\trefs/heads/main',
+      ''
+    ].join('\n')
+  });
+  assert.equal(hydrated.YWI_GITHUB_PR_HEAD_SHA,'dev-current-sha');
+  assert.equal(hydrated.YWI_GITHUB_PR_BASE_SHA,'main-current-sha');
+  assert.equal(hydrated.YWI_GITHUB_LIVE_DEV_SHA,'dev-current-sha');
+  assert.equal(hydrated.YWI_GITHUB_LIVE_MAIN_SHA,'main-current-sha');
+  assert.equal(evaluateProductionPromotionShape(hydrated).ok,true);
+});
+check('freshness-hydration-is-not-run-for-feature-pr',()=>{
+  let touched=false;
+  const hydrated=resolvePromotionFreshnessEnv(feature,{
+    readFile:()=>{touched=true;throw new Error('should not read');},
+    lsRemote:()=>{touched=true;throw new Error('should not fetch');}
+  });
+  assert.equal(touched,false);
+  assert.equal(hydrated.YWI_GITHUB_LIVE_DEV_SHA,undefined);
+});
+check('failed-live-ref-lookup-remains-fail-closed',()=>{
+  const env={...feature,YWI_GITHUB_BASE_REF:'main',YWI_GITHUB_HEAD_REF:'dev',GITHUB_EVENT_PATH:'/tmp/event.json'};
+  const hydrated=resolvePromotionFreshnessEnv(env,{
+    readFile:()=>JSON.stringify({pull_request:{head:{sha:'dev-current-sha'},base:{sha:'main-current-sha'}}}),
+    lsRemote:()=>{throw new Error('remote unavailable');}
+  });
+  const r=evaluateProductionPromotionShape(hydrated);
+  assert.equal(r.ok,false);
+  assert.ok(r.blocker_codes.includes('promotion_freshness_evidence_missing'));
+  assert.match(hydrated.YWI_PROMOTION_FRESHNESS_REMOTE_ERROR,/remote unavailable/);
+});
 check('feature-branch-cannot-target-main',()=>{
   const r=evaluateProductionPromotionShape({...promotion,YWI_GITHUB_HEAD_REF:'build242-production-promotion-freshness-guard'});
   assert.equal(r.ok,false);
@@ -101,35 +137,38 @@ check('summary-exposes-freshness-without-authority',()=>{
 });
 
 const workflow=fs.readFileSync('.github/workflows/staging-browser-integration.yml','utf8');
+const source=fs.readFileSync('scripts/production-promotion-shape-preflight.mjs','utf8');
 const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));
 check('package-wiring',()=>{
   assert.equal(pkg.scripts['promotion:shape:require'],'node scripts/production-promotion-shape-preflight.mjs');
   assert.equal(pkg.scripts['test:promotion-shape'],'node scripts/production-promotion-shape-preflight-check.mjs');
 });
-check('workflow-wiring',()=>{
+check('workflow-wiring-remains-canonical',()=>{
   for(const value of [
-    'Validate Development / Production promotion shape and freshness',
-    'GH_TOKEN: ${{ github.token }}',
+    'Validate Development / Production promotion shape',
     'YWI_GITHUB_EVENT_NAME: ${{ github.event_name }}',
     'YWI_GITHUB_REF: ${{ github.ref }}',
     'YWI_GITHUB_BASE_REF: ${{ github.base_ref }}',
     'YWI_GITHUB_HEAD_REF: ${{ github.head_ref }}',
-    'YWI_GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}',
-    'YWI_GITHUB_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}',
-    'branches/dev',
-    'branches/main',
-    'YWI_GITHUB_LIVE_DEV_SHA',
-    'YWI_GITHUB_LIVE_MAIN_SHA',
     'npm run promotion:shape:require',
     'npm run test:promotion-shape'
   ]) assert.ok(workflow.includes(value),value);
   assert.ok(workflow.indexOf('npm run promotion:shape:require') < workflow.indexOf('npm run test:release-source-evidence'));
 });
-check('workflow-live-branch-fetch-is-promotion-only',()=>{
-  assert.ok(workflow.includes("if [[ \"${YWI_GITHUB_EVENT_NAME}\" == \"pull_request\" && \"${YWI_GITHUB_BASE_REF}\" == \"main\" && \"${YWI_GITHUB_HEAD_REF}\" == \"dev\" ]]; then"));
+check('source-fetches-only-exact-dev-main-refs-for-promotion-freshness',()=>{
+  for(const value of [
+    "eventName !== 'pull_request' || baseRef !== 'main' || headRef !== 'dev'",
+    "execFileSync('git', ['ls-remote', 'origin', 'refs/heads/dev', 'refs/heads/main']",
+    "ref === 'refs/heads/dev'",
+    "ref === 'refs/heads/main'",
+    'GITHUB_EVENT_PATH'
+  ]) assert.ok(source.includes(value),value);
 });
-check('workflow-has-no-promotion-bypass',()=>{
-  for(const forbidden of ['promotion_shape_bypass','ALLOW_DIRECT_MAIN','SKIP_PROMOTION_SHAPE','SKIP_PROMOTION_FRESHNESS']) assert.ok(!workflow.includes(forbidden),forbidden);
+check('workflow-and-source-have-no-promotion-bypass',()=>{
+  for(const forbidden of ['promotion_shape_bypass','ALLOW_DIRECT_MAIN','SKIP_PROMOTION_SHAPE','SKIP_PROMOTION_FRESHNESS']) {
+    assert.ok(!workflow.includes(forbidden),forbidden);
+    assert.ok(!source.includes(forbidden),forbidden);
+  }
 });
 
 for(const item of checks)console.log(`${item.ok?'PASS':'FAIL'}  ${item.name}${item.error?` — ${item.error}`:''}`);
