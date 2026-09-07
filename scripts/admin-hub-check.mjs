@@ -32,7 +32,7 @@ add('build234-existing-authority', all(operations,['window.YWIAdminHub?.open?.(\
 add('build234-bounded-summary', all(operations,['#ad_ops_dashboard_cards .admin-stat-card','.slice(0, 6)','#ad_task_table tbody tr','.slice(0, 3)','ad_site_activity_summary']), 'Operations overview is bounded to six metrics, three tasks, and the already-rendered activity summary.');
 add('build234-no-direct-data-authority', !/(YWIAPI|supabase|jsonFetch|manageAdminEntity|fetch\s*\()/i.test(operations), 'Focused operations presentation adds no direct API/database authority.');
 add('build234-no-precache', !worker.match(/APP_SHELL\s*=\s*\[[\s\S]*admin-operations-workspace\.js/), 'Build 234 operations JavaScript is not added to the Core precache list.');
-add('build234-cache-generation', worker.includes("const CACHE_NAME = 'ywi-shell-v2026-09-07c';"), 'Service-worker generation advances so pre-Build-234 tabs cannot retain the old shell indefinitely.');
+add('build234-cache-contract', worker.includes("const CACHE_NAME = 'ywi-shell-v2026-09-07b';") && worker.includes("fetch(assetUrl, { cache: 'reload' })"), 'Build 234 preserves the current account-security shell contract; app-config remains network-first for the lazy loader.');
 add('no-finance-provider-enable', !/(provider_mutation\s*[:=]\s*true|posting_execution\s*[:=]\s*true|stripe.*enable|paypal.*enable)/i.test(`${hub}\n${operations}`), 'Information architecture cannot enable Finance/provider execution.');
 
 const failed=results.filter((row)=>!row.ok);
