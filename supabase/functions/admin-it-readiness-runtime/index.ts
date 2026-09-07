@@ -8,7 +8,11 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const GITHUB_COMPARE_URL = "https://api.github.com/repos/RosevearCreations/yw/compare/main...dev";
+const GITHUB_ACTIONS_RUNS_URL = "https://api.github.com/repos/RosevearCreations/yw/actions/runs";
+const GITHUB_WORKFLOW_NAME = "YWI source and staging checks";
+const GITHUB_WORKFLOW_PATH = ".github/workflows/staging-browser-integration.yml";
 const GITHUB_COMPARE_FILE_CAP = 300;
+const RELEASE_GATE_EVIDENCE_FRESH_HOURS = 24;
 
 type Section = {
   rows: any[];
@@ -32,6 +36,32 @@ type ReleaseDivergence = {
   policy: any | null;
   policy_error: string | null;
   comparison_files_truncated: boolean;
+  error: string | null;
+};
+
+type ReleaseGateChecklistItem = {
+  gate: string;
+  status: "proven" | "missing" | "stale" | "not_applicable";
+  step_name: string | null;
+  step_number: number | null;
+  step_conclusion: string | null;
+  detail: string;
+};
+
+type ReleaseGateChecklist = {
+  available: boolean;
+  status: "proven" | "missing" | "stale" | "not_applicable" | "evidence_unavailable";
+  candidate_sha: string | null;
+  workflow_run_id: number | null;
+  workflow_run_number: number | null;
+  workflow_run_attempt: number | null;
+  workflow_status: string | null;
+  workflow_conclusion: string | null;
+  workflow_completed_at: string | null;
+  evidence_age_hours: number | null;
+  fresh_hours: number;
+  counts: { proven: number; missing: number; stale: number; not_applicable: number };
+  items: ReleaseGateChecklistItem[];
   error: string | null;
 };
 
@@ -99,6 +129,171 @@ function deferredSection(): Section {
   };
 }
 
+function githubHeaders() {
+  return {
+    "Accept": "application/vnd.github+json",
+    "User-Agent": "ywi-admin-it-readiness",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+}
+
+async function fetchGithubJson(url: string, timeoutMs = 2200) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const result = await fetch(url, { headers: githubHeaders(), signal: controller.signal });
+    if (!result.ok) throw new Error(`GitHub evidence read returned HTTP ${result.status}.`);
+    return await result.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function emptyGateChecklist(status: ReleaseGateChecklist["status"], candidateSha: string | null, error: string | null = null): ReleaseGateChecklist {
+  return {
+    available: status !== "evidence_unavailable",
+    status,
+    candidate_sha: candidateSha,
+    workflow_run_id: null,
+    workflow_run_number: null,
+    workflow_run_attempt: null,
+    workflow_status: null,
+    workflow_conclusion: null,
+    workflow_completed_at: null,
+    evidence_age_hours: null,
+    fresh_hours: RELEASE_GATE_EVIDENCE_FRESH_HOURS,
+    counts: { proven: 0, missing: 0, stale: 0, not_applicable: 0 },
+    items: [],
+    error,
+  };
+}
+
+function gateStep(steps: any[], gate: string) {
+  const expected = `Run npm run ${gate}`;
+  return steps.find((step: any) => {
+    const name = String(step?.name || "").trim();
+    return name === expected || name.includes(`npm run ${gate}`);
+  }) || null;
+}
+
+async function loadReleaseGateChecklist(release: ReleaseDivergence): Promise<ReleaseGateChecklist> {
+  const candidateSha = String(release.development_sha || "").trim() || null;
+  if (release.divergence_status === "content_current") return emptyGateChecklist("not_applicable", candidateSha);
+  if (release.divergence_status !== "development_changes_pending" || !candidateSha) {
+    return emptyGateChecklist("evidence_unavailable", candidateSha, "A Development promotion candidate is not available for exact-SHA gate evidence.");
+  }
+  const requiredGates = Array.isArray(release.policy?.required_gate_scripts)
+    ? release.policy.required_gate_scripts.map((gate: unknown) => String(gate || "").trim()).filter(Boolean)
+    : [];
+  if (!release.policy_available || !requiredGates.length) {
+    return emptyGateChecklist("evidence_unavailable", candidateSha, "Build 246 release classification must be complete before required-gate workflow evidence can be evaluated.");
+  }
+
+  try {
+    const query = `${GITHUB_ACTIONS_RUNS_URL}?head_sha=${encodeURIComponent(candidateSha)}&event=pull_request&per_page=10`;
+    const runsPayload = await fetchGithubJson(query);
+    const runs = (Array.isArray(runsPayload?.workflow_runs) ? runsPayload.workflow_runs : [])
+      .filter((run: any) => String(run?.head_sha || "").trim().toLowerCase() === candidateSha.toLowerCase())
+      .filter((run: any) => String(run?.name || "").trim() === GITHUB_WORKFLOW_NAME)
+      .filter((run: any) => String(run?.path || "").trim() === GITHUB_WORKFLOW_PATH);
+    const run = runs.find((row: any) => row?.status === "completed" && row?.conclusion === "success")
+      || runs.find((row: any) => row?.status === "completed")
+      || runs[0]
+      || null;
+
+    if (!run) {
+      const checklist = emptyGateChecklist("missing", candidateSha);
+      checklist.counts.missing = requiredGates.length;
+      checklist.items = requiredGates.map((gate: string) => ({
+        gate,
+        status: "missing",
+        step_name: null,
+        step_number: null,
+        step_conclusion: null,
+        detail: "No canonical pull-request workflow run is recorded on this exact Development SHA.",
+      }));
+      return checklist;
+    }
+
+    const runId = Number(run?.id || 0) || null;
+    const jobsPayload = runId
+      ? await fetchGithubJson(`${GITHUB_ACTIONS_RUNS_URL}/${runId}/jobs?filter=latest&per_page=100`)
+      : { jobs: [] };
+    const jobs = Array.isArray(jobsPayload?.jobs) ? jobsPayload.jobs : [];
+    const sourceJob = jobs.find((job: any) => String(job?.name || "").trim() === "source-checks") || null;
+    const steps = Array.isArray(sourceJob?.steps) ? sourceJob.steps : [];
+    const evidenceAt = String(run?.completed_at || run?.updated_at || run?.run_started_at || run?.created_at || "").trim() || null;
+    const evidenceMs = evidenceAt ? Date.parse(evidenceAt) : Number.NaN;
+    const ageHours = Number.isFinite(evidenceMs) ? Math.max(0, (Date.now() - evidenceMs) / 3600000) : null;
+    const staleRun = ageHours !== null && ageHours > RELEASE_GATE_EVIDENCE_FRESH_HOURS;
+
+    const items: ReleaseGateChecklistItem[] = requiredGates.map((gate: string) => {
+      const step = gateStep(steps, gate);
+      const conclusion = String(step?.conclusion || "").trim().toLowerCase() || null;
+      if (!step || conclusion !== "success") {
+        return {
+          gate,
+          status: "missing",
+          step_name: step?.name ? String(step.name) : null,
+          step_number: Number.isFinite(Number(step?.number)) ? Number(step.number) : null,
+          step_conclusion: conclusion,
+          detail: step
+            ? `Required workflow step is ${conclusion || String(step?.status || "not proven")}; success on the exact candidate SHA is required.`
+            : "Required gate step is not present in the selected canonical workflow evidence.",
+        };
+      }
+      if (staleRun) {
+        return {
+          gate,
+          status: "stale",
+          step_name: String(step.name || ""),
+          step_number: Number.isFinite(Number(step?.number)) ? Number(step.number) : null,
+          step_conclusion: conclusion,
+          detail: `Gate passed on the exact candidate SHA, but the workflow evidence is older than ${RELEASE_GATE_EVIDENCE_FRESH_HOURS} hours.`,
+        };
+      }
+      return {
+        gate,
+        status: "proven",
+        step_name: String(step.name || ""),
+        step_number: Number.isFinite(Number(step?.number)) ? Number(step.number) : null,
+        step_conclusion: conclusion,
+        detail: "Gate step completed successfully on the exact current Development SHA within the evidence freshness window.",
+      };
+    });
+
+    const counts = {
+      proven: items.filter((item) => item.status === "proven").length,
+      missing: items.filter((item) => item.status === "missing").length,
+      stale: items.filter((item) => item.status === "stale").length,
+      not_applicable: items.filter((item) => item.status === "not_applicable").length,
+    };
+    const status: ReleaseGateChecklist["status"] = counts.missing > 0 ? "missing" : counts.stale > 0 ? "stale" : "proven";
+    return {
+      available: true,
+      status,
+      candidate_sha: candidateSha,
+      workflow_run_id: runId,
+      workflow_run_number: Number(run?.run_number || 0) || null,
+      workflow_run_attempt: Number(run?.run_attempt || 0) || null,
+      workflow_status: String(run?.status || "").trim() || null,
+      workflow_conclusion: String(run?.conclusion || "").trim() || null,
+      workflow_completed_at: String(run?.completed_at || "").trim() || null,
+      evidence_age_hours: ageHours === null ? null : Math.round(ageHours * 10) / 10,
+      fresh_hours: RELEASE_GATE_EVIDENCE_FRESH_HOURS,
+      counts,
+      items,
+      error: null,
+    };
+  } catch (err) {
+    return emptyGateChecklist(
+      "evidence_unavailable",
+      candidateSha,
+      String((err as Error)?.message || err || "Canonical workflow evidence could not be loaded."),
+    );
+  }
+}
+
 async function loadReleaseDivergence(): Promise<ReleaseDivergence> {
   const fallback: ReleaseDivergence = {
     available: false,
@@ -117,19 +312,8 @@ async function loadReleaseDivergence(): Promise<ReleaseDivergence> {
     comparison_files_truncated: false,
     error: null,
   };
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 2500);
   try {
-    const githubResponse = await fetch(GITHUB_COMPARE_URL, {
-      headers: {
-        "Accept": "application/vnd.github+json",
-        "User-Agent": "ywi-admin-it-readiness",
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
-      signal: controller.signal,
-    });
-    if (!githubResponse.ok) throw new Error(`GitHub compare returned HTTP ${githubResponse.status}.`);
-    const payload = await githubResponse.json();
+    const payload = await fetchGithubJson(GITHUB_COMPARE_URL, 2500);
     const developmentSha = String(payload?.head_commit?.sha || "").trim() || null;
     const productionSha = String(payload?.base_commit?.sha || "").trim() || null;
     const developmentTree = String(payload?.head_commit?.commit?.tree?.sha || "").trim() || null;
@@ -190,8 +374,6 @@ async function loadReleaseDivergence(): Promise<ReleaseDivergence> {
       policy_error: "Live GitHub comparison is unavailable; release classification is unavailable by design.",
       error: String((err as Error)?.message || err || "Live GitHub comparison could not be loaded."),
     };
-  } finally {
-    clearTimeout(timer);
   }
 }
 
@@ -234,6 +416,7 @@ Deno.serve(async (req: Request) => {
     listRows(supabase, "v_it_current_admin_todo", { order: "sort_order", limit: 80 }),
   ]);
   const releaseDivergence = await releaseDivergencePromise;
+  const releaseGateChecklist = await loadReleaseGateChecklist(releaseDivergence);
 
   const [schemaDrift, releaseAuthority, releaseEvidence, scorecardTruthStatus, openRails, adminIntegrity, runtimeHealth, functionReadiness, readinessRegistry, currentTodo] = sources;
   const required = [schemaDrift, releaseAuthority, scorecardTruthStatus, openRails, adminIntegrity, runtimeHealth, functionReadiness, currentTodo];
@@ -319,6 +502,20 @@ Deno.serve(async (req: Request) => {
       release_policy_changed_migrations: policy.changed_migrations || [],
       release_policy_comparison_files_truncated: releaseDivergence.comparison_files_truncated,
       release_policy_error: releaseDivergence.policy_error,
+      release_evidence_checklist_available: releaseGateChecklist.available,
+      release_evidence_checklist_status: releaseGateChecklist.status,
+      release_evidence_checklist_candidate_sha: releaseGateChecklist.candidate_sha,
+      release_evidence_checklist_workflow_run_id: releaseGateChecklist.workflow_run_id,
+      release_evidence_checklist_workflow_run_number: releaseGateChecklist.workflow_run_number,
+      release_evidence_checklist_workflow_run_attempt: releaseGateChecklist.workflow_run_attempt,
+      release_evidence_checklist_workflow_status: releaseGateChecklist.workflow_status,
+      release_evidence_checklist_workflow_conclusion: releaseGateChecklist.workflow_conclusion,
+      release_evidence_checklist_workflow_completed_at: releaseGateChecklist.workflow_completed_at,
+      release_evidence_checklist_age_hours: releaseGateChecklist.evidence_age_hours,
+      release_evidence_checklist_fresh_hours: releaseGateChecklist.fresh_hours,
+      release_evidence_checklist_counts: releaseGateChecklist.counts,
+      release_evidence_checklist_items: releaseGateChecklist.items,
+      release_evidence_checklist_error: releaseGateChecklist.error,
       scorecard_truth_status: scorecardRow.scorecard_truth_status || "unknown",
       scorecard_open_count: Number(scorecardRow.open_count || 0),
       scorecard_unclassified_open_count: Number(scorecardRow.unclassified_open_count || 0),
