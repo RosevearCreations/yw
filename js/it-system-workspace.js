@@ -1,15 +1,15 @@
 /* File: js/it-system-workspace.js
-   Build 247 I.T. & System release classification + divergence cockpit.
+   Build 248 I.T. & System release classification, evidence checklist + divergence cockpit.
    Presentation-only operator overview over the established bounded I.T. Readiness authority.
-   It reads the already-loaded readiness snapshot, including the Admin-only read-only GitHub
-   comparison and Build 246 policy evidence supplied by the existing readiness runtime, and
-   creates no browser API, deployment, repository, authentication, database, provider, or write authority.
+   It reads the already-loaded readiness snapshot, including Admin-only read-only GitHub
+   comparison, Build 246 policy evidence and exact-SHA canonical workflow gate evidence,
+   and creates no browser API, deployment, repository, authentication, database, provider, or write authority.
 */
 
 'use strict';
 
 (function () {
-  const BUILD = 247;
+  const BUILD = 248;
   const WORKSPACE_ID = 'itSystemWorkspace';
   const STYLE_ID = 'itSystemWorkspaceStyles';
   const REPOSITORY_REMEDIATION_STEPS = Object.freeze([
@@ -42,8 +42,8 @@
   function normalizedStatus(value) {
     const text = String(value || '').trim().toLowerCase();
     if (/red|fail|failed|error|critical|blocked|behind|missing|unhealthy|not_ready/.test(text)) return 'blocked';
-    if (/amber|warning|warn|review|pending|attention|deferred|manual/.test(text)) return 'action';
-    if (/green|passed|pass|current|ready|healthy|success|complete/.test(text)) return 'ready';
+    if (/amber|warning|warn|review|pending|attention|deferred|manual|stale/.test(text)) return 'action';
+    if (/green|passed|pass|current|ready|healthy|success|complete|proven/.test(text)) return 'ready';
     return 'open';
   }
 
@@ -127,6 +127,21 @@
     return { label:`${risk} RISK`, state:risk === 'CRITICAL' ? 'blocked' : 'action' };
   }
 
+  function releaseEvidenceState(summary) {
+    const divergence = String(summary.release_divergence_status || '').toLowerCase();
+    if (divergence === 'content_current' || String(summary.release_evidence_checklist_status || '').toLowerCase() === 'not_applicable') {
+      return { label:'NOT APPLICABLE', state:'ready' };
+    }
+    if (!summary.release_evidence_checklist_available) return { label:'EVIDENCE UNAVAILABLE', state:'open' };
+    const counts = summary.release_evidence_checklist_counts || {};
+    const missing = Number(counts.missing || 0);
+    const stale = Number(counts.stale || 0);
+    if (missing > 0) return { label:`${missing} MISSING`, state:'blocked' };
+    if (stale > 0) return { label:`${stale} STALE`, state:'action' };
+    if (String(summary.release_evidence_checklist_status || '').toLowerCase() === 'proven') return { label:'ALL GATES PROVEN', state:'ready' };
+    return { label:'REVIEW REQUIRED', state:'action' };
+  }
+
   function nextReleaseAction(summary) {
     if (normalizedStatus(summary.repository_enforcement_status) !== 'ready') {
       return 'Enable and verify main branch protection, then require a fresh exact-main workflow to observe protected=true on that exact main SHA.';
@@ -138,8 +153,12 @@
     if (status === 'production_only_drift') return 'Reconcile Production-only history back into dev and re-run the canonical Development gate before any further promotion.';
     if (status === 'development_changes_pending' && !summary.release_policy_available) return 'Release classification is unavailable for pending Development changes. Restore complete changed-file evidence before any Production promotion.';
     if (status === 'development_changes_pending') {
+      const evidenceStatus = String(summary.release_evidence_checklist_status || '').toLowerCase();
+      if (!summary.release_evidence_checklist_available) return 'Required-gate workflow evidence is unavailable. Restore exact-SHA canonical workflow evidence before any Production promotion.';
+      if (evidenceStatus === 'missing') return 'Complete the missing required gates on the exact current Development SHA, then re-check the canonical promotion evidence.';
+      if (evidenceStatus === 'stale') return 'Re-run the canonical Development proof on the exact current Development SHA so every required gate has fresh evidence.';
       const gates = Array.isArray(summary.release_policy_required_gates) ? summary.release_policy_required_gates.length : 0;
-      return `Complete the ${gates || 'required'} Build 246 policy gate${gates === 1 ? '' : 's'}, then use the normal dev → main promotion PR. This cockpit cannot authorize or perform that promotion.`;
+      return `The ${gates || 'required'} Build 246 policy gate${gates === 1 ? '' : 's'} have exact-SHA workflow evidence; continue only through the normal dev → main promotion PR. This cockpit cannot authorize or perform that promotion.`;
     }
     if (status === 'content_current') return 'No source-content promotion is pending. Continue the roadmap or close the next operational acceptance rail.';
     return 'Open the established release path and resolve the comparison ambiguity before any Production promotion.';
@@ -150,6 +169,8 @@
     if (!summary.github_divergence_evidence_available) return 'Live dev/main comparison evidence is unavailable; do not infer synchronization.';
     const status = String(summary.release_divergence_status || '').toLowerCase();
     if (status === 'development_changes_pending' && !summary.release_policy_available) return 'Development changes are pending but release classification evidence is incomplete; do not promote.';
+    if (status === 'development_changes_pending' && !summary.release_evidence_checklist_available) return 'Development changes are pending but exact-SHA gate evidence is unavailable; do not promote.';
+    if (status === 'development_changes_pending' && /missing|stale/.test(String(summary.release_evidence_checklist_status || '').toLowerCase())) return 'Development changes are pending and mandatory gate evidence is incomplete or stale; do not promote.';
     if (status === 'development_changes_pending') return 'Development contains source changes not yet represented in Production.';
     if (status === 'production_only_drift') return 'Production contains source history not represented in Development; reconciliation is required.';
     if (status === 'content_current') return 'No source-content promotion hold is indicated by the live GitHub comparison.';
@@ -225,6 +246,55 @@
     </section>`;
   }
 
+  function releaseEvidenceChecklistCockpit(payload) {
+    const summary = payload?.summary || {};
+    const state = releaseEvidenceState(summary);
+    const divergence = String(summary.release_divergence_status || '').toLowerCase();
+    const items = Array.isArray(summary.release_evidence_checklist_items) ? summary.release_evidence_checklist_items : [];
+    const counts = summary.release_evidence_checklist_counts || {};
+    const error = String(summary.release_evidence_checklist_error || '').trim();
+
+    if (divergence === 'content_current' || String(summary.release_evidence_checklist_status || '').toLowerCase() === 'not_applicable') {
+      return `<section id="releaseEvidenceChecklistCockpit" class="it-system-evidence" aria-labelledby="releaseEvidenceChecklistCockpitTitle">
+        <div class="it-system-divergence-head"><div><span class="module-kicker">Build ${BUILD} · exact-SHA workflow evidence</span><h3 id="releaseEvidenceChecklistCockpitTitle">Release evidence checklist</h3></div><span class="it-system-status" data-state="ready">NOT APPLICABLE</span></div>
+        <p>No Development source-content candidate is pending, so no mandatory candidate gate checklist applies. A future candidate must earn fresh exact-SHA evidence; prior workflow success is never carried forward automatically.</p>
+      </section>`;
+    }
+
+    if (!summary.release_evidence_checklist_available) {
+      return `<section id="releaseEvidenceChecklistCockpit" class="it-system-evidence" aria-labelledby="releaseEvidenceChecklistCockpitTitle">
+        <div class="it-system-divergence-head"><div><span class="module-kicker">Build ${BUILD} · exact-SHA workflow evidence</span><h3 id="releaseEvidenceChecklistCockpitTitle">Release evidence checklist</h3></div><span class="it-system-status" data-state="open">EVIDENCE UNAVAILABLE</span></div>
+        <p>${esc(error || 'Canonical workflow evidence is unavailable for the current candidate.')}</p>
+        <small>Unavailable workflow evidence never marks a required gate proven. Restore the canonical exact-SHA evidence path before Production promotion.</small>
+      </section>`;
+    }
+
+    const runNumber = Number(summary.release_evidence_checklist_workflow_run_number || 0);
+    const runId = Number(summary.release_evidence_checklist_workflow_run_id || 0);
+    const runLabel = runNumber ? `Run #${runNumber}${runId ? ` / ${runId}` : ''}` : runId ? `Run ${runId}` : 'No canonical run recorded';
+    const age = summary.release_evidence_checklist_age_hours;
+    const ageText = age === null || age === undefined ? 'age not recorded' : `${Number(age).toFixed(1)}h old`;
+    const freshHours = Number(summary.release_evidence_checklist_fresh_hours || 24);
+    return `<section id="releaseEvidenceChecklistCockpit" class="it-system-evidence" aria-labelledby="releaseEvidenceChecklistCockpitTitle">
+      <div class="it-system-divergence-head"><div><span class="module-kicker">Build ${BUILD} · exact-SHA workflow evidence</span><h3 id="releaseEvidenceChecklistCockpitTitle">Release evidence checklist</h3></div><span class="it-system-status" data-state="${esc(state.state)}">${esc(state.label)}</span></div>
+      <div class="it-system-evidence-summary">
+        <div><span>Candidate SHA</span><strong>${esc(shortSha(summary.release_evidence_checklist_candidate_sha))}</strong><small>Must match the current Development candidate exactly.</small></div>
+        <div><span>Canonical workflow</span><strong>${esc(runLabel)}</strong><small>${esc(`${human(summary.release_evidence_checklist_workflow_status)} / ${human(summary.release_evidence_checklist_workflow_conclusion)}`)}</small></div>
+        <div><span>Freshness</span><strong>${esc(ageText)}</strong><small>Evidence older than ${esc(freshHours)} hours is stale, not proven.</small></div>
+        <div><span>Gate totals</span><strong>${esc(Number(counts.proven || 0))} proven · ${esc(Number(counts.missing || 0))} missing</strong><small>${esc(Number(counts.stale || 0))} stale · ${esc(Number(counts.not_applicable || 0))} not applicable.</small></div>
+      </div>
+      <ul class="it-system-evidence-list">${items.map((item)=>{
+        const status = String(item?.status || 'missing').toLowerCase();
+        const stateName = status === 'proven' ? 'ready' : status === 'missing' ? 'blocked' : status === 'stale' ? 'action' : 'open';
+        return `<li data-evidence-status="${esc(status)}"><span class="it-system-status" data-state="${esc(stateName)}">${esc(human(status).toUpperCase())}</span><div><code>${esc(item?.gate || 'unknown gate')}</code><small>${esc(item?.detail || 'No gate detail recorded.')}</small></div></li>`;
+      }).join('')}</ul>
+      <div class="it-system-divergence-notes">
+        <p><strong>Evidence rule:</strong> only a successful matching gate step on the exact current Development SHA within the freshness window is shown as proven.</p>
+        <p><strong>Boundary:</strong> This checklist does not rerun gates, mutate GitHub, record database evidence, change repository protection, or authorize Production. Canonical workflow and repository controls remain authoritative.</p>
+      </div>
+    </section>`;
+  }
+
   function repositoryRemediation(payload) {
     if (!payload) return '';
     const summary=payload.summary || {};
@@ -250,10 +320,10 @@
       #${WORKSPACE_ID}{margin:0 0 16px;padding:16px;border:1px solid rgba(56,189,248,.28);border-radius:16px;background:linear-gradient(180deg,rgba(15,23,42,.94),rgba(15,23,42,.7))}
       #${WORKSPACE_ID}[hidden]{display:none!important}.it-system-head,.it-system-divergence-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}.it-system-head h2,.it-system-divergence-head h3{margin:2px 0 5px}.it-system-head p{margin:0;max-width:850px;color:#cbd5e1;line-height:1.45}.it-system-status{display:inline-flex;align-items:center;min-height:30px;padding:4px 9px;border:1px solid rgba(148,163,184,.28);border-radius:999px;font-size:.75rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase}.it-system-status[data-state="ready"]{border-color:rgba(52,211,153,.45);color:#d7ffe9}.it-system-status[data-state="action"]{border-color:rgba(251,191,36,.48);color:#fff3c4}.it-system-status[data-state="blocked"]{border-color:rgba(248,113,113,.5);color:#fee2e2}.it-system-status[data-state="open"]{color:#bae6fd;border-color:rgba(56,189,248,.45)}
       .it-system-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:14px 0}.it-system-metric{padding:10px 11px;border-radius:12px;background:rgba(30,41,59,.72);border:1px solid rgba(148,163,184,.16)}.it-system-metric span,.it-system-metric strong{display:block}.it-system-metric span{font-size:.75rem;color:#aebdd0}.it-system-metric strong{margin-top:4px;font-size:1.02rem;word-break:break-word}.it-system-context{display:grid;gap:8px;margin:10px 0 14px}.it-system-context div{padding:11px 12px;border-radius:12px;background:rgba(148,163,184,.07);color:#cbd5e1;line-height:1.45}
-      .it-system-divergence,.it-system-policy{margin:12px 0 14px;padding:14px;border:1px solid rgba(56,189,248,.34);border-radius:14px;background:rgba(2,132,199,.08)}.it-system-policy{border-color:rgba(167,139,250,.36);background:rgba(91,33,182,.09)}.it-system-policy>p{color:#dbe6f4;line-height:1.45}.it-system-divergence-grid,.it-system-policy-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:10px}.it-system-divergence-grid>div,.it-system-policy-grid>div{padding:10px 11px;border-radius:11px;background:rgba(15,23,42,.66);border:1px solid rgba(148,163,184,.16)}.it-system-divergence-grid span,.it-system-divergence-grid strong,.it-system-divergence-grid small,.it-system-policy-grid span,.it-system-policy-grid strong,.it-system-policy-grid small{display:block}.it-system-divergence-grid span,.it-system-policy-grid span{font-size:.74rem;color:#aebdd0}.it-system-divergence-grid strong,.it-system-policy-grid strong{margin-top:4px;word-break:break-word}.it-system-divergence-grid small,.it-system-policy-grid small{margin-top:4px;color:#b9c8dc;line-height:1.35}.it-system-divergence-notes{display:grid;gap:6px;margin-top:10px}.it-system-divergence-notes p{margin:0;padding:9px 10px;border-radius:10px;background:rgba(148,163,184,.07);color:#d6e0ed;line-height:1.42}.it-system-policy-gates{margin-top:10px;padding:11px 12px;border-radius:11px;background:rgba(15,23,42,.66);border:1px solid rgba(167,139,250,.24)}.it-system-policy-gates>strong{display:block;margin-bottom:6px}.it-system-policy-gates ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 18px;margin:0;padding-left:1.2rem}.it-system-policy-gates li{min-width:0}.it-system-policy-gates code{font-size:.84em;white-space:normal;overflow-wrap:anywhere}
+      .it-system-divergence,.it-system-policy,.it-system-evidence{margin:12px 0 14px;padding:14px;border:1px solid rgba(56,189,248,.34);border-radius:14px;background:rgba(2,132,199,.08)}.it-system-policy{border-color:rgba(167,139,250,.36);background:rgba(91,33,182,.09)}.it-system-evidence{border-color:rgba(45,212,191,.34);background:rgba(13,148,136,.07)}.it-system-policy>p,.it-system-evidence>p{color:#dbe6f4;line-height:1.45}.it-system-divergence-grid,.it-system-policy-grid,.it-system-evidence-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:10px}.it-system-divergence-grid>div,.it-system-policy-grid>div,.it-system-evidence-summary>div{padding:10px 11px;border-radius:11px;background:rgba(15,23,42,.66);border:1px solid rgba(148,163,184,.16)}.it-system-divergence-grid span,.it-system-divergence-grid strong,.it-system-divergence-grid small,.it-system-policy-grid span,.it-system-policy-grid strong,.it-system-policy-grid small,.it-system-evidence-summary span,.it-system-evidence-summary strong,.it-system-evidence-summary small{display:block}.it-system-divergence-grid span,.it-system-policy-grid span,.it-system-evidence-summary span{font-size:.74rem;color:#aebdd0}.it-system-divergence-grid strong,.it-system-policy-grid strong,.it-system-evidence-summary strong{margin-top:4px;word-break:break-word}.it-system-divergence-grid small,.it-system-policy-grid small,.it-system-evidence-summary small{margin-top:4px;color:#b9c8dc;line-height:1.35}.it-system-divergence-notes{display:grid;gap:6px;margin-top:10px}.it-system-divergence-notes p{margin:0;padding:9px 10px;border-radius:10px;background:rgba(148,163,184,.07);color:#d6e0ed;line-height:1.42}.it-system-policy-gates{margin-top:10px;padding:11px 12px;border-radius:11px;background:rgba(15,23,42,.66);border:1px solid rgba(167,139,250,.24)}.it-system-policy-gates>strong{display:block;margin-bottom:6px}.it-system-policy-gates ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 18px;margin:0;padding-left:1.2rem}.it-system-policy-gates li{min-width:0}.it-system-policy-gates code{font-size:.84em;white-space:normal;overflow-wrap:anywhere}.it-system-evidence-list{display:grid;gap:7px;margin:10px 0 0;padding:0;list-style:none}.it-system-evidence-list li{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start;gap:9px;padding:9px 10px;border-radius:11px;background:rgba(15,23,42,.66);border:1px solid rgba(148,163,184,.16)}.it-system-evidence-list .it-system-status{min-height:25px;font-size:.67rem}.it-system-evidence-list code,.it-system-evidence-list small{display:block}.it-system-evidence-list code{font-size:.87em;white-space:normal;overflow-wrap:anywhere}.it-system-evidence-list small{margin-top:4px;color:#b9c8dc;line-height:1.35}
       .it-system-remediation{margin:12px 0 14px;padding:13px 14px;border:1px solid rgba(251,191,36,.42);border-radius:13px;background:rgba(120,53,15,.16)}.it-system-remediation h3{margin:4px 0 7px}.it-system-remediation p{margin:0 0 8px;color:#e2e8f0;line-height:1.45}.it-system-remediation ol{margin:8px 0 10px;padding-left:1.3rem;color:#e2e8f0}.it-system-remediation li{margin:5px 0;line-height:1.4}.it-system-remediation small{display:block;color:#fef3c7;line-height:1.45}.it-system-remediation code{font-size:.9em}
       .it-system-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.it-system-card{text-align:left;min-width:0;padding:13px;border:1px solid rgba(148,163,184,.2);border-radius:13px;background:rgba(15,23,42,.72);color:inherit;cursor:pointer}.it-system-card:hover,.it-system-card:focus-visible{border-color:rgba(56,189,248,.62)}.it-system-card strong,.it-system-card small{display:block}.it-system-card small{margin-top:5px;color:#b9c8dc;line-height:1.4}.it-system-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
-      @media(max-width:680px){.it-system-grid,.it-system-divergence-grid,.it-system-policy-grid,.it-system-policy-gates ul{grid-template-columns:1fr}.it-system-actions>*{flex:1 1 170px}.it-system-remediation,.it-system-divergence,.it-system-policy{padding:12px}.it-system-remediation ol{padding-left:1.15rem}}
+      @media(max-width:680px){.it-system-grid,.it-system-divergence-grid,.it-system-policy-grid,.it-system-policy-gates ul,.it-system-evidence-summary{grid-template-columns:1fr}.it-system-evidence-list li{grid-template-columns:1fr}.it-system-actions>*{flex:1 1 170px}.it-system-remediation,.it-system-divergence,.it-system-policy,.it-system-evidence{padding:12px}.it-system-remediation ol{padding-left:1.15rem}}
     `;
     document.head.appendChild(style);
   }
@@ -310,13 +380,14 @@
       const rows = metrics(payload);
       host.innerHTML = `
         <div class="it-system-head">
-          <div><span class="module-kicker">Build ${BUILD} · focused operator workspace</span><h2 id="itSystemWorkspaceTitle">I.T. &amp; System</h2><p>Start with bounded source, repository, schema, Admin-access, dev/main handoff and Build 246 release-classification truth, then jump into the established I.T. Readiness evidence needed for investigation. This presentation does not deploy, change repository protection, mutate database schema, change authentication/roles, run browser smoke, authorize Production, or create a new browser data/write authority.</p></div>
+          <div><span class="module-kicker">Build ${BUILD} · focused operator workspace</span><h2 id="itSystemWorkspaceTitle">I.T. &amp; System</h2><p>Start with bounded source, repository, schema, Admin-access, dev/main handoff, Build 246 release classification and exact-SHA mandatory-gate workflow evidence, then jump into the established I.T. Readiness evidence needed for investigation. This presentation does not deploy, change repository protection, mutate database schema, change authentication/roles, rerun browser smoke, authorize Production, or create a new browser data/write authority.</p></div>
           <span class="it-system-status" data-state="${esc(status.state)}">${esc(status.label)}</span>
         </div>
         <div class="it-system-metrics" aria-label="Current I.T. and system readiness summary">${rows.map(([label,value])=>`<div class="it-system-metric"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('')}</div>
         <div class="it-system-context"><div><strong>Release evidence:</strong> ${esc(sourceContext(payload))}</div><div><strong>Operator context:</strong> ${esc(operatorContext(payload))}</div></div>
         ${releaseDivergenceCockpit(payload)}
         ${releaseClassificationCockpit(payload)}
+        ${releaseEvidenceChecklistCockpit(payload)}
         ${repositoryRemediation(payload)}
         <div class="it-system-grid">${QUICK_LINKS.map((item)=>`<button type="button" class="it-system-card" data-it-system-key="${esc(item.key)}"><strong>${esc(item.title)}</strong><small>${esc(item.note)}</small></button>`).join('')}</div>
         <div class="it-system-actions"><button id="itSystemRefresh" type="button" class="secondary">Refresh existing readiness</button><button type="button" class="secondary" data-it-system-key="release">Open release path</button></div>

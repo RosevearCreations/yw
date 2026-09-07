@@ -60,6 +60,27 @@ async function mountIT(page){
         release_policy_changed_migrations:['208'],
         release_policy_comparison_files_truncated:false,
         release_policy_error:null,
+        release_evidence_checklist_available:true,
+        release_evidence_checklist_status:'missing',
+        release_evidence_checklist_candidate_sha:'1111111111111111111111111111111111111111',
+        release_evidence_checklist_workflow_run_id:9001,
+        release_evidence_checklist_workflow_run_number:383,
+        release_evidence_checklist_workflow_run_attempt:1,
+        release_evidence_checklist_workflow_status:'completed',
+        release_evidence_checklist_workflow_conclusion:'failure',
+        release_evidence_checklist_workflow_completed_at:'2026-09-07T16:30:00Z',
+        release_evidence_checklist_age_hours:0.8,
+        release_evidence_checklist_fresh_hours:24,
+        release_evidence_checklist_counts:{proven:4,missing:2,stale:0,not_applicable:0},
+        release_evidence_checklist_items:[
+          {gate:'test:promotion-shape',status:'proven',step_name:'Run npm run test:promotion-shape',step_number:6,step_conclusion:'success',detail:'Gate step completed successfully on the exact current Development SHA within the evidence freshness window.'},
+          {gate:'test:repository-protection-preflight',status:'proven',step_name:'Run npm run test:repository-protection-preflight',step_number:7,step_conclusion:'success',detail:'Gate step completed successfully on the exact current Development SHA within the evidence freshness window.'},
+          {gate:'test:staging-acceptance',status:'proven',step_name:'Run npm run test:staging-acceptance',step_number:25,step_conclusion:'success',detail:'Gate step completed successfully on the exact current Development SHA within the evidence freshness window.'},
+          {gate:'test:staging-runtime-schema',status:'missing',step_name:'Run npm run test:staging-runtime-schema',step_number:29,step_conclusion:'failure',detail:'Required workflow step is failure; success on the exact candidate SHA is required.'},
+          {gate:'test:current-schema-staging-runbook',status:'proven',step_name:'Run npm run test:current-schema-staging-runbook',step_number:30,step_conclusion:'success',detail:'Gate step completed successfully on the exact current Development SHA within the evidence freshness window.'},
+          {gate:'test:finance-schema-dependencies',status:'missing',step_name:null,step_number:null,step_conclusion:null,detail:'Required gate step is not present in the selected canonical workflow evidence.'}
+        ],
+        release_evidence_checklist_error:null,
         admin_access_integrity_blockers:0,
         readiness_blockers:0,
         assertion_blockers:0,
@@ -98,17 +119,30 @@ async function mountIT(page){
       summary.release_policy_changed_files=[];
       summary.release_policy_changed_migrations=[];
       summary.release_policy_error=null;
+      summary.release_evidence_checklist_available=true;
+      summary.release_evidence_checklist_status='not_applicable';
+      summary.release_evidence_checklist_candidate_sha='5555555555555555555555555555555555555555';
+      summary.release_evidence_checklist_workflow_run_id=null;
+      summary.release_evidence_checklist_workflow_run_number=null;
+      summary.release_evidence_checklist_workflow_run_attempt=null;
+      summary.release_evidence_checklist_workflow_status=null;
+      summary.release_evidence_checklist_workflow_conclusion=null;
+      summary.release_evidence_checklist_workflow_completed_at=null;
+      summary.release_evidence_checklist_age_hours=null;
+      summary.release_evidence_checklist_counts={proven:0,missing:0,stale:0,not_applicable:0};
+      summary.release_evidence_checklist_items=[];
+      summary.release_evidence_checklist_error=null;
       document.getElementById('runtimeMarker').textContent='refreshed';
     });
   });
   await page.addScriptTag({content:workspaceSource});
 }
 
-test('Build 247 renders divergence plus Build 246 release class, risk, evidence profile and mandatory gates without expanding authority',async({page})=>{
+test('Build 248 renders divergence, release class and exact-SHA required-gate evidence without expanding authority',async({page})=>{
   await mountIT(page);
   await expect(page.locator('#itSystemWorkspace')).toBeVisible();
-  await expect(page.locator('#itSystemWorkspace')).toHaveAttribute('data-build','247');
-  await expect(page.locator('#itSystemWorkspace')).toContainText('does not deploy, change repository protection, mutate database schema, change authentication/roles, run browser smoke, authorize Production');
+  await expect(page.locator('#itSystemWorkspace')).toHaveAttribute('data-build','248');
+  await expect(page.locator('#itSystemWorkspace')).toContainText('does not deploy, change repository protection, mutate database schema, change authentication/roles, rerun browser smoke, authorize Production');
   await expect(page.locator('.it-system-status').first()).toContainText('BLOCKED');
   await expect(page.locator('.it-system-metric')).toHaveCount(4);
   await expect(page.locator('.it-system-metric').nth(0)).toContainText('green');
@@ -148,6 +182,22 @@ test('Build 247 renders divergence plus Build 246 release class, risk, evidence 
   await expect(policy).toContainText('cannot run or mark gates passed');
   await expect(policy.locator('.it-system-policy-gates li')).toHaveCount(6);
 
+  const checklist=page.locator('#releaseEvidenceChecklistCockpit');
+  await expect(checklist).toBeVisible();
+  await expect(checklist).toContainText('2 MISSING');
+  await expect(checklist).toContainText('Candidate SHA');
+  await expect(checklist).toContainText('111111111111');
+  await expect(checklist).toContainText('Run #383 / 9001');
+  await expect(checklist).toContainText('0.8h old');
+  await expect(checklist).toContainText('4 proven · 2 missing');
+  await expect(checklist).toContainText('test:staging-runtime-schema');
+  await expect(checklist).toContainText('test:finance-schema-dependencies');
+  await expect(checklist.locator('.it-system-evidence-list li')).toHaveCount(6);
+  await expect(checklist.locator('[data-evidence-status="proven"]')).toHaveCount(4);
+  await expect(checklist.locator('[data-evidence-status="missing"]')).toHaveCount(2);
+  await expect(checklist).toContainText('does not rerun gates');
+  await expect(checklist).toContainText('Canonical workflow and repository controls remain authoritative');
+
   const remediation=page.locator('#repositoryEnforcementRemediation');
   await expect(remediation).toBeVisible();
   await expect(remediation).toContainText('Settings → Branches');
@@ -156,7 +206,7 @@ test('Build 247 renders divergence plus Build 246 release class, risk, evidence 
   expect(await page.evaluate(()=>window.__refreshes)).toBe(0);
 });
 
-test('Build 247 follows I.T. route visibility without creating a second browser data load',async({page})=>{
+test('Build 248 follows I.T. route visibility without creating a second browser data load',async({page})=>{
   await mountIT(page);
   await page.evaluate(()=>document.dispatchEvent(new CustomEvent('ywi:route-shown',{detail:{allowed:'admin'}})));
   await expect(page.locator('#itSystemWorkspace')).toBeHidden();
@@ -167,7 +217,7 @@ test('Build 247 follows I.T. route visibility without creating a second browser 
   expect(await page.evaluate(()=>window.__refreshes)).toBe(0);
 });
 
-test('Build 247 reuses readiness refresh and removes candidate classification when dev/main content is current',async({page})=>{
+test('Build 248 reuses readiness refresh and marks release checklist not applicable when dev/main content is current',async({page})=>{
   await mountIT(page);
 
   await page.locator('[data-it-system-key="runtime"]').click();
@@ -187,9 +237,13 @@ test('Build 247 reuses readiness refresh and removes candidate classification wh
   await expect(policy).toContainText('NO PENDING CANDIDATE');
   await expect(policy).toContainText('there is no candidate diff to classify');
   await expect(policy.locator('.it-system-policy-gates')).toHaveCount(0);
+  const checklist=page.locator('#releaseEvidenceChecklistCockpit');
+  await expect(checklist).toContainText('NOT APPLICABLE');
+  await expect(checklist).toContainText('no mandatory candidate gate checklist applies');
+  await expect(checklist.locator('.it-system-evidence-list')).toHaveCount(0);
 });
 
-test('Build 247 treats unavailable GitHub comparison and policy evidence as unknown rather than synchronized or safe',async({page})=>{
+test('Build 248 treats unavailable GitHub comparison, policy and workflow evidence as unknown rather than synchronized or safe',async({page})=>{
   await mountIT(page);
   await page.evaluate(()=>{
     const summary=window.__snapshot.summary;
@@ -201,6 +255,10 @@ test('Build 247 treats unavailable GitHub comparison and policy evidence as unkn
     summary.release_policy_available=false;
     summary.release_policy_status='evidence_unavailable';
     summary.release_policy_error='Live GitHub comparison is unavailable; release classification is unavailable by design.';
+    summary.release_evidence_checklist_available=false;
+    summary.release_evidence_checklist_status='evidence_unavailable';
+    summary.release_evidence_checklist_error='GitHub evidence read returned HTTP 403.';
+    summary.release_evidence_checklist_items=[];
     window.YWIITSystemWorkspace.render();
   });
   const divergence=page.locator('#releaseDivergenceCockpit');
@@ -212,9 +270,13 @@ test('Build 247 treats unavailable GitHub comparison and policy evidence as unkn
   await expect(policy).toContainText('CLASSIFICATION UNAVAILABLE');
   await expect(policy).toContainText('release classification is unavailable by design');
   await expect(policy).toContainText('never implies a source-only or safe release');
+  const checklist=page.locator('#releaseEvidenceChecklistCockpit');
+  await expect(checklist).toContainText('EVIDENCE UNAVAILABLE');
+  await expect(checklist).toContainText('GitHub evidence read returned HTTP 403.');
+  await expect(checklist).toContainText('never marks a required gate proven');
 });
 
-test('Build 247 holds a pending Development candidate when changed-file classification evidence is incomplete',async({page})=>{
+test('Build 248 holds a pending Development candidate when changed-file classification evidence is incomplete',async({page})=>{
   await mountIT(page);
   await page.evaluate(()=>{
     const summary=window.__snapshot.summary;
@@ -223,6 +285,10 @@ test('Build 247 holds a pending Development candidate when changed-file classifi
     summary.release_policy_available=false;
     summary.release_policy_status='changed_file_evidence_unavailable';
     summary.release_policy_error='Development commits are pending but GitHub returned no changed-file evidence; release classification cannot infer a safe class.';
+    summary.release_evidence_checklist_available=false;
+    summary.release_evidence_checklist_status='evidence_unavailable';
+    summary.release_evidence_checklist_error='Build 246 release classification must be complete before required-gate workflow evidence can be evaluated.';
+    summary.release_evidence_checklist_items=[];
     window.YWIITSystemWorkspace.render();
   });
   const divergence=page.locator('#releaseDivergenceCockpit');
@@ -231,4 +297,35 @@ test('Build 247 holds a pending Development candidate when changed-file classifi
   const policy=page.locator('#releaseClassificationCockpit');
   await expect(policy).toContainText('CLASSIFICATION UNAVAILABLE');
   await expect(policy).toContainText('cannot infer a safe class');
+  const checklist=page.locator('#releaseEvidenceChecklistCockpit');
+  await expect(checklist).toContainText('EVIDENCE UNAVAILABLE');
+  await expect(checklist).toContainText('classification must be complete');
+});
+
+test('Build 248 distinguishes stale exact-SHA gate proof from current proven evidence',async({page})=>{
+  await mountIT(page);
+  await page.evaluate(()=>{
+    const summary=window.__snapshot.summary;
+    summary.repository_enforcement_status='green';
+    summary.branch_protection_reported=true;
+    summary.release_evidence_checklist_status='stale';
+    summary.release_evidence_checklist_age_hours=26.4;
+    summary.release_evidence_checklist_workflow_conclusion='success';
+    summary.release_evidence_checklist_counts={proven:0,missing:0,stale:6,not_applicable:0};
+    summary.release_evidence_checklist_items=summary.release_evidence_checklist_items.map((item)=>({
+      ...item,
+      status:'stale',
+      step_conclusion:'success',
+      detail:'Gate passed on the exact candidate SHA, but the workflow evidence is older than 24 hours.'
+    }));
+    window.YWIITSystemWorkspace.render();
+  });
+  const checklist=page.locator('#releaseEvidenceChecklistCockpit');
+  await expect(checklist).toContainText('6 STALE');
+  await expect(checklist).toContainText('26.4h old');
+  await expect(checklist.locator('[data-evidence-status="stale"]')).toHaveCount(6);
+  await expect(checklist).toContainText('older than 24 hours');
+  const divergence=page.locator('#releaseDivergenceCockpit');
+  await expect(divergence).toContainText('mandatory gate evidence is incomplete or stale; do not promote');
+  await expect(divergence).toContainText('Re-run the canonical Development proof');
 });
