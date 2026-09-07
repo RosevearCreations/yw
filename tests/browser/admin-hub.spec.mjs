@@ -67,7 +67,14 @@ async function mount(page,{manage=true}={}){
 }
 
 async function mountPeopleAccess(page){
-  await page.setContent('<!doctype html><html><head></head><body><main><section id="admin" class="card"><div class="section-heading"><h2>Admin</h2></div></section></main></body></html>');
+  await page.route('http://people.test/**',async(route)=>{
+    await route.fulfill({
+      status:200,
+      contentType:'text/html',
+      body:'<!doctype html><html><head></head><body><main><section id="admin" class="card"><div class="section-heading"><h2>Admin</h2></div></section></main></body></html>'
+    });
+  });
+  await page.goto('http://people.test/');
   await page.evaluate(()=>{
     localStorage.setItem('ywi_admin_hub_section_v1',JSON.stringify('home'));
     window.__moduleCalls=[];
@@ -75,7 +82,7 @@ async function mountPeopleAccess(page){
     window.YWI_AUTH={getState:()=>({isAuthenticated:true,role:'admin',profile:{id:'admin-1'}})};
     window.YWIAdminHub={open:(section,options)=>{window.__hubOpen={section,options};}};
     window.YWIAPI={
-      escHtml:(value)=>String(value??'').replace(/[&<>"']/g,(m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])),
+      escHtml:(value)=>String(value??'').replace(/[&<>"']/g,(m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[m])),
       jsonFetch:async(path,options)=>{
         window.__moduleCalls.push({path,body:options?.body});
         return {
