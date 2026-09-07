@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { publicStripePolicy, resolveStripeCheckoutPolicy } from "../_shared/stripe-runtime-policy.mjs";
 
 const BUILD = '2026-09-01a';
 const SCHEMA = 159;
@@ -225,10 +226,18 @@ serve(async (req) => {
       if (deposit?.deposit_status === 'checkout_created' && deposit.checkout_url) return Response.json({ ok:true, reused:true, checkout_url:deposit.checkout_url, deposit, rpc:prepared }, { headers:corsHeaders });
       const stripeKey=clean(Deno.env.get('STRIPE_SECRET_KEY'),500);
       const siteUrl=publicSiteUrl(Deno.env.get('PUBLIC_SITE_URL') || Deno.env.get('SITE_URL'));
-      if (!stripeKey || !siteUrl) {
-        await supabase.rpc('ywi_rpc_mark_deposit_checkout_status', { p_deposit_request_id:deposit.id, p_deposit_status:'checkout_created', p_checkout_session_id:null, p_event_payload:{ setup_required:true, build:BUILD, schema:SCHEMA } });
-        return Response.json({ ok:true, setup_required:true, message:'Deposit request saved. Configure STRIPE_SECRET_KEY and PUBLIC_SITE_URL to create hosted checkout.', deposit, rpc:prepared }, { headers:corsHeaders });
+      const stripePolicy=resolveStripeCheckoutPolicy({
+        secretKey:stripeKey,
+        requestedMode:Deno.env.get('STRIPE_CHECKOUT_MODE') || 'test',
+        environment:Deno.env.get('YWI_ENVIRONMENT') || Deno.env.get('APP_ENV') || 'unknown',
+        liveCheckoutEnabled:Deno.env.get('STRIPE_LIVE_CHECKOUT_ENABLED') || ''
+      });
+      const safeStripePolicy=publicStripePolicy(stripePolicy);
+      if (stripePolicy.code === 'stripe_secret_missing' || !siteUrl) {
+        await supabase.rpc('ywi_rpc_mark_deposit_checkout_status', { p_deposit_request_id:deposit.id, p_deposit_status:'checkout_created', p_checkout_session_id:null, p_event_payload:{ setup_required:true, stripe_policy:safeStripePolicy, build:BUILD, schema:SCHEMA } });
+        return Response.json({ ok:true, setup_required:true, message:'Deposit request saved. Configure Stripe test-mode Checkout and PUBLIC_SITE_URL before hosted checkout.', deposit, rpc:prepared, stripe_policy:safeStripePolicy }, { headers:corsHeaders });
       }
+      if (!stripePolicy.allowed) throw new HttpError(409, stripePolicy.message, safeStripePolicy);
       const remainingCents=Number(prepared.remaining_cents || cents(deposit.requested_amount));
       const session=await stripeCheckout(stripeKey, {
         mode:'payment', success_url:`${siteUrl}/?portal=${encodeURIComponent(token)}&deposit=success`, cancel_url:`${siteUrl}/?portal=${encodeURIComponent(token)}&deposit=cancelled`,
@@ -236,15 +245,21 @@ serve(async (req) => {
         'line_items[0][price_data][unit_amount]':String(remainingCents), 'line_items[0][quantity]':'1',
         client_reference_id:deposit.id, customer_email:clean(body.customer_email || pkg.client_email,260),
         'metadata[deposit_request_id]':deposit.id, 'metadata[quote_package_id]':pkg.quote_package_id,
-        'metadata[estimate_id]':pkg.estimate_id, 'metadata[requested_amount_cents]':String(remainingCents)
+        'metadata[estimate_id]':pkg.estimate_id, 'metadata[requested_amount_cents]':String(remainingCents),
+        'metadata[ywi_stripe_mode]':stripePolicy.mode, 'metadata[ywi_environment]':stripePolicy.environment
       }, `deposit-checkout-${deposit.id}`);
+      const expectedLivemode=stripePolicy.mode === 'live';
+      const expectedSessionPrefix=expectedLivemode ? 'cs_live_' : 'cs_test_';
+      if (typeof session?.livemode !== 'boolean' || session.livemode !== expectedLivemode || !String(session?.id || '').startsWith(expectedSessionPrefix)) {
+        throw new HttpError(502, 'Stripe Checkout returned provider-mode evidence that does not match the configured YWI Stripe mode.', safeStripePolicy);
+      }
       const attached=await callRpc(supabase,'ywi_rpc_attach_deposit_checkout',{
         p_deposit_request_id:deposit.id,
         p_checkout_session_id:session.id,
         p_checkout_url:session.url,
-        p_provider_payload:{ mode:session.mode, payment_status:session.payment_status, amount_total:session.amount_total, currency:session.currency }
+        p_provider_payload:{ mode:session.mode, livemode:session.livemode, payment_status:session.payment_status, amount_total:session.amount_total, currency:session.currency, stripe_policy:safeStripePolicy }
       });
-      return Response.json({ ok:true, checkout_url:session.url, deposit:attached.deposit || deposit, rpc:{ prepared, attached } }, { headers:corsHeaders });
+      return Response.json({ ok:true, checkout_url:session.url, deposit:attached.deposit || deposit, rpc:{ prepared, attached }, stripe_policy:safeStripePolicy }, { headers:corsHeaders });
     }
 
     if (action === 'set_live_update_notifications') {

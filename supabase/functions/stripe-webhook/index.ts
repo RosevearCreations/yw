@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { publicStripePolicy, resolveStripeWebhookPolicy } from "../_shared/stripe-runtime-policy.mjs";
 
 const BUILD='2026-09-01a';
 const SCHEMA=159;
@@ -50,7 +51,13 @@ async function recordDelivery(supabase:any,payload:Record<string,unknown>){
       amount_cents:Number.isFinite(Number(payload.amount_cents))?Math.trunc(Number(payload.amount_cents)):null,
       currency_code:clean(payload.currency_code,8).toUpperCase()||null,
       processed_at:payload.delivery_status==='processed'?new Date().toISOString():null,
-      metadata:{build:BUILD,schema:SCHEMA,payment_status:clean(payload.payment_status,40)||null}
+      metadata:{
+        build:BUILD,
+        schema:SCHEMA,
+        payment_status:clean(payload.payment_status,40)||null,
+        provider_mode:clean(payload.provider_mode,20)||null,
+        event_livemode:typeof payload.event_livemode==='boolean'?payload.event_livemode:null
+      }
     };
     if(eventId) await supabase.from('stripe_webhook_delivery_events').upsert(row,{onConflict:'event_id'});
     else await supabase.from('stripe_webhook_delivery_events').insert(row);
@@ -66,6 +73,7 @@ serve(async(req)=>{
   let event:any=null;
   let session:any={};
   let depositId='';
+  let stripePolicy:any=null;
   try{
     const url=Deno.env.get('SUPABASE_URL')||Deno.env.get('SB_URL')||'';
     const key=Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')||Deno.env.get('SB_SERVICE_ROLE_KEY')||'';
@@ -81,20 +89,36 @@ serve(async(req)=>{
     event=JSON.parse(raw);
     const supported=new Set(['checkout.session.completed','checkout.session.async_payment_succeeded','checkout.session.async_payment_failed','checkout.session.expired']);
     if(!supported.has(event.type)){
-      await recordDelivery(supabase,{event_id:event.id,event_type:event.type,delivery_status:'ignored',validation_status:'verified',validation_reason:'Unsupported event type.'});
+      await recordDelivery(supabase,{event_id:event.id,event_type:event.type,delivery_status:'ignored',validation_status:'verified',validation_reason:'Unsupported event type.',event_livemode:typeof event?.livemode==='boolean'?event.livemode:null});
       return new Response(JSON.stringify({ok:true,ignored:true,reason:'event_type'}),{headers:jsonHeaders});
     }
     session=event?.data?.object||{};
+    stripePolicy=resolveStripeWebhookPolicy({
+      requestedMode:Deno.env.get('STRIPE_CHECKOUT_MODE') || 'test',
+      environment:Deno.env.get('YWI_ENVIRONMENT') || Deno.env.get('APP_ENV') || 'unknown',
+      liveCheckoutEnabled:Deno.env.get('STRIPE_LIVE_CHECKOUT_ENABLED') || '',
+      eventLivemode:event?.livemode
+    });
+    const safeStripePolicy=publicStripePolicy(stripePolicy);
+    if(!stripePolicy.allowed){
+      await recordDelivery(supabase,{
+        event_id:event.id,event_type:event.type,delivery_status:'failed',validation_status:'failed',validation_reason:stripePolicy.message,
+        checkout_session_id:session.id,amount_cents:session.amount_total,currency_code:session.currency,payment_status:session.payment_status,
+        provider_mode:stripePolicy.mode,event_livemode:typeof event?.livemode==='boolean'?event.livemode:null
+      });
+      // Acknowledge the delivery so Stripe does not repeatedly retry an event that this environment is intentionally forbidden to process.
+      return new Response(JSON.stringify({ok:true,ignored:true,reason:'stripe_mode',stripe_policy:safeStripePolicy}),{headers:jsonHeaders});
+    }
     depositId=clean(session?.metadata?.deposit_request_id||session?.client_reference_id,80);
     if(!depositId){
-      await recordDelivery(supabase,{event_id:event.id,event_type:event.type,delivery_status:'ignored',validation_status:'verified',validation_reason:'No deposit request reference on session.',checkout_session_id:session.id,amount_cents:session.amount_total,currency_code:session.currency,payment_status:session.payment_status});
-      return new Response(JSON.stringify({ok:true,ignored:true,reason:'deposit_id'}),{headers:jsonHeaders});
+      await recordDelivery(supabase,{event_id:event.id,event_type:event.type,delivery_status:'ignored',validation_status:'verified',validation_reason:'No deposit request reference on session.',checkout_session_id:session.id,amount_cents:session.amount_total,currency_code:session.currency,payment_status:session.payment_status,provider_mode:stripePolicy.mode,event_livemode:event.livemode});
+      return new Response(JSON.stringify({ok:true,ignored:true,reason:'deposit_id',stripe_policy:safeStripePolicy}),{headers:jsonHeaders});
     }
     const {data:deposit,error:depositError}=await supabase.from('customer_deposit_requests').select('*').eq('id',depositId).maybeSingle();
     if(depositError) throw depositError;
     if(!deposit){
-      await recordDelivery(supabase,{event_id:event.id,event_type:event.type,delivery_status:'failed',validation_status:'failed',validation_reason:'Deposit request was not found.',deposit_request_id:depositId,checkout_session_id:session.id,amount_cents:session.amount_total,currency_code:session.currency,payment_status:session.payment_status});
-      return new Response(JSON.stringify({ok:true,ignored:true,reason:'deposit_not_found'}),{headers:jsonHeaders});
+      await recordDelivery(supabase,{event_id:event.id,event_type:event.type,delivery_status:'failed',validation_status:'failed',validation_reason:'Deposit request was not found.',deposit_request_id:depositId,checkout_session_id:session.id,amount_cents:session.amount_total,currency_code:session.currency,payment_status:session.payment_status,provider_mode:stripePolicy.mode,event_livemode:event.livemode});
+      return new Response(JSON.stringify({ok:true,ignored:true,reason:'deposit_not_found',stripe_policy:safeStripePolicy}),{headers:jsonHeaders});
     }
     validateSession(deposit,session);
 
@@ -107,24 +131,24 @@ serve(async(req)=>{
         p_payment_reference:String(session.payment_intent||session.id),
         p_paid_amount:paidAmount,
         p_currency_code:clean(session.currency||deposit.currency_code||'CAD',8).toUpperCase(),
-        p_event_payload:{ stripe_event_id:event.id, payment_status:session.payment_status, event_type:event.type, build:BUILD, schema:SCHEMA }
+        p_event_payload:{ stripe_event_id:event.id, payment_status:session.payment_status, event_type:event.type, stripe_policy:safeStripePolicy, build:BUILD, schema:SCHEMA }
       });
       if(recorded.error) throw recorded.error;
     }else if(event.type==='checkout.session.completed'){
-      const marked=await supabase.rpc('ywi_rpc_mark_deposit_checkout_status',{ p_deposit_request_id:deposit.id, p_deposit_status:'processing', p_checkout_session_id:session.id, p_event_payload:{ stripe_event_id:event.id, payment_status:session.payment_status, event_type:event.type, build:BUILD, schema:SCHEMA } });
+      const marked=await supabase.rpc('ywi_rpc_mark_deposit_checkout_status',{ p_deposit_request_id:deposit.id, p_deposit_status:'processing', p_checkout_session_id:session.id, p_event_payload:{ stripe_event_id:event.id, payment_status:session.payment_status, event_type:event.type, stripe_policy:safeStripePolicy, build:BUILD, schema:SCHEMA } });
       if(marked.error) throw marked.error;
     }else if(event.type==='checkout.session.async_payment_failed'){
-      const marked=await supabase.rpc('ywi_rpc_mark_deposit_checkout_status',{ p_deposit_request_id:deposit.id, p_deposit_status:'failed', p_checkout_session_id:session.id, p_event_payload:{ stripe_event_id:event.id, payment_status:session.payment_status, event_type:event.type, build:BUILD, schema:SCHEMA } });
+      const marked=await supabase.rpc('ywi_rpc_mark_deposit_checkout_status',{ p_deposit_request_id:deposit.id, p_deposit_status:'failed', p_checkout_session_id:session.id, p_event_payload:{ stripe_event_id:event.id, payment_status:session.payment_status, event_type:event.type, stripe_policy:safeStripePolicy, build:BUILD, schema:SCHEMA } });
       if(marked.error) throw marked.error;
     }else if(event.type==='checkout.session.expired'){
-      const marked=await supabase.rpc('ywi_rpc_mark_deposit_checkout_status',{ p_deposit_request_id:deposit.id, p_deposit_status:'expired', p_checkout_session_id:session.id, p_event_payload:{ stripe_event_id:event.id, event_type:event.type, build:BUILD, schema:SCHEMA } });
+      const marked=await supabase.rpc('ywi_rpc_mark_deposit_checkout_status',{ p_deposit_request_id:deposit.id, p_deposit_status:'expired', p_checkout_session_id:session.id, p_event_payload:{ stripe_event_id:event.id, event_type:event.type, stripe_policy:safeStripePolicy, build:BUILD, schema:SCHEMA } });
       if(marked.error) throw marked.error;
     }
-    await recordDelivery(supabase,{event_id:event.id,event_type:event.type,delivery_status:'processed',validation_status:'verified',deposit_request_id:deposit.id,checkout_session_id:session.id,amount_cents:session.amount_total,currency_code:session.currency,payment_status:session.payment_status});
-    return new Response(JSON.stringify({ok:true,received:true}),{headers:jsonHeaders});
+    await recordDelivery(supabase,{event_id:event.id,event_type:event.type,delivery_status:'processed',validation_status:'verified',deposit_request_id:deposit.id,checkout_session_id:session.id,amount_cents:session.amount_total,currency_code:session.currency,payment_status:session.payment_status,provider_mode:stripePolicy.mode,event_livemode:event.livemode});
+    return new Response(JSON.stringify({ok:true,received:true,stripe_policy:safeStripePolicy}),{headers:jsonHeaders});
   }catch(error){
     const message=error instanceof Error?error.message:'Webhook failed.';
-    await recordDelivery(supabase,{event_id:event?.id,event_type:event?.type,delivery_status:'failed',validation_status:'failed',validation_reason:message,deposit_request_id:depositId,checkout_session_id:session?.id,amount_cents:session?.amount_total,currency_code:session?.currency,payment_status:session?.payment_status});
+    await recordDelivery(supabase,{event_id:event?.id,event_type:event?.type,delivery_status:'failed',validation_status:'failed',validation_reason:message,deposit_request_id:depositId,checkout_session_id:session?.id,amount_cents:session?.amount_total,currency_code:session?.currency,payment_status:session?.payment_status,provider_mode:stripePolicy?.mode,event_livemode:typeof event?.livemode==='boolean'?event.livemode:null});
     return new Response(JSON.stringify({ok:false,error:message}),{status:500,headers:jsonHeaders});
   }
 });
