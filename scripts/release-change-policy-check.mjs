@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Build 246 validates release-classification policy only; runner/browser setup remains canonical workflow evidence.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {buildReleaseChangePolicy, evaluateCurrentReleaseChangePolicy, GATE_PROFILES, POLICY_AUTHORITY, verifyPolicyGateCoverage} from './release-change-policy.mjs';
