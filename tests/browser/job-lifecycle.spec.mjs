@@ -391,7 +391,7 @@ test('real customer portal closeout runtime keeps internal costs private and rec
     customer_note:'Completed work reviewed and approved.',
     accept_closeout:true
   });
-  await expect(page.getByText('Signed off')).toBeVisible();
+  await expect(page.getByText('Signed off', { exact:true })).toBeVisible();
   await expect(page.getByText('Closeout signed')).toBeVisible();
   await expect(page.locator('#customerPortalCloseoutSignoffForm')).toHaveCount(0);
   body = (await page.locator('body').innerText()).toLowerCase();
