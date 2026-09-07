@@ -107,8 +107,8 @@ for (const required of [
   'Runtime execution gate: LOCKED',
   'Source-ready does not mean runnable staging.',
   'Production project authority permanently denies staging-acceptance mutation.',
-  "path:'admin-staging-acceptance'",
-  "action:'status'"
+  "row.path==='admin-staging-acceptance'",
+  "row.action==='status'"
 ]) assertIncludes(browser, required, 'Build 252 rendered runtime-gate acceptance');
 
 assertIncludes(readme, 'next safe action', 'README next-safe-action guidance');
