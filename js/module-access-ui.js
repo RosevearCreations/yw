@@ -10,6 +10,7 @@
 
 (function () {
   const ADMIN_HUB_STORAGE = 'ywi_admin_hub_section_v1';
+  const STYLE_ID = 'ywi-people-access-style';
   const state = {
     payload:null,
     loading:false,
@@ -26,6 +27,22 @@
   const byId = (id) => document.getElementById(id);
   const esc = (value) => window.YWIAPI?.escHtml?.(value) || String(value ?? '')
     .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
+
+  function ensureStyles(){
+    if(byId(STYLE_ID))return;
+    const style=document.createElement('style');
+    style.id=STYLE_ID;
+    style.textContent=`
+      .module-access-overview{margin:0 0 18px;padding:16px;border:1px solid rgba(96,165,250,.28);border-radius:16px;background:rgba(15,23,42,.68)}
+      .module-access-overview-head h3{margin:3px 0 6px}.module-access-overview-head p{margin:0;color:var(--text-soft,#cbd5e1)}
+      .module-access-metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin:14px 0}.module-access-metrics article{padding:11px;border:1px solid rgba(148,163,184,.18);border-radius:12px;background:rgba(30,41,59,.58)}.module-access-metrics strong,.module-access-metrics span{display:block}.module-access-metrics strong{font-size:1.25rem}.module-access-metrics span{margin-top:3px;color:var(--text-soft,#cbd5e1);font-size:.8rem}.module-access-metrics article[data-state="blocked"]{border-color:rgba(248,113,113,.45)}.module-access-metrics article[data-state="ready"]{border-color:rgba(52,211,153,.35)}
+      .module-access-quick-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.module-access-finder{display:grid;grid-template-columns:minmax(220px,1fr) minmax(150px,220px) auto;gap:10px;align-items:end;margin:12px 0}.module-access-finder label{min-width:0}.module-access-filter-check{display:flex;align-items:center;gap:8px;min-height:42px;padding:0 8px}.module-access-filter-check input{width:auto}
+      .module-access-people-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-height:520px;overflow:auto;padding-right:3px}.module-access-person{display:flex;flex-direction:column;gap:6px;text-align:left;min-width:0;padding:11px;border:1px solid rgba(148,163,184,.2);border-radius:12px;background:rgba(30,41,59,.5);color:inherit;cursor:pointer}.module-access-person:hover,.module-access-person:focus-visible{border-color:rgba(96,165,250,.65)}.module-access-person[aria-current="true"]{border-color:rgba(96,165,250,.9);box-shadow:0 0 0 1px rgba(96,165,250,.2) inset}.module-access-person strong,.module-access-person small{display:block;overflow-wrap:anywhere}.module-access-person small{color:var(--text-soft,#cbd5e1);line-height:1.35}.module-access-limit-note{display:block;margin-top:8px;color:var(--text-faint,#94a3b8)}
+      @media(max-width:900px){.module-access-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.module-access-people-list{grid-template-columns:1fr}.module-access-finder{grid-template-columns:1fr 1fr}.module-access-filter-check{grid-column:1/-1}}
+      @media(max-width:560px){.module-access-metrics{grid-template-columns:1fr 1fr}.module-access-finder{grid-template-columns:1fr}.module-access-filter-check{grid-column:auto}.module-access-quick-actions>*{flex:1 1 140px}}
+    `;
+    document.head.appendChild(style);
+  }
 
   function auth() { return window.YWI_AUTH?.getState?.() || {}; }
   function isAdmin() { return String(auth().role || '').toLowerCase() === 'admin'; }
@@ -113,6 +130,7 @@
   }
 
   function render() {
+    ensureStyles();
     const host=byId('moduleAccessManager');
     if (!host) return;
     if (!isAdmin()) { host.hidden=true; return; }
@@ -205,6 +223,7 @@
   }
 
   function inject(){
+    ensureStyles();
     const admin=byId('admin');if(!admin||byId('moduleAccessManager'))return;
     const heading=admin.querySelector('.section-heading')||admin.querySelector('h2');
     const shell=document.createElement('section');shell.id='moduleAccessManager';shell.className='module-access-manager admin-panel-block';shell.hidden=true;
