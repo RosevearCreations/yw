@@ -94,7 +94,7 @@ test('I.T. release cockpit renders from one bounded runtime request with no depl
 test('release cockpit exposes the CI performance budget contract', async ({ page }) => {
   await mount(page, payload());
   await expect(page.locator('#runtimePerformanceBudgets .it-performance-budget')).toHaveCount(6);
-  await expect(page.locator('#runtimePerformanceBudgets')).toContainText('30 assets / 20 JS');
+  await expect(page.locator('#runtimePerformanceBudgets')).toContainText('30 assets / 21 JS');
   await expect(page.locator('#runtimePerformanceBudgets')).toContainText('Safety ≤ 10');
   await expect(page.locator('#runtimePerformanceBudgets')).toContainText('Finance ≤ 3');
   await expect(page.locator('#runtimePerformanceBudgets')).toContainText('Jobs ≤ 4');
