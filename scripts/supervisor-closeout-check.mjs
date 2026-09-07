@@ -111,9 +111,11 @@ add('build254-closeout-runtime-guard', hasAll(closeoutGuard, [
 add('build254-closeout-runtime-loader', hasAll(passwordSecurity, [
   "const CLOSEOUT_RUNTIME_GUARD_SCRIPT = '/js/closeout-runtime-guard.js'",
   'loadCloseoutRuntimeGuard',
+  "!document.getElementById('operationsCockpit')",
+  "node.matches?.('#operationsCockpit') || node.querySelector?.('#operationsCockpit')",
   '2026-09-07-build254',
   'Server-side closeout and signoff validation remains authoritative.'
-]), 'Authenticated staff bootstrap loads the Build 254 closeout guard without changing the module manifest or service-worker core cache.');
+]), 'Authenticated bootstrap loads the Build 254 guard only when the Operations Cockpit exists, avoiding unrelated account-security surfaces.');
 add('build254-real-runtime-browser-contract', hasAll(lifecycleBrowser, [
   "const closeoutGuardRuntime = fs.readFileSync('js/closeout-runtime-guard.js', 'utf8')",
   "const customerPortalRuntime = fs.readFileSync('js/customer-portal.js', 'utf8')",
