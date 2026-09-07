@@ -1,7 +1,47 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
 
 const clean = (value) => String(value ?? '').trim();
+
+export function resolvePromotionFreshnessEnv(env = process.env, deps = {}) {
+  const resolved = { ...env };
+  const eventName = clean(resolved.YWI_GITHUB_EVENT_NAME);
+  const baseRef = clean(resolved.YWI_GITHUB_BASE_REF);
+  const headRef = clean(resolved.YWI_GITHUB_HEAD_REF);
+  if (eventName !== 'pull_request' || baseRef !== 'main' || headRef !== 'dev') return resolved;
+
+  const readFile = deps.readFile || ((path) => fs.readFileSync(path, 'utf8'));
+  const lsRemote = deps.lsRemote || (() => execFileSync('git', ['ls-remote', 'origin', 'refs/heads/dev', 'refs/heads/main'], { encoding: 'utf8' }));
+
+  if (!clean(resolved.YWI_GITHUB_PR_HEAD_SHA) || !clean(resolved.YWI_GITHUB_PR_BASE_SHA)) {
+    try {
+      const eventPath = clean(resolved.GITHUB_EVENT_PATH);
+      if (eventPath) {
+        const payload = JSON.parse(readFile(eventPath));
+        resolved.YWI_GITHUB_PR_HEAD_SHA ||= clean(payload?.pull_request?.head?.sha);
+        resolved.YWI_GITHUB_PR_BASE_SHA ||= clean(payload?.pull_request?.base?.sha);
+      }
+    } catch (error) {
+      resolved.YWI_PROMOTION_FRESHNESS_EVENT_ERROR = clean(error?.message || error);
+    }
+  }
+
+  if (!clean(resolved.YWI_GITHUB_LIVE_DEV_SHA) || !clean(resolved.YWI_GITHUB_LIVE_MAIN_SHA)) {
+    try {
+      const rows = String(lsRemote() || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+      for (const row of rows) {
+        const [sha, ref] = row.split(/\s+/);
+        if (ref === 'refs/heads/dev') resolved.YWI_GITHUB_LIVE_DEV_SHA ||= clean(sha);
+        if (ref === 'refs/heads/main') resolved.YWI_GITHUB_LIVE_MAIN_SHA ||= clean(sha);
+      }
+    } catch (error) {
+      resolved.YWI_PROMOTION_FRESHNESS_REMOTE_ERROR = clean(error?.message || error);
+    }
+  }
+
+  return resolved;
+}
 
 export function evaluateProductionPromotionShape(env = process.env) {
   const eventName = clean(env.YWI_GITHUB_EVENT_NAME);
@@ -113,7 +153,8 @@ export function renderPromotionShapeSummary(result) {
 }
 
 function runCli() {
-  const result = evaluateProductionPromotionShape(process.env);
+  const hydratedEnv = resolvePromotionFreshnessEnv(process.env);
+  const result = evaluateProductionPromotionShape(hydratedEnv);
   const summary = renderPromotionShapeSummary(result);
   console.log(JSON.stringify(result, null, 2));
   console.error(result.ok ? 'PRODUCTION PROMOTION SHAPE: VALID' : 'PRODUCTION PROMOTION SHAPE: LOCKED');
