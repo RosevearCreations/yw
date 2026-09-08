@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Build 210 + Build 255: deterministic customer-portal responsive/privacy/provider-mode release authority. */
+/** Build 210 + Build 255 + Build 256: deterministic customer-portal responsive/privacy/provider-mode release authority. */
 import fs from 'node:fs';
 import {
   resolveStripeCheckoutPolicy,
@@ -7,6 +7,12 @@ import {
   resolveStripeWebhookPolicy,
   publicStripePolicy
 } from '../supabase/functions/_shared/stripe-runtime-policy.mjs';
+import {
+  evaluateStripeAcceptancePreflight,
+  STRIPE_ACCEPTANCE_CONFIRM,
+  STRIPE_ACCEPTANCE_DATA_SCOPE,
+  STRIPE_ACCEPTANCE_RAIL
+} from './customer-portal-stripe-acceptance-preflight.mjs';
 
 const read = (path) => fs.readFileSync(path, 'utf8');
 const hasAll = (text, values) => values.every((value) => text.includes(value));
@@ -21,6 +27,7 @@ const portal = read('js/customer-portal.js');
 const portalFn = read('supabase/functions/customer-portal/index.ts');
 const webhookFn = read('supabase/functions/stripe-webhook/index.ts');
 const stripePolicySource = read('supabase/functions/_shared/stripe-runtime-policy.mjs');
+const stripeAcceptancePreflightSource = read('scripts/customer-portal-stripe-acceptance-preflight.mjs');
 const runbook = read('sql/188_open_rail_acceptance_readiness.sql');
 const css = read('style.css');
 const workflow = read('.github/workflows/staging-browser-integration.yml');
@@ -147,7 +154,105 @@ add('build255-real-browser-provider-contract', hasAll(portalBrowser, [
   "depositStatus:'paid'", 'Deposit received'
 ]), 'Mandatory rendered portal test executes blocked-mode, hosted-test-checkout, webhook-waiting and paid-state behavior through the real customer runtime.');
 
+const build256Secret='sk_test_BUILD256_SECRET_MUST_NOT_LEAK';
+const build256WebhookSecret='whsec_BUILD256_WEBHOOK_SECRET_MUST_NOT_LEAK';
+const build256PortalToken='BUILD256_PORTAL_TOKEN_MUST_NOT_LEAK';
+const build256Base={
+  YWI_RUN_STRIPE_TEST_ACCEPTANCE:'1',
+  YWI_STRIPE_ACCEPTANCE_CONFIRM:STRIPE_ACCEPTANCE_CONFIRM,
+  YWI_STRIPE_ACCEPTANCE_DATA_SCOPE:STRIPE_ACCEPTANCE_DATA_SCOPE,
+  YWI_STRIPE_ACCEPTANCE_DATA_LABEL:'TEST-BUILD256-CUSTOMER-PORTAL',
+  YWI_STRIPE_ACCEPTANCE_TEST_EMAIL:'build256@example.invalid',
+  YWI_STRIPE_ACCEPTANCE_PORTAL_URL:`https://yardweasels.ca/?portal=${build256PortalToken}`,
+  YWI_STRIPE_ACCEPTANCE_WEBHOOK_URL:'https://stagingprojectref.supabase.co/functions/v1/stripe-webhook',
+  STRIPE_CHECKOUT_MODE:'test',
+  STRIPE_LIVE_CHECKOUT_ENABLED:'false',
+  YWI_ENVIRONMENT:'production',
+  STRIPE_SECRET_KEY:build256Secret,
+  STRIPE_WEBHOOK_SIGNING_SECRET:build256WebhookSecret,
+};
+const build256Ready=evaluateStripeAcceptancePreflight(build256Base);
+add('build256-valid-test-acceptance-preflight-is-ready',
+  build256Ready.ok === true
+  && build256Ready.rail === STRIPE_ACCEPTANCE_RAIL
+  && build256Ready.provider_mode === 'test'
+  && build256Ready.test_key_confirmed === true
+  && build256Ready.live_checkout_enable_off === true
+  && build256Ready.portal_token_present === true
+  && build256Ready.disposable_test_email_confirmed === true
+  && build256Ready.disposable_data_scope_confirmed === true
+  && build256Ready.network_calls_performed === false
+  && build256Ready.mutations_performed === false,
+  'A fully explicit disposable Stripe TEST acceptance configuration becomes READY without performing provider/database work.');
+
+const build256LiveKey=evaluateStripeAcceptancePreflight({...build256Base,STRIPE_SECRET_KEY:'sk_live_BUILD256_FORBIDDEN'});
+add('build256-live-key-is-denied',
+  build256LiveKey.ok === false
+  && build256LiveKey.test_key_confirmed === false
+  && build256LiveKey.errors.some((value)=>value.includes('stripe_key_mode_mismatch')),
+  'Live Stripe secret keys cannot pass the test acceptance preflight.');
+
+const build256LiveMode=evaluateStripeAcceptancePreflight({
+  ...build256Base,
+  STRIPE_CHECKOUT_MODE:'live',
+  STRIPE_SECRET_KEY:'sk_live_BUILD256_FORBIDDEN',
+  STRIPE_LIVE_CHECKOUT_ENABLED:'true'
+});
+add('build256-live-mode-and-enable-are-denied',
+  build256LiveMode.ok === false
+  && build256LiveMode.live_checkout_enable_off === false
+  && build256LiveMode.errors.some((value)=>value.includes('STRIPE_CHECKOUT_MODE must be explicitly set to test'))
+  && build256LiveMode.errors.some((value)=>value.includes('STRIPE_LIVE_CHECKOUT_ENABLED must not be true')),
+  'Provider acceptance cannot be switched into live mode through acceptance configuration.');
+
+const build256RealCustomer=evaluateStripeAcceptancePreflight({...build256Base,YWI_STRIPE_ACCEPTANCE_TEST_EMAIL:'customer@example.com'});
+add('build256-real-customer-email-is-denied',
+  build256RealCustomer.ok === false
+  && build256RealCustomer.disposable_test_email_confirmed === false
+  && build256RealCustomer.errors.some((value)=>value.includes('@example.invalid')),
+  'Acceptance is constrained to disposable example.invalid customer identity.');
+
+const build256MissingConfirm=evaluateStripeAcceptancePreflight({...build256Base,YWI_STRIPE_ACCEPTANCE_CONFIRM:''});
+add('build256-explicit-test-only-confirmation-is-required',
+  build256MissingConfirm.ok === false
+  && build256MissingConfirm.test_only_confirmation === false,
+  'A deliberate test-only confirmation phrase is required before READY.');
+
+const build256PublicText=JSON.stringify(build256Ready);
+add('build256-preflight-output-is-secret-and-token-free',
+  !build256PublicText.includes(build256Secret)
+  && !build256PublicText.includes(build256WebhookSecret)
+  && !build256PublicText.includes(build256PortalToken)
+  && build256PublicText.includes('"portal_token_present":true')
+  && build256PublicText.includes('"webhook_signing_secret_present":true'),
+  'Preflight reports secret/token presence and sanitized origins/paths only.');
+
+add('build256-preflight-is-no-network-no-mutation-source',
+  hasAll(stripeAcceptancePreflightSource,[
+    'This validates configuration only.',
+    'network_calls_performed:false',
+    'mutations_performed:false',
+    'STRIPE_CHECKOUT_MODE must be explicitly set to test',
+    'STRIPE_LIVE_CHECKOUT_ENABLED must not be true',
+    '@example.invalid',
+    'required_manual_evidence'
+  ])
+  && !/\bfetch\s*\(|\baxios\b|https\.request\s*\(|supabase\.from\s*\(|\.rpc\s*\(/i.test(stripeAcceptancePreflightSource),
+  'The acceptance preflight is pure configuration validation and contains no provider/database transport.');
+
+add('build256-manual-evidence-rail-remains-open',
+  build256Ready.required_manual_evidence.includes('hosted_test_checkout_completed')
+  && build256Ready.required_manual_evidence.includes('matching_test_webhook_validated')
+  && build256Ready.required_manual_evidence.includes('deposit_and_customer_status_transition_verified')
+  && build256Ready.required_manual_evidence.includes('human_review_no_production_payment_or_live_provider_mutation')
+  && hasAll(runbook,[
+    'matching validated webhook delivery',
+    'resulting deposit/customer-status transition',
+    'human review that no Production payment/provider mutation was used.'
+  ]),
+  'Build 256 prepares acceptance but does not replace hosted Checkout, webhook, state-transition, or human evidence.');
+
 const failed = checks.filter((item) => !item.ok);
 for (const item of checks) console.log(`${item.ok ? 'PASS' : 'FAIL'}  ${item.name}${item.detail ? ` — ${item.detail}` : ''}`);
 if (failed.length) process.exit(1);
-console.log(`Customer portal authority passed (${checks.length}/${checks.length}), including Build 255 Stripe provider-mode acceptance.`);
+console.log(`Customer portal authority passed (${checks.length}/${checks.length}), including Build 255 provider-mode enforcement and Build 256 Stripe acceptance preflight.`);
