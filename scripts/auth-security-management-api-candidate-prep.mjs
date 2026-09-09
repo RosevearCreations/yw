@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
@@ -151,7 +150,8 @@ export async function captureAndPrepareAuthEvidenceCandidates(options={}){
 }
 
 function readCaptureBundle(){
-  const inputPath=path.resolve(process.argv[2] || process.env.YWI_AUTH_MANAGEMENT_CAPTURE_INPUT_PATH || 'auth-security-management-api-capture.json');
+  const positional=process.argv.slice(2).find((arg)=>!arg.startsWith('--'));
+  const inputPath=path.resolve(positional || process.env.YWI_AUTH_MANAGEMENT_CAPTURE_INPUT_PATH || 'auth-security-management-api-capture.json');
   return {inputPath,bundle:JSON.parse(fs.readFileSync(inputPath,'utf8'))};
 }
 
@@ -181,7 +181,7 @@ function printSafeResult(result,mode,inputPath=null){
 
 const invoked=process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href;
 if(invoked){
-  const liveCapture=process.env.YWI_AUTH_CAPTURE_AND_PREPARE==='true';
+  const liveCapture=process.argv.includes('--capture') || process.env.YWI_AUTH_CAPTURE_AND_PREPARE==='true';
   if(liveCapture){
     captureAndPrepareAuthEvidenceCandidates().then((result)=>printSafeResult(result,'live_management_api_capture')).catch((error)=>{
       console.error(`AUTH EVIDENCE CANDIDATE PREPARATION: LOCKED\n- ${error instanceof Error ? error.message : String(error)}`);
