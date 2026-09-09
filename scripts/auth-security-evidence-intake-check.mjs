@@ -7,8 +7,14 @@ import {
   AUTH_EVIDENCE_INTAKE_VERSION,
   EXPECTED_PROJECT_REF,
   buildAuthEvidenceRecordCandidate,
+  calculateSourceCaptureSha256,
   writeAuthEvidenceRecordCandidate,
 } from './auth-security-evidence-intake.mjs';
+import {
+  RECORD_CONFIRM,
+  SOURCE_CONFIRM,
+  buildAuthEvidenceRecordPlan,
+} from './auth-security-evidence-record.mjs';
 
 const NOW='2026-09-05T00:00:00.000Z';
 const OBSERVED='2026-09-04T23:45:00.000Z';
@@ -38,17 +44,21 @@ assert.equal(valid.candidate.recording_authorized_by_tool,false);
 assert.equal(valid.candidate.boundaries.database_write_performed,false);
 assert.equal(valid.candidate.boundaries.auth_setting_mutation_performed,false);
 assert.equal(valid.candidate.boundaries.current_admin_todo_auto_closed,false);
+assert.equal(valid.candidate.boundaries.source_capture_persisted_for_digest_revalidation,true);
 assert.match(valid.candidate.source_capture_sha256,/^[0-9a-f]{64}$/);
+assert.deepEqual(valid.candidate.source_capture,{control:'leaked_password_protection',enabled:true,project_ref:EXPECTED_PROJECT_REF});
+assert.equal(valid.candidate.source_capture_sha256,calculateSourceCaptureSha256(valid.candidate.source_capture));
 assert.equal(JSON.stringify(valid.candidate).includes('operator_note'),true);
-assert.equal(JSON.stringify(valid.candidate).includes('"enabled":true'),false,'Raw source capture must not be serialized into the record candidate.');
+assert.equal(JSON.stringify(valid.candidate).includes('"enabled":true'),true,'Sanitized source capture must be retained so the recorder can recompute its digest.');
 assert.equal(valid.candidate.database_record_candidate.evidence_detail.source_capture_sha256,valid.candidate.source_capture_sha256);
-assert.ok(valid.candidate.required_followup.some((item)=>item.includes('genuine current Supabase Dashboard or Management API evidence')));
+assert.ok(valid.candidate.required_followup.some((item)=>item.includes('recorder must recompute source_capture_sha256')));
 
 const stableA=buildAuthEvidenceRecordCandidate({...base,source_capture:{b:2,a:1}},{now:NOW});
 const stableB=buildAuthEvidenceRecordCandidate({...base,source_capture:{a:1,b:2}},{now:NOW});
 assert.equal(stableA.ok,true);
 assert.equal(stableB.ok,true);
 assert.equal(stableA.candidate.source_capture_sha256,stableB.candidate.source_capture_sha256,'Capture digest must be stable across object-key ordering.');
+assert.deepEqual(stableA.candidate.source_capture,stableB.candidate.source_capture,'Retained source capture must use the same stable object ordering contract.');
 
 const mfaSecure=buildAuthEvidenceRecordCandidate({
   ...base,
@@ -129,6 +139,38 @@ const serialized=JSON.stringify(secretResult.candidate);
 assert.equal(serialized.includes('service-role-secret-must-never-appear'),false);
 assert.equal(serialized.includes('token-secret-must-never-appear'),false);
 
+const recordEnv={
+  YWI_AUTH_EVIDENCE_RECORD_CONFIRM:RECORD_CONFIRM,
+  YWI_AUTH_EVIDENCE_SOURCE_AUTHENTICITY_CONFIRM:SOURCE_CONFIRM,
+  YWI_PRODUCTION_PROJECT_REF:EXPECTED_PROJECT_REF,
+  SUPABASE_URL:`https://${EXPECTED_PROJECT_REF}.supabase.co`,
+  SUPABASE_SERVICE_ROLE_KEY:'synthetic-build264-service-key-never-print',
+};
+const validRecordPlan=buildAuthEvidenceRecordPlan(valid.candidate,recordEnv,{now:NOW});
+assert.equal(validRecordPlan.ok,true,validRecordPlan.errors.join('; '));
+assert.equal(validRecordPlan.source_capture_digest_revalidated,true);
+assert.equal(validRecordPlan.rpc_body.p_evidence_detail.source_capture_digest_revalidation.verified,true);
+
+const tamperedCapture=structuredClone(valid.candidate);
+tamperedCapture.source_capture.enabled=false;
+const tamperedCapturePlan=buildAuthEvidenceRecordPlan(tamperedCapture,recordEnv,{now:NOW});
+assert.equal(tamperedCapturePlan.ok,false,'Changing retained source capture without its original digest must fail closed at recording.');
+assert.ok(tamperedCapturePlan.errors.some((item)=>item.includes('source_capture_sha256 does not match')));
+assert.equal(tamperedCapturePlan.source_capture_digest_revalidated,false);
+
+const missingRetainedCapture=structuredClone(valid.candidate);
+delete missingRetainedCapture.source_capture;
+const missingRetainedCapturePlan=buildAuthEvidenceRecordPlan(missingRetainedCapture,recordEnv,{now:NOW});
+assert.equal(missingRetainedCapturePlan.ok,false,'Legacy/edited candidates without retained source capture must fail closed at recording.');
+assert.ok(missingRetainedCapturePlan.errors.some((item)=>item.includes('source_capture is required')));
+
+const forgedDigest=structuredClone(valid.candidate);
+forgedDigest.source_capture_sha256='0'.repeat(64);
+forgedDigest.database_record_candidate.evidence_detail.source_capture_sha256=forgedDigest.source_capture_sha256;
+const forgedDigestPlan=buildAuthEvidenceRecordPlan(forgedDigest,recordEnv,{now:NOW});
+assert.equal(forgedDigestPlan.ok,false,'Coordinated digest metadata changes that no longer match retained capture must fail closed.');
+assert.ok(forgedDigestPlan.errors.some((item)=>item.includes('source_capture_sha256 does not match')));
+
 const tempDir=fs.mkdtempSync(path.join(os.tmpdir(),'ywi-auth-evidence-intake-'));
 try{
   const outputPath=path.join(tempDir,'candidate.json');
@@ -138,7 +180,9 @@ try{
   const parsed=JSON.parse(fs.readFileSync(outputPath,'utf8'));
   assert.equal(parsed.database_record_candidate.verification_status,'verified_secure');
   assert.equal(parsed.source_authenticity_verified_by_tool,false);
-  assert.equal(Object.prototype.hasOwnProperty.call(parsed,'source_capture'),false);
+  assert.equal(Object.prototype.hasOwnProperty.call(parsed,'source_capture'),true);
+  assert.equal(parsed.boundaries.source_capture_persisted_for_digest_revalidation,true);
+  assert.equal(parsed.source_capture_sha256,calculateSourceCaptureSha256(parsed.source_capture));
 
   fs.writeFileSync(outputPath,'stale candidate','utf8');
   const locked=writeAuthEvidenceRecordCandidate({...base,evidence_source:'manual_external'},{now:NOW,outputPath});
