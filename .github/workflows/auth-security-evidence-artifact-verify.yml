@@ -1,0 +1,19 @@
+name: YWI Auth evidence artifact verification
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  artifact-verification-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify Auth evidence artifact verification contract
+        run: node scripts/auth-security-evidence-artifact-verify-check.mjs
