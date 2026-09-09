@@ -15,6 +15,7 @@ export const RECORD_CONFIRM='I_CONFIRM_AUTH_EVIDENCE_RECORD';
 export const SOURCE_CONFIRM='I_CONFIRM_OFFICIAL_SUPABASE_SOURCE';
 export const EXPECTED_GITHUB_REPOSITORY='RosevearCreations/yw';
 export const EXPECTED_CAPTURE_WORKFLOW_PATH='.github/workflows/auth-security-evidence-capture.yml';
+export const EXPECTED_CAPTURE_BRANCH='main';
 const MAX_AGE_MS=30*24*60*60*1000;
 const FUTURE_SKEW_MS=5*60*1000;
 
@@ -230,9 +231,11 @@ export async function verifyWorkflowProvenanceBeforeRecord(provenance,reference,
   if(String(run?.id)!==normalized.run_id)throw new Error('GitHub workflow run id does not match evidence provenance.');
   if(String(run?.run_attempt)!==normalized.run_attempt)throw new Error('GitHub workflow run attempt does not match evidence provenance.');
   if(clean(run?.head_sha).toLowerCase()!==normalized.commit_sha)throw new Error('GitHub workflow head SHA does not match evidence provenance.');
+  if(clean(run?.head_branch)!==EXPECTED_CAPTURE_BRANCH)throw new Error(`GitHub workflow evidence must run from canonical ${EXPECTED_CAPTURE_BRANCH}.`);
   if(clean(run?.event)!=='workflow_dispatch')throw new Error('GitHub workflow evidence must come from workflow_dispatch.');
   if(clean(run?.path)!==EXPECTED_CAPTURE_WORKFLOW_PATH)throw new Error('GitHub workflow path does not match the protected Auth evidence capture workflow.');
   if(clean(run?.repository?.full_name)!==EXPECTED_GITHUB_REPOSITORY)throw new Error('GitHub workflow repository does not match YardWeasels.');
+  if(clean(run?.head_repository?.full_name)!==EXPECTED_GITHUB_REPOSITORY)throw new Error('GitHub workflow head repository does not match YardWeasels.');
   if(clean(run?.status)!=='completed' || clean(run?.conclusion)!=='success')throw new Error('GitHub workflow evidence run must be completed successfully before recording.');
 
   return {
@@ -241,6 +244,8 @@ export async function verifyWorkflowProvenanceBeforeRecord(provenance,reference,
     api_url:url,
     provenance:normalized,
     workflow_path:EXPECTED_CAPTURE_WORKFLOW_PATH,
+    head_branch:EXPECTED_CAPTURE_BRANCH,
+    head_repository:EXPECTED_GITHUB_REPOSITORY,
     status:'completed',
     conclusion:'success',
   };
@@ -270,6 +275,8 @@ export async function recordAuthEvidenceCandidate(candidate,env=process.env,opti
           verification_source:'github_actions_api',
           workflow_path:provenanceVerification.workflow_path,
           repository:provenanceVerification.provenance.repository,
+          head_repository:provenanceVerification.head_repository,
+          head_branch:provenanceVerification.head_branch,
           run_id:provenanceVerification.provenance.run_id,
           run_attempt:provenanceVerification.provenance.run_attempt,
           commit_sha:provenanceVerification.provenance.commit_sha,
@@ -352,7 +359,7 @@ if(invoked){
       process.exitCode=1;
     }else{
       console.log('\nAUTH SECURITY EVIDENCE RECORDING: RECORDED AND RE-READ');
-      console.log('The recorder recomputes the retained sanitized source-capture SHA-256 and workflow-bound Management API evidence is re-verified against the exact successful GitHub Actions run before the service-private write. This does not change Supabase Auth settings, enable Finance/provider mutation, run staging acceptance, or promote Production.');
+      console.log('The recorder recomputes the retained sanitized source-capture SHA-256 and workflow-bound Management API evidence is re-verified against the exact successful canonical-main GitHub Actions run before the service-private write. This does not change Supabase Auth settings, enable Finance/provider mutation, run staging acceptance, or promote Production.');
     }
   }catch(error){
     console.error(`AUTH SECURITY EVIDENCE RECORDING: LOCKED\n- ${error instanceof Error ? error.message : String(error)}`);

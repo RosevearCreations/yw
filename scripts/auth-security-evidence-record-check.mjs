@@ -4,6 +4,7 @@ import {buildAuthEvidenceRecordCandidate} from './auth-security-evidence-intake.
 import {
   buildAuthEvidenceRecordPlan,
   recordAuthEvidenceCandidate,
+  EXPECTED_CAPTURE_BRANCH,
   EXPECTED_CAPTURE_WORKFLOW_PATH,
   EXPECTED_GITHUB_REPOSITORY,
   EXPECTED_PROJECT_REF,
@@ -205,11 +206,13 @@ const fakeFetch=async (url,options={})=>{
       id:Number(WORKFLOW_RUN_ID),
       run_attempt:Number(WORKFLOW_ATTEMPT),
       head_sha:WORKFLOW_SHA,
+      head_branch:EXPECTED_CAPTURE_BRANCH,
       event:'workflow_dispatch',
       path:EXPECTED_CAPTURE_WORKFLOW_PATH,
       status:'completed',
       conclusion:'success',
       repository:{full_name:EXPECTED_GITHUB_REPOSITORY},
+      head_repository:{full_name:EXPECTED_GITHUB_REPOSITORY},
     }),text:async()=>''};
   }
   if(url.includes('/rpc/ywi_record_auth_security_evidence')){
@@ -229,7 +232,7 @@ const fakeFetch=async (url,options={})=>{
 };
 
 const verified=await verifyWorkflowProvenanceBeforeRecord(workflowProvenance(),WORKFLOW_REFERENCE,{fetchImpl:fakeFetch});
-add('direct-workflow-provenance-verification',verified.verified && verified.read_performed && verified.workflow_path===EXPECTED_CAPTURE_WORKFLOW_PATH);
+add('direct-workflow-provenance-verification',verified.verified && verified.read_performed && verified.workflow_path===EXPECTED_CAPTURE_WORKFLOW_PATH && verified.head_branch===EXPECTED_CAPTURE_BRANCH && verified.head_repository===EXPECTED_GITHUB_REPOSITORY);
 calls=[];
 const recorded=await recordAuthEvidenceCandidate(validCandidate,env(),{now:NOW,fetchImpl:fakeFetch});
 add('mock-record-and-reread',recorded.ok && recorded.write_performed && recorded.evidence_id===77 && recorded.current_status==='verified_secure');
@@ -237,7 +240,7 @@ add('workflow-read-before-rpc-before-reread',calls.length===3 && calls[0].url===
 add('workflow-provenance-verified-before-write',recorded.workflow_provenance_verified===true && recorded.workflow_provenance_read_performed===true);
 const rpcBody=JSON.parse(calls[1].options.body);
 add('rpc-body-derived-not-operator-status',rpcBody.p_observed_state==='enabled' && !Object.prototype.hasOwnProperty.call(rpcBody,'p_verification_status'));
-add('rpc-body-records-live-github-verification',rpcBody.p_evidence_detail?.workflow_provenance_verification?.verified===true && rpcBody.p_evidence_detail?.workflow_provenance_verification?.verification_source==='github_actions_api' && rpcBody.p_evidence_detail?.workflow_provenance_verification?.commit_sha===WORKFLOW_SHA);
+add('rpc-body-records-live-github-verification',rpcBody.p_evidence_detail?.workflow_provenance_verification?.verified===true && rpcBody.p_evidence_detail?.workflow_provenance_verification?.verification_source==='github_actions_api' && rpcBody.p_evidence_detail?.workflow_provenance_verification?.commit_sha===WORKFLOW_SHA && rpcBody.p_evidence_detail?.workflow_provenance_verification?.head_branch===EXPECTED_CAPTURE_BRANCH && rpcBody.p_evidence_detail?.workflow_provenance_verification?.head_repository===EXPECTED_GITHUB_REPOSITORY);
 
 let mismatchSupabaseWrite=false;
 let mismatchRejected=false;
@@ -248,11 +251,13 @@ try{
         id:Number(WORKFLOW_RUN_ID),
         run_attempt:Number(WORKFLOW_ATTEMPT),
         head_sha:'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        head_branch:EXPECTED_CAPTURE_BRANCH,
         event:'workflow_dispatch',
         path:EXPECTED_CAPTURE_WORKFLOW_PATH,
         status:'completed',
         conclusion:'success',
         repository:{full_name:EXPECTED_GITHUB_REPOSITORY},
+        head_repository:{full_name:EXPECTED_GITHUB_REPOSITORY},
       }),text:async()=>''};
     }
     mismatchSupabaseWrite=true;
@@ -262,6 +267,58 @@ try{
   mismatchRejected=String(error?.message || error).includes('head SHA does not match');
 }
 add('live-github-sha-mismatch-blocks-recording',mismatchRejected && !mismatchSupabaseWrite);
+
+let nonMainSupabaseWrite=false;
+let nonMainRejected=false;
+try{
+  await recordAuthEvidenceCandidate(validCandidate,env(),{now:NOW,fetchImpl:async (url)=>{
+    if(url===provenanceApiUrl){
+      return {ok:true,status:200,json:async()=>({
+        id:Number(WORKFLOW_RUN_ID),
+        run_attempt:Number(WORKFLOW_ATTEMPT),
+        head_sha:WORKFLOW_SHA,
+        head_branch:'build999-untrusted-auth-capture',
+        event:'workflow_dispatch',
+        path:EXPECTED_CAPTURE_WORKFLOW_PATH,
+        status:'completed',
+        conclusion:'success',
+        repository:{full_name:EXPECTED_GITHUB_REPOSITORY},
+        head_repository:{full_name:EXPECTED_GITHUB_REPOSITORY},
+      }),text:async()=>''};
+    }
+    nonMainSupabaseWrite=true;
+    throw new Error('Supabase must not be called after non-main provenance.');
+  }});
+}catch(error){
+  nonMainRejected=String(error?.message || error).includes('canonical main');
+}
+add('live-github-non-main-branch-blocks-recording',nonMainRejected && !nonMainSupabaseWrite);
+
+let wrongHeadRepoSupabaseWrite=false;
+let wrongHeadRepoRejected=false;
+try{
+  await recordAuthEvidenceCandidate(validCandidate,env(),{now:NOW,fetchImpl:async (url)=>{
+    if(url===provenanceApiUrl){
+      return {ok:true,status:200,json:async()=>({
+        id:Number(WORKFLOW_RUN_ID),
+        run_attempt:Number(WORKFLOW_ATTEMPT),
+        head_sha:WORKFLOW_SHA,
+        head_branch:EXPECTED_CAPTURE_BRANCH,
+        event:'workflow_dispatch',
+        path:EXPECTED_CAPTURE_WORKFLOW_PATH,
+        status:'completed',
+        conclusion:'success',
+        repository:{full_name:EXPECTED_GITHUB_REPOSITORY},
+        head_repository:{full_name:'example/fork'},
+      }),text:async()=>''};
+    }
+    wrongHeadRepoSupabaseWrite=true;
+    throw new Error('Supabase must not be called after head-repository mismatch.');
+  }});
+}catch(error){
+  wrongHeadRepoRejected=String(error?.message || error).includes('head repository does not match');
+}
+add('live-github-head-repository-mismatch-blocks-recording',wrongHeadRepoRejected && !wrongHeadRepoSupabaseWrite);
 
 let lockedFetchCalled=false;
 const locked=await recordAuthEvidenceCandidate(validCandidate,env({YWI_AUTH_EVIDENCE_RECORD_CONFIRM:''}),{now:NOW,fetchImpl:async()=>{lockedFetchCalled=true;throw new Error('must not call');}});

@@ -23,7 +23,7 @@ assert.ok(contractBlock.includes('node scripts/auth-security-evidence-capture-wo
 assert.equal(contractBlock.includes('secrets.'),false,'PR contract job must not receive repository secrets.');
 assert.equal(contractBlock.includes('auth:evidence:capture-prepare'),false,'PR contract job must not perform live capture.');
 
-assert.ok(captureBlock.includes("if: ${{ github.event_name == 'workflow_dispatch' && inputs.confirm_read_only_capture == 'true' }}"),'Live capture job must require explicit manual confirmation.');
+assert.ok(captureBlock.includes("if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.confirm_read_only_capture == 'true' }}"),'Live capture job must require explicit manual confirmation from canonical main.');
 assert.ok(captureBlock.includes('SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_AUTH_CONFIG_READ_TOKEN }}'),'Capture must map only the dedicated Auth-config read token.');
 assert.ok(captureBlock.includes('YWI_AUTH_EVIDENCE_ARTIFACT_PASSPHRASE: ${{ secrets.YWI_AUTH_EVIDENCE_ARTIFACT_PASSPHRASE }}'),'Encrypted artifact passphrase must come from a secret.');
 assert.ok(captureBlock.includes('YWI_AUTH_EVIDENCE_WORKFLOW_REPOSITORY: ${{ github.repository }}'),'Capture must bind evidence to the exact repository supplied by GitHub.');

@@ -32,7 +32,7 @@ jobs:
         run: node scripts/auth-security-evidence-capture-workflow-check.mjs
 
   capture-auth-evidence:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.confirm_read_only_capture == 'true' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.confirm_read_only_capture == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
