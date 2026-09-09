@@ -24,6 +24,16 @@ function stableValue(value){
   return value;
 }
 
+export function normalizeSourceCapture(value){
+  return stableValue(value);
+}
+
+export function calculateSourceCaptureSha256(value){
+  const canonical=JSON.stringify(normalizeSourceCapture(value));
+  if(typeof canonical!=='string')throw new Error('source_capture cannot be canonicalized for SHA-256 verification.');
+  return crypto.createHash('sha256').update(canonical,'utf8').digest('hex');
+}
+
 function findSensitiveKey(value,pathParts=[]){
   if(Array.isArray(value)){
     for(let index=0;index<value.length;index+=1){
@@ -95,7 +105,8 @@ export function buildAuthEvidenceRecordCandidate(input={},options={}){
     if(nowMs-observedMs>MAX_AGE_MS)errors.push('observed_at is older than the 30-day current-evidence window.');
   }
 
-  if(!(typeof sourceCapture==='string' || Array.isArray(sourceCapture) || isPlainObject(sourceCapture))){
+  const sourceCaptureShapeOk=typeof sourceCapture==='string' || Array.isArray(sourceCapture) || isPlainObject(sourceCapture);
+  if(!sourceCaptureShapeOk){
     errors.push('source_capture must contain the actual captured Dashboard/Management API observation as JSON-compatible text/object/array.');
   }else if(typeof sourceCapture==='string' && !sourceCapture.trim()){
     errors.push('source_capture must not be empty.');
@@ -107,10 +118,11 @@ export function buildAuthEvidenceRecordCandidate(input={},options={}){
   if(sensitiveCaptureKey)errors.push(`source_capture contains a secret-bearing field (${sensitiveCaptureKey}); remove credentials before intake.`);
   if(sensitiveDetailKey)errors.push(`evidence_detail contains a secret-bearing field (${sensitiveDetailKey}); remove credentials before intake.`);
 
+  let normalizedSourceCapture=null;
   let sourceCaptureSha256=null;
-  if(!errors.some((error)=>error.startsWith('source_capture')) && sourceCapture!==undefined){
-    const canonical=JSON.stringify(stableValue(sourceCapture));
-    sourceCaptureSha256=crypto.createHash('sha256').update(canonical,'utf8').digest('hex');
+  if(sourceCaptureShapeOk && !errors.some((error)=>error.startsWith('source_capture'))){
+    normalizedSourceCapture=normalizeSourceCapture(sourceCapture);
+    sourceCaptureSha256=calculateSourceCaptureSha256(normalizedSourceCapture);
   }
 
   const expiresAt=Number.isFinite(observedMs) ? new Date(observedMs+MAX_AGE_MS).toISOString() : null;
@@ -126,6 +138,7 @@ export function buildAuthEvidenceRecordCandidate(input={},options={}){
     observed_state:observedState || null,
     observed_at:Number.isFinite(observedMs) ? new Date(observedMs).toISOString() : null,
     expires_at:expiresAt,
+    source_capture:normalizedSourceCapture,
     source_capture_sha256:sourceCaptureSha256,
     derived_verification_status:verificationStatus,
     source_authenticity_verified_by_tool:false,
@@ -148,6 +161,7 @@ export function buildAuthEvidenceRecordCandidate(input={},options={}){
     },
     boundaries:{
       structure_and_freshness_validation_only:true,
+      source_capture_persisted_for_digest_revalidation:true,
       source_authenticity_verified:false,
       database_write_performed:false,
       auth_setting_mutation_performed:false,
@@ -157,7 +171,7 @@ export function buildAuthEvidenceRecordCandidate(input={},options={}){
     },
     required_followup:[
       'Confirm the supplied capture is genuine current Supabase Dashboard or Management API evidence for the named project and control.',
-      'Record the candidate only through an authorized service-role evidence path; do not edit the derived verification status by hand.',
+      'Record the candidate only through an authorized service-role evidence path; the recorder must recompute source_capture_sha256 from the retained sanitized capture before writing.',
       'Re-read current Auth evidence authority after recording. Production promotion remains separate and deliberate.',
     ],
     generated_at:generatedAt,
@@ -203,7 +217,7 @@ function printResult(result,inputPath){
     return;
   }
   console.log('\nAUTH SECURITY EVIDENCE INTAKE: RECORD CANDIDATE WRITTEN');
-  console.log('This validates structure/freshness and derives database fields. It does not authenticate the external source, write Supabase, change Auth, or close a follow-up.');
+  console.log('This validates structure/freshness, retains only the sanitized capture needed for later digest revalidation, and derives database fields. It does not authenticate the external source, write Supabase, change Auth, or close a follow-up.');
 }
 
 const invoked=process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href;
