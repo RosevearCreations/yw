@@ -8,6 +8,7 @@ import {
   buildWorkflowEvidenceReference,
   normalizeWorkflowProvenance,
 } from './auth-security-management-api-capture.mjs';
+import {calculateSourceCaptureSha256} from './auth-security-evidence-intake.mjs';
 
 export const EXPECTED_PROJECT_REF='jmqvkgiqlimdhcofwkxr';
 export const RECORD_CONFIRM='I_CONFIRM_AUTH_EVIDENCE_RECORD';
@@ -98,6 +99,7 @@ export function buildAuthEvidenceRecordPlan(candidate,env=process.env,options={}
   const observedAt=clean(candidate.observed_at);
   const reference=clean(candidate.evidence_reference);
   const captureSha=clean(candidate.source_capture_sha256).toLowerCase();
+  const sourceCapture=candidate.source_capture;
   const derived=deriveVerification(controlKey,state);
 
   if(candidate.evidence_kind!=='ywi_auth_security_evidence_record_candidate')errors.push('Candidate evidence_kind is invalid.');
@@ -107,6 +109,25 @@ export function buildAuthEvidenceRecordPlan(candidate,env=process.env,options={}
   if(!derived)errors.push('Candidate control/state combination is invalid.');
   if(!reference)errors.push('Candidate evidence_reference is required.');
   if(!/^[0-9a-f]{64}$/.test(captureSha))errors.push('Candidate source_capture_sha256 is invalid.');
+
+  let recomputedCaptureSha=null;
+  const sourceCaptureShapeOk=typeof sourceCapture==='string' || Array.isArray(sourceCapture) || isObject(sourceCapture);
+  if(!sourceCaptureShapeOk){
+    errors.push('Candidate source_capture is required so the recorder can recompute its SHA-256 digest.');
+  }else{
+    try{
+      recomputedCaptureSha=calculateSourceCaptureSha256(sourceCapture);
+    }catch(error){
+      errors.push(`Candidate source_capture could not be canonicalized: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  if(recomputedCaptureSha && /^[0-9a-f]{64}$/.test(captureSha) && recomputedCaptureSha!==captureSha){
+    errors.push('Candidate source_capture_sha256 does not match the retained sanitized source_capture.');
+  }
+  if(candidate?.boundaries?.source_capture_persisted_for_digest_revalidation!==true){
+    errors.push('Candidate must explicitly preserve sanitized source_capture for recorder digest revalidation.');
+  }
+
   if(candidate.derived_verification_status!==derived)errors.push('Candidate derived verification status does not match the control/state.');
   if(db.control_key!==controlKey || db.evidence_source!==evidenceSource || db.observed_state!==state)errors.push('Database candidate identity fields do not match the intake candidate.');
   if(db.verification_status!==derived || db.is_authoritative!==true)errors.push('Database candidate authority/status fields were altered after intake.');
@@ -143,8 +164,14 @@ export function buildAuthEvidenceRecordPlan(candidate,env=process.env,options={}
   const serviceKey=clean(env.SUPABASE_SERVICE_ROLE_KEY);
   if(!serviceKey)errors.push('SUPABASE_SERVICE_ROLE_KEY is required for the service-private recording RPC.');
 
+  const digestRevalidated=Boolean(recomputedCaptureSha && recomputedCaptureSha===captureSha);
   const evidenceDetail=isObject(db.evidence_detail) ? {
     ...db.evidence_detail,
+    source_capture_digest_revalidation:{
+      verified:digestRevalidated,
+      algorithm:'sha256',
+      canonicalization:'stable-json-v1',
+    },
     recording_authorization:'explicit_operator_confirmation',
     source_authenticity_confirmation:'explicit_operator_confirmation',
   } : {};
@@ -168,6 +195,7 @@ export function buildAuthEvidenceRecordPlan(candidate,env=process.env,options={}
     service_key:serviceKey,
     rpc_body:rpcBody,
     workflow_provenance:workflowProvenance,
+    source_capture_digest_revalidated:digestRevalidated,
     expected_current_status:expectedCurrentStatus(derived),
   };
 }
@@ -284,6 +312,7 @@ export async function recordAuthEvidenceCandidate(candidate,env=process.env,opti
     write_performed:true,
     workflow_provenance_verified:provenanceVerification.verified,
     workflow_provenance_read_performed:provenanceVerification.read_performed,
+    source_capture_digest_revalidated:plan.source_capture_digest_revalidated,
     evidence_id:evidenceId,
     control_key:row.control_key,
     current_status:row.current_status,
@@ -308,6 +337,7 @@ if(invoked){
       input_path:inputPath,
       write_performed:result.write_performed,
       workflow_provenance_verified:result.workflow_provenance_verified ?? false,
+      source_capture_digest_revalidated:result.source_capture_digest_revalidated ?? false,
       evidence_id:result.evidence_id ?? null,
       control_key:result.control_key ?? candidate.control_key ?? null,
       current_status:result.current_status ?? null,
@@ -322,7 +352,7 @@ if(invoked){
       process.exitCode=1;
     }else{
       console.log('\nAUTH SECURITY EVIDENCE RECORDING: RECORDED AND RE-READ');
-      console.log('Workflow-bound Management API evidence is re-verified against the exact successful GitHub Actions run before the service-private write. This does not change Supabase Auth settings, enable Finance/provider mutation, run staging acceptance, or promote Production.');
+      console.log('The recorder recomputes the retained sanitized source-capture SHA-256 and workflow-bound Management API evidence is re-verified against the exact successful GitHub Actions run before the service-private write. This does not change Supabase Auth settings, enable Finance/provider mutation, run staging acceptance, or promote Production.');
     }
   }catch(error){
     console.error(`AUTH SECURITY EVIDENCE RECORDING: LOCKED\n- ${error instanceof Error ? error.message : String(error)}`);
