@@ -9,6 +9,7 @@ import {
   normalizeWorkflowProvenance,
 } from './auth-security-management-api-capture.mjs';
 import {calculateSourceCaptureSha256} from './auth-security-evidence-intake.mjs';
+import {verifyAuthEvidenceArtifact} from './auth-security-evidence-artifact-verify.mjs';
 
 export const EXPECTED_PROJECT_REF='jmqvkgiqlimdhcofwkxr';
 export const RECORD_CONFIRM='I_CONFIRM_AUTH_EVIDENCE_RECORD';
@@ -251,18 +252,36 @@ export async function verifyWorkflowProvenanceBeforeRecord(provenance,reference,
   };
 }
 
+function provenanceVerificationFromArtifact(artifactVerification,provenance){
+  return {
+    verified:artifactVerification?.verified===true,
+    read_performed:Number(artifactVerification?.network_reads || 0)>=1,
+    provenance,
+    workflow_path:artifactVerification?.workflow_path || EXPECTED_CAPTURE_WORKFLOW_PATH,
+    head_branch:artifactVerification?.head_branch || EXPECTED_CAPTURE_BRANCH,
+    head_repository:artifactVerification?.repository || EXPECTED_GITHUB_REPOSITORY,
+    status:'completed',
+    conclusion:'success',
+  };
+}
+
 export async function recordAuthEvidenceCandidate(candidate,env=process.env,options={}){
   const plan=buildAuthEvidenceRecordPlan(candidate,env,options);
-  if(!plan.ok)return {...plan,write_performed:false,workflow_provenance_verified:false};
+  if(!plan.ok)return {...plan,write_performed:false,workflow_provenance_verified:false,auth_capture_artifact_verified:false};
   const fetchImpl=options.fetchImpl || fetch;
 
   let provenanceVerification={verified:false,read_performed:false,provenance:null};
+  let artifactVerification={verified:false,network_reads:0,artifact:null};
   if(plan.workflow_provenance){
-    provenanceVerification=await verifyWorkflowProvenanceBeforeRecord(
-      plan.workflow_provenance,
-      plan.rpc_body.p_evidence_reference,
-      {fetchImpl},
-    );
+    artifactVerification=await verifyAuthEvidenceArtifact({
+      run_id:plan.workflow_provenance.run_id,
+      run_attempt:plan.workflow_provenance.run_attempt,
+      commit_sha:plan.workflow_provenance.commit_sha,
+    },{fetchImpl});
+    if(!artifactVerification?.verified){
+      throw new Error('Workflow-bound Auth evidence artifact verification did not succeed.');
+    }
+    provenanceVerification=provenanceVerificationFromArtifact(artifactVerification,plan.workflow_provenance);
   }
 
   const rpcBody={
@@ -280,6 +299,19 @@ export async function recordAuthEvidenceCandidate(candidate,env=process.env,opti
           run_id:provenanceVerification.provenance.run_id,
           run_attempt:provenanceVerification.provenance.run_attempt,
           commit_sha:provenanceVerification.provenance.commit_sha,
+        },
+        auth_capture_artifact_verification:{
+          verified:true,
+          verification_version:artifactVerification.verification_version,
+          verification_source:artifactVerification.verification_source,
+          artifact_id:artifactVerification.artifact?.id ?? null,
+          artifact_name:artifactVerification.artifact?.name ?? null,
+          artifact_digest:artifactVerification.artifact?.digest ?? null,
+          artifact_size_in_bytes:artifactVerification.artifact?.size_in_bytes ?? null,
+          artifact_created_at:artifactVerification.artifact?.created_at ?? null,
+          artifact_expired:artifactVerification.artifact?.expired ?? null,
+          artifact_download_performed:false,
+          artifact_decryption_performed:false,
         },
       } : {}),
     },
@@ -319,6 +351,10 @@ export async function recordAuthEvidenceCandidate(candidate,env=process.env,opti
     write_performed:true,
     workflow_provenance_verified:provenanceVerification.verified,
     workflow_provenance_read_performed:provenanceVerification.read_performed,
+    auth_capture_artifact_verified:artifactVerification.verified,
+    auth_capture_artifact_metadata_reads:Number(artifactVerification.network_reads || 0),
+    auth_capture_artifact_id:artifactVerification.artifact?.id ?? null,
+    auth_capture_artifact_digest:artifactVerification.artifact?.digest ?? null,
     source_capture_digest_revalidated:plan.source_capture_digest_revalidated,
     evidence_id:evidenceId,
     control_key:row.control_key,
@@ -344,6 +380,9 @@ if(invoked){
       input_path:inputPath,
       write_performed:result.write_performed,
       workflow_provenance_verified:result.workflow_provenance_verified ?? false,
+      auth_capture_artifact_verified:result.auth_capture_artifact_verified ?? false,
+      auth_capture_artifact_id:result.auth_capture_artifact_id ?? null,
+      auth_capture_artifact_digest:result.auth_capture_artifact_digest ?? null,
       source_capture_digest_revalidated:result.source_capture_digest_revalidated ?? false,
       evidence_id:result.evidence_id ?? null,
       control_key:result.control_key ?? candidate.control_key ?? null,
@@ -359,7 +398,7 @@ if(invoked){
       process.exitCode=1;
     }else{
       console.log('\nAUTH SECURITY EVIDENCE RECORDING: RECORDED AND RE-READ');
-      console.log('The recorder recomputes the retained sanitized source-capture SHA-256 and workflow-bound Management API evidence is re-verified against the exact successful canonical-main GitHub Actions run before the service-private write. This does not change Supabase Auth settings, enable Finance/provider mutation, run staging acceptance, or promote Production.');
+      console.log('The recorder recomputes the retained sanitized source-capture SHA-256 and workflow-bound Management API evidence requires the exact successful canonical-main GitHub Actions run plus its exact non-expired SHA-256-backed encrypted capture artifact before the service-private write. The artifact is not downloaded or decrypted. This does not change Supabase Auth settings, enable Finance/provider mutation, run staging acceptance, or promote Production.');
     }
   }catch(error){
     console.error(`AUTH SECURITY EVIDENCE RECORDING: LOCKED\n- ${error instanceof Error ? error.message : String(error)}`);
