@@ -26,6 +26,10 @@ assert.equal(contractBlock.includes('auth:evidence:capture-prepare'),false,'PR c
 assert.ok(captureBlock.includes("if: ${{ github.event_name == 'workflow_dispatch' && inputs.confirm_read_only_capture == 'true' }}"),'Live capture job must require explicit manual confirmation.');
 assert.ok(captureBlock.includes('SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_AUTH_CONFIG_READ_TOKEN }}'),'Capture must map only the dedicated Auth-config read token.');
 assert.ok(captureBlock.includes('YWI_AUTH_EVIDENCE_ARTIFACT_PASSPHRASE: ${{ secrets.YWI_AUTH_EVIDENCE_ARTIFACT_PASSPHRASE }}'),'Encrypted artifact passphrase must come from a secret.');
+assert.ok(captureBlock.includes('YWI_AUTH_EVIDENCE_WORKFLOW_REPOSITORY: ${{ github.repository }}'),'Capture must bind evidence to the exact repository supplied by GitHub.');
+assert.ok(captureBlock.includes('YWI_AUTH_EVIDENCE_WORKFLOW_RUN_ID: ${{ github.run_id }}'),'Capture must bind evidence to the exact manual workflow run ID.');
+assert.ok(captureBlock.includes('YWI_AUTH_EVIDENCE_WORKFLOW_RUN_ATTEMPT: ${{ github.run_attempt }}'),'Capture must bind evidence to the exact workflow run attempt.');
+assert.ok(captureBlock.includes('YWI_AUTH_EVIDENCE_WORKFLOW_SHA: ${{ github.sha }}'),'Capture must bind evidence to the exact checked-out commit SHA.');
 assert.ok(captureBlock.includes('npm run auth:evidence:capture-prepare >/dev/null'),'Live capture must reuse the existing read-only capture-and-prepare authority without printing security state to logs.');
 assert.ok(captureBlock.includes('grep -R -F -- "$SUPABASE_ACCESS_TOKEN"'),'Prepared output must be checked for accidental token persistence.');
 assert.ok(captureBlock.includes('openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt'),'Prepared evidence must be encrypted before upload.');
@@ -41,13 +45,22 @@ for(const forbidden of [
   "method:'PATCH'",
   'supabase db',
   'psql ',
+  'derived_states:',
 ]){
-  assert.equal(captureBlock.includes(forbidden),false,`Live capture workflow must not contain mutation authority: ${forbidden}`);
+  assert.equal(captureBlock.includes(forbidden),false,`Live capture workflow must not contain mutation authority or publish captured security state: ${forbidden}`);
 }
 
-assert.equal(canonical.includes('SUPABASE_AUTH_CONFIG_READ_TOKEN'),false,'Canonical source workflow must not receive the Management API Auth read token.');
-assert.equal(canonical.includes('YWI_AUTH_EVIDENCE_ARTIFACT_PASSPHRASE'),false,'Canonical source workflow must not receive the evidence artifact passphrase.');
-assert.equal(canonical.includes('npm run auth:evidence:capture-prepare'),false,'Canonical source workflow must never perform live Auth capture.');
+for(const forbiddenCanonical of [
+  'SUPABASE_AUTH_CONFIG_READ_TOKEN',
+  'YWI_AUTH_EVIDENCE_ARTIFACT_PASSPHRASE',
+  'YWI_AUTH_EVIDENCE_WORKFLOW_REPOSITORY',
+  'YWI_AUTH_EVIDENCE_WORKFLOW_RUN_ID',
+  'YWI_AUTH_EVIDENCE_WORKFLOW_RUN_ATTEMPT',
+  'YWI_AUTH_EVIDENCE_WORKFLOW_SHA',
+  'npm run auth:evidence:capture-prepare',
+]){
+  assert.equal(canonical.includes(forbiddenCanonical),false,`Canonical source workflow must not receive or execute manual Auth capture provenance: ${forbiddenCanonical}`);
+}
 
 for(const required of [
   '## Auth security evidence sanity check',
