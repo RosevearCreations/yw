@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import {buildAuthEvidenceRecordCandidate} from './auth-security-evidence-intake.mjs';
+import {expectedArtifactName,runArtifactsUrl} from './auth-security-evidence-artifact-verify.mjs';
 import {
   buildAuthEvidenceRecordPlan,
   recordAuthEvidenceCandidate,
@@ -30,6 +31,11 @@ const WORKFLOW_ATTEMPT='1';
 const WORKFLOW_SHA='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const WORKFLOW_REFERENCE=`https://github.com/${EXPECTED_GITHUB_REPOSITORY}/actions/runs/${WORKFLOW_RUN_ID}/attempts/${WORKFLOW_ATTEMPT}`;
 const MANAGEMENT_ENDPOINT=`https://api.supabase.com/v1/projects/${EXPECTED_PROJECT_REF}/config/auth`;
+const GITHUB_REPOSITORY_ID=1148400822;
+const ARTIFACT_ID=998877;
+const ARTIFACT_DIGEST=`sha256:${'c'.repeat(64)}`;
+const ARTIFACT_NAME=expectedArtifactName(WORKFLOW_RUN_ID,WORKFLOW_ATTEMPT);
+const ARTIFACTS_API_URL=runArtifactsUrl(WORKFLOW_RUN_ID);
 
 function workflowProvenance(overrides={}){
   return {
@@ -76,6 +82,41 @@ function env(overrides={}){
     YWI_PRODUCTION_PROJECT_REF:EXPECTED_PROJECT_REF,
     SUPABASE_URL:`https://${EXPECTED_PROJECT_REF}.supabase.co`,
     SUPABASE_SERVICE_ROLE_KEY:'synthetic-service-key-never-print',
+    ...overrides,
+  };
+}
+
+function validWorkflowRun(overrides={}){
+  return {
+    id:Number(WORKFLOW_RUN_ID),
+    run_attempt:Number(WORKFLOW_ATTEMPT),
+    head_sha:WORKFLOW_SHA,
+    head_branch:EXPECTED_CAPTURE_BRANCH,
+    event:'workflow_dispatch',
+    path:EXPECTED_CAPTURE_WORKFLOW_PATH,
+    status:'completed',
+    conclusion:'success',
+    repository:{id:GITHUB_REPOSITORY_ID,full_name:EXPECTED_GITHUB_REPOSITORY},
+    head_repository:{id:GITHUB_REPOSITORY_ID,full_name:EXPECTED_GITHUB_REPOSITORY},
+    ...overrides,
+  };
+}
+
+function validArtifact(overrides={}){
+  return {
+    id:ARTIFACT_ID,
+    name:ARTIFACT_NAME,
+    size_in_bytes:4120,
+    expired:false,
+    digest:ARTIFACT_DIGEST,
+    created_at:'2026-09-05T00:12:00Z',
+    workflow_run:{
+      id:Number(WORKFLOW_RUN_ID),
+      repository_id:GITHUB_REPOSITORY_ID,
+      head_repository_id:GITHUB_REPOSITORY_ID,
+      head_branch:EXPECTED_CAPTURE_BRANCH,
+      head_sha:WORKFLOW_SHA,
+    },
     ...overrides,
   };
 }
@@ -197,23 +238,16 @@ add('stale-candidate-rejected-at-recording',!buildAuthEvidenceRecordPlan(staleCa
 
 const provenanceApiUrl=workflowRunAttemptApiUrl(workflowProvenance());
 add('workflow-attempt-api-url-exact',provenanceApiUrl===`https://api.github.com/repos/${EXPECTED_GITHUB_REPOSITORY}/actions/runs/${WORKFLOW_RUN_ID}/attempts/${WORKFLOW_ATTEMPT}`);
+add('artifact-api-url-exact',ARTIFACTS_API_URL===`https://api.github.com/repos/${EXPECTED_GITHUB_REPOSITORY}/actions/runs/${WORKFLOW_RUN_ID}/artifacts?per_page=100` && ARTIFACT_NAME===`ywi-auth-security-evidence-${WORKFLOW_RUN_ID}-${WORKFLOW_ATTEMPT}`);
 
 let calls=[];
 const fakeFetch=async (url,options={})=>{
   calls.push({url,options});
   if(url===provenanceApiUrl){
-    return {ok:true,status:200,json:async()=>({
-      id:Number(WORKFLOW_RUN_ID),
-      run_attempt:Number(WORKFLOW_ATTEMPT),
-      head_sha:WORKFLOW_SHA,
-      head_branch:EXPECTED_CAPTURE_BRANCH,
-      event:'workflow_dispatch',
-      path:EXPECTED_CAPTURE_WORKFLOW_PATH,
-      status:'completed',
-      conclusion:'success',
-      repository:{full_name:EXPECTED_GITHUB_REPOSITORY},
-      head_repository:{full_name:EXPECTED_GITHUB_REPOSITORY},
-    }),text:async()=>''};
+    return {ok:true,status:200,json:async()=>validWorkflowRun(),text:async()=>''};
+  }
+  if(url===ARTIFACTS_API_URL){
+    return {ok:true,status:200,json:async()=>({total_count:1,artifacts:[validArtifact()]}),text:async()=>''};
   }
   if(url.includes('/rpc/ywi_record_auth_security_evidence')){
     return {ok:true,status:200,json:async()=>77,text:async()=>''};
@@ -236,35 +270,26 @@ add('direct-workflow-provenance-verification',verified.verified && verified.read
 calls=[];
 const recorded=await recordAuthEvidenceCandidate(validCandidate,env(),{now:NOW,fetchImpl:fakeFetch});
 add('mock-record-and-reread',recorded.ok && recorded.write_performed && recorded.evidence_id===77 && recorded.current_status==='verified_secure');
-add('workflow-read-before-rpc-before-reread',calls.length===3 && calls[0].url===provenanceApiUrl && calls[1].url.endsWith('/rest/v1/rpc/ywi_record_auth_security_evidence') && calls[2].url.includes('/rest/v1/v_it_auth_security_evidence_current?'));
+add('workflow-and-artifact-read-before-rpc-before-reread',calls.length===4 && calls[0].url===provenanceApiUrl && calls[1].url===ARTIFACTS_API_URL && calls[2].url.endsWith('/rest/v1/rpc/ywi_record_auth_security_evidence') && calls[3].url.includes('/rest/v1/v_it_auth_security_evidence_current?'));
 add('workflow-provenance-verified-before-write',recorded.workflow_provenance_verified===true && recorded.workflow_provenance_read_performed===true);
-const rpcBody=JSON.parse(calls[1].options.body);
+add('artifact-verified-before-write',recorded.auth_capture_artifact_verified===true && recorded.auth_capture_artifact_metadata_reads===2 && recorded.auth_capture_artifact_id===ARTIFACT_ID && recorded.auth_capture_artifact_digest===ARTIFACT_DIGEST);
+const rpcBody=JSON.parse(calls[2].options.body);
 add('rpc-body-derived-not-operator-status',rpcBody.p_observed_state==='enabled' && !Object.prototype.hasOwnProperty.call(rpcBody,'p_verification_status'));
 add('rpc-body-records-live-github-verification',rpcBody.p_evidence_detail?.workflow_provenance_verification?.verified===true && rpcBody.p_evidence_detail?.workflow_provenance_verification?.verification_source==='github_actions_api' && rpcBody.p_evidence_detail?.workflow_provenance_verification?.commit_sha===WORKFLOW_SHA && rpcBody.p_evidence_detail?.workflow_provenance_verification?.head_branch===EXPECTED_CAPTURE_BRANCH && rpcBody.p_evidence_detail?.workflow_provenance_verification?.head_repository===EXPECTED_GITHUB_REPOSITORY);
+add('rpc-body-records-artifact-binding',rpcBody.p_evidence_detail?.auth_capture_artifact_verification?.verified===true && rpcBody.p_evidence_detail?.auth_capture_artifact_verification?.artifact_id===ARTIFACT_ID && rpcBody.p_evidence_detail?.auth_capture_artifact_verification?.artifact_name===ARTIFACT_NAME && rpcBody.p_evidence_detail?.auth_capture_artifact_verification?.artifact_digest===ARTIFACT_DIGEST && rpcBody.p_evidence_detail?.auth_capture_artifact_verification?.artifact_expired===false && rpcBody.p_evidence_detail?.auth_capture_artifact_verification?.artifact_download_performed===false && rpcBody.p_evidence_detail?.auth_capture_artifact_verification?.artifact_decryption_performed===false);
 
 let mismatchSupabaseWrite=false;
 let mismatchRejected=false;
 try{
   await recordAuthEvidenceCandidate(validCandidate,env(),{now:NOW,fetchImpl:async (url)=>{
     if(url===provenanceApiUrl){
-      return {ok:true,status:200,json:async()=>({
-        id:Number(WORKFLOW_RUN_ID),
-        run_attempt:Number(WORKFLOW_ATTEMPT),
-        head_sha:'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
-        head_branch:EXPECTED_CAPTURE_BRANCH,
-        event:'workflow_dispatch',
-        path:EXPECTED_CAPTURE_WORKFLOW_PATH,
-        status:'completed',
-        conclusion:'success',
-        repository:{full_name:EXPECTED_GITHUB_REPOSITORY},
-        head_repository:{full_name:EXPECTED_GITHUB_REPOSITORY},
-      }),text:async()=>''};
+      return {ok:true,status:200,json:async()=>validWorkflowRun({head_sha:'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'}),text:async()=>''};
     }
     mismatchSupabaseWrite=true;
     throw new Error('Supabase must not be called after provenance mismatch.');
   }});
 }catch(error){
-  mismatchRejected=String(error?.message || error).includes('head SHA does not match');
+  mismatchRejected=String(error?.message || error).includes('Workflow head SHA mismatch');
 }
 add('live-github-sha-mismatch-blocks-recording',mismatchRejected && !mismatchSupabaseWrite);
 
@@ -273,18 +298,7 @@ let nonMainRejected=false;
 try{
   await recordAuthEvidenceCandidate(validCandidate,env(),{now:NOW,fetchImpl:async (url)=>{
     if(url===provenanceApiUrl){
-      return {ok:true,status:200,json:async()=>({
-        id:Number(WORKFLOW_RUN_ID),
-        run_attempt:Number(WORKFLOW_ATTEMPT),
-        head_sha:WORKFLOW_SHA,
-        head_branch:'build999-untrusted-auth-capture',
-        event:'workflow_dispatch',
-        path:EXPECTED_CAPTURE_WORKFLOW_PATH,
-        status:'completed',
-        conclusion:'success',
-        repository:{full_name:EXPECTED_GITHUB_REPOSITORY},
-        head_repository:{full_name:EXPECTED_GITHUB_REPOSITORY},
-      }),text:async()=>''};
+      return {ok:true,status:200,json:async()=>validWorkflowRun({head_branch:'build999-untrusted-auth-capture'}),text:async()=>''};
     }
     nonMainSupabaseWrite=true;
     throw new Error('Supabase must not be called after non-main provenance.');
@@ -299,30 +313,61 @@ let wrongHeadRepoRejected=false;
 try{
   await recordAuthEvidenceCandidate(validCandidate,env(),{now:NOW,fetchImpl:async (url)=>{
     if(url===provenanceApiUrl){
-      return {ok:true,status:200,json:async()=>({
-        id:Number(WORKFLOW_RUN_ID),
-        run_attempt:Number(WORKFLOW_ATTEMPT),
-        head_sha:WORKFLOW_SHA,
-        head_branch:EXPECTED_CAPTURE_BRANCH,
-        event:'workflow_dispatch',
-        path:EXPECTED_CAPTURE_WORKFLOW_PATH,
-        status:'completed',
-        conclusion:'success',
-        repository:{full_name:EXPECTED_GITHUB_REPOSITORY},
-        head_repository:{full_name:'example/fork'},
-      }),text:async()=>''};
+      return {ok:true,status:200,json:async()=>validWorkflowRun({head_repository:{id:123,full_name:'example/fork'}}),text:async()=>''};
     }
     wrongHeadRepoSupabaseWrite=true;
     throw new Error('Supabase must not be called after head-repository mismatch.');
   }});
 }catch(error){
-  wrongHeadRepoRejected=String(error?.message || error).includes('head repository does not match');
+  wrongHeadRepoRejected=String(error?.message || error).includes('head repository mismatch');
 }
 add('live-github-head-repository-mismatch-blocks-recording',wrongHeadRepoRejected && !wrongHeadRepoSupabaseWrite);
 
+let missingArtifactSupabaseCall=false;
+let missingArtifactRejected=false;
+try{
+  await recordAuthEvidenceCandidate(validCandidate,env(),{now:NOW,fetchImpl:async (url)=>{
+    if(url===provenanceApiUrl)return {ok:true,status:200,json:async()=>validWorkflowRun(),text:async()=>''};
+    if(url===ARTIFACTS_API_URL)return {ok:true,status:200,json:async()=>({total_count:0,artifacts:[]}),text:async()=>''};
+    missingArtifactSupabaseCall=true;
+    throw new Error('Supabase must not be called when the capture artifact is absent.');
+  }});
+}catch(error){
+  missingArtifactRejected=String(error?.message || error).includes('Expected exactly one');
+}
+add('missing-capture-artifact-blocks-recording',missingArtifactRejected && !missingArtifactSupabaseCall);
+
+let expiredArtifactSupabaseCall=false;
+let expiredArtifactRejected=false;
+try{
+  await recordAuthEvidenceCandidate(validCandidate,env(),{now:NOW,fetchImpl:async (url)=>{
+    if(url===provenanceApiUrl)return {ok:true,status:200,json:async()=>validWorkflowRun(),text:async()=>''};
+    if(url===ARTIFACTS_API_URL)return {ok:true,status:200,json:async()=>({total_count:1,artifacts:[validArtifact({expired:true})]}),text:async()=>''};
+    expiredArtifactSupabaseCall=true;
+    throw new Error('Supabase must not be called when the capture artifact is expired.');
+  }});
+}catch(error){
+  expiredArtifactRejected=String(error?.message || error).includes('artifact is expired');
+}
+add('expired-capture-artifact-blocks-recording',expiredArtifactRejected && !expiredArtifactSupabaseCall);
+
+let badDigestSupabaseCall=false;
+let badDigestRejected=false;
+try{
+  await recordAuthEvidenceCandidate(validCandidate,env(),{now:NOW,fetchImpl:async (url)=>{
+    if(url===provenanceApiUrl)return {ok:true,status:200,json:async()=>validWorkflowRun(),text:async()=>''};
+    if(url===ARTIFACTS_API_URL)return {ok:true,status:200,json:async()=>({total_count:1,artifacts:[validArtifact({digest:'md5:not-allowed'})]}),text:async()=>''};
+    badDigestSupabaseCall=true;
+    throw new Error('Supabase must not be called when the artifact digest is invalid.');
+  }});
+}catch(error){
+  badDigestRejected=String(error?.message || error).includes('SHA-256 digest');
+}
+add('invalid-artifact-digest-blocks-recording',badDigestRejected && !badDigestSupabaseCall);
+
 let lockedFetchCalled=false;
 const locked=await recordAuthEvidenceCandidate(validCandidate,env({YWI_AUTH_EVIDENCE_RECORD_CONFIRM:''}),{now:NOW,fetchImpl:async()=>{lockedFetchCalled=true;throw new Error('must not call');}});
-add('locked-plan-performs-no-network-write',!locked.ok && locked.write_performed===false && !lockedFetchCalled);
+add('locked-plan-performs-no-network-write',!locked.ok && locked.write_performed===false && locked.auth_capture_artifact_verified===false && !lockedFetchCalled);
 
 add('package-wiring',packageJson.includes('"auth:evidence:record": "node scripts/auth-security-evidence-record.mjs"') && packageJson.includes('"test:auth-security-evidence-record": "node scripts/auth-security-evidence-record-check.mjs"'));
 add('workflow-wiring',workflow.includes('npm run test:auth-security-evidence-record'));
