@@ -6,16 +6,31 @@ import path from 'node:path';
 import {
   AUTH_CONFIG_URL,
   CAPTURED_AUTH_FIELDS,
+  EXPECTED_GITHUB_REPOSITORY,
   buildAuthManagementApiEvidenceBundle,
+  buildWorkflowEvidenceReference,
   captureAndWriteAuthSecurityManagementApi,
   captureAuthSecurityManagementApi,
   deriveAuthSecurityStates,
+  normalizeWorkflowProvenance,
   sanitizeManagementApiAuthConfig,
+  workflowProvenanceFromEnv,
 } from './auth-security-management-api-capture.mjs';
+import {
+  prepareAuthEvidenceCandidatesFromCapture,
+  validateAuthManagementCaptureBundle,
+} from './auth-security-management-api-candidate-prep.mjs';
 import { EXPECTED_PROJECT_REF } from './auth-security-evidence-intake.mjs';
 
 const OBSERVED_AT='2026-09-09T14:20:00.000Z';
 const TOKEN='sbp_test_management_token_that_must_never_be_persisted';
+const WORKFLOW_PROVENANCE={
+  repository:EXPECTED_GITHUB_REPOSITORY,
+  run_id:'34380000000',
+  run_attempt:'2',
+  commit_sha:'a'.repeat(40),
+};
+const WORKFLOW_REFERENCE=`https://github.com/${EXPECTED_GITHUB_REPOSITORY}/actions/runs/34380000000/attempts/2`;
 const secureConfig={
   password_hibp_enabled:true,
   mfa_totp_enroll_enabled:true,
@@ -28,6 +43,20 @@ const secureConfig={
   smtp_pass:'smtp-secret-must-never-be-persisted',
   site_url:'https://example.invalid',
 };
+
+const normalizedProvenance=normalizeWorkflowProvenance(WORKFLOW_PROVENANCE);
+assert.deepEqual(normalizedProvenance,{...WORKFLOW_PROVENANCE,event:'workflow_dispatch'});
+assert.equal(buildWorkflowEvidenceReference(WORKFLOW_PROVENANCE),WORKFLOW_REFERENCE);
+assert.deepEqual(workflowProvenanceFromEnv({
+  YWI_AUTH_EVIDENCE_WORKFLOW_REPOSITORY:EXPECTED_GITHUB_REPOSITORY,
+  YWI_AUTH_EVIDENCE_WORKFLOW_RUN_ID:'34380000000',
+  YWI_AUTH_EVIDENCE_WORKFLOW_RUN_ATTEMPT:'2',
+  YWI_AUTH_EVIDENCE_WORKFLOW_SHA:'A'.repeat(40),
+}),normalizedProvenance);
+assert.equal(workflowProvenanceFromEnv({}),null);
+assert.throws(()=>normalizeWorkflowProvenance({...WORKFLOW_PROVENANCE,repository:'other/repo'}),/repository must equal/);
+assert.throws(()=>normalizeWorkflowProvenance({...WORKFLOW_PROVENANCE,run_id:'0'}),/run_id must be a positive integer/);
+assert.throws(()=>normalizeWorkflowProvenance({...WORKFLOW_PROVENANCE,commit_sha:'bad'}),/40-character hexadecimal SHA/);
 
 const sanitized=sanitizeManagementApiAuthConfig(secureConfig);
 assert.deepEqual(Object.keys(sanitized),CAPTURED_AUTH_FIELDS);
@@ -43,6 +72,8 @@ const bundle=buildAuthManagementApiEvidenceBundle(secureConfig,{projectRef:EXPEC
 assert.equal(bundle.project_ref,EXPECTED_PROJECT_REF);
 assert.equal(bundle.endpoint,AUTH_CONFIG_URL(EXPECTED_PROJECT_REF));
 assert.equal(bundle.http_method,'GET');
+assert.equal(bundle.workflow_provenance,null);
+assert.equal(bundle.boundaries.workflow_provenance_bound,false);
 assert.equal(bundle.derived_states.leaked_password_protection,'enabled');
 assert.equal(bundle.derived_states.mfa_options,'configured');
 assert.equal(bundle.intake_validation.leaked_password_protection_ok,true);
@@ -59,6 +90,36 @@ assert.equal(serializedBundle.includes(TOKEN),false);
 assert.equal(serializedBundle.includes('provider-secret-must-never-be-persisted'),false);
 assert.equal(serializedBundle.includes('smtp-secret-must-never-be-persisted'),false);
 assert.equal(serializedBundle.includes('site_url'),false,'Only allowlisted Auth security fields may be persisted.');
+
+const workflowBundle=buildAuthManagementApiEvidenceBundle(secureConfig,{
+  projectRef:EXPECTED_PROJECT_REF,
+  observedAt:OBSERVED_AT,
+  intakeNow:OBSERVED_AT,
+  workflowProvenance:WORKFLOW_PROVENANCE,
+});
+assert.equal(workflowBundle.evidence_reference,WORKFLOW_REFERENCE);
+assert.deepEqual(workflowBundle.workflow_provenance,normalizedProvenance);
+assert.equal(workflowBundle.boundaries.workflow_provenance_bound,true);
+for(const controlKey of ['leaked_password_protection','mfa_options']){
+  const input=workflowBundle.intake_inputs[controlKey];
+  assert.equal(input.evidence_reference,WORKFLOW_REFERENCE);
+  assert.deepEqual(input.evidence_detail.workflow_provenance,normalizedProvenance);
+}
+assert.equal(validateAuthManagementCaptureBundle(workflowBundle),workflowBundle);
+const workflowPrepared=prepareAuthEvidenceCandidatesFromCapture(workflowBundle,{now:OBSERVED_AT});
+assert.equal(workflowPrepared.evidence_reference,WORKFLOW_REFERENCE);
+assert.deepEqual(workflowPrepared.workflow_provenance,normalizedProvenance);
+assert.equal(workflowPrepared.boundaries.workflow_provenance_bound,true);
+for(const candidate of Object.values(workflowPrepared.candidates))assert.equal(candidate.evidence_reference,WORKFLOW_REFERENCE);
+const tamperedWorkflowBundle=structuredClone(workflowBundle);
+tamperedWorkflowBundle.evidence_reference='https://github.com/RosevearCreations/yw/actions/runs/1/attempts/1';
+assert.throws(()=>validateAuthManagementCaptureBundle(tamperedWorkflowBundle),/does not match its exact GitHub Actions run\/attempt/);
+assert.throws(()=>buildAuthManagementApiEvidenceBundle(secureConfig,{
+  projectRef:EXPECTED_PROJECT_REF,
+  observedAt:OBSERVED_AT,
+  workflowProvenance:WORKFLOW_PROVENANCE,
+  evidenceReference:'https://example.invalid/wrong-reference',
+}),/must equal the exact GitHub Actions run\/attempt URL/);
 
 const disabledBundle=buildAuthManagementApiEvidenceBundle({
   password_hibp_enabled:false,
@@ -110,6 +171,7 @@ const captured=await captureAuthSecurityManagementApi({
   observedAt:OBSERVED_AT,
   intakeNow:OBSERVED_AT,
   timeoutMs:1000,
+  workflowProvenance:WORKFLOW_PROVENANCE,
 });
 assert.equal(fetchCalls,1);
 assert.equal(seenRequest.url,AUTH_CONFIG_URL(EXPECTED_PROJECT_REF));
@@ -117,6 +179,8 @@ assert.equal(seenRequest.options.method,'GET');
 assert.equal(seenRequest.options.redirect,'error');
 assert.equal(seenRequest.options.headers.accept,'application/json');
 assert.equal(seenRequest.options.headers.authorization,`Bearer ${TOKEN}`);
+assert.equal(captured.evidence_reference,WORKFLOW_REFERENCE);
+assert.deepEqual(captured.workflow_provenance,normalizedProvenance);
 assert.equal(JSON.stringify(captured).includes(TOKEN),false,'Access token must never enter the returned evidence bundle.');
 assert.equal(JSON.stringify(captured).includes('provider-secret-must-never-be-persisted'),false);
 
@@ -126,6 +190,17 @@ await assert.rejects(
   /registered YardWeasels Production project/,
 );
 assert.equal(forbiddenFetchCalled,false,'Wrong project must be rejected before any network call.');
+let wrongProvenanceFetchCalled=false;
+await assert.rejects(
+  ()=>captureAuthSecurityManagementApi({
+    projectRef:EXPECTED_PROJECT_REF,
+    accessToken:TOKEN,
+    workflowProvenance:{...WORKFLOW_PROVENANCE,repository:'wrong/repo'},
+    fetchImpl:async()=>{wrongProvenanceFetchCalled=true;},
+  }),
+  /repository must equal/,
+);
+assert.equal(wrongProvenanceFetchCalled,false,'Invalid workflow provenance must be rejected before any network call.');
 let missingTokenFetchCalled=false;
 await assert.rejects(
   ()=>captureAuthSecurityManagementApi({projectRef:EXPECTED_PROJECT_REF,accessToken:'',fetchImpl:async()=>{missingTokenFetchCalled=true;}}),
@@ -154,6 +229,7 @@ try{
     fetchImpl:fakeFetch,
     observedAt:OBSERVED_AT,
     intakeNow:OBSERVED_AT,
+    workflowProvenance:WORKFLOW_PROVENANCE,
     outputPath,
   });
   assert.equal(written.ok,true,written.error);
@@ -162,7 +238,10 @@ try{
   assert.equal(disk.includes(TOKEN),false);
   assert.equal(disk.includes('provider-secret-must-never-be-persisted'),false);
   assert.equal(disk.includes('smtp-secret-must-never-be-persisted'),false);
-  assert.equal(JSON.parse(disk).boundaries.evidence_recording_performed,false);
+  const diskJson=JSON.parse(disk);
+  assert.equal(diskJson.boundaries.evidence_recording_performed,false);
+  assert.equal(diskJson.evidence_reference,WORKFLOW_REFERENCE);
+  assert.deepEqual(diskJson.workflow_provenance,normalizedProvenance);
 
   fs.writeFileSync(outputPath,'stale unsafe capture','utf8');
   const locked=await captureAndWriteAuthSecurityManagementApi({
