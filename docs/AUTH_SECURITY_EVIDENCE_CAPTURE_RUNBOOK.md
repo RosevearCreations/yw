@@ -25,9 +25,11 @@ Do not use a Supabase service-role key as the Management API read token. Do not 
 
 Open GitHub Actions and select **YWI Auth security evidence capture**. Run the workflow manually and set **Run one read-only Supabase Auth config capture and prepare encrypted evidence candidates** to `true`.
 
+The live capture job is manual-only. Pull requests may run the separate deterministic workflow-contract check, but that PR check receives no repository secrets and cannot execute the live Management API capture.
+
 The workflow performs one official Management API GET through the existing `auth:evidence:capture-prepare` authority. It validates the sanitized output, confirms the Management API token is absent from the prepared files, encrypts the entire prepared package, deletes the runner-side plaintext package, and uploads only the encrypted artifact.
 
-The workflow must not be added to push, pull-request, scheduled, or canonical source-gate execution. A normal build or Production promotion must never trigger a live Auth configuration capture.
+The live capture job must not run on push, pull-request, scheduled, or canonical source-gate execution. A normal build or Production promotion must never trigger a live Auth configuration capture.
 
 ## Decrypt the evidence package
 
