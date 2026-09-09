@@ -154,7 +154,7 @@ const handbook=fs.readFileSync('docs/ACTIVE_PROJECT_HANDBOOK.md','utf8');
 const nextSteps=fs.readFileSync('docs/NEXT_STEPS_AND_SANITY_CHECK.md','utf8');
 const help=fs.readFileSync('help.html','utf8');
 assert.ok(packageJson.includes('"auth:evidence:intake": "node scripts/auth-security-evidence-intake.mjs"'));
-assert.ok(packageJson.includes('"test:auth-security-evidence-intake": "node scripts/auth-security-evidence-intake-check.mjs && node scripts/auth-security-management-api-capture-check.mjs"'));
+assert.ok(packageJson.includes('"test:auth-security-evidence-intake": "node scripts/auth-security-evidence-intake-check.mjs && node scripts/auth-security-management-api-capture-check.mjs && node scripts/auth-security-management-api-candidate-prep-check.mjs"'));
 assert.ok(workflow.includes('npm run test:auth-security-evidence-intake'));
 for(const text of [handbook,nextSteps]){
   assert.ok(text.includes('auth:evidence:intake'));
