@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const workflow=fs.readFileSync('.github/workflows/auth-security-evidence-capture.yml','utf8');
-const runbook=fs.readFileSync('docs/AUTH_SECURITY_EVIDENCE_CAPTURE_RUNBOOK.md','utf8');
+const nextSteps=fs.readFileSync('docs/NEXT_STEPS_AND_SANITY_CHECK.md','utf8');
 const canonical=fs.readFileSync('.github/workflows/staging-browser-integration.yml','utf8');
 
 assert.ok(workflow.includes('workflow_dispatch:'),'Manual capture workflow must expose workflow_dispatch.');
@@ -50,21 +50,17 @@ assert.equal(canonical.includes('YWI_AUTH_EVIDENCE_ARTIFACT_PASSPHRASE'),false,'
 assert.equal(canonical.includes('npm run auth:evidence:capture-prepare'),false,'Canonical source workflow must never perform live Auth capture.');
 
 for(const required of [
-  'GET https://api.supabase.com/v1/projects/jmqvkgiqlimdhcofwkxr/config/auth',
-  'SUPABASE_AUTH_CONFIG_READ_TOKEN',
-  'YWI_AUTH_EVIDENCE_ARTIFACT_PASSPHRASE',
-  'auth_config_read',
-  'auth:read',
-  'auth:evidence:capture-prepare',
+  '## Auth security evidence sanity check',
+  'Supabase Management API',
+  'auth:evidence:intake',
   'auth:evidence:record',
-  'encrypted artifact',
+  'source authenticity',
   'service-role',
 ]){
-  assert.ok(runbook.includes(required),`Runbook must include ${required}.`);
+  assert.ok(nextSteps.includes(required),`Existing active sanity authority must retain ${required}.`);
 }
-assert.ok(runbook.includes('capture job is manual-only'),'Runbook must distinguish the manual live capture job from PR contract validation.');
-assert.ok(runbook.includes('does not change Supabase Auth configuration'),'Runbook must preserve the read-only Auth boundary.');
-assert.ok(runbook.includes('does not prove that an evidence row was recorded'),'Runbook must keep recording separate from capture.');
-assert.equal(/Build\s+\d+|Run\s+#?\d+|[0-9a-f]{40}/i.test(runbook),false,'Active runbook must not become a build/run/SHA ledger.');
+assert.ok(nextSteps.includes('does not change the external Auth setting'),'Existing active sanity authority must keep recording separate from Auth mutation.');
+assert.ok(nextSteps.includes('application source work must not change the Auth setting or auto-close its Current Admin To-Do item'),'Existing active sanity authority must preserve fail-closed external follow-up truth.');
+assert.equal(/Build\s+\d+|Run\s+#?\d+|[0-9a-f]{40}/i.test(nextSteps),false,'Active sanity authority must not become a build/run/SHA ledger.');
 
 console.log('Auth security evidence manual capture workflow contract gate: PASS.');
