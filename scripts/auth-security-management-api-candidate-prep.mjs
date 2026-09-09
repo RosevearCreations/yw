@@ -5,14 +5,16 @@ import { pathToFileURL } from 'node:url';
 import {
   AUTH_CONFIG_URL,
   AUTH_MANAGEMENT_API_CAPTURE_VERSION,
+  buildWorkflowEvidenceReference,
   captureAuthSecurityManagementApi,
+  normalizeWorkflowProvenance,
 } from './auth-security-management-api-capture.mjs';
 import {
   EXPECTED_PROJECT_REF,
   buildAuthEvidenceRecordCandidate,
 } from './auth-security-evidence-intake.mjs';
 
-export const AUTH_MANAGEMENT_API_CANDIDATE_PREP_VERSION=1;
+export const AUTH_MANAGEMENT_API_CANDIDATE_PREP_VERSION=2;
 export const PREPARED_CONTROL_KEYS=['leaked_password_protection','mfa_options'];
 
 const clean=(value)=>String(value ?? '').trim();
@@ -37,6 +39,16 @@ export function validateAuthManagementCaptureBundle(bundle){
   if(bundle.http_method!=='GET')throw new Error('Capture must come from a GET request.');
   const observedAt=clean(bundle.observed_at);
   if(!Number.isFinite(Date.parse(observedAt)))throw new Error('Capture observed_at is invalid.');
+  const evidenceReference=clean(bundle.evidence_reference);
+  if(!evidenceReference)throw new Error('Capture evidence_reference is required.');
+  const workflowProvenance=normalizeWorkflowProvenance(bundle.workflow_provenance);
+  if(workflowProvenance){
+    const expectedReference=buildWorkflowEvidenceReference(workflowProvenance);
+    if(evidenceReference!==expectedReference)throw new Error('Workflow-bound capture evidence_reference does not match its exact GitHub Actions run/attempt.');
+    validateCaptureBoundary(bundle,'workflow_provenance_bound',true);
+  }else{
+    validateCaptureBoundary(bundle,'workflow_provenance_bound',false);
+  }
   const inputs=requirePlainObject(bundle.intake_inputs,'Capture intake_inputs');
   const validation=requirePlainObject(bundle.intake_validation,'Capture intake_validation');
   const derived=requirePlainObject(bundle.derived_states,'Capture derived_states');
@@ -57,6 +69,11 @@ export function validateAuthManagementCaptureBundle(bundle){
     if(input.evidence_source!=='supabase_management_api')throw new Error(`Capture intake input ${controlKey} is not Management API evidence.`);
     if(input.project_ref!==EXPECTED_PROJECT_REF)throw new Error(`Capture intake input ${controlKey} project mismatch.`);
     if(clean(input.observed_at)!==observedAt)throw new Error(`Capture intake input ${controlKey} timestamp mismatch.`);
+    if(clean(input.evidence_reference)!==evidenceReference)throw new Error(`Capture intake input ${controlKey} evidence reference mismatch.`);
+    if(workflowProvenance){
+      const detailProvenance=normalizeWorkflowProvenance(input.evidence_detail?.workflow_provenance);
+      if(JSON.stringify(detailProvenance)!==JSON.stringify(workflowProvenance))throw new Error(`Capture intake input ${controlKey} workflow provenance mismatch.`);
+    }
     if(validation[`${controlKey}_ok`]!==true)throw new Error(`Capture intake validation for ${controlKey} is not green.`);
   }
   if(inputs.leaked_password_protection.observed_state!==derived.leaked_password_protection)throw new Error('Leaked-password derived state does not match its intake input.');
@@ -76,6 +93,7 @@ export function prepareAuthEvidenceCandidatesFromCapture(bundle,options={}){
     if(candidate.project_ref!==EXPECTED_PROJECT_REF)throw new Error(`Prepared ${controlKey} candidate project mismatch.`);
     if(candidate.evidence_source!=='supabase_management_api')throw new Error(`Prepared ${controlKey} candidate source mismatch.`);
     if(candidate.observed_at!==bundle.observed_at)throw new Error(`Prepared ${controlKey} candidate timestamp mismatch.`);
+    if(candidate.evidence_reference!==bundle.evidence_reference)throw new Error(`Prepared ${controlKey} candidate evidence reference mismatch.`);
     if(candidate.boundaries?.database_write_performed!==false)throw new Error(`Prepared ${controlKey} candidate must remain write-free.`);
     if(candidate.boundaries?.auth_setting_mutation_performed!==false)throw new Error(`Prepared ${controlKey} candidate must remain Auth-mutation-free.`);
     candidates[controlKey]=candidate;
@@ -89,6 +107,8 @@ export function prepareAuthEvidenceCandidatesFromCapture(bundle,options={}){
     project_ref:EXPECTED_PROJECT_REF,
     source_endpoint:bundle.endpoint,
     source_http_method:bundle.http_method,
+    evidence_reference:bundle.evidence_reference,
+    workflow_provenance:bundle.workflow_provenance,
     observed_at:bundle.observed_at,
     derived_states:{...bundle.derived_states},
     candidate_controls:[...PREPARED_CONTROL_KEYS],
@@ -96,6 +116,7 @@ export function prepareAuthEvidenceCandidatesFromCapture(bundle,options={}){
     boundaries:{
       source_capture_revalidated:true,
       existing_intake_contract_reused:true,
+      workflow_provenance_bound:Boolean(bundle.workflow_provenance),
       source_authenticity_verified_by_prep:false,
       database_write_performed:false,
       auth_setting_mutation_performed:false,
@@ -106,6 +127,7 @@ export function prepareAuthEvidenceCandidatesFromCapture(bundle,options={}){
     },
     required_followup:[
       'Confirm the capture came from the genuine official Supabase Management API for the registered YardWeasels Production project.',
+      'When workflow provenance is present, verify the durable evidence reference resolves to the exact manual GitHub Actions run/attempt and commit SHA before recording.',
       'Record each prepared candidate only through the existing authorized Auth evidence recorder with its explicit confirmation gates.',
       'Re-read current Auth evidence authority after each recording. Do not change Supabase Auth settings as part of evidence recording.',
     ],
