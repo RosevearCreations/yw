@@ -183,8 +183,8 @@ const packageJson=fs.readFileSync('package.json','utf8');
 const workflow=fs.readFileSync('.github/workflows/staging-browser-integration.yml','utf8');
 assert.ok(packageJson.includes('"auth:evidence:capture": "node scripts/auth-security-management-api-capture.mjs"'));
 assert.ok(packageJson.includes('"test:auth-security-management-api-capture": "node scripts/auth-security-management-api-capture-check.mjs"'));
-assert.ok(packageJson.includes('"test:auth-security-evidence-intake": "node scripts/auth-security-evidence-intake-check.mjs && node scripts/auth-security-management-api-capture-check.mjs"'));
-assert.ok(workflow.includes('npm run test:auth-security-evidence-intake'),'Canonical source CI must continue to execute the combined Auth evidence intake/capture regression gate.');
+assert.ok(packageJson.includes('"test:auth-security-evidence-intake": "node scripts/auth-security-evidence-intake-check.mjs && node scripts/auth-security-management-api-capture-check.mjs && node scripts/auth-security-management-api-candidate-prep-check.mjs"'));
+assert.ok(workflow.includes('npm run test:auth-security-evidence-intake'),'Canonical source CI must continue to execute the combined Auth evidence intake/capture/preparation regression gate.');
 assert.equal(workflow.includes('npm run auth:evidence:capture'),false,'Canonical CI must never perform a live Management API capture.');
 assert.equal(workflow.includes('SUPABASE_ACCESS_TOKEN'),false,'Canonical source CI must not require a Supabase Management API access token.');
 
