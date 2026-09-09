@@ -8,10 +8,11 @@ import {
   buildAuthEvidenceRecordCandidate,
 } from './auth-security-evidence-intake.mjs';
 
-export const AUTH_MANAGEMENT_API_CAPTURE_VERSION=1;
+export const AUTH_MANAGEMENT_API_CAPTURE_VERSION=2;
 export const MANAGEMENT_API_ORIGIN='https://api.supabase.com';
 export const AUTH_CONFIG_PATH=(projectRef)=>`/v1/projects/${projectRef}/config/auth`;
 export const AUTH_CONFIG_URL=(projectRef)=>`${MANAGEMENT_API_ORIGIN}${AUTH_CONFIG_PATH(projectRef)}`;
+export const EXPECTED_GITHUB_REPOSITORY='RosevearCreations/yw';
 export const CAPTURED_AUTH_FIELDS=[
   'password_hibp_enabled',
   'mfa_totp_enroll_enabled',
@@ -24,6 +25,43 @@ export const CAPTURED_AUTH_FIELDS=[
 
 const clean=(value)=>String(value ?? '').trim();
 const isPlainObject=(value)=>Boolean(value && typeof value==='object' && !Array.isArray(value));
+
+export function normalizeWorkflowProvenance(value){
+  if(value==null || value==='')return null;
+  if(!isPlainObject(value))throw new Error('Workflow provenance must be a JSON object.');
+  const repository=clean(value.repository);
+  const runId=clean(value.run_id);
+  const runAttempt=clean(value.run_attempt);
+  const commitSha=clean(value.commit_sha).toLowerCase();
+  if(repository!==EXPECTED_GITHUB_REPOSITORY)throw new Error(`Workflow provenance repository must equal ${EXPECTED_GITHUB_REPOSITORY}.`);
+  if(!/^[1-9]\d*$/.test(runId))throw new Error('Workflow provenance run_id must be a positive integer.');
+  if(!/^[1-9]\d*$/.test(runAttempt))throw new Error('Workflow provenance run_attempt must be a positive integer.');
+  if(!/^[0-9a-f]{40}$/.test(commitSha))throw new Error('Workflow provenance commit_sha must be a 40-character hexadecimal SHA.');
+  return {
+    repository,
+    run_id:runId,
+    run_attempt:runAttempt,
+    commit_sha:commitSha,
+    event:'workflow_dispatch',
+  };
+}
+
+export function workflowProvenanceFromEnv(env=process.env){
+  const values={
+    repository:env.YWI_AUTH_EVIDENCE_WORKFLOW_REPOSITORY,
+    run_id:env.YWI_AUTH_EVIDENCE_WORKFLOW_RUN_ID,
+    run_attempt:env.YWI_AUTH_EVIDENCE_WORKFLOW_RUN_ATTEMPT,
+    commit_sha:env.YWI_AUTH_EVIDENCE_WORKFLOW_SHA,
+  };
+  if(Object.values(values).every((value)=>!clean(value)))return null;
+  return normalizeWorkflowProvenance(values);
+}
+
+export function buildWorkflowEvidenceReference(value){
+  const provenance=normalizeWorkflowProvenance(value);
+  if(!provenance)throw new Error('Workflow provenance is required to build a workflow evidence reference.');
+  return `https://github.com/${provenance.repository}/actions/runs/${provenance.run_id}/attempts/${provenance.run_attempt}`;
+}
 
 function requireBoolean(source,key){
   if(typeof source?.[key]!=='boolean')throw new Error(`Management API Auth config field ${key} must be a boolean.`);
@@ -67,7 +105,14 @@ export function buildAuthManagementApiEvidenceBundle(rawConfig,options={}){
   const observedAt=new Date(options.observedAt || new Date().toISOString()).toISOString();
   const sanitized=sanitizeManagementApiAuthConfig(rawConfig);
   const states=deriveAuthSecurityStates(sanitized);
-  const evidenceReference=clean(options.evidenceReference || makeEvidenceReference(projectRef,observedAt));
+  const workflowProvenance=normalizeWorkflowProvenance(options.workflowProvenance);
+  const requestedReference=clean(options.evidenceReference);
+  const workflowReference=workflowProvenance ? buildWorkflowEvidenceReference(workflowProvenance) : null;
+  if(workflowReference && requestedReference && requestedReference!==workflowReference){
+    throw new Error('Workflow-bound evidence_reference must equal the exact GitHub Actions run/attempt URL.');
+  }
+  const evidenceReference=requestedReference || workflowReference || makeEvidenceReference(projectRef,observedAt);
+  const provenanceDetail=workflowProvenance ? {workflow_provenance:{...workflowProvenance}} : {};
 
   const common={
     evidence_capture_version:AUTH_EVIDENCE_INTAKE_VERSION,
@@ -90,6 +135,7 @@ export function buildAuthManagementApiEvidenceBundle(rawConfig,options={}){
       management_api_endpoint:AUTH_CONFIG_URL(projectRef),
       captured_field:'password_hibp_enabled',
       transport:'official_https_management_api',
+      ...provenanceDetail,
     },
   };
   const mfaInput={
@@ -111,6 +157,7 @@ export function buildAuthManagementApiEvidenceBundle(rawConfig,options={}){
       management_api_endpoint:AUTH_CONFIG_URL(projectRef),
       configured_mfa_factors:states.configured_mfa_factors,
       transport:'official_https_management_api',
+      ...provenanceDetail,
     },
   };
 
@@ -131,6 +178,8 @@ export function buildAuthManagementApiEvidenceBundle(rawConfig,options={}){
     endpoint:AUTH_CONFIG_URL(projectRef),
     http_method:'GET',
     observed_at:observedAt,
+    evidence_reference:evidenceReference,
+    workflow_provenance:workflowProvenance,
     captured_fields:[...CAPTURED_AUTH_FIELDS],
     derived_states:{
       leaked_password_protection:states.leaked_password_protection,
@@ -149,6 +198,7 @@ export function buildAuthManagementApiEvidenceBundle(rawConfig,options={}){
       management_api_read_only:true,
       exact_official_endpoint_required:true,
       redirect_following_disabled:true,
+      workflow_provenance_bound:Boolean(workflowProvenance),
       full_management_api_response_persisted:false,
       access_token_persisted:false,
       database_write_performed:false,
@@ -164,7 +214,11 @@ export function buildAuthManagementApiEvidenceBundle(rawConfig,options={}){
 export async function captureAuthSecurityManagementApi(options={}){
   const projectRef=clean(options.projectRef || EXPECTED_PROJECT_REF);
   if(projectRef!==EXPECTED_PROJECT_REF)throw new Error(`projectRef must exactly equal the registered YardWeasels Production project ${EXPECTED_PROJECT_REF}.`);
-  const accessToken=clean(options.accessToken ?? process.env.SUPABASE_ACCESS_TOKEN);
+  const env=options.env || process.env;
+  const workflowProvenance=options.workflowProvenance!==undefined
+    ? normalizeWorkflowProvenance(options.workflowProvenance)
+    : workflowProvenanceFromEnv(env);
+  const accessToken=clean(options.accessToken ?? env.SUPABASE_ACCESS_TOKEN);
   if(!accessToken)throw new Error('SUPABASE_ACCESS_TOKEN is required for the read-only Supabase Management API capture.');
   const fetchImpl=options.fetchImpl || globalThis.fetch;
   if(typeof fetchImpl!=='function')throw new Error('A fetch implementation is required.');
@@ -193,6 +247,8 @@ export async function captureAuthSecurityManagementApi(options={}){
     projectRef,
     observedAt:options.observedAt,
     intakeNow:options.intakeNow,
+    evidenceReference:options.evidenceReference,
+    workflowProvenance,
   });
 }
 
