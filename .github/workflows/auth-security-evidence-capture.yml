@@ -1,6 +1,7 @@
 name: YWI Auth security evidence capture
 
 on:
+  pull_request:
   workflow_dispatch:
     inputs:
       confirm_read_only_capture:
@@ -18,6 +19,18 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  contract-check:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify Auth evidence capture workflow contract
+        run: node scripts/auth-security-evidence-capture-workflow-check.mjs
+
   capture-auth-evidence:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.confirm_read_only_capture == 'true' }}
     runs-on: ubuntu-latest
