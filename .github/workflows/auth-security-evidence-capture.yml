@@ -39,6 +39,10 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_AUTH_CONFIG_READ_TOKEN }}
       YWI_AUTH_EVIDENCE_ARTIFACT_PASSPHRASE: ${{ secrets.YWI_AUTH_EVIDENCE_ARTIFACT_PASSPHRASE }}
       YWI_AUTH_EVIDENCE_PREP_OUTPUT_DIR: auth-security-evidence-prepared
+      YWI_AUTH_EVIDENCE_WORKFLOW_REPOSITORY: ${{ github.repository }}
+      YWI_AUTH_EVIDENCE_WORKFLOW_RUN_ID: ${{ github.run_id }}
+      YWI_AUTH_EVIDENCE_WORKFLOW_RUN_ATTEMPT: ${{ github.run_attempt }}
+      YWI_AUTH_EVIDENCE_WORKFLOW_SHA: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
