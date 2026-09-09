@@ -51,6 +51,7 @@ jobs:
       - run: npm run test:promotion-shape
       - run: npm run test:repository-protection-preflight
       - run: node scripts/release-job-separation-check.mjs
+      - run: node scripts/exact-main-release-truth-summary-check.mjs
       - run: npm run test:release-source-evidence
       - run: npm run test:release-source-evidence-verify
       - run: npm run test:release-source-evidence-record
@@ -194,6 +195,35 @@ jobs:
         with:
           name: ywi-main-release-source-${{ github.run_id }}-${{ github.run_attempt }}
           path: release-source-evidence.json
+          if-no-files-found: error
+
+  release-truth-summary:
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [source-checks, repository-enforcement, release-source-evidence]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Summarize exact-main application and control truth
+        env:
+          YWI_GITHUB_EVENT_NAME: ${{ github.event_name }}
+          YWI_GITHUB_REF: ${{ github.ref }}
+          YWI_GITHUB_REPOSITORY: ${{ github.repository }}
+          YWI_HEAD_SHA: ${{ github.sha }}
+          YWI_GITHUB_RUN_ID: ${{ github.run_id }}
+          YWI_GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+          YWI_SOURCE_CHECKS_RESULT: ${{ needs.source-checks.result }}
+          YWI_REPOSITORY_ENFORCEMENT_RESULT: ${{ needs.repository-enforcement.result }}
+          YWI_RELEASE_SOURCE_EVIDENCE_RESULT: ${{ needs.release-source-evidence.result }}
+          YWI_EXACT_MAIN_RELEASE_TRUTH_PATH: exact-main-release-truth-summary.json
+        run: node scripts/exact-main-release-truth-summary.mjs
+      - name: Upload exact-main release truth summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: ywi-main-release-truth-${{ github.run_id }}-${{ github.run_attempt }}
+          path: exact-main-release-truth-summary.json
           if-no-files-found: error
 
   staging-proof:
