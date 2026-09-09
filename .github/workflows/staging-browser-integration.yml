@@ -118,7 +118,18 @@ jobs:
       - run: npm run test:closeout
       - run: npm run test:job-lifecycle
       - name: Install Chromium for rendered module acceptance
-        run: npx playwright install --with-deps chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          for source_file in /etc/apt/sources.list.d/*; do
+            if [ -f "$source_file" ] && grep -q 'dl.google.com/linux/chrome-stable/deb' "$source_file"; then
+              sudo mv "$source_file" "${source_file}.ywi-disabled"
+            fi
+          done
+          if [ -f /etc/apt/sources.list ]; then
+            sudo sed -i '\|dl.google.com/linux/chrome-stable/deb|s|^|# YWI CI disabled: |' /etc/apt/sources.list
+          fi
+          npx playwright install --with-deps chromium
       - run: npm run test:browser
       - run: npm run test:browser:three-surface
       - run: npm run test:browser:field-ux
