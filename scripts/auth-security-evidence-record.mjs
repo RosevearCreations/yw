@@ -2,10 +2,18 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
+import {
+  AUTH_CONFIG_URL,
+  AUTH_MANAGEMENT_API_CAPTURE_VERSION,
+  buildWorkflowEvidenceReference,
+  normalizeWorkflowProvenance,
+} from './auth-security-management-api-capture.mjs';
 
 export const EXPECTED_PROJECT_REF='jmqvkgiqlimdhcofwkxr';
 export const RECORD_CONFIRM='I_CONFIRM_AUTH_EVIDENCE_RECORD';
 export const SOURCE_CONFIRM='I_CONFIRM_OFFICIAL_SUPABASE_SOURCE';
+export const EXPECTED_GITHUB_REPOSITORY='RosevearCreations/yw';
+export const EXPECTED_CAPTURE_WORKFLOW_PATH='.github/workflows/auth-security-evidence-capture.yml';
 const MAX_AGE_MS=30*24*60*60*1000;
 const FUTURE_SKEW_MS=5*60*1000;
 
@@ -42,6 +50,40 @@ function projectRefFromUrl(value){
   return match ? match[1].toLowerCase() : null;
 }
 
+function validateWorkflowBoundManagementApiEvidence(evidenceSource,evidenceDetail,reference,errors){
+  let workflowProvenance=null;
+  if(evidenceSource!=='supabase_management_api'){
+    if(evidenceDetail?.workflow_provenance!=null)errors.push('Workflow provenance is only valid for Supabase Management API evidence.');
+    return workflowProvenance;
+  }
+
+  if(Number(evidenceDetail?.capture_version)!==AUTH_MANAGEMENT_API_CAPTURE_VERSION){
+    errors.push(`Management API evidence capture_version must equal ${AUTH_MANAGEMENT_API_CAPTURE_VERSION}.`);
+  }
+  if(clean(evidenceDetail?.management_api_endpoint)!==AUTH_CONFIG_URL(EXPECTED_PROJECT_REF)){
+    errors.push('Management API evidence endpoint must equal the exact official YardWeasels Auth config endpoint.');
+  }
+  if(clean(evidenceDetail?.transport)!=='official_https_management_api'){
+    errors.push('Management API evidence transport must be official_https_management_api.');
+  }
+
+  if(evidenceDetail?.workflow_provenance!=null){
+    try{
+      workflowProvenance=normalizeWorkflowProvenance(evidenceDetail.workflow_provenance);
+      const expectedReference=buildWorkflowEvidenceReference(workflowProvenance);
+      if(reference!==expectedReference){
+        errors.push('Workflow-bound evidence_reference must equal the exact GitHub Actions run/attempt URL encoded in workflow provenance.');
+      }
+    }catch(error){
+      errors.push(`Workflow provenance is invalid: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }else if(/^https:\/\/github\.com\/RosevearCreations\/yw\/actions\/runs\//i.test(reference)){
+    errors.push('GitHub Actions evidence_reference requires matching workflow_provenance in evidence_detail.');
+  }
+
+  return workflowProvenance;
+}
+
 export function buildAuthEvidenceRecordPlan(candidate,env=process.env,options={}){
   const nowMs=Date.parse(options.now || new Date().toISOString());
   const errors=[];
@@ -76,6 +118,10 @@ export function buildAuthEvidenceRecordPlan(candidate,env=process.env,options={}
   }
   if(candidate?.boundaries?.database_write_performed!==false)errors.push('Candidate must explicitly show that intake performed no database write.');
   if(candidate?.boundaries?.auth_setting_mutation_performed!==false)errors.push('Candidate must explicitly show that intake performed no Auth setting mutation.');
+
+  const workflowProvenance=isObject(db.evidence_detail)
+    ? validateWorkflowBoundManagementApiEvidence(evidenceSource,db.evidence_detail,reference,errors)
+    : null;
 
   const observedMs=Date.parse(observedAt);
   if(!Number.isFinite(observedMs))errors.push('Candidate observed_at is invalid.');
@@ -121,14 +167,89 @@ export function buildAuthEvidenceRecordPlan(candidate,env=process.env,options={}
     supabase_url:supabaseUrl,
     service_key:serviceKey,
     rpc_body:rpcBody,
+    workflow_provenance:workflowProvenance,
     expected_current_status:expectedCurrentStatus(derived),
+  };
+}
+
+export function workflowRunAttemptApiUrl(provenance){
+  const normalized=normalizeWorkflowProvenance(provenance);
+  if(!normalized)throw new Error('Workflow provenance is required.');
+  return `https://api.github.com/repos/${normalized.repository}/actions/runs/${normalized.run_id}/attempts/${normalized.run_attempt}`;
+}
+
+export async function verifyWorkflowProvenanceBeforeRecord(provenance,reference,options={}){
+  const normalized=normalizeWorkflowProvenance(provenance);
+  if(!normalized)return {verified:false,read_performed:false,provenance:null};
+  const expectedReference=buildWorkflowEvidenceReference(normalized);
+  if(clean(reference)!==expectedReference)throw new Error('Workflow evidence reference no longer matches the normalized provenance.');
+
+  const fetchImpl=options.fetchImpl || fetch;
+  const url=workflowRunAttemptApiUrl(normalized);
+  const response=await fetchImpl(url,{
+    method:'GET',
+    headers:{
+      accept:'application/vnd.github+json',
+      'x-github-api-version':'2022-11-28',
+    },
+    redirect:'error',
+  });
+  if(!response?.ok){
+    const text=await response?.text?.().catch(()=> '') || '';
+    throw new Error(`GitHub workflow provenance verification failed (${response?.status ?? 'unknown'})${text ? `: ${text.slice(0,300)}`:''}`);
+  }
+  const run=await response.json();
+  if(String(run?.id)!==normalized.run_id)throw new Error('GitHub workflow run id does not match evidence provenance.');
+  if(String(run?.run_attempt)!==normalized.run_attempt)throw new Error('GitHub workflow run attempt does not match evidence provenance.');
+  if(clean(run?.head_sha).toLowerCase()!==normalized.commit_sha)throw new Error('GitHub workflow head SHA does not match evidence provenance.');
+  if(clean(run?.event)!=='workflow_dispatch')throw new Error('GitHub workflow evidence must come from workflow_dispatch.');
+  if(clean(run?.path)!==EXPECTED_CAPTURE_WORKFLOW_PATH)throw new Error('GitHub workflow path does not match the protected Auth evidence capture workflow.');
+  if(clean(run?.repository?.full_name)!==EXPECTED_GITHUB_REPOSITORY)throw new Error('GitHub workflow repository does not match YardWeasels.');
+  if(clean(run?.status)!=='completed' || clean(run?.conclusion)!=='success')throw new Error('GitHub workflow evidence run must be completed successfully before recording.');
+
+  return {
+    verified:true,
+    read_performed:true,
+    api_url:url,
+    provenance:normalized,
+    workflow_path:EXPECTED_CAPTURE_WORKFLOW_PATH,
+    status:'completed',
+    conclusion:'success',
   };
 }
 
 export async function recordAuthEvidenceCandidate(candidate,env=process.env,options={}){
   const plan=buildAuthEvidenceRecordPlan(candidate,env,options);
-  if(!plan.ok)return {...plan,write_performed:false};
+  if(!plan.ok)return {...plan,write_performed:false,workflow_provenance_verified:false};
   const fetchImpl=options.fetchImpl || fetch;
+
+  let provenanceVerification={verified:false,read_performed:false,provenance:null};
+  if(plan.workflow_provenance){
+    provenanceVerification=await verifyWorkflowProvenanceBeforeRecord(
+      plan.workflow_provenance,
+      plan.rpc_body.p_evidence_reference,
+      {fetchImpl},
+    );
+  }
+
+  const rpcBody={
+    ...plan.rpc_body,
+    p_evidence_detail:{
+      ...plan.rpc_body.p_evidence_detail,
+      ...(provenanceVerification.verified ? {
+        workflow_provenance_verification:{
+          verified:true,
+          verification_source:'github_actions_api',
+          workflow_path:provenanceVerification.workflow_path,
+          repository:provenanceVerification.provenance.repository,
+          run_id:provenanceVerification.provenance.run_id,
+          run_attempt:provenanceVerification.provenance.run_attempt,
+          commit_sha:provenanceVerification.provenance.commit_sha,
+        },
+      } : {}),
+    },
+  };
+
   const headers={
     apikey:plan.service_key,
     authorization:`Bearer ${plan.service_key}`,
@@ -136,7 +257,7 @@ export async function recordAuthEvidenceCandidate(candidate,env=process.env,opti
   };
 
   const rpcResponse=await fetchImpl(`${plan.supabase_url}/rest/v1/rpc/ywi_record_auth_security_evidence`,{
-    method:'POST',headers,body:JSON.stringify(plan.rpc_body),
+    method:'POST',headers,body:JSON.stringify(rpcBody),
   });
   if(!rpcResponse.ok){
     const text=await rpcResponse.text().catch(()=> '');
@@ -161,6 +282,8 @@ export async function recordAuthEvidenceCandidate(candidate,env=process.env,opti
     ok:true,
     errors:[],
     write_performed:true,
+    workflow_provenance_verified:provenanceVerification.verified,
+    workflow_provenance_read_performed:provenanceVerification.read_performed,
     evidence_id:evidenceId,
     control_key:row.control_key,
     current_status:row.current_status,
@@ -184,6 +307,7 @@ if(invoked){
       ok:result.ok,
       input_path:inputPath,
       write_performed:result.write_performed,
+      workflow_provenance_verified:result.workflow_provenance_verified ?? false,
       evidence_id:result.evidence_id ?? null,
       control_key:result.control_key ?? candidate.control_key ?? null,
       current_status:result.current_status ?? null,
@@ -198,7 +322,7 @@ if(invoked){
       process.exitCode=1;
     }else{
       console.log('\nAUTH SECURITY EVIDENCE RECORDING: RECORDED AND RE-READ');
-      console.log('This records the confirmed evidence observation only. It does not change Supabase Auth settings, enable Finance/provider mutation, run staging acceptance, or promote Production.');
+      console.log('Workflow-bound Management API evidence is re-verified against the exact successful GitHub Actions run before the service-private write. This does not change Supabase Auth settings, enable Finance/provider mutation, run staging acceptance, or promote Production.');
     }
   }catch(error){
     console.error(`AUTH SECURITY EVIDENCE RECORDING: LOCKED\n- ${error instanceof Error ? error.message : String(error)}`);

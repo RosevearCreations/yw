@@ -1,7 +1,17 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import {buildAuthEvidenceRecordCandidate} from './auth-security-evidence-intake.mjs';
-import {buildAuthEvidenceRecordPlan,recordAuthEvidenceCandidate,EXPECTED_PROJECT_REF,RECORD_CONFIRM,SOURCE_CONFIRM} from './auth-security-evidence-record.mjs';
+import {
+  buildAuthEvidenceRecordPlan,
+  recordAuthEvidenceCandidate,
+  EXPECTED_CAPTURE_WORKFLOW_PATH,
+  EXPECTED_GITHUB_REPOSITORY,
+  EXPECTED_PROJECT_REF,
+  RECORD_CONFIRM,
+  SOURCE_CONFIRM,
+  verifyWorkflowProvenanceBeforeRecord,
+  workflowRunAttemptApiUrl,
+} from './auth-security-evidence-record.mjs';
 
 const migration=fs.readFileSync('sql/203_auth_evidence_authorized_recording.sql','utf8');
 const lockMigration=fs.readFileSync('sql/204_auth_evidence_direct_write_lock.sql','utf8');
@@ -14,6 +24,22 @@ const checks=[];
 const add=(name,ok)=>checks.push({name,ok:!!ok});
 const all=(text,parts)=>parts.every((part)=>text.includes(part));
 const NOW='2026-09-05T00:20:00.000Z';
+const WORKFLOW_RUN_ID='34300000000';
+const WORKFLOW_ATTEMPT='1';
+const WORKFLOW_SHA='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const WORKFLOW_REFERENCE=`https://github.com/${EXPECTED_GITHUB_REPOSITORY}/actions/runs/${WORKFLOW_RUN_ID}/attempts/${WORKFLOW_ATTEMPT}`;
+const MANAGEMENT_ENDPOINT=`https://api.supabase.com/v1/projects/${EXPECTED_PROJECT_REF}/config/auth`;
+
+function workflowProvenance(overrides={}){
+  return {
+    repository:EXPECTED_GITHUB_REPOSITORY,
+    run_id:WORKFLOW_RUN_ID,
+    run_attempt:WORKFLOW_ATTEMPT,
+    commit_sha:WORKFLOW_SHA,
+    event:'workflow_dispatch',
+    ...overrides,
+  };
+}
 
 function input(overrides={}){
   return {
@@ -23,9 +49,15 @@ function input(overrides={}){
     project_ref:EXPECTED_PROJECT_REF,
     observed_state:'enabled',
     observed_at:'2026-09-05T00:10:00.000Z',
-    evidence_reference:'management-api://projects/current/auth/settings#password-security',
-    evidence_detail:{observation_scope:'password-security'},
-    source_capture:{project_ref:EXPECTED_PROJECT_REF,leaked_password_protection:true},
+    evidence_reference:WORKFLOW_REFERENCE,
+    evidence_detail:{
+      capture_version:2,
+      management_api_endpoint:MANAGEMENT_ENDPOINT,
+      captured_field:'password_hibp_enabled',
+      transport:'official_https_management_api',
+      workflow_provenance:workflowProvenance(),
+    },
+    source_capture:{project_ref:EXPECTED_PROJECT_REF,control:'leaked_password_protection',password_hibp_enabled:true},
     ...overrides,
   };
 }
@@ -118,6 +150,7 @@ add('schema204-marker',lockMigration.includes('204 as expected_schema_version') 
 const validCandidate=candidate();
 const validPlan=buildAuthEvidenceRecordPlan(validCandidate,env(),{now:NOW});
 add('valid-record-plan',validPlan.ok && validPlan.errors.length===0 && validPlan.expected_current_status==='verified_secure');
+add('workflow-provenance-normalized-in-plan',validPlan.workflow_provenance?.repository===EXPECTED_GITHUB_REPOSITORY && validPlan.workflow_provenance?.run_id===WORKFLOW_RUN_ID && validPlan.workflow_provenance?.run_attempt===WORKFLOW_ATTEMPT && validPlan.workflow_provenance?.commit_sha===WORKFLOW_SHA);
 add('explicit-record-confirmation-required',!buildAuthEvidenceRecordPlan(validCandidate,env({YWI_AUTH_EVIDENCE_RECORD_CONFIRM:''}),{now:NOW}).ok);
 add('explicit-source-confirmation-required',!buildAuthEvidenceRecordPlan(validCandidate,env({YWI_AUTH_EVIDENCE_SOURCE_AUTHENTICITY_CONFIRM:''}),{now:NOW}).ok);
 add('exact-production-url-required',!buildAuthEvidenceRecordPlan(validCandidate,env({SUPABASE_URL:'https://differentproject.supabase.co'}),{now:NOW}).ok);
@@ -126,14 +159,59 @@ const tampered=structuredClone(validCandidate);
 tampered.database_record_candidate.verification_status='verified_followup';
 add('tampered-derived-status-rejected',!buildAuthEvidenceRecordPlan(tampered,env(),{now:NOW}).ok);
 
+const tamperedReference=structuredClone(validCandidate);
+tamperedReference.evidence_reference=`https://github.com/${EXPECTED_GITHUB_REPOSITORY}/actions/runs/${WORKFLOW_RUN_ID}/attempts/2`;
+tamperedReference.database_record_candidate.evidence_reference=tamperedReference.evidence_reference;
+add('tampered-workflow-reference-rejected',!buildAuthEvidenceRecordPlan(tamperedReference,env(),{now:NOW}).ok);
+
+const tamperedEndpoint=structuredClone(validCandidate);
+tamperedEndpoint.database_record_candidate.evidence_detail.management_api_endpoint='https://api.supabase.com/v1/projects/not-yardweasels/config/auth';
+add('tampered-management-endpoint-rejected',!buildAuthEvidenceRecordPlan(tamperedEndpoint,env(),{now:NOW}).ok);
+
+const tamperedTransport=structuredClone(validCandidate);
+tamperedTransport.database_record_candidate.evidence_detail.transport='copied_text';
+add('tampered-management-transport-rejected',!buildAuthEvidenceRecordPlan(tamperedTransport,env(),{now:NOW}).ok);
+
+const missingProvenance=structuredClone(validCandidate);
+delete missingProvenance.database_record_candidate.evidence_detail.workflow_provenance;
+add('github-reference-without-provenance-rejected',!buildAuthEvidenceRecordPlan(missingProvenance,env(),{now:NOW}).ok);
+
+const manualInput=input({
+  evidence_reference:`management-api://projects/${EXPECTED_PROJECT_REF}/config/auth?observed_at=${encodeURIComponent('2026-09-05T00:10:00.000Z')}`,
+  evidence_detail:{
+    capture_version:2,
+    management_api_endpoint:MANAGEMENT_ENDPOINT,
+    captured_field:'password_hibp_enabled',
+    transport:'official_https_management_api',
+  },
+});
+const manualResult=buildAuthEvidenceRecordCandidate(manualInput,{now:NOW});
+const manualPlan=buildAuthEvidenceRecordPlan(manualResult.candidate,env(),{now:NOW});
+add('non-workflow-management-api-path-remains-explicitly-confirmed',manualResult.ok && manualPlan.ok && manualPlan.workflow_provenance===null);
+
 const staleCandidate=structuredClone(validCandidate);
 staleCandidate.observed_at='2026-07-01T00:00:00.000Z';
 staleCandidate.database_record_candidate.observed_at=staleCandidate.observed_at;
 add('stale-candidate-rejected-at-recording',!buildAuthEvidenceRecordPlan(staleCandidate,env(),{now:NOW}).ok);
 
+const provenanceApiUrl=workflowRunAttemptApiUrl(workflowProvenance());
+add('workflow-attempt-api-url-exact',provenanceApiUrl===`https://api.github.com/repos/${EXPECTED_GITHUB_REPOSITORY}/actions/runs/${WORKFLOW_RUN_ID}/attempts/${WORKFLOW_ATTEMPT}`);
+
 let calls=[];
 const fakeFetch=async (url,options={})=>{
   calls.push({url,options});
+  if(url===provenanceApiUrl){
+    return {ok:true,status:200,json:async()=>({
+      id:Number(WORKFLOW_RUN_ID),
+      run_attempt:Number(WORKFLOW_ATTEMPT),
+      head_sha:WORKFLOW_SHA,
+      event:'workflow_dispatch',
+      path:EXPECTED_CAPTURE_WORKFLOW_PATH,
+      status:'completed',
+      conclusion:'success',
+      repository:{full_name:EXPECTED_GITHUB_REPOSITORY},
+    }),text:async()=>''};
+  }
   if(url.includes('/rpc/ywi_record_auth_security_evidence')){
     return {ok:true,status:200,json:async()=>77,text:async()=>''};
   }
@@ -149,10 +227,41 @@ const fakeFetch=async (url,options={})=>{
   }
   throw new Error(`Unexpected URL: ${url}`);
 };
+
+const verified=await verifyWorkflowProvenanceBeforeRecord(workflowProvenance(),WORKFLOW_REFERENCE,{fetchImpl:fakeFetch});
+add('direct-workflow-provenance-verification',verified.verified && verified.read_performed && verified.workflow_path===EXPECTED_CAPTURE_WORKFLOW_PATH);
+calls=[];
 const recorded=await recordAuthEvidenceCandidate(validCandidate,env(),{now:NOW,fetchImpl:fakeFetch});
 add('mock-record-and-reread',recorded.ok && recorded.write_performed && recorded.evidence_id===77 && recorded.current_status==='verified_secure');
-add('rpc-before-reread',calls.length===2 && calls[0].url.endsWith('/rest/v1/rpc/ywi_record_auth_security_evidence') && calls[1].url.includes('/rest/v1/v_it_auth_security_evidence_current?'));
-add('rpc-body-derived-not-operator-status',JSON.parse(calls[0].options.body).p_observed_state==='enabled' && !Object.prototype.hasOwnProperty.call(JSON.parse(calls[0].options.body),'p_verification_status'));
+add('workflow-read-before-rpc-before-reread',calls.length===3 && calls[0].url===provenanceApiUrl && calls[1].url.endsWith('/rest/v1/rpc/ywi_record_auth_security_evidence') && calls[2].url.includes('/rest/v1/v_it_auth_security_evidence_current?'));
+add('workflow-provenance-verified-before-write',recorded.workflow_provenance_verified===true && recorded.workflow_provenance_read_performed===true);
+const rpcBody=JSON.parse(calls[1].options.body);
+add('rpc-body-derived-not-operator-status',rpcBody.p_observed_state==='enabled' && !Object.prototype.hasOwnProperty.call(rpcBody,'p_verification_status'));
+add('rpc-body-records-live-github-verification',rpcBody.p_evidence_detail?.workflow_provenance_verification?.verified===true && rpcBody.p_evidence_detail?.workflow_provenance_verification?.verification_source==='github_actions_api' && rpcBody.p_evidence_detail?.workflow_provenance_verification?.commit_sha===WORKFLOW_SHA);
+
+let mismatchSupabaseWrite=false;
+let mismatchRejected=false;
+try{
+  await recordAuthEvidenceCandidate(validCandidate,env(),{now:NOW,fetchImpl:async (url)=>{
+    if(url===provenanceApiUrl){
+      return {ok:true,status:200,json:async()=>({
+        id:Number(WORKFLOW_RUN_ID),
+        run_attempt:Number(WORKFLOW_ATTEMPT),
+        head_sha:'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        event:'workflow_dispatch',
+        path:EXPECTED_CAPTURE_WORKFLOW_PATH,
+        status:'completed',
+        conclusion:'success',
+        repository:{full_name:EXPECTED_GITHUB_REPOSITORY},
+      }),text:async()=>''};
+    }
+    mismatchSupabaseWrite=true;
+    throw new Error('Supabase must not be called after provenance mismatch.');
+  }});
+}catch(error){
+  mismatchRejected=String(error?.message || error).includes('head SHA does not match');
+}
+add('live-github-sha-mismatch-blocks-recording',mismatchRejected && !mismatchSupabaseWrite);
 
 let lockedFetchCalled=false;
 const locked=await recordAuthEvidenceCandidate(validCandidate,env({YWI_AUTH_EVIDENCE_RECORD_CONFIRM:''}),{now:NOW,fetchImpl:async()=>{lockedFetchCalled=true;throw new Error('must not call');}});
