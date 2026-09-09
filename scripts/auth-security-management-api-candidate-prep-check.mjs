@@ -173,7 +173,7 @@ try{
 const packageJson=JSON.parse(fs.readFileSync('package.json','utf8'));
 const workflow=fs.readFileSync('.github/workflows/staging-browser-integration.yml','utf8');
 assert.equal(packageJson.scripts['auth:evidence:prepare'],'node scripts/auth-security-management-api-candidate-prep.mjs');
-assert.equal(packageJson.scripts['auth:evidence:capture-prepare'],'YWI_AUTH_CAPTURE_AND_PREPARE=true node scripts/auth-security-management-api-candidate-prep.mjs');
+assert.equal(packageJson.scripts['auth:evidence:capture-prepare'],'node scripts/auth-security-management-api-candidate-prep.mjs --capture');
 assert.equal(packageJson.scripts['test:auth-security-management-api-candidate-prep'],'node scripts/auth-security-management-api-candidate-prep-check.mjs');
 assert.equal(packageJson.scripts['test:auth-security-evidence-intake'],'node scripts/auth-security-evidence-intake-check.mjs && node scripts/auth-security-management-api-capture-check.mjs && node scripts/auth-security-management-api-candidate-prep-check.mjs');
 assert.ok(workflow.includes('npm run test:auth-security-evidence-intake'));
