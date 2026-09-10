@@ -17,6 +17,7 @@ export const SOURCE_CONFIRM='I_CONFIRM_OFFICIAL_SUPABASE_SOURCE';
 export const EXPECTED_GITHUB_REPOSITORY='RosevearCreations/yw';
 export const EXPECTED_CAPTURE_WORKFLOW_PATH='.github/workflows/auth-security-evidence-capture.yml';
 export const EXPECTED_CAPTURE_BRANCH='main';
+export const AUTH_ARTIFACT_OBSERVATION_MAX_LAG_MS=15*60*1000;
 const MAX_AGE_MS=30*24*60*60*1000;
 const FUTURE_SKEW_MS=5*60*1000;
 
@@ -47,7 +48,7 @@ function expectedCurrentStatus(verificationStatus){
 
 function projectRefFromUrl(value){
   let url;
-  try{ url=new URL(value); }catch{ return null; }
+  try{url=new URL(value);}catch{return null;}
   if(url.protocol!=='https:')return null;
   const match=url.hostname.match(/^([a-z0-9-]{8,80})\.supabase\.co$/i);
   return match ? match[1].toLowerCase() : null;
@@ -252,6 +253,26 @@ export async function verifyWorkflowProvenanceBeforeRecord(provenance,reference,
   };
 }
 
+export function verifyAuthArtifactObservationTime(observedAt,artifactCreatedAt){
+  const observedMs=Date.parse(clean(observedAt));
+  const artifactCreatedMs=Date.parse(clean(artifactCreatedAt));
+  if(!Number.isFinite(observedMs))throw new Error('Workflow-bound Auth evidence observed_at is invalid.');
+  if(!Number.isFinite(artifactCreatedMs))throw new Error('Verified Auth capture artifact created_at is invalid.');
+  if(observedMs>artifactCreatedMs+FUTURE_SKEW_MS){
+    throw new Error('Workflow-bound Auth evidence observed_at is later than the verified artifact creation window.');
+  }
+  if(artifactCreatedMs-observedMs>AUTH_ARTIFACT_OBSERVATION_MAX_LAG_MS){
+    throw new Error('Workflow-bound Auth evidence observed_at is too old relative to the verified artifact creation time.');
+  }
+  return {
+    verified:true,
+    observed_at:new Date(observedMs).toISOString(),
+    artifact_created_at:new Date(artifactCreatedMs).toISOString(),
+    maximum_artifact_lag_ms:AUTH_ARTIFACT_OBSERVATION_MAX_LAG_MS,
+    future_clock_skew_ms:FUTURE_SKEW_MS,
+  };
+}
+
 function provenanceVerificationFromArtifact(artifactVerification,provenance){
   return {
     verified:artifactVerification?.verified===true,
@@ -267,11 +288,12 @@ function provenanceVerificationFromArtifact(artifactVerification,provenance){
 
 export async function recordAuthEvidenceCandidate(candidate,env=process.env,options={}){
   const plan=buildAuthEvidenceRecordPlan(candidate,env,options);
-  if(!plan.ok)return {...plan,write_performed:false,workflow_provenance_verified:false,auth_capture_artifact_verified:false};
+  if(!plan.ok)return {...plan,write_performed:false,workflow_provenance_verified:false,auth_capture_artifact_verified:false,auth_capture_temporal_verified:false};
   const fetchImpl=options.fetchImpl || fetch;
 
   let provenanceVerification={verified:false,read_performed:false,provenance:null};
   let artifactVerification={verified:false,network_reads:0,artifact:null};
+  let temporalVerification={verified:false};
   if(plan.workflow_provenance){
     artifactVerification=await verifyAuthEvidenceArtifact({
       run_id:plan.workflow_provenance.run_id,
@@ -281,6 +303,10 @@ export async function recordAuthEvidenceCandidate(candidate,env=process.env,opti
     if(!artifactVerification?.verified){
       throw new Error('Workflow-bound Auth evidence artifact verification did not succeed.');
     }
+    temporalVerification=verifyAuthArtifactObservationTime(
+      plan.rpc_body.p_observed_at,
+      artifactVerification.artifact?.created_at,
+    );
     provenanceVerification=provenanceVerificationFromArtifact(artifactVerification,plan.workflow_provenance);
   }
 
@@ -312,6 +338,13 @@ export async function recordAuthEvidenceCandidate(candidate,env=process.env,opti
           artifact_expired:artifactVerification.artifact?.expired ?? null,
           artifact_download_performed:false,
           artifact_decryption_performed:false,
+        },
+        auth_capture_temporal_verification:{
+          verified:temporalVerification.verified===true,
+          observed_at:temporalVerification.observed_at ?? null,
+          artifact_created_at:temporalVerification.artifact_created_at ?? null,
+          maximum_artifact_lag_ms:temporalVerification.maximum_artifact_lag_ms ?? null,
+          future_clock_skew_ms:temporalVerification.future_clock_skew_ms ?? null,
         },
       } : {}),
     },
@@ -355,6 +388,9 @@ export async function recordAuthEvidenceCandidate(candidate,env=process.env,opti
     auth_capture_artifact_metadata_reads:Number(artifactVerification.network_reads || 0),
     auth_capture_artifact_id:artifactVerification.artifact?.id ?? null,
     auth_capture_artifact_digest:artifactVerification.artifact?.digest ?? null,
+    auth_capture_temporal_verified:temporalVerification.verified===true,
+    auth_capture_temporal_observed_at:temporalVerification.observed_at ?? null,
+    auth_capture_temporal_artifact_created_at:temporalVerification.artifact_created_at ?? null,
     source_capture_digest_revalidated:plan.source_capture_digest_revalidated,
     evidence_id:evidenceId,
     control_key:row.control_key,
@@ -383,6 +419,9 @@ if(invoked){
       auth_capture_artifact_verified:result.auth_capture_artifact_verified ?? false,
       auth_capture_artifact_id:result.auth_capture_artifact_id ?? null,
       auth_capture_artifact_digest:result.auth_capture_artifact_digest ?? null,
+      auth_capture_temporal_verified:result.auth_capture_temporal_verified ?? false,
+      auth_capture_temporal_observed_at:result.auth_capture_temporal_observed_at ?? null,
+      auth_capture_temporal_artifact_created_at:result.auth_capture_temporal_artifact_created_at ?? null,
       source_capture_digest_revalidated:result.source_capture_digest_revalidated ?? false,
       evidence_id:result.evidence_id ?? null,
       control_key:result.control_key ?? candidate.control_key ?? null,
@@ -398,7 +437,7 @@ if(invoked){
       process.exitCode=1;
     }else{
       console.log('\nAUTH SECURITY EVIDENCE RECORDING: RECORDED AND RE-READ');
-      console.log('The recorder recomputes the retained sanitized source-capture SHA-256 and workflow-bound Management API evidence requires the exact successful canonical-main GitHub Actions run plus its exact non-expired SHA-256-backed encrypted capture artifact before the service-private write. The artifact is not downloaded or decrypted. This does not change Supabase Auth settings, enable Finance/provider mutation, run staging acceptance, or promote Production.');
+      console.log('The recorder recomputes the retained sanitized source-capture SHA-256 and workflow-bound Management API evidence requires the exact successful canonical-main GitHub Actions run, its exact non-expired SHA-256-backed encrypted capture artifact, and an observed_at timestamp bound to that artifact creation window before the service-private write. The artifact is not downloaded or decrypted. This does not change Supabase Auth settings, enable Finance/provider mutation, run staging acceptance, or promote Production.');
     }
   }catch(error){
     console.error(`AUTH SECURITY EVIDENCE RECORDING: LOCKED\n- ${error instanceof Error ? error.message : String(error)}`);
