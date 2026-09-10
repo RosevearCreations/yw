@@ -21,6 +21,10 @@ export const EXPECTED_CAPTURE_BRANCH='main';
 export const AUTH_ARTIFACT_OBSERVATION_MAX_LAG_MS=15*60*1000;
 const MAX_AGE_MS=30*24*60*60*1000;
 const FUTURE_SKEW_MS=5*60*1000;
+const REPLAY_SELECT=[
+  'evidence_id','control_key','evidence_source','observed_state','verification_status','is_authoritative',
+  'observed_at','evidence_reference','evidence_detail','source_project_ref','source_capture_sha256','recording_contract_version',
+].join(',');
 
 const clean=(value)=>String(value ?? '').trim();
 const isObject=(value)=>Boolean(value && typeof value==='object' && !Array.isArray(value));
@@ -53,6 +57,12 @@ function projectRefFromUrl(value){
   if(url.protocol!=='https:')return null;
   const match=url.hostname.match(/^([a-z0-9-]{8,80})\.supabase\.co$/i);
   return match ? match[1].toLowerCase() : null;
+}
+
+function sameInstant(left,right){
+  const leftMs=Date.parse(clean(left));
+  const rightMs=Date.parse(clean(right));
+  return Number.isFinite(leftMs) && Number.isFinite(rightMs) && leftMs===rightMs;
 }
 
 function validateWorkflowBoundManagementApiEvidence(evidenceSource,evidenceDetail,reference,errors){
@@ -297,9 +307,90 @@ function provenanceVerificationFromArtifact(artifactVerification,provenance){
   };
 }
 
+export function authEvidenceReplayLookupUrl(supabaseUrl,rpcBody){
+  const filter=(value)=>encodeURIComponent(clean(value));
+  return `${clean(supabaseUrl).replace(/\/$/,'')}/rest/v1/it_auth_security_evidence?select=${encodeURIComponent(REPLAY_SELECT)}`+
+    `&control_key=eq.${filter(rpcBody?.p_control_key)}`+
+    `&evidence_source=eq.${filter(rpcBody?.p_evidence_source)}`+
+    `&source_project_ref=eq.${filter(rpcBody?.p_source_project_ref)}`+
+    `&source_capture_sha256=eq.${filter(rpcBody?.p_source_capture_sha256)}`+
+    '&limit=2';
+}
+
+function workflowReplayDetailMatches(rowDetail,expectedDetail){
+  const rowWorkflow=rowDetail?.workflow_provenance_verification;
+  const expectedWorkflow=expectedDetail?.workflow_provenance_verification;
+  const rowArtifact=rowDetail?.auth_capture_artifact_verification;
+  const expectedArtifact=expectedDetail?.auth_capture_artifact_verification;
+  const rowBinding=rowDetail?.auth_capture_content_binding_verification;
+  const expectedBinding=expectedDetail?.auth_capture_content_binding_verification;
+  const rowTemporal=rowDetail?.auth_capture_temporal_verification;
+  const expectedTemporal=expectedDetail?.auth_capture_temporal_verification;
+  return rowWorkflow?.verified===true && expectedWorkflow?.verified===true &&
+    clean(rowWorkflow.repository)===clean(expectedWorkflow.repository) &&
+    clean(rowWorkflow.head_repository)===clean(expectedWorkflow.head_repository) &&
+    clean(rowWorkflow.head_branch)===clean(expectedWorkflow.head_branch) &&
+    clean(rowWorkflow.run_id)===clean(expectedWorkflow.run_id) &&
+    clean(rowWorkflow.run_attempt)===clean(expectedWorkflow.run_attempt) &&
+    clean(rowWorkflow.commit_sha).toLowerCase()===clean(expectedWorkflow.commit_sha).toLowerCase() &&
+    rowArtifact?.verified===true && expectedArtifact?.verified===true &&
+    Number(rowArtifact.artifact_id)===Number(expectedArtifact.artifact_id) &&
+    clean(rowArtifact.artifact_digest)===clean(expectedArtifact.artifact_digest) &&
+    rowBinding?.verified===true && expectedBinding?.verified===true &&
+    clean(rowBinding.commitment_sha256).toLowerCase()===clean(expectedBinding.commitment_sha256).toLowerCase() &&
+    Number(rowBinding.marker_artifact_id)===Number(expectedBinding.marker_artifact_id) &&
+    clean(rowBinding.marker_artifact_digest)===clean(expectedBinding.marker_artifact_digest) &&
+    rowTemporal?.verified===true && expectedTemporal?.verified===true &&
+    sameInstant(rowTemporal.observed_at,expectedTemporal.observed_at) &&
+    sameInstant(rowTemporal.artifact_created_at,expectedTemporal.artifact_created_at);
+}
+
+export async function inspectAuthEvidenceReplay(plan,candidate,rpcBody,headers,options={}){
+  const fetchImpl=options.fetchImpl || fetch;
+  const url=authEvidenceReplayLookupUrl(plan.supabase_url,rpcBody);
+  const response=await fetchImpl(url,{method:'GET',headers});
+  if(!response?.ok){
+    const text=await response?.text?.().catch(()=> '') || '';
+    throw new Error(`Auth evidence replay precheck failed (${response?.status ?? 'unknown'})${text ? `: ${text.slice(0,300)}`:''}`);
+  }
+  const rows=await response.json();
+  if(!Array.isArray(rows))throw new Error('Auth evidence replay precheck returned an invalid response shape.');
+  if(rows.length>1)throw new Error('Auth evidence replay precheck found duplicate rows for a unique capture key.');
+  if(rows.length===0){
+    return {checked:true,disposition:'new_capture',existing_evidence_id:null,lookup_url:url};
+  }
+
+  const row=rows[0];
+  const evidenceId=Number(row?.evidence_id);
+  if(!Number.isInteger(evidenceId) || evidenceId<1)throw new Error('Auth evidence replay precheck found an invalid existing evidence id.');
+  const rowDetail=isObject(row?.evidence_detail) ? row.evidence_detail : {};
+  const expectedDetail=isObject(rpcBody?.p_evidence_detail) ? rpcBody.p_evidence_detail : {};
+  const exactBase=row.control_key===rpcBody.p_control_key &&
+    row.evidence_source===rpcBody.p_evidence_source &&
+    row.observed_state===rpcBody.p_observed_state &&
+    row.verification_status===candidate.derived_verification_status &&
+    row.is_authoritative===true &&
+    sameInstant(row.observed_at,rpcBody.p_observed_at) &&
+    clean(row.evidence_reference)===clean(rpcBody.p_evidence_reference) &&
+    clean(row.source_project_ref).toLowerCase()===clean(rpcBody.p_source_project_ref).toLowerCase() &&
+    clean(row.source_capture_sha256).toLowerCase()===clean(rpcBody.p_source_capture_sha256).toLowerCase() &&
+    Number(row.recording_contract_version)===1;
+  const workflowDetailMatch=!plan.workflow_provenance || workflowReplayDetailMatches(rowDetail,expectedDetail);
+  if(!exactBase || !workflowDetailMatch){
+    throw new Error('Auth evidence capture digest is already recorded with conflicting authoritative metadata; refusing replay before RPC.');
+  }
+
+  return {
+    checked:true,
+    disposition:'exact_replay_noop',
+    existing_evidence_id:evidenceId,
+    lookup_url:url,
+  };
+}
+
 export async function recordAuthEvidenceCandidate(candidate,env=process.env,options={}){
   const plan=buildAuthEvidenceRecordPlan(candidate,env,options);
-  if(!plan.ok)return {...plan,write_performed:false,workflow_provenance_verified:false,auth_capture_artifact_verified:false,auth_capture_temporal_verified:false,auth_capture_content_binding_verified:false};
+  if(!plan.ok)return {...plan,write_performed:false,replay_precheck_performed:false,replay_disposition:'not_checked',replay_existing_evidence_id:null,workflow_provenance_verified:false,auth_capture_artifact_verified:false,auth_capture_temporal_verified:false,auth_capture_content_binding_verified:false};
   const fetchImpl=options.fetchImpl || fetch;
 
   let provenanceVerification={verified:false,read_performed:false,provenance:null};
@@ -386,6 +477,37 @@ export async function recordAuthEvidenceCandidate(candidate,env=process.env,opti
     'content-type':'application/json',
   };
 
+  const replayInspection=await inspectAuthEvidenceReplay(plan,candidate,rpcBody,headers,{fetchImpl});
+  if(replayInspection.disposition==='exact_replay_noop'){
+    return {
+      ok:true,
+      errors:[],
+      write_performed:false,
+      replay_precheck_performed:true,
+      replay_disposition:replayInspection.disposition,
+      replay_existing_evidence_id:replayInspection.existing_evidence_id,
+      workflow_provenance_verified:provenanceVerification.verified,
+      workflow_provenance_read_performed:provenanceVerification.read_performed,
+      auth_capture_artifact_verified:artifactVerification.verified,
+      auth_capture_artifact_metadata_reads:Number(artifactVerification.network_reads || 0),
+      auth_capture_artifact_id:artifactVerification.artifact?.id ?? null,
+      auth_capture_artifact_digest:artifactVerification.artifact?.digest ?? null,
+      auth_capture_content_binding_verified:artifactVerification.content_binding_verified===true,
+      auth_capture_content_binding_commitment:plan.workflow_content_binding?.commitment_sha256 ?? null,
+      auth_capture_content_binding_marker_artifact_id:artifactVerification.content_binding?.artifact?.id ?? null,
+      auth_capture_temporal_verified:temporalVerification.verified===true,
+      auth_capture_temporal_observed_at:temporalVerification.observed_at ?? null,
+      auth_capture_temporal_artifact_created_at:temporalVerification.artifact_created_at ?? null,
+      source_capture_digest_revalidated:plan.source_capture_digest_revalidated,
+      evidence_id:replayInspection.existing_evidence_id,
+      control_key:plan.rpc_body.p_control_key,
+      current_status:plan.expected_current_status,
+      source_project_ref:plan.rpc_body.p_source_project_ref,
+      source_capture_sha256:plan.rpc_body.p_source_capture_sha256,
+      recording_contract_version:1,
+    };
+  }
+
   const rpcResponse=await fetchImpl(`${plan.supabase_url}/rest/v1/rpc/ywi_record_auth_security_evidence`,{
     method:'POST',headers,body:JSON.stringify(rpcBody),
   });
@@ -412,6 +534,9 @@ export async function recordAuthEvidenceCandidate(candidate,env=process.env,opti
     ok:true,
     errors:[],
     write_performed:true,
+    replay_precheck_performed:true,
+    replay_disposition:replayInspection.disposition,
+    replay_existing_evidence_id:null,
     workflow_provenance_verified:provenanceVerification.verified,
     workflow_provenance_read_performed:provenanceVerification.read_performed,
     auth_capture_artifact_verified:artifactVerification.verified,
@@ -448,6 +573,9 @@ if(invoked){
       ok:result.ok,
       input_path:inputPath,
       write_performed:result.write_performed,
+      replay_precheck_performed:result.replay_precheck_performed ?? false,
+      replay_disposition:result.replay_disposition ?? 'not_checked',
+      replay_existing_evidence_id:result.replay_existing_evidence_id ?? null,
       workflow_provenance_verified:result.workflow_provenance_verified ?? false,
       auth_capture_artifact_verified:result.auth_capture_artifact_verified ?? false,
       auth_capture_artifact_id:result.auth_capture_artifact_id ?? null,
@@ -471,9 +599,12 @@ if(invoked){
       console.error('\nAUTH SECURITY EVIDENCE RECORDING: LOCKED');
       for(const error of result.errors)console.error(`- ${error}`);
       process.exitCode=1;
+    }else if(result.replay_disposition==='exact_replay_noop'){
+      console.log('\nAUTH SECURITY EVIDENCE RECORDING: VERIFIED REPLAY NO-OP');
+      console.log('The exact authoritative capture was already recorded. The recorder re-verified workflow/artifact/content/temporal provenance where applicable, confirmed the existing service-private row matches, and performed no RPC write.');
     }else{
       console.log('\nAUTH SECURITY EVIDENCE RECORDING: RECORDED AND RE-READ');
-      console.log('The recorder recomputes the retained sanitized source-capture SHA-256 and workflow-bound Management API evidence requires the exact successful canonical-main GitHub Actions run, its exact non-expired SHA-256-backed encrypted capture artifact, an exact salted candidate-content commitment marker artifact, and an observed_at timestamp bound to the artifact creation window before the service-private write. The artifacts are not downloaded or decrypted, and the binding nonce is not persisted in evidence_detail. This does not change Supabase Auth settings, enable Finance/provider mutation, run staging acceptance, or promote Production.');
+      console.log('The recorder recomputes the retained sanitized source-capture SHA-256 and workflow-bound Management API evidence requires the exact successful canonical-main GitHub Actions run, its exact non-expired SHA-256-backed encrypted capture artifact, an exact salted candidate-content commitment marker artifact, and an observed_at timestamp bound to the artifact creation window before the service-private write. A service-private replay precheck prevents exact replays from rewriting existing evidence and blocks conflicting digest reuse before the RPC. The artifacts are not downloaded or decrypted, and the binding nonce is not persisted in evidence_detail. This does not change Supabase Auth settings, enable Finance/provider mutation, run staging acceptance, or promote Production.');
     }
   }catch(error){
     console.error(`AUTH SECURITY EVIDENCE RECORDING: LOCKED\n- ${error instanceof Error ? error.message : String(error)}`);

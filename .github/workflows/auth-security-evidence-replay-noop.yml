@@ -1,0 +1,24 @@
+name: YWI Auth evidence replay no-op
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/auth-security-evidence-record.mjs'
+      - 'scripts/auth-security-evidence-record-check.mjs'
+      - '.github/workflows/auth-security-evidence-replay-noop.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  replay-noop-contract:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci --no-audit --no-fund
+      - run: npm run test:auth-security-evidence-record
