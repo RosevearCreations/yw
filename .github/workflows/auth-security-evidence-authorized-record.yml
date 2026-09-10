@@ -1,0 +1,179 @@
+name: YWI Auth evidence authorized recording
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/auth-security-evidence-authorized-record.yml'
+      - 'scripts/auth-security-evidence-record-workflow-preflight.mjs'
+      - 'scripts/auth-security-evidence-record-workflow-check.mjs'
+      - 'scripts/auth-security-evidence-record.mjs'
+      - 'scripts/auth-security-evidence-record-core.mjs'
+      - 'scripts/auth-security-evidence-artifact-verify.mjs'
+      - '.github/workflows/auth-security-evidence-capture.yml'
+  workflow_dispatch:
+    inputs:
+      capture_run_id:
+        description: 'Successful YWI Auth security evidence capture workflow run ID'
+        required: true
+        type: string
+      capture_run_attempt:
+        description: 'Exact capture workflow run attempt'
+        required: true
+        default: '1'
+        type: string
+      control_key:
+        description: 'Record exactly one Auth control from the encrypted capture package'
+        required: true
+        type: choice
+        options:
+          - leaked_password_protection
+          - mfa_options
+      confirm_record:
+        description: 'Explicitly authorize service-private evidence recording (does not change Auth settings)'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - I_CONFIRM_AUTH_EVIDENCE_RECORD
+      confirm_source_authenticity:
+        description: 'Confirm the selected package is genuine official Supabase Management API evidence'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - I_CONFIRM_OFFICIAL_SUPABASE_SOURCE
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ywi-auth-security-evidence-authorized-record
+  cancel-in-progress: false
+
+jobs:
+  contract-check:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify authorized Auth evidence recording workflow contract
+        run: node scripts/auth-security-evidence-record-workflow-check.mjs
+
+  authorize-recording:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      YWI_AUTH_EVIDENCE_CAPTURE_RUN_ID: ${{ inputs.capture_run_id }}
+      YWI_AUTH_EVIDENCE_CAPTURE_RUN_ATTEMPT: ${{ inputs.capture_run_attempt }}
+      YWI_AUTH_EVIDENCE_CONTROL_KEY: ${{ inputs.control_key }}
+      YWI_AUTH_EVIDENCE_RECORD_CONFIRM: ${{ inputs.confirm_record }}
+      YWI_AUTH_EVIDENCE_SOURCE_AUTHENTICITY_CONFIRM: ${{ inputs.confirm_source_authenticity }}
+      YWI_AUTH_EVIDENCE_RECORD_WORKFLOW_REPOSITORY: ${{ github.repository }}
+      YWI_AUTH_EVIDENCE_RECORD_WORKFLOW_REF: ${{ github.ref }}
+      YWI_AUTH_EVIDENCE_RECORD_WORKFLOW_EVENT: ${{ github.event_name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate manual recording authorization without secrets
+        run: node scripts/auth-security-evidence-record-workflow-preflight.mjs --input-only >/dev/null
+
+  record-auth-evidence:
+    if: ${{ github.event_name == 'workflow_dispatch' && needs.authorize-recording.result == 'success' }}
+    needs: authorize-recording
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SUPABASE_URL: https://jmqvkgiqlimdhcofwkxr.supabase.co
+      YWI_PRODUCTION_PROJECT_REF: jmqvkgiqlimdhcofwkxr
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      YWI_AUTH_EVIDENCE_ARTIFACT_PASSPHRASE: ${{ secrets.YWI_AUTH_EVIDENCE_ARTIFACT_PASSPHRASE }}
+      YWI_AUTH_EVIDENCE_CAPTURE_RUN_ID: ${{ inputs.capture_run_id }}
+      YWI_AUTH_EVIDENCE_CAPTURE_RUN_ATTEMPT: ${{ inputs.capture_run_attempt }}
+      YWI_AUTH_EVIDENCE_CONTROL_KEY: ${{ inputs.control_key }}
+      YWI_AUTH_EVIDENCE_RECORD_CONFIRM: ${{ inputs.confirm_record }}
+      YWI_AUTH_EVIDENCE_SOURCE_AUTHENTICITY_CONFIRM: ${{ inputs.confirm_source_authenticity }}
+      YWI_AUTH_EVIDENCE_RECORD_WORKFLOW_REPOSITORY: ${{ github.repository }}
+      YWI_AUTH_EVIDENCE_RECORD_WORKFLOW_REF: ${{ github.ref }}
+      YWI_AUTH_EVIDENCE_RECORD_WORKFLOW_EVENT: ${{ github.event_name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Validate dedicated recording secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+            echo 'SUPABASE_SERVICE_ROLE_KEY is required for authorized evidence recording.' >&2
+            exit 1
+          fi
+          if [ "${#YWI_AUTH_EVIDENCE_ARTIFACT_PASSPHRASE}" -lt 24 ]; then
+            echo 'YWI_AUTH_EVIDENCE_ARTIFACT_PASSPHRASE must be at least 24 characters.' >&2
+            exit 1
+          fi
+      - name: Download exact encrypted Auth evidence package
+        uses: actions/download-artifact@v4
+        with:
+          name: ywi-auth-security-evidence-${{ inputs.capture_run_id }}-${{ inputs.capture_run_attempt }}
+          path: auth-security-evidence-download
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.capture_run_id }}
+      - name: Decrypt and validate bounded evidence package
+        shell: bash
+        run: |
+          set -euo pipefail
+          encrypted='auth-security-evidence-download/auth-security-evidence-prepared.tgz.enc'
+          archive='auth-security-evidence-prepared.tgz'
+          prepared='auth-security-evidence-prepared'
+          test -f "$encrypted"
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 \
+            -in "$encrypted" \
+            -out "$archive" \
+            -pass env:YWI_AUTH_EVIDENCE_ARTIFACT_PASSPHRASE
+          tar -tzf "$archive" | sed -e 's#^\./##' -e '/^$/d' | sort > auth-security-evidence-actual-files.txt
+          cat > auth-security-evidence-expected-files.txt <<'EOF'
+          candidate-set.json
+          capture.json
+          leaked-password-protection.json
+          mfa-options.json
+          EOF
+          sort -o auth-security-evidence-expected-files.txt auth-security-evidence-expected-files.txt
+          diff -u auth-security-evidence-expected-files.txt auth-security-evidence-actual-files.txt
+          mkdir -p "$prepared"
+          tar --no-same-owner --no-same-permissions -xzf "$archive" -C "$prepared"
+          rm -f "$archive" "$encrypted" auth-security-evidence-actual-files.txt auth-security-evidence-expected-files.txt
+          case "$YWI_AUTH_EVIDENCE_CONTROL_KEY" in
+            leaked_password_protection) candidate="$prepared/leaked-password-protection.json" ;;
+            mfa_options) candidate="$prepared/mfa-options.json" ;;
+            *) echo 'Unsupported Auth evidence control.' >&2; exit 1 ;;
+          esac
+          test -f "$candidate"
+          printf 'YWI_AUTH_EVIDENCE_CANDIDATE_PATH=%s\n' "$candidate" >> "$GITHUB_ENV"
+      - name: Re-bind decrypted candidate to the selected capture run
+        run: node scripts/auth-security-evidence-record-workflow-preflight.mjs "$YWI_AUTH_EVIDENCE_CANDIDATE_PATH" >/dev/null
+      - name: Record selected Auth evidence through existing service-private authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/auth-security-evidence-record.mjs "$YWI_AUTH_EVIDENCE_CANDIDATE_PATH" >/dev/null
+          echo 'Authorized Auth evidence recorder completed. The external Auth setting was not changed.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Destroy decrypted Auth evidence workspace
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          rm -rf auth-security-evidence-prepared auth-security-evidence-download
+          rm -f auth-security-evidence-prepared.tgz auth-security-evidence-actual-files.txt auth-security-evidence-expected-files.txt
