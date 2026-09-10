@@ -32,10 +32,18 @@ assert.ok(captureBlock.includes('YWI_AUTH_EVIDENCE_WORKFLOW_RUN_ATTEMPT: ${{ git
 assert.ok(captureBlock.includes('YWI_AUTH_EVIDENCE_WORKFLOW_SHA: ${{ github.sha }}'),'Capture must bind evidence to the exact checked-out commit SHA.');
 assert.ok(captureBlock.includes('npm run auth:evidence:capture-prepare >/dev/null'),'Live capture must reuse the existing read-only capture-and-prepare authority without printing security state to logs.');
 assert.ok(captureBlock.includes('grep -R -F -- "$SUPABASE_ACCESS_TOKEN"'),'Prepared output must be checked for accidental token persistence.');
+assert.ok(captureBlock.includes('node scripts/auth-security-evidence-content-binding.mjs'),'Workflow must verify prepared candidate content bindings before encryption.');
+assert.ok(captureBlock.includes('--github-output "$GITHUB_OUTPUT"'),'Only salted marker names may leave the encrypted preparation directory through GitHub step outputs.');
+assert.ok(captureBlock.includes('"$YWI_AUTH_EVIDENCE_PREP_OUTPUT_DIR/candidate-set.json" >/dev/null'),'Content-binding marker resolution must suppress candidate details from logs.');
+assert.ok(captureBlock.includes("printf '%s\\n' 'YardWeasels Auth evidence salted candidate-content commitment marker.'"),'Workflow marker file must be generic and contain no Auth state.');
 assert.ok(captureBlock.includes('openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt'),'Prepared evidence must be encrypted before upload.');
 assert.ok(captureBlock.includes('rm -rf "$YWI_AUTH_EVIDENCE_PREP_OUTPUT_DIR"'),'Runner-side plaintext prepared evidence must be removed before upload.');
-assert.ok(captureBlock.includes('path: auth-security-evidence-prepared.tgz.enc'),'Artifact upload must contain only the encrypted package.');
+assert.ok(captureBlock.includes('path: auth-security-evidence-prepared.tgz.enc'),'Encrypted evidence package upload must contain the encrypted package.');
+assert.ok(captureBlock.includes('name: ${{ steps.content-binding.outputs.leaked_password_protection_artifact_name }}'),'Leaked-password commitment must be recorded in a server-side GitHub artifact name.');
+assert.ok(captureBlock.includes('name: ${{ steps.content-binding.outputs.mfa_options_artifact_name }}'),'MFA commitment must be recorded in a server-side GitHub artifact name.');
+assert.ok((captureBlock.match(/path: auth-security-evidence-content-binding-marker\.txt/g) || []).length===2,'Exactly two generic commitment marker artifacts must be published.');
 assert.ok(captureBlock.indexOf('openssl enc -aes-256-cbc') < captureBlock.indexOf('actions/upload-artifact@v4'),'Encryption must happen before artifact upload.');
+assert.ok(captureBlock.indexOf('rm -rf "$YWI_AUTH_EVIDENCE_PREP_OUTPUT_DIR"') < captureBlock.indexOf('Publish leaked-password candidate commitment marker'),'Plaintext prepared candidates must be destroyed before public commitment marker uploads.');
 
 for(const forbidden of [
   'SUPABASE_SERVICE_ROLE_KEY',
@@ -46,8 +54,9 @@ for(const forbidden of [
   'supabase db',
   'psql ',
   'derived_states:',
+  'workflow_content_binding.nonce',
 ]){
-  assert.equal(captureBlock.includes(forbidden),false,`Live capture workflow must not contain mutation authority or publish captured security state: ${forbidden}`);
+  assert.equal(captureBlock.includes(forbidden),false,`Live capture workflow must not contain mutation authority, nonce disclosure, or publish captured security state: ${forbidden}`);
 }
 
 for(const forbiddenCanonical of [
