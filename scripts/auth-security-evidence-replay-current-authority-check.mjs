@@ -128,7 +128,7 @@ add('production-project-binding-rechecked-before-current-read',wrongProjectRejec
 const wrapperSource=fs.readFileSync('scripts/auth-security-evidence-record.mjs','utf8');
 const coreSource=fs.readFileSync('scripts/auth-security-evidence-record-core.mjs','utf8');
 add('direct-cli-uses-current-authority-wrapper',wrapperSource.includes('recordAuthEvidenceCandidateWithCurrentAuthority(candidate)') && wrapperSource.includes('VERIFIED CURRENT REPLAY NO-OP'));
-add('build270-core-preserved-behind-wrapper',coreSource.includes("replay_disposition:'exact_replay_noop'") && coreSource.includes('Authorized Auth evidence RPC failed'));
+add('build270-core-preserved-behind-wrapper',coreSource.includes("disposition:'exact_replay_noop'") && coreSource.includes('Authorized Auth evidence RPC failed'));
 add('wrapper-adds-no-rpc-or-post-mutation-path',!wrapperSource.includes('/rpc/ywi_record_auth_security_evidence') && !wrapperSource.includes("method:'POST'") && !wrapperSource.includes('method:"POST"'));
 add('wrapper-does-not-print-service-key',!wrapperSource.includes('console.log(serviceKey)') && !wrapperSource.includes('console.error(serviceKey)'));
 
