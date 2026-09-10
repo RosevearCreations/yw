@@ -1,0 +1,19 @@
+name: YWI Auth evidence temporal provenance binding
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  temporal-binding-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify Auth evidence temporal provenance binding
+        run: node scripts/auth-security-evidence-temporal-binding-check.mjs
