@@ -1,0 +1,29 @@
+name: YWI Auth evidence cryptographic content binding
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/auth-security-evidence-content-binding.mjs'
+      - 'scripts/auth-security-evidence-content-binding-check.mjs'
+      - 'scripts/auth-security-management-api-candidate-prep.mjs'
+      - 'scripts/auth-security-evidence-artifact-verify.mjs'
+      - 'scripts/auth-security-evidence-record.mjs'
+      - '.github/workflows/auth-security-evidence-capture.yml'
+      - '.github/workflows/auth-security-evidence-content-binding.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  content-binding-contract:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify Auth evidence cryptographic content binding
+        run: node scripts/auth-security-evidence-content-binding-check.mjs
