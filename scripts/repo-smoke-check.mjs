@@ -24,5 +24,7 @@ add('schema203-additive-view-column-order',pCurrent>=0&&pMessage>pCurrent&&pChec
 const dataApiAudit=auditDataApiAccess(); add('future-data-api-access-explicit',dataApiAudit.ok,dataApiAudit.errors.join(' | '));
 const definerAudit=spawnSync(process.execPath,['scripts/security-definer-execute-boundary-check.mjs'],{cwd:root,encoding:'utf8'});
 add('security-definer-execute-boundary',definerAudit.status===0,(definerAudit.stderr||definerAudit.stdout||'').trim().slice(0,1200));
+const releaseEvidenceWorkflowAudit=spawnSync(process.execPath,['scripts/release-source-evidence-record-workflow-check.mjs'],{cwd:root,encoding:'utf8'});
+add('authorized-release-evidence-recording-workflow',releaseEvidenceWorkflowAudit.status===0,(releaseEvidenceWorkflowAudit.stderr||releaseEvidenceWorkflowAudit.stdout||'').trim().slice(0,1200));
 add('help-present',fs.existsSync('help.html')); add('seo-gate-present',fs.existsSync('scripts/help-seo-hygiene-check.mjs')); add('seo-browser-gate-present',fs.existsSync('tests/browser/help-seo-layout.spec.mjs'));
 const passed=results.filter((x)=>x.ok).length; console.log(`Repository hygiene: ${passed}/${results.length} passed`); for(const r of results)console.log(`${r.ok?'PASS':'FAIL'}  ${r.name}${r.detail?' — '+r.detail:''}`); process.exit(passed===results.length?0:1);
