@@ -65,6 +65,7 @@ jobs:
       - run: npm run test:auth-security-evidence
       - run: npm run test:auth-security-evidence-intake
       - run: npm run test:auth-security-evidence-record
+      - run: node scripts/auth-security-evidence-operator-runbook-check.mjs
       - run: npm run test:next-safe-action
       - run: npm run test:pg-net-runtime
       - run: npm run test:equipment-scan
