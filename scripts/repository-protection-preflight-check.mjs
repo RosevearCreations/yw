@@ -25,13 +25,14 @@ check('exact-protected-main-is-ready',()=>{
   assert.deepEqual(r.blocker_codes,[]);
   assert.equal(r.remediation,null);
   assert.match(r.next_safe_action,/verified for this exact main SHA/i);
+  assert.match(r.evidence_source,/branch protection or ruleset/i);
 });
 check('unprotected-main-is-locked-with-actionable-remediation',()=>{
   const r=evaluateRepositoryProtection({...base,YWI_GITHUB_MAIN_PROTECTED:'false'});
   assert.equal(r.ok,false);
   assert.equal(r.main_protected,false);
   assert.ok(r.blocker_codes.includes('main_unprotected'));
-  assert.match(r.next_safe_action,/Enable GitHub branch protection for main/i);
+  assert.match(r.next_safe_action,/branch ruleset or branch protection rule for main/i);
   assert.equal(r.remediation?.automatic_fix_supported,false);
   assert.equal(r.remediation?.manual_steps?.length,5);
 });
@@ -50,11 +51,16 @@ check('missing-github-evidence-is-locked',()=>{
   assert.ok(r.blocker_codes.includes('missing_github_main_evidence'));
 });
 check('protected-value-is-exact-not-truthy',()=>assert.equal(evaluateRepositoryProtection({...base,YWI_GITHUB_MAIN_PROTECTED:'1'}).ok,false));
-check('manual-remediation-contract-is-specific-and-non-automatic',()=>{
+check('manual-remediation-supports-rulesets-and-classic-protection',()=>{
   assert.equal(REPOSITORY_PROTECTION_REMEDIATION.automatic_fix_supported,false);
+  assert.deepEqual(REPOSITORY_PROTECTION_REMEDIATION.accepted_enforcement_paths,[
+    'active branch ruleset targeting main',
+    'classic branch protection rule targeting main'
+  ]);
   const text=REPOSITORY_PROTECTION_REMEDIATION.manual_steps.join('\n');
   for(const value of [
-    'Settings → Branches',
+    'Settings → Rules → Rulesets or Settings → Branches',
+    'active branch ruleset targeting main',
     'classic branch protection rule targeting main',
     'Require a pull request before merging',
     'force pushes and branch deletion disabled',
@@ -69,8 +75,8 @@ check('github-step-summary-is-actionable-and-cannot-claim-auto-fix',()=>{
     '`main_unprotected`',
     '#### Next safe action',
     '#### Manual remediation',
-    'Settings → Branches',
-    'cannot enable branch protection',
+    'Settings → Rules → Rulesets or Settings → Branches',
+    'cannot enable branch protection or rulesets',
     'does not weaken the exact-main enforcement check'
   ]) assert.ok(summary.includes(value),value);
 });
@@ -103,7 +109,7 @@ check('preflight-writes-actions-summary-without-bypass',()=>{
 check('operator-authority-documents-external-boundary',()=>{
   assert.ok(docs.includes('exact-main repository protection preflight'));
   assert.ok(help.includes('Repository enforcement preflight'));
-  assert.ok(help.includes('does not enable branch protection'));
+  assert.ok(help.includes('does not enable branch protection or change GitHub rulesets'));
 });
 
 for(const item of checks)console.log(`${item.ok?'PASS':'FAIL'}  ${item.name}${item.error?` — ${item.error}`:''}`);
