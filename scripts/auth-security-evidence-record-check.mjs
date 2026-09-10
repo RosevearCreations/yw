@@ -7,6 +7,7 @@ import {
   expectedContentBindingArtifactName,
 } from './auth-security-evidence-content-binding.mjs';
 import {
+  authEvidenceReplayLookupUrl,
   buildAuthEvidenceRecordPlan,
   recordAuthEvidenceCandidate,
   EXPECTED_CAPTURE_BRANCH,
@@ -235,15 +236,18 @@ staleCandidate.database_record_candidate.observed_at=staleCandidate.observed_at;
 add('stale-candidate-rejected-at-recording',!buildAuthEvidenceRecordPlan(staleCandidate,env(),{now:NOW}).ok);
 
 const provenanceApiUrl=workflowRunAttemptApiUrl(workflowProvenance());
+const replayApiUrl=authEvidenceReplayLookupUrl(`https://${EXPECTED_PROJECT_REF}.supabase.co`,validPlan.rpc_body);
 add('workflow-attempt-api-url-exact',provenanceApiUrl===`https://api.github.com/repos/${EXPECTED_GITHUB_REPOSITORY}/actions/runs/${WORKFLOW_RUN_ID}/attempts/${WORKFLOW_ATTEMPT}`);
 add('artifact-api-url-exact',ARTIFACTS_API_URL===`https://api.github.com/repos/${EXPECTED_GITHUB_REPOSITORY}/actions/runs/${WORKFLOW_RUN_ID}/artifacts?per_page=100` && ARTIFACT_NAME===`ywi-auth-security-evidence-${WORKFLOW_RUN_ID}-${WORKFLOW_ATTEMPT}`);
 add('content-binding-artifact-name-bound',validBindingArtifactValue.name.includes(validCandidate.workflow_content_binding.commitment_sha256) && !validBindingArtifactValue.name.includes(BINDING_NONCE));
+add('replay-precheck-targets-service-private-authority-table',replayApiUrl.includes('/rest/v1/it_auth_security_evidence?') && replayApiUrl.includes('control_key=eq.leaked_password_protection') && replayApiUrl.includes(`source_capture_sha256=eq.${validCandidate.source_capture_sha256}`));
 
 let calls=[];
 const fakeFetch=async (url,options={})=>{
   calls.push({url,options});
   if(url===provenanceApiUrl)return {ok:true,status:200,json:async()=>validWorkflowRun(),text:async()=>''};
   if(url===ARTIFACTS_API_URL)return {ok:true,status:200,json:async()=>({total_count:2,artifacts:[validArtifact(),validBindingArtifactValue]}),text:async()=>''};
+  if(url.includes('/rest/v1/it_auth_security_evidence?select='))return {ok:true,status:200,json:async()=>[],text:async()=>''};
   if(url.includes('/rpc/ywi_record_auth_security_evidence'))return {ok:true,status:200,json:async()=>77,text:async()=>''};
   if(url.includes('/v_it_auth_security_evidence_current?'))return {ok:true,status:200,json:async()=>[{
     evidence_id:77,control_key:'leaked_password_protection',current_status:'verified_secure',source_project_ref:EXPECTED_PROJECT_REF,
@@ -256,16 +260,71 @@ const verified=await verifyWorkflowProvenanceBeforeRecord(workflowProvenance(),W
 add('direct-workflow-provenance-verification',verified.verified && verified.read_performed && verified.workflow_path===EXPECTED_CAPTURE_WORKFLOW_PATH && verified.head_branch===EXPECTED_CAPTURE_BRANCH && verified.head_repository===EXPECTED_GITHUB_REPOSITORY);
 calls=[];
 const recorded=await recordAuthEvidenceCandidate(validCandidate,env(),{now:NOW,fetchImpl:fakeFetch});
-add('mock-record-and-reread',recorded.ok && recorded.write_performed && recorded.evidence_id===77 && recorded.current_status==='verified_secure');
-add('workflow-and-artifact-read-before-rpc-before-reread',calls.length===4 && calls[0].url===provenanceApiUrl && calls[1].url===ARTIFACTS_API_URL && calls[2].url.endsWith('/rest/v1/rpc/ywi_record_auth_security_evidence') && calls[3].url.includes('/rest/v1/v_it_auth_security_evidence_current?'));
+add('mock-record-and-reread',recorded.ok && recorded.write_performed && recorded.replay_precheck_performed===true && recorded.replay_disposition==='new_capture' && recorded.evidence_id===77 && recorded.current_status==='verified_secure');
+add('workflow-artifact-replay-read-before-rpc-before-reread',calls.length===5 && calls[0].url===provenanceApiUrl && calls[1].url===ARTIFACTS_API_URL && calls[2].url.includes('/rest/v1/it_auth_security_evidence?select=') && calls[3].url.endsWith('/rest/v1/rpc/ywi_record_auth_security_evidence') && calls[4].url.includes('/rest/v1/v_it_auth_security_evidence_current?'));
 add('workflow-provenance-verified-before-write',recorded.workflow_provenance_verified===true && recorded.workflow_provenance_read_performed===true);
 add('artifact-verified-before-write',recorded.auth_capture_artifact_verified===true && recorded.auth_capture_artifact_metadata_reads===2 && recorded.auth_capture_artifact_id===ARTIFACT_ID && recorded.auth_capture_artifact_digest===ARTIFACT_DIGEST);
 add('content-binding-marker-verified-before-write',recorded.auth_capture_content_binding_verified===true && recorded.auth_capture_content_binding_commitment===validCandidate.workflow_content_binding.commitment_sha256 && recorded.auth_capture_content_binding_marker_artifact_id===BINDING_ARTIFACT_ID);
-const rpcBody=JSON.parse(calls[2].options.body);
+const rpcBody=JSON.parse(calls[3].options.body);
 add('rpc-body-derived-not-operator-status',rpcBody.p_observed_state==='enabled' && !Object.prototype.hasOwnProperty.call(rpcBody,'p_verification_status'));
 add('rpc-body-records-live-github-verification',rpcBody.p_evidence_detail?.workflow_provenance_verification?.verified===true && rpcBody.p_evidence_detail?.workflow_provenance_verification?.verification_source==='github_actions_api' && rpcBody.p_evidence_detail?.workflow_provenance_verification?.commit_sha===WORKFLOW_SHA && rpcBody.p_evidence_detail?.workflow_provenance_verification?.head_branch===EXPECTED_CAPTURE_BRANCH && rpcBody.p_evidence_detail?.workflow_provenance_verification?.head_repository===EXPECTED_GITHUB_REPOSITORY);
 add('rpc-body-records-artifact-binding',rpcBody.p_evidence_detail?.auth_capture_artifact_verification?.verified===true && rpcBody.p_evidence_detail?.auth_capture_artifact_verification?.artifact_id===ARTIFACT_ID && rpcBody.p_evidence_detail?.auth_capture_artifact_verification?.artifact_name===ARTIFACT_NAME && rpcBody.p_evidence_detail?.auth_capture_artifact_verification?.artifact_digest===ARTIFACT_DIGEST && rpcBody.p_evidence_detail?.auth_capture_artifact_verification?.artifact_expired===false && rpcBody.p_evidence_detail?.auth_capture_artifact_verification?.artifact_download_performed===false && rpcBody.p_evidence_detail?.auth_capture_artifact_verification?.artifact_decryption_performed===false);
 add('rpc-body-records-content-binding-without-nonce',rpcBody.p_evidence_detail?.auth_capture_content_binding_verification?.verified===true && rpcBody.p_evidence_detail?.auth_capture_content_binding_verification?.commitment_sha256===validCandidate.workflow_content_binding.commitment_sha256 && rpcBody.p_evidence_detail?.auth_capture_content_binding_verification?.marker_artifact_id===BINDING_ARTIFACT_ID && rpcBody.p_evidence_detail?.auth_capture_content_binding_verification?.candidate_nonce_persisted===false && !JSON.stringify(rpcBody.p_evidence_detail).includes(BINDING_NONCE));
+
+const existingReplayRow={
+  evidence_id:77,
+  control_key:rpcBody.p_control_key,
+  evidence_source:rpcBody.p_evidence_source,
+  observed_state:rpcBody.p_observed_state,
+  verification_status:validCandidate.derived_verification_status,
+  is_authoritative:true,
+  observed_at:'2026-09-05T00:10:00+00:00',
+  evidence_reference:rpcBody.p_evidence_reference,
+  evidence_detail:rpcBody.p_evidence_detail,
+  source_project_ref:rpcBody.p_source_project_ref,
+  source_capture_sha256:rpcBody.p_source_capture_sha256,
+  recording_contract_version:1,
+};
+
+let replayCalls=[];
+let replayRpcCalled=false;
+const replayFetch=async (url,options={})=>{
+  replayCalls.push({url,options});
+  if(url===provenanceApiUrl)return {ok:true,status:200,json:async()=>validWorkflowRun(),text:async()=>''};
+  if(url===ARTIFACTS_API_URL)return {ok:true,status:200,json:async()=>({total_count:2,artifacts:[validArtifact(),validBindingArtifactValue]}),text:async()=>''};
+  if(url.includes('/rest/v1/it_auth_security_evidence?select='))return {ok:true,status:200,json:async()=>[existingReplayRow],text:async()=>''};
+  if(url.includes('/rpc/ywi_record_auth_security_evidence')){replayRpcCalled=true;throw new Error('Exact replay must not call the recording RPC.');}
+  throw new Error(`Unexpected replay URL: ${url}`);
+};
+const replayed=await recordAuthEvidenceCandidate(validCandidate,env(),{now:NOW,fetchImpl:replayFetch});
+add('exact-replay-is-verified-noop',replayed.ok && replayed.write_performed===false && replayed.replay_precheck_performed===true && replayed.replay_disposition==='exact_replay_noop' && replayed.replay_existing_evidence_id===77 && replayed.evidence_id===77 && !replayRpcCalled && replayCalls.length===3);
+add('exact-replay-still-reverifies-external-provenance',replayed.workflow_provenance_verified===true && replayed.auth_capture_artifact_verified===true && replayed.auth_capture_content_binding_verified===true && replayed.auth_capture_temporal_verified===true);
+
+let conflictRpcCalled=false;
+let conflictRejected=false;
+try{
+  await recordAuthEvidenceCandidate(validCandidate,env(),{now:NOW,fetchImpl:async (url)=>{
+    if(url===provenanceApiUrl)return {ok:true,status:200,json:async()=>validWorkflowRun(),text:async()=>''};
+    if(url===ARTIFACTS_API_URL)return {ok:true,status:200,json:async()=>({total_count:2,artifacts:[validArtifact(),validBindingArtifactValue]}),text:async()=>''};
+    if(url.includes('/rest/v1/it_auth_security_evidence?select='))return {ok:true,status:200,json:async()=>[{...existingReplayRow,evidence_reference:'management-api://conflicting-reference'}],text:async()=>''};
+    if(url.includes('/rpc/ywi_record_auth_security_evidence')){conflictRpcCalled=true;throw new Error('Conflicting replay must not call RPC.');}
+    throw new Error(`Unexpected conflict URL: ${url}`);
+  }});
+}catch(error){conflictRejected=String(error?.message || error).includes('conflicting authoritative metadata');}
+add('conflicting-digest-reuse-blocked-before-rpc',conflictRejected && !conflictRpcCalled);
+
+let precheckRpcCalled=false;
+let precheckFailureRejected=false;
+try{
+  await recordAuthEvidenceCandidate(validCandidate,env(),{now:NOW,fetchImpl:async (url)=>{
+    if(url===provenanceApiUrl)return {ok:true,status:200,json:async()=>validWorkflowRun(),text:async()=>''};
+    if(url===ARTIFACTS_API_URL)return {ok:true,status:200,json:async()=>({total_count:2,artifacts:[validArtifact(),validBindingArtifactValue]}),text:async()=>''};
+    if(url.includes('/rest/v1/it_auth_security_evidence?select='))return {ok:false,status:503,json:async()=>({}),text:async()=>'synthetic replay precheck outage'};
+    if(url.includes('/rpc/ywi_record_auth_security_evidence')){precheckRpcCalled=true;throw new Error('RPC must not run when replay precheck fails.');}
+    throw new Error(`Unexpected precheck URL: ${url}`);
+  }});
+}catch(error){precheckFailureRejected=String(error?.message || error).includes('Auth evidence replay precheck failed (503)');}
+add('replay-precheck-read-failure-blocks-rpc',precheckFailureRejected && !precheckRpcCalled);
 
 async function assertBlockedBeforeSupabase(name,runOverride,artifactFactory,errorText){
   let supabaseCalled=false;
@@ -293,7 +352,7 @@ await assertBlockedBeforeSupabase('invalid-content-binding-marker-digest-blocks-
 
 let lockedFetchCalled=false;
 const locked=await recordAuthEvidenceCandidate(validCandidate,env({YWI_AUTH_EVIDENCE_RECORD_CONFIRM:''}),{now:NOW,fetchImpl:async()=>{lockedFetchCalled=true;throw new Error('must not call');}});
-add('locked-plan-performs-no-network-write',!locked.ok && locked.write_performed===false && locked.auth_capture_artifact_verified===false && locked.auth_capture_content_binding_verified===false && !lockedFetchCalled);
+add('locked-plan-performs-no-network-write',!locked.ok && locked.write_performed===false && locked.replay_precheck_performed===false && locked.auth_capture_artifact_verified===false && locked.auth_capture_content_binding_verified===false && !lockedFetchCalled);
 
 add('package-wiring',packageJson.includes('"auth:evidence:record": "node scripts/auth-security-evidence-record.mjs"') && packageJson.includes('"test:auth-security-evidence-record": "node scripts/auth-security-evidence-record-check.mjs"'));
 add('workflow-wiring',workflow.includes('npm run test:auth-security-evidence-record'));
