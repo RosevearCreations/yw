@@ -1,0 +1,24 @@
+name: YWI Auth replay current-authority guard
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/auth-security-evidence-record.mjs'
+      - 'scripts/auth-security-evidence-record-core.mjs'
+      - 'scripts/auth-security-evidence-replay-current-authority-check.mjs'
+      - '.github/workflows/auth-evidence-replay-current-authority.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  replay-current-authority-contract:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/auth-security-evidence-replay-current-authority-check.mjs

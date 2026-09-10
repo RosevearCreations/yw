@@ -131,11 +131,13 @@ assert.ok(captureWorkflow.includes('${{ steps.content-binding.outputs.mfa_option
 assert.ok(captureWorkflow.indexOf('rm -rf "$YWI_AUTH_EVIDENCE_PREP_OUTPUT_DIR"') < captureWorkflow.indexOf('Publish leaked-password candidate commitment marker'));
 assert.equal(captureWorkflow.includes('workflow_content_binding.nonce'),false);
 
-const recorder=fs.readFileSync('scripts/auth-security-evidence-record.mjs','utf8');
-assert.ok(recorder.includes('verifyWorkflowCandidateContentBinding(candidate)'));
-assert.ok(recorder.includes('content_binding_commitment_sha256:plan.workflow_content_binding.commitment_sha256'));
-assert.ok(recorder.includes('if(!artifactVerification?.content_binding_verified)'));
-assert.ok(recorder.includes('auth_capture_content_binding_verification'));
-assert.ok(recorder.includes('candidate_nonce_persisted:false'));
+const recorderEntrypoint=fs.readFileSync('scripts/auth-security-evidence-record.mjs','utf8');
+const recorderCore=fs.readFileSync('scripts/auth-security-evidence-record-core.mjs','utf8');
+assert.ok(recorderEntrypoint.includes("export * from './auth-security-evidence-record-core.mjs'"));
+assert.ok(recorderCore.includes('verifyWorkflowCandidateContentBinding(candidate)'));
+assert.ok(recorderCore.includes('content_binding_commitment_sha256:plan.workflow_content_binding.commitment_sha256'));
+assert.ok(recorderCore.includes('if(!artifactVerification?.content_binding_verified)'));
+assert.ok(recorderCore.includes('auth_capture_content_binding_verification'));
+assert.ok(recorderCore.includes('candidate_nonce_persisted:false'));
 
 console.log('Build 269 Auth evidence cryptographic content-binding contract: PASS.');
