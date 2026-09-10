@@ -77,6 +77,15 @@ jobs:
             echo 'Management API token unexpectedly appeared in prepared evidence.' >&2
             exit 1
           fi
+      - name: Verify candidate content bindings and resolve marker names
+        id: content-binding
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/auth-security-evidence-content-binding.mjs \
+            --github-output "$GITHUB_OUTPUT" \
+            "$YWI_AUTH_EVIDENCE_PREP_OUTPUT_DIR/candidate-set.json" >/dev/null
+          printf '%s\n' 'YardWeasels Auth evidence salted candidate-content commitment marker.' > auth-security-evidence-content-binding-marker.txt
       - name: Encrypt prepared evidence before artifact upload
         shell: bash
         run: |
@@ -93,5 +102,19 @@ jobs:
         with:
           name: ywi-auth-security-evidence-${{ github.run_id }}-${{ github.run_attempt }}
           path: auth-security-evidence-prepared.tgz.enc
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish leaked-password candidate commitment marker
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.content-binding.outputs.leaked_password_protection_artifact_name }}
+          path: auth-security-evidence-content-binding-marker.txt
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish MFA candidate commitment marker
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.content-binding.outputs.mfa_options_artifact_name }}
+          path: auth-security-evidence-content-binding-marker.txt
           if-no-files-found: error
           retention-days: 30

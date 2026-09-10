@@ -10,6 +10,7 @@ import {
 } from './auth-security-management-api-capture.mjs';
 import {calculateSourceCaptureSha256} from './auth-security-evidence-intake.mjs';
 import {verifyAuthEvidenceArtifact} from './auth-security-evidence-artifact-verify.mjs';
+import {verifyWorkflowCandidateContentBinding} from './auth-security-evidence-content-binding.mjs';
 
 export const EXPECTED_PROJECT_REF='jmqvkgiqlimdhcofwkxr';
 export const RECORD_CONFIRM='I_CONFIRM_AUTH_EVIDENCE_RECORD';
@@ -147,6 +148,15 @@ export function buildAuthEvidenceRecordPlan(candidate,env=process.env,options={}
     ? validateWorkflowBoundManagementApiEvidence(evidenceSource,db.evidence_detail,reference,errors)
     : null;
 
+  let workflowContentBinding={verified:false};
+  if(workflowProvenance){
+    try{
+      workflowContentBinding=verifyWorkflowCandidateContentBinding(candidate);
+    }catch(error){
+      errors.push(`Workflow content binding is invalid: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
   const observedMs=Date.parse(observedAt);
   if(!Number.isFinite(observedMs))errors.push('Candidate observed_at is invalid.');
   if(Number.isFinite(observedMs) && Number.isFinite(nowMs)){
@@ -198,6 +208,7 @@ export function buildAuthEvidenceRecordPlan(candidate,env=process.env,options={}
     service_key:serviceKey,
     rpc_body:rpcBody,
     workflow_provenance:workflowProvenance,
+    workflow_content_binding:workflowContentBinding,
     source_capture_digest_revalidated:digestRevalidated,
     expected_current_status:expectedCurrentStatus(derived),
   };
@@ -288,20 +299,25 @@ function provenanceVerificationFromArtifact(artifactVerification,provenance){
 
 export async function recordAuthEvidenceCandidate(candidate,env=process.env,options={}){
   const plan=buildAuthEvidenceRecordPlan(candidate,env,options);
-  if(!plan.ok)return {...plan,write_performed:false,workflow_provenance_verified:false,auth_capture_artifact_verified:false,auth_capture_temporal_verified:false};
+  if(!plan.ok)return {...plan,write_performed:false,workflow_provenance_verified:false,auth_capture_artifact_verified:false,auth_capture_temporal_verified:false,auth_capture_content_binding_verified:false};
   const fetchImpl=options.fetchImpl || fetch;
 
   let provenanceVerification={verified:false,read_performed:false,provenance:null};
-  let artifactVerification={verified:false,network_reads:0,artifact:null};
+  let artifactVerification={verified:false,network_reads:0,artifact:null,content_binding:null};
   let temporalVerification={verified:false};
   if(plan.workflow_provenance){
     artifactVerification=await verifyAuthEvidenceArtifact({
       run_id:plan.workflow_provenance.run_id,
       run_attempt:plan.workflow_provenance.run_attempt,
       commit_sha:plan.workflow_provenance.commit_sha,
+      control_key:plan.rpc_body.p_control_key,
+      content_binding_commitment_sha256:plan.workflow_content_binding.commitment_sha256,
     },{fetchImpl});
     if(!artifactVerification?.verified){
       throw new Error('Workflow-bound Auth evidence artifact verification did not succeed.');
+    }
+    if(!artifactVerification?.content_binding_verified){
+      throw new Error('Workflow-bound Auth evidence content-binding marker verification did not succeed.');
     }
     temporalVerification=verifyAuthArtifactObservationTime(
       plan.rpc_body.p_observed_at,
@@ -336,6 +352,20 @@ export async function recordAuthEvidenceCandidate(candidate,env=process.env,opti
           artifact_size_in_bytes:artifactVerification.artifact?.size_in_bytes ?? null,
           artifact_created_at:artifactVerification.artifact?.created_at ?? null,
           artifact_expired:artifactVerification.artifact?.expired ?? null,
+          artifact_download_performed:false,
+          artifact_decryption_performed:false,
+        },
+        auth_capture_content_binding_verification:{
+          verified:artifactVerification.content_binding_verified===true,
+          binding_version:plan.workflow_content_binding.version ?? null,
+          algorithm:plan.workflow_content_binding.algorithm ?? null,
+          canonicalization:plan.workflow_content_binding.canonicalization ?? null,
+          commitment_sha256:plan.workflow_content_binding.commitment_sha256 ?? null,
+          marker_artifact_id:artifactVerification.content_binding?.artifact?.id ?? null,
+          marker_artifact_name:artifactVerification.content_binding?.artifact?.name ?? null,
+          marker_artifact_digest:artifactVerification.content_binding?.artifact?.digest ?? null,
+          marker_artifact_created_at:artifactVerification.content_binding?.artifact?.created_at ?? null,
+          candidate_nonce_persisted:false,
           artifact_download_performed:false,
           artifact_decryption_performed:false,
         },
@@ -388,6 +418,9 @@ export async function recordAuthEvidenceCandidate(candidate,env=process.env,opti
     auth_capture_artifact_metadata_reads:Number(artifactVerification.network_reads || 0),
     auth_capture_artifact_id:artifactVerification.artifact?.id ?? null,
     auth_capture_artifact_digest:artifactVerification.artifact?.digest ?? null,
+    auth_capture_content_binding_verified:artifactVerification.content_binding_verified===true,
+    auth_capture_content_binding_commitment:plan.workflow_content_binding?.commitment_sha256 ?? null,
+    auth_capture_content_binding_marker_artifact_id:artifactVerification.content_binding?.artifact?.id ?? null,
     auth_capture_temporal_verified:temporalVerification.verified===true,
     auth_capture_temporal_observed_at:temporalVerification.observed_at ?? null,
     auth_capture_temporal_artifact_created_at:temporalVerification.artifact_created_at ?? null,
@@ -419,6 +452,9 @@ if(invoked){
       auth_capture_artifact_verified:result.auth_capture_artifact_verified ?? false,
       auth_capture_artifact_id:result.auth_capture_artifact_id ?? null,
       auth_capture_artifact_digest:result.auth_capture_artifact_digest ?? null,
+      auth_capture_content_binding_verified:result.auth_capture_content_binding_verified ?? false,
+      auth_capture_content_binding_commitment:result.auth_capture_content_binding_commitment ?? null,
+      auth_capture_content_binding_marker_artifact_id:result.auth_capture_content_binding_marker_artifact_id ?? null,
       auth_capture_temporal_verified:result.auth_capture_temporal_verified ?? false,
       auth_capture_temporal_observed_at:result.auth_capture_temporal_observed_at ?? null,
       auth_capture_temporal_artifact_created_at:result.auth_capture_temporal_artifact_created_at ?? null,
@@ -437,7 +473,7 @@ if(invoked){
       process.exitCode=1;
     }else{
       console.log('\nAUTH SECURITY EVIDENCE RECORDING: RECORDED AND RE-READ');
-      console.log('The recorder recomputes the retained sanitized source-capture SHA-256 and workflow-bound Management API evidence requires the exact successful canonical-main GitHub Actions run, its exact non-expired SHA-256-backed encrypted capture artifact, and an observed_at timestamp bound to that artifact creation window before the service-private write. The artifact is not downloaded or decrypted. This does not change Supabase Auth settings, enable Finance/provider mutation, run staging acceptance, or promote Production.');
+      console.log('The recorder recomputes the retained sanitized source-capture SHA-256 and workflow-bound Management API evidence requires the exact successful canonical-main GitHub Actions run, its exact non-expired SHA-256-backed encrypted capture artifact, an exact salted candidate-content commitment marker artifact, and an observed_at timestamp bound to the artifact creation window before the service-private write. The artifacts are not downloaded or decrypted, and the binding nonce is not persisted in evidence_detail. This does not change Supabase Auth settings, enable Finance/provider mutation, run staging acceptance, or promote Production.');
     }
   }catch(error){
     console.error(`AUTH SECURITY EVIDENCE RECORDING: LOCKED\n- ${error instanceof Error ? error.message : String(error)}`);

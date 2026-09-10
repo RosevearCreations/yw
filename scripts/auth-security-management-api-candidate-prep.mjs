@@ -13,8 +13,12 @@ import {
   EXPECTED_PROJECT_REF,
   buildAuthEvidenceRecordCandidate,
 } from './auth-security-evidence-intake.mjs';
+import {
+  attachWorkflowCandidateContentBinding,
+  buildContentBindingMarkerNames,
+} from './auth-security-evidence-content-binding.mjs';
 
-export const AUTH_MANAGEMENT_API_CANDIDATE_PREP_VERSION=2;
+export const AUTH_MANAGEMENT_API_CANDIDATE_PREP_VERSION=3;
 export const PREPARED_CONTROL_KEYS=['leaked_password_protection','mfa_options'];
 
 const clean=(value)=>String(value ?? '').trim();
@@ -84,6 +88,7 @@ export function validateAuthManagementCaptureBundle(bundle){
 export function prepareAuthEvidenceCandidatesFromCapture(bundle,options={}){
   validateAuthManagementCaptureBundle(bundle);
   const now=options.now || bundle.observed_at;
+  const workflowBound=Boolean(bundle.workflow_provenance);
   const candidates={};
   for(const controlKey of PREPARED_CONTROL_KEYS){
     const result=buildAuthEvidenceRecordCandidate(bundle.intake_inputs[controlKey],{now});
@@ -96,10 +101,13 @@ export function prepareAuthEvidenceCandidatesFromCapture(bundle,options={}){
     if(candidate.evidence_reference!==bundle.evidence_reference)throw new Error(`Prepared ${controlKey} candidate evidence reference mismatch.`);
     if(candidate.boundaries?.database_write_performed!==false)throw new Error(`Prepared ${controlKey} candidate must remain write-free.`);
     if(candidate.boundaries?.auth_setting_mutation_performed!==false)throw new Error(`Prepared ${controlKey} candidate must remain Auth-mutation-free.`);
-    candidates[controlKey]=candidate;
+    const nonce=options.bindingNonces?.[controlKey];
+    candidates[controlKey]=workflowBound
+      ? attachWorkflowCandidateContentBinding(candidate,nonce ? {nonce} : {})
+      : candidate;
   }
 
-  return {
+  const prepared={
     evidence_format_version:1,
     evidence_kind:'ywi_auth_security_record_candidate_set',
     preparation_contract_version:AUTH_MANAGEMENT_API_CANDIDATE_PREP_VERSION,
@@ -116,7 +124,9 @@ export function prepareAuthEvidenceCandidatesFromCapture(bundle,options={}){
     boundaries:{
       source_capture_revalidated:true,
       existing_intake_contract_reused:true,
-      workflow_provenance_bound:Boolean(bundle.workflow_provenance),
+      workflow_provenance_bound:workflowBound,
+      workflow_content_binding_applied:workflowBound,
+      binding_nonce_publicly_exposed:false,
       source_authenticity_verified_by_prep:false,
       database_write_performed:false,
       auth_setting_mutation_performed:false,
@@ -128,11 +138,14 @@ export function prepareAuthEvidenceCandidatesFromCapture(bundle,options={}){
     required_followup:[
       'Confirm the capture came from the genuine official Supabase Management API for the registered YardWeasels Production project.',
       'When workflow provenance is present, verify the durable evidence reference resolves to the exact manual GitHub Actions run/attempt and commit SHA before recording.',
+      'For workflow-bound candidates, require the exact GitHub marker artifact whose name contains the salted candidate commitment before recording.',
       'Record each prepared candidate only through the existing authorized Auth evidence recorder with its explicit confirmation gates.',
       'Re-read current Auth evidence authority after each recording. Do not change Supabase Auth settings as part of evidence recording.',
     ],
     prepared_at:new Date(Date.parse(now)).toISOString(),
   };
+  prepared.content_binding_markers=workflowBound ? buildContentBindingMarkerNames(prepared) : {};
+  return prepared;
 }
 
 function safeWriteJson(filePath,value){
@@ -195,9 +208,11 @@ function printSafeResult(result,mode,inputPath=null){
       leaked_password_protection:result.prepared.candidates.leaked_password_protection.source_capture_sha256,
       mfa_options:result.prepared.candidates.mfa_options.source_capture_sha256,
     },
+    workflow_content_binding_applied:result.prepared.boundaries.workflow_content_binding_applied,
     boundaries:result.prepared.boundaries,
   },null,2));
   console.log('\nAUTH EVIDENCE CANDIDATE PREPARATION: PREPARED');
+  console.log('Workflow-bound candidates are salted and content-bound before encryption. No binding nonce or Auth state is intentionally published by the workflow.');
   console.log('No database row, Auth setting, Finance/provider control, staging rail, or Production release authority was changed.');
 }
 
