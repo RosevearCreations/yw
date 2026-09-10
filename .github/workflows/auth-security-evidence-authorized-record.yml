@@ -59,8 +59,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Verify authorized Auth evidence recording workflow contract
@@ -80,8 +80,8 @@ jobs:
       YWI_AUTH_EVIDENCE_RECORD_WORKFLOW_REF: ${{ github.ref }}
       YWI_AUTH_EVIDENCE_RECORD_WORKFLOW_EVENT: ${{ github.event_name }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Validate manual recording authorization without secrets
@@ -106,8 +106,8 @@ jobs:
       YWI_AUTH_EVIDENCE_RECORD_WORKFLOW_REF: ${{ github.ref }}
       YWI_AUTH_EVIDENCE_RECORD_WORKFLOW_EVENT: ${{ github.event_name }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
