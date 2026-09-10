@@ -8,9 +8,13 @@ export const REPOSITORY_PROTECTION_REMEDIATION = Object.freeze({
   control:'GitHub exact-main repository enforcement',
   owner:'GitHub repository administrator',
   automatic_fix_supported:false,
+  accepted_enforcement_paths:Object.freeze([
+    'active branch ruleset targeting main',
+    'classic branch protection rule targeting main'
+  ]),
   manual_steps:Object.freeze([
-    'Open RosevearCreations/yw in GitHub, then go to Settings → Branches.',
-    'Add a classic branch protection rule targeting main.',
+    'Open RosevearCreations/yw in GitHub, then use Settings → Rules → Rulesets or Settings → Branches.',
+    'Create or enable an active branch ruleset targeting main, or a classic branch protection rule targeting main.',
     'Require a pull request before merging and require the canonical YWI source/staging source-check status before merge.',
     'Keep force pushes and branch deletion disabled for main.',
     'Complete the next normal main promotion and require the exact-main workflow to observe protected=true on that same main SHA.'
@@ -19,7 +23,7 @@ export const REPOSITORY_PROTECTION_REMEDIATION = Object.freeze({
 
 function nextSafeAction(blockers){
   if(blockers.includes('main_unprotected')){
-    return 'Enable GitHub branch protection for main using the documented manual rule, then verify a fresh exact-main workflow observes protected=true on the same main SHA.';
+    return 'Enable an active GitHub branch ruleset or branch protection rule for main using the documented manual policy, then verify a fresh exact-main workflow observes protected=true on the same main SHA.';
   }
   if(blockers.includes('main_sha_mismatch')){
     return 'Do not record release evidence. Confirm whether main moved after this workflow started, then use a fresh exact-main run for the current main SHA.';
@@ -77,7 +81,7 @@ export function evaluateRepositoryProtection(env={}){
     reported_main_sha:reportedMainSha || null,
     exact_main_sha_match:Boolean(expectedMainSha && reportedMainSha && expectedMainSha===reportedMainSha),
     main_protected:protectedRaw==='true',
-    evidence_source:'GitHub REST branches/main protected field',
+    evidence_source:'GitHub REST branches/main protected field (branch protection or ruleset)',
     blocker_codes:uniqueBlockers,
     next_safe_action:nextSafeAction(uniqueBlockers),
     remediation:ok ? null : REPOSITORY_PROTECTION_REMEDIATION,
@@ -101,7 +105,7 @@ export function renderRepositoryProtectionSummary(result){
   if(result.remediation){
     lines.push('', '#### Manual remediation', '');
     result.remediation.manual_steps.forEach((step,index)=>lines.push(`${index+1}. ${step}`));
-    lines.push('', '> Manual GitHub administrator action is required. This automation cannot enable branch protection, cannot mark the gate green by itself, and does not weaken the exact-main enforcement check.');
+    lines.push('', '> Manual GitHub administrator action is required. This automation cannot enable branch protection or rulesets, cannot mark the gate green by itself, and does not weaken the exact-main enforcement check.');
   }
   return `${lines.join('\n')}\n`;
 }
