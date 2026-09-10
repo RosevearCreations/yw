@@ -35,8 +35,8 @@ jobs:
   source-checks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
@@ -50,6 +50,7 @@ jobs:
         run: npm run promotion:shape:require
       - run: npm run test:promotion-shape
       - run: npm run test:repository-protection-preflight
+      - run: node scripts/github-actions-runtime-contract-check.mjs
       - run: node scripts/release-job-separation-check.mjs
       - run: node scripts/exact-main-release-truth-summary-check.mjs
       - run: npm run test:release-source-evidence
@@ -157,8 +158,8 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
@@ -180,8 +181,8 @@ jobs:
     needs: source-checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Re-verify exact main and write release-source candidate
@@ -214,8 +215,8 @@ jobs:
     needs: [source-checks, repository-enforcement, release-source-evidence]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Summarize exact-main application and control truth
@@ -243,8 +244,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: staging
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
