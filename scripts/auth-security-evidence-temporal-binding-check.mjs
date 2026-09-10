@@ -114,6 +114,7 @@ function fetchHarness({artifactCreatedAt=ARTIFACT_CREATED_AT,candidate=makeCandi
     calls.push({url,options});
     if(url===RUN_URL)return {ok:true,status:200,json:async()=>workflowRun(),text:async()=>''};
     if(url===ARTIFACTS_URL)return {ok:true,status:200,json:async()=>({total_count:2,artifacts:[artifact(artifactCreatedAt),marker(candidate)]}),text:async()=>''};
+    if(url.includes('/rest/v1/it_auth_security_evidence?select='))return {ok:true,status:200,json:async()=>[],text:async()=>''};
     if(url.includes('/rpc/ywi_record_auth_security_evidence'))return {ok:true,status:200,json:async()=>88,text:async()=>''};
     if(url.includes('/v_it_auth_security_evidence_current?'))return {ok:true,status:200,json:async()=>[{
       evidence_id:88,control_key:'leaked_password_protection',current_status:'verified_secure',source_project_ref:EXPECTED_PROJECT_REF,
@@ -141,9 +142,9 @@ add('invalid-artifact-created-at-rejected',invalidArtifactTimeRejected);
 const goodCandidate=makeCandidate();
 let harness=fetchHarness({candidate:goodCandidate});
 const recorded=await recordAuthEvidenceCandidate(goodCandidate,env(),{now:NOW,fetchImpl:harness.fetchImpl});
-add('valid-record-path-temporally-verified',recorded.ok && recorded.write_performed && recorded.auth_capture_content_binding_verified===true && recorded.auth_capture_temporal_verified===true && recorded.auth_capture_temporal_observed_at===OBSERVED_AT && recorded.auth_capture_temporal_artifact_created_at===ARTIFACT_CREATED_AT);
-add('valid-record-network-order',harness.calls.length===4 && harness.calls[0].url===RUN_URL && harness.calls[1].url===ARTIFACTS_URL && harness.calls[2].url.includes('/rpc/ywi_record_auth_security_evidence'));
-const rpcBody=JSON.parse(harness.calls[2].options.body);
+add('valid-record-path-temporally-verified',recorded.ok && recorded.write_performed && recorded.replay_precheck_performed===true && recorded.replay_disposition==='new_capture' && recorded.auth_capture_content_binding_verified===true && recorded.auth_capture_temporal_verified===true && recorded.auth_capture_temporal_observed_at===OBSERVED_AT && recorded.auth_capture_temporal_artifact_created_at===ARTIFACT_CREATED_AT);
+add('valid-record-network-order',harness.calls.length===5 && harness.calls[0].url===RUN_URL && harness.calls[1].url===ARTIFACTS_URL && harness.calls[2].url.includes('/rest/v1/it_auth_security_evidence?select=') && harness.calls[3].url.includes('/rpc/ywi_record_auth_security_evidence') && harness.calls[4].url.includes('/v_it_auth_security_evidence_current?'));
+const rpcBody=JSON.parse(harness.calls[3].options.body);
 add('rpc-persists-temporal-verification',rpcBody.p_evidence_detail?.auth_capture_temporal_verification?.verified===true && rpcBody.p_evidence_detail?.auth_capture_temporal_verification?.observed_at===OBSERVED_AT && rpcBody.p_evidence_detail?.auth_capture_temporal_verification?.artifact_created_at===ARTIFACT_CREATED_AT && rpcBody.p_evidence_detail?.auth_capture_temporal_verification?.maximum_artifact_lag_ms===15*60*1000);
 add('rpc-also-persists-content-binding-proof',rpcBody.p_evidence_detail?.auth_capture_content_binding_verification?.verified===true && rpcBody.p_evidence_detail?.auth_capture_content_binding_verification?.candidate_nonce_persisted===false && !JSON.stringify(rpcBody.p_evidence_detail).includes(BINDING_NONCE));
 
@@ -173,5 +174,5 @@ add('artifact-lag-over-15-minutes-blocks-before-supabase',earlyRejected && !earl
 
 for(const item of checks)console.log(`${item.ok?'PASS':'FAIL'}  ${item.name}`);
 const failed=checks.filter((item)=>!item.ok);
-console.log(`\n${checks.length-failed.length}/${checks.length} Build 268 Auth temporal provenance checks passed under Build 269 content binding.`);
+console.log(`\n${checks.length-failed.length}/${checks.length} Build 268 Auth temporal provenance checks passed under Build 270 replay hardening.`);
 if(failed.length)process.exit(1);
