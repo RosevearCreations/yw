@@ -1,12 +1,16 @@
 #!/usr/bin/env node
 /**
- * Build 251 staging-target identity and rail-specific credential preflight.
+ * Build 288 staging-target preflight.
  *
- * This is intentionally source/runtime configuration validation only. It does
- * not connect to Supabase, mutate data, create fixtures, run acceptance, or
- * print secret values. The live runner remains the execution authority.
+ * The pure evaluateStagingTarget() helper validates only local configuration so
+ * source tests can stay network-free. The executable staging:preflight command
+ * now goes further: it must prove explicit registered staging runtime authority
+ * and exact current-schema parity before it may report READY. It never mutates
+ * Supabase and never prints secret values.
  */
+import fs from 'node:fs';
 import { pathToFileURL } from 'node:url';
+import { verifyRuntimeAuthority } from './staging-runtime-authority-preflight.mjs';
 
 export const KNOWN_PRODUCTION_PROJECT_REF='jmqvkgiqlimdhcofwkxr';
 export const STAGING_ACCEPTANCE_RAILS=Object.freeze([
@@ -28,6 +32,14 @@ export function projectRefFromSupabaseUrl(value){
     const match=url.hostname.match(/^([a-z0-9-]+)\.supabase\.co$/i);
     return match?.[1]?.toLowerCase() || '';
   }catch{return '';}
+}
+
+export function repositorySchemaVersion(){
+  const versions=fs.readdirSync('sql')
+    .filter((name)=>/^\d{3}_.+\.sql$/i.test(name))
+    .map((name)=>Number(name.slice(0,3)))
+    .filter(Number.isFinite);
+  return versions.length ? Math.max(...versions) : 0;
 }
 
 export function evaluateStagingTarget(env={}){
@@ -98,16 +110,117 @@ export function evaluateStagingTarget(env={}){
   };
 }
 
+function runtimeAuthoritySummary(authority){
+  return authority ? {
+    authority_present:authority.authority_present===true,
+    project_ref:authority.project_ref || null,
+    environment_class:authority.environment_class || null,
+    staging_acceptance_mutation_allowed:authority.staging_acceptance_mutation_allowed===true,
+  } : null;
+}
+
+async function verifySchemaAuthority(env,fetchImpl){
+  const repoLatestSchema=repositorySchemaVersion();
+  if(!Number.isInteger(repoLatestSchema) || repoLatestSchema<1){
+    return {ok:false,exact_schema_match:false,repository_schema_version:repoLatestSchema || null,errors:['Could not determine the current repository schema version.']};
+  }
+  const url=clean(env.SUPABASE_URL).replace(/\/$/,'');
+  const key=clean(env.SUPABASE_SERVICE_ROLE_KEY);
+  const endpoint=`${url}/rest/v1/v_schema_drift_status?select=expected_schema_version,latest_applied_schema_version,drift_status&limit=2`;
+  let response;
+  try{
+    response=await fetchImpl(endpoint,{
+      method:'GET',
+      headers:{apikey:key,authorization:`Bearer ${key}`,Accept:'application/json'},
+    });
+  }catch(error){
+    return {ok:false,exact_schema_match:false,repository_schema_version:repoLatestSchema,errors:[`Runtime schema authority read failed before staging execution: ${String(error?.message || error || 'network error')}`]};
+  }
+  if(!response?.ok){
+    return {ok:false,exact_schema_match:false,repository_schema_version:repoLatestSchema,errors:[`Runtime schema authority read returned HTTP ${Number(response?.status || 0) || 'error'} before staging execution.`]};
+  }
+  let rows;
+  try{rows=await response.json();}
+  catch{return {ok:false,exact_schema_match:false,repository_schema_version:repoLatestSchema,errors:['Runtime schema authority response was not valid JSON.']};}
+  if(!Array.isArray(rows) || rows.length!==1){
+    return {ok:false,exact_schema_match:false,repository_schema_version:repoLatestSchema,errors:['Runtime schema authority must return exactly one current-schema row.']};
+  }
+  const row=rows[0] || {};
+  const expectedSchema=Number(row.expected_schema_version || 0);
+  const latestAppliedSchema=Number(row.latest_applied_schema_version || 0);
+  const driftStatus=clean(row.drift_status).toLowerCase();
+  const exact=driftStatus==='current' && expectedSchema===repoLatestSchema && latestAppliedSchema===repoLatestSchema;
+  return {
+    ok:exact,
+    exact_schema_match:exact,
+    repository_schema_version:repoLatestSchema,
+    expected_schema_version:expectedSchema || null,
+    latest_applied_schema_version:latestAppliedSchema || null,
+    drift_status:driftStatus || null,
+    errors:exact?[]:[`Dedicated staging database must exactly match repository Schema ${repoLatestSchema} before staging execution.`],
+  };
+}
+
+export async function verifyStagingTargetRuntime(env={},fetchImpl=fetch){
+  const configuration=evaluateStagingTarget(env);
+  if(!configuration.ok){
+    return {ok:false,configuration,runtime_authority:null,schema_authority:null,errors:[...configuration.errors]};
+  }
+
+  const authority=await verifyRuntimeAuthority(env,fetchImpl);
+  if(authority?.skipped || authority?.ok!==true){
+    const authorityErrors=authority?.errors?.length ? authority.errors : [authority?.reason || 'Explicit staging runtime authority could not be proven.'];
+    return {
+      ok:false,
+      configuration,
+      runtime_authority:runtimeAuthoritySummary(authority),
+      schema_authority:null,
+      errors:authorityErrors,
+    };
+  }
+  if(authority.project_ref!==configuration.actual_url_project_ref || authority.environment_class!=='staging' || authority.staging_acceptance_mutation_allowed!==true){
+    return {
+      ok:false,
+      configuration,
+      runtime_authority:runtimeAuthoritySummary(authority),
+      schema_authority:null,
+      errors:['Runtime authority did not return an explicit staging allow for this exact target project.'],
+    };
+  }
+
+  const schemaAuthority=await verifySchemaAuthority(env,fetchImpl);
+  if(!schemaAuthority.ok){
+    return {
+      ok:false,
+      configuration,
+      runtime_authority:runtimeAuthoritySummary(authority),
+      schema_authority:schemaAuthority,
+      errors:[...(schemaAuthority.errors || [])],
+    };
+  }
+
+  return {
+    ok:true,
+    configuration,
+    runtime_authority:runtimeAuthoritySummary(authority),
+    schema_authority:schemaAuthority,
+    errors:[],
+  };
+}
+
 function printResult(result){
   console.log(JSON.stringify(result,null,2));
   if(!result.ok){
     console.error('\nSTAGING TARGET PREFLIGHT: LOCKED');
-    for(const error of result.errors)console.error(`- ${error}`);
+    for(const error of result.errors || [])console.error(`- ${error}`);
     process.exitCode=1;
     return;
   }
-  console.log('\nSTAGING TARGET PREFLIGHT: READY');
+  console.log('\nSTAGING TARGET CONFIGURATION: READY');
+  console.log('STAGING RUNTIME AUTHORITY: READY');
+  console.log(`STAGING SCHEMA AUTHORITY: CURRENT (Schema ${result.schema_authority.repository_schema_version})`);
+  console.log('STAGING TARGET PREFLIGHT: READY');
 }
 
 const invoked=process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href;
-if(invoked)printResult(evaluateStagingTarget(process.env));
+if(invoked)printResult(await verifyStagingTargetRuntime(process.env,fetch));
