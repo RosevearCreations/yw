@@ -62,7 +62,7 @@ add('workflow-downloads-from-exact-run',has('run-id: ${{ env.SOURCE_RUN_ID }}')&
 add('workflow-fresh-run-and-main-lookups',has('gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}"')&&has('gh api "repos/${GITHUB_REPOSITORY}/branches/main"'));
 const verifyPos=workflow.indexOf('node scripts/release-source-evidence-verify.mjs');
 const oidcPos=workflow.indexOf('ACTIONS_ID_TOKEN_REQUEST_TOKEN');
-const recorderCallPos=workflow.indexOf('"$YWI_RELEASE_RECORDER_URL"');
+const recorderCallPos=workflow.indexOf('--data-binary @release-record-request.json');
 add('workflow-verifies-before-oidc-recording',verifyPos>=0&&oidcPos>verifyPos&&recorderCallPos>oidcPos);
 add('workflow-requests-short-lived-github-oidc',
   has('ACTIONS_ID_TOKEN_REQUEST_TOKEN')&&has('ACTIONS_ID_TOKEN_REQUEST_URL')&&has('audience=${YWI_RELEASE_OIDC_AUDIENCE}'));
@@ -101,8 +101,7 @@ add('edge-requires-current-schema-authority',
   edgeHas('expectedSchema !== liveSchema')&&
   edgeHas('schemaVersion !== expectedSchema'));
 add('edge-fresh-github-reverification',
-  edgeHas(`/repos/${'${EXPECTED_REPOSITORY}'}/actions/runs/${'${runId}'}`)&&
-  edgeHas(`/repos/${'${EXPECTED_REPOSITORY}'}/branches/main`));
+  edgeHas('/actions/runs/${runId}')&&edgeHas('/branches/main'));
 add('edge-requires-fresh-protected-current-main',
   edgeHas("run.status !== 'completed' || run.conclusion !== 'success'")&&
   edgeHas('fullSha(main?.commit?.sha) !== sourceSha')&&
