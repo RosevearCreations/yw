@@ -62,7 +62,8 @@ async function runtimeEnvironmentGuard(supabase: any, supabaseUrl: string) {
   );
   const explicitStaging = runtimeEnvironment === 'staging';
   const exactRefMatch = Boolean(actualProjectRef && expectedStagingRef && actualProjectRef === expectedStagingRef);
-  const registryAllows = registeredAuthority == null || registeredAuthority.staging_acceptance_mutation_allowed === true;
+  const registryAllows = registeredAuthority?.environment_class === 'staging'
+    && registeredAuthority?.staging_acceptance_mutation_allowed === true;
   const mutationAllowed = explicitStaging && mutationFlag && exactRefMatch && !knownProduction && registryAllows;
 
   let reason = 'Dedicated staging mutation is explicitly enabled.';
@@ -72,13 +73,16 @@ async function runtimeEnvironmentGuard(supabase: any, supabaseUrl: string) {
   else if (!expectedStagingRef) reason = 'YWI_STAGING_PROJECT_REF is required for acceptance mutation.';
   else if (!exactRefMatch) reason = 'The runtime project ref does not match YWI_STAGING_PROJECT_REF.';
   else if (!mutationFlag) reason = 'YWI_STAGING_ACCEPTANCE_MUTATION_ENABLED is not explicitly enabled.';
-  else if (!registryAllows) reason = 'Runtime environment authority denies staging-acceptance mutation for this project.';
+  else if (!registeredAuthority) reason = 'Runtime environment authority is not registered for this project; explicit staging registration is required.';
+  else if (registeredAuthority.environment_class !== 'staging') reason = 'Runtime environment authority must classify this project as staging.';
+  else if (!registryAllows) reason = 'Runtime environment authority has not explicitly allowed staging-acceptance mutation for this project.';
 
   return {
     runtime_environment: runtimeEnvironment || 'unconfigured',
     actual_project_ref: actualProjectRef || null,
     expected_staging_project_ref: expectedStagingRef || null,
     configured_production_project_ref: configuredProductionRef || KNOWN_PRODUCTION_PROJECT_REF,
+    registered_authority_present:Boolean(registeredAuthority),
     registered_environment_class: registeredAuthority?.environment_class || null,
     registered_mutation_allowed: registeredAuthority?.staging_acceptance_mutation_allowed ?? null,
     explicit_staging: explicitStaging,
@@ -115,7 +119,7 @@ function assertStagingMutationAllowed(guard: any) {
   if (guard?.mutation_allowed === true) return;
   throw new HttpError(409,'Staging acceptance mutation is locked for this runtime environment.',{
     environment_guard:guard,
-    required:'Set YWI_RUNTIME_ENVIRONMENT=staging, YWI_STAGING_PROJECT_REF to this exact non-production project ref, and YWI_STAGING_ACCEPTANCE_MUTATION_ENABLED=true. Production is always denied.'
+    required:'Set YWI_RUNTIME_ENVIRONMENT=staging, YWI_STAGING_PROJECT_REF to this exact non-production project ref, YWI_STAGING_ACCEPTANCE_MUTATION_ENABLED=true, and explicitly register this project as staging with staging_acceptance_mutation_allowed=true. Production and unregistered runtimes are always denied.'
   });
 }
 
@@ -176,7 +180,19 @@ async function statusPayload(supabase: any, environmentGuard: any) {
 
   const securityRows = securityAssertions || [];
   const catalogRows = catalogAssertions || [];
-  const environmentRows = environmentAssertions || [];
+  const registryExplicitlyAllows = environmentGuard?.registered_authority_present === true
+    && environmentGuard?.registered_environment_class === 'staging'
+    && environmentGuard?.registered_mutation_allowed === true;
+  const environmentRows = [
+    ...(environmentAssertions || []),
+    {
+      assertion_key:'runtime_project_registered_explicit_staging_allow',
+      assertion_status:registryExplicitlyAllows ? 'passed' : 'failed',
+      assertion_detail:registryExplicitlyAllows
+        ? 'The current project is explicitly registered as staging with staging-acceptance mutation allowed.'
+        : 'The current project must have an explicit staging runtime-authority row with staging_acceptance_mutation_allowed=true; missing or unknown registration is denied.',
+    },
+  ];
   const schemaRows = [{
     assertion_key:'staging_runtime_schema_current',
     assertion_status:schemaAuthority.exact_schema_match ? 'passed' : 'failed',
