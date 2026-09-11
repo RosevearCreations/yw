@@ -236,8 +236,11 @@ Deno.serve(async (req: Request) => {
     if (!current || Number(current.id) !== evidenceId || current.source_sha !== shape.sourceSha || Number(current.workflow_run_id) !== runId) {
       throw new HttpError(500, 'Recorded release evidence could not be re-read with matching identity.');
     }
-    if (current.source_gate_status !== 'green' || current.repository_enforcement_status !== 'green') {
-      throw new HttpError(500, 'Recorded release evidence did not become GREEN after recording.', current);
+    if (current.source_gate_status !== 'green') {
+      throw new HttpError(500, 'Recorded release-source evidence did not become GREEN after recording.', current);
+    }
+    if (current.branch_protection_reported !== true || current.branch_policy_verified !== false || current.repository_enforcement_status !== 'amber') {
+      throw new HttpError(500, 'Recorded release evidence did not preserve the explicit repository-policy AMBER boundary.', current);
     }
 
     return Response.json({
@@ -249,6 +252,8 @@ Deno.serve(async (req: Request) => {
       schema_version: shape.schemaVersion,
       source_gate_status: current.source_gate_status,
       repository_enforcement_status: current.repository_enforcement_status,
+      branch_protection_reported: current.branch_protection_reported,
+      branch_policy_verified: current.branch_policy_verified,
     });
   } catch (error) {
     const status = error instanceof HttpError ? error.status : 500;
