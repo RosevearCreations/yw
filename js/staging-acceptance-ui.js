@@ -96,6 +96,54 @@
     </div>`;
   }
 
+  function renderTargetReadinessChecklist(){
+    const guard=environmentGuard();
+    const authority=schemaAuthority();
+    const hasResolvedProject=Boolean(guard.actual_project_ref);
+    const registryPermits=guard.registered_mutation_allowed!==false;
+    const items=[
+      {
+        label:'Dedicated non-Production target',
+        ok:hasResolvedProject && guard.known_production!==true,
+        detail:guard.known_production===true
+          ? 'Current runtime is Production; use a separate Supabase project or development branch.'
+          : (hasResolvedProject?'Current runtime is not classified as Production.':'Current Supabase project ref is unresolved.')
+      },
+      {
+        label:'Runtime labelled staging',
+        ok:guard.explicit_staging===true,
+        detail:guard.explicit_staging===true?'YWI_RUNTIME_ENVIRONMENT is staging.':'YWI_RUNTIME_ENVIRONMENT must be exactly staging.'
+      },
+      {
+        label:'Exact staging project-ref binding',
+        ok:guard.exact_project_ref_match===true,
+        detail:guard.exact_project_ref_match===true?'Runtime project matches YWI_STAGING_PROJECT_REF.':'Runtime project must exactly match YWI_STAGING_PROJECT_REF.'
+      },
+      {
+        label:'Staging mutation flag',
+        ok:guard.mutation_flag_enabled===true,
+        detail:guard.mutation_flag_enabled===true?'YWI_STAGING_ACCEPTANCE_MUTATION_ENABLED is explicitly enabled.':'YWI_STAGING_ACCEPTANCE_MUTATION_ENABLED must be explicitly enabled.'
+      },
+      {
+        label:'Runtime registry permission',
+        ok:registryPermits,
+        detail:registryPermits?'Runtime authority does not deny staging acceptance mutation.':'Runtime authority explicitly denies staging acceptance mutation.'
+      },
+      {
+        label:'Exact current schema',
+        ok:authority.exact_schema_match===true,
+        detail:authority.exact_schema_match===true?'Expected and applied schema versions match exactly.':'Expected and applied schema versions must match exactly.'
+      }
+    ];
+    const ready=items.every((item)=>item.ok) && guard.mutation_allowed===true && authority.exact_schema_match===true;
+    return `<div class="${ready?'help-callout':'it-readiness-error'} staging-target-readiness">
+      <strong>Staging target readiness: ${ready?'READY':'NOT READY'}</strong><br>
+      <small>${ready?'All runtime prerequisites are proven for staging evidence controls.':'Source-ready rails remain non-runnable until every runtime prerequisite below is proven.'}</small>
+      <div class="it-readiness-list staging-target-readiness-list">${items.map((item)=>`<div class="it-readiness-row staging-target-readiness-row"><div><strong>${esc(item.label)}</strong><small>${esc(item.detail)}</small></div>${chip(item.ok?'passed':'blocked')}</div>`).join('')}</div>
+      <small>Creating a Supabase project or development branch is a separate infrastructure decision; this screen never provisions one automatically.</small>
+    </div>`;
+  }
+
   function render(){
     const host=panelHost();
     if(!host)return false;
@@ -146,6 +194,7 @@
       <span class="it-readiness-kicker">Acceptance control plane</span>
       <h3>Staging acceptance evidence</h3>
       <p>Dedicated staging only · ${Number(summary.rail_count||0)} open rail(s) · ${Number(summary.scenario_count||0)} catalog case(s) · ${Number(summary.pending_evidence_count||0)} pending evidence · ${Number(summary.human_action_count||0)} human action(s) · ${Number(summary.assertion_failures||0)} assertion failure(s).</p>
+      ${renderTargetReadinessChecklist()}
       ${renderEnvironmentGuard()}
       ${renderSchemaAuthority()}
       <p><strong>No automatic rail closure:</strong> runner results, human case evidence, finalization, and signoff are evidence only. Scorecard completion remains a separate deliberate release action.</p>
