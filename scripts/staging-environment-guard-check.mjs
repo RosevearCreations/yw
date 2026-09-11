@@ -14,7 +14,8 @@ const helpLower=help.toLowerCase();
 const readme=read('README.md');
 const handbook=read('docs/ACTIVE_PROJECT_HANDBOOK.md');
 const nextSteps=read('docs/NEXT_STEPS_AND_SANITY_CHECK.md');
-const runner=read('scripts/operations-rpc-staging-e2e.mjs');
+const runnerEntry=read('scripts/operations-rpc-staging-e2e.mjs');
+const runner=read('scripts/operations-rpc-staging-e2e-core.mjs');
 const runnerAuthorityPreflight=read('scripts/staging-runtime-authority-preflight.mjs');
 const all=(text,values)=>values.every((value)=>text.includes(value));
 const checks=[];
@@ -124,6 +125,12 @@ add('browser-unregistered-runtime-lock-proof',all(infrastructureBrowser,[
   "expect(actions).toEqual(['status'])"
 ]));
 
+add('runner-entrypoint-embedded-authority-guard',all(runnerEntry,[
+  "import { verifyRuntimeAuthority } from './staging-runtime-authority-preflight.mjs';",
+  'const authority = await verifyRuntimeAuthority(process.env, fetch);',
+  'STAGING RUNTIME AUTHORITY: LOCKED',
+  "await import('./operations-rpc-staging-e2e-core.mjs');"
+]) && runnerEntry.indexOf('await verifyRuntimeAuthority') < runnerEntry.indexOf("await import('./operations-rpc-staging-e2e-core.mjs')"));
 add('runner-production-refusal-preserved',all(runner,[
   "'jmqvkgiqlimdhcofwkxr'",
   'actualProjectRef === productionRef',
