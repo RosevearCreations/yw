@@ -1,9 +1,16 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { evaluateStagingTarget, KNOWN_PRODUCTION_PROJECT_REF, STAGING_ACCEPTANCE_RAILS } from './staging-target-preflight.mjs';
+import {
+  evaluateStagingTarget,
+  verifyStagingTargetRuntime,
+  repositorySchemaVersion,
+  KNOWN_PRODUCTION_PROJECT_REF,
+  STAGING_ACCEPTANCE_RAILS,
+} from './staging-target-preflight.mjs';
 
 const runner=fs.readFileSync('scripts/operations-rpc-staging-e2e-core.mjs','utf8');
+const preflightSource=fs.readFileSync('scripts/staging-target-preflight.mjs','utf8');
 const base={
   YWI_RUN_STAGING_RPC_TESTS:'1',
   SUPABASE_URL:'https://stagingprojectref.supabase.co',
@@ -23,8 +30,12 @@ const check=(name,fn)=>{
   try{fn();checks.push({name,ok:true});}
   catch(error){checks.push({name,ok:false,error:error?.message || String(error)});}
 };
+const checkAsync=async(name,fn)=>{
+  try{await fn();checks.push({name,ok:true});}
+  catch(error){checks.push({name,ok:false,error:error?.message || String(error)});}
+};
 
-check('valid-operations-nonproduction-target-is-ready',()=>{
+check('valid-operations-nonproduction-configuration-is-ready',()=>{
   const result=evaluateStagingTarget(base);
   assert.equal(result.ok,true);
   assert.equal(result.target_rail,'operations_cockpit_live');
@@ -39,7 +50,7 @@ check('valid-operations-nonproduction-target-is-ready',()=>{
   assert.deepEqual(result.missing_secret_inputs,[]);
 });
 
-check('operations-job-admin-jwt-is-required-before-ready',()=>{
+check('operations-job-admin-jwt-is-required-before-configuration-ready',()=>{
   const result=evaluateStagingTarget({...base,YWI_STAGING_JOB_ADMIN_JWT:''});
   assert.equal(result.ok,false);
   assert.equal(result.operations_identity_pair_required,true);
@@ -49,7 +60,7 @@ check('operations-job-admin-jwt-is-required-before-ready',()=>{
   assert(result.missing_secret_inputs.includes('YWI_STAGING_JOB_ADMIN_JWT'));
 });
 
-check('operations-worker-jwt-is-required-before-ready',()=>{
+check('operations-worker-jwt-is-required-before-configuration-ready',()=>{
   const result=evaluateStagingTarget({...base,YWI_STAGING_WORKER_JWT:''});
   assert.equal(result.ok,false);
   assert.equal(result.operations_identity_pair_required,true);
@@ -161,7 +172,7 @@ check('quote-intake-requires-public-key-not-operations-role-jwts',()=>{
   assert(result.errors.some((value)=>value.includes('YWI_STAGING_PUBLIC_KEY')));
 });
 
-check('quote-intake-with-public-key-is-ready',()=>{
+check('quote-intake-with-public-key-has-ready-configuration',()=>{
   const result=evaluateStagingTarget({
     ...base,
     YWI_STAGING_TARGET_RAIL:'quote_intake_live',
@@ -174,7 +185,7 @@ check('quote-intake-with-public-key-is-ready',()=>{
   assert.equal(result.public_key_present,true);
 });
 
-check('result-never-echoes-secret-values',()=>{
+check('configuration-result-never-echoes-secret-values',()=>{
   const publicSecret='public-secret-shaped-value';
   const result=evaluateStagingTarget({...base,YWI_STAGING_PUBLIC_KEY:publicSecret});
   const text=JSON.stringify(result);
@@ -185,6 +196,76 @@ check('result-never-echoes-secret-values',()=>{
   assert.equal(text.includes('job_admin_jwt_present'),true);
   assert.equal(text.includes('worker_jwt_present'),true);
   assert.equal(text.includes('public_key_present'),true);
+});
+
+check('executable-preflight-contract-requires-runtime-authority-before-schema-read',()=>{
+  assert(preflightSource.includes("import { verifyRuntimeAuthority } from './staging-runtime-authority-preflight.mjs';"));
+  assert(preflightSource.includes('const authority=await verifyRuntimeAuthority(env,fetchImpl);'));
+  assert(preflightSource.includes('it_runtime_environment_authorities')===false,'Shared runtime-authority verifier should own registry query semantics.');
+  assert(preflightSource.includes('v_schema_drift_status?select=expected_schema_version,latest_applied_schema_version,drift_status&limit=2'));
+  assert(preflightSource.indexOf('const authority=await verifyRuntimeAuthority(env,fetchImpl);') < preflightSource.indexOf('const schemaAuthority=await verifySchemaAuthority(env,fetchImpl);'));
+  assert(preflightSource.includes("console.log('STAGING TARGET PREFLIGHT: READY');"));
+});
+
+const currentSchema=repositorySchemaVersion();
+const jsonResponse=(data,status=200)=>({ok:status>=200 && status<300,status,json:async()=>data});
+
+await checkAsync('full-preflight-requires-explicit-runtime-authority-and-current-schema',async()=>{
+  const calls=[];
+  const fetchImpl=async(url)=>{
+    calls.push(String(url));
+    if(String(url).includes('/it_runtime_environment_authorities?')){
+      return jsonResponse([{project_ref:'stagingprojectref',environment_class:'staging',staging_acceptance_mutation_allowed:true}]);
+    }
+    if(String(url).includes('/v_schema_drift_status?')){
+      return jsonResponse([{expected_schema_version:currentSchema,latest_applied_schema_version:currentSchema,drift_status:'current'}]);
+    }
+    throw new Error(`Unexpected URL ${url}`);
+  };
+  const result=await verifyStagingTargetRuntime(base,fetchImpl);
+  assert.equal(result.ok,true);
+  assert.equal(result.runtime_authority.authority_present,true);
+  assert.equal(result.runtime_authority.environment_class,'staging');
+  assert.equal(result.runtime_authority.staging_acceptance_mutation_allowed,true);
+  assert.equal(result.schema_authority.exact_schema_match,true);
+  assert.equal(result.schema_authority.repository_schema_version,currentSchema);
+  assert.equal(calls.length,2);
+  assert(calls[0].includes('/it_runtime_environment_authorities?'));
+  assert(calls[1].includes('/v_schema_drift_status?'));
+  const text=JSON.stringify(result);
+  for(const secret of [base.SUPABASE_SERVICE_ROLE_KEY,base.YWI_STAGING_JOB_ADMIN_JWT,base.YWI_STAGING_WORKER_JWT])assert.equal(text.includes(secret),false);
+});
+
+await checkAsync('unregistered-runtime-locks-before-schema-authority-read',async()=>{
+  let schemaRead=false;
+  const fetchImpl=async(url)=>{
+    if(String(url).includes('/it_runtime_environment_authorities?'))return jsonResponse([]);
+    if(String(url).includes('/v_schema_drift_status?'))schemaRead=true;
+    return jsonResponse([]);
+  };
+  const result=await verifyStagingTargetRuntime(base,fetchImpl);
+  assert.equal(result.ok,false);
+  assert.equal(result.runtime_authority?.authority_present,false);
+  assert.equal(result.schema_authority,null);
+  assert.equal(schemaRead,false);
+  assert(result.errors.some((value)=>value.includes('explicit staging registration')));
+});
+
+await checkAsync('schema-drift-locks-after-authority-is-proven',async()=>{
+  const fetchImpl=async(url)=>{
+    if(String(url).includes('/it_runtime_environment_authorities?')){
+      return jsonResponse([{project_ref:'stagingprojectref',environment_class:'staging',staging_acceptance_mutation_allowed:true}]);
+    }
+    if(String(url).includes('/v_schema_drift_status?')){
+      return jsonResponse([{expected_schema_version:currentSchema,latest_applied_schema_version:Math.max(1,currentSchema-1),drift_status:'drift'}]);
+    }
+    throw new Error(`Unexpected URL ${url}`);
+  };
+  const result=await verifyStagingTargetRuntime(base,fetchImpl);
+  assert.equal(result.ok,false);
+  assert.equal(result.runtime_authority?.authority_present,true);
+  assert.equal(result.schema_authority?.exact_schema_match,false);
+  assert(result.errors.some((value)=>value.includes(`repository Schema ${currentSchema}`)));
 });
 
 for(const item of checks)console.log(`${item.ok?'PASS':'FAIL'}  ${item.name}${item.error?` — ${item.error}`:''}`);
