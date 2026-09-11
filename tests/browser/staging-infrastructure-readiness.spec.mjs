@@ -15,7 +15,7 @@ const currentSchemaAuthority={
 function payloadFor(environmentGuard){
   const environmentReady=environmentGuard.mutation_allowed===true;
   return {
-    ok:environmentReady,build:'build277-proof',schema:201,minimum_schema:197,
+    ok:environmentReady,build:'build278-proof',schema:201,minimum_schema:197,
     schema_authority:structuredClone(currentSchemaAuthority),
     environment_guard:structuredClone(environmentGuard),
     summary:{
@@ -29,7 +29,7 @@ function payloadFor(environmentGuard){
       rail_key:'operations_cockpit_live',rail_title:'Operations cockpit write forms',rail_status:'active',progress_percent:94,
       resolution_class:'staging_acceptance',requires_human:true,requires_external:false,
       resolution_note:'Source-ready candidate; dedicated non-production staging evidence is still required.',
-      run_id:runId,run_key:'build277-environment-proof',suite_name:'staging_infrastructure_readiness',run_status:'started',
+      run_id:runId,run_key:'build278-environment-proof',suite_name:'staging_infrastructure_readiness',run_status:'started',
       source_sha:'4be781d794625b7df6be2eaa4e050b0a27e84c80',source_workflow_run_id:33914183726,schema_version:201,
       human_signoff_required:true,human_signoff_status:'pending',staging_acceptance_status:'collecting_evidence',acceptance_complete:false
     }],
@@ -39,7 +39,7 @@ function payloadFor(environmentGuard){
       case_key:'operations_cockpit_write_form_roundtrip',case_title:'Cockpit write-form round trip',
       case_description:'Human staging evidence remains required even when the source scenario is ready.',evidence_kind:'manual',verification_mode:'human',
       is_blocking:true,expected_outcome:'Exercise the write form only in dedicated non-production staging.',prerequisites:[{kind:'environment',key:'dedicated non-production staging'}],
-      case_sort_order:10,run_id:runId,run_key:'build277-environment-proof',suite_name:'staging_infrastructure_readiness',run_status:'started',
+      case_sort_order:10,run_id:runId,run_key:'build278-environment-proof',suite_name:'staging_infrastructure_readiness',run_status:'started',
       source_sha:'4be781d794625b7df6be2eaa4e050b0a27e84c80',source_workflow_run_id:33914183726,schema_version:201,
       human_signoff_required:true,human_signoff_status:'pending',case_status:'pending',observed_outcome:null,evidence_status:'pending_evidence',
       prerequisite_truth:'requires_human_staging_evidence',human_action_required:true
@@ -88,7 +88,7 @@ async function expectChecklistLabels(panel){
 test('source-ready rail stays non-runnable when staging runtime is unconfigured',async({page})=>{
   const guard={
     runtime_environment:'unconfigured',actual_project_ref:'nonproduction-but-unconfigured',expected_staging_project_ref:null,
-    configured_production_project_ref:'jmqvkgiqlimdhcofwkxr',registered_environment_class:null,registered_mutation_allowed:null,
+    configured_production_project_ref:'jmqvkgiqlimdhcofwkxr',registered_authority_present:false,registered_environment_class:null,registered_mutation_allowed:null,
     explicit_staging:false,exact_project_ref_match:false,mutation_flag_enabled:false,known_production:false,mutation_allowed:false,
     reason:'YWI_RUNTIME_ENVIRONMENT must be exactly staging for acceptance mutation.'
   };
@@ -112,7 +112,7 @@ test('source-ready rail stays non-runnable when staging runtime is unconfigured'
 test('staging label with a mismatched project ref remains locked',async({page})=>{
   const guard={
     runtime_environment:'staging',actual_project_ref:'staging-project-a',expected_staging_project_ref:'staging-project-b',
-    configured_production_project_ref:'jmqvkgiqlimdhcofwkxr',registered_environment_class:null,registered_mutation_allowed:null,
+    configured_production_project_ref:'jmqvkgiqlimdhcofwkxr',registered_authority_present:false,registered_environment_class:null,registered_mutation_allowed:null,
     explicit_staging:true,exact_project_ref_match:false,mutation_flag_enabled:true,known_production:false,mutation_allowed:false,
     reason:'The runtime project ref does not match YWI_STAGING_PROJECT_REF.'
   };
@@ -129,10 +129,28 @@ test('staging label with a mismatched project ref remains locked',async({page})=
   expect(actions).toEqual(['status']);
 });
 
+test('unregistered staging project stays locked even when runtime label ref and flag are ready',async({page})=>{
+  const guard={
+    runtime_environment:'staging',actual_project_ref:'staging-project-a',expected_staging_project_ref:'staging-project-a',
+    configured_production_project_ref:'jmqvkgiqlimdhcofwkxr',registered_authority_present:false,registered_environment_class:null,registered_mutation_allowed:null,
+    explicit_staging:true,exact_project_ref_match:true,mutation_flag_enabled:true,known_production:false,mutation_allowed:false,
+    reason:'Runtime environment authority is not registered for this project; explicit staging registration is required.'
+  };
+  await renderHarness(page,payloadFor(guard));
+  const panel=page.locator('#stagingAcceptancePanel');
+  await expect(panel).toContainText('Staging target readiness: NOT READY');
+  await expect(panel).toContainText('No runtime-authority registration exists for this project; missing or unknown registration is denied.');
+  await expect(panel).toContainText('Runtime environment authority is not registered for this project; explicit staging registration is required.');
+  await expect(panel).toContainText('Environment mutation guard: LOCKED');
+  await expectNoMutationControls(panel);
+  const actions=(await page.evaluate(()=>window.__stagingCalls || [])).map((call)=>call.options?.body?.action);
+  expect(actions).toEqual(['status']);
+});
+
 test('all six staging target prerequisites must be proven before human evidence controls appear',async({page})=>{
   const guard={
     runtime_environment:'staging',actual_project_ref:'staging-project-a',expected_staging_project_ref:'staging-project-a',
-    configured_production_project_ref:'jmqvkgiqlimdhcofwkxr',registered_environment_class:'staging',registered_mutation_allowed:true,
+    configured_production_project_ref:'jmqvkgiqlimdhcofwkxr',registered_authority_present:true,registered_environment_class:'staging',registered_mutation_allowed:true,
     explicit_staging:true,exact_project_ref_match:true,mutation_flag_enabled:true,known_production:false,mutation_allowed:true,
     reason:'Dedicated staging mutation is explicitly enabled.'
   };
@@ -140,6 +158,7 @@ test('all six staging target prerequisites must be proven before human evidence 
   const panel=page.locator('#stagingAcceptancePanel');
   await expect(panel).toContainText('Staging target readiness: READY');
   await expectChecklistLabels(panel);
+  await expect(panel).toContainText('Runtime authority explicitly classifies this project as staging and allows staging-acceptance mutation.');
   await expect(panel).toContainText('Environment mutation guard: ENABLED');
   await expect(panel).toContainText('Runtime schema authority: CURRENT');
   await expect(panel.getByRole('button',{name:'Pass evidence'})).toBeVisible();

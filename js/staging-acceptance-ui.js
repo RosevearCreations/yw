@@ -100,7 +100,14 @@
     const guard=environmentGuard();
     const authority=schemaAuthority();
     const hasResolvedProject=Boolean(guard.actual_project_ref);
-    const registryPermits=guard.registered_mutation_allowed!==false;
+    const registryPermits=guard.registered_authority_present===true
+      && guard.registered_environment_class==='staging'
+      && guard.registered_mutation_allowed===true;
+    let registryDetail='Runtime authority must explicitly register this project as staging and allow staging-acceptance mutation.';
+    if(registryPermits)registryDetail='Runtime authority explicitly classifies this project as staging and allows staging-acceptance mutation.';
+    else if(guard.registered_authority_present!==true)registryDetail='No runtime-authority registration exists for this project; missing or unknown registration is denied.';
+    else if(guard.registered_environment_class!=='staging')registryDetail=`Runtime authority class is ${guard.registered_environment_class || 'unknown'}; staging is required.`;
+    else if(guard.registered_mutation_allowed!==true)registryDetail='Runtime authority has not explicitly allowed staging-acceptance mutation.';
     const items=[
       {
         label:'Dedicated non-Production target',
@@ -127,7 +134,7 @@
       {
         label:'Runtime registry permission',
         ok:registryPermits,
-        detail:registryPermits?'Runtime authority does not deny staging acceptance mutation.':'Runtime authority explicitly denies staging acceptance mutation.'
+        detail:registryDetail
       },
       {
         label:'Exact current schema',
