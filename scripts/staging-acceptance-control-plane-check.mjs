@@ -7,7 +7,7 @@ const root=process.cwd();
 const read=(file)=>fs.readFileSync(path.join(root,file),'utf8');
 const migration=read('sql/186_staging_acceptance_control_plane.sql');
 const migration187=read('sql/187_staging_acceptance_scenario_catalog.sql');
-const runner=read('scripts/operations-rpc-staging-e2e.mjs');
+const runner=read('scripts/operations-rpc-staging-e2e-core.mjs');
 const fixtures=read('scripts/staging-fixtures.mjs');
 const endpoint=read('supabase/functions/admin-staging-acceptance/index.ts');
 const config=read('supabase/config.toml');
