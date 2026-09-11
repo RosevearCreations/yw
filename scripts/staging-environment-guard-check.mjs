@@ -6,6 +6,7 @@ const migration=read('sql/197_staging_environment_guard.sql');
 const endpoint=read('supabase/functions/admin-staging-acceptance/index.ts');
 const ui=read('js/staging-acceptance-ui.js');
 const browser=read('tests/browser/staging-acceptance.spec.mjs');
+const infrastructureBrowser=read('tests/browser/staging-infrastructure-readiness.spec.mjs');
 const packageJson=read('package.json');
 const workflow=read('.github/workflows/staging-browser-integration.yml');
 const help=read('help.html');
@@ -54,6 +55,18 @@ add('endpoint-three-part-staging-enable',all(endpoint,[
   'exactRefMatch',
   'mutationAllowed'
 ]));
+add('endpoint-explicit-registry-allow-only',all(endpoint,[
+  "registeredAuthority?.environment_class === 'staging'",
+  'registeredAuthority?.staging_acceptance_mutation_allowed === true',
+  'registered_authority_present:Boolean(registeredAuthority)',
+  'Runtime environment authority is not registered for this project; explicit staging registration is required.',
+  'Production and unregistered runtimes are always denied.'
+]));
+add('endpoint-runtime-registry-status-assertion',all(endpoint,[
+  "assertion_key:'runtime_project_registered_explicit_staging_allow'",
+  'registryExplicitlyAllows',
+  'missing or unknown registration is denied.'
+]));
 add('endpoint-mutation-guard-before-actions',/if \(action === 'status'\)[\s\S]*assertStagingMutationAllowed\(environmentGuard\);[\s\S]*assertCurrentRuntimeSchema\(schemaAuthority\);[\s\S]*if \(action === 'record_case'\)/.test(endpoint));
 add('endpoint-status-remains-readable',all(endpoint,[
   'environment_guard:environmentGuard',
@@ -69,6 +82,13 @@ add('ui-lock-state',all(ui,[
   'Environment mutation guard:',
   'environmentGuard().mutation_allowed===true && schemaCurrent()',
   'Status/catalog reads remain available. Pass/Fail, Finalize, and Signoff controls stay hidden while locked.'
+]));
+add('ui-explicit-registry-readiness-row',all(ui,[
+  'Runtime registry permission',
+  'registered_authority_present===true',
+  "registered_environment_class==='staging'",
+  'registered_mutation_allowed===true',
+  'missing or unknown registration is denied.'
 ]));
 add('ui-controls-require-composed-guard',all(ui,[
   'const canRecord=writesAllowed',
@@ -95,6 +115,12 @@ add('browser-production-lock-proof',all(browser,[
 add('browser-schema-mismatch-lock-proof',all(browser,[
   'staging environment with schema mismatch stays readable and hides all mutation controls',
   'Runtime schema authority: MISMATCH'
+]));
+add('browser-unregistered-runtime-lock-proof',all(infrastructureBrowser,[
+  "test('unregistered staging project stays locked even when runtime label ref and flag are ready'",
+  "registered_authority_present:false",
+  'Runtime environment authority is not registered for this project; explicit staging registration is required.',
+  "expect(actions).toEqual(['status'])"
 ]));
 
 add('runner-production-refusal-preserved',all(runner,[
