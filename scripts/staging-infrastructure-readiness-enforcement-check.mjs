@@ -3,8 +3,8 @@
  * Build 214+: staging infrastructure readiness enforcement.
  *
  * Keeps "source-ready staging candidate" separate from "runnable staging
- * environment". Production or unconfigured runtimes may read status/catalog
- * evidence, but may never record/finalize/sign off staging acceptance.
+ * environment". Production, unregistered or unconfigured runtimes may read
+ * status/catalog evidence, but may never record/finalize/sign off staging acceptance.
  */
 import fs from 'node:fs';
 import process from 'node:process';
@@ -33,6 +33,21 @@ add('staging-mutation-requires-explicit-runtime-boundary', hasAll(endpoint, [
   'explicitStaging && mutationFlag && exactRefMatch && !knownProduction && registryAllows'
 ]), 'Mutation requires staging runtime, exact non-Production project ref, explicit flag, and registry permission.');
 
+add('runtime-registry-is-explicit-allow-only', hasAll(endpoint, [
+  "registeredAuthority?.environment_class === 'staging'",
+  'registeredAuthority?.staging_acceptance_mutation_allowed === true',
+  'registered_authority_present:Boolean(registeredAuthority)',
+  'Runtime environment authority is not registered for this project; explicit staging registration is required.',
+  'missing or unknown registration is denied.'
+]), 'Missing, unknown or non-staging runtime-authority registration cannot enable staging mutation.');
+
+add('status-includes-runtime-registry-assertion', hasAll(endpoint, [
+  "assertion_key:'runtime_project_registered_explicit_staging_allow'",
+  'registryExplicitlyAllows',
+  "environment_guard:environmentGuard",
+  'environment_assertions:environmentRows'
+]), 'Status truth visibly fails when the current target lacks explicit staging registry authority.');
+
 add('status-remains-readable-before-mutation-assertion',
   endpoint.indexOf("if (action === 'status')") >= 0 &&
   endpoint.indexOf("if (action === 'status')") < endpoint.indexOf('assertStagingMutationAllowed(environmentGuard)'),
@@ -60,8 +75,12 @@ add('staging-target-readiness-checklist-is-explicit', hasAll(ui, [
   'Staging mutation flag',
   'Runtime registry permission',
   'Exact current schema',
+  'registered_authority_present===true',
+  "registered_environment_class==='staging'",
+  'registered_mutation_allowed===true',
+  'missing or unknown registration is denied',
   'Creating a Supabase project or development branch is a separate infrastructure decision'
-]), 'The I.T. staging panel exposes each prerequisite independently and never implies infrastructure was provisioned.');
+]), 'The I.T. staging panel exposes each prerequisite independently and treats missing registry authority as denied.');
 
 add('browser-covers-unconfigured-runtime', hasAll(browser, [
   "test('source-ready rail stays non-runnable when staging runtime is unconfigured'",
@@ -80,8 +99,18 @@ add('browser-covers-project-ref-mismatch', hasAll(browser, [
   'The runtime project ref does not match YWI_STAGING_PROJECT_REF.'
 ]), 'A staging label alone cannot authorize writes to the wrong project.');
 
+add('browser-covers-unregistered-runtime-authority', hasAll(browser, [
+  "test('unregistered staging project stays locked even when runtime label ref and flag are ready'",
+  "registered_authority_present:false",
+  "registered_environment_class:null",
+  "registered_mutation_allowed:null",
+  'No runtime-authority registration exists for this project; missing or unknown registration is denied.',
+  "expect(actions).toEqual(['status'])"
+]), 'Rendered acceptance proves missing runtime registry authority fails closed.');
+
 add('browser-covers-all-six-prerequisites-before-write-controls', hasAll(browser, [
   "test('all six staging target prerequisites must be proven before human evidence controls appear'",
+  "registered_authority_present:true",
   "registered_environment_class:'staging'",
   "registered_mutation_allowed:true",
   "mutation_allowed:true",
