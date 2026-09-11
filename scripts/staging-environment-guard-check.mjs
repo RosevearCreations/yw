@@ -15,6 +15,7 @@ const readme=read('README.md');
 const handbook=read('docs/ACTIVE_PROJECT_HANDBOOK.md');
 const nextSteps=read('docs/NEXT_STEPS_AND_SANITY_CHECK.md');
 const runner=read('scripts/operations-rpc-staging-e2e.mjs');
+const runnerAuthorityPreflight=read('scripts/staging-runtime-authority-preflight.mjs');
 const all=(text,values)=>values.every((value)=>text.includes(value));
 const checks=[];
 const add=(name,ok)=>checks.push({name,ok:!!ok});
@@ -132,7 +133,19 @@ add('runner-exact-schema-boundary',all(runner,[
   'repoLatestSchema','expectedSchema !== repoLatestSchema','latestAppliedSchema !== repoLatestSchema',
   'Dedicated staging database must exactly match repository Schema'
 ]));
-add('package-gate-wired',packageJson.includes('"test:staging-environment-guard": "node scripts/staging-environment-guard-check.mjs"'));
+add('runner-runtime-authority-explicit-allow-only',all(runnerAuthorityPreflight,[
+  'it_runtime_environment_authorities',
+  "environmentClass!=='staging'",
+  'staging_acceptance_mutation_allowed===true',
+  'Runtime environment authority is not registered for this project; explicit staging registration is required.',
+  "method:'GET'"
+]));
+add('runner-runtime-authority-before-live-runner',
+  packageJson.includes('"test:staging": "node scripts/staging-runtime-authority-preflight.mjs && node scripts/operations-rpc-staging-e2e.mjs"')
+);
+add('package-gate-wired',
+  packageJson.includes('"test:staging-environment-guard": "node scripts/staging-environment-guard-check.mjs && node scripts/staging-runtime-authority-preflight-check.mjs"')
+);
 add('workflow-gate-wired',workflow.includes('npm run test:staging-environment-guard'));
 add('help-current',
   helpLower.includes('staging mutation guard') &&
