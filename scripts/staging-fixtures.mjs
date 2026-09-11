@@ -2,13 +2,21 @@
 /**
  * Creates or cleans one labelled disposable fixture set in a dedicated staging
  * Supabase project. It refuses ambiguous targets and never defaults to production.
+ * Every mutation also requires explicit runtime-authority registration and exact
+ * current-schema parity before a fixture RPC can run.
  *
  * Create: YWI_STAGING_FIXTURES=1 YWI_STAGING_LABEL=staging
  *         YWI_STAGING_CONFIRM=I_CONFIRM_STAGING_ONLY
  *         YWI_STAGING_PROJECT_REF=<dedicated-staging-ref> ... node scripts/staging-fixtures.mjs create
  * Cleanup: same interlocks plus YWI_STAGING_FIXTURE_SET_ID=<uuid> ... cleanup
  */
+import fs from 'node:fs';
 import process from 'node:process';
+import {
+  KNOWN_PRODUCTION_PROJECT_REF,
+  projectRefFromSupabaseUrl,
+  verifyRuntimeAuthority,
+} from './staging-runtime-authority-preflight.mjs';
 
 const action = String(process.argv[2] || 'help').toLowerCase();
 const url = (process.env.SUPABASE_URL || process.env.SB_URL || '').replace(/\/$/, '');
@@ -19,18 +27,12 @@ const confirm = process.env.YWI_STAGING_CONFIRM || '';
 const enabled = process.env.YWI_STAGING_FIXTURES === '1';
 const fixtureLabel = String(process.env.YWI_STAGING_FIXTURE_LABEL || 'STAGING-RPC').trim().toUpperCase();
 const expectedStagingRef = String(process.env.YWI_STAGING_PROJECT_REF || '').trim();
-const productionRef = String(process.env.YWI_PRODUCTION_PROJECT_REF || 'jmqvkgiqlimdhcofwkxr').trim();
+const productionRef = String(process.env.YWI_PRODUCTION_PROJECT_REF || KNOWN_PRODUCTION_PROJECT_REF).trim();
+const schemaFiles = fs.readdirSync('sql').filter((name) => /^\d{3}_.+\.sql$/i.test(name));
+const schemaVersions = schemaFiles.map((name) => Number(name.slice(0, 3))).filter(Number.isFinite);
+const repoLatestSchema = Math.max(...schemaVersions);
 
 function fail(message) { console.error(`ERROR  ${message}`); process.exit(1); }
-function projectRefFromUrl(value) {
-  try {
-    const host = new URL(value).hostname;
-    const match = host.match(/^([a-z0-9-]+)\.supabase\.co$/i);
-    return match?.[1] || '';
-  } catch {
-    return '';
-  }
-}
 
 if (!['create','cleanup'].includes(action)) {
   console.log('Usage: node scripts/staging-fixtures.mjs create|cleanup');
@@ -40,10 +42,54 @@ if (!enabled) fail('Set YWI_STAGING_FIXTURES=1. Fixtures are disabled by default
 if (label !== 'staging' || confirm !== 'I_CONFIRM_STAGING_ONLY') fail('Set YWI_STAGING_LABEL=staging and YWI_STAGING_CONFIRM=I_CONFIRM_STAGING_ONLY.');
 if (!url || !key || !actorId) fail('Set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and YWI_STAGING_JOB_ADMIN_PROFILE_ID.');
 if (!expectedStagingRef) fail('Set YWI_STAGING_PROJECT_REF to the dedicated non-production Supabase project ref.');
-const actualProjectRef = projectRefFromUrl(url);
+if (!Number.isInteger(repoLatestSchema) || repoLatestSchema < 1) fail('Could not determine the current repository schema version.');
+const actualProjectRef = projectRefFromSupabaseUrl(url);
 if (!actualProjectRef || actualProjectRef !== expectedStagingRef) fail(`SUPABASE_URL project ref ${actualProjectRef || '(unresolved)'} does not match YWI_STAGING_PROJECT_REF.`);
-if (actualProjectRef === productionRef) fail('Refusing staging fixture mutation against the YardWeasels Production project ref.');
+if (actualProjectRef === productionRef || actualProjectRef === KNOWN_PRODUCTION_PROJECT_REF) fail('Refusing staging fixture mutation against the YardWeasels Production project ref.');
 if (action === 'create' && !/^STAGING-[A-Z0-9_-]{3,80}$/.test(fixtureLabel)) fail('YWI_STAGING_FIXTURE_LABEL must begin STAGING- and use only A-Z, 0-9, _, or -.');
+
+const authority = await verifyRuntimeAuthority({
+  ...process.env,
+  YWI_RUN_STAGING_RPC_TESTS:'1',
+  SUPABASE_URL:url,
+  SUPABASE_SERVICE_ROLE_KEY:key,
+  YWI_STAGING_PROJECT_REF:expectedStagingRef,
+  YWI_PRODUCTION_PROJECT_REF:productionRef,
+  YWI_STAGING_LABEL:label,
+  YWI_STAGING_CONFIRM:confirm,
+}, fetch);
+if (authority.skipped || !authority.ok) {
+  const reasons = authority.errors?.length ? ` ${authority.errors.join(' ')}` : '';
+  fail(`Explicit staging runtime authority is required before fixture mutation.${reasons}`);
+}
+if (authority.project_ref !== actualProjectRef || authority.environment_class !== 'staging' || authority.staging_acceptance_mutation_allowed !== true) {
+  fail('Runtime authority did not return an explicit allow for this exact staging project.');
+}
+console.log(`STAGING RUNTIME AUTHORITY: READY (${actualProjectRef})`);
+
+async function readJson(path) {
+  const response = await fetch(`${url}/rest/v1/${path}`, {
+    method:'GET',
+    headers:{ apikey:key, authorization:`Bearer ${key}`, Accept:'application/json' },
+  });
+  const raw=await response.text(); let data=null; try { data=raw?JSON.parse(raw):null; } catch { data=raw; }
+  if (!response.ok) throw new Error(`${response.status}: ${typeof data === 'string' ? data : JSON.stringify(data)}`);
+  return data;
+}
+
+let schemaRows;
+try {
+  schemaRows = await readJson('v_schema_drift_status?select=expected_schema_version,latest_applied_schema_version,drift_status');
+} catch (error) {
+  fail(`Current-schema authority read failed before fixture mutation: ${error instanceof Error ? error.message : String(error)}`);
+}
+const schema = Array.isArray(schemaRows) ? (schemaRows[0] || {}) : {};
+const expectedSchema = Number(schema.expected_schema_version || 0);
+const latestAppliedSchema = Number(schema.latest_applied_schema_version || 0);
+if (schema.drift_status !== 'current' || expectedSchema !== repoLatestSchema || latestAppliedSchema !== repoLatestSchema) {
+  fail(`Dedicated staging database must exactly match repository Schema ${repoLatestSchema} before fixture mutation.`);
+}
+console.log(`STAGING SCHEMA AUTHORITY: CURRENT (Schema ${repoLatestSchema})`);
 
 async function rpc(name, body) {
   const response = await fetch(`${url}/rest/v1/rpc/${name}`, {
