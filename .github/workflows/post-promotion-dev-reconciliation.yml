@@ -1,0 +1,63 @@
+name: YWI post-promotion dev reconciliation
+
+on:
+  workflow_run:
+    workflows: ['YWI source and staging checks']
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  fast-forward-dev:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out current main history
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Reconcile dev to exact GREEN main without force
+        shell: bash
+        env:
+          YWI_SOURCE_RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+          YWI_SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+          YWI_SOURCE_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$YWI_SOURCE_RUN_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo 'Refusing reconciliation: source run SHA is not a full commit SHA.' >&2
+            exit 1
+          fi
+
+          git fetch --no-tags origin main dev
+          current_main="$(git rev-parse origin/main)"
+          current_dev="$(git rev-parse origin/dev)"
+
+          if [[ "$current_main" != "$YWI_SOURCE_RUN_SHA" ]]; then
+            echo 'Refusing reconciliation: main moved after the successful source run.' >&2
+            exit 1
+          fi
+
+          if ! git merge-base --is-ancestor "$current_dev" "$current_main"; then
+            echo 'Refusing reconciliation: dev is not an ancestor of current main.' >&2
+            exit 1
+          fi
+
+          if ! git diff --quiet "$current_dev" "$current_main" --; then
+            echo 'Refusing reconciliation: dev and main application trees differ.' >&2
+            exit 1
+          fi
+
+          if [[ "$current_dev" == "$current_main" ]]; then
+            echo "dev already matches exact GREEN main $current_main; no update required."
+            exit 0
+          fi
+
+          echo "Fast-forwarding dev from $current_dev to exact GREEN main $current_main after source run ${YWI_SOURCE_RUN_ID}/${YWI_SOURCE_RUN_ATTEMPT}."
+          git push origin "$current_main:refs/heads/dev"
