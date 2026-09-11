@@ -15,8 +15,8 @@
   const cleanStatus=(value)=>String(value || 'pending').trim().toLowerCase();
   function statusClass(value){
     const status=cleanStatus(value);
-    if(/accepted|approved|passed|green|complete|satisfied|source_ready|enabled|current|ready/.test(status))return 'passed';
-    if(/failed|rejected|red|stale|error|blocked|locked|denied|production|mismatch|not ready/.test(status))return 'error';
+    if(/accepted|approved|passed|green|complete|satisfied|source_ready|enabled|current/.test(status))return 'passed';
+    if(/failed|rejected|red|stale|error|blocked|locked|denied|production|mismatch/.test(status))return 'error';
     if(/awaiting|pending|progress|amber|review|required|not_run|runtime|human|unconfigured|unknown/.test(status))return 'warning';
     return 'unknown';
   }
@@ -139,7 +139,7 @@
     return `<div class="${ready?'help-callout':'it-readiness-error'} staging-target-readiness">
       <strong>Staging target readiness: ${ready?'READY':'NOT READY'}</strong><br>
       <small>${ready?'All runtime prerequisites are proven for staging evidence controls.':'Source-ready rails remain non-runnable until every runtime prerequisite below is proven.'}</small>
-      <div class="it-readiness-list staging-target-readiness-list">${items.map((item)=>`<div class="it-readiness-row staging-target-readiness-row"><div><strong>${esc(item.label)}</strong><small>${esc(item.detail)}</small></div>${chip(item.ok?'ready':'blocked')}</div>`).join('')}</div>
+      <div class="it-readiness-list staging-target-readiness-list">${items.map((item)=>`<div class="it-readiness-row staging-target-readiness-row"><div><strong>${esc(item.label)}</strong><small>${esc(item.detail)}</small></div>${chip(item.ok?'passed':'blocked')}</div>`).join('')}</div>
       <small>Creating a Supabase project or development branch is a separate infrastructure decision; this screen never provisions one automatically.</small>
     </div>`;
   }
