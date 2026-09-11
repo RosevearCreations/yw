@@ -69,8 +69,14 @@ add('workflow-requests-short-lived-github-oidc',
 add('workflow-sends-verified-payload-only',
   has('--slurpfile verified "$YWI_RELEASE_VERIFIED_PATH"')&&
   has('{verified:$verified[0],source_run_id:$source_run_id,source_run_attempt:$source_run_attempt}'));
-add('workflow-requires-green-recorder-response',
-  has('.ok == true')&&has('.source_gate_status == "green"')&&has('.repository_enforcement_status == "green"'));
+add('workflow-requires-green-source-and-honest-policy-amber',
+  has('.ok == true')&&
+  has('.source_gate_status == "green"')&&
+  has('.repository_enforcement_status == "amber"')&&
+  has('.branch_protection_reported == true')&&
+  has('.branch_policy_verified == false')&&
+  has('source gate GREEN; detailed repository policy remains AMBER.'),
+  'Recording success must not falsely close detailed repository-policy verification.');
 add('workflow-cleanup-always',has('if: ${{ always() }}')&&has('release-record-request.json')&&has('release-record-response.json'));
 add('workflow-no-production-source-promotion',!has('git push')&&!has('gh pr merge')&&!has('update_ref'));
 add('workflow-no-provider-or-staging-mutation',!has('STRIPE')&&!has('PAYPAL')&&!has('YWI_STAGING_ACCEPTANCE_MUTATION_ENABLED'));
@@ -115,10 +121,17 @@ add('edge-release-metadata-only',
   !edgeHas('profiles')&&
   !edgeHas('auth.admin'),
   'OIDC recorder has one narrow metadata RPC and no business, staging, identity or provider mutation path.');
-add('edge-rereads-green-authority',
+add('edge-rereads-green-source-and-honest-policy-amber',
   edgeHas(".from('v_it_release_source_evidence_current')")&&
   edgeHas("current.source_gate_status !== 'green'")&&
-  edgeHas("current.repository_enforcement_status !== 'green'"));
+  edgeHas("current.repository_enforcement_status !== 'amber'")&&
+  edgeHas('current.branch_protection_reported !== true')&&
+  edgeHas('current.branch_policy_verified !== false')&&
+  edgeHas('explicit repository-policy AMBER boundary'),
+  'The recorder must accept its metadata write without misrepresenting detailed GitHub policy as verified.');
+add('edge-response-preserves-policy-boundary',
+  edgeHas('branch_protection_reported: current.branch_protection_reported')&&
+  edgeHas('branch_policy_verified: current.branch_policy_verified'));
 add('config-custom-auth-explicit',
   /\[functions\.release-source-evidence-record\]\s*\nverify_jwt\s*=\s*false/.test(config),
   'Supabase JWT verification is intentionally disabled only because the function performs GitHub OIDC JWT verification itself.');
