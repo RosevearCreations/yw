@@ -68,6 +68,16 @@ assert.ok(
   runnerEntrypoint.indexOf('await verifyRuntimeAuthority') < runnerEntrypoint.indexOf("await import('./operations-rpc-staging-e2e-core.mjs')"),
   'Runtime authority verification must occur before the implementation is imported.'
 );
+
+assert.match(runnerCore,/import \{ verifyRuntimeAuthority \} from '\.\/staging-runtime-authority-preflight\.mjs';/,'The live runner core must import the runtime-authority verifier so direct core execution cannot bypass the guard.');
+assert.match(runnerCore,/const coreAuthority = await verifyRuntimeAuthority\(process\.env, fetch\);/,'The live runner core must verify runtime authority itself.');
+assert.match(runnerCore,/if \(!coreAuthority\.ok \|\| coreAuthority\.skipped\)[\s\S]*STAGING CORE RUNTIME AUTHORITY: LOCKED[\s\S]*process\.exit\(1\);/,'The live runner core must fail closed when explicit runtime authority cannot be proven.');
+assert.match(runnerCore,/STAGING CORE RUNTIME AUTHORITY: READY/,'The live runner core must expose a positive authority checkpoint only after verification.');
+const coreAuthorityIndex=runnerCore.indexOf('const coreAuthority = await verifyRuntimeAuthority');
+assert.ok(coreAuthorityIndex >= 0,'Core runtime-authority checkpoint must exist.');
+assert.ok(coreAuthorityIndex < runnerCore.indexOf('const url ='),'Core runtime authority must be proven before live target configuration is consumed.');
+assert.ok(coreAuthorityIndex < runnerCore.indexOf("const schemaRows = await rest('v_schema_drift_status"),'Core runtime authority must be proven before any live database read.');
+assert.ok(coreAuthorityIndex < runnerCore.indexOf("rpc('ywi_rpc_start_staging_acceptance_run'"),'Core runtime authority must be proven before any staging acceptance mutation RPC.');
 assert.match(runnerCore,/ywi_rpc_start_staging_acceptance_run/,'Internal runner implementation must preserve the staging acceptance execution path.');
 assert.match(runnerCore,/Refusing current-schema staging acceptance against the YardWeasels Production project ref\./,'Internal runner implementation must preserve the Production hard deny.');
 
@@ -77,4 +87,4 @@ assert.match(pkg.scripts?.['test:staging-environment-guard'] || '',/staging-runt
 assert.match(workflow,/run:\s+npm run test:staging/,'Staging workflow must continue through the guarded npm entrypoint.');
 assert.match(workflow,/run:\s+npm run test:staging-environment-guard/,'Canonical source gate must execute the staging environment guard.');
 
-console.log('Build 285 embedded staging runtime authority entrypoint gate: PASS.');
+console.log('Build 287 staging runner core self-guard authority gate: PASS.');
