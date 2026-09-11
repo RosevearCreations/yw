@@ -63,3 +63,6 @@ verify_jwt = true
 
 [functions.resend-email]
 verify_jwt = true
+
+[functions.release-source-evidence-record]
+verify_jwt = false
