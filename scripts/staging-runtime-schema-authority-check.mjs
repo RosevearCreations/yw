@@ -5,7 +5,7 @@ const read=(file)=>fs.readFileSync(file,'utf8');
 const endpoint=read('supabase/functions/admin-staging-acceptance/index.ts');
 const ui=read('js/staging-acceptance-ui.js');
 const browser=read('tests/browser/staging-acceptance.spec.mjs');
-const runner=read('scripts/operations-rpc-staging-e2e.mjs');
+const runner=read('scripts/operations-rpc-staging-e2e-core.mjs');
 const help=read('help.html');
 const packageJson=read('package.json');
 const workflow=read('.github/workflows/staging-browser-integration.yml');

@@ -48,6 +48,8 @@ assert.equal(skip.skipped,true);
 assert.equal(networkCalls,0,'Normal source CI must not contact Supabase.');
 
 const source=fs.readFileSync('scripts/staging-runtime-authority-preflight.mjs','utf8');
+const runnerEntrypoint=fs.readFileSync('scripts/operations-rpc-staging-e2e.mjs','utf8');
+const runnerCore=fs.readFileSync('scripts/operations-rpc-staging-e2e-core.mjs','utf8');
 const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));
 const workflow=fs.readFileSync('.github/workflows/staging-browser-integration.yml','utf8');
 
@@ -57,10 +59,22 @@ assert.doesNotMatch(source,/\/rpc\//,'Preflight must not call database RPC mutat
 assert.match(source,/Runtime environment authority is not registered for this project; explicit staging registration is required\./);
 assert.match(source,/environmentClass!==['"]staging['"]/);
 assert.match(source,/staging_acceptance_mutation_allowed===true/);
-assert.match(pkg.scripts?.['test:staging'] || '',/^node scripts\/staging-runtime-authority-preflight\.mjs && node scripts\/operations-rpc-staging-e2e\.mjs$/,'Live staging npm entrypoint must verify registry authority before the runner.');
-assert.match(pkg.scripts?.['test:staging-acceptance'] || '',/staging-runtime-authority-preflight\.mjs\s+&&\s+node scripts\/operations-rpc-staging-e2e\.mjs/,'The staging acceptance entrypoint must also verify registry authority before the runner.');
+
+assert.match(runnerEntrypoint,/import \{ verifyRuntimeAuthority \} from '\.\/staging-runtime-authority-preflight\.mjs';/,'Direct staging runner entrypoint must import the runtime-authority verifier.');
+assert.match(runnerEntrypoint,/const authority = await verifyRuntimeAuthority\(process\.env, fetch\);/,'Direct staging runner entrypoint must verify authority itself.');
+assert.match(runnerEntrypoint,/if \(!authority\.ok\)[\s\S]*process\.exit\(1\);/,'Direct staging runner entrypoint must fail closed before loading live runner implementation.');
+assert.match(runnerEntrypoint,/await import\('\.\/operations-rpc-staging-e2e-core\.mjs'\);/,'Guarded entrypoint must load the existing runner implementation only after verification.');
+assert.ok(
+  runnerEntrypoint.indexOf('await verifyRuntimeAuthority') < runnerEntrypoint.indexOf("await import('./operations-rpc-staging-e2e-core.mjs')"),
+  'Runtime authority verification must occur before the implementation is imported.'
+);
+assert.match(runnerCore,/ywi_rpc_start_staging_acceptance_run/,'Internal runner implementation must preserve the staging acceptance execution path.');
+assert.match(runnerCore,/Refusing current-schema staging acceptance against the YardWeasels Production project ref\./,'Internal runner implementation must preserve the Production hard deny.');
+
+assert.match(pkg.scripts?.['test:staging'] || '',/^node scripts\/staging-runtime-authority-preflight\.mjs && node scripts\/operations-rpc-staging-e2e\.mjs$/,'Live staging npm entrypoint must keep the outer registry preflight and guarded runner entrypoint.');
+assert.match(pkg.scripts?.['test:staging-acceptance'] || '',/staging-runtime-authority-preflight\.mjs\s+&&\s+node scripts\/operations-rpc-staging-e2e\.mjs/,'The staging acceptance entrypoint must also keep the outer registry preflight and guarded runner entrypoint.');
 assert.match(pkg.scripts?.['test:staging-environment-guard'] || '',/staging-runtime-authority-preflight-check\.mjs/,'Canonical staging guard must execute this regression.');
 assert.match(workflow,/run:\s+npm run test:staging/,'Staging workflow must continue through the guarded npm entrypoint.');
 assert.match(workflow,/run:\s+npm run test:staging-environment-guard/,'Canonical source gate must execute the staging environment guard.');
 
-console.log('Build 284 staging runtime authority preflight gate: PASS.');
+console.log('Build 285 embedded staging runtime authority entrypoint gate: PASS.');

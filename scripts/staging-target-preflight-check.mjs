@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { evaluateStagingTarget, KNOWN_PRODUCTION_PROJECT_REF, STAGING_ACCEPTANCE_RAILS } from './staging-target-preflight.mjs';
 
-const runner=fs.readFileSync('scripts/operations-rpc-staging-e2e.mjs','utf8');
+const runner=fs.readFileSync('scripts/operations-rpc-staging-e2e-core.mjs','utf8');
 const base={
   YWI_RUN_STAGING_RPC_TESTS:'1',
   SUPABASE_URL:'https://stagingprojectref.supabase.co',

@@ -7,7 +7,7 @@ const read=(file)=>fs.readFileSync(path.join(root,file),'utf8');
 const migration=read('sql/187_staging_acceptance_scenario_catalog.sql');
 const endpoint=read('supabase/functions/admin-staging-acceptance/index.ts');
 const ui=read('js/staging-acceptance-ui.js');
-const runner=read('scripts/operations-rpc-staging-e2e.mjs');
+const runner=read('scripts/operations-rpc-staging-e2e-core.mjs');
 const workflow=read('.github/workflows/staging-browser-integration.yml');
 const pkg=JSON.parse(read('package.json'));
 const results=[];
