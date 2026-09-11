@@ -17,6 +17,7 @@ const nextSteps=read('docs/NEXT_STEPS_AND_SANITY_CHECK.md');
 const runnerEntry=read('scripts/operations-rpc-staging-e2e.mjs');
 const runner=read('scripts/operations-rpc-staging-e2e-core.mjs');
 const runnerAuthorityPreflight=read('scripts/staging-runtime-authority-preflight.mjs');
+const fixtures=read('scripts/staging-fixtures.mjs');
 const all=(text,values)=>values.every((value)=>text.includes(value));
 const checks=[];
 const add=(name,ok)=>checks.push({name,ok:!!ok});
@@ -150,6 +151,39 @@ add('runner-runtime-authority-explicit-allow-only',all(runnerAuthorityPreflight,
 add('runner-runtime-authority-before-live-runner',
   packageJson.includes('"test:staging": "node scripts/staging-runtime-authority-preflight.mjs && node scripts/operations-rpc-staging-e2e.mjs"')
 );
+
+add('fixture-script-explicit-runtime-authority',all(fixtures,[
+  "import {\n  KNOWN_PRODUCTION_PROJECT_REF,\n  projectRefFromSupabaseUrl,\n  verifyRuntimeAuthority,",
+  "YWI_RUN_STAGING_RPC_TESTS:'1'",
+  'const authority = await verifyRuntimeAuthority(',
+  "authority.environment_class !== 'staging'",
+  'authority.staging_acceptance_mutation_allowed !== true',
+  'Explicit staging runtime authority is required before fixture mutation.'
+]));
+add('fixture-script-authority-before-any-fixture-rpc',
+  fixtures.indexOf('const authority = await verifyRuntimeAuthority') >= 0 &&
+  fixtures.indexOf('const authority = await verifyRuntimeAuthority') < fixtures.indexOf("rpc('ywi_rpc_create_staging_fixture_set'") &&
+  fixtures.indexOf('const authority = await verifyRuntimeAuthority') < fixtures.indexOf("rpc('ywi_rpc_cleanup_staging_fixture_set'")
+);
+add('fixture-script-exact-current-schema-boundary',all(fixtures,[
+  "v_schema_drift_status?select=expected_schema_version,latest_applied_schema_version,drift_status",
+  "schema.drift_status !== 'current'",
+  'expectedSchema !== repoLatestSchema',
+  'latestAppliedSchema !== repoLatestSchema',
+  'Dedicated staging database must exactly match repository Schema',
+  'STAGING SCHEMA AUTHORITY: CURRENT'
+]));
+add('fixture-script-schema-before-any-fixture-rpc',
+  fixtures.indexOf("v_schema_drift_status?select=expected_schema_version,latest_applied_schema_version,drift_status") >= 0 &&
+  fixtures.indexOf("v_schema_drift_status?select=expected_schema_version,latest_applied_schema_version,drift_status") < fixtures.indexOf("rpc('ywi_rpc_create_staging_fixture_set'") &&
+  fixtures.indexOf("v_schema_drift_status?select=expected_schema_version,latest_applied_schema_version,drift_status") < fixtures.indexOf("rpc('ywi_rpc_cleanup_staging_fixture_set'")
+);
+add('fixture-script-production-refusal-preserved',all(fixtures,[
+  'KNOWN_PRODUCTION_PROJECT_REF',
+  'actualProjectRef === productionRef || actualProjectRef === KNOWN_PRODUCTION_PROJECT_REF',
+  'Refusing staging fixture mutation against the YardWeasels Production project ref.'
+]));
+
 add('package-gate-wired',
   packageJson.includes('"test:staging-environment-guard": "node scripts/staging-environment-guard-check.mjs && node scripts/staging-runtime-authority-preflight-check.mjs"')
 );
