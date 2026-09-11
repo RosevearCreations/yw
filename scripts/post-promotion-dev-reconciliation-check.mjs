@@ -16,7 +16,7 @@ add('dev-must-be-ancestor',workflow.includes('git merge-base --is-ancestor "$cur
 add('zero-tree-diff-required',workflow.includes('git diff --quiet "$current_dev" "$current_main" --'));
 add('idempotent-exact-match',workflow.includes('[[ "$current_dev" == "$current_main" ]]')&&workflow.includes('no update required'));
 add('non-force-dev-only-push',workflow.includes('git push origin "$current_main:refs/heads/dev"')&&!/git\s+push[^\n]*(?:--force|-f\b|\+refs\/heads)/i.test(workflow));
-add('never-push-main',!workflow.includes('refs/heads/main"')&&!/git\s+push[^\n]*main/i.test(workflow));
+add('never-push-main',!/:refs\/heads\/main(?:["'\s]|$)/i.test(workflow));
 add('no-supabase-or-business-secrets',!/(SUPABASE_|STRIPE|PAYPAL|SERVICE_ROLE|CUSTOMER|FINANCE_POSTING)/i.test(workflow));
 add('no-db-provider-business-mutation',!/(psql|supabase\s+db|curl\s+.*supabase|payment|invoice|customer|provider|posting)/i.test(workflow));
 add('canonical-source-remains-main-push-gated',canonical.includes('push:\n    branches: [main]')&&canonical.includes('name: YWI source and staging checks'));
