@@ -27,7 +27,7 @@ const confirm = process.env.YWI_STAGING_CONFIRM || '';
 const enabled = process.env.YWI_STAGING_FIXTURES === '1';
 const fixtureLabel = String(process.env.YWI_STAGING_FIXTURE_LABEL || 'STAGING-RPC').trim().toUpperCase();
 const expectedStagingRef = String(process.env.YWI_STAGING_PROJECT_REF || '').trim();
-const productionRef = String(process.env.YWI_PRODUCTION_PROJECT_REF || KNOWN_PRODUCTION_PROJECT_REF).trim();
+const productionRef = String(process.env.YWI_PRODUCTION_PROJECT_REF || 'jmqvkgiqlimdhcofwkxr').trim();
 const schemaFiles = fs.readdirSync('sql').filter((name) => /^\d{3}_.+\.sql$/i.test(name));
 const schemaVersions = schemaFiles.map((name) => Number(name.slice(0, 3))).filter(Number.isFinite);
 const repoLatestSchema = Math.max(...schemaVersions);
