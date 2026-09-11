@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Build 214: staging infrastructure readiness enforcement.
+ * Build 214+: staging infrastructure readiness enforcement.
  *
  * Keeps "source-ready staging candidate" separate from "runnable staging
  * environment". Production or unconfigured runtimes may read status/catalog
@@ -52,11 +52,23 @@ add('locked-ui-explains-read-only-mode', hasAll(ui, [
   'exact current schema'
 ]), 'Operators can distinguish readable staging candidates from authorized staging execution.');
 
+add('staging-target-readiness-checklist-is-explicit', hasAll(ui, [
+  'Staging target readiness:',
+  'Dedicated non-Production target',
+  'Runtime labelled staging',
+  'Exact staging project-ref binding',
+  'Staging mutation flag',
+  'Runtime registry permission',
+  'Exact current schema',
+  'Creating a Supabase project or development branch is a separate infrastructure decision'
+]), 'The I.T. staging panel exposes each prerequisite independently and never implies infrastructure was provisioned.');
+
 add('browser-covers-unconfigured-runtime', hasAll(browser, [
   "test('source-ready rail stays non-runnable when staging runtime is unconfigured'",
   "runtime_environment:'unconfigured'",
   "expected_staging_project_ref:null",
   "mutation_allowed:false",
+  'Staging target readiness: NOT READY',
   "expect(actions).toEqual(['status'])"
 ]), 'A source-ready rail cannot expose mutation controls merely because its scenario catalog is ready.');
 
@@ -68,13 +80,23 @@ add('browser-covers-project-ref-mismatch', hasAll(browser, [
   'The runtime project ref does not match YWI_STAGING_PROJECT_REF.'
 ]), 'A staging label alone cannot authorize writes to the wrong project.');
 
+add('browser-covers-all-six-prerequisites-before-write-controls', hasAll(browser, [
+  "test('all six staging target prerequisites must be proven before human evidence controls appear'",
+  "registered_environment_class:'staging'",
+  "registered_mutation_allowed:true",
+  "mutation_allowed:true",
+  'Staging target readiness: READY',
+  "getByRole('button',{name:'Pass evidence'})).toBeVisible()",
+  "getByRole('button',{name:'Fail evidence'})).toBeVisible()"
+]), 'Rendered acceptance proves that human evidence controls appear only after every staging target prerequisite is satisfied.');
+
 add('build214-source-check-is-mandatory',
   workflow.includes('node scripts/staging-infrastructure-readiness-enforcement-check.mjs'),
-  'Build 214 source authority runs on each release PR.');
+  'Staging infrastructure source authority runs on each release PR.');
 
 add('build214-browser-check-is-mandatory',
   workflow.includes('tests/browser/staging-infrastructure-readiness.spec.mjs'),
-  'Build 214 rendered fail-closed acceptance runs on each release PR.');
+  'Rendered fail-closed staging acceptance runs on each release PR.');
 
 const failed = checks.filter((check) => !check.ok);
 for (const check of checks) {
@@ -82,8 +104,8 @@ for (const check of checks) {
 }
 
 if (failed.length) {
-  console.error(`\nBuild 214 staging infrastructure readiness enforcement failed: ${failed.length}/${checks.length} check(s) failed.`);
+  console.error(`\nStaging infrastructure readiness enforcement failed: ${failed.length}/${checks.length} check(s) failed.`);
   process.exit(1);
 }
 
-console.log(`\nBuild 214 staging infrastructure readiness enforcement passed: ${checks.length}/${checks.length} checks.`);
+console.log(`\nStaging infrastructure readiness enforcement passed: ${checks.length}/${checks.length} checks.`);
