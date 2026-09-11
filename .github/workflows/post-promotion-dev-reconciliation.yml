@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: ywi-post-promotion-dev-reconciliation
+  cancel-in-progress: false
+
 jobs:
   fast-forward-dev:
     if: >-
@@ -40,12 +44,22 @@ jobs:
           current_dev="$(git rev-parse origin/dev)"
 
           if [[ "$current_main" != "$YWI_SOURCE_RUN_SHA" ]]; then
-            echo 'Refusing reconciliation: main moved after the successful source run.' >&2
-            exit 1
+            echo "Safe skip: source run ${YWI_SOURCE_RUN_ID}/${YWI_SOURCE_RUN_ATTEMPT} was superseded because main is now $current_main instead of $YWI_SOURCE_RUN_SHA."
+            exit 0
+          fi
+
+          if [[ "$current_dev" == "$current_main" ]]; then
+            echo "dev already matches exact GREEN main $current_main; no update required."
+            exit 0
+          fi
+
+          if git merge-base --is-ancestor "$current_main" "$current_dev"; then
+            echo "Safe skip: dev already contains exact GREEN main $current_main and has newer Development work at $current_dev."
+            exit 0
           fi
 
           if ! git merge-base --is-ancestor "$current_dev" "$current_main"; then
-            echo 'Refusing reconciliation: dev is not an ancestor of current main.' >&2
+            echo 'Refusing reconciliation: dev history diverged from current main.' >&2
             exit 1
           fi
 
@@ -54,10 +68,19 @@ jobs:
             exit 1
           fi
 
-          if [[ "$current_dev" == "$current_main" ]]; then
-            echo "dev already matches exact GREEN main $current_main; no update required."
+          echo "Fast-forwarding dev from $current_dev to exact GREEN main $current_main after source run ${YWI_SOURCE_RUN_ID}/${YWI_SOURCE_RUN_ATTEMPT}."
+          if git push origin "$current_main:refs/heads/dev"; then
+            echo "dev reconciled to exact GREEN main $current_main."
             exit 0
           fi
 
-          echo "Fast-forwarding dev from $current_dev to exact GREEN main $current_main after source run ${YWI_SOURCE_RUN_ID}/${YWI_SOURCE_RUN_ATTEMPT}."
-          git push origin "$current_main:refs/heads/dev"
+          echo 'Initial non-force dev push was rejected; re-checking for concurrent Development work.'
+          git fetch --no-tags origin dev
+          refreshed_dev="$(git rev-parse origin/dev)"
+          if git merge-base --is-ancestor "$current_main" "$refreshed_dev"; then
+            echo "Safe skip: dev advanced concurrently to $refreshed_dev after the reconciliation preflight and already contains exact GREEN main $current_main."
+            exit 0
+          fi
+
+          echo "Refusing reconciliation: dev push was rejected and refreshed dev $refreshed_dev does not descend from exact GREEN main $current_main." >&2
+          exit 1
