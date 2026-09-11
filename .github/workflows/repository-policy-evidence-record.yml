@@ -1,0 +1,136 @@
+name: YWI repository policy evidence recording
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/repository-policy-evidence-record.yml'
+      - 'scripts/repository-policy-evidence-verify.mjs'
+      - 'scripts/repository-policy-evidence-verify-check.mjs'
+      - 'scripts/repository-policy-evidence-record-workflow-check.mjs'
+      - 'supabase/functions/repository-policy-evidence-record/**'
+      - 'supabase/config.toml'
+      - 'sql/208_repository_policy_evidence_authority.sql'
+  workflow_run:
+    workflows:
+      - YWI source and staging checks
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: 'Successful exact-main YWI source and staging checks workflow run ID'
+        required: true
+        type: string
+      source_run_attempt:
+        description: 'Exact workflow run attempt that produced the current main source evidence'
+        required: true
+        default: '1'
+        type: string
+      confirm_record:
+        description: 'Explicitly authorize current repository-policy evidence recording only'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - I_CONFIRM_REPOSITORY_POLICY_RECORD
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: ywi-repository-policy-evidence-recording
+  cancel-in-progress: false
+
+jobs:
+  contract-check:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Verify repository policy evidence workflow contract
+        run: node scripts/repository-policy-evidence-record-workflow-check.mjs
+
+  record-repository-policy-evidence:
+    if: ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.confirm_record == 'I_CONFIRM_REPOSITORY_POLICY_RECORD') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      YWI_REPOSITORY_POLICY_RECORDER_URL: https://jmqvkgiqlimdhcofwkxr.supabase.co/functions/v1/repository-policy-evidence-record
+      YWI_REPOSITORY_POLICY_OIDC_AUDIENCE: ywi-repository-policy-evidence
+      YWI_REPOSITORY_RULESETS_PATH: repository-rulesets.json
+      YWI_REPOSITORY_RULESET_PATH: repository-ruleset.json
+      YWI_REPOSITORY_MAIN_BRANCH_PATH: repository-main-branch.json
+      YWI_REPOSITORY_POLICY_WORKFLOW_RUN_PATH: repository-policy-workflow-run.json
+      YWI_REPOSITORY_POLICY_VERIFIED_PATH: repository-policy-evidence-verified.json
+      SOURCE_RUN_ID: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.id || inputs.source_run_id }}
+      SOURCE_RUN_ATTEMPT: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.run_attempt || inputs.source_run_attempt }}
+      SOURCE_HEAD_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.SOURCE_HEAD_SHA }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Validate repository policy recording context
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_RUN_ID" =~ ^[1-9][0-9]*$ ]] || { echo 'source_run_id must be a positive integer.' >&2; exit 1; }
+          [[ "$SOURCE_RUN_ATTEMPT" =~ ^[1-9][0-9]*$ ]] || { echo 'source_run_attempt must be a positive integer.' >&2; exit 1; }
+          [[ "$SOURCE_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'source_head_sha must be a full lowercase commit SHA.' >&2; exit 1; }
+          [[ "$YWI_REPOSITORY_POLICY_RECORDER_URL" == 'https://jmqvkgiqlimdhcofwkxr.supabase.co/functions/v1/repository-policy-evidence-record' ]] || { echo 'repository-policy recorder URL must remain pinned to YardWeasels Production.' >&2; exit 1; }
+          [[ "$YWI_REPOSITORY_POLICY_OIDC_AUDIENCE" == 'ywi-repository-policy-evidence' ]] || { echo 'repository-policy OIDC audience is invalid.' >&2; exit 1; }
+      - name: Re-read successful source run and current main ruleset policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}" > "$YWI_REPOSITORY_POLICY_WORKFLOW_RUN_PATH"
+          gh api "repos/${GITHUB_REPOSITORY}/branches/main" > "$YWI_REPOSITORY_MAIN_BRANCH_PATH"
+          gh api "repos/${GITHUB_REPOSITORY}/rulesets?per_page=100" > "$YWI_REPOSITORY_RULESETS_PATH"
+          ruleset_id="$(jq -er --arg name 'main protection' '[.[] | select(.name == $name and .target == "branch" and .enforcement == "active")] | if length == 1 then .[0].id else error("Expected exactly one active main protection branch ruleset") end' "$YWI_REPOSITORY_RULESETS_PATH")"
+          [[ "$ruleset_id" =~ ^[1-9][0-9]*$ ]] || { echo 'main protection ruleset id must be a positive integer.' >&2; exit 1; }
+          gh api "repos/${GITHUB_REPOSITORY}/rulesets/${ruleset_id}" > "$YWI_REPOSITORY_RULESET_PATH"
+      - name: Verify current repository policy evidence
+        run: node scripts/repository-policy-evidence-verify.mjs
+      - name: Record verified repository policy evidence with GitHub OIDC
+        shell: bash
+        run: |
+          set -euo pipefail
+          oidc_response="$(curl --fail-with-body --silent --show-error \
+            -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${YWI_REPOSITORY_POLICY_OIDC_AUDIENCE}")"
+          oidc_token="$(jq -r '.value // empty' <<<"$oidc_response")"
+          test -n "$oidc_token" || { echo 'GitHub OIDC token request returned no token.' >&2; exit 1; }
+          jq -n \
+            --slurpfile verified "$YWI_REPOSITORY_POLICY_VERIFIED_PATH" \
+            --argjson source_run_id "$SOURCE_RUN_ID" \
+            --argjson source_run_attempt "$SOURCE_RUN_ATTEMPT" \
+            '{verified:$verified[0],source_run_id:$source_run_id,source_run_attempt:$source_run_attempt}' \
+            > repository-policy-record-request.json
+          curl --fail-with-body --silent --show-error \
+            -H "Authorization: Bearer ${oidc_token}" \
+            -H 'Content-Type: application/json' \
+            --data-binary @repository-policy-record-request.json \
+            "$YWI_REPOSITORY_POLICY_RECORDER_URL" \
+            > repository-policy-record-response.json
+          jq -e --arg sha "$SOURCE_HEAD_SHA" --argjson run_id "$SOURCE_RUN_ID" \
+            '.ok == true and .source_sha == $sha and .workflow_run_id == $run_id and .branch_policy_evidence_recorded == true and (.repository_enforcement_status == "amber" or .repository_enforcement_status == "green")' \
+            repository-policy-record-response.json >/dev/null
+          echo 'OIDC-authenticated repository-policy evidence: RECORDED. Final GREEN converges only when independent release-source evidence matches the same exact main SHA.'
+      - name: Destroy repository policy evidence workspace
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          rm -f repository-rulesets.json repository-ruleset.json repository-main-branch.json repository-policy-workflow-run.json
+          rm -f repository-policy-evidence-verified.json repository-policy-record-request.json repository-policy-record-response.json
