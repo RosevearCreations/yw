@@ -130,9 +130,9 @@ jobs:
             "$YWI_RELEASE_RECORDER_URL" \
             > release-record-response.json
           jq -e --arg sha "$SOURCE_HEAD_SHA" --argjson run_id "$SOURCE_RUN_ID" \
-            '.ok == true and .source_sha == $sha and .workflow_run_id == $run_id and .source_gate_status == "green" and .repository_enforcement_status == "green"' \
+            '.ok == true and .source_sha == $sha and .workflow_run_id == $run_id and .source_gate_status == "green" and .repository_enforcement_status == "amber" and .branch_protection_reported == true and .branch_policy_verified == false' \
             release-record-response.json >/dev/null
-          echo 'OIDC-authenticated release evidence recording: GREEN'
+          echo 'OIDC-authenticated release evidence recording: RECORDED; source gate GREEN; detailed repository policy remains AMBER.'
       - name: Destroy release evidence workspace
         if: ${{ always() }}
         shell: bash
