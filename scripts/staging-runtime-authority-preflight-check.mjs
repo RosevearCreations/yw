@@ -57,7 +57,8 @@ assert.doesNotMatch(source,/\/rpc\//,'Preflight must not call database RPC mutat
 assert.match(source,/Runtime environment authority is not registered for this project; explicit staging registration is required\./);
 assert.match(source,/environmentClass!==['"]staging['"]/);
 assert.match(source,/staging_acceptance_mutation_allowed===true/);
-assert.match(pkg.scripts?.['test:staging'] || '',/staging-runtime-authority-preflight\.mjs\s+&&\s+node scripts\/operations-rpc-staging-e2e\.mjs/,'Live staging npm entrypoint must verify registry authority before the runner.');
+assert.match(pkg.scripts?.['test:staging'] || '',/^node scripts\/staging-runtime-authority-preflight\.mjs && node scripts\/operations-rpc-staging-e2e\.mjs$/,'Live staging npm entrypoint must verify registry authority before the runner.');
+assert.match(pkg.scripts?.['test:staging-acceptance'] || '',/staging-runtime-authority-preflight\.mjs\s+&&\s+node scripts\/operations-rpc-staging-e2e\.mjs/,'The staging acceptance entrypoint must also verify registry authority before the runner.');
 assert.match(pkg.scripts?.['test:staging-environment-guard'] || '',/staging-runtime-authority-preflight-check\.mjs/,'Canonical staging guard must execute this regression.');
 assert.match(workflow,/run:\s+npm run test:staging/,'Staging workflow must continue through the guarded npm entrypoint.');
 assert.match(workflow,/run:\s+npm run test:staging-environment-guard/,'Canonical source gate must execute the staging environment guard.');
