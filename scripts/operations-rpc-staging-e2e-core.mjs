@@ -12,6 +12,7 @@
 */
 import fs from 'node:fs';
 import process from 'node:process';
+import { verifyRuntimeAuthority } from './staging-runtime-authority-preflight.mjs';
 
 const read = (file) => fs.readFileSync(file, 'utf8');
 const migration186 = read('sql/186_staging_acceptance_control_plane.sql');
@@ -93,6 +94,15 @@ if (!live) {
   console.log(`\nSKIP live staging acceptance — source checks only. Repository schema ${repoLatestSchema}; catalog schema ${CATALOG_SCHEMA_VERSION}. Live evidence requires manual workflow dispatch and a dedicated non-production project ref.`);
   process.exit(0);
 }
+
+const coreAuthority = await verifyRuntimeAuthority(process.env, fetch);
+if (!coreAuthority.ok || coreAuthority.skipped) {
+  console.error('STAGING CORE RUNTIME AUTHORITY: LOCKED');
+  const errors = coreAuthority.errors || [coreAuthority.reason || 'Explicit staging runtime authority could not be proven.'];
+  for (const error of errors) console.error(`- ${error}`);
+  process.exit(1);
+}
+console.log('STAGING CORE RUNTIME AUTHORITY: READY');
 
 const url = (process.env.SUPABASE_URL || process.env.SB_URL || '').replace(/\/$/, '');
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SB_SERVICE_ROLE_KEY || '';
