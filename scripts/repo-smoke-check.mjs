@@ -26,5 +26,9 @@ const definerAudit=spawnSync(process.execPath,['scripts/security-definer-execute
 add('security-definer-execute-boundary',definerAudit.status===0,(definerAudit.stderr||definerAudit.stdout||'').trim().slice(0,1200));
 const releaseEvidenceWorkflowAudit=spawnSync(process.execPath,['scripts/release-source-evidence-record-workflow-check.mjs'],{cwd:root,encoding:'utf8'});
 add('authorized-release-evidence-recording-workflow',releaseEvidenceWorkflowAudit.status===0,(releaseEvidenceWorkflowAudit.stderr||releaseEvidenceWorkflowAudit.stdout||'').trim().slice(0,1200));
+const repositoryPolicyVerifierAudit=spawnSync(process.execPath,['scripts/repository-policy-evidence-verify-check.mjs'],{cwd:root,encoding:'utf8'});
+add('repository-policy-evidence-verifier',repositoryPolicyVerifierAudit.status===0,(repositoryPolicyVerifierAudit.stderr||repositoryPolicyVerifierAudit.stdout||'').trim().slice(0,1200));
+const repositoryPolicyWorkflowAudit=spawnSync(process.execPath,['scripts/repository-policy-evidence-record-workflow-check.mjs'],{cwd:root,encoding:'utf8'});
+add('repository-policy-evidence-recording-workflow',repositoryPolicyWorkflowAudit.status===0,(repositoryPolicyWorkflowAudit.stderr||repositoryPolicyWorkflowAudit.stdout||'').trim().slice(0,1200));
 add('help-present',fs.existsSync('help.html')); add('seo-gate-present',fs.existsSync('scripts/help-seo-hygiene-check.mjs')); add('seo-browser-gate-present',fs.existsSync('tests/browser/help-seo-layout.spec.mjs'));
 const passed=results.filter((x)=>x.ok).length; console.log(`Repository hygiene: ${passed}/${results.length} passed`); for(const r of results)console.log(`${r.ok?'PASS':'FAIL'}  ${r.name}${r.detail?' — '+r.detail:''}`); process.exit(passed===results.length?0:1);

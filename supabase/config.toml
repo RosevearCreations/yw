@@ -66,3 +66,6 @@ verify_jwt = true
 
 [functions.release-source-evidence-record]
 verify_jwt = false
+
+[functions.repository-policy-evidence-record]
+verify_jwt = false
