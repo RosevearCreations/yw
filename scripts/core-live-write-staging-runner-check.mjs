@@ -4,7 +4,7 @@ import fs from 'node:fs';
 const read = (path) => fs.readFileSync(path, 'utf8');
 const migration = read('sql/201_core_live_write_staging_runner_authority.sql');
 const catalog = read('sql/187_staging_acceptance_scenario_catalog.sql');
-const runner = read('scripts/operations-rpc-staging-e2e.mjs');
+const runner = read('scripts/operations-rpc-staging-e2e-core.mjs');
 const quote = read('supabase/functions/quote-contact-submit/index.ts');
 const config = read('supabase/config.toml');
 const workflow = read('.github/workflows/staging-browser-integration.yml');
