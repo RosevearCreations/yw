@@ -3,13 +3,21 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const itSource = fs.readFileSync(path.join(process.cwd(), 'js/it-readiness-ui.js'), 'utf8');
-const schemaVersions = fs.readdirSync(path.join(process.cwd(),'sql'))
-  .filter((name)=>/^\d{3}_.+\.sql$/i.test(name))
-  .map((name)=>Number(name.slice(0,3)))
-  .filter(Number.isFinite);
-const CURRENT_SCHEMA = Math.max(...schemaVersions);
-const PREVIOUS_SCHEMA = CURRENT_SCHEMA - 1;
-if (!Number.isInteger(CURRENT_SCHEMA) || CURRENT_SCHEMA < 2) throw new Error('Could not derive current repository schema for performance browser fixtures.');
+
+function migrationVersionFromFilename(name) {
+  const match = String(name || '').match(/^(\d+)_.*\.sql$/i);
+  return match ? Number(match[1]) : NaN;
+}
+
+const schemaVersions = [...new Set(fs.readdirSync(path.join(process.cwd(),'sql'))
+  .map(migrationVersionFromFilename)
+  .filter(Number.isInteger))]
+  .sort((a,b)=>a-b);
+const CURRENT_SCHEMA = schemaVersions.at(-1);
+const PREVIOUS_SCHEMA = schemaVersions.at(-2);
+if (!Number.isInteger(CURRENT_SCHEMA) || !Number.isInteger(PREVIOUS_SCHEMA) || PREVIOUS_SCHEMA >= CURRENT_SCHEMA) {
+  throw new Error('Could not derive the latest two repository schemas for performance browser fixtures.');
+}
 
 function section(rows = []) {
   return { rows, error: null, summary: { status: 'passed', total: rows.length, blocking: 0, warning: 0, error: null } };
@@ -82,6 +90,15 @@ async function mount(page, runtimePayload) {
   });
   await expect(page.locator('#releaseDeploymentCockpit')).toBeVisible();
 }
+
+test('performance schema fixtures support variable-width and non-contiguous migration versions', async () => {
+  expect(migrationVersionFromFilename('999_example.sql')).toBe(999);
+  expect(migrationVersionFromFilename('1000_example.sql')).toBe(1000);
+  expect(migrationVersionFromFilename('12034_example.sql')).toBe(12034);
+  expect(Number.isNaN(migrationVersionFromFilename('schema_1000_example.sql'))).toBe(true);
+  expect(PREVIOUS_SCHEMA).toBe(schemaVersions.at(-2));
+  expect(PREVIOUS_SCHEMA).toBeLessThan(CURRENT_SCHEMA);
+});
 
 test('I.T. release cockpit renders from one bounded runtime request with no deploy action', async ({ page }) => {
   await mount(page, payload());
