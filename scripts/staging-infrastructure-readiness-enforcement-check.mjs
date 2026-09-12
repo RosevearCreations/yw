@@ -85,17 +85,26 @@ add('staging-target-readiness-checklist-is-explicit', hasAll(ui, [
 add('browser-current-schema-derived-from-repository',
   hasAll(browser, [
     "fs.readdirSync(path.resolve(repoRoot,'sql'))",
-    'const CURRENT_SCHEMA=Math.max(...schemaFiles.map((name)=>Number(name.slice(0,3))).filter(Number.isFinite));',
+    'function migrationVersionFromFilename(name)',
+    "match(/^(\\d+)_.*\\.sql$/i)",
+    '.map(migrationVersionFromFilename).filter(Number.isFinite)',
+    "migrationVersionFromFilename('999_example.sql')",
+    "migrationVersionFromFilename('1000_future.sql')",
+    "migrationVersionFromFilename('12034_example.sql')",
+    "migrationVersionFromFilename('not-a-migration.sql')",
+    'No numbered SQL migrations found for the staging infrastructure readiness browser fixture.',
     'expected_schema_version:CURRENT_SCHEMA',
     'latest_applied_schema_version:CURRENT_SCHEMA',
     'schema:CURRENT_SCHEMA',
     'schema_version:CURRENT_SCHEMA'
   ])
+  && !browser.includes('slice(0,3)')
+  && !browser.includes('/^\\d{3}_.+\\.sql$/i')
   && !/expected_schema_version:\s*\d+/.test(browser)
   && !/latest_applied_schema_version:\s*\d+/.test(browser)
   && !/(?<!_)schema:\s*\d+/.test(browser)
   && !/schema_version:\s*\d+/.test(browser),
-  'Rendered staging-infrastructure fixtures derive current schema from repository migrations and reject stale numeric current-schema literals.'
+  'Rendered staging-infrastructure fixtures derive current schema from variable-width repository migrations, cover Schema 1000+, and reject stale numeric current-schema literals.'
 );
 
 add('browser-covers-unconfigured-runtime', hasAll(browser, [
