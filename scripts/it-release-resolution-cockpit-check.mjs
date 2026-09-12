@@ -109,7 +109,11 @@ add('build249-no-core-precache', !worker.match(/APP_SHELL\s*=\s*\[[\s\S]*it-rele
 add('build249-browser-current-schema-derived-from-repository',
   all(browser,[
     "fs.readdirSync(path.join(process.cwd(),'sql'))",
-    'const CURRENT_SCHEMA = Math.max(...schemaFiles.map((name)=>Number(name.slice(0,3))).filter(Number.isFinite));',
+    'function migrationVersionFromFilename(name)',
+    'const version = Number(match[1]);',
+    '.map(migrationVersionFromFilename)',
+    '.filter(Number.isSafeInteger);',
+    'const CURRENT_SCHEMA = Math.max(...schemaVersions);',
     'page.evaluate((CURRENT_SCHEMA)=>',
     'latest_applied_schema_version:CURRENT_SCHEMA',
     'expected_schema_version:CURRENT_SCHEMA',
@@ -118,6 +122,21 @@ add('build249-browser-current-schema-derived-from-repository',
   && !/latest_applied_schema_version:\s*\d+/.test(browser)
   && !/expected_schema_version:\s*\d+/.test(browser),
   'Rendered Build 249 fixture derives current schema from repository migrations, passes it explicitly into browser context, and rejects stale numeric current-schema literals.'
+);
+
+add('build300-release-resolution-browser-supports-variable-width-migrations',
+  all(browser,[
+    'migrationWidthRegression',
+    "'999_last_three_digit.sql'",
+    "'1000_first_four_digit.sql'",
+    "'12034_future_width.sql'",
+    "'999,1000,12034'",
+    'if (!schemaVersions.length)',
+    'Could not derive repository schema authority for release-resolution browser fixtures.'
+  ])
+  && !browser.includes('slice(0,3)')
+  && !browser.includes('/^\\d{3}_.+\\.sql$/i'),
+  'Build 300 proves Schema 1000+ migration filenames remain visible to release-resolution browser evidence and rejects the retired exact-three-digit parser.'
 );
 
 add('build249-source-gate-registered', String(pkg.scripts?.['test:runtime'] || '').includes('it-release-resolution-cockpit-check.mjs'), 'The Build 249 source contract is part of canonical runtime checks.');
