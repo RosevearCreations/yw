@@ -6,9 +6,23 @@ import { fileURLToPath } from 'node:url';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const repoRoot=path.resolve(here,'../..');
 const uiPath=path.resolve(repoRoot,'js/staging-acceptance-ui.js');
-const schemaFiles=fs.readdirSync(path.resolve(repoRoot,'sql')).filter((name)=>/^\d{3}_.+\.sql$/i.test(name));
-const CURRENT_SCHEMA=Math.max(...schemaFiles.map((name)=>Number(name.slice(0,3))).filter(Number.isFinite));
+function migrationVersionFromFilename(name){
+  const match=String(name??'').match(/^(\d+)_.*\.sql$/i);
+  if(!match) return null;
+  const version=Number(match[1]);
+  return Number.isSafeInteger(version)&&version>0?version:null;
+}
+const schemaVersions=fs.readdirSync(path.resolve(repoRoot,'sql')).map(migrationVersionFromFilename).filter(Number.isFinite);
+if(!schemaVersions.length) throw new Error('No numbered SQL migrations found for the staging infrastructure readiness browser fixture.');
+const CURRENT_SCHEMA=Math.max(...schemaVersions);
 const runId='22222222-2222-4222-8222-222222222222';
+
+test('staging infrastructure schema parser supports variable-width migration numbers',()=>{
+  expect(migrationVersionFromFilename('999_example.sql')).toBe(999);
+  expect(migrationVersionFromFilename('1000_future.sql')).toBe(1000);
+  expect(migrationVersionFromFilename('12034_example.sql')).toBe(12034);
+  expect(migrationVersionFromFilename('not-a-migration.sql')).toBeNull();
+});
 
 const currentSchemaAuthority={
   expected_schema_version:CURRENT_SCHEMA,latest_applied_schema_version:CURRENT_SCHEMA,drift_status:'current',exact_schema_match:true,
