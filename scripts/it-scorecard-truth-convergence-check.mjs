@@ -88,6 +88,17 @@ add('browser-scorecard-truth-rendered',hasAll(browser,[
   "human · external · provider acceptance","getByRole('button',{name:/complete/i}).count()",
   "non-admin cannot render the I.T. scorecard truth workspace"
 ]));
+add('browser-current-schema-derived-from-repository',
+  hasAll(browser,[
+    "fs.readdirSync(path.join(process.cwd(),'sql'))",
+    'const CURRENT_SCHEMA=Math.max(...schemaFiles.map((name)=>Number(name.slice(0,3))).filter(Number.isFinite));',
+    'expected_schema_version:CURRENT_SCHEMA',
+    'latest_applied_schema_version:CURRENT_SCHEMA'
+  ])
+  && !/expected_schema_version:\s*\d+/.test(browser)
+  && !/latest_applied_schema_version:\s*\d+/.test(browser),
+  'I.T. scorecard browser fixtures derive current schema from repository migrations and reject stale numeric current-schema literals.'
+);
 add('browser-nonpersistent',!/(?:fetch\(|supabase|payment_intent|paypal_order|execute_sql|insert\s+into)/i.test(browser));
 
 add('package-source-gate',packageJson.scripts?.['test:it-scorecard-truth']==='node scripts/it-scorecard-truth-convergence-check.mjs');
