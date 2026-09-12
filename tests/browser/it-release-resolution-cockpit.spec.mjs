@@ -4,8 +4,21 @@ import path from 'node:path';
 
 const workspaceSource = fs.readFileSync(path.join(process.cwd(),'js/it-system-workspace.js'),'utf8');
 const resolutionSource = fs.readFileSync(path.join(process.cwd(),'js/it-release-resolution-cockpit.js'),'utf8');
-const schemaFiles = fs.readdirSync(path.join(process.cwd(),'sql')).filter((name)=>/^\d{3}_.+\.sql$/i.test(name));
-const CURRENT_SCHEMA = Math.max(...schemaFiles.map((name)=>Number(name.slice(0,3))).filter(Number.isFinite));
+function migrationVersionFromFilename(name) {
+  const match = String(name ?? '').match(/^(\d{3,})_.+\.sql$/i);
+  if (!match) return null;
+  const version = Number(match[1]);
+  return Number.isSafeInteger(version) && version > 0 ? version : null;
+}
+const migrationWidthRegression = ['999_last_three_digit.sql','1000_first_four_digit.sql','12034_future_width.sql'].map(migrationVersionFromFilename);
+if (migrationWidthRegression.join(',') !== '999,1000,12034') {
+  throw new Error('Release-resolution schema fixture parser is not safe for variable-width migration numbers.');
+}
+const schemaVersions = fs.readdirSync(path.join(process.cwd(),'sql'))
+  .map(migrationVersionFromFilename)
+  .filter(Number.isSafeInteger);
+if (!schemaVersions.length) throw new Error('Could not derive repository schema authority for release-resolution browser fixtures.');
+const CURRENT_SCHEMA = Math.max(...schemaVersions);
 
 async function mountIT(page) {
   await page.setContent(`<!doctype html><html><head></head><body>
