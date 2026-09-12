@@ -5,6 +5,7 @@ import {
   evaluateStagingTarget,
   verifyStagingTargetRuntime,
   repositorySchemaVersion,
+  migrationVersionFromFilename,
   KNOWN_PRODUCTION_PROJECT_REF,
   STAGING_ACCEPTANCE_RAILS,
 } from './staging-target-preflight.mjs';
@@ -34,6 +35,21 @@ const checkAsync=async(name,fn)=>{
   try{await fn();checks.push({name,ok:true});}
   catch(error){checks.push({name,ok:false,error:error?.message || String(error)});}
 };
+
+check('migration-filename-parser-supports-current-and-four-digit-schema-widths',()=>{
+  assert.equal(migrationVersionFromFilename('208_current_schema.sql'),208);
+  assert.equal(migrationVersionFromFilename('999_last_three_digit.sql'),999);
+  assert.equal(migrationVersionFromFilename('1000_first_four_digit.sql'),1000);
+  assert.equal(migrationVersionFromFilename('12034_future_width.sql'),12034);
+});
+
+check('migration-filename-parser-rejects-invalid-authority-inputs',()=>{
+  for(const name of ['99_too_short.sql','1000.sql','abcd_not_schema.sql','1000_future.txt','',null,undefined]){
+    assert.equal(migrationVersionFromFilename(name),null,String(name));
+  }
+  assert.equal(preflightSource.includes('slice(0,3)'),false,'Staging preflight must not truncate migration versions to three digits.');
+  assert.equal(preflightSource.includes('\\d{3}_'),false,'Staging preflight must not require exactly three migration digits.');
+});
 
 check('valid-operations-nonproduction-configuration-is-ready',()=>{
   const result=evaluateStagingTarget(base);
