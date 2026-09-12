@@ -9,6 +9,7 @@ const resolution = read('js/it-release-resolution-cockpit.js');
 const config = read('js/app-config.js');
 const worker = read('server-worker.js');
 const pkg = JSON.parse(read('package.json'));
+const browser = read('tests/browser/it-release-resolution-cockpit.spec.mjs');
 const results = [];
 const add = (name, ok, detail='') => results.push({ name, ok:!!ok, detail });
 const all = (text, values) => values.every((value)=>text.includes(value));
@@ -104,6 +105,18 @@ add('build249-guidance-never-mutates-evidence-or-authority', all(resolution,[
 ]), 'Guidance is explanatory only and cannot change canonical evidence state.');
 
 add('build249-no-core-precache', !worker.match(/APP_SHELL\s*=\s*\[[\s\S]*it-release-resolution-cockpit\.js/), 'Build 249 stays outside the Core service-worker precache.');
+
+add('build249-browser-current-schema-derived-from-repository',
+  all(browser,[
+    "fs.readdirSync(path.join(process.cwd(),'sql'))",
+    'const CURRENT_SCHEMA = Math.max(...schemaFiles.map((name)=>Number(name.slice(0,3))).filter(Number.isFinite));',
+    'latest_applied_schema_version:CURRENT_SCHEMA',
+    'expected_schema_version:CURRENT_SCHEMA'
+  ])
+  && !/latest_applied_schema_version:\s*\d+/.test(browser)
+  && !/expected_schema_version:\s*\d+/.test(browser),
+  'Rendered Build 249 fixture derives current schema from repository migrations and rejects stale numeric current-schema literals.'
+);
 
 add('build249-source-gate-registered', String(pkg.scripts?.['test:runtime'] || '').includes('it-release-resolution-cockpit-check.mjs'), 'The Build 249 source contract is part of canonical runtime checks.');
 add('build249-browser-acceptance-registered', String(pkg.scripts?.['test:browser:modules'] || '').includes('it-release-resolution-cockpit.spec.mjs'), 'Rendered Build 249 acceptance is part of the canonical module browser suite.');
