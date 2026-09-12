@@ -61,15 +61,32 @@ add('release-cockpit-read-only', /This cockpit never deploys or promotes/.test(i
 add('budget-contract-exported-in-ui', /const PERFORMANCE_BUDGETS = Object\.freeze/.test(itUi) && /coreShellAssets:\s*30/.test(itUi) && /coreShellJs:\s*21/.test(itUi) && /itRuntimeReads:\s*10/.test(itUi));
 add('no-finance-provider-enablement', !/(FINANCE_POSTING_EXECUTION_ENABLED\s*=\s*true|PAYMENT_PROVIDER_MUTATION_ENABLED\s*=\s*true|provider_mutation_allowed\s*=\s*true)/i.test(itUi + organizer));
 add('performance-browser-schema-fixture-derives-current-repository-schema',
-  /fs\.readdirSync\(path\.join\(process\.cwd\(\),'sql'\)\)/.test(performanceBrowser) &&
-  /const CURRENT_SCHEMA = Math\.max\(\.\.\.schemaVersions\)/.test(performanceBrowser) &&
+  /function migrationVersionFromFilename\(name\)/.test(performanceBrowser) &&
+  /\.map\(migrationVersionFromFilename\)/.test(performanceBrowser) &&
+  /const CURRENT_SCHEMA = schemaVersions\.at\(-1\)/.test(performanceBrowser) &&
   /expected_schema_version:\s*CURRENT_SCHEMA/.test(performanceBrowser) &&
   /latest_applied_schema_version:\s*CURRENT_SCHEMA/.test(performanceBrowser),
-  'Rendered performance fixtures must follow the current repository schema instead of a historical literal.');
-add('performance-browser-schema-drift-fixture-is-relative',
-  /const PREVIOUS_SCHEMA = CURRENT_SCHEMA - 1/.test(performanceBrowser) &&
-  /latest_applied_schema_version:\s*PREVIOUS_SCHEMA/.test(performanceBrowser),
-  'Schema-drift acceptance must remain one version behind whatever the current repository schema becomes.');
+  'Rendered performance fixtures must derive current schema from repository migration filenames instead of a historical literal.');
+add('performance-browser-schema-fixture-supports-variable-width-migrations',
+  performanceBrowser.includes("migrationVersionFromFilename('999_example.sql')") &&
+  performanceBrowser.includes("migrationVersionFromFilename('1000_example.sql')") &&
+  performanceBrowser.includes("migrationVersionFromFilename('12034_example.sql')") &&
+  performanceBrowser.includes('toBe(1000)') &&
+  performanceBrowser.includes('toBe(12034)') &&
+  !performanceBrowser.includes('/^\\d{3}_.+\\.sql$/i') &&
+  !performanceBrowser.includes('slice(0,3)'),
+  'Performance browser evidence accepts variable-width numbered SQL migrations, explicitly covers Schema 1000+, and rejects the retired three-digit parser.');
+add('performance-browser-schema-drift-fixture-uses-actual-prior-migration',
+  /const PREVIOUS_SCHEMA = schemaVersions\.at\(-2\)/.test(performanceBrowser) &&
+  /latest_applied_schema_version:\s*PREVIOUS_SCHEMA/.test(performanceBrowser) &&
+  !/const PREVIOUS_SCHEMA = CURRENT_SCHEMA - 1/.test(performanceBrowser),
+  'Schema-drift acceptance must use the actual second-latest repository migration rather than assuming contiguous schema numbering.');
+add('performance-browser-schema-fixture-fails-closed-without-two-schema-versions',
+  /!Number\.isInteger\(CURRENT_SCHEMA\)/.test(performanceBrowser) &&
+  /!Number\.isInteger\(PREVIOUS_SCHEMA\)/.test(performanceBrowser) &&
+  /PREVIOUS_SCHEMA >= CURRENT_SCHEMA/.test(performanceBrowser) &&
+  /Could not derive the latest two repository schemas for performance browser fixtures\./.test(performanceBrowser),
+  'Performance fixtures fail closed if current and previous repository schema authority cannot both be derived.');
 add('performance-browser-schema-fixture-has-no-numeric-schema-literal',
   !/expected_schema_version\s*:\s*\d+/.test(performanceBrowser) &&
   !/latest_applied_schema_version\s*:\s*\d+/.test(performanceBrowser),
