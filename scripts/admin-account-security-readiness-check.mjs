@@ -11,6 +11,7 @@ const runtime = read('js/module-runtime.js');
 const config = read('supabase/config.toml');
 const auth = read('js/auth.js');
 const serviceWorker = read('server-worker.js');
+const adminBrowser = read('tests/browser/admin-account-security.spec.mjs');
 
 const checks = [];
 const add = (key, ok, detail) => checks.push({key,ok:!!ok,detail});
@@ -32,6 +33,20 @@ add('eyeball-toggle', hasAll(passwordUi,["toggle.textContent = '👁'","input.ty
 add('forced-module-gate', hasAll(passwordUi,['password_reset_required === true','needsAccountSetup: true','confirm_password_change']), 'Temporary-password flag is surfaced through the existing module setup gate until replacement.');
 add('admin-current-todo-ui', hasAll(adminUi,['Current Admin To-Do','Only unresolved current requirements','Completed builds and superseded preflight/prerelease checklists are retained for audit','hideHistoricalTodoPanels']), 'Admin UI shows current-only work and hides legacy audit-only panels.');
 add('admin-reset-ui', hasAll(adminUi,['Set temporary password','Generate another','adminTemporaryPassword','reset_temporary_password']), 'Admin UI supports editable/generated temporary passwords.');
+add(
+  'browser-current-schema-derived',
+  hasAll(adminBrowser,[
+    "fs.readdirSync(path.join(process.cwd(),'sql'))",
+    'const CURRENT_SCHEMA = Math.max(...schemaVersions)',
+    'currentSchema:CURRENT_SCHEMA',
+    'expected_schema_version:window.__currentSchema',
+    'latest_applied_schema_version:window.__currentSchema',
+    '`Expected Schema ${CURRENT_SCHEMA} · live Schema ${CURRENT_SCHEMA}`'
+  ])
+    && !/expected_schema_version:\s*\d+/.test(adminBrowser)
+    && !/latest_applied_schema_version:\s*\d+/.test(adminBrowser),
+  'Rendered Admin staging-gate fixtures derive current schema from repository migrations and reject stale numeric current-schema literals.'
+);
 const adminHistoricalScripts = [
   '/js/admin-actions.js',
   '/js/admin-ui.js',
