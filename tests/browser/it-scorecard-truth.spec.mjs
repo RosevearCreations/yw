@@ -4,6 +4,8 @@ import path from 'node:path';
 
 const uiSource=fs.readFileSync(path.join(process.cwd(),'js/it-readiness-ui.js'),'utf8');
 const viewports=[{name:'phone',width:390,height:844},{name:'desktop',width:1440,height:960}];
+const schemaFiles=fs.readdirSync(path.join(process.cwd(),'sql')).filter((name)=>/^\d{3}_.+\.sql$/i.test(name));
+const CURRENT_SCHEMA=Math.max(...schemaFiles.map((name)=>Number(name.slice(0,3))).filter(Number.isFinite));
 
 function payload(){
   const empty={rows:[],error:null,summary:{status:'passed',total:0,blocking:0,warning:0,error:null}};
@@ -11,7 +13,7 @@ function payload(){
     ok:true,
     scope:'it_readiness_runtime',
     summary:{
-      overall_status:'amber',schema_current:true,expected_schema_version:184,latest_applied_schema_version:184,
+      overall_status:'amber',schema_current:true,expected_schema_version:CURRENT_SCHEMA,latest_applied_schema_version:CURRENT_SCHEMA,
       release_authority_status:'green',source_gate_status:'green',repository_enforcement_status:'amber',
       source_sha:'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',workflow_run_id:12345,
       production_promotion_mode:'manual_human_promotion_required',scorecard_truth_status:'green',
