@@ -4,10 +4,13 @@ import path from 'node:path';
 
 const workspaceSource = fs.readFileSync(path.join(process.cwd(),'js/it-system-workspace.js'),'utf8');
 const resolutionSource = fs.readFileSync(path.join(process.cwd(),'js/it-release-resolution-cockpit.js'),'utf8');
+function migrationVersionFromFilename(name) {
+  const match = String(name || '').match(/^(\d+)_.*\.sql$/i);
+  return match ? Number(match[1]) : NaN;
+}
 const schemaVersions = [...new Set(fs.readdirSync(path.join(process.cwd(),'sql'))
-  .filter((name)=>/^\d{3}_.+\.sql$/i.test(name))
-  .map((name)=>Number(name.slice(0,3)))
-  .filter(Number.isFinite))]
+  .map(migrationVersionFromFilename)
+  .filter(Number.isInteger))]
   .sort((a,b)=>a-b);
 const CURRENT_SCHEMA = schemaVersions.at(-1);
 const PREVIOUS_SCHEMA = schemaVersions.at(-2);
@@ -109,6 +112,13 @@ async function mountIT(page) {
 async function triggerSourceRerender(page, marker) {
   await page.evaluate((value)=>{ document.getElementById('runtimeMarker').textContent = value; },marker);
 }
+
+test('Build 299 release-readiness migration parser supports variable-width schema filenames', async ()=>{
+  expect(migrationVersionFromFilename('999_example.sql')).toBe(999);
+  expect(migrationVersionFromFilename('1000_example.sql')).toBe(1000);
+  expect(migrationVersionFromFilename('12034_example.sql')).toBe(12034);
+  expect(Number.isNaN(migrationVersionFromFilename('schema_1000_example.sql'))).toBe(true);
+});
 
 test('Build 250 consolidates release posture and keeps repository enforcement first and fail-closed', async ({page})=>{
   await mountIT(page);
