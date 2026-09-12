@@ -4,6 +4,8 @@ import path from 'node:path';
 
 const workspaceSource = fs.readFileSync(path.join(process.cwd(),'js/it-system-workspace.js'),'utf8');
 const resolutionSource = fs.readFileSync(path.join(process.cwd(),'js/it-release-resolution-cockpit.js'),'utf8');
+const schemaFiles = fs.readdirSync(path.join(process.cwd(),'sql')).filter((name)=>/^\d{3}_.+\.sql$/i.test(name));
+const CURRENT_SCHEMA = Math.max(...schemaFiles.map((name)=>Number(name.slice(0,3))).filter(Number.isFinite));
 
 async function mountIT(page) {
   await page.setContent(`<!doctype html><html><head></head><body>
@@ -18,7 +20,7 @@ async function mountIT(page) {
     </section></main>
   </body></html>`);
 
-  await page.evaluate(()=>{
+  await page.evaluate((CURRENT_SCHEMA)=>{
     window.__refreshes = 0;
     window.__snapshot = {
       interactive_mode:'bounded_runtime',
@@ -26,8 +28,8 @@ async function mountIT(page) {
       summary:{
         overall_status:'red',
         schema_current:true,
-        latest_applied_schema_version:248,
-        expected_schema_version:248,
+        latest_applied_schema_version:CURRENT_SCHEMA,
+        expected_schema_version:CURRENT_SCHEMA,
         source_gate_status:'green',
         repository_enforcement_status:'red',
         branch_protection_reported:false,
@@ -89,7 +91,7 @@ async function mountIT(page) {
     };
     window.YWIITReadiness = { getSnapshot:()=>window.__snapshot };
     document.getElementById('itReadinessRefresh').addEventListener('click',()=>{ window.__refreshes += 1; });
-  });
+  }, CURRENT_SCHEMA);
 
   await page.addScriptTag({content:workspaceSource});
   await page.addScriptTag({content:resolutionSource});
