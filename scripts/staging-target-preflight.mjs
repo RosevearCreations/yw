@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /**
  * Build 288 staging-target preflight.
+ * Build 297 hardens repository schema discovery so future four-digit migrations
+ * remain valid authority inputs instead of being truncated to three digits.
  *
  * The pure evaluateStagingTarget() helper validates only local configuration so
  * source tests can stay network-free. The executable staging:preflight command
@@ -34,11 +36,17 @@ export function projectRefFromSupabaseUrl(value){
   }catch{return '';}
 }
 
+export function migrationVersionFromFilename(name){
+  const match=String(name ?? '').match(/^(\d{3,})_.+\.sql$/i);
+  if(!match)return null;
+  const version=Number(match[1]);
+  return Number.isSafeInteger(version) && version>0 ? version : null;
+}
+
 export function repositorySchemaVersion(){
   const versions=fs.readdirSync('sql')
-    .filter((name)=>/^\d{3}_.+\.sql$/i.test(name))
-    .map((name)=>Number(name.slice(0,3)))
-    .filter(Number.isFinite);
+    .map(migrationVersionFromFilename)
+    .filter(Number.isSafeInteger);
   return versions.length ? Math.max(...versions) : 0;
 }
 
