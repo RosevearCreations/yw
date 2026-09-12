@@ -1,21 +1,24 @@
 import { test, expect } from '@playwright/test';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here=path.dirname(fileURLToPath(import.meta.url));
 const repoRoot=path.resolve(here,'../..');
 const uiPath=path.resolve(repoRoot,'js/staging-acceptance-ui.js');
+const schemaFiles=fs.readdirSync(path.resolve(repoRoot,'sql')).filter((name)=>/^\d{3}_.+\.sql$/i.test(name));
+const CURRENT_SCHEMA=Math.max(...schemaFiles.map((name)=>Number(name.slice(0,3))).filter(Number.isFinite));
 const runId='22222222-2222-4222-8222-222222222222';
 
 const currentSchemaAuthority={
-  expected_schema_version:201,latest_applied_schema_version:201,drift_status:'current',exact_schema_match:true,
+  expected_schema_version:CURRENT_SCHEMA,latest_applied_schema_version:CURRENT_SCHEMA,drift_status:'current',exact_schema_match:true,
   minimum_schema:197,message:'Runtime schema is current.',checked_at:'2026-09-04T20:00:00Z'
 };
 
 function payloadFor(environmentGuard){
   const environmentReady=environmentGuard.mutation_allowed===true;
   return {
-    ok:environmentReady,build:'build278-proof',schema:201,minimum_schema:197,
+    ok:environmentReady,build:'build278-proof',schema:CURRENT_SCHEMA,minimum_schema:197,
     schema_authority:structuredClone(currentSchemaAuthority),
     environment_guard:structuredClone(environmentGuard),
     summary:{
@@ -30,7 +33,7 @@ function payloadFor(environmentGuard){
       resolution_class:'staging_acceptance',requires_human:true,requires_external:false,
       resolution_note:'Source-ready candidate; dedicated non-production staging evidence is still required.',
       run_id:runId,run_key:'build278-environment-proof',suite_name:'staging_infrastructure_readiness',run_status:'started',
-      source_sha:'4be781d794625b7df6be2eaa4e050b0a27e84c80',source_workflow_run_id:33914183726,schema_version:201,
+      source_sha:'4be781d794625b7df6be2eaa4e050b0a27e84c80',source_workflow_run_id:33914183726,schema_version:CURRENT_SCHEMA,
       human_signoff_required:true,human_signoff_status:'pending',staging_acceptance_status:'collecting_evidence',acceptance_complete:false
     }],
     scenario_plan:[{
@@ -40,7 +43,7 @@ function payloadFor(environmentGuard){
       case_description:'Human staging evidence remains required even when the source scenario is ready.',evidence_kind:'manual',verification_mode:'human',
       is_blocking:true,expected_outcome:'Exercise the write form only in dedicated non-production staging.',prerequisites:[{kind:'environment',key:'dedicated non-production staging'}],
       case_sort_order:10,run_id:runId,run_key:'build278-environment-proof',suite_name:'staging_infrastructure_readiness',run_status:'started',
-      source_sha:'4be781d794625b7df6be2eaa4e050b0a27e84c80',source_workflow_run_id:33914183726,schema_version:201,
+      source_sha:'4be781d794625b7df6be2eaa4e050b0a27e84c80',source_workflow_run_id:33914183726,schema_version:CURRENT_SCHEMA,
       human_signoff_required:true,human_signoff_status:'pending',case_status:'pending',observed_outcome:null,evidence_status:'pending_evidence',
       prerequisite_truth:'requires_human_staging_evidence',human_action_required:true
     }],
