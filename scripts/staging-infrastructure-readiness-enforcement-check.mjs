@@ -82,6 +82,22 @@ add('staging-target-readiness-checklist-is-explicit', hasAll(ui, [
   'Creating a Supabase project or development branch is a separate infrastructure decision'
 ]), 'The I.T. staging panel exposes each prerequisite independently and treats missing registry authority as denied.');
 
+add('browser-current-schema-derived-from-repository',
+  hasAll(browser, [
+    "fs.readdirSync(path.resolve(repoRoot,'sql'))",
+    'const CURRENT_SCHEMA=Math.max(...schemaFiles.map((name)=>Number(name.slice(0,3))).filter(Number.isFinite));',
+    'expected_schema_version:CURRENT_SCHEMA',
+    'latest_applied_schema_version:CURRENT_SCHEMA',
+    'schema:CURRENT_SCHEMA',
+    'schema_version:CURRENT_SCHEMA'
+  ])
+  && !/expected_schema_version:\s*\d+/.test(browser)
+  && !/latest_applied_schema_version:\s*\d+/.test(browser)
+  && !/(?<!_)schema:\s*\d+/.test(browser)
+  && !/schema_version:\s*\d+/.test(browser),
+  'Rendered staging-infrastructure fixtures derive current schema from repository migrations and reject stale numeric current-schema literals.'
+);
+
 add('browser-covers-unconfigured-runtime', hasAll(browser, [
   "test('source-ready rail stays non-runnable when staging runtime is unconfigured'",
   "runtime_environment:'unconfigured'",
