@@ -6,8 +6,13 @@ import { fileURLToPath } from 'node:url';
 const here=path.dirname(fileURLToPath(import.meta.url));
 const repoRoot=path.resolve(here,'../..');
 const uiPath=path.resolve(repoRoot,'js/staging-acceptance-ui.js');
-const schemaFiles=fs.readdirSync(path.resolve(repoRoot,'sql')).filter((name)=>/^\d{3}_.+\.sql$/i.test(name));
-const CURRENT_SCHEMA=Math.max(...schemaFiles.map((name)=>Number(name.slice(0,3))).filter(Number.isFinite));
+function migrationVersion(name){
+  const match=String(name??'').match(/^(\d+)_.*\.sql$/i);
+  return match ? Number(match[1]) : null;
+}
+const schemaVersions=fs.readdirSync(path.resolve(repoRoot,'sql')).map(migrationVersion).filter(Number.isFinite);
+if(!schemaVersions.length) throw new Error('No numbered SQL migrations found for the staging acceptance browser fixture.');
+const CURRENT_SCHEMA=Math.max(...schemaVersions);
 const runId='11111111-1111-4111-8111-111111111111';
 const sourceSha='02734b2168511b4faa54bf5f7fdea92b1d8f5b3d';
 
@@ -101,6 +106,14 @@ async function renderHarness(page,width,height,payload=basePayload){
   await page.addScriptTag({path:uiPath});
   await page.evaluate(()=>document.dispatchEvent(new CustomEvent('ywi:module-runtime-ready')));
 }
+
+test('staging acceptance migration parser supports variable-width schema numbers',()=>{
+  expect(migrationVersion('208_current.sql')).toBe(208);
+  expect(migrationVersion('999_before_boundary.sql')).toBe(999);
+  expect(migrationVersion('1000_future.sql')).toBe(1000);
+  expect(migrationVersion('12034_future.sql')).toBe(12034);
+  expect(migrationVersion('not-a-migration.sql')).toBeNull();
+});
 
 test('phone staging runtime exposes exact current schema and explicit human evidence controls',async({page})=>{
   await renderHarness(page,390,844);

@@ -15,6 +15,7 @@ const ui=read('js/staging-acceptance-ui.js');
 const runtime=read('js/module-runtime.js');
 const workflow=read('.github/workflows/staging-browser-integration.yml');
 const pkg=JSON.parse(read('package.json'));
+const browser=read('tests/browser/staging-acceptance.spec.mjs');
 
 const results=[];
 const add=(name,ok,detail='')=>results.push({name,ok:!!ok,detail});
@@ -109,6 +110,22 @@ add('admin-staging-ui-loaded-by-admin-module',hasAll(runtime,[
   "'/js/it-readiness-ui.js',",
   "'/js/staging-acceptance-ui.js'"
 ]),'Staging acceptance remains inside the permission-driven Admin bundle after the Build 229 organization layer.');
+
+add('browser-current-schema-derived-from-repository',
+  hasAll(browser,[
+    "fs.readdirSync(path.resolve(repoRoot,'sql'))",
+    'function migrationVersion(name)',
+    "String(name??'').match(/^(\\d+)_.*\\.sql$/i)",
+    '.map(migrationVersion).filter(Number.isFinite)',
+    'No numbered SQL migrations found for the staging acceptance browser fixture.',
+    "migrationVersion('1000_future.sql')",
+    "migrationVersion('12034_future.sql')",
+    "migrationVersion('not-a-migration.sql')"
+  ])
+  && !browser.includes('slice(0,3)')
+  && !browser.includes('/^\\d{3}_'),
+  'Staging acceptance fixture derives current schema from variable-width numbered migrations and guards the Schema 1000+ boundary.'
+);
 
 add('workflow-source-gates-staging',workflow.includes('npm run test:staging-acceptance')&&workflow.includes('npm run test:staging-scenarios')&&workflow.includes('npm run test:browser:staging-acceptance'));
 add('workflow-live-staging-manual-only',hasAll(workflow,[
