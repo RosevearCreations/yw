@@ -114,6 +114,19 @@ add('build296-readiness-browser-derives-latest-two-repository-schemas', all(read
 ]) && !readinessBrowser.includes('const PREVIOUS_SCHEMA = CURRENT_SCHEMA - 1'),
   'Release-readiness browser evidence derives both the current and actual prior migration from repository schema authority without assuming contiguous migration numbers.');
 
+add('build299-readiness-browser-supports-variable-width-migration-filenames', all(readinessBrowser,[
+  'function migrationVersionFromFilename(name)',
+  "const match = String(name || '').match(",
+  'return match ? Number(match[1]) : NaN;',
+  '.map(migrationVersionFromFilename)',
+  "migrationVersionFromFilename('999_example.sql')",
+  "migrationVersionFromFilename('1000_example.sql')",
+  "migrationVersionFromFilename('12034_example.sql')",
+  'toBe(1000)',
+  'toBe(12034)'
+]) && !readinessBrowser.includes('/^\\d{3}_.+\\.sql$/i') && !readinessBrowser.includes('slice(0,3)'),
+  'Release-readiness browser evidence accepts variable-width numbered SQL migrations, explicitly covers Schema 1000+, and rejects the previous three-digit parser.');
+
 add('build296-readiness-browser-has-no-numeric-current-schema-fixture',
   !/expected_schema_version\s*:\s*\d+/.test(readinessBrowser) &&
   !/latest_applied_schema_version\s*:\s*\d+/.test(readinessBrowser) &&
