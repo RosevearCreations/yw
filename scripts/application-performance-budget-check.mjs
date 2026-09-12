@@ -8,6 +8,7 @@ const itUi = read('js/it-readiness-ui.js');
 const today = read('js/mobile-today.js');
 const organizer = read('js/workspace-organization.js');
 const financeMapping = read('js/finance-account-mapping-ui.js');
+const performanceBrowser = read('tests/browser/application-performance-budget.spec.mjs');
 const help = read('help.html');
 const pkg = JSON.parse(read('package.json'));
 const workflow = read('.github/workflows/staging-browser-integration.yml');
@@ -59,6 +60,20 @@ add('release-cockpit-present', /Release & deployment cockpit/.test(itUi) && /Nex
 add('release-cockpit-read-only', /This cockpit never deploys or promotes/.test(itUi) && !/data-release-(?:deploy|promote)/i.test(itUi));
 add('budget-contract-exported-in-ui', /const PERFORMANCE_BUDGETS = Object\.freeze/.test(itUi) && /coreShellAssets:\s*30/.test(itUi) && /coreShellJs:\s*21/.test(itUi) && /itRuntimeReads:\s*10/.test(itUi));
 add('no-finance-provider-enablement', !/(FINANCE_POSTING_EXECUTION_ENABLED\s*=\s*true|PAYMENT_PROVIDER_MUTATION_ENABLED\s*=\s*true|provider_mutation_allowed\s*=\s*true)/i.test(itUi + organizer));
+add('performance-browser-schema-fixture-derives-current-repository-schema',
+  /fs\.readdirSync\(path\.join\(process\.cwd\(\),'sql'\)\)/.test(performanceBrowser) &&
+  /const CURRENT_SCHEMA = Math\.max\(\.\.\.schemaVersions\)/.test(performanceBrowser) &&
+  /expected_schema_version:\s*CURRENT_SCHEMA/.test(performanceBrowser) &&
+  /latest_applied_schema_version:\s*CURRENT_SCHEMA/.test(performanceBrowser),
+  'Rendered performance fixtures must follow the current repository schema instead of a historical literal.');
+add('performance-browser-schema-drift-fixture-is-relative',
+  /const PREVIOUS_SCHEMA = CURRENT_SCHEMA - 1/.test(performanceBrowser) &&
+  /latest_applied_schema_version:\s*PREVIOUS_SCHEMA/.test(performanceBrowser),
+  'Schema-drift acceptance must remain one version behind whatever the current repository schema becomes.');
+add('performance-browser-schema-fixture-has-no-numeric-schema-literal',
+  !/expected_schema_version\s*:\s*\d+/.test(performanceBrowser) &&
+  !/latest_applied_schema_version\s*:\s*\d+/.test(performanceBrowser),
+  'Current-schema browser fixtures must not silently become stale after a migration.');
 add('help-documents-release-cockpit', /Release &amp; Deployment Cockpit/.test(help) && /performance budget/i.test(help));
 add('source-command-wired', pkg.scripts?.['test:performance-budgets'] === 'node scripts/application-performance-budget-check.mjs');
 add('browser-command-wired', pkg.scripts?.['test:browser:performance-budgets'] === 'playwright test --config=playwright.config.mjs tests/browser/application-performance-budget.spec.mjs');

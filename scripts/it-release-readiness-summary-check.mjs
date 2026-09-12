@@ -6,6 +6,7 @@ const root = process.cwd();
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
 const source = read('js/it-release-resolution-cockpit.js');
 const worker = read('server-worker.js');
+const readinessBrowser = read('tests/browser/it-release-readiness-summary.spec.mjs');
 const pkg = JSON.parse(read('package.json'));
 const marker = 'Build 250 Release Readiness Summary';
 const start = source.indexOf(marker);
@@ -99,6 +100,22 @@ add('build250-advisory-copy-fail-closed', all(build250,[
   'does not execute gates, mutate evidence, change repository settings, apply migrations, enable Finance/provider actions, or authorize Production',
   'Unavailable evidence remains unresolved'
 ]), 'Rendered copy explicitly preserves fail-closed release authority.');
+
+add('build289-readiness-browser-derives-current-repository-schema', all(readinessBrowser,[
+  "fs.readdirSync(path.join(process.cwd(),'sql'))",
+  'const CURRENT_SCHEMA = Math.max(...schemaVersions)',
+  'const PREVIOUS_SCHEMA = CURRENT_SCHEMA - 1',
+  'latest_applied_schema_version:CURRENT_SCHEMA',
+  'expected_schema_version:CURRENT_SCHEMA',
+  '`${CURRENT_SCHEMA} / ${CURRENT_SCHEMA} current`',
+  '`${PREVIOUS_SCHEMA} / ${CURRENT_SCHEMA} review`'
+]), 'Release-readiness browser evidence now follows repository schema authority automatically.');
+
+add('build289-readiness-browser-has-no-numeric-current-schema-fixture',
+  !/expected_schema_version\s*:\s*\d+/.test(readinessBrowser) &&
+  !/latest_applied_schema_version\s*:\s*\d+/.test(readinessBrowser) &&
+  !/\b207\s*\/\s*207\s+current\b/.test(readinessBrowser),
+  'A new schema migration cannot leave the current-schema release-readiness fixture silently pinned to an older literal.');
 
 add('build250-no-core-precache', !worker.match(/APP_SHELL\s*=\s*\[[\s\S]*it-release-resolution-cockpit\.js/),
   'The combined Build 249/250 I.T. helper remains outside the Core service-worker precache.');

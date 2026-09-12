@@ -3,6 +3,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const itSource = fs.readFileSync(path.join(process.cwd(), 'js/it-readiness-ui.js'), 'utf8');
+const schemaVersions = fs.readdirSync(path.join(process.cwd(),'sql'))
+  .filter((name)=>/^\d{3}_.+\.sql$/i.test(name))
+  .map((name)=>Number(name.slice(0,3)))
+  .filter(Number.isFinite);
+const CURRENT_SCHEMA = Math.max(...schemaVersions);
+const PREVIOUS_SCHEMA = CURRENT_SCHEMA - 1;
+if (!Number.isInteger(CURRENT_SCHEMA) || CURRENT_SCHEMA < 2) throw new Error('Could not derive current repository schema for performance browser fixtures.');
 
 function section(rows = []) {
   return { rows, error: null, summary: { status: 'passed', total: rows.length, blocking: 0, warning: 0, error: null } };
@@ -12,8 +19,8 @@ function payload(overrides = {}) {
   const summary = {
     overall_status: 'amber',
     schema_current: true,
-    expected_schema_version: 207,
-    latest_applied_schema_version: 207,
+    expected_schema_version: CURRENT_SCHEMA,
+    latest_applied_schema_version: CURRENT_SCHEMA,
     release_authority_status: 'amber',
     source_gate_status: 'green',
     repository_enforcement_status: 'amber',
@@ -103,7 +110,7 @@ test('release cockpit exposes the CI performance budget contract', async ({ page
 });
 
 test('schema drift outranks later release work in the next-safe-action cue', async ({ page }) => {
-  await mount(page, payload({ schema_current: false, latest_applied_schema_version: 206, repository_enforcement_status: 'green', current_todo_count: 0, open_rail_acceptance_count: 0 }));
+  await mount(page, payload({ schema_current: false, latest_applied_schema_version: PREVIOUS_SCHEMA, repository_enforcement_status: 'green', current_todo_count: 0, open_rail_acceptance_count: 0 }));
   await expect(page.locator('#releaseDeploymentCockpit')).toContainText('Restore exact database schema parity before release work continues');
   expect(await page.evaluate(() => window.__itCalls)).toEqual(['admin-it-readiness-runtime']);
 });
