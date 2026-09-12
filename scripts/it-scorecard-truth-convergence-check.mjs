@@ -91,13 +91,20 @@ add('browser-scorecard-truth-rendered',hasAll(browser,[
 add('browser-current-schema-derived-from-repository',
   hasAll(browser,[
     "fs.readdirSync(path.join(process.cwd(),'sql'))",
-    'const CURRENT_SCHEMA=Math.max(...schemaFiles.map((name)=>Number(name.slice(0,3))).filter(Number.isFinite));',
+    'function migrationVersion(name){',
+    'match(/^(\\d+)_.*\\.sql$/i)',
+    'map(migrationVersion).filter(Number.isFinite)',
+    "throw new Error('No numbered SQL migrations found for the I.T. scorecard browser fixture.')",
     'expected_schema_version:CURRENT_SCHEMA',
-    'latest_applied_schema_version:CURRENT_SCHEMA'
+    'latest_applied_schema_version:CURRENT_SCHEMA',
+    "migrationVersion('1000_future.sql')",
+    "migrationVersion('not-a-migration.sql')"
   ])
+  && !browser.includes('slice(0,3)')
+  && !browser.includes('/^\\d{3}_')
   && !/expected_schema_version:\s*\d+/.test(browser)
   && !/latest_applied_schema_version:\s*\d+/.test(browser),
-  'I.T. scorecard browser fixtures derive current schema from repository migrations and reject stale numeric current-schema literals.'
+  'I.T. scorecard browser fixtures derive current schema from variable-width repository migrations, exercise Schema 1000+ parsing, and reject stale numeric current-schema literals.'
 );
 add('browser-nonpersistent',!/(?:fetch\(|supabase|payment_intent|paypal_order|execute_sql|insert\s+into)/i.test(browser));
 
