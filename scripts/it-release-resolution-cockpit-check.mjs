@@ -110,12 +110,14 @@ add('build249-browser-current-schema-derived-from-repository',
   all(browser,[
     "fs.readdirSync(path.join(process.cwd(),'sql'))",
     'const CURRENT_SCHEMA = Math.max(...schemaFiles.map((name)=>Number(name.slice(0,3))).filter(Number.isFinite));',
+    'page.evaluate((CURRENT_SCHEMA)=>',
     'latest_applied_schema_version:CURRENT_SCHEMA',
-    'expected_schema_version:CURRENT_SCHEMA'
+    'expected_schema_version:CURRENT_SCHEMA',
+    '}, CURRENT_SCHEMA);'
   ])
   && !/latest_applied_schema_version:\s*\d+/.test(browser)
   && !/expected_schema_version:\s*\d+/.test(browser),
-  'Rendered Build 249 fixture derives current schema from repository migrations and rejects stale numeric current-schema literals.'
+  'Rendered Build 249 fixture derives current schema from repository migrations, passes it explicitly into browser context, and rejects stale numeric current-schema literals.'
 );
 
 add('build249-source-gate-registered', String(pkg.scripts?.['test:runtime'] || '').includes('it-release-resolution-cockpit-check.mjs'), 'The Build 249 source contract is part of canonical runtime checks.');
