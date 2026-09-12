@@ -4,6 +4,13 @@ import path from 'node:path';
 
 const workspaceSource = fs.readFileSync(path.join(process.cwd(),'js/it-system-workspace.js'),'utf8');
 const resolutionSource = fs.readFileSync(path.join(process.cwd(),'js/it-release-resolution-cockpit.js'),'utf8');
+const schemaVersions = fs.readdirSync(path.join(process.cwd(),'sql'))
+  .filter((name)=>/^\d{3}_.+\.sql$/i.test(name))
+  .map((name)=>Number(name.slice(0,3)))
+  .filter(Number.isFinite);
+const CURRENT_SCHEMA = Math.max(...schemaVersions);
+const PREVIOUS_SCHEMA = CURRENT_SCHEMA - 1;
+if (!Number.isInteger(CURRENT_SCHEMA) || CURRENT_SCHEMA < 2) throw new Error('Could not derive current repository schema for release-readiness browser fixtures.');
 
 async function mountIT(page) {
   await page.setContent(`<!doctype html><html><head></head><body>
@@ -18,78 +25,78 @@ async function mountIT(page) {
     </section></main>
   </body></html>`);
 
-  await page.evaluate(()=>{
+  await page.evaluate((data)=>{
     window.__refreshes = 0;
-    window.__snapshot = {
-      interactive_mode:'bounded_runtime',
-      source_errors:[],
-      summary:{
-        overall_status:'red',
-        schema_current:true,
-        latest_applied_schema_version:207,
-        expected_schema_version:207,
-        source_gate_status:'green',
-        repository_enforcement_status:'red',
-        branch_protection_reported:false,
-        source_sha:'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        workflow_run_id:391,
-        github_divergence_evidence_available:true,
-        github_compare_status:'ahead',
-        release_divergence_status:'development_changes_pending',
-        development_sha:'1111111111111111111111111111111111111111',
-        production_sha:'2222222222222222222222222222222222222222',
-        development_tree_sha:'3333333333333333333333333333333333333333',
-        production_tree_sha:'4444444444444444444444444444444444444444',
-        development_commits_pending:1,
-        production_only_commits:0,
-        release_divergence_error:null,
-        release_policy_available:true,
-        release_policy_status:'classified',
-        release_policy_source_authority:'build_246_release_change_policy',
-        release_policy_runtime_mode:'read_only_advisory_mirror',
-        release_policy_primary_class:'schema_changing',
-        release_policy_classes:['schema_changing','finance_sensitive','deployment_sensitive'],
-        release_policy_risk_level:'critical',
-        release_policy_evidence_profile:'schema_migration_and_dependent_runtime',
-        release_policy_manual_review_required:true,
-        release_policy_required_gates:['test:promotion-shape','test:staging-runtime-schema','test:finance-posting-preflight','test:browser:performance-budgets'],
-        release_policy_changed_file_count:2,
-        release_policy_changed_files:['sql/250_example.sql','js/example.js'],
-        release_policy_changed_migrations:['250'],
-        release_policy_comparison_files_truncated:false,
-        release_policy_error:null,
-        release_evidence_checklist_available:true,
-        release_evidence_checklist_status:'missing',
-        release_evidence_checklist_candidate_sha:'1111111111111111111111111111111111111111',
-        release_evidence_checklist_workflow_run_id:9200,
-        release_evidence_checklist_workflow_run_number:392,
-        release_evidence_checklist_workflow_run_attempt:1,
-        release_evidence_checklist_workflow_status:'completed',
-        release_evidence_checklist_workflow_conclusion:'failure',
-        release_evidence_checklist_workflow_completed_at:'2026-09-07T19:00:00Z',
-        release_evidence_checklist_age_hours:0.25,
-        release_evidence_checklist_fresh_hours:24,
-        release_evidence_checklist_counts:{proven:1,missing:2,stale:1,not_applicable:0},
-        release_evidence_checklist_items:[
-          {gate:'test:promotion-shape',status:'proven',detail:'Gate step completed successfully on the exact current Development SHA within the evidence freshness window.'},
-          {gate:'test:staging-runtime-schema',status:'missing',detail:'Required workflow step is failure; success on the exact candidate SHA is required.'},
-          {gate:'test:finance-posting-preflight',status:'missing',detail:'Required gate step is not present in the selected canonical workflow evidence.'},
-          {gate:'test:browser:performance-budgets',status:'stale',detail:'Gate step succeeded on the exact candidate SHA, but workflow evidence is older than 24 hours.'}
-        ],
-        release_evidence_checklist_error:null,
-        admin_access_integrity_blockers:0,
-        readiness_blockers:0,
-        assertion_blockers:0,
-        scorecard_unclassified_open_count:0,
-        current_todo_count:0,
-        open_rail_acceptance_count:3,
-        open_rail_technical_pending_count:1,
-        scorecard_human_pending_count:0,
-        scorecard_external_pending_count:0
-      }
-    };
+    window.__snapshot = data;
     window.YWIITReadiness = { getSnapshot:()=>window.__snapshot };
     document.getElementById('itReadinessRefresh').addEventListener('click',()=>{ window.__refreshes += 1; });
+  }, {
+    interactive_mode:'bounded_runtime',
+    source_errors:[],
+    summary:{
+      overall_status:'red',
+      schema_current:true,
+      latest_applied_schema_version:CURRENT_SCHEMA,
+      expected_schema_version:CURRENT_SCHEMA,
+      source_gate_status:'green',
+      repository_enforcement_status:'red',
+      branch_protection_reported:false,
+      source_sha:'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      workflow_run_id:391,
+      github_divergence_evidence_available:true,
+      github_compare_status:'ahead',
+      release_divergence_status:'development_changes_pending',
+      development_sha:'1111111111111111111111111111111111111111',
+      production_sha:'2222222222222222222222222222222222222222',
+      development_tree_sha:'3333333333333333333333333333333333333333',
+      production_tree_sha:'4444444444444444444444444444444444444444',
+      development_commits_pending:1,
+      production_only_commits:0,
+      release_divergence_error:null,
+      release_policy_available:true,
+      release_policy_status:'classified',
+      release_policy_source_authority:'build_246_release_change_policy',
+      release_policy_runtime_mode:'read_only_advisory_mirror',
+      release_policy_primary_class:'schema_changing',
+      release_policy_classes:['schema_changing','finance_sensitive','deployment_sensitive'],
+      release_policy_risk_level:'critical',
+      release_policy_evidence_profile:'schema_migration_and_dependent_runtime',
+      release_policy_manual_review_required:true,
+      release_policy_required_gates:['test:promotion-shape','test:staging-runtime-schema','test:finance-posting-preflight','test:browser:performance-budgets'],
+      release_policy_changed_file_count:2,
+      release_policy_changed_files:['sql/250_example.sql','js/example.js'],
+      release_policy_changed_migrations:['250'],
+      release_policy_comparison_files_truncated:false,
+      release_policy_error:null,
+      release_evidence_checklist_available:true,
+      release_evidence_checklist_status:'missing',
+      release_evidence_checklist_candidate_sha:'1111111111111111111111111111111111111111',
+      release_evidence_checklist_workflow_run_id:9200,
+      release_evidence_checklist_workflow_run_number:392,
+      release_evidence_checklist_workflow_run_attempt:1,
+      release_evidence_checklist_workflow_status:'completed',
+      release_evidence_checklist_workflow_conclusion:'failure',
+      release_evidence_checklist_workflow_completed_at:'2026-09-07T19:00:00Z',
+      release_evidence_checklist_age_hours:0.25,
+      release_evidence_checklist_fresh_hours:24,
+      release_evidence_checklist_counts:{proven:1,missing:2,stale:1,not_applicable:0},
+      release_evidence_checklist_items:[
+        {gate:'test:promotion-shape',status:'proven',detail:'Gate step completed successfully on the exact current Development SHA within the evidence freshness window.'},
+        {gate:'test:staging-runtime-schema',status:'missing',detail:'Required workflow step is failure; success on the exact candidate SHA is required.'},
+        {gate:'test:finance-posting-preflight',status:'missing',detail:'Required gate step is not present in the selected canonical workflow evidence.'},
+        {gate:'test:browser:performance-budgets',status:'stale',detail:'Gate step succeeded on the exact candidate SHA, but workflow evidence is older than 24 hours.'}
+      ],
+      release_evidence_checklist_error:null,
+      admin_access_integrity_blockers:0,
+      readiness_blockers:0,
+      assertion_blockers:0,
+      scorecard_unclassified_open_count:0,
+      current_todo_count:0,
+      open_rail_acceptance_count:3,
+      open_rail_technical_pending_count:1,
+      scorecard_human_pending_count:0,
+      scorecard_external_pending_count:0
+    }
   });
 
   await page.addScriptTag({content:workspaceSource});
@@ -114,7 +121,7 @@ test('Build 250 consolidates release posture and keeps repository enforcement fi
   await expect(summary).toContainText('candidate 111111111111');
   await expect(summary).toContainText('canonical run 392');
   await expect(summary).toContainText('UNPROTECTED');
-  await expect(summary).toContainText('207 / 207 current');
+  await expect(summary).toContainText(`${CURRENT_SCHEMA} / ${CURRENT_SCHEMA} current`);
   await expect(summary).toContainText('3 open acceptance rails · 1 technical pending');
   await expect(summary).toContainText('Settings → Branches');
   await expect(summary).toContainText('main branch protection rule');
@@ -128,22 +135,22 @@ test('Build 250 advances through schema, exact-SHA gate correction, normal promo
   await mountIT(page);
   const summary = page.locator('#releaseReadinessSummary');
 
-  await page.evaluate(()=>{
+  await page.evaluate((previousSchema)=>{
     window.__snapshot.summary.repository_enforcement_status='green';
     window.__snapshot.summary.branch_protection_reported=true;
     window.__snapshot.summary.schema_current=false;
-    window.__snapshot.summary.latest_applied_schema_version=206;
-  });
+    window.__snapshot.summary.latest_applied_schema_version=previousSchema;
+  }, PREVIOUS_SCHEMA);
   await triggerSourceRerender(page,'schema-review');
   await expect(summary.locator('.it-system-status')).toHaveText('BLOCKED');
-  await expect(summary).toContainText('206 / 207 review');
+  await expect(summary).toContainText(`${PREVIOUS_SCHEMA} / ${CURRENT_SCHEMA} review`);
   await expect(summary).toContainText('Development/staging in canonical migration order');
   await expect(summary).toContainText('Never patch Production ad hoc');
 
-  await page.evaluate(()=>{
+  await page.evaluate((currentSchema)=>{
     const s=window.__snapshot.summary;
     s.schema_current=true;
-    s.latest_applied_schema_version=207;
+    s.latest_applied_schema_version=currentSchema;
     s.release_evidence_checklist_status='missing';
     s.release_evidence_checklist_counts={proven:3,missing:1,stale:0,not_applicable:0};
     s.release_evidence_checklist_items=[
@@ -152,7 +159,7 @@ test('Build 250 advances through schema, exact-SHA gate correction, normal promo
       {gate:'test:finance-posting-preflight',status:'missing',detail:'Required gate step is not present in the selected canonical workflow evidence.'},
       {gate:'test:browser:performance-budgets',status:'proven',detail:'Gate step completed successfully.'}
     ];
-  });
+  }, CURRENT_SCHEMA);
   await triggerSourceRerender(page,'gate-missing');
   await expect(summary.locator('.it-system-status')).toHaveText('BLOCKED');
   await expect(summary).toContainText('test:finance-posting-preflight: Restore the canonical workflow step for test:finance-posting-preflight');
