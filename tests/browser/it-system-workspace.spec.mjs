@@ -3,6 +3,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const workspaceSource=fs.readFileSync(path.join(process.cwd(),'js/it-system-workspace.js'),'utf8');
+const sqlDir=path.join(process.cwd(),'sql');
+const currentSchemaVersion=Math.max(...fs.readdirSync(sqlDir,{withFileTypes:true})
+  .filter((entry)=>entry.isFile())
+  .map((entry)=>entry.name.match(/^(\d+)_.*\.sql$/)?.[1])
+  .filter(Boolean)
+  .map(Number));
+if(!Number.isFinite(currentSchemaVersion)) throw new Error('No numbered SQL migrations found for the I.T. System workspace browser fixture.');
 
 async function mountIT(page){
   await page.setContent(`<!doctype html><html><head></head><body>
@@ -19,7 +26,7 @@ async function mountIT(page){
       </section>
     </main>
   </body></html>`);
-  await page.evaluate(()=>{
+  await page.evaluate(({currentSchemaVersion})=>{
     window.__refreshes=0;
     window.__scrolled=null;
     window.__snapshot={
@@ -28,8 +35,8 @@ async function mountIT(page){
       summary:{
         overall_status:'red',
         schema_current:true,
-        latest_applied_schema_version:244,
-        expected_schema_version:244,
+        latest_applied_schema_version:currentSchemaVersion,
+        expected_schema_version:currentSchemaVersion,
         source_gate_status:'green',
         repository_enforcement_status:'red',
         branch_protection_reported:false,
@@ -134,12 +141,13 @@ async function mountIT(page){
       summary.release_evidence_checklist_error=null;
       document.getElementById('runtimeMarker').textContent='refreshed';
     });
-  });
+  },{currentSchemaVersion});
   await page.addScriptTag({content:workspaceSource});
 }
 
-test('Build 248 renders divergence, release class and exact-SHA required-gate evidence without expanding authority',async({page})=>{
+test('Build 295 derives the I.T. System workspace schema fixture from canonical SQL migrations',async({page})=>{
   await mountIT(page);
+  const schemaText=`${currentSchemaVersion} / ${currentSchemaVersion}`;
   await expect(page.locator('#itSystemWorkspace')).toBeVisible();
   await expect(page.locator('#itSystemWorkspace')).toHaveAttribute('data-build','248');
   await expect(page.locator('#itSystemWorkspace')).toContainText('does not deploy, change repository protection, mutate database schema, change authentication/roles, rerun browser smoke, authorize Production');
@@ -147,7 +155,7 @@ test('Build 248 renders divergence, release class and exact-SHA required-gate ev
   await expect(page.locator('.it-system-metric')).toHaveCount(4);
   await expect(page.locator('.it-system-metric').nth(0)).toContainText('green');
   await expect(page.locator('.it-system-metric').nth(1)).toContainText('red');
-  await expect(page.locator('.it-system-metric').nth(2)).toContainText('244 / 244');
+  await expect(page.locator('.it-system-metric').nth(2)).toContainText(schemaText);
   await expect(page.locator('.it-system-context')).toContainText('abcdef123456');
   await expect(page.locator('.it-system-context')).toContainText('workflow 373');
 
@@ -159,7 +167,7 @@ test('Build 248 renders divergence, release class and exact-SHA required-gate ev
   await expect(divergence).toContainText('tree 333333333333');
   await expect(divergence).toContainText('tree 444444444444');
   await expect(divergence).toContainText('diverged · +2 dev / +1 main-only');
-  await expect(divergence).toContainText('CURRENT 244 / 244');
+  await expect(divergence).toContainText(`CURRENT ${schemaText}`);
   await expect(divergence).toContainText('Build 244 release-candidate manifest contract');
   await expect(divergence).toContainText('Repository enforcement is not GREEN');
   await expect(divergence).toContainText('Enable and verify main branch protection');
