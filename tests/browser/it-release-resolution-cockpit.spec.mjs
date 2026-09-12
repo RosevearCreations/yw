@@ -20,7 +20,7 @@ async function mountIT(page) {
     </section></main>
   </body></html>`);
 
-  await page.evaluate(()=>{
+  await page.evaluate((CURRENT_SCHEMA)=>{
     window.__refreshes = 0;
     window.__snapshot = {
       interactive_mode:'bounded_runtime',
@@ -91,7 +91,7 @@ async function mountIT(page) {
     };
     window.YWIITReadiness = { getSnapshot:()=>window.__snapshot };
     document.getElementById('itReadinessRefresh').addEventListener('click',()=>{ window.__refreshes += 1; });
-  });
+  }, CURRENT_SCHEMA);
 
   await page.addScriptTag({content:workspaceSource});
   await page.addScriptTag({content:resolutionSource});
