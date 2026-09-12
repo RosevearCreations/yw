@@ -101,17 +101,20 @@ add('build250-advisory-copy-fail-closed', all(build250,[
   'Unavailable evidence remains unresolved'
 ]), 'Rendered copy explicitly preserves fail-closed release authority.');
 
-add('build289-readiness-browser-derives-current-repository-schema', all(readinessBrowser,[
+add('build296-readiness-browser-derives-latest-two-repository-schemas', all(readinessBrowser,[
   "fs.readdirSync(path.join(process.cwd(),'sql'))",
-  'const CURRENT_SCHEMA = Math.max(...schemaVersions)',
-  'const PREVIOUS_SCHEMA = CURRENT_SCHEMA - 1',
+  'const schemaVersions = [...new Set(',
+  '.sort((a,b)=>a-b)',
+  'const CURRENT_SCHEMA = schemaVersions.at(-1)',
+  'const PREVIOUS_SCHEMA = schemaVersions.at(-2)',
   'latest_applied_schema_version:CURRENT_SCHEMA',
   'expected_schema_version:CURRENT_SCHEMA',
   '`${CURRENT_SCHEMA} / ${CURRENT_SCHEMA} current`',
   '`${PREVIOUS_SCHEMA} / ${CURRENT_SCHEMA} review`'
-]), 'Release-readiness browser evidence now follows repository schema authority automatically.');
+]) && !readinessBrowser.includes('const PREVIOUS_SCHEMA = CURRENT_SCHEMA - 1'),
+  'Release-readiness browser evidence derives both the current and actual prior migration from repository schema authority without assuming contiguous migration numbers.');
 
-add('build289-readiness-browser-has-no-numeric-current-schema-fixture',
+add('build296-readiness-browser-has-no-numeric-current-schema-fixture',
   !/expected_schema_version\s*:\s*\d+/.test(readinessBrowser) &&
   !/latest_applied_schema_version\s*:\s*\d+/.test(readinessBrowser) &&
   !/\b207\s*\/\s*207\s+current\b/.test(readinessBrowser),

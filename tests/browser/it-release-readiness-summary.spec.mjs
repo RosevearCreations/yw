@@ -4,13 +4,16 @@ import path from 'node:path';
 
 const workspaceSource = fs.readFileSync(path.join(process.cwd(),'js/it-system-workspace.js'),'utf8');
 const resolutionSource = fs.readFileSync(path.join(process.cwd(),'js/it-release-resolution-cockpit.js'),'utf8');
-const schemaVersions = fs.readdirSync(path.join(process.cwd(),'sql'))
+const schemaVersions = [...new Set(fs.readdirSync(path.join(process.cwd(),'sql'))
   .filter((name)=>/^\d{3}_.+\.sql$/i.test(name))
   .map((name)=>Number(name.slice(0,3)))
-  .filter(Number.isFinite);
-const CURRENT_SCHEMA = Math.max(...schemaVersions);
-const PREVIOUS_SCHEMA = CURRENT_SCHEMA - 1;
-if (!Number.isInteger(CURRENT_SCHEMA) || CURRENT_SCHEMA < 2) throw new Error('Could not derive current repository schema for release-readiness browser fixtures.');
+  .filter(Number.isFinite))]
+  .sort((a,b)=>a-b);
+const CURRENT_SCHEMA = schemaVersions.at(-1);
+const PREVIOUS_SCHEMA = schemaVersions.at(-2);
+if (!Number.isInteger(CURRENT_SCHEMA) || !Number.isInteger(PREVIOUS_SCHEMA) || PREVIOUS_SCHEMA >= CURRENT_SCHEMA) {
+  throw new Error('Could not derive the latest two repository schemas for release-readiness browser fixtures.');
+}
 
 async function mountIT(page) {
   await page.setContent(`<!doctype html><html><head></head><body>
