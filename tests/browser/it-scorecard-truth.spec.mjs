@@ -4,8 +4,13 @@ import path from 'node:path';
 
 const uiSource=fs.readFileSync(path.join(process.cwd(),'js/it-readiness-ui.js'),'utf8');
 const viewports=[{name:'phone',width:390,height:844},{name:'desktop',width:1440,height:960}];
-const schemaFiles=fs.readdirSync(path.join(process.cwd(),'sql')).filter((name)=>/^\d{3}_.+\.sql$/i.test(name));
-const CURRENT_SCHEMA=Math.max(...schemaFiles.map((name)=>Number(name.slice(0,3))).filter(Number.isFinite));
+function migrationVersion(name){
+  const match=String(name??'').match(/^(\d+)_.*\.sql$/i);
+  return match ? Number(match[1]) : null;
+}
+const schemaVersions=fs.readdirSync(path.join(process.cwd(),'sql')).map(migrationVersion).filter(Number.isFinite);
+if(!schemaVersions.length) throw new Error('No numbered SQL migrations found for the I.T. scorecard browser fixture.');
+const CURRENT_SCHEMA=Math.max(...schemaVersions);
 
 function payload(){
   const empty={rows:[],error:null,summary:{status:'passed',total:0,blocking:0,warning:0,error:null}};
@@ -70,6 +75,12 @@ async function mount(page){
   await expect(page.locator('#itReadinessWorkspace')).toContainText('I.T. Readiness');
   return calls;
 }
+
+test('Build 298 accepts variable-width migration filenames for current-schema fixtures',()=>{
+  expect(migrationVersion('208_current.sql')).toBe(208);
+  expect(migrationVersion('1000_future.sql')).toBe(1000);
+  expect(migrationVersion('not-a-migration.sql')).toBeNull();
+});
 
 for(const viewport of viewports){
   test(`scorecard truth separates verified closure from real pending work on ${viewport.name}`,async({page})=>{
