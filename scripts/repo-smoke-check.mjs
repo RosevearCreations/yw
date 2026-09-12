@@ -6,6 +6,9 @@ import {auditRepository as auditDataApiAccess} from './data-api-explicit-access-
 const root=process.cwd(); const results=[]; const add=(name,ok,detail='')=>results.push({name,ok:!!ok,detail});
 const walk=(dir)=>fs.readdirSync(dir,{withFileTypes:true}).flatMap((e)=>{const f=path.join(dir,e.name);if(['.git','node_modules','playwright-report','test-results'].includes(e.name))return[];return e.isDirectory()?walk(f):[f];});
 const files=walk(root); const rel=(f)=>path.relative(root,f).replaceAll('\\','/');
+function migrationVersionFromFilename(name){const match=String(name??'').match(/^(\d{3,})_.+\.sql$/i);if(!match)return null;const version=Number(match[1]);return Number.isSafeInteger(version)&&version>0?version:null;}
+const migrationWidthRegression=[['999_last_three_digit.sql',999],['1000_first_four_digit.sql',1000],['12034_future_width.sql',12034],['99_too_short.sql',null],['1000.sql',null],['abcd_not_schema.sql',null]];
+add('migration-parser-variable-width-regression',migrationWidthRegression.every(([name,expected])=>migrationVersionFromFilename(name)===expected),migrationWidthRegression.map(([name,expected])=>`${name}:${migrationVersionFromFilename(name)}=>${expected}`).join(', '));
 const activeMd=files.filter((f)=>f.endsWith('.md')).map(rel).sort();
 add('active-markdown-exactly-three',JSON.stringify(activeMd)===JSON.stringify(['README.md','docs/ACTIVE_PROJECT_HANDBOOK.md','docs/NEXT_STEPS_AND_SANITY_CHECK.md']),activeMd.join(', '));
 add('no-archive-tree',!fs.existsSync('archive')); add('no-retired-markdown-tree',!files.some((f)=>/retired-markdown-/i.test(rel(f))));
@@ -15,7 +18,7 @@ add('no-generated-full-schema-snapshot',!fs.existsSync('sql/000_full_schema_refe
 const docs=activeMd.map((f)=>fs.readFileSync(f,'utf8'));
 add('active-docs-no-build-ledger',docs.every((t)=>!(/\bBuild\s+\d+\b/i.test(t)))); add('active-docs-no-run-or-sha-ledger',docs.every((t)=>!(/\bRun\s*#?\d+\b/i.test(t))&&!/\b[0-9a-f]{40}\b/i.test(t)));
 add('docs-four-module-boundary',docs.every((t)=>['Safety','Finance','Jobs','Admin'].every((k)=>t.includes(k)))); add('docs-online-help',docs.every((t)=>/help\.html/i.test(t))); add('docs-manual-production',docs.every((t)=>/Production/i.test(t)&&/manual|deliberate/i.test(t))); add('docs-finance-provider-fail-closed',docs.every((t)=>/Finance/i.test(t)&&/provider/i.test(t)&&/(OFF|fail-closed)/i.test(t)));
-const sqlNames=files.map(rel).filter((f)=>/^sql\/\d{3}_.+\.sql$/i.test(f)); const nums=sqlNames.map((f)=>Number(path.basename(f).slice(0,3))).filter(Number.isFinite).sort((a,b)=>a-b); const unique=[...new Set(nums)]; const missing=[]; if(unique.length){for(let n=30;n<=Math.max(...unique);n++)if(!unique.includes(n))missing.push(n);}
+const nums=files.map(rel).filter((f)=>f.startsWith('sql/')).map((f)=>migrationVersionFromFilename(path.basename(f))).filter(Number.isSafeInteger).sort((a,b)=>a-b); const unique=[...new Set(nums)]; const missing=[]; if(unique.length){for(let n=30;n<=Math.max(...unique);n++)if(!unique.includes(n))missing.push(n);}
 add('migration-history-contiguous',missing.length===0,missing.join(',')); add('migration-version-unique',unique.length===nums.length);
 const migration203=fs.readFileSync('sql/203_auth_evidence_authorized_recording.sql','utf8');
 const view203=(migration203.match(/create or replace view public\.v_it_auth_security_evidence_current[\s\S]*?from controls c\s*\nleft join latest l on l\.control_key=c\.control_key;/i)||[''])[0];
