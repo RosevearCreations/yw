@@ -5,6 +5,10 @@ import path from 'node:path';
 const passwordSource = fs.readFileSync(path.join(process.cwd(),'js/password-security.js'),'utf8');
 const adminSource = fs.readFileSync(path.join(process.cwd(),'js/admin-account-security-ui.js'),'utf8');
 const runtimeGateSource = fs.readFileSync(path.join(process.cwd(),'js/next-safe-action-runtime-gate.js'),'utf8');
+const schemaVersions = fs.readdirSync(path.join(process.cwd(),'sql'))
+  .map((name) => Number(name.match(/^(\d+)_.*\.sql$/)?.[1] || 0))
+  .filter((value) => Number.isInteger(value) && value > 0);
+const CURRENT_SCHEMA = Math.max(...schemaVersions);
 
 async function basePage(page, { role='employee', resetRequired=false, stagingMode='locked' } = {}) {
   await page.setContent(`<!doctype html><html><head></head><body>
@@ -16,10 +20,11 @@ async function basePage(page, { role='employee', resetRequired=false, stagingMod
       <section class="it-readiness-panel"><span class="it-readiness-kicker">Production</span><h3>Old production review</h3></section>
     </div></div>
   </body></html>`);
-  await page.evaluate(({ role, resetRequired, stagingMode }) => {
+  await page.evaluate(({ role, resetRequired, stagingMode, currentSchema }) => {
     window.__authState = { isAuthenticated:true, pendingAuthResolution:false, needsAccountSetup:false, role, profile:{ id: role==='admin'?'admin-1':'user-1', full_name: role==='admin'?'Admin User':'Worker User', password_reset_required:resetRequired }, user:{ id: role==='admin'?'admin-1':'user-1' } };
     window.__apiCalls = [];
     window.__stagingMode = stagingMode;
+    window.__currentSchema = currentSchema;
     window.YWI_AUTH = {
       getState: () => ({ ...window.__authState, profile:{...window.__authState.profile} }),
       changePassword: async () => ({ user:{id:window.__authState.user.id} }),
@@ -44,8 +49,8 @@ async function basePage(page, { role='employee', resetRequired=false, stagingMod
               },
               schema_authority:{
                 exact_schema_match:true,
-                expected_schema_version:202,
-                latest_applied_schema_version:202,
+                expected_schema_version:window.__currentSchema,
+                latest_applied_schema_version:window.__currentSchema,
                 message:'Staging database exactly matches the current repository schema authority.'
               }
             };
@@ -61,8 +66,8 @@ async function basePage(page, { role='employee', resetRequired=false, stagingMod
             },
             schema_authority:{
               exact_schema_match:true,
-              expected_schema_version:202,
-              latest_applied_schema_version:202,
+              expected_schema_version:window.__currentSchema,
+              latest_applied_schema_version:window.__currentSchema,
               message:'Runtime schema is current, but Production is never valid staging evidence.'
             }
           };
@@ -104,7 +109,7 @@ async function basePage(page, { role='employee', resetRequired=false, stagingMod
         return {ok:true};
       }
     };
-  }, { role, resetRequired, stagingMode });
+  }, { role, resetRequired, stagingMode, currentSchema:CURRENT_SCHEMA });
 }
 
 test('eyeball reveals only the value entered in the browser and temporary password forces settings gate', async ({ page }) => {
@@ -187,7 +192,7 @@ test('next safe action runtime gate becomes RUNNABLE only when environment and e
 
   await expect(page.locator('#adminNextSafeActionRuntimeGate')).toContainText('Runtime execution gate: RUNNABLE');
   await expect(page.locator('#adminNextSafeActionRuntimeGate')).toContainText('Dedicated non-production environment guard is satisfied.');
-  await expect(page.locator('#adminNextSafeActionRuntimeGate')).toContainText('Expected Schema 202 · live Schema 202');
+  await expect(page.locator('#adminNextSafeActionRuntimeGate')).toContainText(`Expected Schema ${CURRENT_SCHEMA} · live Schema ${CURRENT_SCHEMA}`);
   const calls = await page.evaluate(() => window.__apiCalls);
   expect(calls.filter((row)=>row.path==='admin-staging-acceptance' && row.action==='status').length).toBe(1);
   expect(calls.some((row)=>['record_case','finalize','signoff'].includes(row.action))).toBe(false);
