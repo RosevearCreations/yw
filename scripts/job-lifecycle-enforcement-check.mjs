@@ -20,13 +20,29 @@ const all = (text, values) => values.every((value) => text.includes(value));
 const checks = [];
 const add = (name, ok) => checks.push([name, !!ok]);
 
-const schemaFiles = fs.readdirSync('sql').filter((name) => /^\d{3}_.+\.sql$/i.test(name));
-const schemaVersions = schemaFiles.map((name) => Number(name.slice(0, 3))).filter(Number.isFinite);
-const repoLatestSchema = Math.max(...schemaVersions);
-const currentSchemaFile = schemaFiles.find((name) => Number(name.slice(0, 3)) === repoLatestSchema) || '';
+function migrationVersionFromFilename(name) {
+  const match = String(name ?? '').match(/^(\d{3,})_.+\.sql$/i);
+  if (!match) return null;
+  const version = Number(match[1]);
+  return Number.isSafeInteger(version) && version > 0 ? version : null;
+}
+const migrationParserRegression = [
+  ['999_last_three_digit.sql', 999],
+  ['1000_first_four_digit.sql', 1000],
+  ['12034_future_width.sql', 12034],
+].every(([name, expected]) => migrationVersionFromFilename(name) === expected)
+  && ['99_too_short.sql', '1000.sql', 'abcd_not_schema.sql', '1000_future.txt', '', null, undefined]
+    .every((name) => migrationVersionFromFilename(name) === null);
+const schemaEntries = fs.readdirSync('sql')
+  .map((name) => ({ name, version: migrationVersionFromFilename(name) }))
+  .filter((entry) => Number.isSafeInteger(entry.version));
+const schemaVersions = schemaEntries.map((entry) => entry.version);
+const repoLatestSchema = schemaVersions.length ? Math.max(...schemaVersions) : Number.NaN;
+const currentSchemaFile = schemaEntries.find((entry) => entry.version === repoLatestSchema)?.name || '';
 const currentSchema = currentSchemaFile ? read(`sql/${currentSchemaFile}`) : '';
 const markerPattern = new RegExp(`\\b${repoLatestSchema}(?:::int)?\\s+as\\s+expected_schema_version\\b`, 'i');
 
+add('migration-parser-supports-variable-width-schema-numbers', migrationParserRegression);
 add('historical-live-update-authority', all(live,[
   'work_order_live_updates','work_order_live_update_media','v_customer_portal_live_updates',
   'ywi_rpc_create_work_order_live_update','ywi_rpc_retract_work_order_live_update',
