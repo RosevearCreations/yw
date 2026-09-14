@@ -21,7 +21,7 @@ export function classifyChangedFiles(files=[]){
 
   for(const file of normalized){
     const lower=file.toLowerCase();
-    const migration=file.match(/^sql\/(\d{3}[a-z]?)_.+\.sql$/i);
+    const migration=file.match(/^sql\/(\d{3,}[a-z]?)_.+\.sql$/i);
     if(migration){
       surfaces.push('database_schema');
       riskTags.push('schema_changing');
