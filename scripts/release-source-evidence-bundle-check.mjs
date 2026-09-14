@@ -23,6 +23,25 @@ const baseEnv={
   YWI_GITHUB_WORKFLOW_NAME:EXPECTED_WORKFLOW,
   YWI_SOURCE_CHECKS_RESULT:'success',
 };
+
+function discoverSchemaFromNames(names){
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'ywi-release-schema-width-'));
+  try{
+    const sqlDir=path.join(root,'sql');
+    fs.mkdirSync(sqlDir);
+    for(const name of names)fs.writeFileSync(path.join(sqlDir,name),'-- schema-width fixture\n','utf8');
+    return discoverLatestSchema(root);
+  } finally {
+    fs.rmSync(root,{recursive:true,force:true});
+  }
+}
+
+assert.equal(discoverSchemaFromNames(['999_last_three_digit.sql']),999,'Schema 999 must remain discoverable.');
+assert.equal(discoverSchemaFromNames(['1000_first_four_digit.sql']),1000,'Schema 1000 must be discoverable.');
+assert.equal(discoverSchemaFromNames(['999_last_three_digit.sql','1000_first_four_digit.sql','12034_future_width.sql']),12034,'Variable-width discovery must select the highest schema.');
+assert.equal(discoverSchemaFromNames(['1000a_suffix_compatibility.sql']),1000,'Historical optional migration suffix semantics must remain supported beyond three digits.');
+assert.equal(discoverSchemaFromNames(['99_too_short.sql','1000.sql','schema_1000_bad.sql','1000-bad.sql']),0,'Malformed migration filenames must not influence schema discovery.');
+
 const latestSchema=discoverLatestSchema();
 assert.ok(latestSchema>=201,`Expected repository schema 201 or newer, got ${latestSchema}.`);
 
