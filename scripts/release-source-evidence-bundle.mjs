@@ -18,7 +18,7 @@ export function discoverLatestSchema(root=process.cwd()){
   try{ names=fs.readdirSync(sqlDir,{withFileTypes:true}).filter((entry)=>entry.isFile()).map((entry)=>entry.name); }
   catch{ return 0; }
   return names.reduce((latest,name)=>{
-    const match=name.match(/^(\d{3})(?:[a-z])?_.+\.sql$/i);
+    const match=name.match(/^(\d{3,})(?:[a-z])?_.+\.sql$/i);
     if(!match)return latest;
     return Math.max(latest,Number.parseInt(match[1],10));
   },0);
