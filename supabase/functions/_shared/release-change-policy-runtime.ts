@@ -102,7 +102,7 @@ function classifyChangedFiles(files: string[]) {
   const migrations: string[] = [];
   for (const file of normalized) {
     const lower = file.toLowerCase();
-    const migration = file.match(/^sql\/(\d{3}[a-z]?)_.+\.sql$/i);
+    const migration = file.match(/^sql\/(\d{3,}[a-z]?)_.+\.sql$/i);
     if (migration) {
       riskTags.push("schema_changing");
       migrations.push(migration[1].toLowerCase());
