@@ -26,6 +26,22 @@ check('schema-change-selects-migration-and-runtime-gates',()=>{
   for(const gate of GATE_PROFILES.schema_changing)assert.ok(policy.required_gate_scripts.includes(gate),gate);
 });
 
+check('schema-1000-plus-change-remains-schema-changing',()=>{
+  const policy=buildReleaseChangePolicy(['sql/1000_future_schema.sql','sql/12034a_future_followup.sql']);
+  assert.equal(policy.primary_class,'schema_changing');
+  assert.equal(policy.risk_level,'critical');
+  assert.equal(policy.database_migration_required,true);
+  assert.equal(policy.staging_acceptance_required,true);
+  assert.deepEqual(policy.changed_migrations,['1000','12034a']);
+  for(const gate of GATE_PROFILES.schema_changing)assert.ok(policy.required_gate_scripts.includes(gate),gate);
+});
+
+check('malformed-schema-filenames-do-not-fabricate-schema-change',()=>{
+  const policy=buildReleaseChangePolicy(['sql/schema_1000_future.sql','sql/12_too_short.sql']);
+  assert.equal(policy.database_migration_required,false);
+  assert.deepEqual(policy.changed_migrations,[]);
+});
+
 check('auth-change-selects-security-evidence',()=>{
   const policy=buildReleaseChangePolicy(['supabase/functions/auth-admin/index.ts','tests/auth-security.spec.mjs']);
   assert.ok(policy.classes.includes('auth_or_security_sensitive'));
@@ -101,6 +117,7 @@ check('dynamic-candidate-evaluation-fails-closed-without-change-evidence',()=>{
 const pkg=JSON.parse(fs.readFileSync('package.json','utf8'));
 const workflow=fs.readFileSync('.github/workflows/staging-browser-integration.yml','utf8');
 const manifest=fs.readFileSync('scripts/release-candidate-manifest.mjs','utf8');
+const runtimePolicySource=fs.readFileSync('supabase/functions/_shared/release-change-policy-runtime.ts','utf8');
 check('package-wires-build-246-classifier',()=>{
   assert.equal(pkg.scripts?.['release:classify'],'node scripts/release-change-policy.mjs');
   assert.equal(pkg.scripts?.['test:release-classifier'],'node scripts/release-change-policy-check.mjs');
@@ -115,6 +132,13 @@ check('build-244-manifest-remains-evidence-not-release-authority',()=>{
   assert.match(manifest,/descriptive_evidence_only:true/);
   assert.match(manifest,/release_authorization_performed:false/);
   assert.ok(!manifest.includes('production_promotion_performed:true'));
+});
+check('runtime-policy-mirror-keeps-variable-width-migration-contract',()=>{
+  assert.ok(runtimePolicySource.includes('^sql\\/(\\d{3,}[a-z]?)_.+\\.sql$'));
+  assert.ok(!runtimePolicySource.includes('^sql\\/(\\d{3}[a-z]?)_.+\\.sql$'));
+  assert.ok(runtimePolicySource.includes('read_only_advisory_mirror'));
+  assert.ok(runtimePolicySource.includes('production_promotion_performed: false'));
+  assert.ok(runtimePolicySource.includes('database_mutation_performed: false'));
 });
 
 const passed=checks.filter((item)=>item.ok).length;
