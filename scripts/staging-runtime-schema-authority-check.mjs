@@ -50,6 +50,12 @@ add('browser-schema-mismatch-lock-proof',all(browser,[
 ]));
 add('browser-no-stale-build187-runtime-labels',!browser.includes("run_key:'staging-b187-ops'")&&!browser.includes("suite_name:'build187_operations_cockpit_live_acceptance'"));
 
+add('runner-variable-width-schema-discovery',all(runner,[
+  'function migrationVersionFromFilename(name)',
+  '\\d{3,}',
+  'migration-parser-variable-width-regression',
+  'Number.isSafeInteger(repoLatestSchema)'
+])&&!runner.includes('\\d{3}_')&&!runner.includes('slice(0,3)'));
 add('runner-already-current-schema-exact',all(runner,[
   'Current-schema staging acceptance runner',
   'repoLatestSchema',
