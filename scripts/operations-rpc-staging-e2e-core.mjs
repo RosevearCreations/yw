@@ -30,10 +30,18 @@ const add = (name, ok, details = '') => checks.push({ name, ok:!!ok, details });
 const uuid = (value) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value || '').trim());
 const sha40 = (value) => /^[0-9a-f]{40}$/.test(String(value || '').trim());
 const CATALOG_SCHEMA_VERSION = 187;
-const schemaFiles = fs.readdirSync('sql').filter((name) => /^\d{3}_.+\.sql$/i.test(name));
-const schemaVersions = schemaFiles.map((name) => Number(name.slice(0,3))).filter(Number.isFinite);
-const repoLatestSchema = Math.max(...schemaVersions);
-const currentSchemaFile = schemaFiles.find((name) => Number(name.slice(0,3)) === repoLatestSchema) || '';
+function migrationVersionFromFilename(name) {
+  const match = String(name ?? '').match(/^(\d{3,})_.+\.sql$/i);
+  if (!match) return null;
+  const version = Number(match[1]);
+  return Number.isSafeInteger(version) && version > 0 ? version : null;
+}
+const schemaFiles = fs.readdirSync('sql').filter((name) => migrationVersionFromFilename(name) !== null);
+const schemaVersions = schemaFiles.map((name) => migrationVersionFromFilename(name)).filter(Number.isSafeInteger);
+const repoLatestSchema = schemaVersions.length ? Math.max(...schemaVersions) : null;
+const currentSchemaFile = Number.isSafeInteger(repoLatestSchema)
+  ? schemaFiles.find((name) => migrationVersionFromFilename(name) === repoLatestSchema) || ''
+  : '';
 const currentSchemaMigration = currentSchemaFile ? read(`sql/${currentSchemaFile}`) : '';
 const expectedMarkerPattern = new RegExp(`\\b${repoLatestSchema}(?:::int)?\\s+as\\s+expected_schema_version\\b`,'i');
 const allowedRails = new Set([
@@ -42,6 +50,15 @@ const allowedRails = new Set([
   'supervisor_closeout_signoff_invoice_followup'
 ]);
 
+const migrationParserRegression = [
+  ['999_last_three_digit.sql', 999],
+  ['1000_first_four_digit.sql', 1000],
+  ['12034_future_width.sql', 12034],
+  ['99_too_short.sql', null],
+  ['1000.sql', null],
+  ['abcd_not_schema.sql', null],
+].every(([name, expected]) => migrationVersionFromFilename(name) === expected);
+add('migration-parser-variable-width-regression', migrationParserRegression);
 add('schema186-control-plane-still-present', all(migration186,[
   'ywi_rpc_signoff_staging_acceptance_run','staging_evidence_never_auto_closes_scorecard',
   'v_it_staging_acceptance_status'
@@ -66,7 +83,7 @@ add('schema201-quote-runner-authority-source', repoLatestSchema < 201 || all(mig
   'quote_invalid_payload_rejected','quote_submission_creates_request','quote_created_event_recorded',
   'quote_fixture_cleanup','quote_human_acceptance_review','verification_mode = \'runner\''
 ]));
-add('current-repository-schema-detected', Number.isInteger(repoLatestSchema) && repoLatestSchema >= CATALOG_SCHEMA_VERSION && !!currentSchemaFile, `${repoLatestSchema}:${currentSchemaFile}`);
+add('current-repository-schema-detected', Number.isSafeInteger(repoLatestSchema) && repoLatestSchema >= CATALOG_SCHEMA_VERSION && !!currentSchemaFile, `${repoLatestSchema}:${currentSchemaFile}`);
 add('current-repository-schema-marker-exact', expectedMarkerPattern.test(currentSchemaMigration));
 add('fixture-script-project-ref-guard', all(fixturesScript,[
   'YWI_STAGING_PROJECT_REF','YWI_PRODUCTION_PROJECT_REF',
