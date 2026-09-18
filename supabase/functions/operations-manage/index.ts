@@ -762,7 +762,7 @@ async function queuePayload(supabase: any, profile: any) {
   const bankHistoryIds = (queueMap.bank_imports || []).slice(0, 20).map((row: any) => clean(row.id, 80)).filter(isUuid);
   const bankReviewIds = (queueMap.bank_imports || [])
     .filter((row: any) => !row.promoted_at && row.preview_status !== 'discarded')
-    .slice(0, 8)
+    .slice(0, 20)
     .map((row: any) => clean(row.id, 80))
     .filter(isUuid);
   const [bankItems, profiles, banks, rails, stripeRows, exportRows, testRows, policyRows, signalRows, alertRows, releaseRows, capabilitySnapshot] = await Promise.all([
@@ -785,7 +785,7 @@ async function queuePayload(supabase: any, profile: any) {
       .in('import_id', bankReviewIds)
       .is('promoted_at', null)
       .order('row_number')
-      .limit(300)) : Promise.resolve([]),
+      .limit(500)) : Promise.resolve([]),
     bankHistoryIds.length ? safeSelect(supabase.from('bank_csv_import_previews')
       .select('id,validation_summary,metadata,header_json,updated_at')
       .in('id', bankHistoryIds)
