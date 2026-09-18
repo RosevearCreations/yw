@@ -404,7 +404,7 @@
   async function handleArApplicationPreview() {
     const form=byId('oc_ar_application_form'); if(!form) return;
     const payload=buildArApplicationPayload(form);
-    const response=await send({action:'payment_application_preview',...payload},'A/R application validation',false);
+    const response=await send({action:'payment_action_request',preview_only:true,...payload},'A/R application validation',false);
     paymentApplicationPreview=response?.preview || null;
     renderArApplicationPreview(paymentApplicationPreview);
     if(paymentApplicationPreview?.allowed) status('A/R application checks passed. Review the evidence, then submit for approval. Ledger posting remains OFF.');
@@ -712,7 +712,7 @@
           <label>Amount<input name="amount" type="number" min="0.01" step="0.01" required /></label>
           <label>Proof reference<input name="proof_reference" required placeholder="Receipt, deposit, approval, or document reference" /></label>
           <label class="operations-span">Reason / reviewer context<textarea name="reason" minlength="8" required placeholder="Explain why this amount should be applied and any adjustment authority."></textarea></label>
-          <div class="operations-actions operations-span"><button id="oc_ar_application_preview_btn" type="button" class="secondary" data-oc-permission="payment_application_preview">Preview &amp; validate</button><button id="oc_ar_application_submit" type="submit" data-oc-permission="payment_action_request" disabled>Submit for approval</button></div>
+          <div class="operations-actions operations-span"><button id="oc_ar_application_preview_btn" type="button" class="secondary" data-oc-permission="payment_action_request">Preview &amp; validate</button><button id="oc_ar_application_submit" type="submit" data-oc-permission="payment_action_request" disabled>Submit for approval</button></div>
         </form><div id="oc_ar_application_preview" class="oc-recon-review" aria-live="polite"><p class="muted">Preview the application to validate customer identity, source balance, invoice balance, date, proof, and open-period status before submitting.</p></div><h4>A/R application review queue</h4><div id="oc_payment_queue" class="oc-live-queue"></div></details>
         <details><summary>General payment request — posting disabled</summary><p class="muted">Legacy/general payment requests can still be staged for review. Build 313 does not provide a ledger-post action.</p><form id="oc_payment_form" class="operations-form">
           <label>Action<select name="action_type"><option value="apply_payment">Apply payment</option><option value="reverse_payment">Reverse payment</option><option value="refund">Refund</option><option value="write_off">Write-off</option><option value="overpayment_credit">Overpayment credit</option></select></label>
