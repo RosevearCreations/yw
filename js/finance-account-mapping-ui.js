@@ -1,6 +1,6 @@
 /* File: js/finance-account-mapping-ui.js
    Schema 180 human accountant mapping review, Schema 181 read-only observability,
-   and Schema 183 structural chart-account decision support.
+   Schema 183 structural chart-account decision support, and Build 314 posting-preview integration.
    Human review only: this client cannot enable posting execution, mutate providers,
    write Jobs state, or auto-select/auto-approve a chart account.
 */
@@ -69,7 +69,7 @@
       <label><span>Chart account</span><select data-mapping-account="${esc(row.mapping_key)}">${accountOptions(row.mapping_key,row.account_id)}</select></label>
       <small>Expected account type: <strong>${esc(expected)}</strong>. Type-mismatch choices may be reviewed/rejected, but the database will not approve them.</small>
       <div class="finance-review-actions">
-        <button type="button" data-mapping-review="review" data-mapping-key="${esc(row.mapping_key)}" ${state.mutating?'disabled':''}>Save for review</button>
+        <button type="button" data-mapping-review="review" data-mapping-key="${esc(row.mapping_key)}" ${state.mutating?'disabled':''}>Reclassify for review</button>
         <button type="button" data-mapping-review="approved" data-mapping-key="${esc(row.mapping_key)}" ${state.mutating?'disabled':''}>Approve</button>
         <button type="button" data-mapping-review="rejected" data-mapping-key="${esc(row.mapping_key)}" ${state.mutating?'disabled':''}>Reject</button>
       </div>
@@ -100,6 +100,70 @@
     return `<strong>${esc(label(current.compatibility_code))}</strong><br>
       <small>Expected ${esc(current.expected_account_type||'unknown')} · ${eligible} compatible active candidate(s)</small><br>
       <small>${esc(current.decision_support_message||'')}</small>`;
+  }
+
+  function money(value){
+    const n=Number(value||0);
+    return Number.isFinite(n)?new Intl.NumberFormat('en-CA',{style:'currency',currency:'CAD'}).format(n):'—';
+  }
+
+  function mappingByKey(key){
+    const rows=Array.isArray(state.payload?.mappings)?state.payload.mappings:[];
+    return rows.find((row)=>String(row?.mapping_key||'')===String(key||''))||null;
+  }
+
+  function postingPreviewPanel(){
+    const previews=Array.isArray(state.payload?.posting_previews)?state.payload.posting_previews:[];
+    if(!previews.length){
+      return `<section class="finance-list-card"><div class="finance-list-heading"><div><h3>Posting preview</h3><small>Schema 176 read-only proposed entries before posting can ever occur.</small></div><span>0 candidates</span></div><div class="finance-empty"><strong>No posting candidate pairs are available.</strong><small>Preview remains read-only; no browser action can manufacture a posting candidate.</small></div></section>`;
+    }
+    const cards=previews.slice(0,12).map((row)=>{
+      const journal=row?.journal_plan||{};
+      const invoice=row?.invoice_plan||{};
+      const mapped=invoice?.mapped_fields||{};
+      const entries=Array.isArray(journal?.proposed_entries)?journal.proposed_entries:[];
+      const blockers=Array.isArray(row?.blockers)?row.blockers:[];
+      const tax=Number(mapped?.tax_total||0);
+      const entryRows=entries.map((entry)=>{
+        const mapping=mappingByKey(entry?.account_mapping_key);
+        const account=mapping?.account_id?`${mapping.account_number||'—'} — ${mapping.account_name||''}`:'UNMAPPED';
+        const decision=mapping?.mapping_approved===true?'approved':String(mapping?.review_status||'review required');
+        return `<tr>
+          <td data-label="Line">${esc(entry?.line??'—')}</td>
+          <td data-label="Mapping"><strong>${esc(mapping?.target_label||entry?.account_mapping_key||'—')}</strong><br><small>${esc(entry?.account_mapping_key||'')}</small></td>
+          <td data-label="Mapped account"><strong>${esc(account)}</strong><br><small>${esc(decision)}</small></td>
+          <td data-label="Debit">${money(entry?.debit_amount)}</td>
+          <td data-label="Credit">${money(entry?.credit_amount)}</td>
+        </tr>`;
+      }).join('');
+      return `<article class="finance-list-card" data-posting-preview="${esc(row?.intake_id||row?.finance_intake_id||'')}">
+        <div class="finance-list-heading"><div><h4>Source transaction ${esc(row?.job_code||row?.work_order_number||row?.intake_id||row?.finance_intake_id||'candidate')}</h4><small>Canonical Finance intake → invoice candidate → journal candidate</small></div><span>${esc(row?.preflight_status||'unknown')}</span></div>
+        <div class="finance-stat-grid">
+          ${statusCard('Debit total',money(journal?.debit_total),'Proposed only')}
+          ${statusCard('Credit total',money(journal?.credit_total),journal?.is_balanced===true?'Balanced':'Balance check required')}
+          ${statusCard('Tax treatment',tax>0?`Sales tax payable ${money(tax)}`:'Zero-tax transaction',tax>0?'Tax mapping required':'No tax line proposed')}
+          ${statusCard('Blockers',String(blockers.length),blockers.length?'Must be resolved before any release':'No preflight blockers')}
+        </div>
+        ${entryRows?`<div class="table-wrap"><table class="finance-table"><thead><tr><th>Line</th><th>Mapping</th><th>Mapped account</th><th>Debit</th><th>Credit</th></tr></thead><tbody>${entryRows}</tbody></table></div>`:'<div class="finance-empty"><strong>No proposed entries returned.</strong></div>'}
+        <div class="finance-module-note"><strong>Evidence:</strong> intake ${esc(row?.intake_id||row?.finance_intake_id||'—')} · posting approval ${esc(row?.posting_approval_id||journal?.posting_approval_id||invoice?.posting_approval_id||'not approved')} · idempotency ${esc(journal?.idempotency_key||invoice?.idempotency_key||'not available')}.</div>
+        ${blockers.length?`<div class="finance-module-note"><strong>Preflight blockers:</strong> ${blockers.map((b)=>esc(b?.code||b?.message||'unknown')).join(' · ')}</div>`:''}
+        <div class="finance-module-note"><strong>Execution boundary:</strong> this is a read-only posting preview. Posting execution and provider/payment mutation remain OFF.</div>
+      </article>`;
+    }).join('');
+    return `<section class="finance-list-card" id="financePostingPreviewWorkbench"><div class="finance-list-heading"><div><h3>Account Mapping &amp; Posting Preview</h3><small>Build 314 shows source transaction, proposed debit/credit entries, mapped accounts, tax treatment and evidence before posting.</small></div><span>${previews.length} candidate${previews.length===1?'':'s'}</span></div>${cards}</section>`;
+  }
+
+  function decisionAuditPanel(){
+    const audit=Array.isArray(state.payload?.decision_audit)?state.payload.decision_audit:[];
+    return `<section class="finance-list-card" id="financeMappingDecisionAudit"><div class="finance-list-heading"><div><h3>Preview-to-decision audit trail</h3><small>Immutable Schema 180 mapping decisions supporting the current posting preview.</small></div><span>${audit.length} event${audit.length===1?'':'s'}</span></div>
+      ${audit.length?`<div class="table-wrap"><table class="finance-table"><thead><tr><th>When</th><th>Mapping</th><th>Decision</th><th>Account change</th><th>Reason / evidence</th></tr></thead><tbody>${audit.slice(0,50).map((row)=>`<tr>
+        <td data-label="When">${esc(row?.reviewed_at?new Date(row.reviewed_at).toLocaleString('en-CA'):'—')}</td>
+        <td data-label="Mapping"><strong>${esc(row?.mapping_key||'—')}</strong></td>
+        <td data-label="Decision">${esc(row?.prior_review_status||'—')} → <strong>${esc(row?.new_review_status||'—')}</strong></td>
+        <td data-label="Account change"><small>${esc(row?.prior_account_id||'none')} → ${esc(row?.new_account_id||'none')}</small></td>
+        <td data-label="Reason / evidence">${esc(row?.review_reason||'—')}<br><small>audit ${esc(row?.id||'—')} · actor ${esc(row?.reviewed_by_profile_id||'—')}</small></td>
+      </tr>`).join('')}</tbody></table></div>`:'<div class="finance-empty"><strong>No mapping decisions have been recorded yet.</strong><small>Approve, reject or reclassify remains a human Finance-manage action.</small></div>'}
+    </section>`;
   }
 
   function render(){
@@ -147,6 +211,9 @@
         ${statusCard('No live sample',String(observabilityReadiness.no_generated_pair_sample_count??0),'Neutral when no generated pair exercises a mapping')}
       </div>
       <div class="finance-module-note"><strong>${esc(observabilityReadiness.mapping_observability_status||'unknown')}</strong> — ${esc(observabilityReadiness.observability_message||'Mapping observability has not been evaluated.')}</div>
+
+      ${postingPreviewPanel()}
+      ${decisionAuditPanel()}
 
       ${mappings.length?`<div class="table-wrap"><table class="finance-table"><thead><tr><th>Mapping</th><th>Current account</th><th>Review</th><th>Decision support</th><th>Human review age</th><th>Drift / preflight</th><th>Blocker / next action</th><th>Human action</th></tr></thead><tbody>${mappings.map((row)=>{
         const obs=obsByKey[String(row.mapping_key||'')];

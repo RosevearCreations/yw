@@ -66,3 +66,9 @@
           <p>Every accepted application is saved as an idempotent, auditable Finance review request. Approval does not post a ledger entry: ledger posting remains OFF until a separately authorized release enables and verifies that execution path.</p>
         </section>
 >
+        <section class="help-section" id="account-mapping-posting-preview">
+          <h2>Account Mapping &amp; Posting Preview</h2>
+          <p>Build 314 joins the existing human account-mapping authority to the Schema 176 read-only posting preflight. Finance reviewers can see the source transaction, proposed debit and credit lines, mapped chart accounts, sales-tax treatment, blocker codes, and posting/idempotency evidence before any posting can occur.</p>
+          <p>Each canonical mapping remains a row-level human decision. Finance manage may approve, reject, or reclassify an account for review with a recorded reason. Structural type guards still block incompatible approvals, and the immutable mapping-review audit shows the preview-to-decision history.</p>
+          <p>The preview creates no accounting rows and exposes no execution-release control. Posting execution and provider/payment mutation remain OFF unless a later separately authorized release enables and verifies those boundaries.</p>
+        </section>
