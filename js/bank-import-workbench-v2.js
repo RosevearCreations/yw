@@ -337,7 +337,7 @@
   function mappingHtml(){
     return `<section id="oc_bank311_mapping" class="operations-span" aria-label="Build 311 bank column mapping">
       <span class="operations-kicker">Build 311 · Bank Import Workbench v2</span>
-      <p class="muted">Map the bank file once, save the template for this bank/account on this device, then review server validation row by row. Validation and promotion never silently post to the ledger.</p>
+      <p class="muted"><strong>Promotion is not posting.</strong> Map the bank file once, save the template for this bank/account on this device, then review server validation row by row. Validation and promotion never silently post to the ledger.</p>
       <div class="operations-form">
         <label>Date column<select id="oc_bank311_map_date"></select></label>
         <label>Description column<select id="oc_bank311_map_description"></select></label>
@@ -423,6 +423,11 @@
   }
 
   const observer = new MutationObserver(()=>bindWorkbench());
-  document.addEventListener('DOMContentLoaded',()=>{ bindWorkbench(); observer.observe(document.body,{childList:true,subtree:true}); });
+  const start = () => {
+    bindWorkbench();
+    if (document.body) observer.observe(document.body,{childList:true,subtree:true});
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded',start,{once:true});
+  else start();
   document.addEventListener('ywi:auth-changed',()=>setTimeout(()=>bindWorkbench(),0));
 })();
