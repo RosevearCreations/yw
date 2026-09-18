@@ -681,53 +681,217 @@ async function targetByReference(supabase: any, ref: string) {
   }
   return null;
 }
+function reconciliationConfidence(score: number) {
+  return score >= 85 ? 'high' : score >= 65 ? 'medium' : 'low';
+}
+function reconciliationTargetAmount(target: any) {
+  return money(target?.row?.__match_amount ?? target?.row?.unapplied_amount ?? target?.row?.paid_amount ?? target?.row?.balance_due ?? target?.row?.amount ?? target?.row?.total_amount ?? target?.row?.requested_amount ?? 0);
+}
+function reconciliationTargetDate(target: any) {
+  return target?.row?.__match_date || target?.row?.payment_date || target?.row?.invoice_date || target?.row?.bill_date || target?.row?.paid_at || target?.row?.item_date || target?.row?.updated_at || target?.row?.created_at || null;
+}
 function scoreTarget(item: any, target: any) {
-  const amount = money(target?.row?.amount ?? target?.row?.total_amount ?? target?.row?.balance_due ?? 0);
+  const amount = Math.abs(reconciliationTargetAmount(target));
   const bankAmount = Math.abs(money(item.amount));
-  const difference = Math.abs(bankAmount - Math.abs(amount));
+  const difference = Math.abs(bankAmount - amount);
   let amountScore = 0;
   if (difference < 0.005) amountScore = 55;
-  else if (difference <= 1) amountScore = 40;
-  else if (bankAmount && difference / bankAmount <= 0.02) amountScore = 25;
-  const targetDateRaw = target?.row?.payment_date || target?.row?.invoice_date || target?.row?.bill_date || target?.row?.batch_date;
+  else if (difference <= 1) amountScore = 42;
+  else if (bankAmount && difference / bankAmount <= 0.02) amountScore = 30;
+  else if (bankAmount && difference / bankAmount <= 0.10) amountScore = 18;
+  else if (bankAmount && Math.min(bankAmount, amount) / Math.max(bankAmount, amount) >= 0.50) amountScore = 10;
+  const targetDateRaw = reconciliationTargetDate(target);
   const bankDate = item.item_date ? new Date(`${item.item_date}T00:00:00Z`) : null;
-  const targetDate = targetDateRaw ? new Date(`${targetDateRaw}T00:00:00Z`) : null;
-  const dayDifference = bankDate && targetDate ? Math.round(Math.abs(bankDate.valueOf() - targetDate.valueOf()) / 86400000) : null;
-  const dateScore = dayDifference === null ? 0 : dayDifference === 0 ? 20 : dayDifference <= 3 ? 15 : dayDifference <= 7 ? 8 : 0;
+  const targetDate = targetDateRaw ? new Date(String(targetDateRaw).length === 10 ? `${targetDateRaw}T00:00:00Z` : targetDateRaw) : null;
+  const dayDifference = bankDate && targetDate && Number.isFinite(bankDate.valueOf()) && Number.isFinite(targetDate.valueOf())
+    ? Math.round(Math.abs(bankDate.valueOf() - targetDate.valueOf()) / 86400000)
+    : null;
+  const dateScore = dayDifference === null ? 0 : dayDifference === 0 ? 20 : dayDifference <= 3 ? 15 : dayDifference <= 7 ? 8 : dayDifference <= 14 ? 4 : 0;
   const refText = normalize(target?.reference);
   const description = normalize(item.item_description);
   const referenceScore = refText && description.includes(refText) ? 15 : refText ? 8 : 0;
   const words = refText.split(' ').filter((word) => word.length > 3);
   const descriptionScore = words.some((word) => description.includes(word)) ? 10 : 0;
   const score = Math.min(100, amountScore + dateScore + referenceScore + descriptionScore);
+  const coverage = bankAmount > 0 ? Number((Math.min(bankAmount, amount) / Math.max(bankAmount, amount) * 100).toFixed(1)) : 0;
   return {
     score,
+    confidence_band: reconciliationConfidence(score),
     target_amount: amount,
     amount_difference: Number(difference.toFixed(2)),
+    amount_coverage_percent: coverage,
     day_difference: dayDifference,
     components: { amount: amountScore, date: dateScore, reference: referenceScore, description: descriptionScore },
-    summary: `${amountScore}/55 amount, ${dateScore}/20 date, ${referenceScore}/15 reference, ${descriptionScore}/10 description.`
+    summary: `${amountScore}/55 amount, ${dateScore}/20 date, ${referenceScore}/15 reference, ${descriptionScore}/10 description; ${coverage}% amount coverage.`
   };
+}
+function reconciliationTarget(target: any) {
+  return {
+    target_type: target.type,
+    target_id: clean(target?.row?.id, 80) || null,
+    target_reference: clean(target.reference, 180) || clean(target?.row?.id, 80),
+    allocated_amount: Math.abs(reconciliationTargetAmount(target)),
+    target_date: reconciliationTargetDate(target)
+  };
+}
+function reconciliationSuggestion(item: any, target: any, matchMode = 'one_to_one', extra: Record<string, unknown> = {}) {
+  const explanation = scoreTarget(item, target);
+  const exact = explanation.amount_difference < 0.005;
+  const partial = !exact;
+  return {
+    match_mode: matchMode,
+    type: target.type,
+    target_id: clean(target?.row?.id, 80) || null,
+    reference: clean(target.reference, 180) || clean(target?.row?.id, 80),
+    targets: [reconciliationTarget(target)],
+    group_total: explanation.target_amount,
+    partial,
+    actionable: matchMode === 'one_to_one' && exact,
+    requires_human_confirmation: true,
+    confidence_band: explanation.confidence_band,
+    explanation,
+    ...extra
+  };
+}
+function buildOneToManySuggestions(item: any, candidates: any[]) {
+  const bankAmount = Math.abs(money(item.amount));
+  const eligible = candidates.filter((candidate) => candidate.type !== 'bank_transfer' && candidate?.row?.id).slice(0, 10);
+  const groups: any[] = [];
+  const seen = new Set<string>();
+  const addGroup = (parts: any[]) => {
+    const targets = parts.map(reconciliationTarget);
+    const key = targets.map((target) => target.target_id || target.target_reference).sort().join('|');
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    const total = targets.reduce((sum, target) => sum + Math.abs(money(target.allocated_amount)), 0);
+    if (!bankAmount || total <= 0 || total > bankAmount * 1.20) return;
+    const reference = targets.map((target) => target.target_reference).filter(Boolean).join(' + ');
+    const dated = parts.map((part) => reconciliationTargetDate(part)).filter(Boolean).sort();
+    const target = { type:'multi_target', reference, row:{ id:key, __match_amount:total, __match_date:dated[0] || null } };
+    const explanation = scoreTarget(item, target);
+    if (explanation.amount_coverage_percent < 50) return;
+    groups.push({
+      match_mode:'one_to_many',
+      type:'multi_target',
+      target_id:null,
+      reference,
+      targets,
+      group_total:Number(total.toFixed(2)),
+      partial:explanation.amount_difference >= 0.005,
+      actionable:explanation.amount_difference < 0.005,
+      requires_human_confirmation:true,
+      confidence_band:explanation.confidence_band,
+      explanation:{...explanation, summary:`${explanation.summary} Combined ${targets.length} source records; exact-cent split remains mandatory before confirmation.`}
+    });
+  };
+  for (let i=0;i<eligible.length;i++) {
+    for (let j=i+1;j<eligible.length;j++) addGroup([eligible[i], eligible[j]]);
+  }
+  for (let i=0;i<Math.min(eligible.length,7);i++) {
+    for (let j=i+1;j<Math.min(eligible.length,8);j++) {
+      for (let k=j+1;k<Math.min(eligible.length,9);k++) addGroup([eligible[i], eligible[j], eligible[k]]);
+    }
+  }
+  return groups.sort((a,b)=>b.explanation.score-a.explanation.score || a.explanation.amount_difference-b.explanation.amount_difference).slice(0,6);
+}
+function buildManyToOneSuggestions(item: any, candidates: any[], otherBankRows: any[]) {
+  const bankAmount = Math.abs(money(item.amount));
+  const suggestions:any[] = [];
+  for (const target of candidates.filter((candidate)=>candidate.type !== 'bank_transfer').slice(0,10)) {
+    const targetAmount = Math.abs(reconciliationTargetAmount(target));
+    if (!targetAmount || targetAmount <= bankAmount + 0.005) continue;
+    for (const other of otherBankRows.slice(0,40)) {
+      if (String(other.id) === String(item.id) || Number(other.amount || 0) === 0) continue;
+      const combined = bankAmount + Math.abs(money(other.amount));
+      if (Math.abs(targetAmount - combined) > Math.max(1, targetAmount * 0.02)) continue;
+      const combinedItem = { ...item, amount: combined };
+      const explanation = scoreTarget(combinedItem, target);
+      suggestions.push({
+        match_mode:'many_to_one',
+        type:target.type,
+        target_id:clean(target?.row?.id,80) || null,
+        reference:clean(target.reference,180) || clean(target?.row?.id,80),
+        targets:[reconciliationTarget(target)],
+        related_bank_rows:[
+          { id:item.id, item_date:item.item_date, item_description:item.item_description, amount:money(item.amount) },
+          { id:other.id, item_date:other.item_date, item_description:other.item_description, amount:money(other.amount) }
+        ],
+        group_total:Number(combined.toFixed(2)),
+        partial:explanation.amount_difference >= 0.005,
+        actionable:false,
+        requires_human_confirmation:true,
+        confidence_band:explanation.confidence_band,
+        explanation:{...explanation, summary:`${explanation.summary} Two bank rows appear to map to one source record. Review-only: the current transactional RPC does not auto-aggregate bank rows.`}
+      });
+      if (suggestions.length >= 6) return suggestions;
+    }
+  }
+  return suggestions;
 }
 async function suggestMatches(supabase: any, item: any) {
   const absAmount = Math.abs(money(item.amount));
+  const lower = Math.max(0.01, absAmount * 0.25);
+  const upper = Math.max(absAmount + 1, absAmount * 2);
   const tables = [
-    { table:'ar_payments', type:'ar_payment', refCol:'payment_number', dateCol:'payment_date', amountCol:'amount', select:'id, payment_number, reference_number, payment_date, amount, client_id' },
-    { table:'ap_payments', type:'ap_payment', refCol:'payment_number', dateCol:'payment_date', amountCol:'amount', select:'id, payment_number, reference_number, payment_date, amount, vendor_id' },
-    { table:'ar_invoices', type:'ar_invoice', refCol:'invoice_number', dateCol:'invoice_date', amountCol:'total_amount', select:'id, invoice_number, invoice_date, total_amount, balance_due, client_id' },
-    { table:'ap_bills', type:'ap_bill', refCol:'bill_number', dateCol:'bill_date', amountCol:'total_amount', select:'id, bill_number, bill_date, total_amount, balance_due, vendor_id' }
+    { table:'ar_payments', type:'customer_payment', refCol:'payment_number', amountCol:'amount', select:'id, payment_number, reference_number, payment_date, amount, unapplied_amount, client_id' },
+    { table:'ap_payments', type:'vendor_payment', refCol:'payment_number', amountCol:'amount', select:'id, payment_number, reference_number, payment_date, amount, vendor_id' },
+    { table:'ar_invoices', type:'customer_invoice', refCol:'invoice_number', amountCol:'balance_due', select:'id, invoice_number, invoice_date, total_amount, balance_due, client_id' },
+    { table:'ap_bills', type:'vendor_bill', refCol:'bill_number', amountCol:'balance_due', select:'id, bill_number, bill_date, total_amount, balance_due, vendor_id' }
   ];
-  const candidates: any[] = [];
+  const candidates:any[] = [];
   for (const config of tables) {
-    const { data } = await supabase.from(config.table).select(config.select).gte(config.amountCol, Math.max(0, absAmount - 1)).lte(config.amountCol, absAmount + 1).limit(8);
+    const { data } = await supabase.from(config.table).select(config.select).gte(config.amountCol, lower).lte(config.amountCol, upper).limit(12);
     for (const row of data || []) {
-      const type = config.type;
-      const refCol = config.refCol;
-      const target = { type, row, reference: row[refCol] };
-      candidates.push({ ...target, explanation: scoreTarget(item, target) });
+      candidates.push({ type:config.type, row:{...row, __match_amount:row[config.amountCol]}, reference:row[config.refCol] || row.reference_number || row.id });
     }
   }
-  return candidates.sort((a, b) => b.explanation.score - a.explanation.score).slice(0, 8);
+  const { data: deposits } = await supabase.from('customer_deposit_requests')
+    .select('id, quote_package_id, estimate_id, client_id, requested_amount, paid_amount, deposit_status, payment_reference, paid_at, updated_at')
+    .gt('paid_amount',0)
+    .gte('paid_amount',lower)
+    .lte('paid_amount',upper)
+    .order('paid_at',{ascending:false})
+    .limit(12);
+  for (const row of deposits || []) {
+    candidates.push({ type:'customer_deposit', row:{...row,__match_amount:row.paid_amount,__match_date:row.paid_at}, reference:row.payment_reference || `deposit:${row.id}` });
+  }
+
+  const { data: bankRows } = await supabase.from('bank_reconciliation_items')
+    .select('id,reconciliation_session_id,item_date,item_description,amount,match_status,clearing_status')
+    .neq('id',item.id)
+    .eq('clearing_status','open')
+    .order('item_date',{ascending:false})
+    .limit(80);
+  const otherBankRows = bankRows || [];
+  for (const row of otherBankRows) {
+    if (Number(row.amount || 0) === 0 || Math.sign(Number(row.amount || 0)) === Math.sign(Number(item.amount || 0))) continue;
+    const target = { type:'bank_transfer', row:{...row,__match_amount:Math.abs(money(row.amount)),__match_date:row.item_date}, reference:`transfer:${row.id}` };
+    const explanation = scoreTarget(item,target);
+    if (explanation.amount_coverage_percent >= 90 && (explanation.day_difference === null || explanation.day_difference <= 7)) candidates.push(target);
+  }
+
+  const singles = candidates
+    .map((target)=>reconciliationSuggestion(item,target))
+    .filter((suggestion)=>suggestion.explanation.amount_coverage_percent >= 25)
+    .sort((a,b)=>b.explanation.score-a.explanation.score || a.explanation.amount_difference-b.explanation.amount_difference)
+    .slice(0,14);
+  const oneToMany = buildOneToManySuggestions(item,candidates);
+  const manyToOne = buildManyToOneSuggestions(item,candidates,otherBankRows);
+  const ranked = [...singles,...oneToMany,...manyToOne]
+    .sort((a,b)=>b.explanation.score-a.explanation.score || Number(a.partial)-Number(b.partial) || a.explanation.amount_difference-b.explanation.amount_difference)
+    .slice(0,12)
+    .map((suggestion,index)=>({
+      ...suggestion,
+      rank:index+1,
+      matching_rule:suggestion.match_mode === 'one_to_many'
+        ? 'Exact-cent split only after operator review.'
+        : suggestion.match_mode === 'many_to_one'
+          ? 'Review-only aggregate candidate; no automatic multi-bank-row action.'
+          : suggestion.partial
+            ? 'Partial candidate requires operator review; no automatic application.'
+            : 'Exact candidate still requires operator confirmation.'
+    }));
+  return ranked;
 }
 async function resolveEquipment(supabase: any, code: string) {
   const fields = ['equipment_code', 'asset_tag', 'serial_number'];

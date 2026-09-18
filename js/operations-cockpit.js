@@ -5,7 +5,7 @@
 'use strict';
 
 (function () {
-  const BUILD = '2026-09-01a';
+  const BUILD = '312-smart-reconciliation';
   const RETRY_KEY = 'ywi_operations_cockpit_retry_v2';
   const DRAFT_KEY = 'ywi_operations_cockpit_draft_v2';
   let cameraStream = null;
@@ -13,6 +13,8 @@
   let queues = {};
   let queueLoading = false;
   let selectedReconItemId = '';
+  let reconciliationSuggestions = [];
+  let selectedReconSuggestion = null;
 
   const actionCapability = {
     'payment-approve':'payment_action_decision', 'payment-reject':'payment_action_decision', 'payment-post':'payment_action_decision',
@@ -492,8 +494,22 @@
   async function handleReconciliation(event) {
     event.preventDefault(); const data = formData(event.currentTarget); let splitRows = [];
     if (String(data.split_rows || '').trim()) { try { splitRows = JSON.parse(String(data.split_rows)); } catch { throw new Error('Split rows must be valid JSON.'); } }
-    const response = await send({ action:'reconciliation_action', idempotency_key:idem('recon'), action_type:data.action_type, import_id:data.import_id, bank_row_id:data.bank_row_id, target_reference:data.target_reference, undo_of_action_id:data.undo_of_action_id, split_rows:splitRows, signoff_note:data.signoff_note }, 'Reconciliation action');
+    if (selectedReconSuggestion && selectedReconSuggestion.actionable === false && ['match','split'].includes(String(data.action_type || ''))) {
+      throw new Error('This ranked suggestion is review-only. Partial and many-to-one candidates cannot be auto-applied.');
+    }
+    const selected = selectedReconSuggestion?.actionable ? selectedReconSuggestion : null;
+    const response = await send({
+      action:'reconciliation_action', idempotency_key:idem('recon'), action_type:data.action_type, import_id:data.import_id,
+      bank_row_id:data.bank_row_id, target_reference:data.target_reference, target_type:selected?.type || undefined,
+      target_id:selected?.target_id || undefined, match_score:selected?.explanation?.score ?? undefined,
+      match_explanation:selected?.explanation || undefined, suggestion_context:selected ? {
+        build:312, rank:selected.rank, match_mode:selected.match_mode, confidence_band:selected.confidence_band,
+        requires_human_confirmation:true, partial:selected.partial === true
+      } : undefined,
+      undo_of_action_id:data.undo_of_action_id, split_rows:splitRows, signoff_note:data.signoff_note
+    }, 'Reconciliation action');
     selectedReconItemId = data.bank_row_id || selectedReconItemId;
+    selectedReconSuggestion = null;
     byId('oc_recon_explanation').textContent = response?.match_explanation?.summary || 'Reconciliation action recorded.';
     renderReconciliationReview(selectedReconItemId);
   }
@@ -572,8 +588,22 @@
     if (action === 'recon-use') { selectedReconItemId = id; byId('oc_recon_row_id').value = id; byId('oc_recon_action').value = 'match'; renderReconciliationReview(id); byId('oc_recon_form')?.scrollIntoView({ behavior:'smooth', block:'center' }); return; }
     if (action === 'recon-suggest') {
       const response = await send({ action:'reconciliation_suggest', bank_row_id:id }, 'Finding reconciliation matches', false);
-      const suggestions = response?.suggestions || []; selectedReconItemId = id; byId('oc_recon_row_id').value = id; renderReconciliationReview(id);
-      byId('oc_recon_suggestions').innerHTML = suggestions.length ? suggestions.map((item) => `<button type="button" class="secondary oc-suggestion" data-ref="${esc(item.reference)}"><strong>${esc(item.reference)}</strong><span>${esc(item.type)} · ${item.explanation.score}% · ${money(item.explanation.target_amount)}</span><small>${esc(item.explanation.summary)}</small></button>`).join('') : emptyQueue('No close matches', 'Enter a target reference manually or use an exact split.');
+      reconciliationSuggestions = response?.suggestions || [];
+      selectedReconSuggestion = null;
+      selectedReconItemId = id;
+      byId('oc_recon_row_id').value = id;
+      renderReconciliationReview(id);
+      byId('oc_recon_suggestions').innerHTML = reconciliationSuggestions.length ? reconciliationSuggestions.map((item,index) => {
+        const mode = String(item.match_mode || 'one_to_one').replaceAll('_',' → ');
+        const difference = Number(item?.explanation?.amount_difference || 0);
+        const actionLabel = item.actionable ? (item.match_mode === 'one_to_many' ? 'Prepare exact split' : 'Use exact candidate') : 'Review candidate';
+        return `<article class="oc-queue-card oc-smart-recon-suggestion" data-confidence="${esc(item.confidence_band || 'low')}">
+          <header><strong>#${Number(item.rank || index + 1)} · ${esc(item.reference || 'Candidate')}</strong><span class="${statusClass(item.confidence_band || 'low')}">${esc(item.confidence_band || 'low')} · ${Number(item.explanation?.score || 0)}%</span></header>
+          <dl><div><dt>Mode</dt><dd>${esc(mode)}</dd></div><div><dt>Candidate total</dt><dd>${money(item.group_total ?? item.explanation?.target_amount)}</dd></div><div><dt>Difference</dt><dd>${money(difference)}</dd></div><div><dt>Coverage</dt><dd>${Number(item.explanation?.amount_coverage_percent || 0).toFixed(1)}%</dd></div></dl>
+          <p>${esc(item.explanation?.summary || '')}</p><small>${esc(item.matching_rule || 'Human confirmation required.')}</small>
+          <div class="oc-row-actions"><button type="button" class="secondary oc-suggestion" data-suggestion-index="${index}">${esc(actionLabel)}</button></div>
+        </article>`;
+      }).join('') : emptyQueue('No close matches', 'Enter a target reference manually or leave the bank row open for research.');
       byId('oc_recon_form')?.scrollIntoView({ behavior:'smooth', block:'center' }); return;
     }
     if (action === 'recon-reject') { const note = prompt('Why should this bank row be treated as an exception?'); if (!note) return; await send({ action:'reconciliation_action', idempotency_key:idem('recon'), action_type:'reject', bank_row_id:id, signoff_note:note }, 'Reconciliation exception'); return; }
@@ -620,7 +650,7 @@
           <label>Customer/vendor<input name="customer_or_vendor_name" required /></label><label>Invoice/bill reference<input name="invoice_reference" /></label><label>Payment reference<input name="payment_reference" /></label><label>Reversal request ID<input name="reversal_of_request_id" /></label><label>Amount<input name="amount" type="number" min="0.01" step="0.01" required /></label><label>Proof reference<input name="proof_reference" required placeholder="Receipt, bank row, or attachment reference" /></label><label class="operations-span">Reason<textarea name="reason" minlength="8" required></textarea></label><button type="submit" data-oc-permission="payment_action_request">Submit for approval</button>
         </form><h4>Live payment queue</h4><div id="oc_payment_queue" class="oc-live-queue"></div></details>
         <details><summary>Bank CSV preview and promotion</summary><form id="oc_bank_form" class="operations-form"><label class="operations-span">CSV file<input id="oc_bank_file" type="file" accept=".csv,text/csv" required /></label><label>Bank account<select id="oc_bank_account" data-oc-bank-select></select></label><label>Fallback bank hint<input id="oc_bank_account_hint" /></label><button type="submit" data-oc-permission="bank_csv_preview">Parse and validate</button><input id="oc_bank_import_id" type="hidden" /><label class="operations-span">Confirmation note<input id="oc_bank_confirmation_note" /></label><button id="oc_bank_confirm" type="button" class="secondary" data-oc-permission="bank_csv_confirm_import">Confirm and promote accepted rows</button></form><p id="oc_bank_preview_summary" class="muted"></p><p id="oc_bank_server_summary" class="muted"></p><div class="table-scroll"><table><thead id="oc_bank_preview_headers"></thead><tbody id="oc_bank_preview_rows"></tbody></table></div><h4>Live import queue</h4><div id="oc_bank_queue" class="oc-live-queue"></div></details>
-        <details><summary>Reconciliation scoring, split, sign-off, and undo</summary><form id="oc_recon_form" class="operations-form"><label>Action<select id="oc_recon_action" name="action_type"><option value="match">Exact match</option><option value="split">Exact split</option><option value="undo">Undo prior action</option><option value="signoff">Sign off session</option><option value="reject">Exception/reject</option></select></label><label>Import/session ID<input id="oc_recon_import_id" name="import_id" /></label><label>Promoted bank item ID<input id="oc_recon_row_id" name="bank_row_id" /></label><label>Target reference<input id="oc_recon_target" name="target_reference" /></label><label>Prior action ID for undo<input name="undo_of_action_id" /></label><label class="operations-span">Split rows JSON<textarea name="split_rows" placeholder='[{"reference":"INV-1","amount":100},{"reference":"INV-2","amount":50}]'></textarea></label><label class="operations-span">Sign-off/decision note<textarea name="signoff_note"></textarea></label><button type="submit" data-oc-permission="reconciliation_action">Process reconciliation action</button></form><p id="oc_recon_explanation" class="operations-explanation muted"></p><div id="oc_recon_suggestions" class="oc-suggestions"></div><div id="oc_recon_review" class="oc-recon-review" aria-live="polite"></div><h4>Open bank rows</h4><div id="oc_recon_queue" class="oc-live-queue"></div></details>
+        <details><summary>Smart Reconciliation Workbench — ranked matching, split, sign-off, and undo</summary><form id="oc_recon_form" class="operations-form"><label>Action<select id="oc_recon_action" name="action_type"><option value="match">Exact match</option><option value="split">Exact split</option><option value="undo">Undo prior action</option><option value="signoff">Sign off session</option><option value="reject">Exception/reject</option></select></label><label>Import/session ID<input id="oc_recon_import_id" name="import_id" /></label><label>Promoted bank item ID<input id="oc_recon_row_id" name="bank_row_id" /></label><label>Target reference<input id="oc_recon_target" name="target_reference" /></label><label>Prior action ID for undo<input name="undo_of_action_id" /></label><label class="operations-span">Split rows JSON<textarea name="split_rows" placeholder='[{"reference":"INV-1","amount":100},{"reference":"INV-2","amount":50}]'></textarea></label><label class="operations-span">Sign-off/decision note<textarea name="signoff_note"></textarea></label><button type="submit" data-oc-permission="reconciliation_action">Process reconciliation action</button></form><p id="oc_recon_explanation" class="operations-explanation muted"></p><div id="oc_recon_suggestions" class="oc-suggestions"></div><div id="oc_recon_review" class="oc-recon-review" aria-live="polite"></div><h4>Open bank rows</h4><div id="oc_recon_queue" class="oc-live-queue"></div></details>
         <details><summary>Equipment scan, service, and cost recovery</summary><form id="oc_equipment_form" class="operations-form"><label>Scan code<input id="oc_scan_code" name="scan_code" required /></label><input id="oc_scan_source" name="scan_source" type="hidden" value="manual" /><label>Stage<select name="scan_stage"><option value="checkout">Checkout</option><option value="site_arrival">Site arrival</option><option value="return">Return</option><option value="return_to_service">Return to service</option><option value="field_check">Field check</option></select></label><label>Equipment reference<input name="equipment_reference" /></label><label>Job code/ID<input name="job_reference" /></label><label>Condition<input name="condition_summary" /></label><label>Accessories<input name="accessory_summary" /></label><label>Signer<input name="signer_name" /></label><label>Estimated recovery cost<input name="estimated_cost" type="number" min="0" step="0.01" /></label><label class="operations-inline-check"><input name="service_required" type="checkbox" /> Service required</label><label class="operations-inline-check"><input name="cost_recovery_required" type="checkbox" /> Cost recovery review</label><label class="operations-inline-check"><input name="customer_billable" type="checkbox" /> Customer billable</label><label class="operations-span">Notes<textarea name="notes"></textarea></label><div class="operations-actions"><button type="submit" data-oc-permission="equipment_scan_event">Resolve and save custody event</button><button id="oc_camera_start" type="button" class="secondary">Scan QR/barcode</button><button id="oc_camera_stop" type="button" class="secondary">Stop camera</button></div><video id="oc_scan_video" class="operations-scan-video" playsinline muted hidden></video></form><p id="oc_equipment_resolution" class="muted"></p><h4>Live service and scan queue</h4><div id="oc_equipment_queue" class="oc-live-queue"></div></details>
         <details><summary>Real visual upload and approval</summary><form id="oc_asset_form" class="operations-form"><label class="operations-span">Image file<input id="oc_asset_file" name="asset_file" type="file" accept="image/jpeg,image/png,image/webp" /></label><label>Status<select name="asset_status"><option value="review">Review</option><option value="draft">Draft</option></select></label><label>Surface<input name="surface_area" value="public" /></label><label>Image role<input name="image_role" value="placeholder_replacement" /></label><label class="operations-span">Existing source URL (file optional)<input name="source_url" type="url" /></label><label class="operations-span">Alt text<input name="alt_text" minlength="12" required /></label><label>Consent<select name="consent_status"><option value="not_required">Not required</option><option value="approved">Approved</option><option value="pending">Pending</option></select></label><label>Compression<select name="compression_status"><option value="optimized">Optimized</option><option value="ready">Ready</option><option value="pending">Pending</option></select></label><label>Route key<input name="route_key" /></label><label>Placeholder selector<input name="placeholder_selector" placeholder=".hero-visual" /></label><label>Known width for URL<input name="pixel_width" type="number" min="0" /></label><label>Known height for URL<input name="pixel_height" type="number" min="0" /></label><label class="operations-span">Notes<textarea name="notes"></textarea></label><button type="submit" data-oc-permission="visual_asset_register">Optimize, upload, and register</button><progress id="oc_asset_progress" max="100" value="0" hidden></progress><div id="oc_asset_preview" class="oc-asset-preview"></div></form><h4>Live visual approval queue</h4><div id="oc_asset_queue" class="oc-live-queue"></div></details>
         <details><summary>Approved public route and sitemap publication</summary><form id="oc_route_form" class="operations-form"><div class="operations-readiness"><span id="oc_route_score">0% ready</span><small>Title, one H1, meta, local proof, CTA, clean path, and approved visual are publication gates.</small></div><label>Route key<input name="route_key" required /></label><label>Path<input id="oc_route_path" name="route_path" value="/services/" required /></label><label>Type<select name="route_type"><option value="service">Service</option><option value="location">Location</option><option value="service_location">Service + location</option><option value="guide">Guide</option></select></label><label>Status<select name="route_status"><option value="draft">Draft</option><option value="review">Review</option><option value="approved">Approved</option></select></label><label>Service name<input name="service_name" /></label><label>Location name<input name="location_name" /></label><label class="operations-span">Page title<input id="oc_route_title" name="page_title" maxlength="70" required /></label><label class="operations-span">One H1 text<input id="oc_route_h1" name="h1_text" maxlength="120" required /></label><label class="operations-span">Meta description<textarea id="oc_route_meta" name="meta_description" maxlength="170"></textarea></label><label class="operations-span">Intro<textarea name="page_intro"></textarea></label><label class="operations-span">Body Markdown<textarea name="page_body_markdown" rows="8"></textarea></label><label class="operations-span">Local proof<input id="oc_route_proof" name="local_proof_hint" /></label><label>Primary CTA path<input id="oc_route_cta" name="primary_cta_path" placeholder="#quote-intake" /></label><label>Visual asset key<input name="visual_asset_key" /></label><label class="operations-span">Canonical URL<input name="canonical_url" type="url" /></label><button type="submit" data-oc-permission="public_route_register">Save route approval row</button></form><h4>Live route publication queue</h4><div id="oc_route_queue" class="oc-live-queue"></div></details>
@@ -636,7 +666,7 @@
     byId('oc_payment_form')?.addEventListener('submit', (e) => handlePayment(e).catch(() => {}));
     byId('oc_bank_form')?.addEventListener('submit', (e) => handleBankPreview(e).catch((err) => status(err.message, true)));
     byId('oc_bank_confirm')?.addEventListener('click', () => handleBankConfirm().catch((err) => status(err.message, true)));
-    byId('oc_recon_form')?.addEventListener('submit', (e) => handleReconciliation(e).catch(() => {}));
+    byId('oc_recon_form')?.addEventListener('submit', (e) => handleReconciliation(e).catch((err) => status(err?.message || 'Reconciliation action failed.', true)));
     byId('oc_equipment_form')?.addEventListener('submit', (e) => handleEquipment(e).catch(() => {}));
     byId('oc_asset_form')?.addEventListener('submit', (e) => handleAsset(e).catch((err) => status(err.message, true)));
     byId('oc_route_form')?.addEventListener('submit', (e) => handleRoute(e).catch(() => {}));
@@ -654,7 +684,32 @@
     byId('operationsCockpit')?.addEventListener('input', saveDraft);
     byId('operationsCockpit')?.addEventListener('click', (event) => {
       const rowAction = event.target.closest('[data-oc-action]'); if (rowAction) handleRowAction(rowAction).catch(() => {});
-      const suggestion = event.target.closest('.oc-suggestion'); if (suggestion) { byId('oc_recon_target').value = suggestion.dataset.ref || ''; byId('oc_recon_action').value = 'match'; status(`Selected ${suggestion.dataset.ref}. Submit to validate the exact amount and record the match.`); }
+      const suggestion = event.target.closest('.oc-suggestion'); if (suggestion) {
+        const item = reconciliationSuggestions[Number(suggestion.dataset.suggestionIndex)];
+        if (!item) return;
+        selectedReconSuggestion = item;
+        const splitField = byId('oc_recon_form')?.elements?.split_rows;
+        if (item.actionable === false) {
+          byId('oc_recon_target').value = '';
+          if (splitField) splitField.value = '';
+          status(`Rank #${item.rank || '?'} is review-only (${String(item.match_mode || 'candidate').replaceAll('_',' ')}). No reconciliation action was prepared.`, true);
+          return;
+        }
+        if (item.match_mode === 'one_to_many') {
+          byId('oc_recon_action').value = 'split';
+          byId('oc_recon_target').value = '';
+          if (splitField) splitField.value = JSON.stringify((item.targets || []).map((target) => ({
+            target_type:target.target_type, target_id:target.target_id, target_reference:target.target_reference,
+            allocated_amount:target.allocated_amount, match_score:item.explanation?.score, match_explanation:item.explanation
+          })), null, 2);
+          status(`Prepared exact split from ranked suggestion #${item.rank}. Review every allocation and submit only after human confirmation.`);
+          return;
+        }
+        byId('oc_recon_target').value = item.reference || '';
+        byId('oc_recon_action').value = 'match';
+        if (splitField) splitField.value = '';
+        status(`Selected exact ranked candidate #${item.rank}: ${item.reference}. Human confirmation is still required before recording the match.`);
+      }
     });
   }
   function inject() {
