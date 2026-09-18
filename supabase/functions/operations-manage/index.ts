@@ -1162,16 +1162,14 @@ serve(async (req) => {
       ) }, { headers: corsHeaders });
     }
 
-    if (action === 'payment_application_preview') {
-      requireRank(profile, 45, action);
-      const preview = await resolveBuild313ArApplication(supabase, body);
-      return Response.json({ ok:true, preview, posting_enabled:false, build:313 }, { headers:corsHeaders });
-    }
-
     if (action === 'payment_action_request') {
       requireRank(profile, 45, action);
       const applicationType = clean(body.application_type,40).toLowerCase();
       const preview = applicationType ? await resolveBuild313ArApplication(supabase, body) : null;
+      if (body.preview_only === true) {
+        if (!preview) throw new HttpError(400, 'A/R application preview requires an application_type.');
+        return Response.json({ ok:true, preview, preview_only:true, posting_enabled:false, build:313 }, { headers:corsHeaders });
+      }
       if (preview && !preview.allowed) {
         throw new HttpError(409, 'A/R application validation failed. Correct the failed checks before submitting.', { validations: preview.validations, application: preview.application });
       }
