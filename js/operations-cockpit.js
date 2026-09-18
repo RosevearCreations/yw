@@ -147,7 +147,7 @@
       const app=row?.metadata?.payment_application || {};
       const type=app.application_type || row.action_type || 'payment action';
       const postingNote=row.action_status==='approved' && row.posting_status!=='posted'
-        ? 'Approved for accounting review. Build 313 keeps ledger posting disabled.'
+        ? 'Approved for accounting review. Ledger posting remains disabled in Build 313.'
         : (row.posting_message || row.decision_note || 'Awaiting review');
       return `<article class="oc-queue-card"><header><strong>${esc(String(type).replaceAll('_',' '))}</strong><span class="${statusClass(row.posting_status || row.action_status)}">${esc(row.posting_status || row.action_status)}</span></header><dl><div><dt>Side / date</dt><dd>${esc((row.ledger_side || 'auto').toUpperCase())} · ${esc(row.transaction_date || '—')}</dd></div><div><dt>Customer</dt><dd>${esc(row.customer_or_vendor_name || app.client_name || '—')}</dd></div><div><dt>Invoice / source</dt><dd>${esc(row.invoice_reference || app.invoice_reference || '—')} / ${esc(row.payment_reference || app.source_reference || '—')}</dd></div><div><dt>Amount</dt><dd>${money(row.amount)}</dd></div><div><dt>Proof</dt><dd>${esc(row.proof_reference || 'Missing')}</dd></div><div><dt>Posting</dt><dd>${esc(postingNote)}</dd></div></dl>${buttons(actions)}</article>`;
     }).join('') : emptyQueue('No payment applications', 'Validated A/R application requests will appear here for approval. Ledger posting remains disabled.');
