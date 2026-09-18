@@ -190,8 +190,9 @@ window.YWI_RUNTIME_CONFIG = Object.assign({}, window.YWI_RUNTIME_CONFIG || {}, {
   else startObserver();
 })();
 
-// Build 236 adds the same bounded, on-demand presentation rule to Admin Finance & Accounting.
-// It does not add or enable posting, payment, provider, database, or Finance write authority.
+// Build 310 deepens the bounded, on-demand Admin Finance & Accounting presentation into
+// a fail-closed acceptance command center. It still adds no posting, payment, provider,
+// mapping-approval, database, or Finance write authority.
 (function loadAdminFinanceWorkspaceOnDemand() {
   const selector = 'script[data-ywi-admin-finance-workspace="1"]';
   let observer = null;
@@ -203,7 +204,7 @@ window.YWI_RUNTIME_CONFIG = Object.assign({}, window.YWI_RUNTIME_CONFIG || {}, {
   function loadIfNeeded() {
     if (!isFinanceOpen() || document.querySelector(selector)) return;
     const script = document.createElement('script');
-    script.src = '/js/admin-finance-workspace.js?v=2026-09-07a';
+    script.src = '/js/admin-finance-workspace.js?v=2026-09-18a';
     script.async = false;
     script.dataset.ywiAdminFinanceWorkspace = '1';
     script.onerror = () => {
