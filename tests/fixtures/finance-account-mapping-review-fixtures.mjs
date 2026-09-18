@@ -119,6 +119,45 @@ export function mappingFixture(accessLevel='view'){
       observability_message:'Human accountant/bookkeeper review is stale/pending; this is an accounting decision queue, not an I.T. migration failure.'
     },
     accounts:canManage?ACCOUNTS.map((row)=>({...row})):[],
-    boundary:{human_accounting_decision_required:true,migration_auto_approval:false,structural_account_type_guard_on_approval:true,posting_execution_authorized:false,provider_mutation:false,jobs_writeback:false}
+    posting_previews:[{
+      intake_id:'84000000-0000-4000-8000-000000000001',
+      posting_approval_id:'85000000-0000-4000-8000-000000000001',
+      job_code:'YW-314-001',
+      work_order_number:'WO-314-001',
+      queued_at:'2026-09-18T22:00:00.000Z',
+      preflight_status:'blocked',
+      blockers:[{code:'AR_ACCOUNT_MAPPING_NOT_APPROVED',message:'Accounts Receivable mapping must be approved before execution.'}],
+      invoice_plan:{
+        posting_approval_id:'85000000-0000-4000-8000-000000000001',
+        idempotency_key:'build314-preview-1',
+        mapped_fields:{subtotal:1000,tax_total:130,total_amount:1130,balance_due:1130,invoice_source:'job'},
+        creates_rows:false,posting_execution_authorized:false
+      },
+      journal_plan:{
+        posting_approval_id:'85000000-0000-4000-8000-000000000001',
+        idempotency_key:'build314-preview-1',
+        proposed_entries:[
+          {line:1,account_mapping_key:'accounts_receivable',account_id:ACCOUNTS[0].id,debit_amount:1130,credit_amount:0},
+          {line:2,account_mapping_key:'service_revenue',account_id:ACCOUNTS[1].id,debit_amount:0,credit_amount:1000},
+          {line:3,account_mapping_key:'sales_tax_payable',account_id:ACCOUNTS[2].id,debit_amount:0,credit_amount:130}
+        ],
+        debit_total:1130,credit_total:1130,is_balanced:true,creates_rows:false,posting_execution_authorized:false
+      },
+      execution_authorized:false,provider_mutation_authorized:false
+    }],
+    decision_audit:[{
+      id:'86000000-0000-4000-8000-000000000001',
+      mapping_rule_id:MAPPINGS[1].mapping_rule_id,
+      mapping_key:'service_revenue',
+      prior_account_id:ACCOUNTS[3].id,
+      new_account_id:ACCOUNTS[1].id,
+      prior_review_status:'review',
+      new_review_status:'approved',
+      review_reason:'Reclassified to the landscape service revenue account after review.',
+      reviewed_by_profile_id:'83000000-0000-4000-8000-000000000001',
+      reviewed_at:'2026-09-18T21:30:00.000Z',
+      metadata:{authority:'schema183_finance_account_mapping_decision_support',posting_execution_released:false,provider_mutation:false}
+    }],
+    boundary:{human_accounting_decision_required:true,migration_auto_approval:false,structural_account_type_guard_on_approval:true,posting_preview_read_only:true,preview_decision_audit_visible:true,posting_execution_authorized:false,provider_mutation:false,jobs_writeback:false}
   };
 }

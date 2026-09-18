@@ -67,19 +67,33 @@ Deno.serve(async (req: Request) => {
   const canManage = await hasModuleAccess(supabase, actorProfile, "finance", "manage");
 
   if (action === "list") {
-    const [mappingResult, statusResult, observabilityResult, observabilityStatusResult, decisionSupportStatusResult] = await Promise.all([
+    const [
+      mappingResult,
+      statusResult,
+      observabilityResult,
+      observabilityStatusResult,
+      decisionSupportStatusResult,
+      postingPreviewResult,
+      auditResult,
+    ] = await Promise.all([
       supabase.from("v_finance_account_mapping_review_directory").select("*").order("mapping_key"),
       supabase.from("v_it_finance_account_mapping_review_status").select("*").limit(1),
       supabase.from("v_finance_account_mapping_observability").select("*").order("mapping_key"),
       supabase.from("v_it_finance_account_mapping_observability_status").select("*").limit(1),
       supabase.from("v_it_finance_account_mapping_decision_support_status").select("*").limit(1),
+      supabase.from("v_finance_job_completion_posting_preflight_queue").select("*").order("queued_at", { ascending: false }).limit(25),
+      supabase.from("finance_account_mapping_review_audit")
+        .select("id,mapping_rule_id,mapping_key,prior_account_id,new_account_id,prior_review_status,new_review_status,review_reason,reviewed_by_profile_id,reviewed_at,metadata")
+        .order("reviewed_at", { ascending: false })
+        .limit(100),
     ]);
-    if (mappingResult.error || statusResult.error || observabilityResult.error || observabilityStatusResult.error || decisionSupportStatusResult.error) {
+    if (mappingResult.error || statusResult.error || observabilityResult.error || observabilityStatusResult.error || decisionSupportStatusResult.error || postingPreviewResult.error || auditResult.error) {
       return reply({
         ok: false,
         error: mappingResult.error?.message || statusResult.error?.message || observabilityResult.error?.message
           || observabilityStatusResult.error?.message || decisionSupportStatusResult.error?.message
-          || "Finance mapping readiness could not load.",
+          || postingPreviewResult.error?.message || auditResult.error?.message
+          || "Finance mapping readiness and posting preview could not load.",
       }, 500);
     }
 
@@ -120,11 +134,15 @@ Deno.serve(async (req: Request) => {
       observability_readiness: observabilityStatusResult.data?.[0] || {},
       decision_support: decisionSupport,
       decision_support_readiness: decisionSupportStatusResult.data?.[0] || {},
+      posting_previews: postingPreviewResult.data || [],
+      decision_audit: auditResult.data || [],
       accounts,
       boundary: {
         human_accounting_decision_required: true,
         migration_auto_approval: false,
         structural_account_type_guard_on_approval: true,
+        posting_preview_read_only: true,
+        preview_decision_audit_visible: true,
         posting_execution_authorized: false,
         provider_mutation: false,
         jobs_writeback: false,
