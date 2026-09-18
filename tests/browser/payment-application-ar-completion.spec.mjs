@@ -30,12 +30,11 @@ async function mount(page,{approvedQueue=false}={}){
           bank_imports:[],reconciliation:[],bank_items:[],profiles:[],banks:[],rails:[],equipment:[],equipment_service:[],assets:[],routes:[],quotes:[],portal:[],
           job_costs:[],job_updates:[],customer_notifications:[],execution_proofs:[],execution_costs:[],closeouts:[],content_signals:[],webhook_alerts:[],staging_tests:[],
           capabilities:{actions:{
-            payment_application_preview:{permitted:true,label:'A/R preview'},
-            payment_action_request:{permitted:true,label:'Payment request'},
+            payment_action_request:{permitted:true,label:'Payment request and preview'},
             payment_action_decision:{permitted:true,label:'Payment approval'}
           }}
         }};
-        if(payload.action==='payment_application_preview'){
+        if(payload.action==='payment_action_request' && payload.preview_only===true){
           const sourceAvailable=payload.application_type==='deposit'?80:payload.application_type==='overpayment'?125:125;
           const needsInvoice=payload.application_type!=='overpayment';
           const allowed=Number(payload.amount)>0 && Number(payload.amount)<=sourceAvailable && (!needsInvoice || (payload.invoice_id===s.invoice.id && Number(payload.amount)<=s.invoice.balance_due)) && Boolean(payload.proof_reference);
@@ -58,7 +57,7 @@ async function mount(page,{approvedQueue=false}={}){
             client_id:s.invoice.client_id,client_name:'Example Customer',posting_enabled:false
           },validations}};
         }
-        if(payload.action==='payment_action_request'){
+        if(payload.action==='payment_action_request' && payload.preview_only!==true){
           const record={id:'50000000-0000-4000-8000-000000000002',action_type:payload.application_type==='receipt'?'apply_payment':'apply_'+payload.application_type,
             action_status:'submitted',posting_status:'not_posted',ledger_side:'ar',transaction_date:payload.application_date,customer_or_vendor_name:'Example Customer',
             invoice_reference:s.invoice.invoice_number,payment_reference:s.payment.payment_number,amount:Number(payload.amount),proof_reference:payload.proof_reference,
@@ -97,8 +96,8 @@ test('Build 313 validates a receipt then submits an auditable review request wit
   await expect(page.locator('#oc_ar_application_preview')).toContainText('OFF');
   await expect(page.locator('#oc_ar_application_submit')).toBeEnabled();
   await page.locator('#oc_ar_application_submit').click();
-  await expect.poll(async()=>page.evaluate(()=>window.__ar313Calls.filter((x)=>x.action==='payment_action_request').length)).toBe(1);
-  const request=await page.evaluate(()=>window.__ar313Calls.find((x)=>x.action==='payment_action_request'));
+  await expect.poll(async()=>page.evaluate(()=>window.__ar313Calls.filter((x)=>x.action==='payment_action_request'&&x.preview_only!==true).length)).toBe(1);
+  const request=await page.evaluate(()=>window.__ar313Calls.find((x)=>x.action==='payment_action_request'&&x.preview_only!==true));
   expect(request.application_type).toBe('receipt');
   expect(request.invoice_id).toBe('10000000-0000-4000-8000-000000000001');
   expect(request.payment_id).toBe('30000000-0000-4000-8000-000000000001');
@@ -121,7 +120,7 @@ test('Build 313 blocks an amount beyond the available source or invoice balance'
   await expect(page.locator('#oc_ar_application_preview')).toContainText('blocked');
   await expect(page.locator('#oc_ar_application_preview')).toContainText('Amount exceeds');
   await expect(page.locator('#oc_ar_application_submit')).toBeDisabled();
-  expect(await page.evaluate(()=>window.__ar313Calls.filter((x)=>x.action==='payment_action_request').length)).toBe(0);
+  expect(await page.evaluate(()=>window.__ar313Calls.filter((x)=>x.action==='payment_action_request'&&x.preview_only!==true).length)).toBe(0);
 });
 
 test('Build 313 handles paid deposit source and exposes no ledger-post control',async({page})=>{
