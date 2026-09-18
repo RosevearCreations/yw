@@ -82,6 +82,7 @@ async function mount(page){
     };
   });
   await page.addScriptTag({content:cockpitSource});
+  await page.evaluate(()=>document.dispatchEvent(new Event('DOMContentLoaded')));
   await expect(page.locator('#operationsCockpit')).toBeVisible();
   await expect(page.locator('[data-oc-action="recon-suggest"]')).toBeVisible();
 }
