@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { hasModuleAccess } from "../_shared/module-permissions.ts";
 import { boundaryAuditFields, resolveModuleWriteBoundary } from "../_shared/module-write-boundaries.ts";
 
-const BUILD = '2026-09-01a';
+const BUILD = '313-payment-application-ar-completion';
 const SCHEMA = 159;
 const WRITE_BOUNDARY_BUILD = '2026-09-01f';
 const WRITE_BOUNDARY_SCHEMA = 164;
@@ -911,6 +911,131 @@ async function resolveJob(supabase: any, reference: string) {
   const { data } = await supabase.from('jobs').select('*').eq('job_code', reference).limit(1).maybeSingle();
   return data || null;
 }
+
+const BUILD313_APPLICATION_TYPES = new Set(['receipt','unapplied_cash','deposit','credit','discount','writeoff','overpayment']);
+function build313ActionType(applicationType: string) {
+  const map: Record<string,string> = {
+    receipt:'apply_payment',
+    unapplied_cash:'apply_unapplied_cash',
+    deposit:'apply_deposit',
+    credit:'apply_credit',
+    discount:'apply_discount',
+    writeoff:'write_off',
+    overpayment:'overpayment_credit'
+  };
+  return map[applicationType] || '';
+}
+async function resolveBuild313ArApplication(supabase: any, body: Record<string, unknown>) {
+  const applicationType = clean(body.application_type, 40).toLowerCase();
+  if (!BUILD313_APPLICATION_TYPES.has(applicationType)) throw new HttpError(400, 'Unsupported A/R application type.');
+  const amount = money(body.amount);
+  const applicationDate = isoDate(body.application_date || body.transaction_date) || today();
+  const invoiceRef = clean(body.invoice_id || body.invoice_reference, 160);
+  const paymentRef = clean(body.payment_id || body.payment_reference, 160);
+  const depositRef = clean(body.deposit_id || body.deposit_reference, 160);
+  const manualSourceReference = clean(body.source_reference, 240);
+  const validations: Array<{key:string,status:'pass'|'fail',message:string}> = [];
+  const push = (key:string, ok:boolean, message:string) => validations.push({ key, status:ok ? 'pass' : 'fail', message });
+
+  let invoice:any = null;
+  if (invoiceRef) invoice = await findExact(supabase,'ar_invoices',invoiceRef,'id',['invoice_number'],'*');
+  const invoiceRequired = applicationType !== 'overpayment';
+  push('invoice', !invoiceRequired || Boolean(invoice?.id), invoiceRequired ? (invoice ? 'Invoice found.' : 'Choose an exact open A/R invoice.') : (invoice ? 'Optional invoice context found.' : 'No invoice required for overpayment classification.'));
+
+  let payment:any = null;
+  let deposit:any = null;
+  let sourceType = '';
+  let sourceId:string|null = null;
+  let sourceReference = manualSourceReference || null;
+  let sourceClientId:string|null = null;
+  let sourceDate:string|null = null;
+  let availableAmount = 0;
+
+  if (['receipt','unapplied_cash','overpayment'].includes(applicationType)) {
+    payment = paymentRef ? await findExact(supabase,'ar_payments',paymentRef,'id',['payment_number','reference_number'],'*') : null;
+    sourceType = 'ar_payment';
+    sourceId = payment?.id || null;
+    sourceReference = clean(payment?.payment_number || payment?.reference_number || paymentRef,160) || null;
+    sourceClientId = payment?.client_id || null;
+    sourceDate = isoDate(payment?.payment_date);
+    availableAmount = money(payment?.unapplied_amount ?? payment?.amount);
+    push('source', Boolean(payment?.id), payment ? 'A/R payment source found.' : 'Choose an exact A/R payment or unapplied-cash source.');
+  } else if (applicationType === 'deposit') {
+    deposit = depositRef ? await findExact(supabase,'customer_deposit_requests',depositRef,'id',['payment_reference'],'*') : null;
+    sourceType = 'customer_deposit';
+    sourceId = deposit?.id || null;
+    sourceReference = clean(deposit?.payment_reference || depositRef,160) || null;
+    sourceClientId = deposit?.client_id || null;
+    sourceDate = isoDate(deposit?.paid_at || deposit?.updated_at);
+    availableAmount = money(deposit?.paid_amount);
+    const paid = Boolean(deposit?.id) && availableAmount > 0 && !['failed','cancelled','expired'].includes(clean(deposit?.deposit_status,40).toLowerCase());
+    push('source', paid, paid ? 'Paid customer deposit source found.' : 'Choose a paid customer deposit with available value.');
+  } else {
+    sourceType = 'manual_adjustment';
+    sourceId = null;
+    availableAmount = money(invoice?.balance_due);
+    push('source', manualSourceReference.length >= 3, manualSourceReference.length >= 3 ? 'Adjustment source/reference supplied.' : 'Credit, discount, and write-off applications require a source/reference.');
+  }
+
+  const invoiceClientId = invoice?.client_id || null;
+  let client:any = null;
+  const resolvedClientId = invoiceClientId || sourceClientId;
+  if (resolvedClientId) client = await findExact(supabase,'clients',resolvedClientId,'id',[],'id,client_code,legal_name,display_name,is_active');
+  const identityMatches = !invoiceClientId || !sourceClientId || String(invoiceClientId) === String(sourceClientId);
+  push('customer_identity', identityMatches && Boolean(resolvedClientId), identityMatches && resolvedClientId ? 'Customer identity matches invoice and source.' : 'Invoice and source must belong to the same customer.');
+
+  push('amount', amount > 0, amount > 0 ? 'Application amount is greater than zero.' : 'Application amount must be greater than zero.');
+  const invoiceBalance = money(invoice?.balance_due);
+  const invoiceAmountAllowed = !invoiceRequired || (invoiceBalance > 0 && amount <= invoiceBalance);
+  push('invoice_balance', invoiceAmountAllowed, invoiceRequired ? (invoiceAmountAllowed ? 'Amount fits within the open invoice balance.' : 'Amount exceeds the invoice balance or the invoice has no open balance.') : 'Invoice balance does not constrain overpayment classification.');
+
+  const sourceAmountAllowed = ['credit','discount','writeoff'].includes(applicationType)
+    ? amount > 0 && (!invoiceRequired || amount <= invoiceBalance)
+    : availableAmount > 0 && amount <= availableAmount;
+  push('available_balance', sourceAmountAllowed, sourceAmountAllowed ? 'Amount fits within the available source balance.' : 'Amount exceeds the available source balance.');
+
+  const sourceDateOk = !sourceDate || applicationDate >= sourceDate;
+  push('date', sourceDateOk, sourceDateOk ? 'Application date is on or after the source date.' : 'Application date cannot precede the source transaction date.');
+
+  let periodOpen = true;
+  let periodMessage = 'A/R period is open for this application date.';
+  try { await assertPeriodOpen(supabase, applicationDate, 'ar'); }
+  catch (error) { periodOpen = false; periodMessage = error instanceof Error ? error.message : 'A/R period is locked.'; }
+  push('open_period', periodOpen, periodMessage);
+
+  const proofReference = clean(body.proof_reference,240);
+  push('proof', proofReference.length >= 3, proofReference.length >= 3 ? 'Proof reference supplied.' : 'Proof reference is required.');
+
+  const allowed = validations.every((item)=>item.status === 'pass');
+  return {
+    allowed,
+    application: {
+      application_type: applicationType,
+      action_type: build313ActionType(applicationType),
+      application_date: applicationDate,
+      amount,
+      invoice_id: invoice?.id || null,
+      invoice_reference: invoice?.invoice_number || invoiceRef || null,
+      invoice_balance: invoiceBalance,
+      payment_id: payment?.id || null,
+      payment_reference: payment?.payment_number || payment?.reference_number || null,
+      deposit_id: deposit?.id || null,
+      deposit_reference: deposit?.payment_reference || null,
+      source_type: sourceType,
+      source_id: sourceId,
+      source_reference: sourceReference,
+      source_date: sourceDate,
+      available_amount: availableAmount,
+      client_id: resolvedClientId || null,
+      client_name: clean(client?.display_name || client?.legal_name,180) || null,
+      customer_identity_match: identityMatches,
+      posting_enabled: false,
+      approval_required: ['credit','discount','writeoff'].includes(applicationType)
+    },
+    validations
+  };
+}
+
 async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false, bankReviewImportId = '') {
   const queueNames: Record<string, string> = {
     quotes: 'v_quote_contact_followup_queue', payments: 'v_payment_action_workbench', bank_imports: 'v_bank_csv_import_workbench',
@@ -928,7 +1053,7 @@ async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false
     : [];
   const requestedReviewId = bankWorkbenchV2 && isUuid(bankReviewImportId) ? clean(bankReviewImportId, 80) : '';
   const bankReviewIds = requestedReviewId ? [requestedReviewId] : [];
-  const [bankItems, profiles, banks, rails, stripeRows, exportRows, testRows, policyRows, signalRows, alertRows, releaseRows, capabilitySnapshot] = await Promise.all([
+  const [bankItems, profiles, banks, rails, stripeRows, exportRows, testRows, policyRows, signalRows, alertRows, releaseRows, capabilitySnapshot, arInvoices, arPayments, customerDeposits, arApplications] = await Promise.all([
     safeSelect(supabase.from('bank_reconciliation_items').select('id, reconciliation_session_id, item_date, item_description, amount, match_status, clearing_status, difference_reason, notes, created_at').eq('clearing_status', 'open').order('item_date', { ascending: false }).limit(100)),
     safeSelect(supabase.from('profiles').select('id, full_name, email, role').order('full_name').limit(200)),
     safeSelect(supabase.from('bank_accounts').select('id, account_name, currency_code, account_mask, is_default, gl_account_id').eq('account_status', 'open').order('is_default', { ascending: false }).order('account_name')),
@@ -940,7 +1065,11 @@ async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false
     safeSelect(supabase.from('v_route_content_decision_queue').select('*').limit(12)),
     callRpc(supabase, 'ywi_refresh_stripe_webhook_alerts', {}).catch(() => ({})).then(() => safeSelect(supabase.from('v_stripe_webhook_alert_queue').select('*').limit(12))),
     safeSelect(supabase.from('v_release_readiness_dashboard').select('*').limit(1)),
-    callRpc(supabase, 'ywi_get_operations_capabilities', { p_actor_profile_id: profile.id }).catch(() => ({ actor_role: profile?.role || 'unknown', actor_rank: roleRank(profile?.role), actions: {} }))
+    callRpc(supabase, 'ywi_get_operations_capabilities', { p_actor_profile_id: profile.id }).catch(() => ({ actor_role: profile?.role || 'unknown', actor_rank: roleRank(profile?.role), actions: {} })),
+    safeSelect(supabase.from('ar_invoices').select('id,invoice_number,invoice_date,due_date,invoice_status,total_amount,balance_due,client_id,work_order_id,updated_at').gt('balance_due',0).order('due_date',{ascending:true}).limit(250)),
+    safeSelect(supabase.from('ar_payments').select('id,payment_number,reference_number,payment_date,amount,unapplied_amount,application_status,client_id,invoice_id,updated_at').gt('unapplied_amount',0).order('payment_date',{ascending:false}).limit(250)),
+    safeSelect(supabase.from('customer_deposit_requests').select('id,quote_package_id,estimate_id,client_id,requested_amount,paid_amount,deposit_status,payment_reference,paid_at,updated_at').gt('paid_amount',0).order('paid_at',{ascending:false}).limit(200)),
+    safeSelect(supabase.from('ar_payment_applications').select('id,payment_id,invoice_id,application_date,applied_amount,application_status,application_type,credit_amount,discount_amount,writeoff_amount,overpayment_amount,review_status,source_reconciliation_item_id,application_payload,created_at,updated_at').order('created_at',{ascending:false}).limit(100))
   ]);
   const [bankReviewRows, bankDetails] = await Promise.all([
     bankReviewIds.length ? safeSelect(supabase.from('bank_csv_import_preview_rows')
@@ -963,7 +1092,7 @@ async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false
   }));
 
   return {
-    ...queueMap, bank_preview_rows: bankReviewRows, bank_items: bankItems, profiles, banks, rails,
+    ...queueMap, bank_preview_rows: bankReviewRows, bank_items: bankItems, profiles, banks, rails, ar_invoices: arInvoices, ar_payments: arPayments, customer_deposits: customerDeposits, ar_applications: arApplications,
     capabilities: capabilitySnapshot,
     stripe_health: {
       ...(stripeRows?.[0] || {}),
@@ -1033,12 +1162,24 @@ serve(async (req) => {
       ) }, { headers: corsHeaders });
     }
 
+    if (action === 'payment_application_preview') {
+      requireRank(profile, 45, action);
+      const preview = await resolveBuild313ArApplication(supabase, body);
+      return Response.json({ ok:true, preview, posting_enabled:false, build:313 }, { headers:corsHeaders });
+    }
+
     if (action === 'payment_action_request') {
       requireRank(profile, 45, action);
-      const allowed = ['apply_payment','reverse_payment','refund','write_off','overpayment_credit'];
-      const actionType = clean(body.action_type || 'apply_payment', 80);
+      const applicationType = clean(body.application_type,40).toLowerCase();
+      const preview = applicationType ? await resolveBuild313ArApplication(supabase, body) : null;
+      if (preview && !preview.allowed) {
+        throw new HttpError(409, 'A/R application validation failed. Correct the failed checks before submitting.', { validations: preview.validations, application: preview.application });
+      }
+
+      const allowed = ['apply_payment','apply_unapplied_cash','apply_deposit','apply_credit','apply_discount','reverse_payment','refund','write_off','overpayment_credit'];
+      const actionType = preview?.application?.action_type || clean(body.action_type || 'apply_payment', 80);
       if (!allowed.includes(actionType)) throw new HttpError(400, 'Unsupported payment action type.');
-      const amount = money(body.amount);
+      const amount = money(preview?.application?.amount ?? body.amount);
       if (amount <= 0) throw new HttpError(400, 'Payment action amount must be greater than zero.');
       const reason = clean(body.reason, 1000);
       if (reason.length < 8) throw new HttpError(400, 'Add a clear reason of at least 8 characters.');
@@ -1046,22 +1187,39 @@ serve(async (req) => {
       const proofReference = clean(body.proof_reference, 240);
       if (proofRequired && !proofReference) throw new HttpError(400, 'Proof reference is required for this action.');
       const key = idempotencyKey(req, body, 'payment');
+      const application = preview?.application || null;
       const row = {
         action_key: key, idempotency_key: key, action_type: actionType, action_status: 'submitted',
-        ledger_side: clean(body.ledger_side || 'auto', 20), bank_account_id: isUuid(body.bank_account_id) ? body.bank_account_id : null,
-        bank_account_hint: clean(body.bank_account_hint, 180) || null, transaction_date: isoDate(body.transaction_date) || today(),
-        customer_or_vendor_name: clean(body.customer_or_vendor_name, 180) || null,
-        invoice_reference: clean(body.invoice_reference, 160) || null, payment_reference: clean(body.payment_reference, 160) || null,
+        ledger_side: application ? 'ar' : clean(body.ledger_side || 'auto', 20),
+        bank_account_id: isUuid(body.bank_account_id) ? body.bank_account_id : null,
+        bank_account_hint: clean(body.bank_account_hint, 180) || null,
+        transaction_date: application?.application_date || isoDate(body.transaction_date) || today(),
+        customer_or_vendor_name: clean(application?.client_name || body.customer_or_vendor_name, 180) || null,
+        invoice_reference: clean(application?.invoice_reference || body.invoice_reference, 160) || null,
+        payment_reference: clean(application?.payment_reference || application?.deposit_reference || application?.source_reference || body.payment_reference, 160) || null,
         reversal_of_request_id: isUuid(body.reversal_of_request_id) ? body.reversal_of_request_id : null,
+        ar_invoice_id: isUuid(application?.invoice_id) ? application.invoice_id : null,
+        ar_payment_id: isUuid(application?.payment_id) ? application.payment_id : null,
         amount, currency_code: clean(body.currency_code || 'CAD', 8) || 'CAD', reason,
         proof_required: proofRequired, proof_reference: proofReference || null, requested_by_profile_id: profile.id,
-        posting_status: 'not_posted', rollback_hint: 'Reverse through a new approved reversal request; never edit posted journal lines.',
-        metadata: { build: BUILD, schema: SCHEMA, source: 'operations-cockpit' }, updated_at: nowIso()
+        posting_status: 'not_posted',
+        rollback_hint: 'Build 313 stages reviewed A/R applications only. Ledger posting remains disabled until separately authorized.',
+        metadata: {
+          build: 313, schema: SCHEMA, source: application ? 'payment-application-ar-completion' : 'operations-cockpit',
+          payment_application: application || undefined,
+          validations: preview?.validations || undefined,
+          posting_enabled: false
+        },
+        updated_at: nowIso()
       };
       const { data, error } = await supabase.from('payment_action_requests').upsert(row, { onConflict: 'action_key', ignoreDuplicates: false }).select('*').single();
       if (error) throw error;
-      await audit(supabase, { operation_action: action, operation_status: 'submitted', entity_type: 'payment_action_request', entity_id: data.id, actor_profile_id: profile.id, request_payload: safeRequest(body), response_payload: { action_key: data.action_key } });
-      return Response.json({ ok: true, record: data }, { headers: corsHeaders });
+      await audit(supabase, {
+        operation_action: action, operation_status: 'submitted', entity_type: 'payment_action_request',
+        entity_id: data.id, actor_profile_id: profile.id, request_payload: safeRequest(body),
+        response_payload: { action_key: data.action_key, build:313, application_type:application?.application_type || null, posting_enabled:false }
+      });
+      return Response.json({ ok: true, record: data, preview, posting_enabled:false }, { headers: corsHeaders });
     }
 
     if (action === 'payment_action_decision') {
@@ -1073,10 +1231,7 @@ serve(async (req) => {
       const { data: existing, error: readError } = await supabase.from('payment_action_requests').select('*').eq('id', requestId).single();
       if (readError) throw readError;
       if (decision === 'post') {
-        const postedResult = await callRpc(supabase, 'ywi_rpc_post_payment_action', { p_request_id: requestId, p_actor_profile_id: profile.id });
-        const posted = postedResult.record || postedResult;
-        await audit(supabase, { operation_action: action, operation_status: 'posted', entity_type: 'payment_action_request', entity_id: requestId, actor_profile_id: profile.id, request_payload: safeRequest(body), response_payload: { rpc: 'ywi_rpc_post_payment_action', gl_batch_id: posted?.gl_batch_id, result: postedResult } });
-        return Response.json({ ok: true, record: posted, rpc: postedResult }, { headers: corsHeaders });
+        throw new HttpError(409, 'Ledger posting is disabled for Build 313. Review and approve A/R application requests only; posting requires a separately authorized release.');
       }
       const note = clean(body.decision_note, 1000);
       if ((decision === 'reject' || decision === 'cancel') && note.length < 5) throw new HttpError(400, 'Add a decision note.');
