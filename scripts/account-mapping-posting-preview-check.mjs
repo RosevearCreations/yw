@@ -34,7 +34,7 @@ for(const token of [
 assert.ok(!ui.includes("action:'execute_posting'"),'Build 314 mapping UI must not expose posting execution.');
 assert.ok(!ui.includes('data-finance-execution-release'),'Build 314 mapping UI must not expose release controls.');
 assert.ok(fixture.includes('posting_previews:[')&&fixture.includes('decision_audit:['),'Build 314 deterministic fixtures are required.');
-assert.ok(browser.includes('read-only posting preview')&&browser.includes('Reclassify for review'),'Build 314 rendered acceptance must cover preview and human reclassification.');
+assert.ok(browser.includes('read-only posting preview')&&browser.includes('data-mapping-review="review"'),'Build 314 rendered acceptance must cover preview and human reclassification.');
 assert.equal(pkg.scripts['test:account-mapping-posting-preview'],'node scripts/account-mapping-posting-preview-check.mjs');
 assert.equal(pkg.scripts['test:browser:account-mapping-posting-preview'],'playwright test --config=playwright.config.mjs tests/browser/account-mapping-posting-preview.spec.mjs');
 assert.ok(workflow.includes('npm run test:account-mapping-posting-preview'),'Canonical source workflow must run Build 314 source acceptance.');
