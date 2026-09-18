@@ -58,4 +58,11 @@
           <p>The workbench can propose one-to-one matches and bounded one-to-many combinations. An exact one-to-many candidate may prepare split allocations, but the operator must review every target and confirm the action; the database still enforces exact-cent balance.</p>
           <p>Partial candidates and many-to-one candidates are review-only under the current reconciliation contract. They remain visible for investigation and human confirmation but cannot be auto-applied. Match suggestions do not post ledger entries, enable Finance posting, or mutate payment providers.</p>
         </section>
+
+        <section class="help-section" id="payment-application-ar-completion">
+          <h2>Payment Application &amp; A/R Completion</h2>
+          <p>Build 313 completes the review flow for applying receipts and unapplied cash, paid customer deposits, credits, discounts, approved write-offs, and overpayments to Accounts Receivable.</p>
+          <p>Before a request can be submitted, the server validates the open invoice balance, available source balance, customer identity, source record, application date, proof reference, and whether the A/R period is open. Failed checks block submission rather than being treated as warnings.</p>
+          <p>Every accepted application is saved as an idempotent, auditable Finance review request. Approval does not post a ledger entry: ledger posting remains OFF until a separately authorized release enables and verifies that execution path.</p>
+        </section>
 >
