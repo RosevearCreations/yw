@@ -260,10 +260,12 @@
       if (!cap) return;
       const base = control.dataset.ocBaseLabel || control.textContent.replace(/ · restricted$/, '');
       control.dataset.ocBaseLabel = base;
-      control.disabled = cap.permitted === false;
-      control.setAttribute('title', cap.reason || 'Server permission check applies.');
-      control.textContent = cap.permitted === false ? `${base} · restricted` : base;
-      control.setAttribute('aria-disabled', cap.permitted === false ? 'true' : 'false');
+      const permissionDenied = cap.permitted === false;
+      const businessBlocked = control.id === 'oc_ar_application_submit' && !paymentApplicationPreview?.allowed;
+      control.disabled = permissionDenied || businessBlocked;
+      control.setAttribute('title', permissionDenied ? (cap.reason || 'Your role cannot perform this action.') : businessBlocked ? 'Preview and pass all A/R application checks before submitting.' : (cap.reason || 'Server permission check applies.'));
+      control.textContent = permissionDenied ? `${base} · restricted` : base;
+      control.setAttribute('aria-disabled', control.disabled ? 'true' : 'false');
     });
   }
   function renderOperationsHealth() {
@@ -399,7 +401,11 @@
     const validations=preview?.validations || [];
     const failed=validations.filter((item)=>item.status!=='pass');
     wrap.innerHTML=`<article class="oc-recon-review-card"><header><div><span class="operations-kicker">Build 313 server validation</span><h4>${esc(String(application.application_type || 'A/R application').replaceAll('_',' '))}</h4></div><span class="${statusClass(preview?.allowed ? 'approved' : 'blocked')}">${preview?.allowed ? 'ready for review' : 'blocked'}</span></header><div class="oc-recon-math"><div><span>Application amount</span><strong>${money(application.amount)}</strong></div><div><span>Invoice balance</span><strong>${money(application.invoice_balance)}</strong></div><div><span>Source available</span><strong>${money(application.available_amount)}</strong></div><div><span>Posting</span><strong>OFF</strong></div></div><ul class="oc-score-components">${validations.map((item)=>`<li><strong>${item.status==='pass'?'PASS':'BLOCK'}</strong> · ${esc(item.message)}</li>`).join('')}</ul><p class="muted">${failed.length ? 'Correct every blocked check before submitting.' : 'All pre-application checks passed. Submission creates an auditable review request only; it does not post a ledger entry.'}</p></article>`;
-    const submit=byId('oc_ar_application_submit'); if(submit) submit.disabled=!preview?.allowed;
+    const submit=byId('oc_ar_application_submit'); if(submit) {
+      const permissionDenied=capabilityFor('payment_action_request')?.permitted === false;
+      submit.disabled=permissionDenied || !preview?.allowed;
+      submit.setAttribute('aria-disabled', submit.disabled ? 'true' : 'false');
+    }
   }
   async function handleArApplicationPreview() {
     const form=byId('oc_ar_application_form'); if(!form) return;
