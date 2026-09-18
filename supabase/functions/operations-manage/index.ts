@@ -121,6 +121,53 @@ function validateBankRows(rows: Record<string, unknown>[] = []) {
     };
   });
 }
+function bankPreviewCounts(rows: any[] = []) {
+  const duplicateFrequency = new Map<string, number>();
+  for (const row of rows) {
+    const key = clean(row?.duplicate_key, 1200);
+    if (key) duplicateFrequency.set(key, (duplicateFrequency.get(key) || 0) + 1);
+  }
+  const accepted = rows.filter((row) => row?.row_status === 'accepted').length;
+  const rejected = rows.filter((row) => row?.row_status === 'rejected').length;
+  const duplicates = [...duplicateFrequency.values()].reduce((total, count) => total + Math.max(0, count - 1), 0);
+  return { accepted, rejected, duplicates, total: rows.length };
+}
+async function refreshBankPreviewSummary(supabase: any, importId: string, extraSummary: Record<string, unknown> = {}) {
+  const rows = await safeSelect(supabase.from('bank_csv_import_preview_rows')
+    .select('id,row_status,duplicate_key,rejection_reason')
+    .eq('import_id', importId)
+    .is('promoted_at', null)
+    .order('row_number')
+    .limit(2500));
+  const counts = bankPreviewCounts(rows);
+  const { data: current, error: readError } = await supabase.from('bank_csv_import_previews')
+    .select('validation_summary')
+    .eq('id', importId)
+    .single();
+  if (readError) throw readError;
+  const validationSummary = { ...objectValue(current?.validation_summary), accepted: counts.accepted, rejected: counts.rejected, duplicates: counts.duplicates, ...extraSummary };
+  const { data, error } = await supabase.from('bank_csv_import_previews').update({
+    total_rows: counts.total,
+    accepted_rows: counts.accepted,
+    rejected_rows: counts.rejected,
+    duplicate_rows: counts.duplicates,
+    validation_summary: validationSummary,
+    updated_at: nowIso()
+  }).eq('id', importId).select('*').single();
+  if (error) throw error;
+  return { preview: data, counts };
+}
+async function requireBankPreviewReview(supabase: any, profile: any, importId: string) {
+  if (!isUuid(importId)) throw new HttpError(400, 'Valid import_id is required.');
+  if (!(await hasModuleAccess(supabase, profile, 'finance', 'approve'))) {
+    throw new HttpError(403, 'Finance approve access is required to review bank-import rows.');
+  }
+  const { data: preview, error } = await supabase.from('bank_csv_import_previews').select('*').eq('id', importId).single();
+  if (error) throw error;
+  if (preview?.promoted_at) throw new HttpError(409, 'This bank import is already promoted and can no longer be edited.');
+  if (preview?.preview_status === 'discarded') throw new HttpError(409, 'This bank import was discarded before promotion.');
+  return preview;
+}
 function safeRequest(body: Record<string, unknown>) {
   const copy: Record<string, unknown> = { ...body };
   delete copy.local_payload;
@@ -700,7 +747,7 @@ async function resolveJob(supabase: any, reference: string) {
   const { data } = await supabase.from('jobs').select('*').eq('job_code', reference).limit(1).maybeSingle();
   return data || null;
 }
-async function queuePayload(supabase: any, profile: any) {
+async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false, bankReviewImportId = '') {
   const queueNames: Record<string, string> = {
     quotes: 'v_quote_contact_followup_queue', payments: 'v_payment_action_workbench', bank_imports: 'v_bank_csv_import_workbench',
     reconciliation: 'v_reconciliation_action_workbench', equipment: 'v_equipment_scan_resolution_queue', equipment_service: 'v_equipment_service_cost_recovery_queue',
@@ -711,6 +758,12 @@ async function queuePayload(supabase: any, profile: any) {
     const rows = await safeSelect(supabase.from(view).select('*').limit(60));
     return [key, rows];
   }));
+  const queueMap = Object.fromEntries(entries) as Record<string, any[]>;
+  const bankHistoryIds = bankWorkbenchV2
+    ? (queueMap.bank_imports || []).slice(0, 20).map((row: any) => clean(row.id, 80)).filter(isUuid)
+    : [];
+  const requestedReviewId = bankWorkbenchV2 && isUuid(bankReviewImportId) ? clean(bankReviewImportId, 80) : '';
+  const bankReviewIds = requestedReviewId ? [requestedReviewId] : [];
   const [bankItems, profiles, banks, rails, stripeRows, exportRows, testRows, policyRows, signalRows, alertRows, releaseRows, capabilitySnapshot] = await Promise.all([
     safeSelect(supabase.from('bank_reconciliation_items').select('id, reconciliation_session_id, item_date, item_description, amount, match_status, clearing_status, difference_reason, notes, created_at').eq('clearing_status', 'open').order('item_date', { ascending: false }).limit(100)),
     safeSelect(supabase.from('profiles').select('id, full_name, email, role').order('full_name').limit(200)),
@@ -725,8 +778,28 @@ async function queuePayload(supabase: any, profile: any) {
     safeSelect(supabase.from('v_release_readiness_dashboard').select('*').limit(1)),
     callRpc(supabase, 'ywi_get_operations_capabilities', { p_actor_profile_id: profile.id }).catch(() => ({ actor_role: profile?.role || 'unknown', actor_rank: roleRank(profile?.role), actions: {} }))
   ]);
+  const [bankReviewRows, bankDetails] = await Promise.all([
+    bankReviewIds.length ? safeSelect(supabase.from('bank_csv_import_preview_rows')
+      .select('id,import_id,row_number,row_status,transaction_date,description,amount,debit_amount,credit_amount,reference,duplicate_key,rejection_reason,raw_row,promoted_at,created_at')
+      .in('import_id', bankReviewIds)
+      .is('promoted_at', null)
+      .order('row_number')
+      .limit(2500)) : Promise.resolve([]),
+    bankHistoryIds.length ? safeSelect(supabase.from('bank_csv_import_previews')
+      .select('id,validation_summary,metadata,header_json,updated_at')
+      .in('id', bankHistoryIds)
+      .limit(20)) : Promise.resolve([])
+  ]);
+  const bankDetailMap = new Map((bankDetails || []).map((row: any) => [String(row.id), row]));
+  queueMap.bank_imports = (queueMap.bank_imports || []).map((row: any) => ({
+    ...row,
+    validation_summary: bankDetailMap.get(String(row.id))?.validation_summary || {},
+    metadata: bankDetailMap.get(String(row.id))?.metadata || {},
+    header_json: bankDetailMap.get(String(row.id))?.header_json || []
+  }));
+
   return {
-    ...Object.fromEntries(entries), bank_items: bankItems, profiles, banks, rails,
+    ...queueMap, bank_preview_rows: bankReviewRows, bank_items: bankItems, profiles, banks, rails,
     capabilities: capabilitySnapshot,
     stripe_health: {
       ...(stripeRows?.[0] || {}),
@@ -788,7 +861,12 @@ serve(async (req) => {
 
     if (action === 'operations_queue_list') {
       requireRank(profile, 30, action);
-      return Response.json({ ok: true, build: BUILD, schema: SCHEMA, queues: await queuePayload(supabase, profile) }, { headers: corsHeaders });
+      return Response.json({ ok: true, build: BUILD, schema: SCHEMA, queues: await queuePayload(
+        supabase,
+        profile,
+        body.bank_workbench_v2 === true,
+        clean(body.bank_review_import_id, 80)
+      ) }, { headers: corsHeaders });
     }
 
     if (action === 'payment_action_request') {
@@ -849,6 +927,111 @@ serve(async (req) => {
 
     if (action === 'bank_csv_preview') {
       requireRank(profile, 45, action);
+      const reviewOperation = clean(body.review_operation, 40);
+      if (reviewOperation) {
+        const importId = clean(body.import_id, 80);
+        const preview = await requireBankPreviewReview(supabase, profile, importId);
+
+        if (reviewOperation === 'discard_import') {
+          const reason = clean(body.reason, 1000);
+          if (reason.length < 5) throw new HttpError(400, 'Add a discard reason of at least 5 characters.');
+          const { error: rowsError } = await supabase.from('bank_csv_import_preview_rows').update({
+            row_status: 'rejected',
+            rejection_reason: `Import discarded before promotion: ${reason}`
+          }).eq('import_id', importId).is('promoted_at', null);
+          if (rowsError) throw rowsError;
+          const summary = await refreshBankPreviewSummary(supabase, importId, { discarded: true, discard_reason: reason });
+          const { data, error } = await supabase.from('bank_csv_import_previews').update({
+            preview_status: 'discarded',
+            metadata: { ...objectValue(preview.metadata), discarded_at: nowIso(), discarded_by_profile_id: profile.id, discard_reason: reason },
+            updated_at: nowIso()
+          }).eq('id', importId).select('*').single();
+          if (error) throw error;
+          await audit(supabase, { operation_action: action, operation_status: 'discarded', entity_type: 'bank_csv_import_preview', entity_id: importId, actor_profile_id: profile.id, request_payload: safeRequest(body), response_payload: summary.counts });
+          return Response.json({ ok: true, record: data, summary: summary.counts, discarded: true }, { headers: corsHeaders });
+        }
+
+        if (reviewOperation === 'row_decision') {
+          const rowId = clean(body.row_id, 80);
+          const decision = clean(body.decision, 30);
+          if (!isUuid(rowId)) throw new HttpError(400, 'Valid row_id is required.');
+          if (!['approve','reject','correct','undo'].includes(decision)) throw new HttpError(400, 'Unsupported bank-row decision.');
+          const { data: row, error: rowError } = await supabase.from('bank_csv_import_preview_rows').select('*').eq('id', rowId).eq('import_id', importId).is('promoted_at', null).single();
+          if (rowError) throw rowError;
+          let update: Record<string, unknown> = {};
+
+          if (decision === 'reject') {
+            const reason = clean(body.reason, 1000);
+            if (reason.length < 5) throw new HttpError(400, 'Add a rejection reason of at least 5 characters.');
+            update = { row_status: 'rejected', rejection_reason: reason };
+          } else if (decision === 'approve') {
+            const validated = validateBankRows([{ date: row.transaction_date, description: row.description, amount: row.amount, reference: row.reference }])[0];
+            const coreReasons = validated.reasons.filter((reason) => reason !== 'Possible duplicate row.');
+            if (coreReasons.length) throw new HttpError(409, `Correct this row before approval: ${coreReasons.join(' ')}`);
+            update = { row_status: 'accepted', rejection_reason: null };
+          } else {
+            const source = decision === 'undo' ? objectValue(row.raw_row) : {
+              date: body.transaction_date,
+              description: body.description,
+              amount: body.amount,
+              reference: body.reference,
+              __source_row: objectValue(row.raw_row)?.__source_row || objectValue(row.raw_row)
+            };
+            const validated = validateBankRows([source])[0];
+            const duplicateMatch = await safeSelect(supabase.from('bank_csv_import_preview_rows')
+              .select('id')
+              .eq('import_id', importId)
+              .eq('duplicate_key', validated.duplicateKey)
+              .neq('id', rowId)
+              .limit(1));
+            const reasons = [...validated.reasons.filter((reason) => reason !== 'Possible duplicate row.')];
+            if (duplicateMatch.length) reasons.push('Possible duplicate row.');
+            update = {
+              transaction_date: validated.dateText,
+              description: validated.description || null,
+              amount: validated.amount,
+              debit_amount: validated.debit,
+              credit_amount: validated.credit,
+              reference: validated.reference || null,
+              duplicate_key: validated.duplicateKey,
+              row_status: reasons.length ? 'rejected' : 'accepted',
+              rejection_reason: reasons.join(' ') || null
+            };
+          }
+          const { data, error } = await supabase.from('bank_csv_import_preview_rows').update(update).eq('id', rowId).eq('import_id', importId).is('promoted_at', null).select('*').single();
+          if (error) throw error;
+          const summary = await refreshBankPreviewSummary(supabase, importId, { last_review_operation: decision, last_reviewed_at: nowIso() });
+          await audit(supabase, { operation_action: action, operation_status: `row_${decision}`, entity_type: 'bank_csv_import_preview_row', entity_id: rowId, actor_profile_id: profile.id, request_payload: safeRequest(body), response_payload: { import_id: importId, row_status: data.row_status, counts: summary.counts } });
+          return Response.json({ ok: true, record: data, summary: summary.counts }, { headers: corsHeaders });
+        }
+
+        if (reviewOperation === 'bulk_decision') {
+          const rowIds = [...new Set(arrayValue(body.row_ids).map((value) => clean(value, 80)).filter(isUuid))].slice(0, 101);
+          if (!rowIds.length) throw new HttpError(400, 'Select at least one bank row.');
+          if (rowIds.length > 100) throw new HttpError(400, 'Bulk bank review is limited to 100 explicitly selected rows.');
+          const decision = clean(body.decision, 20);
+          if (!['approve','reject'].includes(decision)) throw new HttpError(400, 'Bulk review supports approve or reject only.');
+          const reason = clean(body.reason, 1000);
+          if (decision === 'reject' && reason.length < 5) throw new HttpError(400, 'Add a rejection reason of at least 5 characters.');
+          const selected = await safeSelect(supabase.from('bank_csv_import_preview_rows').select('*').eq('import_id', importId).in('id', rowIds).is('promoted_at', null).limit(100));
+          if (selected.length !== rowIds.length) throw new HttpError(409, 'One or more selected rows are missing, already promoted, or outside this import.');
+          if (decision === 'approve') {
+            const invalid = selected.filter((row: any) => validateBankRows([{ date: row.transaction_date, description: row.description, amount: row.amount, reference: row.reference }])[0].reasons.filter((reason) => reason !== 'Possible duplicate row.').length);
+            if (invalid.length) throw new HttpError(409, `${invalid.length} selected row(s) still need correction before approval.`);
+          }
+          const { error } = await supabase.from('bank_csv_import_preview_rows').update({
+            row_status: decision === 'approve' ? 'accepted' : 'rejected',
+            rejection_reason: decision === 'approve' ? null : reason
+          }).eq('import_id', importId).in('id', rowIds).is('promoted_at', null);
+          if (error) throw error;
+          const summary = await refreshBankPreviewSummary(supabase, importId, { last_review_operation: `bulk_${decision}`, last_review_count: rowIds.length, last_reviewed_at: nowIso() });
+          await audit(supabase, { operation_action: action, operation_status: `bulk_${decision}`, entity_type: 'bank_csv_import_preview', entity_id: importId, actor_profile_id: profile.id, request_payload: safeRequest(body), response_payload: { selected_count: rowIds.length, counts: summary.counts } });
+          return Response.json({ ok: true, summary: summary.counts, reviewed: rowIds.length }, { headers: corsHeaders });
+        }
+
+        throw new HttpError(400, 'Unsupported bank-import review operation.');
+      }
+
       const rows = arrayValue(body.rows).slice(0, 2500).map((row) => objectValue(row));
       if (!rows.length) throw new HttpError(400, 'CSV rows are required.');
       const validated = validateBankRows(rows);
@@ -864,7 +1047,13 @@ serve(async (req) => {
         preview_status: 'review', header_json: headers, total_rows: validated.length, accepted_rows: accepted.length,
         rejected_rows: rejected.length, duplicate_rows: duplicates.length,
         validation_summary: { accepted: accepted.length, rejected: rejected.length, duplicates: duplicates.length, rules: ['valid date','description required','non-zero amount','duplicate fingerprint'] },
-        created_by_profile_id: profile.id, metadata: { build: BUILD, schema: SCHEMA, source: 'operations-cockpit' }, updated_at: nowIso()
+        created_by_profile_id: profile.id, metadata: {
+          build: BUILD, schema: SCHEMA, source: 'operations-cockpit',
+          source_file_sha256: clean(body.source_file_sha256, 80) || null,
+          source_file_bytes: Math.max(0, int(body.source_file_bytes)),
+          source_file_last_modified: clean(body.source_file_last_modified, 80) || null,
+          column_mapping: objectValue(body.column_mapping)
+        }, updated_at: nowIso()
       }, { onConflict: 'import_key' }).select('*').single();
       if (batchError) throw batchError;
       await supabase.from('bank_csv_import_preview_rows').delete().eq('import_id', batch.id).is('promoted_at', null);
@@ -884,6 +1073,10 @@ serve(async (req) => {
       requireRank(profile, 45, action);
       const importId = clean(body.import_id, 80);
       if (!isUuid(importId)) throw new HttpError(400, 'Valid import_id is required.');
+      const { data: promotionGuard, error: promotionGuardError } = await supabase.from('bank_csv_import_previews').select('id,preview_status,promoted_at,accepted_rows').eq('id', importId).single();
+      if (promotionGuardError) throw promotionGuardError;
+      if (promotionGuard.preview_status === 'discarded') throw new HttpError(409, 'Discarded bank imports cannot be promoted. Restore or create a new preview instead.');
+      if (!promotionGuard.promoted_at && Number(promotionGuard.accepted_rows || 0) < 1) throw new HttpError(409, 'No explicitly accepted rows are available for promotion.');
       const promotedResult = await callRpc(supabase, 'ywi_rpc_promote_bank_csv_import', {
         p_import_id: importId,
         p_actor_profile_id: profile.id,

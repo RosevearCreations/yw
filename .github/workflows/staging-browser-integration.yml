@@ -99,6 +99,7 @@ jobs:
       - run: npm run test:finance-account-mapping-review
       - run: npm run test:finance-account-mapping-observability
       - run: npm run test:finance-account-mapping-decision-support
+      - run: npm run test:bank-import-workbench-v2
       - run: npm run test:help-seo
       - run: npm run test:search-discovery
       - run: npm run test:repo
@@ -142,6 +143,7 @@ jobs:
       - run: npx playwright test --config=playwright.config.mjs tests/browser/release-readiness-evidence.spec.mjs
       - run: npm run test:browser:job-lifecycle
       - run: npm run test:browser:modules
+      - run: npm run test:browser:bank-import-workbench-v2
       - run: npm run test:browser:profile-reference-lifecycle
       - run: npm run test:browser:workspace-organization
       - run: npm run test:browser:performance-budgets
