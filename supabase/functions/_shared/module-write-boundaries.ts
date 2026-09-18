@@ -25,7 +25,6 @@ const contract = (
 export const MODULE_WRITE_BOUNDARIES: Readonly<Record<string, ModuleWriteBoundary>> = Object.freeze({
   operations_queue_list: contract('operations_queue_list', 'admin', 'view', 'read', 'operations_control_plane'),
 
-  payment_application_preview: contract('payment_application_preview', 'finance', 'view', 'read', 'payments'),
   payment_action_request: contract('payment_action_request', 'finance', 'create', 'write', 'payments', 'finance.payment_action.requested'),
   payment_action_decision: contract('payment_action_decision', 'finance', 'approve', 'write', 'payments', 'finance.payment_action.decided'),
   bank_csv_preview: contract('bank_csv_preview', 'finance', 'create', 'write', 'banking', 'finance.bank_import.previewed'),
