@@ -28,9 +28,14 @@ const enabled = process.env.YWI_STAGING_FIXTURES === '1';
 const fixtureLabel = String(process.env.YWI_STAGING_FIXTURE_LABEL || 'STAGING-RPC').trim().toUpperCase();
 const expectedStagingRef = String(process.env.YWI_STAGING_PROJECT_REF || '').trim();
 const productionRef = String(process.env.YWI_PRODUCTION_PROJECT_REF || 'jmqvkgiqlimdhcofwkxr').trim();
-const schemaFiles = fs.readdirSync('sql').filter((name) => /^\d{3}_.+\.sql$/i.test(name));
-const schemaVersions = schemaFiles.map((name) => Number(name.slice(0, 3))).filter(Number.isFinite);
-const repoLatestSchema = Math.max(...schemaVersions);
+function migrationVersionFromFilename(name) {
+  const match = String(name ?? '').match(/^(\d{3,})_.+\.sql$/i);
+  if (!match) return null;
+  const version = Number(match[1]);
+  return Number.isSafeInteger(version) && version > 0 ? version : null;
+}
+const schemaVersions = fs.readdirSync('sql').map(migrationVersionFromFilename).filter(Number.isSafeInteger);
+const repoLatestSchema = schemaVersions.length ? Math.max(...schemaVersions) : null;
 
 function fail(message) { console.error(`ERROR  ${message}`); process.exit(1); }
 
