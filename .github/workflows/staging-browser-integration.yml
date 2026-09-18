@@ -143,6 +143,7 @@ jobs:
       - run: npx playwright test --config=playwright.config.mjs tests/browser/release-readiness-evidence.spec.mjs
       - run: npm run test:browser:job-lifecycle
       - run: npm run test:browser:modules
+      - run: npm run test:browser:bank-import-workbench-v2
       - run: npm run test:browser:profile-reference-lifecycle
       - run: npm run test:browser:workspace-organization
       - run: npm run test:browser:performance-budgets
