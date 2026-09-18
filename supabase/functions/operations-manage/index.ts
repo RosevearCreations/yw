@@ -747,7 +747,7 @@ async function resolveJob(supabase: any, reference: string) {
   const { data } = await supabase.from('jobs').select('*').eq('job_code', reference).limit(1).maybeSingle();
   return data || null;
 }
-async function queuePayload(supabase: any, profile: any) {
+async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false, bankReviewImportId = '') {
   const queueNames: Record<string, string> = {
     quotes: 'v_quote_contact_followup_queue', payments: 'v_payment_action_workbench', bank_imports: 'v_bank_csv_import_workbench',
     reconciliation: 'v_reconciliation_action_workbench', equipment: 'v_equipment_scan_resolution_queue', equipment_service: 'v_equipment_service_cost_recovery_queue',
@@ -759,12 +759,11 @@ async function queuePayload(supabase: any, profile: any) {
     return [key, rows];
   }));
   const queueMap = Object.fromEntries(entries) as Record<string, any[]>;
-  const bankHistoryIds = (queueMap.bank_imports || []).slice(0, 20).map((row: any) => clean(row.id, 80)).filter(isUuid);
-  const bankReviewIds = (queueMap.bank_imports || [])
-    .filter((row: any) => !row.promoted_at && row.preview_status !== 'discarded')
-    .slice(0, 20)
-    .map((row: any) => clean(row.id, 80))
-    .filter(isUuid);
+  const bankHistoryIds = bankWorkbenchV2
+    ? (queueMap.bank_imports || []).slice(0, 20).map((row: any) => clean(row.id, 80)).filter(isUuid)
+    : [];
+  const requestedReviewId = bankWorkbenchV2 && isUuid(bankReviewImportId) ? clean(bankReviewImportId, 80) : '';
+  const bankReviewIds = requestedReviewId ? [requestedReviewId] : [];
   const [bankItems, profiles, banks, rails, stripeRows, exportRows, testRows, policyRows, signalRows, alertRows, releaseRows, capabilitySnapshot] = await Promise.all([
     safeSelect(supabase.from('bank_reconciliation_items').select('id, reconciliation_session_id, item_date, item_description, amount, match_status, clearing_status, difference_reason, notes, created_at').eq('clearing_status', 'open').order('item_date', { ascending: false }).limit(100)),
     safeSelect(supabase.from('profiles').select('id, full_name, email, role').order('full_name').limit(200)),
@@ -785,7 +784,7 @@ async function queuePayload(supabase: any, profile: any) {
       .in('import_id', bankReviewIds)
       .is('promoted_at', null)
       .order('row_number')
-      .limit(500)) : Promise.resolve([]),
+      .limit(2500)) : Promise.resolve([]),
     bankHistoryIds.length ? safeSelect(supabase.from('bank_csv_import_previews')
       .select('id,validation_summary,metadata,header_json,updated_at')
       .in('id', bankHistoryIds)
@@ -862,7 +861,12 @@ serve(async (req) => {
 
     if (action === 'operations_queue_list') {
       requireRank(profile, 30, action);
-      return Response.json({ ok: true, build: BUILD, schema: SCHEMA, queues: await queuePayload(supabase, profile) }, { headers: corsHeaders });
+      return Response.json({ ok: true, build: BUILD, schema: SCHEMA, queues: await queuePayload(
+        supabase,
+        profile,
+        body.bank_workbench_v2 === true,
+        clean(body.bank_review_import_id, 80)
+      ) }, { headers: corsHeaders });
     }
 
     if (action === 'payment_action_request') {
