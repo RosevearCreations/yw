@@ -16,8 +16,10 @@ const migrationAuthorityCandidates=files
   .filter(({source})=>source.includes('readdirSync')&&source.includes('.sql')&&/(schema|migration)/i.test(source));
 const fixedWidthMigrationAuthorities=migrationAuthorityCandidates.flatMap(({file,source})=>{
   const reasons=[];
-  if(source.includes('\\d{3}_')||source.includes('\\d{3})(?:[a-z])?_'))reasons.push('exact-three-digit-sql-regex');
-  const fixedSliceLine=source.split(/\r?\n/).find((line)=>/(schema|migration)/i.test(line)&&/slice\(0,\s*\d+\)/.test(line));
+  const lines=source.split(/\r?\n/);
+  const exactThreeParserLine=lines.find((line)=>!line.includes('.includes(')&&/\\d\{3\}(?!,)/.test(line)&&/\.sql/i.test(line));
+  if(exactThreeParserLine)reasons.push('exact-three-digit-sql-regex');
+  const fixedSliceLine=lines.find((line)=>!line.includes('.includes(')&&/(schema|migration)/i.test(line)&&/slice\(0,\s*\d+\)/.test(line));
   if(fixedSliceLine)reasons.push('fixed-width-schema-prefix-slice');
   return reasons.map((reason)=>`${file}:${reason}`);
 });
