@@ -3,7 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { hasModuleAccess } from "../_shared/module-permissions.ts";
 import { boundaryAuditFields, resolveModuleWriteBoundary } from "../_shared/module-write-boundaries.ts";
 
-const BUILD = '313-payment-application-ar-completion';
+const BUILD = '2026-09-01a';
+const PAYMENT_APPLICATION_BUILD = 313;
 const PAYMENT_POSTING_RPC = 'ywi_rpc_post_payment_action'; // Preserved authority contract; Build 313 does not invoke it.
 const SCHEMA = 159;
 const WRITE_BOUNDARY_BUILD = '2026-09-01f';
@@ -1169,7 +1170,7 @@ serve(async (req) => {
       const preview = applicationType ? await resolveBuild313ArApplication(supabase, body) : null;
       if (body.preview_only === true) {
         if (!preview) throw new HttpError(400, 'A/R application preview requires an application_type.');
-        return Response.json({ ok:true, preview, preview_only:true, posting_enabled:false, build:313 }, { headers:corsHeaders });
+        return Response.json({ ok:true, preview, preview_only:true, posting_enabled:false, build:PAYMENT_APPLICATION_BUILD }, { headers:corsHeaders });
       }
       if (preview && !preview.allowed) {
         throw new HttpError(409, 'A/R application validation failed. Correct the failed checks before submitting.', { validations: preview.validations, application: preview.application });
@@ -1216,7 +1217,7 @@ serve(async (req) => {
       await audit(supabase, {
         operation_action: action, operation_status: 'submitted', entity_type: 'payment_action_request',
         entity_id: data.id, actor_profile_id: profile.id, request_payload: safeRequest(body),
-        response_payload: { action_key: data.action_key, build:313, application_type:application?.application_type || null, posting_enabled:false }
+        response_payload: { action_key: data.action_key, build:PAYMENT_APPLICATION_BUILD, application_type:application?.application_type || null, posting_enabled:false }
       });
       return Response.json({ ok: true, record: data, preview, posting_enabled:false }, { headers: corsHeaders });
     }
