@@ -56,7 +56,7 @@ add('build313-existing-write-boundary-retained',
   && boundaries.includes("payment_action_decision: contract('payment_action_decision', 'finance', 'approve', 'write', 'payments', 'finance.payment_action.decided')"),
   'Existing request/approval authorities remain unchanged.');
 add('build313-help-updated',
-  all(help,['Payment Application & A/R Completion','unapplied cash','write-offs','ledger posting remains OFF']),
+  all(help,['Payment Application &amp; A/R Completion','unapplied cash','write-offs','ledger posting remains OFF']),
   'Help documents the Build 313 workflow and fail-closed posting boundary.');
 add('build313-source-command-wired',
   pkg.scripts?.['test:payment-application-ar-completion']==='node scripts/payment-application-ar-completion-check.mjs');
