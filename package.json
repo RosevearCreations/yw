@@ -101,7 +101,9 @@
     "test:browser:bank-import-workbench-v2": "playwright test --config=playwright.config.mjs tests/browser/bank-import-workbench-v2.spec.mjs",
     "test:help-seo": "node scripts/help-seo-hygiene-check.mjs",
     "test:search-discovery": "node scripts/search-discovery-quality-check.mjs",
-    "test:browser:help-seo": "playwright test --config=playwright.config.mjs tests/browser/help-seo-layout.spec.mjs"
+    "test:browser:help-seo": "playwright test --config=playwright.config.mjs tests/browser/help-seo-layout.spec.mjs",
+    "test:smart-reconciliation-workbench": "node scripts/smart-reconciliation-workbench-check.mjs",
+    "test:browser:smart-reconciliation-workbench": "playwright test --config=playwright.config.mjs tests/browser/smart-reconciliation-workbench.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
