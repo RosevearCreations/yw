@@ -101,6 +101,7 @@ jobs:
       - run: npm run test:finance-account-mapping-decision-support
       - run: npm run test:bank-import-workbench-v2
       - run: npm run test:smart-reconciliation-workbench
+      - run: npm run test:payment-application-ar-completion
       - run: npm run test:help-seo
       - run: npm run test:search-discovery
       - run: npm run test:repo
@@ -146,6 +147,7 @@ jobs:
       - run: npm run test:browser:modules
       - run: npm run test:browser:bank-import-workbench-v2
       - run: npm run test:browser:smart-reconciliation-workbench
+      - run: npm run test:browser:payment-application-ar-completion
       - run: npm run test:browser:profile-reference-lifecycle
       - run: npm run test:browser:workspace-organization
       - run: npm run test:browser:performance-budgets
