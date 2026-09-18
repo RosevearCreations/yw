@@ -4,6 +4,7 @@ import { hasModuleAccess } from "../_shared/module-permissions.ts";
 import { boundaryAuditFields, resolveModuleWriteBoundary } from "../_shared/module-write-boundaries.ts";
 
 const BUILD = '313-payment-application-ar-completion';
+const PAYMENT_POSTING_RPC = 'ywi_rpc_post_payment_action'; // Preserved authority contract; Build 313 does not invoke it.
 const SCHEMA = 159;
 const WRITE_BOUNDARY_BUILD = '2026-09-01f';
 const WRITE_BOUNDARY_SCHEMA = 164;
@@ -1229,7 +1230,7 @@ serve(async (req) => {
       const { data: existing, error: readError } = await supabase.from('payment_action_requests').select('*').eq('id', requestId).single();
       if (readError) throw readError;
       if (decision === 'post') {
-        throw new HttpError(409, 'Ledger posting is disabled for Build 313. Review and approve A/R application requests only; posting requires a separately authorized release.');
+        throw new HttpError(409, 'Ledger posting is disabled for Build 313. Review and approve A/R application requests only; posting requires a separately authorized release.', { posting_enabled:false, posting_rpc:PAYMENT_POSTING_RPC });
       }
       const note = clean(body.decision_note, 1000);
       if ((decision === 'reject' || decision === 'cancel') && note.length < 5) throw new HttpError(400, 'Add a decision note.');
