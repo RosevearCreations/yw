@@ -5,7 +5,7 @@
 'use strict';
 
 (function () {
-  const BUILD = '312-smart-reconciliation';
+  const BUILD = '313-payment-application-ar-completion';
   const RETRY_KEY = 'ywi_operations_cockpit_retry_v2';
   const DRAFT_KEY = 'ywi_operations_cockpit_draft_v2';
   let cameraStream = null;
@@ -15,6 +15,7 @@
   let selectedReconItemId = '';
   let reconciliationSuggestions = [];
   let selectedReconSuggestion = null;
+  let paymentApplicationPreview = null;
 
   const actionCapability = {
     'payment-approve':'payment_action_decision', 'payment-reject':'payment_action_decision', 'payment-post':'payment_action_decision',
@@ -120,6 +121,7 @@
       queues = response?.queues || {};
       renderQueues();
       hydrateBankSelects();
+      hydrateArApplicationSelects();
       if (!silent) status(`Live queues refreshed for build ${response?.build || BUILD}.`);
     } catch (error) {
       if (!silent) status(error?.message || 'Live queues could not be loaded.', true);
@@ -139,15 +141,16 @@
     wrap.innerHTML = rows.length ? rows.map((row) => {
       const actions = [];
       if (['submitted','draft'].includes(row.action_status)) {
-        actions.push(button('Approve','payment-approve',row.id));
+        actions.push(button('Approve review request','payment-approve',row.id));
         actions.push(button('Reject','payment-reject',row.id,'',true));
       }
-      if (row.action_status === 'approved' && row.posting_status !== 'posted') {
-        actions.push(button('Post to ledger','payment-post',row.id));
-        actions.push(button('Reject','payment-reject',row.id,'',true));
-      }
-      return `<article class="oc-queue-card"><header><strong>${esc(row.action_type?.replaceAll('_',' '))}</strong><span class="${statusClass(row.posting_status || row.action_status)}">${esc(row.posting_status || row.action_status)}</span></header><dl><div><dt>Side / date</dt><dd>${esc((row.ledger_side || 'auto').toUpperCase())} · ${esc(row.transaction_date || '—')}</dd></div><div><dt>Party</dt><dd>${esc(row.customer_or_vendor_name || '—')}</dd></div><div><dt>Invoice / payment</dt><dd>${esc(row.invoice_reference || '—')} / ${esc(row.payment_reference || '—')}</dd></div><div><dt>Amount</dt><dd>${money(row.amount)}</dd></div><div><dt>Proof</dt><dd>${esc(row.proof_reference || 'Missing')}</dd></div><div><dt>Posting</dt><dd>${esc(row.posting_message || row.decision_note || 'Awaiting action')}</dd></div></dl>${buttons(actions)}</article>`;
-    }).join('') : emptyQueue('No payment actions', 'Submitted payment requests will appear here for approval and posting.');
+      const app=row?.metadata?.payment_application || {};
+      const type=app.application_type || row.action_type || 'payment action';
+      const postingNote=row.action_status==='approved' && row.posting_status!=='posted'
+        ? 'Approved for accounting review. Ledger posting remains disabled in Build 313.'
+        : (row.posting_message || row.decision_note || 'Awaiting review');
+      return `<article class="oc-queue-card"><header><strong>${esc(String(type).replaceAll('_',' '))}</strong><span class="${statusClass(row.posting_status || row.action_status)}">${esc(row.posting_status || row.action_status)}</span></header><dl><div><dt>Side / date</dt><dd>${esc((row.ledger_side || 'auto').toUpperCase())} · ${esc(row.transaction_date || '—')}</dd></div><div><dt>Customer</dt><dd>${esc(row.customer_or_vendor_name || app.client_name || '—')}</dd></div><div><dt>Invoice / source</dt><dd>${esc(row.invoice_reference || app.invoice_reference || '—')} / ${esc(row.payment_reference || app.source_reference || '—')}</dd></div><div><dt>Amount</dt><dd>${money(row.amount)}</dd></div><div><dt>Proof</dt><dd>${esc(row.proof_reference || 'Missing')}</dd></div><div><dt>Posting</dt><dd>${esc(postingNote)}</dd></div></dl>${buttons(actions)}</article>`;
+    }).join('') : emptyQueue('No payment applications', 'Validated A/R application requests will appear here for approval. Ledger posting remains disabled.');
   }
 
   function renderBankQueue() {
@@ -257,10 +260,12 @@
       if (!cap) return;
       const base = control.dataset.ocBaseLabel || control.textContent.replace(/ · restricted$/, '');
       control.dataset.ocBaseLabel = base;
-      control.disabled = cap.permitted === false;
-      control.setAttribute('title', cap.reason || 'Server permission check applies.');
-      control.textContent = cap.permitted === false ? `${base} · restricted` : base;
-      control.setAttribute('aria-disabled', cap.permitted === false ? 'true' : 'false');
+      const permissionDenied = cap.permitted === false;
+      const businessBlocked = control.id === 'oc_ar_application_submit' && !paymentApplicationPreview?.allowed;
+      control.disabled = permissionDenied || businessBlocked;
+      control.setAttribute('title', permissionDenied ? (cap.reason || 'Your role cannot perform this action.') : businessBlocked ? 'Preview and pass all A/R application checks before submitting.' : (cap.reason || 'Server permission check applies.'));
+      control.textContent = permissionDenied ? `${base} · restricted` : base;
+      control.setAttribute('aria-disabled', control.disabled ? 'true' : 'false');
     });
   }
   function renderOperationsHealth() {
@@ -355,11 +360,71 @@
   }
 
   function renderQueues() {
-    renderRails(); renderRolePermissions(); renderOperationsHealth(); renderReleaseDashboard(); renderReleaseProof(); renderPaymentQueue(); renderBankQueue(); renderReconQueue(); renderEquipmentQueue(); renderAssetQueue(); renderRouteQueue(); renderQuoteQueue(); renderPortalQueue(); renderLiveUpdateQueue(); renderExecutionProofQueue(); renderCloseoutQueue(); renderCustomerNotificationQueue(); hydrateLiveUpdateSelects(); decoratePermissionControls();
+    renderRails(); renderRolePermissions(); renderOperationsHealth(); renderReleaseDashboard(); renderReleaseProof(); renderPaymentQueue(); renderBankQueue(); renderReconQueue(); renderEquipmentQueue(); renderAssetQueue(); renderRouteQueue(); renderQuoteQueue(); renderPortalQueue(); renderLiveUpdateQueue(); renderExecutionProofQueue(); renderCloseoutQueue(); renderCustomerNotificationQueue(); hydrateArApplicationSelects(); hydrateLiveUpdateSelects(); decoratePermissionControls();
   }
   function hydrateBankSelects() {
     const options = `<option value="">Choose bank account</option>${(queues.banks || []).map((bank) => `<option value="${esc(bank.id)}">${esc(bank.account_name)}${bank.is_default ? ' (default)' : ''}</option>`).join('')}`;
     document.querySelectorAll('[data-oc-bank-select]').forEach((select) => { const current = select.value; select.innerHTML = options; if (current) select.value = current; });
+  }
+
+  function hydrateArApplicationSelects() {
+    const invoiceOptions = `<option value="">Choose open invoice</option>${(queues.ar_invoices || []).map((row) => `<option value="${esc(row.id)}">${esc(row.invoice_number || row.id)} · ${money(row.balance_due)} open</option>`).join('')}`;
+    const paymentOptions = `<option value="">Choose receipt / unapplied cash</option>${(queues.ar_payments || []).map((row) => `<option value="${esc(row.id)}">${esc(row.payment_number || row.reference_number || row.id)} · ${money(row.unapplied_amount ?? row.amount)} available</option>`).join('')}`;
+    const depositOptions = `<option value="">Choose paid deposit</option>${(queues.customer_deposits || []).map((row) => `<option value="${esc(row.id)}">${esc(row.payment_reference || row.id)} · ${money(row.paid_amount)} paid</option>`).join('')}`;
+    const applyOptions=(selector,html)=>document.querySelectorAll(selector).forEach((select)=>{ const current=select.value; select.innerHTML=html; if(current) select.value=current; });
+    applyOptions('[data-oc-ar-invoice-select]',invoiceOptions);
+    applyOptions('[data-oc-ar-payment-select]',paymentOptions);
+    applyOptions('[data-oc-ar-deposit-select]',depositOptions);
+  }
+  function buildArApplicationPayload(form) {
+    const data=formData(form);
+    return {
+      application_type:data.application_type,
+      invoice_id:data.invoice_id,
+      payment_id:data.payment_id,
+      deposit_id:data.deposit_id,
+      source_reference:data.source_reference,
+      application_date:data.application_date,
+      amount:Number(data.amount || 0),
+      proof_reference:data.proof_reference,
+      reason:data.reason
+    };
+  }
+  function invalidateArApplicationPreview() {
+    paymentApplicationPreview=null;
+    const submit=byId('oc_ar_application_submit'); if(submit) submit.disabled=true;
+    const wrap=byId('oc_ar_application_preview'); if(wrap) wrap.innerHTML='<p class="muted">Preview the application to validate customer identity, source balance, invoice balance, date, proof, and open-period status before submitting.</p>';
+  }
+  function renderArApplicationPreview(preview) {
+    const wrap=byId('oc_ar_application_preview'); if(!wrap) return;
+    const application=preview?.application || {};
+    const validations=preview?.validations || [];
+    const failed=validations.filter((item)=>item.status!=='pass');
+    wrap.innerHTML=`<article class="oc-recon-review-card"><header><div><span class="operations-kicker">Build 313 server validation</span><h4>${esc(String(application.application_type || 'A/R application').replaceAll('_',' '))}</h4></div><span class="${statusClass(preview?.allowed ? 'approved' : 'blocked')}">${preview?.allowed ? 'ready for review' : 'blocked'}</span></header><div class="oc-recon-math"><div><span>Application amount</span><strong>${money(application.amount)}</strong></div><div><span>Invoice balance</span><strong>${money(application.invoice_balance)}</strong></div><div><span>Source available</span><strong>${money(application.available_amount)}</strong></div><div><span>Posting</span><strong>OFF</strong></div></div><ul class="oc-score-components">${validations.map((item)=>`<li><strong>${item.status==='pass'?'PASS':'BLOCK'}</strong> · ${esc(item.message)}</li>`).join('')}</ul><p class="muted">${failed.length ? 'Correct every blocked check before submitting.' : 'All pre-application checks passed. Submission creates an auditable review request only; it does not post a ledger entry.'}</p></article>`;
+    const submit=byId('oc_ar_application_submit'); if(submit) {
+      const permissionDenied=capabilityFor('payment_action_request')?.permitted === false;
+      submit.disabled=permissionDenied || !preview?.allowed;
+      submit.setAttribute('aria-disabled', submit.disabled ? 'true' : 'false');
+    }
+  }
+  async function handleArApplicationPreview() {
+    const form=byId('oc_ar_application_form'); if(!form) return;
+    const payload=buildArApplicationPayload(form);
+    const response=await send({action:'payment_action_request',preview_only:true,...payload},'A/R application validation',false);
+    paymentApplicationPreview=response?.preview || null;
+    renderArApplicationPreview(paymentApplicationPreview);
+    if(paymentApplicationPreview?.allowed) status('A/R application checks passed. Review the evidence, then submit for approval. Ledger posting remains OFF.');
+  }
+  async function handleArApplication(event) {
+    event.preventDefault();
+    const form=event.currentTarget;
+    if(!paymentApplicationPreview?.allowed) throw new Error('Preview and pass all A/R application checks before submitting.');
+    const payload=buildArApplicationPayload(form);
+    await send({action:'payment_action_request',idempotency_key:idem('ar_application'),...payload,proof_required:true},'A/R application request');
+    form.reset();
+    const date=byId('oc_ar_application_date'); if(date) date.value=new Date().toISOString().slice(0,10);
+    invalidateArApplicationPreview();
+    hydrateArApplicationSelects();
   }
 
   function hydrateLiveUpdateSelects() {
@@ -643,12 +708,24 @@
         <details open><summary>Live job updates: staff-only or customer-visible</summary><p class="muted">Site leaders may save staff-only updates. Customer-visible updates require a supervisor, show only in the secure portal, and can attach only approved public images. This does not send a payment, publish a public web page, or expose staff notes.</p><form id="oc_live_update_form" class="operations-form"><label>Work order<select name="work_order_id" data-oc-work-order-select required><option value="">Loading accepted work orders…</option></select></label><label>Visibility<select name="visibility"><option value="staff">Staff only</option><option value="customer">Customer visible (supervisor)</option></select></label><label>Update type<select name="update_type"><option value="arrival">Arrival</option><option value="progress" selected>Progress</option><option value="delay">Timing update</option><option value="access">Access/site update</option><option value="completion">Completion</option><option value="note">Service note</option></select></label><label>Progress %<input name="progress_percent" type="number" min="0" max="100" step="1" placeholder="Optional" /></label><label>When<input name="occurred_at" type="datetime-local" /></label><label class="operations-span">Update title<input name="title" maxlength="180" minlength="3" required placeholder="Example: Crew arrived and site walk-through started" /></label><label class="operations-span">Customer-safe message<textarea name="message" maxlength="4000" placeholder="Use plain language. Do not include private staff, costing, or access-code information in customer-visible updates."></textarea></label><label class="operations-span">Approved public images (optional)<select name="asset_ids" data-oc-live-update-assets multiple size="4" aria-describedby="oc_live_update_asset_help"></select><small id="oc_live_update_asset_help">Only approved public images are available here. Private review images and staff-only notes cannot be shown to customers.</small></label><label class="operations-inline-check operations-span"><input name="customer_notification_requested" type="checkbox" /> Queue a consent-controlled customer e-mail when the customer has opted in</label><button type="submit" data-oc-permission="work_order_live_update">Save live update</button></form><h4>Live update history</h4><div id="oc_live_updates_queue" class="oc-live-queue"></div><h4>Customer e-mail delivery</h4><div id="oc_customer_notification_queue" class="oc-live-queue"></div></details>
         <details open><summary>Service-execution proof and internal job cost</summary><p class="muted">Capture arrival/completion evidence plus labour, material, equipment, and other costs. Customer-visible proof requires approved public images and a customer-safe summary; internal costs never appear in the portal.</p><form id="oc_execution_proof_form" class="operations-form"><label>Work order<select name="work_order_id" data-oc-work-order-select required><option value="">Loading accepted work orders…</option></select></label><label>Proof type<select name="proof_type"><option value="arrival">Arrival</option><option value="progress">Progress</option><option value="completion">Completion</option><option value="quality">Quality check</option><option value="material">Material use</option><option value="equipment">Equipment use</option><option value="expense">Other expense</option><option value="note">Service note</option></select></label><label>Progress %<input name="progress_percent" type="number" min="0" max="100" step="1" placeholder="Optional" /></label><label>When<input name="occurred_at" type="datetime-local" /></label><label>Labour minutes<input name="labour_minutes" type="number" min="0" step="1" value="0" /></label><label>Labour hourly cost<input name="labour_hourly_rate" type="number" min="0" step="0.01" value="0" /></label><label>Material cost<input name="material_cost_total" type="number" min="0" step="0.01" value="0" /></label><label>Equipment cost<input name="equipment_cost_total" type="number" min="0" step="0.01" value="0" /></label><label>Other cost<input name="other_cost_total" type="number" min="0" step="0.01" value="0" /></label><label class="operations-span">Proof title<input name="title" maxlength="180" minlength="3" required placeholder="Example: Arrival walkaround completed" /></label><label class="operations-span">Staff notes<textarea name="staff_notes" maxlength="4000" placeholder="Internal proof notes, cost context, issue notes, or crew details. Never shown to customers."></textarea></label><label class="operations-span">Customer-safe summary<textarea name="customer_summary" maxlength="1500" placeholder="Optional summary shown only after supervisor approval if customer-visible is checked. Do not include costs or access details."></textarea></label><label class="operations-span">Approved public images (optional)<select name="asset_ids" data-oc-live-update-assets multiple size="4"></select><small>Customer-visible proof may use only approved public images. Private review media stays internal.</small></label><label class="operations-inline-check operations-span"><input name="customer_visible" type="checkbox" /> After supervisor approval, show this proof summary in the secure customer portal</label><button type="submit" data-oc-permission="work_order_execution_proof_submit">Capture service proof</button></form><h4>Execution proof and cost review</h4><div id="oc_execution_proof_queue" class="oc-live-queue"></div></details>
         <details open><summary>Supervisor closeout, signoff, invoice readiness, and follow-up</summary><p class="muted">Build the final customer-safe closeout from approved proof. Before/after gallery, customer signoff, review request, invoice-readiness, and maintenance follow-up stay separate from public SEO pages and never expose costs.</p><form id="oc_closeout_form" class="operations-form"><label>Work order<select name="work_order_id" data-oc-work-order-select required><option value="">Loading accepted work orders…</option></select></label><label>Maintenance follow-up due<input name="maintenance_followup_due_at" type="date" /></label><label class="operations-inline-check"><input name="invoice_ready_requested" type="checkbox" /> Prepare invoice-readiness after customer signoff</label><label class="operations-inline-check"><input name="review_request_requested" type="checkbox" /> Queue review request after customer signoff</label><label class="operations-span">Customer-safe closeout summary<textarea name="customer_summary" maxlength="2000" minlength="12" required placeholder="Summarize what was completed, what the customer should know, and any care/maintenance tip. Do not include costs, staff notes, access codes, or internal margin."></textarea></label><label class="operations-span">Staff-only closeout notes<textarea name="staff_closeout_notes" maxlength="4000" placeholder="Internal notes for invoice, rework, cost context, or supervisor review. Never shown in the customer portal."></textarea></label><label class="operations-span">Approved BEFORE images<select name="before_asset_ids" data-oc-closeout-before-assets multiple size="4"></select><small>Only approved public images are selectable. Review-stage media stays private.</small></label><label class="operations-span">Approved AFTER images<select name="after_asset_ids" data-oc-closeout-after-assets multiple size="4"></select><small>The portal gallery shows approved customer-safe public images only.</small></label><button type="submit" data-oc-permission="work_order_closeout_submit">Submit closeout package</button></form><h4>Closeout review queue</h4><div id="oc_closeout_queue" class="oc-live-queue"></div></details>
-        <details open><summary>Payment action and posting</summary><form id="oc_payment_form" class="operations-form">
+        <details open><summary>Payment Application &amp; A/R Completion</summary><p class="muted">Apply receipts and unapplied cash, paid deposits, credits, discounts, approved write-offs, or overpayments only after server validation. Every submission is review/audit evidence; <strong>ledger posting remains OFF</strong> until a separately authorized release.</p><form id="oc_ar_application_form" class="operations-form">
+          <label>Application type<select name="application_type"><option value="receipt">Receipt to invoice</option><option value="unapplied_cash">Unapplied cash to invoice</option><option value="deposit">Paid deposit to invoice</option><option value="credit">Credit to invoice</option><option value="discount">Discount to invoice</option><option value="writeoff">Approved write-off</option><option value="overpayment">Overpayment / customer credit</option></select></label>
+          <label>Application date<input id="oc_ar_application_date" name="application_date" type="date" value="${todayValue}" required /></label>
+          <label>Open invoice<select name="invoice_id" data-oc-ar-invoice-select></select></label>
+          <label>Receipt / unapplied source<select name="payment_id" data-oc-ar-payment-select></select></label>
+          <label>Paid deposit source<select name="deposit_id" data-oc-ar-deposit-select></select></label>
+          <label>Adjustment/source reference<input name="source_reference" placeholder="Credit memo, approval, discount authorization…" /></label>
+          <label>Amount<input name="amount" type="number" min="0.01" step="0.01" required /></label>
+          <label>Proof reference<input name="proof_reference" required placeholder="Receipt, deposit, approval, or document reference" /></label>
+          <label class="operations-span">Reason / reviewer context<textarea name="reason" minlength="8" required placeholder="Explain why this amount should be applied and any adjustment authority."></textarea></label>
+          <div class="operations-actions operations-span"><button id="oc_ar_application_preview_btn" type="button" class="secondary" data-oc-permission="payment_action_request">Preview &amp; validate</button><button id="oc_ar_application_submit" type="submit" data-oc-permission="payment_action_request" disabled>Submit for approval</button></div>
+        </form><div id="oc_ar_application_preview" class="oc-recon-review" aria-live="polite"><p class="muted">Preview the application to validate customer identity, source balance, invoice balance, date, proof, and open-period status before submitting.</p></div><h4>A/R application review queue</h4><div id="oc_payment_queue" class="oc-live-queue"></div></details>
+        <details><summary>General payment request — posting disabled</summary><p class="muted">Legacy/general payment requests can still be staged for review. Build 313 does not provide a ledger-post action.</p><form id="oc_payment_form" class="operations-form">
           <label>Action<select name="action_type"><option value="apply_payment">Apply payment</option><option value="reverse_payment">Reverse payment</option><option value="refund">Refund</option><option value="write_off">Write-off</option><option value="overpayment_credit">Overpayment credit</option></select></label>
           <label>Ledger side<select name="ledger_side"><option value="auto">Auto resolve</option><option value="ar">Accounts receivable</option><option value="ap">Accounts payable</option></select></label>
           <label>Bank account<select name="bank_account_id" data-oc-bank-select></select></label><label>Date<input id="oc_payment_date" name="transaction_date" type="date" value="${todayValue}" required /></label>
           <label>Customer/vendor<input name="customer_or_vendor_name" required /></label><label>Invoice/bill reference<input name="invoice_reference" /></label><label>Payment reference<input name="payment_reference" /></label><label>Reversal request ID<input name="reversal_of_request_id" /></label><label>Amount<input name="amount" type="number" min="0.01" step="0.01" required /></label><label>Proof reference<input name="proof_reference" required placeholder="Receipt, bank row, or attachment reference" /></label><label class="operations-span">Reason<textarea name="reason" minlength="8" required></textarea></label><button type="submit" data-oc-permission="payment_action_request">Submit for approval</button>
-        </form><h4>Live payment queue</h4><div id="oc_payment_queue" class="oc-live-queue"></div></details>
+        </form></details>
         <details><summary>Bank CSV preview and promotion</summary><form id="oc_bank_form" class="operations-form"><label class="operations-span">CSV file<input id="oc_bank_file" type="file" accept=".csv,text/csv" required /></label><label>Bank account<select id="oc_bank_account" data-oc-bank-select></select></label><label>Fallback bank hint<input id="oc_bank_account_hint" /></label><button type="submit" data-oc-permission="bank_csv_preview">Parse and validate</button><input id="oc_bank_import_id" type="hidden" /><label class="operations-span">Confirmation note<input id="oc_bank_confirmation_note" /></label><button id="oc_bank_confirm" type="button" class="secondary" data-oc-permission="bank_csv_confirm_import">Confirm and promote accepted rows</button></form><p id="oc_bank_preview_summary" class="muted"></p><p id="oc_bank_server_summary" class="muted"></p><div class="table-scroll"><table><thead id="oc_bank_preview_headers"></thead><tbody id="oc_bank_preview_rows"></tbody></table></div><h4>Live import queue</h4><div id="oc_bank_queue" class="oc-live-queue"></div></details>
         <details><summary>Smart Reconciliation Workbench — ranked matching, split, sign-off, and undo</summary><form id="oc_recon_form" class="operations-form"><label>Action<select id="oc_recon_action" name="action_type"><option value="match">Exact match</option><option value="split">Exact split</option><option value="undo">Undo prior action</option><option value="signoff">Sign off session</option><option value="reject">Exception/reject</option></select></label><label>Import/session ID<input id="oc_recon_import_id" name="import_id" /></label><label>Promoted bank item ID<input id="oc_recon_row_id" name="bank_row_id" /></label><label>Target reference<input id="oc_recon_target" name="target_reference" /></label><label>Prior action ID for undo<input name="undo_of_action_id" /></label><label class="operations-span">Split rows JSON<textarea name="split_rows" placeholder='[{"reference":"INV-1","amount":100},{"reference":"INV-2","amount":50}]'></textarea></label><label class="operations-span">Sign-off/decision note<textarea name="signoff_note"></textarea></label><button type="submit" data-oc-permission="reconciliation_action">Process reconciliation action</button></form><p id="oc_recon_explanation" class="operations-explanation muted"></p><div id="oc_recon_suggestions" class="oc-suggestions"></div><div id="oc_recon_review" class="oc-recon-review" aria-live="polite"></div><h4>Open bank rows</h4><div id="oc_recon_queue" class="oc-live-queue"></div></details>
         <details><summary>Equipment scan, service, and cost recovery</summary><form id="oc_equipment_form" class="operations-form"><label>Scan code<input id="oc_scan_code" name="scan_code" required /></label><input id="oc_scan_source" name="scan_source" type="hidden" value="manual" /><label>Stage<select name="scan_stage"><option value="checkout">Checkout</option><option value="site_arrival">Site arrival</option><option value="return">Return</option><option value="return_to_service">Return to service</option><option value="field_check">Field check</option></select></label><label>Equipment reference<input name="equipment_reference" /></label><label>Job code/ID<input name="job_reference" /></label><label>Condition<input name="condition_summary" /></label><label>Accessories<input name="accessory_summary" /></label><label>Signer<input name="signer_name" /></label><label>Estimated recovery cost<input name="estimated_cost" type="number" min="0" step="0.01" /></label><label class="operations-inline-check"><input name="service_required" type="checkbox" /> Service required</label><label class="operations-inline-check"><input name="cost_recovery_required" type="checkbox" /> Cost recovery review</label><label class="operations-inline-check"><input name="customer_billable" type="checkbox" /> Customer billable</label><label class="operations-span">Notes<textarea name="notes"></textarea></label><div class="operations-actions"><button type="submit" data-oc-permission="equipment_scan_event">Resolve and save custody event</button><button id="oc_camera_start" type="button" class="secondary">Scan QR/barcode</button><button id="oc_camera_stop" type="button" class="secondary">Stop camera</button></div><video id="oc_scan_video" class="operations-scan-video" playsinline muted hidden></video></form><p id="oc_equipment_resolution" class="muted"></p><h4>Live service and scan queue</h4><div id="oc_equipment_queue" class="oc-live-queue"></div></details>
@@ -663,7 +740,10 @@
     byId('oc_live_update_form')?.addEventListener('submit', (e) => handleLiveUpdate(e).catch((err) => status(err?.message || 'Live work update failed.', true)));
     byId('oc_execution_proof_form')?.addEventListener('submit', (e) => handleExecutionProof(e).catch((err) => status(err?.message || 'Service-execution proof failed.', true)));
     byId('oc_closeout_form')?.addEventListener('submit', (e) => handleCloseout(e).catch((err) => status(err?.message || 'Closeout package failed.', true)));
-    byId('oc_payment_form')?.addEventListener('submit', (e) => handlePayment(e).catch(() => {}));
+    byId('oc_ar_application_form')?.addEventListener('submit', (e) => handleArApplication(e).catch((err) => status(err?.message || 'A/R application request failed.', true)));
+    byId('oc_ar_application_preview_btn')?.addEventListener('click', () => handleArApplicationPreview().catch((err) => status(err?.message || 'A/R application validation failed.', true)));
+    byId('oc_ar_application_form')?.addEventListener('input', invalidateArApplicationPreview);
+    byId('oc_payment_form')?.addEventListener('submit', (e) => handlePayment(e).catch((err) => status(err?.message || 'Payment request failed.', true)));
     byId('oc_bank_form')?.addEventListener('submit', (e) => handleBankPreview(e).catch((err) => status(err.message, true)));
     byId('oc_bank_confirm')?.addEventListener('click', () => handleBankConfirm().catch((err) => status(err.message, true)));
     byId('oc_recon_form')?.addEventListener('submit', (e) => handleReconciliation(e).catch((err) => status(err?.message || 'Reconciliation action failed.', true)));
@@ -715,7 +795,7 @@
   function inject() {
     const admin = byId('admin'); if (!admin || byId('operationsCockpit')) return;
     const anchor = byId('ad_stats_grid') || admin.querySelector('.section-heading'); if (!anchor) return;
-    anchor.insertAdjacentHTML('afterend', panelHtml()); bind(); restoreDraft(); renderRetry(); routeReadiness(); hydrateBankSelects(); hydrateLiveUpdateSelects(); loadQueues(true);
+    anchor.insertAdjacentHTML('afterend', panelHtml()); bind(); restoreDraft(); renderRetry(); routeReadiness(); hydrateBankSelects(); hydrateArApplicationSelects(); hydrateLiveUpdateSelects(); loadQueues(true);
   }
 
   const observer = new MutationObserver(inject);
