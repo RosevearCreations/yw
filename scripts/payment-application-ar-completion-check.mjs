@@ -20,9 +20,11 @@ add('build313-existing-schema-supports-adjustments',
 add('build313-no-schema-migration-added',
   !fs.readdirSync('sql').some((name)=>/^209[_-]/.test(name)),
   'Build 313 remains Schema 208/source-only.');
-add('build313-preview-boundary-read-only',
-  boundaries.includes("payment_application_preview: contract('payment_application_preview', 'finance', 'view', 'read', 'payments')"),
-  'Preview is registered as Finance read/view authority.');
+add('build313-preview-reuses-existing-authority',
+  !boundaries.includes('payment_application_preview:')
+    && boundaries.includes("payment_action_request: contract('payment_action_request', 'finance', 'create', 'write', 'payments', 'finance.payment_action.requested')")
+    && all(ops,["body.preview_only === true","preview_only:true","posting_enabled:false"]),
+  'Preview is a non-mutating mode of the existing payment request authority, so the Schema 164 action registry does not drift.');
 add('build313-supported-application-types',
   all(ops,["'receipt'","'unapplied_cash'","'deposit'","'credit'","'discount'","'writeoff'","'overpayment'"]),
   'Receipt, unapplied cash, deposit, credit, discount, write-off and overpayment flows are explicit.');
@@ -44,7 +46,7 @@ add('build313-posting-hard-blocked',
     && !ui.includes("button('Post to ledger','payment-post'"),
   'Build 313 approval is review-only and exposes no ledger-post UI action.');
 add('build313-ui-server-preview-required',
-  all(ui,['Payment Application &amp; A/R Completion','payment_application_preview','paymentApplicationPreview','Preview and pass all A/R application checks before submitting.','oc_ar_application_submit']),
+  all(ui,['Payment Application &amp; A/R Completion','preview_only:true','paymentApplicationPreview','Preview and pass all A/R application checks before submitting.','oc_ar_application_submit']),
   'A/R operator submission requires a passing server preview.');
 add('build313-ui-authoritative-selectors',
   all(ui,['data-oc-ar-invoice-select','data-oc-ar-payment-select','data-oc-ar-deposit-select','hydrateArApplicationSelects']),
