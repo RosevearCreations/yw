@@ -666,7 +666,7 @@
     byId('oc_payment_form')?.addEventListener('submit', (e) => handlePayment(e).catch(() => {}));
     byId('oc_bank_form')?.addEventListener('submit', (e) => handleBankPreview(e).catch((err) => status(err.message, true)));
     byId('oc_bank_confirm')?.addEventListener('click', () => handleBankConfirm().catch((err) => status(err.message, true)));
-    byId('oc_recon_form')?.addEventListener('submit', (e) => handleReconciliation(e).catch(() => {}));
+    byId('oc_recon_form')?.addEventListener('submit', (e) => handleReconciliation(e).catch((err) => status(err?.message || 'Reconciliation action failed.', true)));
     byId('oc_equipment_form')?.addEventListener('submit', (e) => handleEquipment(e).catch(() => {}));
     byId('oc_asset_form')?.addEventListener('submit', (e) => handleAsset(e).catch((err) => status(err.message, true)));
     byId('oc_route_form')?.addEventListener('submit', (e) => handleRoute(e).catch(() => {}));
