@@ -27,6 +27,8 @@ add('build311-admin-lazy-runtime',runtime.includes("'/js/operations-cockpit.js',
 add('build311-help-updated',all(help,['Bank Import Workbench v2','SHA-256 source fingerprint','at most 100 rows','Promotion is not posting']),'Online Help documents mapping, source proof, bounded review and non-posting semantics.');
 add('build311-source-command-wired',pkg.scripts?.['test:bank-import-workbench-v2']==='node scripts/bank-import-workbench-v2-check.mjs');
 add('build311-workflow-source-gate-wired',workflow.includes('npm run test:bank-import-workbench-v2'));
+add('build311-browser-command-wired',pkg.scripts?.['test:browser:bank-import-workbench-v2']==='playwright test --config=playwright.config.mjs tests/browser/bank-import-workbench-v2.spec.mjs');
+add('build311-workflow-browser-gate-wired',workflow.includes('npm run test:browser:bank-import-workbench-v2'));
 
 try { new Function(addon); add('build311-addon-javascript-syntax',true); }
 catch(error){ add('build311-addon-javascript-syntax',false,String(error)); }
