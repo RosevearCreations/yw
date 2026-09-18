@@ -22,7 +22,7 @@ const originalModuleScripts = [
   '/js/hse-ops-ui.js','/js/logbook-ui.js','/js/reports-ui.js','/js/forms-toolbox.js','/js/forms-ppe.js','/js/forms-firstaid.js','/js/forms-incident.js','/js/forms-inspection.js','/js/forms-drill.js',
   '/js/finance-ui.js','/js/jobs-ui.js','/js/admin-actions.js','/js/admin-ui.js','/js/operations-cockpit.js','/js/module-access-ui.js','/js/it-readiness-ui.js'
 ];
-const currentBusinessScripts=[...originalModuleScripts,'/js/admin-hub-ui.js','/js/finance-account-mapping-ui.js','/js/jobs-finance-boundary.js','/js/equipment-scanner.js','/js/staging-acceptance-ui.js'];
+const currentBusinessScripts=[...originalModuleScripts,'/js/admin-hub-ui.js','/js/bank-import-workbench-v2.js','/js/finance-account-mapping-ui.js','/js/jobs-finance-boundary.js','/js/equipment-scanner.js','/js/staging-acceptance-ui.js'];
 
 add('schema161-transaction-balanced', (migration161.match(/^begin;$/gmi) || []).length === 1 && (migration161.match(/^commit;$/gmi) || []).length === 1, 'Schema 161 has one BEGIN and one COMMIT.');
 add('schema161-core-contract-registry', hasAll(migration161, ['app_core_entity_contracts','shared_by_modules','canonical_relation','primary_key_type']), 'Canonical shared identities are explicit database contracts.');
@@ -35,6 +35,7 @@ add('schema180-finance-addon-lazy-manifest',runtime.includes("scripts: Object.fr
 add('schema185-equipment-scanner-lazy-manifest',runtime.includes("scripts: Object.freeze(['/js/jobs-ui.js','/js/jobs-finance-boundary.js','/js/equipment-scanner.js'])"),'Build 185 camera/manual scanning loads only with the permission-driven Jobs module.');
 add('schema186-staging-acceptance-admin-addon',runtime.includes("'/js/it-readiness-ui.js',\n        '/js/staging-acceptance-ui.js'"),'Build 186 staging acceptance rendering loads only inside the permission-driven Admin module after I.T. Readiness.');
 add('build229-admin-hub-lazy-manifest', runtime.includes("'/js/admin-ui.js',\n        '/js/admin-hub-ui.js',\n        '/js/operations-cockpit.js'"), 'The Admin information-architecture layer loads only with the permission-driven Admin module and after the legacy Admin controller it decorates.');
+add('build311-bank-workbench-admin-addon', runtime.includes("'/js/operations-cockpit.js',\n        '/js/bank-import-workbench-v2.js',\n        '/js/module-access-ui.js'"), 'Build 311 bank review loads only inside the permission-driven Admin module after the Operations Cockpit.');
 add('build229-admin-hub-progressive-disclosure', hasAll(adminHub,['People & Access','Needs Attention','Find an Admin setting','Recent Admin & Audit Activity','admin-hub-detail','deferredScopes','scope !== \'command_center\'']), 'Build 229 provides card navigation, search, audit orientation, collapsible panels, and command-center-only initial Admin data loading.');
 add('schema161-private-contract-control-plane', hasAll(migration161, [
   'alter table public.app_core_entity_contracts enable row level security;',
