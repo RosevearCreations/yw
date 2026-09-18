@@ -84,6 +84,8 @@ async function mount(page){
   await page.addScriptTag({content:cockpitSource});
   await page.evaluate(()=>document.dispatchEvent(new Event('DOMContentLoaded')));
   await expect(page.locator('#operationsCockpit')).toBeVisible();
+  const reconPanel=page.locator('#operationsCockpit details').filter({hasText:'Smart Reconciliation Workbench'}).first();
+  await reconPanel.locator(':scope > summary').click();
   await expect(page.locator('[data-oc-action="recon-suggest"]')).toBeVisible();
 }
 
