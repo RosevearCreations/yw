@@ -9,6 +9,19 @@ const files=walk(root); const rel=(f)=>path.relative(root,f).replaceAll('\\','/'
 function migrationVersionFromFilename(name){const match=String(name??'').match(/^(\d{3,})_.+\.sql$/i);if(!match)return null;const version=Number(match[1]);return Number.isSafeInteger(version)&&version>0?version:null;}
 const migrationWidthRegression=[['999_last_three_digit.sql',999],['1000_first_four_digit.sql',1000],['12034_future_width.sql',12034],['99_too_short.sql',null],['1000.sql',null],['abcd_not_schema.sql',null]];
 add('migration-parser-variable-width-regression',migrationWidthRegression.every(([name,expected])=>migrationVersionFromFilename(name)===expected),migrationWidthRegression.map(([name,expected])=>`${name}:${migrationVersionFromFilename(name)}=>${expected}`).join(', '));
+const migrationAuthorityCandidates=files
+  .filter((f)=>/\.(?:mjs|js|ts)$/.test(f))
+  .filter((f)=>rel(f)!=='scripts/repo-smoke-check.mjs')
+  .map((f)=>({file:rel(f),source:fs.readFileSync(f,'utf8')}))
+  .filter(({source})=>source.includes('readdirSync')&&source.includes('.sql')&&/(schema|migration)/i.test(source));
+const fixedWidthMigrationAuthorities=migrationAuthorityCandidates.flatMap(({file,source})=>{
+  const reasons=[];
+  if(source.includes('\\d{3}_')||source.includes('\\d{3})(?:[a-z])?_'))reasons.push('exact-three-digit-sql-regex');
+  const fixedSliceLine=source.split(/\r?\n/).find((line)=>/(schema|migration)/i.test(line)&&/slice\(0,\s*\d+\)/.test(line));
+  if(fixedSliceLine)reasons.push('fixed-width-schema-prefix-slice');
+  return reasons.map((reason)=>`${file}:${reason}`);
+});
+add('migration-width-authorities-converged',fixedWidthMigrationAuthorities.length===0,fixedWidthMigrationAuthorities.join(', '));
 const activeMd=files.filter((f)=>f.endsWith('.md')).map(rel).sort();
 add('active-markdown-exactly-three',JSON.stringify(activeMd)===JSON.stringify(['README.md','docs/ACTIVE_PROJECT_HANDBOOK.md','docs/NEXT_STEPS_AND_SANITY_CHECK.md']),activeMd.join(', '));
 add('no-archive-tree',!fs.existsSync('archive')); add('no-retired-markdown-tree',!files.some((f)=>/retired-markdown-/i.test(rel(f))));
