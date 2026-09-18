@@ -72,6 +72,7 @@
         '/js/admin-ui.js',
         '/js/admin-hub-ui.js',
         '/js/operations-cockpit.js',
+        '/js/bank-import-workbench-v2.js',
         '/js/module-access-ui.js',
         '/js/it-readiness-ui.js',
         '/js/staging-acceptance-ui.js'
