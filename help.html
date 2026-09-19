@@ -85,4 +85,11 @@
           <p>A hard lock is rejected server-side until every required close gate passes. Soft lock remains a review state. Existing period guards continue to reject posting into locked A/R, A/P, or GL periods even if a browser is stale or bypassed.</p>
           <p>Reopening a period requires Finance decision authority and an explicit recorded reason of at least eight characters. Reopen/lock activity remains auditable. Finance posting execution and provider/payment mutation remain OFF unless separately authorized.</p>
         </section>
+        <section class="help-section" id="accountant-export-package-v2">
+          <h2>Accountant Export Package v2</h2>
+          <p>Build 317 generates a private month-end ZIP for Finance manage users from the selected accounting close period. The package includes a through-period-end trial balance, period GL detail, A/R and A/P registers and aging context, bank reconciliation summary, unresolved reconciliation exceptions, sales-tax and payroll-remittance schedules, account-mapping and posting exceptions, close/reopen state, and the Build 316 close-cockpit snapshot.</p>
+          <p>The manifest records the period, generation time, source/query row counts, per-file source and filter, row-limit/truncation warnings, included artifacts, package hash, and fail-closed execution controls. The ZIP is stored only in the private accountant-exports bucket and is downloaded through a short-lived signed URL.</p>
+          <p>A/R and A/P aging is current balance/aging at generation for documents dated on or before the close period end; YW does not present it as reconstructed historical aging. The package is management/accountant-review evidence, not a filed return or accountant-reviewed financial statement. Generating or downloading it does not authorize Finance posting, provider/payment mutation, or Jobs writeback.</p>
+        </section>
+
 
