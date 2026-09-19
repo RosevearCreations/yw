@@ -5,6 +5,7 @@ const read=(p)=>fs.readFileSync(p,'utf8');
 const ops=read('supabase/functions/operations-manage/index.ts');
 const ui=read('js/operations-cockpit.js');
 const browser=read('tests/browser/reconciliation-exception-resolution.spec.mjs');
+const finance=read('js/admin-finance-workspace.js');
 const help=read('help.html');
 const pkg=JSON.parse(read('package.json'));
 const workflow=read('.github/workflows/staging-browser-integration.yml');
@@ -39,6 +40,8 @@ for(const token of [
 
 assert.ok(!ui.includes("action:'execute_posting'"),'Build 315 Operations UI must not expose posting execution.');
 assert.ok(!ui.includes('provider_mutation:true'),'Build 315 Operations UI must not enable provider mutation.');
+assert.ok(ui.includes('data-finance-blocker')&&ui.includes('data-close-blocker'),'Build 315 exception cards must expose Finance and close blocker markers.');
+assert.ok(finance.includes('oc_recon_exception_queue .oc-recon-exception-card[data-finance-blocker="true"]')&&finance.includes('oc_recon_exception_queue .oc-recon-exception-card[data-close-blocker="true"]'),'Build 315 material exceptions must feed Finance readiness and period/close areas.');
 assert.ok(browser.includes('material unresolved exception')&&browser.includes('exception_resolve'),'Build 315 rendered acceptance must cover blockers and resolution.');
 assert.equal(pkg.scripts['test:reconciliation-exception-resolution'],'node scripts/reconciliation-exception-resolution-check.mjs');
 assert.equal(pkg.scripts['test:browser:reconciliation-exception-resolution'],'playwright test --config=playwright.config.mjs tests/browser/reconciliation-exception-resolution.spec.mjs');
