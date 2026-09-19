@@ -182,57 +182,68 @@ Make period close a guided and auditable workflow covering bank reconciliation, 
 
 Produce an accountant-friendly close package containing trial balance and GL detail, A/R and A/P summaries where available, bank/reconciliation summary, unresolved exceptions, tax/remittance schedules, mapping/posting exceptions, close/reopen state and a manifest proving period, source rows, generation time and included artifacts.
 
-### 318 — Job Cost and Profitability Closeout
+### 318–353 — Landscaping & Yard Maintenance Operating System
 
-Bring estimate/revenue together with actual labour, materials, equipment and subcontract/vendor cost, invoiced/collected amount, gross margin and variance. Preserve execution-proof provenance and keep all internal cost/margin data staff-only while customer-safe closeout remains separate.
+The future YW roadmap is now explicitly focused on a landscaping, lawn-care and yard-maintenance business operating model.
 
-### 319 — Finance Dashboard and Cash Position
+The five permanent operating pillars are:
 
-Give ownership/management a practical operational view of cash/bank position from authoritative data, receivables, overdue invoices, near-term commitments, taxes/remittances, current-period revenue/cost/margin, reconciliation blockers and close readiness. Treat this as operational decision support rather than a replacement for accountant-reviewed statements.
+1. **Safety & Compliance**
+2. **Jobs & Customers**
+3. **Equipment & Fleet**
+4. **Employment & Workforce**
+5. **Finance & Profitability**
 
-### 320 — Admin Needs Attention v2
+The primary operating chain is:
 
-Upgrade Admin Home with priority, owner, due date, source area, permission-aware **Take me there**, snooze/defer and recently resolved history. Distinguish informational, action-required and blocked items. Acknowledgement or snooze must never resolve the source business/readiness record.
+**Customer → Property → Estimate → Job / Visit → Crew → Time → Equipment → Materials → Safety → Completion Evidence → Invoice → Payment → Profitability**
 
-### 321 — Saved Views and Operator Preferences
+Builds **318–350** form the core autonomous landscaping operating-system program. Builds **351–353** remain controlled acceptance campaigns with external/human prerequisites.
 
-Persist safe per-user filters and presentation preferences such as My Open Jobs, Finance Exceptions, Today, Assigned to Me, Awaiting Review, table columns, sort order, density and page size. Provide reset-to-default and keep all permission filtering server-authoritative.
+The authoritative detailed scope, module model and build-by-build definitions are maintained in:
 
-### 322 — Safe Bulk Operations
+**[`docs/LANDSCAPING_OPERATING_SYSTEM_ROADMAP.md`](LANDSCAPING_OPERATING_SYSTEM_ROADMAP.md)**
 
-Add multi-select and bounded bulk actions for appropriate non-destructive queues, with affected-row preview, per-row results, audit evidence and partial-failure handling. Destructive, accounting or provider actions require stronger purpose-built confirmation and authority rather than generic bulk execution.
+Current sequence:
 
-### 323 — Universal Activity and Audit Timeline
+- **318 — Job Cost & Profitability Closeout**
+- **319 — Landscaping Finance Dashboard & Cash Position**
+- **320 — Operations Needs Attention**
+- **321 — Crew Scheduling & Dispatch**
+- **322 — Recurring Lawn & Yard Maintenance Engine**
+- **323 — Property & Site Intelligence**
+- **324 — Estimate → Job → Invoice Workflow**
+- **325 — Landscape Production Tracking**
+- **326 — Mobile Crew App v2**
+- **327 — Safety & Compliance Command Centre**
+- **328 — Job Hazard & Site Safety Plans**
+- **329 — Incident & Near-Miss Investigation**
+- **330 — Training & Certification Matrix**
+- **331 — Equipment Registry & QR System v2**
+- **332 — Daily Equipment Inspection & Lockout**
+- **333 — Fleet, Trailer & Vehicle Operations**
+- **334 — Preventive Maintenance Engine**
+- **335 — Fuel, Consumables & Materials Control**
+- **336 — Employee & Crew Management**
+- **337 — Timekeeping, Attendance & Payroll Evidence**
+- **338 — Performance & Development**
+- **339 — Hiring & Onboarding Workflow**
+- **340 — Customer & Property CRM**
+- **341 — Route Optimization & Territory Management**
+- **342 — Weather & Workability Controls**
+- **343 — Landscape Material Estimator**
+- **344 — Change Orders & Extras**
+- **345 — Quality Control & Customer Signoff**
+- **346 — Seasonal Operations Centre**
+- **347 — Universal Activity & Audit Timeline**
+- **348 — Offline & Conflict Recovery**
+- **349 — Saved Views, Search & Command Centre**
+- **350 — Owner / Management Command Centre**
+- **351 — Real Staging Acceptance Campaign**
+- **352 — Accounting Acceptance Campaign**
+- **353 — Payment & Provider Acceptance**
 
-Create one permission-aware chronological history for customers, jobs, invoices/payments, employees and equipment where identifiers permit it. Surface created/changed/approved/rejected/notified/uploaded/posted/reopened events with actor, timestamp, source module and evidence link while redacting private/security/accounting details appropriately.
-
-### 324 — Offline and Conflict Recovery UX
-
-Make sync recovery understandable: explain the conflict, show local versus server values where safe, and offer explicit Keep Mine, Keep Server, Merge, Retry or Discard actions only when the record contract supports them. Preserve unsent work and never silently overwrite newer authoritative data.
-
-### 325 — Mobile Supervisor Quick Actions
-
-Optimize common field actions for 390/430-width phones: assigned job, clock action, live update/photo, safety item, material use, execution proof, closeout request and customer signoff. Keep touch targets usable, avoid horizontal overflow, preserve permission boundaries and show pending/offline sync state clearly.
-
-### 326 — Global Command and Search Palette
-
-Add permission-aware search/navigation across customers, jobs, invoices/payments, employees, equipment and Admin workspaces. Support direct navigation to known records and keyboard/mobile use without leaking hidden-module data.
-
-### 327 — Notification Centre and Daily Digest
-
-Consolidate approvals, overdue follow-up, failed/manual-review delivery, reconciliation exceptions, safety items, closeouts and Finance reviews into a per-user attention centre. Read/acknowledge/snooze affects the notification only, not the underlying source record. Start with an in-application daily summary before considering external delivery.
-
-### 328 — Real Staging Acceptance Campaign
-
-When a dedicated non-Production Supabase project/branch exists and is explicitly authorized, prove environment identity, project-ref guard and exact current-schema parity immediately before mutation. Run approved disposable automated cases plus required human Operations/quote/job-lifecycle cases, record evidence, and finalize/sign off only through existing scenario authority. Never substitute Production customer/business/provider data.
-
-### 329 — Accounting Acceptance Campaign
-
-After the Finance workbench sequence above or equivalent current functionality is complete and no critical Finance blockers remain, run controlled test transactions through bank import, reconciliation, payment application, mapping, posting preview, exception handling, period close and accountant export. Verify idempotency, locked-period behavior, reopen audit and expected outputs with required human/accounting review. Passing acceptance does not automatically enable Production posting.
-
-### 330 — Payment and Provider Acceptance
-
-Only after internal accounting behavior is trustworthy, validate supported provider/payment paths including success, decline/failure, duplicate webhook/event, retry, idempotency, refund, partial refund and dispute/chargeback. Verify provider events link to correct internal payment/accounting records, cannot double-settle/apply/post, and uncertain outcomes remain manual review. Provider acceptance and Production provider enablement remain separate deliberate decisions.
+The next autonomous item remains **Build 318**. It should be implemented around landscaping/yard-maintenance economics rather than generic job costing.
 
 ### Roadmap selection rules
 
@@ -240,4 +251,4 @@ When the next YW technical item is requested, prefer the earliest still-valid ro
 
 After the first four roadmap items are complete, do not default to CI-only micro-releases merely to raise the release number. Prefer Finance completion, accounting usability, profitability and operator value unless a new release-safety defect is proven. Accounting/provider/staging acceptance remains blocked until its real prerequisites and external/human evidence exist.
 
-The target is not the highest possible release number. The target is a YW application that releases with trustworthy exact-source evidence, makes Finance exceptions resolvable, produces accountant-ready close/export evidence, shows real job profitability, minimizes repetitive operator work, remains field-usable on phones and during connectivity problems, and eventually closes staging/accounting/provider acceptance with genuine evidence rather than source-only confidence.
+The target is not the highest possible release number. The target is a landscaping and yard-maintenance operating system that releases with trustworthy exact-source evidence, keeps Safety, Jobs, Equipment, Employment and Finance connected, shows real crew/job profitability, reduces repetitive office and field work, remains usable on phones and during poor connectivity, preserves audit and regulatory/accounting boundaries, and eventually closes staging/accounting/provider acceptance with genuine evidence rather than source-only confidence.
