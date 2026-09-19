@@ -5,7 +5,10 @@ import { evaluateMonthEndCloseCockpit } from "../_shared/month-end-close-cockpit
 import { zipSync, strToU8 } from "npm:fflate@0.8.2";
 
 const BUILD = 317;
-const SCHEMA = 208;
+// SCHEMA remains the module-permission contract version expected by the shared authorization gate.
+// SOURCE_SCHEMA records the current database/source package boundary.
+const SCHEMA = 159;
+const SOURCE_SCHEMA = 208;
 const PACKAGE_VERSION = 2;
 const BUCKET = 'accountant-exports';
 const ROW_LIMIT = 5000;
@@ -353,7 +356,7 @@ serve(async (req) => {
     const manifest:any = {
       product: 'YWI operations platform',
       build: BUILD,
-      schema: SCHEMA,
+      schema: SOURCE_SCHEMA,
       package_version: PACKAGE_VERSION,
       generated_at: generatedAt,
       generated_by: actor.email || actor.full_name || actor.id,
@@ -456,7 +459,7 @@ serve(async (req) => {
       artifact_size_bytes:archive.byteLength,
       artifact_content_type:'application/zip',
       artifact_expires_at:new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      source_schema_version:SCHEMA
+      source_schema_version:SOURCE_SCHEMA
     }).select('*').single();
     if (exportError) throw exportError;
 
@@ -533,7 +536,7 @@ serve(async (req) => {
     return Response.json({
       ok:true,
       build:BUILD,
-      schema:SCHEMA,
+      schema:SOURCE_SCHEMA,
       package_version:PACKAGE_VERSION,
       export:exportRow,
       manifest,
