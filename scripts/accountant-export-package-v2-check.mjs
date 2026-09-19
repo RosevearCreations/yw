@@ -26,7 +26,7 @@ for(const token of [
   'provider_mutation: false',
   'jobs_writeback: false',
   'createSignedUrl',
-  'accountant_close_package_v2'
+  "bundle_kind:'management_close_bundle'"
 ]) assert.ok(exporter.includes(token),`Build 317 exporter missing: ${token}`);
 
 for(const filename of [
