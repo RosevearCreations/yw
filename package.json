@@ -111,7 +111,9 @@
     "test:reconciliation-exception-resolution": "node scripts/reconciliation-exception-resolution-check.mjs",
     "test:browser:reconciliation-exception-resolution": "playwright test --config=playwright.config.mjs tests/browser/reconciliation-exception-resolution.spec.mjs",
     "test:month-end-close-cockpit": "node scripts/month-end-close-cockpit-check.mjs",
-    "test:browser:month-end-close-cockpit": "playwright test --config=playwright.config.mjs tests/browser/month-end-close-cockpit.spec.mjs"
+    "test:browser:month-end-close-cockpit": "playwright test --config=playwright.config.mjs tests/browser/month-end-close-cockpit.spec.mjs",
+    "test:accountant-export-package-v2": "node scripts/accountant-export-package-v2-check.mjs",
+    "test:browser:accountant-export-package-v2": "playwright test --config=playwright.config.mjs tests/browser/accountant-export-package-v2.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
