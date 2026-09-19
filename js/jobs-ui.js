@@ -1939,11 +1939,43 @@
       const e = els();
       const row = (state.monthEndCloseWorkbench || [])[0];
       if (!row?.id) return setNotice(e.jobCommercialSummary, 'No accounting period close row is available.', true);
-      const action = window.prompt('Period action (soft_lock, lock, reopen):', row.is_hard_locked ? 'reopen' : 'soft_lock') || 'soft_lock';
-      const notes = window.prompt('Period close/reopen notes:', row.reopen_reason || '') || '';
-      const resp = await api.manageAdminEntity({ entity: 'accounting_period_close', action, item_id: row.id, notes });
-      if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'Month-end close action failed.', true);
-      setNotice(e.jobCommercialSummary, 'Month-end close action saved.');
+      const action = (window.prompt('Period action (soft_lock, lock, reopen):', row.period_lock_status === 'locked' ? 'reopen' : 'soft_lock') || 'soft_lock').trim().toLowerCase();
+      if (!['soft_lock','lock','reopen'].includes(action)) return setNotice(e.jobCommercialSummary, 'Choose soft_lock, lock, or reopen.', true);
+
+      if (action === 'lock') {
+        const preview = await api.manageAdminEntity({ entity:'accounting_period_close', action:'preview_close', item_id:row.id });
+        if (!preview?.ok) return setNotice(e.jobCommercialSummary, preview?.error || 'Month-end close preview failed.', true);
+        const cockpit = preview.cockpit || {};
+        if (cockpit.ready_for_hard_lock !== true) {
+          const blocked = (cockpit.gates || []).filter((gate) => gate.required && gate.state !== 'pass');
+          const names = blocked.map((gate) => gate.label).filter(Boolean).join(', ');
+          return setNotice(e.jobCommercialSummary, `Hard lock blocked by ${cockpit.blocking_gate_count || blocked.length || 1} required gate(s): ${names || 'review the Month-End Close Cockpit'}.`, true);
+        }
+      }
+
+      let notes = '';
+      if (action === 'reopen') {
+        notes = (window.prompt('Reopen reason (required, at least 8 characters):', row.reopen_reason || '') || '').trim();
+        if (notes.length < 8) return setNotice(e.jobCommercialSummary, 'Reopening requires an explicit reason of at least 8 characters.', true);
+      } else {
+        notes = (window.prompt('Period close/lock notes:', row.close_notes || '') || '').trim();
+      }
+
+      const resp = await api.manageAdminEntity({
+        entity:'accounting_period_close',
+        action,
+        item_id:row.id,
+        notes,
+        reopen_reason:action === 'reopen' ? notes : undefined,
+      });
+      if (!resp?.ok) {
+        const cockpit = resp?.cockpit || {};
+        const blocked = (cockpit.gates || []).filter((gate) => gate.required && gate.state !== 'pass');
+        const suffix = blocked.length ? ` Blocked: ${blocked.map((gate) => gate.label).join(', ')}.` : '';
+        return setNotice(e.jobCommercialSummary, (resp?.error || 'Month-end close action failed.') + suffix, true);
+      }
+      const cockpit = resp.cockpit || {};
+      setNotice(e.jobCommercialSummary, `Month-end ${action} saved under Build 316 close authority. ${cockpit.blocking_gate_count || 0} required gate(s) remain blocked.`);
       await loadData();
     }
 

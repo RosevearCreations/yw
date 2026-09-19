@@ -8,6 +8,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { effectiveModuleAccess, hasModuleAccess } from "../_shared/module-permissions.ts";
+import { MONTH_END_CLOSE_BUILD, evaluateMonthEndCloseCockpit } from "../_shared/month-end-close-cockpit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -54,7 +55,7 @@ function moduleRequirementForEntity(entity: unknown, action: unknown): ModuleReq
   const key = String(entity || '').trim().toLowerCase();
   const act = String(action || '').trim().toLowerCase();
   if (key === 'module_permission') return { moduleKey:'admin', minimum:'manage' };
-  const isDecision = /(approve|review|finalize|finalise|lock|reopen|verify|resolve|signoff|release|post)/.test(act);
+  const isDecision = /(approve|review|finalize|finalise|close|lock|reopen|verify|resolve|signoff|release|post)/.test(act);
   const minimum = isDecision ? 'approve' : 'create';
   if (SAFETY_ENTITIES.has(key)) return { moduleKey:'safety', minimum };
   if (FINANCE_ENTITIES.has(key)) return { moduleKey:'finance', minimum };
@@ -4040,12 +4041,23 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         created_by_profile_id: actorId,
         updated_at: new Date().toISOString(),
       };
-      if (!patch.period_code || !patch.period_start || !patch.period_end) return Response.json({ ok:false, error:'period_code, period_start, and period_end are required' }, { status:400, headers:corsHeaders });
-      if (action === 'create') { const { data, error } = await supabase.from('accounting_period_closes').insert(patch).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
-      if (action === 'update' || action === 'close' || action === 'reopen') {
-        if (action === 'close') { patch.close_status = 'closed'; patch.closed_by_profile_id = actorId; patch.closed_at = new Date().toISOString(); }
-        if (action === 'reopen') { patch.close_status = 'reopened'; patch.closed_by_profile_id = null; patch.closed_at = null; patch.reopened_by_profile_id = actorId; patch.reopened_at = new Date().toISOString(); patch.reopen_reason = body.reopen_reason ?? body.close_notes ?? 'Reopened from admin close control.'; }
-        const { data, error } = await supabase.from('accounting_period_closes').update(patch).eq('id', body.item_id).select('*').single(); if (error) throw error; return Response.json({ ok:true, record:data }, { headers:corsHeaders }); }
+      if (action === 'create') {
+        if (!patch.period_code || !patch.period_start || !patch.period_end) {
+          return Response.json({ ok:false, error:'period_code, period_start, and period_end are required' }, { status:400, headers:corsHeaders });
+        }
+        const { data, error } = await supabase.from('accounting_period_closes').insert(patch).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
+      if (action === 'update') {
+        if (!body.item_id) return Response.json({ ok:false, error:'item_id is required' }, { status:400, headers:corsHeaders });
+        if (!patch.period_code || !patch.period_start || !patch.period_end) {
+          return Response.json({ ok:false, error:'period_code, period_start, and period_end are required' }, { status:400, headers:corsHeaders });
+        }
+        const { data, error } = await supabase.from('accounting_period_closes').update(patch).eq('id', body.item_id).select('*').single();
+        if (error) throw error;
+        return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+      }
     }
 
     if (entity === 'sales_tax_filing') {
@@ -5789,29 +5801,88 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
 
     if (entity === 'accounting_period_close') {
       if (!body.item_id) return Response.json({ ok:false, error:'item_id is required' }, { status:400, headers:corsHeaders });
+
+      const supportedDecision = ['preview_close','soft_lock','lock','close','reopen'].includes(action);
+      if (!supportedDecision) {
+        return Response.json({ ok:false, error:'Unsupported accounting period close action.' }, { status:400, headers:corsHeaders });
+      }
+
+      const currentCockpit = await evaluateMonthEndCloseCockpit(supabase, String(body.item_id));
+      if (action === 'preview_close') {
+        return Response.json({
+          ok:true,
+          build:MONTH_END_CLOSE_BUILD,
+          cockpit:currentCockpit,
+          posting_execution_authorized:false,
+          provider_mutation:false,
+        }, { headers:corsHeaders });
+      }
+
+      const hardLock = action === 'lock' || action === 'close';
+      if (hardLock && currentCockpit.ready_for_hard_lock !== true) {
+        return Response.json({
+          ok:false,
+          build:MONTH_END_CLOSE_BUILD,
+          code:'MONTH_END_CLOSE_BLOCKED',
+          error:`Month-end hard lock is blocked by ${currentCockpit.blocking_gate_count || 1} required gate(s).`,
+          cockpit:currentCockpit,
+          posting_execution_authorized:false,
+          provider_mutation:false,
+        }, { status:409, headers:corsHeaders });
+      }
+
+      const reopenReason = String(body.reopen_reason ?? body.notes ?? '').trim();
+      if (action === 'reopen' && reopenReason.length < 8) {
+        return Response.json({
+          ok:false,
+          build:MONTH_END_CLOSE_BUILD,
+          code:'MONTH_END_REOPEN_REASON_REQUIRED',
+          error:'Reopening a locked accounting period requires an explicit reason of at least 8 characters.',
+          cockpit:currentCockpit,
+          posting_execution_authorized:false,
+          provider_mutation:false,
+        }, { status:400, headers:corsHeaders });
+      }
+
       const nowIso = new Date().toISOString();
+      const suppliedChecklist = body.close_checklist && typeof body.close_checklist === 'object' && !Array.isArray(body.close_checklist)
+        ? body.close_checklist
+        : {};
       const patch: Record<string, unknown> = {
         close_notes: body.close_notes ?? body.notes ?? null,
-        close_checklist: body.close_checklist || {},
+        close_checklist: hardLock
+          ? {
+              ...suppliedChecklist,
+              month_end_close_cockpit: {
+                build: MONTH_END_CLOSE_BUILD,
+                ready_for_hard_lock: currentCockpit.ready_for_hard_lock,
+                required_gate_count: currentCockpit.required_gate_count,
+                blocking_gate_count: currentCockpit.blocking_gate_count,
+                verified_at: nowIso,
+              },
+            }
+          : suppliedChecklist,
         close_package_manifest: body.close_package_manifest || {},
         accountant_package_export_id: asNullableText(body.accountant_package_export_id),
         updated_at: nowIso,
       };
-      if (action === 'soft_lock' || action === 'lock') {
-        patch.period_lock_status = action === 'lock' ? 'locked' : 'soft_locked';
+
+      if (action === 'soft_lock' || hardLock) {
+        patch.period_lock_status = hardLock ? 'locked' : 'soft_locked';
         patch.ar_locked = true;
         patch.ap_locked = true;
-        patch.gl_locked = action === 'lock';
+        patch.gl_locked = hardLock;
         patch.payroll_locked = true;
         patch.tax_locked = true;
         patch.locked_by_profile_id = actorId;
         patch.locked_at = nowIso;
-        patch.close_status = action === 'lock' ? 'closed' : 'in_review';
-        if (action === 'lock') {
+        patch.close_status = hardLock ? 'closed' : 'in_review';
+        if (hardLock) {
           patch.closed_by_profile_id = actorId;
           patch.closed_at = nowIso;
         }
       }
+
       if (action === 'reopen') {
         patch.period_lock_status = 'reopened';
         patch.close_status = 'reopened';
@@ -5820,14 +5891,44 @@ if (!isAdmin) return Response.json({ ok: false, error: 'Admin role required' }, 
         patch.gl_locked = false;
         patch.payroll_locked = false;
         patch.tax_locked = false;
+        patch.closed_by_profile_id = null;
+        patch.closed_at = null;
         patch.reopened_by_profile_id = actorId;
         patch.reopened_at = nowIso;
-        patch.reopen_reason = body.reopen_reason || body.notes || 'Reopened from Admin.';
+        patch.reopen_reason = reopenReason;
       }
+
       const { data, error } = await supabase.from('accounting_period_closes').update(patch).eq('id', body.item_id).select('*').single();
       if (error) throw error;
-      await recordSiteActivity(supabase, { event_type:'accounting_period_close_updated', entity_type:'accounting_period_close', entity_id:data.id, severity: action === 'lock' ? 'success' : 'info', title:'Accounting period close updated', summary:`Period ${data.period_code || data.id} ${action}.`, created_by_profile_id: actorId });
-      return Response.json({ ok:true, record:data }, { headers:corsHeaders });
+
+      const updatedCockpit = await evaluateMonthEndCloseCockpit(supabase, String(body.item_id));
+      await recordSiteActivity(supabase, {
+        event_type:'accounting_period_close_updated',
+        entity_type:'accounting_period_close',
+        entity_id:data.id,
+        severity: hardLock ? 'success' : 'info',
+        title:'Accounting period close updated',
+        summary:`Period ${data.period_code || data.id} ${action} under Build ${MONTH_END_CLOSE_BUILD} close authority.`,
+        metadata:{
+          build:MONTH_END_CLOSE_BUILD,
+          action,
+          ready_before_action:currentCockpit.ready_for_hard_lock,
+          blocking_gate_count_before_action:currentCockpit.blocking_gate_count,
+          reopen_reason:action === 'reopen' ? reopenReason : null,
+          posting_execution_authorized:false,
+          provider_mutation:false,
+        },
+        created_by_profile_id:actorId,
+      });
+
+      return Response.json({
+        ok:true,
+        build:MONTH_END_CLOSE_BUILD,
+        record:data,
+        cockpit:updatedCockpit,
+        posting_execution_authorized:false,
+        provider_mutation:false,
+      }, { headers:corsHeaders });
     }
 
     if (entity === 'accountant_handoff_export' && ['prepare_package','review_package','finalize_package','deliver_package'].includes(action)) {
