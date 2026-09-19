@@ -445,7 +445,7 @@ serve(async (req) => {
       export_markdown:readme,
       export_payload:payload,
       package_status:'prepared',
-      bundle_kind:'accountant_close_package_v2',
+      bundle_kind:'management_close_bundle',
       delivery_channel:'download',
       bundle_item_count:fileRows.length + 3,
       bundle_payload:{ package_version:PACKAGE_VERSION, files:manifest.files, readiness:manifest.readiness, close_cockpit:manifest.close_cockpit },
