@@ -72,3 +72,10 @@
           <p>Each canonical mapping remains a row-level human decision. Finance manage may approve, reject, or reclassify an account for review with a recorded reason. Structural type guards still block incompatible approvals, and the immutable mapping-review audit shows the preview-to-decision history.</p>
           <p>The preview creates no accounting rows and exposes no execution-release control. Posting execution and provider/payment mutation remain OFF unless a later separately authorized release enables and verifies those boundaries.</p>
         </section>
+
+        <section class="help-section" id="reconciliation-exception-resolution">
+          <h2>Reconciliation Exception Resolution</h2>
+          <p>Build 315 turns unmatched, partial, and exception bank rows into owned Finance work. Each exception records severity, category, owner, age, evidence, and an explicit resolution reason using the existing Schema 208 reconciliation review fields.</p>
+          <p>Supported categories include timing difference, duplicate, missing document, wrong account, amount mismatch, transfer pair, provider settlement, and manual accounting review. Material unresolved exceptions remain visible as blockers to Finance readiness and month-end close until a reviewer records evidence and a resolution reason.</p>
+          <p>Resolving an exception does not post a journal, clear a payment provider, or enable Finance execution. Posting execution and provider mutation remain OFF and require separate authorization.</p>
+        </section>
