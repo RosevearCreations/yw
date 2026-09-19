@@ -109,7 +109,9 @@
     "test:account-mapping-posting-preview": "node scripts/account-mapping-posting-preview-check.mjs",
     "test:browser:account-mapping-posting-preview": "playwright test --config=playwright.config.mjs tests/browser/account-mapping-posting-preview.spec.mjs",
     "test:reconciliation-exception-resolution": "node scripts/reconciliation-exception-resolution-check.mjs",
-    "test:browser:reconciliation-exception-resolution": "playwright test --config=playwright.config.mjs tests/browser/reconciliation-exception-resolution.spec.mjs"
+    "test:browser:reconciliation-exception-resolution": "playwright test --config=playwright.config.mjs tests/browser/reconciliation-exception-resolution.spec.mjs",
+    "test:month-end-close-cockpit": "node scripts/month-end-close-cockpit-check.mjs",
+    "test:browser:month-end-close-cockpit": "playwright test --config=playwright.config.mjs tests/browser/month-end-close-cockpit.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
