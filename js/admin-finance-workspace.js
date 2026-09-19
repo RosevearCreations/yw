@@ -156,6 +156,7 @@
     if (!value) return false;
     const issue = /fail|failed|error|blocked|exception|pending|open|review|required|missing|stale|overdue|unmatched|rejected|duplicate|draft|warning|hold|recovery|attention/i.test(value);
     const clearlyDone = /completed|closed|resolved|reconciled|remitted|delivered|confirmed|posted|passed|current|green/i.test(value);
+    if (clearlyDone && !severeText(value)) return false;
     return issue || !clearlyDone;
   }
 
