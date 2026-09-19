@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const cockpitSource=fs.readFileSync(path.join(process.cwd(),'js/operations-cockpit.js'),'utf8');
+const financeWorkspaceSource=fs.readFileSync(path.join(process.cwd(),'js/admin-finance-workspace.js'),'utf8');
 
 async function mount(page){
   await page.route('https://recon315.test/**',async(route)=>{
@@ -103,4 +104,33 @@ test('Build 315 resolves an exception only through explicit human evidence and r
   expect(call).not.toHaveProperty('provider_mutation');
   const calls=await page.evaluate(()=>window.__recon315Calls);
   expect(calls.some((entry)=>/execute_posting|provider_mutation/i.test(String(entry.action||'')))).toBe(false);
+});
+
+
+test('Build 315 material exception is rendered as both Finance readiness and period-close blocker',async({page})=>{
+  await page.setContent(`<!doctype html><html><body>
+    <div id="ad_hub_breadcrumb"><strong>Finance &amp; Accounting</strong></div>
+    <div id="ad_hub_workspace_heading"></div>
+    <span id="ad_accounting_age_badge" data-status="ok">Accounting data current</span>
+    <div id="ad_close_center_summary">Month-end close review is active.</div>
+    <div id="oc_recon_exception_queue">
+      <article class="oc-recon-exception-card" data-finance-blocker="true" data-close-blocker="true">
+        Critical amount mismatch exception · Finance Reviewer · evidence missing · BLOCKS Finance readiness / month-end close
+      </article>
+    </div>
+    <table id="ad_accounting_table"><tbody></tbody></table>
+    <table id="ad_task_table"><tbody></tbody></table>
+    <table id="ad_close_wizard_detail_table"><tbody></tbody></table>
+    <table id="ad_accounting_close_control_table"><tbody></tbody></table>
+  </body></html>`);
+  await page.addScriptTag({content:financeWorkspaceSource});
+  const workspace=page.locator('#adminFinanceWorkspace');
+  await expect(workspace).toBeVisible();
+  const recon=workspace.locator('[data-finance-blocker="reconciliation"]');
+  const close=workspace.locator('[data-finance-blocker="period-close"]');
+  await expect(recon).toContainText('BLOCKED');
+  await expect(recon).toContainText('Critical amount mismatch exception');
+  await expect(close).toContainText('BLOCKED');
+  await expect(close).toContainText('Critical amount mismatch exception');
+  await expect(workspace).toContainText('ACCOUNTING BLOCKED');
 });
