@@ -182,57 +182,211 @@ Make period close a guided and auditable workflow covering bank reconciliation, 
 
 Produce an accountant-friendly close package containing trial balance and GL detail, A/R and A/P summaries where available, bank/reconciliation summary, unresolved exceptions, tax/remittance schedules, mapping/posting exceptions, close/reopen state and a manifest proving period, source rows, generation time and included artifacts.
 
-### 318 — Job Cost and Profitability Closeout
+### Landscaping & yard-maintenance operating-system direction
 
-Bring estimate/revenue together with actual labour, materials, equipment and subcontract/vendor cost, invoiced/collected amount, gross margin and variance. Preserve execution-proof provenance and keep all internal cost/margin data staff-only while customer-safe closeout remains separate.
+YW is now intentionally focused on a landscaping, lawn-care and yard-maintenance business model rather than a generic business application.
 
-### 319 — Finance Dashboard and Cash Position
+The five permanent operating pillars are:
 
-Give ownership/management a practical operational view of cash/bank position from authoritative data, receivables, overdue invoices, near-term commitments, taxes/remittances, current-period revenue/cost/margin, reconciliation blockers and close readiness. Treat this as operational decision support rather than a replacement for accountant-reviewed statements.
+1. **Safety & Compliance**
+2. **Jobs & Customers**
+3. **Equipment & Fleet**
+4. **Employment & Workforce**
+5. **Finance & Profitability**
 
-### 320 — Admin Needs Attention v2
+Admin, I.T. readiness, mobile, offline support, notifications, reporting, audit history and search support those pillars rather than becoming separate competing products.
 
-Upgrade Admin Home with priority, owner, due date, source area, permission-aware **Take me there**, snooze/defer and recently resolved history. Distinguish informational, action-required and blocked items. Acknowledgement or snooze must never resolve the source business/readiness record.
+The primary operating chain is:
 
-### 321 — Saved Views and Operator Preferences
+**Customer → Property → Estimate → Job / Visit → Crew → Time → Equipment → Materials → Safety → Completion Evidence → Invoice → Payment → Profitability**
 
-Persist safe per-user filters and presentation preferences such as My Open Jobs, Finance Exceptions, Today, Assigned to Me, Awaiting Review, table columns, sort order, density and page size. Provide reset-to-default and keep all permission filtering server-authoritative.
+The application should preserve traceability across that chain so ownership and supervisors can answer practical questions such as:
 
-### 322 — Safe Bulk Operations
+- Which crews, routes and service types are profitable?
+- Which recurring properties consistently exceed estimate?
+- Which completed jobs have not been invoiced?
+- Which equipment is unavailable, overdue for service or disproportionately expensive?
+- Which employee needs training before operating a specific machine?
+- Which jobs are at risk because of weather, equipment, materials or staffing?
+- What unresolved Safety, Jobs, Equipment, Employment or Finance issue prevents the business from being operationally GREEN?
 
-Add multi-select and bounded bulk actions for appropriate non-destructive queues, with affected-row preview, per-row results, audit evidence and partial-failure handling. Destructive, accounting or provider actions require stronger purpose-built confirmation and authority rather than generic bulk execution.
+#### Safety & Compliance product direction
 
-### 323 — Universal Activity and Audit Timeline
+Safety is a first-class operational module rather than a checklist attached to Jobs.
 
-Create one permission-aware chronological history for customers, jobs, invoices/payments, employees and equipment where identifiers permit it. Surface created/changed/approved/rejected/notified/uploaded/posted/reopened events with actor, timestamp, source module and evidence link while redacting private/security/accounting details appropriately.
+The long-term system should support field-level hazard assessments, job/site safety plans, toolbox talks, PPE, incidents, near misses, corrective actions, equipment lockout, training/certification, supervisor review and durable evidence. It should be capable of supporting OHSA/OSHA-style workflows without falsely claiming regulatory compliance merely because a form exists.
 
-### 324 — Offline and Conflict Recovery UX
+#### Jobs & Customers product direction
 
-Make sync recovery understandable: explain the conflict, show local versus server values where safe, and offer explicit Keep Mine, Keep Server, Merge, Retry or Discard actions only when the record contract supports them. Preserve unsent work and never silently overwrite newer authoritative data.
+Jobs should be property-aware and service-aware. The system should cover leads, customers, properties, estimates, recurring maintenance, scheduling, crew dispatch, route planning, weather/workability, field production, change orders, customer communication, quality control, completion evidence and invoice readiness.
 
-### 325 — Mobile Supervisor Quick Actions
+#### Equipment & Fleet product direction
 
-Optimize common field actions for 390/430-width phones: assigned job, clock action, live update/photo, safety item, material use, execution proof, closeout request and customer signoff. Keep touch targets usable, avoid horizontal overflow, preserve permission boundaries and show pending/offline sync state clearly.
+Equipment should be traceable from purchase through field use, maintenance and retirement. Support mowers, trimmers, blowers, saws, aerators, spreaders, tractors, trucks, trailers and specialty equipment with QR/barcode identity, inspections, lockout, service history, operating cost, preventive maintenance and lifecycle/replacement evidence.
 
-### 326 — Global Command and Search Palette
+#### Employment & Workforce product direction
 
-Add permission-aware search/navigation across customers, jobs, invoices/payments, employees, equipment and Admin workspaces. Support direct navigation to known records and keyboard/mobile use without leaking hidden-module data.
+Connect employees, crews, skills, availability, timekeeping, attendance, payroll evidence, onboarding, training, equipment authorization, seasonal staffing and performance/development while keeping safety-event truth independent from performance-management decisions.
 
-### 327 — Notification Centre and Daily Digest
+#### Finance & Profitability product direction
 
-Consolidate approvals, overdue follow-up, failed/manual-review delivery, reconciliation exceptions, safety items, closeouts and Finance reviews into a per-user attention centre. Read/acknowledge/snooze affects the notification only, not the underlying source record. Start with an in-application daily summary before considering external delivery.
+Finance should answer practical operating questions while preserving accounting controls: job cost, estimate-vs-actual, labour/material/equipment/subcontract/fuel/disposal/travel cost, invoicing, collections, A/R/A/P, reconciliation, account mapping, posting preview, close, accountant export, cash position and true job margin.
 
-### 328 — Real Staging Acceptance Campaign
+Finance posting, provider/payment mutation and Production provider enablement remain separate deliberate controls.
 
-When a dedicated non-Production Supabase project/branch exists and is explicitly authorized, prove environment identity, project-ref guard and exact current-schema parity immediately before mutation. Run approved disposable automated cases plus required human Operations/quote/job-lifecycle cases, record evidence, and finalize/sign off only through existing scenario authority. Never substitute Production customer/business/provider data.
+### Future autonomous queue
 
-### 329 — Accounting Acceptance Campaign
+The following sequence supersedes the older generic post-317 roadmap. Items 318–350 are the core autonomous landscaping operating-system program. Items 351–353 are controlled acceptance campaigns and retain external/human prerequisites.
 
-After the Finance workbench sequence above or equivalent current functionality is complete and no critical Finance blockers remain, run controlled test transactions through bank import, reconciliation, payment application, mapping, posting preview, exception handling, period close and accountant export. Verify idempotency, locked-period behavior, reopen audit and expected outputs with required human/accounting review. Passing acceptance does not automatically enable Production posting.
+#### 318 — Job Cost & Profitability Closeout
 
-### 330 — Payment and Provider Acceptance
+Make job profitability landscaping-specific. Join estimate/approved scope, invoiced and collected revenue, crew labour, travel where tracked, materials, consumables, equipment use, fuel, subcontract/vendor cost, disposal/tipping, rework, gross margin and estimate-to-actual variance. Preserve execution-proof provenance and keep internal cost/margin staff-only.
 
-Only after internal accounting behavior is trustworthy, validate supported provider/payment paths including success, decline/failure, duplicate webhook/event, retry, idempotency, refund, partial refund and dispute/chargeback. Verify provider events link to correct internal payment/accounting records, cannot double-settle/apply/post, and uncertain outcomes remain manual review. Provider acceptance and Production provider enablement remain separate deliberate decisions.
+#### 319 — Landscaping Finance Dashboard & Cash Position
+
+Provide ownership/management with an operational view of cash/bank position, receivables, overdue invoices, payroll/material/vendor commitments, tax/remittance readiness, current-period revenue/cost/margin, job-profitability exceptions, reconciliation blockers, seasonal comparisons and close readiness.
+
+#### 320 — Operations Needs Attention
+
+Create one prioritized cross-business queue for overdue/unassigned jobs, customer/property follow-up, equipment defects/lockouts, overdue maintenance, safety corrective actions, employee/training issues, missing timesheets, completed-not-invoiced work, overdue receivables and Finance/reconciliation exceptions. Include priority, owner, due date, source module, permission-aware navigation, snooze/defer and recently resolved history.
+
+#### 321 — Crew Scheduling & Dispatch
+
+Build a landscaping-specific daily/weekly scheduler covering crew composition, lead/supervisor, employee assignment, truck/trailer/equipment assignment, property/job, recurring visits, estimated duration, travel allowance, route order, staffing/equipment conflicts, weather/workability state and reschedule/cancellation reason.
+
+#### 322 — Recurring Lawn & Yard Maintenance Engine
+
+Support weekly/biweekly/custom mowing, garden/bed maintenance, hedge/shrub trimming, spring cleanup, fall cleanup, aeration, fertilizing and other seasonal programs. Handle recurrence rules, service windows, seasonal start/stop, skipped visits, weather delays, make-up visits, customer holds and cancellation.
+
+#### 323 — Property & Site Intelligence
+
+Make Property a first-class record with customer relationship, service address, lawn/garden zones, approximate serviceable area, gates/fences, access instructions, parking/trailer limits, pets, irrigation, slopes, drainage/wet areas, known hazards, utility/locate notes, tree/brush concerns, photos and recurring property-specific instructions.
+
+#### 324 — Estimate → Job → Invoice Workflow
+
+Make estimating landscaping-aware using service templates, labour-hour and crew-size assumptions, material quantities, equipment requirements, subcontract/vendor allowances, disposal, travel, markup/margin review, optional work, customer approval, deposits where applicable, work-order conversion, change orders and invoice readiness. Estimate assumptions must remain traceable into variance.
+
+#### 325 — Landscape Production Tracking
+
+Capture actual field execution: start/finish, crew members, labour hours, quantities, material use, equipment, disposal, delays, weather/workability impacts, notes, before/during/after photos, unfinished work, return visit requirements, customer/site issues and completion evidence.
+
+#### 326 — Mobile Crew App v2
+
+Optimize field use for 390/430-width phones with My Jobs / My Route, property access notes, clocking, job checklist, safety assessment, photos/live update, material use, equipment scan, inspection/defect, production quantities, execution proof, deficiency/rework, closeout request, customer signoff where appropriate and clear offline/pending sync state.
+
+#### 327 — Safety & Compliance Command Centre
+
+Provide one safety operating centre for open hazards, required assessments, toolbox talks, incidents/near misses, corrective actions, training expiries, PPE issues, equipment lockouts, unresolved site hazards, supervisor signoff and overdue safety actions.
+
+#### 328 — Job Hazard & Site Safety Plans
+
+Create reusable safety plans by landscaping work type such as mowing, trimming/edging, blowers, chainsaw/brush work, hedge work, loading/unloading, trailers/towing, roadside work, excavation/digging, underground-utility concern, fertilizer/application work where legally permitted, heat, cold, storms/lightning, slips/trips, slopes and public/pedestrian interaction. Templates must allow actual field conditions and controls to be recorded.
+
+#### 329 — Incident & Near-Miss Investigation
+
+Support immediate and auditable capture of incidents, injuries/illness where applicable, property damage, vehicle/equipment damage, environmental events and near misses with date/time/site/job, people involved, witnesses, equipment, photos, initial response, contributing/root factors, corrective actions, owner, due date, supervisor review and closure evidence.
+
+#### 330 — Training & Certification Matrix
+
+Create role/equipment-based training requirements for orientation, WHMIS where applicable, first aid/CPR where required, equipment authorization, chainsaw/brush equipment, mower/tractor authorization, pesticide/application credentials where required, trailer/towing, supervisor training, company SOPs and refresher/expiry dates. Internal records must not falsely imply legal authorization.
+
+#### 331 — Equipment Registry & QR System v2
+
+Give each significant asset an operational identity with asset code, QR/barcode, make/model/serial, purchase date/cost, assigned crew/location, status, manuals, photos, hours/meter where supported, accessories, current lockout state, latest inspection, next maintenance, lifecycle cost and replacement state.
+
+#### 332 — Daily Equipment Inspection & Lockout
+
+Create machine-specific pre-use/post-use inspections covering guards/safety systems, fluids, blades/cutting components, tires/wheels, fuel/battery, accessories, damage and defects. Safety-critical failure should create lockout, repair/service work, supervisor review and verified return to service.
+
+#### 333 — Fleet, Trailer & Vehicle Operations
+
+Manage trucks/trailers with identity, odometer, registration/insurance evidence, inspection, maintenance, tire status, towing assignment, hitch/trailer compatibility, crew/job assignment, trailer load/content readiness, fuel, damage and downtime.
+
+#### 334 — Preventive Maintenance Engine
+
+Schedule equipment/fleet maintenance by date, hours, kilometres and seasonal milestones. Track oil, filters, blades, sharpening, belts, lubrication, tires, batteries, winterization/storage, preseason setup, repairs, service history and downtime.
+
+#### 335 — Fuel, Consumables & Materials Control
+
+Track gasoline/diesel where applicable, oil, trimmer line, blades, fertilizer, seed, sod, mulch, soil, gravel/stone, plants, landscape fabric, disposal supplies and other consumables with stock, reorder, supplier, unit cost, job use, waste and variance.
+
+#### 336 — Employee & Crew Management
+
+Create practical workforce operations for employee status, role, supervisor, crew, skills, availability, privacy-aware contact/emergency information, assigned training, equipment authorization, seasonal status and active/inactive dates.
+
+#### 337 — Timekeeping, Attendance & Payroll Evidence
+
+Track shift time, job/visit time, travel time, breaks, overtime, missed punches, corrections, employee explanation, supervisor approval, job-cost allocation and payroll-ready export/evidence. Time corrections remain auditable.
+
+#### 338 — Performance & Development
+
+Support role expectations, coaching, recognition, attendance patterns, training/development plans, documented reviews, improvement actions and follow-up dates while keeping Safety incident truth separate from performance-management outcomes.
+
+#### 339 — Hiring & Onboarding Workflow
+
+Support Applicant → Interview → Offer → Hired → Documents → Orientation → Training → Equipment Authorization → Crew Assignment, including incomplete onboarding and pre-field readiness gates.
+
+#### 340 — Customer & Property CRM
+
+Unify leads, customers, multiple properties, estimates, active service plans, service history, communications, complaints, follow-ups, property preferences, renewals and appropriate upsell/cross-service opportunities.
+
+#### 341 — Route Optimization & Territory Management
+
+Support recurring-route planning by service area, property proximity, crew capacity, estimated duration, equipment needs, time windows, frequency, route order, travel efficiency and territory ownership. Optimization may suggest; operators retain dispatch authority.
+
+#### 342 — Weather & Workability Controls
+
+Add weather/workability decision support for rain delay, saturated ground, heat, cold, high wind, lightning/storm, visibility and service-type restrictions. Record supervisor decision, postponement/reschedule and customer-notification readiness rather than automatically making safety decisions.
+
+#### 343 — Landscape Material Estimator
+
+Add area/volume/quantity calculators for mulch, soil, sod, seed, fertilizer, gravel, stone, disposal and configurable materials. Record assumptions, unit conversions, waste factor and planned-vs-actual use.
+
+#### 344 — Change Orders & Extras
+
+Support field-discovered extra work using Crew identifies extra work → evidence/photos → office/supervisor review → price/scope → customer authorization → job budget/scope update → invoice evidence. No hidden customer billing or unaudited field-only price change.
+
+#### 345 — Quality Control & Customer Signoff
+
+Provide service-type completion templates, crew completion, supervisor QC where required, deficiencies, rework, before/after evidence, customer-safe completion summary, customer acknowledgement/signoff where appropriate and unresolved-issue tracking.
+
+#### 346 — Seasonal Operations Centre
+
+Coordinate spring startup, summer maintenance, fall cleanup, winter shutdown and optional winter/snow operations with recurring-customer rollover, seasonal staffing, equipment conversion/service, material stock, route activation, seasonal checklists and outstanding work.
+
+#### 347 — Universal Activity & Audit Timeline
+
+Create one permission-aware chronological history across Customer, Property, Estimate, Job/Visit, Employee, Equipment/Fleet, Safety and Invoice/Payment. Surface meaningful created/changed/assigned/approved/rejected/inspected/locked-out/trained/uploaded/notified/posted/reopened events with actor, timestamp, source module and evidence reference.
+
+#### 348 — Offline & Conflict Recovery
+
+Make field synchronization understandable. Where the record contract allows, show local versus server value and explicit Keep Mine, Keep Server, Merge, Retry or Discard actions. Preserve unsent work and never silently overwrite newer authoritative data.
+
+#### 349 — Saved Views, Search & Command Centre
+
+Add permission-aware operational views such as My Crew Today, My Route, Jobs Behind Schedule, Equipment Locked Out, Maintenance Due, Safety Actions Due, Training Expiring, Completed Not Invoiced, Overdue Receivables, Finance Exceptions and Assigned to Me. Add global search/navigation across customers, properties, jobs, invoices/payments, employees, equipment and Admin workspaces.
+
+#### 350 — Owner / Management Command Centre
+
+Create one practical business cockpit showing today's crews, scheduled/completed work, schedule risk, production/completion rate, revenue, job margin, labour utilization, recurring-route performance, Safety blockers, equipment downtime, training/workforce blockers, completed-not-invoiced work, receivables, cash/Finance readiness and operational needs attention. Deep-link to source workflows rather than becoming duplicate authority.
+
+### Controlled acceptance campaigns
+
+These items stay on the roadmap but are not ordinary autonomous feature releases.
+
+#### 351 — Real Staging Acceptance Campaign
+
+Run only when a dedicated non-Production Supabase project/branch exists and is explicitly authorized. Require exact environment identity, project-ref guard, exact current-schema parity immediately before mutation, approved disposable automated cases, required human Operations/Jobs/Safety/Equipment scenarios, recorded evidence and deliberate finalization/signoff. Never substitute Production business/provider data.
+
+#### 352 — Accounting Acceptance Campaign
+
+After the landscaping Finance workflow is complete and no critical Finance blockers remain, run controlled test transactions through estimates/jobs, job cost, bank import, reconciliation, payment application, account mapping, posting preview, exception handling, period close and accountant export. Verify idempotency, locked-period behavior, reopen audit, job-profitability linkage and expected outputs. Passing acceptance does not automatically enable Production posting.
+
+#### 353 — Payment & Provider Acceptance
+
+Only after internal accounting behavior is trustworthy, validate supported provider/payment paths including success, decline/failure, duplicate webhook/event, retry, idempotency, refund, partial refund and dispute/chargeback. Verify provider events link to the correct internal payment/accounting/job records and cannot double-settle, double-apply or double-post. Provider acceptance and Production provider enablement remain separate deliberate decisions.
+
+The next planned autonomous item remains **318 — Job Cost & Profitability Closeout**, implemented specifically around landscaping and yard-maintenance economics.
 
 ### Roadmap selection rules
 
@@ -240,4 +394,4 @@ When the next YW technical item is requested, prefer the earliest still-valid ro
 
 After the first four roadmap items are complete, do not default to CI-only micro-releases merely to raise the release number. Prefer Finance completion, accounting usability, profitability and operator value unless a new release-safety defect is proven. Accounting/provider/staging acceptance remains blocked until its real prerequisites and external/human evidence exist.
 
-The target is not the highest possible release number. The target is a YW application that releases with trustworthy exact-source evidence, makes Finance exceptions resolvable, produces accountant-ready close/export evidence, shows real job profitability, minimizes repetitive operator work, remains field-usable on phones and during connectivity problems, and eventually closes staging/accounting/provider acceptance with genuine evidence rather than source-only confidence.
+The target is not the highest possible release number. The target is a landscaping and yard-maintenance operating system that releases with trustworthy exact-source evidence, keeps Safety, Jobs, Equipment, Employment and Finance connected, shows real crew/job profitability, reduces repetitive office and field work, remains usable on phones and during poor connectivity, preserves audit and regulatory/accounting boundaries, and eventually closes staging/accounting/provider acceptance with genuine evidence rather than source-only confidence.
