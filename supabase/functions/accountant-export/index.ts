@@ -330,6 +330,26 @@ serve(async (req) => {
 
     const generatedAt = new Date().toISOString();
     const sourceRows = Object.fromEntries(fileRows.map((file) => [file.filename, file.rows.length]));
+    const sourceQueryCounts = {
+      journal_batches_period: journalBatches.length,
+      gl_entries_period: periodEntries.length,
+      gl_entries_through_period_end: cumulativeEntries.length,
+      chart_of_accounts: accounts.length,
+      ar_invoices_through_period_end: invoices.length,
+      ap_bills_through_period_end: bills.length,
+      ar_aging_rows: arAging.length,
+      ap_aging_rows: apAging.length,
+      payment_actions_period: paymentActions.length,
+      bank_reconciliation_sessions: reconSummary.length,
+      bank_reconciliation_items_period: reconItems.length,
+      sales_tax_schedule: salesTax.length,
+      payroll_remittance_schedule: payrollRemittance.length,
+      account_mapping_review: mappings.length,
+      finance_lifecycle_rows_loaded: financeLifecycle.length,
+    };
+    const sourceQueryTruncation = Object.fromEntries(
+      Object.entries(sourceQueryCounts).map(([key, count]) => [key, Number(count) >= ROW_LIMIT])
+    );
     const manifest:any = {
       product: 'YWI operations platform',
       build: BUILD,
@@ -353,6 +373,8 @@ serve(async (req) => {
         blocking_gate_count: closeCockpit.blocking_gate_count,
       } : null,
       source_row_counts: sourceRows,
+      source_query_counts: sourceQueryCounts,
+      source_query_truncation_possible: sourceQueryTruncation,
       files: fileRows.map((file) => ({
         filename:file.filename,
         row_count:file.rows.length,
@@ -457,6 +479,8 @@ serve(async (req) => {
           generated_at:generatedAt,
           file_count:fileRows.length + 3,
           source_row_counts:sourceRows,
+          source_query_counts:sourceQueryCounts,
+          source_query_truncation_possible:sourceQueryTruncation,
         },
         updated_at:generatedAt,
       }).eq('id', periodClose.id);
@@ -488,7 +512,7 @@ serve(async (req) => {
         source_type:'accountant-export-v2',
         source_id:periodClose?.id || null,
         item_order:99,
-        item_payload:{ sha256:hash, size_bytes:archive.byteLength, package_version:PACKAGE_VERSION, source_row_counts:sourceRows },
+        item_payload:{ sha256:hash, size_bytes:archive.byteLength, package_version:PACKAGE_VERSION, source_row_counts:sourceRows, source_query_counts:sourceQueryCounts, source_query_truncation_possible:sourceQueryTruncation },
       },
       {
         export_id:exportRow.id,
