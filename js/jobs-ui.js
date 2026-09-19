@@ -640,6 +640,7 @@
             <button id="job_review_payment_application" class="secondary" type="button">Review Payment Application</button>
             <button id="job_review_reconciliation" class="secondary" type="button">Review Bank Match</button>
             <button id="job_signoff_remittance" class="secondary" type="button">Signoff Remittance/Filing</button>
+            <button id="job_generate_accountant_package_v2" class="secondary" type="button">Generate Accountant Package v2</button>
             <button id="job_lock_period" class="secondary" type="button">Lock / Reopen Period</button>
           </div>
         </div>
@@ -923,6 +924,7 @@
         jobReviewPaymentApplication: $('#job_review_payment_application'),
         jobReviewReconciliation: $('#job_review_reconciliation'),
         jobSignoffRemittance: $('#job_signoff_remittance'),
+        jobGenerateAccountantPackageV2: $('#job_generate_accountant_package_v2'),
         jobLockPeriod: $('#job_lock_period'),
         jobQuotePackageBody: $('#job_quote_package_table tbody'),
         jobQuoteEngagementBody: $('#job_quote_engagement_table tbody'),
@@ -1932,6 +1934,42 @@
       const resp = await api.manageAdminEntity({ entity: 'remittance_filing_review', action: 'signoff', review_kind: row.review_kind, item_id: row.id, filing_status, notes });
       if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'Filing/remittance signoff failed.', true);
       setNotice(e.jobCommercialSummary, 'Filing/remittance signoff saved.');
+      await loadData();
+    }
+
+    async function generateAccountantClosePackageV2() {
+      const e = els();
+      const row = (state.monthEndCloseWorkbench || [])[0];
+      if (!row?.id) return setNotice(e.jobCommercialSummary, 'No accounting period close row is available for an accountant package.', true);
+      if (typeof api?.accountantExport !== 'function') return setNotice(e.jobCommercialSummary, 'Accountant export service is unavailable in this application build.', true);
+
+      const titleDefault = `Accountant close package ${row.period_code || `${row.period_start || ''} to ${row.period_end || ''}`}`;
+      const export_title = (window.prompt('Accountant package title:', titleDefault) || '').trim();
+      if (!export_title) return;
+
+      setNotice(e.jobCommercialSummary, 'Generating Build 317 private accountant close package…');
+      const resp = await api.accountantExport({
+        action:'prepare_v2',
+        period_close_id:row.id,
+        period_start:row.period_start,
+        period_end:row.period_end,
+        export_title,
+      });
+      if (!resp?.ok) return setNotice(e.jobCommercialSummary, resp?.error || 'Accountant package generation failed.', true);
+
+      const fileCount = Array.isArray(resp?.manifest?.files) ? resp.manifest.files.length : 0;
+      const exportId = resp?.export?.id || '';
+      let opened = false;
+      if (resp.download_url) {
+        try {
+          const win = window.open(resp.download_url, '_blank', 'noopener,noreferrer');
+          opened = Boolean(win);
+        } catch {}
+      }
+      setNotice(
+        e.jobCommercialSummary,
+        `Build 317 accountant package v2 generated${exportId ? ` · ${exportId}` : ''} with ${fileCount} data file(s). ${opened ? 'Private signed download opened.' : 'Use the generated export row to request a fresh private signed download if the browser blocked the new tab.'}`
+      );
       await loadData();
     }
 
@@ -3365,6 +3403,10 @@
       if (e.jobSignoffRemittance && e.jobSignoffRemittance.dataset.bound !== '1') {
         e.jobSignoffRemittance.dataset.bound = '1';
         e.jobSignoffRemittance.addEventListener('click', () => signoffFirstRemittanceRow());
+      }
+      if (e.jobGenerateAccountantPackageV2 && e.jobGenerateAccountantPackageV2.dataset.bound !== '1') {
+        e.jobGenerateAccountantPackageV2.dataset.bound = '1';
+        e.jobGenerateAccountantPackageV2.addEventListener('click', () => generateAccountantClosePackageV2());
       }
       if (e.jobLockPeriod && e.jobLockPeriod.dataset.bound !== '1') {
         e.jobLockPeriod.dataset.bound = '1';
