@@ -12,7 +12,8 @@ const workflow=read('.github/workflows/staging-browser-integration.yml');
 
 for(const token of [
   'const BUILD = 317',
-  'const SCHEMA = 208',
+  'const SCHEMA = 159',
+  'const SOURCE_SCHEMA = 208',
   'const PACKAGE_VERSION = 2',
   "const BUCKET = 'accountant-exports'",
   "action === 'download'",
