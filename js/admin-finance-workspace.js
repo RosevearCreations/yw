@@ -10,6 +10,7 @@
 
 (function () {
   const BUILD = 310;
+  const MONTH_END_CLOSE_BUILD = 316;
   const WORKSPACE_ID = 'adminFinanceWorkspace';
   const STYLE_ID = 'adminFinanceWorkspaceStyles';
   const LABEL = 'Finance & Accounting';
@@ -116,8 +117,8 @@
       #${WORKSPACE_ID}[hidden]{display:none!important}.admin-finance-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}.admin-finance-head h3{margin:2px 0 5px}.admin-finance-head p{margin:0;max-width:860px;color:#cbd5e1;line-height:1.45}.admin-finance-status{display:inline-flex;align-items:center;min-height:30px;padding:4px 9px;border:1px solid rgba(148,163,184,.28);border-radius:999px;font-size:.75rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase}.admin-finance-status[data-state="ready"]{border-color:rgba(52,211,153,.45);color:#d7ffe9}.admin-finance-status[data-state="action"]{border-color:rgba(251,191,36,.48);color:#fff3c4}.admin-finance-status[data-state="blocked"]{border-color:rgba(248,113,113,.5);color:#fee2e2}.admin-finance-status[data-state="open"]{color:#bfdbfe;border-color:rgba(96,165,250,.4)}
       .admin-finance-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin:14px 0}.admin-finance-metric{padding:10px 11px;border-radius:12px;background:rgba(30,41,59,.72);border:1px solid rgba(148,163,184,.16)}.admin-finance-metric span,.admin-finance-metric strong{display:block}.admin-finance-metric span{font-size:.75rem;color:#aebdd0}.admin-finance-metric strong{margin-top:4px;font-size:1.08rem}.admin-finance-context{margin:10px 0 14px;padding:11px 12px;border-radius:12px;background:rgba(148,163,184,.07);color:#cbd5e1;line-height:1.45}
       .admin-finance-blockers{margin:14px 0}.admin-finance-blockers-head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}.admin-finance-blockers-head h4{margin:0}.admin-finance-blockers-head small{color:#b9c8dc}.admin-finance-blocker-list{display:grid;gap:8px}.admin-finance-blocker{padding:11px 12px;border:1px solid rgba(148,163,184,.2);border-radius:12px;background:rgba(15,23,42,.64)}.admin-finance-blocker-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}.admin-finance-blocker h5{margin:0;font-size:.95rem}.admin-finance-blocker p{margin:6px 0 0;color:#cbd5e1;line-height:1.4}.admin-finance-blocker-meta{display:grid;grid-template-columns:minmax(120px,.7fr) minmax(220px,1.6fr) auto;gap:8px;align-items:center;margin-top:9px}.admin-finance-blocker-meta small{color:#b9c8dc}.admin-finance-blocker-evidence{margin-top:7px;color:#aebdd0;font-size:.78rem}
-      .admin-finance-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.admin-finance-card{text-align:left;min-width:0;padding:13px;border:1px solid rgba(148,163,184,.2);border-radius:13px;background:rgba(15,23,42,.72);color:inherit;cursor:pointer}.admin-finance-card:hover,.admin-finance-card:focus-visible{border-color:rgba(250,204,21,.58)}.admin-finance-card strong,.admin-finance-card small{display:block}.admin-finance-card small{margin-top:5px;color:#b9c8dc;line-height:1.4}.admin-finance-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
-      @media(max-width:760px){.admin-finance-grid{grid-template-columns:1fr}.admin-finance-actions>*{flex:1 1 150px}.admin-finance-blocker-meta{grid-template-columns:1fr}.admin-finance-blocker-meta button{width:100%}}
+      .admin-finance-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.admin-finance-card{text-align:left;min-width:0;padding:13px;border:1px solid rgba(148,163,184,.2);border-radius:13px;background:rgba(15,23,42,.72);color:inherit;cursor:pointer}.admin-finance-card:hover,.admin-finance-card:focus-visible{border-color:rgba(250,204,21,.58)}.admin-finance-card strong,.admin-finance-card small{display:block}.admin-finance-card small{margin-top:5px;color:#b9c8dc;line-height:1.4}.admin-finance-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.admin-finance-close-cockpit{margin:14px 0;padding:14px;border:1px solid rgba(96,165,250,.28);border-radius:14px;background:rgba(15,23,42,.56)}.admin-finance-close-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}.admin-finance-close-head h4{margin:0 0 4px}.admin-finance-close-head p{margin:0;color:#b9c8dc}.admin-finance-close-gates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}.admin-finance-close-gate{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:10px;border:1px solid rgba(148,163,184,.16);border-radius:11px;background:rgba(2,6,23,.36)}.admin-finance-close-gate strong,.admin-finance-close-gate small{display:block}.admin-finance-close-gate small{margin-top:4px;color:#9fb0c5;line-height:1.35}
+      @media(max-width:760px){.admin-finance-grid,.admin-finance-close-gates{grid-template-columns:1fr}.admin-finance-actions>*{flex:1 1 150px}.admin-finance-blocker-meta{grid-template-columns:1fr}.admin-finance-blocker-meta button{width:100%}}
     `;
     document.head.appendChild(style);
   }
@@ -217,6 +218,52 @@
     return String(document.getElementById('ad_close_center_summary')?.textContent || '').trim();
   }
 
+  function monthEndCloseSnapshot(acceptance) {
+    const areaMap = new Map((acceptance?.areas || []).map((area) => [area.key, area]));
+    const definitions = [
+      ['reconciliation','Bank reconciliation','reconciliation'],
+      ['payments','Payment exceptions / A/R-A/P application issues','payments'],
+      ['mapping','Account mappings','mapping'],
+      ['journal','Journal review & posting locks','control-plane'],
+      ['remittance','Tax & payroll remittances','remittance'],
+      ['period-close','Period lock / material exception state','period-close'],
+      ['accountant-export','Accountant export readiness','accountant-export'],
+    ];
+    const gates = definitions.map(([key,label,areaKey]) => {
+      const area = areaMap.get(areaKey);
+      if (!area) return { key,label,state:'open',labelState:'OPEN TO LOAD',evidence:'Evidence is not currently loaded.' };
+      return {
+        key,label,state:area.state,labelState:area.label,
+        evidence:area.evidence?.[0] || area.action || 'No blocking evidence is currently visible.'
+      };
+    });
+    const providerRows = tableRows('#oc_recon_exception_queue .oc-recon-exception-card[data-close-blocker="true"]')
+      .map((row) => shortEvidence(row.textContent || ''))
+      .filter((text) => /provider|settlement|stripe|paypal/i.test(text));
+    gates.splice(5,0,{
+      key:'provider-settlement',
+      label:'Provider settlement exceptions',
+      state:providerRows.length ? (providerRows.some(severeText) ? 'blocked' : 'action') : (acceptance?.state === 'open' ? 'open' : 'ready'),
+      labelState:providerRows.length ? 'BLOCKED' : (acceptance?.state === 'open' ? 'OPEN TO LOAD' : 'READY'),
+      evidence:providerRows[0] || 'No material provider-settlement close blocker is visible in the loaded reconciliation evidence.'
+    });
+    const blocked = gates.filter((item) => item.state !== 'ready');
+    return {
+      gates,
+      ready: acceptance?.state !== 'open' && blocked.length === 0,
+      blockerCount: blocked.length,
+      state: acceptance?.state === 'open' ? 'open' : (blocked.length ? 'blocked' : 'ready'),
+      label: acceptance?.state === 'open' ? 'OPEN TO LOAD' : (blocked.length ? 'HARD LOCK BLOCKED' : 'READY FOR SERVER PREVIEW')
+    };
+  }
+
+  function monthEndCloseGateCard(gate) {
+    return `<article class="admin-finance-close-gate" data-close-gate="${esc(gate.key)}" data-state="${esc(gate.state)}">
+      <div><strong>${esc(gate.label)}</strong><small>${esc(gate.evidence)}</small></div>
+      <span class="admin-finance-status" data-state="${esc(gate.state)}">${esc(gate.labelState)}</span>
+    </article>`;
+  }
+
   function createWorkspace() {
     let host = document.getElementById(WORKSPACE_ID);
     if (host) return host;
@@ -271,6 +318,7 @@
       if (host.hidden) return;
       const status = statusSnapshot();
       const acceptance = acceptanceSnapshot();
+      const closeCockpit = monthEndCloseSnapshot(acceptance);
       const metricRows = metrics();
       const summary = summaryText();
       const blockerCount = acceptance.areas.reduce((count, area) => count + (area.state === 'ready' ? 0 : 1), 0);
@@ -281,6 +329,14 @@
         </div>
         <div class="admin-finance-metrics" aria-label="Currently loaded finance and accounting counts">${metricRows.map(([label,value]) => `<div class="admin-finance-metric"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('')}</div>
         <div class="admin-finance-context"><strong>Close review context:</strong> ${esc(summary || 'No bounded close-center summary is currently loaded.')}<br><small>${blockerCount} acceptance area${blockerCount === 1 ? '' : 's'} currently require loading, review, or correction. Unknown evidence never produces GREEN.</small></div>
+        <section id="adminMonthEndCloseCockpit" class="admin-finance-close-cockpit" data-build="${MONTH_END_CLOSE_BUILD}" aria-labelledby="adminMonthEndCloseTitle">
+          <div class="admin-finance-close-head">
+            <div><span class="module-kicker">Build ${MONTH_END_CLOSE_BUILD} · guided close</span><h4 id="adminMonthEndCloseTitle">Month-End Close Cockpit</h4><p>Review required close gates in one place. This presentation never performs the lock itself; the server independently rechecks every required gate before hard lock.</p></div>
+            <span class="admin-finance-status" data-state="${esc(closeCockpit.state)}">${esc(closeCockpit.label)}</span>
+          </div>
+          <div class="admin-finance-close-gates">${closeCockpit.gates.map(monthEndCloseGateCard).join('')}</div>
+          <div class="admin-finance-context"><strong>Lock / reopen authority:</strong> hard lock remains blocked until server gate preview passes. Posting into locked periods remains rejected. Reopening requires Finance approval plus a recorded reason.</div>
+        </section>
         <section class="admin-finance-blockers" aria-labelledby="adminFinanceBlockersTitle">
           <div class="admin-finance-blockers-head"><div><h4 id="adminFinanceBlockersTitle">Accounting GREEN blockers</h4><small>Severity · owner · corrective action · existing review destination</small></div><span class="admin-finance-status" data-state="${esc(status.state)}">Accounting evidence: ${esc(status.label)}</span></div>
           <div class="admin-finance-blocker-list">${acceptance.areas.map(blockerCard).join('')}</div>
