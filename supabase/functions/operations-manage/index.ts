@@ -5,6 +5,7 @@ import { boundaryAuditFields, resolveModuleWriteBoundary } from "../_shared/modu
 
 const BUILD = '2026-09-01a';
 const PAYMENT_APPLICATION_BUILD = 313;
+const RECONCILIATION_EXCEPTION_BUILD = 315;
 const PAYMENT_POSTING_RPC = 'ywi_rpc_post_payment_action'; // Preserved authority contract; Build 313 does not invoke it.
 const SCHEMA = 159;
 const WRITE_BOUNDARY_BUILD = '2026-09-01f';
@@ -1038,6 +1039,71 @@ async function resolveBuild313ArApplication(supabase: any, body: Record<string, 
   };
 }
 
+
+const RECON_EXCEPTION_CATEGORIES = new Set([
+  'timing_difference','duplicate','missing_document','wrong_account','amount_mismatch',
+  'transfer_pair','provider_settlement','manual_accounting_review'
+]);
+const RECON_EXCEPTION_SEVERITIES = new Set(['low','medium','high','critical']);
+
+function parseReconReviewNotes(value: unknown) {
+  const raw = clean(value, 6000);
+  if (!raw) return {} as Record<string, unknown>;
+  try {
+    const parsed = JSON.parse(raw);
+    return objectValue(parsed);
+  } catch {
+    return { legacy_note: raw };
+  }
+}
+function inferReconExceptionCategory(row: any) {
+  const text = normalize(`${row?.difference_reason || ''} ${row?.item_description || ''} ${row?.notes || ''}`);
+  if (text.includes('duplicate')) return 'duplicate';
+  if (text.includes('transfer')) return 'transfer_pair';
+  if (text.includes('stripe') || text.includes('paypal') || text.includes('provider') || text.includes('settlement')) return 'provider_settlement';
+  if (text.includes('wrong account') || text.includes('account mismatch')) return 'wrong_account';
+  if (text.includes('document') || text.includes('receipt') || text.includes('invoice missing')) return 'missing_document';
+  if (text.includes('amount') || text.includes('difference')) return 'amount_mismatch';
+  if (text.includes('timing') || text.includes('date')) return 'timing_difference';
+  return 'manual_accounting_review';
+}
+function defaultReconExceptionSeverity(row: any, ageDays: number) {
+  const amount = Math.abs(money(row?.amount));
+  if (amount >= 5000 || ageDays >= 60) return 'critical';
+  if (amount >= 1000 || ageDays >= 30) return 'high';
+  if (amount >= 250 || ageDays >= 14) return 'medium';
+  return 'low';
+}
+function reconciliationExceptionView(row: any, profileMap: Map<string, any>) {
+  const note = parseReconReviewNotes(row?.review_notes);
+  const created = new Date(row?.created_at || row?.item_date || nowIso());
+  const ageDays = Number.isNaN(created.valueOf()) ? 0 : Math.max(0, Math.floor((Date.now() - created.valueOf()) / 86400000));
+  const severityCandidate = clean(note.severity, 30).toLowerCase();
+  const categoryCandidate = clean(note.category, 80).toLowerCase();
+  const severity = RECON_EXCEPTION_SEVERITIES.has(severityCandidate) ? severityCandidate : defaultReconExceptionSeverity(row, ageDays);
+  const category = RECON_EXCEPTION_CATEGORIES.has(categoryCandidate) ? categoryCandidate : inferReconExceptionCategory(row);
+  const ownerProfileId = isUuid(note.owner_profile_id) ? clean(note.owner_profile_id,80) : (isUuid(row?.reviewed_by_profile_id) ? row.reviewed_by_profile_id : null);
+  const owner = ownerProfileId ? profileMap.get(String(ownerProfileId)) : null;
+  const resolutionStatus = clean(note.resolution_status, 30).toLowerCase() === 'resolved' || row?.manual_review_status === 'approved' ? 'resolved' : 'open';
+  const material = ['high','critical'].includes(severity) || Math.abs(money(row?.amount)) >= 1000;
+  const blocker = resolutionStatus !== 'resolved' && material;
+  return {
+    ...row,
+    exception_severity: severity,
+    exception_category: category,
+    owner_profile_id: ownerProfileId,
+    owner_name: owner?.full_name || owner?.email || null,
+    age_days: ageDays,
+    evidence_reference: clean(note.evidence_reference || row?.notes || row?.difference_reason, 1000) || null,
+    resolution_reason: clean(note.resolution_reason, 1000) || null,
+    resolution_status: resolutionStatus,
+    material,
+    finance_readiness_blocker: blocker,
+    month_end_close_blocker: blocker,
+    review_metadata: note
+  };
+}
+
 async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false, bankReviewImportId = '') {
   const queueNames: Record<string, string> = {
     quotes: 'v_quote_contact_followup_queue', payments: 'v_payment_action_workbench', bank_imports: 'v_bank_csv_import_workbench',
@@ -1056,7 +1122,7 @@ async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false
   const requestedReviewId = bankWorkbenchV2 && isUuid(bankReviewImportId) ? clean(bankReviewImportId, 80) : '';
   const bankReviewIds = requestedReviewId ? [requestedReviewId] : [];
   const [bankItems, profiles, banks, rails, stripeRows, exportRows, testRows, policyRows, signalRows, alertRows, releaseRows, capabilitySnapshot, arInvoices, arPayments, customerDeposits, arApplications] = await Promise.all([
-    safeSelect(supabase.from('bank_reconciliation_items').select('id, reconciliation_session_id, item_date, item_description, amount, match_status, clearing_status, difference_reason, notes, created_at').eq('clearing_status', 'open').order('item_date', { ascending: false }).limit(100)),
+    safeSelect(supabase.from('bank_reconciliation_items').select('id, reconciliation_session_id, item_date, item_description, amount, match_status, clearing_status, difference_reason, notes, manual_review_status, reviewed_by_profile_id, reviewed_at, review_notes, created_at, updated_at').eq('clearing_status', 'open').order('item_date', { ascending: false }).limit(100)),
     safeSelect(supabase.from('profiles').select('id, full_name, email, role').order('full_name').limit(200)),
     safeSelect(supabase.from('bank_accounts').select('id, account_name, currency_code, account_mask, is_default, gl_account_id').eq('account_status', 'open').order('is_default', { ascending: false }).order('account_name')),
     safeSelect(supabase.from('admin_scorecard_progress_rails').select('*').eq('rail_status', 'active').order('sort_order')),
@@ -1086,6 +1152,8 @@ async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false
       .limit(20)) : Promise.resolve([])
   ]);
   const bankDetailMap = new Map((bankDetails || []).map((row: any) => [String(row.id), row]));
+  const profileMap = new Map((profiles || []).map((row: any) => [String(row.id), row]));
+  const reconciliationExceptions = (bankItems || []).filter((row: any) => ['unmatched','partial','exception'].includes(clean(row?.match_status,40).toLowerCase()) || clean(row?.manual_review_status,40).toLowerCase() === 'exception').map((row: any) => reconciliationExceptionView(row, profileMap));
   queueMap.bank_imports = (queueMap.bank_imports || []).map((row: any) => ({
     ...row,
     validation_summary: bankDetailMap.get(String(row.id))?.validation_summary || {},
@@ -1094,7 +1162,7 @@ async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false
   }));
 
   return {
-    ...queueMap, bank_preview_rows: bankReviewRows, bank_items: bankItems, profiles, banks, rails, ar_invoices: arInvoices, ar_payments: arPayments, customer_deposits: customerDeposits, ar_applications: arApplications,
+    ...queueMap, bank_preview_rows: bankReviewRows, bank_items: bankItems, reconciliation_exceptions: reconciliationExceptions, profiles, banks, rails, ar_invoices: arInvoices, ar_payments: arPayments, customer_deposits: customerDeposits, ar_applications: arApplications,
     capabilities: capabilitySnapshot,
     stripe_health: {
       ...(stripeRows?.[0] || {}),
@@ -1463,11 +1531,68 @@ serve(async (req) => {
     if (action === 'reconciliation_action') {
       requireRank(profile, 45, action);
       const actionType = clean(body.action_type || 'match', 50);
-      if (!['match','split','undo','signoff','reject'].includes(actionType)) throw new HttpError(400, 'Unsupported reconciliation action.');
+      if (!['match','split','undo','signoff','reject','exception_update','exception_resolve'].includes(actionType)) throw new HttpError(400, 'Unsupported reconciliation action.');
       const bankRowId = clean(body.reconciliation_item_id || body.bank_row_id, 80);
       const splitRows = arrayValue(body.split_rows || body.split_json).map((row) => objectValue(row));
       if (actionType !== 'undo' && !isUuid(bankRowId)) throw new HttpError(400, 'A promoted reconciliation item ID is required.');
       if (actionType === 'split' && splitRows.length < 2) throw new HttpError(400, 'Split actions require at least two allocations.');
+      if (['exception_update','exception_resolve'].includes(actionType)) {
+        const item = await resolveReconItem(supabase, bankRowId);
+        if (!item) throw new HttpError(404, 'Promoted reconciliation row was not found.');
+        const severity = clean(body.exception_severity || 'medium', 30).toLowerCase();
+        const category = clean(body.exception_category || 'manual_accounting_review', 80).toLowerCase();
+        if (!RECON_EXCEPTION_SEVERITIES.has(severity)) throw new HttpError(400, 'Exception severity must be low, medium, high, or critical.');
+        if (!RECON_EXCEPTION_CATEGORIES.has(category)) throw new HttpError(400, 'Unsupported reconciliation exception category.');
+        const ownerProfileId = isUuid(body.owner_profile_id) ? clean(body.owner_profile_id,80) : profile.id;
+        const evidenceReference = clean(body.evidence_reference, 1000);
+        if (evidenceReference.length < 3) throw new HttpError(400, 'Evidence reference is required for reconciliation exception work.');
+        const resolutionReason = clean(body.resolution_reason || body.signoff_note, 1000);
+        const resolved = actionType === 'exception_resolve';
+        if (resolved && resolutionReason.length < 8) throw new HttpError(400, 'Resolved reconciliation exceptions require a clear resolution reason of at least 8 characters.');
+        const material = ['high','critical'].includes(severity) || Math.abs(money(item.amount)) >= 1000;
+        const reviewMetadata = {
+          build: RECONCILIATION_EXCEPTION_BUILD,
+          severity,
+          category,
+          owner_profile_id: ownerProfileId,
+          evidence_reference: evidenceReference,
+          resolution_reason: resolutionReason || null,
+          resolution_status: resolved ? 'resolved' : 'open',
+          material,
+          finance_readiness_blocker: !resolved && material,
+          month_end_close_blocker: !resolved && material,
+          updated_by_profile_id: profile.id,
+          updated_at: nowIso(),
+          posting_execution_authorized: false,
+          provider_mutation: false
+        };
+        const { data, error } = await supabase.from('bank_reconciliation_items').update({
+          manual_review_status: resolved ? 'approved' : 'exception',
+          reviewed_by_profile_id: ownerProfileId,
+          reviewed_at: nowIso(),
+          review_notes: JSON.stringify(reviewMetadata),
+          difference_reason: resolved ? (resolutionReason || item.difference_reason) : (clean(body.exception_summary,1000) || item.difference_reason || `Open ${category.replaceAll('_',' ')} exception.`),
+          updated_at: nowIso()
+        }).eq('id', item.id).select('*').single();
+        if (error) throw error;
+        await audit(supabase, {
+          operation_action: action,
+          operation_status: resolved ? 'exception_resolved' : 'exception_updated',
+          entity_type: 'bank_reconciliation_item',
+          entity_id: item.id,
+          actor_profile_id: profile.id,
+          request_payload: safeRequest(body),
+          response_payload: { build:RECONCILIATION_EXCEPTION_BUILD, severity, category, owner_profile_id:ownerProfileId, material, resolved, posting_execution_authorized:false, provider_mutation:false }
+        });
+        return Response.json({
+          ok:true,
+          record:data,
+          exception:reconciliationExceptionView(data, new Map([[String(profile.id), profile]])),
+          posting_execution_authorized:false,
+          provider_mutation:false,
+          build:RECONCILIATION_EXCEPTION_BUILD
+        }, { headers:corsHeaders });
+      }
       const reconResult = await callRpc(supabase, 'ywi_rpc_apply_reconciliation_action', {
         p_payload: { ...safeRequest(body), action_type: actionType, bank_row_id: bankRowId, reconciliation_item_id: bankRowId, split_rows: splitRows },
         p_actor_profile_id: profile.id

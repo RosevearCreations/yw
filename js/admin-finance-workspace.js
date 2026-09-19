@@ -36,7 +36,7 @@
       owner:'Bookkeeper / accountant',
       action:'Resolve unmatched, exception, split, or recovery items and complete human reconciliation signoff.',
       panel:'Operations and Accounting Backbone Manager',
-      selectors:['#ad_reconciliation_exception_resolution_table tbody tr','#ad_reconciliation_match_workbench_table tbody tr','#ad_accounting_exception_closure_table tbody tr'],
+      selectors:['#oc_recon_exception_queue .oc-recon-exception-card[data-finance-blocker="true"]','#ad_reconciliation_exception_resolution_table tbody tr','#ad_reconciliation_match_workbench_table tbody tr','#ad_accounting_exception_closure_table tbody tr'],
       taskPattern:/reconcil|unmatched|bank match|split match/i,
     },
     {
@@ -72,7 +72,7 @@
       owner:'Finance administrator',
       action:'Complete the Guided Close Center blockers in order; do not bypass period locks or unresolved reconciliation.',
       panel:'Guided Close Center',
-      selectors:['#ad_close_wizard_detail_table tbody tr','#ad_accounting_close_control_table tbody tr'],
+      selectors:['#oc_recon_exception_queue .oc-recon-exception-card[data-close-blocker="true"]','#ad_close_wizard_detail_table tbody tr','#ad_accounting_close_control_table tbody tr'],
       taskPattern:/period close|close step|month[- ]end|year[- ]end/i,
     },
     {
@@ -134,7 +134,7 @@
 
   function tableRows(selector, emptyPattern = /no .*loaded|no .*items|nothing .*waiting|no .*review/i) {
     return [...document.querySelectorAll(selector)]
-      .filter((row) => row.cells?.length && !emptyPattern.test(row.textContent || ''));
+      .filter((row) => (row.cells?.length || row.matches?.('.oc-recon-exception-card')) && !emptyPattern.test(row.textContent || ''));
   }
 
   function countRows(selector, emptyPattern) {
@@ -305,7 +305,7 @@
       'ad_orders_table','ad_accounting_table','ad_task_table','ad_accounting_close_control_table',
       'ad_reconciliation_exception_resolution_table','ad_reconciliation_match_workbench_table','ad_accounting_exception_closure_table',
       'ad_payment_exception_decision_table','ad_payment_adjustment_workflow_table','ad_payment_application_ui_queue_table',
-      'ad_payment_write_path_table','ad_payment_posting_proof_table','ad_bank_csv_import_table','ad_reconciliation_import_validation_table'
+      'ad_payment_write_path_table','ad_payment_posting_proof_table','ad_bank_csv_import_table','ad_reconciliation_import_validation_table','oc_recon_exception_queue'
     ].map((id) => document.getElementById(id)).filter(Boolean).forEach((node) => observer.observe(node, {
       subtree:true,
       childList:true,

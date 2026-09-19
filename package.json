@@ -107,7 +107,9 @@
     "test:payment-application-ar-completion": "node scripts/payment-application-ar-completion-check.mjs",
     "test:browser:payment-application-ar-completion": "playwright test --config=playwright.config.mjs tests/browser/payment-application-ar-completion.spec.mjs",
     "test:account-mapping-posting-preview": "node scripts/account-mapping-posting-preview-check.mjs",
-    "test:browser:account-mapping-posting-preview": "playwright test --config=playwright.config.mjs tests/browser/account-mapping-posting-preview.spec.mjs"
+    "test:browser:account-mapping-posting-preview": "playwright test --config=playwright.config.mjs tests/browser/account-mapping-posting-preview.spec.mjs",
+    "test:reconciliation-exception-resolution": "node scripts/reconciliation-exception-resolution-check.mjs",
+    "test:browser:reconciliation-exception-resolution": "playwright test --config=playwright.config.mjs tests/browser/reconciliation-exception-resolution.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
