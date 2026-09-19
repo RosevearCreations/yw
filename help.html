@@ -79,3 +79,10 @@
           <p>Supported categories include timing difference, duplicate, missing document, wrong account, amount mismatch, transfer pair, provider settlement, and manual accounting review. Material unresolved exceptions remain visible as blockers to Finance readiness and month-end close until a reviewer records evidence and a resolution reason.</p>
           <p>Resolving an exception does not post a journal, clear a payment provider, or enable Finance execution. Posting execution and provider mutation remain OFF and require separate authorization.</p>
         </section>
+        <section class="help-section" id="month-end-close-cockpit">
+          <h2>Month-End Close Cockpit</h2>
+          <p>Build 316 turns period close into a guided Finance decision. The cockpit brings bank reconciliation, payment application exceptions, account mappings, journal review, tax/payroll remittances, material and provider-settlement exceptions, open A/R/A/P context, and accountant-export readiness into one fail-closed review.</p>
+          <p>A hard lock is rejected server-side until every required close gate passes. Soft lock remains a review state. Existing period guards continue to reject posting into locked A/R, A/P, or GL periods even if a browser is stale or bypassed.</p>
+          <p>Reopening a period requires Finance decision authority and an explicit recorded reason of at least eight characters. Reopen/lock activity remains auditable. Finance posting execution and provider/payment mutation remain OFF unless separately authorized.</p>
+        </section>
+
