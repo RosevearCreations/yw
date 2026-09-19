@@ -1587,7 +1587,7 @@ serve(async (req) => {
         return Response.json({
           ok:true,
           record:data,
-          exception:reconciliationExceptionView(data, new Map([[String(ownerProfileId), (profiles => profiles)(profile)]])),
+          exception:reconciliationExceptionView(data, new Map([[String(profile.id), profile]])),
           posting_execution_authorized:false,
           provider_mutation:false,
           build:RECONCILIATION_EXCEPTION_BUILD
