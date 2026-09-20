@@ -14,6 +14,8 @@
     payload: null,
     reviewPayload: null,
     postingPayload: null,
+    jobsPayload: null,
+    jobsError: '',
     error: '',
     reviewError: '',
     postingError: '',
@@ -30,6 +32,7 @@
 
   function rows(name) { return Array.isArray(state.payload?.[name]) ? state.payload[name] : []; }
   function reviewRows() { return Array.isArray(state.reviewPayload?.queue) ? state.reviewPayload.queue : []; }
+  function jobProfitabilityRows() { return Array.isArray(state.jobsPayload?.job_profitability_closeout) ? state.jobsPayload.job_profitability_closeout : []; }
   function postingRows() {
     const lifecycle = Array.isArray(state.postingPayload?.operational_lifecycle) ? state.postingPayload.operational_lifecycle : [];
     const executionQueue = Array.isArray(state.postingPayload?.queue) ? state.postingPayload.queue : [];
@@ -159,6 +162,71 @@
     </section>`;
   }
 
+  function financeDashboardPanel() {
+    const banks = rows('bank_reconciliation_sessions');
+    const ar = rows('ar_invoice_aging_detail');
+    const ap = rows('ap_bill_aging_detail');
+    const tax = rows('sales_tax_filing_review');
+    const payroll = rows('payroll_remittance_review');
+    const recon = rows('accounting_reconciliation_manual_review_queue');
+    const close = rows('accounting_close_admin_control_dashboard');
+    const profit = jobProfitabilityRows();
+
+    const latestBank = [...banks].sort((a,b)=>new Date(b?.period_end||0)-new Date(a?.period_end||0))[0] || {};
+    const cash = Number(latestBank.bank_balance ?? latestBank.book_balance ?? 0);
+    const arOpen = ar.reduce((sum,r)=>sum + Number(r?.balance_due ?? r?.outstanding_balance ?? 0),0);
+    const arOverdue = ar.filter((r)=>Number(r?.days_past_due ?? r?.aging_days ?? 0)>0 || ['overdue','past_due'].includes(String(r?.aging_bucket||r?.status||'').toLowerCase()))
+      .reduce((sum,r)=>sum + Number(r?.balance_due ?? r?.outstanding_balance ?? 0),0);
+    const apOpen = ap.reduce((sum,r)=>sum + Number(r?.balance_due ?? r?.outstanding_balance ?? 0),0);
+    const taxDue = tax.filter((r)=>!['filed','paid','complete','completed'].includes(String(r?.filing_status||r?.review_status||'').toLowerCase()))
+      .reduce((sum,r)=>sum + Number(r?.amount_due ?? r?.net_remittance_total ?? r?.net_tax ?? 0),0);
+    const payrollDue = payroll.filter((r)=>!['remitted','paid','complete','completed'].includes(String(r?.remittance_status||r?.review_status||'').toLowerCase()))
+      .reduce((sum,r)=>sum + Number(r?.total_remittance ?? r?.net_remittance_total ?? r?.amount_due ?? 0),0);
+    const revenue = profit.reduce((sum,r)=>sum + Number(r?.actual_revenue_total||0),0);
+    const cost = profit.reduce((sum,r)=>sum + Number(r?.actual_cost_total||0),0);
+    const gross = revenue - cost;
+    const margin = revenue > 0 ? (gross / revenue) * 100 : 0;
+    const exceptions = profit.filter((r)=>String(r?.closeout_status||'') !== 'profitability_closed');
+    const closeRow = close[0] || {};
+    const closeReady = recon.length===0 && taxDue<=0 && payrollDue<=0 && !['blocked','failed'].includes(String(closeRow?.close_status||'').toLowerCase());
+
+    return `<section class="finance-list-card" id="landscapingFinanceDashboard">
+      <div class="finance-list-heading"><div><h3>Landscaping Finance Dashboard &amp; Cash Position</h3><small>Build 319 · ownership/management decision support from existing Finance and job-cost evidence.</small></div><span>${closeReady?'CLOSE READY':'ATTENTION'}</span></div>
+      <div class="finance-stat-grid">
+        ${statCard('Cash / bank position', money(cash), latestBank?.period_end ? `Latest reconciliation ${dateText(latestBank.period_end)}` : 'No reconciled bank period')}
+        ${statCard('Receivables', money(arOpen), `${money(arOverdue)} overdue`)}
+        ${statCard('Vendor / A/P commitments', money(apOpen), 'Open bill balance')}
+        ${statCard('Tax / payroll readiness', money(taxDue+payrollDue), `${money(taxDue)} tax · ${money(payrollDue)} payroll`)}
+        ${statCard('Revenue', money(revenue), 'Loaded landscaping profitability evidence')}
+        ${statCard('Cost', money(cost), 'Labour + materials + equipment + field costs')}
+        ${statCard('Gross margin', `${margin.toFixed(1)}%`, money(gross))}
+        ${statCard('Profitability exceptions', String(exceptions.length), 'Jobs not yet profitability-closed')}
+      </div>
+      <div class="finance-module-note"><strong>Cash-position boundary:</strong> this dashboard is read-only. Bank/reconciliation, A/R, A/P, tax/payroll, close and Build 318 job-profitability authorities remain the source of truth. It does not post, pay, collect, file, enable providers, or close a period.</div>
+      ${state.jobsError ? `<div class="notice warning"><strong>Job profitability detail unavailable.</strong> ${esc(state.jobsError)} Cash, A/R, A/P, remittance and reconciliation evidence remain available.</div>` : ''}
+      ${compactTable('Overdue / open receivables', ar.filter((r)=>Number(r?.balance_due ?? r?.outstanding_balance ?? 0)>0), [
+        {label:'Invoice', render:(r)=>esc(r.invoice_number || r.invoice_code || r.id || '—')},
+        {label:'Due', render:(r)=>dateText(r.due_date)},
+        {label:'Open', render:(r)=>money(r.balance_due ?? r.outstanding_balance ?? 0)},
+        {label:'Aging', render:(r)=>esc(r.aging_bucket || r.days_past_due || 'current')}
+      ], 'No open receivables are reported.')}
+      ${compactTable('Vendor / material commitments', ap.filter((r)=>Number(r?.balance_due ?? r?.outstanding_balance ?? 0)>0), [
+        {label:'Bill', render:(r)=>esc(r.bill_number || r.bill_code || r.id || '—')},
+        {label:'Due', render:(r)=>dateText(r.due_date)},
+        {label:'Open', render:(r)=>money(r.balance_due ?? r.outstanding_balance ?? 0)},
+        {label:'Aging', render:(r)=>esc(r.aging_bucket || r.days_past_due || 'current')}
+      ], 'No open vendor commitments are reported.')}
+      ${compactTable('Job profitability exceptions', exceptions, [
+        {label:'Job', render:(r)=>`<strong>${esc(r.job_code || r.job_id)}</strong><br><small>${esc(r.job_name || r.client_name || '')}</small>`},
+        {label:'Status', render:(r)=>esc(r.closeout_status || 'review_required')},
+        {label:'Revenue', render:(r)=>money(r.actual_revenue_total)},
+        {label:'Cost', render:(r)=>money(r.actual_cost_total)},
+        {label:'Margin', render:(r)=>`${Number(r.actual_margin_percent||0).toFixed(1)}%`}
+      ], 'No job-profitability exceptions are reported.')}
+      <div class="finance-module-note"><strong>Seasonal comparison:</strong> retained job profitability and accounting-period evidence remain available for period/season comparison; Build 319 does not invent historical values where source dates or closed-period evidence are absent.</div>
+    </section>`;
+  }
+
   function bindReviewActions() {
     document.querySelectorAll('[data-finance-review]').forEach((button) => {
       button.addEventListener('click', async () => {
@@ -254,6 +322,7 @@
       </div>
       <div class="finance-module-note"><strong>Module boundary:</strong> Finance data is not loaded for Safety-only or Jobs-only profiles. All completion-to-accounting actions use protected server-owned authorities and preserve manual Production promotion.</div>
       <div class="finance-lists">
+        ${financeDashboardPanel()}
         ${operationalLifecyclePanel()}
         ${completionReviewPanel()}
         ${compactTable('Accounting close', closeRows, [
@@ -318,6 +387,20 @@
     }
   }
 
+  async function loadJobsProfitability() {
+    state.jobsError = '';
+    try {
+      const response = await window.YWIAPI?.jsonFetch?.('jobs-directory', {
+        method:'POST', body:{}, requireAuth:true, timeoutMs:30000
+      });
+      if (!response?.ok) throw new Error(response?.error || 'Jobs profitability authority returned no data.');
+      state.jobsPayload = response;
+    } catch (err) {
+      state.jobsPayload = null;
+      state.jobsError = err?.message || 'Jobs profitability authority is unavailable.';
+    }
+  }
+
   async function mutateReview(payload) {
     if (!canApprove() || state.mutating) return;
     state.mutating = true;
@@ -363,7 +446,8 @@
       const [accounting] = await Promise.all([
         window.YWIAPI?.loadAdminDirectory?.({ scope:'accounting', limit:40, timeoutMs:30000 }),
         loadReview(),
-        loadPosting()
+        loadPosting(),
+        loadJobsProfitability()
       ]);
       state.payload = accounting;
       if (!state.payload?.ok) throw new Error(state.payload?.error || 'Finance accounting scope returned no data.');
@@ -383,8 +467,8 @@
   document.addEventListener('DOMContentLoaded', () => { render(); if (active()) load(false); });
   document.addEventListener('ywi:route-shown', onRoute);
   document.addEventListener('ywi:auth-changed', () => {
-    state.payload = null; state.reviewPayload = null; state.postingPayload = null;
-    state.loadedAt = 0; state.error = ''; state.reviewError = ''; state.postingError = '';
+    state.payload = null; state.reviewPayload = null; state.postingPayload = null; state.jobsPayload = null;
+    state.loadedAt = 0; state.error = ''; state.reviewError = ''; state.postingError = ''; state.jobsError = '';
     render(); if (active()) load(true);
   });
   document.addEventListener('ywi:module-permissions-changed', () => { render(); if (active()) load(true); });
