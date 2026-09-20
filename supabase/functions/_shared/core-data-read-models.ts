@@ -32,7 +32,7 @@ export const CORE_READ_MODELS: Record<CoreEntityKey, {
   },
   customer_site: {
     relation: 'client_sites',
-    columns: 'id,client_id,site_code,site_name,is_active',
+    columns: 'id,client_id,site_code,site_name,service_address,city,province,postal_code,approximate_serviceable_area,area_unit,is_active',
     orderColumn: 'site_name',
     ascending: true,
   },
