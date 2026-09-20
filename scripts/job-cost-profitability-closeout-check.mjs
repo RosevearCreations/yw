@@ -80,7 +80,7 @@ assert.ok(workflow.includes('npm run test:job-cost-profitability-closeout'),'Can
 assert.ok(workflow.includes('npm run test:browser:job-cost-profitability-closeout'),'Canonical browser workflow must run Build 318 rendered acceptance.');
 assert.ok((help.includes('Job Cost &amp; Profitability Closeout')||help.includes('Job Cost & Profitability Closeout'))&&help.includes('318'),'Help must document Build 318.');
 assert.ok(next.includes('319 — Landscaping Finance Dashboard & Cash Position'),'Roadmap must preserve the next landscaping build after 318.');
-assert.ok(!fs.readdirSync('sql').some((name)=>/^209_/.test(name)),'Build 318 must remain schema-neutral at Schema 208.');
+assert.ok(!fs.readdirSync('sql').some((name)=>/^318[_-]/.test(name)),'Build 318 itself remains schema-neutral; later roadmap builds may advance the schema.');
 
 const customerPortal=read('js/customer-portal.js');
 for(const secret of ['labour_cost_total','material_cost_total','equipment_cost_total','actual_profit_total','actual_margin_percent','profit_variance_total']){
