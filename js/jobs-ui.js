@@ -1837,14 +1837,14 @@
           <tr data-build318-job="${escHtml(row.job_id || '')}">
             <td>${escHtml(row.job_code || row.job_name || row.job_id || '')}<br><span class="muted">${escHtml(row.service_pattern || row.client_name || '')}</span></td>
             <td><strong>${escHtml(row.closeout_status || 'review_required')}</strong><br><span class="muted">Internal only</span></td>
-            <td>Quote ${Number(row.estimated_revenue_total || 0).toFixed(2)}<br>Actual ${Number(row.actual_revenue_total || 0).toFixed(2)}<br>Invoiced ${Number(row.invoiced_total || 0).toFixed(2)}<br>Collected ${Number(row.collected_total || 0).toFixed(2)}</td>
-            <td>${Number(row.labour_cost_total || 0).toFixed(2)}</td>
-            <td>${Number(row.material_cost_total || 0).toFixed(2)}</td>
-            <td>Equipment ${Number(row.equipment_cost_total || 0).toFixed(2)}<br>Fuel ${Number(row.fuel_cost_total || 0).toFixed(2)}</td>
-            <td>Travel ${Number(row.travel_cost_total || 0).toFixed(2)}<br>Disposal ${Number(row.disposal_cost_total || 0).toFixed(2)}</td>
-            <td>Subcontract ${Number(row.subcontract_cost_total || 0).toFixed(2)}<br>Rework ${Number(row.rework_cost_total || 0).toFixed(2)}<br>Other ${Number(row.other_cost_total || 0).toFixed(2)}</td>
-            <td>Cost ${Number(row.actual_cost_total || 0).toFixed(2)}<br><strong>Profit ${Number(row.actual_profit_total || 0).toFixed(2)}</strong><br>Margin ${Number(row.actual_margin_percent || 0).toFixed(2)}%</td>
-            <td>Revenue Δ ${Number(row.revenue_variance_total || 0).toFixed(2)}<br>Cost Δ ${Number(row.cost_variance_total || 0).toFixed(2)}<br>Profit Δ ${Number(row.profit_variance_total || 0).toFixed(2)}<br><span class="muted">${escHtml(evidence)}</span></td>
+            <td>Quote &#36;${Number(row.estimated_revenue_total || 0).toFixed(2)}<br>Actual &#36;${Number(row.actual_revenue_total || 0).toFixed(2)}<br>Invoiced &#36;${Number(row.invoiced_total || 0).toFixed(2)}<br>Collected &#36;${Number(row.collected_total || 0).toFixed(2)}</td>
+            <td>&#36;${Number(row.labour_cost_total || 0).toFixed(2)}</td>
+            <td>&#36;${Number(row.material_cost_total || 0).toFixed(2)}</td>
+            <td>Equipment &#36;${Number(row.equipment_cost_total || 0).toFixed(2)}<br>Fuel &#36;${Number(row.fuel_cost_total || 0).toFixed(2)}</td>
+            <td>Travel &#36;${Number(row.travel_cost_total || 0).toFixed(2)}<br>Disposal &#36;${Number(row.disposal_cost_total || 0).toFixed(2)}</td>
+            <td>Subcontract &#36;${Number(row.subcontract_cost_total || 0).toFixed(2)}<br>Rework &#36;${Number(row.rework_cost_total || 0).toFixed(2)}<br>Other &#36;${Number(row.other_cost_total || 0).toFixed(2)}</td>
+            <td>Cost &#36;${Number(row.actual_cost_total || 0).toFixed(2)}<br><strong>Profit &#36;${Number(row.actual_profit_total || 0).toFixed(2)}</strong><br>Margin ${Number(row.actual_margin_percent || 0).toFixed(2)}%</td>
+            <td>Revenue Δ &#36;${Number(row.revenue_variance_total || 0).toFixed(2)}<br>Cost Δ &#36;${Number(row.cost_variance_total || 0).toFixed(2)}<br>Profit Δ &#36;${Number(row.profit_variance_total || 0).toFixed(2)}<br><span class="muted">${escHtml(evidence)}</span></td>
           </tr>`;
         }).join('') : '<tr><td colspan="10" class="muted">No Finance-authorized Build 318 profitability closeout rows are loaded for this job.</td></tr>';
       }
