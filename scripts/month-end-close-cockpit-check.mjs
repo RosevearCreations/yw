@@ -76,6 +76,6 @@ assert.equal(pkg.scripts['test:browser:month-end-close-cockpit'],'playwright tes
 assert.ok(workflow.includes('npm run test:month-end-close-cockpit'),'Canonical source workflow must run Build 316 source acceptance.');
 assert.ok(workflow.includes('npm run test:browser:month-end-close-cockpit'),'Canonical rendered workflow must run Build 316 browser acceptance.');
 assert.ok(help.includes('Month-End Close Cockpit')&&help.includes('Build 316'),'Help must document Build 316.');
-assert.ok(!fs.readdirSync('sql').some((name)=>/^209_/.test(name)),'Build 316 must remain schema-neutral at Schema 208.');
+assert.ok(!fs.readdirSync('sql').some((name)=>/^316[_-]/.test(name)),'Build 316 itself remains schema-neutral; later roadmap builds may advance the schema.');
 
 console.log('Build 316 Month-End Close Cockpit source acceptance: PASS');
