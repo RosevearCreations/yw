@@ -5,7 +5,7 @@
 'use strict';
 
 (function () {
-  const BUILD = '323-property-site-intelligence';
+  const BUILD = '324-estimate-job-invoice-workflow';
   const RETRY_KEY = 'ywi_operations_cockpit_retry_v2';
   const DRAFT_KEY = 'ywi_operations_cockpit_draft_v2';
   let cameraStream = null;
@@ -36,7 +36,9 @@
     'dispatch-load':'dispatch_schedule', 'dispatch-cancel':'dispatch_schedule', 'dispatch-now':'dispatch_schedule',
     'recurring-program-edit':'recurring_service_program_save',
     'recurring-visit-skip':'recurring_service_visit_event', 'recurring-visit-weather':'recurring_service_visit_event', 'recurring-visit-makeup':'recurring_service_visit_event', 'recurring-visit-hold':'recurring_service_visit_event', 'recurring-visit-resume':'recurring_service_visit_event', 'recurring-visit-cancel':'recurring_service_visit_event',
-    'property-edit':'property_site_save', 'property-zone-edit':'property_zone_save', 'property-photo-edit':'property_photo_register'
+    'property-edit':'property_site_save', 'property-zone-edit':'property_zone_save', 'property-photo-edit':'property_photo_register',
+    'estimate-edit':'estimate_workflow_save', 'estimate-approval-request':'estimate_approval_decision', 'estimate-approval-approve':'estimate_approval_decision', 'estimate-approval-reject':'estimate_approval_decision', 'estimate-approval-reopen':'estimate_approval_decision', 'estimate-convert':'estimate_convert_work_order',
+    'estimate-assumption-edit':'estimate_workflow_save', 'change-order-edit':'change_order_save'
   };
 
 
@@ -371,6 +373,136 @@
       return `<article class="oc-queue-card oc-notification-delivery-card"><header><div><strong>${esc(row.work_order_number || 'Work order')}</strong><small>${esc(row.live_update_title || row.update_type || 'Customer-visible update')}</small></div><span class="${statusClass(row.delivery_status)}">${esc(row.delivery_status || 'unknown')}</span></header><dl><div><dt>Consent</dt><dd>${esc(row.consent_status || 'unknown')} · ${row.live_work_update_opt_in ? 'email on' : 'email off'}</dd></div><div><dt>Attempts</dt><dd>${Number(row.attempt_count || 0)} of ${Number(row.max_attempts || 0)}</dd></div><div><dt>Next attempt</dt><dd>${esc(when(row.next_attempt_at))}</dd></div><div><dt>Last result</dt><dd>${esc(short(row.last_error || row.cancellation_reason || row.provider_message_id || 'Awaiting protected dispatch', 150))}</dd></div></dl>${buttons(actions)}</article>`;
     });
     wrap.innerHTML = `<div class="oc-notification-delivery-status"><span class="${statusClass(deliveryBadge)}">${esc(delivery.enabled ? 'delivery state' : 'delivery off')}</span><p>${esc(deliveryState)} Email addresses, portal tokens, staff notes, and private media are never shown in this queue.</p></div>${cards.length ? cards.join('') : emptyQueue('No customer e-mails awaiting review', 'Customer-visible updates require an explicit portal opt-in before delivery is queued.')}`;
+  }
+
+  function commercialMoney(value) { return money(Number(value || 0)); }
+  function commercialStageLabel(value) { return String(value || 'unknown').replaceAll('_',' '); }
+  function resetEstimateWorkflowForm() {
+    const form=byId('oc_estimate_workflow_form'); if(!form) return;
+    form.reset(); form.elements.id.value=''; form.elements.status.value='draft'; form.elements.estimate_type.value='landscaping';
+    form.elements.discount_mode.value='none'; form.elements.approval_required.checked=false;
+  }
+  function loadEstimateWorkflowForm(row) {
+    const form=byId('oc_estimate_workflow_form'); if(!form || !row) return;
+    const keys=['estimate_id','client_id','client_site_id','service_pricing_template_id','estimate_number','estimate_type','estimate_status','valid_until','quote_title','estimated_labour_hours','assumed_crew_size','markup_percent','target_margin_percent','deposit_required_amount','deposit_required_percent'];
+    const map={estimate_id:'id',estimate_status:'status'};
+    keys.forEach((key)=>{ const name=map[key]||key; if(form.elements[name]) form.elements[name].value=row[key] ?? ''; });
+    form.elements.approval_required.checked=row.approval_required===true;
+    form.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  function resetEstimateAssumptionForm() {
+    const form=byId('oc_estimate_assumption_form'); if(!form) return;
+    const estimateId=form.elements.estimate_id?.value || '';
+    form.reset(); form.elements.id.value=''; form.elements.estimate_id.value=estimateId; form.elements.assumption_type.value='labour';
+    form.elements.quantity.value='1'; form.elements.sort_order.value='100'; form.elements.selected.checked=true; form.elements.is_active.checked=true;
+  }
+  function loadEstimateAssumptionForm(row) {
+    const form=byId('oc_estimate_assumption_form'); if(!form || !row) return;
+    ['id','estimate_id','assumption_code','assumption_type','assumption_label','quantity','unit_label','unit_cost','estimated_cost','estimated_charge','notes','sort_order'].forEach((key)=>{ if(form.elements[key]) form.elements[key].value=row[key] ?? ''; });
+    form.elements.optional_work.checked=row.optional_work===true; form.elements.selected.checked=row.selected!==false; form.elements.is_active.checked=row.is_active!==false;
+    form.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  function resetChangeOrderForm() {
+    const form=byId('oc_change_order_form'); if(!form) return;
+    const workOrderId=form.elements.work_order_id?.value || '';
+    form.reset(); form.elements.id.value=''; form.elements.work_order_id.value=workOrderId; form.elements.status.value='draft';
+  }
+  function loadChangeOrderForm(row) {
+    const form=byId('oc_change_order_form'); if(!form || !row) return;
+    ['id','work_order_id','change_order_number','status','scope_summary','reason','estimated_cost_delta','estimated_charge_delta','customer_approval_reference','customer_approved_by_name','notes'].forEach((key)=>{ if(form.elements[key]) form.elements[key].value=row[key] ?? ''; });
+    if(form.elements.customer_approved_at) form.elements.customer_approved_at.value=row.customer_approved_at ? new Date(row.customer_approved_at).toISOString().slice(0,16) : '';
+    form.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  function hydrateEstimateWorkflowSelectors() {
+    const clients=queues.estimate_workflow_clients || [];
+    const sites=queues.estimate_workflow_sites || [];
+    const templates=queues.estimate_pricing_templates || [];
+    const flows=queues.estimate_invoice_workflows || [];
+    const workOrders=flows.filter((row)=>row.work_order_id);
+    const apply=(selector,html)=>document.querySelectorAll(selector).forEach((select)=>{ const current=select.value; select.innerHTML=html; if(current) select.value=current; });
+    apply('[data-oc-estimate-client]',`<option value="">Choose customer</option>${clients.map((row)=>`<option value="${esc(row.id)}">${esc(row.display_name || row.legal_name || row.client_code || row.id)}</option>`).join('')}`);
+    apply('[data-oc-estimate-site]',`<option value="">No property selected</option>${sites.map((row)=>`<option value="${esc(row.id)}" data-client-id="${esc(row.client_id)}">${esc(row.site_name || row.site_code || row.id)} · ${esc(row.city || '')}</option>`).join('')}`);
+    apply('[data-oc-estimate-template]',`<option value="">No pricing template</option>${templates.map((row)=>`<option value="${esc(row.id)}">${esc(row.template_name || row.template_code || row.id)}</option>`).join('')}`);
+    apply('[data-oc-estimate-id]',`<option value="">Choose estimate</option>${flows.map((row)=>`<option value="${esc(row.estimate_id)}">${esc(row.estimate_number || row.estimate_id)} · ${esc(row.client_name || '')}</option>`).join('')}`);
+    apply('[data-oc-work-order-id]',`<option value="">Choose work order</option>${workOrders.map((row)=>`<option value="${esc(row.work_order_id)}">${esc(row.work_order_number || row.work_order_id)} · ${esc(row.estimate_number || '')}</option>`).join('')}`);
+  }
+  function renderEstimateInvoiceWorkflow() {
+    const flows=queues.estimate_invoice_workflows || [];
+    const assumptions=queues.estimate_workflow_assumptions || [];
+    const changes=queues.estimate_change_orders || [];
+    const variance=queues.estimate_assumption_variance || [];
+    const summary=byId('oc_estimate_workflow_summary');
+    if(summary) {
+      const ready=flows.filter((row)=>row.work_order_conversion_ready && !row.work_order_id).length;
+      const finance=flows.filter((row)=>row.finance_handoff_ready).length;
+      summary.textContent=`${flows.length} estimate(s) · ${ready} ready to convert · ${finance} ready for Finance review · ${changes.filter((row)=>row.status==='approved').length} approved change order(s)`;
+    }
+    const flowWrap=byId('oc_estimate_workflows');
+    if(flowWrap) flowWrap.innerHTML=flows.length ? flows.map((row)=>{
+      const approval=row.approval_required ? (row.approval_status || 'draft') : 'not required';
+      const customer=row.customer_approval_ready ? 'approved' : 'awaiting';
+      const deposit=row.deposit_readiness || 'not required';
+      const actions=[
+        button('Edit estimate','estimate-edit',row.estimate_id,'',true,'estimate_workflow_save'),
+        row.approval_required && row.approval_status!=='approved' ? button('Request approval','estimate-approval-request',row.estimate_id,'',true,'estimate_approval_decision') : '',
+        row.approval_required && row.approval_status!=='approved' ? button('Approve internally','estimate-approval-approve',row.estimate_id,'',true,'estimate_approval_decision') : '',
+        row.approval_required && row.approval_status==='approved' ? button('Reopen approval','estimate-approval-reopen',row.estimate_id,'',true,'estimate_approval_decision') : '',
+        row.work_order_conversion_ready && !row.work_order_id ? button('Convert to work order','estimate-convert',row.estimate_id,'',false,'estimate_convert_work_order') : ''
+      ];
+      return `<article class="oc-queue-card oc-estimate-workflow-card" data-stage="${esc(row.workflow_stage || '')}">
+        <header><div><strong>${esc(row.estimate_number || 'Estimate')}</strong><small>${esc(row.client_name || 'Customer')} · ${esc(row.site_name || 'No property')}</small></div><span class="${statusClass(row.workflow_stage)}">${esc(commercialStageLabel(row.workflow_stage))}</span></header>
+        <dl>
+          <div><dt>Estimate</dt><dd>${commercialMoney(row.estimate_total_amount)} · cost ${commercialMoney(row.estimate_total_cost)} · margin ${Number(row.estimate_margin_percent || 0).toFixed(1)}%</dd></div>
+          <div><dt>Assumptions</dt><dd>${Number(row.active_assumption_count||0)} active · ${Number(row.optional_assumption_count||0)} optional · version ${Number(row.assumption_version||1)}</dd></div>
+          <div><dt>Approval</dt><dd>Internal: ${esc(approval)} · Customer: ${esc(customer)}</dd></div>
+          <div><dt>Deposit</dt><dd>${esc(String(deposit).replaceAll('_',' '))} · required ${commercialMoney(row.effective_deposit_required_amount)} · paid ${commercialMoney(row.deposit_paid_amount)}</dd></div>
+          <div><dt>Work order</dt><dd>${esc(row.work_order_number || 'Not converted')} · ${esc(row.work_order_status || '')}</dd></div>
+          <div><dt>Change orders</dt><dd>${Number(row.approved_change_order_count||0)} approved · charge Δ ${commercialMoney(row.approved_change_order_charge_delta)}</dd></div>
+          <div><dt>Invoice readiness</dt><dd>${row.finance_handoff_ready ? 'Ready for existing Finance review' : esc(commercialStageLabel(row.workflow_stage))}</dd></div>
+          <div><dt>Invoice authority</dt><dd>${esc(row.invoice_candidate_number || 'No Finance candidate')} · ${esc(row.ar_invoice_number || 'No materialized invoice')}</dd></div>
+        </dl>
+        ${buttons(actions)}
+      </article>`;
+    }).join('') : emptyQueue('No estimates yet','Create a landscaping estimate using the Build 324 form. Customer approval, deposits and Finance posting keep their existing authorities.');
+
+    const assumptionWrap=byId('oc_estimate_assumptions');
+    if(assumptionWrap) assumptionWrap.innerHTML=assumptions.length ? assumptions.slice(0,200).map((row)=>`<article class="oc-queue-card">
+      <header><div><strong>${esc(row.assumption_label)}</strong><small>${esc(row.estimate_number || '')} · ${esc(String(row.assumption_type||'other').replaceAll('_',' '))}</small></div><span class="${statusClass(row.optional_work ? 'optional' : 'selected')}">${row.optional_work ? 'optional' : 'base'}</span></header>
+      <dl><div><dt>Quantity</dt><dd>${Number(row.quantity||0)} ${esc(row.unit_label||'')}</dd></div><div><dt>Cost / charge</dt><dd>${commercialMoney(row.estimated_cost)} / ${commercialMoney(row.estimated_charge)}</dd></div><div><dt>Selected</dt><dd>${row.selected ? 'Yes' : 'No'}</dd></div><div><dt>Source</dt><dd>${esc(row.source_template_name || row.source_template_code || 'Manual')}</dd></div></dl>
+      ${buttons([button('Edit assumption','estimate-assumption-edit',row.id,'',true,'estimate_workflow_save')])}
+    </article>`).join('') : emptyQueue('No estimate assumptions','Add labour, crew, material, equipment, subcontract, disposal, travel or optional-work assumptions.');
+
+    const changeWrap=byId('oc_change_orders');
+    if(changeWrap) changeWrap.innerHTML=changes.length ? changes.map((row)=>`<article class="oc-queue-card">
+      <header><div><strong>${esc(row.change_order_number || 'Change order')}</strong><small>${esc(row.scope_summary || '')}</small></div><span class="${statusClass(row.status)}">${esc(row.status||'draft')}</span></header>
+      <dl><div><dt>Estimate delta</dt><dd>Cost ${commercialMoney(row.estimated_cost_delta)} · charge ${commercialMoney(row.estimated_charge_delta)}</dd></div><div><dt>Customer approval</dt><dd>${esc(row.customer_approval_reference || 'Not recorded')}</dd></div></dl>
+      ${buttons([button('Edit change order','change-order-edit',row.id,'',true,'change_order_save')])}
+    </article>`).join('') : emptyQueue('No change orders','Approved change orders require a customer-approval evidence/reference.');
+
+    const varianceWrap=byId('oc_estimate_variance');
+    if(varianceWrap) varianceWrap.innerHTML=variance.length ? variance.map((row)=>`<article class="oc-queue-card">
+      <header><strong>${esc(row.work_order_number || 'Work order')}</strong><span class="${statusClass(row.production_actuals_started ? 'active' : 'baseline')}">${row.production_actuals_started ? 'actuals started' : 'baseline'}</span></header>
+      <dl><div><dt>Baseline cost / charge</dt><dd>${commercialMoney(row.baseline_assumption_cost_total)} / ${commercialMoney(row.baseline_assumption_charge_total)}</dd></div><div><dt>Current cost / charge</dt><dd>${commercialMoney(row.current_work_order_cost_total)} / ${commercialMoney(row.current_work_order_charge_total)}</dd></div><div><dt>Variance</dt><dd>Cost ${commercialMoney(row.current_cost_variance)} · charge ${commercialMoney(row.current_charge_variance)}</dd></div><div><dt>Production evidence</dt><dd>Materials ${commercialMoney(row.actual_material_cost_evidence)} · receipts ${commercialMoney(row.received_cost_evidence)}</dd></div></dl>
+    </article>`).join('') : emptyQueue('No converted estimate baselines','Assumption baselines appear after an accepted/deposit-ready estimate is converted to a work order.');
+  }
+  async function handleEstimateWorkflowForm(event) {
+    event.preventDefault(); const form=event.currentTarget; const data=formData(form);
+    await send({action:'estimate_workflow_save',...data,approval_required:form.elements.approval_required.checked},'Estimate workflow save');
+    resetEstimateWorkflowForm();
+  }
+  async function handleEstimateAssumptionForm(event) {
+    event.preventDefault(); const form=event.currentTarget; const data=formData(form);
+    if(!data.estimate_id){ status('Choose an estimate before saving an assumption.',true); return; }
+    const flow=(queues.estimate_invoice_workflows||[]).find((row)=>String(row.estimate_id)===String(data.estimate_id)) || {};
+    await send({action:'estimate_workflow_save',id:data.estimate_id,client_id:flow.client_id,status:flow.estimate_status || 'draft',
+      assumption:{id:data.id||null,assumption_code:data.assumption_code||null,assumption_type:data.assumption_type,assumption_label:data.assumption_label,quantity:data.quantity,unit_label:data.unit_label,unit_cost:data.unit_cost,estimated_cost:data.estimated_cost,estimated_charge:data.estimated_charge,optional_work:form.elements.optional_work.checked,selected:form.elements.selected.checked,notes:data.notes,sort_order:data.sort_order,is_active:form.elements.is_active.checked}
+    },'Estimate assumption save');
+    resetEstimateAssumptionForm();
+  }
+  async function handleChangeOrderForm(event) {
+    event.preventDefault(); const form=event.currentTarget; const data=formData(form);
+    await send({action:'change_order_save',...data,customer_approved_at:data.customer_approved_at ? new Date(data.customer_approved_at).toISOString() : null},'Change order save');
+    resetChangeOrderForm();
   }
 
   function propertyAreaLabel(value,unit) {
@@ -853,7 +985,7 @@
   }
 
   function renderQueues() {
-    renderPropertySiteIntelligence(); renderRecurringService(); renderCrewDispatch(); renderAttentionQueue(); renderRails(); renderRolePermissions(); renderOperationsHealth(); renderReleaseDashboard(); renderReleaseProof(); renderPaymentQueue(); renderBankQueue(); renderReconQueue(); renderEquipmentQueue(); renderAssetQueue(); renderRouteQueue(); renderQuoteQueue(); renderPortalQueue(); renderLiveUpdateQueue(); renderExecutionProofQueue(); renderCloseoutQueue(); renderCustomerNotificationQueue(); hydrateArApplicationSelects(); hydrateLiveUpdateSelects(); hydratePropertySelectors(); hydrateRecurringSelectors(); hydrateCrewDispatchSelectors(); decoratePermissionControls();
+    renderEstimateInvoiceWorkflow(); renderPropertySiteIntelligence(); renderRecurringService(); renderCrewDispatch(); renderAttentionQueue(); renderRails(); renderRolePermissions(); renderOperationsHealth(); renderReleaseDashboard(); renderReleaseProof(); renderPaymentQueue(); renderBankQueue(); renderReconQueue(); renderEquipmentQueue(); renderAssetQueue(); renderRouteQueue(); renderQuoteQueue(); renderPortalQueue(); renderLiveUpdateQueue(); renderExecutionProofQueue(); renderCloseoutQueue(); renderCustomerNotificationQueue(); hydrateArApplicationSelects(); hydrateLiveUpdateSelects(); hydrateEstimateWorkflowSelectors(); hydratePropertySelectors(); hydrateRecurringSelectors(); hydrateCrewDispatchSelectors(); decoratePermissionControls();
   }
   function hydrateBankSelects() {
     const options = `<option value="">Choose bank account</option>${(queues.banks || []).map((bank) => `<option value="${esc(bank.id)}">${esc(bank.account_name)}${bank.is_default ? ' (default)' : ''}</option>`).join('')}`;
@@ -1243,6 +1375,26 @@
       await send({ action:'quote_owner_assign', request_id:id, assigned_to_profile_id:owner, followup_due_at:due ? new Date(due).toISOString() : null, event_note:'Owner/follow-up updated from Operations Cockpit.' }, 'Quote owner assignment'); return;
     }
     if (action === 'quote-contact') { const note = prompt('Contact or follow-up note:'); if (!note) return; await send({ action:'quote_followup_event', request_id:id, event_type:'contacted', request_status:'contacted', response_status:'responded', event_note:note }, 'Quote contact history'); return; }
+    if (action === 'estimate-edit') {
+      const row=(queues.estimate_invoice_workflows || []).find((item)=>String(item.estimate_id)===String(id)); if(row) loadEstimateWorkflowForm(row); return;
+    }
+    if (action === 'estimate-assumption-edit') {
+      const row=(queues.estimate_workflow_assumptions || []).find((item)=>String(item.id)===String(id)); if(row) loadEstimateAssumptionForm(row); return;
+    }
+    if (action === 'change-order-edit') {
+      const row=(queues.estimate_change_orders || []).find((item)=>String(item.id)===String(id)); if(row) loadChangeOrderForm(row); return;
+    }
+    if (action.startsWith('estimate-approval-')) {
+      const map={'estimate-approval-request':'request','estimate-approval-approve':'approve','estimate-approval-reject':'reject','estimate-approval-reopen':'reopen'};
+      const decision=map[action]; if(!decision) return;
+      const note=prompt(`${decision[0].toUpperCase()+decision.slice(1)} approval note (optional):`) || '';
+      await send({action:'estimate_approval_decision',estimate_id:id,decision,note},`Estimate approval ${decision}`); return;
+    }
+    if (action === 'estimate-convert') {
+      const row=(queues.estimate_invoice_workflows || []).find((item)=>String(item.estimate_id)===String(id));
+      if(!row?.work_order_conversion_ready){ status('This estimate is not ready to convert. Resolve internal approval, customer acceptance and deposit requirements first.',true); return; }
+      await send({action:'estimate_convert_work_order',estimate_id:id},'Estimate to work-order conversion'); return;
+    }
     if (action === 'property-edit') {
       const row=(queues.property_sites || []).find((item)=>String(item.id)===String(id)); if(row) loadPropertyForm(row); return;
     }
@@ -1337,6 +1489,74 @@
       <div class="operations-toolbar"><button id="oc_refresh" type="button">Refresh all live queues</button><span>Build ${BUILD}</span></div>
       <div id="oc_scorecards" class="operations-scorecards" aria-label="Implementation progress"></div><section id="oc_role_permissions" class="oc-permission-strip" aria-label="Role capability checklist"></section><section class="oc-health-grid" aria-label="Payment and release health"><div id="oc_stripe_health" class="oc-health-list"></div><div id="oc_export_readiness" class="oc-export-readiness"></div></section><section id="oc_release_dashboard" class="oc-release-dashboard" aria-label="Release readiness dashboard"></section>
       <div class="operations-grid">
+        <details open class="operations-commercial-panel"><summary>Estimate → Job → Invoice Workflow</summary>
+          <p class="muted">Build 324 makes landscaping estimating operational without creating a second accounting system. Estimates remain canonical in <code>estimates</code>; customer quote acceptance and deposits keep their existing portal/provider authorities; conversion creates/reuses the canonical <code>work_orders</code>; invoice readiness hands off to the existing Finance candidate authority.</p>
+          <div class="finance-module-note"><strong id="oc_estimate_workflow_summary">Loading estimate workflow…</strong> · Finance posting and payment-provider mutation remain disabled.</div>
+          <form id="oc_estimate_workflow_form" class="operations-form">
+            <input type="hidden" name="id" />
+            <label>Customer<select name="client_id" data-oc-estimate-client required><option value="">Loading customers…</option></select></label>
+            <label>Property<select name="client_site_id" data-oc-estimate-site><option value="">Loading properties…</option></select></label>
+            <label>Pricing template<select name="service_pricing_template_id" data-oc-estimate-template><option value="">Loading templates…</option></select></label>
+            <label>Estimate #<input name="estimate_number" maxlength="80" placeholder="Auto-generated if blank" /></label>
+            <label>Estimate type<input name="estimate_type" value="landscaping" maxlength="60" /></label>
+            <label>Status<select name="status"><option value="draft">Draft</option><option value="sent">Sent</option><option value="accepted">Accepted</option><option value="declined">Declined</option><option value="expired">Expired</option><option value="cancelled">Cancelled</option></select></label>
+            <label>Valid until<input name="valid_until" type="date" /></label>
+            <label>Quote title<input name="quote_title" maxlength="220" /></label>
+            <label>Labour hours<input name="estimated_labour_hours" type="number" min="0" step="0.25" /></label>
+            <label>Crew size<input name="assumed_crew_size" type="number" min="1" max="100" /></label>
+            <label>Markup %<input name="markup_percent" type="number" step="0.01" /></label>
+            <label>Target margin %<input name="target_margin_percent" type="number" min="-100" max="100" step="0.01" /></label>
+            <label>Deposit amount<input name="deposit_required_amount" type="number" min="0" step="0.01" value="0" /></label>
+            <label>Deposit %<input name="deposit_required_percent" type="number" min="0" max="100" step="0.01" value="0" /></label>
+            <label>Discount mode<select name="discount_mode"><option value="none">None</option><option value="percent">Percent</option><option value="amount">Amount</option></select></label>
+            <label>Discount value<input name="discount_value" type="number" min="0" step="0.01" value="0" /></label>
+            <label class="operations-span">Scope<textarea name="scope_notes" maxlength="3500"></textarea></label>
+            <label class="operations-span">Terms<textarea name="terms_notes" maxlength="3500"></textarea></label>
+            <label class="operations-span">Workflow notes<textarea name="workflow_notes" maxlength="2500"></textarea></label>
+            <label class="operations-inline-check"><input name="approval_required" type="checkbox" /> Internal approval required</label>
+            <button type="submit" data-oc-permission="estimate_workflow_save">Save estimate</button>
+            <button id="oc_estimate_reset" type="button" class="secondary">Clear estimate form</button>
+          </form>
+          <form id="oc_estimate_assumption_form" class="operations-form">
+            <input type="hidden" name="id" />
+            <label>Estimate<select name="estimate_id" data-oc-estimate-id required><option value="">Loading estimates…</option></select></label>
+            <label>Assumption code<input name="assumption_code" maxlength="80" placeholder="Auto-generated if blank" /></label>
+            <label>Type<select name="assumption_type"><option value="labour">Labour</option><option value="crew">Crew</option><option value="material">Material</option><option value="equipment">Equipment</option><option value="subcontract">Subcontract / vendor</option><option value="disposal">Disposal</option><option value="travel">Travel</option><option value="other">Other</option></select></label>
+            <label>Assumption / requirement<input name="assumption_label" maxlength="240" required /></label>
+            <label>Quantity<input name="quantity" type="number" min="0" step="0.01" value="1" /></label>
+            <label>Unit<input name="unit_label" maxlength="80" placeholder="hours, yd³, loads…" /></label>
+            <label>Unit cost<input name="unit_cost" type="number" min="0" step="0.01" /></label>
+            <label>Estimated cost<input name="estimated_cost" type="number" min="0" step="0.01" /></label>
+            <label>Estimated charge<input name="estimated_charge" type="number" min="0" step="0.01" /></label>
+            <label>Sort order<input name="sort_order" type="number" min="0" max="10000" value="100" /></label>
+            <label class="operations-span">Notes<textarea name="notes" maxlength="1800"></textarea></label>
+            <label class="operations-inline-check"><input name="optional_work" type="checkbox" /> Optional work</label>
+            <label class="operations-inline-check"><input name="selected" type="checkbox" checked /> Selected in estimate</label>
+            <label class="operations-inline-check"><input name="is_active" type="checkbox" checked /> Active assumption</label>
+            <button type="submit" data-oc-permission="estimate_workflow_save">Save assumption</button>
+            <button id="oc_estimate_assumption_reset" type="button" class="secondary">Clear assumption form</button>
+          </form>
+          <form id="oc_change_order_form" class="operations-form">
+            <input type="hidden" name="id" />
+            <label>Work order<select name="work_order_id" data-oc-work-order-id required><option value="">Loading work orders…</option></select></label>
+            <label>Change order #<input name="change_order_number" maxlength="80" placeholder="Auto-generated if blank" /></label>
+            <label>Status<select name="status"><option value="draft">Draft</option><option value="requested">Requested</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="completed">Completed</option><option value="void">Void</option></select></label>
+            <label>Estimated cost Δ<input name="estimated_cost_delta" type="number" step="0.01" value="0" /></label>
+            <label>Estimated charge Δ<input name="estimated_charge_delta" type="number" step="0.01" value="0" /></label>
+            <label class="operations-span">Scope summary<textarea name="scope_summary" maxlength="2500" required></textarea></label>
+            <label class="operations-span">Reason<textarea name="reason" maxlength="1800"></textarea></label>
+            <label class="operations-span">Customer approval reference<input name="customer_approval_reference" maxlength="1000" placeholder="Signed change order, portal event, email reference…" /></label>
+            <label>Customer approved by<input name="customer_approved_by_name" maxlength="240" /></label>
+            <label>Customer approved at<input name="customer_approved_at" type="datetime-local" /></label>
+            <label class="operations-span">Notes<textarea name="notes" maxlength="2200"></textarea></label>
+            <button type="submit" data-oc-permission="change_order_save">Save change order</button>
+            <button id="oc_change_order_reset" type="button" class="secondary">Clear change order form</button>
+          </form>
+          <h4>Estimate → work-order → invoice readiness</h4><div id="oc_estimate_workflows" class="oc-live-queue"></div>
+          <h4>Estimate assumptions</h4><div id="oc_estimate_assumptions" class="oc-live-queue"></div>
+          <h4>Change orders</h4><div id="oc_change_orders" class="oc-live-queue"></div>
+          <h4>Baseline → actual variance</h4><div id="oc_estimate_variance" class="oc-live-queue"></div>
+        </details>
         <details open class="operations-property-panel"><summary>Property &amp; Site Intelligence</summary>
           <p class="muted">Build 323 makes the canonical customer property (<code>client_sites</code>) the landscaping field profile. It records service address, approximate serviceable area, lawn/garden/access zones, gates/fences, parking/trailer limits, pets, irrigation, slopes, wet/drainage areas, known hazard notes, utility/locate notes, tree/brush concerns, recurring instructions and private photo references. The separate Safety <code>sites</code> authority remains unchanged.</p>
           <div class="finance-module-note"><strong id="oc_property_summary">Loading property intelligence…</strong> · Property hazard notes are field context, not a replacement for Safety assessments.</div>
@@ -1533,6 +1753,12 @@
   }
 
   function bind() {
+    byId('oc_estimate_workflow_form')?.addEventListener('submit',(e)=>handleEstimateWorkflowForm(e).catch((err)=>status(err?.message || 'Estimate workflow save failed.',true)));
+    byId('oc_estimate_reset')?.addEventListener('click',resetEstimateWorkflowForm);
+    byId('oc_estimate_assumption_form')?.addEventListener('submit',(e)=>handleEstimateAssumptionForm(e).catch((err)=>status(err?.message || 'Estimate assumption save failed.',true)));
+    byId('oc_estimate_assumption_reset')?.addEventListener('click',resetEstimateAssumptionForm);
+    byId('oc_change_order_form')?.addEventListener('submit',(e)=>handleChangeOrderForm(e).catch((err)=>status(err?.message || 'Change order save failed.',true)));
+    byId('oc_change_order_reset')?.addEventListener('click',resetChangeOrderForm);
     byId('oc_property_form')?.addEventListener('submit',(e)=>handlePropertyForm(e).catch((err)=>status(err?.message || 'Property intelligence save failed.',true)));
     byId('oc_property_reset')?.addEventListener('click',resetPropertyForm);
     byId('oc_property_zone_form')?.addEventListener('submit',(e)=>handlePropertyZoneForm(e).catch((err)=>status(err?.message || 'Property zone save failed.',true)));
