@@ -176,6 +176,43 @@ left join conflicts cf on cf.id=b.id;
 revoke all on table public.v_crew_dispatch_schedule from public,anon,authenticated;
 grant select on table public.v_crew_dispatch_schedule to service_role;
 
+create or replace view public.v_crew_dispatch_work_order_candidates
+with (security_invoker=true)
+as
+select
+  wo.id as work_order_id,
+  wo.work_order_number,
+  wo.work_type,
+  wo.status as work_order_status,
+  wo.approval_status,
+  wo.legacy_job_id as job_id,
+  j.job_code,
+  j.job_name,
+  wo.client_id,
+  coalesce(cl.display_name,cl.legal_name) as client_name,
+  wo.client_site_id,
+  cs.site_name,
+  cs.service_address,
+  cs.city as site_city,
+  wo.route_id,
+  r.route_code,
+  r.name as route_name,
+  wo.supervisor_profile_id,
+  sp.full_name as supervisor_name,
+  wo.scheduled_start,
+  wo.scheduled_end,
+  wo.crew_notes,
+  wo.safety_notes
+from public.work_orders wo
+left join public.jobs j on j.id=wo.legacy_job_id
+left join public.clients cl on cl.id=wo.client_id
+left join public.client_sites cs on cs.id=wo.client_site_id
+left join public.routes r on r.id=wo.route_id
+left join public.profiles sp on sp.id=wo.supervisor_profile_id
+where lower(coalesce(wo.status,'')) not in ('completed','done','closed');
+revoke all on table public.v_crew_dispatch_work_order_candidates from public,anon,authenticated;
+grant select on table public.v_crew_dispatch_work_order_candidates to service_role;
+
 create or replace function public.ywi_rpc_dispatch_schedule_v2(
   p_work_order_id uuid,
   p_schedule_status text,
@@ -403,6 +440,14 @@ as $$
         and grantee in ('anon','authenticated','PUBLIC')
     ) then 'passed' else 'failed' end,
     'Crew scheduling read model is server-only and permission-filtered by the Edge Function.'
+  union all
+  select 'dispatch_candidate_view_browser_private',
+    case when not exists(
+      select 1 from information_schema.table_privileges
+      where table_schema='public' and table_name='v_crew_dispatch_work_order_candidates'
+        and grantee in ('anon','authenticated','PUBLIC')
+    ) then 'passed' else 'failed' end,
+    'Dispatch work-order candidates are exposed only through server authority.'
   union all
   select 'dispatch_rpc_browser_private',
     case when not exists(
