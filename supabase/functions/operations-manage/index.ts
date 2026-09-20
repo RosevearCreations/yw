@@ -1358,6 +1358,16 @@ async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false
     safeSelect(supabase.from('clients').select('id,client_code,display_name,legal_name,is_active').eq('is_active',true).order('display_name',{ascending:true}).limit(400))
   ]) : [[],[],[],[]];
 
+  const [estimateWorkflow,estimateAssumptions,estimateVariance,estimateTemplates,estimateClients,estimateSites,estimateChangeOrders] = jobsAttentionAllowed ? await Promise.all([
+    safeSelect(supabase.from('v_estimate_job_invoice_workflow').select('*').order('estimate_number',{ascending:false}).limit(400)),
+    safeSelect(supabase.from('v_estimate_workflow_assumption_directory').select('*').order('estimate_number',{ascending:false}).order('sort_order',{ascending:true}).limit(900)),
+    safeSelect(supabase.from('v_estimate_assumption_variance').select('*').order('work_order_number',{ascending:false}).limit(400)),
+    safeSelect(supabase.from('service_pricing_templates').select('id,template_code,template_name,job_family,project_scope,default_estimated_duration_hours,default_markup_percent,default_quoted_charge_total,default_estimated_cost_total,is_active').eq('is_active',true).order('template_name',{ascending:true}).limit(300)),
+    safeSelect(supabase.from('clients').select('id,client_code,display_name,legal_name,is_active').eq('is_active',true).order('display_name',{ascending:true}).limit(400)),
+    safeSelect(supabase.from('client_sites').select('id,client_id,site_code,site_name,service_address,city,is_active').eq('is_active',true).order('site_name',{ascending:true}).limit(500)),
+    safeSelect(supabase.from('change_orders').select('id,change_order_number,status,work_order_id,estimate_id,job_id,scope_summary,reason,estimated_cost_delta,estimated_charge_delta,customer_approval_reference,customer_approved_at,customer_approved_by_name,requested_at,approved_at,updated_at').order('requested_at',{ascending:false}).limit(500))
+  ]) : [[],[],[],[],[],[],[]];
+
   return {
     operations_attention: operationsAttention.active,
     operations_attention_resolved: operationsAttention.resolved,
@@ -1378,6 +1388,14 @@ async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false
     property_photos: propertyPhotos,
     property_clients: propertyClients,
     property_site_meta: { build:323, schema:212, permission_filtered:true, property_authority:'client_sites', legacy_safety_site_authority:'sites', photo_mode:'private_reference' },
+    estimate_invoice_workflows: estimateWorkflow,
+    estimate_workflow_assumptions: estimateAssumptions,
+    estimate_assumption_variance: estimateVariance,
+    estimate_pricing_templates: estimateTemplates,
+    estimate_workflow_clients: estimateClients,
+    estimate_workflow_sites: estimateSites,
+    estimate_change_orders: estimateChangeOrders,
+    estimate_invoice_meta: { build:324, schema:213, permission_filtered:true, estimate_authority:'estimates', work_order_authority:'work_orders', customer_acceptance_authority:'ywi_rpc_accept_quote_package', invoice_authority:'job_invoice_candidates', finance_posting_enabled:false },
     ...queueMap, bank_preview_rows: bankReviewRows, bank_items: bankItems, reconciliation_exceptions: reconciliationExceptions, profiles, banks, rails, ar_invoices: arInvoices, ar_payments: arPayments, customer_deposits: customerDeposits, ar_applications: arApplications,
     capabilities: capabilitySnapshot,
     stripe_health: {
@@ -2100,6 +2118,134 @@ serve(async (req) => {
         payload:{ request_id:requestId, assigned_to_profile_id:targetOwnerId, followup_due_at:followup, event_type:eventType, build:BUILD, schema:SCHEMA }
       });
       return Response.json({ ok: true, record: data }, { headers: corsHeaders });
+    }
+
+    if (action === 'estimate_workflow_save') {
+      requireRank(profile,45,action);
+      const id=isUuid(body.id) ? clean(body.id,80) : null;
+      const clientId=isUuid(body.client_id) ? clean(body.client_id,80) : null;
+      if(!id && !clientId) throw new HttpError(400,'Choose a customer before creating an estimate.');
+      const statusValue=clean(body.status || 'draft',40).toLowerCase();
+      if(!['draft','sent','accepted','declined','expired','cancelled','approved'].includes(statusValue)) throw new HttpError(400,'Unsupported estimate status.');
+      const assumption=objectValue(body.assumption);
+      if(Object.keys(assumption).length && !clean(assumption.assumption_label,240)) throw new HttpError(400,'Assumption label is required.');
+      const payload:any={
+        id,
+        client_id:clientId,
+        client_site_id:isUuid(body.client_site_id)?clean(body.client_site_id,80):null,
+        service_pricing_template_id:isUuid(body.service_pricing_template_id)?clean(body.service_pricing_template_id,80):null,
+        estimate_number:clean(body.estimate_number,80)||null,
+        estimate_type:clean(body.estimate_type || 'landscaping',60),
+        status:statusValue,
+        valid_until:clean(body.valid_until,20)||null,
+        quote_title:clean(body.quote_title,220)||null,
+        scope_notes:clean(body.scope_notes,3500)||null,
+        terms_notes:clean(body.terms_notes,3500)||null,
+        pricing_basis_label:clean(body.pricing_basis_label,220)||null,
+        discount_mode:clean(body.discount_mode || 'none',40),
+        discount_value:body.discount_value===''||body.discount_value==null?0:Number(body.discount_value),
+        approval_required:body.approval_required===true || String(body.approval_required).toLowerCase()==='true',
+        client_notes:clean(body.client_notes,2500)||null,
+        internal_notes:clean(body.internal_notes,2500)||null,
+        estimated_labour_hours:body.estimated_labour_hours===''||body.estimated_labour_hours==null?null:Number(body.estimated_labour_hours),
+        assumed_crew_size:body.assumed_crew_size===''||body.assumed_crew_size==null?null:int(body.assumed_crew_size,0),
+        markup_percent:body.markup_percent===''||body.markup_percent==null?null:Number(body.markup_percent),
+        target_margin_percent:body.target_margin_percent===''||body.target_margin_percent==null?null:Number(body.target_margin_percent),
+        deposit_required_amount:body.deposit_required_amount===''||body.deposit_required_amount==null?0:Number(body.deposit_required_amount),
+        deposit_required_percent:body.deposit_required_percent===''||body.deposit_required_percent==null?0:Number(body.deposit_required_percent),
+        workflow_notes:clean(body.workflow_notes,2500)||null,
+        approval_notes:clean(body.approval_notes,1800)||null,
+        assumption:Object.keys(assumption).length ? {
+          id:isUuid(assumption.id)?clean(assumption.id,80):null,
+          assumption_code:clean(assumption.assumption_code,80)||null,
+          assumption_type:clean(assumption.assumption_type || 'other',40).toLowerCase(),
+          assumption_label:clean(assumption.assumption_label,240),
+          quantity:assumption.quantity===''||assumption.quantity==null?1:Number(assumption.quantity),
+          unit_label:clean(assumption.unit_label,80)||null,
+          unit_cost:assumption.unit_cost===''||assumption.unit_cost==null?0:Number(assumption.unit_cost),
+          estimated_cost:assumption.estimated_cost===''||assumption.estimated_cost==null?0:Number(assumption.estimated_cost),
+          estimated_charge:assumption.estimated_charge===''||assumption.estimated_charge==null?0:Number(assumption.estimated_charge),
+          optional_work:assumption.optional_work===true || String(assumption.optional_work).toLowerCase()==='true',
+          selected:assumption.selected!==false && String(assumption.selected).toLowerCase()!=='false',
+          notes:clean(assumption.notes,1800)||null,
+          sort_order:Math.max(0,Math.min(10000,int(assumption.sort_order,100))),
+          is_active:assumption.is_active!==false && String(assumption.is_active).toLowerCase()!=='false'
+        } : {}
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_estimate_workflow_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      const estimateId=clean((data as any)?.estimate?.id || id,80);
+      const rows=estimateId ? await safeSelect(supabase.from('v_estimate_job_invoice_workflow').select('*').eq('estimate_id',estimateId).limit(1)) : [];
+      await audit(supabase,{
+        operation_action:action,operation_status:id?'updated':'created',entity_type:'estimate',entity_id:estimateId,
+        actor_profile_id:profile.id,
+        request_payload:{client_id:clientId,status:statusValue,approval_required:payload.approval_required,has_assumption:Object.keys(assumption).length>0},
+        response_payload:{estimate_id:estimateId,workflow_stage:rows[0]?.workflow_stage || null}
+      });
+      return Response.json({ok:true,build:324,schema:213,record:rows[0] || (data as any)?.estimate,assumption:(data as any)?.assumption || null},{headers:corsHeaders});
+    }
+
+    if (action === 'estimate_approval_decision') {
+      requireRank(profile,45,action);
+      const estimateId=clean(body.estimate_id,80);
+      const decision=clean(body.decision,30).toLowerCase();
+      const note=clean(body.note,1800);
+      if(!isUuid(estimateId)) throw new HttpError(400,'Valid estimate_id is required.');
+      if(!['request','approve','reject','reopen'].includes(decision)) throw new HttpError(400,'Unsupported estimate approval decision.');
+      const {data,error}=await supabase.rpc('ywi_rpc_estimate_approval_decision',{p_estimate_id:estimateId,p_actor_profile_id:profile.id,p_decision:decision,p_note:note||null});
+      if(error) throw error;
+      await audit(supabase,{
+        operation_action:action,operation_status:decision,entity_type:'estimate',entity_id:estimateId,actor_profile_id:profile.id,
+        request_payload:{decision,note:Boolean(note)},response_payload:{approval_status:(data as any)?.approval_status || null}
+      });
+      return Response.json({ok:true,build:324,schema:213,record:data},{headers:corsHeaders});
+    }
+
+    if (action === 'estimate_convert_work_order') {
+      requireRank(profile,45,action);
+      const estimateId=clean(body.estimate_id,80);
+      if(!isUuid(estimateId)) throw new HttpError(400,'Valid estimate_id is required.');
+      const {data,error}=await supabase.rpc('ywi_rpc_estimate_convert_work_order',{p_estimate_id:estimateId,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      const workOrderId=clean((data as any)?.work_order?.id,80);
+      await audit(supabase,{
+        operation_action:action,operation_status:'converted',entity_type:'work_order',entity_id:workOrderId,actor_profile_id:profile.id,
+        request_payload:{estimate_id:estimateId},response_payload:{work_order_id:workOrderId,deposit_required:(data as any)?.deposit_required,deposit_paid:(data as any)?.deposit_paid}
+      });
+      return Response.json({ok:true,build:324,schema:213,...(data as any)},{headers:corsHeaders});
+    }
+
+    if (action === 'change_order_save') {
+      requireRank(profile,45,action);
+      const id=isUuid(body.id)?clean(body.id,80):null;
+      const workOrderId=isUuid(body.work_order_id)?clean(body.work_order_id,80):null;
+      const statusValue=clean(body.status || 'draft',30).toLowerCase();
+      const scopeSummary=clean(body.scope_summary,2500);
+      const approvalReference=clean(body.customer_approval_reference,1000);
+      if(!id && !workOrderId) throw new HttpError(400,'Choose a work order before creating a change order.');
+      if(!id && !scopeSummary) throw new HttpError(400,'Change-order scope is required.');
+      if(statusValue==='approved' && !approvalReference) throw new HttpError(400,'Customer approval evidence/reference is required before approval.');
+      const payload:any={
+        id,work_order_id:workOrderId,change_order_number:clean(body.change_order_number,80)||null,status:statusValue,
+        scope_summary:scopeSummary||null,reason:clean(body.reason,1800)||null,
+        estimated_cost_delta:body.estimated_cost_delta===''||body.estimated_cost_delta==null?0:Number(body.estimated_cost_delta),
+        estimated_charge_delta:body.estimated_charge_delta===''||body.estimated_charge_delta==null?0:Number(body.estimated_charge_delta),
+        actual_cost_delta:body.actual_cost_delta===''||body.actual_cost_delta==null?0:Number(body.actual_cost_delta),
+        actual_charge_delta:body.actual_charge_delta===''||body.actual_charge_delta==null?0:Number(body.actual_charge_delta),
+        customer_approval_reference:approvalReference||null,
+        customer_approved_at:clean(body.customer_approved_at,80)||null,
+        customer_approved_by_name:clean(body.customer_approved_by_name,240)||null,
+        notes:clean(body.notes,2200)||null
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_change_order_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      const changeId=clean((data as any)?.id,80);
+      await audit(supabase,{
+        operation_action:action,operation_status:statusValue,entity_type:'change_order',entity_id:changeId,actor_profile_id:profile.id,
+        request_payload:{work_order_id:workOrderId,status:statusValue,approval_reference:Boolean(approvalReference)},
+        response_payload:{change_order_id:changeId,change_order_number:(data as any)?.change_order_number || null}
+      });
+      return Response.json({ok:true,build:324,schema:213,record:data},{headers:corsHeaders});
     }
 
     if (action === 'property_site_save') {
