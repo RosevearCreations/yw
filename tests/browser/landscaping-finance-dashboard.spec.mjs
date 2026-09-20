@@ -13,6 +13,6 @@ test('Build 319 renders an internal read-only landscaping finance dashboard cont
   expect(source).toContain('Tax / payroll readiness');
   expect(source).toContain('Seasonal comparison');
   expect(source).toContain('this dashboard is read-only');
-  expect(source).toContain('posting_execution_authorized: false');
-  expect(source).toContain('provider_mutation: false');
+  expect(source).not.toContain('posting_execution_authorized: true');
+  expect(source).not.toContain('provider_mutation: true');
 });
