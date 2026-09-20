@@ -66,6 +66,32 @@ create index if not exists job_session_crew_hours_work_order_idx
   on public.job_session_crew_hours(work_order_id,created_at desc)
   where work_order_id is not null;
 
+-- Repair the existing shared material-issue journal trigger so it works for both
+-- material_issues headers (id) and material_issue_lines (issue_id).
+create or replace function public.ywi_after_material_issue_journal_sync()
+returns trigger
+language plpgsql
+as $
+declare
+  v_source_id uuid;
+begin
+  if tg_op='DELETE' then
+    v_source_id:=coalesce(
+      nullif(to_jsonb(old)->>'issue_id','')::uuid,
+      nullif(to_jsonb(old)->>'id','')::uuid
+    );
+    perform public.ywi_drop_source_journal_batch('material_issue',v_source_id);
+    return old;
+  end if;
+  v_source_id:=coalesce(
+    nullif(to_jsonb(new)->>'issue_id','')::uuid,
+    nullif(to_jsonb(new)->>'id','')::uuid
+  );
+  perform public.ywi_sync_material_issue_journal(v_source_id);
+  return new;
+end;
+$;
+
 alter table public.material_issues
   add column if not exists job_session_id uuid references public.job_sessions(id) on delete set null;
 create index if not exists material_issues_job_session_idx
