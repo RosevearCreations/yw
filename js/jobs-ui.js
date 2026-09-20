@@ -1692,6 +1692,7 @@
       const reqs = state.requirements.filter((row) => Number(row.job_id) === Number(jobRow.id));
       (reqs.length ? reqs : [{ needed_qty: 1, reserved_qty: 0 }]).forEach(addEquipmentRequirementRow);
       renderJobActivity();
+      renderCommercialWorkflow();
       setNotice(e.jobSummary, `Loaded job ${jobRow.job_code} into the form for editing.`);
       window.YWIRouter?.showSection?.('jobs', { skipFocus: true });
     }
