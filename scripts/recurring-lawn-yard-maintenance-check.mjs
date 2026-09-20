@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 
 const read=(p)=>fs.readFileSync(p,'utf8');
 const migration=read('sql/211_recurring_lawn_yard_maintenance.sql');
+const hygiene=read('sql/211b_recurring_lawn_yard_maintenance_advisor_hygiene.sql');
 const operations=read('supabase/functions/operations-manage/index.ts');
 const scheduler=read('supabase/functions/service-execution-scheduler-run/index.ts');
 const ui=read('js/operations-cockpit.js');
@@ -91,6 +92,10 @@ assert.ok(workflow.includes('npm run test:browser:recurring-lawn-yard-maintenanc
 assert.ok(help.includes('Build 322') && help.includes('Recurring Lawn &amp; Yard Maintenance'));
 assert.ok(roadmap.includes('323 — Property & Site Intelligence'));
 assert.ok(!migration.includes("greatest(current_date, coalesce(a.start_date, current_date)) as candidate_date"),'Legacy today-only recurrence candidate logic must be replaced.');
+assert.ok(hygiene.includes('drop index if exists public.recurring_service_agreements_site_status_idx'),'Build 322 must remove its duplicate site/status index.');
+assert.ok(hygiene.includes('recurring_service_agreements_paused_by_profile_idx'),'Build 322 must cover paused_by_profile_id.');
+assert.ok(hygiene.includes('recurring_service_agreements_cancelled_by_profile_idx'),'Build 322 must cover cancelled_by_profile_id.');
+assert.ok(hygiene.includes('recurring_service_visit_events_actor_profile_idx'),'Build 322 must cover recurring visit actor_profile_id.');
 
 try { new Function(ui); }
 catch(error) { assert.fail(`Operations UI JavaScript syntax failed: ${error}`); }
