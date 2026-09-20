@@ -78,7 +78,7 @@ assert.equal(pkg.scripts['test:job-cost-profitability-closeout'],'node scripts/j
 assert.equal(pkg.scripts['test:browser:job-cost-profitability-closeout'],'playwright test --config=playwright.config.mjs tests/browser/job-cost-profitability-closeout.spec.mjs');
 assert.ok(workflow.includes('npm run test:job-cost-profitability-closeout'),'Canonical source workflow must run Build 318 source acceptance.');
 assert.ok(workflow.includes('npm run test:browser:job-cost-profitability-closeout'),'Canonical browser workflow must run Build 318 rendered acceptance.');
-assert.ok(help.includes('Job Cost & Profitability Closeout')&&help.includes('318'),'Help must document Build 318.');
+assert.ok((help.includes('Job Cost &amp; Profitability Closeout')||help.includes('Job Cost & Profitability Closeout'))&&help.includes('318'),'Help must document Build 318.');
 assert.ok(next.includes('319 — Landscaping Finance Dashboard & Cash Position'),'Roadmap must preserve the next landscaping build after 318.');
 assert.ok(!fs.readdirSync('sql').some((name)=>/^209_/.test(name)),'Build 318 must remain schema-neutral at Schema 208.');
 
