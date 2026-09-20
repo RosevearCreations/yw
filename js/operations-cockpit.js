@@ -31,7 +31,8 @@
     'closeout-approve':'work_order_closeout_decision', 'closeout-reject':'work_order_closeout_decision', 'closeout-rework':'work_order_closeout_decision', 'closeout-invoice':'work_order_closeout_decision',
     'webhook-ack':'stripe_webhook_alert_decision', 'webhook-resolve':'stripe_webhook_alert_decision',
     'signal-review':'content_signal_decision', 'signal-actioned':'content_signal_decision',
-    'release-readiness-capture':'release_readiness_snapshot'
+    'release-readiness-capture':'release_readiness_snapshot',
+    'attention-defer':'operations_attention_defer', 'attention-resolve':'operations_attention_resolve'
   };
 
 
@@ -368,8 +369,46 @@
     wrap.innerHTML = `<div class="oc-notification-delivery-status"><span class="${statusClass(deliveryBadge)}">${esc(delivery.enabled ? 'delivery state' : 'delivery off')}</span><p>${esc(deliveryState)} Email addresses, portal tokens, staff notes, and private media are never shown in this queue.</p></div>${cards.length ? cards.join('') : emptyQueue('No customer e-mails awaiting review', 'Customer-visible updates require an explicit portal opt-in before delivery is queued.')}`;
   }
 
+  function renderAttentionQueue() {
+    const wrap=byId('oc_attention_queue');
+    const resolvedWrap=byId('oc_attention_resolved');
+    const meta=queues.operations_attention_meta || {};
+    const rows=queues.operations_attention || [];
+    const resolved=queues.operations_attention_resolved || [];
+    const role=window.YWI_AUTH?.getState?.()?.role || 'employee';
+    const canManage=window.YWISecurity?.canViewModule?.('admin',role,'manage') === true;
+    const canNavigate=(row)=>window.YWISecurity?.canViewModule?.(row.source_module,role,'view') === true;
+    if (wrap) {
+      wrap.innerHTML=rows.length ? rows.map((row)=> {
+        const nav=canNavigate(row)
+          ? `<button type="button" class="secondary oc-row-action" data-oc-action="attention-open" data-id="${esc(row.source_key)}">Open ${esc(row.source_module)}</button>`
+          : '<button type="button" class="secondary" disabled title="Source module access is required.">Source restricted</button>';
+        const manage=canManage
+          ? `${button('Defer','attention-defer',row.source_key,'',true,'operations_attention_defer')}${button('Resolve','attention-resolve',row.source_key,'','', 'operations_attention_resolve')}`
+          : '<button type="button" class="secondary" disabled title="Admin manage access is required.">Manage restricted</button>';
+        return `<article class="oc-queue-card oc-attention-card" data-priority="${esc(row.priority)}">
+          <header><strong>${esc(row.title)}</strong><span class="${statusClass(row.priority)}">${esc(row.priority)}</span></header>
+          <dl>
+            <div><dt>Source</dt><dd>${esc(row.source_module)} · ${esc(String(row.source_type||'').replaceAll('_',' '))}</dd></div>
+            <div><dt>Owner</dt><dd>${esc(row.owner || 'Unassigned')}</dd></div>
+            <div><dt>Due</dt><dd>${when(row.due_at)}</dd></div>
+            <div><dt>Context</dt><dd>${esc(row.context || '—')}</dd></div>
+          </dl>
+          <div class="oc-row-actions">${nav}${manage}</div>
+        </article>`;
+      }).join('') : emptyQueue('Nothing needs attention', 'No visible cross-business source currently meets the Build 320 attention rules.');
+      const summary=byId('oc_attention_summary');
+      if(summary) summary.textContent=`${Number(meta.total_active || rows.length)} active · ${Number(meta.deferred_count || 0)} deferred · permission filtered`;
+    }
+    if (resolvedWrap) resolvedWrap.innerHTML=resolved.length ? resolved.map((row)=>`
+      <article class="oc-queue-card oc-attention-resolved">
+        <header><strong>${esc(row.title)}</strong><span class="${statusClass('resolved')}">resolved</span></header>
+        <dl><div><dt>Source</dt><dd>${esc(row.source_module)} · ${esc(String(row.source_type||'').replaceAll('_',' '))}</dd></div><div><dt>Resolved</dt><dd>${when(row.resolved_at)}</dd></div><div><dt>Note</dt><dd>${esc(row.state_note || 'Resolved')}</dd></div></dl>
+      </article>`).join('') : emptyQueue('No recently resolved items', 'Resolved Build 320 attention items will remain visible here as management history.');
+  }
+
   function renderQueues() {
-    renderRails(); renderRolePermissions(); renderOperationsHealth(); renderReleaseDashboard(); renderReleaseProof(); renderPaymentQueue(); renderBankQueue(); renderReconQueue(); renderEquipmentQueue(); renderAssetQueue(); renderRouteQueue(); renderQuoteQueue(); renderPortalQueue(); renderLiveUpdateQueue(); renderExecutionProofQueue(); renderCloseoutQueue(); renderCustomerNotificationQueue(); hydrateArApplicationSelects(); hydrateLiveUpdateSelects(); decoratePermissionControls();
+    renderAttentionQueue(); renderRails(); renderRolePermissions(); renderOperationsHealth(); renderReleaseDashboard(); renderReleaseProof(); renderPaymentQueue(); renderBankQueue(); renderReconQueue(); renderEquipmentQueue(); renderAssetQueue(); renderRouteQueue(); renderQuoteQueue(); renderPortalQueue(); renderLiveUpdateQueue(); renderExecutionProofQueue(); renderCloseoutQueue(); renderCustomerNotificationQueue(); hydrateArApplicationSelects(); hydrateLiveUpdateSelects(); decoratePermissionControls();
   }
   function hydrateBankSelects() {
     const options = `<option value="">Choose bank account</option>${(queues.banks || []).map((bank) => `<option value="${esc(bank.id)}">${esc(bank.account_name)}${bank.is_default ? ' (default)' : ''}</option>`).join('')}`;
@@ -670,6 +709,39 @@
   async function handleRowAction(buttonEl) {
     const action = buttonEl.dataset.ocAction; const id = buttonEl.dataset.id;
     if (!action || !id || buttonEl.disabled) return;
+    if (action === 'attention-open') {
+      const row=(queues.operations_attention || []).find((item)=>String(item.source_key)===String(id));
+      if (!row) return;
+      const role=window.YWI_AUTH?.getState?.()?.role || 'employee';
+      if (window.YWISecurity?.canViewModule?.(row.source_module,role,'view') !== true) {
+        status('Source module access is required to open this attention item.',true); return;
+      }
+      const target=row.route_hint || window.YWISecurity?.getDefaultSectionForModule?.(row.source_module,role);
+      if (target) window.YWIRouter?.showSection?.(target);
+      return;
+    }
+    if (action === 'attention-defer' || action === 'attention-resolve') {
+      const row=(queues.operations_attention || []).find((item)=>String(item.source_key)===String(id));
+      if (!row) return;
+      const isResolve=action === 'attention-resolve';
+      const note=prompt(isResolve ? 'Resolution note:' : 'Defer note (optional):') || '';
+      if (isResolve && note.trim().length < 3) return;
+      let deferredUntil=null;
+      if (!isResolve) {
+        const suggested=new Date(Date.now()+24*60*60*1000).toISOString().slice(0,10);
+        const dateText=prompt('Defer until (YYYY-MM-DD):',suggested) || '';
+        if(!/^\d{4}-\d{2}-\d{2}$/.test(dateText)) return;
+        deferredUntil=new Date(`${dateText}T23:59:59`).toISOString();
+      }
+      await send({
+        action:isResolve ? 'operations_attention_resolve' : 'operations_attention_defer',
+        source_key:row.source_key, source_module:row.source_module, source_type:row.source_type, source_id:row.source_id,
+        source_title:row.title, source_context:row.context, source_priority:row.priority, source_due_at:row.due_at,
+        deferred_until:deferredUntil, note:note.trim()
+      },isResolve ? 'Resolving attention item' : 'Deferring attention item');
+      return;
+    }
+
     if (action.startsWith('payment-')) {
       const decision = action.split('-')[1]; const note = ['reject','cancel'].includes(decision) ? prompt('Decision note (required):') : '';
       if (['reject','cancel'].includes(decision) && !note) return;
@@ -746,6 +818,7 @@
       <div class="operations-toolbar"><button id="oc_refresh" type="button">Refresh all live queues</button><span>Build ${BUILD}</span></div>
       <div id="oc_scorecards" class="operations-scorecards" aria-label="Implementation progress"></div><section id="oc_role_permissions" class="oc-permission-strip" aria-label="Role capability checklist"></section><section class="oc-health-grid" aria-label="Payment and release health"><div id="oc_stripe_health" class="oc-health-list"></div><div id="oc_export_readiness" class="oc-export-readiness"></div></section><section id="oc_release_dashboard" class="oc-release-dashboard" aria-label="Release readiness dashboard"></section>
       <div class="operations-grid">
+        <details open class="operations-attention-panel"><summary>Operations Needs Attention</summary><p class="muted">Build 320 prioritizes overdue/unassigned Jobs, customer follow-up, Equipment defects and maintenance, Safety/training, time-entry issues, completed-not-invoiced work, overdue receivables and Finance reconciliation exceptions. Source records remain authoritative.</p><div class="finance-module-note"><strong id="oc_attention_summary">Loading attention summary…</strong> · Defer/resolve changes management disposition only; it never edits the source business record.</div><div id="oc_attention_queue" class="oc-live-queue"></div><h4>Recently resolved</h4><div id="oc_attention_resolved" class="oc-live-queue"></div></details>
         <details open><summary>Quote owners, alerts, and follow-up</summary><p class="muted">Assign each request, set a due time, and preserve every contact event.</p><div id="oc_quote_queue" class="oc-live-queue"></div></details>
         <details open><summary>Live job updates: staff-only or customer-visible</summary><p class="muted">Site leaders may save staff-only updates. Customer-visible updates require a supervisor, show only in the secure portal, and can attach only approved public images. This does not send a payment, publish a public web page, or expose staff notes.</p><form id="oc_live_update_form" class="operations-form"><label>Work order<select name="work_order_id" data-oc-work-order-select required><option value="">Loading accepted work orders…</option></select></label><label>Visibility<select name="visibility"><option value="staff">Staff only</option><option value="customer">Customer visible (supervisor)</option></select></label><label>Update type<select name="update_type"><option value="arrival">Arrival</option><option value="progress" selected>Progress</option><option value="delay">Timing update</option><option value="access">Access/site update</option><option value="completion">Completion</option><option value="note">Service note</option></select></label><label>Progress %<input name="progress_percent" type="number" min="0" max="100" step="1" placeholder="Optional" /></label><label>When<input name="occurred_at" type="datetime-local" /></label><label class="operations-span">Update title<input name="title" maxlength="180" minlength="3" required placeholder="Example: Crew arrived and site walk-through started" /></label><label class="operations-span">Customer-safe message<textarea name="message" maxlength="4000" placeholder="Use plain language. Do not include private staff, costing, or access-code information in customer-visible updates."></textarea></label><label class="operations-span">Approved public images (optional)<select name="asset_ids" data-oc-live-update-assets multiple size="4" aria-describedby="oc_live_update_asset_help"></select><small id="oc_live_update_asset_help">Only approved public images are available here. Private review images and staff-only notes cannot be shown to customers.</small></label><label class="operations-inline-check operations-span"><input name="customer_notification_requested" type="checkbox" /> Queue a consent-controlled customer e-mail when the customer has opted in</label><button type="submit" data-oc-permission="work_order_live_update">Save live update</button></form><h4>Live update history</h4><div id="oc_live_updates_queue" class="oc-live-queue"></div><h4>Customer e-mail delivery</h4><div id="oc_customer_notification_queue" class="oc-live-queue"></div></details>
         <details open><summary>Service-execution proof and internal job cost</summary><p class="muted">Capture arrival/completion evidence plus labour, material, equipment, and other costs. Customer-visible proof requires approved public images and a customer-safe summary; internal costs never appear in the portal.</p><form id="oc_execution_proof_form" class="operations-form"><label>Work order<select name="work_order_id" data-oc-work-order-select required><option value="">Loading accepted work orders…</option></select></label><label>Proof type<select name="proof_type"><option value="arrival">Arrival</option><option value="progress">Progress</option><option value="completion">Completion</option><option value="quality">Quality check</option><option value="material">Material use</option><option value="equipment">Equipment use</option><option value="expense">Other expense</option><option value="note">Service note</option></select></label><label>Progress %<input name="progress_percent" type="number" min="0" max="100" step="1" placeholder="Optional" /></label><label>When<input name="occurred_at" type="datetime-local" /></label><label>Labour minutes<input name="labour_minutes" type="number" min="0" step="1" value="0" /></label><label>Labour hourly cost<input name="labour_hourly_rate" type="number" min="0" step="0.01" value="0" /></label><label>Material cost<input name="material_cost_total" type="number" min="0" step="0.01" value="0" /></label><label>Equipment cost<input name="equipment_cost_total" type="number" min="0" step="0.01" value="0" /></label><label>Other cost<input name="other_cost_total" type="number" min="0" step="0.01" value="0" /></label><label class="operations-span">Proof title<input name="title" maxlength="180" minlength="3" required placeholder="Example: Arrival walkaround completed" /></label><label class="operations-span">Staff notes<textarea name="staff_notes" maxlength="4000" placeholder="Internal proof notes, cost context, issue notes, or crew details. Never shown to customers."></textarea></label><label class="operations-span">Customer-safe summary<textarea name="customer_summary" maxlength="1500" placeholder="Optional summary shown only after supervisor approval if customer-visible is checked. Do not include costs or access details."></textarea></label><label class="operations-span">Approved public images (optional)<select name="asset_ids" data-oc-live-update-assets multiple size="4"></select><small>Customer-visible proof may use only approved public images. Private review media stays internal.</small></label><label class="operations-inline-check operations-span"><input name="customer_visible" type="checkbox" /> After supervisor approval, show this proof summary in the secure customer portal</label><button type="submit" data-oc-permission="work_order_execution_proof_submit">Capture service proof</button></form><h4>Execution proof and cost review</h4><div id="oc_execution_proof_queue" class="oc-live-queue"></div></details>
