@@ -386,7 +386,7 @@ After the landscaping Finance workflow is complete and no critical Finance block
 
 Only after internal accounting behavior is trustworthy, validate supported provider/payment paths including success, decline/failure, duplicate webhook/event, retry, idempotency, refund, partial refund and dispute/chargeback. Verify provider events link to the correct internal payment/accounting/job records and cannot double-settle, double-apply or double-post. Provider acceptance and Production provider enablement remain separate deliberate decisions.
 
-Items **318 — Job Cost & Profitability Closeout**, **319 — Landscaping Finance Dashboard & Cash Position**, **320 — Operations Needs Attention**, **321 — Crew Scheduling & Dispatch**, **322 — Recurring Lawn & Yard Maintenance Engine**, and **323 — Property & Site Intelligence** are implemented by the current release. The next planned autonomous item is **324 — Estimate → Job → Invoice Workflow**.
+Items **318 — Job Cost & Profitability Closeout**, **319 — Landscaping Finance Dashboard & Cash Position**, **320 — Operations Needs Attention**, **321 — Crew Scheduling & Dispatch**, **322 — Recurring Lawn & Yard Maintenance Engine**, **323 — Property & Site Intelligence**, and **324 — Estimate → Job → Invoice Workflow** are implemented by the current release. The next planned autonomous item is **325 — Landscape Production Tracking**.
 
 ### Roadmap selection rules
 

@@ -133,3 +133,12 @@
           <p>Schema 212 keeps property zones, photo references, server views and mutation RPCs private, with Jobs-approve write boundaries. Finance posting and payment-provider mutation remain disabled.</p>
         </section>
 
+        <section class="help-section" id="estimate-job-invoice-workflow">
+          <h2>Estimate → Job → Invoice Workflow</h2>
+          <p>Build 324 keeps <code>estimates</code>, <code>work_orders</code>, <code>change_orders</code> and the existing Finance invoice-candidate path as the commercial authorities. The workflow adds landscaping assumptions for labour hours, crew size, materials, equipment, subcontract/vendor allowances, disposal, travel, markup/margin review and optional work without creating parallel quote, job or invoice records.</p>
+          <p>Estimate assumptions are versioned and snapshotted when an accepted estimate converts to a work order. That preserves the estimating baseline so later production and job-cost evidence can be compared with the original plan instead of overwriting it.</p>
+          <p>Internal estimate approval is separate from customer approval. Customer acceptance continues to use the existing quote/portal authority. When a deposit is required, conversion remains blocked until the existing deposit records show the required amount paid; Build 324 does not mark provider payments paid itself.</p>
+          <p>Change orders link to the canonical work order and estimate. An approved change order requires a customer-approval evidence/reference so scope and commercial deltas remain traceable.</p>
+          <p>Invoice readiness means the work order is ready to enter the existing Finance review/candidate workflow. Build 324 does not directly create a posted A/R invoice, post a journal, collect a payment or enable payment-provider mutation. Those Finance controls remain deliberately separate.</p>
+        </section>
+
