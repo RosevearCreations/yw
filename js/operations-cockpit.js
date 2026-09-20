@@ -5,7 +5,7 @@
 'use strict';
 
 (function () {
-  const BUILD = '324-estimate-job-invoice-workflow';
+  const BUILD = '325-landscape-production-tracking';
   const RETRY_KEY = 'ywi_operations_cockpit_retry_v2';
   const DRAFT_KEY = 'ywi_operations_cockpit_draft_v2';
   let cameraStream = null;
@@ -38,7 +38,8 @@
     'recurring-visit-skip':'recurring_service_visit_event', 'recurring-visit-weather':'recurring_service_visit_event', 'recurring-visit-makeup':'recurring_service_visit_event', 'recurring-visit-hold':'recurring_service_visit_event', 'recurring-visit-resume':'recurring_service_visit_event', 'recurring-visit-cancel':'recurring_service_visit_event',
     'property-edit':'property_site_save', 'property-zone-edit':'property_zone_save', 'property-photo-edit':'property_photo_register',
     'estimate-edit':'estimate_workflow_save', 'estimate-approval-request':'estimate_approval_decision', 'estimate-approval-approve':'estimate_approval_decision', 'estimate-approval-reject':'estimate_approval_decision', 'estimate-approval-reopen':'estimate_approval_decision', 'estimate-convert':'estimate_convert_work_order',
-    'estimate-assumption-edit':'estimate_workflow_save', 'change-order-edit':'change_order_save'
+    'estimate-assumption-edit':'estimate_workflow_save', 'change-order-edit':'change_order_save',
+    'production-session-edit':'landscape_production_session_save', 'production-quantity-edit':'landscape_production_quantity_save'
   };
 
 
@@ -373,6 +374,113 @@
       return `<article class="oc-queue-card oc-notification-delivery-card"><header><div><strong>${esc(row.work_order_number || 'Work order')}</strong><small>${esc(row.live_update_title || row.update_type || 'Customer-visible update')}</small></div><span class="${statusClass(row.delivery_status)}">${esc(row.delivery_status || 'unknown')}</span></header><dl><div><dt>Consent</dt><dd>${esc(row.consent_status || 'unknown')} · ${row.live_work_update_opt_in ? 'email on' : 'email off'}</dd></div><div><dt>Attempts</dt><dd>${Number(row.attempt_count || 0)} of ${Number(row.max_attempts || 0)}</dd></div><div><dt>Next attempt</dt><dd>${esc(when(row.next_attempt_at))}</dd></div><div><dt>Last result</dt><dd>${esc(short(row.last_error || row.cancellation_reason || row.provider_message_id || 'Awaiting protected dispatch', 150))}</dd></div></dl>${buttons(actions)}</article>`;
     });
     wrap.innerHTML = `<div class="oc-notification-delivery-status"><span class="${statusClass(deliveryBadge)}">${esc(delivery.enabled ? 'delivery state' : 'delivery off')}</span><p>${esc(deliveryState)} Email addresses, portal tokens, staff notes, and private media are never shown in this queue.</p></div>${cards.length ? cards.join('') : emptyQueue('No customer e-mails awaiting review', 'Customer-visible updates require an explicit portal opt-in before delivery is queued.')}`;
+  }
+
+  function productionStageLabel(value) { return String(value || 'open').replaceAll('_',' '); }
+  function resetProductionSessionForm() {
+    const form=byId('oc_production_session_form'); if(!form) return;
+    form.reset(); form.elements.id.value=''; form.elements.session_status.value='planned';
+    form.elements.workability_status.value='not_recorded'; form.elements.completion_state.value='open';
+    form.elements.delay_minutes.value='0'; form.elements.return_visit_required.checked=false;
+    form.elements.crew_pay_code.value='regular'; form.elements.crew_break_minutes.value='0';
+  }
+  function loadProductionSessionForm(row) {
+    const form=byId('oc_production_session_form'); if(!form || !row) return;
+    const pairs={job_session_id:'id',work_order_id:'work_order_id',session_date:'session_date',session_status:'session_status',
+      workability_status:'workability_status',weather_summary:'weather_summary',delay_minutes:'delay_minutes',
+      delay_reason:'delay_reason',completion_state:'completion_state',unfinished_work_notes:'unfinished_work_notes',
+      return_visit_reason:'return_visit_reason',customer_site_issue_notes:'customer_site_issue_notes',
+      production_notes:'production_notes'};
+    Object.entries(pairs).forEach(([source,name])=>{ if(form.elements[name]) form.elements[name].value=row[source] ?? ''; });
+    if(form.elements.started_at) form.elements.started_at.value=row.started_at ? new Date(row.started_at).toISOString().slice(0,16) : '';
+    if(form.elements.ended_at) form.elements.ended_at.value=row.ended_at ? new Date(row.ended_at).toISOString().slice(0,16) : '';
+    form.elements.return_visit_required.checked=row.return_visit_required===true;
+    form.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  function resetProductionQuantityForm() {
+    const form=byId('oc_production_quantity_form'); if(!form) return;
+    const sessionId=form.elements.job_session_id?.value || '';
+    form.reset(); form.elements.id.value=''; form.elements.job_session_id.value=sessionId;
+    form.elements.record_type.value='production'; form.elements.activity_type.value='mowing';
+    form.elements.actual_quantity.value='0'; form.elements.waste_quantity.value='0';
+    form.elements.disposal_quantity.value='0'; form.elements.sort_order.value='100'; form.elements.is_active.checked=true;
+  }
+  function loadProductionQuantityForm(row) {
+    const form=byId('oc_production_quantity_form'); if(!form || !row) return;
+    ['id','job_session_id','client_site_zone_id','record_type','activity_type','metric_label','planned_quantity','actual_quantity',
+      'waste_quantity','disposal_quantity','unit_label','completion_percent','disposal_destination','notes','sort_order']
+      .forEach((key)=>{ if(form.elements[key]) form.elements[key].value=row[key] ?? ''; });
+    form.elements.is_active.checked=row.is_active!==false;
+    form.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  function hydrateLandscapeProductionSelectors() {
+    const workOrders=queues.landscape_production_work_orders || [];
+    const sessions=queues.landscape_production_sessions || [];
+    const materialIssues=queues.landscape_production_material_issues || [];
+    const equipment=queues.landscape_production_equipment_signouts || [];
+    const zones=queues.property_zones || [];
+    const apply=(selector,html)=>document.querySelectorAll(selector).forEach((select)=>{ const current=select.value; select.innerHTML=html; if(current) select.value=current; });
+    apply('[data-oc-production-work-order]',`<option value="">Choose work order</option>${workOrders.map((row)=>`<option value="${esc(row.id)}">${esc(row.work_order_number || row.id)} · ${esc(row.status || '')}</option>`).join('')}`);
+    apply('[data-oc-production-session]',`<option value="">No production session link</option>${sessions.map((row)=>`<option value="${esc(row.job_session_id)}">${esc(row.work_order_number || 'Work order')} · ${esc(row.session_date || '')} · ${esc(productionStageLabel(row.production_state))}</option>`).join('')}`);
+    apply('[data-oc-production-material]',`<option value="">No material issue link</option>${materialIssues.map((row)=>`<option value="${esc(row.id)}">${esc(row.issue_number || row.id)} · ${esc(row.issue_status || '')}</option>`).join('')}`);
+    apply('[data-oc-production-equipment]',`<option value="">No equipment signout link</option>${equipment.map((row)=>`<option value="${esc(row.id)}">Signout #${esc(row.id)} · ${esc(row.verification_status || '')}</option>`).join('')}`);
+    apply('[data-oc-production-zone]',`<option value="">No property zone</option>${zones.map((row)=>`<option value="${esc(row.id)}">${esc(row.site_name || '')} · ${esc(row.zone_name || row.zone_code || row.id)}</option>`).join('')}`);
+  }
+  function renderLandscapeProduction() {
+    const sessions=queues.landscape_production_sessions || [];
+    const quantities=queues.landscape_production_quantities || [];
+    const summary=byId('oc_production_summary');
+    if(summary) {
+      const active=sessions.filter((row)=>row.session_status==='in_progress').length;
+      const returns=sessions.filter((row)=>row.return_visit_required).length;
+      const missing=sessions.filter((row)=>row.production_state==='completed_missing_evidence').length;
+      summary.textContent=`${sessions.length} session(s) · ${active} in progress · ${returns} return visit(s) · ${missing} completed missing evidence`;
+    }
+    const sessionWrap=byId('oc_production_sessions');
+    if(sessionWrap) sessionWrap.innerHTML=sessions.length ? sessions.map((row)=>`<article class="oc-queue-card oc-production-card" data-state="${esc(row.production_state || '')}">
+      <header><div><strong>${esc(row.work_order_number || 'Work order')}</strong><small>${esc(row.client_name || 'Customer')} · ${esc(row.site_name || 'Property')} · ${esc(row.session_date || '')}</small></div><span class="${statusClass(row.production_state)}">${esc(productionStageLabel(row.production_state))}</span></header>
+      <dl>
+        <div><dt>Time / crew</dt><dd>${when(row.started_at)} → ${when(row.ended_at)} · ${Number(row.crew_member_count||0)} crew · ${Number(row.total_labour_hours||0).toFixed(2)} h</dd></div>
+        <div><dt>Workability</dt><dd>${esc(productionStageLabel(row.workability_status))}${row.weather_summary ? ' · '+esc(row.weather_summary) : ''}</dd></div>
+        <div><dt>Production</dt><dd>${Number(row.production_metric_count||0)} metric(s) · actual ${Number(row.actual_quantity_total||0)} · waste ${Number(row.waste_quantity_total||0)} · disposal ${Number(row.disposal_quantity_total||0)}</dd></div>
+        <div><dt>Resources</dt><dd>${Number(row.material_issue_count||0)} material issue(s) · ${Number(row.equipment_signout_count||0)} equipment signout(s)</dd></div>
+        <div><dt>Evidence</dt><dd>${Number(row.before_media_count||0)} before · ${Number(row.during_media_count||0)} during · ${Number(row.after_media_count||0)} after · ${Number(row.execution_proof_count||0)} proof(s)</dd></div>
+        <div><dt>Completion</dt><dd>${esc(productionStageLabel(row.completion_state))}${row.return_visit_required ? ' · return required' : ''}</dd></div>
+        <div><dt>Unfinished / site issue</dt><dd>${esc(row.unfinished_work_notes || row.customer_site_issue_notes || 'None recorded')}</dd></div>
+      </dl>
+      ${buttons([button('Edit session','production-session-edit',row.job_session_id,'',true,'landscape_production_session_save')])}
+    </article>`).join('') : emptyQueue('No production sessions yet','Start a field session against an existing work order. Crew time, material/equipment links and proof remain in their canonical systems.');
+
+    const quantityWrap=byId('oc_production_quantities');
+    if(quantityWrap) quantityWrap.innerHTML=quantities.length ? quantities.slice(0,300).map((row)=>`<article class="oc-queue-card">
+      <header><div><strong>${esc(row.metric_label || 'Production quantity')}</strong><small>${esc(row.work_order_number || '')} · ${esc(productionStageLabel(row.activity_type))}</small></div><span class="${statusClass(row.record_type)}">${esc(row.record_type || 'production')}</span></header>
+      <dl><div><dt>Planned / actual</dt><dd>${row.planned_quantity ?? '—'} / ${Number(row.actual_quantity||0)} ${esc(row.unit_label||'')}</dd></div><div><dt>Variance</dt><dd>${row.quantity_variance ?? '—'} · completion ${row.completion_percent ?? row.planned_completion_percent ?? '—'}%</dd></div><div><dt>Waste / disposal</dt><dd>${Number(row.waste_quantity||0)} / ${Number(row.disposal_quantity||0)} ${esc(row.unit_label||'')}</dd></div><div><dt>Zone</dt><dd>${esc(row.zone_name || row.zone_code || 'Whole property')}</dd></div></dl>
+      ${buttons([button('Edit quantity','production-quantity-edit',row.id,'',true,'landscape_production_quantity_save')])}
+    </article>`).join('') : emptyQueue('No production quantities','Record measurable mowing, trimming, bed work, material installation, disposal and other field quantities.');
+  }
+  async function handleProductionSessionForm(event) {
+    event.preventDefault(); const form=event.currentTarget; const data=formData(form);
+    const dt=(value)=>value ? new Date(value).toISOString() : null;
+    await send({
+      action:'landscape_production_session_save',...data,
+      started_at:dt(data.started_at),ended_at:dt(data.ended_at),
+      return_visit_required:form.elements.return_visit_required.checked,
+      crew_hour:{
+        worker_name:data.crew_worker_name||null,
+        started_at:dt(data.crew_started_at),ended_at:dt(data.crew_ended_at),
+        hours_worked:data.crew_hours_worked===''?null:data.crew_hours_worked,
+        regular_hours:data.crew_regular_hours===''?null:data.crew_regular_hours,
+        overtime_hours:data.crew_overtime_hours===''?null:data.crew_overtime_hours,
+        break_minutes:data.crew_break_minutes||0,pay_code:data.crew_pay_code||'regular',
+        notes:data.crew_notes||null
+      }
+    },'Landscape production session save');
+    resetProductionSessionForm();
+  }
+  async function handleProductionQuantityForm(event) {
+    event.preventDefault(); const form=event.currentTarget; const data=formData(form);
+    await send({action:'landscape_production_quantity_save',...data,is_active:form.elements.is_active.checked},'Landscape production quantity save');
+    resetProductionQuantityForm();
   }
 
   function commercialMoney(value) { return money(Number(value || 0)); }
@@ -985,7 +1093,7 @@
   }
 
   function renderQueues() {
-    renderEstimateInvoiceWorkflow(); renderPropertySiteIntelligence(); renderRecurringService(); renderCrewDispatch(); renderAttentionQueue(); renderRails(); renderRolePermissions(); renderOperationsHealth(); renderReleaseDashboard(); renderReleaseProof(); renderPaymentQueue(); renderBankQueue(); renderReconQueue(); renderEquipmentQueue(); renderAssetQueue(); renderRouteQueue(); renderQuoteQueue(); renderPortalQueue(); renderLiveUpdateQueue(); renderExecutionProofQueue(); renderCloseoutQueue(); renderCustomerNotificationQueue(); hydrateArApplicationSelects(); hydrateLiveUpdateSelects(); hydrateEstimateWorkflowSelectors(); hydratePropertySelectors(); hydrateRecurringSelectors(); hydrateCrewDispatchSelectors(); decoratePermissionControls();
+    renderLandscapeProduction(); renderEstimateInvoiceWorkflow(); renderPropertySiteIntelligence(); renderRecurringService(); renderCrewDispatch(); renderAttentionQueue(); renderRails(); renderRolePermissions(); renderOperationsHealth(); renderReleaseDashboard(); renderReleaseProof(); renderPaymentQueue(); renderBankQueue(); renderReconQueue(); renderEquipmentQueue(); renderAssetQueue(); renderRouteQueue(); renderQuoteQueue(); renderPortalQueue(); renderLiveUpdateQueue(); renderExecutionProofQueue(); renderCloseoutQueue(); renderCustomerNotificationQueue(); hydrateArApplicationSelects(); hydrateLiveUpdateSelects(); hydrateLandscapeProductionSelectors(); hydrateEstimateWorkflowSelectors(); hydratePropertySelectors(); hydrateRecurringSelectors(); hydrateCrewDispatchSelectors(); decoratePermissionControls();
   }
   function hydrateBankSelects() {
     const options = `<option value="">Choose bank account</option>${(queues.banks || []).map((bank) => `<option value="${esc(bank.id)}">${esc(bank.account_name)}${bank.is_default ? ' (default)' : ''}</option>`).join('')}`;
@@ -1089,6 +1197,7 @@
       action:'work_order_live_update_create',
       idempotency_key:idem('work_update'),
       work_order_id:data.work_order_id,
+      job_session_id:data.job_session_id || null,
       visibility:data.visibility,
       update_type:data.update_type,
       title:data.title,
@@ -1123,6 +1232,7 @@
       action:'work_order_execution_proof_submit',
       idempotency_key:idem('execution_proof'),
       work_order_id:data.work_order_id,
+      job_session_id:data.job_session_id || null,
       proof_type:data.proof_type,
       title:data.title,
       staff_notes:data.staff_notes,
@@ -1375,6 +1485,12 @@
       await send({ action:'quote_owner_assign', request_id:id, assigned_to_profile_id:owner, followup_due_at:due ? new Date(due).toISOString() : null, event_note:'Owner/follow-up updated from Operations Cockpit.' }, 'Quote owner assignment'); return;
     }
     if (action === 'quote-contact') { const note = prompt('Contact or follow-up note:'); if (!note) return; await send({ action:'quote_followup_event', request_id:id, event_type:'contacted', request_status:'contacted', response_status:'responded', event_note:note }, 'Quote contact history'); return; }
+    if (action === 'production-session-edit') {
+      const row=(queues.landscape_production_sessions || []).find((item)=>String(item.job_session_id)===String(id)); if(row) loadProductionSessionForm(row); return;
+    }
+    if (action === 'production-quantity-edit') {
+      const row=(queues.landscape_production_quantities || []).find((item)=>String(item.id)===String(id)); if(row) loadProductionQuantityForm(row); return;
+    }
     if (action === 'estimate-edit') {
       const row=(queues.estimate_invoice_workflows || []).find((item)=>String(item.estimate_id)===String(id)); if(row) loadEstimateWorkflowForm(row); return;
     }
@@ -1489,6 +1605,66 @@
       <div class="operations-toolbar"><button id="oc_refresh" type="button">Refresh all live queues</button><span>Build ${BUILD}</span></div>
       <div id="oc_scorecards" class="operations-scorecards" aria-label="Implementation progress"></div><section id="oc_role_permissions" class="oc-permission-strip" aria-label="Role capability checklist"></section><section class="oc-health-grid" aria-label="Payment and release health"><div id="oc_stripe_health" class="oc-health-list"></div><div id="oc_export_readiness" class="oc-export-readiness"></div></section><section id="oc_release_dashboard" class="oc-release-dashboard" aria-label="Release readiness dashboard"></section>
       <div class="operations-grid">
+        <details open class="operations-production-panel"><summary>Landscape Production Tracking</summary>
+          <p class="muted">Build 325 records actual field execution against canonical work orders. Crew hours stay in <code>job_session_crew_hours</code>; material use stays in <code>material_issues</code>; equipment stays in custody/signout; before/during/after photos and completion evidence stay in Execution Proof; closeout remains the supervisor closeout authority.</p>
+          <div class="finance-module-note"><strong id="oc_production_summary">Loading production…</strong> · Weather/workability is recorded as field evidence, not an automated safety decision.</div>
+          <form id="oc_production_session_form" class="operations-form">
+            <input type="hidden" name="id" />
+            <label>Work order<select name="work_order_id" data-oc-production-work-order required><option value="">Loading work orders…</option></select></label>
+            <label>Session date<input name="session_date" type="date" /></label>
+            <label>Status<select name="session_status"><option value="planned">Planned</option><option value="in_progress">In progress</option><option value="delayed">Delayed</option><option value="paused">Paused</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option></select></label>
+            <label>Start<input name="started_at" type="datetime-local" /></label>
+            <label>Finish<input name="ended_at" type="datetime-local" /></label>
+            <label>Workability<select name="workability_status"><option value="not_recorded">Not recorded</option><option value="workable">Workable</option><option value="restricted">Restricted</option><option value="delayed">Delayed</option><option value="stopped">Stopped</option></select></label>
+            <label>Delay minutes<input name="delay_minutes" type="number" min="0" value="0" /></label>
+            <label>Completion state<select name="completion_state"><option value="open">Open</option><option value="complete">Complete</option><option value="partial">Partial</option><option value="blocked">Blocked</option><option value="return_required">Return required</option></select></label>
+            <label class="operations-span">Weather / workability context<textarea name="weather_summary" maxlength="1200"></textarea></label>
+            <label class="operations-span">Delay reason<textarea name="delay_reason" maxlength="1200"></textarea></label>
+            <label class="operations-span">Unfinished work<textarea name="unfinished_work_notes" maxlength="2500"></textarea></label>
+            <label class="operations-inline-check"><input name="return_visit_required" type="checkbox" /> Return visit required</label>
+            <label class="operations-span">Return visit reason<textarea name="return_visit_reason" maxlength="2000"></textarea></label>
+            <label class="operations-span">Customer / site issue<textarea name="customer_site_issue_notes" maxlength="2500"></textarea></label>
+            <label class="operations-span">Production notes<textarea name="production_notes" maxlength="3000"></textarea></label>
+            <label>Existing material issue<select name="material_issue_id" data-oc-production-material><option value="">No material issue link</option></select></label>
+            <label>Existing equipment signout<select name="equipment_signout_id" data-oc-production-equipment><option value="">No equipment signout link</option></select></label>
+            <fieldset class="operations-span"><legend>Crew-hour evidence</legend>
+              <label>Worker name<input name="crew_worker_name" maxlength="220" /></label>
+              <label>Crew start<input name="crew_started_at" type="datetime-local" /></label>
+              <label>Crew finish<input name="crew_ended_at" type="datetime-local" /></label>
+              <label>Hours<input name="crew_hours_worked" type="number" min="0" step="0.01" /></label>
+              <label>Regular hours<input name="crew_regular_hours" type="number" min="0" step="0.01" /></label>
+              <label>Overtime hours<input name="crew_overtime_hours" type="number" min="0" step="0.01" /></label>
+              <label>Break minutes<input name="crew_break_minutes" type="number" min="0" value="0" /></label>
+              <label>Pay code<select name="crew_pay_code"><option value="regular">Regular</option><option value="overtime">Overtime</option><option value="mixed">Mixed</option><option value="manual">Manual</option></select></label>
+              <label class="operations-span">Crew notes<textarea name="crew_notes" maxlength="1200"></textarea></label>
+            </fieldset>
+            <button type="submit" data-oc-permission="landscape_production_session_save">Save production session</button>
+            <button id="oc_production_session_reset" type="button" class="secondary">Clear session form</button>
+          </form>
+          <form id="oc_production_quantity_form" class="operations-form">
+            <input type="hidden" name="id" />
+            <label>Production session<select name="job_session_id" data-oc-production-session required><option value="">Loading sessions…</option></select></label>
+            <label>Property zone<select name="client_site_zone_id" data-oc-production-zone><option value="">No property zone</option></select></label>
+            <label>Record type<select name="record_type"><option value="production">Production</option><option value="disposal">Disposal</option></select></label>
+            <label>Activity<select name="activity_type"><option value="mowing">Mowing</option><option value="edging">Edging</option><option value="trimming">Trimming</option><option value="garden_bed">Garden / bed</option><option value="hedge_shrub">Hedge / shrub</option><option value="tree_brush">Tree / brush</option><option value="cleanup">Cleanup</option><option value="aeration">Aeration</option><option value="fertilizing">Fertilizing</option><option value="seeding">Seeding</option><option value="sod">Sod</option><option value="planting">Planting</option><option value="mulch">Mulch</option><option value="soil">Soil</option><option value="gravel_stone">Gravel / stone</option><option value="disposal">Disposal</option><option value="snow_ice">Snow / ice</option><option value="other">Other</option></select></label>
+            <label class="operations-span">Metric / work completed<input name="metric_label" maxlength="240" required placeholder="Example: Front lawn serviced" /></label>
+            <label>Planned qty<input name="planned_quantity" type="number" min="0" step="0.01" /></label>
+            <label>Actual qty<input name="actual_quantity" type="number" min="0" step="0.01" value="0" /></label>
+            <label>Waste qty<input name="waste_quantity" type="number" min="0" step="0.01" value="0" /></label>
+            <label>Disposal qty<input name="disposal_quantity" type="number" min="0" step="0.01" value="0" /></label>
+            <label>Unit<input name="unit_label" maxlength="80" placeholder="sq_ft, yd³, loads…" /></label>
+            <label>Completion %<input name="completion_percent" type="number" min="0" max="100" step="0.01" /></label>
+            <label class="operations-span">Disposal destination<input name="disposal_destination" maxlength="400" /></label>
+            <label class="operations-span">Notes<textarea name="notes" maxlength="1800"></textarea></label>
+            <label>Sort order<input name="sort_order" type="number" min="0" max="10000" value="100" /></label>
+            <label class="operations-inline-check"><input name="is_active" type="checkbox" checked /> Active production metric</label>
+            <button type="submit" data-oc-permission="landscape_production_quantity_save">Save quantity</button>
+            <button id="oc_production_quantity_reset" type="button" class="secondary">Clear quantity form</button>
+          </form>
+          <p class="muted">Before/during/after photos are captured through the existing Service Execution Proof form below. Choose the production session there so photos/proof roll into this session.</p>
+          <h4>Field sessions</h4><div id="oc_production_sessions" class="oc-live-queue"></div>
+          <h4>Production / disposal quantities</h4><div id="oc_production_quantities" class="oc-live-queue"></div>
+        </details>
         <details open class="operations-commercial-panel"><summary>Estimate → Job → Invoice Workflow</summary>
           <p class="muted">Build 324 makes landscaping estimating operational without creating a second accounting system. Estimates remain canonical in <code>estimates</code>; customer quote acceptance and deposits keep their existing portal/provider authorities; conversion creates/reuses the canonical <code>work_orders</code>; invoice readiness hands off to the existing Finance candidate authority.</p>
           <div class="finance-module-note"><strong id="oc_estimate_workflow_summary">Loading estimate workflow…</strong> · Finance posting and payment-provider mutation remain disabled.</div>
@@ -1710,8 +1886,8 @@
         </details>
         <details open class="operations-attention-panel"><summary>Operations Needs Attention</summary><p class="muted">Build 320 prioritizes overdue/unassigned Jobs, customer follow-up, Equipment defects and maintenance, Safety/training, time-entry issues, completed-not-invoiced work, overdue receivables and Finance reconciliation exceptions. Source records remain authoritative.</p><div class="finance-module-note"><strong id="oc_attention_summary">Loading attention summary…</strong> · Defer/resolve changes management disposition only; it never edits the source business record.</div><div id="oc_attention_queue" class="oc-live-queue"></div><h4>Recently resolved</h4><div id="oc_attention_resolved" class="oc-live-queue"></div></details>
         <details open><summary>Quote owners, alerts, and follow-up</summary><p class="muted">Assign each request, set a due time, and preserve every contact event.</p><div id="oc_quote_queue" class="oc-live-queue"></div></details>
-        <details open><summary>Live job updates: staff-only or customer-visible</summary><p class="muted">Site leaders may save staff-only updates. Customer-visible updates require a supervisor, show only in the secure portal, and can attach only approved public images. This does not send a payment, publish a public web page, or expose staff notes.</p><form id="oc_live_update_form" class="operations-form"><label>Work order<select name="work_order_id" data-oc-work-order-select required><option value="">Loading accepted work orders…</option></select></label><label>Visibility<select name="visibility"><option value="staff">Staff only</option><option value="customer">Customer visible (supervisor)</option></select></label><label>Update type<select name="update_type"><option value="arrival">Arrival</option><option value="progress" selected>Progress</option><option value="delay">Timing update</option><option value="access">Access/site update</option><option value="completion">Completion</option><option value="note">Service note</option></select></label><label>Progress %<input name="progress_percent" type="number" min="0" max="100" step="1" placeholder="Optional" /></label><label>When<input name="occurred_at" type="datetime-local" /></label><label class="operations-span">Update title<input name="title" maxlength="180" minlength="3" required placeholder="Example: Crew arrived and site walk-through started" /></label><label class="operations-span">Customer-safe message<textarea name="message" maxlength="4000" placeholder="Use plain language. Do not include private staff, costing, or access-code information in customer-visible updates."></textarea></label><label class="operations-span">Approved public images (optional)<select name="asset_ids" data-oc-live-update-assets multiple size="4" aria-describedby="oc_live_update_asset_help"></select><small id="oc_live_update_asset_help">Only approved public images are available here. Private review images and staff-only notes cannot be shown to customers.</small></label><label class="operations-inline-check operations-span"><input name="customer_notification_requested" type="checkbox" /> Queue a consent-controlled customer e-mail when the customer has opted in</label><button type="submit" data-oc-permission="work_order_live_update">Save live update</button></form><h4>Live update history</h4><div id="oc_live_updates_queue" class="oc-live-queue"></div><h4>Customer e-mail delivery</h4><div id="oc_customer_notification_queue" class="oc-live-queue"></div></details>
-        <details open><summary>Service-execution proof and internal job cost</summary><p class="muted">Capture arrival/completion evidence plus labour, material, equipment, and other costs. Customer-visible proof requires approved public images and a customer-safe summary; internal costs never appear in the portal.</p><form id="oc_execution_proof_form" class="operations-form"><label>Work order<select name="work_order_id" data-oc-work-order-select required><option value="">Loading accepted work orders…</option></select></label><label>Proof type<select name="proof_type"><option value="arrival">Arrival</option><option value="progress">Progress</option><option value="completion">Completion</option><option value="quality">Quality check</option><option value="material">Material use</option><option value="equipment">Equipment use</option><option value="expense">Other expense</option><option value="note">Service note</option></select></label><label>Progress %<input name="progress_percent" type="number" min="0" max="100" step="1" placeholder="Optional" /></label><label>When<input name="occurred_at" type="datetime-local" /></label><label>Labour minutes<input name="labour_minutes" type="number" min="0" step="1" value="0" /></label><label>Labour hourly cost<input name="labour_hourly_rate" type="number" min="0" step="0.01" value="0" /></label><label>Material cost<input name="material_cost_total" type="number" min="0" step="0.01" value="0" /></label><label>Equipment cost<input name="equipment_cost_total" type="number" min="0" step="0.01" value="0" /></label><label>Other cost<input name="other_cost_total" type="number" min="0" step="0.01" value="0" /></label><label class="operations-span">Proof title<input name="title" maxlength="180" minlength="3" required placeholder="Example: Arrival walkaround completed" /></label><label class="operations-span">Staff notes<textarea name="staff_notes" maxlength="4000" placeholder="Internal proof notes, cost context, issue notes, or crew details. Never shown to customers."></textarea></label><label class="operations-span">Customer-safe summary<textarea name="customer_summary" maxlength="1500" placeholder="Optional summary shown only after supervisor approval if customer-visible is checked. Do not include costs or access details."></textarea></label><label class="operations-span">Approved public images (optional)<select name="asset_ids" data-oc-live-update-assets multiple size="4"></select><small>Customer-visible proof may use only approved public images. Private review media stays internal.</small></label><label class="operations-inline-check operations-span"><input name="customer_visible" type="checkbox" /> After supervisor approval, show this proof summary in the secure customer portal</label><button type="submit" data-oc-permission="work_order_execution_proof_submit">Capture service proof</button></form><h4>Execution proof and cost review</h4><div id="oc_execution_proof_queue" class="oc-live-queue"></div></details>
+        <details open><summary>Live job updates: staff-only or customer-visible</summary><p class="muted">Site leaders may save staff-only updates. Customer-visible updates require a supervisor, show only in the secure portal, and can attach only approved public images. This does not send a payment, publish a public web page, or expose staff notes.</p><form id="oc_live_update_form" class="operations-form"><label>Work order<select name="work_order_id" data-oc-work-order-select required><option value="">Loading accepted work orders…</option></select></label><label>Production session<select name="job_session_id" data-oc-production-session><option value="">No production session link</option></select></label><label>Visibility<select name="visibility"><option value="staff">Staff only</option><option value="customer">Customer visible (supervisor)</option></select></label><label>Update type<select name="update_type"><option value="arrival">Arrival</option><option value="progress" selected>Progress</option><option value="delay">Timing update</option><option value="access">Access/site update</option><option value="completion">Completion</option><option value="note">Service note</option></select></label><label>Progress %<input name="progress_percent" type="number" min="0" max="100" step="1" placeholder="Optional" /></label><label>When<input name="occurred_at" type="datetime-local" /></label><label class="operations-span">Update title<input name="title" maxlength="180" minlength="3" required placeholder="Example: Crew arrived and site walk-through started" /></label><label class="operations-span">Customer-safe message<textarea name="message" maxlength="4000" placeholder="Use plain language. Do not include private staff, costing, or access-code information in customer-visible updates."></textarea></label><label class="operations-span">Approved public images (optional)<select name="asset_ids" data-oc-live-update-assets multiple size="4" aria-describedby="oc_live_update_asset_help"></select><small id="oc_live_update_asset_help">Only approved public images are available here. Private review images and staff-only notes cannot be shown to customers.</small></label><label class="operations-inline-check operations-span"><input name="customer_notification_requested" type="checkbox" /> Queue a consent-controlled customer e-mail when the customer has opted in</label><button type="submit" data-oc-permission="work_order_live_update">Save live update</button></form><h4>Live update history</h4><div id="oc_live_updates_queue" class="oc-live-queue"></div><h4>Customer e-mail delivery</h4><div id="oc_customer_notification_queue" class="oc-live-queue"></div></details>
+        <details open><summary>Service-execution proof and internal job cost</summary><p class="muted">Capture arrival/completion evidence plus labour, material, equipment, and other costs. Customer-visible proof requires approved public images and a customer-safe summary; internal costs never appear in the portal.</p><form id="oc_execution_proof_form" class="operations-form"><label>Work order<select name="work_order_id" data-oc-work-order-select required><option value="">Loading accepted work orders…</option></select></label><label>Production session<select name="job_session_id" data-oc-production-session><option value="">No production session link</option></select></label><label>Proof type<select name="proof_type"><option value="arrival">Arrival</option><option value="progress">Progress</option><option value="completion">Completion</option><option value="quality">Quality check</option><option value="material">Material use</option><option value="equipment">Equipment use</option><option value="expense">Other expense</option><option value="note">Service note</option></select></label><label>Progress %<input name="progress_percent" type="number" min="0" max="100" step="1" placeholder="Optional" /></label><label>When<input name="occurred_at" type="datetime-local" /></label><label>Labour minutes<input name="labour_minutes" type="number" min="0" step="1" value="0" /></label><label>Labour hourly cost<input name="labour_hourly_rate" type="number" min="0" step="0.01" value="0" /></label><label>Material cost<input name="material_cost_total" type="number" min="0" step="0.01" value="0" /></label><label>Equipment cost<input name="equipment_cost_total" type="number" min="0" step="0.01" value="0" /></label><label>Other cost<input name="other_cost_total" type="number" min="0" step="0.01" value="0" /></label><label class="operations-span">Proof title<input name="title" maxlength="180" minlength="3" required placeholder="Example: Arrival walkaround completed" /></label><label class="operations-span">Staff notes<textarea name="staff_notes" maxlength="4000" placeholder="Internal proof notes, cost context, issue notes, or crew details. Never shown to customers."></textarea></label><label class="operations-span">Customer-safe summary<textarea name="customer_summary" maxlength="1500" placeholder="Optional summary shown only after supervisor approval if customer-visible is checked. Do not include costs or access details."></textarea></label><label class="operations-span">Approved public images (optional)<select name="asset_ids" data-oc-live-update-assets multiple size="4"></select><small>Customer-visible proof may use only approved public images. Private review media stays internal.</small></label><label class="operations-inline-check operations-span"><input name="customer_visible" type="checkbox" /> After supervisor approval, show this proof summary in the secure customer portal</label><button type="submit" data-oc-permission="work_order_execution_proof_submit">Capture service proof</button></form><h4>Execution proof and cost review</h4><div id="oc_execution_proof_queue" class="oc-live-queue"></div></details>
         <details open><summary>Supervisor closeout, signoff, invoice readiness, and follow-up</summary><p class="muted">Build the final customer-safe closeout from approved proof. Before/after gallery, customer signoff, review request, invoice-readiness, and maintenance follow-up stay separate from public SEO pages and never expose costs.</p><form id="oc_closeout_form" class="operations-form"><label>Work order<select name="work_order_id" data-oc-work-order-select required><option value="">Loading accepted work orders…</option></select></label><label>Maintenance follow-up due<input name="maintenance_followup_due_at" type="date" /></label><label class="operations-inline-check"><input name="invoice_ready_requested" type="checkbox" /> Prepare invoice-readiness after customer signoff</label><label class="operations-inline-check"><input name="review_request_requested" type="checkbox" /> Queue review request after customer signoff</label><label class="operations-span">Customer-safe closeout summary<textarea name="customer_summary" maxlength="2000" minlength="12" required placeholder="Summarize what was completed, what the customer should know, and any care/maintenance tip. Do not include costs, staff notes, access codes, or internal margin."></textarea></label><label class="operations-span">Staff-only closeout notes<textarea name="staff_closeout_notes" maxlength="4000" placeholder="Internal notes for invoice, rework, cost context, or supervisor review. Never shown in the customer portal."></textarea></label><label class="operations-span">Approved BEFORE images<select name="before_asset_ids" data-oc-closeout-before-assets multiple size="4"></select><small>Only approved public images are selectable. Review-stage media stays private.</small></label><label class="operations-span">Approved AFTER images<select name="after_asset_ids" data-oc-closeout-after-assets multiple size="4"></select><small>The portal gallery shows approved customer-safe public images only.</small></label><button type="submit" data-oc-permission="work_order_closeout_submit">Submit closeout package</button></form><h4>Closeout review queue</h4><div id="oc_closeout_queue" class="oc-live-queue"></div></details>
         <details open><summary>Payment Application &amp; A/R Completion</summary><p class="muted">Apply receipts and unapplied cash, paid deposits, credits, discounts, approved write-offs, or overpayments only after server validation. Every submission is review/audit evidence; <strong>ledger posting remains OFF</strong> until a separately authorized release.</p><form id="oc_ar_application_form" class="operations-form">
           <label>Application type<select name="application_type"><option value="receipt">Receipt to invoice</option><option value="unapplied_cash">Unapplied cash to invoice</option><option value="deposit">Paid deposit to invoice</option><option value="credit">Credit to invoice</option><option value="discount">Discount to invoice</option><option value="writeoff">Approved write-off</option><option value="overpayment">Overpayment / customer credit</option></select></label>
@@ -1753,6 +1929,10 @@
   }
 
   function bind() {
+    byId('oc_production_session_form')?.addEventListener('submit',(e)=>handleProductionSessionForm(e).catch((err)=>status(err?.message || 'Production session save failed.',true)));
+    byId('oc_production_session_reset')?.addEventListener('click',resetProductionSessionForm);
+    byId('oc_production_quantity_form')?.addEventListener('submit',(e)=>handleProductionQuantityForm(e).catch((err)=>status(err?.message || 'Production quantity save failed.',true)));
+    byId('oc_production_quantity_reset')?.addEventListener('click',resetProductionQuantityForm);
     byId('oc_estimate_workflow_form')?.addEventListener('submit',(e)=>handleEstimateWorkflowForm(e).catch((err)=>status(err?.message || 'Estimate workflow save failed.',true)));
     byId('oc_estimate_reset')?.addEventListener('click',resetEstimateWorkflowForm);
     byId('oc_estimate_assumption_form')?.addEventListener('submit',(e)=>handleEstimateAssumptionForm(e).catch((err)=>status(err?.message || 'Estimate assumption save failed.',true)));

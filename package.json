@@ -127,7 +127,9 @@
     "test:property-site-intelligence": "node scripts/property-site-intelligence-check.mjs",
     "test:browser:property-site-intelligence": "playwright test --config=playwright.config.mjs tests/browser/property-site-intelligence.spec.mjs",
     "test:estimate-job-invoice-workflow": "node scripts/estimate-job-invoice-workflow-check.mjs",
-    "test:browser:estimate-job-invoice-workflow": "playwright test --config=playwright.config.mjs tests/browser/estimate-job-invoice-workflow.spec.mjs"
+    "test:browser:estimate-job-invoice-workflow": "playwright test --config=playwright.config.mjs tests/browser/estimate-job-invoice-workflow.spec.mjs",
+    "test:landscape-production-tracking": "node scripts/landscape-production-tracking-check.mjs",
+    "test:browser:landscape-production-tracking": "playwright test --config=playwright.config.mjs tests/browser/landscape-production-tracking.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
