@@ -272,7 +272,7 @@ Deno.serve(async (req) => {
 
         const { data: agreement, error: agreementError } = await supabase
           .from('recurring_service_agreements')
-          .select('visit_estimated_duration_hours')
+          .select('visit_estimated_duration_hours,visit_estimated_minutes,recurrence_frequency,custom_interval_days,recurrence_interval,service_program_type')
           .eq('id', candidate.agreement_id)
           .maybeSingle()
 
@@ -288,9 +288,19 @@ Deno.serve(async (req) => {
         }
 
         const durationMinutes =
-          agreement?.visit_estimated_duration_hours != null
-            ? Math.round(Number(agreement.visit_estimated_duration_hours) * 60)
-            : null
+          agreement?.visit_estimated_minutes != null
+            ? Math.round(Number(agreement.visit_estimated_minutes))
+            : agreement?.visit_estimated_duration_hours != null
+              ? Math.round(Number(agreement.visit_estimated_duration_hours) * 60)
+              : null
+        const frequencyLabel = (() => {
+          const frequency = String(agreement?.recurrence_frequency || '').toLowerCase()
+          if (frequency === 'weekly') return 'Weekly'
+          if (frequency === 'biweekly') return 'Biweekly'
+          if (frequency === 'custom_days') return `Every ${Number(agreement?.custom_interval_days || agreement?.recurrence_interval || 1)} day(s)`
+          if (frequency === 'seasonal_once') return 'Seasonal once'
+          return frequency ? frequency.replaceAll('_', ' ') : 'scheduler-created'
+        })()
 
         const scheduledStartAt = `${candidate.candidate_date}T${String(setting.run_hour_local).padStart(2, '0')}:${String(setting.run_minute_local).padStart(2, '0')}:00`
 
@@ -301,10 +311,10 @@ Deno.serve(async (req) => {
             session_date: candidate.candidate_date,
             session_kind: 'field_service',
             session_status: 'planned',
-            service_frequency_label: 'scheduler-created',
+            service_frequency_label: frequencyLabel,
             scheduled_start_at: scheduledStartAt,
             duration_minutes: durationMinutes,
-            notes: `Auto-created by scheduler run ${runCode} for agreement ${candidate.agreement_code ?? ''}`.trim(),
+            notes: `Build 322 recurring visit · ${frequencyLabel} · auto-created by scheduler run ${runCode} for agreement ${candidate.agreement_code ?? ''}`.trim(),
           })
           .select('id')
           .single()
