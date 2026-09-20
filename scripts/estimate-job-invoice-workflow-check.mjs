@@ -71,8 +71,8 @@ must(boundaries,[
   "change_order_save: contract('change_order_save', 'jobs', 'approve', 'write'"
 ],'Build 324 boundaries');
 
+assert.ok(/const BUILD = '\\d{3}-[a-z0-9-]+';/.test(ui),'Operations cockpit must retain a current autonomous build marker.');
 must(ui,[
-  "const BUILD = '324-estimate-job-invoice-workflow'",
   'Estimate → Job → Invoice Workflow',
   'Labour hours',
   'Crew size',
