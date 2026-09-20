@@ -108,6 +108,7 @@ jobs:
       - run: npm run test:accountant-export-package-v2
       - run: npm run test:job-cost-profitability-closeout
       - run: npm run test:landscaping-finance-dashboard
+      - run: npm run test:operations-needs-attention
       - run: npm run test:help-seo
       - run: npm run test:search-discovery
       - run: npm run test:repo
@@ -160,6 +161,7 @@ jobs:
       - run: npm run test:browser:accountant-export-package-v2
       - run: npm run test:browser:job-cost-profitability-closeout
       - run: npm run test:browser:landscaping-finance-dashboard
+      - run: npm run test:browser:operations-needs-attention
       - run: npm run test:browser:profile-reference-lifecycle
       - run: npm run test:browser:workspace-organization
       - run: npm run test:browser:performance-budgets
