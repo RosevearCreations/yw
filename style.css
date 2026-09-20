@@ -3638,3 +3638,31 @@ body[data-authenticated="false"] .module-section-nav {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Build 322 — Recurring Lawn & Yard Maintenance Engine */
+.operations-recurring-panel .operations-form {
+  align-items: start;
+}
+#oc_recurring_programs,
+#oc_recurring_visits {
+  display: grid;
+  gap: 12px;
+}
+.oc-recurring-program-card dl,
+.oc-recurring-visit-card dl {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+.oc-recurring-visit-card[data-status="held"],
+.oc-recurring-visit-card[data-status="weather_delayed"] {
+  border-width: 2px;
+}
+.oc-recurring-visit-card[data-status="skipped"],
+.oc-recurring-visit-card[data-status="cancelled"] {
+  opacity: .78;
+}
+@media (max-width: 720px) {
+  .operations-recurring-panel .operations-form {
+    grid-template-columns: 1fr;
+  }
+}
