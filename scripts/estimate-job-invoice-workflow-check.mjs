@@ -25,6 +25,7 @@ must(migration,[
   'create or replace function public.ywi_rpc_estimate_convert_work_order',
   'create or replace function public.ywi_rpc_change_order_save',
   "'portal_acceptance_authority_preserved'",
+  'Customer acceptance status is controlled by the existing quote/portal authority.',
   "'finance_candidate_authority_preserved'",
   "'finance_provider_execution_off'",
   "213,'213_estimate_job_invoice_workflow'"
