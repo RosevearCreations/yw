@@ -597,7 +597,7 @@ begin
   if not found then raise exception 'Estimate was not found.' using errcode='23503'; end if;
   update public.estimates e set
     approval_required=true,
-    approval_status=case v_decision when 'request' then 'requested' when 'approve' then 'approved' when 'reject' then 'rejected' else 'draft' end,
+    approval_status=case v_decision when 'request' then 'pending' when 'approve' then 'approved' when 'reject' then 'rejected' else 'draft' end,
     approval_requested_at=case when v_decision='request' then now() when v_decision='reopen' then null else e.approval_requested_at end,
     approved_by_profile_id=case when v_decision='approve' then p_actor_profile_id when v_decision in ('reject','reopen') then null else e.approved_by_profile_id end,
     approved_at=case when v_decision='approve' then now() when v_decision in ('reject','reopen') then null else e.approved_at end,
