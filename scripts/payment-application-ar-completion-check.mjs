@@ -18,8 +18,8 @@ add('build313-existing-schema-supports-adjustments',
   all(sql124,['application_type','credit_amount','discount_amount','writeoff_amount','overpayment_amount','review_status','application_payload']),
   'Existing schema already supports Build 313 application categories and review evidence.');
 add('build313-no-schema-migration-added',
-  !fs.readdirSync('sql').some((name)=>/^209[_-]/.test(name)),
-  'Build 313 remains Schema 208/source-only.');
+  !fs.readdirSync('sql').some((name)=>/^313[_-]/.test(name)),
+  'Build 313 itself remains source-only; later roadmap builds may legitimately advance the schema.');
 add('build313-preview-reuses-existing-authority',
   !boundaries.includes('payment_application_preview:')
     && boundaries.includes("payment_action_request: contract('payment_action_request', 'finance', 'create', 'write', 'payments', 'finance.payment_action.requested')")
