@@ -43,8 +43,8 @@ const {
   boundaryAuditFields,
 } = module.exports;
 
-assert.equal(Array.from(MODULE_WRITE_ACTIONS).length, 46, 'Exactly 46 operations actions must be contracted through Schema 213.');
-assert.equal(Object.keys(MODULE_WRITE_BOUNDARIES).length, 46);
+assert.equal(Array.from(MODULE_WRITE_ACTIONS).length, 48, 'Exactly 48 operations actions must be contracted through Schema 214.');
+assert.equal(Object.keys(MODULE_WRITE_BOUNDARIES).length, 48);
 
 const financeCreate = resolveModuleWriteBoundary('payment_action_request');
 assert.equal(financeCreate.ownerModule, 'finance');
@@ -136,6 +136,19 @@ assert.equal(changeOrder.minimum, 'approve');
 assert.equal(changeOrder.mode, 'write');
 assert.equal(changeOrder.eventKey, 'jobs.change_order.saved');
 
+const productionSession = resolveModuleWriteBoundary('landscape_production_session_save');
+assert.equal(productionSession.ownerModule, 'jobs');
+assert.equal(productionSession.minimum, 'create');
+assert.equal(productionSession.mode, 'write');
+assert.equal(productionSession.crossModule, true);
+assert.equal(productionSession.eventKey, 'jobs.production.session_saved');
+
+const productionQuantity = resolveModuleWriteBoundary('landscape_production_quantity_save');
+assert.equal(productionQuantity.ownerModule, 'jobs');
+assert.equal(productionQuantity.minimum, 'create');
+assert.equal(productionQuantity.mode, 'write');
+assert.equal(productionQuantity.eventKey, 'jobs.production.quantity_saved');
+
 const disabled = resolveModuleWriteBoundary('deposit_status_update');
 assert.equal(disabled.ownerModule, 'finance');
 assert.equal(disabled.minimum, 'manage');
@@ -173,11 +186,12 @@ for (const action of Array.from(MODULE_WRITE_ACTIONS)) {
   if (boundary.crossModule) assert.ok(boundary.eventKey, `Cross-module contract needs event key: ${action}`);
 }
 
-console.log('PASS boundary-exact-46-actions');
+console.log('PASS boundary-exact-48-actions');
 console.log('PASS boundary-build320-attention-management');
 console.log('PASS boundary-build322-recurring-service-management');
 console.log('PASS boundary-build323-property-site-management');
 console.log('PASS boundary-build324-estimate-job-invoice-management');
+console.log('PASS boundary-build325-landscape-production-management');
 console.log('PASS boundary-finance-read-write-ownership');
 console.log('PASS boundary-jobs-cross-module-event');
 console.log('PASS boundary-admin-write-ownership');
@@ -185,4 +199,4 @@ console.log('PASS boundary-disabled-payment-mutation');
 console.log('PASS boundary-unknown-action-fails-closed');
 console.log('PASS boundary-audit-metadata');
 console.log('PASS boundary-all-contracts-valid');
-console.log('\nSchema 164 + 209 + 211 + 212 + 213 module write-boundary behavior gate passed: 12/12 checks.');
+console.log('\nSchema 164 + 209 + 211 + 212 + 213 + 214 module write-boundary behavior gate passed: 13/13 checks.');
