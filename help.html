@@ -109,4 +109,11 @@
           <p>Every row shows priority, owner, due date, source module and operating context. Navigation is permission-aware: the source module must be visible to the signed-in profile before the cockpit offers a source-workspace link. Hidden Finance, Safety or Jobs data is not added to that profile's Build 320 attention feed.</p>
           <p>Admin-manage users may defer an attention item to a future date or mark it resolved with a note. Build 320 stores only that management disposition and recently resolved history; it does not change the underlying Job, customer, Equipment, Safety, timekeeping, receivable or reconciliation record. Schema 209 keeps the disposition table private behind RLS and server authority.</p>
         </section>
+        <section class="help-section" id="crew-scheduling-dispatch">
+          <h2>Crew Scheduling &amp; Dispatch</h2>
+          <p>Build 321 adds a daily and seven-day landscaping scheduler on top of the existing Jobs dispatch authority. Each visit can record the named crew, lead/supervisor, specific employees, truck/vehicle, trailer, additional equipment, customer/property, route and stop order, estimated service duration, travel allowance, recurring-visit label and dispatch notes.</p>
+          <p>Workability is a deliberate supervisor/dispatcher decision. Record workable, caution, delayed or blocked along with weather/field context; the application does not automatically make weather or safety decisions. A blocked visit cannot be dispatched.</p>
+          <p>The server checks overlapping active assignments for the same crew, person or equipment. Conflicts require an explicit override note, and locked-out/unavailable equipment is rejected. Reschedules and cancellations require reasons and create a new dispatch-history row that supersedes the earlier visit rather than erasing it.</p>
+          <p>Schema 210 keeps <code>dispatch_schedule_items</code> as the canonical source, preserves the existing atomic <code>jobs.job_scheduled</code> event path, and exposes the new scheduler only through Jobs-authorized server access. Finance posting and payment-provider mutation remain off.</p>
+        </section>
 
