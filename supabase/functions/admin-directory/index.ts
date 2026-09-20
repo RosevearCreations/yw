@@ -699,6 +699,11 @@ serve(async (req) => {
     accounting.accounting_close_package_delivery_queue = await safeList(supabase, 'v_accounting_close_package_delivery_queue', '*', 'updated_at', limit, false);
     accounting.sales_tax_filing_review = await safeList(supabase, 'v_sales_tax_filing_review_directory', '*', 'filing_period_end', limit, false);
     accounting.payroll_remittance_review = await safeList(supabase, 'v_payroll_remittance_review_directory', '*', 'remittance_period_end', limit, false);
+    accounting.bank_reconciliation_sessions = await safeList(supabase, 'v_bank_reconciliation_summary', '*', 'period_end', limit, false);
+    accounting.ar_invoice_aging_detail = await safeList(supabase, 'v_ar_invoice_aging_detail', '*', 'due_date', 120, true);
+    accounting.ap_bill_aging_detail = await safeList(supabase, 'v_ap_bill_aging_detail', '*', 'due_date', 120, true);
+    accounting.accounting_payment_application_dashboard = await safeList(supabase, 'v_accounting_payment_application_dashboard');
+    accounting.bank_accounts = await safeList(supabase, 'bank_accounts', 'id,account_name,institution_name,currency_code,account_mask,account_status,is_default', 'account_name', 40, false);
     return Response.json(accounting, { headers: corsHeaders });
   }
 
