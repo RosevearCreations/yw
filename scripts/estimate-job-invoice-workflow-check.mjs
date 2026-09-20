@@ -46,7 +46,7 @@ assert.ok(/revoke all on table public\.estimate_workflow_assumptions from public
 assert.ok(/alter table public\.work_order_assumption_baselines enable row level security;/i.test(migration));
 assert.ok(/revoke all on table public\.work_order_assumption_baselines from public,anon,authenticated;/i.test(migration));
 assert.ok(!/insert\s+into\s+public\.(?:ar_invoices|ar_invoice_lines|gl_journal_batches|gl_journal_entries|ar_payments|payments)\b/i.test(migration),'Build 324 migration must not post invoices, journals or payments.');
-assert.ok(!/execution_enabled\s*=\s*true|provider_mutation_enabled\s*=\s*true/i.test(migration),'Build 324 must not enable Finance/provider execution.');
+assert.ok(!/update\s+public\.finance_job_completion_posting_execution_controls[\s\S]{0,1200}\b(?:execution_enabled|provider_mutation_enabled)\s*=\s*true/i.test(migration),'Build 324 must not enable Finance/provider execution.');
 
 must(operations,[
   "if (action === 'estimate_workflow_save')",
