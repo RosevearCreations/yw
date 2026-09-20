@@ -117,7 +117,9 @@
     "test:job-cost-profitability-closeout": "node scripts/job-cost-profitability-closeout-check.mjs",
     "test:browser:job-cost-profitability-closeout": "playwright test --config=playwright.config.mjs tests/browser/job-cost-profitability-closeout.spec.mjs",
     "test:landscaping-finance-dashboard": "node scripts/landscaping-finance-dashboard-check.mjs",
-    "test:browser:landscaping-finance-dashboard": "playwright test --config=playwright.config.mjs tests/browser/landscaping-finance-dashboard.spec.mjs"
+    "test:browser:landscaping-finance-dashboard": "playwright test --config=playwright.config.mjs tests/browser/landscaping-finance-dashboard.spec.mjs",
+    "test:operations-needs-attention": "node scripts/operations-needs-attention-check.mjs",
+    "test:browser:operations-needs-attention": "playwright test --config=playwright.config.mjs tests/browser/operations-needs-attention.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
