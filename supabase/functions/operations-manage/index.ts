@@ -1344,6 +1344,13 @@ async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false
     safeSelect(supabase.from('v_crew_dispatch_work_order_candidates').select('*').order('scheduled_start',{ascending:true}).limit(300))
   ]) : [[],[],[],[],[]];
 
+  const [recurringPrograms,recurringVisits,recurringClients,recurringSites] = jobsAttentionAllowed ? await Promise.all([
+    safeSelect(supabase.from('v_recurring_service_program_directory').select('*').order('agreement_code',{ascending:true}).limit(240)),
+    safeSelect(supabase.from('v_recurring_service_visit_schedule').select('*').order('service_date',{ascending:true}).limit(500)),
+    safeSelect(supabase.from('clients').select('id,display_name,legal_name').order('display_name',{ascending:true}).limit(300)),
+    safeSelect(supabase.from('client_sites').select('id,client_id,site_name,service_address,city').order('site_name',{ascending:true}).limit(400))
+  ]) : [[],[],[],[]];
+
   return {
     operations_attention: operationsAttention.active,
     operations_attention_resolved: operationsAttention.resolved,
@@ -1354,6 +1361,11 @@ async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false
     crew_dispatch_routes: dispatchRoutes,
     crew_dispatch_work_orders: dispatchCandidates,
     crew_dispatch_meta: { build:321, schema:210, permission_filtered:true, scheduler_authority:'dispatch_schedule_items', conflict_policy:'explicit_override_required' },
+    recurring_service_programs: recurringPrograms,
+    recurring_service_visits: recurringVisits,
+    recurring_service_clients: recurringClients,
+    recurring_service_sites: recurringSites,
+    recurring_service_meta: { build:322, schema:211, permission_filtered:true, agreement_authority:'recurring_service_agreements', scheduler_authority:'v_service_execution_scheduler_candidates' },
     ...queueMap, bank_preview_rows: bankReviewRows, bank_items: bankItems, reconciliation_exceptions: reconciliationExceptions, profiles, banks, rails, ar_invoices: arInvoices, ar_payments: arPayments, customer_deposits: customerDeposits, ar_applications: arApplications,
     capabilities: capabilitySnapshot,
     stripe_health: {
@@ -2076,6 +2088,106 @@ serve(async (req) => {
         payload:{ request_id:requestId, assigned_to_profile_id:targetOwnerId, followup_due_at:followup, event_type:eventType, build:BUILD, schema:SCHEMA }
       });
       return Response.json({ ok: true, record: data }, { headers: corsHeaders });
+    }
+
+    if (action === 'recurring_service_program_save') {
+      requireRank(profile,45,action);
+      const serviceName=clean(body.service_name,180);
+      const agreementStatus=clean(body.agreement_status || 'draft',40).toLowerCase();
+      const programType=clean(body.service_program_type || 'other',60).toLowerCase();
+      const frequency=clean(body.recurrence_frequency || 'weekly',40).toLowerCase();
+      if(!serviceName && !isUuid(body.id)) throw new HttpError(400,'Service name is required.');
+      if(!['draft','active','paused','completed','cancelled'].includes(agreementStatus)) throw new HttpError(400,'Unsupported agreement status.');
+      if(!['mowing','garden_bed_maintenance','hedge_shrub_trimming','spring_cleanup','fall_cleanup','aeration','fertilizing','seasonal_program','other'].includes(programType)) throw new HttpError(400,'Unsupported lawn/yard program type.');
+      if(!['weekly','biweekly','custom_days','seasonal_once','manual'].includes(frequency)) throw new HttpError(400,'Unsupported recurrence frequency.');
+      const customDays=body.custom_interval_days === '' || body.custom_interval_days === null || body.custom_interval_days === undefined ? null : int(body.custom_interval_days,0);
+      if(frequency==='custom_days' && (!customDays || customDays<1 || customDays>366)) throw new HttpError(400,'Custom recurrence requires 1–366 days.');
+      const preferredWeekday=body.preferred_weekday === '' || body.preferred_weekday === null || body.preferred_weekday === undefined ? null : int(body.preferred_weekday,-1);
+      if(preferredWeekday!==null && (preferredWeekday<0 || preferredWeekday>6)) throw new HttpError(400,'Preferred weekday must be Sunday (0) through Saturday (6).');
+      if(agreementStatus==='paused' && !clean(body.pause_reason,1000)) throw new HttpError(400,'A pause/hold reason is required.');
+      if(agreementStatus==='cancelled' && !clean(body.cancellation_reason,1000)) throw new HttpError(400,'A cancellation reason is required.');
+      const payload:any={
+        id:isUuid(body.id)?body.id:null,
+        agreement_code:clean(body.agreement_code,80) || null,
+        client_id:isUuid(body.client_id)?body.client_id:null,
+        client_site_id:isUuid(body.client_site_id)?body.client_site_id:null,
+        route_id:isUuid(body.route_id)?body.route_id:null,
+        crew_id:isUuid(body.crew_id)?body.crew_id:null,
+        service_name:serviceName || null,
+        agreement_status:agreementStatus,
+        billing_method:clean(body.billing_method || 'per_visit',40),
+        service_pattern:clean(body.service_pattern,180) || null,
+        recurrence_frequency:frequency,
+        recurrence_rule:clean(body.recurrence_rule,300) || null,
+        recurrence_interval:Math.max(1,int(body.recurrence_interval,1)),
+        recurrence_anchor_date:clean(body.recurrence_anchor_date,20) || null,
+        custom_interval_days:customDays,
+        preferred_weekday:preferredWeekday,
+        start_date:clean(body.start_date,20) || null,
+        end_date:clean(body.end_date,20) || null,
+        open_end_date:body.open_end_date===true || String(body.open_end_date).toLowerCase()==='true',
+        service_window_start:clean(body.service_window_start,20) || null,
+        service_window_end:clean(body.service_window_end,20) || null,
+        season_start_month:body.season_start_month === '' || body.season_start_month == null ? null : int(body.season_start_month,0),
+        season_start_day:body.season_start_day === '' || body.season_start_day == null ? null : int(body.season_start_day,0),
+        season_end_month:body.season_end_month === '' || body.season_end_month == null ? null : int(body.season_end_month,0),
+        season_end_day:body.season_end_day === '' || body.season_end_day == null ? null : int(body.season_end_day,0),
+        visit_estimated_minutes:body.visit_estimated_minutes === '' || body.visit_estimated_minutes == null ? null : Math.max(1,int(body.visit_estimated_minutes,1)),
+        default_travel_allowance_minutes:Math.max(0,int(body.default_travel_allowance_minutes,0)),
+        weather_delay_policy:clean(body.weather_delay_policy || 'manual',40),
+        weather_makeup_days:Math.max(0,int(body.weather_makeup_days,1)),
+        customer_hold_until:clean(body.customer_hold_until,20) || null,
+        customer_hold_reason:clean(body.customer_hold_reason,1000) || null,
+        pause_reason:clean(body.pause_reason,1000) || null,
+        cancellation_reason:clean(body.cancellation_reason,1000) || null,
+        service_notes:clean(body.service_notes,2000) || null,
+        auto_create_session_candidates:body.auto_create_session_candidates !== false && String(body.auto_create_session_candidates).toLowerCase()!=='false'
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_recurring_program_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      const programId=clean((data as any)?.id,80);
+      const rows=programId ? await safeSelect(supabase.from('v_recurring_service_program_directory').select('*').eq('id',programId).limit(1)) : [];
+      await audit(supabase,{
+        operation_action:action,operation_status:agreementStatus,entity_type:'recurring_service_agreement',
+        entity_id:programId,actor_profile_id:profile.id,
+        request_payload:{service_name:serviceName,agreement_status:agreementStatus,service_program_type:programType,recurrence_frequency:frequency},
+        response_payload:{agreement_id:programId,agreement_code:(data as any)?.agreement_code || null}
+      });
+      return Response.json({ok:true,build:322,schema:211,record:rows[0] || data},{headers:corsHeaders});
+    }
+
+    if (action === 'recurring_service_visit_event') {
+      requireRank(profile,45,action);
+      const agreementId=clean(body.agreement_id,80);
+      const originalDate=clean(body.original_service_date,20);
+      const eventType=clean(body.event_type,40).toLowerCase();
+      const effectiveDate=clean(body.effective_service_date,20) || null;
+      const reason=clean(body.reason,1200);
+      const workability=clean(body.workability_state,40).toLowerCase() || null;
+      if(!isUuid(agreementId)) throw new HttpError(400,'Valid agreement_id is required.');
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(originalDate)) throw new HttpError(400,'Valid original service date is required.');
+      if(!['skip','weather_delay','makeup','customer_hold','resume','cancel_visit'].includes(eventType)) throw new HttpError(400,'Unsupported recurring visit event.');
+      if(eventType!=='resume' && !reason) throw new HttpError(400,'A reason is required.');
+      if(['weather_delay','makeup'].includes(eventType) && !effectiveDate) throw new HttpError(400,'Weather delay and make-up events require an effective service date.');
+      if(workability && !['not_assessed','workable','caution','delayed','blocked'].includes(workability)) throw new HttpError(400,'Unsupported workability state.');
+      const {data,error}=await supabase.rpc('ywi_rpc_recurring_visit_event',{
+        p_agreement_id:agreementId,
+        p_original_service_date:originalDate,
+        p_event_type:eventType,
+        p_effective_service_date:effectiveDate,
+        p_reason:reason || null,
+        p_workability_state:workability,
+        p_actor_profile_id:profile.id
+      });
+      if(error) throw error;
+      const eventId=clean((data as any)?.id,80);
+      await audit(supabase,{
+        operation_action:action,operation_status:eventType,entity_type:'recurring_service_visit_event',
+        entity_id:eventId,actor_profile_id:profile.id,
+        request_payload:{agreement_id:agreementId,original_service_date:originalDate,event_type:eventType,effective_service_date:effectiveDate},
+        response_payload:{event_id:eventId}
+      });
+      return Response.json({ok:true,build:322,schema:211,event:data},{headers:corsHeaders});
     }
 
     if (action === 'dispatch_schedule') {

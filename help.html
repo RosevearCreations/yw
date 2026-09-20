@@ -116,4 +116,12 @@
           <p>The server checks overlapping active assignments for the same crew, person or equipment. Conflicts require an explicit override note, and locked-out/unavailable equipment is rejected. Reschedules and cancellations require reasons and create a new dispatch-history row that supersedes the earlier visit rather than erasing it.</p>
           <p>Schema 210 keeps <code>dispatch_schedule_items</code> as the canonical source, preserves the existing atomic <code>jobs.job_scheduled</code> event path, and exposes the new scheduler only through Jobs-authorized server access. Finance posting and payment-provider mutation remain off.</p>
         </section>
+        <section class="help-section" id="recurring-lawn-yard-maintenance">
+          <h2>Recurring Lawn &amp; Yard Maintenance</h2>
+          <p>Build 322 turns the existing recurring service agreement into a landscaping program engine. Programs support mowing, garden/bed maintenance, hedge/shrub trimming, spring cleanup, fall cleanup, aeration, fertilizing and other seasonal work with weekly, biweekly, custom-day, seasonal-once or manual cadence.</p>
+          <p>Use agreement start/end dates for the contract period and the optional annual season month/day fields for the working season inside that contract. Service windows record the preferred clock window; duration, travel allowance, default crew and route carry forward as planning context.</p>
+          <p>Generated visits are evidence-backed rather than destructive. Skip, weather-delay, make-up, customer-hold/resume and single-visit cancellation actions create private visit-event rows. Weather delay and make-up actions keep the original service date and record the effective replacement date.</p>
+          <p>Customer holds pause the program without deleting its history. Resume clears the hold and returns it to active. Program cancellation requires an explicit reason. Active generated visits feed the pre-existing service-execution scheduler and job-session authority; Build 322 does not create a parallel scheduler.</p>
+          <p>Schema 211 keeps recurring-service tables and mutation RPCs server-only, keeps RLS enabled, and leaves Finance posting/payment-provider execution disabled.</p>
+        </section>
 

@@ -14,19 +14,21 @@ const operationsPath = 'supabase/functions/operations-manage/index.ts';
 const helperPath = 'supabase/functions/_shared/module-write-boundaries.ts';
 const migrationPath = 'sql/164_cross_module_event_write_boundaries.sql';
 const extensionMigrationPath = 'sql/209_operations_needs_attention.sql';
+const recurringMigrationPath = 'sql/211_recurring_lawn_yard_maintenance.sql';
 const operations = read(operationsPath);
 const helper = read(helperPath);
 const migration = read(migrationPath);
 const extensionMigration = read(extensionMigrationPath);
+const recurringMigration = read(recurringMigrationPath);
 const coreData = read('supabase/functions/core-data-read/index.ts');
 
 const handledActions = [...new Set([...operations.matchAll(/action\s*===\s*['"]([^'"]+)['"]/g)].map((m) => m[1]))].sort();
 const helperActions = [...new Set([...helper.matchAll(/^\s{2}([a-z0-9_]+):\s*contract\('([^']+)'/gmi)].map((m) => m[2]))].sort();
-const sqlActions = [...new Set([...`${migration}\n${extensionMigration}`.matchAll(/^\s*\('([a-z0-9_]+)','(?:safety|finance|jobs|admin)'/gmi)].map((m) => m[1]))].sort();
+const sqlActions = [...new Set([...`${migration}\n${extensionMigration}\n${recurringMigration}`.matchAll(/^\s*\('([a-z0-9_]+)','(?:safety|finance|jobs|admin)'/gmi)].map((m) => m[1]))].sort();
 
-add('schema164-exact-handler-count', handledActions.length === 37, `Handled operations actions: ${handledActions.length}.`);
-add('schema164-helper-exact-handler-set', equalSets(handledActions, helperActions), `Helper contracts: ${helperActions.length}; handlers: ${handledActions.length}.`);
-add('schema164-plus209-db-exact-handler-set', equalSets(handledActions, sqlActions), `DB contracts: ${sqlActions.length}; handlers: ${handledActions.length}.`);
+add('schema164-exact-handler-count', handledActions.length === 39, `Handled operations actions: ${handledActions.length}.`);
+add('schema164-helper-plus322-exact-handler-set', equalSets(handledActions, helperActions), `Helper contracts: ${helperActions.length}; handlers: ${handledActions.length}.`);
+add('schema164-plus209-plus211-db-exact-handler-set', equalSets(handledActions, sqlActions), `DB contracts: ${sqlActions.length}; handlers: ${handledActions.length}.`);
 
 add('schema164-no-permissive-module-fallback', !operations.includes('moduleRequirementForAction') && !operations.includes("return { moduleKey:'admin', minimum:'manage' };"), 'Legacy unknown-action -> Admin/manage fallback is removed.');
 add('schema164-boundary-resolved-before-authorization', operations.indexOf('const boundary = resolveModuleWriteBoundary(action);') > -1 && operations.indexOf('const boundary = resolveModuleWriteBoundary(action);') < operations.indexOf('hasModuleAccess(supabase, profile, boundary.ownerModule, boundary.minimum)'), 'Action contract resolves before permission evaluation.');
@@ -44,6 +46,7 @@ add('schema164-job-cost-cross-boundary-explicit', helper.includes("job_cost_refr
 add('schema164-equipment-cost-recovery-cross-boundary-explicit', helper.includes("equipment_cost_recovery_decision: contract('equipment_cost_recovery_decision', 'jobs', 'approve', 'write', 'equipment_cost_recovery', 'jobs.equipment.cost_recovery_decided', true)"), 'Jobs equipment cost recovery exposes a named Finance-facing boundary event.');
 add('schema164-read-actions-not-misclassified-as-write', helper.includes("operations_queue_list: contract('operations_queue_list', 'admin', 'view', 'read'") && helper.includes("reconciliation_suggest: contract('reconciliation_suggest', 'finance', 'view', 'read'"), 'Known read actions are explicitly read-mode contracts.');
 add('build320-attention-actions-explicit', helper.includes("operations_attention_defer: contract('operations_attention_defer', 'admin', 'manage', 'write'") && helper.includes("operations_attention_resolve: contract('operations_attention_resolve', 'admin', 'manage', 'write'") && extensionMigration.includes("('operations_attention_defer','admin','manage','write'") && extensionMigration.includes("('operations_attention_resolve','admin','manage','write'"), 'Build 320 defer/resolve state is explicitly Admin-manage and DB-registered.');
+add('build322-recurring-actions-explicit', helper.includes("recurring_service_program_save: contract('recurring_service_program_save', 'jobs', 'approve', 'write'") && helper.includes("recurring_service_visit_event: contract('recurring_service_visit_event', 'jobs', 'approve', 'write'") && recurringMigration.includes("('recurring_service_program_save','jobs','approve','write'") && recurringMigration.includes("('recurring_service_visit_event','jobs','approve','write'"), 'Build 322 recurring program and visit-event writes are explicit Jobs-approve contracts.');
 
 add('schema164-private-contract-registry', migration.includes('alter table public.app_module_write_contracts enable row level security;') && migration.includes('revoke all on table public.app_module_write_contracts from public, anon, authenticated;') && migration.includes('grant select on table public.app_module_write_contracts to service_role;'), 'Write-contract registry is a private service-role control plane.');
 add('schema164-db-security-assertions', migration.includes('ywi_module_write_boundary_security_assertions') && migration.includes("'operations_action_contract_count'") && migration.includes("'manual_deposit_mutation_disabled'") && migration.includes("'boundary_control_plane_private'"), 'Database assertions verify contract count, disabled payment mutation, and private control plane.');
