@@ -427,6 +427,13 @@ declare
   v_deposit_amount numeric := coalesce(nullif(p_payload->>'deposit_required_amount','')::numeric,0);
   v_deposit_percent numeric := coalesce(nullif(p_payload->>'deposit_required_percent','')::numeric,0);
 begin
+  if v_id is not null then
+    select * into v_est from public.estimates where id=v_id;
+    if not found then raise exception 'Estimate % does not exist.',v_id using errcode='23503'; end if;
+  end if;
+  if v_status='accepted' and (v_id is null or coalesce(v_est.status,'')<>'accepted') then
+    raise exception 'Customer acceptance status is controlled by the existing quote/portal authority.' using errcode='23514';
+  end if;
   if v_status not in ('draft','sent','accepted','declined','expired','cancelled','approved') then
     raise exception 'Unsupported estimate status %.',v_status using errcode='23514';
   end if;
@@ -472,7 +479,6 @@ begin
     ) returning * into v_est;
   else
     select * into v_est from public.estimates where id=v_id for update;
-    if not found then raise exception 'Estimate % does not exist.',v_id using errcode='23503'; end if;
     if v_client_id is null then v_client_id:=v_est.client_id; end if;
     update public.estimates e set
       client_id=v_client_id,
