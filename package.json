@@ -121,7 +121,9 @@
     "test:operations-needs-attention": "node scripts/operations-needs-attention-check.mjs",
     "test:browser:operations-needs-attention": "playwright test --config=playwright.config.mjs tests/browser/operations-needs-attention.spec.mjs",
     "test:crew-scheduling-dispatch": "node scripts/crew-scheduling-dispatch-check.mjs",
-    "test:browser:crew-scheduling-dispatch": "playwright test --config=playwright.config.mjs tests/browser/crew-scheduling-dispatch.spec.mjs"
+    "test:browser:crew-scheduling-dispatch": "playwright test --config=playwright.config.mjs tests/browser/crew-scheduling-dispatch.spec.mjs",
+    "test:recurring-lawn-yard-maintenance": "node scripts/recurring-lawn-yard-maintenance-check.mjs",
+    "test:browser:recurring-lawn-yard-maintenance": "playwright test --config=playwright.config.mjs tests/browser/recurring-lawn-yard-maintenance.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
