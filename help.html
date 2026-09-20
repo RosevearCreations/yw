@@ -103,4 +103,10 @@
           <p>The dashboard reuses the existing accounting fast path and Build 318 job-profitability closeout when the operator has the required Jobs visibility. If job-profitability detail is unavailable, cash, A/R, A/P, remittance and reconciliation evidence remain visible rather than failing the entire Finance workspace.</p>
           <p>Build 319 remains schema-neutral at Schema 208. It does not post journals, pay bills, collect receivables, file remittances, enable provider/payment mutation, change Jobs records or close an accounting period. The underlying Finance, reconciliation, close and job-cost authorities remain the source of truth.</p>
         </section>
+        <section class="help-section" id="operations-needs-attention">
+          <h2>Operations Needs Attention</h2>
+          <p>Build 320 gives management one prioritized cross-business queue for overdue or unassigned jobs, customer follow-up, equipment defects and lockouts, overdue maintenance, Safety corrective actions and training, employee time-entry issues, completed-not-invoiced work, overdue receivables, and Finance reconciliation exceptions.</p>
+          <p>Every row shows priority, owner, due date, source module and operating context. Navigation is permission-aware: the source module must be visible to the signed-in profile before the cockpit offers a source-workspace link. Hidden Finance, Safety or Jobs data is not added to that profile's Build 320 attention feed.</p>
+          <p>Admin-manage users may defer an attention item to a future date or mark it resolved with a note. Build 320 stores only that management disposition and recently resolved history; it does not change the underlying Job, customer, Equipment, Safety, timekeeping, receivable or reconciliation record. Schema 209 keeps the disposition table private behind RLS and server authority.</p>
+        </section>
 

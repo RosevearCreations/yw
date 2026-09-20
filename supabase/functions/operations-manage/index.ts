@@ -1104,6 +1104,159 @@ function reconciliationExceptionView(row: any, profileMap: Map<string, any>) {
   };
 }
 
+
+const ATTENTION_PRIORITY_RANK: Record<string, number> = { critical:0, high:10, medium:20, low:30, info:40 };
+function attentionPriority(value: unknown, fallback = 'medium') {
+  const cleanValue = clean(value, 40).toLowerCase();
+  return Object.prototype.hasOwnProperty.call(ATTENTION_PRIORITY_RANK, cleanValue) ? cleanValue : fallback;
+}
+function attentionItem(input: Record<string, unknown>) {
+  const sourceModule = clean(input.source_module, 20).toLowerCase();
+  const sourceType = clean(input.source_type, 80).toLowerCase();
+  const sourceId = clean(input.source_id, 160);
+  return {
+    source_key: `${sourceModule}:${sourceType}:${sourceId}`,
+    source_module: sourceModule,
+    source_type: sourceType,
+    source_id: sourceId,
+    title: clean(input.title, 240),
+    context: clean(input.context, 600),
+    priority: attentionPriority(input.priority, 'medium'),
+    owner: clean(input.owner, 180) || 'Unassigned',
+    due_at: input.due_at || null,
+    route_hint: clean(input.route_hint, 60) || sourceModule,
+    state_status: 'open',
+    deferred_until: null,
+    state_note: null
+  };
+}
+function buildOperationsAttentionQueue(input: Record<string, any[]>) {
+  const now = Date.now();
+  const todayText = new Date().toISOString().slice(0,10);
+  const items: any[] = [];
+  const jobs = input.jobs || [];
+  for (const row of jobs) {
+    const status = clean(row?.status,40).toLowerCase();
+    const active = !['completed','done','closed','cancelled','canceled'].includes(status);
+    const reasons:string[] = [];
+    if (active && row?.start_date && String(row.start_date) < todayText) reasons.push('overdue');
+    if (active && !row?.crew_id && !row?.assigned_supervisor_profile_id) reasons.push('unassigned');
+    if (reasons.length) items.push(attentionItem({
+      source_module:'jobs', source_type:'job_schedule', source_id:row.id,
+      title:`${row.job_code || 'Job'} · ${reasons.join(' / ')}`,
+      context:`${row.job_name || ''}${row.client_name ? ` · ${row.client_name}` : ''}`,
+      priority: reasons.includes('overdue') ? 'high' : 'medium',
+      owner: row.assigned_supervisor_name || row.supervisor_name || row.crew_name,
+      due_at: row.start_date || row.end_date, route_hint:'jobs'
+    }));
+    if (['completed','done','closed'].includes(status) && !clean(row?.invoice_number,100)) {
+      items.push(attentionItem({
+        source_module:'jobs', source_type:'completed_not_invoiced', source_id:row.id,
+        title:`${row.job_code || 'Job'} · completed, not invoiced`,
+        context:`${row.job_name || ''}${row.client_name ? ` · ${row.client_name}` : ''}`,
+        priority:'high', owner:row.admin_name || row.assigned_supervisor_name || row.supervisor_name,
+        due_at:row.end_date || row.updated_at, route_hint:'jobs'
+      }));
+    }
+  }
+  for (const row of input.quotes || []) {
+    if (row?.overdue === true || !row?.assigned_to_profile_id) items.push(attentionItem({
+      source_module:'jobs', source_type:'customer_followup', source_id:row.id,
+      title:`${row.full_name || 'Customer'} · ${row?.overdue === true ? 'follow-up overdue' : 'follow-up unassigned'}`,
+      context:`${row.service_type || 'Service inquiry'}${row.service_area ? ` · ${row.service_area}` : ''}`,
+      priority:row?.overdue === true ? 'high' : 'medium', owner:row.assigned_owner_name,
+      due_at:row.followup_due_at, route_hint:'jobs'
+    }));
+  }
+  for (const row of input.equipment || []) {
+    if (row?.is_locked_out === true || !['','none','resolved','closed'].includes(clean(row?.defect_status,40).toLowerCase())) items.push(attentionItem({
+      source_module:'jobs', source_type:'equipment_defect', source_id:row.id,
+      title:`${row.equipment_code || 'Equipment'} · ${row?.is_locked_out === true ? 'LOCKED OUT' : 'defect review'}`,
+      context:row.equipment_name || row.job_reference || 'Equipment issue',
+      priority:row?.is_locked_out === true ? 'critical' : 'high', owner:'',
+      due_at:row.created_at, route_hint:'jobs'
+    }));
+  }
+  for (const row of input.maintenance || []) {
+    const status = clean(row?.task_status,40).toLowerCase();
+    const due = row?.due_at ? new Date(row.due_at).valueOf() : 0;
+    if (!['resolved','closed','complete','completed'].includes(status) && due && due < now) items.push(attentionItem({
+      source_module:'jobs', source_type:'maintenance_overdue', source_id:row.id,
+      title:`${row.equipment_code || 'Equipment'} · maintenance overdue`,
+      context:`${row.task_type || 'Service'}${row.failure_reason ? ` · ${row.failure_reason}` : ''}`,
+      priority:attentionPriority(row.priority,'high'), owner:row.assigned_to_name,
+      due_at:row.due_at, route_hint:'jobs'
+    }));
+  }
+  for (const row of input.safety || []) {
+    items.push(attentionItem({
+      source_module:'safety', source_type:row.queue_type || 'safety_action', source_id:row.queue_id,
+      title:row.headline || 'Safety action requires attention',
+      context:row.primary_context || row.site_name || row.job_code || '',
+      priority:attentionPriority(row.queue_priority,'high'), owner:row.owner_name || row.supervisor_name,
+      due_at:row.due_label || row.sort_at, route_hint:'toolbox'
+    }));
+  }
+  for (const row of input.time || []) {
+    if (row?.needs_review === true) items.push(attentionItem({
+      source_module:'admin', source_type:'timesheet_issue', source_id:row.time_entry_id,
+      title:`${row.full_name || 'Employee'} · ${row.issue_summary || row.issue_code || 'time review'}`,
+      context:`${row.job_code || row.job_name || 'Unassigned time'}${row.crew_name ? ` · ${row.crew_name}` : ''}`,
+      priority:attentionPriority(row.latest_severity || row.default_severity,'medium'),
+      owner:row.latest_reviewed_by_name, due_at:row.signed_out_at || row.signed_in_at, route_hint:'admin'
+    }));
+  }
+  for (const row of input.ar || []) {
+    if (Number(row?.balance_due || 0) > 0 && Number(row?.days_past_due || 0) > 0) items.push(attentionItem({
+      source_module:'finance', source_type:'overdue_receivable', source_id:row.id,
+      title:`${row.invoice_number || 'Invoice'} · ${Number(row.days_past_due || 0)} day(s) overdue`,
+      context:`${row.client_name || 'Customer'} · ${money(row.balance_due).toFixed(2)} CAD open`,
+      priority:Number(row.days_past_due || 0) >= 60 ? 'critical' : Number(row.days_past_due || 0) >= 30 ? 'high' : 'medium',
+      owner:'Finance', due_at:row.due_date, route_hint:'finance'
+    }));
+  }
+  for (const row of input.reconciliation || []) {
+    items.push(attentionItem({
+      source_module:'finance', source_type:'reconciliation_exception', source_id:row.reconciliation_item_id,
+      title:`${row.session_code || 'Reconciliation'} · ${row.item_description || 'manual review'}`,
+      context:`${row.account_name || 'Bank'} · ${row.match_status || row.reconciliation_status || 'review'}`,
+      priority:Number(row.review_priority || 90) <= 20 ? 'high' : 'medium',
+      owner:'Finance', due_at:row.item_date || row.period_end, route_hint:'finance'
+    }));
+  }
+
+  const states = new Map((input.states || []).map((row:any)=>[String(row.source_key),row]));
+  const active:any[] = [];
+  for (const item of items) {
+    const state:any = states.get(item.source_key);
+    if (state?.state_status === 'resolved') continue;
+    if (state?.state_status === 'deferred' && state?.deferred_until && new Date(state.deferred_until).valueOf() > now) continue;
+    active.push({
+      ...item,
+      state_status:state?.state_status === 'deferred' ? 'open' : (state?.state_status || 'open'),
+      deferred_until:state?.deferred_until || null,
+      state_note:state?.state_note || null
+    });
+  }
+  active.sort((a,b)=>
+    (ATTENTION_PRIORITY_RANK[a.priority] ?? 99) - (ATTENTION_PRIORITY_RANK[b.priority] ?? 99)
+    || new Date(a.due_at || '2999-12-31').valueOf() - new Date(b.due_at || '2999-12-31').valueOf()
+    || String(a.title).localeCompare(String(b.title))
+  );
+  const resolved=(input.states || [])
+    .filter((row:any)=>row?.state_status === 'resolved')
+    .sort((a:any,b:any)=>new Date(b.resolved_at || b.updated_at || 0).valueOf()-new Date(a.resolved_at || a.updated_at || 0).valueOf())
+    .slice(0,20)
+    .map((row:any)=>({
+      source_key:row.source_key, source_module:row.source_module, source_type:row.source_type, source_id:row.source_id,
+      title:row.source_title || row.source_key, context:row.source_context || '', priority:row.source_priority || 'medium',
+      owner:'Resolved', due_at:row.source_due_at, state_status:'resolved', state_note:row.state_note,
+      resolved_at:row.resolved_at, route_hint:row.source_module
+    }));
+  const deferredCount=(input.states || []).filter((row:any)=>row?.state_status==='deferred' && row?.deferred_until && new Date(row.deferred_until).valueOf()>now).length;
+  return { active:active.slice(0,120), resolved, deferred_count:deferredCount, total_active:active.length };
+}
+
 async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false, bankReviewImportId = '') {
   const queueNames: Record<string, string> = {
     quotes: 'v_quote_contact_followup_queue', payments: 'v_payment_action_workbench', bank_imports: 'v_bank_csv_import_workbench',
@@ -1161,7 +1314,32 @@ async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false
     header_json: bankDetailMap.get(String(row.id))?.header_json || []
   }));
 
+
+  const [jobsAttentionAllowed,safetyAttentionAllowed,financeAttentionAllowed] = await Promise.all([
+    hasModuleAccess(supabase, profile, 'jobs', 'view'),
+    hasModuleAccess(supabase, profile, 'safety', 'view'),
+    hasModuleAccess(supabase, profile, 'finance', 'view')
+  ]);
+  const [attentionJobs,attentionQuotes,attentionEquipment,attentionMaintenance,attentionSafety,attentionTime,attentionAr,attentionRecon,attentionStates] = await Promise.all([
+    jobsAttentionAllowed ? safeSelect(supabase.from('v_jobs_directory').select('*').order('start_date',{ascending:true}).limit(250)) : Promise.resolve([]),
+    jobsAttentionAllowed ? safeSelect(supabase.from('v_quote_contact_followup_queue').select('*').order('followup_due_at',{ascending:true}).limit(160)) : Promise.resolve([]),
+    jobsAttentionAllowed ? safeSelect(supabase.from('v_equipment_scan_resolution_queue').select('*').order('created_at',{ascending:false}).limit(160)) : Promise.resolve([]),
+    jobsAttentionAllowed ? safeSelect(supabase.from('v_equipment_service_task_directory').select('*').order('due_at',{ascending:true}).limit(160)) : Promise.resolve([]),
+    safetyAttentionAllowed ? safeSelect(supabase.from('v_supervisor_safety_queue').select('*').order('sort_at',{ascending:false}).limit(160)) : Promise.resolve([]),
+    safeSelect(supabase.from('v_employee_time_review_queue').select('*').eq('needs_review',true).limit(160)),
+    financeAttentionAllowed ? safeSelect(supabase.from('v_ar_invoice_aging_detail').select('*').gt('balance_due',0).order('due_date',{ascending:true}).limit(200)) : Promise.resolve([]),
+    financeAttentionAllowed ? safeSelect(supabase.from('v_accounting_reconciliation_manual_review_queue').select('*').order('review_priority',{ascending:true}).limit(160)) : Promise.resolve([]),
+    safeSelect(supabase.from('operations_attention_states').select('*').order('updated_at',{ascending:false}).limit(300))
+  ]);
+  const operationsAttention = buildOperationsAttentionQueue({
+    jobs:attentionJobs, quotes:attentionQuotes, equipment:attentionEquipment, maintenance:attentionMaintenance,
+    safety:attentionSafety, time:attentionTime, ar:attentionAr, reconciliation:attentionRecon, states:attentionStates
+  });
+
   return {
+    operations_attention: operationsAttention.active,
+    operations_attention_resolved: operationsAttention.resolved,
+    operations_attention_meta: { build:320, schema:209, total_active:operationsAttention.total_active, deferred_count:operationsAttention.deferred_count, permission_filtered:true },
     ...queueMap, bank_preview_rows: bankReviewRows, bank_items: bankItems, reconciliation_exceptions: reconciliationExceptions, profiles, banks, rails, ar_invoices: arInvoices, ar_payments: arPayments, customer_deposits: customerDeposits, ar_applications: arApplications,
     capabilities: capabilitySnapshot,
     stripe_health: {
@@ -1230,6 +1408,52 @@ serve(async (req) => {
         body.bank_workbench_v2 === true,
         clean(body.bank_review_import_id, 80)
       ) }, { headers: corsHeaders });
+    }
+
+
+    if (action === 'operations_attention_defer' || action === 'operations_attention_resolve') {
+      requireRank(profile, 50, action);
+      const sourceKey = clean(body.source_key, 240);
+      const sourceModule = clean(body.source_module, 20).toLowerCase();
+      const sourceType = clean(body.source_type, 100).toLowerCase();
+      const sourceId = clean(body.source_id, 180);
+      if (!sourceKey || !['safety','finance','jobs','admin'].includes(sourceModule) || !sourceType || !sourceId) {
+        throw new HttpError(400, 'A valid source_key, source_module, source_type and source_id are required.');
+      }
+      if (sourceKey !== `${sourceModule}:${sourceType}:${sourceId}`) {
+        throw new HttpError(400, 'Attention source identity does not match the canonical source key.');
+      }
+      const title = clean(body.source_title, 240);
+      const context = clean(body.source_context, 600);
+      const priority = attentionPriority(body.source_priority,'medium');
+      const sourceDueAt = body.source_due_at ? new Date(String(body.source_due_at)) : null;
+      const note = clean(body.note, 1200);
+      const isResolve = action === 'operations_attention_resolve';
+      const deferredUntil = !isResolve && body.deferred_until ? new Date(String(body.deferred_until)) : null;
+      if (!isResolve && (!deferredUntil || Number.isNaN(deferredUntil.valueOf()) || deferredUntil.valueOf() <= Date.now())) {
+        throw new HttpError(400, 'Choose a future defer date/time.');
+      }
+      if (isResolve && note.length < 3) throw new HttpError(400, 'Add a short resolution note.');
+      const row = {
+        source_key:sourceKey, source_module:sourceModule, source_type:sourceType, source_id:sourceId,
+        source_title:title || sourceKey, source_context:context || null, source_priority:priority,
+        source_due_at:sourceDueAt && !Number.isNaN(sourceDueAt.valueOf()) ? sourceDueAt.toISOString() : null,
+        state_status:isResolve ? 'resolved' : 'deferred',
+        deferred_until:isResolve ? null : deferredUntil!.toISOString(),
+        state_note:note || (isResolve ? 'Resolved from Operations Needs Attention.' : 'Deferred from Operations Needs Attention.'),
+        resolved_at:isResolve ? nowIso() : null,
+        resolved_by_profile_id:isResolve ? profile.id : null,
+        last_source_seen_at:nowIso(),
+        created_by_profile_id:profile.id, updated_by_profile_id:profile.id, updated_at:nowIso()
+      };
+      const { data, error } = await supabase.from('operations_attention_states').upsert(row,{onConflict:'source_key'}).select('*').single();
+      if (error) throw error;
+      await audit(supabase, {
+        operation_action:action, operation_status:'completed', entity_type:'operations_attention',
+        actor_profile_id:profile.id, request_payload:{source_key:sourceKey,state_status:row.state_status},
+        response_payload:{source_key:sourceKey,state_status:data.state_status}
+      });
+      return Response.json({ok:true,build:320,schema:209,attention_state:data},{headers:corsHeaders});
     }
 
     if (action === 'payment_action_request') {

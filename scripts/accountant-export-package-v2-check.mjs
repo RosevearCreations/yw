@@ -90,6 +90,6 @@ assert.equal(pkg.scripts['test:browser:accountant-export-package-v2'],'playwrigh
 assert.ok(workflow.includes('npm run test:accountant-export-package-v2'),'Canonical source workflow must run Build 317 source acceptance.');
 assert.ok(workflow.includes('npm run test:browser:accountant-export-package-v2'),'Canonical browser workflow must run Build 317 browser acceptance.');
 assert.ok(help.includes('Accountant Export Package v2')&&help.includes('Build 317'),'Help must document Build 317.');
-assert.ok(!fs.readdirSync('sql').some((name)=>/^209_/.test(name)),'Build 317 must remain schema-neutral at Schema 208.');
+assert.ok(!fs.readdirSync('sql').some((name)=>/^317[_-]/.test(name)),'Build 317 itself remains schema-neutral; later roadmap builds may advance the schema.');
 
 console.log('Build 317 Accountant Export Package v2 source acceptance: PASS');

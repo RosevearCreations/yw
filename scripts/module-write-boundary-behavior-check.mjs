@@ -43,8 +43,8 @@ const {
   boundaryAuditFields,
 } = module.exports;
 
-assert.equal(Array.from(MODULE_WRITE_ACTIONS).length, 35, 'Exactly 35 operations actions must be contracted.');
-assert.equal(Object.keys(MODULE_WRITE_BOUNDARIES).length, 35);
+assert.equal(Array.from(MODULE_WRITE_ACTIONS).length, 37, 'Exactly 37 operations actions must be contracted through Schema 209.');
+assert.equal(Object.keys(MODULE_WRITE_BOUNDARIES).length, 37);
 
 const financeCreate = resolveModuleWriteBoundary('payment_action_request');
 assert.equal(financeCreate.ownerModule, 'finance');
@@ -68,6 +68,18 @@ const adminWrite = resolveModuleWriteBoundary('public_route_publish');
 assert.equal(adminWrite.ownerModule, 'admin');
 assert.equal(adminWrite.minimum, 'manage');
 assert.equal(adminWrite.mode, 'write');
+
+const attentionDefer = resolveModuleWriteBoundary('operations_attention_defer');
+assert.equal(attentionDefer.ownerModule, 'admin');
+assert.equal(attentionDefer.minimum, 'manage');
+assert.equal(attentionDefer.mode, 'write');
+assert.equal(attentionDefer.eventKey, 'admin.operations_attention.deferred');
+
+const attentionResolve = resolveModuleWriteBoundary('operations_attention_resolve');
+assert.equal(attentionResolve.ownerModule, 'admin');
+assert.equal(attentionResolve.minimum, 'manage');
+assert.equal(attentionResolve.mode, 'write');
+assert.equal(attentionResolve.eventKey, 'admin.operations_attention.resolved');
 
 const disabled = resolveModuleWriteBoundary('deposit_status_update');
 assert.equal(disabled.ownerModule, 'finance');
@@ -106,7 +118,8 @@ for (const action of Array.from(MODULE_WRITE_ACTIONS)) {
   if (boundary.crossModule) assert.ok(boundary.eventKey, `Cross-module contract needs event key: ${action}`);
 }
 
-console.log('PASS boundary-exact-35-actions');
+console.log('PASS boundary-exact-37-actions');
+console.log('PASS boundary-build320-attention-management');
 console.log('PASS boundary-finance-read-write-ownership');
 console.log('PASS boundary-jobs-cross-module-event');
 console.log('PASS boundary-admin-write-ownership');
@@ -114,4 +127,4 @@ console.log('PASS boundary-disabled-payment-mutation');
 console.log('PASS boundary-unknown-action-fails-closed');
 console.log('PASS boundary-audit-metadata');
 console.log('PASS boundary-all-contracts-valid');
-console.log('\nSchema 164 module write-boundary behavior gate passed: 8/8 checks.');
+console.log('\nSchema 164 + 209 module write-boundary behavior gate passed: 9/9 checks.');
