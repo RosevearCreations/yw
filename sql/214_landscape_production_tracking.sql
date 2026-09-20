@@ -71,7 +71,7 @@ create index if not exists job_session_crew_hours_work_order_idx
 create or replace function public.ywi_after_material_issue_journal_sync()
 returns trigger
 language plpgsql
-as $
+as $material_sync$
 declare
   v_source_id uuid;
 begin
@@ -90,7 +90,7 @@ begin
   perform public.ywi_sync_material_issue_journal(v_source_id);
   return new;
 end;
-$;
+$material_sync$;
 
 alter table public.material_issues
   add column if not exists job_session_id uuid references public.job_sessions(id) on delete set null;
