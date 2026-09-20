@@ -1499,7 +1499,7 @@
             <label>Pricing template<select name="service_pricing_template_id" data-oc-estimate-template><option value="">Loading templates…</option></select></label>
             <label>Estimate #<input name="estimate_number" maxlength="80" placeholder="Auto-generated if blank" /></label>
             <label>Estimate type<input name="estimate_type" value="landscaping" maxlength="60" /></label>
-            <label>Status<select name="status"><option value="draft">Draft</option><option value="sent">Sent</option><option value="accepted">Accepted</option><option value="declined">Declined</option><option value="expired">Expired</option><option value="cancelled">Cancelled</option></select></label>
+            <label>Status<select name="status"><option value="draft">Draft</option><option value="sent">Sent</option><option value="accepted" disabled>Accepted (portal-controlled)</option><option value="declined">Declined</option><option value="expired">Expired</option><option value="cancelled">Cancelled</option></select></label>
             <label>Valid until<input name="valid_until" type="date" /></label>
             <label>Quote title<input name="quote_title" maxlength="220" /></label>
             <label>Labour hours<input name="estimated_labour_hours" type="number" min="0" step="0.25" /></label>
