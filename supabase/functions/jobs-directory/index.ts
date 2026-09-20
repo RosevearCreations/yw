@@ -43,6 +43,173 @@ async function safeSelect(supabase: any, tableOrView: string, selectExpr = '*', 
   }
 }
 
+function numeric(value: any) {
+  const n = Number(value ?? 0);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function buildJobProfitabilityCloseout(input: any) {
+  const jobs = Array.isArray(input.jobs) ? input.jobs : [];
+  const rollups = Array.isArray(input.rollups) ? input.rollups : [];
+  const depthRows = Array.isArray(input.depthRows) ? input.depthRows : [];
+  const events = Array.isArray(input.events) ? input.events : [];
+  const reviews = Array.isArray(input.reviews) ? input.reviews : [];
+  const invoiceCandidates = Array.isArray(input.invoiceCandidates) ? input.invoiceCandidates : [];
+  const invoicePostings = Array.isArray(input.invoicePostings) ? input.invoicePostings : [];
+  const invoicePostingLinks = Array.isArray(input.invoicePostingLinks) ? input.invoicePostingLinks : [];
+  const paymentApplications = Array.isArray(input.paymentApplications) ? input.paymentApplications : [];
+  const executionCosts = Array.isArray(input.executionCosts) ? input.executionCosts : [];
+
+  const firstByJob = (rows: any[]) => {
+    const map = new Map<number, any>();
+    for (const row of rows) {
+      const id = Number(row?.job_id || 0);
+      if (id && !map.has(id)) map.set(id, row);
+    }
+    return map;
+  };
+  const rollupByJob = firstByJob(rollups);
+  const depthByJob = firstByJob(depthRows);
+  const reviewsByJob = new Map<number, any[]>();
+  const eventsByJob = new Map<number, any[]>();
+  const executionByJob = new Map<number, any[]>();
+  for (const row of reviews) {
+    const id = Number(row?.job_id || 0);
+    if (!id) continue;
+    const list = reviewsByJob.get(id) || [];
+    list.push(row); reviewsByJob.set(id, list);
+  }
+  for (const row of events) {
+    const id = Number(row?.job_id || 0);
+    if (!id) continue;
+    const list = eventsByJob.get(id) || [];
+    list.push(row); eventsByJob.set(id, list);
+  }
+  for (const row of executionCosts) {
+    const id = Number(row?.job_id || 0);
+    if (!id) continue;
+    const list = executionByJob.get(id) || [];
+    list.push(row); executionByJob.set(id, list);
+  }
+
+  const candidateJob = new Map<string, number>();
+  for (const row of invoiceCandidates) {
+    const id = String(row?.id || '');
+    const jobId = Number(row?.job_id || 0);
+    if (id && jobId) candidateJob.set(id, jobId);
+  }
+  const invoiceIdsByJob = new Map<number, Set<string>>();
+  for (const link of invoicePostingLinks) {
+    const jobId = candidateJob.get(String(link?.invoice_candidate_id || '')) || 0;
+    const invoiceId = String(link?.ar_invoice_id || '');
+    if (!jobId || !invoiceId) continue;
+    const set = invoiceIdsByJob.get(jobId) || new Set<string>();
+    set.add(invoiceId); invoiceIdsByJob.set(jobId, set);
+  }
+
+  return jobs.map((job: any) => {
+    const jobId = Number(job?.id || 0);
+    const rollup = rollupByJob.get(jobId) || {};
+    const depth = depthByJob.get(jobId) || {};
+    const jobEvents = eventsByJob.get(jobId) || [];
+    const jobReviews = reviewsByJob.get(jobId) || [];
+    const jobExecution = executionByJob.get(jobId) || [];
+
+    const eventCost = (types: string[]) => jobEvents
+      .filter((row: any) => types.includes(String(row?.event_type || '')))
+      .reduce((sum: number, row: any) => sum + numeric(row?.cost_amount), 0);
+    const categoryCost = (category: string) => jobEvents
+      .filter((row: any) => String(row?.cost_category || '').toLowerCase() === category)
+      .reduce((sum: number, row: any) => sum + numeric(row?.cost_amount), 0);
+
+    const labour = numeric(rollup.labor_cost_total);
+    const material = eventCost(['material']);
+    const equipment = eventCost(['equipment_usage','equipment_repair','equipment_replacement']) + numeric(job.equipment_repair_cost_total);
+    const fuel = eventCost(['fuel']);
+    const travel = eventCost(['travel']);
+    const subcontract = eventCost(['subcontract']);
+    const disposal = eventCost(['disposal']);
+    const rework = categoryCost('rework') + eventCost(['delay']) + numeric(job.delay_cost_total);
+
+    const estimatedRevenue = numeric(job.quoted_charge_total);
+    const estimatedCost = numeric(job.estimated_cost_total);
+    const actualRevenue = numeric(rollup.actual_charge_rollup_total || depth.total_known_revenue || job.actual_charge_total);
+    const actualCost = numeric(rollup.actual_cost_rollup_total || depth.total_known_cost || job.actual_cost_total);
+    const actualProfit = actualRevenue - actualCost;
+    const actualMargin = actualRevenue > 0 ? Number(((actualProfit / actualRevenue) * 100).toFixed(2)) : 0;
+    const estimatedProfit = numeric(job.estimated_profit_total || (estimatedRevenue - estimatedCost));
+    const classifiedCost = labour + material + equipment + fuel + travel + subcontract + disposal + rework;
+    const other = Math.max(0, Number((actualCost - classifiedCost).toFixed(2)));
+
+    const jobPostingRows = invoicePostings.filter((row: any) => Number(row?.job_id || 0) === jobId && String(row?.posting_status || '') === 'posted');
+    const invoiced = jobPostingRows.reduce((sum: number, row: any) => sum + numeric(row?.total_amount), 0);
+    const invoiceIds = invoiceIdsByJob.get(jobId) || new Set<string>();
+    const jobApplications = paymentApplications.filter((row: any) =>
+      invoiceIds.has(String(row?.invoice_id || '')) &&
+      !['reversed','void'].includes(String(row?.review_status || row?.application_status || '').toLowerCase())
+    );
+    const collected = jobApplications.reduce((sum: number, row: any) => sum + numeric(row?.applied_amount), 0);
+
+    const approvedProofCount = jobExecution.reduce((sum: number, row: any) => sum + numeric(row?.approved_proof_count), 0);
+    const submittedProofCount = jobExecution.reduce((sum: number, row: any) => sum + numeric(row?.submitted_proof_count), 0);
+    const accountingReady = jobReviews.some((row: any) => row?.accounting_ready === true);
+    const reviewApproved = jobReviews.some((row: any) => ['approved','complete','completed','closed'].includes(String(row?.review_status || '').toLowerCase()));
+
+    let closeoutStatus = 'review_required';
+    if (!jobReviews.length) closeoutStatus = 'needs_completion_review';
+    else if (!approvedProofCount && submittedProofCount) closeoutStatus = 'needs_proof_approval';
+    else if (!accountingReady && !reviewApproved) closeoutStatus = 'needs_closeout_review';
+    else if (invoiced <= 0 && actualRevenue > 0) closeoutStatus = 'ready_to_invoice';
+    else if (invoiced > 0 && collected + 0.01 < invoiced) closeoutStatus = 'collection_open';
+    else if (actualCost > estimatedCost && estimatedCost > 0) closeoutStatus = 'cost_variance_review';
+    else closeoutStatus = 'profitability_closed';
+
+    return {
+      build: 318,
+      job_id: jobId,
+      job_code: job.job_code,
+      job_name: job.job_name,
+      client_name: job.client_name,
+      service_pattern: job.service_pattern,
+      closeout_status: closeoutStatus,
+      estimated_revenue_total: Number(estimatedRevenue.toFixed(2)),
+      estimated_cost_total: Number(estimatedCost.toFixed(2)),
+      estimated_profit_total: Number(estimatedProfit.toFixed(2)),
+      actual_revenue_total: Number(actualRevenue.toFixed(2)),
+      invoiced_total: Number(invoiced.toFixed(2)),
+      collected_total: Number(collected.toFixed(2)),
+      outstanding_invoiced_total: Number(Math.max(0, invoiced - collected).toFixed(2)),
+      labour_cost_total: Number(labour.toFixed(2)),
+      material_cost_total: Number(material.toFixed(2)),
+      equipment_cost_total: Number(equipment.toFixed(2)),
+      fuel_cost_total: Number(fuel.toFixed(2)),
+      travel_cost_total: Number(travel.toFixed(2)),
+      subcontract_cost_total: Number(subcontract.toFixed(2)),
+      disposal_cost_total: Number(disposal.toFixed(2)),
+      rework_cost_total: Number(rework.toFixed(2)),
+      other_cost_total: other,
+      actual_cost_total: Number(actualCost.toFixed(2)),
+      actual_profit_total: Number(actualProfit.toFixed(2)),
+      actual_margin_percent: actualMargin,
+      revenue_variance_total: Number((actualRevenue - estimatedRevenue).toFixed(2)),
+      cost_variance_total: Number((actualCost - estimatedCost).toFixed(2)),
+      profit_variance_total: Number((actualProfit - estimatedProfit).toFixed(2)),
+      source_provenance: {
+        labour_entry_count: Number(rollup.labor_entry_count || 0),
+        financial_event_count: jobEvents.length,
+        completion_review_count: jobReviews.length,
+        submitted_execution_proof_count: submittedProofCount,
+        approved_execution_proof_count: approvedProofCount,
+        posted_invoice_count: jobPostingRows.length,
+        payment_application_count: jobApplications.length
+      },
+      internal_only: true,
+      posting_execution_authorized: false,
+      provider_mutation: false
+    };
+  });
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   const supabase = createClient((Deno.env.get('SB_URL') || Deno.env.get('SUPABASE_URL'))!, (Deno.env.get('SB_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'))!);
@@ -94,6 +261,9 @@ serve(async (req) => {
   const profitabilityVariance = await safeSelect(supabase, 'v_job_profitability_variance_directory', '*', (query) => query.order('group_type', { ascending:true }).limit(2000));
   const completionSignoffs = await safeSelect(supabase, 'v_job_completion_signoff_directory', '*', (query) => query.order('sort_order', { ascending:true }).limit(3000));
   const invoicePostings = await safeSelect(supabase, 'v_job_invoice_posting_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
+  const jobInvoicePostingLinks = await safeSelect(supabase, 'job_invoice_postings', 'id,invoice_candidate_id,ar_invoice_id,posting_status,posted_at,updated_at', (query) => query.order('updated_at', { ascending:false }).limit(1000));
+  const jobProfitabilityEvents = await safeSelect(supabase, 'job_financial_events', 'id,job_id,event_type,cost_category,cost_amount,revenue_amount,billable_charge_status,posting_status,reference_number,notes,event_date', (query) => query.order('event_date', { ascending:false }).limit(4000));
+  const jobExecutionCostDashboard = await safeSelect(supabase, 'v_work_order_execution_cost_dashboard', '*', (query) => query.order('scheduled_start', { ascending:false }).limit(2000));
   const journalPostings = await safeSelect(supabase, 'v_job_journal_posting_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
   const profitabilityManagement = await safeSelect(supabase, 'v_job_profitability_management_scorecard_directory', '*', (query) => query.order('group_type', { ascending:true }).limit(2000));
   const quoteEngagement = await safeSelect(supabase, 'v_quote_package_engagement_directory', '*', (query) => query.order('updated_at', { ascending:false }).limit(1000));
@@ -199,9 +369,22 @@ serve(async (req) => {
     accountant_handoff_exports:[], profitability_variance:[], invoice_postings:[], journal_postings:[], profitability_management:[], quote_package_engagement:[],
     accounting_lifecycle:[], invoice_posting_automation:[], journal_posting_automation:[], accountant_handoff_bundles:[], accountant_packages:[],
     ar_payment_applications:[], ap_payment_applications:[], journal_generated_lines:[], sales_tax_review:[], payroll_remittance_review:[], bank_reconciliation_match_scored:[],
-    job_cost_depth:[], payment_application_workbench:[], bank_reconciliation_review_workbench:[], remittance_filing_review_workbench:[], month_end_close_workbench:[],
+    job_cost_depth:[], job_profitability_closeout:[], payment_application_workbench:[], bank_reconciliation_review_workbench:[], remittance_filing_review_workbench:[], month_end_close_workbench:[],
     job_financial_events:[], job_financial_rollups:[]
   };
+
+  const jobProfitabilityCloseout = buildJobProfitabilityCloseout({
+    jobs: jobs || [],
+    rollups: jobFinancialRollups || [],
+    depthRows: jobCostDepth || [],
+    events: jobProfitabilityEvents || [],
+    reviews: completionReviews || [],
+    invoiceCandidates: invoiceCandidates || [],
+    invoicePostings: invoicePostings || [],
+    invoicePostingLinks: jobInvoicePostingLinks || [],
+    paymentApplications: arPaymentApplications || [],
+    executionCosts: jobExecutionCostDashboard || []
+  });
 
   return Response.json({
     ok:true,
@@ -271,6 +454,7 @@ serve(async (req) => {
     payroll_remittance_review: payrollRemittanceReview || [],
     bank_reconciliation_match_scored: bankReconciliationMatchScored || [],
     job_cost_depth: jobCostDepth || [],
+    job_profitability_closeout: jobProfitabilityCloseout,
     payment_application_workbench: paymentApplicationWorkbench || [],
     bank_reconciliation_review_workbench: bankReconciliationReviewWorkbench || [],
     remittance_filing_review_workbench: remittanceFilingReviewWorkbench || [],
