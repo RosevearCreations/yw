@@ -386,7 +386,7 @@ After the landscaping Finance workflow is complete and no critical Finance block
 
 Only after internal accounting behavior is trustworthy, validate supported provider/payment paths including success, decline/failure, duplicate webhook/event, retry, idempotency, refund, partial refund and dispute/chargeback. Verify provider events link to the correct internal payment/accounting/job records and cannot double-settle, double-apply or double-post. Provider acceptance and Production provider enablement remain separate deliberate decisions.
 
-Item **318 — Job Cost & Profitability Closeout** is implemented by the current release. The next planned autonomous item is **319 — Landscaping Finance Dashboard & Cash Position**.
+Items **318 — Job Cost & Profitability Closeout** and **319 — Landscaping Finance Dashboard & Cash Position** are implemented by the current release. The next planned autonomous item is **320 — Operations Needs Attention**.
 
 ### Roadmap selection rules
 
