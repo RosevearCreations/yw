@@ -1623,6 +1623,7 @@
       if (!jobRow) return;
       state.editingJobId = jobRow.id;
       state.selectedJobId = jobRow.id;
+      renderAccountingDepthTables(Number(jobRow.id || 0));
       e.jobCode.value = jobRow.job_code || '';
       e.jobName.value = jobRow.job_name || '';
       e.jobSiteName.value = jobRow.site_code || jobRow.site_name || '';
@@ -2774,6 +2775,7 @@
         state.monthEndCloseWorkbench = Array.isArray(resp?.month_end_close_workbench) ? resp.month_end_close_workbench : [];
         state.equipmentAccountability = Array.isArray(resp?.equipment_accountability) ? resp.equipment_accountability : [];
         state.equipmentServiceTasks = Array.isArray(resp?.equipment_service_tasks) ? resp.equipment_service_tasks : [];
+        renderAccountingDepthTables();
         fillSiteSelect(e.jobSiteName);
         fillSiteSelect(e.eqHomeSite);
         fillSiteSelect(e.eqCurrentSite);
