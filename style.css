@@ -3666,3 +3666,17 @@ body[data-authenticated="false"] .module-section-nav {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Build 323 — Property & Site Intelligence */
+.operations-property-panel .operations-form { align-items:start; }
+#oc_property_sites,#oc_property_zones,#oc_property_photos { display:grid; gap:12px; }
+.oc-property-card dl,.oc-property-zone-card dl,.oc-property-photo-card dl {
+  grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+}
+.oc-property-card[data-profile-status="needs_address"],
+.oc-property-card[data-profile-status="needs_profile"] { border-width:2px; }
+.oc-property-photo-card .oc-badge-private { text-transform:uppercase; letter-spacing:.03em; }
+@media(max-width:720px){
+  .operations-property-panel .operations-form { grid-template-columns:1fr; }
+}
