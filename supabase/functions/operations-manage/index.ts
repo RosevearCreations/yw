@@ -1336,10 +1336,24 @@ async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false
     safety:attentionSafety, time:attentionTime, ar:attentionAr, reconciliation:attentionRecon, states:attentionStates
   });
 
+  const [dispatchSchedule,dispatchCrews,dispatchEquipment,dispatchRoutes,dispatchCandidates] = jobsAttentionAllowed ? await Promise.all([
+    safeSelect(supabase.from('v_crew_dispatch_schedule').select('*').order('scheduled_start',{ascending:true}).limit(240)),
+    safeSelect(supabase.from('v_crew_directory').select('*').order('crew_name',{ascending:true}).limit(120)),
+    safeSelect(supabase.from('equipment_items').select('id,equipment_code,equipment_name,category,status,is_locked_out,defect_status,condition_status').order('equipment_name',{ascending:true}).limit(300)),
+    safeSelect(supabase.from('routes').select('id,route_code,name,route_type,day_of_week,is_active').eq('is_active',true).order('name',{ascending:true}).limit(160)),
+    safeSelect(supabase.from('v_crew_dispatch_work_order_candidates').select('*').order('scheduled_start',{ascending:true}).limit(300))
+  ]) : [[],[],[],[],[]];
+
   return {
     operations_attention: operationsAttention.active,
     operations_attention_resolved: operationsAttention.resolved,
     operations_attention_meta: { build:320, schema:209, total_active:operationsAttention.total_active, deferred_count:operationsAttention.deferred_count, permission_filtered:true },
+    crew_dispatch_schedule: dispatchSchedule,
+    crew_dispatch_crews: dispatchCrews,
+    crew_dispatch_equipment: dispatchEquipment,
+    crew_dispatch_routes: dispatchRoutes,
+    crew_dispatch_work_orders: dispatchCandidates,
+    crew_dispatch_meta: { build:321, schema:210, permission_filtered:true, scheduler_authority:'dispatch_schedule_items', conflict_policy:'explicit_override_required' },
     ...queueMap, bank_preview_rows: bankReviewRows, bank_items: bankItems, reconciliation_exceptions: reconciliationExceptions, profiles, banks, rails, ar_invoices: arInvoices, ar_payments: arPayments, customer_deposits: customerDeposits, ar_applications: arApplications,
     capabilities: capabilitySnapshot,
     stripe_health: {
@@ -2068,20 +2082,68 @@ serve(async (req) => {
       requireRank(profile, 45, action);
       const workOrderId = clean(body.work_order_id, 80);
       if (!isUuid(workOrderId)) throw new HttpError(400, 'Valid work_order_id is required.');
-      const start = clean(body.scheduled_start, 80); const end = clean(body.scheduled_end, 80);
-      if (!start || !end || new Date(end) <= new Date(start)) throw new HttpError(400, 'Valid start and end times are required.');
-      const { data: workOrder, error: workOrderError } = await supabase.from('work_orders').select('*').eq('id', workOrderId).single();
-      if (workOrderError) throw workOrderError;
-      const { data, error } = await supabase.from('dispatch_schedule_items').insert({
-        work_order_id: workOrderId, job_id: workOrder.legacy_job_id || null, schedule_status: clean(body.schedule_status || 'scheduled', 60),
-        scheduled_start: start, scheduled_end: end, assigned_supervisor_profile_id: isUuid(body.assigned_supervisor_profile_id) ? body.assigned_supervisor_profile_id : null,
-        assigned_crew_profile_ids: arrayValue(body.assigned_crew_profile_ids), route_id: isUuid(body.route_id) ? body.route_id : workOrder.route_id,
-        dispatch_notes: clean(body.dispatch_notes, 1000) || null, customer_notification_status: 'pending', crew_notification_status: 'pending',
-        dispatched_at: clean(body.schedule_status || 'scheduled') === 'dispatched' ? nowIso() : null, dispatched_by_profile_id: profile.id
-      }).select('*').single();
-      if (error) throw error;
-      await supabase.from('work_orders').update({ scheduled_start: start, scheduled_end: end, supervisor_profile_id: isUuid(body.assigned_supervisor_profile_id) ? body.assigned_supervisor_profile_id : workOrder.supervisor_profile_id, status: 'scheduled', updated_at: nowIso() }).eq('id', workOrderId);
-      return Response.json({ ok: true, record: data }, { headers: corsHeaders });
+      const start = clean(body.scheduled_start, 80);
+      const end = clean(body.scheduled_end, 80);
+      if (!start || !end || Number.isNaN(new Date(start).valueOf()) || Number.isNaN(new Date(end).valueOf()) || new Date(end) <= new Date(start)) {
+        throw new HttpError(400, 'Valid start and end times are required.');
+      }
+      const scheduleStatus = clean(body.schedule_status || 'scheduled', 40).toLowerCase();
+      const workabilityState = clean(body.workability_state || 'not_assessed', 40).toLowerCase();
+      if (!['draft','scheduled','dispatched','rescheduled','cancelled'].includes(scheduleStatus)) throw new HttpError(400, 'Unsupported dispatch schedule status.');
+      if (!['not_assessed','workable','caution','delayed','blocked'].includes(workabilityState)) throw new HttpError(400, 'Unsupported workability state.');
+      if (scheduleStatus === 'dispatched' && workabilityState === 'blocked') throw new HttpError(409, 'A workability-blocked visit cannot be dispatched.');
+      const rescheduleReason = clean(body.reschedule_reason,1000);
+      const cancellationReason = clean(body.cancellation_reason,1000);
+      if (scheduleStatus === 'rescheduled' && !rescheduleReason) throw new HttpError(400, 'A reschedule reason is required.');
+      if (scheduleStatus === 'cancelled' && !cancellationReason) throw new HttpError(400, 'A cancellation reason is required.');
+
+      const crewProfiles = arrayValue(body.assigned_crew_profile_ids).map((value:any)=>clean(value,80)).filter(isUuid);
+      const equipmentIds = arrayValue(body.assigned_equipment_item_ids).map((value:any)=>int(value,0)).filter((value:number)=>value>0);
+      const args = {
+        p_work_order_id: workOrderId,
+        p_schedule_status: scheduleStatus,
+        p_scheduled_start: new Date(start).toISOString(),
+        p_scheduled_end: new Date(end).toISOString(),
+        p_crew_id: isUuid(body.crew_id) ? body.crew_id : null,
+        p_lead_profile_id: isUuid(body.lead_profile_id) ? body.lead_profile_id : null,
+        p_supervisor_profile_id: isUuid(body.assigned_supervisor_profile_id) ? body.assigned_supervisor_profile_id : null,
+        p_assigned_crew_profile_ids: crewProfiles,
+        p_route_id: isUuid(body.route_id) ? body.route_id : null,
+        p_client_site_id: isUuid(body.client_site_id) ? body.client_site_id : null,
+        p_route_order: body.route_order === null || body.route_order === undefined || body.route_order === '' ? null : Math.max(1,int(body.route_order,1)),
+        p_estimated_duration_minutes: body.estimated_duration_minutes === null || body.estimated_duration_minutes === undefined || body.estimated_duration_minutes === '' ? null : Math.max(1,int(body.estimated_duration_minutes,1)),
+        p_travel_allowance_minutes: Math.max(0,int(body.travel_allowance_minutes,0)),
+        p_truck_equipment_item_id: int(body.assigned_truck_equipment_item_id,0) || null,
+        p_trailer_equipment_item_id: int(body.assigned_trailer_equipment_item_id,0) || null,
+        p_equipment_item_ids: equipmentIds,
+        p_recurring_visit_key: clean(body.recurring_visit_key,180) || null,
+        p_recurrence_label: clean(body.recurrence_label,180) || null,
+        p_workability_state: workabilityState,
+        p_weather_summary: clean(body.weather_summary,500) || null,
+        p_workability_note: clean(body.workability_note,1000) || null,
+        p_schedule_reason: clean(body.schedule_reason,1000) || null,
+        p_reschedule_reason: rescheduleReason || null,
+        p_cancellation_reason: cancellationReason || null,
+        p_supersedes_dispatch_id: isUuid(body.supersedes_dispatch_id) ? body.supersedes_dispatch_id : null,
+        p_conflict_override_note: clean(body.conflict_override_note,1200) || null,
+        p_dispatch_notes: clean(body.dispatch_notes,1500) || null,
+        p_actor_profile_id: profile.id
+      };
+      const { data, error } = await supabase.rpc('ywi_rpc_dispatch_schedule_v2', args);
+      if (error) {
+        const message = clean(error.message || error.details || 'Dispatch scheduling failed.',2000);
+        if (/conflict detected|locked out|unavailable|reschedule reason|cancellation reason|workability/i.test(message)) throw new HttpError(409,message);
+        throw error;
+      }
+      const recordId = clean((data as any)?.id,80);
+      const rows = recordId ? await safeSelect(supabase.from('v_crew_dispatch_schedule').select('*').eq('id',recordId).limit(1)) : [];
+      await audit(supabase, {
+        operation_action:action, operation_status:scheduleStatus, entity_type:'dispatch_schedule_item',
+        entity_id:recordId, actor_profile_id:profile.id,
+        request_payload:{work_order_id:workOrderId,schedule_status:scheduleStatus,scheduled_start:start,scheduled_end:end,crew_id:args.p_crew_id,route_id:args.p_route_id},
+        response_payload:{dispatch_id:recordId,dispatch_readiness:rows[0]?.dispatch_readiness || null,conflict_count:rows[0]?.conflict_count || 0}
+      });
+      return Response.json({ ok:true, build:321, schema:210, record:rows[0] || data }, { headers:corsHeaders });
     }
 
     if (action === 'job_cost_refresh') {
