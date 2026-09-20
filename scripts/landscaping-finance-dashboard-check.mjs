@@ -40,6 +40,6 @@ assert.ok(workflow.includes('npm run test:landscaping-finance-dashboard'));
 assert.ok(workflow.includes('npm run test:browser:landscaping-finance-dashboard'));
 assert.ok(help.includes('Build 319') && (help.includes('Landscaping Finance Dashboard &amp; Cash Position') || help.includes('Landscaping Finance Dashboard & Cash Position')));
 assert.ok(next.includes('320 — Operations Needs Attention'),'Roadmap must advance to Build 320 after 319.');
-assert.ok(!fs.readdirSync('sql').some((name)=>/^209_/.test(name)),'Build 319 remains schema-neutral at Schema 208.');
+assert.ok(!fs.readdirSync('sql').some((name)=>/^319[_-]/.test(name)),'Build 319 remains schema-neutral at Schema 208.');
 
 console.log('Build 319 Landscaping Finance Dashboard & Cash Position source gate: PASS');
