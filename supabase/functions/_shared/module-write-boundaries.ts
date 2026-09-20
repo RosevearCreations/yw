@@ -50,6 +50,8 @@ export const MODULE_WRITE_BOUNDARIES: Readonly<Record<string, ModuleWriteBoundar
   estimate_approval_decision: contract('estimate_approval_decision', 'jobs', 'approve', 'write', 'commercial_workflow', 'jobs.estimate.approval_decided'),
   estimate_convert_work_order: contract('estimate_convert_work_order', 'jobs', 'approve', 'write', 'commercial_workflow', 'jobs.estimate.converted', true),
   change_order_save: contract('change_order_save', 'jobs', 'approve', 'write', 'commercial_workflow', 'jobs.change_order.saved'),
+  landscape_production_session_save: contract('landscape_production_session_save', 'jobs', 'create', 'write', 'landscape_production', 'jobs.production.session_saved', true),
+  landscape_production_quantity_save: contract('landscape_production_quantity_save', 'jobs', 'create', 'write', 'landscape_production', 'jobs.production.quantity_saved'),
   work_order_live_update_create: contract('work_order_live_update_create', 'jobs', 'create', 'write', 'work_order_updates', 'jobs.work_order.update_created', true),
   work_order_live_update_retract: contract('work_order_live_update_retract', 'jobs', 'approve', 'write', 'work_order_updates', 'jobs.work_order.update_retracted', true),
   work_order_execution_proof_submit: contract('work_order_execution_proof_submit', 'jobs', 'create', 'write', 'execution_proof', 'jobs.execution_proof.submitted', true),
