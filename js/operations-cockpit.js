@@ -5,7 +5,7 @@
 'use strict';
 
 (function () {
-  const BUILD = '315-reconciliation-exception-resolution';
+  const BUILD = '321-crew-scheduling-dispatch';
   const RETRY_KEY = 'ywi_operations_cockpit_retry_v2';
   const DRAFT_KEY = 'ywi_operations_cockpit_draft_v2';
   let cameraStream = null;
@@ -32,7 +32,8 @@
     'webhook-ack':'stripe_webhook_alert_decision', 'webhook-resolve':'stripe_webhook_alert_decision',
     'signal-review':'content_signal_decision', 'signal-actioned':'content_signal_decision',
     'release-readiness-capture':'release_readiness_snapshot',
-    'attention-defer':'operations_attention_defer', 'attention-resolve':'operations_attention_resolve'
+    'attention-defer':'operations_attention_defer', 'attention-resolve':'operations_attention_resolve',
+    'dispatch-load':'dispatch_schedule', 'dispatch-cancel':'dispatch_schedule', 'dispatch-now':'dispatch_schedule'
   };
 
 
@@ -369,6 +370,187 @@
     wrap.innerHTML = `<div class="oc-notification-delivery-status"><span class="${statusClass(deliveryBadge)}">${esc(delivery.enabled ? 'delivery state' : 'delivery off')}</span><p>${esc(deliveryState)} Email addresses, portal tokens, staff notes, and private media are never shown in this queue.</p></div>${cards.length ? cards.join('') : emptyQueue('No customer e-mails awaiting review', 'Customer-visible updates require an explicit portal opt-in before delivery is queued.')}`;
   }
 
+  function dispatchLocalValue(value) {
+    if (!value) return '';
+    const d=new Date(value); if(Number.isNaN(d.valueOf())) return '';
+    const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);
+    return local.toISOString().slice(0,16);
+  }
+  function dispatchSelectedValues(selector) {
+    const el=document.querySelector(selector);
+    return el ? [...el.selectedOptions].map((option)=>option.value).filter(Boolean) : [];
+  }
+  function dispatchWindowRows() {
+    const rows=(queues.crew_dispatch_schedule || []).filter((row)=>row.schedule_status!=='superseded');
+    const anchor=byId('oc_dispatch_board_date')?.value || new Date().toISOString().slice(0,10);
+    const mode=byId('oc_dispatch_board_mode')?.value || 'week';
+    const start=new Date(`${anchor}T00:00:00`);
+    if(Number.isNaN(start.valueOf())) return rows;
+    const end=new Date(start);
+    end.setDate(end.getDate()+(mode==='day'?1:7));
+    return rows.filter((row)=>{
+      const whenValue=new Date(row.scheduled_start || 0).valueOf();
+      return whenValue>=start.valueOf() && whenValue<end.valueOf();
+    });
+  }
+  function renderCrewDispatch() {
+    const wrap=byId('oc_crew_dispatch_board'); if(!wrap) return;
+    const rows=dispatchWindowRows();
+    const meta=queues.crew_dispatch_meta || {};
+    const activeConflicts=rows.filter((row)=>Number(row.conflict_count||0)>0 && !row.conflict_override_note && !['cancelled','completed'].includes(row.schedule_status)).length;
+    const blocked=rows.filter((row)=>row.workability_state==='blocked').length;
+    const summary=byId('oc_dispatch_board_summary');
+    if(summary) summary.textContent=`${rows.length} visit(s) · ${activeConflicts} conflict(s) · ${blocked} workability block(s) · ${meta.permission_filtered===true?'permission filtered':'loading'}`;
+    if(!rows.length){ wrap.innerHTML=emptyQueue('No scheduled visits in this window','Use the scheduler form to assign a crew, route and equipment to an eligible work order.'); return; }
+    const byDay=new Map();
+    rows.sort((a,b)=>new Date(a.scheduled_start||0)-new Date(b.scheduled_start||0) || Number(a.route_order||999)-Number(b.route_order||999));
+    rows.forEach((row)=>{
+      const day=(row.scheduled_start || '').slice(0,10) || 'Unscheduled';
+      if(!byDay.has(day)) byDay.set(day,[]);
+      byDay.get(day).push(row);
+    });
+    wrap.innerHTML=[...byDay.entries()].map(([day,dayRows])=>`<section class="oc-dispatch-day"><h4>${esc(day)}</h4><div class="oc-live-queue">${dayRows.map((row)=>{
+      const readiness=row.dispatch_readiness || 'ready';
+      const crew=row.crew_name || row.lead_name || row.supervisor_name || 'Crew unassigned';
+      const location=[row.site_name,row.service_address,row.site_city].filter(Boolean).join(' · ');
+      const resourceBits=[
+        row.truck_name ? `Truck: ${row.truck_name}` : '',
+        row.trailer_name ? `Trailer: ${row.trailer_name}` : '',
+        Array.isArray(row.assigned_equipment_item_ids) && row.assigned_equipment_item_ids.length ? `${row.assigned_equipment_item_ids.length} extra equipment` : ''
+      ].filter(Boolean).join(' · ') || 'No vehicle/equipment assigned';
+      const recurring=row.recurrence_label || row.recurring_visit_key || 'One-time / not labelled';
+      const conflictText=Number(row.conflict_count||0)>0 ? `${Number(row.conflict_count)} overlapping assignment(s)${row.conflict_override_note?' · override recorded':''}` : 'No detected resource conflicts';
+      return `<article class="oc-queue-card oc-dispatch-card" data-readiness="${esc(readiness)}">
+        <header><div><strong>${esc(row.work_order_number || row.job_code || 'Work order')}</strong><small>${esc(row.work_type || row.job_name || '')}</small></div><span class="${statusClass(readiness)}">${esc(String(readiness).replaceAll('_',' '))}</span></header>
+        <dl>
+          <div><dt>Time</dt><dd>${when(row.scheduled_start)} → ${when(row.scheduled_end)}</dd></div>
+          <div><dt>Crew / lead</dt><dd>${esc(crew)}${row.lead_name && row.crew_name ? ` · lead ${esc(row.lead_name)}` : ''}</dd></div>
+          <div><dt>Property / customer</dt><dd>${esc(location || row.client_name || 'Property not linked')}</dd></div>
+          <div><dt>Route</dt><dd>${esc(row.route_name || 'No route')}${row.route_order ? ` · stop ${Number(row.route_order)}` : ''}</dd></div>
+          <div><dt>Duration / travel</dt><dd>${Number(row.estimated_duration_minutes||0)} min · ${Number(row.travel_allowance_minutes||0)} min travel</dd></div>
+          <div><dt>Equipment</dt><dd>${esc(resourceBits)}</dd></div>
+          <div><dt>Recurring</dt><dd>${esc(recurring)}</dd></div>
+          <div><dt>Workability</dt><dd>${esc(String(row.workability_state||'not assessed').replaceAll('_',' '))}${row.weather_summary ? ` · ${esc(short(row.weather_summary,100))}` : ''}</dd></div>
+          <div><dt>Conflicts</dt><dd>${esc(conflictText)}</dd></div>
+          <div><dt>Status</dt><dd>${esc(String(row.schedule_status||'scheduled').replaceAll('_',' '))}</dd></div>
+        </dl>
+        ${row.dispatch_notes ? `<p class="muted">${esc(short(row.dispatch_notes,220))}</p>` : ''}
+        ${buttons([
+          button('Edit / reschedule','dispatch-load',row.id,'',true,'dispatch_schedule'),
+          row.schedule_status!=='cancelled' ? button('Dispatch now','dispatch-now',row.id,'',false,'dispatch_schedule') : '',
+          row.schedule_status!=='cancelled' ? button('Cancel visit','dispatch-cancel',row.id,'',true,'dispatch_schedule') : ''
+        ])}
+      </article>`;
+    }).join('')}</div></section>`).join('');
+  }
+  function hydrateCrewDispatchSelectors() {
+    const crews=queues.crew_dispatch_crews || [];
+    const profiles=queues.profiles || [];
+    const equipment=(queues.crew_dispatch_equipment || []).filter((row)=>!row.is_locked_out && !['inactive','retired','out_of_service'].includes(String(row.status||'').toLowerCase()));
+    const routes=queues.crew_dispatch_routes || [];
+    const workOrders=queues.crew_dispatch_work_orders || [];
+    const apply=(selector,html)=>document.querySelectorAll(selector).forEach((select)=>{ const current=select.value; select.innerHTML=html; if(current) select.value=current; });
+    apply('[data-oc-dispatch-work-order]',`<option value="">Choose work order</option>${workOrders.map((row)=>`<option value="${esc(row.work_order_id)}">${esc(row.work_order_number || row.job_code || row.work_order_id)} · ${esc(row.client_name || row.site_name || row.work_type || 'work')}</option>`).join('')}`);
+    apply('[data-oc-dispatch-crew]',`<option value="">No named crew</option>${crews.filter((row)=>!['inactive','archived'].includes(String(row.crew_status||'').toLowerCase())).map((row)=>`<option value="${esc(row.id)}">${esc(row.crew_name)} · ${Number(row.member_count||0)} member(s)</option>`).join('')}`);
+    const profileOptions=`<option value="">Use crew/default assignment</option>${profiles.map((row)=>`<option value="${esc(row.id)}">${esc(row.full_name || row.email || row.id)} · ${esc(row.role || '')}</option>`).join('')}`;
+    apply('[data-oc-dispatch-lead]',profileOptions);
+    apply('[data-oc-dispatch-supervisor]',profileOptions);
+    apply('[data-oc-dispatch-route]',`<option value="">Use work-order/default route</option>${routes.map((row)=>`<option value="${esc(row.id)}">${esc(row.name)}${row.route_code?` · ${esc(row.route_code)}`:''}</option>`).join('')}`);
+    const equipOptions=`<option value="">None</option>${equipment.map((row)=>`<option value="${esc(row.id)}">${esc(row.equipment_name)}${row.category?` · ${esc(row.category)}`:''}</option>`).join('')}`;
+    const truckChoices=equipment.filter((row)=>/truck|vehicle|fleet|pickup|van/i.test(String(row.category||row.equipment_name||'')));
+    const trailerChoices=equipment.filter((row)=>/trailer/i.test(String(row.category||row.equipment_name||'')));
+    apply('[data-oc-dispatch-truck]',`<option value="">No truck/vehicle assigned</option>${(truckChoices.length?truckChoices:equipment).map((row)=>`<option value="${esc(row.id)}">${esc(row.equipment_name)}</option>`).join('')}`);
+    apply('[data-oc-dispatch-trailer]',`<option value="">No trailer assigned</option>${(trailerChoices.length?trailerChoices:equipment).map((row)=>`<option value="${esc(row.id)}">${esc(row.equipment_name)}</option>`).join('')}`);
+    document.querySelectorAll('[data-oc-dispatch-equipment]').forEach((select)=>{
+      const current=[...select.selectedOptions].map((o)=>o.value);
+      select.innerHTML=equipment.map((row)=>`<option value="${esc(row.id)}">${esc(row.equipment_name)}${row.category?` · ${esc(row.category)}`:''}</option>`).join('');
+      current.forEach((value)=>{ const option=[...select.options].find((o)=>o.value===value); if(option) option.selected=true; });
+    });
+  }
+  function populateCrewFromSelection() {
+    const form=byId('oc_crew_dispatch_form'); if(!form) return;
+    const crew=(queues.crew_dispatch_crews || []).find((row)=>String(row.id)===String(form.elements.crew_id?.value || ''));
+    if(!crew) return;
+    if(crew.lead_profile_id) form.elements.lead_profile_id.value=crew.lead_profile_id;
+    if(crew.supervisor_profile_id) form.elements.assigned_supervisor_profile_id.value=crew.supervisor_profile_id;
+    const memberIds=Array.isArray(crew.members_json) ? crew.members_json.map((row)=>String(row.profile_id||row.id||'')).filter(Boolean) : [];
+    const select=form.elements.assigned_crew_profile_ids;
+    if(select) [...select.options].forEach((option)=>{ option.selected=memberIds.includes(option.value); });
+  }
+  function resetCrewDispatchForm() {
+    const form=byId('oc_crew_dispatch_form'); if(!form) return;
+    form.reset();
+    form.elements.supersedes_dispatch_id.value='';
+    if(form.elements.schedule_status) form.elements.schedule_status.value='scheduled';
+    if(form.elements.workability_state) form.elements.workability_state.value='not_assessed';
+  }
+  function loadDispatchIntoForm(row,statusValue='rescheduled') {
+    const form=byId('oc_crew_dispatch_form'); if(!form || !row) return;
+    form.elements.work_order_id.value=row.work_order_id || '';
+    form.elements.schedule_status.value=statusValue;
+    form.elements.scheduled_start.value=dispatchLocalValue(row.scheduled_start);
+    form.elements.scheduled_end.value=dispatchLocalValue(row.scheduled_end);
+    form.elements.crew_id.value=row.crew_id || '';
+    form.elements.lead_profile_id.value=row.lead_profile_id || '';
+    form.elements.assigned_supervisor_profile_id.value=row.assigned_supervisor_profile_id || '';
+    form.elements.route_id.value=row.route_id || '';
+    form.elements.route_order.value=row.route_order || '';
+    form.elements.estimated_duration_minutes.value=row.estimated_duration_minutes || '';
+    form.elements.travel_allowance_minutes.value=row.travel_allowance_minutes || 0;
+    form.elements.assigned_truck_equipment_item_id.value=row.assigned_truck_equipment_item_id || '';
+    form.elements.assigned_trailer_equipment_item_id.value=row.assigned_trailer_equipment_item_id || '';
+    form.elements.recurring_visit_key.value=row.recurring_visit_key || '';
+    form.elements.recurrence_label.value=row.recurrence_label || '';
+    form.elements.workability_state.value=row.workability_state || 'not_assessed';
+    form.elements.weather_summary.value=row.weather_summary || '';
+    form.elements.workability_note.value=row.workability_note || '';
+    form.elements.dispatch_notes.value=row.dispatch_notes || '';
+    form.elements.supersedes_dispatch_id.value=row.id || '';
+    const crewSelect=form.elements.assigned_crew_profile_ids;
+    const crewIds=Array.isArray(row.assigned_crew_profile_ids)?row.assigned_crew_profile_ids.map(String):[];
+    if(crewSelect) [...crewSelect.options].forEach((option)=>{ option.selected=crewIds.includes(option.value); });
+    const equipmentSelect=form.elements.assigned_equipment_item_ids;
+    const equipmentIds=Array.isArray(row.assigned_equipment_item_ids)?row.assigned_equipment_item_ids.map(String):[];
+    if(equipmentSelect) [...equipmentSelect.options].forEach((option)=>{ option.selected=equipmentIds.includes(option.value); });
+    form.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  async function handleCrewDispatch(event) {
+    event.preventDefault();
+    const form=event.currentTarget;
+    const data=formData(form);
+    const payload={
+      action:'dispatch_schedule',
+      work_order_id:data.work_order_id,
+      schedule_status:data.schedule_status,
+      scheduled_start:data.scheduled_start ? new Date(data.scheduled_start).toISOString() : '',
+      scheduled_end:data.scheduled_end ? new Date(data.scheduled_end).toISOString() : '',
+      crew_id:data.crew_id || null,
+      lead_profile_id:data.lead_profile_id || null,
+      assigned_supervisor_profile_id:data.assigned_supervisor_profile_id || null,
+      assigned_crew_profile_ids:dispatchSelectedValues('#oc_dispatch_crew_members'),
+      route_id:data.route_id || null,
+      route_order:data.route_order || null,
+      estimated_duration_minutes:data.estimated_duration_minutes || null,
+      travel_allowance_minutes:data.travel_allowance_minutes || 0,
+      assigned_truck_equipment_item_id:data.assigned_truck_equipment_item_id || null,
+      assigned_trailer_equipment_item_id:data.assigned_trailer_equipment_item_id || null,
+      assigned_equipment_item_ids:dispatchSelectedValues('#oc_dispatch_equipment'),
+      recurring_visit_key:data.recurring_visit_key || null,
+      recurrence_label:data.recurrence_label || null,
+      workability_state:data.workability_state || 'not_assessed',
+      weather_summary:data.weather_summary || null,
+      workability_note:data.workability_note || null,
+      schedule_reason:data.schedule_reason || null,
+      reschedule_reason:data.reschedule_reason || null,
+      cancellation_reason:data.cancellation_reason || null,
+      supersedes_dispatch_id:data.supersedes_dispatch_id || null,
+      conflict_override_note:data.conflict_override_note || null,
+      dispatch_notes:data.dispatch_notes || null
+    };
+    await send(payload,`Crew dispatch ${String(data.schedule_status||'scheduled').replaceAll('_',' ')}`);
+    resetCrewDispatchForm();
+  }
+
   function renderAttentionQueue() {
     const wrap=byId('oc_attention_queue');
     const resolvedWrap=byId('oc_attention_resolved');
@@ -408,7 +590,7 @@
   }
 
   function renderQueues() {
-    renderAttentionQueue(); renderRails(); renderRolePermissions(); renderOperationsHealth(); renderReleaseDashboard(); renderReleaseProof(); renderPaymentQueue(); renderBankQueue(); renderReconQueue(); renderEquipmentQueue(); renderAssetQueue(); renderRouteQueue(); renderQuoteQueue(); renderPortalQueue(); renderLiveUpdateQueue(); renderExecutionProofQueue(); renderCloseoutQueue(); renderCustomerNotificationQueue(); hydrateArApplicationSelects(); hydrateLiveUpdateSelects(); decoratePermissionControls();
+    renderCrewDispatch(); renderAttentionQueue(); renderRails(); renderRolePermissions(); renderOperationsHealth(); renderReleaseDashboard(); renderReleaseProof(); renderPaymentQueue(); renderBankQueue(); renderReconQueue(); renderEquipmentQueue(); renderAssetQueue(); renderRouteQueue(); renderQuoteQueue(); renderPortalQueue(); renderLiveUpdateQueue(); renderExecutionProofQueue(); renderCloseoutQueue(); renderCustomerNotificationQueue(); hydrateArApplicationSelects(); hydrateLiveUpdateSelects(); hydrateCrewDispatchSelectors(); decoratePermissionControls();
   }
   function hydrateBankSelects() {
     const options = `<option value="">Choose bank account</option>${(queues.banks || []).map((bank) => `<option value="${esc(bank.id)}">${esc(bank.account_name)}${bank.is_default ? ' (default)' : ''}</option>`).join('')}`;
@@ -798,6 +980,42 @@
       await send({ action:'quote_owner_assign', request_id:id, assigned_to_profile_id:owner, followup_due_at:due ? new Date(due).toISOString() : null, event_note:'Owner/follow-up updated from Operations Cockpit.' }, 'Quote owner assignment'); return;
     }
     if (action === 'quote-contact') { const note = prompt('Contact or follow-up note:'); if (!note) return; await send({ action:'quote_followup_event', request_id:id, event_type:'contacted', request_status:'contacted', response_status:'responded', event_note:note }, 'Quote contact history'); return; }
+    if (action === 'dispatch-load' || action === 'dispatch-now' || action === 'dispatch-cancel') {
+      const row=(queues.crew_dispatch_schedule || []).find((item)=>String(item.id)===String(id));
+      if(!row) return;
+      if(action==='dispatch-load'){ loadDispatchIntoForm(row,'rescheduled'); return; }
+      if(action==='dispatch-cancel'){
+        const reason=prompt('Cancellation reason (required):') || ''; if(!reason.trim()) return;
+        await send({
+          action:'dispatch_schedule', work_order_id:row.work_order_id, schedule_status:'cancelled',
+          scheduled_start:row.scheduled_start, scheduled_end:row.scheduled_end,
+          crew_id:row.crew_id, lead_profile_id:row.lead_profile_id, assigned_supervisor_profile_id:row.assigned_supervisor_profile_id,
+          assigned_crew_profile_ids:row.assigned_crew_profile_ids || [], route_id:row.route_id, route_order:row.route_order,
+          estimated_duration_minutes:row.estimated_duration_minutes, travel_allowance_minutes:row.travel_allowance_minutes || 0,
+          assigned_truck_equipment_item_id:row.assigned_truck_equipment_item_id, assigned_trailer_equipment_item_id:row.assigned_trailer_equipment_item_id,
+          assigned_equipment_item_ids:row.assigned_equipment_item_ids || [], recurring_visit_key:row.recurring_visit_key, recurrence_label:row.recurrence_label,
+          workability_state:row.workability_state || 'not_assessed', weather_summary:row.weather_summary, workability_note:row.workability_note,
+          cancellation_reason:reason.trim(), supersedes_dispatch_id:row.id, dispatch_notes:row.dispatch_notes
+        },'Crew dispatch cancellation');
+        return;
+      }
+      if(action==='dispatch-now'){
+        if(row.workability_state==='blocked'){ status('This visit is workability-blocked and cannot be dispatched.',true); return; }
+        await send({
+          action:'dispatch_schedule', work_order_id:row.work_order_id, schedule_status:'dispatched',
+          scheduled_start:row.scheduled_start, scheduled_end:row.scheduled_end,
+          crew_id:row.crew_id, lead_profile_id:row.lead_profile_id, assigned_supervisor_profile_id:row.assigned_supervisor_profile_id,
+          assigned_crew_profile_ids:row.assigned_crew_profile_ids || [], route_id:row.route_id, route_order:row.route_order,
+          estimated_duration_minutes:row.estimated_duration_minutes, travel_allowance_minutes:row.travel_allowance_minutes || 0,
+          assigned_truck_equipment_item_id:row.assigned_truck_equipment_item_id, assigned_trailer_equipment_item_id:row.assigned_trailer_equipment_item_id,
+          assigned_equipment_item_ids:row.assigned_equipment_item_ids || [], recurring_visit_key:row.recurring_visit_key, recurrence_label:row.recurrence_label,
+          workability_state:row.workability_state || 'not_assessed', weather_summary:row.weather_summary, workability_note:row.workability_note,
+          schedule_reason:'Dispatched from Crew Scheduling & Dispatch board.', supersedes_dispatch_id:row.id,
+          conflict_override_note:row.conflict_override_note || null, dispatch_notes:row.dispatch_notes
+        },'Crew dispatch activation');
+        return;
+      }
+    }
     if (action === 'portal-dispatch') { const start = prompt('Scheduled start (YYYY-MM-DDTHH:MM):'); if (!start) return; const end = prompt('Scheduled end (YYYY-MM-DDTHH:MM):'); if (!end) return; await send({ action:'dispatch_schedule', work_order_id:id, scheduled_start:new Date(start).toISOString(), scheduled_end:new Date(end).toISOString(), schedule_status:'scheduled' }, 'Dispatch schedule'); return; }
     if (action === 'webhook-ack' || action === 'webhook-resolve') { const decision = action === 'webhook-ack' ? 'acknowledged' : 'resolved'; await send({ action:'stripe_webhook_alert_decision', alert_id:id, alert_status:decision }, `Webhook alert ${decision}`); return; }
     if (action === 'signal-review' || action === 'signal-actioned') { const decision = action === 'signal-review' ? 'review' : 'actioned'; const note = prompt(decision === 'actioned' ? 'What change was made or scheduled?' : 'Review note (optional):') || ''; await send({ action:'content_signal_decision', observation_id:id, decision_status:decision, decision_note:note }, `Route signal marked ${decision}`); return; }
@@ -818,6 +1036,41 @@
       <div class="operations-toolbar"><button id="oc_refresh" type="button">Refresh all live queues</button><span>Build ${BUILD}</span></div>
       <div id="oc_scorecards" class="operations-scorecards" aria-label="Implementation progress"></div><section id="oc_role_permissions" class="oc-permission-strip" aria-label="Role capability checklist"></section><section class="oc-health-grid" aria-label="Payment and release health"><div id="oc_stripe_health" class="oc-health-list"></div><div id="oc_export_readiness" class="oc-export-readiness"></div></section><section id="oc_release_dashboard" class="oc-release-dashboard" aria-label="Release readiness dashboard"></section>
       <div class="operations-grid">
+        <details open class="operations-dispatch-panel"><summary>Crew Scheduling &amp; Dispatch</summary>
+          <p class="muted">Build 321 extends the canonical Jobs dispatch record with crew composition, lead/supervisor, employee, truck/trailer/equipment, property, recurring-visit, duration/travel, route-order and workability evidence. Conflicting resource assignments require an explicit management override note; blocked workability can never be dispatched.</p>
+          <div class="operations-toolbar"><label>Board start<input id="oc_dispatch_board_date" type="date" value="${todayValue}" /></label><label>View<select id="oc_dispatch_board_mode"><option value="week">7-day</option><option value="day">Daily</option></select></label><strong id="oc_dispatch_board_summary">Loading scheduler…</strong></div>
+          <form id="oc_crew_dispatch_form" class="operations-form">
+            <input type="hidden" name="supersedes_dispatch_id" />
+            <label>Work order<select name="work_order_id" data-oc-dispatch-work-order required><option value="">Loading work orders…</option></select></label>
+            <label>Status<select name="schedule_status"><option value="scheduled">Scheduled</option><option value="dispatched">Dispatch now</option><option value="rescheduled">Rescheduled</option><option value="cancelled">Cancelled</option></select></label>
+            <label>Start<input name="scheduled_start" type="datetime-local" required /></label>
+            <label>End<input name="scheduled_end" type="datetime-local" required /></label>
+            <label>Crew<select name="crew_id" data-oc-dispatch-crew><option value="">No named crew</option></select></label>
+            <label>Lead<select name="lead_profile_id" data-oc-dispatch-lead><option value="">Use crew/default</option></select></label>
+            <label>Supervisor<select name="assigned_supervisor_profile_id" data-oc-dispatch-supervisor><option value="">Use crew/default</option></select></label>
+            <label class="operations-span">Crew members<select id="oc_dispatch_crew_members" name="assigned_crew_profile_ids" multiple size="5"></select><small>Named crew membership is loaded automatically and may be adjusted for this visit.</small></label>
+            <label>Route<select name="route_id" data-oc-dispatch-route><option value="">Use work-order/default route</option></select></label>
+            <label>Route order<input name="route_order" type="number" min="1" max="999" step="1" /></label>
+            <label>Estimated duration (min)<input name="estimated_duration_minutes" type="number" min="1" max="1440" step="1" /></label>
+            <label>Travel allowance (min)<input name="travel_allowance_minutes" type="number" min="0" max="720" step="1" value="0" /></label>
+            <label>Truck / vehicle<select name="assigned_truck_equipment_item_id" data-oc-dispatch-truck><option value="">None</option></select></label>
+            <label>Trailer<select name="assigned_trailer_equipment_item_id" data-oc-dispatch-trailer><option value="">None</option></select></label>
+            <label class="operations-span">Other equipment<select id="oc_dispatch_equipment" name="assigned_equipment_item_ids" data-oc-dispatch-equipment multiple size="5"></select><small>Locked-out and unavailable assets are excluded and also rejected by the server.</small></label>
+            <label>Recurring visit key<input name="recurring_visit_key" maxlength="180" placeholder="Optional stable program/visit key" /></label>
+            <label>Recurrence label<input name="recurrence_label" maxlength="180" placeholder="Example: Weekly mowing" /></label>
+            <label>Workability<select name="workability_state"><option value="not_assessed">Not assessed</option><option value="workable">Workable</option><option value="caution">Caution</option><option value="delayed">Delayed</option><option value="blocked">Blocked</option></select></label>
+            <label>Weather / field summary<input name="weather_summary" maxlength="500" placeholder="Observed/forecast context; supervisor retains decision authority" /></label>
+            <label class="operations-span">Workability note<textarea name="workability_note" maxlength="1000" placeholder="Ground, access, heat/wind/rain or other workability context."></textarea></label>
+            <label class="operations-span">Schedule reason<textarea name="schedule_reason" maxlength="1000" placeholder="Why this timing/crew/route was chosen."></textarea></label>
+            <label class="operations-span">Reschedule reason<textarea name="reschedule_reason" maxlength="1000" placeholder="Required only when status is Rescheduled."></textarea></label>
+            <label class="operations-span">Cancellation reason<textarea name="cancellation_reason" maxlength="1000" placeholder="Required only when status is Cancelled."></textarea></label>
+            <label class="operations-span">Conflict override note<textarea name="conflict_override_note" maxlength="1200" placeholder="Required only if intentionally overriding an overlapping crew/person/equipment assignment."></textarea></label>
+            <label class="operations-span">Dispatch notes<textarea name="dispatch_notes" maxlength="1500"></textarea></label>
+            <button type="submit" data-oc-permission="dispatch_schedule">Save crew dispatch</button>
+            <button id="oc_dispatch_reset" type="button" class="secondary">Clear form</button>
+          </form>
+          <div id="oc_crew_dispatch_board"></div>
+        </details>
         <details open class="operations-attention-panel"><summary>Operations Needs Attention</summary><p class="muted">Build 320 prioritizes overdue/unassigned Jobs, customer follow-up, Equipment defects and maintenance, Safety/training, time-entry issues, completed-not-invoiced work, overdue receivables and Finance reconciliation exceptions. Source records remain authoritative.</p><div class="finance-module-note"><strong id="oc_attention_summary">Loading attention summary…</strong> · Defer/resolve changes management disposition only; it never edits the source business record.</div><div id="oc_attention_queue" class="oc-live-queue"></div><h4>Recently resolved</h4><div id="oc_attention_resolved" class="oc-live-queue"></div></details>
         <details open><summary>Quote owners, alerts, and follow-up</summary><p class="muted">Assign each request, set a due time, and preserve every contact event.</p><div id="oc_quote_queue" class="oc-live-queue"></div></details>
         <details open><summary>Live job updates: staff-only or customer-visible</summary><p class="muted">Site leaders may save staff-only updates. Customer-visible updates require a supervisor, show only in the secure portal, and can attach only approved public images. This does not send a payment, publish a public web page, or expose staff notes.</p><form id="oc_live_update_form" class="operations-form"><label>Work order<select name="work_order_id" data-oc-work-order-select required><option value="">Loading accepted work orders…</option></select></label><label>Visibility<select name="visibility"><option value="staff">Staff only</option><option value="customer">Customer visible (supervisor)</option></select></label><label>Update type<select name="update_type"><option value="arrival">Arrival</option><option value="progress" selected>Progress</option><option value="delay">Timing update</option><option value="access">Access/site update</option><option value="completion">Completion</option><option value="note">Service note</option></select></label><label>Progress %<input name="progress_percent" type="number" min="0" max="100" step="1" placeholder="Optional" /></label><label>When<input name="occurred_at" type="datetime-local" /></label><label class="operations-span">Update title<input name="title" maxlength="180" minlength="3" required placeholder="Example: Crew arrived and site walk-through started" /></label><label class="operations-span">Customer-safe message<textarea name="message" maxlength="4000" placeholder="Use plain language. Do not include private staff, costing, or access-code information in customer-visible updates."></textarea></label><label class="operations-span">Approved public images (optional)<select name="asset_ids" data-oc-live-update-assets multiple size="4" aria-describedby="oc_live_update_asset_help"></select><small id="oc_live_update_asset_help">Only approved public images are available here. Private review images and staff-only notes cannot be shown to customers.</small></label><label class="operations-inline-check operations-span"><input name="customer_notification_requested" type="checkbox" /> Queue a consent-controlled customer e-mail when the customer has opted in</label><button type="submit" data-oc-permission="work_order_live_update">Save live update</button></form><h4>Live update history</h4><div id="oc_live_updates_queue" class="oc-live-queue"></div><h4>Customer e-mail delivery</h4><div id="oc_customer_notification_queue" class="oc-live-queue"></div></details>
@@ -863,6 +1116,11 @@
   }
 
   function bind() {
+    byId('oc_crew_dispatch_form')?.addEventListener('submit',(e)=>handleCrewDispatch(e).catch((err)=>status(err?.message || 'Crew dispatch failed.',true)));
+    byId('oc_crew_dispatch_form')?.elements?.crew_id?.addEventListener('change',populateCrewFromSelection);
+    byId('oc_dispatch_board_date')?.addEventListener('change',renderCrewDispatch);
+    byId('oc_dispatch_board_mode')?.addEventListener('change',renderCrewDispatch);
+    byId('oc_dispatch_reset')?.addEventListener('click',resetCrewDispatchForm);
     byId('oc_live_update_form')?.addEventListener('submit', (e) => handleLiveUpdate(e).catch((err) => status(err?.message || 'Live work update failed.', true)));
     byId('oc_execution_proof_form')?.addEventListener('submit', (e) => handleExecutionProof(e).catch((err) => status(err?.message || 'Service-execution proof failed.', true)));
     byId('oc_closeout_form')?.addEventListener('submit', (e) => handleCloseout(e).catch((err) => status(err?.message || 'Closeout package failed.', true)));
