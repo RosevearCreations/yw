@@ -1351,6 +1351,13 @@ async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false
     safeSelect(supabase.from('client_sites').select('id,client_id,site_name,service_address,city').order('site_name',{ascending:true}).limit(400))
   ]) : [[],[],[],[]];
 
+  const [propertySites,propertyZones,propertyPhotos,propertyClients] = jobsAttentionAllowed ? await Promise.all([
+    safeSelect(supabase.from('v_property_site_intelligence').select('*').order('site_name',{ascending:true}).limit(400)),
+    safeSelect(supabase.from('v_property_site_zone_directory').select('*').order('sort_order',{ascending:true}).order('zone_name',{ascending:true}).limit(700)),
+    safeSelect(supabase.from('v_property_site_photo_directory').select('*').eq('is_active',true).order('created_at',{ascending:false}).limit(500)),
+    safeSelect(supabase.from('clients').select('id,client_code,display_name,legal_name,is_active').eq('is_active',true).order('display_name',{ascending:true}).limit(400))
+  ]) : [[],[],[],[]];
+
   return {
     operations_attention: operationsAttention.active,
     operations_attention_resolved: operationsAttention.resolved,
@@ -1366,6 +1373,11 @@ async function queuePayload(supabase: any, profile: any, bankWorkbenchV2 = false
     recurring_service_clients: recurringClients,
     recurring_service_sites: recurringSites,
     recurring_service_meta: { build:322, schema:211, permission_filtered:true, agreement_authority:'recurring_service_agreements', scheduler_authority:'v_service_execution_scheduler_candidates' },
+    property_sites: propertySites,
+    property_zones: propertyZones,
+    property_photos: propertyPhotos,
+    property_clients: propertyClients,
+    property_site_meta: { build:323, schema:212, permission_filtered:true, property_authority:'client_sites', legacy_safety_site_authority:'sites', photo_mode:'private_reference' },
     ...queueMap, bank_preview_rows: bankReviewRows, bank_items: bankItems, reconciliation_exceptions: reconciliationExceptions, profiles, banks, rails, ar_invoices: arInvoices, ar_payments: arPayments, customer_deposits: customerDeposits, ar_applications: arApplications,
     capabilities: capabilitySnapshot,
     stripe_health: {
@@ -2088,6 +2100,129 @@ serve(async (req) => {
         payload:{ request_id:requestId, assigned_to_profile_id:targetOwnerId, followup_due_at:followup, event_type:eventType, build:BUILD, schema:SCHEMA }
       });
       return Response.json({ ok: true, record: data }, { headers: corsHeaders });
+    }
+
+    if (action === 'property_site_save') {
+      requireRank(profile,45,action);
+      const id=isUuid(body.id) ? clean(body.id,80) : null;
+      const clientId=isUuid(body.client_id) ? clean(body.client_id,80) : null;
+      const siteName=clean(body.site_name,180);
+      if(!id && !clientId) throw new HttpError(400,'Choose a customer before creating a property.');
+      if(!id && !siteName) throw new HttpError(400,'Property/site name is required.');
+      const area=body.approximate_serviceable_area === '' || body.approximate_serviceable_area == null ? null : Number(body.approximate_serviceable_area);
+      if(area!==null && (!Number.isFinite(area) || area<0)) throw new HttpError(400,'Approximate serviceable area must be zero or greater.');
+      const areaUnit=clean(body.area_unit || 'sq_ft',20).toLowerCase();
+      if(!['sq_ft','sq_m','acre','hectare'].includes(areaUnit)) throw new HttpError(400,'Unsupported property area unit.');
+      const payload:any={
+        id,
+        client_id:clientId,
+        legacy_site_id:isUuid(body.legacy_site_id) ? clean(body.legacy_site_id,80) : null,
+        site_code:clean(body.site_code,80) || null,
+        site_name:siteName || null,
+        service_address:clean(body.service_address,400) || null,
+        city:clean(body.city,120) || null,
+        province:clean(body.province,80) || null,
+        postal_code:clean(body.postal_code,30) || null,
+        latitude:body.latitude === '' || body.latitude == null ? null : Number(body.latitude),
+        longitude:body.longitude === '' || body.longitude == null ? null : Number(body.longitude),
+        access_notes:clean(body.access_notes,2500) || null,
+        hazard_notes:clean(body.hazard_notes,2500) || null,
+        is_active:body.is_active !== false && String(body.is_active).toLowerCase()!=='false',
+        approximate_serviceable_area:area,
+        area_unit:areaUnit,
+        gate_fence_summary:clean(body.gate_fence_summary,1800) || null,
+        parking_trailer_limits:clean(body.parking_trailer_limits,1800) || null,
+        pet_notes:clean(body.pet_notes,1800) || null,
+        irrigation_notes:clean(body.irrigation_notes,1800) || null,
+        slope_notes:clean(body.slope_notes,1800) || null,
+        drainage_wet_area_notes:clean(body.drainage_wet_area_notes,1800) || null,
+        utility_locate_notes:clean(body.utility_locate_notes,1800) || null,
+        tree_brush_notes:clean(body.tree_brush_notes,1800) || null,
+        recurring_property_instructions:clean(body.recurring_property_instructions,3000) || null,
+        verify_access_now:body.verify_access_now===true || String(body.verify_access_now).toLowerCase()==='true'
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_property_site_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      const propertyId=clean((data as any)?.id,80);
+      const rows=propertyId ? await safeSelect(supabase.from('v_property_site_intelligence').select('*').eq('id',propertyId).limit(1)) : [];
+      await audit(supabase,{
+        operation_action:action,operation_status:id?'updated':'created',entity_type:'client_site',entity_id:propertyId,
+        actor_profile_id:profile.id,request_payload:{client_id:clientId,site_name:siteName,verify_access_now:payload.verify_access_now},
+        response_payload:{property_id:propertyId,site_code:(data as any)?.site_code || null}
+      });
+      return Response.json({ok:true,build:323,schema:212,record:rows[0] || data},{headers:corsHeaders});
+    }
+
+    if (action === 'property_zone_save') {
+      requireRank(profile,45,action);
+      const id=isUuid(body.id) ? clean(body.id,80) : null;
+      const siteId=isUuid(body.client_site_id) ? clean(body.client_site_id,80) : null;
+      const zoneName=clean(body.zone_name,180);
+      const zoneType=clean(body.zone_type || 'other',40).toLowerCase();
+      const areaUnit=clean(body.area_unit || 'sq_ft',20).toLowerCase();
+      const priority=clean(body.service_priority || 'normal',30).toLowerCase();
+      const area=body.approximate_area === '' || body.approximate_area == null ? null : Number(body.approximate_area);
+      if(!id && !siteId) throw new HttpError(400,'Choose a property before creating a zone.');
+      if(!id && !zoneName) throw new HttpError(400,'Zone name is required.');
+      if(!['lawn','garden_bed','hedge_shrub','tree_brush','driveway_parking','access','utility','drainage','other'].includes(zoneType)) throw new HttpError(400,'Unsupported zone type.');
+      if(!['sq_ft','sq_m','acre','hectare'].includes(areaUnit)) throw new HttpError(400,'Unsupported zone area unit.');
+      if(!['low','normal','high','restricted'].includes(priority)) throw new HttpError(400,'Unsupported zone service priority.');
+      if(area!==null && (!Number.isFinite(area) || area<0)) throw new HttpError(400,'Zone area must be zero or greater.');
+      const payload:any={
+        id,client_site_id:siteId,zone_code:clean(body.zone_code,80) || null,zone_name:zoneName || null,
+        zone_type:zoneType,approximate_area:area,area_unit:areaUnit,service_priority:priority,
+        access_instructions:clean(body.access_instructions,1800) || null,
+        irrigation_notes:clean(body.irrigation_notes,1800) || null,
+        slope_notes:clean(body.slope_notes,1800) || null,
+        drainage_wet_area_notes:clean(body.drainage_wet_area_notes,1800) || null,
+        hazard_notes:clean(body.hazard_notes,1800) || null,
+        utility_locate_notes:clean(body.utility_locate_notes,1800) || null,
+        tree_brush_notes:clean(body.tree_brush_notes,1800) || null,
+        recurring_instructions:clean(body.recurring_instructions,2400) || null,
+        is_active:body.is_active !== false && String(body.is_active).toLowerCase()!=='false',
+        sort_order:Math.max(0,Math.min(10000,int(body.sort_order,100)))
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_property_zone_save',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      const zoneId=clean((data as any)?.id,80);
+      await audit(supabase,{
+        operation_action:action,operation_status:id?'updated':'created',entity_type:'client_site_zone',entity_id:zoneId,
+        actor_profile_id:profile.id,request_payload:{client_site_id:siteId,zone_name:zoneName,zone_type:zoneType},
+        response_payload:{zone_id:zoneId}
+      });
+      return Response.json({ok:true,build:323,schema:212,record:data},{headers:corsHeaders});
+    }
+
+    if (action === 'property_photo_register') {
+      requireRank(profile,45,action);
+      const id=isUuid(body.id) ? clean(body.id,80) : null;
+      const siteId=isUuid(body.client_site_id) ? clean(body.client_site_id,80) : null;
+      const zoneId=isUuid(body.zone_id) ? clean(body.zone_id,80) : null;
+      const kind=clean(body.photo_kind || 'overview',40).toLowerCase();
+      if(!['overview','access','gate_fence','parking_trailer','pet','irrigation','slope_drainage','hazard','utility_locate','tree_brush','zone','other'].includes(kind)) throw new HttpError(400,'Unsupported property photo kind.');
+      const rawUrl=clean(body.source_url,1200);
+      const sourceUrl=rawUrl ? safeHttpUrl(rawUrl) : null;
+      if(rawUrl && !sourceUrl) throw new HttpError(400,'Property photo URL must use http or https.');
+      const storageBucket=clean(body.storage_bucket,180) || null;
+      const storagePath=clean(body.storage_path,800) || null;
+      if(!id && !siteId) throw new HttpError(400,'Choose a property before registering a photo.');
+      if(!id && !sourceUrl && !(storageBucket && storagePath)) throw new HttpError(400,'Provide a photo URL or private storage bucket/path.');
+      const payload:any={
+        id,client_site_id:siteId,zone_id:zoneId,photo_kind:kind,source_url:sourceUrl,
+        storage_bucket:storageBucket,storage_path:storagePath,caption:clean(body.caption,1200) || null,
+        captured_at:clean(body.captured_at,80) || null,
+        is_active:body.is_active !== false && String(body.is_active).toLowerCase()!=='false',
+        metadata:{build:323,schema:212,source:'operations-manage'}
+      };
+      const {data,error}=await supabase.rpc('ywi_rpc_property_photo_register',{p_payload:payload,p_actor_profile_id:profile.id});
+      if(error) throw error;
+      const photoId=clean((data as any)?.id,80);
+      await audit(supabase,{
+        operation_action:action,operation_status:id?'updated':'registered',entity_type:'client_site_photo',entity_id:photoId,
+        actor_profile_id:profile.id,request_payload:{client_site_id:siteId,zone_id:zoneId,photo_kind:kind,reference_type:storageBucket&&storagePath?'storage_reference':'url_reference'},
+        response_payload:{photo_id:photoId}
+      });
+      return Response.json({ok:true,build:323,schema:212,record:data},{headers:corsHeaders});
     }
 
     if (action === 'recurring_service_program_save') {

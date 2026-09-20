@@ -124,4 +124,12 @@
           <p>Customer holds pause the program without deleting its history. Resume clears the hold and returns it to active. Program cancellation requires an explicit reason. Active generated visits feed the pre-existing service-execution scheduler and job-session authority; Build 322 does not create a parallel scheduler.</p>
           <p>Schema 211 keeps recurring-service tables and mutation RPCs server-only, keeps RLS enabled, and leaves Finance posting/payment-provider execution disabled.</p>
         </section>
+        <section class="help-section" id="property-site-intelligence">
+          <h2>Property &amp; Site Intelligence</h2>
+          <p>Build 323 makes the canonical customer property record (<code>client_sites</code>) the landscaping field profile. Use it for the service address, approximate serviceable area, gates/fences, access instructions, parking/trailer limits, pets, irrigation, slopes, wet/drainage areas, known hazard notes, utility/locate notes, tree/brush concerns and recurring property instructions.</p>
+          <p>Property zones divide a property into lawn, garden/bed, hedge/shrub, tree/brush, driveway/parking, access, utility, drainage or other areas. Each zone can carry its own approximate area, priority, access, irrigation, slope, drainage, hazard, utility/locate, tree/brush and recurring-service notes.</p>
+          <p>Property photos are registered as private references using either an approved http/https URL or a private storage bucket/path. Build 323 does not publish these images and does not move them into the public visual-asset workflow.</p>
+          <p>The separate <code>sites</code> authority used by Safety/legacy site workflows remains intact. Property hazard notes are field context only; they do not replace required Safety assessments, incident records, job hazard analysis or supervisor decisions.</p>
+          <p>Schema 212 keeps property zones, photo references, server views and mutation RPCs private, with Jobs-approve write boundaries. Finance posting and payment-provider mutation remain disabled.</p>
+        </section>
 

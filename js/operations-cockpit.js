@@ -5,7 +5,7 @@
 'use strict';
 
 (function () {
-  const BUILD = '322-recurring-lawn-yard-maintenance';
+  const BUILD = '323-property-site-intelligence';
   const RETRY_KEY = 'ywi_operations_cockpit_retry_v2';
   const DRAFT_KEY = 'ywi_operations_cockpit_draft_v2';
   let cameraStream = null;
@@ -35,7 +35,8 @@
     'attention-defer':'operations_attention_defer', 'attention-resolve':'operations_attention_resolve',
     'dispatch-load':'dispatch_schedule', 'dispatch-cancel':'dispatch_schedule', 'dispatch-now':'dispatch_schedule',
     'recurring-program-edit':'recurring_service_program_save',
-    'recurring-visit-skip':'recurring_service_visit_event', 'recurring-visit-weather':'recurring_service_visit_event', 'recurring-visit-makeup':'recurring_service_visit_event', 'recurring-visit-hold':'recurring_service_visit_event', 'recurring-visit-resume':'recurring_service_visit_event', 'recurring-visit-cancel':'recurring_service_visit_event'
+    'recurring-visit-skip':'recurring_service_visit_event', 'recurring-visit-weather':'recurring_service_visit_event', 'recurring-visit-makeup':'recurring_service_visit_event', 'recurring-visit-hold':'recurring_service_visit_event', 'recurring-visit-resume':'recurring_service_visit_event', 'recurring-visit-cancel':'recurring_service_visit_event',
+    'property-edit':'property_site_save', 'property-zone-edit':'property_zone_save', 'property-photo-edit':'property_photo_register'
   };
 
 
@@ -370,6 +371,120 @@
       return `<article class="oc-queue-card oc-notification-delivery-card"><header><div><strong>${esc(row.work_order_number || 'Work order')}</strong><small>${esc(row.live_update_title || row.update_type || 'Customer-visible update')}</small></div><span class="${statusClass(row.delivery_status)}">${esc(row.delivery_status || 'unknown')}</span></header><dl><div><dt>Consent</dt><dd>${esc(row.consent_status || 'unknown')} · ${row.live_work_update_opt_in ? 'email on' : 'email off'}</dd></div><div><dt>Attempts</dt><dd>${Number(row.attempt_count || 0)} of ${Number(row.max_attempts || 0)}</dd></div><div><dt>Next attempt</dt><dd>${esc(when(row.next_attempt_at))}</dd></div><div><dt>Last result</dt><dd>${esc(short(row.last_error || row.cancellation_reason || row.provider_message_id || 'Awaiting protected dispatch', 150))}</dd></div></dl>${buttons(actions)}</article>`;
     });
     wrap.innerHTML = `<div class="oc-notification-delivery-status"><span class="${statusClass(deliveryBadge)}">${esc(delivery.enabled ? 'delivery state' : 'delivery off')}</span><p>${esc(deliveryState)} Email addresses, portal tokens, staff notes, and private media are never shown in this queue.</p></div>${cards.length ? cards.join('') : emptyQueue('No customer e-mails awaiting review', 'Customer-visible updates require an explicit portal opt-in before delivery is queued.')}`;
+  }
+
+  function propertyAreaLabel(value,unit) {
+    if(value===null || value===undefined || value==='') return 'Not estimated';
+    const label={sq_ft:'sq ft',sq_m:'m²',acre:'acre',hectare:'ha'}[unit] || unit || 'sq ft';
+    return `${Number(value).toLocaleString(undefined,{maximumFractionDigits:2})} ${label}`;
+  }
+  function renderPropertySiteIntelligence() {
+    const sitesWrap=byId('oc_property_sites');
+    const zonesWrap=byId('oc_property_zones');
+    const photosWrap=byId('oc_property_photos');
+    if(!sitesWrap || !zonesWrap || !photosWrap) return;
+    const sites=queues.property_sites || [];
+    const zones=queues.property_zones || [];
+    const photos=queues.property_photos || [];
+    const profiled=sites.filter((row)=>row.property_profile_status==='profiled').length;
+    const hazards=sites.filter((row)=>row.has_known_hazard_notes).length;
+    const gaps=sites.reduce((sum,row)=>sum+Number(row.profile_gap_count||0),0);
+    const summary=byId('oc_property_summary');
+    if(summary) summary.textContent=`${sites.length} properties · ${profiled} profiled · ${zones.length} zones · ${photos.length} photo refs · ${hazards} with hazard notes · ${gaps} profile gap(s)`;
+
+    sitesWrap.innerHTML=sites.length ? sites.map((row)=>`<article class="oc-queue-card oc-property-card" data-profile-status="${esc(row.property_profile_status || 'needs_profile')}">
+      <header><div><strong>${esc(row.site_name || row.site_code || 'Property')}</strong><small>${esc(row.client_name || 'Customer not linked')} · ${esc(row.site_code || '')}</small></div><span class="${statusClass(row.property_profile_status)}">${esc(String(row.property_profile_status || 'needs_profile').replaceAll('_',' '))}</span></header>
+      <dl>
+        <div><dt>Service address</dt><dd>${esc([row.service_address,row.city,row.province,row.postal_code].filter(Boolean).join(', ') || 'Not recorded')}</dd></div>
+        <div><dt>Serviceable area</dt><dd>${esc(propertyAreaLabel(row.approximate_serviceable_area,row.area_unit))}</dd></div>
+        <div><dt>Zones / photos</dt><dd>${Number(row.active_zone_count||0)} active zone(s) · ${Number(row.active_photo_count||0)} photo ref(s)</dd></div>
+        <div><dt>Recurring / open work</dt><dd>${Number(row.recurring_program_count||0)} program(s) · ${Number(row.open_work_order_count||0)} open work order(s)</dd></div>
+        <div><dt>Access constraints</dt><dd>${row.has_access_constraints ? esc(short([row.gate_fence_summary,row.parking_trailer_limits,row.access_notes].filter(Boolean).join(' · '),220)) : 'None recorded'}</dd></div>
+        <div><dt>Hazard context</dt><dd>${row.has_known_hazard_notes ? esc(short(row.hazard_notes || 'Zone hazard notes recorded',220)) : 'No known hazard notes recorded'}</dd></div>
+      </dl>
+      ${row.pet_notes ? `<p class="muted"><strong>Pets:</strong> ${esc(short(row.pet_notes,220))}</p>` : ''}
+      ${row.irrigation_notes ? `<p class="muted"><strong>Irrigation:</strong> ${esc(short(row.irrigation_notes,220))}</p>` : ''}
+      ${row.slope_notes || row.drainage_wet_area_notes ? `<p class="muted"><strong>Terrain:</strong> ${esc(short([row.slope_notes,row.drainage_wet_area_notes].filter(Boolean).join(' · '),260))}</p>` : ''}
+      ${row.utility_locate_notes ? `<p class="muted"><strong>Utilities/locates:</strong> ${esc(short(row.utility_locate_notes,220))}</p>` : ''}
+      ${row.tree_brush_notes ? `<p class="muted"><strong>Trees/brush:</strong> ${esc(short(row.tree_brush_notes,220))}</p>` : ''}
+      ${row.recurring_property_instructions ? `<p class="muted"><strong>Recurring instructions:</strong> ${esc(short(row.recurring_property_instructions,280))}</p>` : ''}
+      ${buttons([button('Edit property','property-edit',row.id,'',true,'property_site_save')])}
+    </article>`).join('') : emptyQueue('No customer properties yet','Create a property once a customer exists; Build 323 does not create a parallel customer authority.');
+
+    zonesWrap.innerHTML=zones.length ? zones.map((row)=>`<article class="oc-queue-card oc-property-zone-card">
+      <header><div><strong>${esc(row.zone_name)}</strong><small>${esc(row.site_name || '')} · ${esc(row.zone_code || '')}</small></div><span class="${statusClass(row.service_priority || 'normal')}">${esc(row.service_priority || 'normal')}</span></header>
+      <dl>
+        <div><dt>Type</dt><dd>${esc(String(row.zone_type || 'other').replaceAll('_',' '))}</dd></div>
+        <div><dt>Area</dt><dd>${esc(propertyAreaLabel(row.approximate_area,row.area_unit))}</dd></div>
+        <div><dt>Access</dt><dd>${esc(short(row.access_instructions || 'No zone-specific access note',180))}</dd></div>
+        <div><dt>Conditions</dt><dd>${esc(short([row.slope_notes,row.drainage_wet_area_notes,row.irrigation_notes].filter(Boolean).join(' · ') || 'No terrain/irrigation note',220))}</dd></div>
+        <div><dt>Hazards / utilities</dt><dd>${esc(short([row.hazard_notes,row.utility_locate_notes].filter(Boolean).join(' · ') || 'None recorded',220))}</dd></div>
+        <div><dt>Trees / recurring</dt><dd>${esc(short([row.tree_brush_notes,row.recurring_instructions].filter(Boolean).join(' · ') || 'None recorded',220))}</dd></div>
+      </dl>
+      ${buttons([button('Edit zone','property-zone-edit',row.id,'',true,'property_zone_save')])}
+    </article>`).join('') : emptyQueue('No property zones yet','Add lawn, garden, hedge, access, drainage, utility or other zones to a property.');
+
+    photosWrap.innerHTML=photos.length ? photos.map((row)=>`<article class="oc-queue-card oc-property-photo-card">
+      <header><div><strong>${esc(String(row.photo_kind || 'overview').replaceAll('_',' '))}</strong><small>${esc(row.site_name || '')}${row.zone_name ? ` · ${esc(row.zone_name)}` : ''}</small></div><span class="${statusClass('private')}">private ref</span></header>
+      <dl>
+        <div><dt>Reference</dt><dd>${esc(row.reference_type === 'storage_reference' ? [row.storage_bucket,row.storage_path].filter(Boolean).join('/') : short(row.source_url || 'Missing',180))}</dd></div>
+        <div><dt>Caption</dt><dd>${esc(short(row.caption || 'No caption',220))}</dd></div>
+        <div><dt>Captured</dt><dd>${when(row.captured_at)}</dd></div>
+      </dl>
+      ${buttons([button('Edit photo reference','property-photo-edit',row.id,'',true,'property_photo_register')])}
+    </article>`).join('') : emptyQueue('No property photo references yet','Register a private storage path or approved http/https reference. Build 323 does not publish property photos.');
+  }
+  function hydratePropertySelectors() {
+    const clients=queues.property_clients || [];
+    const sites=queues.property_sites || [];
+    const zones=queues.property_zones || [];
+    const apply=(selector,html)=>document.querySelectorAll(selector).forEach((select)=>{ const current=select.value; select.innerHTML=html; if(current) select.value=current; });
+    apply('[data-oc-property-client]',`<option value="">Choose customer</option>${clients.map((row)=>`<option value="${esc(row.id)}">${esc(row.display_name || row.legal_name || row.client_code || row.id)}</option>`).join('')}`);
+    apply('[data-oc-property-site]',`<option value="">Choose property</option>${sites.map((row)=>`<option value="${esc(row.id)}">${esc(row.site_name || row.site_code || row.id)}${row.client_name ? ` · ${esc(row.client_name)}` : ''}</option>`).join('')}`);
+    apply('[data-oc-property-zone]',`<option value="">No zone / property-level</option>${zones.filter((row)=>row.is_active!==false).map((row)=>`<option value="${esc(row.id)}">${esc(row.site_name || 'Property')} · ${esc(row.zone_name)}</option>`).join('')}`);
+  }
+  function resetPropertyForm() {
+    const form=byId('oc_property_form'); if(!form) return;
+    form.reset(); form.elements.id.value=''; form.elements.area_unit.value='sq_ft'; form.elements.is_active.checked=true;
+  }
+  function loadPropertyForm(row) {
+    const form=byId('oc_property_form'); if(!form || !row) return;
+    ['id','client_id','site_code','site_name','service_address','city','province','postal_code','latitude','longitude','approximate_serviceable_area','area_unit','access_notes','hazard_notes','gate_fence_summary','parking_trailer_limits','pet_notes','irrigation_notes','slope_notes','drainage_wet_area_notes','utility_locate_notes','tree_brush_notes','recurring_property_instructions'].forEach((key)=>{ if(form.elements[key]) form.elements[key].value=row[key] ?? ''; });
+    form.elements.is_active.checked=row.is_active!==false; form.elements.verify_access_now.checked=false;
+    form.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  async function handlePropertyForm(event) {
+    event.preventDefault(); const form=event.currentTarget; const data=formData(form);
+    await send({action:'property_site_save',...data,is_active:form.elements.is_active.checked,verify_access_now:form.elements.verify_access_now.checked},'Property intelligence save');
+    resetPropertyForm();
+  }
+  function resetPropertyZoneForm() {
+    const form=byId('oc_property_zone_form'); if(!form) return;
+    form.reset(); form.elements.id.value=''; form.elements.area_unit.value='sq_ft'; form.elements.service_priority.value='normal'; form.elements.sort_order.value='100'; form.elements.is_active.checked=true;
+  }
+  function loadPropertyZoneForm(row) {
+    const form=byId('oc_property_zone_form'); if(!form || !row) return;
+    ['id','client_site_id','zone_code','zone_name','zone_type','approximate_area','area_unit','service_priority','access_instructions','irrigation_notes','slope_notes','drainage_wet_area_notes','hazard_notes','utility_locate_notes','tree_brush_notes','recurring_instructions','sort_order'].forEach((key)=>{ if(form.elements[key]) form.elements[key].value=row[key] ?? ''; });
+    form.elements.is_active.checked=row.is_active!==false; form.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  async function handlePropertyZoneForm(event) {
+    event.preventDefault(); const form=event.currentTarget; const data=formData(form);
+    await send({action:'property_zone_save',...data,is_active:form.elements.is_active.checked},'Property zone save');
+    resetPropertyZoneForm();
+  }
+  function resetPropertyPhotoForm() {
+    const form=byId('oc_property_photo_form'); if(!form) return;
+    form.reset(); form.elements.id.value=''; form.elements.photo_kind.value='overview'; form.elements.is_active.checked=true;
+  }
+  function loadPropertyPhotoForm(row) {
+    const form=byId('oc_property_photo_form'); if(!form || !row) return;
+    ['id','client_site_id','zone_id','photo_kind','source_url','storage_bucket','storage_path','caption','captured_at'].forEach((key)=>{ if(form.elements[key]) form.elements[key].value=key==='captured_at' && row[key] ? new Date(row[key]).toISOString().slice(0,16) : (row[key] ?? ''); });
+    form.elements.is_active.checked=row.is_active!==false; form.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  async function handlePropertyPhotoForm(event) {
+    event.preventDefault(); const form=event.currentTarget; const data=formData(form);
+    await send({action:'property_photo_register',...data,captured_at:data.captured_at ? new Date(data.captured_at).toISOString() : null,is_active:form.elements.is_active.checked},'Property photo reference');
+    resetPropertyPhotoForm();
   }
 
   function recurringDateLabel(value) {
@@ -738,7 +853,7 @@
   }
 
   function renderQueues() {
-    renderRecurringService(); renderCrewDispatch(); renderAttentionQueue(); renderRails(); renderRolePermissions(); renderOperationsHealth(); renderReleaseDashboard(); renderReleaseProof(); renderPaymentQueue(); renderBankQueue(); renderReconQueue(); renderEquipmentQueue(); renderAssetQueue(); renderRouteQueue(); renderQuoteQueue(); renderPortalQueue(); renderLiveUpdateQueue(); renderExecutionProofQueue(); renderCloseoutQueue(); renderCustomerNotificationQueue(); hydrateArApplicationSelects(); hydrateLiveUpdateSelects(); hydrateRecurringSelectors(); hydrateCrewDispatchSelectors(); decoratePermissionControls();
+    renderPropertySiteIntelligence(); renderRecurringService(); renderCrewDispatch(); renderAttentionQueue(); renderRails(); renderRolePermissions(); renderOperationsHealth(); renderReleaseDashboard(); renderReleaseProof(); renderPaymentQueue(); renderBankQueue(); renderReconQueue(); renderEquipmentQueue(); renderAssetQueue(); renderRouteQueue(); renderQuoteQueue(); renderPortalQueue(); renderLiveUpdateQueue(); renderExecutionProofQueue(); renderCloseoutQueue(); renderCustomerNotificationQueue(); hydrateArApplicationSelects(); hydrateLiveUpdateSelects(); hydratePropertySelectors(); hydrateRecurringSelectors(); hydrateCrewDispatchSelectors(); decoratePermissionControls();
   }
   function hydrateBankSelects() {
     const options = `<option value="">Choose bank account</option>${(queues.banks || []).map((bank) => `<option value="${esc(bank.id)}">${esc(bank.account_name)}${bank.is_default ? ' (default)' : ''}</option>`).join('')}`;
@@ -1128,6 +1243,15 @@
       await send({ action:'quote_owner_assign', request_id:id, assigned_to_profile_id:owner, followup_due_at:due ? new Date(due).toISOString() : null, event_note:'Owner/follow-up updated from Operations Cockpit.' }, 'Quote owner assignment'); return;
     }
     if (action === 'quote-contact') { const note = prompt('Contact or follow-up note:'); if (!note) return; await send({ action:'quote_followup_event', request_id:id, event_type:'contacted', request_status:'contacted', response_status:'responded', event_note:note }, 'Quote contact history'); return; }
+    if (action === 'property-edit') {
+      const row=(queues.property_sites || []).find((item)=>String(item.id)===String(id)); if(row) loadPropertyForm(row); return;
+    }
+    if (action === 'property-zone-edit') {
+      const row=(queues.property_zones || []).find((item)=>String(item.id)===String(id)); if(row) loadPropertyZoneForm(row); return;
+    }
+    if (action === 'property-photo-edit') {
+      const row=(queues.property_photos || []).find((item)=>String(item.id)===String(id)); if(row) loadPropertyPhotoForm(row); return;
+    }
     if (action === 'recurring-program-edit') {
       const row=(queues.recurring_service_programs || []).find((item)=>String(item.id)===String(id));
       if(row) loadRecurringProgram(row);
@@ -1213,6 +1337,78 @@
       <div class="operations-toolbar"><button id="oc_refresh" type="button">Refresh all live queues</button><span>Build ${BUILD}</span></div>
       <div id="oc_scorecards" class="operations-scorecards" aria-label="Implementation progress"></div><section id="oc_role_permissions" class="oc-permission-strip" aria-label="Role capability checklist"></section><section class="oc-health-grid" aria-label="Payment and release health"><div id="oc_stripe_health" class="oc-health-list"></div><div id="oc_export_readiness" class="oc-export-readiness"></div></section><section id="oc_release_dashboard" class="oc-release-dashboard" aria-label="Release readiness dashboard"></section>
       <div class="operations-grid">
+        <details open class="operations-property-panel"><summary>Property &amp; Site Intelligence</summary>
+          <p class="muted">Build 323 makes the canonical customer property (<code>client_sites</code>) the landscaping field profile. It records service address, approximate serviceable area, lawn/garden/access zones, gates/fences, parking/trailer limits, pets, irrigation, slopes, wet/drainage areas, known hazard notes, utility/locate notes, tree/brush concerns, recurring instructions and private photo references. The separate Safety <code>sites</code> authority remains unchanged.</p>
+          <div class="finance-module-note"><strong id="oc_property_summary">Loading property intelligence…</strong> · Property hazard notes are field context, not a replacement for Safety assessments.</div>
+          <form id="oc_property_form" class="operations-form">
+            <input type="hidden" name="id" />
+            <label>Customer<select name="client_id" data-oc-property-client required><option value="">Loading customers…</option></select></label>
+            <label>Property code<input name="site_code" maxlength="80" placeholder="Auto-generated if blank" /></label>
+            <label>Property / site name<input name="site_name" maxlength="180" required /></label>
+            <label>Service address<input name="service_address" maxlength="400" /></label>
+            <label>City<input name="city" maxlength="120" /></label>
+            <label>Province<input name="province" maxlength="80" value="Ontario" /></label>
+            <label>Postal code<input name="postal_code" maxlength="30" /></label>
+            <label>Approx. serviceable area<input name="approximate_serviceable_area" type="number" min="0" step="0.01" /></label>
+            <label>Area unit<select name="area_unit"><option value="sq_ft">Square feet</option><option value="sq_m">Square metres</option><option value="acre">Acres</option><option value="hectare">Hectares</option></select></label>
+            <label>Latitude<input name="latitude" type="number" step="0.000001" /></label>
+            <label>Longitude<input name="longitude" type="number" step="0.000001" /></label>
+            <label class="operations-span">Access instructions<textarea name="access_notes" maxlength="2500" placeholder="Arrival/access instructions; avoid storing unnecessary secrets."></textarea></label>
+            <label class="operations-span">Gates / fences<textarea name="gate_fence_summary" maxlength="1800"></textarea></label>
+            <label class="operations-span">Parking / trailer limits<textarea name="parking_trailer_limits" maxlength="1800"></textarea></label>
+            <label class="operations-span">Pets<textarea name="pet_notes" maxlength="1800"></textarea></label>
+            <label class="operations-span">Irrigation<textarea name="irrigation_notes" maxlength="1800"></textarea></label>
+            <label class="operations-span">Slopes<textarea name="slope_notes" maxlength="1800"></textarea></label>
+            <label class="operations-span">Drainage / wet areas<textarea name="drainage_wet_area_notes" maxlength="1800"></textarea></label>
+            <label class="operations-span">Known hazard notes<textarea name="hazard_notes" maxlength="2500" placeholder="Field context only; Safety remains authoritative for assessments/incidents."></textarea></label>
+            <label class="operations-span">Utilities / locate notes<textarea name="utility_locate_notes" maxlength="1800"></textarea></label>
+            <label class="operations-span">Tree / brush concerns<textarea name="tree_brush_notes" maxlength="1800"></textarea></label>
+            <label class="operations-span">Recurring property instructions<textarea name="recurring_property_instructions" maxlength="3000"></textarea></label>
+            <label class="operations-inline-check"><input name="is_active" type="checkbox" checked /> Active property</label>
+            <label class="operations-inline-check"><input name="verify_access_now" type="checkbox" /> Mark access instructions verified now</label>
+            <button type="submit" data-oc-permission="property_site_save">Save property profile</button>
+            <button id="oc_property_reset" type="button" class="secondary">Clear property form</button>
+          </form>
+          <form id="oc_property_zone_form" class="operations-form">
+            <input type="hidden" name="id" />
+            <label>Property<select name="client_site_id" data-oc-property-site required><option value="">Loading properties…</option></select></label>
+            <label>Zone code<input name="zone_code" maxlength="80" placeholder="Auto-generated if blank" /></label>
+            <label>Zone name<input name="zone_name" maxlength="180" required placeholder="Front lawn, south beds, side gate…" /></label>
+            <label>Zone type<select name="zone_type"><option value="lawn">Lawn</option><option value="garden_bed">Garden / bed</option><option value="hedge_shrub">Hedge / shrub</option><option value="tree_brush">Tree / brush</option><option value="driveway_parking">Driveway / parking</option><option value="access">Access</option><option value="utility">Utility</option><option value="drainage">Drainage</option><option value="other">Other</option></select></label>
+            <label>Approx. area<input name="approximate_area" type="number" min="0" step="0.01" /></label>
+            <label>Area unit<select name="area_unit"><option value="sq_ft">Square feet</option><option value="sq_m">Square metres</option><option value="acre">Acres</option><option value="hectare">Hectares</option></select></label>
+            <label>Service priority<select name="service_priority"><option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="restricted">Restricted</option></select></label>
+            <label>Sort order<input name="sort_order" type="number" min="0" max="10000" value="100" /></label>
+            <label class="operations-span">Zone access<textarea name="access_instructions" maxlength="1800"></textarea></label>
+            <label class="operations-span">Irrigation<textarea name="irrigation_notes" maxlength="1800"></textarea></label>
+            <label class="operations-span">Slope<textarea name="slope_notes" maxlength="1800"></textarea></label>
+            <label class="operations-span">Drainage / wet areas<textarea name="drainage_wet_area_notes" maxlength="1800"></textarea></label>
+            <label class="operations-span">Known hazard notes<textarea name="hazard_notes" maxlength="1800"></textarea></label>
+            <label class="operations-span">Utility / locate notes<textarea name="utility_locate_notes" maxlength="1800"></textarea></label>
+            <label class="operations-span">Tree / brush concerns<textarea name="tree_brush_notes" maxlength="1800"></textarea></label>
+            <label class="operations-span">Recurring zone instructions<textarea name="recurring_instructions" maxlength="2400"></textarea></label>
+            <label class="operations-inline-check"><input name="is_active" type="checkbox" checked /> Active zone</label>
+            <button type="submit" data-oc-permission="property_zone_save">Save property zone</button>
+            <button id="oc_property_zone_reset" type="button" class="secondary">Clear zone form</button>
+          </form>
+          <form id="oc_property_photo_form" class="operations-form">
+            <input type="hidden" name="id" />
+            <label>Property<select name="client_site_id" data-oc-property-site required><option value="">Loading properties…</option></select></label>
+            <label>Zone<select name="zone_id" data-oc-property-zone><option value="">No zone / property-level</option></select></label>
+            <label>Photo kind<select name="photo_kind"><option value="overview">Overview</option><option value="access">Access</option><option value="gate_fence">Gate / fence</option><option value="parking_trailer">Parking / trailer</option><option value="pet">Pet</option><option value="irrigation">Irrigation</option><option value="slope_drainage">Slope / drainage</option><option value="hazard">Hazard context</option><option value="utility_locate">Utility / locate</option><option value="tree_brush">Tree / brush</option><option value="zone">Zone</option><option value="other">Other</option></select></label>
+            <label>Captured at<input name="captured_at" type="datetime-local" /></label>
+            <label class="operations-span">Photo URL<input name="source_url" type="url" maxlength="1200" placeholder="Optional approved http/https reference" /></label>
+            <label>Private storage bucket<input name="storage_bucket" maxlength="180" placeholder="Optional" /></label>
+            <label>Private storage path<input name="storage_path" maxlength="800" placeholder="Optional" /></label>
+            <label class="operations-span">Caption / field context<textarea name="caption" maxlength="1200"></textarea></label>
+            <label class="operations-inline-check"><input name="is_active" type="checkbox" checked /> Active reference</label>
+            <button type="submit" data-oc-permission="property_photo_register">Register private photo reference</button>
+            <button id="oc_property_photo_reset" type="button" class="secondary">Clear photo form</button>
+          </form>
+          <h4>Properties</h4><div id="oc_property_sites" class="oc-live-queue"></div>
+          <h4>Zones</h4><div id="oc_property_zones" class="oc-live-queue"></div>
+          <h4>Private photo references</h4><div id="oc_property_photos" class="oc-live-queue"></div>
+        </details>
         <details open class="operations-recurring-panel"><summary>Recurring Lawn &amp; Yard Maintenance</summary>
           <p class="muted">Build 322 extends the canonical recurring-service agreement and existing service-execution scheduler. Weekly, biweekly, custom-day and seasonal programs generate auditable visit dates; skips, weather delays, make-up visits, customer holds/resumes and single-visit cancellations are recorded as private Jobs evidence rather than overwriting history.</p>
           <div class="finance-module-note"><strong id="oc_recurring_summary">Loading recurring programs…</strong> · Finance posting and payment-provider mutation remain off.</div>
@@ -1337,6 +1533,12 @@
   }
 
   function bind() {
+    byId('oc_property_form')?.addEventListener('submit',(e)=>handlePropertyForm(e).catch((err)=>status(err?.message || 'Property intelligence save failed.',true)));
+    byId('oc_property_reset')?.addEventListener('click',resetPropertyForm);
+    byId('oc_property_zone_form')?.addEventListener('submit',(e)=>handlePropertyZoneForm(e).catch((err)=>status(err?.message || 'Property zone save failed.',true)));
+    byId('oc_property_zone_reset')?.addEventListener('click',resetPropertyZoneForm);
+    byId('oc_property_photo_form')?.addEventListener('submit',(e)=>handlePropertyPhotoForm(e).catch((err)=>status(err?.message || 'Property photo reference failed.',true)));
+    byId('oc_property_photo_reset')?.addEventListener('click',resetPropertyPhotoForm);
     byId('oc_recurring_program_form')?.addEventListener('submit',(e)=>handleRecurringProgram(e).catch((err)=>status(err?.message || 'Recurring program save failed.',true)));
     byId('oc_recurring_reset')?.addEventListener('click',resetRecurringProgramForm);
     byId('oc_crew_dispatch_form')?.addEventListener('submit',(e)=>handleCrewDispatch(e).catch((err)=>status(err?.message || 'Crew dispatch failed.',true)));
