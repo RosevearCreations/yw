@@ -107,6 +107,7 @@ jobs:
       - run: npm run test:month-end-close-cockpit
       - run: npm run test:accountant-export-package-v2
       - run: npm run test:job-cost-profitability-closeout
+      - run: npm run test:job-cost-profitability-closeout
       - run: npm run test:help-seo
       - run: npm run test:search-discovery
       - run: npm run test:repo
@@ -157,6 +158,7 @@ jobs:
       - run: npm run test:browser:reconciliation-exception-resolution
       - run: npm run test:browser:month-end-close-cockpit
       - run: npm run test:browser:accountant-export-package-v2
+      - run: npm run test:browser:job-cost-profitability-closeout
       - run: npm run test:browser:job-cost-profitability-closeout
       - run: npm run test:browser:profile-reference-lifecycle
       - run: npm run test:browser:workspace-organization
