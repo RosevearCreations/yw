@@ -77,6 +77,7 @@ async function mount(page,{financeRows=true}={}){
 
 test('Build 318 renders landscaping profitability closeout only from Finance-authorized directory data',async({page})=>{
   await mount(page,{financeRows:true});
+  await page.getByRole('button',{name:'Load'}).first().click();
   const table=page.locator('#job_profitability_closeout_table');
   await expect(table).toBeVisible();
   await expect(table).toContainText('JOB-LAND-318');
@@ -103,6 +104,7 @@ test('Build 318 renders landscaping profitability closeout only from Finance-aut
 
 test('Build 318 profitability closeout fails closed when Finance-authorized rows are absent',async({page})=>{
   await mount(page,{financeRows:false});
+  await page.getByRole('button',{name:'Load'}).first().click();
   const table=page.locator('#job_profitability_closeout_table');
   await expect(table).toBeVisible();
   await expect(table).toContainText('No Finance-authorized Build 318 profitability closeout rows');
