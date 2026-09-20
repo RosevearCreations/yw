@@ -1017,7 +1017,16 @@
         return;
       }
     }
-    if (action === 'portal-dispatch') { const start = prompt('Scheduled start (YYYY-MM-DDTHH:MM):'); if (!start) return; const end = prompt('Scheduled end (YYYY-MM-DDTHH:MM):'); if (!end) return; await send({ action:'dispatch_schedule', work_order_id:id, scheduled_start:new Date(start).toISOString(), scheduled_end:new Date(end).toISOString(), schedule_status:'scheduled' }, 'Dispatch schedule'); return; }
+    if (action === 'portal-dispatch') {
+      resetCrewDispatchForm();
+      const form=byId('oc_crew_dispatch_form');
+      if(form){
+        form.elements.work_order_id.value=id;
+        form.scrollIntoView({behavior:'smooth',block:'start'});
+        status('Work order loaded into Build 321 Crew Scheduling & Dispatch. Add crew, timing, route, equipment and workability before saving.');
+      }
+      return;
+    }
     if (action === 'webhook-ack' || action === 'webhook-resolve') { const decision = action === 'webhook-ack' ? 'acknowledged' : 'resolved'; await send({ action:'stripe_webhook_alert_decision', alert_id:id, alert_status:decision }, `Webhook alert ${decision}`); return; }
     if (action === 'signal-review' || action === 'signal-actioned') { const decision = action === 'signal-review' ? 'review' : 'actioned'; const note = prompt(decision === 'actioned' ? 'What change was made or scheduled?' : 'Review note (optional):') || ''; await send({ action:'content_signal_decision', observation_id:id, decision_status:decision, decision_note:note }, `Route signal marked ${decision}`); return; }
     if (action === 'execution-proof-approve' || action === 'execution-proof-reject') { const decision = action.endsWith('approve') ? 'approve' : 'reject'; const note = prompt(decision === 'approve' ? 'Approval note (optional):' : 'Why is this proof rejected?'); if (decision === 'reject' && !note) return; await send({ action:'work_order_execution_proof_decision', execution_proof_id:id, decision, decision_note:note || '' }, `Execution proof ${decision}`); return; }
