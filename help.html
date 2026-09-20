@@ -97,4 +97,10 @@
           <p>The closeout retains provenance counts for labour entries, financial events, approved execution proof, posted invoices, and payment applications so supervisors and Finance can see whether a number is supported by actual operating evidence. Statuses such as needs completion review, ready to invoice, collection open, cost variance review, and profitability closed are decision-support states rather than automatic accounting actions.</p>
           <p>Profitability is internal Finance information. Customer-facing surfaces continue to exclude labour cost, materials cost, equipment cost, margin, profit, staff notes, and other private costing. Build 318 remains schema-neutral at Schema 208 and does not authorize posting execution, provider/payment mutation, or customer billing by itself.</p>
         </section>
+        <section class="help-section" id="landscaping-finance-dashboard">
+          <h2>Landscaping Finance Dashboard &amp; Cash Position</h2>
+          <p>Build 319 gives ownership and management one read-only operational Finance view for reconciled cash/bank position, open and overdue receivables, vendor and material commitments, tax and payroll remittance readiness, current loaded job revenue/cost/margin, job-profitability exceptions, reconciliation blockers, seasonal evidence and close readiness.</p>
+          <p>The dashboard reuses the existing accounting fast path and Build 318 job-profitability closeout when the operator has the required Jobs visibility. If job-profitability detail is unavailable, cash, A/R, A/P, remittance and reconciliation evidence remain visible rather than failing the entire Finance workspace.</p>
+          <p>Build 319 remains schema-neutral at Schema 208. It does not post journals, pay bills, collect receivables, file remittances, enable provider/payment mutation, change Jobs records or close an accounting period. The underlying Finance, reconciliation, close and job-cost authorities remain the source of truth.</p>
+        </section>
 
