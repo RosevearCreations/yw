@@ -43,8 +43,8 @@ const {
   boundaryAuditFields,
 } = module.exports;
 
-assert.equal(Array.from(MODULE_WRITE_ACTIONS).length, 42, 'Exactly 42 operations actions must be contracted through Schema 212.');
-assert.equal(Object.keys(MODULE_WRITE_BOUNDARIES).length, 42);
+assert.equal(Array.from(MODULE_WRITE_ACTIONS).length, 46, 'Exactly 46 operations actions must be contracted through Schema 213.');
+assert.equal(Object.keys(MODULE_WRITE_BOUNDARIES).length, 46);
 
 const financeCreate = resolveModuleWriteBoundary('payment_action_request');
 assert.equal(financeCreate.ownerModule, 'finance');
@@ -111,6 +111,31 @@ assert.equal(propertyPhoto.minimum, 'approve');
 assert.equal(propertyPhoto.mode, 'write');
 assert.equal(propertyPhoto.eventKey, 'jobs.property_site.photo_registered');
 
+const estimateSave = resolveModuleWriteBoundary('estimate_workflow_save');
+assert.equal(estimateSave.ownerModule, 'jobs');
+assert.equal(estimateSave.minimum, 'approve');
+assert.equal(estimateSave.mode, 'write');
+assert.equal(estimateSave.eventKey, 'jobs.estimate.saved');
+
+const estimateApproval = resolveModuleWriteBoundary('estimate_approval_decision');
+assert.equal(estimateApproval.ownerModule, 'jobs');
+assert.equal(estimateApproval.minimum, 'approve');
+assert.equal(estimateApproval.mode, 'write');
+assert.equal(estimateApproval.eventKey, 'jobs.estimate.approval_decided');
+
+const estimateConvert = resolveModuleWriteBoundary('estimate_convert_work_order');
+assert.equal(estimateConvert.ownerModule, 'jobs');
+assert.equal(estimateConvert.minimum, 'approve');
+assert.equal(estimateConvert.mode, 'write');
+assert.equal(estimateConvert.crossModule, true);
+assert.equal(estimateConvert.eventKey, 'jobs.estimate.converted');
+
+const changeOrder = resolveModuleWriteBoundary('change_order_save');
+assert.equal(changeOrder.ownerModule, 'jobs');
+assert.equal(changeOrder.minimum, 'approve');
+assert.equal(changeOrder.mode, 'write');
+assert.equal(changeOrder.eventKey, 'jobs.change_order.saved');
+
 const disabled = resolveModuleWriteBoundary('deposit_status_update');
 assert.equal(disabled.ownerModule, 'finance');
 assert.equal(disabled.minimum, 'manage');
@@ -148,10 +173,11 @@ for (const action of Array.from(MODULE_WRITE_ACTIONS)) {
   if (boundary.crossModule) assert.ok(boundary.eventKey, `Cross-module contract needs event key: ${action}`);
 }
 
-console.log('PASS boundary-exact-42-actions');
+console.log('PASS boundary-exact-46-actions');
 console.log('PASS boundary-build320-attention-management');
 console.log('PASS boundary-build322-recurring-service-management');
 console.log('PASS boundary-build323-property-site-management');
+console.log('PASS boundary-build324-estimate-job-invoice-management');
 console.log('PASS boundary-finance-read-write-ownership');
 console.log('PASS boundary-jobs-cross-module-event');
 console.log('PASS boundary-admin-write-ownership');
@@ -159,4 +185,4 @@ console.log('PASS boundary-disabled-payment-mutation');
 console.log('PASS boundary-unknown-action-fails-closed');
 console.log('PASS boundary-audit-metadata');
 console.log('PASS boundary-all-contracts-valid');
-console.log('\nSchema 164 + 209 + 211 + 212 module write-boundary behavior gate passed: 11/11 checks.');
+console.log('\nSchema 164 + 209 + 211 + 212 + 213 module write-boundary behavior gate passed: 12/12 checks.');

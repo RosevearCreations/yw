@@ -112,6 +112,7 @@ jobs:
       - run: npm run test:crew-scheduling-dispatch
       - run: npm run test:recurring-lawn-yard-maintenance
       - run: npm run test:property-site-intelligence
+      - run: npm run test:estimate-job-invoice-workflow
       - run: npm run test:help-seo
       - run: npm run test:search-discovery
       - run: npm run test:repo
@@ -168,6 +169,7 @@ jobs:
       - run: npm run test:browser:crew-scheduling-dispatch
       - run: npm run test:browser:recurring-lawn-yard-maintenance
       - run: npm run test:browser:property-site-intelligence
+      - run: npm run test:browser:estimate-job-invoice-workflow
       - run: npm run test:browser:profile-reference-lifecycle
       - run: npm run test:browser:workspace-organization
       - run: npm run test:browser:performance-budgets

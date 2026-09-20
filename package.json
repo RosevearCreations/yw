@@ -125,7 +125,9 @@
     "test:recurring-lawn-yard-maintenance": "node scripts/recurring-lawn-yard-maintenance-check.mjs",
     "test:browser:recurring-lawn-yard-maintenance": "playwright test --config=playwright.config.mjs tests/browser/recurring-lawn-yard-maintenance.spec.mjs",
     "test:property-site-intelligence": "node scripts/property-site-intelligence-check.mjs",
-    "test:browser:property-site-intelligence": "playwright test --config=playwright.config.mjs tests/browser/property-site-intelligence.spec.mjs"
+    "test:browser:property-site-intelligence": "playwright test --config=playwright.config.mjs tests/browser/property-site-intelligence.spec.mjs",
+    "test:estimate-job-invoice-workflow": "node scripts/estimate-job-invoice-workflow-check.mjs",
+    "test:browser:estimate-job-invoice-workflow": "playwright test --config=playwright.config.mjs tests/browser/estimate-job-invoice-workflow.spec.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
